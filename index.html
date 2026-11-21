@@ -1203,6 +1203,7 @@ EXPERIENCE IDEA: ${d.concept||"(not described yet)"}
 FORMAT: ${d.format}. CITY: ${d.city||"TBD"}. HEADCOUNT: ${d.headcount}. BUDGET: ${money(d.budget)}. DATE: ${d.date||"TBD"}.
 GOAL: ${d.goal||"build relationships with target accounts"}
 PROJECT TYPE: ${(KINDS[d.kind]||KINDS.dinner).label}
+PRIMARY OBJECTIVE: ${OBJECTIVES[objOf(d)].label}: ${OBJECTIVES[objOf(d)].line}. Judge every recommendation against this objective.
 TARGET AUDIENCE: roles ${d.audience.roles.join(", ")||"senior B2B buyers"}; industries ${d.audience.industries.join(", ")||"any"}; seniority ${d.audience.seniority||"senior"}.${brandProfile?.audience?`\nWHAT ENCORE KNOWS ABOUT THEIR CUSTOMERS: ${(brandProfile.audience.surprises||[]).map(x=>x.fact).join(" ")} They spend time at: ${(brandProfile.audience.gather||[]).join(", ")}. Buying triggers: ${(brandProfile.audience.triggers||[]).join(", ")}.`:""}${d.intel?`\nBUYER PERSONA: ${d.intel.archetype}, "${d.intel.tagline}". ${d.intel.summary||""} Lights up: ${(d.intel.lightsUp||[]).map(c=>c.t||c).join(", ")}. Drains: ${(d.intel.drains||[]).map(c=>c.t||c).join(", ")}. They'd appreciate: ${(d.intel.feelSeen||[]).join("; ")}.`:""}`;
 }
 function matchRoles(e,roles){ return !roles.length || (e.audience?.roles||[]).some(r=>roles.includes(r)) }
@@ -1502,13 +1503,15 @@ function cloneForReuse(d,over={}){ const c=clone(d); ["id","metrics","opps","deb
   c.guests=[]; c.tasksDone=[]; c.status="planning"; c.example=false; c.createdAt=Date.now(); return Object.assign(c,over) }
 $("#dupEvent").onclick=()=>{ draft=hydrate(cloneForReuse(draft,{name:(draft.name||"Event")+" (copy)"})); step=1; renderStep(); toast("Duplicated: copy, plan and budget carried over; guests and results start fresh. Save to keep it.") };
 $("#seriesBtn").onclick=()=>{ const h=$("#factsHost"); if(!h) return; const box=document.createElement("div"); box.className="panel stack seriesbox";
-  box.innerHTML=`<div><h3>Make "${esc(draft.name||"this event")}" a series</h3><p class="note">One master (copy, run of show, budget, questions), one child per city with its own date, venue, guests and AE owners. One per line: City, YYYY-MM-DD.</p></div><textarea id="serIn" rows="4" placeholder="New York, 2027-03-11&#10;London, 2027-04-08&#10;Berlin, 2027-04-15"></textarea><div class="btns"><button class="btn primary sm" id="serGo">Create the series</button><button class="btn ghost sm" id="serX">Cancel</button></div>`;
+  box.innerHTML=`<div><h3>Make "${esc(draft.name||"this event")}" a series</h3><p class="note">One master (copy, run of show, budget, questions), one child per city with its own date, venue, guests and AE owners. One per line: City, YYYY-MM-DD, budget, owner, currency. Budget defaults to an even split of ${money(+draft.budget||0)}.</p></div><textarea id="serIn" rows="5" placeholder="New York, 2027-03-11, 24000, Maya, USD&#10;London, 2027-04-08, 22000, Lena, GBP&#10;Berlin, 2027-04-15, 20000, Lena, EUR"></textarea><div class="btns"><button class="btn primary sm" id="serGo">Create the series</button><button class="btn ghost sm" id="serX">Cancel</button></div>`;
   h.appendChild(box); $("#serX").onclick=()=>box.remove();
   $("#serGo").onclick=async()=>{ const L=$("#serIn").value.split("\n").map(x=>x.split(",").map(y=>y.trim())).filter(x=>x[0]); if(!L.length){ toast("Add at least one city"); return }
     if(db&&!draft.id&&!(await saveEvent())) return; const parent=draft.id||(draft.id="local_"+Math.random().toString(36).slice(2,8)); let n=0;
-    for(const [city,date] of L){ const c=cloneForReuse(draft,{name:`${draft.name}: ${city}`,city,date:/^\d{4}-\d{2}-\d{2}$/.test(date||"")?date:"",parentId:parent,seriesName:draft.name,venues:null,venuePick:0,scout:null}); delete c.id;
+    const even=Math.round((+draft.budget||0)/L.length), sum=L.reduce((a,x)=>a+(+x[2]||even),0); if(draft.budget&&sum>+draft.budget*1.001&&!confirm?.(`City budgets add up to ${money(sum)}, more than the ${money(+draft.budget)} total. Create anyway?`)) return;
+    draft.isSeries=true; draft.seriesBudget=+draft.budget||sum;
+    for(const [city,date,bud,own,cur] of L){ const c=cloneForReuse(draft,{name:`${draft.name}: ${city}`,city,date:/^\d{4}-\d{2}-\d{2}$/.test(date||"")?date:"",budget:+bud||even,owner:own||draft.owner||"",currency:(cur||"USD").toUpperCase().slice(0,3),parentId:parent,seriesName:draft.name,venues:null,venuePick:0,scout:null,produce:draft.produce?{...clone(draft.produce),budget:(draft.produce.budget||[]).map(b=>({...b,amount:Math.round((+b.amount||0)*(+bud||even)/Math.max(1,eventCost(draft)))}))}:null,isSeries:false}); delete c.id;
       if(db){ try{ await db.collection("events").add(c); n++ }catch{} } else { allEvents.push({...c,id:"local_"+Math.random().toString(36).slice(2,8)}); n++ } }
-    box.remove(); toast(`Created ${n} event${n===1?"":"s"} in the series. Find them on Home.`) } };
+    box.remove(); renderStep(); toast(`Created ${n} event${n===1?"":"s"} in the series. They're listed above and on Home.`) } };
 
 async function saveEvent(){
   if(!db){ toast("Saving needs the page opened in claude.ai while signed in."); return false }
@@ -1546,19 +1549,20 @@ function subTabs(group,cur){ const T=group==="ideas"?[["inspire","Inspiration"],
 // ==================================================================
 function renderStep(){
   if(isGuestRoute()) return;
-  renderHeader(); drawCoach(); const eo=$("#evOwner"); if(eo){ eo.value=draft.owner||""; eo.onchange=()=>{ draft.owner=eo.value.trim() } } const fh=$("#factsHost"); if(fh){ const op=$(".ready",fh)?.open; fh.innerHTML=factsStrip(draft)+confHTML(draft)+readyHTML(draft); if(op) $(".ready",fh).open=true; $$("[data-confgo],[data-rgo]",fh).forEach(b=>b.onclick=()=>{ step=+(b.dataset.confgo||b.dataset.rgo); renderStep(); window.scrollTo({top:0,behavior:"smooth"}) }) }
+  renderHeader(); drawCoach(); const eo=$("#evOwner"); if(eo){ eo.value=draft.owner||""; eo.onchange=()=>{ draft.owner=eo.value.trim() } } const fh=$("#factsHost"); if(fh){ const op=$(".ready",fh)?.open; fh.innerHTML=factsStrip(draft)+confHTML(draft)+readyHTML(draft)+seriesHTML(draft); $$("[data-sopen]",fh).forEach(b=>b.onclick=()=>{ const e=allEvents.find(x=>x.id===b.dataset.sopen); if(e){ draft=hydrate(e); draft.example=false; renderStep() } }); if(op) $(".ready",fh).open=true; $$("[data-confgo],[data-rgo]",fh).forEach(b=>b.onclick=()=>{ step=+(b.dataset.confgo||b.dataset.rgo); renderStep(); window.scrollTo({top:0,behavior:"smooth"}) }) }
   const sb=$("#sampleBar"); if(sb){ sb.innerHTML=draft.example?`<div class="samplebar btns" style="justify-content:space-between"><span>You're looking at a sample event with made-up data. Explore it, then start your own.</span><button class="btn primary sm" id="startOwn">Start your own event</button></div>`:""; $("#startOwn")&&($("#startOwn").onclick=()=>{ draft=brandDraft(); step=1; renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6,8:stepSignoff,9:stepDistribution})[step](host);
   wireChase(host);
   $$("[id^=out-]",host).forEach(el=>{ const k=el.id.slice(4); if(AGENTS[k]) el.insertAdjacentHTML("afterbegin",needsHTML(k,out(k))) }); wireMods(host); wireNeeds(host);
   host.insertAdjacentHTML("afterbegin",lessonStrip(step)); $$("[data-teach]",host).forEach(b=>b.onclick=()=>teachMore(+b.dataset.teach,b));
-  const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; toast(`${KINDS[draft.kind].label}: your specialists are in Design.`); renderStep() }) }
+  const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; const P=kprof(draft); if(P.dist&&(!draft.dist||draft.dist.kind!==draft.kind)) draft.dist={kind:draft.kind,show:P.show,ch:P.dist.map(([n,sh,ac])=>({n,sh,ac}))}; else if(draft.dist&&draft.dist.kind!==draft.kind){ draft.dist={kind:draft.kind,show:P.show,ch:DIST_DEFAULT.map(([n,sh,ac])=>({n,sh,ac}))} } toast(`${KINDS[draft.kind].label}: specialists, channels and measurement updated.`); renderStep() });
+    $$("[data-obj]",kh).forEach(b=>b.onclick=()=>{ draft.objective=b.dataset.obj; draft.example=false; toast(`Goal: ${OBJECTIVES[draft.objective].label}. Strategy, guests and measurement now judge against it.`); renderStep() }) }
 }
 const DIST_DEFAULT=[["AE personal invites",40,25],["Exec-to-exec notes",15,35],["Partner co-invites",10,15],["Customer 'bring a peer'",15,30],["Community & newsletters",10,4],["LinkedIn (posts + targeted ads)",5,1.5]];
-function stepDistribution(host){ const d=draft; d.dist=d.dist||{show:70,ch:DIST_DEFAULT.map(([n,sh,ac])=>({n,sh,ac}))};
+function stepDistribution(host){ const d=draft, KP=kprof(d); d.dist=d.dist||{kind:kindOf(d),show:KP.show,ch:(KP.dist||DIST_DEFAULT).map(([n,sh,ac])=>({n,sh,ac}))};
   const D=d.dist, need=Math.ceil(d.headcount/(D.show/100)), tot=D.ch.reduce((a,c)=>a+(+c.sh||0),0)||1, rows=D.ch.map(c=>{ const rs=Math.ceil(need*(+c.sh||0)/tot); return {...c,rs,inv:c.ac>0?Math.ceil(rs/(c.ac/100)):0} }), invites=rows.reduce((a,r)=>a+r.inv,0);
-  host.innerHTML=`<div><small class="eyebrow">Step 5 · Distribution</small><h3>How you'll fill every seat</h3><p class="note">The seat math tells you how many invites each channel has to send. The playbook says who sends what, when.</p></div>
+  host.innerHTML=`<div><small class="eyebrow">Step 5 · Distribution</small><h3>How you'll fill every seat</h3><p class="note">The seat math tells you how many invites each channel has to send. The playbook says who sends what, when.${KP.note?` ${esc(KP.note)}`:""}</p></div>
   <div class="panel stack"><div class="kpis"><div class="kpi"><small>Seats</small><b>${esc(d.headcount)}</b></div><div class="kpi"><small>Expected show rate</small><b><input class="mini" type="number" min="10" max="100" id="dShow" value="${D.show}" style="width:70px">%</b></div><div class="kpi"><small>RSVPs needed</small><b>${need}</b></div><div class="kpi"><small>Invites to send</small><b>${invites}</b></div></div>
     <div class="tscroll"><table><thead><tr><th>Channel</th><th class="num">Share of RSVPs</th><th class="num">Acceptance rate</th><th class="num">RSVPs</th><th class="num">Invites needed</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td><b>${esc(r.n)}</b></td><td class="num"><input class="mini" type="number" min="0" max="100" data-dsh="${i}" value="${r.sh}" style="width:70px">%</td><td class="num"><input class="mini" type="number" min="0" max="100" step="0.5" data-dac="${i}" value="${r.ac}" style="width:70px">%</td><td class="num">${r.rs}</td><td class="num"><b>${r.inv}</b></td></tr>`).join("")}</tbody></table></div>
     <p class="note">Acceptance rates are starting estimates. Edit them to match your history; Encore's debriefs will sharpen them over time.</p></div>
@@ -1578,8 +1582,10 @@ const LESSONS={
  8:["Lead the proposal with the accounts and pipeline at stake, not the venue. Executives approve outcomes.","Show the downside is capped: 'we only book after 10 target accounts confirm' gets a faster yes than a big number."],
  6:["Seat people by shared problems, not by company. Peers talk; vendors pitch.","Send a 'who's coming' note three days out. Seeing peers' titles is the strongest reason not to cancel."],
  7:["Follow up within 24 hours, and lead with something useful from the night (the recipe, the anonymous answers), not a meeting ask.","Measure influenced pipeline over 90 days. Event impact often shows up as deals moving faster, not only as new ones."]};
+const LESSONS_X={1:["Tie the event to a customer moment: renewals coming up, a new feature they paid for, or a gap in adoption. Pick those accounts first.","Invite the economic buyer and the daily champion together. Renewals are decided by the first and defended by the second."],
+ 7:["Measure what the event changed for each account: expansion opportunities, renewals secured or still at risk, and new references or case studies.","Log the roadmap asks you heard and close the loop within two weeks. Customers who see their feedback land renew more willingly."]};
 let teachCache={};
-function lessonStrip(st){ const L=LESSONS[st]; if(!L||expert()) return ""; const T=teachCache[st];
+function lessonStrip(st){ const L=(objOf(draft)==="expansion"&&LESSONS_X[st])||LESSONS[st]; if(!L||expert()) return ""; const T=teachCache[st];
   return `<div class="lesson"><div class="lhead"><span class="lbulb">✦</span><b>What great field marketers know</b><button class="btn ghost sm" data-teach="${st}">${T?"Teach me more":"Teach me more"}</button></div>
     <ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${T?`<div class="lmore">${T.map(i=>`<div class="surprise"><b>${esc(i.insight)}</b><span class="note">${esc(i.why)}${i.source?` · ${/^https?:/.test(i.source)?`<a href="${esc(i.source)}" target="_blank" rel="noopener">source</a>`:esc(i.source)}`:""}</span></div>`).join("")}</div>`:""}<pre class="stream" id="st-teach" hidden></pre></div>` }
 async function teachMore(st,btn){ const label={1:"strategy",2:"validation",3:"design",4:"launching the event page and promotion",9:"distribution",5:"production",8:"getting sign-off",6:"guest list and invitations",7:"follow-up and measurement"}[st];
@@ -2163,13 +2169,25 @@ async function copyTxt(t){ try{ await navigator.clipboard.writeText(t); toast("C
 // ==================================================================
 const KINDS={
   dinner:{label:"Executive dinner",mods:["narrative","content"]},
-  conference:{label:"Third-party conference",mods:["confscout","confplan","narrative","content"]},
+  conference:{label:"Third-party conference",mods:["confplan","booth","confscout","narrative","content"]},
   owned:{label:"Owned conference",mods:["ownedconf","content","narrative","vendors"]},
   summit:{label:"Executive summit / forum",mods:["summit","narrative","content","vendors"]},
   webinar:{label:"Webinar",mods:["webinar","narrative"]},
   launch:{label:"Product launch",mods:["launch","content","narrative","vendors"]},
   roadshow:{label:"Roadshow",mods:["roadshow","narrative","vendors"]},
   experience:{label:"Creative experience",mods:["narrative","vendors"]}};
+const OBJECTIVES={pipeline:{label:"New pipeline",line:"create new opportunities with target accounts"},expansion:{label:"Expansion and renewals",line:"grow and keep existing customers: expansion, renewals and advocacy, not net-new pipeline"},
+  awareness:{label:"Brand and community",line:"build reputation and community with the right people; pipeline is a secondary signal"},mixed:{label:"A mix",line:"balance new pipeline with customer expansion"}};
+const objOf=d=>OBJECTIVES[d.objective]?d.objective:"pipeline";
+const KPROF={
+  dinner:{show:70},roadshow:{show:70},experience:{show:70},
+  summit:{show:75,dist:[["AE personal invites",30,25],["Exec-to-exec notes",25,35],["Customer 'bring a peer'",15,30],["Speaker and partner networks",15,15],["Community & newsletters",10,4],["LinkedIn (posts + targeted ads)",5,1.5]]},
+  owned:{show:55,dist:[["Email to your list",30,4],["AE personal invites",20,20],["Speakers and partners promote",20,8],["Customer 'bring a peer'",10,25],["Community & newsletters",10,3],["Paid social",10,0.8]]},
+  conference:{show:65,unit:"meetings",dist:[["Pre-booked meetings from AE outreach",40,12],["Side-event invites",25,20],["Partner co-promotion",10,10],["Customer intros",10,25],["LinkedIn and community",10,2],["Show app and organizer listing",5,3]],
+    note:"For a booth, the room is your meeting calendar. Count booked meetings and side-event seats, not booth traffic.",launch:"For the booth itself you don't need an event page. Use the launch kit for your side event, and pre-book meetings in Distribution."},
+  webinar:{show:40,dist:[["Email to your list",40,3],["LinkedIn (posts + ads)",20,1],["Partner co-promotion",15,4],["AE personal invites",15,15],["Community & newsletters",10,2]],launch:"Webinars usually live on your webinar platform (Zoom, ON24, Livestorm, Goldcast). Pick 'Your website' or Luma for the registration page, and paste the platform link as your event page link."},
+  launch:{show:60,dist:[["Email to your list",30,3],["Press and analysts",15,5],["AE personal invites",20,20],["Customer 'bring a peer'",10,25],["LinkedIn (posts + ads)",15,1],["Partner co-promotion",10,6]]}};
+const kprof=d=>KPROF[kindOf(d)]||KPROF.dinner;
 const SECTION_SPEC=`Reply with only JSON: {"summary":"your recommendation in max 30 words","sections":[{"title":"","type":"cards|table|timeline|kpis|chips","items":[...]}]}. Item shapes: cards {"title","subtitle","body":"max 25 words","score":1-10,"tags":[],"date":"YYYY-MM-DD or empty","city":"or empty"}; table {"columns":[...],"rows":[[...]]} (put the table object itself as the single item); timeline {"when","what","owner"}; kpis {"label","value","note"}; chips: plain strings. Use 2 to 5 sections. Only state facts you found or can stand behind; mark estimates as estimates.`;
 const MODS={
   confscout:{label:"Conference scout",av:"CS",desc:"Which conferences are worth it for your buyers, and how to show up.",
@@ -2202,6 +2220,9 @@ Sections: "Demos" as cards (tags = [owner, prep time]), "Sessions" as cards, "Pr
   distribution:{label:"Distribution playbook",av:"DP",desc:"Who sends what, where and when to fill every seat with the right people.",
     prompt:d=>`Build the distribution playbook to fill ${d.headcount} seats with the right people for this event${d.date?` on ${d.date}`:""}. Channels to consider: AE personal invites, exec-to-exec notes from our leadership, partner co-invites, "bring a peer" referrals from customers, community groups and newsletters the buyers read, LinkedIn (exec posts, targeted ads to named accounts), a waitlist, and speakers or hosts promoting to their networks. For each channel: who sends, to whom, the message angle, timing, and the expected acceptance rate (label estimates). Add a timeline from launch to event, the moments that create urgency, and what to do if RSVPs are behind at 3 weeks, 2 weeks and 1 week out.
 Sections: "Channels" as cards (title = channel, subtitle = who sends, body = angle + audience, score = expected impact, tags = [acceptance rate estimate, timing]), "Timeline" as a timeline, "If RSVPs lag" as cards, "Targets" as kpis.`},
+  booth:{label:"Booth plan",av:"BT",desc:"Staffing rota, shipping deadlines, lead capture, demo stations and pre-booked meetings for the booth.",
+    prompt:d=>`Plan the booth at this third-party conference${d.date?` (show date ${d.date})`:""}. Cover: booth staffing rota by shift (who, role, what they own), shipping and freight deadlines working back from the show's advance-warehouse cutoff (say to confirm it with the organizer), lead capture (scanner or app, qualifying questions, routing to AEs within 24h), demo stations and what each shows, a target number of pre-booked meetings and how to book them, and what goes to booth visitors after the show (e.g. a follow-up webinar). Research the show if you can.
+Sections: "Staffing rota" as a table (Shift, Who, Role, Owns), "Deadlines" as timeline, "Lead capture" as chips, "Targets" as kpis (Pre-booked meetings, Qualified leads, Side-event seats), "After the show" as cards.`},
   fit:{label:"Brand and audience fit",av:"FT",desc:"Will this resonate with your buyers, and does it feel like your brand? A straight answer, with what to change.",
     prompt:d=>`Judge honestly whether this event concept will resonate with the target audience AND fits the brand (its voice, character and what it's known for). Score both 1-10. Be willing to say it doesn't fit. Use web research on the audience and the brand's recent public presence.
 Sections: "Scores" as kpis (Audience fit, Brand fit, Overall), "Why it works" as chips, "What feels off" as chips, "Make it unmistakably yours" as cards (3 concrete changes, each with a score for impact).`},
@@ -2255,7 +2276,9 @@ function wireMods(host){
   $$("[data-adopt]",host).forEach(b=>b.onclick=()=>{ const [k,si,ci]=b.dataset.adopt.split("|"), c=draft.mods[k].sections[+si].items[+ci];
     Object.assign(draft,{name:c.title||draft.name,city:c.city||draft.city,date:/^\d{4}-\d{2}-\d{2}$/.test(c.date||"")?c.date:draft.date}); toast(`"${c.title}" is now your event.`); renderStep() });
 }
-function kindPicker(){ const k=kindOf(); return `<div class="kindrow" role="group" aria-label="What are you running?"><small class="eyebrow">What are you running?</small><div class="chips">${Object.entries(KINDS).map(([id,K])=>`<button class="tile2 ${k===id?"on":""}" data-kind="${id}">${esc(K.label)}</button>`).join("")}</div></div>` }
+function kindPicker(){ const k=kindOf(), o=objOf(draft); return `<div class="kindrow" role="group" aria-label="What are you running?"><small class="eyebrow">What are you running?</small><div class="chips">${Object.entries(KINDS).map(([id,K])=>`<button class="tile2 ${k===id?"on":""}" data-kind="${id}">${esc(K.label)}</button>`).join("")}</div>
+  <small class="eyebrow" style="margin-top:10px">What's it for?</small><div class="chips">${Object.entries(OBJECTIVES).map(([id,O])=>`<button class="tile2 ${o===id?"on":""}" data-obj="${id}">${esc(O.label)}</button>`).join("")}</div>
+  <p class="note">The type and goal shape every step: who you invite, how you fill the room, what you launch, and how you measure it.</p></div>` }
 
 // ==================================================================
 // Operations: programs home, AE nominations, CRM files, badge scans
@@ -2279,6 +2302,10 @@ const READY=[["Plan",[["Concept",1,d=>!!d.concept],["Strategy and goal",1,()=>!!
 function readyHTML(d){ const all=READY.flatMap(g=>g[1]), done=all.filter(x=>x[2](d)).length;
   return `<details class="ready"><summary><b>Everything to think about</b><span class="note">${done} of ${all.length} covered</span><span class="rbar"><i style="width:${Math.round(done/all.length*100)}%"></i></span></summary>
     <div class="rgrid">${READY.map(([g,L])=>`<div><small class="eyebrow">${g}</small>${L.map(([t,st,f])=>`<button class="rchip ${f(d)?"ok":""}" data-rgo="${st}">${f(d)?"✓":"○"} ${esc(t)}</button>`).join("")}</div>`).join("")}</div></details>` }
+function seriesHTML(d){ const root=d.parentId||(d.isSeries?d.id:null); if(!root) return ""; const kids=allEvents.filter(e=>e.parentId===root), master=allEvents.find(e=>e.id===root)||(d.id===root?d:null); if(!kids.length) return "";
+  const tot=kids.reduce((a,e)=>a+(+e.budget||0),0), cap=+(master?.seriesBudget||master?.budget||0);
+  return `<details class="ready series" open><summary><b>Series: ${esc(master?.name||d.seriesName||"")}</b><span class="note">${kids.length} cities · ${money(tot)}${cap?` of ${money(cap)}`:""}</span>${cap&&tot>cap?`<span class="pchip bad">Over by ${money(tot-cap)}</span>`:""}</summary>
+    <div class="tscroll"><table><thead><tr><th>City</th><th>Date</th><th>Owner</th><th class="num">Budget</th><th class="num">Registered</th><th></th></tr></thead><tbody>${kids.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(e=>`<tr ${e.id===d.id?'style="background:var(--bg)"':""}><td><b>${esc(e.city||"")}</b></td><td>${esc(fmtDate(e.date))}</td><td>${esc(e.owner||"")}</td><td class="num">${money(+e.budget||0)} ${e.currency&&e.currency!=="USD"?`<span class="note">${esc(e.currency)}</span>`:""}</td><td class="num">${regCount(e)}/${+e.headcount||0}</td><td>${e.id===d.id?"Open":`<button class="mini-btn" data-sopen="${esc(e.id)}">Open</button>`}</td></tr>`).join("")}</tbody></table></div></details>` }
 function factsStrip(d){ return `<div class="facts"><span><small>Type</small><b>${esc(KINDS[kindOf(d)].label)}</b></span><span><small>Date</small><b>${d.date?esc(fmtDate(d.date)):"Not set"}</b></span><span><small>City</small><b>${esc(d.city||"Not set")}</b></span><span><small>Guests</small><b>${esc(d.headcount)}</b></span><span><small>Budget</small><b>${money(eventCost(d))}</b></span><span><small>Registered</small><b>${regCount(d)} / ${esc(d.headcount)}</b></span></div>` }
 // ---------------- Programs home ----------------
 function journeySteps(){ const d=draft, mine=!d.example, P=out("produce");
@@ -2406,6 +2433,7 @@ function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date
   d.opps.forEach(o=>{ if(o.bucket==="created"&&d.opps.some(x=>x!==o&&x.bucket==="existing"&&x.account===o.account)){ o.bucket="existing"; o.note="Account already had an open opportunity before the event" } });
   d.opps.forEach(o=>o.bucket==="created"?src+=o.amount:o.bucket==="existing"?infl+=o.amount:0);
   return {rows:rows.length,matched,infl,src,dup} }
+function bucketsFor(d){ return objOf(d)==="expansion"?{created:["Expansion opportunities","A new upsell or cross-sell opportunity at an attending customer, created within 90 days after the event."],existing:["Renewals and open deals","A renewal or open opportunity at an attending account that moved stage within 90 days. Mark at-risk renewals in the handoff notes."],meeting:["Advocacy and follow-ups","Attending customers who agreed to a reference, case study or follow-up meeting, with no opportunity yet."]}:BUCKETS }
 const BUCKETS={created:["Created after the event","A new opportunity created within 90 days after the event, at an account with an attendee and no open opportunity before it."],
   existing:["Existing deals with attendees","An opportunity that was open before the event, where an attendee is involved, and that moved stage within 90 days."],
   meeting:["Meetings, no deal yet","An attendee's account booked a meeting after the event but has no opportunity yet."]};
@@ -2423,13 +2451,13 @@ function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d
   const inv=d.guests.filter(g=>g.status!=="Not invited"), att=inv.filter(g=>g.status==="Attended"), noShow=inv.filter(g=>g.status!=="Attended");
   const rate2=L=>{ const A=[...new Set(L.map(g=>g.company))]; return A.length?Math.round(100*A.filter(a=>L.some(g=>g.company===a&&rank(g.outcome)>=1)).length/A.length):null };
   const ra=rate2(att), rn=rate2(noShow), small=Math.min(new Set(att.map(g=>g.company)).size,new Set(noShow.map(g=>g.company)).size)<20;
-  h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Pipeline report · 90 days</small><h3>Pipeline you can defend</h3><p class="note">Three buckets with fixed definitions. Each deal links back to its CRM record. Nothing is counted twice.</p></div><button class="btn sm" id="repCsv">Export report (CSV)</button></div>
+  h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">${objOf(d)==="expansion"?"Customer impact":"Pipeline report"} · 90 days</small><h3>${objOf(d)==="expansion"?"What the event did for your customers":"Pipeline you can defend"}</h3><p class="note">Three buckets with fixed definitions. Each deal links back to its CRM record. Nothing is counted twice.</p></div><button class="btn sm" id="repCsv">Export report (CSV)</button></div>
     ${sampleMode?`<div class="samplebar">Sample deals to show the report. Import opportunities above, or pull them from your CRM, to see yours.</div>`:""}
-    <div class="buckets">${Object.entries(BUCKETS).map(([k,[t,def]])=>`<div class="bucket b-${k}"><small>${t}</small><b>${k==="meeting"?meet.length:money(sum(k))}</b><span class="note">${k==="meeting"?`${meet.length} account${meet.length===1?"":"s"}`:`${n(k)} deal${n(k)===1?"":"s"}`}</span><p class="note">${def}</p></div>`).join("")}</div>
+    <div class="buckets">${Object.entries(bucketsFor(d)).map(([k,[t,def]])=>`<div class="bucket b-${k}"><small>${t}</small><b>${k==="meeting"?meet.length:money(sum(k))}</b><span class="note">${k==="meeting"?`${meet.length} account${meet.length===1?"":"s"}`:`${n(k)} deal${n(k)===1?"":"s"}`}</span><p class="note">${def}</p></div>`).join("")}</div>
     <div class="costrow"><span>Cost: <b>${money(spend)}</b> spend + <input class="mini" type="number" min="0" id="repH" value="${hours}" aria-label="Team hours"> team hours × $<input class="mini" type="number" min="0" id="repR" value="${rate}" aria-label="Hourly cost"> = <b>${money(cost)}</b></span>
       <span>New pipeline per $1: <b>${per(sum("created"))}</b></span><span>All connected pipeline per $1: <b>${per(sum("created")+sum("existing"))}</b></span></div>
     ${O.length?`<div class="tscroll"><table><thead><tr><th>Account</th><th>Attendee</th><th class="num">Amount</th><th>Stage</th><th>Created</th><th>Bucket</th><th>How we matched</th></tr></thead><tbody>${O.map((o,i)=>`<tr><td><b>${esc(o.account||"")}</b>${o.url?` <a href="${esc(o.url)}" target="_blank" rel="noopener">CRM ↗</a>`:o.id?`<div class="note">${esc(o.id)}</div>`:""}</td><td>${esc(o.contact||"")}</td><td class="num">${money(o.amount)}</td><td>${esc(o.stage||"")}</td><td>${esc(o.created||"")}</td>
-      <td><select data-ob="${i}" ${o.sample?"disabled":""} aria-label="Bucket for ${esc(o.account||"")}">${["created","existing","exclude"].map(b=>`<option value="${b}" ${o.bucket===b?"selected":""}>${b==="exclude"?"Exclude":BUCKETS[b][0]}</option>`).join("")}</select>${o.note?`<div class="note">${esc(o.note)}</div>`:""}</td>
+      <td><select data-ob="${i}" ${o.sample?"disabled":""} aria-label="Bucket for ${esc(o.account||"")}">${["created","existing","exclude"].map(b=>`<option value="${b}" ${o.bucket===b?"selected":""}>${b==="exclude"?"Exclude":bucketsFor(d)[b][0]}</option>`).join("")}</select>${o.note?`<div class="note">${esc(o.note)}</div>`:""}</td>
       <td>${o.match==="contact"?`<span class="pchip good">Attendee is on the deal</span>`:`<span class="pchip warn" title="Matched only by company name. Check the CRM record.">Company name only · check</span>`}</td></tr>`).join("")}</tbody></table></div>`:""}
     <div class="caveat"><b>Read this before you share it.</b> This report shows pipeline connected to people who attended. It doesn't prove the event caused it: the accounts you invite are often the ones already closest to buying.
       ${!sampleMode&&ra!=null&&rn!=null?` Attended accounts reached a meeting or better ${ra}% of the time; invited accounts that didn't come, ${rn}%.${small?" Fewer than 20 accounts in a group, so treat the gap as a hint, not a result.":""}`:""}</div>`;
@@ -2438,7 +2466,7 @@ function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d
   $("#repCsv",h).onclick=async()=>{ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, csv=["Account,Attendee,Amount,Stage,Created,Bucket,Match,CRM link",...O.map(o=>[o.account,o.contact,o.amount,o.stage,o.created,BUCKETS[o.bucket]?.[0]||o.bucket,o.match==="contact"?"Attendee on deal":"Company name only",o.url||o.id||""].map(q).join(","))].join("\n");
     if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-pipeline.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) } }
 // ---------- 2. Hand off to sales: notes, next step, AE-approved follow-up, gift with cost ----------
-const NEXT=["Book a meeting","Send what they asked for","Intro to an exec","Invite to the next event","Nurture","No follow-up"];
+const NEXT=["Book a meeting","Send what they asked for","Intro to an exec","Invite to the next event","Expansion conversation","Renewal: at risk","Reference or case study","Roadmap feedback: close the loop","Nurture","No follow-up"];
 function drawHandoff(d){ const h=$("#handoff"); if(!h) return; const att=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Attended");
   const S=out("briefing"), owners=aeList(d), st=g=>g.fuState||(g.fuDraft?"Draft":"Not started");
   const sent24=att.filter(x=>x.g.contactedAt&&x.g.leadAt&&x.g.contactedAt-x.g.leadAt<=864e5).length, gifts=att.reduce((a,x)=>a+(+x.g.giftCost||0),0);
@@ -2873,7 +2901,7 @@ async function slackPost(text,channel){ const mcp=await getMcp(); if(!mcp) throw
   return mcp.callTool("Slack","slack_send_message",input) }
 function launchKitHTML(d){ const p=lp(d), P=PLATFORMS[p], F=launchFields(d), A=out("launchAssets"), sender=d.launch.sender||"founder";
   return `<section class="panel stack launchkit">
-    <div><div class="eyebrow">Step 4 · Launch</div><h3>Launch your event page</h3><p class="note">Pick where it lives. Encore's agents write the page, make the artwork, design the questions and brief your team, so publishing takes a few clicks.</p></div>
+    <div><div class="eyebrow">Step 4 · Launch</div><h3>Launch your event page</h3>${kprof(d).launch?`<div class="samplebar">${esc(kprof(d).launch)}</div>`:""}<p class="note">Pick where it lives. Encore's agents write the page, make the artwork, design the questions and brief your team, so publishing takes a few clicks.</p></div>
     <div class="plats" role="radiogroup" aria-label="Platform">${Object.entries(PLATFORMS).map(([k,x])=>`<button type="button" class="plat" role="radio" aria-checked="${k===p}" data-plat="${k}"><span class="pmark">${x.mark}</span>${esc(x.label)}</button>`).join("")}</div>
     <div class="lgrid"><div class="lfields">${F.map(([l,v],i)=>`<div class="lfield"><div class="btns" style="justify-content:space-between"><small class="eyebrow">${esc(l)}</small><button class="btn ghost sm" data-lcp="${i}">Copy</button></div><div class="lval">${esc(v)}</div></div>`).join("")}</div>
       <div class="lside"><figure><canvas id="lCover" width="${P.img[0]}" height="${P.img[1]}" aria-label="${esc(A?.alt||"Event cover")}"></canvas><figcaption class="note">${esc(P.img[2])} · ${P.img[0]} × ${P.img[1]}${A?.alt?`<br>Alt text: ${esc(A.alt)}`:""}</figcaption></figure>
@@ -3276,6 +3304,7 @@ function step6(host){
     <div id="attrib"></div>
   </div>
   <div class="panel stack" id="handoff"></div>
+  <div class="panel"><div class="btns" style="justify-content:space-between"><div><b>Keep the momentum</b><p class="note">Start the next event with these people already on the list: attendees, scanned leads and no-shows, each tagged with where they came from.</p></div><div class="btns"><select id="fuKind" aria-label="Follow-up event type">${Object.entries(KINDS).map(([k,K])=>`<option value="${k}" ${k==="webinar"?"selected":""}>${esc(K.label)}</option>`).join("")}</select><button class="btn sm" id="fuEvent">Create follow-up event</button></div></div></div>
   <div class="panel stack" id="pipeRep"></div>
   ${agentBox("followup","Follow-up","A personal follow-up for each guest, drafted for you or their AE.","Draft follow-ups")}
   <div class="panel stack">
@@ -3327,6 +3356,10 @@ function step6(host){
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
   drawAttrib(); drawHandoff(d); drawPipeRep(d);
+  $("#fuEvent")&&($("#fuEvent").onclick=()=>{ const k=$("#fuKind").value, src=d.guests.filter(g=>g.status!=="Not invited"&&g.status!=="Declined");
+    const n=hydrate(cloneForReuse(d,{kind:k,name:`${(KINDS[k]||KINDS.dinner).label} for ${d.name} guests`,date:"",parentId:d.id||null,followsFrom:d.name,venues:null,venuePick:0,scout:null,produce:null,copy:null,launchCopy:null,dist:null}));
+    n.guests=src.map(g=>({name:g.name,title:g.title||"",company:g.company||"",email:g.email||"",owner:g.owner||"",tier:g.tier||"B",status:"Not invited",outcome:"None yet",value:0,source:g.scanned?"Badge scan":g.status==="Attended"?`Attended ${d.name}`:`No-show at ${d.name}`,arr:g.arr,renewalDate:g.renewalDate,health:g.health,note:g.note}));
+    draft=n; step=1; renderStep(); toast(`New ${(KINDS[k]||KINDS.dinner).label.toLowerCase()} started with ${n.guests.length} people from ${d.name}. Save it to keep it.`) });
   const F=d.followup;
   $("#out-followup").innerHTML = !F ? `<p class="empty">${d.guests.some(g=>g.status==="Attended")?`Draft a personal follow-up for each of the ${d.guests.filter(g=>g.status==="Attended").length} attendees, or use the handoff cards above for AE-approved ones.`:"Mark who came, then draft follow-ups."}</p>` : `
     ${F.principles?.length?`<ul class="clean">${F.principles.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}

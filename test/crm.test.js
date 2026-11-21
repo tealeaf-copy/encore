@@ -41,9 +41,9 @@ test("CRM integrations are not listed without their env vars", () => {
   assert.ok(servers().includes("Salesforce - Beta"));
   process.env.HUBSPOT_TOKEN = "test";
   const hs = configured().find((s) => s.server === "HubSpot");
-  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline", "log_followups"]);
+  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity"]);
   const sf = configured().find((s) => s.server === "Salesforce - Beta");
-  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline", "log_followups"]);
+  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity"]);
 });
 
 test("HubSpot search sends the CRM v3 search body with a bearer token", async () => {
@@ -224,6 +224,8 @@ test("HubSpot log_followups creates a task per known contact and a note for gift
     if (u.pathname === "/crm/v3/objects/contacts/batch/read") return [207, { results: [{ id: "1", properties: { email: "ana@acme.com" } }] }];
     if (u.pathname === "/crm/v3/objects/tasks") return { id: "t1" };
     if (u.pathname === "/crm/v3/objects/notes") return { id: "n1" };
+    if (u.pathname === "/crm/v3/properties/contacts") return [409, { message: "exists" }];
+    if (u.pathname === "/crm/v3/objects/contacts/batch/update") return { results: [] };
     return [404, {}];
   });
   const r = await callTool("HubSpot", "log_followups", { eventName: "Creator Kitchen", items: [
@@ -231,7 +233,9 @@ test("HubSpot log_followups creates a task per known contact and a note for gift
     { email: "nobody@x.com", subject: "Nurture" },
     { email: "ana@acme.com", subject: "duplicate is dropped" },
   ] });
-  assert.deepEqual(r.payload, { tasksCreated: 1, notesCreated: 1, missing: ["nobody@x.com"], errors: [] });
+  assert.deepEqual(r.payload, { tasksCreated: 1, notesCreated: 1, missing: ["nobody@x.com"], written: [{ email: "ana@acme.com", recordType: "contact", id: "1" }], fieldErrors: [], errors: [] });
+  const upd = calls.find((c) => c.url.pathname === "/crm/v3/objects/contacts/batch/update");
+  assert.deepEqual(upd.body.inputs[0], { id: "1", properties: { encore_last_event: "Creator Kitchen", encore_gift_cost: "40" } });
   const task = calls.find((c) => c.url.pathname === "/crm/v3/objects/tasks");
   assert.equal(task.body.properties.hs_task_subject, "Book a meeting (Creator Kitchen)");
   assert.equal(task.body.properties.hs_timestamp, "2027-02-19T17:00:00.000Z");
@@ -248,14 +252,42 @@ test("Salesforce log_followups creates Tasks on Contacts or Leads", async () => 
       if (/FROM Contact/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "003A", Email: "ana@acme.com" }] };
       if (/FROM Lead/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "00QB", Email: "ben@b.com" }] };
     }
+    if (u.pathname.endsWith("/composite/sobjects") && init.method === "PATCH") return [200, body.records.map(() => ({ success: false, errors: [{ message: "No such column 'Encore_Gift_Cost__c' on sobject of type Contact" }] }))];
     if (u.pathname.endsWith("/composite/sobjects")) return [200, body.records.map(() => ({ success: true }))];
     return [404, {}];
   });
   const r = await callTool("Salesforce - Beta", "log_followups", { eventName: "Creator Kitchen", items: [
     { email: "ana@acme.com", subject: "Book a meeting", gift: "Apron", giftCost: 30 }, { email: "ben@b.com", subject: "Renewal: at risk", dueDate: "2027-02-20" }, { email: "zed@z.com", subject: "Nurture" } ] });
-  assert.deepEqual(r.payload, { tasksCreated: 2, missing: ["zed@z.com"], errors: [] });
-  const post = calls.find((c) => c.url.pathname.endsWith("/composite/sobjects"));
+  assert.equal(r.payload.tasksCreated, 2);
+  assert.deepEqual(r.payload.missing, ["zed@z.com"]);
+  assert.deepEqual(r.payload.written, [{ email: "ana@acme.com", recordType: "contact", id: "003A" }, { email: "ben@b.com", recordType: "lead", id: "00QB" }]);
+  assert.match(r.payload.fieldErrors[0], /add the Encore_Gift_Cost__c/);
+  const post = calls.find((c) => c.url.pathname.endsWith("/composite/sobjects") && c.method === "POST");
   assert.deepEqual(post.body.records.map((x) => x.WhoId), ["003A", "00QB"]);
   assert.match(post.body.records[0].Description, /Gift: Apron \(\$30\)/);
   assert.equal(post.body.records[1].ActivityDate, "2027-02-20");
+});
+
+test("verify_activity counts meetings logged since the event", async () => {
+  process.env.HUBSPOT_TOKEN = "test-token";
+  mockFetch((u, init, body) => {
+    if (u.pathname === "/crm/v3/objects/contacts/batch/read") return [207, { results: [{ id: "1", properties: { email: "ana@acme.com" } }] }];
+    if (u.pathname === "/crm/v3/objects/meetings/search") return { results: [{ properties: { hs_timestamp: "2027-02-22T15:00:00Z" } }] };
+    return [404, {}];
+  });
+  let r = await callTool("HubSpot", "verify_activity", { emails: ["ana@acme.com", "x@y.com"], since: "2027-02-18" });
+  assert.deepEqual(r.payload.results, [{ email: "ana@acme.com", found: true, meetings: 1, lastAt: "2027-02-22T15:00:00Z" }, { email: "x@y.com", found: false, meetings: 0 }]);
+  const search = calls.find((c) => c.url.pathname === "/crm/v3/objects/meetings/search");
+  assert.equal(search.body.filterGroups[0].filters[0].propertyName, "associations.contact");
+  delete process.env.HUBSPOT_TOKEN;
+  process.env.SF_INSTANCE_URL = "https://acme.my.salesforce.com"; process.env.SF_ACCESS_TOKEN = "tok";
+  mockFetch((u) => {
+    const q = u.searchParams.get("q") || "";
+    if (/FROM Contact/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "003A", Email: "ana@acme.com" }] };
+    if (/FROM Lead/.test(q)) return { totalSize: 0, done: true, records: [] };
+    if (/FROM Event/.test(q)) return { totalSize: 2, done: true, records: [{ WhoId: "003A", ActivityDate: "2027-02-20" }, { WhoId: "003A", ActivityDate: "2027-02-25" }] };
+    return [404, {}];
+  });
+  r = await callTool("Salesforce - Beta", "verify_activity", { emails: ["ana@acme.com"], since: "2027-02-18" });
+  assert.deepEqual(r.payload.results, [{ email: "ana@acme.com", found: true, meetings: 2, lastAt: "2027-02-25" }]);
 });

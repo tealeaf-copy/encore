@@ -78,8 +78,10 @@ export const FOLLOWUPS_SCHEMA = {
           subject: { type: "string", description: "Task subject, e.g. the next step" },
           body: { type: "string", description: "What the guest said, the next step, and the approved follow-up" },
           dueDate: { type: "string", description: "YYYY-MM-DD" },
-          giftCost: { type: "number" },
+          giftCost: { type: "number", description: "Landed cost (item + shipping) when known" },
           gift: { type: "string" },
+          giftStatus: { type: "string" },
+          eventCostPerHead: { type: "number" },
         },
         required: ["email", "subject"],
       },
@@ -100,7 +102,21 @@ export function validateFollowups(input, who) {
     if (!email || !subject || seen.has(email)) continue;
     if (it.dueDate && !isDate(it.dueDate)) throw bad(who, `item ${email}: dueDate must be YYYY-MM-DD`);
     seen.add(email);
-    items.push({ email, subject, body: String(it.body || "").slice(0, 30000), dueDate: it.dueDate || null, gift: String(it.gift || ""), giftCost: +it.giftCost || 0 });
+    items.push({ email, subject, body: String(it.body || "").slice(0, 30000), dueDate: it.dueDate || null, gift: String(it.gift || ""), giftCost: +it.giftCost || 0, giftStatus: String(it.giftStatus || "").slice(0, 40), eventCostPerHead: +it.eventCostPerHead || 0 });
   }
   return { eventName, items };
+}
+
+export const VERIFY_SCHEMA = {
+  type: "object",
+  properties: {
+    emails: { type: "array", items: { type: "string" } },
+    since: { type: "string", description: "YYYY-MM-DD: count meetings on or after this date" },
+  },
+  required: ["emails", "since"],
+};
+export function validateVerify(input, who) {
+  if (!Array.isArray(input?.emails)) throw bad(who, "emails must be an array");
+  if (!isDate(input.since)) throw bad(who, "since must be YYYY-MM-DD");
+  return { emails: [...new Set(input.emails.map((e) => String(e || "").trim().toLowerCase()).filter(Boolean))].slice(0, 500), since: input.since };
 }

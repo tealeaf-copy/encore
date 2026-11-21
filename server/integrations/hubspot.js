@@ -1,6 +1,6 @@
 // HubSpot: CRM search, event attendee sync (contacts + marketing event states)
 // and event pipeline (deals associated with attendees). Private app token.
-import { chunk, errText, validateMembers, validateWindow, validateFollowups, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, validateFollowups, validateVerify, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA } from "./crm-common.js";
 
 const API = "https://api.hubapi.com";
 const OBJECT_TYPES = ["contacts", "companies", "deals"];
@@ -210,7 +210,39 @@ async function logFollowups(input) {
       } catch (e) { errors.push(`note ${it.email}: ${errText(e)}`); }
     }
   }
-  return { tasksCreated, notesCreated, missing, errors };
+  // Reportable fields on the contact, so RevOps can report spend per contact and account in HubSpot itself.
+  const fieldErrors = [];
+  const props = [["encore_last_event", "Encore: last event", "string", "text"], ["encore_gift_cost", "Encore: gift landed cost", "number", "number"], ["encore_gift_status", "Encore: gift status", "string", "text"], ["encore_event_cost_per_head", "Encore: event cost per head", "number", "number"]];
+  for (const [name, label, type, fieldType] of props) {
+    try { await hs("POST", "/crm/v3/properties/contacts", { name, label, type, fieldType, groupName: "contactinformation" }, { allow: [409] }); }
+    catch (e) { fieldErrors.push(`property ${name}: ${errText(e)}`); }
+  }
+  const updates = items.filter((i) => ids.has(i.email)).map((i) => ({ id: ids.get(i.email), properties: {
+    encore_last_event: eventName, ...(i.giftCost ? { encore_gift_cost: String(i.giftCost) } : {}), ...(i.giftStatus ? { encore_gift_status: i.giftStatus } : {}), ...(i.eventCostPerHead ? { encore_event_cost_per_head: String(i.eventCostPerHead) } : {}) } }));
+  for (const part of chunk(updates, 100)) {
+    try { await hs("POST", "/crm/v3/objects/contacts/batch/update", { inputs: part }); } catch (e) { fieldErrors.push(`contact fields: ${errText(e)}`); }
+  }
+  const written = items.filter((i) => ids.has(i.email)).map((i) => ({ email: i.email, recordType: "contact", id: ids.get(i.email) }));
+  return { tasksCreated, notesCreated, missing, written, fieldErrors, errors };
+}
+
+// Did a meeting actually happen? Meetings associated with each contact since a date.
+async function verifyActivity(input) {
+  const { emails, since } = validateVerify(input, "HubSpot");
+  const ids = new Map(), from = Date.parse(since + "T00:00:00Z");
+  for (const part of chunk(emails, 100)) {
+    const { json } = await hs("POST", "/crm/v3/objects/contacts/batch/read", { idProperty: "email", properties: ["email"], inputs: part.map((e) => ({ id: e })) }, { allow: [207] });
+    for (const c of json?.results || []) ids.set(String(c.properties?.email || "").toLowerCase(), c.id);
+  }
+  const results = [];
+  for (const email of emails) {
+    const id = ids.get(email);
+    if (!id) { results.push({ email, found: false, meetings: 0 }); continue; }
+    const { json } = await hs("POST", "/crm/v3/objects/meetings/search", { filterGroups: [{ filters: [{ propertyName: "associations.contact", operator: "EQ", value: id }, { propertyName: "hs_timestamp", operator: "GTE", value: String(from) }] }], properties: ["hs_timestamp", "hs_meeting_title"], limit: 20 });
+    const rows = json?.results || [];
+    results.push({ email, found: true, meetings: rows.length, lastAt: rows.map((r) => r.properties?.hs_timestamp).filter(Boolean).sort().pop() || null });
+  }
+  return { results };
 }
 
 export default function hubspot() {
@@ -258,6 +290,12 @@ export default function hubspot() {
         description: "Create a HubSpot task on each attendee's contact for their AE-approved next step, plus a note recording any gift and its cost.",
         inputSchema: FOLLOWUPS_SCHEMA,
         run: logFollowups,
+      },
+      {
+        name: "verify_activity",
+        description: "For each email, count meetings logged on the HubSpot contact since a date, so 'next step happened' is checked against the CRM.",
+        inputSchema: VERIFY_SCHEMA,
+        run: verifyActivity,
       },
     ],
   };

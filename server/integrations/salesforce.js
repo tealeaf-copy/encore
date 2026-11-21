@@ -1,7 +1,7 @@
 // Salesforce: read-only SOQL, event attendee sync (Campaign + CampaignMembers,
 // Leads for unknown emails) and event pipeline (Opportunities). REST API with
 // either a ready access token or the OAuth 2.0 client-credentials flow.
-import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, FOLLOWUPS_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, validateVerify, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA } from "./crm-common.js";
 
 const STATUS_LABELS = ["Invited", "Registered", "Attended", "Declined"];
 const RESPONDED = new Set(["Registered", "Attended"]);
@@ -140,7 +140,35 @@ async function logFollowups(input) {
     const res = await collection("POST", records);
     res.forEach((r, i) => { if (r.success) tasksCreated++; else errors.push(`task ${records[i].WhoId}: ${collErrors(r)}`); });
   }
-  return { tasksCreated, missing, errors };
+  // Reportable fields, if the org has them: Encore_Gift_Cost__c, Encore_Gift_Status__c, Encore_Last_Event__c on Contact.
+  const fieldErrors = [], ups = [];
+  for (const it of items) {
+    const c = contacts.get(it.email); if (!c) continue;
+    ups.push({ attributes: { type: "Contact" }, Id: c.Id, Encore_Last_Event__c: eventName.slice(0, 255), ...(it.giftCost ? { Encore_Gift_Cost__c: it.giftCost } : {}), ...(it.giftStatus ? { Encore_Gift_Status__c: it.giftStatus } : {}) });
+  }
+  if (ups.length) {
+    try {
+      const res = await collection("PATCH", ups);
+      const bad = res.filter((r) => !r.success);
+      if (bad.length) fieldErrors.push(/INVALID_FIELD|No such column/i.test(collErrors(bad[0])) ? "add the Encore_Gift_Cost__c, Encore_Gift_Status__c and Encore_Last_Event__c fields on Contact to report spend in Salesforce" : collErrors(bad[0]));
+    } catch (e) { fieldErrors.push(errText(e)); }
+  }
+  const written = items.map((i) => { const c = contacts.get(i.email), l = leads.get(i.email); return c ? { email: i.email, recordType: "contact", id: c.Id } : l ? { email: i.email, recordType: "lead", id: l.Id } : null; }).filter(Boolean);
+  return { tasksCreated, missing, written, fieldErrors, errors };
+}
+
+async function verifyActivity(input) {
+  const { emails, since } = validateVerify(input, "Salesforce");
+  const { contacts, leads } = await lookupPeople(emails);
+  const who = new Map([...contacts, ...leads].map(([e, r]) => [r.Id, e])), ids = [...who.keys()];
+  const counts = new Map();
+  for (const part of chunk(ids, 200)) {
+    for (const ev of await query(`SELECT WhoId, ActivityDate FROM Event WHERE WhoId IN ${inList(part)} AND ActivityDate >= ${since}`)) {
+      const e = who.get(ev.WhoId), c = counts.get(e) || { n: 0, last: null };
+      c.n++; if (!c.last || ev.ActivityDate > c.last) c.last = ev.ActivityDate; counts.set(e, c);
+    }
+  }
+  return { results: emails.map((email) => ({ email, found: contacts.has(email) || leads.has(email), meetings: counts.get(email)?.n || 0, lastAt: counts.get(email)?.last || null })) };
 }
 
 async function upsertEventAttendees(input) {
@@ -268,6 +296,12 @@ export default function salesforce() {
         description: "Create a Salesforce Task on each attendee's Contact or Lead for their AE-approved next step, with any gift and its cost in the description.",
         inputSchema: FOLLOWUPS_SCHEMA,
         run: logFollowups,
+      },
+      {
+        name: "verify_activity",
+        description: "For each email, count Salesforce Events (meetings) on the Contact or Lead since a date, so 'next step happened' is checked against the CRM.",
+        inputSchema: VERIFY_SCHEMA,
+        run: verifyActivity,
       },
     ],
   };

@@ -1,7 +1,7 @@
 <title>Encore Event Studio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: app shell (top bar + Studio / Insights / Impact views) plus a separate guest-facing mode (#rsvp-ID, #survey-ID). Studio = step rail left, working canvas right, autopilot console on top. */
 :root{
@@ -10,8 +10,8 @@
   --fg:#1B1740; --ink:#1B1740; --muted:#5B5880; --accent:#FF4F64; --accent-ink:#FFFFFF; --accent-soft:#FFE4E8;
   --teal:#13A884; --cobalt:#3B5BFF; --sun:#FFC93C; --lilac:#E9E4FF;
   --good:#13875D; --warn:#B86E00; --bad:#D7344A;
-  --f-display:"Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
-  --f-body:"Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-display:"Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
   --r:12px; color-scheme:light;
 }
@@ -665,9 +665,9 @@ label.logoph{cursor:pointer}
 .wantlogo{background:var(--sun);animation:pulse 1.4s infinite}
 /* ---- Bubbly layer: puffy, rounded, soft glows ---- */
 :root{--r:20px;--puff:0 14px 34px -18px rgba(59,91,255,.45),0 2px 0 rgba(27,23,64,.05)}
-.logo{font-family:var(--f-display);font-weight:700;font-size:1.6rem;letter-spacing:-.02em;gap:6px}
+.logo{font-family:var(--f-display);font-weight:800;font-size:1.5rem;letter-spacing:-.035em;gap:6px}
 .logo span{background:linear-gradient(180deg,#2A2560,#1B1740);-webkit-background-clip:text;background-clip:text;color:transparent}
-h1,h2,h3{font-weight:700;letter-spacing:-.01em}
+h1,h2,h3{font-weight:800;letter-spacing:-.025em}
 .eyebrow{font-family:var(--f-display);font-weight:600;letter-spacing:.06em}
 nav.tabs a{font-weight:700}
 nav.tabs a[aria-current="page"]{background:var(--cobalt);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.3)}
@@ -981,7 +981,7 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   try{ sample = await window.claude?.use?.("sample") ?? null }catch{ sample=null }
   try{ downloads = await window.claude?.use?.("downloads") ?? null }catch{ downloads=null }
   $("#aiDot").classList.toggle("on",!!sample);
-  $("#aiStatus").textContent = sample ? "7 AI agents ready" : "AI agents offline: open in claude.ai to run them";
+  $("#aiStatus").textContent = sample ? "AI ready" : "AI offline"; $("#aiStatus").title = sample ? "" : "Open Encore in claude.ai, or run the server with an API key, to turn on the AI agents.";
   if(!isGuestRoute()) renderStep();
 })();
 (async()=>{ try{ user = await window.claude?.use?.("user") ?? null }catch{ user=null } })();
@@ -2141,7 +2141,7 @@ function drawVenueArt(cv,v,cols){
   else if(/roof|outdoor|garden|boat|park/.test(t)){ x.fillStyle=c2; x.globalAlpha=.9; x.beginPath(); x.arc(W*.75,H*.3,50,0,7); x.fill(); x.globalAlpha=1; for(let i=0;i<9;i++){ x.fillStyle=shade(c1,-.1-i*.02); const bw=W/9; x.fillRect(i*bw,H*(.45+((i*37)%5)*.04),bw-6,H) } }
   else { for(let c=0;c<4;c++) for(let r=0;r<2;r++){ x.fillStyle=shade(c1,.28); x.fillRect(W*(.1+c*.21),H*(.1+r*.24),W*.16,H*.19); x.fillStyle=shade(c2,.2); x.globalAlpha=.25; x.fillRect(W*(.1+c*.21),H*(.1+r*.24),W*.16,H*.19); x.globalAlpha=1 }
     x.strokeStyle=c2; x.lineWidth=2; x.beginPath(); for(let i=0;i<=W;i+=10) x.lineTo(i,H*.07+Math.sin(i/40)*8); x.stroke(); for(let i=0;i<W;i+=40){ x.fillStyle=c2; x.beginPath(); x.arc(i,H*.07+Math.sin(i/40)*8+6,4,0,7); x.fill() } }
-  x.fillStyle="rgba(255,255,255,.85)"; x.font=`600 15px Nunito, sans-serif`; x.fillText("Illustration · add a real photo",16,26);
+  x.fillStyle="rgba(255,255,255,.85)"; x.font=`600 15px Inter, sans-serif`; x.fillText("Illustration · add a real photo",16,26);
 }
 
 // STEP · Promote ----------------------------------------------------
@@ -2566,16 +2566,16 @@ function drawCover(cv,d,{square=false,mini=false,motif}={}){
   x.restore(); x.globalAlpha=1;
   if(mini) return;
   const head=(d.cover?.headline||d.name||"Your event").trim(), pad=W*.06, fs=square?W*.1:H*.11;
-  x.textBaseline="top"; x.font=`800 ${fs}px Fredoka, Nunito, sans-serif`;
+  x.textBaseline="top"; x.font=`800 ${fs}px "Plus Jakarta Sans", Inter, sans-serif`;
   const maxW=square?W-pad*2:W*.55, lines=[]; let cur="";
   head.split(/\s+/).forEach(w=>{ const t=cur?cur+" "+w:w; if(x.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t }); lines.push(cur);
   const L=lines.slice(0,4), top=square?H-pad-L.length*fs*1.05:pad*1.6;
   if(square){ x.fillStyle="rgba(0,0,0,.3)"; x.fillRect(0,top-pad*.6,W,H) }
   x.fillStyle="#fff"; L.forEach((l,i)=>x.fillText(l,pad,top+i*fs*1.05));
-  x.font=`600 ${fs*.28}px Nunito, sans-serif`; x.fillStyle=c2; x.fillText((d.brand||"BRAND").toUpperCase(),pad,square?pad:H-pad-fs*.3);
+  x.font=`600 ${fs*.28}px Inter, sans-serif`; x.fillStyle=c2; x.fillText((d.brand||"BRAND").toUpperCase(),pad,square?pad:H-pad-fs*.3);
   if(logoImg?.complete&&logoImg.naturalWidth&&(!d.brand||!brandProfile?.company||d.brand===brandProfile.company)){ const lh=Math.min(W,H)*.13, lw=Math.min(lh*logoImg.naturalWidth/logoImg.naturalHeight,W*.3), px=W-pad-lw-lh*.3, py=square?pad*.7:pad*.8;
     x.fillStyle="rgba(255,255,255,.95)"; x.beginPath(); x.roundRect?x.roundRect(px-lh*.25,py-lh*.2,lw+lh*.5,lh*1.4,lh*.35):x.rect(px-lh*.25,py-lh*.2,lw+lh*.5,lh*1.4); x.fill(); x.drawImage(logoImg,px,py,lw,lh) }
-  if(!square){ x.fillStyle="rgba(255,255,255,.82)"; x.font=`500 ${fs*.26}px Nunito, sans-serif`; x.fillText([fmtDate(d.date),d.city].filter(Boolean).join("  ·  "),pad,top+L.length*fs*1.05+fs*.3) }
+  if(!square){ x.fillStyle="rgba(255,255,255,.82)"; x.font=`500 ${fs*.26}px Inter, sans-serif`; x.fillText([fmtDate(d.date),d.city].filter(Boolean).join("  ·  "),pad,top+L.length*fs*1.05+fs*.3) }
 }
 
 // ==================================================================

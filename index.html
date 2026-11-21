@@ -512,6 +512,9 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
 .lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 .lmore{display:flex;flex-direction:column;gap:6px}
+.dlog{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--bg)}.dlog ul{margin:6px 0 0;font-size:.88rem;display:flex;flex-direction:column;gap:3px}
+#commitsHost input:not([type=checkbox]),#commitsHost select{min-width:0;width:100%;padding:6px 8px}#commitsHost td{vertical-align:top}#commitsHost input.mini{width:90px}
+
 .buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.bucket{padding:14px;border-radius:18px;background:var(--bg);display:flex;flex-direction:column;gap:2px}
 .bucket b{font-size:1.6rem;font-family:var(--f-display)}.bucket p{margin:6px 0 0;font-size:.8rem}.b-created{background:#E8F8F2}.b-existing{background:#EEF2FF}.b-meeting{background:#FFF7E0}
 .costrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid var(--line)}.costrow input.mini{width:70px}
@@ -1009,7 +1012,7 @@ const EXAMPLE = {
   product:"Platform for B2B brands to find, book and manage creator partnerships",
   concept:"20 B2B marketing leaders cook a three-course dinner with a chef, then swap honest notes on what's actually working with B2B creators.",
   goal:"Build relationships with 8 target accounts and book follow-up meetings",
-  format:"Hosted dinner", city:"Chicago", headcount:24, budget:18000, date:"2027-02-18",
+  format:"Hosted dinner", city:"Chicago", headcount:20, budget:18000, date:"2027-02-18",
   audience:{roles:["VP of Marketing","Head of Demand Gen"],industries:["B2B SaaS","Developer tools"],seniority:"Director to VP"},
   status:"planning",
   validation:null, research:null, venues:null, venuePick:0, copy:null, produce:null, outreach:null, debrief:null,
@@ -1021,11 +1024,11 @@ const EXAMPLE = {
   tasksDone:[0,1],
   guests:[
     {name:"Priya Raman",title:"VP of Marketing",company:"Ledgerline",tier:"A",status:"Going",owner:"Sam (AE)",outcome:"None yet",value:0},
-    {name:"Marcus Webb",title:"Head of Demand Gen",company:"Shiftwise",tier:"A",status:"Invited",owner:"Jo (AE)",outcome:"None yet",value:0},
+    {name:"Marcus Webb",title:"Head of Demand Gen",company:"Shiftwise",tier:"A",status:"Going",owner:"Jo (AE)",outcome:"None yet",value:0},
     {name:"Elena Sato",title:"Director of Brand",company:"Harborlight",tier:"B",status:"Maybe",owner:"Sam (AE)",outcome:"None yet",value:0},
     {name:"Tom Okafor",title:"VP of Marketing",company:"Bramble",tier:"A",status:"Not invited",owner:"Ari (AE)",outcome:"None yet",value:0},
     {name:"Grace Lin",title:"Head of Growth",company:"Northshore Labs",tier:"B",status:"Going",owner:"Jo (AE)",outcome:"None yet",value:0},
-    {name:"Dev Patel",title:"VP of Growth",company:"Kitebird",tier:"A",status:"Invited",owner:"Ari (AE)",outcome:"None yet",value:0}],
+    {name:"Dev Patel",title:"VP of Growth",company:"Kitebird",tier:"A",status:"Going",owner:"Ari (AE)",outcome:"None yet",value:0}],
   metrics:{invited:0,rsvps:0,attended:0,nps:null,meetings:0,pipeline:0},
   example:true
 };
@@ -2608,7 +2611,13 @@ function planData(d){
 function planHTMLDoc(d,readOnly){ const E=d.planEdits||{};
   return planData(d).map(([id,t,html],i)=>`<section class="plansec" id="ps-${id}"><h3>${i+1}. ${esc(t)}</h3>${html}${E[id]?`<div class="plannote">${esc(E[id]).replace(/\n/g,"<br>")}</div>`:""}${!readOnly&&pitchEditing?`<textarea class="planedit" data-pnote="${id}" placeholder="Add notes, changes or decisions for this section">${esc(E[id]||"")}</textarea>`:""}</section>`).join("") }
 function planText(d){ const tmp=document.createElement("div"); tmp.innerHTML=planHTMLDoc(d,true); return tmp.innerText }
+const SAMPLE_PITCH={title:"The Creator Kitchen",oneLiner:"A hands-on dinner for 20 B2B marketing leaders in Chicago, built to start real conversations with 8 target accounts.",whyNow:"Creator budgets for next year get set in Q1. We want to be in the room before they are.",audience:"VPs of Marketing and Heads of Demand Gen at B2B SaaS companies, 50 to 2,000 people",experience:"Teams cook three courses with a chef, then eat together and compare notes on what's working with creators.",
+  outcomes:[{metric:"Target accounts attending",target:"8"},{metric:"Meetings booked within 2 weeks",target:"6"},{metric:"New opportunities within 90 days",target:"2 to 3"}],risks:[{risk:"Low turnout from busy executives",mitigation:"Book the venue only after 10 target accounts say yes; keep a waitlist"},{risk:"Feels like a sales dinner",mitigation:"Customers host tables; no slides; product comes up only if guests ask"}],
+  timeline:[{when:"Dec 5",what:"Approve budget"},{when:"Jan 9",what:"AE nominations in"},{when:"Jan 12",what:"Personal invites out"},{when:"Feb 18",what:"Dinner"},{when:"Feb 19",what:"Follow-ups sent"}],ask:"Approve $18,000 by Dec 5 so we can hold the venue.",
+  impact:{pipelineLow:0,pipelineHigh:0,deals:"2 to 3 new opportunities",rationale:"Range depends on your average deal size. Set it in the proposal before you send."},whyThis:"Small, hands-on dinners get senior marketers to show up, because they meet peers, not vendors.",alternatives:[{option:"Conference booth",whyNot:"Senior buyers rarely visit booths, and we'd compete with 200 other logos."},{option:"Webinar",whyNot:"Good for reach, weak for relationships with 8 specific accounts."}],
+  budgetRange:{low:15000,high:21000,assumptions:"20 guests, weeknight buyout, cooking class and wine pairing"},salesCopy:{subject:"Cook dinner with us on Feb 18?",body:"Hi [first name], I'm hosting a small dinner for B2B marketing leaders in Chicago on Feb 18. We cook three courses with a chef, then swap notes on what's working with creators. No slides. Would you like a seat?"},example:true};
 function drawPitch(){
+  if(!draft.pitch&&draft.example) draft.pitch=clone(SAMPLE_PITCH);
   const el=$("#pitchHost"); if(!el) return; const P=draft.pitch, d=draft;
   if(!P){ el.innerHTML=d.concept&&!d.example?`<div class="pitchbar"><span><b>Need sign-off?</b> Turn this event into a one-page proposal and a full plan.</span><button class="btn sm" data-run="pitch"><span class="spark">✦</span>Write the proposal</button><pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div></div>`:""; wireRuns(el); return }
   const tot=eventCost(d); P.budget={...(P.budget||{}),total:tot,perGuest:Math.round(tot/(+d.headcount||1))};
@@ -3036,6 +3045,8 @@ function planHTML(P,d){
 const PM_KEYS=["linear","asana","clickup","slack","slackUsers"];
 function pmState(d){ d.approvals=d.approvals||{}; d.blocked=d.blocked||{}; d.pmSent=d.pmSent||null; return d }
 function approvers(P){ const T=P.team||[]; const a=T.filter(m=>/lead|sponsor|exec|vp|head|director|owner/i.test(m.role)).map(m=>m.role); return a.length?a.slice(0,3):["Event lead","Your manager"] }
+function commitRisks(d){ const now=Date.now(); return (d.commits||[]).filter(c=>c.status!=="Cancelled").flatMap(c=>{ const dd=c.depositDue?Math.ceil((new Date(c.depositDue+"T12:00:00")-now)/864e5):null, cb=c.cancelBy?Math.ceil((new Date(c.cancelBy+"T12:00:00")-now)/864e5):null;
+  return [...(!c.paid&&dd!=null&&dd<=7?[`${c.vendor}: ${money(c.deposit)} deposit ${dd<0?`${-dd} days overdue`:`due in ${dd} days`}`]:[]),...(cb!=null&&cb>=0&&cb<=14?[`${c.vendor}: free cancellation ends in ${cb} days`]:[])] }) }
 function taskStatus(d,P){ const ev=d.date?new Date(d.date+"T12:00:00"):null, now=Date.now();
   return (P.tasks||[]).map((t,i)=>{ const due=ev?new Date(ev.getTime()+t.days*864e5):null, days=due?Math.ceil((due-now)/864e5):null;
     const st=d.tasksDone.includes(i)?"done":d.blocked[i]!=null?"blocked":days!=null&&days<0?"overdue":days!=null&&days<=3?"soon":"later";
@@ -3048,13 +3059,13 @@ function pmHTML(d,P){
   return `<section class="pm stack">
     <div class="btns" style="justify-content:space-between"><div class="who"><span class="av">PM</span><div><h3>Project manager</h3><p class="note">Sends tasks to owners, checks in daily, flags risks, and comes to you when something's stuck.</p></div></div>
       <div class="chips">${PM_KEYS.filter((k,i,a)=>a.findIndex(x=>CONNECT[x].server===CONNECT[k].server)===i).map(k=>`<span class="chip ${srcState[k]==="on"?"on":""}">${srcState[k]==="on"?"● ":"○ "}${esc(CONNECT[k].label)}</span>`).join("")}</div></div>
-    <div class="approvals"><small class="eyebrow">1 · Approve the plan</small><div class="btns">${A.map(r=>`<button class="appr ${d.approvals[r]?"ok":""}" data-appr="${esc(r)}">${d.approvals[r]?"✓ ":""}${esc(r)}</button>`).join("")}</div></div>
+    <div class="approvals"><small class="eyebrow">1 · Approve the plan</small><div class="btns">${A.map(r=>`<button class="appr ${d.approvals[r]?"ok":""}" data-appr="${esc(r)}" title="${d.approvals[r]?.by?`Approved by ${esc(d.approvals[r].by)}, ${new Date(d.approvals[r].at).toLocaleDateString()}`:""}">${d.approvals[r]?"✓ ":""}${esc(r)}${d.approvals[r]?.by?` · ${esc(d.approvals[r].by)}`:""}</button>`).join("")}</div>${decisionLog(d)}</div>
     <div><small class="eyebrow">2 · Send tasks to owners</small><div class="btns" style="margin-top:6px"><button class="btn primary" id="pmSend" ${allOk?"":"disabled"}>${d.pmSent?"Resend tasks":"Send tasks"}${tools.length?` to ${esc([...new Set(tools)].join(" + "))}`:""}</button>
       <span class="note">${!allOk?"Unlocks when everyone above approves.":tools.length?"Each task goes to its owner with its deadline.":"Connect Linear, Asana, ClickUp or Slack in claude.ai to send tasks automatically. Until then, copy the task list."}</span>
       ${!tools.length?`<button class="btn ghost sm" id="pmCopy">Copy task list</button>`:""}</div>${d.pmSent?`<p class="note">Last sent ${new Date(d.pmSent.at).toLocaleString()}${d.pmSent.where?` to ${esc(d.pmSent.where)}`:""}.</p>`:""}</div>
     <div><small class="eyebrow">3 · Today's stand-up</small>
       <div class="pmkpis">${[["overdue","Overdue"],["blocked","Blocked"],["soon","Due in 3 days"],["done","Done"]].map(([k,l])=>`<div class="kpi ${k}"><small>${l}</small><b>${by(k).length}</b></div>`).join("")}</div>
-      <div class="pmlist">${[...by("blocked"),...by("overdue"),...by("soon")].map(row).join("")||`<p class="note">Nothing urgent today.</p>`}</div>
+      <div class="pmlist">${commitRisks(d).map(r=>`<div class="pmrow overdue"><div><b>${esc(r)}</b><span class="note">Commitments</span></div></div>`).join("")}${[...by("blocked"),...by("overdue"),...by("soon")].map(row).join("")||(commitRisks(d).length?"":`<p class="note">Nothing urgent today.</p>`)}</div>
       <details><summary class="note" style="cursor:pointer">Later and done (${by("later").length+by("done").length})</summary><div class="pmlist" style="margin-top:6px">${[...by("later"),...by("done")].map(row).join("")}</div></details></div>
     <div class="btns"><button class="btn" id="pmNudge"><span class="spark">✦</span>Write today's nudges${srcState.slack==="on"?" and post to Slack":""}</button></div>
     <pre class="stream" id="st-pm" hidden></pre><div id="pmOut">${d.pmReport?pmReportHTML(d.pmReport):""}</div>
@@ -3064,8 +3075,35 @@ function pmHTML(d,P){
 function pmReportHTML(R){ return `${R.risks?.length?`<div class="stack" style="gap:6px"><small class="eyebrow">Risks</small>${R.risks.map(r=>`<div class="surprise"><b>${esc(r.risk)}</b><span class="note">${esc(r.fix||"")}</span></div>`).join("")}</div>`:""}
   ${R.askYou?`<div class="askbox"><small class="eyebrow">Needs your input</small><p>${esc(R.askYou)}</p></div>`:""}
   ${R.nudges?.length?`<div class="cards">${R.nudges.map((n,i)=>`<div class="card"><div class="btns" style="justify-content:space-between"><b>${esc(n.to)}</b><button class="btn ghost sm" data-ncopy="${i}">Copy</button></div><p style="font-size:.9rem">${esc(n.message)}</p>${n.posted?`<span class="tag live">Posted to Slack</span>`:""}</div>`).join("")}</div>`:""}` }
+const SAMPLE_COMMITS=[{vendor:"The Chopping Block",what:"Private class and dinner, weeknight buyout",amount:9800,deposit:2450,depositDue:"2026-12-15",paid:true,cancelBy:"2027-01-18",status:"Signed"},
+  {vendor:"Local photographer",what:"3 hours, edited photos in 48h",amount:1400,deposit:400,depositDue:"2027-01-20",paid:false,cancelBy:"2027-02-04",status:"Quote"},
+  {vendor:"Swag.com",what:"20 aprons with embroidered logo",amount:900,deposit:900,depositDue:"2027-01-25",paid:false,cancelBy:"2027-01-25",status:"Quote"}];
+function drawCommits(d){ const h=$("#commitsHost"); if(!h) return; const sample=!d.commits&&d.example, C=d.commits||(sample?clone(SAMPLE_COMMITS):[]), now=Date.now(), days=x=>x?Math.ceil((new Date(x+"T12:00:00")-now)/864e5):null;
+  const tot=C.reduce((a,c)=>a+(+c.amount||0),0), dep=C.filter(c=>!c.paid).reduce((a,c)=>a+(+c.deposit||0),0), plan=eventCost(d);
+  const flags=C.map(c=>{ const dd=days(c.depositDue), cb=days(c.cancelBy); return !c.paid&&dd!=null&&dd<0?["bad",`Deposit ${-dd}d overdue`]:!c.paid&&dd!=null&&dd<=7?["warn",`Deposit due in ${dd}d`]:cb!=null&&cb>=0&&cb<=14?["warn",`Free cancellation ends in ${cb}d`]:cb!=null&&cb<0?["",`Past cancel-by`]:["good","On track"] });
+  h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Money</small><h3>Commitments</h3><p class="note">Every vendor you've booked or are about to: what it costs, when deposits are due, and the last day to cancel without paying.</p></div>
+    <div class="kpis" style="max-width:520px;flex:1"><div class="kpi"><small>Committed</small><b>${money(tot)}</b><small>of ${money(plan)} plan</small></div><div class="kpi"><small>Deposits unpaid</small><b>${money(dep)}</b></div></div></div>
+    ${sample?`<div class="samplebar">Sample commitments. Add your own vendors below.</div>`:""}${tot>plan&&plan?`<div class="caveat">Commitments are ${money(tot-plan)} over the plan. Get approval before signing more.</div>`:""}
+    <div class="tscroll"><table><thead><tr><th>Vendor</th><th>What</th><th class="num">Amount</th><th class="num">Deposit</th><th>Deposit due</th><th>Paid</th><th>Cancel by</th><th>Status</th><th></th></tr></thead><tbody>${C.map((c,i)=>`<tr>
+      <td><input data-cm="${i}|vendor" value="${esc(c.vendor||"")}"></td><td><input data-cm="${i}|what" value="${esc(c.what||"")}"></td><td class="num"><input class="mini" type="number" data-cm="${i}|amount" value="${+c.amount||0}"></td><td class="num"><input class="mini" type="number" data-cm="${i}|deposit" value="${+c.deposit||0}"></td>
+      <td><input type="date" data-cm="${i}|depositDue" value="${esc(c.depositDue||"")}"></td><td><input type="checkbox" data-cmp="${i}" ${c.paid?"checked":""} aria-label="Deposit paid"></td><td><input type="date" data-cm="${i}|cancelBy" value="${esc(c.cancelBy||"")}"></td>
+      <td><select data-cm="${i}|status">${["Quote","Hold","Signed","Paid","Cancelled"].map(x=>`<option ${x===c.status?"selected":""}>${x}</option>`).join("")}</select><div><span class="pchip ${flags[i][0]}">${flags[i][1]}</span></div></td><td><button class="mini-btn" data-cmx="${i}" aria-label="Remove">×</button></td></tr>`).join("")}</tbody></table></div>
+    <div class="btns"><button class="btn sm" id="cmAdd">+ Add a vendor</button>${C.length?`<button class="btn sm ghost" id="cmCsv">Export for finance (CSV)</button>`:""}</div>`;
+  const own=()=>{ if(!d.commits) d.commits=C; return d.commits };
+  $$("[data-cm]",h).forEach(x=>x.onchange=()=>{ const [i,k]=x.dataset.cm.split("|"), c=own()[+i], v=x.type==="number"?+x.value||0:x.value; const old=c[k]; c[k]=v; if(k==="status"||k==="amount") logDecision(d,`changed ${c.vendor||"a vendor"} ${k} from ${k==="amount"?money(old):old} to ${k==="amount"?money(v):v}`); drawCommits(d) });
+  $$("[data-cmp]",h).forEach(x=>x.onchange=()=>{ const c=own()[+x.dataset.cmp]; c.paid=x.checked; logDecision(d,`marked the ${c.vendor} deposit ${x.checked?"paid":"unpaid"}`); drawCommits(d) });
+  $$("[data-cmx]",h).forEach(b=>b.onclick=()=>{ const c=own().splice(+b.dataset.cmx,1)[0]; logDecision(d,`removed ${c?.vendor||"a vendor"}`); drawCommits(d) });
+  $("#cmAdd",h).onclick=()=>{ own().push({vendor:"",what:"",amount:0,deposit:0,depositDue:"",paid:false,cancelBy:"",status:"Quote"}); drawCommits(d) };
+  $("#cmCsv",h)&&($("#cmCsv",h).onclick=async()=>{ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, csv=["Event,Vendor,What,Amount,Deposit,Deposit due,Paid,Cancel by,Status",...C.map(c=>[d.name,c.vendor,c.what,c.amount,c.deposit,c.depositDue,c.paid?"yes":"no",c.cancelBy,c.status].map(q).join(","))].join("\n");
+    if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-commitments.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) }) }
+function me(){ try{ return localStorage.getItem("encore-me")||"" }catch{ return "" } }
+function logDecision(d,what){ d.log=d.log||[]; d.log.unshift({at:Date.now(),who:me()||"Someone",what,version:d.updatedAt||null}); d.log=d.log.slice(0,100) }
+function decisionLog(d){ const L=d.log||[]; return `<div class="dlog"><div class="btns" style="justify-content:space-between"><small class="eyebrow">Decision log</small><label class="f" style="max-width:220px;flex-direction:row;align-items:center;gap:6px">You are<input id="meName" value="${esc(me())}" placeholder="Your name and role"></label></div>
+  ${L.length?`<ul class="clean">${L.slice(0,8).map(x=>`<li><b>${esc(x.who)}</b> ${esc(x.what)} <span class="note">· ${new Date(x.at).toLocaleString()}</span></li>`).join("")}</ul>${L.length>8?`<span class="note">and ${L.length-8} earlier</span>`:""}`:`<p class="note">Approvals, budget changes and commitments are recorded here with who and when.</p>`}</div>` }
 function wirePM(host,d,P){
-  $$("[data-appr]",host).forEach(b=>b.onclick=()=>{ const r=b.dataset.appr; d.approvals[r]=!d.approvals[r]; renderStep() });
+  $("#meName",host)&&($("#meName",host).onchange=e=>{ try{ localStorage.setItem("encore-me",e.target.value.trim()) }catch{} });
+  $$("[data-appr]",host).forEach(b=>b.onclick=()=>{ const r=b.dataset.appr; if(!me()){ toast("Add your name in the decision log first, so approvals have an owner."); $("#meName")?.focus(); return }
+    if(d.approvals[r]){ delete d.approvals[r]; logDecision(d,`withdrew approval as ${r}`) } else { d.approvals[r]={by:me(),at:Date.now()}; logDecision(d,`approved the plan as ${r} (budget ${money(eventCost(d))})`) } renderStep() });
   $$("[data-pdone]",host).forEach(b=>b.onclick=()=>{ const i=+b.dataset.pdone; d.tasksDone=d.tasksDone.includes(i)?d.tasksDone.filter(x=>x!==i):[...d.tasksDone,i]; delete d.blocked[i]; renderStep() });
   $$("[data-pblock]",host).forEach(b=>b.onclick=()=>{ const i=+b.dataset.pblock; if(d.blocked[i]!=null) delete d.blocked[i]; else d.blocked[i]=""; renderStep() });
   $$("[data-bnote]",host).forEach(x=>x.onchange=()=>{ d.blocked[+x.dataset.bnote]=x.value; drawCoach() });
@@ -3125,7 +3163,8 @@ function step4(host){
         <div class="agenda">${P.runOfShow.map(r=>`<span>${esc(r.time)}</span><span>${esc(r.item)} <span class="note">· ${esc(r.owner)}</span></span>`).join("")}</div>
       </div>
     </div>`;
-  wirePM(host,d,P); $("#actSpend")&&($("#actSpend").onchange=e=>{ d.actualSpend=+e.target.value||0 });
+  const ch=document.createElement("div"); ch.className="panel stack"; ch.id="commitsHost"; const nb=$("[data-next]",host)?.closest(".btns"); nb?nb.before(ch):host.appendChild(ch); drawCommits(d);
+  wirePM(host,d,P); $("#actSpend")&&($("#actSpend").onchange=e=>{ d.actualSpend=+e.target.value||0; logDecision(d,`set actual spend to ${money(d.actualSpend)}`) });
   $$("[data-t]",host).forEach(c=>c.onchange=()=>{ const i=+c.dataset.t; d.tasksDone=c.checked?[...new Set([...d.tasksDone,i])]:d.tasksDone.filter(x=>x!==i); renderStep() });
   wireRuns(host); wireNext(host);
 }

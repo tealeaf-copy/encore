@@ -507,6 +507,86 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.lesson{padding:14px 16px;border-radius:20px;background:linear-gradient(120deg,#EEF2FF,#FFF7E0);display:flex;flex-direction:column;gap:8px}
+.lhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.lhead b{flex:1}
+.lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
+.lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.lmore{display:flex;flex-direction:column;gap:6px}
+.needs{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:16px;background:#FFF7E0;border:1px solid #F5D77A;margin-bottom:10px}
+.provs{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.provs a.chip{text-decoration:none}
+.ready{border-radius:18px;background:#fff;padding:10px 14px;margin-top:10px}.ready summary{display:flex;align-items:center;gap:10px;cursor:pointer;flex-wrap:wrap}
+.rbar{flex:1;min-width:80px;height:8px;border-radius:99px;background:var(--bg);overflow:hidden}.rbar i{display:block;height:100%;background:var(--teal)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:12px}.rgrid>div{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.rchip{border:0;background:none;font:inherit;font-size:.9rem;cursor:pointer;padding:2px 0;color:var(--muted);text-align:left}.rchip.ok{color:var(--teal);font-weight:600}.rchip:hover{text-decoration:underline}
+.wbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.wbar input{flex:1;min-width:200px}.wtabs{display:flex;gap:6px}
+.wtabs button{border:0;padding:10px 16px;border-radius:999px;background:#fff;font:inherit;font-weight:700;cursor:pointer}.wtabs button[aria-selected="true"]{background:var(--ink);color:#fff}.wtabs span{opacity:.6;margin-left:4px}
+.wlive{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}.wlive i{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.3}}.wopen{padding:4px 10px;border-radius:999px;background:var(--b2);color:var(--b2ink)}.gchange{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+
+.plats{display:flex;flex-wrap:wrap;gap:8px}.plat{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;border:2px solid var(--line);background:#fff;font:inherit;font-weight:700;cursor:pointer}
+.plat[aria-checked="true"]{border-color:var(--cobalt);background:#EEF2FF}.pmark{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--ink);color:#fff;font-size:.8rem}
+.lgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}@media(max-width:820px){.lgrid{grid-template-columns:1fr}}
+.lfields{display:flex;flex-direction:column;gap:8px}.lfield{padding:10px 12px;border-radius:14px;background:var(--bg)}.lval{white-space:pre-wrap;font-size:.92rem;max-height:220px;overflow:auto}
+.lside{display:flex;flex-direction:column;gap:12px}.lside canvas{width:100%;height:auto;border-radius:16px;display:block}.lhow{margin:0;padding-left:20px;font-size:.9rem;display:flex;flex-direction:column;gap:3px}
+.wallbox{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:16px;background:linear-gradient(120deg,#FFF1F3,#EEF2FF)}
+.agents3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.qlist{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.ksrcs{display:flex;flex-wrap:wrap;gap:8px}.ksrc{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:14px;background:var(--bg);font-weight:700;font-size:.9rem}
+.ksrc small{font-weight:400;color:var(--muted);font-size:.75rem}.ksrc i{width:8px;height:8px;border-radius:50%;background:#C9C6DD}.ksrc.on i{background:var(--teal)}
+.krows{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}.krow{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:18px;border:1px solid var(--line);background:#fff}
+.khead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.khead>div:first-child{display:flex;flex-direction:column}.chip.dim{opacity:.6}.kout{padding:10px;border-radius:12px;background:var(--bg)}
+.wall{display:flex;flex-direction:column;gap:16px}.wallhero{padding:32px 28px;border-radius:28px;background:var(--b1);color:var(--b1ink);display:flex;flex-direction:column;gap:8px}
+.wallhero .eyebrow{color:inherit;opacity:.8}.wallhero h1{margin:0;font-family:var(--bfont,var(--f-display));font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.1}.wallhero p{margin:0;opacity:.9}
+.wstats{display:flex;gap:18px;flex-wrap:wrap}.wstats b{font-size:1.4rem;font-family:var(--f-display)}.wbtn{background:var(--b2);color:var(--b2ink);border:0;align-self:flex-start}
+.wbar input{width:100%;padding:12px 16px;border-radius:999px;border:1px solid var(--line)}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.wcard{background:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 20px rgba(27,23,64,.07)}
+.wtop{display:flex;gap:12px;align-items:center;position:relative}.wtop img,.wtop canvas{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:none}
+.wwho{display:flex;flex-direction:column;min-width:0}.wwho span{font-size:.88rem;color:var(--muted)}.wwho .wco{color:var(--ink);font-weight:600}
+.wli{position:absolute;top:0;right:0;width:26px;height:26px;border-radius:6px;background:#0A66C2;color:#fff;font-weight:800;font-size:.8rem;display:grid;place-items:center;text-decoration:none}
+.wlearn{padding:10px 12px;border-radius:14px;background:var(--bg)}.wlearn small{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.wlearn p{margin:2px 0 0;font-size:.95rem}
+.cobtn{position:fixed;right:20px;bottom:20px;z-index:60;display:flex;gap:6px;align-items:center;padding:12px 18px;border-radius:999px;border:0;background:var(--ink);color:#fff;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(27,23,64,.3)}
+.copanel{position:fixed;right:20px;bottom:80px;z-index:61;width:min(410px,calc(100vw - 32px));height:min(640px,calc(100vh - 110px));background:#fff;border-radius:24px;box-shadow:0 20px 60px rgba(27,23,64,.28);display:flex;flex-direction:column;overflow:hidden}
+.copanel header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}.copanel header div{display:flex;flex-direction:column}
+.comsgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:8px}.comsgs .bubble ul{margin:4px 0;padding-left:18px}.coacts{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.cosug{padding:0 14px 8px}.copanel .composer{margin:0;border-top:1px solid var(--line);border-radius:0}
+@media(max-width:560px){.cobtn{right:16px;bottom:16px}.copanel{right:16px;left:16px;width:auto;bottom:72px}}
+
+
+.gx{overflow:hidden}
+.gxcover canvas{border-radius:0}
+.gxhi{font-family:var(--f-display);font-size:1.6rem;font-weight:800;color:var(--b1)}
+.gxwhy{padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--b2) 25%,#fff);font-weight:600}
+.gxfacts{display:flex;flex-wrap:wrap;gap:8px}
+.gxfacts span{display:flex;flex-direction:column;padding:8px 12px;border-radius:14px;background:var(--bg)}
+.gxfacts small,.gxhosts small{font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.gxhosts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gxhosts canvas{width:22px;height:22px;border-radius:50%}
+.gxwho{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:16px;background:var(--bg)}
+.avstack{display:flex}.avstack canvas{width:34px;height:34px;border-radius:50%;border:2px solid #fff;margin-left:-8px}.avstack canvas:first-child{margin-left:0}
+.ticket{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:18px;border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--b1) 14%,#fff),#fff);border:2px dashed color-mix(in srgb,var(--b1) 40%,transparent)}
+.tcode{display:flex;flex-direction:column;align-items:center;padding:12px 16px;border-radius:16px;background:var(--b1);color:var(--b1ink)}
+.tcode b{font-family:var(--f-mono);font-size:1.6rem;letter-spacing:.15em}
+.conf{display:flex;gap:14px;align-items:center;margin-top:10px;padding:12px 16px;border-radius:20px;background:var(--surface);box-shadow:var(--puff)}
+.conf > div:last-child{display:flex;flex-direction:column}
+.confring{--v:0;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;flex:none;background:conic-gradient(var(--cc,var(--good)) calc(var(--v)*1%),var(--sunk) 0)}
+.confring.good{--cc:var(--good)}.confring.warn{--cc:var(--warn)}.confring.bad{--cc:var(--bad)}
+.confring span{width:48px;height:48px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-family:var(--f-display);font-weight:800}
+
+.subtabs{display:inline-flex;gap:4px;padding:4px;border-radius:99px;background:var(--surface);box-shadow:var(--puff);margin-bottom:16px}
+.subtabs a{padding:7px 16px;border-radius:99px;text-decoration:none;color:var(--muted);font-weight:700}
+.subtabs a.on{background:var(--ink);color:#fff}
+.hero-home{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:start;padding:28px;border-radius:30px;background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--teal) 18%,transparent),transparent 55%),var(--accent-soft);box-shadow:var(--puff)}
+.hero-home h1{font-size:clamp(1.9rem,3.6vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin:6px 0 10px}
+.journey{background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--puff)}
+.journey ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.journey li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:16px}
+.journey li > div{display:flex;flex-direction:column;min-width:0}
+.journey li.next{background:#FFF0C2}
+.journey li.done{opacity:.7}
+.jn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.8rem;background:var(--sunk)}
+.journey li.done .jn{background:var(--teal);color:#fff}.journey li.next .jn{background:var(--accent);color:#fff}
+.rail .phase{font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;padding:10px 12px 2px}
+@media (max-width:860px){.hero-home{grid-template-columns:minmax(0,1fr)}.rail .phase{display:none}}
+
 .hostbar{padding:10px 14px 0}
 .hostbar.onart{position:absolute;left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:16px;background:rgba(15,13,40,.55);backdrop-filter:blur(4px)}
 .hostbar.onart .hostrow small,.hostbar.onart .x{color:#fff}
@@ -775,13 +855,11 @@ input,textarea,select{border-radius:14px}
 <header class="top" id="appHeader"><div class="wrap">
   <div class="logo"><svg viewBox="0 0 44 32" width="40" height="29" aria-hidden="true"><circle cx="12" cy="18" r="11" fill="#FF4F64"/><circle cx="30" cy="13" r="12" fill="#3B5BFF"/><circle cx="24" cy="24" r="7.5" fill="#FFC93C"/><ellipse cx="8.5" cy="13.5" rx="3.2" ry="2" fill="#fff" opacity=".7"/><ellipse cx="26" cy="7.5" rx="3.6" ry="2.2" fill="#fff" opacity=".7"/><ellipse cx="22" cy="21.5" rx="2.2" ry="1.4" fill="#fff" opacity=".75"/></svg><span>encore</span></div>
   <nav class="tabs" aria-label="Main">
-    <a href="#programs" data-view="programs">Programs</a>
-    <a href="#inspire" data-view="inspire">Inspire</a>
-    <a href="#canvas" data-view="canvas">Canvas</a>
-    <a href="#brand" data-view="brand">Brand</a>
-    <a href="#studio" data-view="studio">Event studio</a>
-    <a href="#insights" data-view="insights">Audience insights</a>
-    <a href="#impact" data-view="impact">Impact</a>
+    <a href="#programs" data-view="programs">Home</a>
+    <a href="#brand" data-view="brand">Set up</a>
+    <a href="#inspire" data-view="inspire">Ideas</a>
+    <a href="#studio" data-view="studio">Events</a>
+    <a href="#impact" data-view="impact">Results</a>
   </nav>
   <div class="status"><span class="dot" id="aiDot"></span><span id="aiStatus">Connecting AI agents…</span></div>
 </div></header>
@@ -794,7 +872,7 @@ input,textarea,select{border-radius:14px}
     <div style="min-width:0;flex:1">
       <div class="eyebrow" id="draftLabel">Example draft · Ridgeline (fictional brand)</div>
       <h2 id="draftTitle">Plan an experience</h2>
-      <p class="lede">Plan it, prove it, launch it.</p><div id="kindHost"></div>
+      <p class="lede" id="studioLede">Work through the steps on the left. The coach below always shows the next best move.</p>
     </div>
     <div class="btns">
       <button class="btn" id="newDraft">Start a blank event</button>
@@ -803,19 +881,24 @@ input,textarea,select{border-radius:14px}
   </div>
   <div class="banner" id="brandBanner" hidden><span>New here? Set up your brand in 2 minutes and every event starts on-brand.</span><a href="#brand">Set up brand →</a></div>
   <div id="factsHost"></div>
-  <div class="clock" id="clock"></div>
+  <div id="sampleBar"></div>
   <div id="autoHost" style="margin-top:18px" hidden></div>
-  <div id="pitchHost"></div>
   <div id="coachHost"></div>
   <div class="studio">
     <div class="rail" aria-label="Planning steps">
-      <button data-step="1"><span class="n">1</span><span><b>Strategy</b><small>Where events fit, and why</small></span></button>
-      <button data-step="2"><span class="n">2</span><span><b>Validate</b><small>Conviction before launch</small></span></button>
+      <small class="phase">Plan</small>
+      <button data-step="1"><span class="n">1</span><span><b>Strategy</b><small>What to run, and why</small></span></button>
+      <button data-step="2"><span class="n">2</span><span><b>Validate</b><small>Will people come?</small></span></button>
+      <small class="phase">Prepare</small>
       <button data-step="3"><span class="n">3</span><span><b>Design</b><small>Venue, hooks, art, copy</small></span></button>
-      <button data-step="4"><span class="n">4</span><span><b>Promote</b><small>Assets for every channel</small></span></button>
-      <button data-step="5"><span class="n">5</span><span><b>Produce</b><small>Run-of-show, budget, tasks</small></span></button>
-      <button data-step="6"><span class="n">6</span><span><b>Guests</b><small>List, sales, invites, RSVPs</small></span></button>
-      <button data-step="7"><span class="n">7</span><span><b>Measure</b><small>Attribution, follow-up, debrief</small></span></button>
+      <button data-step="4"><span class="n">4</span><span><b>Launch</b><small>Event page, emails, team brief</small></span></button>
+      <button data-step="9"><span class="n">5</span><span><b>Distribution</b><small>How you'll fill every seat</small></span></button>
+      <button data-step="5"><span class="n">6</span><span><b>Produce</b><small>Plan, budget, owners</small></span></button>
+      <button data-step="8"><span class="n">7</span><span><b>Sign-off</b><small>Proposal and full plan</small></span></button>
+      <small class="phase">Invite & run</small>
+      <button data-step="6"><span class="n">8</span><span><b>Guests</b><small>List, sales, invites, check-in</small></span></button>
+      <small class="phase">After</small>
+      <button data-step="7"><span class="n">9</span><span><b>Measure</b><small>Follow-up, pipeline, debrief</small></span></button>
       <div class="savebox">
         <button class="btn primary" id="saveEvent">Save event</button>
         <p class="note">Saved events and their feedback teach Encore what each audience loves.</p>
@@ -839,6 +922,7 @@ input,textarea,select{border-radius:14px}
 
 <!-- ============ INSIGHTS ============ -->
 <section class="view" id="view-insights" hidden>
+  <div id="subIns"></div>
   <div class="eyebrow">Audience memory · learned from every event and every attendee</div>
   <h2>Audience insights</h2>
   <p class="lede">Pick who you want to reach. Encore shows which experiences that audience has loved, what they've told us, and suggests what to run next.</p>
@@ -871,6 +955,7 @@ input,textarea,select{border-radius:14px}
 
 <!-- ============ IMPACT ============ -->
 <section class="view" id="view-impact" hidden>
+  <div id="subImp"></div>
   <div class="eyebrow">Portfolio</div>
   <h2>Impact</h2>
   <p class="lede">What your experiences return: attendance, sentiment, meetings and pipeline, across every event.</p>
@@ -886,6 +971,10 @@ input,textarea,select{border-radius:14px}
 <!-- ============ GUEST MODE ============ -->
 <section class="view guest" id="view-guest" hidden></section>
 </main>
+<button class="cobtn" id="coBtn" aria-expanded="false" aria-controls="coPanel"><span class="spark">✦</span>Ask Encore</button>
+<section class="copanel" id="coPanel" hidden aria-label="Encore assistant"><header><div><b>Ask Encore</b><small class="note">Your chief of staff. It can do the work.</small></div><button class="btn ghost sm" id="coClose" aria-label="Close">×</button></header>
+  <div class="comsgs" id="coMsgs" aria-live="polite"></div><div class="chips cosug" id="coSug"></div>
+  <form id="coForm" class="composer"><input id="coIn" autocomplete="off" placeholder="Ask or tell Encore to do something…" aria-label="Message Encore"><button class="btn primary sm" type="submit">Send</button></form></section>
 <div class="toast" id="toast" hidden></div>
 <div class="tip" id="tip" hidden></div>
 
@@ -1068,7 +1157,8 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.collection("interest").onSnapshot(sn=>{ allInterest=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#canvas") renderCanvas() });
   db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
   db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
-  db.collection("rsvps").onSnapshot(snap=>{ allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
+  db.collection("wall").onSnapshot(sn=>{ allWall=sn.docs.map(d=>d.data()) },()=>{});
+  db.collection("rsvps").onSnapshot(snap=>{ const before=new Map(allRsvps.map(r=>[r.id,r.response])); snap.docs.forEach(x=>{ const r=x.data(), b=before.get(x.id); if(before.size&&b&&b!==r.response&&r.response==="no"&&!isGuestRoute()) toast(`${r.name} can't make it anymore. A seat opened up.`) }); allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
 })();
 function refreshAll(){ renderInsights(); renderImpact(); if(!location.hash||location.hash==="#programs") renderPrograms(); if(isGuestRoute()) renderGuest(); else if(step===1||step===7) renderStep() }
 
@@ -1088,7 +1178,8 @@ async function askJSON(prompt, btn, streamEl, extra={}){
 // ==================================================================
 // Context the agents share
 // ==================================================================
-function brief(d=draft){
+function brief(d=draft){ return briefCore(d)+knowledgeBrief() }
+function briefCore(d=draft){
   return `BRAND: ${d.brand||"(unnamed)"} (${d.product||"B2B company"}). Voice: ${d.brandVoice||"professional, warm"}
 EXPERIENCE IDEA: ${d.concept||"(not described yet)"}
 FORMAT: ${d.format}. CITY: ${d.city||"TBD"}. HEADCOUNT: ${d.headcount}. BUDGET: ${money(d.budget)}. DATE: ${d.date||"TBD"}.
@@ -1241,9 +1332,18 @@ ${F?.character?`Brand character: ${F.character}.\n`:""}Take on the brand's chara
 Work in two passes: draft, then edit as the founders would. Cut filler, use the reader's own words, keep the founders' rhythm, and make every line about the reader, not the company.
 Also return "voiceCheck":{"soundsLike":"whose voice this matches, max 10 words","reader":"who it's written for, max 10 words"}.`;
 }
+const ASK=`If something important is missing or ambiguous and the tools can't settle it, don't guess silently: give your best answer anyway and add "needs":[{"q":"a short question for the user","why":"what the answer changes, max 12 words"}] (max 3) to the JSON.`;
+function answersFor(key){ const A=(draft.answers||{})[key]; return A?.length?`\nTHE USER ANSWERED YOUR EARLIER QUESTIONS: ${A.map(x=>`${x.q} → ${x.a}`).join(" | ")}`:"" }
+function needsHTML(key,o){ const N=(o&&!o.example&&o.needs)||[]; if(!N.length) return "";
+  return `<div class="needs" data-needs="${key}"><b>Encore needs your input</b><span class="note">Answer what you can, then re-run. The agent uses your answers.</span>${N.map((n,i)=>`<label class="f">${esc(n.q)}${n.why?`<span class="h">${esc(n.why)}</span>`:""}<input data-need="${i}" value="${esc(((draft.answers||{})[key]||[]).find(x=>x.q===n.q)?.a||"")}"></label>`).join("")}<div class="btns"><button class="btn sm primary" data-needgo="${key}">Answer and re-run</button></div></div>` }
+function wireNeeds(host){ $$("[data-needgo]",host).forEach(b=>b.onclick=async()=>{ const key=b.dataset.needgo, box=b.closest("[data-needs]"), isMod=key.startsWith("mod:"), k=isMod?key.slice(4):key, o=isMod?draft.mods?.[k]:out(k);
+    draft.answers=draft.answers||{}; const prev=draft.answers[k]||[]; const add=(o?.needs||[]).map((n,i)=>({q:n.q,a:$(`[data-need="${i}"]`,box).value.trim()})).filter(x=>x.a);
+    draft.answers[k]=[...prev.filter(x=>!add.some(y=>y.q===x.q)),...add]; if(!add.length){ toast("Answer at least one question"); return }
+    if(isMod) return runModule(k,b); if(await runAgent(k,b,$("#st-"+k))) renderStep() }) }
 async function runAgent(key,btn,stream){
-  const a=AGENTS[key], used=new Set(), tools=a.uses?await toolsFor(a.uses,used):[];
-  const note=tools.length?`\nTOOLS: you can call ${tools.map(t=>t.name).join(", ")}. Use them before answering, and cite what you found in the "sources" field as [{"source":"","detail":"short, with URL if any"}].`:"";
+  const a=AGENTS[key], used=new Set(), tools=await toolsFor([...new Set([...(a.uses||[]),"web"])],used);
+  const ans=answersFor(key);
+  const note=`\n${ASK}${ans}`+(tools.length?`\nTOOLS: you can call ${tools.map(t=>t.name).join(", ")}. Use them before answering, and cite what you found in the "sources" field as [{"source":"","detail":"short, with URL if any"}].`:"");
   const o=await askJSON(a.prompt(draft)+note,btn,stream,{tools});
   if(!o || !a.ok(o)){ if(o) toast(a.label+" returned something unexpected. Try again."); return null }
   if(used.size) o._used=[...used];
@@ -1286,22 +1386,74 @@ $("#autoBtn").onclick=autopilot;
 // ==================================================================
 // Routing
 // ==================================================================
-function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap)/.test(location.hash) }
+function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash) }
 function route(){
   const h=location.hash.slice(1);
   if(isGuestRoute()){
-    $("#appHeader").hidden=true; $$(".view").forEach(s=>s.hidden=s.id!=="view-guest"); renderGuest(); return;
+    $("#appHeader").hidden=true; $("#coBtn").hidden=true; $("#coPanel").hidden=true; $$(".view").forEach(s=>s.hidden=s.id!=="view-guest"); renderGuest(); return;
   }
-  $("#appHeader").hidden=false;
+  $("#appHeader").hidden=false; $("#coBtn").hidden=false;
   const name=["studio","insights","impact","brand","canvas","inspire","programs"].includes(h)?h:(h?"studio":"programs");
   $$(".view").forEach(s=>s.hidden = s.id!=="view-"+name);
-  $$("nav.tabs a").forEach(a=>{ if(a.dataset.view===name) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") });
+  const navFor={canvas:"inspire",insights:"impact"}[name]||name;
+  $$("nav.tabs a").forEach(a=>{ if(a.dataset.view===navFor) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") });
   if(name==="studio") renderStep();
   if(name==="brand") renderBrand();
   if(name==="canvas") renderCanvas();
   if(name==="programs") renderPrograms();
+  if(name==="impact") $("#subImp").innerHTML=subTabs("results","impact");
+  if(name==="insights") $("#subIns").innerHTML=subTabs("results","insights");
   if(name==="inspire") renderInspire(); else closeStories?.();
 }
+
+// ---------------- Ask Encore: the built-in assistant ----------------
+let coMsgs=[], coBusy=false;
+const VIEW_OF={home:"programs",setup:"brand",ideas:"inspire",canvas:"canvas",events:"studio",results:"impact",insights:"insights"};
+const STEP_OF={strategy:1,validate:2,design:3,launch:4,promote:4,distribution:9,produce:5,signoff:8,guests:6,measure:7};
+function coContext(){ const d=draft, L=launchConfidence(d);
+  return JSON.stringify({page:location.hash||"#programs",step:Object.keys(STEP_OF).find(k=>STEP_OF[k]===step),
+    event:{id:d.id||null,name:d.name,isSample:!!d.example,concept:d.concept,kind:d.kind,format:d.format,city:d.city,date:d.date,headcount:d.headcount,budget:d.budget,goal:d.goal,audience:d.audience,guests:d.guests.length,going:d.guests.filter(g=>g.status==="Going").length,launch:d.launch||null},
+    agentsDone:Object.keys(AGENTS).filter(k=>d[k]&&!d[k].example),launchConfidence:{score:L.score,topGaps:L.gaps.map(g=>g[4])},
+    brand:brandProfile?.company||null,knowledgeLoaded:Object.keys(brandProfile?.knowledge||{}),savedEvents:allEvents.filter(e=>!e.example).slice(0,25).map(e=>({id:e.id,name:e.name,status:e.status,date:e.date}))}) }
+function coRefresh(){ if(location.hash==="#studio") renderStep(); else route() }
+function coTools(){ return [
+  {name:"get_context",description:"See what the user is looking at: page and step, the open event's details, which agents have run, the top launch-confidence gaps, and their saved events. Call this first.",inputSchema:{type:"object",properties:{}},execute:async()=>coContext()},
+  {name:"navigate",description:"Open a page, or a step of the open event. view: home, setup, ideas, canvas, events, results, insights. step (events only): strategy, validate, design, launch, distribution, produce, signoff, guests, measure.",inputSchema:{type:"object",properties:{view:{type:"string"},step:{type:"string"}},required:["view"]},
+   execute:async({view,step:st})=>{ const v=VIEW_OF[view]||"studio"; if(st&&STEP_OF[st]) step=STEP_OF[st]; if(location.hash==="#"+v) coRefresh(); else location.hash=v; return "Opened "+view+(st?" / "+st:"") }},
+  {name:"new_event",description:"Start a new blank event for the user. Do this before editing when the open event is the sample.",inputSchema:{type:"object",properties:{}},execute:async()=>{ draft=brandDraft(); step=1; if(location.hash==="#studio") renderStep(); else location.hash="studio"; return "Started a new event" }},
+  {name:"update_event",description:"Change fields on the open event. Pass only what changes. If the open event is the sample, a new event is started first.",inputSchema:{type:"object",properties:{name:{type:"string"},concept:{type:"string",description:"the experience in 1 to 2 sentences"},format:{type:"string"},city:{type:"string"},date:{type:"string",description:"YYYY-MM-DD"},headcount:{type:"integer"},budget:{type:"number"},goal:{type:"string"},kind:{type:"string",enum:Object.keys(KINDS)},audience_roles:{type:"array",items:{type:"string"}},audience_industries:{type:"array",items:{type:"string"}},approval_required:{type:"boolean"},platform:{type:"string",enum:Object.keys(PLATFORMS)},email_sender:{type:"string",enum:Object.keys(SENDERS)}}},
+   execute:async i=>{ if(draft.example){ draft=brandDraft(); step=1 } const d=draft;
+     ["name","concept","format","city","date","goal","kind"].forEach(k=>{ if(i[k]!=null) d[k]=String(i[k]) }); if(i.headcount!=null) d.headcount=+i.headcount; if(i.budget!=null) d.budget=+i.budget;
+     if(i.audience_roles) d.audience.roles=i.audience_roles; if(i.audience_industries) d.audience.industries=i.audience_industries; if(i.approval_required!=null) d.approvalRequired=!!i.approval_required;
+     lp(d); if(i.platform) d.launch.platform=i.platform; if(i.email_sender) d.launch.sender=i.email_sender; coRefresh(); return "Updated "+Object.keys(i).join(", ") }},
+  {name:"run_agent",description:"Run one of Encore's specialist agents on the open event; its output is saved on the event and shown in its step. Agents: "+Object.entries(AGENTS).map(([k,a])=>`${k} (${a.label})`).join(", ")+". Returns a summary and the output.",inputSchema:{type:"object",properties:{agent:{type:"string",enum:Object.keys(AGENTS)}},required:["agent"]},
+   execute:async({agent})=>{ if(!AGENTS[agent]) return "Unknown agent"; const o=await runAgent(agent); if(!o) return "The agent didn't finish."; coRefresh(); const j=JSON.stringify(o); return AGENTS[agent].sum(o)+". Output: "+(j.length>2500?j.slice(0,2500)+"…":j) }},
+  {name:"add_guests",description:"Add people to the open event's guest list.",inputSchema:{type:"object",properties:{guests:{type:"array",items:{type:"object",properties:{name:{type:"string"},title:{type:"string"},company:{type:"string"},email:{type:"string"},city:{type:"string"},owner:{type:"string",description:"who owns the relationship"},why:{type:"string"}},required:["name"]}}},required:["guests"]},
+   execute:async({guests})=>{ (guests||[]).forEach(g=>{ if(!draft.guests.some(x=>x.name===g.name)) draft.guests.push({title:"",company:"",email:"",tier:"B",status:"Not invited",outcome:"None yet",value:0,...g}) }); coRefresh(); return `Added ${guests?.length||0} guests` }},
+  {name:"open_event",description:"Open one of the user's saved events by id (ids come from get_context).",inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},
+   execute:async({id})=>{ const e=allEvents.find(x=>x.id===id); if(!e) return "No event with that id"; draft=hydrate(e); draft.example=false; step=1; if(location.hash==="#studio") renderStep(); else location.hash="studio"; return "Opened "+e.name }},
+  {name:"save_event",description:"Save the open event.",inputSchema:{type:"object",properties:{}},execute:async()=>{ await saveEvent(); return draft.id?"Saved":"Tried to save; check for a message on screen" }}] }
+function coFmt(t){ return esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/^[-•] (.*)$/gm,"<li>$1</li>").replace(/(<li>.*<\/li>\n?)+/g,m=>`<ul>${m}</ul>`).replace(/\n/g,"<br>") }
+function coSuggest(){ return location.hash==="#studio"&&!draft.example?["What's missing before I launch?","Write my event page and the founder email","Draft the Slack update for stakeholders","Find 10 more people to invite"]:["Plan an exec dinner for 20 CFOs in New York in March","What should my first event be?","Teach me how to fill a room of senior buyers","What's missing before I launch?"] }
+function coDraw(){ const m=$("#coMsgs"); if(!m) return;
+  m.innerHTML=(coMsgs.length?coMsgs.map(x=>`<div class="bubble ${x.role}">${x.acts?.length?`<div class="coacts">${x.acts.map(a=>`<span class="pchip">✓ ${esc(a.replace(/_/g," "))}</span>`).join("")}</div>`:""}${x.content?coFmt(x.content):x.live?`<span class="typing"><i></i><i></i><i></i></span>`:""}</div>`).join("")
+    :`<div class="bubble assistant">I can do the work, not just explain it: start an event, run any agent, write your page and emails, add guests, and tell you what's missing. What do you need?</div>`);
+  $("#coSug").innerHTML=coBusy?"":coSuggest().map((t,i)=>`<button class="chip" data-cos="${i}">${esc(t)}</button>`).join("");
+  $$("[data-cos]").forEach(b=>b.onclick=()=>coSend(coSuggest()[+b.dataset.cos])); m.scrollTop=1e9 }
+async function coSend(text){ if(coBusy||!text) return; if(!sample){ toast("Open Encore in claude.ai, or on the Encore server, to use the assistant."); return }
+  coMsgs.push({role:"user",content:text}); const live={role:"assistant",content:"",live:true,acts:[]}; coMsgs.push(live); coBusy=true; coDraw();
+  const extra=await toolsFor(["web","playbook"],null);
+  const tools=[...coTools(),...extra].map(t=>({...t,execute:async inp=>{ live.acts.push(t.name); coDraw(); return t.execute(inp) }}));
+  const sys=`You are Encore's built-in assistant: chief of staff to a B2B field marketer. You do the work, not just describe it: navigate the app, start or edit events, run Encore's specialist agents, add guests and save. Call get_context first. When a request matches an agent, run it, say in one line what it produced, and navigate to the step where it shows. Fill in sensible defaults instead of asking lots of questions; ask only when a choice really matters. When it fits, teach one thing a great field marketer knows that the user may not. Keep replies short: 2 to 5 sentences or a few bullets. Never invent facts about their customers; use tools.${STYLE}`;
+  let convo=coMsgs.filter(x=>!x.live&&x.content).slice(-12).map(x=>({role:x.role,content:x.content})); while(convo.length&&convo[0].role!=="user") convo.shift();
+  convo[0]={role:"user",content:sys+"\n\nUSER: "+convo[0].content};
+  try{ const r=await sample(convo,{tools,modelTier:"default",cache:false,onText:({text})=>{ live.content=text; coDraw() }}); live.content=r?.text||live.content||"Done." }
+  catch(e){ live.content=e?.code==="not_granted"?"AI access was declined for this page.":e?.code==="rate_limited"?"Too many requests. Try again in a minute.":"I couldn't finish that: "+(e?.message||"try again") }
+  live.live=false; coBusy=false; coDraw() }
+function coToggle(open){ const p=$("#coPanel"); p.hidden=open===undefined?!p.hidden:!open; $("#coBtn").setAttribute("aria-expanded",!p.hidden); if(!p.hidden){ coDraw(); $("#coIn").focus() } }
+$("#coBtn").onclick=()=>coToggle(); $("#coClose").onclick=()=>coToggle(false);
+$("#coForm").onsubmit=e=>{ e.preventDefault(); const v=$("#coIn").value.trim(); if(v){ $("#coIn").value=""; coSend(v) } };
+addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("#coPanel").hidden) coToggle(false) });
 addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
 
 $$(".rail button[data-step]").forEach(b=>b.onclick=()=>{step=+b.dataset.step;renderStep();window.scrollTo({top:0,behavior:"smooth"})});
@@ -1323,7 +1475,7 @@ async function saveEvent(){
 function renderHeader(){
   $("#draftTitle").textContent = draft.name || "Untitled experience";
   $("#draftLabel").textContent = draft.example ? "Example draft · Ridgeline (fictional brand)" : (draft.id ? "Saved event · "+(draft.brand||"No brand") : "Draft · not saved yet");
-  const done={1:!!(curStrategy()||draft.concept),2:!!out("validation"),3:!!out("copy"),4:!!out("promo"),5:!!out("produce"),6:draft.guests.some(g=>g.status!=="Not invited"),7:draft.status==="done"};
+  const done={9:!!draft.mods?.distribution,8:!!draft.pitch,1:!!(curStrategy()||draft.concept),2:!!out("validation"),3:!!out("copy"),4:!!out("promo"),5:!!out("produce"),6:draft.guests.some(g=>g.status!=="Not invited"),7:draft.status==="done"};
   $$(".rail button[data-step]").forEach(b=>{ const s=+b.dataset.step; b.setAttribute("aria-current",s===step?"step":"false"); b.classList.toggle("done",!!done[s]) });
   drawClock(done);
 }
@@ -1337,16 +1489,55 @@ function drawClock(done){
 }
 setInterval(()=>{ if(!isGuestRoute()&&$("#clock")) renderHeader() },60000);
 
+function subTabs(group,cur){ const T=group==="ideas"?[["inspire","Inspiration"],["canvas","Your year"]]:[["impact","Impact"],["insights","Audience insights"]];
+  return `<div class="subtabs" role="tablist">${T.map(([h,l])=>`<a href="#${h}" class="${h===cur?"on":""}" role="tab" aria-selected="${h===cur}">${l}</a>`).join("")}</div>` }
 // ==================================================================
 // Studio steps
 // ==================================================================
 function renderStep(){
   if(isGuestRoute()) return;
-  renderHeader(); drawPitch(); drawCoach(); const fh=$("#factsHost"); if(fh) fh.innerHTML=factsStrip(draft);
-  const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; toast(`${KINDS[draft.kind].label}: your specialists are in Design.`); renderStep() }) }
+  renderHeader(); drawCoach(); const fh=$("#factsHost"); if(fh){ const op=$(".ready",fh)?.open; fh.innerHTML=factsStrip(draft)+confHTML(draft)+readyHTML(draft); if(op) $(".ready",fh).open=true; $$("[data-confgo],[data-rgo]",fh).forEach(b=>b.onclick=()=>{ step=+(b.dataset.confgo||b.dataset.rgo); renderStep(); window.scrollTo({top:0,behavior:"smooth"}) }) }
+  const sb=$("#sampleBar"); if(sb){ sb.innerHTML=draft.example?`<div class="samplebar btns" style="justify-content:space-between"><span>You're looking at a sample event from a made-up company. Explore it, then start your own.</span><button class="btn primary sm" id="startOwn">Start your own event</button></div>`:""; $("#startOwn")&&($("#startOwn").onclick=()=>{ draft=brandDraft(); step=1; renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
-  ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6})[step](host);
+  ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6,8:stepSignoff,9:stepDistribution})[step](host);
+  $$("[id^=out-]",host).forEach(el=>{ const k=el.id.slice(4); if(AGENTS[k]) el.insertAdjacentHTML("afterbegin",needsHTML(k,out(k))) }); wireMods(host); wireNeeds(host);
+  host.insertAdjacentHTML("afterbegin",lessonStrip(step)); $$("[data-teach]",host).forEach(b=>b.onclick=()=>teachMore(+b.dataset.teach,b));
+  const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; toast(`${KINDS[draft.kind].label}: your specialists are in Design.`); renderStep() }) }
 }
+const DIST_DEFAULT=[["AE personal invites",40,25],["Exec-to-exec notes",15,35],["Partner co-invites",10,15],["Customer 'bring a peer'",15,30],["Community & newsletters",10,4],["LinkedIn (posts + targeted ads)",5,1.5]];
+function stepDistribution(host){ const d=draft; d.dist=d.dist||{show:70,ch:DIST_DEFAULT.map(([n,sh,ac])=>({n,sh,ac}))};
+  const D=d.dist, need=Math.ceil(d.headcount/(D.show/100)), tot=D.ch.reduce((a,c)=>a+(+c.sh||0),0)||1, rows=D.ch.map(c=>{ const rs=Math.ceil(need*(+c.sh||0)/tot); return {...c,rs,inv:c.ac>0?Math.ceil(rs/(c.ac/100)):0} }), invites=rows.reduce((a,r)=>a+r.inv,0);
+  host.innerHTML=`<div><small class="eyebrow">Step 5 · Distribution</small><h3>How you'll fill every seat</h3><p class="note">The seat math tells you how many invites each channel has to send. The playbook says who sends what, when.</p></div>
+  <div class="panel stack"><div class="kpis"><div class="kpi"><small>Seats</small><b>${esc(d.headcount)}</b></div><div class="kpi"><small>Expected show rate</small><b><input class="mini" type="number" min="10" max="100" id="dShow" value="${D.show}" style="width:70px">%</b></div><div class="kpi"><small>RSVPs needed</small><b>${need}</b></div><div class="kpi"><small>Invites to send</small><b>${invites}</b></div></div>
+    <div class="tscroll"><table><thead><tr><th>Channel</th><th class="num">Share of RSVPs</th><th class="num">Acceptance rate</th><th class="num">RSVPs</th><th class="num">Invites needed</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td><b>${esc(r.n)}</b></td><td class="num"><input class="mini" type="number" min="0" max="100" data-dsh="${i}" value="${r.sh}" style="width:70px">%</td><td class="num"><input class="mini" type="number" min="0" max="100" step="0.5" data-dac="${i}" value="${r.ac}" style="width:70px">%</td><td class="num">${r.rs}</td><td class="num"><b>${r.inv}</b></td></tr>`).join("")}</tbody></table></div>
+    <p class="note">Acceptance rates are starting estimates. Edit them to match your history; Encore's debriefs will sharpen them over time.</p></div>
+  ${modHTML("distribution",d)}${modHTML("pr",d)}${nextBtn(5,"Next: produce")}`;
+  $("#dShow").onchange=e=>{ D.show=Math.max(10,Math.min(100,+e.target.value||70)); renderStep() };
+  $$("[data-dsh]",host).forEach(x=>x.onchange=()=>{ D.ch[+x.dataset.dsh].sh=+x.value||0; renderStep() });
+  $$("[data-dac]",host).forEach(x=>x.onchange=()=>{ D.ch[+x.dataset.dac].ac=+x.value||0; renderStep() });
+  wireMods(host); wireNext(host) }
+// What great field marketers know: lessons per step + "Teach me more"
+const LESSONS={
+ 1:["Tie every event to a revenue moment: a launch, a renewal window, a budget cycle. Without one, a great night rarely turns into pipeline.","Pick the accounts before the venue. The guest list is the strategy; the venue is a detail."],
+ 2:["Ask ten target buyers 'would you come?' before booking anything. If fewer than three say yes, change the concept, not the invite copy.","A yes that won't hold a date isn't a yes. Ask which date works, not whether they like the idea."],
+ 3:["Guests remember one moment, not the agenda. Design the signature moment first, then build the evening around it.","Choose a room that's slightly too small. A full room feels like demand; an empty corner feels like a miss."],
+ 4:["Publish the page only after a few named guests have said yes. An empty guest wall slows sign-ups; three real names speed them up.","Send the art to your execs first. A post from a founder reaches the buyers a brand page can't."],
+ 9:["Personal invites from someone the guest already knows beat marketing emails by a wide margin. Make AEs and execs your main channel.","Over-invite and keep a waitlist. Backfill seats in the last week instead of hoping people show."],
+ 5:["Confirm headcount with the venue at a week out and again two days out. Surprise costs usually come from minimums and service charges.","Give every task one owner and one date. Shared tasks don't get done."],
+ 8:["Lead the proposal with the accounts and pipeline at stake, not the venue. Executives approve outcomes.","Show the downside is capped: 'we only book after 10 target accounts confirm' gets a faster yes than a big number."],
+ 6:["Seat people by shared problems, not by company. Peers talk; vendors pitch.","Send a 'who's coming' note three days out. Seeing peers' titles is the strongest reason not to cancel."],
+ 7:["Follow up within 24 hours, and lead with something useful from the night (the recipe, the anonymous answers), not a meeting ask.","Measure influenced pipeline over 90 days. Event impact often shows up as deals moving faster, not only as new ones."]};
+let teachCache={};
+function lessonStrip(st){ const L=LESSONS[st]; if(!L) return ""; const T=teachCache[st];
+  return `<div class="lesson"><div class="lhead"><span class="lbulb">✦</span><b>What great field marketers know</b><button class="btn ghost sm" data-teach="${st}">${T?"Teach me more":"Teach me more"}</button></div>
+    <ul>${L.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${T?`<div class="lmore">${T.map(i=>`<div class="surprise"><b>${esc(i.insight)}</b><span class="note">${esc(i.why)}${i.source?` · ${/^https?:/.test(i.source)?`<a href="${esc(i.source)}" target="_blank" rel="noopener">source</a>`:esc(i.source)}`:""}</span></div>`).join("")}</div>`:""}<pre class="stream" id="st-teach" hidden></pre></div>` }
+async function teachMore(st,btn){ const label={1:"strategy",2:"validation",3:"design",4:"launching the event page and promotion",9:"distribution",5:"production",8:"getting sign-off",6:"guest list and invitations",7:"follow-up and measurement"}[st];
+  const tools=await toolsFor(["playbook","web"],null);
+  const o=await askJSON(`Teach a field marketer three things they probably don't know about ${label} for this specific event. Skip the obvious; be concrete and specific to these buyers and this format. ${tools.length?"Ground them in MKT1's playbooks or reputable sources found with the tools, and cite each.":"Say where each comes from (practice, research, or reasoning); don't invent statistics."}
+${brief(draft)}
+Reply with only JSON: {"insights":[{"insight":"max 22 words","why":"max 20 words: why it matters here","source":"URL or short source name"}] (3)}`,btn,$("#st-teach"),{tools});
+  if(o?.insights){ teachCache[st]=o.insights; renderStep() } }
+function stepSignoff(host){ host.innerHTML=`<div><small class="eyebrow">Step 6 · Sign-off</small><h3>Get a yes, then hand everyone the plan</h3><p class="note">A one-page proposal for your boss and a full execution plan for the team. Both are editable.</p></div><div id="pitchHost"></div>${nextBtn(6,"Next: guests")}`; drawPitch(); wireNext(host) }
 function exTag(o){ return o?.example ? '<span class="tag ex">Example output</span>' : (o ? `<span class="tag live">Generated${o._used?.length?" · used "+o._used.map(esc).join(", "):""}</span>` : '') }
 function voiceChip(o){ return o?.voiceCheck?`<div class="chips"><span class="pchip">Sounds like: ${esc(o.voiceCheck.soundsLike)}</span><span class="pchip good">Written for: ${esc(o.voiceCheck.reader)}</span></div>`:"" }
 function srcList(o){ return o?.sources?.length?`<details><summary class="note" style="cursor:pointer">Sources (${o.sources.length})</summary><ul class="clean" style="margin-top:6px">${o.sources.map(x=>`<li><span class="tag">${esc(x.source)}</span> ${esc(x.detail)}</li>`).join("")}</ul></details>`:"" }
@@ -1563,6 +1754,16 @@ const CONNECT={
   calls:{label:"Calls",server:"Gong",tool:"ask_account",name:"ask_call_recordings",desc:"Ask Gong about an account's recorded calls: what the buyer cares about, objections, personal details they shared on calls."},
   crm:{label:"HubSpot",server:"HubSpot",tool:"search_crm_objects",name:"search_hubspot",desc:"Search HubSpot CRM for the company, contacts, deals and recent activity."},
   sfdc:{label:"Salesforce",server:"Salesforce - Beta",tool:"dispatch_readonly",name:"query_salesforce",desc:"Read-only Salesforce access: accounts, contacts, opportunities and activity history."},
+  granola:{label:"Granola",server:"Granola",tool:"*",pick:/search|query|meeting|note|list/i,name:"search_granola",desc:"Search Granola meeting notes and transcripts for what buyers and customers said."},
+  attio:{label:"Attio",server:"Attio",tool:"*",pick:/search|query|list|record/i,name:"search_attio",desc:"Search Attio CRM records: companies, people, lists and deals."},
+  posthog:{label:"PostHog",server:"PostHog",tool:"*",pick:/query|insight|search|list/i,name:"query_posthog",desc:"Query PostHog product analytics: which companies and users are most active, and what they use."},
+  swag:{label:"Swag.com",server:"Swag.com",tool:"*",pick:/search|product|catalog|list/i,name:"search_swag_com",site:"https://www.swag.com",desc:"Search Swag.com's catalog of branded merchandise: items, minimums, prices and lead times."},
+  printful:{label:"Printful",server:"Printful",tool:"*",pick:/search|product|catalog|list/i,name:"search_printful",site:"https://www.printful.com",desc:"Search Printful's print-on-demand catalog: items, prices and production times."},
+  sendoso:{label:"Sendoso",server:"Sendoso",tool:"*",pick:/search|product|catalog|list|send/i,name:"search_sendoso",site:"https://www.sendoso.com",desc:"Search Sendoso's gifting catalog and sending options."},
+  reachdesk:{label:"Reachdesk",server:"Reachdesk",tool:"*",pick:/search|product|catalog|list/i,name:"search_reachdesk",site:"https://reachdesk.com",desc:"Search Reachdesk's global gifting catalog."},
+  goody:{label:"Goody",server:"Goody",tool:"*",pick:/search|product|catalog|list/i,name:"search_goody",site:"https://www.ongoody.com",desc:"Search Goody's gift catalog; recipients choose or swap gifts."},
+  postal:{label:"Postal",server:"Postal",tool:"*",pick:/search|product|catalog|list/i,name:"search_postal",site:"https://postal.com",desc:"Search Postal's catalog of gifts, experiences and direct mail."},
+  gmailDraft:{label:"Gmail",server:"Gmail",tool:"create_draft",name:"gmail_create_draft",desc:"Create a Gmail draft."},
   yelp:{label:"Yelp",server:"Yelp",tool:"yelp_search_local_businesses",name:"search_yelp",desc:"Search Yelp for local businesses: ratings, review counts, price level. One signal among several; not the best for premium venues."},
   browseNav:{label:"Browser",server:"host:claude_browser",tool:"navigate",name:"open_page",desc:"Open a web page in the browser (use before reading it)."},
   browseText:{label:"Browser",server:"host:claude_browser",tool:"get_page_text",name:"read_page_text",desc:"Read the text of the page currently open in the browser."},
@@ -1594,7 +1795,8 @@ async function probeSources(force=false){
   if(srcProbed&&!force) return srcProbed;
   srcProbed=(async()=>{ const mcp=await getMcp(); let servers=[];
     if(mcp){ try{ servers=(await mcp.listTools()).servers||[] }catch{} }
-    Object.entries(CONNECT).forEach(([k,c])=>{ const sv=servers.find(x=>x.server===c.server); srcState[k]= !mcp?"off": sv&&sv.tools?.some(t=>t.name===c.tool)&&sv.authStatus!=="needs_reauth" ? "on" : "connect" });
+    Object.entries(CONNECT).forEach(([k,c])=>{ const sv=servers.find(x=>String(x.server).toLowerCase()===c.server.toLowerCase()); const tn=c.tool==="*"?sv?.tools?.find(t=>c.pick.test(t.name))?.name:c.tool; if(c.tool==="*"){ c._tool=tn; if(sv) c.server=sv.server }
+      srcState[k]= !mcp?"off": sv&&tn&&sv.tools?.some(t=>t.name===tn)&&sv.authStatus!=="needs_reauth" ? "on" : "connect" });
     return srcState })();
   return srcProbed;
 }
@@ -1603,9 +1805,9 @@ async function toolsFor(keys,used){
   keys=[...new Set(keys.flatMap(k=>k==="web"?WEB_KEYS:[k]))];
   await probeSources(); const mcp=await getMcp(), tools=[]; if(!mcp) return tools;
   for(const k of keys){ const c=CONNECT[k]; if(srcState[k]!=="on") continue;
-    let schema=c.schema; if(!schema){ try{ schema=(await mcp.describeTool(c.server,c.tool)).inputSchema }catch{ continue } }
+    let schema=c.schema; if(!schema){ try{ schema=(await mcp.describeTool(c.server,c._tool||c.tool)).inputSchema }catch{ continue } }
     tools.push({name:c.name,description:c.desc,inputSchema:schema,execute:async input=>{ used&&used.add(c.label);
-      try{ const t=c.run? await c.run(mcp,input||{}) : JSON.stringify((r=>r.payload??r.content)(await mcp.callTool(c.server,c.tool,input||{}))); return t.length>7000?t.slice(0,7000)+"…(truncated)":t }
+      try{ const t=c.run? await c.run(mcp,input||{}) : JSON.stringify((r=>r.payload??r.content)(await mcp.callTool(c.server,c._tool||c.tool,input||{}))); return t.length>7000?t.slice(0,7000)+"…(truncated)":t }
       catch(e){ return `Error from ${c.server}: ${e?.code||"failed"}` } }}) }
   // one web source is enough: keep the first connected provider's tools
   const webProv=WEB_KEYS.map(k=>CONNECT[k].server).find(sv=>tools.some(t=>CONNECT[Object.keys(CONNECT).find(k=>CONNECT[k].name===t.name)]?.server===sv));
@@ -1710,7 +1912,7 @@ let stratBusy=false, challenges=[];
 function curStrategy(){ return draft.strategy||brandProfile?.strategy||(draft.example?EXAMPLE_OUT.strategy:null) }
 function step1(host){
   const S=curStrategy(), co=brandProfile?.company||draft.brand;
-  host.innerHTML=`
+  host.innerHTML=`<div id="kindHost"></div>
   <div class="strat-head"><div><small class="eyebrow">Step 1 · Strategy</small><h2>${co?`Where events fit for ${esc(co)}`:"Where events fit"}</h2></div>
     <div class="btns">${S?exTag(S):""}<button class="btn ${S?"":"primary"}" id="stratRun"><span class="spark">✦</span>${S?"Redo the research":"Research and build the strategy"}</button></div></div>
   ${!co&&!draft.example?`<div class="banner"><span>Tell Encore your company first. It does the research from there.</span><a href="#brand">Set up brand →</a></div>`:""}
@@ -1814,6 +2016,7 @@ function step2(host){
       <label class="f">Said they'd attend<input type="number" min="0" id="s-yes" value="${d.signals.callsYes}"></label>
     </div>
     <div class="meter" id="conv"></div>
+  </div>${modHTML("fit",draft)}<div>
     ${nextBtn(3,"Next: design it")}
   </div>`;
   const v=out("validation"), r=out("research");
@@ -1862,7 +2065,8 @@ function step3(host){
   </div>
   ${agentBox("hooks","Hooks","Who headlines it, the moments people talk about afterward, and the gift they keep.","Find the hooks")}
   ${agentBox("copy","Copywriter","Invite copy, agenda and discussion topics for the roles you're targeting. Builds in the panel's tweaks and your hooks.","Write it")}
-  ${nextBtn(4,"Next: promote it")}`;
+  ${modHTML("decor",d)}${modHTML("ctas",d)}
+  ${nextBtn(4,"Next: launch it")}`;
   const V=out("venues");
   const drawVen=()=>{ const el=$("#out-venues");
     if(!V){ el.innerHTML=`<p class="empty">Find real venues that fit your concept, with photos, recent reviews and what it'll cost.</p>`; return }
@@ -1944,6 +2148,27 @@ Sections: "By segment" as cards (title = segment, body = hook + proof, tags = [d
   content:{label:"Demos & technical content",av:"DC",desc:"Demos, technical sessions and customer content, with Product and Sales Engineering.",
     prompt:d=>`Plan the demos and technical programming with Product and Sales Engineering: demo stations or live demos that show the product solving these buyers' real problems, technical sessions, customer content, who owns each (product, SE, marketing), and prep deadlines.
 Sections: "Demos" as cards (tags = [owner, prep time]), "Sessions" as cards, "Prep" as a timeline.`},
+  distribution:{label:"Distribution playbook",av:"DP",desc:"Who sends what, where and when to fill every seat with the right people.",
+    prompt:d=>`Build the distribution playbook to fill ${d.headcount} seats with the right people for this event${d.date?` on ${d.date}`:""}. Channels to consider: AE personal invites, exec-to-exec notes from our leadership, partner co-invites, "bring a peer" referrals from customers, community groups and newsletters the buyers read, LinkedIn (exec posts, targeted ads to named accounts), a waitlist, and speakers or hosts promoting to their networks. For each channel: who sends, to whom, the message angle, timing, and the expected acceptance rate (label estimates). Add a timeline from launch to event, the moments that create urgency, and what to do if RSVPs are behind at 3 weeks, 2 weeks and 1 week out.
+Sections: "Channels" as cards (title = channel, subtitle = who sends, body = angle + audience, score = expected impact, tags = [acceptance rate estimate, timing]), "Timeline" as a timeline, "If RSVPs lag" as cards, "Targets" as kpis.`},
+  fit:{label:"Brand and audience fit",av:"FT",desc:"Will this resonate with your buyers, and does it feel like your brand? A straight answer, with what to change.",
+    prompt:d=>`Judge honestly whether this event concept will resonate with the target audience AND fits the brand (its voice, character and what it's known for). Score both 1-10. Be willing to say it doesn't fit. Use web research on the audience and the brand's recent public presence.
+Sections: "Scores" as kpis (Audience fit, Brand fit, Overall), "Why it works" as chips, "What feels off" as chips, "Make it unmistakably yours" as cards (3 concrete changes, each with a score for impact).`},
+  decor:{label:"Decor and atmosphere",av:"DC",desc:"Theme, table, signage, lighting and the small touches guests photograph, within budget.",
+    prompt:d=>`Design the decor and atmosphere for this event so it feels on-brand without looking like a trade-show booth. Use the brand colors ${(d.brandColors||[]).join(", ")} and voice. Respect the budget (${money(d.budget)} total): decor should usually be 5 to 10% of it.
+Sections: "The feel" as chips (5 words or short phrases), "Elements" as a table (Element, Where, Est. cost, Vendor type, Notes), "Signage and print" as chips, "Avoid" as chips.`},
+  ctas:{label:"Calls to action",av:"CT",desc:"What you want each guest to do next, at every stage, and how you'll know they did.",
+    prompt:d=>`Plan the calls to action for this event so it creates pipeline without feeling salesy. One primary CTA, then one per stage.
+Sections: "Primary CTA" as cards (1), "By stage" as a table (Stage, CTA, Where it appears, Metric) covering invite, event page, on-site, follow-up, "On-site moment" as cards (1 or 2 natural ways to start the next conversation, e.g. a QR to book a working session).`},
+  pr:{label:"PR and amplification",av:"PR",desc:"Whether PR is worth it, who could amplify it (press, newsletters, creators, partners), and the asks.",
+    prompt:d=>`Decide whether this event deserves PR or amplification, and if so, who should help. Consider trade press, newsletters and podcasts the audience reads, creators and LinkedIn voices, customers and partners who could co-promote, and analysts. Be honest if a small private event should stay quiet (say so and suggest post-event content instead). Research real outlets and voices for this audience.
+Sections: "Verdict" as cards (1: worth it or not, and why), "Who could amplify" as a table (Who, Type, Why them, The ask, When), "Story angles" as chips, "Timeline" as timeline.`},
+  gifts:{label:"Gifts and merch",av:"GF",desc:"What to give, when, and from which provider, matched to your buyers, brand and budget.",providers:["swag","printful","sendoso","reachdesk","goody","postal"],
+    prompt:d=>`Recommend gifts and merchandise for this event: on-site take-homes, a thank-you after the event, and (if it's a webinar or conference) what to send to attendees and booth visitors. Research what this audience actually values and keeps (skip anything that ends up in a drawer). Match the brand's style and the budget (${money(d.budget)} total; gifts are usually 5 to 15%). Note international shipping or customs issues if guests are spread out. Suggest which provider fits each item: Swag.com or Printful for branded merch, Sendoso, Reachdesk, Postal or Goody for sending gifts to people's homes.
+Sections: "What this audience values" as chips, "Recommendations" as a table (Item, Moment, Why them, Branding, Est. unit cost, Qty, Total, Provider, Lead time), "Budget" as kpis (Per guest, Total, Share of event budget), "Avoid" as chips.`},
+  feedback:{label:"Feedback plan",av:"FB",desc:"What to ask before, during and after, when to ask it, and how answers reach sales.",
+    prompt:d=>`Design the feedback plan for this event: pre-event questions (to shape seating and content), a light during-event pulse, and the post-event survey. Say exactly when each goes out, through which channel, and who reads the answers. Keep the post-event survey to 5 questions or fewer, including one rating, one "would you come again", and one open question that sales can act on.
+Sections: "Timeline" as timeline (when, what, owner), "Pre-event questions" as chips, "Post-event survey" as chips, "What we'll measure" as kpis.`},
   vendors:{label:"Vendors",av:"VD",desc:"Every vendor to book, by when, with a budget for each.",
     prompt:d=>`List every vendor this event needs (venue, catering, AV, photo/video, printing and signage, swag/gifts, transport, staffing, security if needed). For each: the vendor type or a well-known local option if you're confident, why, estimated cost, book-by date${d.date?` (event ${d.date})`:""}, and what to confirm in the contract.
 Sections: "Vendors" as a table (Vendor, Type, Est. cost, Book by, Confirm), "Contract checklist" as chips.`},
@@ -1952,7 +2177,8 @@ function kindOf(d=draft){ return KINDS[d.kind]?d.kind:"dinner" }
 function modHTML(key,d){ const M=MODS[key], R=d.mods?.[key];
   return `<div class="agent"><header><div class="who"><span class="av">${M.av}</span><div><h3>${esc(M.label)}</h3><p class="note">${esc(M.desc)}</p></div></div>
     <div class="btns">${R?`<span class="tag live">Generated${R._used?.length?" · used "+R._used.map(esc).join(", "):""}</span>`:""}<button class="btn ${R?"":"primary"}" data-mod="${key}"><span class="spark">✦</span>${R?"Redo":"Run"}</button></div></header>
-    <div class="body"><pre class="stream" id="st-mod-${key}" hidden></pre>${R?sectionsHTML(R,key):`<p class="empty">${esc(M.desc)}</p>`}</div></div>`; }
+    <div class="body"><pre class="stream" id="st-mod-${key}" hidden></pre>${M.providers?providerStrip(M.providers):""}${needsHTML("mod:"+key,R)}${R?sectionsHTML(R,key):`<p class="empty">${esc(M.desc)}</p>`}</div></div>`; }
+function providerStrip(keys){ return `<div class="provs"><small class="eyebrow">Providers</small><div class="chips">${keys.map(k=>{ const c=CONNECT[k]; return `<a class="chip ${srcState[k]==="on"?"on":""}" href="${esc(c.site)}" target="_blank" rel="noopener">${srcState[k]==="on"?"● ":"○ "}${esc(c.label)}</a>` }).join("")}</div><span class="note">Connected providers are searched for real items and prices. Others open in a new tab.</span></div>` }
 function sectionsHTML(R,key){
   return `${R.summary?`<p class="big modsum">${esc(R.summary)}</p>`:""}${(R.sections||[]).map((s,si)=>{ const it=s.items||[];
     let body="";
@@ -1964,12 +2190,13 @@ function sectionsHTML(R,key){
     return `<section class="msec"><small class="eyebrow">${esc(s.title||"")}</small>${body}</section>` }).join("")}${srcList(R)}`;
 }
 async function runModule(key,btn){
-  const d=draft, M=MODS[key], used=new Set(), tools=await toolsFor(["web","playbook","docs","notes","crm"],used);
+  const d=draft, M=MODS[key], used=new Set(), tools=await toolsFor(["web","playbook","docs","notes","crm",...(M.providers||[])],used);
   const o=await askJSON(`${M.prompt(d)}
 ${brief(d)}
 PROJECT TYPE: ${KINDS[kindOf(d)].label}
 ${tools.length?"Use the tools to check facts (especially dates, prices and names) before answering. Cite sources in a \"sources\" field as [{\"source\":\"\",\"detail\":\"\"}].":"No research tools are available: say which facts need checking."}
-${SECTION_SPEC}`,btn,$("#st-mod-"+key),{tools,tier:"complex"});
+${answersFor(key)}
+${SECTION_SPEC} ${ASK}`,btn,$("#st-mod-"+key),{tools,tier:"complex"});
   if(o?.sections){ if(used.size) o._used=[...used]; d.mods=d.mods||{}; d.mods[key]=o; d.example=false; renderStep(); burst() }
 }
 function wireMods(host){
@@ -1985,8 +2212,41 @@ function kindPicker(){ const k=kindOf(); return `<div class="kindrow" role="grou
 function slug(x){ return String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"ae" }
 function eventCost(d){ const P=d.produce||(d.example?EXAMPLE_OUT.produce:null); return (P?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||+d.budget||0 }
 function regCount(e){ return (e.guests||[]).filter(g=>g.status==="Going"||g.status==="Attended").length+allRsvps.filter(r=>r.eventId===e.id&&r.response==="going").length }
+function launchConfidence(d){ const s=d.signals||{}, P=d.produce||(d.example?EXAMPLE_OUT.produce:null), going=regCount(d), inv=d.guests.filter(g=>g.status!=="Not invited").length, aes=[...new Set(d.guests.map(g=>g.owner).filter(Boolean))], noms=allNoms.filter(n=>n.eventId===d.id).length;
+  const items=[["Strategy",curStrategy()?1:0,10,1,"Get a strategy"],["Real demand signals",s.sent?Math.min(1,(s.interested/s.sent)/0.25):0,15,2,"Send teaser notes to 10+ target buyers"],["Venue chosen",venuePicked(d)?1:0,10,3,"Shortlist a venue"],["Distribution plan",d.mods?.distribution?1:0,10,9,"Plan how you'll fill every seat"],["Plan with owners",P?1:0,10,5,"Build the plan"],["Plan approved",P&&approvers(P).every(r=>d.approvals?.[r])?1:0,10,5,"Get the plan approved"],["Invite list",Math.min(1,inv/(1.5*(+d.headcount||1))),10,6,"Invite 1.5× your seats"],["RSVPs vs target",Math.min(1,going/(+d.headcount||1)),20,6,"Grow RSVPs to your target"],["Sales nominations",aes.length?Math.min(1,noms/aes.length):0,5,6,"Get every AE's nominations"]];
+  const score=Math.round(items.reduce((a,[,v,w])=>a+v*w,0)), gaps=items.filter(i=>i[1]<1).sort((a,b)=>(b[2]*(1-b[1]))-(a[2]*(1-a[1]))).slice(0,3);
+  return {score,gaps,items} }
+function confHTML(d){ const L=launchConfidence(d), c=L.score>=75?"good":L.score>=50?"warn":"bad";
+  return `<div class="conf"><div class="confring ${c}" style="--v:${L.score}"><span>${L.score}</span></div><div style="min-width:0;flex:1"><b>Launch confidence</b><span class="note">${L.score>=75?"High. You're set up to fill the room.":L.score>=50?"Promising. A few moves will raise it.":"Early. Here's what moves it most."}</span>
+    ${L.gaps.length?`<div class="btns" style="gap:6px;margin-top:6px">${L.gaps.map(g=>`<button class="mini-btn" data-confgo="${g[3]}">+${Math.round(g[2]*(1-g[1]))} · ${esc(g[4])}</button>`).join("")}</div>`:""}</div></div>` }
+const READY=[["Plan",[["Concept",1,d=>!!d.concept],["Strategy and goal",1,()=>!!curStrategy()],["Resonates with buyers",2,()=>!!out("validation")],["Fits the brand",2,d=>!!d.mods?.fit]]],
+ ["Design",[["Venue",3,d=>!!venuePicked(d)],["Speakers and hooks",3,()=>!!out("hooks")],["Decor",3,d=>!!d.mods?.decor],["Calls to action",3,d=>!!d.mods?.ctas],["Invite copy",3,()=>!!out("copy")]]],
+ ["Launch",[["Event page",4,()=>!!out("launchCopy")],["Pre-event questions",4,()=>!!out("launchQs")],["Promo email",4,()=>!!out("mailer")],["Stakeholder brief",4,()=>!!out("stakeholders")]]],
+ ["Fill the room",[["Distribution plan",9,d=>!!(d.mods?.distribution||d.dist)],["PR and amplification",9,d=>!!d.mods?.pr],["Attendees",6,d=>d.guests.length>=5]]],
+ ["Produce",[["Run of show and budget",5,()=>!!out("produce")],["Photo, video, moments",5,()=>!!out("media")],["Gifts and merch",5,d=>!!d.mods?.gifts],["Feedback plan",5,d=>!!d.mods?.feedback],["Sign-off",8,()=>!!out("pitch")]]],
+ ["After",[["Follow-up",7,()=>!!out("followup")]]]];
+function readyHTML(d){ const all=READY.flatMap(g=>g[1]), done=all.filter(x=>x[2](d)).length;
+  return `<details class="ready"><summary><b>Everything to think about</b><span class="note">${done} of ${all.length} covered</span><span class="rbar"><i style="width:${Math.round(done/all.length*100)}%"></i></span></summary>
+    <div class="rgrid">${READY.map(([g,L])=>`<div><small class="eyebrow">${g}</small>${L.map(([t,st,f])=>`<button class="rchip ${f(d)?"ok":""}" data-rgo="${st}">${f(d)?"✓":"○"} ${esc(t)}</button>`).join("")}</div>`).join("")}</div></details>` }
 function factsStrip(d){ return `<div class="facts"><span><small>Type</small><b>${esc(KINDS[kindOf(d)].label)}</b></span><span><small>Date</small><b>${d.date?esc(fmtDate(d.date)):"Not set"}</b></span><span><small>City</small><b>${esc(d.city||"Not set")}</b></span><span><small>Guests</small><b>${esc(d.headcount)}</b></span><span><small>Budget</small><b>${money(eventCost(d))}</b></span><span><small>Registered</small><b>${regCount(d)} / ${esc(d.headcount)}</b></span></div>` }
 // ---------------- Programs home ----------------
+function journeySteps(){ const d=draft, mine=!d.example, P=out("produce");
+  return [
+    {k:"brand",t:"Tell Encore about your company",why:"Share your website. Encore learns who you sell to, your brand and voice.",min:"5 min",done:!!brandProfile?.company},
+    {k:"idea",t:"Pick your first event",why:"Browse ideas from companies you respect, or let Encore suggest the strongest play.",min:"15 min",done:mine&&!!d.concept},
+    {k:"plan",t:"Plan it",why:"Strategy, venue, invite copy and a dated plan with owners. Autopilot drafts it all.",min:"1 hour",done:mine&&!!out("produce")},
+    {k:"signoff",t:"Get sign-off",why:"A one-page proposal your boss can approve, plus the full plan for the team.",min:"15 min",done:mine&&!!d.pitch},
+    {k:"invite",t:"Invite your guests",why:"Build the list with sales, send personal invites, and track RSVPs.",min:"1 hour",done:mine&&d.guests.some(g=>g.status!=="Not invited")},
+    {k:"run",t:"Run the day",why:"Check people in at the door. Encore keeps the team's tasks on track before that.",min:"on the day",done:mine&&d.guests.some(g=>g.status==="Attended")},
+    {k:"measure",t:"Follow up and measure",why:"Follow up within 24 hours, sync to your CRM, and see pipeline and ROI.",min:"30 min",done:mine&&d.status==="done"}] }
+function journeyGo(k){ if(k==="brand") return location.hash="brand"; if(k==="idea") return location.hash="inspire";
+  if(draft.example){ draft=brandDraft() } step={plan:1,signoff:8,invite:6,run:6,measure:7}[k]||1; location.hash="studio"; renderStep() }
+function homeHero(){ const S=journeySteps(), next=S.find(x=>!x.done), n=S.filter(x=>x.done).length;
+  return `<section class="hero-home"><div><small class="eyebrow">Encore</small><h1>Plan and launch your first event in a day.</h1>
+    <p class="lede">Encore is your events team in one place. It researches your buyers, suggests what to host, writes the copy, builds the plan and the guest list with sales, keeps everyone on schedule, and shows the pipeline it created.</p>
+    ${draft.example?`<p class="note">The app is filled with a sample company (Ridgeline) so you can look around. Your own work replaces it as you go.</p>`:""}</div>
+    <div class="journey"><div class="btns" style="justify-content:space-between"><b>Your first event in a day</b><span class="note">${n} of ${S.length} done</span></div>
+      <ol>${S.map((x,i)=>`<li class="${x.done?"done":x===next?"next":""}"><span class="jn">${x.done?"✓":i+1}</span><div><b>${esc(x.t)}</b><span class="note">${esc(x.why)} · ${esc(x.min)}</span></div>${x===next?`<button class="btn primary sm" data-journey="${x.k}">Start</button>`:x.done?`<button class="btn ghost sm" data-journey="${x.k}">Open</button>`:""}</li>`).join("")}</ol></div></section>` }
 function renderPrograms(){
   const el=$("#view-programs"); if(!el) return;
   const evs=[...allEvents.filter(e=>e.status!=="done"&&!e.example)];
@@ -1997,7 +2257,7 @@ function renderPrograms(){
     days=e.date?Math.ceil((new Date(e.date+"T12:00:00")-Date.now())/864e5):null, health=bl?"blocked":od||(days!=null&&days<21&&reg<tgt*.5)?"at risk":"on track";
     return {e,od,bl,nx,reg,tgt,plan,act,noms,aes,days,health} });
   const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
-  el.innerHTML=`<div class="canvas-head"><div><small class="eyebrow">Programs</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
+  el.innerHTML=`${homeHero()}<div class="canvas-head" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
     <div class="btns"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
     <div class="kpis" style="margin:18px 0"><div class="kpi"><small>Events in flight</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs target</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Budget: actual vs plan</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Blocked or overdue</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
     ${rows.length?`<div class="progs big">${rows.map(r=>`<article class="prog ${r.health.replace(" ","")}">
@@ -2005,10 +2265,11 @@ function renderPrograms(){
       <b class="big">${esc(r.e.name||"Untitled")}</b><span class="note">${esc(r.e.city||"")}${r.e.date?` · ${esc(fmtDate(r.e.date))}`:""}${r.days!=null?` · ${r.days} days`:""}${r.e._draft?" · not saved":""}</span>
       <div class="meterrow"><small>Registered</small><div class="bar"><i style="width:${r.tgt?Math.min(100,100*r.reg/r.tgt):0}%"></i></div><span>${r.reg}/${r.tgt}</span></div>
       <div class="meterrow"><small>Spend</small><div class="bar"><i style="width:${r.plan?Math.min(100,100*r.act/r.plan):0}%;background:${r.act>r.plan?"var(--bad)":"var(--cobalt)"}"></i></div><span>${money(r.act)}</span></div>
-      ${r.aes?`<span class="note">Nominations: ${r.noms} of ${r.aes} AEs</span>`:""}
+      ${r.aes?`<span class="note">Nominations: ${r.noms} of ${r.aes} AEs</span>`:""}<span class="note"><b>Launch confidence ${launchConfidence(hydrate(r.e)).score}</b></span>
       ${r.nx?`<span class="note">Next: ${esc(r.nx.task)} · ${esc(r.nx.owner)}</span>`:""}${r.od||r.bl?`<span class="note" style="color:var(--bad)">${r.od} overdue · ${r.bl} blocked</span>`:""}
       <button class="btn sm" data-popen="${esc(r.e.id||"")}">Open</button></article>`).join("")}</div>`:`<p class="empty">No events in flight. Start one, or pick a template from Inspire.</p>`}`;
   $("#newEv").onclick=()=>{ draft=brandDraft(); step=1; location.hash="studio" };
+  $$("[data-journey]",el).forEach(b=>b.onclick=()=>journeyGo(b.dataset.journey));
   $("#tplBtn").onclick=()=>location.hash="inspire";
   $$("[data-popen]",el).forEach(b=>b.onclick=()=>{ const id=b.dataset.popen; if(id){ const e=allEvents.find(x=>x.id===id); if(e) draft=hydrate(e) } step=1; location.hash="studio" });
 }
@@ -2152,7 +2413,7 @@ function drawCoach(){
     <div class="coachact">${a.date||!d.date?`<label class="f datef">Event date<input type="date" id="evDate" value="${esc(d.date||"")}" min="${new Date().toISOString().slice(0,10)}"></label>`:""}${a.cta?`<button class="btn primary" id="coachGo">${esc(a.cta)}</button>`:""}</div></div>`;
   $("#evDate")&&($("#evDate").onchange=e=>setDate(e.target.value));
   $("#coachGo")&&($("#coachGo").onclick=async e=>{ if(a.go) return a.go(); if(a.mod){ step=3; renderStep(); return runModule(a.mod,$(`[data-mod="${a.mod}"]`)) } if(a.run==="strategy"){ step=1; renderStep(); return runStrategy($("#stratRun")) }
-    const o=await runAgent(a.run,e.currentTarget,null); if(o){ step={venues:3,produce:5,scout:6,copy:3,outreach:6,pitch:step}[a.run]||step; renderStep(); burst() } });
+    const o=await runAgent(a.run,e.currentTarget,null); if(o){ step={venues:3,produce:5,scout:6,copy:3,outreach:6,pitch:8}[a.run]||step; renderStep(); burst() } });
 }
 async function setDate(v){ const d=draft; d.date=v; d.example=false; renderStep();
   if(!v) return; toast(`Date set: ${fmtDate(v)}. Finding venues and building your plan…`);
@@ -2357,16 +2618,228 @@ function drawVenueArt(cv,v,cols){
 }
 
 // STEP · Promote ----------------------------------------------------
+
+// ---------------- Launch kit: Luma, Partiful, Eventbrite or your own site ----------------
+const PLATFORMS={
+ luma:{label:"Luma",mark:"L",url:"https://lu.ma/create",img:[1080,1080,"Square cover"],words:"Max 170 words. Luma renders simple formatting, so plain paragraphs and '- ' bullets work.",qLabel:"Registration questions",appOn:"Require approval: on. Review each request before it's confirmed.",appOff:"Open registration, free ticket. Turn on the waitlist at capacity.",
+   how:["Create an event on Luma","Paste the name, date, location and description","Upload the cover","Add the registration questions","Set capacity and approval, then publish","Paste the page link below so emails and Slack use it"]},
+ partiful:{label:"Partiful",mark:"P",url:"https://partiful.com/create",img:[1080,1080,"Poster"],words:"Max 110 words. It's read on phones and the tone is casual, so lead with the fun part.",qLabel:"RSVP questions",appOn:"Ask guests to request to join, and approve each one.",appOff:"Open RSVP. Cap the guest list at your headcount.",
+   how:["Create an event on Partiful","Paste the title, date, location and description","Upload the poster","Add the RSVP questions","Set the guest cap, then share","Paste the page link below"]},
+ eventbrite:{label:"Eventbrite",mark:"E",url:"https://www.eventbrite.com/create",img:[2160,1080,"Event image (2:1)"],words:"Max 220 words. People find it in search, so the first sentence must say who it's for and what happens.",qLabel:"Order form questions",appOn:"Use an invite-only or hidden ticket and approve registrations.",appOff:"Free ticket with a quantity equal to your headcount.",
+   how:["Create an event on Eventbrite","Paste the title and summary","Paste the description and FAQ","Upload the event image","Add a free ticket and the order form questions","Add the tags, publish, and paste the link below"]},
+ site:{label:"Your website",mark:"W",url:null,img:[1600,900,"Hero image"],words:"Max 250 words. Write it as a landing page: a clear promise, what happens, who it's for, one call to action.",qLabel:"RSVP form questions (Encore asks these)",appOn:"Curated: guests request a seat on Encore and you approve each one.",appOff:"Open RSVP on Encore. Responses land in your guest list.",
+   how:["Download the landing page","Put it on your site (or hand it to whoever runs the site)","The RSVP button goes to your Encore invite, so responses land here","Embed the guest wall to show who's coming"]}};
+const SENDERS={founder:{label:"Founder",who:"the founder and CEO",angle:"Say why the founder personally cares about this topic and these people. It should read like a note from them, not from marketing.",sign:"[Founder first name]"},
+ cs:{label:"Head of CS",who:"the head of customer success",angle:"Write to existing customers: what they'll learn from peers, and that the team will be there.",sign:"[Head of CS first name]"},
+ mkt:{label:"Head of marketing",who:"the head of marketing",angle:"Lead with what attendees get and who else is coming. Practical and specific.",sign:"[Head of marketing first name]"}};
+const lp=d=>(d.launch=d.launch||{platform:"luma",sender:"founder",qsOnRsvp:true}).platform||"luma";
+function venueLine(d){ const V=venuePicked(d); return V?`VENUE: ${V.name}${V.address?`, ${V.address}`:""}${V.area?` (${V.area})`:""}.`:"" }
+function evLink(d){ return d.launch?.url || (d.id?ART_URL+"#rsvp-"+d.id:"[event link]") }
+function fillLinks(t,d){ return String(t||"").replace(/\[event (link|page)\]/gi,evLink(d)) }
+Object.assign(AGENTS,{
+ launchCopy:{label:"Page copywriter",av:"CW",uses:["web","playbook"],ok:o=>!!o?.title&&!!o?.description,sum:o=>`Page copy: "${o.title}"`,
+  prompt:d=>{const P=PLATFORMS[lp(d)],C=d.copy; return `${editor(d)}
+Write the public event page for ${P.label}. ${P.words}
+${brief(d)}
+${venueLine(d)}
+${C?`EXISTING INVITE COPY: ${C.title}. ${C.tagline||""} ${C.description||""}`:""}
+Reply with only JSON: {"title":"max 60 chars","summary":"max 140 chars, used in previews and search","description":"the page body: short paragraphs separated by blank lines, a '- ' list of 3 to 4 things guests get, who it's for, and what happens on the night","faq":[{"q":"","a":"max 25 words"}] (3: the questions this audience actually asks, like who else is coming, cost, recording, plus-ones),"tags":[5 short search tags],"seo":{"title":"max 60 chars","description":"max 155 chars"},"tip":"one non-obvious tip for getting this page shared, max 25 words"}`}},
+ launchAssets:{label:"Asset designer",av:"AD",ok:o=>!!o?.coverLine,sum:o=>`Cover: "${o.coverLine}"`,
+  prompt:d=>{const P=PLATFORMS[lp(d)]; return `You are the brand designer making the artwork for this event's ${P.label} page (${P.img[2]}, ${P.img[0]} × ${P.img[1]}). Encore draws the artwork from the brand colors, a motif and a short cover line. Choose the words and the motif.
+${brief(d)}
+Motifs: ${MOTIFS.join(", ")}.
+Reply with only JSON: {"coverLine":"max 6 words: the hook people see first in a feed","motif":"one of the motifs","alt":"alt text for the cover, max 25 words","photoBrief":"if they swap in a real photo: what to shoot or source, max 30 words","checks":[3 short checks before publishing]}`}},
+ launchQs:{label:"Questionnaire designer",av:"QD",ok:o=>Array.isArray(o?.questions)&&o.questions.length,sum:o=>`${o.questions.length} registration questions`,
+  prompt:d=>`You design the registration questions for this event. Good questions help the host seat people well, brief sales and qualify demand, and take under a minute. Nothing should feel like a sales form.
+${brief(d)}
+Reply with only JSON: {"questions":[{"q":"as guests see it","type":"short|choice|yesno","options":["only for choice"],"required":true,"why":"what the host does with the answer, max 15 words"}] (4 to 5; include one about what they're excited to learn and one about dietary needs if food is served),"approval":"should registration need approval? yes or no and why, max 15 words"}`},
+ stakeholders:{label:"Stakeholder brief",av:"SB",ok:o=>!!o?.post,sum:()=>"Slack update for stakeholders",
+  prompt:d=>{const T=out("produce")?.tasks||[]; return `${editor(d)}
+Write the internal Slack update that tells every key stakeholder what's happening and exactly what we need from each of them. It's for colleagues: brief, direct, friendly. Use Slack formatting (*bold*, • bullets).
+${brief(d)}
+${venueLine(d)} GUESTS SO FAR: ${d.guests.length} on the list, ${d.guests.filter(g=>g.status==="Going").length} going. EVENT PAGE: ${d.launch?.url||"[event page]"}
+${T.length?`PLAN OWNERS: ${[...new Set(T.map(t=>t.owner))].join(", ")}`:""}
+Teams to consider: sales (AEs and their leader), customer success, the executive sponsor, product marketing, design, finance, legal or ops. Only include teams with a real ask.
+Reply with only JSON: {"channel":"suggested channel like #evt-name","post":"the Slack message, max 170 words: what, when, where, who's coming, why it matters, each ask with an owner and a date, and the event page link","asks":[{"team":"","ask":"max 15 words","by":"date"}] (3 to 5),"dms":[{"to":"role","text":"a short personal DM, max 50 words"}] (1 to 2)}`}},
+ mailer:{label:"Email writer",av:"EM",uses:["web"],ok:o=>!!o?.subject&&!!o?.body,sum:o=>`Email: "${o.subject}"`,
+  prompt:d=>{const S=SENDERS[d.launch?.sender||"founder"]; return `${editor(d)}
+Write the email ${S.who} sends to the company's mailing list to promote this event. ${S.angle} First person, plain text, short paragraphs, one clear call to action with [event link] where the link goes. Honest about limited seats.
+${brief(d)}
+${venueLine(d)}
+Reply with only JSON: {"subject":"max 50 chars","preview":"preview text, max 90 chars","body":"plain-text email, max 160 words, signed ${S.sign}","ps":"a P.S. line or empty","segment":"which part of the list to send to first and why, max 25 words","sendTime":"when to send, max 15 words"}`}}
+});
+Object.assign(EXAMPLE_OUT,{
+ launchCopy:{title:"The Data Leaders' Kitchen",summary:"20 data leaders cook a three-course dinner with a chef in Chicago, then talk about getting data ready for AI. Feb 18.",
+  description:"Most AI conversations happen on a stage. This one happens over a cutting board.\n\nOn February 18, twenty data leaders from banks, insurers and health systems will cook a three-course dinner with a chef at The Chopping Block, then sit down and eat it together.\n\nWhat you get:\n- A hands-on cooking session (beginners welcome, aprons provided)\n- Dinner with peers who run data teams under the same regulators you do\n- An honest conversation about getting data ready for AI, with no slides\n- The recipes, plus the anonymous answers to our pre-dinner questions\n\nWho it's for: heads of data, analytics and data platform at regulated companies.\n\nHosted by Ridgeline. Seats are limited and we confirm every request personally.",
+  faq:[{q:"Who else is coming?",a:"VPs and directors of data from Chicago-area banks, insurers and health systems. We share the guest list three days before."},{q:"Does it cost anything?",a:"No. Ridgeline covers dinner and drinks."},{q:"Is it recorded?",a:"No recording and no press. Share what you like afterwards, without attributing it to anyone."}],
+  tags:["data leaders","AI readiness","Chicago","dinner","financial services"],seo:{title:"The Data Leaders' Kitchen · Chicago · Feb 18",description:"A hands-on cooking dinner for 20 data leaders in regulated industries, hosted by Ridgeline at The Chopping Block in Chicago."},
+  tip:"Ask two confirmed guests to repost the page. Buyers trust a peer's 'I'm going' more than the host's invite.",example:true},
+ launchAssets:{coverLine:"Cook first. Then talk data.",motif:"table",alt:"Blue and yellow Ridgeline cover reading 'Cook first. Then talk data.' for a Chicago dinner on February 18",photoBrief:"A close, warm shot of hands plating at a cooking station. Real steam and a little mess; no stock smiles or logos.",checks:["Cover line readable at thumbnail size on a phone","Date and city visible without opening the page","Alt text added on the platform"],example:true},
+ launchQs:{questions:[{q:"What's one data problem you'd like to compare notes on?",type:"short",required:true,why:"Seats people next to peers with the same problem"},{q:"Where is your team with AI today?",type:"choice",options:["Exploring","Piloting","In production"],required:true,why:"Tells sales who's ready for a follow-up"},{q:"How confident are you in the kitchen?",type:"choice",options:["Happy to lead a station","I'll follow instructions","Give me the easy job"],required:false,why:"Lets the chef plan stations"},{q:"What are you most excited to learn about?",type:"short",required:false,why:"Shown on the guest wall; shapes the conversation"},{q:"Any dietary needs or allergies?",type:"short",required:false,why:"Menu planning"}],approval:"Yes. A curated room is part of the appeal, and it keeps vendors out.",example:true},
+ stakeholders:{channel:"#evt-data-leaders-kitchen",post:"*The Data Leaders' Kitchen · Feb 18 · Chicago*\nWe're hosting 20 data leaders from regulated industries for a hands-on cooking dinner at The Chopping Block, 6:00 to 9:00 pm. Goal: real conversations with our 8 Central target accounts and follow-up meetings in Q1.\n\n*What we need*\n• *Central AEs:* nominate 3 to 5 contacts each by Jan 9. Personal invites go out Jan 12.\n• *Customer success:* suggest 2 to 3 happy customers who'd host a table, by Jan 9.\n• *Exec sponsor:* hold 5:30 to 9:30 pm on Feb 18 and send 10 personal notes the week of Jan 12. I'll draft them.\n• *Finance:* approve the $18k budget by Dec 5.\n\nEvent page: [event page]\nQuestions? Reply in the thread.",
+  asks:[{team:"Central AEs",ask:"Nominate 3 to 5 target contacts each",by:"Jan 9"},{team:"Customer success",ask:"Suggest 2 to 3 customers to host a table",by:"Jan 9"},{team:"Exec sponsor",ask:"Hold the evening and send 10 personal notes",by:"Jan 16"},{team:"Finance",ask:"Approve the $18k budget",by:"Dec 5"}],
+  dms:[{to:"Exec sponsor",text:"Quick one: we're hosting 20 data leaders for a cooking dinner in Chicago on Feb 18. Could you hold the evening and send about 10 short personal invites the week of Jan 12? I'll draft them for you."}],example:true},
+ mailer:{subject:"Cook dinner with 20 data leaders?",preview:"Feb 18 in Chicago. Beginners welcome, and we confirm every seat.",body:"Hi [first name],\n\nMost conversations about AI readiness happen in conference halls. I wanted one that happens over dinner.\n\nOn February 18 we're hosting 20 data leaders from banks, insurers and health systems at The Chopping Block in Chicago. We'll cook three courses with a chef, then sit down and talk honestly about getting data ready for AI. No slides.\n\nIf you lead a data team in a regulated industry, I'd love to have you there. Seats are limited, so we confirm each one personally.\n\nRequest a seat: [event link]\n\n[Founder first name]",
+  ps:"P.S. Beginner cooks welcome. The chef gives the hardest jobs to whoever volunteers first.",segment:"Start with Chicago-area contacts in banking, insurance and health. Go wider only if seats remain after a week.",sendTime:"Tuesday or Wednesday morning, 4 to 5 weeks out",example:true}});
+function launchFields(d){ const p=lp(d), P=PLATFORMS[p], L=out("launchCopy")||{}, C=d.copy||out("copy")||{}, V=venuePicked(d), Q=out("launchQs"), ag=C.agenda||[];
+  const when=d.date?`${fmtDate(d.date)}${ag[0]?`, ${ag[0].time}`:""}${ag.length>1?` to ${ag[ag.length-1].time}`:""}`:"";
+  const F=[["Event name",L.title||C.title||d.name],["Date and time",when||"Pick a date in step 1"],["Location",V?`${V.name}${V.address?`, ${V.address}`:""}`:(d.city||"")]];
+  if(p==="eventbrite"||p==="site") F.push(["Summary",L.summary||C.tagline||""]);
+  F.push(["Description",fillLinks(L.description||C.description||d.concept||"",d)]);
+  if(L.faq?.length) F.push(["FAQ",L.faq.map(f=>`${f.q}\n${f.a}`).join("\n\n")]);
+  F.push(["Capacity",`${d.headcount} guests`],["Registration",d.approvalRequired?P.appOn:P.appOff]);
+  if(Q?.questions?.length) F.push([P.qLabel,Q.questions.map((q,i)=>`${i+1}. ${q.q}${q.type==="choice"&&q.options?.length?` (${q.options.join(" / ")})`:q.type==="yesno"?" (Yes / No)":""}${q.required?" *":""}`).join("\n")]);
+  if((p==="eventbrite"||p==="luma")&&L.tags?.length) F.push(["Tags",L.tags.join(", ")]);
+  if(p==="site"&&L.seo) F.push(["SEO title and description",`${L.seo.title}\n${L.seo.description}`]);
+  return F.filter(f=>f[1]) }
+function launchCover(d){ const A=out("launchAssets"); return A?{...d,cover:{...(d.cover||{}),headline:A.coverLine,motif:MOTIFS.includes(A.motif)?A.motif:d.cover?.motif}}:d }
+function landingHTML(d,img){ const L=out("launchCopy")||{}, C=d.copy||out("copy")||{}, V=venuePicked(d), c=d.brandColors||brandProfile?.colors||["#3B5BFF","#FFC93C"], t=L.title||C.title||d.name, sum=L.summary||C.tagline||"";
+  const body=fillLinks(L.description||C.description||d.concept||"",d).split(/\n\n+/).map(par=>/^- /m.test(par)?`<ul>${par.split("\n").filter(x=>/^- /.test(x)).map(x=>`<li>${esc(x.slice(2))}</li>`).join("")}</ul>${par.split("\n").filter(x=>!/^- /.test(x)).map(x=>`<p>${esc(x)}</p>`).join("")}`:`<p>${esc(par)}</p>`).join("");
+  const rsvp=evLink(d), wall=d.id?ART_URL+"#guests-"+d.id:"";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(L.seo?.title||t)}</title><meta name="description" content="${esc(L.seo?.description||sum)}">
+<meta property="og:title" content="${esc(t)}"><meta property="og:description" content="${esc(sum)}"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>:root{--b1:${c[0]};--b2:${c[1]||"#FFC93C"}}*{box-sizing:border-box}body{margin:0;font:17px/1.6 Inter,system-ui,sans-serif;color:#1B1740;background:#F6F7FB}
+.hero img{width:100%;max-height:520px;object-fit:cover;display:block}.wrap{max-width:760px;margin:-60px auto 60px;padding:32px;background:#fff;border-radius:24px;position:relative;box-shadow:0 20px 60px rgba(27,23,64,.12)}
+h1{font:800 clamp(2rem,5vw,3rem)/1.1 "Plus Jakarta Sans",sans-serif;margin:0 0 10px}.sum{font-size:1.15rem;color:#4A4670}.facts{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}
+.facts span{padding:10px 14px;border-radius:14px;background:#F1F2FA}.facts small{display:block;font-size:.75rem;color:#6B6890;text-transform:uppercase;letter-spacing:.06em}
+.cta{display:inline-block;padding:14px 26px;border-radius:999px;background:var(--b1);color:#fff;font-weight:700;text-decoration:none}.cta.alt{background:transparent;color:var(--b1);border:2px solid var(--b1);margin-left:8px}
+h2{font:800 1.3rem "Plus Jakarta Sans",sans-serif;margin-top:32px}dt{font-weight:700;margin-top:12px}dd{margin:4px 0 0}@media(max-width:600px){.wrap{margin:-30px 16px 40px;padding:22px}.cta.alt{margin:10px 0 0}}</style></head>
+<body><div class="hero">${img?`<img src="${img}" alt="${esc(out("launchAssets")?.alt||t)}">`:""}</div><main class="wrap">
+<h1>${esc(t)}</h1>${sum?`<p class="sum">${esc(sum)}</p>`:""}
+<div class="facts">${d.date?`<span><small>When</small>${esc(fmtDate(d.date))}</span>`:""}<span><small>Where</small>${esc(V?V.name+", ":"")}${esc(d.city||"")}</span><span><small>Seats</small>${esc(d.headcount)}</span></div>
+<p><a class="cta" href="${esc(rsvp)}">${d.approvalRequired?"Request a seat":"RSVP"}</a>${wall?`<a class="cta alt" href="${esc(wall)}">See who's coming</a>`:""}</p>
+${body}${(C.agenda||[]).length?`<h2>The evening</h2><dl>${C.agenda.map(a=>`<dt>${esc(a.time)}</dt><dd>${esc(a.item)}</dd>`).join("")}</dl>`:""}
+${L.faq?.length?`<h2>Questions</h2><dl>${L.faq.map(f=>`<dt>${esc(f.q)}</dt><dd>${esc(f.a)}</dd>`).join("")}</dl>`:""}
+<p style="margin-top:32px"><a class="cta" href="${esc(rsvp)}">${d.approvalRequired?"Request a seat":"RSVP"}</a></p></main></body></html>` }
+async function slackPost(text,channel){ const mcp=await getMcp(); if(!mcp) throw {code:"unavailable"}; let sc={}; try{ sc=(await mcp.describeTool("Slack","slack_send_message")).inputSchema||{} }catch{}
+  const ps=Object.keys(sc.properties||{}), ck=ps.find(x=>/channel/i.test(x)), tk=ps.find(x=>/^(text|message)$/i.test(x))||"text", input={[tk]:text}; if(ck&&channel) input[ck]=channel;
+  return mcp.callTool("Slack","slack_send_message",input) }
+function launchKitHTML(d){ const p=lp(d), P=PLATFORMS[p], F=launchFields(d), A=out("launchAssets"), sender=d.launch.sender||"founder";
+  return `<section class="panel stack launchkit">
+    <div><div class="eyebrow">Step 4 · Launch</div><h3>Launch your event page</h3><p class="note">Pick where it lives. Encore's agents write the page, make the artwork, design the questions and brief your team, so publishing takes a few clicks.</p></div>
+    <div class="plats" role="radiogroup" aria-label="Platform">${Object.entries(PLATFORMS).map(([k,x])=>`<button type="button" class="plat" role="radio" aria-checked="${k===p}" data-plat="${k}"><span class="pmark">${x.mark}</span>${esc(x.label)}</button>`).join("")}</div>
+    <div class="lgrid"><div class="lfields">${F.map(([l,v],i)=>`<div class="lfield"><div class="btns" style="justify-content:space-between"><small class="eyebrow">${esc(l)}</small><button class="btn ghost sm" data-lcp="${i}">Copy</button></div><div class="lval">${esc(v)}</div></div>`).join("")}</div>
+      <div class="lside"><figure><canvas id="lCover" width="${P.img[0]}" height="${P.img[1]}" aria-label="${esc(A?.alt||"Event cover")}"></canvas><figcaption class="note">${esc(P.img[2])} · ${P.img[0]} × ${P.img[1]}${A?.alt?`<br>Alt text: ${esc(A.alt)}`:""}</figcaption></figure>
+        <div class="btns">${downloads?`<button class="btn sm" id="lDl">Download artwork</button>`:""}<button class="btn sm ghost" id="lCopyAll">Copy everything</button></div>
+        <ol class="lhow">${P.how.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+        <div class="btns">${P.url?`<a class="btn primary" href="${P.url}" target="_blank" rel="noopener">Open ${esc(P.label)} ↗</a>`:`<button class="btn primary" id="lSite">${downloads?"Download landing page":"Copy landing page HTML"}</button>`}</div>
+        <label class="f">Your event page link<input id="lUrl" type="url" placeholder="https://…" value="${esc(d.launch.url||"")}"><span class="h">Emails, Slack updates and the guest wall use it.</span></label>
+        <div class="wallbox"><b>Guest wall</b><span class="note">A page that shows who's coming, with photos, roles and what each guest wants to learn. Guests opt in when they RSVP.</span>
+          <div class="btns"><a class="btn sm" href="#guests-${esc(d.id||"sample")}" target="_blank" rel="noopener">Open guest wall ↗</a><button class="btn sm ghost" id="lEmbed">Copy embed code</button></div></div></div></div>
+  </section>
+  <div class="agents3">${agentBox("launchCopy","Page copywriter",`Writes the ${esc(P.label)} page in your founders' voice, within its limits.`,"Write the page")}
+  ${agentBox("launchAssets","Asset designer","Picks the cover line and motif, and writes the alt text and a photo brief.","Design the cover",false)}
+  ${agentBox("launchQs","Questionnaire designer","Questions that help you seat people and brief sales, in under a minute.","Design the questions",false)}</div>
+  ${agentBox("stakeholders","Stakeholder brief","One Slack update for sales, CS, your exec sponsor and finance: the details and exactly what you need from each.","Write the Slack update",false)}
+  ${agentBox("mailer","Email writer","The email your founder, head of CS or head of marketing sends to your list.","Write the email",false)}` }
+function wireLaunch(host,d){ const F=launchFields(d), P=PLATFORMS[lp(d)];
+  $$("[data-plat]",host).forEach(b=>b.onclick=()=>{ d.launch.platform=b.dataset.plat; renderStep() });
+  $$("[data-lcp]",host).forEach(b=>b.onclick=()=>copyTxt(F[+b.dataset.lcp][1]));
+  $("#lCopyAll",host).onclick=()=>copyTxt(F.map(([l,v])=>`${l.toUpperCase()}\n${v}`).join("\n\n"));
+  const cv=$("#lCover",host), draw=()=>drawCover(cv,launchCover(d),{square:cv.height/cv.width>.8}); draw(); document.fonts?.ready.then(()=>cv.isConnected&&draw());
+  $("#lDl",host)&&($("#lDl",host).onclick=()=>cv.toBlob(async b=>{ try{ await downloads.save({filename:`${slug(d.name)}-${lp(d)}-cover.png`,data:b}) }catch{ toast("Download cancelled") } },"image/png"));
+  $("#lUrl",host).onchange=e=>{ d.launch.url=e.target.value.trim(); toast("Saved the page link"); renderStep() };
+  $("#lEmbed",host).onclick=()=>{ if(!d.id) toast("Save the event first so the wall has a link"); copyTxt(`<iframe src="${ART_URL}#guests-${d.id||"sample"}" title="Who's coming" style="width:100%;min-height:900px;border:0" loading="lazy"></iframe>`) };
+  $("#lSite",host)&&($("#lSite",host).onclick=async()=>{ if(!d.id) toast("Tip: save the event so the RSVP button links to your invite");
+    const c2=document.createElement("canvas"); c2.width=1600; c2.height=900; drawCover(c2,launchCover(d)); const html=landingHTML(d,c2.toDataURL("image/jpeg",.86));
+    if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}.html`,data:new Blob([html],{type:"text/html"})}) }catch{ toast("Download cancelled") } } else copyTxt(html) });
+  // agent outputs
+  const L=out("launchCopy"); if(L) $("#out-launchCopy").innerHTML=`${L.voiceCheck?voiceChip(L):""}<p class="note">The fields above now use this copy.</p>${L.tip?`<div class="surprise"><b>Tip</b><span class="note">${esc(L.tip)}</span></div>`:""}`;
+  else $("#out-launchCopy").innerHTML=`<p class="empty">Uses your invite copy until you run it.</p>`;
+  const A=out("launchAssets"); $("#out-launchAssets").innerHTML=A?`<p class="big">“${esc(A.coverLine)}”</p><span class="tag">${esc(A.motif||"")}</span><p class="note">${esc(A.photoBrief||"")}</p><ul class="clean">${(A.checks||[]).map(c=>`<li>☐ ${esc(c)}</li>`).join("")}</ul><button class="btn ghost sm" id="useCover">Use this cover everywhere</button>`:`<p class="empty">The cover above uses your event name.</p>`;
+  $("#useCover")&&($("#useCover").onclick=()=>{ d.cover={...(d.cover||{}),headline:A.coverLine,motif:MOTIFS.includes(A.motif)?A.motif:d.cover?.motif}; toast("Cover updated on every asset"); renderStep() });
+  const Q=out("launchQs"); $("#out-launchQs").innerHTML=Q?`<ol class="qlist">${Q.questions.map(q=>`<li><b>${esc(q.q)}</b>${q.required?` <span class="tag">required</span>`:""} <span class="tag">${esc(q.type)}</span>${q.options?.length?`<div class="note">${esc(q.options.join(" · "))}</div>`:""}<div class="note">Why: ${esc(q.why||"")}</div></li>`).join("")}</ol>${Q.approval?`<p class="note">Approval: ${esc(Q.approval)}</p>`:""}
+    <label class="chip"><input type="checkbox" id="qsOnRsvp" ${d.launch.qsOnRsvp!==false?"checked":""}> Ask these on the Encore RSVP page too</label>`:`<p class="empty">Design questions that make seating and follow-up easy.</p>`;
+  $("#qsOnRsvp")&&($("#qsOnRsvp").onchange=e=>{ d.launch.qsOnRsvp=e.target.checked; if(!d.launchQs&&Q) d.launchQs={...Q,example:false} });
+  const S=out("stakeholders"); $("#out-stakeholders").innerHTML=S?`<div class="lgrid"><div><small class="eyebrow">Post in ${esc(S.channel||"#events")}</small><p class="channel">${esc(fillLinks(S.post,d))}</p>
+      <div class="btns"><button class="btn sm" id="sbCopy">Copy</button>${srcState.slack==="on"?`<input id="sbCh" placeholder="Channel ID" style="max-width:160px"><button class="btn sm primary" id="sbSend">Post to Slack</button>`:""}</div></div>
+    <div><small class="eyebrow">Who owes what</small><table class="tbl"><tbody>${(S.asks||[]).map(a=>`<tr><td><b>${esc(a.team)}</b></td><td>${esc(a.ask)}</td><td class="note">${esc(a.by||"")}</td></tr>`).join("")}</tbody></table>
+      ${(S.dms||[]).map((m,i)=>`<div class="card" style="margin-top:8px"><div class="btns" style="justify-content:space-between"><b>DM to ${esc(m.to)}</b><button class="btn ghost sm" data-dm="${i}">Copy</button></div><p class="channel">${esc(m.text)}</p></div>`).join("")}</div></div>`:`<p class="empty">Keep sales, CS and your exec sponsor in the loop with one message.</p>`;
+  $("#sbCopy")&&($("#sbCopy").onclick=()=>copyTxt(fillLinks(S.post,d))); $$("[data-dm]",host).forEach(b=>b.onclick=()=>copyTxt(S.dms[+b.dataset.dm].text));
+  $("#sbSend")&&($("#sbSend").onclick=async e=>{ e.currentTarget.disabled=true; try{ await slackPost(fillLinks(S.post,d),$("#sbCh").value.trim()); toast("Posted to Slack") }catch(err){ toast("Couldn't post to Slack: "+(err?.code||"error")) } e.currentTarget&&(e.currentTarget.disabled=false) });
+  const M=out("mailer"), mt=M?`Subject: ${M.subject}\n\n${fillLinks(M.body,d)}${M.ps?`\n\n${M.ps}`:""}`:"";
+  $("#out-mailer").innerHTML=`<div class="chips" style="margin-bottom:10px"><span class="note">From:</span>${Object.entries(SENDERS).map(([k,x])=>`<button type="button" class="chip" data-sender="${k}" aria-pressed="${(d.launch.sender||"founder")===k}">${esc(x.label)}</button>`).join("")}</div>`+(M?`<div class="lgrid"><div class="card"><small class="eyebrow">Subject</small><b>${esc(M.subject)}</b><span class="note">${esc(M.preview||"")}</span><p class="channel" style="margin-top:10px">${esc(fillLinks(M.body,d))}${M.ps?`\n\n${esc(M.ps)}`:""}</p>
+      <div class="btns"><button class="btn sm" id="mCopy">Copy</button>${srcState.gmailDraft==="on"?`<button class="btn sm primary" id="mGmail">Save as Gmail draft</button>`:""}</div></div>
+    <div class="stack" style="gap:8px">${M.segment?`<div class="surprise"><b>Send to first</b><span class="note">${esc(M.segment)}</span></div>`:""}${M.sendTime?`<div class="surprise"><b>When</b><span class="note">${esc(M.sendTime)}</span></div>`:""}<p class="note">Send it from your email tool to your list. A personal sender address gets more replies than a no-reply one.</p></div></div>`:`<p class="empty">Pick who it's from, then write it.</p>`);
+  $$("[data-sender]",host).forEach(b=>b.onclick=()=>{ d.launch.sender=b.dataset.sender; renderStep() });
+  $("#mCopy")&&($("#mCopy").onclick=()=>copyTxt(mt));
+  $("#mGmail")&&($("#mGmail").onclick=async()=>{ const mcp=await getMcp(); try{ await mcp.callTool("Gmail","create_draft",{subject:M.subject,body:fillLinks(M.body,d)+(M.ps?`\n\n${M.ps}`:""),includeSignature:true}); toast("Draft saved in Gmail") }catch(e){ toast("Couldn't save the draft: "+(e?.code||"error")) } });
+}
+
+// ---------------- Where your knowledge lives ----------------
+const KSRC=[["granola","Granola"],["calls","Gong"],["attio","Attio"],["crm","HubSpot"],["sfdc","Salesforce"],["posthog","PostHog"],["notes","Notion"],["doc","Word doc"]];
+const KTYPES={
+ accounts:{t:"Target account list",d:"The companies you want in the room.",def:["crm","sfdc","attio","doc"],unit:"accounts",
+   shape:`{"accounts":[{"name":"company","tier":"A|B|C","owner":"AE if known","why":"max 12 words"}] (up to 40),"summary":"one sentence"}`,count:o=>o.accounts?.length||0,rows:o=>(o.accounts||[]).map(a=>`${a.name}${a.tier?` · Tier ${a.tier}`:""}${a.owner?` · ${a.owner}`:""}`)},
+ intel:{t:"Account intel",d:"What buyers said on calls and in meetings.",def:["calls","granola","notes","doc"],unit:"insights",
+   shape:`{"notes":[{"account":"","insight":"max 25 words","source":"tool or doc"}] (up to 20),"summary":"one sentence"}`,count:o=>o.notes?.length||0,rows:o=>(o.notes||[]).map(n=>`${n.account}: ${n.insight}`)},
+ icp:{t:"Ideal customer profile",d:"Who buys, why now, and who isn't a fit.",def:["notes","posthog","doc"],unit:"profile",
+   shape:`{"icp":{"who":"max 20 words","titles":[],"industries":[],"pains":[3],"triggers":[3],"notFit":"max 15 words"},"summary":"one sentence"}`,count:o=>o.icp?1:0,rows:o=>o.icp?[o.icp.who,...(o.icp.pains||[]).map(p=>"Pain: "+p),...(o.icp.triggers||[]).map(t=>"Trigger: "+t)]:[]},
+ people:{t:"People to invite",d:"Contacts you could invite, with the person who knows them.",def:["crm","sfdc","attio","doc"],unit:"people",
+   shape:`{"people":[{"name":"","title":"","company":"","city":"","email":"only if present in the source","owner":"relationship owner if known","source":""}] (up to 60),"summary":"one sentence"}`,count:o=>o.people?.length||0,rows:o=>(o.people||[]).map(p=>`${p.name}${p.title?`, ${p.title}`:""}${p.company?` · ${p.company}`:""}${p.city?` · ${p.city}`:""}`)}};
+function kState(){ brandProfile=brandProfile||{}; brandProfile.knowledge=brandProfile.knowledge||{}; brandProfile.kdocs=brandProfile.kdocs||{}; brandProfile.ksel=brandProfile.ksel||{}; return brandProfile }
+function knowledgeBrief(){ const K=brandProfile?.knowledge||{}, D=brandProfile?.kdocs||{}, L=[];
+  if(K.accounts?.accounts?.length) L.push("TARGET ACCOUNTS (from the user's own systems): "+K.accounts.accounts.slice(0,30).map(a=>a.name+(a.tier?` (${a.tier})`:"")).join(", "));
+  if(K.icp?.icp){ const I=K.icp.icp; L.push(`THEIR ICP: ${I.who||""}. Titles: ${(I.titles||[]).join(", ")}. Pains: ${(I.pains||[]).join("; ")}. Triggers: ${(I.triggers||[]).join("; ")}. Not a fit: ${I.notFit||""}`) }
+  if(K.intel?.notes?.length) L.push("ACCOUNT INTEL: "+K.intel.notes.slice(0,12).map(n=>`${n.account}: ${n.insight}`).join(" | "));
+  if(K.people?.people?.length) L.push("PEOPLE THEY CAN INVITE (start guest lists from these and keep each owner): "+K.people.people.slice(0,40).map(p=>[p.name,p.title,p.company,p.city,p.owner&&"owner "+p.owner].filter(Boolean).join(", ")).join(" | "));
+  Object.entries(D).forEach(([t,x])=>{ if(x?.text&&(!K[t]||K[t].raw)) L.push(`FROM THEIR DOC "${x.name}" (${KTYPES[t]?.t||t}): ${x.text.slice(0,1500)}`) });
+  return L.length?"\n"+L.join("\n"):"" }
+// .docx is a zip; read word/document.xml with the browser's own inflate
+async function docxText(buf){ const v=new DataView(buf); let e=buf.byteLength-22; while(e>0&&v.getUint32(e,true)!==0x06054b50) e--; if(e<=0) throw new Error("not a Word document");
+  const n=v.getUint16(e+10,true); let p=v.getUint32(e+16,true);
+  for(let i=0;i<n;i++){ const comp=v.getUint16(p+10,true), csize=v.getUint32(p+20,true), fl=v.getUint16(p+28,true), xl=v.getUint16(p+30,true), cl=v.getUint16(p+32,true), off=v.getUint32(p+42,true);
+    const name=new TextDecoder().decode(new Uint8Array(buf,p+46,fl));
+    if(name==="word/document.xml"){ const lfl=v.getUint16(off+26,true), lxl=v.getUint16(off+28,true), data=new Uint8Array(buf,off+30+lfl+lxl,csize);
+      const xml= comp===0? new TextDecoder().decode(data) : await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+      return xml.replace(/<\/w:p>/g,"\n").replace(/<w:tab\/>/g,"\t").replace(/<[^>]+>/g,"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/\n{3,}/g,"\n\n").trim() }
+    p+=46+fl+xl+cl }
+  throw new Error("no document text found") }
+function csvToKnowledge(type,text){ const rows=parseCSV(text).filter(r=>!r._); const g=(r,...ks)=>{ for(const k of ks){ const h=Object.keys(r).find(x=>x.includes(k)); if(h&&r[h]) return r[h] } return "" };
+  if(type==="people"){ const people=rows.map(r=>({name:g(r,"name"),title:g(r,"title","role"),company:g(r,"company","account","organization"),city:g(r,"city","location"),email:g(r,"email"),owner:g(r,"owner","ae"),source:"CSV"})).filter(x=>x.name); return people.length?{people,summary:`${people.length} people from the file`}:null }
+  if(type==="accounts"){ const accounts=rows.map(r=>({name:g(r,"account","company","name"),tier:g(r,"tier"),owner:g(r,"owner","ae"),why:""})).filter(x=>x.name); return accounts.length?{accounts,summary:`${accounts.length} accounts from the file`}:null }
+  return null }
+function drawKnowledge(){ const h=$("#kHost"); if(!h) return; const B=brandProfile||{}, K=B.knowledge||{}, D=B.kdocs||{}, S=B.ksel||{};
+  const st=k=>k==="doc"?"on":srcState[k]==="on"?"on":"off";
+  h.innerHTML=`<div><small class="eyebrow">Your knowledge</small><h3>Where do you keep it?</h3><p class="note">Point Encore at the tools where your team already keeps accounts, notes and contacts. Every agent then works from your data, not guesses. Encore only reads; it never writes back without asking.</p></div>
+    <div class="ksrcs">${KSRC.map(([k,l])=>`<span class="ksrc ${st(k)}"><i></i>${esc(l)}<small>${k==="doc"?"Upload .docx, .csv, .txt":st(k)==="on"?"Connected":"Connect in claude.ai Settings → Connectors"}</small></span>`).join("")}</div>
+    <div class="krows">${Object.entries(KTYPES).map(([t,T])=>{ const sel=S[t]||T.def, o=K[t];
+      return `<div class="krow"><div class="khead"><div><b>${T.t}</b><span class="note">${T.d}</span></div>
+        <div class="btns"><label class="btn ghost sm">Upload<input type="file" hidden accept=".docx,.csv,.txt,.md" data-kup="${t}"></label><button class="btn sm primary" data-kpull="${t}"><span class="spark">✦</span>${o?"Refresh":"Pull it in"}</button></div></div>
+        <div class="chips">${KSRC.map(([k,l])=>`<button type="button" class="chip ${st(k)==="on"?"":"dim"}" data-ksel="${t}|${k}" aria-pressed="${sel.includes(k)}">${st(k)==="on"?"● ":"○ "}${esc(l)}${k==="doc"&&D[t]?`: ${esc(D[t].name)}`:""}</button>`).join("")}</div>
+        <pre class="stream" id="st-k${t}" hidden></pre>
+        ${o?`<div class="kout"><span class="tag">${T.count(o)} ${T.unit}</span> <span class="note">${esc(o.summary||"")}${o.from?.length?` · from ${esc(o.from.join(", "))}`:""}</span><ul class="clean">${T.rows(o).slice(0,6).map(r=>`<li>${esc(r)}</li>`).join("")}</ul>${T.count(o)>6?`<span class="note">and ${T.count(o)-6} more</span>`:""}</div>`:""}</div>` }).join("")}</div>`;
+  $$("[data-ksel]",h).forEach(b=>b.onclick=()=>{ const [t,k]=b.dataset.ksel.split("|"), B=kState(); const cur=B.ksel[t]||[...KTYPES[t].def]; B.ksel[t]=cur.includes(k)?cur.filter(x=>x!==k):[...cur,k]; drawKnowledge() });
+  $$("[data-kup]",h).forEach(inp=>inp.onchange=async()=>{ const f=inp.files?.[0], t=inp.dataset.kup; if(!f) return; const B=kState();
+    try{ const text=/\.docx$/i.test(f.name)? await docxText(await f.arrayBuffer()) : await f.text();
+      B.kdocs[t]={name:f.name,text:text.slice(0,20000),at:Date.now()}; if(!(B.ksel[t]||KTYPES[t].def).includes("doc")) B.ksel[t]=[...(B.ksel[t]||KTYPES[t].def),"doc"];
+      const direct=/\.csv$/i.test(f.name)?csvToKnowledge(t,text):null;
+      if(direct){ B.knowledge[t]={...direct,from:[f.name],at:Date.now()}; toast(`Read ${KTYPES[t].count(direct)} ${KTYPES[t].unit} from ${f.name}`) }
+      else if(sample){ toast(`Read ${f.name}. Pulling out the ${KTYPES[t].t.toLowerCase()}…`); drawKnowledge(); await pullKnowledge(t,$(`[data-kpull="${t}"]`)); return }
+      else { B.knowledge[t]={raw:true,summary:`Text from ${f.name} (${text.length.toLocaleString()} characters). Agents read it directly.`,from:[f.name],at:Date.now()} }
+      saveBrand(true); drawKnowledge() }catch(e){ toast("Couldn't read that file: "+(e?.message||"try a .docx, .csv or .txt")) } });
+  $$("[data-kpull]",h).forEach(b=>b.onclick=()=>pullKnowledge(b.dataset.kpull,b)) }
+async function pullKnowledge(t,btn){ const B=kState(), T=KTYPES[t], sel=B.ksel[t]||T.def, doc=sel.includes("doc")?B.kdocs[t]:null, used=new Set();
+  const tools=await toolsFor(sel.filter(k=>k!=="doc"),used);
+  if(!tools.length&&!doc){ toast(`Connect ${sel.filter(k=>k!=="doc").map(k=>KSRC.find(x=>x[0]===k)[1]).join(" or ")} in claude.ai, or upload a doc.`); return }
+  const o=await askJSON(`You are building the ${T.t.toLowerCase()} for ${B.company||"this company"}${B.sellsTo?` (they sell to ${B.sellsTo})`:""} from the user's own systems, so a field marketer can plan events around it.
+${tools.length?`Search the connected tools (${tools.map(x=>x.name).join(", ")}). Try a few queries: recent activity, open deals, top accounts, meeting notes.`:""}
+${doc?`THE USER'S DOCUMENT "${doc.name}":\n${doc.text.slice(0,12000)}`:""}
+Only include records the tools or the document actually contain. Never invent accounts, people, emails or quotes. If a source returned nothing useful, say so in the summary.
+Reply with only JSON: ${T.shape}`,btn,$("#st-k"+t),{tools});
+  if(!o) return; o.from=[...used,...(doc?[doc.name]:[])]; o.at=Date.now(); B.knowledge[t]=o; await saveBrand(true); drawKnowledge(); toast(`${T.t}: ${T.count(o)} ${T.unit}`) }
 function stepPromote(host){
-  const d=draft, P=out("promo");
-  host.innerHTML=`
+  const d=draft, P=out("promo"); lp(d);
+  host.innerHTML=`${launchKitHTML(d)}
   <div class="panel stack">
-    <div class="btns" style="justify-content:space-between"><div><div class="eyebrow">Step 4 · Promote</div><h3>Asset kit</h3><p class="note">Every size you need, on brand, without waiting on design. Change the style or headline in step 3.</p></div>
+    <div class="btns" style="justify-content:space-between"><div><div class="eyebrow">Social and ads</div><h3>Asset kit</h3><p class="note">Every size you need, on brand, without waiting on design. Change the style or headline in step 3.</p></div>
     ${downloads?'<button class="btn" id="dlAll">Download all</button>':""}</div>
     <div class="assets">${ASSETS.map(([k,l,w,h])=>`<figure><canvas width="${w}" height="${h}" data-asset="${k}" aria-label="${esc(l)}"></canvas><figcaption class="note">${esc(l)} · ${w} × ${h}</figcaption>${downloads?`<button class="btn ghost sm" data-dl="${k}">Download</button>`:""}</figure>`).join("")}</div>
   </div>
   ${agentBox("promo","Promoter","Posts and emails for every channel, plus a note your account execs can forward.","Write the posts")}
-  ${nextBtn(5,"Next: produce it")}`;
+  ${nextBtn(9,"Next: distribution")}`;
   const canv={}; $$("[data-asset]",host).forEach(c=>{ canv[c.dataset.asset]=c; drawCover(c,d,{square:c.height/c.width>.8}) });
   document.fonts?.ready.then(()=>Object.values(canv).forEach(c=>c.isConnected&&drawCover(c,d,{square:c.height/c.width>.8})));
   const save=k=>new Promise(res=>canv[k].toBlob(async b=>{ try{ await downloads.save({filename:`${(d.name||"event").replace(/\W+/g,"-").toLowerCase()}-${k}.png`,data:b}) }catch{ toast("Download cancelled") } res() },"image/png"));
@@ -2377,13 +2850,13 @@ function stepPromote(host){
   const texts=[P?.linkedin,P?.x,P?.email?`Subject: ${P.email.subject}\n\n${P.email.body}`:"",P?.website,P?.salesBlurb].filter(Boolean);
   if(P?.voiceCheck) $("#out-promo").insertAdjacentHTML("afterbegin",voiceChip(P));
   $$("[data-cpp]",host).forEach(b=>b.onclick=()=>copyTxt(texts[+b.dataset.cpp]));
-  wireRuns(host); wireNext(host);
+  wireLaunch(host,d); wireRuns(host); wireNext(host);
 }
 
 // Project plan: team + Gantt -------------------------------------------
 const OWNER_COLORS=["#3B5BFF","#FF4F64","#13A884","#F5A700","#8B5CF6","#0EA5E9","#EC4899"];
 function drawCheckin(d){ const h=$("#checkinHost"); if(!h) return; let q="";
-  const draw=()=>{ const L=d.guests.map((g,i)=>({...g,i})).filter(g=>g.status!=="Not invited"&&g.status!=="Declined"&&(!q||(g.name+g.company).toLowerCase().includes(q)));
+  const draw=()=>{ const L=d.guests.map((g,i)=>({...g,i})).filter(g=>g.status!=="Not invited"&&g.status!=="Declined"&&(!q||(g.name+g.company+(allRsvps.find(r=>r.eventId===d.id&&r.name===g.name)?.code||"")).toLowerCase().includes(q)));
     const n=d.guests.filter(g=>g.status==="Attended").length;
     h.innerHTML=`<div class="checkin"><div class="btns" style="justify-content:space-between"><b class="big">${n} checked in</b><input id="ciQ" placeholder="Search a name" value="${esc(q)}" style="max-width:260px"><button class="btn ghost sm" id="ciClose">Done</button></div>
       <div class="citiles">${L.map(g=>`<button class="citile ${g.status==="Attended"?"in":""}" data-ci="${g.i}"><canvas width="96" height="96" data-av="${esc(g.name)}"></canvas><b>${esc(g.name)}</b><span>${esc(g.company)}</span><em>${g.status==="Attended"?"✓ Checked in":"Tap to check in"}</em></button>`).join("")||`<p class="empty">No guests yet.</p>`}</div></div>`;
@@ -2491,7 +2964,8 @@ function step4(host){
   host.innerHTML=`<div class="eyebrow">Step 5 · Produce</div>${agentBox("produce","Producer","Run-of-show, budget, countdown checklist.","Build the plan")}
   ${agentBox("media","Media crew","Photo moments people want to post, the crew to book, and the content plan after.","Plan the media",false)}
   ${agentBox("partners","Co-host scout","Partners who split the cost and bring the right people.","Find co-hosts",false)}
-  ${nextBtn(6,"Next: guests")}`;
+  ${modHTML("gifts",d)}${modHTML("feedback",d)}
+  ${nextBtn(8,"Next: sign-off")}`;
   drawMedia(host,d); drawPartners(host,d);
   const P=out("produce");
   if(!P){ $("#out-produce").innerHTML=`<p class="empty">Build a production plan: who does what, when, and what it costs.</p>`; wireRuns(host); wireNext(host); return }  const total=P.budget.reduce((a,b)=>a+(+b.amount||0),0), today=new Date();
@@ -2528,7 +3002,7 @@ function step5(host){
     <div class="btns" style="justify-content:space-between"><div><div class="eyebrow">Step 6 · Guests</div><h3>Guest list</h3></div>
       <div class="kpis" style="flex:1;max-width:440px"><div class="kpi"><small>Guests</small><b>${d.guests.length}</b></div><div class="kpi"><small>Going</small><b>${going}</b></div><div class="kpi"><small>Capacity</small><b>${d.headcount}</b></div></div></div>
     ${d.guests.length?`<div class="tscroll"><table><thead><tr><th>Guest</th><th>Tier</th><th>Sales owner</th><th>Status</th><th></th></tr></thead><tbody>${d.guests.map((g,i)=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.title)} · ${esc(g.company)}</div></td><td><span class="tag">${esc(g.tier)}</span></td><td><input class="mini" data-go="${i}" value="${esc(g.owner||"")}" placeholder="AE" aria-label="Sales owner for ${esc(g.name)}"></td>
-      <td><select data-gs="${i}" aria-label="Status for ${esc(g.name)}">${GSTATUS.map(s=>`<option ${s===g.status?"selected":""}>${s}</option>`).join("")}</select></td><td><button class="btn ghost sm" data-gd="${i}" aria-label="Remove ${esc(g.name)}">Remove</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No guests yet. Add target accounts below.</p>`}
+      <td><select data-gs="${i}" aria-label="Status for ${esc(g.name)}">${GSTATUS.map(s=>`<option ${s===g.status?"selected":""}>${s}</option>`).join("")}</select></td><td><div class="btns" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost sm" data-plink="${i}" title="Copy ${esc(g.name)}'s personal invite link">Personal link</button><button class="btn ghost sm" data-gd="${i}" aria-label="Remove ${esc(g.name)}">Remove</button></div></td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No guests yet. Add target accounts below.</p>`}
     <details><summary style="cursor:pointer;font-weight:600">Add guests</summary>
       <div class="stack" style="margin-top:12px;gap:10px">
         <label class="f">Paste one guest per line: Name, Title, Company, Tier (A/B/C), Email<textarea id="gPaste" placeholder="Jordan Lee, VP of Data, Acme Bank, A, jordan@acmebank.com"></textarea></label>
@@ -2546,7 +3020,8 @@ function step5(host){
       <div class="f"><span>RSVP link</span><input readonly value="${ART_URL}#rsvp-${esc(d.id)}" id="lnkR"></div>
       <div class="f"><span>Post-event survey link</span><input readonly value="${ART_URL}#survey-${esc(d.id)}" id="lnkS"></div></div>
       <div class="btns"><button class="btn sm" id="cpR">Copy RSVP link</button><button class="btn sm" id="cpS">Copy survey link</button><a class="btn ghost sm" href="#rsvp-${esc(d.id)}">Preview guest page</a></div>
-      ${live.length?`<div class="tscroll"><table><thead><tr><th>Name</th><th>Response</th><th>Wants to discuss</th><th>Dietary</th></tr></thead><tbody>${live.map(r=>`<tr><td><b>${esc(r.name)}</b><div class="note">${esc(r.title)} · ${esc(r.company)}</div></td><td><span class="pill ${r.response==="going"?"done":r.response==="maybe"?"planning":"idea"}">${esc(r.response)}</span></td><td>${esc(r.topic)}</td><td>${esc(r.dietary)}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No RSVPs through the link yet.</p>`}`
+      <label class="chip" style="align-self:flex-start"><input type="checkbox" id="apprMode" ${d.approvalRequired?"checked":""}> Curated: guests request a seat and you approve</label>
+      ${live.length?`<div class="tscroll"><table><thead><tr><th>Name</th><th>Response</th><th>Code</th><th>Wants to discuss</th><th>Dietary</th><th></th></tr></thead><tbody>${live.map(r=>`<tr><td><b>${esc(r.name)}</b><div class="note">${esc(r.title)} · ${esc(r.company)}${r.plusOne?" · +1":""}</div></td><td><span class="pill ${r.response==="going"?"done":r.response==="requested"?"planning":"idea"}">${esc(r.response)}</span></td><td><code>${esc(r.code||"")}</code></td><td>${esc(r.topic)}</td><td>${esc(r.dietary)}</td><td>${r.response==="requested"?`<div class="btns" style="gap:6px;flex-wrap:nowrap"><button class="mini-btn good" data-appr2="${esc(r.id)}|going">Approve</button><button class="mini-btn" data-appr2="${esc(r.id)}|declined">Decline</button></div>`:""}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No RSVPs through the link yet.</p>`}`
     :`<div class="btns"><button class="btn primary" id="save5">Save event to get guest links</button></div>`}
   </div>
   ${nextBtn(7,"Next: measure")}`;
@@ -2585,7 +3060,10 @@ function step5(host){
       try{ const r=await mcp.callTool("Gmail","create_draft",{...(g?.email?{to:[g.email]}:{}),subject:iv.subject,body:iv.body,includeSignature:true}); ok++; const u=r?.payload?.viewUrl; if(u) links.push(`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(g?.name||"Draft")}</a>`) }
       catch(err){ if(err?.code==="server_not_connected"||err?.code==="not_granted"){ toast("Connect Gmail in claude.ai and allow it for this page."); break } } }
     btn.disabled=false; $("#gmNote").innerHTML=ok?`Saved ${ok} draft${ok>1?"s":""} to Gmail${links.length?": "+links.join(", "):""}.${O.invites.some(iv=>!d.guests[iv.guestIndex]?.email)?" Some guests have no email, so add the address in Gmail.":""}`:"No drafts saved." });
-  $("#cpR")&&($("#cpR").onclick=()=>copyTxt($("#lnkR").value)); $("#cpS")&&($("#cpS").onclick=()=>copyTxt($("#lnkS").value));
+  $("#cpR")&&($("#cpR").onclick=()=>copyTxt($("#lnkR").value));
+  $("#apprMode")&&($("#apprMode").onchange=e=>{ d.approvalRequired=e.target.checked; toast(d.approvalRequired?"Curated mode on. Save the event to apply it to links.":"Open RSVPs on.") });
+  $$("[data-appr2]",host).forEach(b=>b.onclick=async()=>{ const [rid,st]=b.dataset.appr2.split("|"); try{ await db.doc("rsvps/"+rid).update({response:st}); const rr=allRsvps.find(x=>x.id===rid); if(rr?.showOnWall){ try{ st==="going"?await db.doc("wall/"+wallId(rr)).set(wallEntry(rr)):await db.doc("wall/"+wallId(rr)).delete() }catch{} } toast(st==="going"?"Approved":"Declined") }catch(e){ toast("Couldn't update: "+(e?.message||"try again")) } });
+  $$("[data-plink]",host).forEach(b=>b.onclick=()=>{ if(!d.id){ toast("Save the event first to create personal links."); return } copyTxt(`${ART_URL}#rsvp-${d.id}.g${b.dataset.plink}`) }); $("#cpS")&&($("#cpS").onclick=()=>copyTxt($("#lnkS").value));
   $("#save5")&&($("#save5").onclick=saveEvent);
   wireRuns(host); wireNext(host);
 }
@@ -2719,52 +3197,120 @@ function fmtDate(s){ if(!s) return "Date TBD"; const d=new Date(s+"T12:00:00"); 
 // ==================================================================
 // Guest-facing pages (#rsvp-ID, #survey-ID)
 // ==================================================================
+
+// ---------------- Guest wall: who's coming ----------------
+let allWall=[];
+function wallId(r){ return `${r.eventId}--${slug(r.name)}-${String(r.code||"").toLowerCase()}` }
+function wallEntry(r){ return {eventId:r.eventId,status:r.response==="maybe"?"maybe":r.response==="no"?"cancelled":"going",name:r.name,title:r.title||"",company:r.company||"",learn:r.topic||"",linkedin:/^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(r.linkedin||"")?r.linkedin:"",photo:/^data:image\/jpeg;base64,/.test(r.photo||"")?r.photo:"",createdAt:Date.now()} }
+async function shrinkPhoto(f){ if(!f) return ""; const bm=await createImageBitmap(f), c=document.createElement("canvas"), S=192; c.width=c.height=S; const m=Math.min(bm.width,bm.height);
+  c.getContext("2d").drawImage(bm,(bm.width-m)/2,(bm.height-m)/2,m,m,0,0,S,S); return c.toDataURL("image/jpeg",.82) }
+const SAMPLE_LEARN=["How peers are cleaning up data lineage before audits","What 'AI-ready' actually means to a regulator","How other banks staff a data platform team","Whether anyone has a good answer on unstructured data","Getting business teams to own data quality","What a realistic first AI use case looks like","How to budget for data work nobody sees","Lessons from moving off a legacy warehouse","Knife skills, honestly"];
+function sampleWall(e){ return ((e.scout||EXAMPLE_OUT.scout)?.contacts||[]).slice(0,9).map((c,i)=>({name:c.name,title:c.title,company:c.company,learn:SAMPLE_LEARN[i%SAMPLE_LEARN.length],linkedin:"",photo:"",sample:true})) }
+async function renderWall(host,id){
+  let ev=id==="sample"?{...EXAMPLE,id:"sample",example:true}:allEvents.find(e=>e.id===id);
+  if(!ev&&db){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
+  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady||!db?"We couldn't find this guest page. Check the link with your host.":"Loading…"}</p></div>`; if(!dbReady&&db) setTimeout(()=>{ if(location.hash==="#guests-"+id){ host.dataset.key=""; renderGuest() } },1200); return }
+  const e=hydrate(ev), C=e.copy||(e.example?EXAMPLE_OUT.copy:null), V=e.venues?.venues?.[e.venuePick??0]||(e.example?EXAMPLE_OUT.venues.venues[0]:null);
+  let ALL=[]; if(db&&id!=="sample"){ try{ const s=await db.collection("wall").where("eventId","==",id).get(); ALL=s.docs.map(x=>x.data()) }catch{ ALL=allWall.filter(w=>w.eventId===id) } }
+  const sampleMode=!ALL.length&&e.example; if(sampleMode){ ALL=sampleWall(e); ALL[ALL.length-1].status="maybe"; ALL.push({...ALL[0],name:"Chris Webb",company:"Example Co",status:"cancelled",updatedAt:Date.now()-36e5}) }
+  let tab="going", q="", W=[], cos=new Set(), seen=JSON.stringify(ALL);
+  const split=()=>{ ALL.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)); W=ALL.filter(w=>(w.status||"going")===tab); cos=new Set(ALL.filter(w=>(w.status||"going")==="going").map(w=>w.company).filter(Boolean)) };
+  const stats=()=>{ const g=ALL.filter(w=>(w.status||"going")==="going").length, m=ALL.filter(w=>w.status==="maybe").length, c=ALL.filter(w=>w.status==="cancelled"&&Date.now()-(w.updatedAt||0)<7*864e5).length;
+    $("#wStats").innerHTML=`<span><b>${g}</b> going</span><span><b>${cos.size}</b> ${cos.size===1?"company":"companies"}</span><span><b>${Math.max(0,(+e.headcount||0)-g)}</b> seats left</span>${c?`<span class="wopen"><b>${c}</b> ${c===1?"seat just opened up":"seats just opened up"}</span>`:""}`;
+    $("#wTabs").innerHTML=[["going","Going",g],["maybe","Maybe",m]].map(([k,l,n])=>`<button role="tab" aria-selected="${tab===k}" data-wtab="${k}">${l} <span>${n}</span></button>`).join("");
+    $$("[data-wtab]").forEach(b=>b.onclick=()=>{ tab=b.dataset.wtab; split(); stats(); draw() }) };
+  const draw=()=>{ const L=W.filter(w=>!q||[w.name,w.title,w.company,w.learn].join(" ").toLowerCase().includes(q));
+    $("#wGrid").innerHTML=L.map(w=>`<article class="wcard"><div class="wtop">${w.photo?`<img src="${esc(w.photo)}" alt="${esc(w.name)}">`:`<canvas width="144" height="144" data-av="${esc(w.name)}" aria-hidden="true"></canvas>`}
+      <div class="wwho"><b>${esc(w.name)}</b><span>${esc(w.title)}</span><span class="wco">${esc(w.company)}</span></div>${w.linkedin?`<a class="wli" href="${esc(w.linkedin)}" target="_blank" rel="noopener" aria-label="${esc(w.name)} on LinkedIn">in</a>`:""}</div>
+      ${w.learn?`<div class="wlearn"><small>Excited to learn about</small><p>${esc(w.learn)}</p></div>`:""}</article>`).join("")||`<p class="empty">${W.length?"No one matches that search.":"Be the first on the wall. RSVP and tick “Show me on the guest page”."}</p>`;
+    $$("canvas[data-av]",$("#wGrid")).forEach(c=>drawAvatar(c,c.dataset.av,e.brandColors)) };
+  host.innerHTML=`<div class="wall" style="${brandStyle()}"><header class="wallhero"><small class="eyebrow">${esc(e.brand||"")} · Who's coming</small><h1>${esc(C?.title||e.name)}</h1>
+      <p>${esc([fmtDate(e.date),V?.name,e.city].filter(Boolean).join(" · "))}</p>
+      <div class="wstats" id="wStats"></div>
+      <div class="btns"><a class="btn wbtn" href="#rsvp-${esc(e.id)}">${e.approvalRequired?"Request a seat":"RSVP"}</a></div></header>
+    ${sampleMode?`<div class="samplebar">Sample guests. Real guests appear here when they RSVP and opt in.</div>`:""}
+    <div class="wbar"><div class="wtabs" role="tablist" id="wTabs"></div><input id="wQ" placeholder="Search by name, company or topic" aria-label="Search guests"><span class="wlive" title="Updates live"><i></i>Live</span></div>
+    <div class="wgrid" id="wGrid"></div><p class="note" style="text-align:center">Guests choose to appear here when they RSVP. Hosted on Encore.</p></div>`;
+  split(); stats(); draw(); $("#wQ").oninput=ev=>{ q=ev.target.value.toLowerCase().trim(); draw() };
+  if(db&&id!=="sample"){ const apply=rows=>{ const j=JSON.stringify(rows); if(j===seen||!host.isConnected||location.hash!=="#guests-"+id) return; seen=j; ALL=rows; split(); stats(); draw() };
+    try{ db.collection("wall").where("eventId","==",id).onSnapshot(sn=>apply(sn.docs.map(x=>x.data())),()=>{}) }catch{}
+    const t=setInterval(async()=>{ if(location.hash!=="#guests-"+id){ clearInterval(t); return } try{ const s=await db.collection("wall").where("eventId","==",id).get(); apply(s.docs.map(x=>x.data())) }catch{} },20000) } }
 async function renderGuest(){
   const host=$("#view-guest");
   if(location.hash==="#roadmap"){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
   const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
+  const wm=location.hash.match(/^#guests-([A-Za-z0-9_]+)$/); if(wm){ host.classList.add("wide"); if(host.dataset.key!=="wall"+wm[1]){ host.dataset.key="wall"+wm[1]; renderWall(host,wm[1]) } return }
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
-  const [,kind,id]=location.hash.match(/^#(rsvp|survey)-(.+)$/)||[];
-  const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore · <a href="#studio">Organizer view</a></p></div>`;
-  if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Open this invite in claude.ai while signed in to respond.":"Loading your invite…"}</p></div>`); return }
+  const gm=location.hash.match(/^#(rsvp|survey)-([A-Za-z0-9_]+)(?:\.g(\d+))?$/)||[], kind=gm[1], id=gm[2], gi=gm[3]!=null?+gm[3]:null;
+  const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore</p></div>`;
+  if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Open this invite while signed in to respond.":"Loading your invite…"}</p></div>`); return }
   let ev=allEvents.find(e=>e.id===id);
   if(!ev){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
   if(!ev){ host.innerHTML=shell(`<div class="panel"><p class="empty">${dbReady?"We couldn't find this event. Check the link with your host.":"Loading your invite…"}</p></div>`); return }
-  const e=hydrate(ev), C=e.copy, V=e.venues?.venues?.[e.venuePick??0];
-  if(host.dataset.key===kind+id+(host.dataset.sent||"")) return; // don't wipe a form mid-typing on db updates
-  host.dataset.key=kind+id+(host.dataset.sent||"");
-  host.innerHTML=shell(`<div class="invite"><canvas class="cover" id="gCv" width="1200" height="630" style="border-radius:0" aria-label="Event cover"></canvas>
-    <div class="in"><span class="eyebrow">${esc(e.brand)} ${kind==="rsvp"?"invites you":"· thank you for coming"}</span><h3>${esc(C?.title||e.name)}</h3>
-    ${C?.tagline?`<p class="note">${esc(C.tagline)}</p>`:""}
-    <p class="note">${esc(fmtDate(e.date))} · ${esc(V?V.area+", ":"")}${esc(e.city)}</p>
-    ${kind==="rsvp"?`<p>${esc(C?.description||e.concept)}</p>${C?.agenda?.length?`<div class="agenda">${C.agenda.map(a=>`<span>${esc(a.time)}</span><span>${esc(a.item)}</span>`).join("")}</div>`:""}`:""}
+  const e=hydrate(ev), C=e.copy, V=e.venues?.venues?.[e.venuePick??0], me=gi!=null?e.guests[gi]:null, why=me?((e.scout?.contacts||[]).find(c=>c.name===me.name)?.why||me.why||""):"";
+  if(host.dataset.key===kind+id+(gi??"")+(host.dataset.sent||"")) return;
+  host.dataset.key=kind+id+(gi??"")+(host.dataset.sent||"");
+  const going=[...e.guests.filter(g=>g.status==="Going"||g.status==="Attended"),...allRsvps.filter(r=>r.eventId===e.id&&r.response==="going")];
+  const cos=new Set(going.map(g=>g.company).filter(Boolean)), titles=[...new Set(going.map(g=>g.title).filter(Boolean))].slice(0,6);
+  const hosts=[e.brand||"Your host",...new Set(e.guests.map(g=>g.owner).filter(Boolean))].slice(0,3);
+  const start=(C?.agenda?.[0]?.time)||"18:00", dt=e.date?e.date.replace(/-/g,"")+"T"+(/^(\d{1,2}):(\d{2})/.test(start)?start.replace(/^(\d):/,"0$1:").replace(":","").slice(0,4)+"00":"180000"):"";
+  const cal=e.date?`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(C?.title||e.name)}&dates=${dt}/${dt}&details=${encodeURIComponent((C?.tagline||"")+" "+location.href)}&location=${encodeURIComponent(V?(V.address||V.name):e.city||"")}`:"";
+  const map=V||e.city?`https://www.google.com/maps/search/${encodeURIComponent(V?(V.address||V.name+" "+(e.city||"")):e.city)}`:"";
+  host.innerHTML=shell(`<div class="invite gx" style="${brandStyle()}"><div class="gxcover"><canvas class="cover" id="gCv" width="1200" height="630" aria-label="Event cover"></canvas></div>
+    <div class="in">
+      ${me?`<p class="gxhi">${esc(me.name.split(" ")[0])}, you're invited.</p>${why?`<p class="gxwhy">Why you: ${esc(why)}</p>`:""}`:`<span class="eyebrow">${esc(e.brand)} ${kind==="rsvp"?"invites you":"· thank you for coming"}</span>`}
+      <h3>${esc(C?.title||e.name)}</h3>${C?.tagline?`<p class="note">${esc(C.tagline)}</p>`:""}
+      <div class="gxfacts"><span><small>When</small><b>${esc(fmtDate(e.date))}${C?.agenda?.[0]?` · ${esc(start)}`:""}</b></span><span><small>Where</small><b>${esc(V?V.name:"")}${V?" · ":""}${esc(e.city||"")}</b></span><span><small>Size</small><b>${esc(e.headcount)} guests</b></span></div>
+      <div class="btns">${cal?`<a class="btn sm" href="${esc(cal)}" target="_blank" rel="noopener">Add to Google Calendar</a>`:""}${map?`<a class="btn ghost sm" href="${esc(map)}" target="_blank" rel="noopener">Map</a>`:""}</div>
+      <div class="gxhosts"><small>Hosted by</small>${hosts.map(h=>`<span class="hostchip"><canvas width="44" height="44" data-av="${esc(h)}"></canvas>${esc(h)}</span>`).join("")}</div>
+      ${kind==="rsvp"?`${going.length?`<div class="gxwho"><b>${going.length} ${going.length===1?"person is":"people are"} coming from ${cos.size} ${cos.size===1?"company":"companies"}</b><div class="avstack">${going.slice(0,8).map(g=>`<canvas width="64" height="64" data-av="${esc(g.name)}"></canvas>`).join("")}</div>${titles.length?`<div class="chips">${titles.map(t=>`<span class="pchip">${esc(t)}</span>`).join("")}</div>`:""}</div>`:""}
+      <p>${esc(C?.description||e.concept)}</p>${C?.agenda?.length?`<div class="agenda">${C.agenda.map(a=>`<span>${esc(a.time)}</span><span>${esc(a.item)}</span>`).join("")}</div>`:""}`:""}
     </div></div>
     <div class="panel" id="gForm"></div>`);
-  drawCover($("#gCv"),e);
+  drawCover($("#gCv"),e); $$("canvas[data-av]",host).forEach(c=>drawAvatar(c,c.dataset.av,e.brandColors));
   const f=$("#gForm");
   if(kind==="survey"){
     if(host.dataset.sent){ f.innerHTML=`<h3>Thank you.</h3><p class="note">Your feedback helps ${esc(e.brand)} host better events.</p>`; return }
     f.innerHTML=`<h3 style="margin-bottom:12px">How was it?</h3><div id="gSv"></div>`;
     surveyForm($("#gSv"),e,{guest:true,onDone:()=>{host.dataset.sent="1";renderGuest()}}); return;
   }
-  if(host.dataset.sent){ f.innerHTML=`<h3>You're on the list.</h3><p class="note">${esc(e.brand)} will send details closer to the date.</p>`; return }
-  let resp="going";
-  f.innerHTML=`<div class="stack" style="gap:14px"><h3>Will you join?</h3>
-    <div class="chips" id="gResp">${[["going","I'm going"],["maybe","Maybe"],["no","Can't make it"]].map(([v,l])=>`<button type="button" class="chip" data-v="${v}" aria-pressed="${v==="going"}">${l}</button>`).join("")}</div>
-    <div class="row"><label class="f">Name<input id="g-name" autocomplete="name"></label><label class="f">Title<input id="g-title"></label><label class="f">Company<input id="g-co" autocomplete="organization"></label></div>
-    <label class="f">What would you most like to discuss with peers?<span class="h">Your host uses this to shape the conversation.</span><input id="g-topic"></label>
+  const wireChange=()=>$$("[data-chg]",host).forEach(b=>b.onclick=async()=>{ const v=b.dataset.chg, M=JSON.parse(localStorage.getItem("encore-rsvp-"+e.id)||"null"); if(!M) return; b.disabled=true;
+    try{ if(M.rid) await db.doc("rsvps/"+M.rid).update({response:v,changedAt:Date.now()});
+      if(M.wall){ const w={...M.data,status:v==="no"?"cancelled":v,updatedAt:Date.now()}; await db.doc("wall/"+wallId({eventId:e.id,name:M.name,code:M.code})).set(w) }
+      M.response=v; localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify(M)); host.dataset.resp=v; host.dataset.key=""; toast(v==="no"?"Got it. Your host has been told.":"RSVP updated"); renderGuest() }catch(err){ toast("Couldn't update: "+(err?.message||"try again")); b.disabled=false } });
+  const mine=(()=>{ try{ return JSON.parse(localStorage.getItem("encore-rsvp-"+e.id)||"null") }catch{ return null } })();
+  if(!host.dataset.sent&&mine&&kind==="rsvp"){ host.dataset.sent="1"; host.dataset.ticket=mine.code; host.dataset.resp=mine.response }
+  if(host.dataset.sent){ const t=host.dataset.ticket||"", cur=host.dataset.resp||"going";
+    f.innerHTML=`<div class="ticket" style="${brandStyle()}"><div><small class="eyebrow">${e.approvalRequired?"Request received":"You're on the list"}</small><h3>${esc(C?.title||e.name)}</h3><p class="note">${esc(fmtDate(e.date))}${e.city?` · ${esc(e.city)}`:""}</p><p>${e.approvalRequired?`${esc(e.brand)} will confirm your seat shortly.`:"Show this code at check-in."}</p></div><div class="tcode"><small>Check-in code</small><b>${esc(t)}</b></div></div><div class="btns" style="margin-top:10px"><a class="btn ghost sm" href="#guests-${esc(e.id)}">See who's coming</a></div>
+    ${mine&&!e.approvalRequired?`<div class="gchange"><small class="eyebrow">Plans changed?</small><div class="chips">${[["going","I'm going"],["maybe","Maybe"],["no","Can't make it"]].map(([v,l])=>`<button type="button" class="chip" data-chg="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")}</div><span class="note">${cur==="no"?"Thanks for letting us know. Your seat goes to someone on the waitlist.":"Your host sees changes right away."}</span></div>`:""}${cal?`<div class="btns" style="margin-top:10px"><a class="btn sm" href="${esc(cal)}" target="_blank" rel="noopener">Add to Google Calendar</a></div>`:""}`; wireChange(); return }
+  const cqs=(e.launch?.qsOnRsvp===false?[]:(e.launchQs?.questions||[])).filter(q=>!/diet|allerg|excited|learn|discuss/i.test(q.q)).slice(0,4); let photo="";
+  let resp="going"; const plus=/plus-one|family|partner/i.test(e.format+" "+(e.concept||""))||e.plusOnes;
+  f.innerHTML=`<div class="stack" style="gap:14px"><h3>${e.approvalRequired?"Request your seat":"Will you join?"}</h3>
+    ${e.approvalRequired?`<p class="note">Seats are limited and curated. ${esc(e.brand)} confirms every request personally.</p>`:`<div class="chips" id="gResp">${[["going","I'm going"],["maybe","Maybe"],["no","Can't make it"]].map(([v,l])=>`<button type="button" class="chip" data-v="${v}" aria-pressed="${v==="going"}">${l}</button>`).join("")}</div>`}
+    <div class="row"><label class="f">Name<input id="g-name" autocomplete="name" value="${esc(me?.name||"")}"></label><label class="f">Title<input id="g-title" value="${esc(me?.title||"")}"></label><label class="f">Company<input id="g-co" autocomplete="organization" value="${esc(me?.company||"")}"></label><label class="f">Work email<input id="g-email" type="email" autocomplete="email" value="${esc(me?.email||"")}"></label></div>
+    ${plus?`<label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-plus"> I'll bring a plus-one</label>`:""}
+    <label class="f">What are you most excited to learn about?<span class="h">Your host uses this to shape the conversation and seating.</span><input id="g-topic"></label>
+    ${cqs.map((q,i)=>`<label class="f">${esc(q.q)}${q.required?" *":""}${q.type==="short"?`<input data-cq="${i}">`:`<select data-cq="${i}"><option value=""></option>${(q.type==="yesno"?["Yes","No"]:(q.options||[])).map(o=>`<option>${esc(o)}</option>`).join("")}</select>`}</label>`).join("")}
     <label class="f">Dietary needs<input id="g-diet" placeholder="None"></label>
-    <div class="btns"><button type="button" class="btn primary" id="g-send">Send RSVP</button></div></div>`;
+    <div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
+    <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall" checked> Show my name, role and photo on the guest page</label>
+    <div class="btns"><button type="button" class="btn primary" id="g-send">${e.approvalRequired?"Request a seat":"Send RSVP"}</button></div></div>`;
+  $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("Couldn't read that image") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   $("#g-send").onclick=async()=>{
     const name=$("#g-name").value.trim(); if(!name){toast("Add your name so your host knows who's coming");return}
-    const data={eventId:e.id,response:resp,name,title:$("#g-title").value.trim(),company:$("#g-co").value.trim(),topic:$("#g-topic").value.trim(),dietary:$("#g-diet").value.trim(),createdAt:Date.now()};
+    const answers=cqs.map((q,i)=>({q:q.q,a:$(`[data-cq="${i}"]`).value.trim()})); const miss=cqs.find((q,i)=>q.required&&!answers[i].a); if(miss){ toast("Please answer: "+miss.q); return }
+    const code=(e.id.slice(0,2)+[...name].reduce((a,c)=>(a*31+c.charCodeAt(0))%46656,7).toString(36)).toUpperCase().padEnd(5,"X").slice(0,5);
+    const data={eventId:e.id,response:e.approvalRequired?"requested":resp,name,title:$("#g-title").value.trim(),company:$("#g-co").value.trim(),email:$("#g-email").value.trim(),plusOne:!!$("#g-plus")?.checked,topic:$("#g-topic").value.trim(),dietary:$("#g-diet").value.trim(),code,guestIndex:gi,createdAt:Date.now(),answers,linkedin:$("#g-li").value.trim(),photo,showOnWall:$("#g-wall").checked};
     $("#g-send").disabled=true;
     try{
       let uid=null; try{ uid=await user?.id?.() }catch{}
-      if(uid) await db.doc(`rsvps/${e.id}--${uid}`).set(data); else await db.collection("rsvps").add(data);
-      host.dataset.sent="1"; renderGuest();
+      let rid=`${e.id}--${uid}`; if(uid) await db.doc(`rsvps/${rid}`).set(data); else rid=(await db.collection("rsvps").add(data))?.id;
+      if(data.showOnWall&&(data.response==="going"||data.response==="maybe")){ try{ await db.doc("wall/"+wallId(data)).set(wallEntry(data)) }catch{} }
+      try{ localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify({rid,code,name,response:data.response,wall:!!data.showOnWall,eventId:e.id,data:wallEntry(data)})) }catch{}
+      host.dataset.resp=data.response;
+      host.dataset.ticket=code; host.dataset.sent="1"; renderGuest();
     }catch(err){ toast(err?.code==="permission_denied"?"You don't have permission to RSVP on this page. Ask your host to share it with you.":"Couldn't send: "+(err?.message||"try again")); $("#g-send").disabled=false }
   };
 }
@@ -2822,8 +3368,8 @@ function renderBrand(){
         <input id="chatIn" autocomplete="off" placeholder="Type your answer…" aria-label="Your answer"><button class="btn primary sm" type="submit">Send</button></form>
     </section>
     <section class="board" id="board" aria-label="Your brand board"></section>
-  </div>`;
-  drawMsgs(); drawBoard();
+  </div><section class="panel stack" id="kHost" aria-label="Where your knowledge lives"></section>`;
+  drawMsgs(); drawBoard(); drawKnowledge(); probeSources().then(drawKnowledge);
   $("#composer").onsubmit=e=>{ e.preventDefault(); const v=$("#chatIn").value.trim(); if(v){ $("#chatIn").value=""; sendChat(v) } };
   $("#b-logo").onchange=e=>{ const f=e.target.files?.[0]; if(f){ readLogo(f); chat.push({role:"user",content:"(added our logo)"}); chat.push({role:"assistant",content:"Got your logo. I pulled your colors from it; tap a swatch on the board to change primary and accent."}); drawMsgs() } };
 }
@@ -3022,8 +3568,8 @@ function renderCanvas(){
   const el=$("#view-canvas"); if(!el) return; const C=cv()||{items:[]}, Q=quarters();
   const moments=(curStrategy()?.moments||[]).map(m=>({...m,qi:Q.findIndex(q=>{ const [yy,mm]=(m.date||"").split("-").map(Number); return yy===q.y&&Math.ceil(mm/3)===q.q })})).filter(m=>m.qi>=0);
   const items=C.items||[], tot=items.reduce((a,b)=>a+(+b.budget||0),0);
-  el.innerHTML=`
-  <div class="canvas-head"><div><small class="eyebrow">Creative canvas</small><h2>${esc(brandProfile?.company||C.company||"Your")} year of experiences</h2><p class="lede">Drag ideas around, dream up new ones, and deploy the ones you love.</p></div>
+  el.innerHTML=`${subTabs("ideas","canvas")}
+  <div class="canvas-head"><div><small class="eyebrow">Ideas · Your year</small><h2>${esc(brandProfile?.company||C.company||"Your")} year of experiences</h2><p class="lede">Drag ideas around, dream up new ones, and deploy the ones you love.</p></div>
     <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn" id="shareRm">Share roadmap</button><button class="btn" id="terrBtn"><span class="spark">✦</span>Plan by territory</button><button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
   <div class="cv-stats">
     <div class="kpi"><small>Experiences</small><b>${items.length}</b></div>
@@ -3154,8 +3700,8 @@ function renderInspire(){
   const el=$("#view-inspire"); if(!el) return;
   const hostsAll={}; feed().filter(x=>x.peer).forEach(x=>hostsOf(x).forEach(h=>hostsAll[h]=(hostsAll[h]||0)+1));
   const F=feed().filter(x=>(!inspHost||(x.peer&&hostsOf(x).includes(inspHost)))&&(inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter))&&(!inspType||catOf(x.format)===inspType));
-  el.innerHTML=`
-  <div class="canvas-head"><div><small class="eyebrow">Inspire</small><h2>What could you host next?</h2><p class="lede">Watch the stories, save what sparks something, and open any card for a playbook.</p></div>
+  el.innerHTML=`${subTabs("ideas","inspire")}
+  <div class="canvas-head"><div><small class="eyebrow">Ideas · Inspiration</small><h2>What could you host next?</h2><p class="lede">Watch the stories, save what sparks something, and open any card for a playbook.</p></div>
     <div class="btns"><button class="btn primary big" id="playStories">▶ Watch stories</button><button class="btn" id="inspMore"><span class="spark">✦</span>Inspire me</button></div></div>
   <div class="peerbar"><div style="flex:1;min-width:240px"><small class="eyebrow">Learn from peers</small><input id="peerIn" placeholder="Companies you respect, e.g. Clay, Ramp, Notion" value="${esc(peerCompanies())}"><span class="note">Encore finds real events these companies (or comparable ones in your space) have hosted, with sources.</span></div><button class="btn primary" id="peerGo"><span class="spark">✦</span>Find their events</button></div>
   <pre class="stream" id="st-peers" hidden></pre>

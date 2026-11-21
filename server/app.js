@@ -20,7 +20,7 @@ const TOOL_TIMEOUT_MS = 120_000;
 const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/shim.js"></script></head><body>';
 const TAIL = "</body></html>";
 
-const GUEST_COLLECTIONS = new Set(["rsvps", "feedback", "interest", "nominations"]);
+const GUEST_COLLECTIONS = new Set(["rsvps", "feedback", "interest", "nominations", "wall"]);
 // Single documents guests may read: any event (RSVP, survey, plan, nomination links) plus the public roadmap and brand.
 const GUEST_READABLE = (segs) => (segs.length === 2 && segs[0] === "events") || ["canvas/main", "brands/main"].includes(segs.join("/"));
 
@@ -35,6 +35,8 @@ function guestAllowed(req) {
     if (req.method === "PUT" || req.method === "PATCH") return segs.length === 2 && GUEST_COLLECTIONS.has(segs[0]);
   }
   if (route === "/api/db/collection" && req.method === "POST") return segs.length === 1 && GUEST_COLLECTIONS.has(segs[0]);
+  // The guest wall only holds what guests chose to show (name, role, photo, topic), so anyone with the link may read it.
+  if (route === "/api/db/collection" && req.method === "GET") return p === "wall";
   return false;
 }
 

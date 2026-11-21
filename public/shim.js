@@ -5,7 +5,7 @@ window.ENCORE_SERVER = true; // tells the page it runs on this server (guest lin
 (function () {
   "use strict";
 
-  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap)/.test(location.hash || "");
+  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash || "");
   const capError = (code, message, extra) => Object.assign({ code, message }, extra || {});
 
   async function api(method, url, body, { raw = false, headers = {} } = {}) {

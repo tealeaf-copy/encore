@@ -222,6 +222,7 @@ test("HubSpot log_followups creates a task per known contact and a note for gift
   process.env.HUBSPOT_TOKEN = "test-token";
   mockFetch((u) => {
     if (u.pathname === "/crm/v3/objects/contacts/batch/read") return [207, { results: [{ id: "1", properties: { email: "ana@acme.com" } }] }];
+    if (u.pathname === "/crm/v3/objects/tasks/search") return { total: 0, results: [] };
     if (u.pathname === "/crm/v3/objects/tasks") return { id: "t1" };
     if (u.pathname === "/crm/v3/objects/notes") return { id: "n1" };
     if (u.pathname === "/crm/v3/properties/contacts") return [409, { message: "exists" }];
@@ -233,7 +234,7 @@ test("HubSpot log_followups creates a task per known contact and a note for gift
     { email: "nobody@x.com", subject: "Nurture" },
     { email: "ana@acme.com", subject: "duplicate is dropped" },
   ] });
-  assert.deepEqual(r.payload, { tasksCreated: 1, notesCreated: 1, missing: ["nobody@x.com"], written: [{ email: "ana@acme.com", recordType: "contact", id: "1" }], fieldErrors: [], errors: [] });
+  assert.deepEqual(r.payload, { tasksCreated: 1, notesCreated: 1, skipped: 0, missing: ["nobody@x.com"], written: [{ email: "ana@acme.com", recordType: "contact", id: "1" }], fieldErrors: [], errors: [] });
   const upd = calls.find((c) => c.url.pathname === "/crm/v3/objects/contacts/batch/update");
   assert.deepEqual(upd.body.inputs[0], { id: "1", properties: { encore_last_event: "Creator Kitchen", encore_gift_cost: "40" } });
   const task = calls.find((c) => c.url.pathname === "/crm/v3/objects/tasks");
@@ -251,6 +252,7 @@ test("Salesforce log_followups creates Tasks on Contacts or Leads", async () => 
       const q = u.searchParams.get("q");
       if (/FROM Contact/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "003A", Email: "ana@acme.com" }] };
       if (/FROM Lead/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "00QB", Email: "ben@b.com" }] };
+      if (/FROM Task/.test(q)) return { totalSize: 0, done: true, records: [] };
     }
     if (u.pathname.endsWith("/composite/sobjects") && init.method === "PATCH") return [200, body.records.map(() => ({ success: false, errors: [{ message: "No such column 'Encore_Gift_Cost__c' on sobject of type Contact" }] }))];
     if (u.pathname.endsWith("/composite/sobjects")) return [200, body.records.map(() => ({ success: true }))];
@@ -290,4 +292,32 @@ test("verify_activity counts meetings logged since the event", async () => {
   });
   r = await callTool("Salesforce - Beta", "verify_activity", { emails: ["ana@acme.com"], since: "2027-02-18" });
   assert.deepEqual(r.payload.results, [{ email: "ana@acme.com", found: true, meetings: 2, lastAt: "2027-02-25" }]);
+});
+
+test("log_followups is safe to repeat: existing tasks are skipped", async () => {
+  process.env.HUBSPOT_TOKEN = "test-token";
+  mockFetch((u) => {
+    if (u.pathname === "/crm/v3/objects/contacts/batch/read") return [207, { results: [{ id: "1", properties: { email: "ana@acme.com" } }] }];
+    if (u.pathname === "/crm/v3/objects/tasks/search") return { total: 1, results: [{ id: "t0" }] };
+    if (u.pathname === "/crm/v3/properties/contacts") return [409, {}];
+    if (u.pathname === "/crm/v3/objects/contacts/batch/update") return { results: [] };
+    return [404, {}];
+  });
+  const r = await callTool("HubSpot", "log_followups", { eventName: "Kitchen", items: [{ email: "ana@acme.com", subject: "Book a meeting" }] });
+  assert.equal(r.payload.tasksCreated, 0);
+  assert.equal(r.payload.skipped, 1);
+  assert.ok(!calls.some((c) => c.url.pathname === "/crm/v3/objects/tasks"), "no new task");
+  delete process.env.HUBSPOT_TOKEN;
+  process.env.SF_INSTANCE_URL = "https://acme.my.salesforce.com"; process.env.SF_ACCESS_TOKEN = "tok";
+  mockFetch((u, init) => {
+    const q = u.searchParams.get("q") || "";
+    if (/FROM Contact/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "003A", Email: "ana@acme.com" }] };
+    if (/FROM Lead/.test(q)) return { totalSize: 0, done: true, records: [] };
+    if (/FROM Task/.test(q)) return { totalSize: 1, done: true, records: [{ WhoId: "003A", Subject: "Book a meeting (Kitchen)" }] };
+    if (u.pathname.endsWith("/composite/sobjects")) return [200, []];
+    return [404, {}];
+  });
+  const s2 = await callTool("Salesforce - Beta", "log_followups", { eventName: "Kitchen", items: [{ email: "ana@acme.com", subject: "Book a meeting" }] });
+  assert.equal(s2.payload.tasksCreated, 0);
+  assert.equal(s2.payload.skipped, 1);
 });

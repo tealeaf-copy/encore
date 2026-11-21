@@ -135,7 +135,17 @@ async function logFollowups(input) {
     const desc = [it.body, it.gift || it.giftCost ? `Gift: ${it.gift || "gift"}${it.giftCost ? ` ($${it.giftCost})` : ""}` : ""].filter(Boolean).join("\n\n");
     records.push({ attributes: { type: "Task" }, WhoId: who.Id, Subject: `${it.subject} (${eventName})`.slice(0, 255), Description: desc.slice(0, 32000), ActivityDate: it.dueDate || new Date().toISOString().slice(0, 10), Status: "Not Started", Priority: "High" });
   }
-  let tasksCreated = 0;
+  let tasksCreated = 0, skipped = 0;
+  // Safe to repeat: skip people who already have a Task with the same subject.
+  if (records.length) {
+    const have = new Set();
+    for (const part of chunk(records, 100)) {
+      for (const t of await query(`SELECT WhoId, Subject FROM Task WHERE WhoId IN ${inList(part.map((r) => r.WhoId))} AND Subject IN ${inList([...new Set(part.map((r) => r.Subject))])}`)) have.add(t.WhoId + "|" + t.Subject);
+    }
+    const before = records.length;
+    records.splice(0, records.length, ...records.filter((r) => !have.has(r.WhoId + "|" + r.Subject)));
+    skipped = before - records.length;
+  }
   if (records.length) {
     const res = await collection("POST", records);
     res.forEach((r, i) => { if (r.success) tasksCreated++; else errors.push(`task ${records[i].WhoId}: ${collErrors(r)}`); });
@@ -154,7 +164,7 @@ async function logFollowups(input) {
     } catch (e) { fieldErrors.push(errText(e)); }
   }
   const written = items.map((i) => { const c = contacts.get(i.email), l = leads.get(i.email); return c ? { email: i.email, recordType: "contact", id: c.Id } : l ? { email: i.email, recordType: "lead", id: l.Id } : null; }).filter(Boolean);
-  return { tasksCreated, missing, written, fieldErrors, errors };
+  return { tasksCreated, skipped, missing, written, fieldErrors, errors };
 }
 
 async function verifyActivity(input) {

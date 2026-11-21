@@ -33,6 +33,7 @@ const app = createApp({ store, dataDir });
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 
+if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data. Set it before sharing guest links.");
 const server = app.listen(port, host, () => {
   console.log(`[encore] http://localhost:${port}  ai=${aiMode()}  integrations=[${configured().map((s) => s.server).join(", ")}]  auth=${process.env.APP_PASSWORD ? "on" : "off"}`);
 });

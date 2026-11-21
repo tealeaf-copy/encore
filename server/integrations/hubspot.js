@@ -188,11 +188,17 @@ async function logFollowups(input) {
       for (const c of json?.results || []) ids.set(String(c.properties?.email || "").toLowerCase(), c.id);
     } catch (e) { errors.push(`contacts: ${errText(e)}`); }
   }
-  let tasksCreated = 0, notesCreated = 0;
+  let tasksCreated = 0, notesCreated = 0, skipped = 0;
   const missing = items.filter((i) => !ids.has(i.email)).map((i) => i.email);
   for (const it of items) {
     const id = ids.get(it.email); if (!id) continue;
     const due = new Date((it.dueDate || new Date().toISOString().slice(0, 10)) + "T17:00:00Z").toISOString();
+    const subject = `${it.subject} (${eventName})`.slice(0, 250);
+    // Safe to repeat: skip if this contact already has a task with the same subject.
+    try {
+      const { json } = await hs("POST", "/crm/v3/objects/tasks/search", { filterGroups: [{ filters: [{ propertyName: "associations.contact", operator: "EQ", value: id }, { propertyName: "hs_task_subject", operator: "EQ", value: subject }] }], limit: 1 });
+      if ((json?.total || json?.results?.length || 0) > 0) { skipped++; continue; }
+    } catch (e) { errors.push(`task check ${it.email}: ${errText(e)}`); continue; }
     try {
       await hs("POST", "/crm/v3/objects/tasks", {
         properties: { hs_timestamp: due, hs_task_subject: `${it.subject} (${eventName})`.slice(0, 250), hs_task_body: it.body, hs_task_status: "NOT_STARTED", hs_task_priority: "HIGH" },
@@ -223,7 +229,7 @@ async function logFollowups(input) {
     try { await hs("POST", "/crm/v3/objects/contacts/batch/update", { inputs: part }); } catch (e) { fieldErrors.push(`contact fields: ${errText(e)}`); }
   }
   const written = items.filter((i) => ids.has(i.email)).map((i) => ({ email: i.email, recordType: "contact", id: ids.get(i.email) }));
-  return { tasksCreated, notesCreated, missing, written, fieldErrors, errors };
+  return { tasksCreated, notesCreated, skipped, missing, written, fieldErrors, errors };
 }
 
 // Did a meeting actually happen? Meetings associated with each contact since a date.

@@ -16,9 +16,10 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
   const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash || "");
   const capError = (code, message, extra) => Object.assign({ code, message }, extra || {});
 
+  const guestKey = () => { try { let k = localStorage.getItem("encore.gkey"); if (!k) { k = randomId().slice(0, 32); localStorage.setItem("encore.gkey", k); } return k; } catch { return ""; } };
   async function api(method, url, body, { raw = false, headers = {} } = {}) {
     const h = { ...headers };
-    if (isGuest()) h["x-encore-guest"] = "1";
+    if (isGuest()) { h["x-encore-guest"] = "1"; h["x-encore-key"] = guestKey(); h["x-encore-view"] = (/^#([a-z]+)/.exec(location.hash || "") || [])[1] || ""; }
     let payload = body;
     if (body !== undefined && !raw) { h["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
     let res;

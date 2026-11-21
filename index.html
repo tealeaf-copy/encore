@@ -507,6 +507,24 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.kindrow{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.kindrow .tile2{font-size:.82rem;padding:7px 12px}
+.specials{display:flex;flex-direction:column;gap:14px}
+.modsum{font-family:var(--f-display);font-size:1.1rem}
+.msec{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.mcard{position:relative;gap:6px}.mcard .score{position:absolute;top:10px;right:10px}
+.mcard b{padding-right:56px}
+.checkin{padding:16px;border-radius:24px;background:var(--surface);box-shadow:var(--puff);display:flex;flex-direction:column;gap:12px}
+.citiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.citile{font:inherit;cursor:pointer;border:none;border-radius:20px;padding:14px;background:var(--bg);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:var(--fg);box-shadow:inset 0 -3px 0 rgba(27,23,64,.08);min-height:150px}
+.citile canvas{width:56px;height:56px;border-radius:50%}
+.citile em{font-style:normal;font-size:.78rem;font-weight:800;color:var(--muted)}
+.citile.in{background:#DDF6EE}.citile.in em{color:var(--good)}
+.progs{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))}
+.prog{padding:14px;border-radius:20px;background:var(--bg);display:flex;flex-direction:column;gap:4px;box-shadow:inset 4px 0 0 var(--good)}
+.prog.atrisk{box-shadow:inset 4px 0 0 var(--warn)}.prog.blocked{box-shadow:inset 4px 0 0 var(--bad)}
+.prog .btn{align-self:flex-start;margin-top:4px}
+
 .pm{padding:18px;border-radius:24px;background:var(--surface);box-shadow:var(--puff);margin:18px 0}
 .pm .who{display:flex;gap:10px;align-items:center}
 .appr{font:inherit;font-weight:800;cursor:pointer;border:none;border-radius:99px;padding:8px 14px;background:var(--sunk);color:var(--fg);box-shadow:inset 0 -2px 0 rgba(27,23,64,.1)}
@@ -689,7 +707,7 @@ input,textarea,select{border-radius:14px}
     <div style="min-width:0;flex:1">
       <div class="eyebrow" id="draftLabel">Example draft · Ridgeline (fictional brand)</div>
       <h2 id="draftTitle">Plan an experience</h2>
-      <p class="lede">Plan it, prove it, launch it.</p>
+      <p class="lede">Plan it, prove it, launch it.</p><div id="kindHost"></div>
     </div>
     <div class="btns">
       <button class="btn" id="newDraft">Start a blank event</button>
@@ -766,6 +784,7 @@ input,textarea,select{border-radius:14px}
   <h2>Impact</h2>
   <p class="lede">What your experiences return: attendance, sentiment, meetings and pipeline, across every event.</p>
   <div class="kpis" id="portKpis" style="margin-top:20px"></div>
+  <div class="panel stack" style="margin-top:18px"><div><h3>Programs in flight</h3><p class="note">Everything you're running at once: health, days left, and what's next.</p></div><div id="programs"></div></div>
   <div class="two" style="margin-top:18px">
     <div class="panel stack"><div><h3>Pipeline per $1 spent, by format</h3><p class="note">Completed events only. Hover a bar for details.</p></div><div id="roiChart"></div></div>
     <div class="panel stack"><div><h3>Show rate by format</h3><p class="note">Share of RSVPs who actually came.</p></div><div id="showChart"></div></div>
@@ -783,8 +802,8 @@ input,textarea,select{border-radius:14px}
 // ==================================================================
 // Constants and example data
 // ==================================================================
-const ART_URL = "https://claude.ai/artifact/MXJgia72hUVng8D2QCG2wm";
-const FORMATS = ["Hosted dinner","Hands-on workshop","Creative / hobby workshop","Plus-one experience","Outdoor / active","Executive roundtable","Customer advisory board","Community meetup","Hack night","Contributor summit","Cultural outing","Offsite retreat","Happy hour"];
+const ART_URL = window.ENCORE_SERVER ? location.origin+"/" : "https://claude.ai/artifact/MXJgia72hUVng8D2QCG2wm";
+const FORMATS = ["Hosted dinner","Hands-on workshop","Creative / hobby workshop","Plus-one experience","Outdoor / active","Executive roundtable","Customer advisory board","Community meetup","Hack night","Contributor summit","Third-party conference","Owned conference","Executive summit","Webinar","Product launch","Roadshow stop","Cultural outing","Offsite retreat","Happy hour"];
 const OUTCOMES = ["None yet","Meeting booked","Opportunity","Closed won"];
 const ASSETS = [["linkedin","LinkedIn / link preview",1200,627],["square","Square post",1080,1080],["story","Story",1080,1920],["email","Email header",1200,400]];
 const MOTIFS = ["table","waves","grid","sun","peaks","orbit"];
@@ -980,6 +999,7 @@ function brief(d=draft){
 EXPERIENCE IDEA: ${d.concept||"(not described yet)"}
 FORMAT: ${d.format}. CITY: ${d.city||"TBD"}. HEADCOUNT: ${d.headcount}. BUDGET: ${money(d.budget)}. DATE: ${d.date||"TBD"}.
 GOAL: ${d.goal||"build relationships with target accounts"}
+PROJECT TYPE: ${(KINDS[d.kind]||KINDS.dinner).label}
 TARGET AUDIENCE: roles ${d.audience.roles.join(", ")||"senior B2B buyers"}; industries ${d.audience.industries.join(", ")||"any"}; seniority ${d.audience.seniority||"senior"}.${brandProfile?.audience?`\nWHAT ENCORE KNOWS ABOUT THEIR CUSTOMERS: ${(brandProfile.audience.surprises||[]).map(x=>x.fact).join(" ")} They spend time at: ${(brandProfile.audience.gather||[]).join(", ")}. Buying triggers: ${(brandProfile.audience.triggers||[]).join(", ")}.`:""}${d.intel?`\nBUYER PERSONA: ${d.intel.archetype}, "${d.intel.tagline}". ${d.intel.summary||""} Lights up: ${(d.intel.lightsUp||[]).map(c=>c.t||c).join(", ")}. Drains: ${(d.intel.drains||[]).map(c=>c.t||c).join(", ")}. They'd appreciate: ${(d.intel.feelSeen||[]).join("; ")}.`:""}`;
 }
 function matchRoles(e,roles){ return !roles.length || (e.audience?.roles||[]).some(r=>roles.includes(r)) }
@@ -1226,6 +1246,7 @@ setInterval(()=>{ if(!isGuestRoute()&&$("#clock")) renderHeader() },60000);
 function renderStep(){
   if(isGuestRoute()) return;
   renderHeader(); drawPitch(); drawCoach();
+  const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; toast(`${KINDS[draft.kind].label}: your specialists are in Design.`); renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6})[step](host);
 }
@@ -1719,6 +1740,7 @@ function step2(host){
 function step3(host){
   const d=draft;
   host.innerHTML=`
+  <div class="specials"><div><small class="eyebrow">Specialists for this ${esc(KINDS[kindOf(d)].label.toLowerCase())}</small></div>${KINDS[kindOf(d)].mods.map(k=>modHTML(k,d)).join("")}</div>
   ${agentBox("venues","Venue scout","Venues matched to the concept, headcount and budget, with what to ask when you book.","Find venues")}
   <div class="agent">
     <header><div class="who"><span class="av">AD</span><div><h3>Art director</h3><p class="note">On-brand cover and thumbnail drawn from your colors and the concept.</p></div></div>
@@ -1773,9 +1795,85 @@ function step3(host){
     </div>`;
   if(C?.voiceCheck) $("#out-copy").insertAdjacentHTML("afterbegin",voiceChip(C));
   $("#copyText")&&($("#copyText").onclick=()=>copyTxt(`${C.title}\n${C.tagline}\n\n${C.description}`));
-  wireRuns(host); wireNext(host);
+  wireRuns(host); wireNext(host); wireMods(host);
 }
 async function copyTxt(t){ try{ await navigator.clipboard.writeText(t); toast("Copied") }catch{ toast("Couldn't copy. Select the text instead.") } }
+
+// ==================================================================
+// Project types and their specialist agents (from real field-marketing JDs)
+// ==================================================================
+const KINDS={
+  dinner:{label:"Executive dinner",mods:["narrative","content"]},
+  conference:{label:"Third-party conference",mods:["confscout","confplan","narrative","content"]},
+  owned:{label:"Owned conference",mods:["ownedconf","content","narrative","vendors"]},
+  summit:{label:"Executive summit / forum",mods:["summit","narrative","content","vendors"]},
+  webinar:{label:"Webinar",mods:["webinar","narrative"]},
+  launch:{label:"Product launch",mods:["launch","content","narrative","vendors"]},
+  roadshow:{label:"Roadshow",mods:["roadshow","narrative","vendors"]},
+  experience:{label:"Creative experience",mods:["narrative","vendors"]}};
+const SECTION_SPEC=`Reply with only JSON: {"summary":"your recommendation in max 30 words","sections":[{"title":"","type":"cards|table|timeline|kpis|chips","items":[...]}]}. Item shapes: cards {"title","subtitle","body":"max 25 words","score":1-10,"tags":[],"date":"YYYY-MM-DD or empty","city":"or empty"}; table {"columns":[...],"rows":[[...]]} (put the table object itself as the single item); timeline {"when","what","owner"}; kpis {"label","value","note"}; chips: plain strings. Use 2 to 5 sections. Only state facts you found or can stand behind; mark estimates as estimates.`;
+const MODS={
+  confscout:{label:"Conference scout",av:"CS",desc:"Which conferences are worth it for your buyers, and how to show up.",
+    prompt:d=>`You are a field marketing lead deciding which third-party conferences to attend in the next 2-3 quarters. Use web search to find real upcoming conferences where the target buyers actually go (dates, city, size, cost to attend/sponsor/speak, CFP or sponsorship deadlines). Score each on audience fit. For each, recommend the play: attend + host a side dinner, sponsor a booth, speak, or skip. Estimate meetings and pipeline. Include one "skip" with why.
+Sections: "Shortlist" as cards (title = conference name, subtitle = dates and city, body = audience + recommended play, score = fit, tags = [play, cost range], date = start date, city), "Compare" as a table (Conference, Dates, Fit, Cost, Play, Est. meetings, Deadline), "Deadlines" as a timeline.`},
+  confplan:{label:"Conference game plan",av:"GP",desc:"Before, during and after: meetings, booth or side event, and lead follow-up.",
+    prompt:d=>`Build the game plan for attending ${d.name||"this conference"}${d.city?` in ${d.city}`:""}${d.date?` on ${d.date}`:""}. Cover pre-event meeting booking with target accounts (who, how many, by when), on-site presence (booth vs. side event vs. speaking; staffing; demo), a side event if it fits, lead capture, and a 24-hour follow-up rule with owners.
+Sections: "Targets" as kpis (meetings booked, leads, pipeline), "Before" as a timeline, "On site" as cards (title = moment, body = what happens, tags = [owner]), "After" as a timeline.`},
+  ownedconf:{label:"Program designer",av:"PD",desc:"Tracks, sessions, speakers and the attendee journey for your own conference.",
+    prompt:d=>`Design the program for an owned conference: themes and tracks for technical and business leaders, keynote and session ideas with speaker types (customers, partners, your product and engineering leaders), hands-on demos, hallway moments, and the attendee journey from invite to follow-up.
+Sections: "Tracks" as cards, "Agenda" as a timeline (when = time of day), "Speakers to land" as cards (tags = [type, how to land them]), "Targets" as kpis.`},
+  summit:{label:"Summit designer",av:"SD",desc:"A curated executive summit or forum: guest list strategy, content and hospitality.",
+    prompt:d=>`Design a curated executive summit or forum for top engineering and business leaders: the theme that earns their time, a deliberate guest-list strategy (seniority mix, peer groups, customers vs prospects), differentiated content (closed-door discussions, practitioner talks, live demos), standout hospitality touches, and the arc of the day.
+Sections: "Theme" as cards (2 options, score = draw), "Guest strategy" as chips, "Run of day" as a timeline, "Hospitality" as cards, "Targets" as kpis.`},
+  webinar:{label:"Webinar producer",av:"WB",desc:"Angles, speakers, promo calendar and follow-up by segment.",
+    prompt:d=>`Produce a webinar for these buyers. Score 3 topic angles by pull with this audience, give 3 title options, speakers (one customer, one outside expert, one of ours), a 45-minute run-of-show, a promo calendar from 3 weeks out, registration and attendance targets with benchmarks you can stand behind (label them estimates), follow-up for attendees vs no-shows, and how to repurpose the recording.
+Sections: "Angles" as cards (score = pull), "Titles" as chips, "Run of show" as a timeline, "Promo calendar" as a timeline, "Targets" as kpis, "Follow-up" as cards.`},
+  launch:{label:"Launch planner",av:"LP",desc:"The launch event tied to your release: format, press, customers, enablement.",
+    prompt:d=>`Plan the launch event for the company's next release${brandProfile?.nextLaunch?` (${brandProfile.nextLaunch})`:""}${d.date?` on ${d.date}`:""}. Recommend the format (in-person launch, virtual keynote, hybrid, or a launch-week of small events) and why; press and analyst plan; customer stories to feature; demo moments; sales enablement before launch day; a timeline from 6 weeks out.
+Sections: "Format" as cards (2-3 options, score = impact), "Timeline" as a timeline, "Customer stories" as cards, "Enablement" as chips, "Targets" as kpis.`},
+  roadshow:{label:"City planner",av:"CP",desc:"Which cities, in what order, and what to run in each.",
+    prompt:d=>`Plan a multi-city roadshow. Rank 4-6 cities by target-account density and sales coverage, propose a sequence and dates, the format per city (dinner, workshop, meetup), and the local hook for each.
+Sections: "Cities" as cards (title = city, score = account density, body = format + local hook, tags = [sales owner]), "Sequence" as a timeline, "Targets" as kpis.`},
+  narrative:{label:"Story localizer",av:"SL",desc:"Your core story adapted for each industry, region or segment in the room.",
+    prompt:d=>`Localize the company's core narrative and value proposition for this event's audience. For each of 2-4 industries, regions or segments represented, give a one-line hook, the proof point that lands with them, the demo angle, and a customer story type to feature. Keep it plain and credible for senior technical and business leaders.
+Sections: "By segment" as cards (title = segment, body = hook + proof, tags = [demo angle]), "Words that land" as chips, "Words to avoid" as chips.`},
+  content:{label:"Demos & technical content",av:"DC",desc:"Demos, technical sessions and customer content, with Product and Sales Engineering.",
+    prompt:d=>`Plan the demos and technical programming with Product and Sales Engineering: demo stations or live demos that show the product solving these buyers' real problems, technical sessions, customer content, who owns each (product, SE, marketing), and prep deadlines.
+Sections: "Demos" as cards (tags = [owner, prep time]), "Sessions" as cards, "Prep" as a timeline.`},
+  vendors:{label:"Vendors",av:"VD",desc:"Every vendor to book, by when, with a budget for each.",
+    prompt:d=>`List every vendor this event needs (venue, catering, AV, photo/video, printing and signage, swag/gifts, transport, staffing, security if needed). For each: the vendor type or a well-known local option if you're confident, why, estimated cost, book-by date${d.date?` (event ${d.date})`:""}, and what to confirm in the contract.
+Sections: "Vendors" as a table (Vendor, Type, Est. cost, Book by, Confirm), "Contract checklist" as chips.`},
+};
+function kindOf(d=draft){ return KINDS[d.kind]?d.kind:"dinner" }
+function modHTML(key,d){ const M=MODS[key], R=d.mods?.[key];
+  return `<div class="agent"><header><div class="who"><span class="av">${M.av}</span><div><h3>${esc(M.label)}</h3><p class="note">${esc(M.desc)}</p></div></div>
+    <div class="btns">${R?`<span class="tag live">Generated${R._used?.length?" · used "+R._used.map(esc).join(", "):""}</span>`:""}<button class="btn ${R?"":"primary"}" data-mod="${key}"><span class="spark">✦</span>${R?"Redo":"Run"}</button></div></header>
+    <div class="body"><pre class="stream" id="st-mod-${key}" hidden></pre>${R?sectionsHTML(R,key):`<p class="empty">${esc(M.desc)}</p>`}</div></div>`; }
+function sectionsHTML(R,key){
+  return `${R.summary?`<p class="big modsum">${esc(R.summary)}</p>`:""}${(R.sections||[]).map((s,si)=>{ const it=s.items||[];
+    let body="";
+    if(s.type==="cards") body=`<div class="cards">${it.map((c,ci)=>`<div class="card mcard">${c.score?`<span class="score" title="Score">${esc(c.score)}/10</span>`:""}<b>${esc(c.title||"")}</b>${c.subtitle?`<span class="meta">${esc(c.subtitle)}</span>`:""}<p class="note">${esc(c.body||"")}</p>${c.tags?.length?`<div class="chips">${c.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}${key==="confscout"||key==="roadshow"?`<button class="btn ghost sm" data-adopt="${key}|${si}|${ci}">Make this my event</button>`:""}</div>`).join("")}</div>`;
+    else if(s.type==="table"){ const T=it[0]||{}; body=`<div class="tscroll"><table><thead><tr>${(T.columns||[]).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${(T.rows||[]).map(r=>`<tr>${r.map(v=>`<td>${esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` }
+    else if(s.type==="timeline") body=`<div class="timeline">${it.map(t=>`<div class="tp"><b>${esc(t.when||"")}</b>${esc(t.what||"")}${t.owner?` <span class="tag">${esc(t.owner)}</span>`:""}</div>`).join("")}</div>`;
+    else if(s.type==="kpis") body=`<div class="kpis">${it.map(k=>`<div class="kpi"><small>${esc(k.label||"")}</small><b>${esc(k.value||"")}</b>${k.note?`<small>${esc(k.note)}</small>`:""}</div>`).join("")}</div>`;
+    else body=`<div class="chips">${it.map(x=>`<span class="pchip">${esc(typeof x==="string"?x:(x.title||JSON.stringify(x)))}</span>`).join("")}</div>`;
+    return `<section class="msec"><small class="eyebrow">${esc(s.title||"")}</small>${body}</section>` }).join("")}${srcList(R)}`;
+}
+async function runModule(key,btn){
+  const d=draft, M=MODS[key], used=new Set(), tools=await toolsFor(["web","playbook","docs","notes","crm"],used);
+  const o=await askJSON(`${M.prompt(d)}
+${brief(d)}
+PROJECT TYPE: ${KINDS[kindOf(d)].label}
+${tools.length?"Use the tools to check facts (especially dates, prices and names) before answering. Cite sources in a \"sources\" field as [{\"source\":\"\",\"detail\":\"\"}].":"No research tools are available: say which facts need checking."}
+${SECTION_SPEC}`,btn,$("#st-mod-"+key),{tools,tier:"complex"});
+  if(o?.sections){ if(used.size) o._used=[...used]; d.mods=d.mods||{}; d.mods[key]=o; d.example=false; renderStep(); burst() }
+}
+function wireMods(host){
+  $$("[data-mod]",host).forEach(b=>b.onclick=()=>runModule(b.dataset.mod,b));
+  $$("[data-adopt]",host).forEach(b=>b.onclick=()=>{ const [k,si,ci]=b.dataset.adopt.split("|"), c=draft.mods[k].sections[+si].items[+ci];
+    Object.assign(draft,{name:c.title||draft.name,city:c.city||draft.city,date:/^\d{4}-\d{2}-\d{2}$/.test(c.date||"")?c.date:draft.date}); toast(`"${c.title}" is now your event.`); renderStep() });
+}
+function kindPicker(){ const k=kindOf(); return `<div class="kindrow" role="group" aria-label="What are you running?"><small class="eyebrow">What are you running?</small><div class="chips">${Object.entries(KINDS).map(([id,K])=>`<button class="tile2 ${k===id?"on":""}" data-kind="${id}">${esc(K.label)}</button>`).join("")}</div></div>` }
 
 // Chief-of-staff coach ----------------------------------------------------
 function nextAction(){ const d=draft;
@@ -1785,6 +1883,8 @@ function nextAction(){ const d=draft;
     if(approvers(P).some(r=>!d.approvals[r])) return {t:"Get the plan approved",why:"Once your approvers say yes, Encore sends every task to its owner with a deadline.",go:()=>{step=5;renderStep()},cta:"Review the plan"} }
   if(!brandProfile&&!d.example) return {t:"Tell Encore about your company",why:"Everything else gets smarter once Encore knows who you sell to.",go:()=>location.hash="brand",cta:"Set up brand"};
   if(!curStrategy()) return {t:"Get a strategy",why:"Encore researches your launches and tells you which kind of event will work. Takes about a minute.",run:"strategy",cta:"Research it"};
+  const K=kindOf(d), first=KINDS[K].mods[0];
+  if(["conference","webinar","launch","roadshow","owned","summit"].includes(K)&&!d.mods?.[first]) return {t:`${MODS[first].label}: ${MODS[first].desc}`,why:{confscout:"Picking the right conferences is most of the ROI. Encore compares fit, cost and deadlines.",webinar:"Angles, titles, speakers and a promo calendar in one pass.",launch:"Tie the event to the release so press, customers and sales line up.",roadshow:"Go where your target accounts and sales coverage are densest.",ownedconf:"Tracks, sessions and speakers that earn senior leaders' time.",summit:"Theme, guest strategy and hospitality for a curated room."}[first]||"",mod:first,cta:"Run it"};
   if(!d.date) return {t:"Pick a date",why:"Once there's a date, Encore finds venues that work and builds your plan backwards from it.",date:true};
   if(!out("venues")) return {t:"Find a venue",why:"Good venues book up 6 to 8 weeks out. Encore shortlists three with reviews and costs.",run:"venues",cta:"Find venues"};
   if(!out("produce")) return {t:"Build the project plan",why:"Who does what, by when. You'll see every deadline from today to the event.",run:"produce",cta:"Build the plan"};
@@ -1799,7 +1899,7 @@ function drawCoach(){
   el.innerHTML=`<div class="coach"><div class="cav">✦</div><div style="flex:1;min-width:0"><small class="eyebrow">Do this next</small><h3>${esc(a.t)}</h3><p>${esc(a.why)}</p></div>
     <div class="coachact">${a.date||!d.date?`<label class="f datef">Event date<input type="date" id="evDate" value="${esc(d.date||"")}" min="${new Date().toISOString().slice(0,10)}"></label>`:""}${a.cta?`<button class="btn primary" id="coachGo">${esc(a.cta)}</button>`:""}</div></div>`;
   $("#evDate")&&($("#evDate").onchange=e=>setDate(e.target.value));
-  $("#coachGo")&&($("#coachGo").onclick=async e=>{ if(a.go) return a.go(); if(a.run==="strategy"){ step=1; renderStep(); return runStrategy($("#stratRun")) }
+  $("#coachGo")&&($("#coachGo").onclick=async e=>{ if(a.go) return a.go(); if(a.mod){ step=3; renderStep(); return runModule(a.mod,$(`[data-mod="${a.mod}"]`)) } if(a.run==="strategy"){ step=1; renderStep(); return runStrategy($("#stratRun")) }
     const o=await runAgent(a.run,e.currentTarget,null); if(o){ step={venues:3,produce:5,scout:6,copy:3,outreach:6,pitch:step}[a.run]||step; renderStep(); burst() } });
 }
 async function setDate(v){ const d=draft; d.date=v; d.example=false; renderStep();
@@ -1955,6 +2055,19 @@ function stepPromote(host){
 
 // Project plan: team + Gantt -------------------------------------------
 const OWNER_COLORS=["#3B5BFF","#FF4F64","#13A884","#F5A700","#8B5CF6","#0EA5E9","#EC4899"];
+function drawCheckin(d){ const h=$("#checkinHost"); if(!h) return; let q="";
+  const draw=()=>{ const L=d.guests.map((g,i)=>({...g,i})).filter(g=>g.status!=="Not invited"&&g.status!=="Declined"&&(!q||(g.name+g.company).toLowerCase().includes(q)));
+    const n=d.guests.filter(g=>g.status==="Attended").length;
+    h.innerHTML=`<div class="checkin"><div class="btns" style="justify-content:space-between"><b class="big">${n} checked in</b><input id="ciQ" placeholder="Search a name" value="${esc(q)}" style="max-width:260px"><button class="btn ghost sm" id="ciClose">Done</button></div>
+      <div class="citiles">${L.map(g=>`<button class="citile ${g.status==="Attended"?"in":""}" data-ci="${g.i}"><canvas width="96" height="96" data-av="${esc(g.name)}"></canvas><b>${esc(g.name)}</b><span>${esc(g.company)}</span><em>${g.status==="Attended"?"✓ Checked in":"Tap to check in"}</em></button>`).join("")||`<p class="empty">No guests yet.</p>`}</div></div>`;
+    $$("canvas[data-av]",h).forEach(c=>drawAvatar(c,c.dataset.av,d.brandColors));
+    $("#ciQ").oninput=e=>{ q=e.target.value.toLowerCase(); const pos=e.target.selectionStart; draw(); const x=$("#ciQ"); x.focus(); x.setSelectionRange(pos,pos) };
+    $("#ciClose").onclick=()=>{ h.innerHTML=""; renderStep() };
+    $$("[data-ci]",h).forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.ci]; if(g.status==="Attended"){ g.status="Going" } else { g.status="Attended"; g.leadAt=g.leadAt||Date.now() } draw() }) };
+  draw(); h.scrollIntoView({behavior:"smooth",block:"start"}) }
+function slaCell(g){ if(g.status!=="Attended") return `<span class="note">–</span>`; const i=g.i??draft.guests.indexOf(g), start=g.leadAt||Date.now();
+  if(g.contactedAt){ const h=Math.max(0,Math.round((g.contactedAt-start)/36e5)); return `<span class="pchip ${h<=24?"good":"bad"}">${h<=24?"✓":"Late"} ${h}h</span>` }
+  const h=Math.round((Date.now()-start)/36e5); return `<div class="btns" style="gap:6px;flex-wrap:nowrap"><span class="pchip ${h>24?"bad":h>12?"warn":""}">${h>24?`Overdue ${h}h`:`${24-h}h left`}</span><button class="mini-btn good" data-contact="${i}">Contacted</button></div>` }
 function planHTML(P,d){
   const tasks=(P.tasks||[]).map((t,i)=>({...t,i,dur:Math.max(1,+t.dur||5),ws:t.workstream||"Logistics"}));
   if(!tasks.length) return "";
@@ -2096,6 +2209,7 @@ function step5(host){
       </div></details>
   </div>
   ${agentBox("scout","Guest scout","Your invite list, row by row: who they are, how you know them, why they fit, and whether they're in town.","Build the guest list")}
+  <div class="btns"><button class="btn" id="checkinBtn">Onsite check-in mode</button><span class="note">Big tap targets for the door on the day. Every check-in starts that lead's 24-hour follow-up clock.</span></div><div id="checkinHost"></div>
   ${agentBox("briefing","Sales lead","A one-glance cheat sheet for every attendee, so the whole team is ready.","Build cheat sheets")}
   ${agentBox("outreach","Outreach","A personal invite for each guest, written for their role and company, plus a follow-up sequence.","Write invites")}
   <div class="panel stack">
@@ -2130,6 +2244,7 @@ function step5(host){
     toast(rows.length?`Added ${rows.length} guest${rows.length>1?"s":""}`:"Nothing to add. Use Name, Title, Company per line."); renderStep() };
   const O=out("outreach");
   drawBriefing(host,d);
+  $("#checkinBtn").onclick=()=>drawCheckin(d);
   $("#out-outreach").innerHTML = !O ? `<p class="empty">Write a personal invite for each guest on your list.</p>` : `
     <div class="cards">${O.invites.map((iv,k)=>{const g=d.guests[iv.guestIndex]; return `<div class="card"><div class="meta">To: ${esc(g?`${g.name}, ${g.title}`:"Example guest")}</div><b>${esc(iv.subject)}</b><p style="font-size:.9rem">${esc(iv.body)}</p>${iv.aeNote?`<p class="note"><b>Line for ${esc(g?.owner||"the AE")}:</b> ${esc(iv.aeNote)}</p>`:""}<div class="btns"><button class="btn ghost sm" data-cp="${k}">Copy</button>${g&&g.status==="Not invited"?`<button class="btn ghost sm" data-mk="${iv.guestIndex}">Mark invited</button>`:""}</div></div>`}).join("")}</div>
     <div class="btns"><button class="btn primary sm" id="gmDrafts">Save as Gmail drafts</button><span class="note" id="gmNote">Drafts land in your Gmail with your signature. Nothing is sent until you hit send.</span></div>
@@ -2183,13 +2298,20 @@ function step6(host){
     return {att:att.length,meet:att.filter(g=>rank(g.outcome)>=1).length,opp:att.filter(g=>rank(g.outcome)>=2).length,won:att.filter(g=>rank(g.outcome)>=3).length,pipe:att.filter(g=>rank(g.outcome)>=2).reduce((a,g)=>a+(+g.value||0),0)} };
   const drawAttrib=()=>{ const t=tally();
     $("#attrib").innerHTML = !ga.length ? `<p class="empty">Invite guests in step 6 to track outcomes here.</p>` : `
-    <div class="kpis"><div class="kpi"><small>Attended</small><b>${t.att}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>Opportunities</small><b>${t.opp}</b></div><div class="kpi"><small>Closed won</small><b>${t.won}</b></div><div class="kpi"><small>Attributed pipeline</small><b>${money(t.pipe)}</b></div></div>
-    <div class="tscroll"><table><thead><tr><th>Guest</th><th>Came?</th><th>Outcome</th><th class="num">Opportunity value</th></tr></thead><tbody>${ga.map(g=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.company)}${g.owner?" · "+esc(g.owner):""}</div></td>
+    ${(()=>{ const L=d.guests.filter(g=>g.status==="Attended"), ok=L.filter(g=>g.contactedAt&&g.leadAt&&(g.contactedAt-g.leadAt)<=864e5).length, src=L.filter(g=>g.source==="Sourced").reduce((a,g)=>a+(OUTCOMES.indexOf(g.outcome||"None yet")>=2?+g.value||0:0),0), cost=(out("produce")?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||d.budget||0;
+      return `<div class="kpis"><div class="kpi"><small>Leads</small><b>${L.length}</b></div><div class="kpi"><small>Followed up within 24h</small><b>${L.length?pct(ok,L.length):"–"}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>Pipeline sourced</small><b>${money(src)}</b></div><div class="kpi"><small>Pipeline influenced</small><b>${money(t.pipe-src)}</b></div><div class="kpi"><small>ROI</small><b>${cost?(t.pipe/cost).toFixed(1)+"x":"–"}</b><small>pipeline ÷ cost</small></div></div>` })()}
+    <details><summary class="note" style="cursor:pointer">Add leads (badge scans, sign-up sheet)</summary><div class="stack" style="gap:8px;margin-top:8px"><textarea id="leadPaste" placeholder="Name, Title, Company, Email — one per line"></textarea><div class="btns"><button class="btn sm" id="leadAdd">Add leads</button></div></div></details>
+    <div class="tscroll"><table><thead><tr><th>Guest</th><th>Came?</th><th>Source</th><th>Follow-up (24h)</th><th>Outcome</th><th class="num">Opportunity value</th></tr></thead><tbody>${ga.map(g=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.company)}${g.owner?" · "+esc(g.owner):""}</div></td>
       <td><input type="checkbox" data-ac="${g.i}" ${g.status==="Attended"?"checked":""} aria-label="${esc(g.name)} attended"></td>
+      <td><select data-asrc="${g.i}" aria-label="Pipeline source for ${esc(g.name)}">${["Influenced","Sourced"].map(o=>`<option ${o===(g.source||"Influenced")?"selected":""}>${o}</option>`).join("")}</select></td>
+      <td>${slaCell({...d.guests[g.i],i:g.i})}</td>
       <td><select data-ao="${g.i}" aria-label="Outcome for ${esc(g.name)}">${OUTCOMES.map(o=>`<option ${o===(g.outcome||"None yet")?"selected":""}>${o}</option>`).join("")}</select></td>
       <td class="num"><input class="mini" type="number" min="0" step="1000" data-av="${g.i}" value="${+g.value||0}" aria-label="Opportunity value for ${esc(g.name)}"></td></tr>`).join("")}</tbody></table></div>
     <div class="btns"><button class="btn sm" id="useAttr">Use these totals in the results</button></div>`;
-    $$("[data-ac]").forEach(c=>c.onchange=()=>{ const g=d.guests[+c.dataset.ac]; g.status=c.checked?"Attended":"Going"; drawAttrib() });
+    $$("[data-ac]").forEach(c=>c.onchange=()=>{ const g=d.guests[+c.dataset.ac]; g.status=c.checked?"Attended":"Going"; if(c.checked&&!g.leadAt) g.leadAt=Date.now(); drawAttrib() });
+    $$("[data-asrc]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.asrc].source=c.value; drawAttrib() });
+    $$("[data-contact]").forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.contact]; g.contactedAt=Date.now(); if(!g.leadAt) g.leadAt=g.contactedAt; drawAttrib() });
+    $("#leadAdd")&&($("#leadAdd").onclick=()=>{ const rows=$("#leadPaste").value.split("\n").map(l=>l.split(",").map(x=>x.trim())).filter(r=>r[0]); rows.forEach(([name,title="",company="",email=""])=>d.guests.push({name,title,company,email,tier:"B",status:"Attended",source:"Sourced",leadAt:Date.now(),outcome:"None yet",value:0})); toast(`Added ${rows.length} lead${rows.length===1?"":"s"}. The 24-hour follow-up clock has started.`); renderStep() });
     $$("[data-ao]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.ao].outcome=c.value; drawAttrib() });
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
@@ -2554,7 +2676,7 @@ function renderCanvas(){
   const items=C.items||[], tot=items.reduce((a,b)=>a+(+b.budget||0),0);
   el.innerHTML=`
   <div class="canvas-head"><div><small class="eyebrow">Creative canvas</small><h2>${esc(brandProfile?.company||C.company||"Your")} year of experiences</h2><p class="lede">Drag ideas around, dream up new ones, and deploy the ones you love.</p></div>
-    <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
+    <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn" id="terrBtn"><span class="spark">✦</span>Plan by territory</button><button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
   <div class="cv-stats">
     <div class="kpi"><small>Experiences</small><b>${items.length}</b></div>
     <div class="kpi"><small>Program budget</small><b>${money(tot)}</b></div>
@@ -2565,10 +2687,12 @@ function renderCanvas(){
   <div class="cv-wrap"><div class="cv-grid" style="--cols:${Q.length}">
     <div class="cv-corner"></div>${Q.map((q,i)=>`<div class="cv-qh"><b>${q.label}</b>${moments.filter(m=>m.qi===i).map(m=>`<span class="moment-pin" title="${esc(m.what||"")}">◆ ${esc(m.name)}</span>`).join("")}</div>`).join("")}
     ${LANES.map(([k,l,c])=>`<div class="cv-lane" style="--lc:${c}"><b>${l}</b></div>${Q.map((_,qi)=>`<div class="cv-cell" data-cell="${k}|${qi}" style="--lc:${c}">
-        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${c}"><span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span><b>${esc(it.name)}</b><small>${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
+        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${c}"><span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span><b>${esc(it.name)}</b><small>${it.region?`${esc(it.region)} · `:""}${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
         <button class="dream" data-dream="${k}|${qi}" aria-label="Dream up an experience for ${l} in ${Q[qi].label}">+ Dream one up</button></div>`).join("")}`).join("")}
   </div></div>
-  <div id="cvDetail"></div>`;
+  <div id="cvDetail"></div><div id="terrHost">${C.territory?terrHTML(C.territory):""}</div>`;
+  $("#terrBtn").onclick=e=>planTerritory(e.currentTarget);
+  $("#terrAdd")&&($("#terrAdd").onclick=()=>{ const T=cv().territory; (T.regions||[]).forEach(r=>(r.events||[]).forEach(ev=>cv().items.push({...ev,region:r.region,quarter:Math.max(0,Math.min(3,+ev.quarter||0)),audience:LANES.some(l=>l[0]===ev.audience)?ev.audience:"prospects"}))); cv().example=false; saveCanvas(); renderCanvas(); toast("Territory events added to your canvas") });
   $("#fillYear").onclick=e=>fillYear(e.currentTarget);
   $$("[data-item]",el).forEach(b=>{ b.onclick=()=>{ canvasPick=+b.dataset.item; renderCanvas() }; b.ondragstart=e=>{ e.dataTransfer.setData("text/plain",b.dataset.item); b.classList.add("drag") } });
   $$("[data-cell]",el).forEach(c=>{ c.ondragover=e=>{e.preventDefault();c.classList.add("over")}; c.ondragleave=()=>c.classList.remove("over");
@@ -2582,6 +2706,16 @@ function canvasGaps(items,Q){ if(!items.length) return []; const g=[];
     LANES.forEach(([k,l])=>{ const same={}; items.filter(i=>i.audience===k&&i.quarter===qi).forEach(i=>same[i.format]=(same[i.format]||0)+1); Object.entries(same).forEach(([f,n])=>{ if(n>=3) g.push(`${n} ${f.toLowerCase()}s for ${l.toLowerCase()} in ${q.label}`) }) }) });
   const sw=items.filter(i=>(+i.ambition||0)>=5).length; if(!sw) g.push("No big swing yet: dream up one 5-star experience");
   return g.slice(0,5) }
+function terrHTML(T){ return `<section class="panel stack" style="margin-top:18px"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Territory plan</small><h3>${esc(T.summary||"Field presence by region")}</h3></div><button class="btn primary sm" id="terrAdd">Add these to the canvas</button></div>
+  <div class="tscroll"><table><thead><tr><th>Region</th><th>Sales lead</th><th class="num">Revenue target</th><th>Target accounts</th><th>Focus</th><th>Planned events</th></tr></thead><tbody>${(T.regions||[]).map(r=>`<tr><td><b>${esc(r.region)}</b></td><td>${esc(r.salesLead||"")}</td><td class="num">${esc(r.target||"")}</td><td>${esc(r.accounts||"")}</td><td>${esc(r.focus||"")}</td><td>${(r.events||[]).map(e=>`<span class="tag">${esc(e.name)}</span>`).join(" ")}</td></tr>`).join("")}</tbody></table></div></section>` }
+async function planTerritory(btn){
+  if(!sample){ toast("Open Encore with AI on to plan by territory."); return }
+  const tools=await toolsFor(["crm","sfdc","docs","web"],null);
+  const o=await askJSON(`Build a field marketing territory plan with the regional sales teams, aligned to revenue targets. ${tools.length?"Use the CRM and docs to find regions, sales leads, targets and account counts; label anything you estimate.":"No CRM is connected: propose sensible regions for this company and label targets and counts as placeholders to confirm with sales."} For each region recommend 1-3 events over the next four quarters that fit its accounts (mix of dinners, summits, third-party conferences, roadshow stops).
+${canvasContext()}
+Reply with only JSON: {"summary":"max 14 words","regions":[{"region":"","salesLead":"","target":"e.g. $4M (to confirm)","accounts":"e.g. 40 named accounts","focus":"max 10 words","events":[{"name":"max 4 words","format":"one of ${FORMATS.join(", ")}","audience":"customers|prospects|partners|community|employees","quarter":0-3,"concept":"max 18 words","budget":number,"ambition":1-5,"goal":"max 8 words"}]}] (3-6)}`,btn,null,{tools,tier:"complex"});
+  if(o?.regions){ const C=cv()||(canvasData={items:[]}); C.territory=o; C.example=false; saveCanvas(); renderCanvas(); $("#terrHost")?.scrollIntoView({behavior:"smooth"}) }
+}
 function moveItem(ix,a,q){ const C=cv(); const it=C.items[ix]; if(!it) return; it.audience=a; it.quarter=q; C.example=false; saveCanvas(); canvasPick=ix; renderCanvas() }
 function drawDetail(){
   const el=$("#cvDetail"), C=cv(); if(!el) return; const it=C?.items?.[canvasPick]; if(!it){ el.innerHTML=""; return }
@@ -2858,10 +2992,13 @@ function renderImpact(){
   $("#portKpis").innerHTML=[["Events run",done.length],["Attendees",sum("attended")],["Show rate",pct(sum("attended"),sum("rsvps"))],["Meetings booked",sum("meetings")],["Pipeline influenced",money(sum("pipeline"))],["Pipeline per $1",spend?"$"+(sum("pipeline")/spend).toFixed(1):"–"]]
     .map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("");
   const waiting=!db?"Your events appear here once the page is opened in claude.ai while signed in.":!dbReady?"Loading events…":null;
-  if(waiting){ ["#roiChart","#showChart","#eventsTable"].forEach(s=>$(s).innerHTML=`<p class="empty">${waiting}</p>`); return }
+  if(waiting){ ["#roiChart","#showChart","#eventsTable","#programs"].forEach(s=>$(s).innerHTML=`<p class="empty">${waiting}</p>`); return }
   const rows=formatRank([],"");
   $("#roiChart").innerHTML=hbars([...rows].sort((a,b)=>b.roi-a.roi),r=>r.roi,v=>"$"+v.toFixed(1),r=>`${r.format}: ${money(r.pipe)} pipeline on ${money(r.spend)} spend across ${r.n} event${r.n>1?"s":""}`);
   $("#showChart").innerHTML=hbars([...rows].sort((a,b)=>b.attend-a.attend),r=>r.attend,v=>Math.round(v*100)+"%",r=>`${r.format}: ${Math.round(r.attend*100)}% of RSVPs attended, across ${r.n} event${r.n>1?"s":""}`);
+  const act=ev.filter(e=>e.status!=="done"&&!e.example);
+  $("#programs").innerHTML = !act.length ? `<p class="empty">Events you're planning show up here with their health and next deadline.</p>` : `<div class="progs">${act.map(e=>{ const h=hydrate(e), P=e.produce, S=P?taskStatus(pmState(h),P):[], od=S.filter(t=>t.st==="overdue").length, bl=S.filter(t=>t.st==="blocked").length, nx=S.filter(t=>t.st!=="done").sort((a,b)=>a.days-b.days)[0], days=e.date?Math.ceil((new Date(e.date+"T12:00:00")-Date.now())/864e5):null, health=bl?"blocked":od?"at risk":"on track";
+    return `<div class="prog ${health.replace(" ","")}"><div class="btns" style="justify-content:space-between"><span class="tag">${esc((KINDS[e.kind]||KINDS.dinner).label)}</span><span class="pchip ${health==="on track"?"good":health==="at risk"?"warn":"bad"}">${health}</span></div><b>${esc(e.name)}</b><span class="note">${esc(e.city||"")}${e.date?` · ${esc(fmtDate(e.date))}`:""}${days!=null?` · ${days} days`:""}</span>${nx?`<span class="note">Next: ${esc(nx.task)} (${esc(nx.owner)})</span>`:""}${od||bl?`<span class="note" style="color:var(--bad)">${od} overdue · ${bl} blocked</span>`:""}<button class="btn ghost sm" data-open="${esc(e.id)}">Open</button></div>` }).join("")}</div>`;
   $("#eventsTable").innerHTML = !ev.length ? `<p class="empty">No events yet. Plan one in the Event studio and save it.</p>` :
    `<table><thead><tr><th>Event</th><th>Stage</th><th>Format</th><th class="num">RSVP</th><th class="num">Show</th><th class="num">Rating</th><th class="num">NPS</th><th class="num">Meetings</th><th class="num">Pipeline</th><th></th></tr></thead><tbody>${ev.map(e=>{const s=fbStats(e.id),m=e.metrics||{};return `<tr>
     <td><b>${esc(e.name)}</b><div class="note">${esc(e.brand)} · ${esc(e.city)} · ${esc(fmtDate(e.date))}${e.example?' · <span class="tag ex">Example</span>':""}</div></td>

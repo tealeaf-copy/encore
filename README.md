@@ -12,3 +12,80 @@ Venue photos are not stored in this repo. They're hosted with the published arti
 ## How it runs
 
 The page runs inside claude.ai as an artifact. It uses the viewer's Claude account for the AI agents, a shared database for events and feedback, and the viewer's own connectors (Gmail, Google Drive, Notion, and optionally Gong, HubSpot, Salesforce, web search) for research. Opened as a plain file in a browser, it shows example data and the AI features stay off.
+
+## Running it as a web app (Node server)
+
+The page can also run outside claude.ai, on a small Node.js server in this repo. The server serves `index.html` unchanged and a browser shim (`public/shim.js`) provides the platform features the page asks for with `window.claude.use(name)`: AI, a shared database, connectors, file uploads, downloads and the viewer's id.
+
+### Setup
+
+Needs Node 20 or newer.
+
+```bash
+npm install
+cp .env.example .env      # then add ANTHROPIC_API_KEY, and Slack/Linear if you use them
+npm start                 # http://localhost:3000
+```
+
+No key yet? `ENCORE_FAKE_AI=1 npm start` runs an offline demo: AI calls return canned text (`{"ok":true}` for JSON prompts) and web search returns placeholder results.
+
+Run the tests with `npm test` (they use fake AI and a temporary database).
+
+### Environment variables
+
+| Variable | Default | What it does |
+|---|---|---|
+| `PORT` / `HOST` | `3000` / `0.0.0.0` | Where the server listens |
+| `DATA_DIR` | `data` | SQLite database (`encore.db`) and uploaded files (`assets/`) |
+| `DB_FILE` | `$DATA_DIR/encore.db` | Override the database file |
+| `ASSET_MAX_MB` | `15` | Upload size limit |
+| `APP_PASSWORD` | unset | Turns on a shared-password login |
+| `SESSION_SECRET` | `APP_PASSWORD` | Signs the login cookie |
+| `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
+| `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |
+| `SLACK_BOT_TOKEN` | unset | Slack Web API (send messages, DMs by email, find users) |
+| `SLACK_DEFAULT_CHANNEL` | unset | Channel for messages with no channel given (PM nudges) |
+| `SLACK_WEBHOOK_URL` | unset | Without a bot token: send-only Slack via an incoming webhook |
+| `LINEAR_API_KEY` / `LINEAR_TEAM_ID` | unset | Linear issue creation |
+| `PM_CRON` | `0 8 * * 1-5` | When the daily project-manager job runs (`off` disables it) |
+| `PM_TZ` | `America/Chicago` | Time zone for `PM_CRON` |
+
+`.env` is loaded at start-up; variables already set in the environment win.
+
+### How the page's capabilities map to the server
+
+| `window.claude.use(...)` | Server side |
+|---|---|
+| `sample` | `POST /api/ai` streams Server-Sent Events. The server runs Claude (`claude-opus-5-5`, effort from `modelTier`: quick=low, default=medium, complex=high) and the tool loop. When Claude calls one of the page's tools, the server sends a `tool_call` event, the shim runs the tool in the browser and posts the result to `/api/ai/:runId/tool-result`. Refusal fallbacks are on. `sample.json` parses the reply tolerantly |
+| `db` | Firestore-style documents in SQLite. REST at `/api/db/doc` and `/api/db/collection`; live updates via one SSE stream at `/api/db/events` that tells the shim which paths changed |
+| `mcp` | Server-side integrations in `server/integrations/`. Only configured ones are listed: **Parallel Search** (`web_search`, `web_fetch`, via Claude's web tools; on whenever AI is), **Slack** (`slack_send_message`, `slack_search_users`), **Linear** (`create_issue`). Others the page knows (Gmail, Asana, ...) show as not connected |
+| `assets` | `POST /api/assets` stores the file under `data/assets/`, served at `/_blob/:id` |
+| `user` | A stable per-browser id in localStorage; everyone is an owner/editor |
+| `downloads` | A normal browser download |
+| anything else | `null` (the page hides those features) |
+
+`GET /api/health` reports the AI mode (`live`, `fake` or `missing_key`) and the configured integrations.
+
+### Login and guest links
+
+With `APP_PASSWORD` set, visitors see a password form and get a 30-day cookie. RSVP and survey links (`/#rsvp-…`, `/#survey-…`) keep working without a login: the login page forwards them to `/g`, which serves the page, and the shim marks their requests as guest requests. Guests can only read single event documents and write to `rsvps` and `feedback`.
+
+### The daily project-manager job
+
+`server/pm.js` runs on `PM_CRON` (weekdays at 8am Chicago time by default), or on demand with `POST /api/pm/run`. For every event that has a production plan (`produce.tasks`), a date and a status other than `done`, it works out each task's status the same way the page does (done, blocked, overdue, due within 3 days, or later; due = event date + the task's `days`). If anything is overdue, blocked or due soon, it asks Claude for short, friendly nudges per owner, the main risks with fixes, and anything the event lead must decide. Then it:
+
+- posts each nudge to Slack, prefixed with the owner's name (if Slack is configured),
+- saves the result to the event as `pmReport` (with a `posted` flag per nudge) and `pmRanAt`,
+- adds a `notifications` document when the event lead needs to decide something,
+- logs a one-line summary.
+
+### Deploying
+
+Any host that runs a Node 20 container and gives you a persistent disk works. Mount the disk at the data directory, since the database and uploads live there. Run a single instance: SQLite and the live-update stream are in-process.
+
+- **Docker:** `docker build -t encore . && docker run -p 3000:3000 -v encore-data:/app/data --env-file .env encore`
+- **Render:** new Web Service from the repo (Docker), add a Disk mounted at `/app/data`, set the env vars.
+- **Fly.io:** `fly launch` (uses the Dockerfile), `fly volumes create encore_data`, mount it at `/app/data` in `fly.toml`, `fly secrets set ANTHROPIC_API_KEY=... APP_PASSWORD=...`.
+- **Railway:** deploy from the repo (Dockerfile), attach a Volume at `/app/data`, set the variables.
+
+Put the app behind HTTPS (all three do this for you) and set `APP_PASSWORD` before sharing the URL. The scheduled job runs inside the web process, so keep at least one instance always on.

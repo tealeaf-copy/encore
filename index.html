@@ -2498,7 +2498,7 @@ function fmtDate(s){ if(!s) return "Date TBD"; const d=new Date(s+"T12:00:00"); 
 // Guest-facing pages (#rsvp-ID, #survey-ID)
 // ==================================================================
 async function renderGuest(){
-  const host=$("#view-guest"); const nm=location.hash.match(/^#nominate-(.+)-([a-z0-9-]+)$/);
+  const host=$("#view-guest"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
   const [,kind,id]=location.hash.match(/^#(rsvp|survey)-(.+)$/)||[];
   const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore · <a href="#studio">Organizer view</a></p></div>`;

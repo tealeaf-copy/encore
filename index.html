@@ -1965,7 +1965,8 @@ async function renderNominate(host,eventId,aeSlug){
   draw();
 }
 // ---------------- CRM files ----------------
-function campaignCSV(d){ const st=g=>g.status==="Attended"?"Attended":g.status==="Going"?"Registered":g.status==="Declined"?"Declined":g.status==="Not invited"?"":"Invited";
+const crmStatus=g=>g.status==="Attended"?"Attended":g.status==="Going"?"Registered":g.status==="Declined"?"Declined":g.status==="Not invited"?"":"Invited";
+function campaignCSV(d){ const st=crmStatus;
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`; const rows=d.guests.filter(g=>st(g)).map(g=>{ const [f,...l]=(g.name||"").split(" "); return [f,l.join(" "),g.email,g.company,g.title,st(g),g.owner,`Event: ${d.name}`,g.source||"Influenced"].map(q).join(",") });
   return ["First Name,Last Name,Email,Company,Title,Member Status,Owner,Campaign,Pipeline Credit",...rows].join("\n") }
 function parseCSV(text){ const lines=text.trim().split(/\r?\n/).filter(Boolean); if(!lines.length) return [];
@@ -1980,6 +1981,11 @@ function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date
     if(!newOpp&&!movedOpp&&ev) return; matched++;
     g.outcome=/won/i.test(stage)?"Closed won":"Opportunity"; g.value=amt; g.source=newOpp&&g.source==="Sourced"?"Sourced":"Influenced"; g.source==="Sourced"?src+=amt:infl+=amt });
   return {rows:rows.length,matched,infl,src} }
+function crmOn(){ const k=["crm","sfdc"].find(k=>srcState[k]==="on"); return k&&CONNECT[k] }
+function crmMembers(d){ return d.guests.filter(g=>crmStatus(g)&&g.email).map(g=>{ const [f,...l]=(g.name||"").split(" "); return {email:g.email,firstName:f||"",lastName:l.join(" "),company:g.company||"",title:g.title||"",status:crmStatus(g)} }) }
+function dealsCSV(deals){ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  return ["Account,Amount,Stage,Created Date,Last Stage Change,Contact Email",...deals.map(x=>[x.company,x.amount,x.stage,x.createdate,x.lastStageChange,x.contactEmail].map(q).join(","))].join("\n") }
+const crmPayload=r=>r?.payload??(()=>{ try{ return JSON.parse(r?.content?.[0]?.text) }catch{ return null } })();
 // ---------------- Badge scans ----------------
 function importLeads(d,text){ const rows=parseCSV(text); let added=0,dupes=0;
   const seniority=t=>/chief|cxo|ceo|cto|cio|cdo|ciso|vp|vice president|head of/i.test(t)?"A":/director|principal|lead/i.test(t)?"B":"C";
@@ -2412,13 +2418,16 @@ function step6(host){
   const ga=d.guests.map((g,i)=>({...g,i})).filter(g=>g.status!=="Not invited"&&g.status!=="Declined");
   const tally=()=>{ const att=d.guests.filter(g=>g.status==="Attended"), rank=o=>OUTCOMES.indexOf(o||"None yet");
     return {att:att.length,meet:att.filter(g=>rank(g.outcome)>=1).length,opp:att.filter(g=>rank(g.outcome)>=2).length,won:att.filter(g=>rank(g.outcome)>=3).length,pipe:att.filter(g=>rank(g.outcome)>=2).reduce((a,g)=>a+(+g.value||0),0)} };
-  const drawAttrib=()=>{ const t=tally();
+  const drawAttrib=()=>{ const t=tally(), crm=crmOn();
+    if(!crm) probeSources().then(()=>{ if(crmOn()&&$("#attrib")) drawAttrib() });
     $("#attrib").innerHTML = !ga.length ? `<p class="empty">Invite guests in step 6 to track outcomes here.</p>` : `
     ${(()=>{ const L=d.guests.filter(g=>g.status==="Attended"), ok=L.filter(g=>g.contactedAt&&g.leadAt&&(g.contactedAt-g.leadAt)<=864e5).length, src=L.filter(g=>g.source==="Sourced").reduce((a,g)=>a+(OUTCOMES.indexOf(g.outcome||"None yet")>=2?+g.value||0:0),0), cost=(out("produce")?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||d.budget||0;
       return `<div class="kpis"><div class="kpi"><small>Leads</small><b>${L.length}</b></div><div class="kpi"><small>Followed up within 24h</small><b>${L.length?pct(ok,L.length):"–"}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>Pipeline sourced</small><b>${money(src)}</b></div><div class="kpi"><small>Pipeline influenced</small><b>${money(t.pipe-src)}</b></div><div class="kpi"><small>ROI</small><b>${cost?(t.pipe/cost).toFixed(1)+"x":"–"}</b><small>pipeline ÷ cost</small></div></div>` })()}
     <div class="crmbar"><details><summary class="btn sm">Import badge scans</summary><div class="stack" style="gap:8px;margin-top:8px"><p class="note">Upload the scanner's CSV or paste rows (Name, Title, Company, Email). Encore removes duplicates, scores leads by seniority and target account, routes them to the AE who owns the company, and starts the 24-hour clock.</p><input type="file" accept=".csv,text/csv" id="leadFile"><textarea id="leadPaste" placeholder="Name, Title, Company, Email"></textarea><div class="btns"><button class="btn sm" id="leadAdd">Import leads</button></div></div></details>
       <button class="btn sm" id="crmExport">Export campaign members (CSV)</button>
+      ${crm?`<button class="btn sm" id="crmSync">Sync attendees to ${esc(crm.label)}</button><button class="btn sm" id="crmPull">Pull pipeline from ${esc(crm.label)}</button>`:""}
       <details><summary class="btn sm">Import opportunities from CRM</summary><div class="stack" style="gap:8px;margin-top:8px"><p class="note">Upload a Salesforce or HubSpot opportunity export (Account, Amount, Stage, Created Date, Last Stage Change, Contact Email). Rule: an opportunity created within 90 days after the event counts as sourced if the lead was sourced here, otherwise influenced; one that moved stage in that window counts as influenced.</p><input type="file" accept=".csv,text/csv" id="oppFile"><textarea id="oppPaste" placeholder="Paste the CSV"></textarea><div class="btns"><button class="btn sm" id="oppApply">Apply to this event</button></div></div></details></div>
+    ${d.crmSyncedAt?`<p class="note">Last synced to CRM: ${esc(new Date(d.crmSyncedAt).toLocaleString())}</p>`:""}
     <div class="tscroll"><table><thead><tr><th>Guest</th><th>Came?</th><th>Source</th><th>Follow-up (24h)</th><th>Outcome</th><th class="num">Opportunity value</th></tr></thead><tbody>${ga.map(g=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.company)}${g.owner?" · "+esc(g.owner):""}</div></td>
       <td><input type="checkbox" data-ac="${g.i}" ${g.status==="Attended"?"checked":""} aria-label="${esc(g.name)} attended"></td>
       <td><select data-asrc="${g.i}" aria-label="Pipeline source for ${esc(g.name)}">${["Influenced","Sourced"].map(o=>`<option ${o===(g.source||"Influenced")?"selected":""}>${o}</option>`).join("")}</select></td>
@@ -2432,6 +2441,13 @@ function step6(host){
     const readF=(id,ta)=>{ const f=$(id)?.files?.[0]; return f?f.text():Promise.resolve($(ta).value) };
     $("#leadAdd")&&($("#leadAdd").onclick=async()=>{ const r=importLeads(d,await readF("#leadFile","#leadPaste")); toast(`Imported ${r.added} lead${r.added===1?"":"s"}${r.dupes?`, skipped ${r.dupes} duplicate${r.dupes===1?"":"s"}`:""}. The 24-hour clock has started.`); renderStep() });
     $("#crmExport")&&($("#crmExport").onclick=async()=>{ const csv=campaignCSV(d); if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-campaign-members.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) });
+    const crmCall=async(btn,tool,input)=>{ btn.disabled=true; try{ return crmPayload(await (await getMcp()).callTool(crm.server,tool,input)) }catch(e){ toast(`${crm.label}: ${e?.message||e?.code||"request failed"}`); return null }finally{ btn.disabled=false } };
+    $("#crmSync")&&($("#crmSync").onclick=async e=>{ if(!d.date){ toast("Set the event date first."); return } const members=crmMembers(d); if(!members.length){ toast("No guests with an email to sync."); return }
+      const p=await crmCall(e.currentTarget,"upsert_event_attendees",{eventName:d.name,eventDate:d.date,members}); if(!p) return; d.crmSyncedAt=Date.now();
+      toast(`Synced ${p.contactsUpserted??p.membersUpserted??0} of ${members.length} guests to ${crm.label}${p.leadsCreated?`, ${p.leadsCreated} new lead${p.leadsCreated===1?"":"s"}`:""}${p.errors?.length?`, ${p.errors.length} error${p.errors.length===1?"":"s"}`:""}.`); drawAttrib() });
+    $("#crmPull")&&($("#crmPull").onclick=async e=>{ if(!d.date){ toast("Set the event date first."); return } const emails=d.guests.filter(g=>g.status==="Attended"&&g.email).map(g=>g.email); if(!emails.length){ toast("No attended guests with an email yet."); return }
+      const until=new Date(new Date(d.date+"T12:00:00Z").getTime()+90*864e5).toISOString().slice(0,10), p=await crmCall(e.currentTarget,"event_pipeline",{emails,since:d.date,until,eventName:d.name}); if(!p) return;
+      const deals=Array.isArray(p)?p:p.deals||[], r=applyOpps(d,dealsCSV(deals)); toast(`Matched ${r.matched} deal${r.matched===1?"":"s"}: ${money(r.src)} sourced, ${money(r.infl)} influenced`); renderStep() });
     $("#oppApply")&&($("#oppApply").onclick=async()=>{ const r=applyOpps(d,await readF("#oppFile","#oppPaste")); toast(`Matched ${r.matched} of ${r.rows} opportunities: ${money(r.src)} sourced, ${money(r.infl)} influenced.`); renderStep() });
     $$("[data-ao]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.ao].outcome=c.value; drawAttrib() });
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });

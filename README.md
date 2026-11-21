@@ -47,6 +47,12 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `SLACK_DEFAULT_CHANNEL` | unset | Channel for messages with no channel given (PM nudges) |
 | `SLACK_WEBHOOK_URL` | unset | Without a bot token: send-only Slack via an incoming webhook |
 | `LINEAR_API_KEY` / `LINEAR_TEAM_ID` | unset | Linear issue creation |
+| `HUBSPOT_TOKEN` | unset | HubSpot private app token (CRM search, attendee sync, pipeline) |
+| `HUBSPOT_EVENT_ORGANIZER` | `Encore` | Organizer shown on HubSpot marketing events Encore creates |
+| `SF_INSTANCE_URL` | unset | Salesforce My Domain URL. Needs `SF_ACCESS_TOKEN`, or `SF_CLIENT_ID` + `SF_CLIENT_SECRET` |
+| `SF_ACCESS_TOKEN` | unset | Ready Salesforce access token |
+| `SF_CLIENT_ID` / `SF_CLIENT_SECRET` | unset | Connected app for the OAuth 2.0 client-credentials flow (token cached and refreshed) |
+| `SF_API_VERSION` | `v61.0` | Salesforce REST API version |
 | `PM_CRON` | `0 8 * * 1-5` | When the daily project-manager job runs (`off` disables it) |
 | `PM_TZ` | `America/Chicago` | Time zone for `PM_CRON` |
 
@@ -58,13 +64,24 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 |---|---|
 | `sample` | `POST /api/ai` streams Server-Sent Events. The server runs Claude (`claude-opus-5-5`, effort from `modelTier`: quick=low, default=medium, complex=high) and the tool loop. When Claude calls one of the page's tools, the server sends a `tool_call` event, the shim runs the tool in the browser and posts the result to `/api/ai/:runId/tool-result`. Refusal fallbacks are on. `sample.json` parses the reply tolerantly |
 | `db` | Firestore-style documents in SQLite. REST at `/api/db/doc` and `/api/db/collection`; live updates via one SSE stream at `/api/db/events` that tells the shim which paths changed |
-| `mcp` | Server-side integrations in `server/integrations/`. Only configured ones are listed: **Parallel Search** (`web_search`, `web_fetch`, via Claude's web tools; on whenever AI is), **Slack** (`slack_send_message`, `slack_search_users`), **Linear** (`create_issue`). Others the page knows (Gmail, Asana, ...) show as not connected |
+| `mcp` | Server-side integrations in `server/integrations/`. Only configured ones are listed: **Parallel Search** (`web_search`, `web_fetch`, via Claude's web tools; on whenever AI is), **Slack** (`slack_send_message`, `slack_search_users`), **Linear** (`create_issue`), **HubSpot** (`search_crm_objects`, `upsert_event_attendees`, `event_pipeline`), **Salesforce - Beta** (`dispatch_readonly`, `upsert_event_attendees`, `event_pipeline`). Others the page knows (Gmail, Asana, ...) show as not connected |
 | `assets` | `POST /api/assets` stores the file under `data/assets/`, served at `/_blob/:id` |
 | `user` | A stable per-browser id in localStorage; everyone is an owner/editor |
 | `downloads` | A normal browser download |
 | anything else | `null` (the page hides those features) |
 
 `GET /api/health` reports the AI mode (`live`, `fake` or `missing_key`) and the configured integrations.
+
+### CRM sync (HubSpot and Salesforce)
+
+With `HUBSPOT_TOKEN` or the `SF_*` variables set, the Measure step shows two more buttons next to the CSV export and import (HubSpot wins if both are set):
+
+- **Sync attendees to HubSpot/Salesforce** sends every invited guest with an email, with the same status mapping as the CSV export (Invited, Registered, Attended, Declined).
+  - HubSpot: upserts contacts by email, creates or updates a marketing event (external id = slug of name + date, external account `encore`) and records register/attend/cancel states by email. Invited guests are upserted as contacts only.
+  - Salesforce: finds or creates the Campaign "Event: {name}" (type Event), adds any missing member statuses, matches each email to a Contact or an open Lead (creating a Lead with LeadSource "Event" if neither exists) and upserts the CampaignMember.
+- **Pull pipeline** asks for deals/opportunities linked to the attended guests (HubSpot: deals associated with the contacts; Salesforce: opportunities on their accounts or with them as contact roles) created or moved stage in the 90 days after the event, and runs them through the same sourced/influenced rule as the CSV import.
+
+The `dispatch_readonly` tool only accepts a single SOQL `SELECT`. CRM errors come back to the page as `tool_error`. Without a CRM configured the CSV export and import work as before.
 
 ### Login and guest links
 

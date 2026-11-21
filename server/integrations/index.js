@@ -3,8 +3,10 @@
 import parallelSearch from "./parallel-search.js";
 import slack from "./slack.js";
 import linear from "./linear.js";
+import hubspot from "./hubspot.js";
+import salesforce from "./salesforce.js";
 
-const factories = [parallelSearch, slack, linear];
+const factories = [parallelSearch, slack, linear, hubspot, salesforce];
 
 export function configured() {
   return factories.map((f) => f()).filter(Boolean);

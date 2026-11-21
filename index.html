@@ -512,6 +512,10 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
 .lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 .lmore{display:flex;flex-direction:column;gap:6px}
+.gonogo{margin-bottom:12px}.rubric{display:flex;flex-direction:column;gap:8px;margin-top:10px}.rrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg)}.rrow>div:first-child{display:flex;flex-direction:column}.rrow small{grid-column:1/-1}
+.gaccs{margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--line);display:grid;gap:6px}.gaccs p{margin:0;font-size:.92rem}
+@media(max-width:560px){.rrow{grid-template-columns:1fr}}
+
 tr.child td{background:#FAFAFF}tr.child td:first-child{padding-left:22px}
 .lowconf{padding:10px 12px;border-radius:12px;background:#FFF7E0}
 .funnel{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}@media(max-width:820px){.funnel{grid-template-columns:repeat(2,1fr)}}
@@ -1986,16 +1990,37 @@ function burst(){
 const STRAT_KEYS=["web","browseNav","browseText","docs","notes","email","crm","sfdc","calls","playbook"];
 let stratBusy=false, challenges=[];
 function curStrategy(){ return draft.strategy||brandProfile?.strategy||(draft.example?EXAMPLE_OUT.strategy:null) }
+// Go / no-go before spending, and a one-page brief (goals, audience, creative, channels, stakeholders)
+const RUBRIC=[["icp","The room is your ICP","Most guests match who you sell to (or who you're expanding)."],["goal","One clear goal","You can say what success is in one number: meetings, opportunities, renewals."],
+  ["accounts","Accounts named before the venue","You know which accounts this event is meant to move."],["sales","Sales is in","Account owners have agreed to invite and follow up."],
+  ["cost","Cost per target account makes sense","Spend divided by target accounts is worth it at your deal size."],["follow","Follow-up has an owner","Someone owns the 24-hour follow-up and the 90-day report."]];
+function rubricGuess(d){ const P=d.guests.filter(g=>g.tier==="A").length, owners=new Set(d.guests.map(g=>g.owner).filter(Boolean)).size, acct=new Set(d.guests.map(g=>g.company).filter(Boolean)).size||1;
+  return {icp:d.audience.roles.length?2:0,goal:d.goal?2:0,accounts:P>=5||(brandProfile?.knowledge?.accounts?.accounts||[]).length?2:P?1:0,sales:owners>=2||allNoms.some(n=>n.eventId===d.id)?2:owners?1:0,
+    cost:eventCost(d)/acct<5000?2:eventCost(d)/acct<12000?1:0,follow:out("produce")?.team?.length||d.guests.some(g=>g.owner)?2:0} }
+function goNoGoHTML(d){ const G=rubricGuess(d), V={...G,...(d.rubric||{})}, score=Object.values(V).reduce((a,b)=>a+b,0), max=RUBRIC.length*2, no=RUBRIC.filter(([k])=>V[k]===0);
+  const verdict=score>=10&&!no.length?["good","Go","The basics are in place. Book it."]:score>=7?["warn","Fix first",`Close these before you commit money: ${no.map(([,t])=>t.toLowerCase()).join("; ")||"the partial items below"}.`]:["bad","Not yet","This would be an expensive guess. Rework the plan or pick a smaller format."];
+  return `<details class="ready gonogo" ${d.rubricOpen?"open":""}><summary><b>Should we do this event?</b><span class="pchip ${verdict[0]}">${verdict[1]} · ${score}/${max}</span><span class="note">${verdict[2]}</span></summary>
+    <div class="rubric">${RUBRIC.map(([k,t,h])=>`<div class="rrow"><div><b>${t}</b><span class="note">${h}</span></div><div class="chips">${[[2,"Yes"],[1,"Partly"],[0,"No"]].map(([v,l])=>`<button type="button" class="chip" data-rub="${k}|${v}" aria-pressed="${V[k]===v}">${l}</button>`).join("")}</div>${d.rubric?.[k]==null?`<small class="note">Encore's guess</small>`:""}</div>`).join("")}</div>
+    <div class="gaccs"><div class="btns" style="justify-content:space-between"><b>One-page brief</b><button class="btn ghost sm" id="gaccsCopy">Copy brief</button></div>${gaccs(d).map(([k,v])=>`<div><small class="eyebrow">${k}</small><p>${esc(v)}</p></div>`).join("")}</div></details>` }
+function gaccs(d){ const D=d.dist?.ch||(kprof(d).dist||DIST_DEFAULT).map(([n,sh])=>({n,sh})), P=out("pitch"), A=out("produce")?.team||[];
+  return [["Goals",`${OBJECTIVES[objOf(d)].label}. ${d.goal||"Set one goal in a sentence."}${P?.outcomes?.length?` Targets: ${P.outcomes.map(o=>`${o.metric} ${o.target}`).join(", ")}.`:""}`],
+    ["Audience",`${d.audience.roles.join(", ")||"Roles not set"}${d.audience.industries.length?` in ${d.audience.industries.join(", ")}`:""}. ${d.guests.filter(g=>g.tier==="A").length} priority guests, ${new Set(d.guests.map(g=>g.company).filter(Boolean)).size} accounts on the list.`],
+    ["Creative",`${(d.copy||out("copy"))?.title||d.name}: ${d.concept||"concept not set"}`],
+    ["Channels",[...D].sort((a,b)=>b.sh-a.sh).slice(0,3).map(c=>`${c.n} (${c.sh}%)`).join(", ")],
+    ["Stakeholders",[...new Set([...A.map(m=>m.role),...d.guests.map(g=>g.owner).filter(Boolean)])].slice(0,6).join(", ")||"Add owners in Produce and Guests"]] }
+function wireGoNoGo(host){ const d=draft, g=$(".gonogo",host); if(!g) return; g.ontoggle=()=>{ d.rubricOpen=g.open };
+  $$("[data-rub]",host).forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.rub.split("|"); d.rubric={...(d.rubric||{}),[k]:+v}; renderStep() });
+  $("#gaccsCopy",host).onclick=()=>copyTxt(`${d.name}: event brief\n\n`+gaccs(d).map(([k,v])=>`${k}: ${v}`).join("\n")) }
 function step1(host){
   const S=curStrategy(), co=brandProfile?.company||draft.brand;
-  host.innerHTML=`<div id="kindHost"></div>
+  host.innerHTML=`<div id="kindHost"></div>${goNoGoHTML(draft)}
   <div class="strat-head"><div><small class="eyebrow">Step 1 · Strategy</small><h2>${co?`Where events fit for ${esc(co)}`:"Where events fit"}</h2></div>
     <div class="btns">${S?exTag(S):""}<button class="btn ${S?"":"primary"}" id="stratRun"><span class="spark">✦</span>${S?"Redo the research":"Research and build the strategy"}</button></div></div>
   ${!co&&!draft.example?`<div class="banner"><span>Tell Encore your company first. It does the research from there.</span><a href="#brand">Set up brand →</a></div>`:""}
   <div id="stratProg" hidden></div>
   <div id="stratOut">${S?strategyHTML(S):`<p class="empty">Encore researches your latest launches and marketing, then tells you where events fit and which formats your buyers will show up for.</p>`}</div>
   <details class="drawer" id="deckDrawer"><summary><b>More ideas</b> <span class="note">shuffle the idea deck</span></summary><div id="deckHost" style="margin-top:14px"></div></details>`;
-  $("#stratRun").onclick=e=>runStrategy(e.currentTarget);
+  $("#stratRun").onclick=e=>runStrategy(e.currentTarget); wireGoNoGo(host);
   wireStrategy(host,S);
   const dd=$("#deckDrawer"); dd.ontoggle=()=>{ if(dd.open&&!$("#deckHost").innerHTML) deckStep($("#deckHost")) };
   if(!S&&sample&&co&&!stratBusy&&!draft._stratAuto){ draft._stratAuto=true; runStrategy($("#stratRun")) }
@@ -3379,6 +3404,7 @@ function step6(host){
     <div id="attrib"></div>
   </div>
   <div class="panel stack" id="handoff"></div>
+  <div class="panel"><div class="btns" style="justify-content:space-between"><div><b>Attendee recap</b><p class="note">Within 48 hours, send everyone who came the list of who was there (with LinkedIn) and the questions people brought. It's the follow-up guests actually forward.</p></div><button class="btn sm" id="recapBtn">Copy the recap</button></div></div>
   <div class="panel stack" id="funnel"></div>
   <div class="panel stack" id="pilot"></div>
   <div class="panel"><div class="btns" style="justify-content:space-between"><div><b>Keep the momentum</b><p class="note">Start the next event with these people already on the list: attendees, scanned leads and no-shows, each tagged with where they came from.</p></div><div class="btns"><select id="fuKind" aria-label="Follow-up event type">${Object.entries(KINDS).map(([k,K])=>`<option value="${k}" ${k==="webinar"?"selected":""}>${esc(K.label)}</option>`).join("")}</select><button class="btn sm" id="fuEvent">Create follow-up event</button></div></div></div>
@@ -3433,6 +3459,9 @@ function step6(host){
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
   drawAttrib(); drawHandoff(d); drawPipeRep(d); drawFunnel(d); drawPilot(d);
+  $("#recapBtn")&&($("#recapBtn").onclick=()=>{ const A=d.guests.filter(g=>g.status==="Attended"); if(!A.length){ toast("Mark who came first."); return }
+    const W=allWall.filter(w=>w.eventId===d.id), R2=allRsvps.filter(r=>r.eventId===d.id), li=n=>W.find(w=>w.name===n)?.linkedin||R2.find(r=>r.name===n)?.linkedin||"", topics=[...new Set(R2.map(r=>r.topic).filter(Boolean))];
+    copyTxt(`Thank you for coming to ${d.copy?.title||d.name}.\n\nWho was there:\n${A.map(g=>`• ${g.name}, ${g.title||""}${g.company?` at ${g.company}`:""}${li(g.name)?` · ${li(g.name)}`:""}`).join("\n")}\n\n${topics.length?`What people came to learn about:\n${topics.map(t=>`• ${t}`).join("\n")}\n\n`:""}Reply if you'd like an intro to anyone on the list.`); toast("Recap copied. Only share LinkedIn links guests added themselves.") });
   $("#fuEvent")&&($("#fuEvent").onclick=()=>{ const k=$("#fuKind").value, src=d.guests.filter(g=>g.status!=="Not invited"&&g.status!=="Declined");
     const n=hydrate(cloneForReuse(d,{kind:k,name:`${(KINDS[k]||KINDS.dinner).label} for ${d.name} guests`,date:"",parentId:d.id||null,followsFrom:d.name,venues:null,venuePick:0,scout:null,produce:null,copy:null,launchCopy:null,dist:null}));
     n.guests=src.map(g=>({name:g.name,title:g.title||"",company:g.company||"",email:g.email||"",owner:g.owner||"",tier:g.tier||"B",status:"Not invited",outcome:"None yet",value:0,source:g.scanned?"Badge scan":g.status==="Attended"?`Attended ${d.name}`:`No-show at ${d.name}`,arr:g.arr,renewalDate:g.renewalDate,health:g.health,note:g.note}));

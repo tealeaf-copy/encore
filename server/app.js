@@ -213,7 +213,7 @@ export function createApp({ store, dataDir }) {
     if (same.length > 1) return res.status(409).json({ code: "conflict", message: "Two of your guests share that name; include the company." });
     const g = same[0];
     if (!g) return res.status(403).json({ code: "not_granted", message: "That guest isn't one of yours." });
-    const action = String(b.action || ""); if (!["approve", "sent", "done", "note", "nudge"].includes(action)) return res.status(400).json({ code: "invalid" });
+    const action = String(b.action || ""); if (!["approve", "sent", "done", "note", "nudge", "roe"].includes(action)) return res.status(400).json({ code: "invalid" });
     const rec = { eventId, guest: g.name, ae: g.owner, aeSlug: slug, action, at: Date.now(), ...(b.draft ? { draft: String(b.draft).slice(0, 8000) } : {}), ...(b.note ? { note: String(b.note).slice(0, 4000) } : {}), ...(b.nudge ? { nudge: String(b.nudge).slice(0, 4000) } : {}) };
     store.add("aeactions", rec);
     res.json({ ok: true, action: rec });

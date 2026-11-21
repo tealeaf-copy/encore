@@ -507,6 +507,19 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.catb{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:3px 9px 3px 7px;border-radius:99px;background:color-mix(in srgb,var(--cc) 14%,#fff);color:color-mix(in srgb,var(--cc) 80%,#1B1740);white-space:nowrap}
+.catb.light{background:#fff}
+.audb{display:inline-flex;font-size:.7rem;font-weight:800;padding:2px 9px;border-radius:99px;border:1.5px solid var(--ac);color:color-mix(in srgb,var(--ac) 75%,#1B1740);align-self:flex-start}
+.pin{border-top:6px solid var(--cc)}
+.pin .aud{background:transparent;padding:0}
+.rmcard{border-top:5px solid var(--cc)}
+.typef{margin-bottom:6px}
+.filters{align-items:center}
+.filters > .eyebrow{min-width:64px}
+.cattile{border-left:6px solid var(--cc)!important}
+.cattile.on{background:var(--cc)!important;color:#fff!important}
+.cnt{font-size:.72rem;opacity:.7;margin-left:2px}
+
 .peerbar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:16px;border-radius:22px;background:var(--surface);box-shadow:var(--puff)}
 .peerbar input{margin:6px 0 4px}
 .by{font-size:.74rem;font-weight:800;color:var(--cobalt)}
@@ -1491,6 +1504,13 @@ function useIdea(i){
   if(sample){ toast(`Deploying "${i.name}"…`); autopilot() } else toast(`"${i.name}" is your event.`);
 }
 const SUITS=["table","sun","peaks","orbit","waves","grid"];
+// Event categories: each type gets its own color, artwork and icon
+const ICON={dinner:'<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 0-3 2-3 5s1 4 3 4v9"/>',conference:'<rect x="4" y="4" width="16" height="11" rx="2"/><path d="M9 21h6M12 15v6"/>',summit:'<circle cx="12" cy="8" r="3"/><circle cx="5" cy="15" r="2.5"/><circle cx="19" cy="15" r="2.5"/><path d="M8 20c0-2 2-3.5 4-3.5s4 1.5 4 3.5"/>',workshop:'<path d="M14 6l4 4-9 9H5v-4z"/><path d="M13 7l4 4"/>',community:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c0-3 2.5-5 5-5s5 2 5 5M11 20c0-3 2.5-5 5-5s5 2 5 5"/>',webinar:'<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9l5 2.5-5 2.5z"/>',launch:'<path d="M12 3c3 2 5 6 5 10l-5 3-5-3c0-4 2-8 5-10z"/><path d="M9 18l-2 3M15 18l2 3"/>',outdoor:'<path d="M3 20l6-10 4 6 3-4 5 8z"/>',experience:'<path d="M12 3l2.5 6 6.5.5-5 4 1.5 6.5L12 17l-5.5 3 1.5-6.5-5-4 6.5-.5z"/>'};
+const CATS={dinner:{label:"Dinners",color:"#FF4F64",motif:"table"},conference:{label:"Conferences",color:"#3B5BFF",motif:"grid"},summit:{label:"Summits & roundtables",color:"#8B5CF6",motif:"orbit"},workshop:{label:"Workshops",color:"#13A884",motif:"grid"},community:{label:"Community",color:"#F97316",motif:"orbit"},webinar:{label:"Webinars",color:"#0EA5E9",motif:"waves"},launch:{label:"Launches",color:"#F5A700",motif:"sun"},outdoor:{label:"Outdoor & retreats",color:"#16A34A",motif:"peaks"},experience:{label:"Experiences",color:"#EC4899",motif:"sun"}};
+function catOf(f){ f=String(f||"").toLowerCase();
+  return /dinner|chef|supper|happy hour/.test(f)?"dinner":/third-party conference|owned conference|conference|booth|sponsor/.test(f)?"conference":/summit|roundtable|forum|advisory board/.test(f)?"summit":/workshop|lab|craft|hands-on|escape/.test(f)?"workshop":/meetup|hack|contributor|community|fireside/.test(f)?"community":/webinar|virtual|online/.test(f)?"webinar":/launch|premiere|keynote/.test(f)?"launch":/outdoor|active|retreat|offsite|regatta|run|sail|roadshow/.test(f)?"outdoor":"experience" }
+function catBadge(f,light){ const k=catOf(f), C=CATS[k]; return `<span class="catb ${light?"light":""}" style="--cc:${C.color}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>${esc(C.label.replace(/s( &.*)?$/,"").replace("Summit","Summit").replace("Outdoor & retreat","Outdoor"))}</span>` }
+function audBadge(a){ const L=LANES.find(l=>l[0]===a); return L?`<span class="audb" style="--ac:${L[2]}">${esc(L[1])}</span>`:"" }
 function ideaCard(i,k){
   const imp=+i.impact||0, fea=+i.feasibility||0, w=Math.max(1,Math.min(5,+i.wildness||3));
   return `<article class="icard" style="--tilt:${(k%2?1:-1)*0.6}deg">
@@ -2050,7 +2070,7 @@ function publicItems(C){ return (C?.items||[]).filter(i=>i.public!==false&&i.aud
 function rmYear(){ const Q=quarters(); return Q[0].y===Q[3].y?String(Q[0].y):`${Q[0].y}–${String(Q[3].y).slice(2)}` }
 function roadmapHTML(C,B,preview){ const Q=quarters(), its=publicItems(C), co=B?.company||C?.company||"Our";
   return `<div class="roadmap" style="${brandStyle()}"><header class="rmhead">${B?.logo?`<img src="${B.logo}" alt="${esc(co)} logo">`:""}<div><small class="eyebrow">${esc(co)} events · ${rmYear()}</small><h2>Where to meet us this year</h2><p class="note">Small rooms, good conversations. Request an invite to anything that fits.</p></div></header>
-    <div class="rmgrid">${Q.map((q,qi)=>`<div class="rmq"><b class="rmql">${q.label}</b>${its.filter(i=>i.quarter===qi).map(i=>{ const n=allInterest.filter(x=>x.item===i.name).length; return `<article class="rmcard"><span class="tag">${esc(i.format)}</span><h3>${esc(i.name)}</h3><p>${esc(i.concept||"")}</p><span class="note">${esc([i.city,i.date&&fmtDate(i.date),i.size].filter(Boolean).join(" · "))}</span>${preview?(n?`<span class="pchip good">${n} request${n>1?"s":""}</span>`:""):`<button class="btn primary sm" data-req="${esc(i.name)}">Request an invite</button>`}</article>` }).join("")||`<p class="note">More soon.</p>`}</div>`).join("")}</div></div>` }
+    <div class="rmgrid">${Q.map((q,qi)=>`<div class="rmq"><b class="rmql">${q.label}</b>${its.filter(i=>i.quarter===qi).map(i=>{ const n=allInterest.filter(x=>x.item===i.name).length; return `<article class="rmcard" style="--cc:${CATS[catOf(i.format)].color}">${catBadge(i.format)}<h3>${esc(i.name)}</h3><p>${esc(i.concept||"")}</p><span class="note">${esc([i.city,i.date&&fmtDate(i.date),i.size].filter(Boolean).join(" · "))}</span>${preview?(n?`<span class="pchip good">${n} request${n>1?"s":""}</span>`:""):`<button class="btn primary sm" data-req="${esc(i.name)}">Request an invite</button>`}</article>` }).join("")||`<p class="note">More soon.</p>`}</div>`).join("")}</div></div>` }
 function drawRoadmapImage(cvs,C,B){ const x=cvs.getContext("2d"),W=cvs.width,H=cvs.height,[c1,c2]=B?.colors?.length===2?B.colors:(draft.brandColors||["#3B5BFF","#FFC93C"]),ink=inkOn(c1),pad=W*.06,tall=H>W;
   const g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,c1); g.addColorStop(1,shade(c1,-.35)); x.fillStyle=g; x.fillRect(0,0,W,H);
   x.fillStyle=c2; x.globalAlpha=.9; x.beginPath(); x.arc(W*.92,H*.08,Math.min(W,H)*.18,0,7); x.fill(); x.globalAlpha=1;
@@ -2061,7 +2081,7 @@ function drawRoadmapImage(cvs,C,B){ const x=cvs.getContext("2d"),W=cvs.width,H=c
   const Q=quarters(), its=publicItems(C), cols=tall?2:4, rowsN=tall?2:1, gap=pad*.4, cw=(W-pad*2-(cols-1)*gap)/cols, cellH=(H-y-pad*2)/rowsN, bh=f*(tall?.1:.105), lab=f*.05;
   Q.forEach((q,qi)=>{ const cx=pad+(qi%cols)*(cw+gap); let cy=y+Math.floor(qi/cols)*cellH; const fit=Math.max(1,Math.floor((cellH-lab)/(bh+f*.02)));
     x.fillStyle=c2; x.font=F(f*.032); x.fillText(q.label,cx,cy); cy+=lab;
-    its.filter(i=>i.quarter===qi).slice(0,Math.min(fit,4)).forEach(i=>{ x.fillStyle="rgba(255,255,255,.14)"; x.beginPath(); x.roundRect?x.roundRect(cx,cy,cw,bh,f*.02):x.rect(cx,cy,cw,bh); x.fill();
+    its.filter(i=>i.quarter===qi).slice(0,Math.min(fit,4)).forEach(i=>{ x.fillStyle="rgba(255,255,255,.14)"; x.beginPath(); x.roundRect?x.roundRect(cx,cy,cw,bh,f*.02):x.rect(cx,cy,cw,bh); x.fill(); x.fillStyle=CATS[catOf(i.format)].color; x.beginPath(); x.roundRect?x.roundRect(cx,cy,f*.012,bh,f*.006):x.rect(cx,cy,f*.012,bh); x.fill();
       x.fillStyle=ink; x.font=F(f*.03); let nm=i.name; while(x.measureText(nm).width>cw-f*.04&&nm.length>4) nm=nm.slice(0,-2); x.fillText(nm===i.name?nm:nm+"…",cx+f*.02,cy+f*.018);
       x.globalAlpha=.8; x.font=`500 ${f*.022}px Inter, sans-serif`; x.fillText([i.format,i.city].filter(Boolean).join(" · ").slice(0,40),cx+f*.02,cy+f*(tall?.052:.06)); x.globalAlpha=1; cy+=bh+f*.02 }) });
   x.fillStyle=c2; x.font=F(f*.032); x.textBaseline="bottom"; x.fillText("Request an invite →",pad,H-pad*.7) }
@@ -2999,7 +3019,7 @@ function renderCanvas(){
   <div class="cv-wrap"><div class="cv-grid" style="--cols:${Q.length}">
     <div class="cv-corner"></div>${Q.map((q,i)=>`<div class="cv-qh"><b>${q.label}</b>${moments.filter(m=>m.qi===i).map(m=>`<span class="moment-pin" title="${esc(m.what||"")}">◆ ${esc(m.name)}</span>`).join("")}</div>`).join("")}
     ${LANES.map(([k,l,c])=>`<div class="cv-lane" style="--lc:${c}"><b>${l}</b></div>${Q.map((_,qi)=>`<div class="cv-cell" data-cell="${k}|${qi}" style="--lc:${c}">
-        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${c}"><span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span><b>${esc(it.name)}</b>${allInterest.filter(x=>x.item===it.name).length?`<span class="pchip good" style="align-self:flex-start;font-size:.7rem">${allInterest.filter(x=>x.item===it.name).length} invite requests</span>`:""}<small>${it.region?`${esc(it.region)} · `:""}${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
+        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${CATS[catOf(it.format)].color}"><span class="btns" style="gap:6px;justify-content:space-between">${catBadge(it.format)}<span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span></span><b>${esc(it.name)}</b>${allInterest.filter(x=>x.item===it.name).length?`<span class="pchip good" style="align-self:flex-start;font-size:.7rem">${allInterest.filter(x=>x.item===it.name).length} invite requests</span>`:""}<small>${it.region?`${esc(it.region)} · `:""}${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
         <button class="dream" data-dream="${k}|${qi}" aria-label="Dream up an experience for ${l} in ${Q[qi].label}">+ Dream one up</button></div>`).join("")}`).join("")}
   </div></div>
   <div id="cvDetail"></div><div id="shareHost"></div><div id="terrHost">${C.territory?terrHTML(C.territory):""}</div>`;
@@ -3111,19 +3131,20 @@ const LIB=[
   steps:["Pick 3 customers with real stories","Hire a documentary crew","Book a small cinema","Red carpet and photo wall","Release the film online after"],kpis:["Views","Customer referrals","Press mentions"],pitfalls:["Legal approvals take long","Film running over budget"]},
  {name:"Champions Escape Room",audience:"customers",format:"Hands-on workshop",line:"Your internal champions solve a puzzle room built around their daily work.",why:"Champions who feel like heroes keep selling for you.",ambition:3,cost:"$6k–12k",lead:"5 weeks",proven:true,
   steps:["Invite champions from top accounts","Theme the room on their problems","Teams mix companies","Debrief over drinks","Send a champion kit"],kpis:["Champion retention","Referrals"],pitfalls:["Puzzles too hard","Too long"]}];
-let inspFeed=null, inspFilter="all", inspSaved=new Set(), storyIx=0, storyTimer=null;
+let inspType="", inspFeed=null, inspFilter="all", inspSaved=new Set(), storyIx=0, storyTimer=null;
 function feed(){ if(!inspFeed) inspFeed=LIB.map((x,i)=>({...x,id:"lib"+i,starter:true})); return inspFeed }
 function laneOf(a){ return LANES.find(l=>l[0]===a)||LANES[0] }
 function renderInspire(){
   const el=$("#view-inspire"); if(!el) return;
-  const F=feed().filter(x=>inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter));
+  const F=feed().filter(x=>(inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter))&&(!inspType||catOf(x.format)===inspType));
   el.innerHTML=`
   <div class="canvas-head"><div><small class="eyebrow">Inspire</small><h2>What could you host next?</h2><p class="lede">Watch the stories, save what sparks something, and open any card for a playbook.</p></div>
     <div class="btns"><button class="btn primary big" id="playStories">▶ Watch stories</button><button class="btn" id="inspMore"><span class="spark">✦</span>Inspire me</button></div></div>
   <div class="peerbar"><div style="flex:1;min-width:240px"><small class="eyebrow">Learn from peers</small><input id="peerIn" placeholder="Companies you respect, e.g. Clay, Ramp, Notion" value="${esc(peerCompanies())}"><span class="note">Encore finds real events these companies (or comparable ones in your space) have hosted, with sources.</span></div><button class="btn primary" id="peerGo"><span class="spark">✦</span>Find their events</button></div>
   <pre class="stream" id="st-peers" hidden></pre>
   <div class="storyrow">${feed().slice(0,10).map((x,i)=>`<button class="bubble-s" data-story="${i}" style="--lc:${laneOf(x.audience)[2]}"><canvas width="120" height="120" data-sart="${x.id}"></canvas><span>${esc(x.name)}</span></button>`).join("")}</div>
-  <div class="filters">${[["all","All"],...LANES.map(l=>[l[0],l[1]]),["peers",`From peers (${feed().filter(x=>x.peer).length})`],["saved",`Saved (${inspSaved.size})`]].map(([k,l])=>`<button class="tile2 ${inspFilter===k?"on":""}" data-filt="${k}">${esc(l)}</button>`).join("")}</div>
+  <div class="filters typef"><small class="eyebrow">Type</small><button class="tile2 ${!inspType?"on":""}" data-tfilt="">All types</button>${Object.entries(CATS).filter(([k])=>feed().some(x=>catOf(x.format)===k)).map(([k,C])=>`<button class="tile2 cattile ${inspType===k?"on":""}" style="--cc:${C.color}" data-tfilt="${k}">${C.label} <span class="cnt">${feed().filter(x=>catOf(x.format)===k).length}</span></button>`).join("")}</div>
+  <div class="filters"><small class="eyebrow">Audience</small>${[["all","All"],...LANES.map(l=>[l[0],l[1]]),["peers",`From peers (${feed().filter(x=>x.peer).length})`],["saved",`Saved (${inspSaved.size})`]].map(([k,l])=>`<button class="tile2 ${inspFilter===k?"on":""}" data-filt="${k}">${esc(l)}</button>`).join("")}</div>
   <div class="pins">${F.length?F.map(x=>pinCard(x)).join(""):`<p class="empty">Nothing here yet. Save cards with ♥.</p>`}</div>
   <div id="pbHost"></div><div id="storyHost"></div>`;
   $$("canvas[data-sart]",el).forEach(c=>artFor(c,feed().find(x=>x.id===c.dataset.sart)));
@@ -3131,6 +3152,7 @@ function renderInspire(){
   $("#playStories").onclick=()=>openStories(0);
   $$("[data-story]",el).forEach(b=>b.onclick=()=>openStories(+b.dataset.story));
   $$("[data-filt]",el).forEach(b=>b.onclick=()=>{inspFilter=b.dataset.filt;renderInspire()});
+  $$("[data-tfilt]",el).forEach(b=>b.onclick=()=>{inspType=b.dataset.tfilt;renderInspire()});
   $("#inspMore").onclick=e=>inspireMore(e.currentTarget);
   $("#peerGo").onclick=e=>findPeerEvents(e.currentTarget);
   wirePinActions(el);
@@ -3150,10 +3172,10 @@ Reply with only JSON: {"companies":"comma-separated list of the companies you co
   if(db) db.doc("inspire/peers").set(peerData).catch(()=>{});
   toast(`Found ${ideas.length} events from ${new Set(ideas.map(x=>x.company)).size} companies${used.size?` using ${[...used].join(", ")}`:""}.`);
 }
-function artFor(c,x){ if(!c||!x) return; const L=laneOf(x.audience); drawCover(c,{...draft,name:x.name,brand:"",cover:{motif:SUITS[[...x.name].reduce((a,ch)=>a+ch.charCodeAt(0),0)%SUITS.length]},brandColors:[L[2],"#FFC93C"]},{mini:true}) }
+function artFor(c,x){ if(!c||!x) return; const C=CATS[catOf(x.format)]; drawCover(c,{...draft,name:x.name,brand:"",cover:{motif:C.motif},brandColors:[C.color,"#FFFFFF"]},{mini:true}) }
 function pinCard(x){ const L=laneOf(x.audience), h=[260,320,380][[...x.name].length%3];
-  return `<article class="pin" style="--lc:${L[2]}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${esc(L[1])}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}</div>
-    <div class="ib">${x.peer?`<span class="by">By ${esc(x.company)}${x.date?` · ${esc(x.date)}`:""}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
+  return `<article class="pin" style="--lc:${L[2]};--cc:${CATS[catOf(x.format)].color}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${catBadge(x.format)}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}</div>
+    <div class="ib">${audBadge(x.audience)}${x.peer?`<span class="by">By ${esc(x.company)}${x.date?` · ${esc(x.date)}`:""}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
     <div class="btns"><button class="round sm ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn sm" data-pb="${x.id}">Playbook</button><button class="btn ghost sm" data-addc="${x.id}">+ Canvas</button></div></div></article>` }
 function wirePinActions(root){
   $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; inspSaved.has(id)?inspSaved.delete(id):inspSaved.add(id); b.classList.toggle("keep"); toast(inspSaved.has(id)?"Saved":"Removed") });
@@ -3176,7 +3198,7 @@ function drawStory(){
     <canvas width="540" height="960" id="sArt" aria-hidden="true"></canvas>
     <div class="sshade"></div>
     <button class="sclose" aria-label="Close stories">✕</button>
-    <div class="stext">${x.peer?`<span class="by light">By ${esc(x.company)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
+    <div class="stext"><div class="btns" style="gap:6px">${catBadge(x.format,true)}${audBadge(x.audience)}</div>${x.peer?`<span class="by light">By ${esc(x.company)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
       <div class="sstats"><span>${"★".repeat(x.ambition||3)}</span><span>${esc(x.cost||"")}</span><span>${esc(x.lead||"")}</span><span>${x.proven?"Proven motion":"New motion"}</span></div>
       <div class="btns"><button class="round ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn" data-pb="${x.id}">Playbook ↑</button><button class="btn" data-addc="${x.id}">+ Canvas</button><button class="btn primary" data-dep="${x.id}">Deploy</button></div></div>
     <button class="szone l" aria-label="Previous"></button><button class="szone r" aria-label="Next"></button></div></div>`;

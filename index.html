@@ -507,6 +507,20 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.facts span{display:flex;flex-direction:column;padding:8px 14px;border-radius:16px;background:var(--surface);box-shadow:var(--puff);min-width:110px}
+.facts small{font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.facts b{font-family:var(--f-display)}
+.progs.big{grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+.meterrow{display:grid;grid-template-columns:72px 1fr 64px;gap:8px;align-items:center;font-size:.8rem}
+.meterrow span{text-align:right;font-variant-numeric:tabular-nums}
+.nomrow{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--bg);cursor:pointer}
+.nomrow > div{display:flex;flex-direction:column}
+.nomrow.on{background:#DDF6EE}
+.crmbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.crmbar details{flex:1 1 260px}
+.crmbar details > summary{list-style:none;display:inline-flex}
+
 .kindrow{margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .kindrow .tile2{font-size:.82rem;padding:7px 12px}
 .specials{display:flex;flex-direction:column;gap:14px}
@@ -689,6 +703,7 @@ input,textarea,select{border-radius:14px}
 <header class="top" id="appHeader"><div class="wrap">
   <div class="logo"><svg viewBox="0 0 44 32" width="40" height="29" aria-hidden="true"><circle cx="12" cy="18" r="11" fill="#FF4F64"/><circle cx="30" cy="13" r="12" fill="#3B5BFF"/><circle cx="24" cy="24" r="7.5" fill="#FFC93C"/><ellipse cx="8.5" cy="13.5" rx="3.2" ry="2" fill="#fff" opacity=".7"/><ellipse cx="26" cy="7.5" rx="3.6" ry="2.2" fill="#fff" opacity=".7"/><ellipse cx="22" cy="21.5" rx="2.2" ry="1.4" fill="#fff" opacity=".75"/></svg><span>encore</span></div>
   <nav class="tabs" aria-label="Main">
+    <a href="#programs" data-view="programs">Programs</a>
     <a href="#inspire" data-view="inspire">Inspire</a>
     <a href="#canvas" data-view="canvas">Canvas</a>
     <a href="#brand" data-view="brand">Brand</a>
@@ -715,6 +730,7 @@ input,textarea,select{border-radius:14px}
     </div>
   </div>
   <div class="banner" id="brandBanner" hidden><span>New here? Set up your brand in 2 minutes and every event starts on-brand.</span><a href="#brand">Set up brand →</a></div>
+  <div id="factsHost"></div>
   <div class="clock" id="clock"></div>
   <div id="autoHost" style="margin-top:18px" hidden></div>
   <div id="pitchHost"></div>
@@ -736,6 +752,9 @@ input,textarea,select{border-radius:14px}
     <div id="stepHost" class="stack"></div>
   </div>
 </section>
+
+<!-- ============ PROGRAMS ============ -->
+<section class="view" id="view-programs" hidden></section>
 
 <!-- ============ INSPIRE ============ -->
 <section class="view" id="view-inspire" hidden></section>
@@ -974,9 +993,10 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.collection("feedback").onSnapshot(snap=>{ allFeedback=snap.docs.map(d=>({id:d.id,...d.data()})); refreshAll() });
   db.doc("brands/main").onSnapshot(sn=>{ if(sn.exists){ brandProfile=sn.data(); syncLogo(); if(location.hash==="#brand") renderBrand(); if(step===1&&!isGuestRoute()) renderStep() } });
   db.doc("canvas/main").onSnapshot(sn=>{ if(sn.exists){ canvasData=sn.data(); if(location.hash==="#canvas"||!location.hash) renderCanvas() } });
+  db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
   db.collection("rsvps").onSnapshot(snap=>{ allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
 })();
-function refreshAll(){ renderInsights(); renderImpact(); if(isGuestRoute()) renderGuest(); else if(step===1||step===7) renderStep() }
+function refreshAll(){ renderInsights(); renderImpact(); if(!location.hash||location.hash==="#programs") renderPrograms(); if(isGuestRoute()) renderGuest(); else if(step===1||step===7) renderStep() }
 
 const STYLE=`\nWRITING STYLE: write like a real person talking to a colleague. Plain, specific words, short sentences. Never use these phrases or close variants: off the record, no (sales) pitch, no slides, nothing recorded, compare notes, trade notes, swap notes, the room, peers (as a selling point), candid, intimate, curated, elevate, unforgettable, memorable, legendary, irresistible, seamless, game-changing, deep dive, thought leadership, feel seen, lead with value, value-first, war stories, bucket-list, magic. No "not X, but Y" sentences. No em-dashes.`;
 async function askJSON(prompt, btn, streamEl, extra={}){
@@ -1190,19 +1210,20 @@ $("#autoBtn").onclick=autopilot;
 // ==================================================================
 // Routing
 // ==================================================================
-function isGuestRoute(){ return /^#(rsvp|survey)-/.test(location.hash) }
+function isGuestRoute(){ return /^#(rsvp|survey|nominate)-/.test(location.hash) }
 function route(){
   const h=location.hash.slice(1);
   if(isGuestRoute()){
     $("#appHeader").hidden=true; $$(".view").forEach(s=>s.hidden=s.id!=="view-guest"); renderGuest(); return;
   }
   $("#appHeader").hidden=false;
-  const name=["studio","insights","impact","brand","canvas","inspire"].includes(h)?h:(h?"studio":"canvas");
+  const name=["studio","insights","impact","brand","canvas","inspire","programs"].includes(h)?h:(h?"studio":"programs");
   $$(".view").forEach(s=>s.hidden = s.id!=="view-"+name);
   $$("nav.tabs a").forEach(a=>{ if(a.dataset.view===name) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") });
   if(name==="studio") renderStep();
   if(name==="brand") renderBrand();
   if(name==="canvas") renderCanvas();
+  if(name==="programs") renderPrograms();
   if(name==="inspire") renderInspire(); else closeStories?.();
 }
 addEventListener("hashchange",()=>{route();window.scrollTo(0,0)});
@@ -1245,7 +1266,7 @@ setInterval(()=>{ if(!isGuestRoute()&&$("#clock")) renderHeader() },60000);
 // ==================================================================
 function renderStep(){
   if(isGuestRoute()) return;
-  renderHeader(); drawPitch(); drawCoach();
+  renderHeader(); drawPitch(); drawCoach(); const fh=$("#factsHost"); if(fh) fh.innerHTML=factsStrip(draft);
   const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ draft.kind=b.dataset.kind; draft.example=false; toast(`${KINDS[draft.kind].label}: your specialists are in Design.`); renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6})[step](host);
@@ -1875,6 +1896,100 @@ function wireMods(host){
 }
 function kindPicker(){ const k=kindOf(); return `<div class="kindrow" role="group" aria-label="What are you running?"><small class="eyebrow">What are you running?</small><div class="chips">${Object.entries(KINDS).map(([id,K])=>`<button class="tile2 ${k===id?"on":""}" data-kind="${id}">${esc(K.label)}</button>`).join("")}</div></div>` }
 
+// ==================================================================
+// Operations: programs home, AE nominations, CRM files, badge scans
+// ==================================================================
+function slug(x){ return String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"ae" }
+function eventCost(d){ const P=d.produce||(d.example?EXAMPLE_OUT.produce:null); return (P?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||+d.budget||0 }
+function regCount(e){ return (e.guests||[]).filter(g=>g.status==="Going"||g.status==="Attended").length+allRsvps.filter(r=>r.eventId===e.id&&r.response==="going").length }
+function factsStrip(d){ return `<div class="facts"><span><small>Type</small><b>${esc(KINDS[kindOf(d)].label)}</b></span><span><small>Date</small><b>${d.date?esc(fmtDate(d.date)):"Not set"}</b></span><span><small>City</small><b>${esc(d.city||"Not set")}</b></span><span><small>Guests</small><b>${esc(d.headcount)}</b></span><span><small>Budget</small><b>${money(eventCost(d))}</b></span><span><small>Registered</small><b>${regCount(d)} / ${esc(d.headcount)}</b></span></div>` }
+// ---------------- Programs home ----------------
+function renderPrograms(){
+  const el=$("#view-programs"); if(!el) return;
+  const evs=[...allEvents.filter(e=>e.status!=="done"&&!e.example)];
+  if(draft.concept&&!draft.id&&!draft.example) evs.unshift({...draft,id:null,_draft:true});
+  const rows=evs.map(e=>{ const h=hydrate(e), P=e.produce, S=P?taskStatus(pmState(h),P):[], od=S.filter(t=>t.st==="overdue").length, bl=S.filter(t=>t.st==="blocked").length,
+    nx=S.filter(t=>t.st!=="done").sort((a,b)=>a.days-b.days)[0], reg=regCount(e), tgt=+e.headcount||0, plan=eventCost(h), act=+e.actualSpend||0,
+    noms=allNoms.filter(n=>n.eventId===e.id).length, aes=[...new Set((e.guests||[]).map(g=>g.owner).filter(Boolean))].length,
+    days=e.date?Math.ceil((new Date(e.date+"T12:00:00")-Date.now())/864e5):null, health=bl?"blocked":od||(days!=null&&days<21&&reg<tgt*.5)?"at risk":"on track";
+    return {e,od,bl,nx,reg,tgt,plan,act,noms,aes,days,health} });
+  const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
+  el.innerHTML=`<div class="canvas-head"><div><small class="eyebrow">Programs</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
+    <div class="btns"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
+    <div class="kpis" style="margin:18px 0"><div class="kpi"><small>Events in flight</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs target</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Budget: actual vs plan</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Blocked or overdue</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
+    ${rows.length?`<div class="progs big">${rows.map(r=>`<article class="prog ${r.health.replace(" ","")}">
+      <div class="btns" style="justify-content:space-between"><span class="tag">${esc((KINDS[r.e.kind]||KINDS.dinner).label)}</span><span class="pchip ${r.health==="on track"?"good":r.health==="at risk"?"warn":"bad"}">${r.health}</span></div>
+      <b class="big">${esc(r.e.name||"Untitled")}</b><span class="note">${esc(r.e.city||"")}${r.e.date?` · ${esc(fmtDate(r.e.date))}`:""}${r.days!=null?` · ${r.days} days`:""}${r.e._draft?" · not saved":""}</span>
+      <div class="meterrow"><small>Registered</small><div class="bar"><i style="width:${r.tgt?Math.min(100,100*r.reg/r.tgt):0}%"></i></div><span>${r.reg}/${r.tgt}</span></div>
+      <div class="meterrow"><small>Spend</small><div class="bar"><i style="width:${r.plan?Math.min(100,100*r.act/r.plan):0}%;background:${r.act>r.plan?"var(--bad)":"var(--cobalt)"}"></i></div><span>${money(r.act)}</span></div>
+      ${r.aes?`<span class="note">Nominations: ${r.noms} of ${r.aes} AEs</span>`:""}
+      ${r.nx?`<span class="note">Next: ${esc(r.nx.task)} · ${esc(r.nx.owner)}</span>`:""}${r.od||r.bl?`<span class="note" style="color:var(--bad)">${r.od} overdue · ${r.bl} blocked</span>`:""}
+      <button class="btn sm" data-popen="${esc(r.e.id||"")}">Open</button></article>`).join("")}</div>`:`<p class="empty">No events in flight. Start one, or pick a template from Inspire.</p>`}`;
+  $("#newEv").onclick=()=>{ draft=brandDraft(); step=1; location.hash="studio" };
+  $("#tplBtn").onclick=()=>location.hash="inspire";
+  $$("[data-popen]",el).forEach(b=>b.onclick=()=>{ const id=b.dataset.popen; if(id){ const e=allEvents.find(x=>x.id===id); if(e) draft=hydrate(e) } step=1; location.hash="studio" });
+}
+// ---------------- AE nominations ----------------
+let allNoms=[];
+function aeList(d){ return [...new Set([...d.guests.map(g=>g.owner),...((out("scout")?.contacts)||[]).map(c=>c.owner)].filter(Boolean))] }
+function nomLink(d,ae){ return `${ART_URL}#nominate-${d.id}-${slug(ae)}` }
+function nominationsHTML(d){
+  const A=aeList(d); if(!A.length) return `<p class="empty">Add AE owners to your guests (or build the guest list) to ask sales for nominations.</p>`;
+  if(!d.id) return `<div class="btns"><button class="btn primary sm" id="nomSave">Save event to create nomination links</button></div>`;
+  return `<div class="tscroll"><table><thead><tr><th>Account exec</th><th>Status</th><th>Nominated</th><th></th></tr></thead><tbody>${A.map(ae=>{ const n=allNoms.find(x=>x.eventId===d.id&&x.ae===slug(ae)); return `<tr><td><b>${esc(ae)}</b></td><td>${n?`<span class="pchip good">Submitted</span>`:`<span class="pchip warn">Waiting</span>`}</td><td>${n?(n.picks||[]).map(p=>esc(p.name)).join(", ")||"None":"–"}</td>
+    <td><div class="btns" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost sm" data-nomcopy="${esc(ae)}">Copy Slack message</button>${srcState.slack==="on"?`<button class="btn ghost sm" data-nomslack="${esc(ae)}">Send on Slack</button>`:""}</div></td></tr>` }).join("")}</tbody></table></div>
+    ${allNoms.some(n=>n.eventId===d.id&&n.picks?.length)?`<div class="btns"><button class="btn primary sm" id="nomMerge">Add nominated people to the guest list</button></div>`:""}`;
+}
+function nomMessage(d,ae){ const sug=((out("scout")?.contacts)||[]).filter(c=>!c.owner||c.owner===ae).slice(0,5).map(c=>c.name).join(", ");
+  return `Hi ${ae.split(" ")[0]}, we're hosting ${d.name} (${d.date?fmtDate(d.date):"date TBD"}${d.city?`, ${d.city}`:""}). Could you nominate up to 3 people from your accounts? ${sug?`I've suggested ${sug}. `:""}Approve or add names here, it takes a minute: ${nomLink(d,ae)}` }
+function wireNominations(host,d){
+  $("#nomSave",host)&&($("#nomSave",host).onclick=saveEvent);
+  $$("[data-nomcopy]",host).forEach(b=>b.onclick=()=>copyTxt(nomMessage(d,b.dataset.nomcopy)));
+  $$("[data-nomslack]",host).forEach(b=>b.onclick=async()=>{ const mcp=await getMcp(); try{ await mcp.callTool("Slack","slack_send_message",{text:nomMessage(d,b.dataset.nomslack)}); toast("Sent on Slack") }catch(e){ toast("Couldn't send on Slack: "+(e?.code||"error")) } });
+  $("#nomMerge",host)&&($("#nomMerge",host).onclick=()=>{ let n=0; allNoms.filter(x=>x.eventId===d.id).forEach(x=>(x.picks||[]).forEach(p=>{ if(!d.guests.some(g=>g.name===p.name)){ d.guests.push({name:p.name,title:p.title||"",company:p.company||"",email:p.email||"",owner:x.aeName||x.ae,tier:"A",status:"Not invited",outcome:"None yet",value:0,nominated:true}); n++ } })); toast(`Added ${n} nominated guest${n===1?"":"s"}`); renderStep() });
+}
+async function renderNominate(host,eventId,aeSlug){
+  let ev=allEvents.find(e=>e.id===eventId); if(!ev&&db){ try{ const s=await db.doc("events/"+eventId).get(); if(s.exists) ev={id:eventId,...s.data()} }catch{} }
+  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady?"We couldn't find this event.":"Loading…"}</p></div>`; return }
+  const e=hydrate(ev), sug=((e.scout?.contacts)||[]).filter(c=>!c.owner||slug(c.owner)===aeSlug).slice(0,8), picked=new Set(sug.filter((_,i)=>i<3).map(c=>c.name)), extra=[];
+  const draw=()=>{ host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel stack"><small class="eyebrow">Nominations · ${esc(e.brand||"")}</small><h2>${esc(e.name)}</h2><p class="note">${esc(fmtDate(e.date))}${e.city?` · ${esc(e.city)}`:""} · ${esc(e.headcount)} guests</p><p>Pick up to 3 people from your accounts who'd get the most out of this. Your field marketer handles invites and logistics.</p></div>
+    <div class="panel stack">${sug.length?sug.map(c=>`<label class="nomrow ${picked.has(c.name)?"on":""}"><input type="checkbox" data-pick="${esc(c.name)}" ${picked.has(c.name)?"checked":""}><div><b>${esc(c.name)}</b><span class="note">${esc(c.title)} · ${esc(c.company)}</span><span class="note">${esc(c.why||"")}</span></div></label>`).join(""):`<p class="note">No suggestions yet. Add people below.</p>`}
+      ${extra.map(x=>`<div class="nomrow on"><div><b>${esc(x.name)}</b><span class="note">${esc(x.title)} · ${esc(x.company)}</span></div></div>`).join("")}
+      <div class="row"><label class="f">Name<input id="nx-name"></label><label class="f">Title<input id="nx-title"></label><label class="f">Company<input id="nx-co"></label><label class="f">Email<input id="nx-email"></label></div>
+      <div class="btns"><button class="btn sm" id="nxAdd">Add person</button><button class="btn primary" id="nomSend">Submit ${picked.size+extra.length} nomination${picked.size+extra.length===1?"":"s"}</button></div></div></div>`;
+    $$("[data-pick]",host).forEach(c=>c.onchange=()=>{ c.checked?picked.add(c.dataset.pick):picked.delete(c.dataset.pick); draw() });
+    $("#nxAdd").onclick=()=>{ const n=$("#nx-name").value.trim(); if(!n) return; extra.push({name:n,title:$("#nx-title").value.trim(),company:$("#nx-co").value.trim(),email:$("#nx-email").value.trim()}); draw() };
+    $("#nomSend").onclick=async()=>{ const picks=[...sug.filter(c=>picked.has(c.name)).map(({name,title,company,email,why})=>({name,title,company,email:email||"",why:why||""})),...extra];
+      try{ await db.doc(`nominations/${eventId}--${aeSlug}`).set({eventId,ae:aeSlug,aeName:aeSlug.replace(/-/g," "),picks,at:Date.now()}); host.innerHTML=`<div class="panel"><h3>Thanks, nominations sent.</h3><p class="note">${picks.length} ${picks.length===1?"person":"people"} nominated. You'll see them on the guest list once invites go out.</p></div>` }
+      catch(err){ toast("Couldn't submit: "+(err?.message||"try again")) } } };
+  draw();
+}
+// ---------------- CRM files ----------------
+function campaignCSV(d){ const st=g=>g.status==="Attended"?"Attended":g.status==="Going"?"Registered":g.status==="Declined"?"Declined":g.status==="Not invited"?"":"Invited";
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`; const rows=d.guests.filter(g=>st(g)).map(g=>{ const [f,...l]=(g.name||"").split(" "); return [f,l.join(" "),g.email,g.company,g.title,st(g),g.owner,`Event: ${d.name}`,g.source||"Influenced"].map(q).join(",") });
+  return ["First Name,Last Name,Email,Company,Title,Member Status,Owner,Campaign,Pipeline Credit",...rows].join("\n") }
+function parseCSV(text){ const lines=text.trim().split(/\r?\n/).filter(Boolean); if(!lines.length) return [];
+  const split=l=>{ const out=[]; let cur="",q=false; for(const ch of l){ if(ch==='"'){ q=!q } else if(ch===","&&!q){ out.push(cur); cur="" } else cur+=ch } out.push(cur); return out.map(x=>x.trim()) };
+  const head=split(lines[0]).map(h=>h.toLowerCase()); const hasHead=head.some(h=>/name|email|company|account|amount|title/.test(h));
+  return (hasHead?lines.slice(1):lines).map(l=>{ const v=split(l); if(!hasHead) return {_:v}; const o={}; head.forEach((h,i)=>o[h]=v[i]); return o }) }
+const col=(o,...ks)=>{ for(const k of ks){ const hit=Object.keys(o).find(x=>x.replace(/[^a-z]/g,"").includes(k)); if(hit&&o[hit]) return o[hit] } return "" };
+function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date+"T12:00:00"):null, W=90*864e5; let matched=0, infl=0, src=0;
+  rows.forEach(r=>{ const email=col(r,"email").toLowerCase(), co=col(r,"account","company").toLowerCase(), amt=+String(col(r,"amount","value")).replace(/[^0-9.]/g,"")||0, stage=col(r,"stage"), created=new Date(col(r,"created","createddate")), moved=new Date(col(r,"laststage","stagechange","modified")||col(r,"created"));
+    const g=d.guests.find(x=>x.status==="Attended"&&((email&&x.email?.toLowerCase()===email)||(co&&x.company?.toLowerCase()===co))); if(!g) return;
+    const inWin=t=>ev&&!isNaN(t)&&t>=ev&&t-ev<=W, newOpp=inWin(created), movedOpp=inWin(moved);
+    if(!newOpp&&!movedOpp&&ev) return; matched++;
+    g.outcome=/won/i.test(stage)?"Closed won":"Opportunity"; g.value=amt; g.source=newOpp&&g.source==="Sourced"?"Sourced":"Influenced"; g.source==="Sourced"?src+=amt:infl+=amt });
+  return {rows:rows.length,matched,infl,src} }
+// ---------------- Badge scans ----------------
+function importLeads(d,text){ const rows=parseCSV(text); let added=0,dupes=0;
+  const seniority=t=>/chief|cxo|ceo|cto|cio|cdo|ciso|vp|vice president|head of/i.test(t)?"A":/director|principal|lead/i.test(t)?"B":"C";
+  const targets=new Set([...d.guests.map(g=>g.company?.toLowerCase()),...((out("scout")?.contacts)||[]).map(c=>c.company?.toLowerCase())].filter(Boolean));
+  rows.forEach(r=>{ const name=r._?r._[0]:(col(r,"fullname","name")||[col(r,"first"),col(r,"last")].filter(Boolean).join(" ")), email=(r._?r._[3]:col(r,"email"))||"", company=(r._?r._[2]:col(r,"company","account","organization"))||"", title=(r._?r._[1]:col(r,"title","jobtitle"))||"";
+    if(!name) return; if(d.guests.some(g=>(email&&g.email?.toLowerCase()===email.toLowerCase())||(g.name.toLowerCase()===name.toLowerCase()&&(g.company||"").toLowerCase()===company.toLowerCase()))){ dupes++; return }
+    const owner=d.guests.find(g=>g.company&&g.company.toLowerCase()===company.toLowerCase()&&g.owner)?.owner||"Unassigned", tier=targets.has(company.toLowerCase())?"A":seniority(title);
+    d.guests.push({name,title,company,email,owner,tier,status:"Attended",source:"Sourced",leadAt:Date.now(),outcome:"None yet",value:0,scanned:true}); added++ });
+  return {added,dupes} }
+
 // Chief-of-staff coach ----------------------------------------------------
 function nextAction(){ const d=draft;
   const P=out("produce"); if(P&&!d.example){ pmState(d); const S=taskStatus(d,P), bl=S.filter(t=>t.st==="blocked"), od=S.filter(t=>t.st==="overdue");
@@ -1913,7 +2028,7 @@ function pitchText(P){ return [`# ${P.title}`,P.oneLiner,"",`## Why now`,P.whyNo
 function drawPitch(){
   const el=$("#pitchHost"); if(!el) return; const P=draft.pitch;
   if(!P){ el.innerHTML=draft.concept&&!draft.example?`<div class="pitchbar"><span><b>Need sign-off?</b> Turn this event into a one-page proposal.</span><button class="btn sm" data-run="pitch"><span class="spark">✦</span>Write the proposal</button><pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div></div>`:""; wireRuns(el); return }
-  const tot=P.budget?.total||0;
+  const tot=eventCost(draft), per=tot/(+draft.headcount||1); P.budget={...(P.budget||{}),total:tot,perGuest:Math.round(per)};
   el.innerHTML=`<details class="pitch onbrand" open style="${brandStyle()}"><summary>${brandProfile?.logo?`<img class="plogo" src="${brandProfile.logo}" alt="${esc(brandProfile.company||"")} logo">`:""}<span class="eyebrow">${esc(brandProfile?.company||draft.brand||"")} · Proposal</span> <b>${esc(P.title)}</b></summary>
     <div class="pitchbody">
       <canvas width="1200" height="380" id="pitchCv" aria-hidden="true"></canvas>
@@ -2182,12 +2297,12 @@ function step4(host){
           return `<label class="task ${done?"done":""} ${late?"late":""}"><input type="checkbox" data-t="${t.i}" ${done?"checked":""}><span class="due">${t.days<0?"T"+t.days:"T+"+t.days}${dd?" · "+dd.toLocaleDateString(undefined,{month:"short",day:"numeric"}):""}</span><span class="t">${esc(t.task)}</span><span class="own tag">${esc(t.owner)}</span></label>`}).join("")}
       </div>
       <div class="stack" style="gap:8px"><div class="eyebrow">Budget</div>
-        <div class="tscroll"><table><tbody>${P.budget.map(b=>`<tr><td>${esc(b.line)}<div class="note">${esc(b.note)}</div></td><td class="num">${money(b.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${money(total)}</b></td></tr></tbody></table></div>
+        <div class="tscroll"><table><tbody>${P.budget.map(b=>`<tr><td>${esc(b.line)}<div class="note">${esc(b.note)}</div></td><td class="num">${money(b.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${money(total)}</b></td></tr><tr><td>Actual spend so far</td><td class="num"><input class="mini" type="number" min="0" step="100" id="actSpend" value="${+d.actualSpend||0}" aria-label="Actual spend so far"></td></tr></tbody></table></div>
         <div class="eyebrow" style="margin-top:8px">Run-of-show</div>
         <div class="agenda">${P.runOfShow.map(r=>`<span>${esc(r.time)}</span><span>${esc(r.item)} <span class="note">· ${esc(r.owner)}</span></span>`).join("")}</div>
       </div>
     </div>`;
-  wirePM(host,d,P);
+  wirePM(host,d,P); $("#actSpend")&&($("#actSpend").onchange=e=>{ d.actualSpend=+e.target.value||0 });
   $$("[data-t]",host).forEach(c=>c.onchange=()=>{ const i=+c.dataset.t; d.tasksDone=c.checked?[...new Set([...d.tasksDone,i])]:d.tasksDone.filter(x=>x!==i); renderStep() });
   wireRuns(host); wireNext(host);
 }
@@ -2209,6 +2324,7 @@ function step5(host){
       </div></details>
   </div>
   ${agentBox("scout","Guest scout","Your invite list, row by row: who they are, how you know them, why they fit, and whether they're in town.","Build the guest list")}
+  <div class="panel stack"><div><h3>Ask sales for nominations</h3><p class="note">Each AE gets a link with suggestions from their accounts. They approve or add up to 3 people in a minute. You see who's in and who's holding up.</p></div>${nominationsHTML(d)}</div>
   <div class="btns"><button class="btn" id="checkinBtn">Onsite check-in mode</button><span class="note">Big tap targets for the door on the day. Every check-in starts that lead's 24-hour follow-up clock.</span></div><div id="checkinHost"></div>
   ${agentBox("briefing","Sales lead","A one-glance cheat sheet for every attendee, so the whole team is ready.","Build cheat sheets")}
   ${agentBox("outreach","Outreach","A personal invite for each guest, written for their role and company, plus a follow-up sequence.","Write invites")}
@@ -2244,7 +2360,7 @@ function step5(host){
     toast(rows.length?`Added ${rows.length} guest${rows.length>1?"s":""}`:"Nothing to add. Use Name, Title, Company per line."); renderStep() };
   const O=out("outreach");
   drawBriefing(host,d);
-  $("#checkinBtn").onclick=()=>drawCheckin(d);
+  $("#checkinBtn").onclick=()=>drawCheckin(d); wireNominations(host,d);
   $("#out-outreach").innerHTML = !O ? `<p class="empty">Write a personal invite for each guest on your list.</p>` : `
     <div class="cards">${O.invites.map((iv,k)=>{const g=d.guests[iv.guestIndex]; return `<div class="card"><div class="meta">To: ${esc(g?`${g.name}, ${g.title}`:"Example guest")}</div><b>${esc(iv.subject)}</b><p style="font-size:.9rem">${esc(iv.body)}</p>${iv.aeNote?`<p class="note"><b>Line for ${esc(g?.owner||"the AE")}:</b> ${esc(iv.aeNote)}</p>`:""}<div class="btns"><button class="btn ghost sm" data-cp="${k}">Copy</button>${g&&g.status==="Not invited"?`<button class="btn ghost sm" data-mk="${iv.guestIndex}">Mark invited</button>`:""}</div></div>`}).join("")}</div>
     <div class="btns"><button class="btn primary sm" id="gmDrafts">Save as Gmail drafts</button><span class="note" id="gmNote">Drafts land in your Gmail with your signature. Nothing is sent until you hit send.</span></div>
@@ -2300,7 +2416,9 @@ function step6(host){
     $("#attrib").innerHTML = !ga.length ? `<p class="empty">Invite guests in step 6 to track outcomes here.</p>` : `
     ${(()=>{ const L=d.guests.filter(g=>g.status==="Attended"), ok=L.filter(g=>g.contactedAt&&g.leadAt&&(g.contactedAt-g.leadAt)<=864e5).length, src=L.filter(g=>g.source==="Sourced").reduce((a,g)=>a+(OUTCOMES.indexOf(g.outcome||"None yet")>=2?+g.value||0:0),0), cost=(out("produce")?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||d.budget||0;
       return `<div class="kpis"><div class="kpi"><small>Leads</small><b>${L.length}</b></div><div class="kpi"><small>Followed up within 24h</small><b>${L.length?pct(ok,L.length):"–"}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>Pipeline sourced</small><b>${money(src)}</b></div><div class="kpi"><small>Pipeline influenced</small><b>${money(t.pipe-src)}</b></div><div class="kpi"><small>ROI</small><b>${cost?(t.pipe/cost).toFixed(1)+"x":"–"}</b><small>pipeline ÷ cost</small></div></div>` })()}
-    <details><summary class="note" style="cursor:pointer">Add leads (badge scans, sign-up sheet)</summary><div class="stack" style="gap:8px;margin-top:8px"><textarea id="leadPaste" placeholder="Name, Title, Company, Email — one per line"></textarea><div class="btns"><button class="btn sm" id="leadAdd">Add leads</button></div></div></details>
+    <div class="crmbar"><details><summary class="btn sm">Import badge scans</summary><div class="stack" style="gap:8px;margin-top:8px"><p class="note">Upload the scanner's CSV or paste rows (Name, Title, Company, Email). Encore removes duplicates, scores leads by seniority and target account, routes them to the AE who owns the company, and starts the 24-hour clock.</p><input type="file" accept=".csv,text/csv" id="leadFile"><textarea id="leadPaste" placeholder="Name, Title, Company, Email"></textarea><div class="btns"><button class="btn sm" id="leadAdd">Import leads</button></div></div></details>
+      <button class="btn sm" id="crmExport">Export campaign members (CSV)</button>
+      <details><summary class="btn sm">Import opportunities from CRM</summary><div class="stack" style="gap:8px;margin-top:8px"><p class="note">Upload a Salesforce or HubSpot opportunity export (Account, Amount, Stage, Created Date, Last Stage Change, Contact Email). Rule: an opportunity created within 90 days after the event counts as sourced if the lead was sourced here, otherwise influenced; one that moved stage in that window counts as influenced.</p><input type="file" accept=".csv,text/csv" id="oppFile"><textarea id="oppPaste" placeholder="Paste the CSV"></textarea><div class="btns"><button class="btn sm" id="oppApply">Apply to this event</button></div></div></details></div>
     <div class="tscroll"><table><thead><tr><th>Guest</th><th>Came?</th><th>Source</th><th>Follow-up (24h)</th><th>Outcome</th><th class="num">Opportunity value</th></tr></thead><tbody>${ga.map(g=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.company)}${g.owner?" · "+esc(g.owner):""}</div></td>
       <td><input type="checkbox" data-ac="${g.i}" ${g.status==="Attended"?"checked":""} aria-label="${esc(g.name)} attended"></td>
       <td><select data-asrc="${g.i}" aria-label="Pipeline source for ${esc(g.name)}">${["Influenced","Sourced"].map(o=>`<option ${o===(g.source||"Influenced")?"selected":""}>${o}</option>`).join("")}</select></td>
@@ -2311,7 +2429,10 @@ function step6(host){
     $$("[data-ac]").forEach(c=>c.onchange=()=>{ const g=d.guests[+c.dataset.ac]; g.status=c.checked?"Attended":"Going"; if(c.checked&&!g.leadAt) g.leadAt=Date.now(); drawAttrib() });
     $$("[data-asrc]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.asrc].source=c.value; drawAttrib() });
     $$("[data-contact]").forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.contact]; g.contactedAt=Date.now(); if(!g.leadAt) g.leadAt=g.contactedAt; drawAttrib() });
-    $("#leadAdd")&&($("#leadAdd").onclick=()=>{ const rows=$("#leadPaste").value.split("\n").map(l=>l.split(",").map(x=>x.trim())).filter(r=>r[0]); rows.forEach(([name,title="",company="",email=""])=>d.guests.push({name,title,company,email,tier:"B",status:"Attended",source:"Sourced",leadAt:Date.now(),outcome:"None yet",value:0})); toast(`Added ${rows.length} lead${rows.length===1?"":"s"}. The 24-hour follow-up clock has started.`); renderStep() });
+    const readF=(id,ta)=>{ const f=$(id)?.files?.[0]; return f?f.text():Promise.resolve($(ta).value) };
+    $("#leadAdd")&&($("#leadAdd").onclick=async()=>{ const r=importLeads(d,await readF("#leadFile","#leadPaste")); toast(`Imported ${r.added} lead${r.added===1?"":"s"}${r.dupes?`, skipped ${r.dupes} duplicate${r.dupes===1?"":"s"}`:""}. The 24-hour clock has started.`); renderStep() });
+    $("#crmExport")&&($("#crmExport").onclick=async()=>{ const csv=campaignCSV(d); if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-campaign-members.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) });
+    $("#oppApply")&&($("#oppApply").onclick=async()=>{ const r=applyOpps(d,await readF("#oppFile","#oppPaste")); toast(`Matched ${r.matched} of ${r.rows} opportunities: ${money(r.src)} sourced, ${money(r.infl)} influenced.`); renderStep() });
     $$("[data-ao]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.ao].outcome=c.value; drawAttrib() });
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
@@ -2377,7 +2498,9 @@ function fmtDate(s){ if(!s) return "Date TBD"; const d=new Date(s+"T12:00:00"); 
 // Guest-facing pages (#rsvp-ID, #survey-ID)
 // ==================================================================
 async function renderGuest(){
-  const host=$("#view-guest"); const [,kind,id]=location.hash.match(/^#(rsvp|survey)-(.+)$/)||[];
+  const host=$("#view-guest"); const nm=location.hash.match(/^#nominate-(.+)-([a-z0-9-]+)$/);
+  if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
+  const [,kind,id]=location.hash.match(/^#(rsvp|survey)-(.+)$/)||[];
   const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore · <a href="#studio">Organizer view</a></p></div>`;
   if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Open this invite in claude.ai while signed in to respond.":"Loading your invite…"}</p></div>`); return }
   let ev=allEvents.find(e=>e.id===id);

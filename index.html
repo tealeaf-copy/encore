@@ -512,6 +512,7 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
 .lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 .lmore{display:flex;flex-direction:column;gap:6px}
+body{padding-bottom:84px}
 .dlog{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--bg)}.dlog ul{margin:6px 0 0;font-size:.88rem;display:flex;flex-direction:column;gap:3px}
 #commitsHost input:not([type=checkbox]),#commitsHost select{min-width:0;width:100%;padding:6px 8px}#commitsHost td{vertical-align:top}#commitsHost input.mini{width:90px}
 
@@ -916,6 +917,7 @@ input,textarea,select{border-radius:14px}
       <div class="savebox">
         <button class="btn primary" id="saveEvent">Save event</button>
         <div class="btns" style="gap:6px"><button class="btn ghost sm" id="dupEvent">Duplicate</button><button class="btn ghost sm" id="seriesBtn">Make a series</button></div>
+        <label class="f" style="font-size:.85rem">Event owner<input id="evOwner" placeholder="Who runs this event"></label>
         <label class="chip" style="align-self:flex-start"><input type="checkbox" id="expertT"> Expert mode (hide tips)</label>
         <p class="note">Saved events and their feedback teach Encore what each audience loves.</p>
       </div>
@@ -1180,7 +1182,7 @@ function refreshAll(){ renderInsights(); renderImpact(); if(!location.hash||loca
 
 const STYLE=`\nWRITING STYLE: write like a real person talking to a colleague. Plain, specific words, short sentences. Never use these phrases or close variants: off the record, no (sales) pitch, no slides, nothing recorded, compare notes, trade notes, swap notes, the room, peers (as a selling point), candid, intimate, curated, elevate, unforgettable, memorable, legendary, irresistible, seamless, game-changing, deep dive, thought leadership, feel seen, lead with value, value-first, war stories, bucket-list, magic. No "not X, but Y" sentences. No em-dashes.`;
 async function askJSON(prompt, btn, streamEl, extra={}){
-  if(!sample){ toast("Open this page in claude.ai while signed in to run AI agents."); return null }
+  if(!sample){ toast("AI agents run when Encore is open in claude.ai or on your Encore server. The sample shows what they produce."); return null }
   const label = btn?.innerHTML; if(btn){btn.disabled=true;btn.innerHTML="Working…"}
   if(streamEl){streamEl.hidden=false;streamEl.textContent="Thinking…"}
   try{
@@ -1340,10 +1342,13 @@ Reply with only JSON: {"contacts":[{"name":"","title":"","company":"","relations
 
 };
 function readiness(c){ if(c.readiness!=null) return {score:+c.readiness,signals:c.signals||[],est:false};
+  if(!c.relationship&&c.tier){ const sc={A:70,B:55,C:40}[c.tier]??50; return {score:sc+(c.renewalDate&&(new Date(c.renewalDate)-Date.now())/864e5<=120?10:0),signals:[{s:`Tier ${c.tier}${c.owner?`, owned by ${c.owner}`:""}`,src:"CRM"},...(c.health?[{s:`Health: ${c.health}`,src:"CRM"}]:[])],est:true} }
   const base={"Open opportunity":80,"Customer":68,"Prospect":55,"Former customer":50,"Partner":45,"Outside expert":35}[c.relationship]??45, adj={verified:5,likely:0,unverified:-5,elsewhere:-20}[c.cityCheck]??0;
   return {score:Math.max(5,Math.min(95,base+adj)),signals:[{s:c.relationship||"Contact",src:"CRM"},...(c.why?[{s:c.why,src:"Inferred"}]:[])],est:true} }
 function readyCell(c){ const R=readiness(c), cls=R.score>=70?"good":R.score>=50?"warn":"";
   return `<div class="rdy"><span class="pchip ${cls}" title="${R.est?"Estimated from relationship and location":"From the guest scout's signals"}">${R.score}${R.est?"*":""}</span><div class="sigs">${R.signals.slice(0,3).map(x=>`<span class="sig ${x.src==="Inferred"?"inf":""}" title="${esc(x.src)}">${esc(x.src)}: ${esc(x.s)}</span>`).join("")}</div></div>` }
+function acctCell(g){ const dd=g.renewalDate?Math.ceil((new Date(g.renewalDate+"T12:00:00")-Date.now())/864e5):null;
+  return `<div class="sigs">${g.arr?`<span class="pchip">ARR ${money(+g.arr)}</span>`:""}${g.renewalDate?`<span class="pchip ${dd!=null&&dd<=120?"warn":""}">Renews ${esc(fmtDate(g.renewalDate))}${dd!=null&&dd<=120&&dd>=0?` · ${dd}d`:""}</span>`:""}${g.health?`<span class="pchip ${/red|risk|poor/i.test(g.health)?"bad":/green|good|healthy/i.test(g.health)?"good":"warn"}">${esc(g.health)}</span>`:""}${g.region?`<span class="note">${esc(g.region)}</span>`:""}</div>` }
 function chaseHTML(d){ const wait=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Invited"), going=d.guests.filter(g=>g.status==="Going"||g.status==="Attended");
   const K=brandProfile?.knowledge?.accounts?.accounts||[], have=new Set(d.guests.map(g=>(g.company||"").toLowerCase())), miss=K.filter(a=>!have.has((a.name||"").toLowerCase())).slice(0,12);
   if(!wait.length&&!K.length) return `<div class="panel stack"><div><h3>Who's missing</h3><p class="note">Connect your target account list in Set up to see which accounts have nobody invited yet.</p></div></div>`;
@@ -1471,7 +1476,7 @@ function coDraw(){ const m=$("#coMsgs"); if(!m) return;
     :`<div class="bubble assistant">I can do the work, not just explain it: start an event, run any agent, write your page and emails, add guests, and tell you what's missing. What do you need?</div>`);
   $("#coSug").innerHTML=coBusy?"":coSuggest().map((t,i)=>`<button class="chip" data-cos="${i}">${esc(t)}</button>`).join("");
   $$("[data-cos]").forEach(b=>b.onclick=()=>coSend(coSuggest()[+b.dataset.cos])); m.scrollTop=1e9 }
-async function coSend(text){ if(coBusy||!text) return; if(!sample){ toast("Open Encore in claude.ai, or on the Encore server, to use the assistant."); return }
+async function coSend(text){ if(coBusy||!text) return; if(!sample){ coMsgs.push({role:"user",content:text},{role:"assistant",content:"I'm offline on this copy of Encore, so I can't run agents right now. Open Encore in claude.ai or on your Encore server and ask again. Meanwhile, the sample event shows what each step produces."}); coDraw(); return }
   coMsgs.push({role:"user",content:text}); const live={role:"assistant",content:"",live:true,acts:[]}; coMsgs.push(live); coBusy=true; coDraw();
   const extra=await toolsFor(["web","playbook"],null);
   const tools=[...coTools(),...extra].map(t=>({...t,execute:async inp=>{ live.acts.push(t.name); coDraw(); return t.execute(inp) }}));
@@ -1500,10 +1505,9 @@ $("#seriesBtn").onclick=()=>{ const h=$("#factsHost"); if(!h) return; const box=
   box.innerHTML=`<div><h3>Make "${esc(draft.name||"this event")}" a series</h3><p class="note">One master (copy, run of show, budget, questions), one child per city with its own date, venue, guests and AE owners. One per line: City, YYYY-MM-DD.</p></div><textarea id="serIn" rows="4" placeholder="New York, 2027-03-11&#10;London, 2027-04-08&#10;Berlin, 2027-04-15"></textarea><div class="btns"><button class="btn primary sm" id="serGo">Create the series</button><button class="btn ghost sm" id="serX">Cancel</button></div>`;
   h.appendChild(box); $("#serX").onclick=()=>box.remove();
   $("#serGo").onclick=async()=>{ const L=$("#serIn").value.split("\n").map(x=>x.split(",").map(y=>y.trim())).filter(x=>x[0]); if(!L.length){ toast("Add at least one city"); return }
-    if(!db){ toast("Saving a series needs the page opened in claude.ai or on the Encore server."); return }
-    if(!draft.id&&!(await saveEvent())) return; const parent=draft.id; let n=0;
+    if(db&&!draft.id&&!(await saveEvent())) return; const parent=draft.id||(draft.id="local_"+Math.random().toString(36).slice(2,8)); let n=0;
     for(const [city,date] of L){ const c=cloneForReuse(draft,{name:`${draft.name}: ${city}`,city,date:/^\d{4}-\d{2}-\d{2}$/.test(date||"")?date:"",parentId:parent,seriesName:draft.name,venues:null,venuePick:0,scout:null}); delete c.id;
-      try{ await db.collection("events").add(c); n++ }catch{} }
+      if(db){ try{ await db.collection("events").add(c); n++ }catch{} } else { allEvents.push({...c,id:"local_"+Math.random().toString(36).slice(2,8)}); n++ } }
     box.remove(); toast(`Created ${n} event${n===1?"":"s"} in the series. Find them on Home.`) } };
 
 async function saveEvent(){
@@ -1542,7 +1546,7 @@ function subTabs(group,cur){ const T=group==="ideas"?[["inspire","Inspiration"],
 // ==================================================================
 function renderStep(){
   if(isGuestRoute()) return;
-  renderHeader(); drawCoach(); const fh=$("#factsHost"); if(fh){ const op=$(".ready",fh)?.open; fh.innerHTML=factsStrip(draft)+confHTML(draft)+readyHTML(draft); if(op) $(".ready",fh).open=true; $$("[data-confgo],[data-rgo]",fh).forEach(b=>b.onclick=()=>{ step=+(b.dataset.confgo||b.dataset.rgo); renderStep(); window.scrollTo({top:0,behavior:"smooth"}) }) }
+  renderHeader(); drawCoach(); const eo=$("#evOwner"); if(eo){ eo.value=draft.owner||""; eo.onchange=()=>{ draft.owner=eo.value.trim() } } const fh=$("#factsHost"); if(fh){ const op=$(".ready",fh)?.open; fh.innerHTML=factsStrip(draft)+confHTML(draft)+readyHTML(draft); if(op) $(".ready",fh).open=true; $$("[data-confgo],[data-rgo]",fh).forEach(b=>b.onclick=()=>{ step=+(b.dataset.confgo||b.dataset.rgo); renderStep(); window.scrollTo({top:0,behavior:"smooth"}) }) }
   const sb=$("#sampleBar"); if(sb){ sb.innerHTML=draft.example?`<div class="samplebar btns" style="justify-content:space-between"><span>You're looking at a sample event with made-up data. Explore it, then start your own.</span><button class="btn primary sm" id="startOwn">Start your own event</button></div>`:""; $("#startOwn")&&($("#startOwn").onclick=()=>{ draft=brandDraft(); step=1; renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6,8:stepSignoff,9:stepDistribution})[step](host);
@@ -2294,25 +2298,25 @@ function homeHero(){ const S=journeySteps(), next=S.find(x=>!x.done), n=S.filter
     ${draft.example?`<p class="note">The app is filled with a sample Passionfroot event so you can look around. Your own work replaces it as you go.</p>`:""}</div>
     <div class="journey"><div class="btns" style="justify-content:space-between"><b>Your first event in a day</b><span class="note">${n} of ${S.length} done</span></div>
       <ol>${S.map((x,i)=>`<li class="${x.done?"done":x===next?"next":""}"><span class="jn">${x.done?"✓":i+1}</span><div><b>${esc(x.t)}</b><span class="note">${esc(x.why)} · ${esc(x.min)}</span></div>${x===next?`<button class="btn primary sm" data-journey="${x.k}">Start</button>`:x.done?`<button class="btn ghost sm" data-journey="${x.k}">Open</button>`:""}</li>`).join("")}</ol></div></section>` }
-const SAMPLE_PROGRAM=[{name:"The Creator Kitchen",kind:"dinner",city:"Chicago",date:"2027-02-18",plan:18000,act:6200,pipe:0,region:"North America"},
-  {name:"Creator Budget Breakfast",kind:"dinner",city:"New York",date:"2026-10-14",plan:9500,act:9100,pipe:180000,region:"North America",done:true},
-  {name:"B2B Creator Report webinar",kind:"webinar",city:"Online",date:"2026-11-05",plan:4000,act:3800,pipe:95000,region:"Global",done:true},
-  {name:"Creator roadshow: London",kind:"roadshow",city:"London",date:"2027-03-10",plan:22000,act:0,pipe:0,region:"EMEA"},
-  {name:"SaaStr Annual: booth and dinner",kind:"conference",city:"San Mateo",date:"2027-05-12",plan:65000,act:12000,pipe:0,region:"North America"},
-  {name:"OMR side event",kind:"experience",city:"Hamburg",date:"2027-05-05",plan:14000,act:0,pipe:0,region:"EMEA"}];
+const SAMPLE_PROGRAM=[{name:"The Creator Kitchen",kind:"dinner",city:"Chicago",date:"2027-02-18",plan:18000,act:6200,pipe:0,region:"North America",owner:"Maya (Field)"},
+  {name:"Creator Budget Breakfast",kind:"dinner",city:"New York",date:"2026-10-14",plan:9500,act:9100,pipe:180000,region:"North America",done:true,owner:"Maya (Field)"},
+  {name:"B2B Creator Report webinar",kind:"webinar",city:"Online",date:"2026-11-05",plan:4000,act:3800,pipe:95000,region:"Global",done:true,owner:"Jo (Content)"},
+  {name:"Creator roadshow: London",kind:"roadshow",city:"London",date:"2027-03-10",plan:22000,act:0,pipe:0,region:"EMEA",owner:"Lena (EMEA)"},
+  {name:"SaaStr Annual: booth and dinner",kind:"conference",city:"San Mateo",date:"2027-05-12",plan:65000,act:12000,pipe:0,region:"North America",owner:"Maya (Field)"},
+  {name:"OMR side event",kind:"experience",city:"Hamburg",date:"2027-05-05",plan:14000,act:0,pipe:0,region:"EMEA",owner:"Lena (EMEA)"}];
 function qOf(date){ if(!date) return null; const m=+date.slice(5,7); return "Q"+Math.ceil(m/3)+" "+date.slice(0,4) }
-function programRows(){ const real=allEvents.filter(e=>!e.example); if(!real.length) return {sample:true,rows:SAMPLE_PROGRAM.map(r=>({...r,q:qOf(r.date)}))};
-  return {sample:false,rows:real.map(e=>{ const h=hydrate(e), O=e.opps||[]; return {id:e.id,name:e.name,kind:e.kind,city:e.city,date:e.date,plan:eventCost(h),act:+e.actualSpend||0,pipe:O.length?O.filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0):+(e.metrics?.pipeline||0),region:e.region||"",done:e.status==="done",parentId:e.parentId||null,q:qOf(e.date)} })} }
+function programRows(){ const real=allEvents.filter(e=>!e.example); if(!real.length){ const X=hydrate({...EXAMPLE,example:true}); return {sample:true,rows:SAMPLE_PROGRAM.map(r=>({...r,...(r.name===EXAMPLE.name?{plan:eventCost(X),act:actualOf(X)}:{}),q:qOf(r.date)}))} }
+  return {sample:false,rows:real.map(e=>{ const h=hydrate(e), O=e.opps||[]; return {id:e.id,name:e.name,kind:e.kind,city:e.city,date:e.date,plan:eventCost(h),act:actualOf(h),owner:e.owner||"",pipe:O.length?O.filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0):+(e.metrics?.pipeline||0),region:e.region||"",done:e.status==="done",parentId:e.parentId||null,q:qOf(e.date)} })} }
 function programHTML(){ const P=brandProfile?.program||{annual:400000}, {sample,rows}=programRows(), annual=+P.annual||0, qs=[...new Set(rows.map(r=>r.q).filter(Boolean))].sort((a,b)=>a.slice(3)+a[1]<b.slice(3)+b[1]?-1:1);
   const qa=q=>+(P.q?.[q]??annual/4), qc=q=>rows.filter(r=>r.q===q).reduce((a,r)=>a+Math.max(r.plan,r.act),0), tot=rows.reduce((a,r)=>a+Math.max(r.plan,r.act),0), pipe=rows.reduce((a,r)=>a+r.pipe,0), spent=rows.reduce((a,r)=>a+r.act,0);
   const byKind={}; rows.filter(r=>r.done&&r.act).forEach(r=>{ const k=(KINDS[r.kind]||{label:r.kind}).label; byKind[k]=byKind[k]||{a:0,p:0}; byKind[k].a+=r.act; byKind[k].p+=r.pipe });
   return `<section class="panel stack program"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Program</small><h3>Budget across every event</h3><p class="note">Committed vs. allocation by quarter, and new pipeline per dollar by format, so you can decide where the next dollar goes.</p></div>
-      <label class="f" style="max-width:220px">Annual events budget<input type="number" min="0" step="10000" id="progAnnual" value="${annual}"></label></div>
+      <label class="f" style="max-width:220px">Annual events budget<input type="number" min="0" step="10000" id="progAnnual" value="${annual}"><span class="h">${money(annual)}</span></label></div>
     ${sample?`<div class="samplebar">Sample program. Your saved events replace it.</div>`:""}
     <div class="kpis"><div class="kpi"><small>Committed</small><b>${money(tot)}</b><small>of ${money(annual)} (${annual?Math.round(100*tot/annual):0}%)</small></div><div class="kpi"><small>Spent so far</small><b>${money(spent)}</b></div><div class="kpi"><small>New pipeline</small><b>${money(pipe)}</b></div><div class="kpi"><small>New pipeline per $1 spent</small><b>${spent?"$"+(pipe/spent).toFixed(1):"–"}</b></div></div>
     <div class="qbars">${qs.map(q=>{ const c=qc(q), a=qa(q), over=c>a; return `<div class="qbar ${over?"over":""}"><div class="btns" style="justify-content:space-between"><b>${q}</b><span class="note">${money(c)} of <input class="mini" type="number" min="0" step="5000" data-qa="${q}" value="${Math.round(a)}" aria-label="${q} allocation"></span></div><div class="bar"><i style="width:${a?Math.min(100,100*c/a):100}%"></i></div>${over?`<span class="note" style="color:var(--bad)">Over by ${money(c-a)}. Move an event or raise the allocation.</span>`:""}</div>` }).join("")}</div>
     ${Object.keys(byKind).length?`<div><small class="eyebrow">Finished events: new pipeline per $1, by format</small><div class="chips">${Object.entries(byKind).map(([k,v])=>`<span class="pchip">${esc(k)}: $${(v.p/Math.max(1,v.a)).toFixed(1)}</span>`).join("")}</div></div>`:""}
-    <div class="tscroll"><table><thead><tr><th>Event</th><th>Format</th><th>When</th><th>Region</th><th class="num">Plan</th><th class="num">Actual</th><th class="num">New pipeline</th><th class="num">Per $1</th></tr></thead><tbody>${rows.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(r=>`<tr><td><b>${esc(r.name||"Untitled")}</b>${r.parentId?` <span class="tag">series</span>`:""}${r.done?` <span class="tag">done</span>`:""}<div class="note">${esc(r.city||"")}</div></td><td>${esc((KINDS[r.kind]||{label:r.kind||""}).label)}</td><td>${esc(r.q||"")}</td><td>${esc(r.region||"")}</td><td class="num">${money(r.plan)}</td><td class="num" style="${r.act>r.plan?"color:var(--bad)":""}">${money(r.act)}</td><td class="num">${r.pipe?money(r.pipe):"–"}</td><td class="num">${r.act&&r.pipe?"$"+(r.pipe/r.act).toFixed(1):"–"}</td></tr>`).join("")}</tbody></table></div></section>` }
+    <div class="tscroll"><table><thead><tr><th>Event</th><th>Format</th><th>When</th><th>Owner</th><th>Region</th><th class="num">Plan</th><th class="num">Actual</th><th class="num">New pipeline</th><th class="num">Per $1</th></tr></thead><tbody>${rows.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(r=>`<tr><td><b>${esc(r.name||"Untitled")}</b>${r.parentId?` <span class="tag">series</span>`:""}${r.done?` <span class="tag">done</span>`:""}<div class="note">${esc(r.city||"")}</div></td><td>${esc((KINDS[r.kind]||{label:r.kind||""}).label)}</td><td>${esc(r.q||"")}</td><td>${esc(r.owner||"")}</td><td>${esc(r.region||"")}</td><td class="num">${money(r.plan)}</td><td class="num" style="${r.act>r.plan?"color:var(--bad)":""}">${money(r.act)}</td><td class="num">${r.pipe?money(r.pipe):"–"}</td><td class="num">${r.act&&r.pipe?"$"+(r.pipe/r.act).toFixed(1):"–"}</td></tr>`).join("")}</tbody></table></div></section>` }
 function wireProgram(el){ const save=()=>{ saveBrand(true); renderPrograms() };
   $("#progAnnual",el)&&($("#progAnnual",el).onchange=e=>{ brandProfile=brandProfile||{}; brandProfile.program={...(brandProfile.program||{}),annual:+e.target.value||0}; save() });
   $$("[data-qa]",el).forEach(x=>x.onchange=()=>{ brandProfile=brandProfile||{}; const P=brandProfile.program=brandProfile.program||{annual:400000}; P.q={...(P.q||{}),[x.dataset.qa]:+x.value||0}; save() }) }
@@ -2328,7 +2332,7 @@ function renderPrograms(){
   const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
   el.innerHTML=`${homeHero()}<div class="canvas-head" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
     <div class="btns"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
-    <div class="kpis" style="margin:18px 0"><div class="kpi"><small>Events in flight</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs target</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Budget: actual vs plan</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Blocked or overdue</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
+    <div class="kpis" style="margin:18px 0" ${rows.length?"":"hidden"}><div class="kpi"><small>Events in flight</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs target</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Budget: actual vs plan</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Blocked or overdue</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
     ${programHTML()}
     ${rows.length?`<div class="progs big">${rows.map(r=>`<article class="prog ${r.health.replace(" ","")}">
       <div class="btns" style="justify-content:space-between"><span class="tag">${esc((KINDS[r.e.kind]||KINDS.dinner).label)}</span><span class="pchip ${r.health==="on track"?"good":r.health==="at risk"?"warn":"bad"}">${r.health}</span></div>
@@ -2337,10 +2341,13 @@ function renderPrograms(){
       <div class="meterrow"><small>Spend</small><div class="bar"><i style="width:${r.plan?Math.min(100,100*r.act/r.plan):0}%;background:${r.act>r.plan?"var(--bad)":"var(--cobalt)"}"></i></div><span>${money(r.act)}</span></div>
       ${r.aes?`<span class="note">Nominations: ${r.noms} of ${r.aes} AEs</span>`:""}<span class="note"><b>Launch confidence ${launchConfidence(hydrate(r.e)).score}</b></span>
       ${r.nx?`<span class="note">Next: ${esc(r.nx.task)} · ${esc(r.nx.owner)}</span>`:""}${r.od||r.bl?`<span class="note" style="color:var(--bad)">${r.od} overdue · ${r.bl} blocked</span>`:""}
-      <button class="btn sm" data-popen="${esc(r.e.id||"")}">Open</button></article>`).join("")}</div>`:`<p class="empty">No events in flight. Start one, or pick a template from Inspire.</p>`}`;
+      <button class="btn sm" data-popen="${esc(r.e.id||"")}">Open</button></article>`).join("")}</div>`:`<p class="empty">No events of your own yet. The sample program above shows how your year will look. Start one with "+ New event".</p>`}`;
   $("#newEv").onclick=()=>{ draft=brandDraft(); step=1; location.hash="studio" };
   $$("[data-journey]",el).forEach(b=>b.onclick=()=>journeyGo(b.dataset.journey));
-  $("#tplBtn").onclick=()=>location.hash="inspire"; wireProgram(el);
+  $("#tplBtn").onclick=()=>{ const mine=allEvents.filter(e=>!e.example&&!e.parentId); if(!mine.length){ location.hash="inspire"; return }
+    const box=$("#tplBox")||el.insertAdjacentElement("afterbegin",Object.assign(document.createElement("section"),{id:"tplBox",className:"panel stack"}));
+    box.innerHTML=`<div class="btns" style="justify-content:space-between"><h3>Start from one of your events</h3><button class="btn ghost sm" id="tplX">Close</button></div><p class="note">Copy, run of show, budget lines and questions carry over. Guests, results and spend start fresh.</p><div class="cards">${mine.map(e=>`<div class="card"><b>${esc(e.name)}</b><span class="note">${esc((KINDS[e.kind]||KINDS.dinner).label)} · ${esc(e.city||"")} · ${esc(fmtDate(e.date))}</span><button class="btn sm" data-tpl="${esc(e.id)}">Use as template</button></div>`).join("")}</div><p class="note">Or <a href="#inspire">browse ideas from other companies</a>.</p>`;
+    $("#tplX").onclick=()=>box.remove(); $$("[data-tpl]",box).forEach(b=>b.onclick=()=>{ const e=allEvents.find(x=>x.id===b.dataset.tpl); draft=hydrate(cloneForReuse(e,{name:e.name+" (new)"})); step=1; location.hash="studio" }); box.scrollIntoView({behavior:"smooth"}) }; wireProgram(el);
   $$("[data-popen]",el).forEach(b=>b.onclick=()=>{ const id=b.dataset.popen; if(id){ const e=allEvents.find(x=>x.id===id); if(e) draft=hydrate(e) } step=1; location.hash="studio" });
 }
 // ---------------- AE nominations ----------------
@@ -2402,15 +2409,17 @@ function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date
 const BUCKETS={created:["Created after the event","A new opportunity created within 90 days after the event, at an account with an attendee and no open opportunity before it."],
   existing:["Existing deals with attendees","An opportunity that was open before the event, where an attendee is involved, and that moved stage within 90 days."],
   meeting:["Meetings, no deal yet","An attendee's account booked a meeting after the event but has no opportunity yet."]};
-function repOpps(d){ if(d.opps?.length||!d.example) return d.opps||[]; const P=(d.guests.length?d.guests:(out("scout")?.contacts||[]));
+let showSampleRep=false;
+function repOpps(d){ if(d.opps?.length||!d.example||!showSampleRep) return d.opps||[]; const P=(d.guests.length?d.guests:(out("scout")?.contacts||[]));
   const pick=i=>P[i%Math.max(1,P.length)]||{}; return [{key:"s1",account:pick(0).company,contact:pick(0).name,amount:85000,stage:"Discovery",created:"2027-03-04",bucket:"created",match:"contact",sample:true},
     {key:"s2",account:pick(3).company,contact:pick(3).name,amount:140000,stage:"Proposal",created:"2026-11-12",bucket:"existing",match:"contact",sample:true},
     {key:"s3",account:pick(4).company,contact:pick(4).name,amount:60000,stage:"Discovery",created:"2027-03-20",bucket:"created",match:"company",sample:true}] }
 function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d), sampleMode=O.some(o=>o.sample);
   const accts=new Set(O.map(o=>(o.account||"").toLowerCase())), rank=o=>OUTCOMES.indexOf(o||"None yet");
+  if(!O.length&&!d.guests.some(g=>g.status==="Attended")){ h.innerHTML=`<div><small class="eyebrow">Pipeline report · 90 days</small><h3>Pipeline you can defend</h3><p class="note">After the event, import opportunities (or pull them from your CRM) and Encore sorts them into three buckets with fixed definitions: created after the event, existing deals with attendees, and meetings with no deal yet. Nothing is counted twice, and every deal links to its CRM record.</p></div>${d.example?`<div class="btns"><button class="btn sm" id="repSample">Show a sample report</button></div>`:""}`; $("#repSample",h)&&($("#repSample",h).onclick=()=>{ showSampleRep=true; drawPipeRep(d) }); return }
   const meet=(sampleMode?[{company:(d.guests[1]||{}).company||"Sample account",name:(d.guests[1]||{}).name||""}]:d.guests.filter(g=>g.status==="Attended"&&rank(g.outcome)===1&&!accts.has((g.company||"").toLowerCase())));
   const sum=b=>O.filter(o=>o.bucket===b).reduce((a,o)=>a+(+o.amount||0),0), n=b=>O.filter(o=>o.bucket===b).length;
-  const spend=+d.actualSpend||eventCost(d)||0, hours=d.hours??40, rate=d.hourRate??75, cost=spend+hours*rate, per=v=>cost?`$${(v/cost).toFixed(1)}`:"–";
+  const spend=actualOf(d)||eventCost(d)||0, hours=d.hours??40, rate=d.hourRate??75, cost=spend+hours*rate, per=v=>cost?`$${(v/cost).toFixed(1)}`:"–";
   const inv=d.guests.filter(g=>g.status!=="Not invited"), att=inv.filter(g=>g.status==="Attended"), noShow=inv.filter(g=>g.status!=="Attended");
   const rate2=L=>{ const A=[...new Set(L.map(g=>g.company))]; return A.length?Math.round(100*A.filter(a=>L.some(g=>g.company===a&&rank(g.outcome)>=1)).length/A.length):null };
   const ra=rate2(att), rn=rate2(noShow), small=Math.min(new Set(att.map(g=>g.company)).size,new Set(noShow.map(g=>g.company)).size)<20;
@@ -2423,7 +2432,7 @@ function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d
       <td><select data-ob="${i}" ${o.sample?"disabled":""} aria-label="Bucket for ${esc(o.account||"")}">${["created","existing","exclude"].map(b=>`<option value="${b}" ${o.bucket===b?"selected":""}>${b==="exclude"?"Exclude":BUCKETS[b][0]}</option>`).join("")}</select>${o.note?`<div class="note">${esc(o.note)}</div>`:""}</td>
       <td>${o.match==="contact"?`<span class="pchip good">Attendee is on the deal</span>`:`<span class="pchip warn" title="Matched only by company name. Check the CRM record.">Company name only · check</span>`}</td></tr>`).join("")}</tbody></table></div>`:""}
     <div class="caveat"><b>Read this before you share it.</b> This report shows pipeline connected to people who attended. It doesn't prove the event caused it: the accounts you invite are often the ones already closest to buying.
-      ${ra!=null&&rn!=null?` Attended accounts reached a meeting or better ${ra}% of the time; invited accounts that didn't come, ${rn}%.${small?" Fewer than 20 accounts in a group, so treat the gap as a hint, not a result.":""}`:""}</div>`;
+      ${!sampleMode&&ra!=null&&rn!=null?` Attended accounts reached a meeting or better ${ra}% of the time; invited accounts that didn't come, ${rn}%.${small?" Fewer than 20 accounts in a group, so treat the gap as a hint, not a result.":""}`:""}</div>`;
   $("#repH",h).onchange=e=>{ d.hours=+e.target.value||0; drawPipeRep(d) }; $("#repR",h).onchange=e=>{ d.hourRate=+e.target.value||0; drawPipeRep(d) };
   $$("[data-ob]",h).forEach(x=>x.onchange=()=>{ const o=d.opps[+x.dataset.ob]; if(x.value==="exclude") d.opps.splice(+x.dataset.ob,1); else o.bucket=x.value; drawPipeRep(d) });
   $("#repCsv",h).onclick=async()=>{ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, csv=["Account,Attendee,Amount,Stage,Created,Bucket,Match,CRM link",...O.map(o=>[o.account,o.contact,o.amount,o.stage,o.created,BUCKETS[o.bucket]?.[0]||o.bucket,o.match==="contact"?"Attendee on deal":"Company name only",o.url||o.id||""].map(q).join(","))].join("\n");
@@ -2436,7 +2445,7 @@ function drawHandoff(d){ const h=$("#handoff"); if(!h) return; const att=d.guest
   h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">The morning after</small><h3>Hand off to sales</h3><p class="note">Capture what each guest said, pick the next step, and let the AE approve the follow-up before it goes out. The follow-up starts from the conversation, not a template.</p></div>
       <div class="btns">${att.length?`<button class="btn sm" id="hoCsv">Export handoff (CSV)</button>${srcState.slack==="on"?`<button class="btn sm" id="hoSlack">Send each AE their list on Slack</button>`:""}`:""}</div></div>
     ${att.length?`<div class="kpis"><div class="kpi"><small>Attended</small><b>${att.length}</b></div><div class="kpi"><small>With notes</small><b>${att.filter(x=>x.g.note).length}</b></div><div class="kpi"><small>AE approved</small><b>${att.filter(x=>/Approved|Sent/.test(st(x.g))).length}</b></div><div class="kpi"><small>Followed up in 24h</small><b>${sent24}/${att.length}</b></div><div class="kpi"><small>Gift spend</small><b>${money(gifts)}</b></div></div>
-    <div class="hogrid">${att.map(({g,i})=>{ const c=(S?.sheets||S?.attendees||[]).find?.(x=>x.name===g.name); return `<div class="hocard"><div class="btns" style="justify-content:space-between"><div><b>${esc(g.name)}</b><div class="note">${esc(g.title||"")} · ${esc(g.company||"")}</div></div><span class="pchip ${st(g)==="Sent"?"good":st(g)==="Approved"?"":"warn"}">${st(g)}</span></div>
+    <div class="hogrid">${att.map(({g,i})=>{ const c=(S?.sheets||S?.attendees||[]).find?.(x=>x.name===g.name); return `<div class="hocard"><div class="btns" style="justify-content:space-between"><div><b>${esc(g.name)}</b><div class="note">${esc(g.title||"")} · ${esc(g.company||"")}</div>${g.arr||g.renewalDate||g.health?acctCell(g):""}</div><span class="pchip ${st(g)==="Sent"?"good":st(g)==="Approved"?"":"warn"}">${st(g)}</span></div>
       <div class="row"><label class="f">Owner<select data-hown="${i}">${[...new Set([g.owner||"Unassigned",...owners])].map(o=>`<option ${o===g.owner?"selected":""}>${esc(o)}</option>`).join("")}</select></label><label class="f">Next step<select data-hnext="${i}">${NEXT.map(o=>`<option ${o===(g.nextStep||"Book a meeting")?"selected":""}>${o}</option>`).join("")}</select></label></div>
       <label class="f">What they said<textarea data-hnote="${i}" rows="2" placeholder="e.g. Budget frozen until Q2; wants the measurement template; asked about EU creators">${esc(g.note||"")}</textarea></label>
       <div class="row"><label class="f">Gift (optional)<input data-hgift="${i}" value="${esc(g.gift||"")}" placeholder="e.g. the cookbook from dinner"></label><label class="f">Cost<input type="number" min="0" data-hgc="${i}" value="${+g.giftCost||""}"></label></div>
@@ -2544,7 +2553,7 @@ function nextAction(){ const d=draft;
   if(!d.guests.length||!out("scout")) return {t:"Build the guest list",why:"The right 20 people matter more than the venue. Encore drafts the list and checks who's in town.",run:"scout",cta:"Build the list"};
   if(!out("copy")) return {t:"Write the invite",why:"A clear, personal invite is the biggest lever on who shows up.",run:"copy",cta:"Write it"};
   if(!out("outreach")) return {t:"Personalize invites",why:"One note per guest, ready to send from Gmail.",run:"outreach",cta:"Write invites"};
-  if(!d.pitch) return {t:"Get sign-off",why:"A one-page proposal your boss can say yes to.",run:"pitch",cta:"Write the proposal"};
+  if(!d.pitch&&!d.example) return {t:"Get sign-off",why:"A one-page proposal your boss can say yes to.",run:"pitch",cta:"Write the proposal"};
   return {t:"Send the invites",why:"Everything's ready. Open your Gmail drafts and hit send.",go:()=>{step=6;renderStep()},cta:"Go to guests"};
 }
 function drawCoach(){
@@ -2829,7 +2838,7 @@ Object.assign(EXAMPLE_OUT,{
   ps:"P.S. Beginner cooks welcome. The chef gives the hardest jobs to whoever volunteers first.",segment:"Start with Chicago-area marketing leaders at B2B SaaS companies. Go wider only if seats remain after a week.",sendTime:"Tuesday or Wednesday morning, 4 to 5 weeks out",example:true}});
 function launchFields(d){ const p=lp(d), P=PLATFORMS[p], L=out("launchCopy")||{}, C=d.copy||out("copy")||{}, V=venuePicked(d), Q=out("launchQs"), ag=C.agenda||[];
   const when=d.date?`${fmtDate(d.date)}${ag[0]?`, ${ag[0].time}`:""}${ag.length>1?` to ${ag[ag.length-1].time}`:""}`:"";
-  const F=[["Event name",L.title||C.title||d.name],["Date and time",when||"Pick a date in step 1"],["Location",V?`${V.name}${V.address?`, ${V.address}`:""}`:(d.city||"")]];
+  const F=[["Event name",L.title||C.title||d.name],["Date and time",when||"Pick a date in Strategy"],["Location",V?`${V.name}${V.address?`, ${V.address}`:""}`:(d.city||"")]];
   if(p==="eventbrite"||p==="site") F.push(["Summary",L.summary||C.tagline||""]);
   F.push(["Description",fillLinks(L.description||C.description||d.concept||"",d)]);
   if(L.faq?.length) F.push(["FAQ",L.faq.map(f=>`${f.q}\n${f.a}`).join("\n\n")]);
@@ -3078,6 +3087,7 @@ function pmReportHTML(R){ return `${R.risks?.length?`<div class="stack" style="g
 const SAMPLE_COMMITS=[{vendor:"The Chopping Block",what:"Private class and dinner, weeknight buyout",amount:9800,deposit:2450,depositDue:"2026-12-15",paid:true,cancelBy:"2027-01-18",status:"Signed"},
   {vendor:"Local photographer",what:"3 hours, edited photos in 48h",amount:1400,deposit:400,depositDue:"2027-01-20",paid:false,cancelBy:"2027-02-04",status:"Quote"},
   {vendor:"Swag.com",what:"20 aprons with embroidered logo",amount:900,deposit:900,depositDue:"2027-01-25",paid:false,cancelBy:"2027-01-25",status:"Quote"}];
+function actualOf(d){ if(+d.actualSpend) return +d.actualSpend; const C=d.commits||(d.example?SAMPLE_COMMITS:[]); return C.filter(c=>c.status!=="Cancelled").reduce((a,c)=>a+(c.status==="Paid"?+c.amount||0:c.paid?+c.deposit||0:0),0) }
 function drawCommits(d){ const h=$("#commitsHost"); if(!h) return; const sample=!d.commits&&d.example, C=d.commits||(sample?clone(SAMPLE_COMMITS):[]), now=Date.now(), days=x=>x?Math.ceil((new Date(x+"T12:00:00")-now)/864e5):null;
   const tot=C.reduce((a,c)=>a+(+c.amount||0),0), dep=C.filter(c=>!c.paid).reduce((a,c)=>a+(+c.deposit||0),0), plan=eventCost(d);
   const flags=C.map(c=>{ const dd=days(c.depositDue), cb=days(c.cancelBy); return !c.paid&&dd!=null&&dd<0?["bad",`Deposit ${-dd}d overdue`]:!c.paid&&dd!=null&&dd<=7?["warn",`Deposit due in ${dd}d`]:cb!=null&&cb>=0&&cb<=14?["warn",`Free cancellation ends in ${cb}d`]:cb!=null&&cb<0?["",`Past cancel-by`]:["good","On track"] });
@@ -3158,7 +3168,7 @@ function step4(host){
           return `<label class="task ${done?"done":""} ${late?"late":""}"><input type="checkbox" data-t="${t.i}" ${done?"checked":""}><span class="due">${t.days<0?"T"+t.days:"T+"+t.days}${dd?" · "+dd.toLocaleDateString(undefined,{month:"short",day:"numeric"}):""}</span><span class="t">${esc(t.task)}</span><span class="own tag">${esc(t.owner)}</span></label>`}).join("")}
       </div>
       <div class="stack" style="gap:8px"><div class="eyebrow">Budget</div>
-        <div class="tscroll"><table><tbody>${P.budget.map(b=>`<tr><td>${esc(b.line)}<div class="note">${esc(b.note)}</div></td><td class="num">${money(b.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${money(total)}</b></td></tr><tr><td>Actual spend so far</td><td class="num"><input class="mini" type="number" min="0" step="100" id="actSpend" value="${+d.actualSpend||0}" aria-label="Actual spend so far"></td></tr></tbody></table></div>
+        <div class="tscroll"><table><tbody>${P.budget.map(b=>`<tr><td>${esc(b.line)}<div class="note">${esc(b.note)}</div></td><td class="num">${money(b.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${money(total)}</b></td></tr><tr><td>Actual spend so far</td><td class="num"><input class="mini" type="number" min="0" step="100" id="actSpend" value="${actualOf(d)}" title="Defaults to paid deposits and invoices in Commitments" aria-label="Actual spend so far"></td></tr></tbody></table></div>
         <div class="eyebrow" style="margin-top:8px">Run-of-show</div>
         <div class="agenda">${P.runOfShow.map(r=>`<span>${esc(r.time)}</span><span>${esc(r.item)} <span class="note">· ${esc(r.owner)}</span></span>`).join("")}</div>
       </div>
@@ -3177,11 +3187,11 @@ function step5(host){
   <div class="panel stack">
     <div class="btns" style="justify-content:space-between"><div><div class="eyebrow">Step 8 · Guests</div><h3>Guest list</h3></div>
       <div class="kpis" style="flex:1;max-width:440px"><div class="kpi"><small>Guests</small><b>${d.guests.length}</b></div><div class="kpi"><small>Going</small><b>${going}</b></div><div class="kpi"><small>Capacity</small><b>${d.headcount}</b></div></div></div>
-    ${d.guests.length?`<div class="tscroll"><table><thead><tr><th>Guest</th><th>Tier</th><th>Sales owner</th><th>Status</th><th></th></tr></thead><tbody>${d.guests.map((g,i)=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.title)} · ${esc(g.company)}</div></td><td><span class="tag">${esc(g.tier)}</span></td><td><input class="mini" data-go="${i}" value="${esc(g.owner||"")}" placeholder="AE" aria-label="Sales owner for ${esc(g.name)}"></td>
+    ${d.guests.length?`<div class="tscroll"><table><thead><tr><th>Guest</th><th>Readiness</th>${d.guests.some(g=>g.arr||g.renewalDate||g.health)?"<th>Account</th>":""}<th>Tier</th><th>Sales owner</th><th>Status</th><th></th></tr></thead><tbody>${d.guests.map((g,i)=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.title)} · ${esc(g.company)}</div></td><td>${readyCell(g)}</td>${d.guests.some(x=>x.arr||x.renewalDate||x.health)?`<td>${acctCell(g)}</td>`:""}<td><span class="tag">${esc(g.tier)}</span></td><td><input class="mini" data-go="${i}" value="${esc(g.owner||"")}" placeholder="AE" aria-label="Sales owner for ${esc(g.name)}"></td>
       <td><select data-gs="${i}" aria-label="Status for ${esc(g.name)}">${GSTATUS.map(s=>`<option ${s===g.status?"selected":""}>${s}</option>`).join("")}</select></td><td><div class="btns" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost sm" data-plink="${i}" title="Copy ${esc(g.name)}'s personal invite link">Personal link</button><button class="btn ghost sm" data-gd="${i}" aria-label="Remove ${esc(g.name)}">Remove</button></div></td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No guests yet. Add target accounts below.</p>`}
     <details><summary style="cursor:pointer;font-weight:600">Add guests</summary>
       <div class="stack" style="margin-top:12px;gap:10px">
-        <label class="f">Paste one guest per line: Name, Title, Company, Tier (A/B/C), Email<textarea id="gPaste" placeholder="Jordan Lee, VP of Marketing, Acme Software, A, jordan@acmesoftware.com"></textarea></label>
+        <label class="f">Paste one guest per line: Name, Title, Company, Tier (A/B/C), Email, and optionally ARR, Renewal date (YYYY-MM-DD), Health, Region<textarea id="gPaste" placeholder="Jordan Lee, VP of Marketing, Acme Software, A, jordan@acmesoftware.com"></textarea></label>
         <div class="btns"><button class="btn" id="gAdd">Add to list</button></div>
       </div></details>
   </div>
@@ -3210,7 +3220,7 @@ function step5(host){
     const cc={verified:["good","✓ Verified"],likely:["warn","Likely"],unverified:["","Unverified"],elsewhere:["bad","Lives elsewhere"]};
     $("#out-scout").innerHTML=`${S.contacts.some(c=>c.sample)?`<div class="samplebar">Sample contacts: fictional people to show how the list works. Connect your CRM or Gmail and run it again for real names.</div>`:""}
     <div class="tscroll"><table class="guestlist"><thead><tr><th></th><th>Person</th><th>Readiness</th><th>Relationship</th><th>Why they fit</th><th>${esc(d.city||"City")} check</th></tr></thead><tbody>
-    ${S.contacts.map((c,i)=>{const [cls,lab]=cc[c.cityCheck]||cc.unverified, on=d.guests.some(g=>g.name===c.name);return `<tr class="${c.cityCheck==="elsewhere"?"dim":""}"><td><input type="checkbox" data-pick="${i}" ${sel.has(i)?"checked":""} ${on?"disabled":""} aria-label="Select ${esc(c.name)}"></td>
+    ${S.contacts.map((c,i)=>[c,i]).sort((a,b)=>readiness(b[0]).score-readiness(a[0]).score).map(([c,i])=>{const [cls,lab]=cc[c.cityCheck]||cc.unverified, on=d.guests.some(g=>g.name===c.name);return `<tr class="${c.cityCheck==="elsewhere"?"dim":""}"><td><input type="checkbox" data-pick="${i}" ${sel.has(i)?"checked":""} ${on?"disabled":""} aria-label="Select ${esc(c.name)}"></td>
       <td><div class="who"><canvas width="64" height="64" data-av="${esc(c.name)}"></canvas><div><b>${esc(c.name)}</b>${c.sample?' <span class="tag ex">Sample</span>':""}<div class="note">${esc(c.title)} · ${esc(c.company)}</div></div></div></td><td>${readyCell(c)}</td>
       <td><span class="rel rel-${esc((c.relationship||"").split(" ")[0].toLowerCase())}">${esc(c.relationship)}</span></td><td>${esc(c.why)}</td>
       <td><span class="pchip ${cls}" title="${esc(c.cityEvidence||"")}">${lab}</span><div class="note">${esc(c.city||"")}${c.cityEvidence?` · ${esc(c.cityEvidence)}`:""}</div></td></tr>`}).join("")}</tbody></table></div>
@@ -3218,10 +3228,10 @@ function step5(host){
     <p class="note">Readiness comes from real signals where the scout found them (CRM, product usage, calls). Grey dashed signals are inferred, and * means estimated. Ask account owners to rank this list in Nominations before you invite.</p>`;
     $$("canvas[data-av]",$("#out-scout")).forEach(c=>drawAvatar(c,c.dataset.av,d.brandColors));
     $$("[data-pick]",host).forEach(x=>x.onchange=()=>{ const i=+x.dataset.pick; x.checked?sel.add(i):sel.delete(i) });
-    $("#addPicked").onclick=()=>{ let n=0; sel.forEach(i=>{ const c=S.contacts[i]; if(d.guests.some(g=>g.name===c.name)) return; d.guests.push({name:c.name,title:c.title,company:c.company,email:c.email||"",owner:c.owner||"",tier:/Open|Customer/.test(c.relationship)?"A":"B",status:"Not invited",outcome:"None yet",value:0}); n++ }); toast(`Added ${n} guest${n===1?"":"s"}`); renderStep() } }
+    $("#addPicked").onclick=()=>{ let n=0; sel.forEach(i=>{ const c=S.contacts[i]; if(d.guests.some(g=>g.name===c.name)) return; d.guests.push({name:c.name,title:c.title,company:c.company,email:c.email||"",owner:c.owner||"",tier:/Open|Customer/.test(c.relationship)?"A":"B",status:"Not invited",outcome:"None yet",value:0,relationship:c.relationship,why:c.why,cityCheck:c.cityCheck,...(c.readiness!=null?{readiness:c.readiness,signals:c.signals}:{})}); n++ }); toast(`Added ${n} guest${n===1?"":"s"}`); renderStep() } }
   $$("[data-gd]",host).forEach(b=>b.onclick=()=>{d.guests.splice(+b.dataset.gd,1); renderStep()});
   $("#gAdd").onclick=()=>{ const rows=$("#gPaste").value.split("\n").map(l=>l.split(",").map(s=>s.trim())).filter(r=>r[0]);
-    rows.forEach(([name,title="",company="",tier="B",email=""])=>d.guests.push({name,title,company,email:/@/.test(email)?email:"",tier:(tier||"B").toUpperCase().slice(0,1),status:"Not invited"}));
+    rows.forEach(([name,title="",company="",tier="B",email="",arr="",renewalDate="",health="",region=""])=>d.guests.push({name,title,company,email:/@/.test(email)?email:"",tier:(tier||"B").toUpperCase().slice(0,1),status:"Not invited",arr:+String(arr).replace(/[^0-9.]/g,"")||0,renewalDate:/^\d{4}-\d{2}-\d{2}$/.test(renewalDate)?renewalDate:"",health,region}));
     toast(rows.length?`Added ${rows.length} guest${rows.length>1?"s":""}`:"Nothing to add. Use Name, Title, Company per line."); renderStep() };
   const O=out("outreach");
   drawBriefing(host,d);
@@ -3269,7 +3279,7 @@ function step6(host){
   <div class="panel stack" id="pipeRep"></div>
   ${agentBox("followup","Follow-up","A personal follow-up for each guest, drafted for you or their AE.","Draft follow-ups")}
   <div class="panel stack">
-    <div><h3>Attendee feedback</h3><p class="note">Guests answer a 30-second survey from the link in step 6. You can also log answers here.</p></div>
+    <div><h3>Attendee feedback</h3><p class="note">Guests answer a 30-second survey from the link in Guests. You can also log answers here.</p></div>
     ${d.id?`${fb.length?`<div class="stack" style="gap:8px">${fb.slice(-6).reverse().map(f=>`<div class="card"><div class="meta">${"★".repeat(+f.rating||0)} · ${esc(f.role)} · ${f.wouldReturn?"would return":"would not return"}${(f.highlights||[]).length?" · "+f.highlights.map(esc).join(", "):""}</div><p>${esc(f.comment)}</p></div>`).join("")}</div>`:`<p class="empty">No feedback yet.</p>`}
       <details><summary style="cursor:pointer;font-weight:600">Log feedback by hand</summary><div id="fbForm" style="margin-top:12px"></div></details>`
     :`<p class="empty">Save this event first to collect feedback.</p>`}
@@ -3284,9 +3294,9 @@ function step6(host){
     return {att:att.length,meet:att.filter(g=>rank(g.outcome)>=1).length,opp:att.filter(g=>rank(g.outcome)>=2).length,won:att.filter(g=>rank(g.outcome)>=3).length,pipe:att.filter(g=>rank(g.outcome)>=2).reduce((a,g)=>a+(+g.value||0),0)} };
   const drawAttrib=()=>{ const t=tally(), crm=crmOn();
     if(!crm) probeSources().then(()=>{ if(crmOn()&&$("#attrib")) drawAttrib() });
-    $("#attrib").innerHTML = !ga.length ? `<p class="empty">Invite guests in step 6 to track outcomes here.</p>` : `
+    $("#attrib").innerHTML = !ga.length ? `<p class="empty">Invite guests in the Guests step to track outcomes here.</p>` : `
     ${(()=>{ const L=d.guests.filter(g=>g.status==="Attended"), ok=L.filter(g=>g.contactedAt&&g.leadAt&&(g.contactedAt-g.leadAt)<=864e5).length, src=L.filter(g=>g.source==="Sourced").reduce((a,g)=>a+(OUTCOMES.indexOf(g.outcome||"None yet")>=2?+g.value||0:0),0), cost=(out("produce")?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||d.budget||0;
-      return `<div class="kpis"><div class="kpi"><small>Leads</small><b>${L.length}</b></div><div class="kpi"><small>Followed up within 24h</small><b>${L.length?pct(ok,L.length):"–"}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>Pipeline sourced</small><b>${money(src)}</b></div><div class="kpi"><small>Pipeline influenced</small><b>${money(t.pipe-src)}</b></div><div class="kpi"><small>ROI</small><b>${cost?(t.pipe/cost).toFixed(1)+"x":"–"}</b><small>pipeline ÷ cost</small></div></div>` })()}
+      return `<div class="kpis"><div class="kpi"><small>Leads</small><b>${L.length}</b></div><div class="kpi"><small>Followed up within 24h</small><b>${L.length?pct(ok,L.length):"–"}</b></div><div class="kpi"><small>Meetings</small><b>${t.meet}</b></div><div class="kpi"><small>New pipeline (created after)</small><b>${money((d.opps||[]).filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0)||src)}</b></div><div class="kpi"><small>Pipeline influenced</small><b>${money(t.pipe-src)}</b></div><div class="kpi"><small>ROI</small><b>${cost?(t.pipe/cost).toFixed(1)+"x":"–"}</b><small>pipeline ÷ cost</small></div></div>` })()}
     <div class="crmbar"><details><summary class="btn sm">Import badge scans</summary><div class="stack" style="gap:8px;margin-top:8px"><p class="note">Upload the scanner's CSV or paste rows (Name, Title, Company, Email). Encore removes duplicates, scores leads by seniority and target account, routes them to the AE who owns the company, and starts the 24-hour clock.</p><input type="file" accept=".csv,text/csv" id="leadFile"><textarea id="leadPaste" placeholder="Name, Title, Company, Email"></textarea><div class="btns"><button class="btn sm" id="leadAdd">Import leads</button></div></div></details>
       <button class="btn sm" id="crmExport">Export campaign members (CSV)</button>
       ${crm?`<button class="btn sm" id="crmSync">Sync attendees to ${esc(crm.label)}</button><button class="btn sm" id="crmPull">Pull pipeline from ${esc(crm.label)}</button>`:""}
@@ -3318,7 +3328,7 @@ function step6(host){
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
   drawAttrib(); drawHandoff(d); drawPipeRep(d);
   const F=d.followup;
-  $("#out-followup").innerHTML = !F ? `<p class="empty">Mark who came, then draft follow-ups.</p>` : `
+  $("#out-followup").innerHTML = !F ? `<p class="empty">${d.guests.some(g=>g.status==="Attended")?`Draft a personal follow-up for each of the ${d.guests.filter(g=>g.status==="Attended").length} attendees, or use the handoff cards above for AE-approved ones.`:"Mark who came, then draft follow-ups."}</p>` : `
     ${F.principles?.length?`<ul class="clean">${F.principles.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
     <div class="cards">${F.messages.map((x,k)=>{const g=d.guests[x.guestIndex]; return `<div class="card"><div class="meta">${esc(g?.name||"Example guest")} · ${esc(x.channel)} · ${esc(x.timing)} · from ${esc(x.from)}</div><p style="font-size:.9rem">${esc(x.message)}</p><div class="btns"><button class="btn ghost sm" data-fc="${k}">Copy</button></div></div>`}).join("")}</div>${srcList(F)}`;
   $$("[data-fc]").forEach(b=>b.onclick=()=>copyTxt(F.messages[+b.dataset.fc].message));
@@ -3385,14 +3395,14 @@ function wallEntry(r){ return {eventId:r.eventId,status:r.response==="maybe"?"ma
 async function shrinkPhoto(f){ if(!f) return ""; const bm=await createImageBitmap(f), c=document.createElement("canvas"), S=192; c.width=c.height=S; const m=Math.min(bm.width,bm.height);
   c.getContext("2d").drawImage(bm,(bm.width-m)/2,(bm.height-m)/2,m,m,0,0,S,S); return c.toDataURL("image/jpeg",.82) }
 const SAMPLE_LEARN=["How peers measure creator campaigns past the click","What a fair newsletter sponsorship costs","How other teams staff a creator program","Whether anyone has cracked podcast attribution","Getting sales to use creator content","What a realistic first creator test looks like","How to budget for brand work finance can't see","Lessons from moving spend out of paid social","Knife skills, honestly"];
-function sampleWall(e){ return ((e.scout||EXAMPLE_OUT.scout)?.contacts||[]).slice(0,9).map((c,i)=>({name:c.name,title:c.title,company:c.company,learn:SAMPLE_LEARN[i%SAMPLE_LEARN.length],linkedin:"",photo:"",sample:true})) }
+function sampleWall(e){ return (e.guests||[]).filter(g=>/Going|Attended|Maybe/.test(g.status)).map((g,i)=>({name:g.name,title:g.title,company:g.company,learn:SAMPLE_LEARN[i%SAMPLE_LEARN.length],linkedin:"",photo:"",status:g.status==="Maybe"?"maybe":"going",sample:true})) }
 async function renderWall(host,id){
   let ev=id==="sample"?{...EXAMPLE,id:"sample",example:true}:allEvents.find(e=>e.id===id);
   if(!ev&&db){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
   if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady||!db?"We couldn't find this guest page. Check the link with your host.":"Loading…"}</p></div>`; if(!dbReady&&db) setTimeout(()=>{ if(location.hash==="#guests-"+id){ host.dataset.key=""; renderGuest() } },1200); return }
   const e=hydrate(ev), C=e.copy||(e.example?EXAMPLE_OUT.copy:null), V=e.venues?.venues?.[e.venuePick??0]||(e.example?EXAMPLE_OUT.venues.venues[0]:null);
   let ALL=[]; if(db&&id!=="sample"){ try{ const s=await db.collection("wall").where("eventId","==",id).get(); ALL=s.docs.map(x=>x.data()) }catch{ ALL=allWall.filter(w=>w.eventId===id) } }
-  const sampleMode=!ALL.length&&e.example; if(sampleMode){ ALL=sampleWall(e); ALL[ALL.length-1].status="maybe"; ALL.push({...ALL[0],name:"Chris Webb",company:"Example Co",status:"cancelled",updatedAt:Date.now()-36e5}) }
+  const sampleMode=!ALL.length&&e.example; if(sampleMode){ ALL=sampleWall(e); ALL.push({...ALL[0],name:"Chris Webb",company:"Example Co",status:"cancelled",updatedAt:Date.now()-36e5}) }
   let tab="going", q="", W=[], cos=new Set(), seen=JSON.stringify(ALL);
   const split=()=>{ ALL.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)); W=ALL.filter(w=>(w.status||"going")===tab); cos=new Set(ALL.filter(w=>(w.status||"going")==="going").map(w=>w.company).filter(Boolean)) };
   const stats=()=>{ const g=ALL.filter(w=>(w.status||"going")==="going").length, m=ALL.filter(w=>w.status==="maybe").length, c=ALL.filter(w=>w.status==="cancelled"&&Date.now()-(w.updatedAt||0)<7*864e5).length;
@@ -4093,6 +4103,13 @@ function renderImpact(){
   const done=ev.filter(e=>e.status==="done"), sum=k=>done.reduce((a,e)=>a+(e.metrics?.[k]||0),0), spend=done.reduce((a,e)=>a+(e.budget||0),0);
   $("#portKpis").innerHTML=[["Events run",done.length],["Attendees",sum("attended")],["Show rate",pct(sum("attended"),sum("rsvps"))],["Meetings booked",sum("meetings")],["Pipeline influenced",money(sum("pipeline"))],["Pipeline per $1",spend?"$"+(sum("pipeline")/spend).toFixed(1):"–"]]
     .map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("");
+  if(!done.length&&!ev.some(e=>!e.example)){ const S=SAMPLE_PROGRAM.filter(r=>r.done), att=[18,140], rsv=[22,310];
+    $("#portKpis").innerHTML=[["Events run",S.length],["Attendees",att.reduce((a,b)=>a+b,0)],["Show rate",pct(att.reduce((a,b)=>a+b,0),rsv.reduce((a,b)=>a+b,0))],["Meetings booked",11],["New pipeline",money(S.reduce((a,r)=>a+r.pipe,0))],["Pipeline per $1","$"+(S.reduce((a,r)=>a+r.pipe,0)/S.reduce((a,r)=>a+r.act,0)).toFixed(1)]].map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("")+`<div class="samplebar" style="grid-column:1/-1">Sample results from the sample program on Home. Finish an event to see yours.</div>`;
+    const rows=S.map((r,i)=>({format:(KINDS[r.kind]||{label:r.kind}).label,roi:r.pipe/r.act,attend:att[i]/rsv[i],n:1,pipe:r.pipe,spend:r.act}));
+    $("#roiChart").innerHTML=hbars([...rows].sort((a,b)=>b.roi-a.roi),r=>r.roi,v=>"$"+v.toFixed(1),r=>`${r.format}: ${money(r.pipe)} pipeline on ${money(r.spend)}`);
+    $("#showChart").innerHTML=hbars([...rows].sort((a,b)=>b.attend-a.attend),r=>r.attend,v=>Math.round(v*100)+"%",r=>`${r.format}: ${Math.round(r.attend*100)}% of RSVPs attended`);
+    $("#programs").innerHTML=`<p class="empty">Events you're planning show up here with their health and next deadline.</p>`;
+    $("#eventsTable").innerHTML=`<table><thead><tr><th>Event</th><th>Format</th><th class="num">Spend</th><th class="num">New pipeline</th><th class="num">Per $1</th></tr></thead><tbody>${S.map(r=>`<tr><td><b>${esc(r.name)}</b> <span class="tag ex">Sample</span><div class="note">${esc(r.city)} · ${esc(fmtDate(r.date))}</div></td><td>${esc((KINDS[r.kind]||{label:r.kind}).label)}</td><td class="num">${money(r.act)}</td><td class="num">${money(r.pipe)}</td><td class="num">$${(r.pipe/r.act).toFixed(1)}</td></tr>`).join("")}</tbody></table>`; return }
   const waiting=!db?"Your events appear here once the page is opened in claude.ai while signed in.":!dbReady?"Loading events…":null;
   if(waiting){ ["#roiChart","#showChart","#eventsTable","#programs"].forEach(s=>$(s).innerHTML=`<p class="empty">${waiting}</p>`); return }
   const rows=formatRank([],"");

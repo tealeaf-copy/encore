@@ -41,9 +41,9 @@ test("CRM integrations are not listed without their env vars", () => {
   assert.ok(servers().includes("Salesforce - Beta"));
   process.env.HUBSPOT_TOKEN = "test";
   const hs = configured().find((s) => s.server === "HubSpot");
-  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity"]);
+  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity", "rollup_account_spend"]);
   const sf = configured().find((s) => s.server === "Salesforce - Beta");
-  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity"]);
+  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline", "log_followups", "verify_activity", "rollup_account_spend"]);
 });
 
 test("HubSpot search sends the CRM v3 search body with a bearer token", async () => {
@@ -320,4 +320,30 @@ test("log_followups is safe to repeat: existing tasks are skipped", async () => 
   const s2 = await callTool("Salesforce - Beta", "log_followups", { eventName: "Kitchen", items: [{ email: "ana@acme.com", subject: "Book a meeting" }] });
   assert.equal(s2.payload.tasksCreated, 0);
   assert.equal(s2.payload.skipped, 1);
+});
+
+test("rollup_account_spend writes account totals to the CRM", async () => {
+  process.env.HUBSPOT_TOKEN = "test-token";
+  mockFetch((u, init, body) => {
+    if (u.pathname === "/crm/v3/properties/companies") return [409, {}];
+    if (u.pathname === "/crm/v3/objects/companies/search") return body.filterGroups[0].filters[0].value === "acme.com" ? { results: [{ id: "c1" }] } : { results: [] };
+    if (u.pathname === "/crm/v3/objects/companies/batch/update") return { results: body.inputs };
+    return [404, {}];
+  });
+  const r = await callTool("HubSpot", "rollup_account_spend", { accounts: [{ name: "Acme", domain: "acme.com", spend: 1234.4, gifts: 80, events: 2 }, { name: "Nowhere", spend: 10 }] });
+  assert.deepEqual(r.payload, { updated: 1, missing: ["Nowhere"], errors: [] });
+  const upd = calls.find((c) => c.url.pathname === "/crm/v3/objects/companies/batch/update");
+  assert.deepEqual(upd.body.inputs[0], { id: "c1", properties: { encore_event_spend: "1234", encore_gift_spend: "80", encore_events_attended: "2" } });
+  delete process.env.HUBSPOT_TOKEN;
+  process.env.SF_INSTANCE_URL = "https://acme.my.salesforce.com"; process.env.SF_ACCESS_TOKEN = "tok";
+  mockFetch((u, init, body) => {
+    const q = u.searchParams.get("q") || "";
+    if (/FROM Account/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "001A", Name: "Acme" }] };
+    if (u.pathname.endsWith("/composite/sobjects")) return [200, body.records.map(() => ({ success: true }))];
+    return [404, {}];
+  });
+  const s2 = await callTool("Salesforce - Beta", "rollup_account_spend", { accounts: [{ name: "Acme", spend: 500, gifts: 40, events: 1 }] });
+  assert.deepEqual(s2.payload, { updated: 1, missing: [], errors: [] });
+  const patchCall = calls.find((c) => c.url.pathname.endsWith("/composite/sobjects"));
+  assert.equal(patchCall.body.records[0].Encore_Event_Spend__c, 500);
 });

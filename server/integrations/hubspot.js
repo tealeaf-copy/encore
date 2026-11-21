@@ -1,6 +1,6 @@
 // HubSpot: CRM search, event attendee sync (contacts + marketing event states)
 // and event pipeline (deals associated with attendees). Private app token.
-import { chunk, errText, validateMembers, validateWindow, validateFollowups, validateVerify, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, validateFollowups, validateVerify, validateRollup, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA, ROLLUP_SCHEMA } from "./crm-common.js";
 
 const API = "https://api.hubapi.com";
 const OBJECT_TYPES = ["contacts", "companies", "deals"];
@@ -251,6 +251,32 @@ async function verifyActivity(input) {
   return { results };
 }
 
+// Account-level spend, so RevOps can report event spend next to pipeline on the company record.
+async function rollupAccountSpend(input) {
+  const { accounts } = validateRollup(input, "HubSpot");
+  const errors = [], missing = [], inputs = [];
+  for (const [name, label] of [["encore_event_spend", "Encore: event spend (USD)"], ["encore_gift_spend", "Encore: gift spend, landed (USD)"], ["encore_events_attended", "Encore: events attended"]]) {
+    try { await hs("POST", "/crm/v3/properties/companies", { name, label, type: "number", fieldType: "number", groupName: "companyinformation" }, { allow: [409] }); }
+    catch (e) { errors.push(`property ${name}: ${errText(e)}`); }
+  }
+  for (const a of accounts) {
+    try {
+      const filters = a.domain ? [{ propertyName: "domain", operator: "EQ", value: a.domain }] : [{ propertyName: "name", operator: "EQ", value: a.name }];
+      const { json } = await hs("POST", "/crm/v3/objects/companies/search", { filterGroups: [{ filters }], properties: ["name", "domain"], limit: 2 });
+      const rows = json?.results || [];
+      if (!rows.length) { missing.push(a.name); continue; }
+      if (rows.length > 1) errors.push(`${a.name}: more than one company matched; updated the first`);
+      inputs.push({ id: rows[0].id, properties: { encore_event_spend: String(a.spend), encore_gift_spend: String(a.gifts), encore_events_attended: String(a.events) } });
+    } catch (e) { errors.push(`${a.name}: ${errText(e)}`); }
+  }
+  let updated = 0;
+  for (const part of chunk(inputs, 100)) {
+    try { const { json } = await hs("POST", "/crm/v3/objects/companies/batch/update", { inputs: part }); updated += json?.results?.length ?? part.length; }
+    catch (e) { errors.push(`update: ${errText(e)}`); }
+  }
+  return { updated, missing, errors };
+}
+
 export default function hubspot() {
   if (!process.env.HUBSPOT_TOKEN) return null;
   return {
@@ -302,6 +328,12 @@ export default function hubspot() {
         description: "For each email, count meetings logged on the HubSpot contact since a date, so 'next step happened' is checked against the CRM.",
         inputSchema: VERIFY_SCHEMA,
         run: verifyActivity,
+      },
+      {
+        name: "rollup_account_spend",
+        description: "Write total event spend, landed gift spend and events attended onto each HubSpot company (by domain, else name).",
+        inputSchema: ROLLUP_SCHEMA,
+        run: rollupAccountSpend,
       },
     ],
   };

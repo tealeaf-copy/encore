@@ -120,3 +120,21 @@ export function validateVerify(input, who) {
   if (!isDate(input.since)) throw bad(who, "since must be YYYY-MM-DD");
   return { emails: [...new Set(input.emails.map((e) => String(e || "").trim().toLowerCase()).filter(Boolean))].slice(0, 500), since: input.since };
 }
+
+export const ROLLUP_SCHEMA = {
+  type: "object",
+  properties: {
+    accounts: { type: "array", items: { type: "object", properties: { name: { type: "string" }, domain: { type: "string" }, spend: { type: "number", description: "Total event spend attributed to the account (cost per head share + landed gift cost), USD" }, gifts: { type: "number" }, events: { type: "number" } }, required: ["name", "spend"] } },
+  },
+  required: ["accounts"],
+};
+export function validateRollup(input, who) {
+  if (!Array.isArray(input?.accounts)) throw bad(who, "accounts must be an array");
+  const seen = new Set(), accounts = [];
+  for (const a of input.accounts) {
+    const name = String(a?.name || "").trim(); if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    accounts.push({ name, domain: String(a.domain || "").trim().toLowerCase().replace(/^www\./, ""), spend: Math.round(+a.spend || 0), gifts: Math.round(+a.gifts || 0), events: Math.round(+a.events || 0) });
+  }
+  return { accounts: accounts.slice(0, 500) };
+}

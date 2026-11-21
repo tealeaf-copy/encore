@@ -1,7 +1,7 @@
 // Salesforce: read-only SOQL, event attendee sync (Campaign + CampaignMembers,
 // Leads for unknown emails) and event pipeline (Opportunities). REST API with
 // either a ready access token or the OAuth 2.0 client-credentials flow.
-import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, validateVerify, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, validateVerify, validateRollup, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA, ROLLUP_SCHEMA } from "./crm-common.js";
 
 const STATUS_LABELS = ["Invited", "Registered", "Attended", "Declined"];
 const RESPONDED = new Set(["Registered", "Attended"]);
@@ -167,6 +167,29 @@ async function logFollowups(input) {
   return { tasksCreated, skipped, missing, written, fieldErrors, errors };
 }
 
+async function rollupAccountSpend(input) {
+  const { accounts } = validateRollup(input, "Salesforce");
+  const byName = new Map();
+  for (const part of chunk(accounts, 100)) {
+    for (const r of await query(`SELECT Id, Name FROM Account WHERE Name IN ${inList(part.map((a) => a.name))}`)) {
+      const k = String(r.Name).toLowerCase(); byName.set(k, [...(byName.get(k) || []), r.Id]);
+    }
+  }
+  const errors = [], missing = [], records = [];
+  for (const a of accounts) {
+    const ids = byName.get(a.name.toLowerCase()) || [];
+    if (!ids.length) { missing.push(a.name); continue; }
+    if (ids.length > 1) errors.push(`${a.name}: more than one Account matched; updated the first`);
+    records.push({ attributes: { type: "Account" }, Id: ids[0], Encore_Event_Spend__c: a.spend, Encore_Gift_Spend__c: a.gifts, Encore_Events_Attended__c: a.events });
+  }
+  let updated = 0;
+  if (records.length) {
+    const res = await collection("PATCH", records);
+    res.forEach((r, i) => { if (r.success) updated++; else errors.push(/INVALID_FIELD|No such column/i.test(collErrors(r)) ? "add Encore_Event_Spend__c, Encore_Gift_Spend__c and Encore_Events_Attended__c (number) fields on Account" : `${records[i].Id}: ${collErrors(r)}`); });
+  }
+  return { updated, missing, errors: [...new Set(errors)] };
+}
+
 async function verifyActivity(input) {
   const { emails, since } = validateVerify(input, "Salesforce");
   const { contacts, leads } = await lookupPeople(emails);
@@ -312,6 +335,12 @@ export default function salesforce() {
         description: "For each email, count Salesforce Events (meetings) on the Contact or Lead since a date, so 'next step happened' is checked against the CRM.",
         inputSchema: VERIFY_SCHEMA,
         run: verifyActivity,
+      },
+      {
+        name: "rollup_account_spend",
+        description: "Write total event spend, landed gift spend and events attended onto each Salesforce Account (by name).",
+        inputSchema: ROLLUP_SCHEMA,
+        run: rollupAccountSpend,
       },
     ],
   };

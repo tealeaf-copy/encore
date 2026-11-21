@@ -5,22 +5,16 @@
 <style>
 /* Layout: app shell (top bar + Studio / Insights / Impact views) plus a separate guest-facing mode (#rsvp-ID, #survey-ID). Studio = step rail left, working canvas right, autopilot console on top. */
 :root{
-  --bg:#F5F6F8; --surface:#FFFFFF; --sunk:#ECEEF2; --line:#DCE0E7;
-  --fg:#16181D; --muted:#5D6472; --accent:#D6336C; --accent-ink:#FFFFFF; --accent-soft:#FBE3EC;
-  --teal:#0E7C7E; --good:#1F8A4C; --warn:#B7791F; --bad:#C53030;
+  /* Bright, single-theme identity: airy blue-white ground, indigo ink, coral / cobalt / sunflower / mint */
+  --bg:#F3F5FF; --surface:#FFFFFF; --sunk:#ECEFFC; --line:#D9DCF2;
+  --fg:#1B1740; --ink:#1B1740; --muted:#5B5880; --accent:#FF4F64; --accent-ink:#FFFFFF; --accent-soft:#FFE4E8;
+  --teal:#13A884; --cobalt:#3B5BFF; --sun:#FFC93C; --lilac:#E9E4FF;
+  --good:#13875D; --warn:#B86E00; --bad:#D7344A;
   --f-display:"Bricolage Grotesque", "Inter", system-ui, sans-serif;
   --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
-  --r:10px;
+  --r:12px; color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#111318; --surface:#1A1D24; --sunk:#23262F; --line:#2F333D;
-  --fg:#ECEEF2; --muted:#A0A7B4; --accent:#FF5C8D; --accent-ink:#1A0610; --accent-soft:#3A1726;
-  --teal:#3CC3C5; --good:#4CC17E; --warn:#E0A84A; --bad:#F26B6B; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#111318; --surface:#1A1D24; --sunk:#23262F; --line:#2F333D;
-  --fg:#ECEEF2; --muted:#A0A7B4; --accent:#FF5C8D; --accent-ink:#1A0610; --accent-soft:#3A1726;
-  --teal:#3CC3C5; --good:#4CC17E; --warn:#E0A84A; --bad:#F26B6B; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
@@ -409,6 +403,59 @@ td input.mini{padding:5px 8px;min-width:90px}
   .hbar{grid-template-columns:100px minmax(0,1fr) 56px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---- Creative layer ---- */
+body{background-color:var(--bg);background-image:radial-gradient(circle at 6% 10%,#FFC93C40 0 140px,transparent 141px),radial-gradient(circle at 95% 28%,#3B5BFF26 0 180px,transparent 181px),radial-gradient(circle at 72% 96%,#FF4F6424 0 160px,transparent 161px),radial-gradient(circle at 20% 70%,#13A88420 0 110px,transparent 111px);background-attachment:fixed}
+.logo i{background:conic-gradient(var(--accent) 0 25%,var(--sun) 0 50%,var(--cobalt) 0 75%,var(--teal) 0)}
+h2{letter-spacing:-.02em}
+nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
+.btn{border-width:2px;border-color:var(--ink)}
+.btn.ghost{border-color:var(--line)}
+.btn.primary{border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn.primary:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn.primary:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.rail button[data-step][aria-current="step"]{background:var(--surface);box-shadow:3px 3px 0 var(--ink);outline:2px solid var(--ink)}
+.rail button[aria-current="step"] .n{background:var(--sun);border-color:var(--ink);color:var(--ink)}
+.rail button.done .n{border-color:var(--teal);color:#fff;background:var(--teal)}
+.clock .segs i.on{background:linear-gradient(90deg,var(--accent),var(--sun))}
+.auto{background:var(--cobalt);color:#fff;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.auto h3{color:#fff}.auto .note,.auto .eyebrow{color:#ffffffd0!important}
+.crew .m{background:#ffffff22}.crew .m.ok .ic{color:var(--sun)}
+.banner{background:var(--sun);color:var(--ink);border:2px solid var(--ink)}.banner a{color:var(--ink)}
+.mixer{background-color:#FFF0C2;background-image:radial-gradient(#1B174014 1.2px,transparent 1.2px);background-size:16px 16px;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.tile2{border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.tile2.on{background:var(--cobalt);color:#fff}
+.dial5 button{border:2px solid var(--ink)}
+.dial5 button.on{background:var(--accent);border-color:var(--ink)}
+.reelwin{background:var(--ink);color:var(--sun);border:2px solid var(--ink)}
+.tunebtn{border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.dface,.face,.icard,.vcard{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.ghostcard{border:2px solid var(--ink);background:var(--lilac)}
+.ghostcard:nth-child(2){background:#FFF0C2}
+.dback{background:var(--accent);color:#fff}
+.dback .eyebrow,.dback .note{color:#ffffffd9}
+.face.back{background:var(--cobalt);color:#fff}
+.face.back .eyebrow,.face.back small,.face.back .note,.face.back summary{color:#ffffffcc}
+.face.back .pchip,.face.back .pchip.good,.face.back .pchip.bad,.face.back .pchip.warn{background:#ffffff24;color:#fff}
+.face.back .btn{color:#fff;border-color:#ffffff80}
+.round{border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.round.keep{background:var(--accent);color:#fff;border-color:var(--ink)}
+.pick{border-color:var(--ink)}.pick.on{background:#FFF0C2;box-shadow:4px 4px 0 var(--ink)}
+.kept{border:2px solid var(--ink)}
+.who-strip{border:2px solid var(--ink)}
+.agent{border:2px solid var(--ink)}
+.agent > header{background:var(--lilac)}
+.av{background:var(--cobalt);color:#fff}
+.chatbox{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.bubble.assistant{background:var(--lilac)}
+.bubble.user{background:var(--cobalt);color:#fff}
+.slot.on{border:2px solid var(--ink)}
+.surprise{background:#FFF0C2;border-left-color:var(--accent)}
+.logoph{background:var(--sun);color:var(--ink)}
+.pchip.good{background:#DDF6EE}.pchip.bad{background:#FFE4E8}.pchip.warn{background:#FFF0C2}
+.tag.ex{background:var(--sun);color:var(--ink)}
+.kpi{background:var(--lilac)}
+.panel{border:2px solid var(--line)}
 </style>
 
 <header class="top" id="appHeader"><div class="wrap">
@@ -525,7 +572,7 @@ const HIGHLIGHTS = ["The people","The conversation","Practical takeaways","The v
 const GSTATUS = ["Not invited","Invited","Going","Maybe","Declined","Attended"];
 
 const EXAMPLE = {
-  id:null, name:"The Data Leaders' Kitchen", brand:"Ridgeline", brandColors:["#1B3A4B","#F2A541"],
+  id:null, name:"The Data Leaders' Kitchen", brand:"Ridgeline", brandColors:["#3B5BFF","#FFC93C"],
   brandVoice:"Warm, plainspoken, a little nerdy.",
   product:"Data infrastructure platform for regulated industries",
   concept:"20 data leaders cook a three-course dinner with a chef, then talk through how they're getting their data ready for AI.",
@@ -1210,7 +1257,7 @@ function wirePersona(root){
 }
 function drawAvatar(cv,seedStr,cols){
   const x=cv.getContext("2d"),W=cv.width; let s=[...seedStr].reduce((a,c)=>a*31+c.charCodeAt(0)>>>0,7); const r=()=>((s=(s*1664525+1013904223)>>>0)/4294967296);
-  const [c1,c2]=cols||["#1B3A4B","#F2A541"], skins=["#F2D2BD","#E0AC8A","#C68863","#8D5A3B","#5C3A24"], hairs=["#2B1B12","#5A3A22","#B07A3B","#D9C07A","#8A8A8A","#1C1C1C"];
+  const [c1,c2]=cols||["#3B5BFF","#FFC93C"], skins=["#F2D2BD","#E0AC8A","#C68863","#8D5A3B","#5C3A24"], hairs=["#2B1B12","#5A3A22","#B07A3B","#D9C07A","#8A8A8A","#1C1C1C"];
   const bg=x.createRadialGradient(W/2,W*.4,10,W/2,W/2,W*.7); bg.addColorStop(0,shade(c2,.35)); bg.addColorStop(1,c2); x.fillStyle=bg; x.fillRect(0,0,W,W);
   for(let i=0;i<14;i++){ x.fillStyle="rgba(255,255,255,.18)"; x.beginPath(); x.arc(r()*W,r()*W*.5,2+r()*4,0,7); x.fill() }
   const skin=skins[Math.floor(r()*skins.length)], hair=hairs[Math.floor(r()*hairs.length)], style=Math.floor(r()*3);
@@ -1732,7 +1779,7 @@ function shade(hex,amt){ const n=parseInt((hex||"#333333").slice(1),16); const c
 function drawCover(cv,d,{square=false,mini=false,motif}={}){
   if(!cv) return;
   motif=motif||d.cover?.motif||"orbit";
-  const x=cv.getContext("2d"), W=cv.width, H=cv.height, [c1,c2]=d.brandColors||["#1B3A4B","#F2A541"], S=Math.min(W,H);
+  const x=cv.getContext("2d"), W=cv.width, H=cv.height, [c1,c2]=d.brandColors||["#3B5BFF","#FFC93C"], S=Math.min(W,H);
   x.globalAlpha=1; const g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,c1); g.addColorStop(1,shade(c1,-.35)); x.fillStyle=g; x.fillRect(0,0,W,H);
   x.save(); let rs=[...(d.name||"x")].reduce((a,c)=>a+c.charCodeAt(0),0); const rnd=()=>((rs=(rs*9301+49297)%233280)/233280);
   const cx=W*(square?.5:.72);

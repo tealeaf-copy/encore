@@ -23,7 +23,7 @@ test("named users sign in with their email and the team password", async () => {
   assert.equal(r.status, 200);
   const cookie = r.headers.get("set-cookie").split(";")[0];
   const me = await fetch(srv.base + "/api/me", { headers: { cookie } }).then((x) => x.json());
-  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], verified: true });
+  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true });
   const forged = cookie.replace("maya%40acme.com", "sam%40acme.com");
   assert.equal((await fetch(srv.base + "/api/me", { headers: { cookie: forged } })).status, 401, "a cookie can't be re-pointed at someone else");
   await fetch(srv.base + "/api/audit", { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({ eventId: "e1", what: "approved the plan" }) });
@@ -90,4 +90,30 @@ test("guest links get a redacted event; AE links are signed and scoped to the AE
   assert.deepEqual(page.event.guests.map((x) => x.name), ["Ana Diaz"]);
   assert.equal(page.actions.length, 1);
   assert.equal((await fetch(srv.base + "/api/db/collection?path=aeactions", { method: "POST", headers: { "x-encore-guest": "1", "Content-Type": "application/json" }, body: "{}" })).status, 401, "guests can't write AE actions directly");
+});
+
+test("personal passwords, signed plan links, scoped guest wall, save conflicts", async () => {
+  const { hashPassword } = await import("../server/auth.js");
+  const before = process.env.ENCORE_USERS;
+  process.env.ENCORE_USERS = `Maya Chen|maya@acme.com|Event lead|${hashPassword("maya-only")};Sam Lee|sam@acme.com|Exec sponsor`;
+  try {
+    assert.equal((await login({ password: "team-pass", email: "maya@acme.com" })).status, 401, "a personal password replaces the team password");
+    const r = await login({ password: "maya-only", email: "maya@acme.com" });
+    assert.equal(r.status, 200);
+    const cookie = r.headers.get("set-cookie").split(";")[0], H = { cookie, "Content-Type": "application/json" };
+    await fetch(srv.base + "/api/db/doc?path=events/evP", { method: "PUT", headers: H, body: JSON.stringify({ name: "P", budget: 9000, notes: "secret", pitch: { ask: "x" }, updatedAt: 1, guests: [{ name: "A", email: "a@x.com", note: "n" }] }) });
+    const plain = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan" } }).then((y) => y.json());
+    assert.equal(plain.data.budget, undefined, "an unsigned plan view gets the guest view");
+    assert.equal(plain.data.notes, undefined, "unknown fields never reach guests");
+    const { token } = await fetch(srv.base + "/api/plantoken?eventId=evP", { headers: H }).then((y) => y.json());
+    const signed = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan", "x-encore-token": token } }).then((y) => y.json());
+    assert.equal(signed.data.budget, 9000);
+    assert.equal(signed.data.guests[0].email, undefined);
+    assert.equal((await fetch(srv.base + "/api/db/collection?path=wall", { headers: { "x-encore-guest": "1" } })).status, 400, "guests must name the event");
+    assert.equal((await fetch(srv.base + "/api/db/doc?path=system/secret", { headers: H })).status, 403);
+    const stale = await fetch(srv.base + "/api/db/doc?path=events/evP", { method: "PUT", headers: H, body: JSON.stringify({ name: "P2", _base: 0, updatedAt: 2 }) });
+    assert.equal(stale.status, 409, "a stale save is refused");
+    const fresh = await fetch(srv.base + "/api/db/doc?path=events/evP", { method: "PUT", headers: H, body: JSON.stringify({ name: "P2", _base: 1, updatedAt: 2 }) });
+    assert.equal(fresh.status, 200);
+  } finally { process.env.ENCORE_USERS = before; }
 });

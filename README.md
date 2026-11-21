@@ -120,3 +120,26 @@ Each person signs in with their work email plus the team password (`APP_PASSWORD
 ## CRM write-back
 
 With HubSpot or Salesforce connected, "Log approved next steps" in Measure creates a task on each attendee's contact (HubSpot task, Salesforce Task) for their AE-approved next step, and records any gift and its cost.
+
+## Use Encore from Claude
+
+Encore runs as an MCP server, so a field marketer can plan, chase and report from a Claude chat.
+
+1. On the server, set `ENCORE_MCP_TOKEN` to a long random value.
+2. In Claude, add a custom connector: URL `https://<your-encore-host>/mcp`, header `Authorization: Bearer <ENCORE_MCP_TOKEN>`.
+3. Add the skill in `claude/skills/encore-events/` so Claude knows which tool to use for which request.
+
+Tools: `list_events`, `get_event`, `create_event`, `update_event`, `add_guests`, `guest_list`, `followups_due`, `pipeline_report`, `launch_kit`, `program_summary`. Anyone with the token can read and change events; treat it like a password.
+
+## Sign-in and security
+
+- `APP_PASSWORD` is required unless the server listens on localhost (or `ENCORE_ALLOW_OPEN=1` is set on purpose).
+- With `ENCORE_USERS`, `SESSION_SECRET` is required. Give each person their own password by adding a 4th field: `Name|email|roles|scrypt$...` (generate it with `node server/hash-password.js 'their password'`). People without one sign in with the team password.
+- Guest links (RSVP, guest wall, nomination, survey) only see an allowlisted view of an event: no emails, notes, money or deals. Plan links are signed per event.
+- Guests can only change responses they created (a per-browser key), and AE follow-up links are signed per AE.
+- Saves carry the version they started from; a stale save is refused instead of overwriting someone else's change.
+
+## More integrations
+
+- Webinars: Sequel (launch kit and, when connected, registrants and attendance).
+- Call intelligence: Gong, Granola and Fathom, plus Slack search, feed account intel, the guest scout and sales briefs.

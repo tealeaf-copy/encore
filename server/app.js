@@ -9,6 +9,7 @@ import { parsePath, httpError, randomId } from "./db.js";
 import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, findServer, callTool } from "./integrations/index.js";
 import { runPm } from "./pm.js";
+import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users } from "./auth.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -24,19 +25,22 @@ const GUEST_COLLECTIONS = new Set(["rsvps", "feedback", "interest", "nominations
 // Guest-writable docs that a guest may change after creating: only with the same browser key (x-encore-key).
 const OWNED = new Set(["rsvps", "wall"]);
 // What a guest link may see of an event. Guests never get emails, notes, money, deals or internal tracking.
-const GUEST_GUEST_FIELDS = ["name", "title", "company", "status", "owner", "optIn", "why"];
-const INTERNAL = ["opps", "holdoutOpps", "meetLog", "holdout", "lift", "log", "oppLog", "approvals", "commits", "hoursB", "hours", "hourRate", "rubric", "answers", "actualSpend", "baseline", "baselineId", "scoutRejects", "crmSyncedAt", "pmReport", "pmSent", "blocked", "signals", "intel", "spark", "strategy", "debrief", "metrics", "btId"];
+const GUEST_GUEST_FIELDS = ["name", "title", "company", "status", "owner", "optIn"];
+// Allowlist: only these event fields ever reach a guest link.
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
   return { cost, committed, currency: e.currency || "USD" };
 }
 export function publicEvent(data, view) {
-  const e = { ...data };
-  for (const k of INTERNAL) delete e[k];
+  const e = Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]]));
   e.guests = (data.guests || []).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
-  if (e.scout?.contacts) e.scout = { ...e.scout, contacts: e.scout.contacts.map((c) => ({ name: c.name, title: c.title, company: c.company, owner: c.owner, why: c.why, relationship: c.relationship })) };
-  if (view !== "plan") { delete e.budget; delete e.pitch; if (e.produce) e.produce = { runOfShow: e.produce.runOfShow || [] }; }
+  if (data.launch) e.launch = { platform: data.launch.platform, url: data.launch.url, qsOnRsvp: data.launch.qsOnRsvp };
+  const v = data.venues?.venues?.[data.venuePick ?? 0];
+  if (v) { e.venues = { venues: [{ name: v.name, address: v.address, area: v.area, photo: v.photo }] }; e.venuePick = 0; }
+  if (view === "nominate" && data.scout?.contacts) e.scout = { contacts: data.scout.contacts.map((c) => ({ name: c.name, title: c.title, company: c.company, owner: c.owner })) };
+  if (view === "plan") { for (const k of ["budget", "currency", "pitch", "produce", "goal", "concept", "audience", "dist", "mods"]) if (data[k] != null) e[k] = data[k]; }
   return e;
 }
 // Single documents guests may read: any event (RSVP, survey, plan, nomination links) plus the public roadmap and brand.
@@ -117,15 +121,18 @@ export function createApp({ store, dataDir }) {
   });
 
   const json = express.json({ limit: "2mb" });
+  mountMcp(app, { store, afterEventWrite, json });
 
   // ---------- who's signed in; append-only audit log ----------
   app.get("/api/me", (req, res) => {
     const u = currentUser(req);
-    res.json(u ? { name: u.name, email: u.email, roles: u.roles, verified: true } : { verified: false, teamConfigured: users().length > 0 });
+    const teamRoles = [...new Set(users().flatMap((x) => x.roles))];
+    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, verified: true } : { verified: false, teamConfigured: users().length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
   const AUDIT = /^(audit|approvals|aeactions|system)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
+    if (req.method === "GET" && /^system(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
     if (req.method !== "GET" && AUDIT.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted", message: "The audit log is append-only. Use /api/audit." });
     next();
   });
@@ -133,7 +140,7 @@ export function createApp({ store, dataDir }) {
     const u = currentUser(req), b = req.body || {};
     const eventId = String(b.eventId || "").slice(0, 80), what = String(b.what || "").trim().slice(0, 500);
     if (!what) return res.status(400).json({ code: "invalid", message: "what is required" });
-    res.json(store.add("audit", { eventId, what, who: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now() }));
+    res.json(store.add("audit", { eventId, what, kind: "note", who: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now() }));
   });
   // Plan approvals are recorded by the server: it checks the signed-in person's roles,
   // keeps the approval in a collection the data API can't write, and logs it.
@@ -143,11 +150,12 @@ export function createApp({ store, dataDir }) {
     if (!eventId || !role) return res.status(400).json({ code: "invalid", message: "eventId and role are required" });
     if (users().length && !u) return res.status(401).json({ code: "not_granted", message: "Sign in as a team member to approve." });
     if (u && !u.roles.some((r) => r.toLowerCase() === role.toLowerCase())) return res.status(403).json({ code: "not_granted", message: `${u.name} doesn't have the "${role}" role.` });
+    const canonical = u ? u.roles.find((r) => r.toLowerCase() === role.toLowerCase()) : role;
     const ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? store.get("events/" + eventId) : null;
     if (!ev) return res.status(404).json({ code: "not_found", message: "Save the event before approving it." });
     const path = "approvals/" + eventId, cur = store.get(path)?.data || { eventId, roles: {} }, money = eventMoney(ev.data);
     const approval = { by: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now(), cost: money.cost, committed: money.committed, currency: money.currency };
-    if (b.withdraw) delete cur.roles[role]; else cur.roles[role] = approval;
+    if (b.withdraw) delete cur.roles[canonical]; else cur.roles[canonical] = approval;
     store.set(path, cur);
     store.add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: ${b.withdraw ? "withdrew approval" : `approved the plan at ${money.currency} ${approval.cost.toLocaleString("en-US")} planned, ${money.currency} ${approval.committed.toLocaleString("en-US")} committed`} as ${role}`, who: approval.by, email: approval.email, verified: approval.verified, at: approval.at });
     res.json({ ok: true, approval, roles: cur.roles });
@@ -158,7 +166,7 @@ export function createApp({ store, dataDir }) {
     const ap = store.get("approvals/" + m[1]); if (!ap || !Object.keys(ap.data.roles || {}).length) return;
     const ev = store.get(p); if (!ev) return;
     const now = eventMoney(ev.data), moved = (a, b) => Math.abs(a - b) > Math.max(500, b * 0.05);
-    const stale = Object.entries(ap.data.roles).filter(([, a]) => moved(now.cost, a.cost || 0) || moved(now.committed, a.committed || 0));
+    const stale = Object.entries(ap.data.roles).filter(([, a]) => (a.currency || "USD") !== now.currency || moved(now.cost, a.cost || 0) || moved(now.committed, a.committed || 0));
     if (!stale.length) return;
     for (const [r] of stale) delete ap.data.roles[r];
     store.set("approvals/" + m[1], ap.data);
@@ -177,6 +185,12 @@ export function createApp({ store, dataDir }) {
   const aeSlug = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "ae";
   const secret = () => { let s0 = store.get("system/secret")?.data?.v; if (!s0) { s0 = randomBytes(32).toString("hex"); store.set("system/secret", { v: s0 }); } return process.env.SESSION_SECRET || s0; };
   const aeToken = (eventId, slug) => createHmac("sha256", secret()).update(`ae:${eventId}:${slug}`).digest("hex").slice(0, 32);
+  const signedOk = (kind, id, token) => { const a = Buffer.from(createHmac("sha256", secret()).update(`${kind}:${id}`).digest("hex").slice(0, 32)), b2 = Buffer.from(String(token || "")); return a.length === b2.length && timingSafeEqual(a, b2); };
+  app.get("/api/plantoken", (req, res) => {
+    if (req.guest) return res.status(401).json({ code: "not_granted" });
+    const id = String(req.query.eventId || "");
+    res.json({ token: createHmac("sha256", secret()).update(`plan:${id}`).digest("hex").slice(0, 32) });
+  });
   const aeOk = (eventId, slug, token) => { const a = Buffer.from(aeToken(eventId, slug)), b2 = Buffer.from(String(token || "")); return a.length === b2.length && timingSafeEqual(a, b2); };
   app.get("/api/aelink", (req, res) => {
     if (req.guest) return res.status(401).json({ code: "not_granted" });
@@ -195,8 +209,10 @@ export function createApp({ store, dataDir }) {
     const b = req.body || {}, eventId = String(b.eventId || ""), slug = String(b.ae || "");
     if (!aeOk(eventId, slug, b.t)) return res.status(403).json({ code: "not_granted", message: "This link isn't valid." });
     const ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? store.get("events/" + eventId) : null; if (!ev) return res.status(404).json({ code: "not_found" });
-    const g = (ev.data.guests || []).find((x) => x.name === b.guest);
-    if (!g || aeSlug(g.owner) !== slug) return res.status(403).json({ code: "not_granted", message: "That guest isn't one of yours." });
+    const same = (ev.data.guests || []).filter((x) => x.name === b.guest && aeSlug(x.owner) === slug && (!b.company || x.company === b.company));
+    if (same.length > 1) return res.status(409).json({ code: "conflict", message: "Two of your guests share that name; include the company." });
+    const g = same[0];
+    if (!g) return res.status(403).json({ code: "not_granted", message: "That guest isn't one of yours." });
     const action = String(b.action || ""); if (!["approve", "sent", "done", "note", "nudge"].includes(action)) return res.status(400).json({ code: "invalid" });
     const rec = { eventId, guest: g.name, ae: g.owner, aeSlug: slug, action, at: Date.now(), ...(b.draft ? { draft: String(b.draft).slice(0, 8000) } : {}), ...(b.note ? { note: String(b.note).slice(0, 4000) } : {}), ...(b.nudge ? { nudge: String(b.nudge).slice(0, 4000) } : {}) };
     store.add("aeactions", rec);
@@ -207,10 +223,23 @@ export function createApp({ store, dataDir }) {
   app.get("/api/db/doc", (req, res) => {
     const p = String(req.query.path || ""), doc = store.get(p);
     let data = doc?.data;
-    if (doc && req.guest && p.startsWith("events/")) data = publicEvent(data, String(req.get("x-encore-view") || ""));
+    if (doc && req.guest && p.startsWith("events/")) {
+      let view = String(req.get("x-encore-view") || "");
+      if (view === "plan" && !signedOk("plan", doc.id, req.get("x-encore-token"))) view = "rsvp"; // plan links are signed
+      data = publicEvent(data, view);
+    }
     res.json(doc ? { exists: true, id: doc.id, data, updated: doc.updated } : { exists: false, id: p.split("/").pop() });
   });
   const guestKey = (req) => String(req.get("x-encore-key") || "").slice(0, 64);
+  // Saves carry the version they started from; a stale save gets 409 instead of overwriting someone else's change.
+  const versionOk = (req, res) => {
+    const p = String(req.query.path || "");
+    if (!/^events\//.test(p) || req.guest) return true;
+    const base = req.body?._base; if (req.body) { delete req.body._base; delete req.body.approvals; }
+    const cur = store.get(p);
+    if (base != null && cur && cur.data?.updatedAt && cur.data.updatedAt !== base) { res.status(409).json({ code: "conflict", message: "Someone else changed this event since you opened it. Reload to see their changes, then save again." }); return false; }
+    return true;
+  };
   const ownedWrite = (req, res) => {
     if (!req.guest) return true;
     const p = String(req.query.path || ""), cur = store.get(p), k = guestKey(req);
@@ -219,16 +248,21 @@ export function createApp({ store, dataDir }) {
     req.body = { ...(req.body || {}), _k: k };
     return true;
   };
-  app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res)) return; const r = store.set(String(req.query.path || ""), req.body); afterEventWrite(String(req.query.path || "")); res.json(r); });
-  app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res)) return; const r = store.update(String(req.query.path || ""), req.body); afterEventWrite(String(req.query.path || "")); res.json(r); });
+  app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = store.set(String(req.query.path || ""), req.body); afterEventWrite(String(req.query.path || "")); res.json(r); });
+  app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = store.update(String(req.query.path || ""), req.body); afterEventWrite(String(req.query.path || "")); res.json(r); });
   app.delete("/api/db/doc", (req, res) => res.json(store.delete(String(req.query.path || ""))));
   app.get("/api/db/collection", (req, res) => {
     let docs = store.list(String(req.query.path || ""));
-    if (req.guest) docs = docs.map((d) => { const { _k, ...data } = d.data || {}; return { ...d, data }; });
+    if (req.guest) {
+      const ev = String(req.query.eventId || "");
+      if (!ev) return res.status(400).json({ code: "invalid", message: "eventId is required" });
+      docs = docs.filter((d) => d.data?.eventId === ev).map((d) => { const { _k, ...data } = d.data || {}; return { ...d, data }; });
+    }
     res.json({ docs });
   });
   app.post("/api/db/collection", json, (req, res) => {
     const p = String(req.query.path || "");
+    if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     const body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
     res.json(store.add(p, body));
   });

@@ -33,7 +33,16 @@ const app = createApp({ store, dataDir });
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 
-if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data. Set it before sharing guest links.");
+const loopback = /^(127\.0\.0\.1|localhost|::1)$/.test(host);
+if (!process.env.APP_PASSWORD && !loopback && process.env.ENCORE_ALLOW_OPEN !== "1") {
+  console.error("Refusing to start: APP_PASSWORD is not set and the server listens on " + host + ". Set APP_PASSWORD (and SESSION_SECRET), or HOST=127.0.0.1 for local use, or ENCORE_ALLOW_OPEN=1 to run open on purpose.");
+  process.exit(1);
+}
+if (process.env.ENCORE_USERS && !process.env.SESSION_SECRET) {
+  console.error("Refusing to start: ENCORE_USERS is set but SESSION_SECRET isn't. Set a long random SESSION_SECRET so sign-ins can't be forged.");
+  process.exit(1);
+}
+if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data.");
 const server = app.listen(port, host, () => {
   console.log(`[encore] http://localhost:${port}  ai=${aiMode()}  integrations=[${configured().map((s) => s.server).join(", ")}]  auth=${process.env.APP_PASSWORD ? "on" : "off"}`);
 });

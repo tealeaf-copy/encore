@@ -1,5 +1,5 @@
 // Optional shared-password gate. Off unless APP_PASSWORD is set.
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
 
 const COOKIE = "encore_auth";
 const MAX_AGE_S = 60 * 60 * 24 * 30;
@@ -15,11 +15,20 @@ export function authEnabled() {
  */
 export function users() {
   return String(process.env.ENCORE_USERS || "").split(";").map((x) => x.trim()).filter(Boolean).map((x) => {
-    const [name, email, roles = ""] = x.split("|").map((y) => y.trim());
-    return { name, email: String(email || "").toLowerCase(), roles: roles.split("+").map((r) => r.trim()).filter(Boolean) };
+    const [name, email, roles = "", pw = ""] = x.split("|").map((y) => y.trim());
+    return { name, email: String(email || "").toLowerCase(), roles: roles.split("+").map((r) => r.trim()).filter(Boolean), pw };
   }).filter((u) => u.name && u.email);
 }
 const findUser = (email) => users().find((u) => u.email === String(email || "").trim().toLowerCase()) || null;
+/** "scrypt$salt$hash" for a personal password (see server/hash-password.js). */
+export function hashPassword(password, salt = randomBytes(16).toString("hex")) {
+  return `scrypt$${salt}$${scryptSync(String(password), salt, 32).toString("hex")}`;
+}
+function checkPersonal(u, password) {
+  const [, salt, hash] = String(u.pw || "").split("$");
+  if (!salt || !hash) return null;
+  return same(scryptSync(String(password), salt, 32).toString("hex"), hash);
+}
 function sign(email) {
   const secret = process.env.SESSION_SECRET || process.env.APP_PASSWORD;
   return createHmac("sha256", secret).update("encore-user:" + email + ":" + process.env.APP_PASSWORD).digest("hex");
@@ -57,14 +66,18 @@ export function loginHandler(req, res) {
   if (!authEnabled()) return res.json({ ok: true });
   const password = req.body?.password ?? "";
   const isForm = req.is("application/x-www-form-urlencoded");
-  if (!same(password, process.env.APP_PASSWORD)) {
-    return isForm ? res.redirect(303, "/login?error=1") : res.status(401).json({ code: "not_granted", message: "Wrong password." });
-  }
   let value = token();
   if (users().length) {
     const u = findUser(req.body?.email);
     if (!u) return isForm ? res.redirect(303, "/login?error=2") : res.status(401).json({ code: "not_granted", message: "That email isn't on the team list." });
+    // A personal password, when set, is required; the shared team password then doesn't work for that person.
+    const personal = checkPersonal(u, password);
+    if (personal === false || (personal === null && !same(password, process.env.APP_PASSWORD))) {
+      return isForm ? res.redirect(303, "/login?error=1") : res.status(401).json({ code: "not_granted", message: "Wrong password." });
+    }
     value = `${u.email}.${sign(u.email)}`;
+  } else if (!same(password, process.env.APP_PASSWORD)) {
+    return isForm ? res.redirect(303, "/login?error=1") : res.status(401).json({ code: "not_granted", message: "Wrong password." });
   }
   const secure = req.secure ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
@@ -95,7 +108,7 @@ export function loginPage() {
   <h1>encore</h1>
   <script>if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
   ${users().length ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" required>` : ""}
-  <input type="password" name="password" placeholder="Team password" autocomplete="current-password" autofocus required>
+  <input type="password" name="password" placeholder="${users().some((u) => u.pw) ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
 </form></body></html>`;
 }

@@ -1327,7 +1327,7 @@ Respect word limits. Reply with only JSON: {"moments":[{"name":"max 4 words","wh
     prompt:d=>`You find co-hosts and partners for a B2B experience: non-competing companies that sell to the same buyers, local brands that make the experience better, or communities that bring the right people. Goals: split the cost, widen the invite list, add credibility. Prefer real companies you can name with confidence; otherwise describe the type and how to find one.
 ${brief(d)}
 Respect word limits. Reply with only JSON: {"partners":[{"name":"company or type","kind":"Co-host vendor|Local brand|Community|Media partner","why":"max 14 words","overlap":1-5 (audience overlap),"split":integer percent of cost they'd cover,"gives":"what they bring, max 8 words","pitch":"a 50-70 word outreach note"}] (3-4),"rules":[ground rules for co-hosting, max 8 words each] (3)}`},
-  briefing:{label:"Sales lead",av:"SL",uses:["email","docs","notes","calls","crm","sfdc","web"],ok:o=>Array.isArray(o?.sheets),sum:o=>`${o.sheets.length} cheat sheets`,
+  briefing:{label:"Sales lead",av:"SL",uses:["email","docs","notes","calls","fathom","granola","slackSearch","crm","sfdc","web"],ok:o=>Array.isArray(o?.sheets),sum:o=>`${o.sheets.length} cheat sheets`,
     prompt:d=>{ const g=d.guests.map((x,i)=>({...x,i})).filter(x=>["Going","Maybe","Invited","Attended"].includes(x.status)).slice(0,10);
       const said=n=>allRsvps.find(r=>r.eventId===d.id&&r.name?.toLowerCase()===n.toLowerCase())?.topic||"";
       return `You are a sales lead preparing the whole team (hosts and account execs) for a B2B experience. For each attendee, research them with the tools (email history, docs, notes, call recordings, CRM, recent company news) and write a one-glance cheat sheet so everyone knows who they are talking to. Stay professional: no sensitive personal data, nothing that would feel like surveillance. Only state facts you found; mark unknowns as "unknown".
@@ -1351,7 +1351,7 @@ MEDIA: ${(d.media?.moments||[]).map(m=>m.name).join(", ")||"none"}
 GUESTS: ${d.guests.length} on the list, ${d.guests.filter(g=>g.status==="Going").length} going: ${d.guests.slice(0,20).map(g=>`${g.name} (${g.title}, ${g.company}${g.value?`, open deal ${money(g.value)}`:""})`).join("; ")}.
 STRATEGY PLAYS AND WHAT TO SKIP: ${(curStrategy()?.plays||[]).map(p=>p.name+" ("+p.format+")").join("; ")} | skip: ${(curStrategy()?.notFit||[]).map(n=>n.idea).join("; ")}
 Reply with only JSON: {"title":"","oneLiner":"max 22 words","whyNow":"max 45 words","audience":"max 25 words","experience":"max 50 words","budget":{"total":number,"perGuest":number,"coHostSaves":number,"lines":[{"line":"","amount":number}]},"outcomes":[{"metric":"max 5 words","target":"max 6 words"}] (3),"risks":[{"risk":"max 10 words","mitigation":"max 14 words"}] (3),"timeline":[{"when":"","what":"max 8 words"}] (4),"ask":"the decision you need and by when, max 25 words","impact":{"pipelineLow":number,"pipelineHigh":number,"deals":"e.g. 2 to 4","rationale":"how you got the range, using the guest list and deal sizes, max 30 words"},"whyThis":"why this playbook beats the alternatives for these buyers, max 35 words","alternatives":[{"option":"","whyNot":"max 14 words"}] (2-3),"budgetRange":{"low":number,"high":number,"assumptions":"max 20 words"},"salesCopy":{"subject":"","body":"the email an account exec sends a customer or prospect to invite them, 80-120 words, first person from the AE, in the brand voice, with [first name] and [personal reason] placeholders"}}`}},
-  scout:{label:"Guest scout",av:"GS",uses:["crm","sfdc","email","docs","notes","calls","web"],ok:o=>Array.isArray(o?.contacts),sum:o=>`${o.contacts.length} contacts`,
+  scout:{label:"Guest scout",av:"GS",uses:["crm","sfdc","attio","clay","email","docs","notes","calls","fathom","granola","slackSearch","posthog","web"],ok:o=>Array.isArray(o?.contacts),sum:o=>`${o.contacts.length} contacts`,
     prompt:d=>`Build the actual invite list for this event, row by row: 12 to 15 people. Search the CRM, email, docs, notes and call recordings for real customers, open opportunities, prospects and partners who match the target audience. For each person, check that they live or work in ${d.city||"the event city"}: use their CRM address, email signature, LinkedIn location or company office found on the web. Mark the city check honestly: "verified" (evidence found), "likely" (company office there, person unconfirmed), "unverified" (no data) or "elsewhere" (they're based in another city; say where).
 If you can't find real people with the tools (or no tools are available), fill the list with clearly fictional sample contacts with realistic titles and companies, and set "sample": true on each. Never present invented people as real.
 Aim for a good room: mostly target accounts, a few happy customers, one or two respected outside voices.
@@ -1572,7 +1572,7 @@ $("#seriesBtn").onclick=()=>{ const h=$("#factsHost"); if(!h) return; const box=
 
 async function saveEvent(){
   if(!db){ toast("Saving needs the page opened in claude.ai while signed in."); return false }
-  const data=clone(draft); delete data.id; data.updatedAt=Date.now(); data.createdAt=data.createdAt||Date.now();
+  const data=clone(draft); delete data.id; if(window.ENCORE_SERVER&&draft.id) data._base=draft.updatedAt||null; data.updatedAt=Date.now(); data.createdAt=data.createdAt||Date.now();
   // Persist example outputs the user kept, so a saved copy of the example stays complete
   if(draft.example){ ["validation","research","venues","copy","produce","outreach","ideas","hooks","promo","scout"].forEach(k=>{ if(!data[k]) data[k]={...EXAMPLE_OUT[k],example:false} }) }
   data.example=false;
@@ -1580,7 +1580,7 @@ async function saveEvent(){
     if(draft.id){ await db.doc("events/"+draft.id).set(data) }
     else { const ref=await db.collection("events").add(data); draft.id=ref.id }
     Object.assign(draft,hydrate({...data,id:draft.id})); toast("Event saved"); renderStep(); return true;
-  }catch(e){ toast(e?.code==="permission_denied"?"You don't have permission to save events here.":"Couldn't save: "+(e?.message||"try again")); return false }
+  }catch(e){ toast(e?.code==="permission_denied"?"You don't have permission to save events here.":e?.code==="conflict"?e.message:"Couldn't save: "+(e?.message||"try again")); return false }
 }
 function renderHeader(){
   $("#draftTitle").textContent = draft.name || "Untitled experience";
@@ -1878,6 +1878,10 @@ const CONNECT={
   calls:{label:"Calls",server:"Gong",tool:"ask_account",name:"ask_call_recordings",desc:"Ask Gong about an account's recorded calls: what the buyer cares about, objections, personal details they shared on calls."},
   crm:{label:"HubSpot",server:"HubSpot",tool:"search_crm_objects",name:"search_hubspot",desc:"Search HubSpot CRM for the company, contacts, deals and recent activity."},
   sfdc:{label:"Salesforce",server:"Salesforce - Beta",tool:"dispatch_readonly",name:"query_salesforce",desc:"Read-only Salesforce access: accounts, contacts, opportunities and activity history."},
+  clay:{label:"Clay",server:"Clay",tool:"*",pick:/enrich|search|find|lookup/i,name:"enrich_clay",desc:"Enrich people and accounts with Clay: titles, company size, location and signals."},
+  fathom:{label:"Fathom",server:"Fathom",tool:"*",pick:/search|meeting|transcript|call|list/i,name:"search_fathom",desc:"Search Fathom call recordings and summaries for what buyers and customers said."},
+  slackSearch:{label:"Slack",server:"Slack",tool:"*",pick:/search/i,name:"search_slack",desc:"Search Slack for what the team has said about an account (deal channels, customer channels)."},
+  sequel:{label:"Sequel",server:"Sequel",tool:"*",pick:/regist|attendee|event|list/i,name:"sequel_registrants",desc:"Read Sequel webinar events and registrants, including who attended and for how long."},
   granola:{label:"Granola",server:"Granola",tool:"*",pick:/search|query|meeting|note|list/i,name:"search_granola",desc:"Search Granola meeting notes and transcripts for what buyers and customers said."},
   attio:{label:"Attio",server:"Attio",tool:"*",pick:/search|query|list|record/i,name:"search_attio",desc:"Search Attio CRM records: companies, people, lists and deals."},
   posthog:{label:"PostHog",server:"PostHog",tool:"*",pick:/query|insight|search|list/i,name:"query_posthog",desc:"Query PostHog product analytics: which companies and users are most active, and what they use."},
@@ -1911,7 +1915,7 @@ const CONNECT={
   playbook:{label:"MKT1 playbooks",server:"Mkt1",tool:"mkt1_newsletter",name:"search_playbooks",desc:"Search MKT1's B2B marketing newsletter archive for proven playbooks on events, field marketing, gifting and follow-up. Returns post titles and links.",
     schema:{type:"object",properties:{query:{type:"string"},limit:{type:"number"}},required:["query"]}},
 };
-const INTEL_KEYS=["email","docs","notes","calls","crm","sfdc","web"];
+const INTEL_KEYS=["email","docs","notes","calls","fathom","granola","slackSearch","crm","sfdc","web"];
 function webOn(){ return WEB_KEYS.some(k=>srcState[k]==="on") }
 let srcState={}, srcProbed=null;
 async function getMcp(){ try{ return await window.claude?.use?.("mcp") ?? null }catch{ return null } }
@@ -2055,9 +2059,11 @@ function gaccs(d){ const D=d.dist?.ch||(kprof(d).dist||DIST_DEFAULT).map(([n,sh]
 function wireGoNoGo(host){ const d=draft, g=$(".gonogo",host); if(!g) return; g.ontoggle=()=>{ d.rubricOpen=g.open };
   $$("[data-rub]",host).forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.rub.split("|"); d.rubric={...(d.rubric||{}),[k]:+v}; renderStep() });
   $("#gaccsCopy",host).onclick=()=>copyTxt(`${d.name}: event brief\n\n`+gaccs(d).map(([k,v])=>`${k}: ${v}`).join("\n")) }
+function playbooksHTML(d){ const L=(brandProfile?.playbooks||[]).filter(x=>x.kind===kindOf(d)); if(!L.length||d.example) return "";
+  return `<details class="ready"><summary><b>Your playbooks for ${esc(KINDS[kindOf(d)].label.toLowerCase())}s</b><span class="note">${L.length} saved from past events</span></summary><div class="cards">${L.map((x,i)=>`<div class="card"><b>${esc(x.name)}</b><span class="note">${esc(x.city||"")}${x.venue?` · ${esc(x.venue.name)}`:""} · ${x.seedGuests.length} seed guests</span>${x.change?`<span class="note">Change next time: ${esc(x.change)}</span>`:""}<button class="btn sm" data-pbuse="${esc(x.from)}">Start from this playbook</button></div>`).join("")}</div></details>` }
 function step1(host){
   const S=curStrategy(), co=brandProfile?.company||draft.brand;
-  host.innerHTML=`<div id="kindHost"></div>${goNoGoHTML(draft)}
+  host.innerHTML=`<div id="kindHost"></div>${goNoGoHTML(draft)}${playbooksHTML(draft)}
   <div class="strat-head"><div><small class="eyebrow">Step 1 · Strategy</small><h2>${co?`Where events fit for ${esc(co)}`:"Where events fit"}</h2></div>
     <div class="btns">${S?exTag(S):""}<button class="btn ${S?"":"primary"}" id="stratRun"><span class="spark">✦</span>${S?"Redo the research":"Research and build the strategy"}</button></div></div>
   ${!co&&!draft.example?`<div class="banner"><span>Tell Encore your company first. It does the research from there.</span><a href="#brand">Set up brand →</a></div>`:""}
@@ -2065,6 +2071,11 @@ function step1(host){
   <div id="stratOut">${S?strategyHTML(S):`<p class="empty">Encore researches your latest launches and marketing, then tells you where events fit and which formats your buyers will show up for.</p>`}</div>
   <details class="drawer" id="deckDrawer"><summary><b>More ideas</b> <span class="note">shuffle the idea deck</span></summary><div id="deckHost" style="margin-top:14px"></div></details>`;
   $("#stratRun").onclick=e=>runStrategy(e.currentTarget); wireGoNoGo(host);
+  $$("[data-pbuse]",host).forEach(b=>b.onclick=()=>{ const x=(brandProfile?.playbooks||[]).find(p=>p.from===b.dataset.pbuse); if(!x) return; const d=draft;
+    if(x.city&&!d.city) d.city=x.city; if(x.runOfShow?.length&&!d.produce) d.produce={...starterProduce(d),runOfShow:x.runOfShow,fromPlaybook:x.name};
+    x.seedGuests.forEach(g=>{ if(!d.guests.some(y=>y.name===g.name)) d.guests.push({...g,tier:"A",status:"Not invited",outcome:"None yet",value:0,source:`Came to ${x.name}`}) });
+    if(x.questions?.length&&!d.launchQs) d.launchQs={questions:x.questions.map(q=>({q,type:"short",required:false,why:"From your playbook"})),example:false};
+    logDecision(d,`started from the ${x.name} playbook`); toast(`Started from ${x.name}: ${x.seedGuests.length} seed guests, run of show and questions added.`); renderStep() });
   wireStrategy(host,S);
   const dd=$("#deckDrawer"); dd.ontoggle=()=>{ if(dd.open&&!$("#deckHost").innerHTML) deckStep($("#deckHost")) };
   if(!S&&sample&&co&&!stratBusy&&!draft._stratAuto){ draft._stratAuto=true; runStrategy($("#stratRun")) }
@@ -2330,6 +2341,12 @@ Sections: "Demos" as cards (tags = [owner, prep time]), "Sessions" as cards, "Pr
   distribution:{label:"Distribution playbook",av:"DP",desc:"Who sends what, where and when to fill every seat with the right people.",
     prompt:d=>`Build the distribution playbook to fill ${d.headcount} seats with the right people for this event${d.date?` on ${d.date}`:""}. Channels to consider: AE personal invites, exec-to-exec notes from our leadership, partner co-invites, "bring a peer" referrals from customers, community groups and newsletters the buyers read, LinkedIn (exec posts, targeted ads to named accounts), a waitlist, and speakers or hosts promoting to their networks. For each channel: who sends, to whom, the message angle, timing, and the expected acceptance rate (label estimates). Add a timeline from launch to event, the moments that create urgency, and what to do if RSVPs are behind at 3 weeks, 2 weeks and 1 week out.
 Sections: "Channels" as cards (title = channel, subtitle = who sends, body = angle + audience, score = expected impact, tags = [acceptance rate estimate, timing]), "Timeline" as a timeline, "If RSVPs lag" as cards, "Targets" as kpis.`},
+  repurpose:{label:"Turn the event into content",av:"CT",desc:"One central asset from the event (the questions, the anonymous answers, what peers said), cut into a recap post, a short report, clips and a nurture email, so the event keeps working after the night.",
+    prompt:d=>{ const R2=allRsvps.filter(r=>r.eventId===d.id), topics=[...new Set(R2.map(r=>r.topic).filter(Boolean))], notes=d.guests.filter(g=>g.note).map(g=>g.note);
+      return `Plan the content that comes out of this event. Start from one central asset built from what attendees brought and said (anonymized: no names, companies, ARR or deal details without permission), then cut it into pieces for each channel. Say who needs to approve quotes.
+WHAT GUESTS WANTED TO LEARN: ${topics.join("; ")||"unknown"}
+THEMES FROM THE CONVERSATIONS (internal notes, anonymize): ${notes.slice(0,12).join("; ")||"unknown"}
+Sections: "Central asset" as cards (1: title, format, why this audience will read it), "Cuts" as a table (Piece, Channel, Owner, Publish by), "Permissions" as chips, "Measure" as kpis (e.g. downloads by target accounts, replies, meetings).` }},
   boothdesign:{label:"Booth design and activations",av:"BD",desc:"A booth people walk toward: one message, sightlines, demo stations, a bespoke element and activations that pull your target accounts in.",
     prompt:d=>`Design the booth for this third-party conference to maximize qualified traffic from the target accounts, not just badge scans. Cover the one-line message visible from 10 meters, layout (open front, demo stations, a quiet meeting nook), lighting and graphics, one bespoke element that fits the brand and is worth photographing, and 4 to 6 activations (e.g. espresso or smoothie bar with branded cups, live podcast taping with customers, 15-minute workshops, a prize tied to a product action, an after-hours happy hour or side dinner, a passport game with partner booths). For each activation give expected qualified conversations, cost and what it needs. Respect the budget (${money(d.budget)}) and say what to rent vs buy.
 Sections: "Message and layout" as cards, "Bespoke element" as cards (1), "Activations" as a table (Activation, When, Why it pulls target accounts, Est. cost, Expected conversations, Needs), "Graphics and print" as chips, "Avoid" as chips.`},
@@ -2456,7 +2473,7 @@ function benchHTML(){ const done=allEvents.filter(e=>!e.example&&e.status==="don
   return rows.length?`<div><small class="eyebrow">Your benchmarks${sample?" (sample)":""}</small><div class="chips">${rows.map(r=>`<span class="pchip">${esc(r.k)}: ${r.rsvp??"–"}% of invites RSVP, ${r.show??"–"}% show · ${r.n} event${r.n===1?"":"s"}</span>`).join("")}</div><span class="note">From your finished events. Encore uses these as the starting rates in Distribution.</span></div>`:"" }
 function accountSpend(){ const evs=allEvents.filter(e=>!e.example), map={};
   evs.forEach(e=>{ const h=hydrate(e), att=h.guests.filter(g=>g.status==="Attended"), per=att.length?toUSD(actualOf(h)||eventCost(h),e.currency)/att.length:0;
-    att.forEach(g=>{ const k=(g.company||"").trim(); if(!k) return; const m=map[k]=map[k]||{account:k,events:new Set(),head:0,gifts:0,pipe:0,domain:(g.email||"").split("@")[1]||""}; m.events.add(e.name); m.head+=per; m.gifts+=toUSD(+g.giftLanded||+g.giftCost||0,e.currency) });
+    att.forEach(g=>{ const k=(g.company||"").trim(); if(!k) return; const dm=(g.email||"").split("@")[1]||"", m=map[k]=map[k]||{account:k,events:new Set(),head:0,gifts:0,pipe:0,domain:""}; if(!m.domain&&dm&&!/^(gmail|googlemail|yahoo|outlook|hotmail|icloud|proton|aol)\./i.test(dm)) m.domain=dm; m.events.add(e.name); m.head+=per; m.gifts+=toUSD(+g.giftLanded||+g.giftCost||0,e.currency) });
     (e.opps||[]).forEach(o=>{ const k=(o.account||"").trim(); if(map[k]&&o.bucket==="created") map[k].pipe+=+o.amount||0 }) });
   return Object.values(map).map(m=>({...m,events:[...m.events],total:Math.round(m.head+m.gifts)})).sort((a,b)=>b.total-a.total) }
 function accountSpendHTML(){ const A=accountSpend(); if(!A.length) return "";
@@ -2643,6 +2660,14 @@ function drawAsks(d){ const h=$("#roadmapAsks"); if(!h) return; const A=d.asks=d
   $$("[data-ask]",h).forEach(x=>x.onchange=()=>{ const [i,k]=x.dataset.ask.split("|"); A[+i][k]=x.value });
   $$("[data-askd]",h).forEach(x=>x.onchange=()=>{ A[+x.dataset.askd].done=x.checked; drawAsks(d) });
   $("#askAdd",h).onclick=()=>{ A.push({ask:"",from:"",owner:"Product lead",by:new Date(Date.now()+14*864e5).toISOString().slice(0,10),done:false}); drawAsks(d) } }
+function drawPlaybookSave(d){ const h=$("#playbookSave"); if(!h) return; const B=brandProfile||{}, P=(B.playbooks||[]).find(x=>x.from===d.id), V=venuePicked(d), stars=d.guests.filter(g=>g.status==="Attended"&&(g.nsDoneAt||/Meeting|Opportunity|Renewed|Expanded/.test(g.outcome||"")));
+  h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Rinse and repeat</small><h3>Save what worked as a playbook</h3><p class="note">The venue that worked in this city, the guests who made the room, the invite and follow-up that landed, and what you'd change. The next event of this type starts from it.</p></div>
+    <button class="btn sm ${P?"ghost":"primary"}" id="pbSave">${P?"Update the playbook":"Save as playbook"}</button></div>
+    <div class="row"><div class="kpi"><small>Venue</small><b style="font-size:1rem">${esc(V?.name||"–")}</b><small>${esc(d.city||"")}</small></div><div class="kpi"><small>Guests to invite again</small><b>${stars.length}</b></div><div class="kpi"><small>Used before</small><b>${(B.playbooks||[]).filter(x=>x.kind===kindOf(d)).length}</b><small>${esc(KINDS[kindOf(d)].label)} playbooks</small></div></div>
+    <label class="f">What you'd change next time<input id="pbChange" value="${esc(P?.change||d.debrief?.change||"")}" placeholder="e.g. start 30 minutes later; seat customers next to prospects"></label>`;
+  $("#pbSave",h).onclick=async()=>{ const b=brandProfile=brandProfile||{}; b.playbooks=(b.playbooks||[]).filter(x=>x.from!==d.id);
+    b.playbooks.push({from:d.id,name:d.name,kind:kindOf(d),city:d.city,at:Date.now(),venue:V?{name:V.name,address:V.address,area:V.area}:null,seedGuests:stars.map(g=>({name:g.name,title:g.title,company:g.company,owner:g.owner})),invite:(out("outreach")?.invites||[])[0]?.body||d.copy?.description||"",followup:d.guests.find(g=>g.fuDraft)?.fuDraft||"",questions:(out("launchQs")?.questions||[]).map(q=>q.q),runOfShow:out("produce")?.runOfShow||[],change:$("#pbChange",h).value.trim()});
+    await saveBrand(true); logDecision(d,"saved this event as a playbook"); toast("Saved. The next event of this type can start from it."); drawPlaybookSave(d) } }
 function drawBacktest(d){ const h=$("#backtest"); if(!h) return; const evs=allEvents.filter(e=>!e.example&&(e.guests||[]).some(g=>g.status==="Attended")), bid=d.btId||"", E=bid?hydrate(allEvents.find(e=>e.id===bid)||d):d;
   const G=E.guests.filter(g=>g.status!=="Not invited").map(g=>({g,score:g.readinessAtInvite??readiness({...g,status:"Not invited",optIn:false}).score,inf:(()=>{ const R=readiness(g); const n=R.signals.length||1; return R.signals.filter(x=>x.src==="Inferred").length/n })()})).sort((a,b)=>b.score-a.score);
   const k=Math.floor(G.length/3), top=G.slice(0,k), bot=G.slice(G.length-k), rate=(L,f)=>L.length?Math.round(100*L.filter(x=>f(x.g)).length/L.length):null;
@@ -2904,7 +2929,7 @@ function drawPitch(){
   $("#pDl")&&($("#pDl").onclick=async()=>{ try{ await downloads.save({filename:slug(P.title)+"-proposal.md",data:new Blob([pitchText(P).replace(/\\n/g,"\n")],{type:"text/markdown"})}) }catch{ toast("Download cancelled") } });
   $("#planCopy")&&($("#planCopy").onclick=()=>copyTxt(planText(d)));
   $("#planDl")&&($("#planDl").onclick=async()=>{ try{ await downloads.save({filename:slug(d.name)+"-plan.txt",data:new Blob([planText(d)],{type:"text/plain"})}) }catch{ toast("Download cancelled") } });
-  $("#planShare")&&($("#planShare").onclick=async()=>{ if(!d.id){ if(!(await saveEvent())) return } else await saveEvent(); copyTxt(`${ART_URL}#plan-${d.id}`); $("#planNote")&&($("#planNote").textContent="Read-only link copied. Anyone with access to Encore can open it.") });
+  $("#planShare")&&($("#planShare").onclick=async()=>{ if(!d.id){ if(!(await saveEvent())) return } else await saveEvent(); let tok=""; if(window.ENCORE_SERVER){ try{ tok=(await (await fetch(`/api/plantoken?eventId=${encodeURIComponent(d.id)}`,{credentials:"same-origin"})).json()).token||"" }catch{} } copyTxt(`${ART_URL}#plan-${d.id}${tok?"~"+tok:""}`); $("#planNote")&&($("#planNote").textContent="Read-only link copied. Anyone with access to Encore can open it.") });
   $("#planFill")&&($("#planFill").onclick=e=>fillPlan(e.currentTarget));
   wireRuns(el);
 }
@@ -2916,7 +2941,7 @@ RUN OF SHOW: ${(out("produce")?.runOfShow||[]).map(r=>`${r.time} ${r.item}`).joi
 Reply with only JSON: {"comms":[{"when":"","channel":"","audience":"","message":"max 14 words"}] (6-9),"staffing":[{"role":"","who":"","shift":"","duties":"max 14 words"}] (3-6),"dayof":[{"time":"","task":"","owner":""}] (10-16),"contingencies":[{"risk":"","plan":"max 18 words","owner":""}] (4-6)}`,btn,$("#st-plan"),{tier:"complex"});
   if(o){ d.planAI=o; drawPitch(); burst(); toast("Plan filled in. Review and edit anything.") } }
 function renderPlanShare(host,id){ (async()=>{ let ev=allEvents.find(e=>e.id===id); if(!ev&&db){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
-  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady?"We couldn't find this plan.":"Loading…"}</p></div>`; return }
+  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady?"We couldn't find this plan.":"Loading…"}</p></div>`; if(!dbReady) setTimeout(()=>{ if(location.hash.startsWith("#plan-"+id)){ host.dataset.key=""; renderGuest() } },1200); return }
   const keep=draft; draft=hydrate(ev); draft.example=false;
   host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel"><small class="eyebrow">Event plan · read only</small><h2>${esc(ev.name)}</h2><p class="note">${esc(fmtDate(ev.date))}${ev.city?` · ${esc(ev.city)}`:""}</p></div><div class="panel plandoc">${planHTMLDoc(draft,true)}</div></div>`; draft=keep })() }
 
@@ -3027,15 +3052,19 @@ const PLATFORMS={
    how:["Create an event on Partiful","Paste the title, date, location and description","Upload the poster","Add the RSVP questions","Set the guest cap, then share","Paste the page link below"]},
  eventbrite:{label:"Eventbrite",mark:"E",url:"https://www.eventbrite.com/create",img:[2160,1080,"Event image (2:1)"],words:"Max 220 words. People find it in search, so the first sentence must say who it's for and what happens.",qLabel:"Order form questions",appOn:"Use an invite-only or hidden ticket and approve registrations.",appOff:"Free ticket with a quantity equal to your headcount.",
    how:["Create an event on Eventbrite","Paste the title and summary","Paste the description and FAQ","Upload the event image","Add a free ticket and the order form questions","Add the tags, publish, and paste the link below"]},
+ sequel:{label:"Sequel",mark:"S",url:"https://www.sequel.io",img:[1920,1080,"Event banner (16:9)"],words:"Max 180 words. Sequel event pages lead with the session and the speakers: say what attendees will be able to do after, then who's speaking.",qLabel:"Registration questions",appOn:"Approve registrations before sending the join link.",appOff:"Open registration; Sequel sends the join link and reminders.",
+   how:["Create the event in Sequel","Paste the title, date and time, and description","Add the speakers and the banner","Add the registration questions","Embed the Sequel page on your site if you like, then publish","Paste the event link below so emails and Slack use it"]},
  site:{label:"Your website",mark:"W",url:null,img:[1600,900,"Hero image"],words:"Max 250 words. Write it as a landing page: a clear promise, what happens, who it's for, one call to action.",qLabel:"RSVP form questions (Encore asks these)",appOn:"Curated: guests request a seat on Encore and you approve each one.",appOff:"Open RSVP on Encore. Responses land in your guest list.",
    how:["Download the landing page","Put it on your site (or hand it to whoever runs the site)","The RSVP button goes to your Encore invite, so responses land here","Embed the guest wall to show who's coming"]}};
 const SENDERS={founder:{label:"Founder",who:"the founder and CEO",angle:"Say why the founder personally cares about this topic and these people. It should read like a note from them, not from marketing.",sign:"[Founder first name]"},
  cs:{label:"Head of CS",who:"the head of customer success",angle:"Write to existing customers: what they'll learn from peers, and that the team will be there.",sign:"[Head of CS first name]"},
  mkt:{label:"Head of marketing",who:"the head of marketing",angle:"Lead with what attendees get and who else is coming. Practical and specific.",sign:"[Head of marketing first name]"}};
-const lp=d=>(d.launch=d.launch||{platform:"luma",sender:"founder",qsOnRsvp:true}).platform||"luma";
+const lp=d=>(d.launch=d.launch||{platform:kindOf(d)==="webinar"?"sequel":"luma",sender:"founder",qsOnRsvp:true}).platform||"luma";
 function venueLine(d){ const V=venuePicked(d); return V?`VENUE: ${V.name}${V.address?`, ${V.address}`:""}${V.area?` (${V.area})`:""}.`:"" }
-function evLink(d){ return d.launch?.url || (d.id?ART_URL+"#rsvp-"+d.id:"[event link]") }
-function fillLinks(t,d){ return String(t||"").replace(/\[event (link|page)\]/gi,evLink(d)) }
+function utmCampaign(d){ return (d.launch?.utm||slug((d.copy?.title||d.name||"event")+(d.date?"-"+d.date.slice(0,7):""))) }
+function withUtm(url,d,source,medium){ if(!url||/^\[/.test(url)) return url; try{ if(/#/.test(url)&&!/^https?:\/\/[^#]+\?/.test(url)&&url.startsWith(ART_URL)) return url; const u=new URL(url); u.searchParams.set("utm_source",source); u.searchParams.set("utm_medium",medium); u.searchParams.set("utm_campaign",utmCampaign(d)); return u.toString() }catch{ return url } }
+function evLink(d,source="email",medium="email"){ return d.launch?.url?withUtm(d.launch.url,d,source,medium):(d.id?ART_URL+"#rsvp-"+d.id:"[event link]") }
+function fillLinks(t,d,source="email",medium="email"){ return String(t||"").replace(/\[event (link|page)\]/gi,evLink(d,source,medium)) }
 Object.assign(AGENTS,{
  launchCopy:{label:"Page copywriter",av:"CW",uses:["web","playbook"],ok:o=>!!o?.title&&!!o?.description,sum:o=>`Page copy: "${o.title}"`,
   prompt:d=>{const P=PLATFORMS[lp(d)],C=d.copy; return `${editor(d)}
@@ -3119,13 +3148,13 @@ async function slackPost(text,channel){ const mcp=await getMcp(); if(!mcp) throw
 function launchKitHTML(d){ const p=lp(d), P=PLATFORMS[p], F=launchFields(d), A=out("launchAssets"), sender=d.launch.sender||"founder";
   return `<section class="panel stack launchkit">
     <div><div class="eyebrow">Step 4 · Launch</div><h3>Launch your event page</h3>${kprof(d).launch?`<div class="samplebar">${esc(kprof(d).launch)}</div>`:""}<p class="note">Pick where it lives. Encore's agents write the page, make the artwork, design the questions and brief your team, so publishing takes a few clicks.</p></div>
-    <div class="plats" role="radiogroup" aria-label="Platform">${Object.entries(PLATFORMS).map(([k,x])=>`<button type="button" class="plat" role="radio" aria-checked="${k===p}" data-plat="${k}"><span class="pmark">${x.mark}</span>${esc(x.label)}</button>`).join("")}</div>
+    <div class="plats" role="radiogroup" aria-label="Platform">${Object.entries(PLATFORMS).filter(([k])=>k!=="sequel"||/webinar|launch|owned/.test(kindOf(d))).map(([k,x])=>`<button type="button" class="plat" role="radio" aria-checked="${k===p}" data-plat="${k}"><span class="pmark">${x.mark}</span>${esc(x.label)}</button>`).join("")}</div>
     <div class="lgrid"><div class="lfields">${F.map(([l,v],i)=>`<div class="lfield"><div class="btns" style="justify-content:space-between"><small class="eyebrow">${esc(l)}</small><button class="btn ghost sm" data-lcp="${i}">Copy</button></div><div class="lval">${esc(v)}</div></div>`).join("")}</div>
       <div class="lside"><figure><canvas id="lCover" width="${P.img[0]}" height="${P.img[1]}" aria-label="${esc(A?.alt||"Event cover")}"></canvas><figcaption class="note">${esc(P.img[2])} · ${P.img[0]} × ${P.img[1]}${A?.alt?`<br>Alt text: ${esc(A.alt)}`:""}</figcaption></figure>
         <div class="btns">${downloads?`<button class="btn sm" id="lDl">Download artwork</button>`:""}<button class="btn sm ghost" id="lCopyAll">Copy everything</button></div>
         <ol class="lhow">${P.how.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
         <div class="btns">${P.url?`<a class="btn primary" href="${P.url}" target="_blank" rel="noopener">Open ${esc(P.label)} ↗</a>`:`<button class="btn primary" id="lSite">${downloads?"Download landing page":"Copy landing page HTML"}</button>`}</div>
-        <label class="f">Your event page link<input id="lUrl" type="url" placeholder="https://…" value="${esc(d.launch.url||"")}"><span class="h">Emails, Slack updates and the guest wall use it.</span></label>
+        <label class="f">Your event page link<input id="lUrl" type="url" placeholder="https://…" value="${esc(d.launch.url||"")}"><span class="h">Campaign name for UTMs: <input id="lUtm" style="display:inline-block;width:auto;padding:2px 6px" value="${esc(utmCampaign(d))}"> · every link Encore writes is tagged by channel so the CRM can credit the campaign.</span><span class="h">Emails, Slack updates and the guest wall use it.</span></label>
         <div class="wallbox"><b>Guest wall</b><span class="note">A page that shows who's coming, with photos, roles and what each guest wants to learn. Guests opt in when they RSVP.</span>
           <div class="btns"><a class="btn sm" href="#guests-${esc(d.id||"sample")}" target="_blank" rel="noopener">Open guest wall ↗</a><button class="btn sm ghost" id="lEmbed">Copy embed code</button></div></div></div></div>
   </section>
@@ -3140,6 +3169,7 @@ function wireLaunch(host,d){ const F=launchFields(d), P=PLATFORMS[lp(d)];
   $("#lCopyAll",host).onclick=()=>copyTxt(F.map(([l,v])=>`${l.toUpperCase()}\n${v}`).join("\n\n"));
   const cv=$("#lCover",host), draw=()=>drawCover(cv,launchCover(d),{square:cv.height/cv.width>.8}); draw(); document.fonts?.ready.then(()=>cv.isConnected&&draw());
   $("#lDl",host)&&($("#lDl",host).onclick=()=>cv.toBlob(async b=>{ try{ await downloads.save({filename:`${slug(d.name)}-${lp(d)}-cover.png`,data:b}) }catch{ toast("Download cancelled") } },"image/png"));
+  $("#lUtm",host).onchange=e=>{ d.launch.utm=slug(e.target.value)||""; renderStep() };
   $("#lUrl",host).onchange=e=>{ d.launch.url=e.target.value.trim(); toast("Saved the page link"); renderStep() };
   $("#lEmbed",host).onclick=()=>{ if(!d.id) toast("Save the event first so the wall has a link"); copyTxt(`<iframe src="${ART_URL}#guests-${d.id||"sample"}" title="Who's coming" style="width:100%;min-height:900px;border:0" loading="lazy"></iframe>`) };
   $("#lSite",host)&&($("#lSite",host).onclick=async()=>{ if(!d.id) toast("Tip: save the event so the RSVP button links to your invite");
@@ -3153,13 +3183,13 @@ function wireLaunch(host,d){ const F=launchFields(d), P=PLATFORMS[lp(d)];
   const Q=out("launchQs"); $("#out-launchQs").innerHTML=Q?`<ol class="qlist">${Q.questions.map(q=>`<li><b>${esc(q.q)}</b>${q.required?` <span class="tag">required</span>`:""} <span class="tag">${esc(q.type)}</span>${q.options?.length?`<div class="note">${esc(q.options.join(" · "))}</div>`:""}<div class="note">Why: ${esc(q.why||"")}</div></li>`).join("")}</ol>${Q.approval?`<p class="note">Approval: ${esc(Q.approval)}</p>`:""}
     <label class="chip"><input type="checkbox" id="qsOnRsvp" ${d.launch.qsOnRsvp!==false?"checked":""}> Ask these on the Encore RSVP page too</label>`:`<p class="empty">Design questions that make seating and follow-up easy.</p>`;
   $("#qsOnRsvp")&&($("#qsOnRsvp").onchange=e=>{ d.launch.qsOnRsvp=e.target.checked; if(!d.launchQs&&Q) d.launchQs={...Q,example:false} });
-  const S=out("stakeholders"); $("#out-stakeholders").innerHTML=S?`<div class="lgrid"><div><small class="eyebrow">Post in ${esc(S.channel||"#events")}</small><p class="channel">${esc(fillLinks(S.post,d))}</p>
+  const S=out("stakeholders"); $("#out-stakeholders").innerHTML=S?`<div class="lgrid"><div><small class="eyebrow">Post in ${esc(S.channel||"#events")}</small><p class="channel">${esc(fillLinks(S.post,d,"slack","internal"))}</p>
       <div class="btns"><button class="btn sm" id="sbCopy">Copy</button>${srcState.slack==="on"?`<input id="sbCh" placeholder="Channel ID" style="max-width:160px"><button class="btn sm primary" id="sbSend">Post to Slack</button>`:""}</div></div>
     <div><small class="eyebrow">Who owes what</small><table class="tbl"><tbody>${(S.asks||[]).map(a=>`<tr><td><b>${esc(a.team)}</b></td><td>${esc(a.ask)}</td><td class="note">${esc(a.by||"")}</td></tr>`).join("")}</tbody></table>
       ${(S.dms||[]).map((m,i)=>`<div class="card" style="margin-top:8px"><div class="btns" style="justify-content:space-between"><b>DM to ${esc(m.to)}</b><button class="btn ghost sm" data-dm="${i}">Copy</button></div><p class="channel">${esc(m.text)}</p></div>`).join("")}</div></div>`:`<p class="empty">Keep sales, CS and your exec sponsor in the loop with one message.</p>`;
-  $("#sbCopy")&&($("#sbCopy").onclick=()=>copyTxt(fillLinks(S.post,d))); $$("[data-dm]",host).forEach(b=>b.onclick=()=>copyTxt(S.dms[+b.dataset.dm].text));
+  $("#sbCopy")&&($("#sbCopy").onclick=()=>copyTxt(fillLinks(S.post,d,"slack","internal"))); $$("[data-dm]",host).forEach(b=>b.onclick=()=>copyTxt(S.dms[+b.dataset.dm].text));
   $("#sbSend")&&($("#sbSend").onclick=async e=>{ e.currentTarget.disabled=true; try{ await slackPost(fillLinks(S.post,d),$("#sbCh").value.trim()); toast("Posted to Slack") }catch(err){ toast("Couldn't post to Slack: "+(err?.code||"error")) } e.currentTarget&&(e.currentTarget.disabled=false) });
-  const M=out("mailer"), mt=M?`Subject: ${M.subject}\n\n${fillLinks(M.body,d)}${M.ps?`\n\n${M.ps}`:""}`:"";
+  const M=out("mailer"), mt=M?`Subject: ${M.subject}\n\n${fillLinks(M.body,d,"newsletter","email")}${M.ps?`\n\n${M.ps}`:""}`:"";
   $("#out-mailer").innerHTML=`<div class="chips" style="margin-bottom:10px"><span class="note">From:</span>${Object.entries(SENDERS).map(([k,x])=>`<button type="button" class="chip" data-sender="${k}" aria-pressed="${(d.launch.sender||"founder")===k}">${esc(x.label)}</button>`).join("")}</div>`+(M?`<div class="lgrid"><div class="card"><small class="eyebrow">Subject</small><b>${esc(M.subject)}</b><span class="note">${esc(M.preview||"")}</span><p class="channel" style="margin-top:10px">${esc(fillLinks(M.body,d))}${M.ps?`\n\n${esc(M.ps)}`:""}</p>
       <div class="btns"><button class="btn sm" id="mCopy">Copy</button>${srcState.gmailDraft==="on"?`<button class="btn sm primary" id="mGmail">Save as Gmail draft</button>`:""}</div></div>
     <div class="stack" style="gap:8px">${M.segment?`<div class="surprise"><b>Send to first</b><span class="note">${esc(M.segment)}</span></div>`:""}${M.sendTime?`<div class="surprise"><b>When</b><span class="note">${esc(M.sendTime)}</span></div>`:""}<p class="note">Send it from your email tool to your list. A personal sender address gets more replies than a no-reply one.</p></div></div>`:`<p class="empty">Pick who it's from, then write it.</p>`);
@@ -3169,11 +3199,11 @@ function wireLaunch(host,d){ const F=launchFields(d), P=PLATFORMS[lp(d)];
 }
 
 // ---------------- Where your knowledge lives ----------------
-const KSRC=[["granola","Granola"],["calls","Gong"],["attio","Attio"],["crm","HubSpot"],["sfdc","Salesforce"],["posthog","PostHog"],["notes","Notion"],["doc","Word doc"]];
+const KSRC=[["granola","Granola"],["calls","Gong"],["fathom","Fathom"],["slackSearch","Slack"],["attio","Attio"],["crm","HubSpot"],["sfdc","Salesforce"],["posthog","PostHog"],["notes","Notion"],["doc","Word doc"]];
 const KTYPES={
  accounts:{t:"Target account list",d:"The companies you want in the room.",def:["crm","sfdc","attio","doc"],unit:"accounts",
    shape:`{"accounts":[{"name":"company","tier":"A|B|C","owner":"AE if known","why":"max 12 words"}] (up to 40),"summary":"one sentence"}`,count:o=>o.accounts?.length||0,rows:o=>(o.accounts||[]).map(a=>`${a.name}${a.tier?` · Tier ${a.tier}`:""}${a.owner?` · ${a.owner}`:""}`)},
- intel:{t:"Account intel",d:"What buyers said on calls and in meetings.",def:["calls","granola","notes","doc"],unit:"insights",
+ intel:{t:"Account intel",d:"What buyers said on calls and in meetings.",def:["calls","granola","fathom","slackSearch","notes","doc"],unit:"insights",
    shape:`{"notes":[{"account":"","insight":"max 25 words","source":"tool or doc"}] (up to 20),"summary":"one sentence"}`,count:o=>o.notes?.length||0,rows:o=>(o.notes||[]).map(n=>`${n.account}: ${n.insight}`)},
  icp:{t:"Ideal customer profile",d:"Who buys, why now, and who isn't a fit.",def:["notes","posthog","doc"],unit:"profile",
    shape:`{"icp":{"who":"max 20 words","titles":[],"industries":[],"pains":[3],"triggers":[3],"notFit":"max 15 words"},"summary":"one sentence"}`,count:o=>o.icp?1:0,rows:o=>o.icp?[o.icp.who,...(o.icp.pains||[]).map(p=>"Pain: "+p),...(o.icp.triggers||[]).map(t=>"Trigger: "+t)]:[]},
@@ -3298,7 +3328,7 @@ function planHTML(P,d){
 // Project manager agent ----------------------------------------------------
 const PM_KEYS=["linear","asana","clickup","slack","slackUsers"];
 function pmState(d){ d.approvals=d.approvals||{}; d.blocked=d.blocked||{}; d.pmSent=d.pmSent||null; return d }
-function approvers(P){ const T=P.team||[]; const a=T.filter(m=>/lead|sponsor|exec|vp|head|director|owner/i.test(m.role)).map(m=>m.role); return a.length?a.slice(0,3):["Event lead","Your manager"] }
+function approvers(P){ if((window.ENCORE_ME?.teamRoles||[]).length) return window.ENCORE_ME.teamRoles.slice(0,4); const T=P.team||[]; const a=T.filter(m=>/lead|sponsor|exec|vp|head|director|owner/i.test(m.role)).map(m=>m.role); return a.length?a.slice(0,3):["Event lead","Your manager"] }
 function commitRisks(d){ const now=Date.now(); return (d.commits||[]).filter(c=>c.status!=="Cancelled").flatMap(c=>{ const dd=c.depositDue?Math.ceil((new Date(c.depositDue+"T12:00:00")-now)/864e5):null, cb=c.cancelBy?Math.ceil((new Date(c.cancelBy+"T12:00:00")-now)/864e5):null;
   return [...(!c.paid&&dd!=null&&dd<=7?[`${c.vendor}: ${money(c.deposit)} deposit ${dd<0?`${-dd} days overdue`:`due in ${dd} days`}`]:[]),...(cb!=null&&cb>=0&&cb<=14?[`${c.vendor}: free cancellation ends in ${cb} days`]:[])] }) }
 function taskStatus(d,P){ const ev=d.date?new Date(d.date+"T12:00:00"):null, now=Date.now();
@@ -3306,7 +3336,7 @@ function taskStatus(d,P){ const ev=d.date?new Date(d.date+"T12:00:00"):null, now
     const st=d.tasksDone.includes(i)?"done":d.blocked[i]!=null?"blocked":days!=null&&days<0?"overdue":days!=null&&days<=3?"soon":"later";
     return {...t,i,due,days,st} }) }
 let apprSynced={};
-function syncApprovals(d){ if(!window.ENCORE_SERVER||!d.id||apprSynced[d.id]) return; apprSynced[d.id]=1;
+function syncApprovals(d){ if(!window.ENCORE_SERVER||!d.id||(apprSynced[d.id]&&Date.now()-apprSynced[d.id]<5000)) return; apprSynced[d.id]=Date.now();
   fetch(`/api/approvals?eventId=${encodeURIComponent(d.id)}`,{credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(j=>{ if(!j||draft.id!==d.id) return; const before=JSON.stringify(d.approvals||{}); d.approvals={...j.roles}; if(JSON.stringify(d.approvals)!==before&&step===5) renderStep() }).catch(()=>{}) }
 function pmHTML(d,P){
   pmState(d); syncApprovals(d); if(!window.ENCORE_SERVER) checkApprovals(d); const A=approvers(P), allOk=A.every(r=>d.approvals[r]), S=taskStatus(d,P);
@@ -3587,8 +3617,10 @@ function step6(host){
     <div id="attrib"></div>
   </div>
   <div class="panel stack" id="handoff"></div>
+  ${modHTML("repurpose",d)}
   <div class="panel"><div class="btns" style="justify-content:space-between"><div><b>Attendee recap</b><p class="note">Within 48 hours, send everyone who came the list of who was there (with LinkedIn) and the questions people brought. It's the follow-up guests actually forward.</p></div><button class="btn sm" id="recapBtn">Copy the recap</button></div></div>
   ${objOf(d)==="expansion"?`<div class="panel stack" id="roadmapAsks"></div>`:""}
+  <div class="panel stack" id="playbookSave"></div>
   <div class="panel stack" id="funnel"></div>
   <div class="panel stack" id="pilot"></div>
   <div class="panel stack" id="backtest"></div>
@@ -3645,7 +3677,7 @@ function step6(host){
     $$("[data-ao]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.ao].outcome=c.value; drawAttrib() });
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
-  drawAttrib(); drawHandoff(d); drawPipeRep(d); drawFunnel(d); drawPilot(d); drawBacktest(d); drawAsks(d);
+  drawAttrib(); drawHandoff(d); drawPipeRep(d); drawFunnel(d); drawPilot(d); drawBacktest(d); drawAsks(d); drawPlaybookSave(d);
   $("#recapBtn")&&($("#recapBtn").onclick=()=>{ const A=d.guests.filter(g=>g.status==="Attended"); if(!A.length){ toast("Mark who came first."); return }
     const W=allWall.filter(w=>w.eventId===d.id), R2=allRsvps.filter(r=>r.eventId===d.id), li=n=>W.find(w=>w.name===n)?.linkedin||R2.find(r=>r.name===n)?.linkedin||"", topics=[...new Set(R2.map(r=>r.topic).filter(Boolean))];
     copyTxt(`Thank you for coming to ${d.copy?.title||d.name}.\n\nWho was there:\n${A.map(g=>`• ${g.name}, ${g.title||""}${g.company?` at ${g.company}`:""}${li(g.name)?` · ${li(g.name)}`:""}`).join("\n")}\n\n${topics.length?`What people came to learn about:\n${topics.map(t=>`• ${t}`).join("\n")}\n\n`:""}Reply if you'd like an intro to anyone on the list.`); toast("Recap copied. Only share LinkedIn links guests added themselves.") });
@@ -3662,7 +3694,7 @@ function step6(host){
   $$("[data-fc]").forEach(b=>b.onclick=()=>copyTxt(F.messages[+b.dataset.fc].message));
   wireRuns(host);
   const drawImpact=()=>{ const s=fbStats(d.id);
-    $("#impact").innerHTML=[["RSVP rate",pct(m.rsvps,m.invited)],["Show rate",pct(m.attended,m.rsvps)],["NPS",m.nps??"–"],["Avg rating",s.avg?s.avg+"/5":"–"],["Meetings",m.meetings||0],["Pipeline",money(m.pipeline)],["Cost per attendee",m.attended?money(d.budget/m.attended):"–"],["Pipeline per $1",d.budget&&m.pipeline?"$"+(m.pipeline/d.budget).toFixed(1):"–"]]
+    $("#impact").innerHTML=[["RSVP rate",pct(m.rsvps,m.invited)],["Show rate",pct(m.attended,m.rsvps)],["NPS",m.nps??"–"],["Avg rating",s.avg?s.avg+"/5":"–"],["Meetings",m.meetings||0],["Pipeline",money(m.pipeline)],["Cost per attendee",m.attended?money(toUSD(actualOf(d)||eventCost(d),d.currency)/m.attended):"–"],["Pipeline per $1",m.pipeline&&(actualOf(d)||eventCost(d))?"$"+(m.pipeline/toUSD(actualOf(d)||eventCost(d),d.currency)).toFixed(1):"–"]]
       .map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("") };
   drawImpact();
   $("#m-status").onchange=e=>{d.status=e.target.value;renderHeader()};
@@ -3737,7 +3769,7 @@ async function renderApprove(host,eventId,aeSlug,tok){
   const e=hydrate(ev); if(!window.ENCORE_SERVER) try{ const s=await db.collection("aeactions").where("eventId","==",eventId).get(); const got=s.docs.map(x=>x.data()), key=a=>a.guest+a.action+a.at; allAe=[...allAe.filter(a=>a.eventId!==eventId||!got.some(g=>key(g)===key(a))),...got] }catch{} applyAeActions(e);
   const L=e.guests.filter(g=>g.status==="Attended"&&slug(g.owner||"")===aeSlug), N=e.guests.filter(g=>g.status==="Invited"&&slug(g.owner||"")===aeSlug), ae=(L[0]||N[0])?.owner||aeSlug.replace(/-/g," ");
   const send=async(g,action,extra={})=>{ try{ let rec={eventId,guest:g.name,ae,aeSlug,action,at:Date.now(),...extra};
-      if(window.ENCORE_SERVER){ const r=await fetch("/api/aeaction",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...rec,ae:aeSlug,t:tok})}), j=await r.json(); if(!r.ok) throw new Error(j.message||"not allowed"); rec=j.action } else await db.collection("aeactions").add(rec);
+      if(window.ENCORE_SERVER){ const r=await fetch("/api/aeaction",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...rec,company:g.company||"",ae:aeSlug,t:tok})}), j=await r.json(); if(!r.ok) throw new Error(j.message||"not allowed"); rec=j.action } else await db.collection("aeactions").add(rec);
       allAe.push(rec); toast({approve:"Approved",sent:"Marked sent",done:"Next step marked done",note:"Notes saved",nudge:"Nudge approved"}[action]); renderApprove(host,eventId,aeSlug,tok) }catch(err){ toast("Couldn't save: "+(err?.message||"try again")) } };
   host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel stack"><small class="eyebrow">${esc(e.brand||"")} · ${esc(e.name)}</small><h2>${esc(ae)}, your follow-ups</h2><p class="note">${L.length} of your accounts came${N.length?`, and ${N.length} haven't replied yet`:""}. Check each draft, edit it if you like, approve it, and tick the next step when it's happened. Marketing sees it right away.</p></div>
     ${L.length?L.map((g,i)=>`<div class="panel stack aecard"><div class="btns" style="justify-content:space-between"><div><b>${esc(g.name)}</b><div class="note">${esc(g.title||"")} · ${esc(g.company||"")}</div></div><span class="pchip ${g.nsDoneAt?"good":g.fuState==="Sent"?"good":g.fuState==="Approved"?"":"warn"}">${g.nsDoneAt?"Next step done":g.fuState==="Sent"?"Sent":g.fuState==="Approved"?"Approved":"Needs you"}</span></div>
@@ -3795,7 +3827,7 @@ async function renderWall(host,id){
 async function renderGuest(){
   const host=$("#view-guest");
   if(location.hash==="#roadmap"){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
-  const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
+  const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)(?:~[a-f0-9]+)?$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
   const am=location.hash.match(/^#approve-([A-Za-z0-9_]+)-([a-z0-9-]+)(?:~([a-f0-9]+))?$/); if(am){ host.classList.remove("wide"); if(!db&&!window.ENCORE_SERVER){ host.innerHTML=`<div class="panel"><p class="empty">Open this link on your Encore server or in claude.ai.</p></div>`; return } if(host.dataset.key!=="ae"+am[1]+am[2]+(am[3]||"")){ host.dataset.key="ae"+am[1]+am[2]+(am[3]||""); renderApprove(host,am[1],am[2],am[3]) } return }
   const wm=location.hash.match(/^#guests-([A-Za-z0-9_]+)$/); if(wm){ host.classList.add("wide"); if(host.dataset.key!=="wall"+wm[1]){ host.dataset.key="wall"+wm[1]; renderWall(host,wm[1]) } return }
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
@@ -4381,7 +4413,7 @@ Reply with only JSON: {"ideas":[{"name":"max 4 words","audience":"customers|pros
 function formatRank(roles,ind){
   const ev=allEvents.filter(e=>e.status==="done"&&matchRoles(e,roles)&&(!ind||(e.audience?.industries||[]).includes(ind)));
   const by={}; ev.forEach(e=>{ const s=fbStats(e.id), k=e.format||"Other"; const b=(by[k]??={format:k,n:0,ratings:[],attend:[],nps:[],pipe:0,spend:0}); b.n++;
-    if(s.avg!=null)b.ratings.push(s.avg); if(e.metrics?.rsvps)b.attend.push(e.metrics.attended/e.metrics.rsvps); if(e.metrics?.nps!=null)b.nps.push(e.metrics.nps); b.pipe+=e.metrics?.pipeline||0; b.spend+=e.budget||0 });
+    if(s.avg!=null)b.ratings.push(s.avg); if(e.metrics?.rsvps)b.attend.push(e.metrics.attended/e.metrics.rsvps); if(e.metrics?.nps!=null)b.nps.push(e.metrics.nps); const h=hydrate(e), O=e.opps||[]; b.pipe+=O.length?O.filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0):(e.metrics?.pipeline||0); b.spend+=toUSD(actualOf(h)||eventCost(h),e.currency) });
   return Object.values(by).map(b=>({...b,avg:avg(b.ratings),attend:avg(b.attend),npsAvg:b.nps.length?Math.round(avg(b.nps)):null,roi:b.spend?b.pipe/b.spend:0})).sort((a,b)=>b.avg-a.avg);
 }
 function lessonsFor(roles){ return allEvents.filter(e=>e.debrief?.audienceLesson&&matchRoles(e,roles)).map(e=>({text:e.debrief.audienceLesson,from:e.name})) }
@@ -4493,7 +4525,7 @@ function renderImpact(){
    `<table><thead><tr><th>Event</th><th>Stage</th><th>Format</th><th class="num">RSVP</th><th class="num">Show</th><th class="num">Rating</th><th class="num">NPS</th><th class="num">Meetings</th><th class="num">Pipeline</th><th></th></tr></thead><tbody>${ev.map(e=>{const s=fbStats(e.id),m=e.metrics||{};return `<tr>
     <td><b>${esc(e.name)}</b><div class="note">${esc(e.brand)} · ${esc(e.city)} · ${esc(fmtDate(e.date))}${e.example?' · <span class="tag ex">Example</span>':""}</div></td>
     <td><span class="pill ${esc(e.status)}">${esc(e.status==="live"?"invites out":e.status)}</span></td><td>${esc(e.format)}</td>
-    <td class="num">${pct(m.rsvps,m.invited)}</td><td class="num">${pct(m.attended,m.rsvps)}</td><td class="num">${s.avg??"–"}</td><td class="num">${m.nps??"–"}</td><td class="num">${m.meetings||0}</td><td class="num">${money(m.pipeline)}</td>
+    <td class="num">${pct(m.rsvps,m.invited)}</td><td class="num">${pct(m.attended,m.rsvps)}</td><td class="num">${s.avg??"–"}</td><td class="num">${m.nps??"–"}</td><td class="num">${m.meetings||0}</td><td class="num">${money((e.opps||[]).length?(e.opps||[]).filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0):m.pipeline)}</td>
     <td><button class="btn ghost sm" data-open="${esc(e.id)}">Open</button></td></tr>`}).join("")}</tbody></table>`;
   $$("[data-open]").forEach(b=>b.onclick=()=>{ const e=allEvents.find(x=>x.id===b.dataset.open); if(!e) return;
     draft=hydrate(e); draft.example=false; step=e.status==="done"?7:1; $("#autoHost").hidden=true; location.hash="studio"; renderStep() });

@@ -404,6 +404,42 @@ td input.mini{padding:5px 8px;min-width:90px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+.pitch{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:18px;background:var(--surface);margin-top:18px;overflow:hidden}
+.pitch > summary{cursor:pointer;padding:14px 18px;background:var(--sun);display:flex;gap:10px;align-items:baseline}
+.pitchbody{padding:0 18px 18px;display:flex;flex-direction:column;gap:16px}
+.pitchbody canvas{width:calc(100% + 36px);margin:0 -18px;height:auto;display:block}
+.pitchbody h3{font-size:1.8rem;font-weight:800}
+.pitchbody .big{font-family:var(--f-display);font-size:1.15rem}
+.askbox{border:2px solid var(--ink);border-radius:14px;padding:12px 16px;background:#FFE4E8}
+.askbox p{font-family:var(--f-display);font-size:1.15rem;font-weight:700}
+.pitchbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding:12px 16px;border:2px dashed var(--ink);border-radius:14px;background:var(--surface)}
+.strat-head{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap}
+.thesis{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:20px;padding:22px;background:linear-gradient(135deg,#FFF0C2,#FFE4E8 60%,var(--lilac));display:flex;flex-direction:column;gap:12px}
+.thesis h3{font-size:clamp(1.4rem,2.6vw,2rem);font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.conf i.on{background:var(--cobalt)!important}
+.reasons{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.reasons li b{display:block}
+.timeline.big .tp{flex:1 0 190px;display:flex;flex-direction:column;gap:3px;padding-right:14px}
+.timeline.big .tp strong{font-family:var(--f-display);font-size:1rem}
+.timeline.big .tp .tag{align-self:flex-start}
+.plays{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))}
+.play{border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:18px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column}
+.play canvas{width:100%;height:auto;display:block}
+.play .ib{padding:16px;display:flex;flex-direction:column;gap:10px}
+.play h3{font-size:1.35rem;font-weight:800}
+.score{font-family:var(--f-display);font-weight:800;background:var(--sun);border:2px solid var(--ink);border-radius:99px;padding:1px 10px;font-size:.9rem}
+.skips{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr))}
+.skip{border:2px dashed var(--bad);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;background:#FFF6F7}
+.skip b{text-decoration:line-through;text-decoration-color:var(--bad)}
+.qa{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--bg)}
+.qa summary{cursor:pointer;font-weight:700}
+.qa p{margin-top:8px}
+.chal{display:flex;flex-direction:column;gap:6px}
+.talk{background:var(--lilac)}
+.tps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-family:var(--f-display);font-size:1.08rem;font-weight:600}
+.scan.big span{font-size:.9rem;padding:6px 14px}
+#stratOut{display:flex;flex-direction:column;gap:22px}
+#stratOut > section{display:flex;flex-direction:column;gap:10px}
 /* ---- Creative layer ---- */
 body{background-color:var(--bg);background-image:radial-gradient(circle at 6% 10%,#FFC93C40 0 140px,transparent 141px),radial-gradient(circle at 95% 28%,#3B5BFF26 0 180px,transparent 181px),radial-gradient(circle at 72% 96%,#FF4F6424 0 160px,transparent 161px),radial-gradient(circle at 20% 70%,#13A88420 0 110px,transparent 111px);background-attachment:fixed}
 .logo i{background:conic-gradient(var(--accent) 0 25%,var(--sun) 0 50%,var(--cobalt) 0 75%,var(--teal) 0)}
@@ -487,9 +523,10 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
   <div class="banner" id="brandBanner" hidden><span>New here? Set up your brand in 2 minutes and every event starts on-brand.</span><a href="#brand">Set up brand →</a></div>
   <div class="clock" id="clock"></div>
   <div id="autoHost" style="margin-top:18px" hidden></div>
+  <div id="pitchHost"></div>
   <div class="studio">
     <div class="rail" aria-label="Planning steps">
-      <button data-step="1"><span class="n">1</span><span><b>Idea</b><small>Who you want, what they love</small></span></button>
+      <button data-step="1"><span class="n">1</span><span><b>Strategy</b><small>Where events fit, and why</small></span></button>
       <button data-step="2"><span class="n">2</span><span><b>Validate</b><small>Conviction before launch</small></span></button>
       <button data-step="3"><span class="n">3</span><span><b>Design</b><small>Venue, hooks, art, copy</small></span></button>
       <button data-step="4"><span class="n">4</span><span><b>Promote</b><small>Assets for every channel</small></span></button>
@@ -598,6 +635,16 @@ const EXAMPLE = {
   example:true
 };
 const EXAMPLE_OUT = {
+  strategy:{headline:"Ridgeline should use small hands-on dinners to turn its Q1 AI governance launch into 8 late-stage bank deals.",
+    hypothesis:{confidence:"medium",why:[{point:"The launch creates a reason to meet",evidence:"AI governance module ships in Q1; buyers face audit deadlines the same quarter.",source:"Your launch plan"},{point:"These buyers rate small dinners highest",evidence:"Hosted dinners average 4.7 of 5 with data leaders on Encore.",source:"Encore history"},{point:"Webinars aren't reaching them",evidence:"Big rooms and happy hours drew half-empty RSVPs last year.",source:"Encore history"}]},
+    moments:[{date:"2026-10",name:"Lineage report v2",what:"Auditor-ready lineage export announced at a fall data conference.",source:"Example press release"},{date:"2027-01",name:"AI governance module",what:"New module for documenting model inputs in regulated industries.",source:"Your launch plan"},{date:"2027-03",name:"Midwest banking push",what:"Sales is targeting 8 named banks this half.",source:"Example CRM note"}],
+    plays:[{name:"The Data Leaders' Kitchen",format:"Hosted dinner",concept:"20 data leaders cook three courses with a chef, then talk audit readiness over dinner.",forPersona:"VP of Data",whenInGTM:"3 weeks after the Q1 launch",why:"Puts the launch in front of buyers when audits make it urgent.",evidence:"Dinners rate 4.7/5 for this audience (Encore).",kpi:"6 meetings, 3 new opportunities",confidence:8},
+      {name:"Audit Dry Run",format:"Hands-on workshop",concept:"Half-day session where analytics leads run a mock AI audit on sample data.",forPersona:"Head of Analytics Engineering",whenInGTM:"Right after the lineage v2 release",why:"Practitioners trust what they can try; it shows the product without a demo.",evidence:"Lineage Lab drew a 84% show rate (Encore).",kpi:"20 attendees, 10 trial accounts",confidence:7},
+      {name:"Bloom & Build",format:"Plus-one experience",concept:"Saturday flower workshop for 6 bank CDOs and their partners, with brunch.",forPersona:"Chief Data Officer",whenInGTM:"Late-stage deals, before Q2 close",why:"A rare weekend yes from top buyers when deals need a push.",evidence:"Plus-one formats rated highest by CHROs on Encore; untested with CDOs.",kpi:"4 of 6 deals advance a stage",confidence:5}],
+    notFit:[{idea:"Conference booth",why:"These buyers skip expo halls; last year's booth produced 2 meetings."},{idea:"Large happy hour",why:"Half the RSVPs didn't come and guests left early."}],
+    skeptic:[{q:"Why not just run a webinar on the launch?",a:"Webinars reach practitioners, not the VPs who sign. These buyers rate small dinners 4.7 and our last webinar series booked zero meetings with VPs."},{q:"$18k for 20 people is $900 a head. Is that worth it?",a:"Each of the 8 target accounts is worth about $250k a year. If the dinner moves 2 deals forward, it pays back many times over."},{q:"What if nobody from the target banks comes?",a:"We confirm demand first: 13 of 40 teaser notes said yes, above the 30% bar. We only book the venue after 10 confirmed target accounts."}],
+    talkingPoints:["Our Q1 launch lands the same quarter our buyers face AI audits. That's the moment to meet them.","Small dinners are this audience's top-rated format on our own data, at 4.7 out of 5.","We'll only book the venue once 10 target accounts confirm, so the downside is capped."],
+    sources:["Example data for the fictional Ridgeline brand","Encore event history"],example:true},
   media:{moments:[{name:"The pass",what:"Each team plates their course at the chef's pass under a warm spotlight.",why:"Pride in something they made",shot:"close-up"},{name:"Apron group shot",what:"Whole table in name-embroidered aprons, flour still on hands.",why:"Everyone in aprons, flour on hands",shot:"wide"},{name:"The toast",what:"Chef raises a glass to the winning team's dish.",why:"Real and unposed",shot:"video"},{name:"Recipe card portrait",what:"Guest holding their signed recipe card at the window.",why:"Easy LinkedIn post with a story",shot:"portrait"}],
     crew:[{role:"Photographer",hours:3,cost:"$1.2k to $2k",brief:"Documentary style, unposed.",find:"Local wedding photographers on The Knot"},{role:"Videographer",hours:2,cost:"$1.5k to $2.5k",brief:"60-second recap reel plus 3 vertical clips.",find:"Peerspace partner crews or Reddit referrals"}],
     shotList:["Hands chopping, close","Teams laughing at stations","Plates at the pass","Long table, golden hour","Chef with each team","Recipe cards on the table"],
@@ -857,6 +904,19 @@ ${brief(d)}
 ATTENDEES (index: name, title, company, AE owner, what they said they want to discuss):
 ${g.map(x=>`${x.i}: ${x.name}, ${x.title}, ${x.company}, ${x.owner||"no owner"}, ${said(x.name)||"unknown"}`).join("\n")||"none yet"}
 Respect word limits. Reply with only JSON: {"sheets":[{"guestIndex":integer,"oneLiner":"who they are, max 12 words","stage":"Prospect|Open opp|Customer|Churn risk|unknown","news":"recent company news, max 14 words","history":"our history with them, max 14 words","opener":"a natural first line, max 15 words","ask":["questions to ask, max 8 words"] (2),"avoid":"max 8 words","introTo":"who at the event to introduce them to, max 10 words","goal":"our goal with them tonight, max 10 words"}],"roomPlan":"seating or flow tip, max 20 words"}`}},
+  pitch:{label:"Proposal",av:"PP",uses:["playbook"],ok:o=>!!o?.title&&Array.isArray(o?.outcomes),sum:()=>"Proposal ready",
+    prompt:d=>{ const P=d.produce, S=curStrategy(), V=venuePicked(d), pr=d.partners?.partners?.[0];
+      return `Write an internal proposal that a field marketer sends to their CMO and sales leadership to get this event approved. Plain, confident, specific. Every number must come from the plan below; if something is unknown, say "to confirm".
+${brief(d)}
+STRATEGY THESIS: ${S?.headline||"none"}
+VALIDATION: ${d.validation?`conviction ${d.validation.conviction}/100. ${d.validation.verdict}`:"not run"}; teaser replies ${d.signals.interested}/${d.signals.sent}, calls ${d.signals.callsYes}/${d.signals.calls}.
+VENUE: ${V?`${V.name} (${V.area||""})`:"to confirm"}
+AGENDA: ${(d.copy?.agenda||[]).map(a=>a.time+" "+a.item).join("; ")||"to confirm"}
+BUDGET LINES: ${(P?.budget||[]).map(b=>`${b.line} $${b.amount}`).join("; ")||"to confirm"}
+CO-HOST: ${pr?`${pr.name}, covers ${pr.split}%`:"none"}
+MEDIA: ${(d.media?.moments||[]).map(m=>m.name).join(", ")||"none"}
+GUESTS: ${d.guests.length} on the list, ${d.guests.filter(g=>g.status==="Going").length} going.
+Reply with only JSON: {"title":"","oneLiner":"max 22 words","whyNow":"max 45 words","audience":"max 25 words","experience":"max 50 words","budget":{"total":number,"perGuest":number,"coHostSaves":number,"lines":[{"line":"","amount":number}]},"outcomes":[{"metric":"max 5 words","target":"max 6 words"}] (3),"risks":[{"risk":"max 10 words","mitigation":"max 14 words"}] (3),"timeline":[{"when":"","what":"max 8 words"}] (4),"ask":"the decision you need and by when, max 25 words"}`}},
   scout:{label:"Guest scout",av:"GS",ok:o=>!!o?.profile,sum:o=>`${o.criteria?.length||0} list criteria`,
     prompt:d=>`You are a go-to-market engineer building a target attendee list for a field marketer. Define who to invite and exactly how to find them. Do not invent real people.
 ${brief(d)}
@@ -886,7 +946,7 @@ async function runAgent(key,btn,stream){
 // ==================================================================
 // Autopilot
 // ==================================================================
-const CREW = [["validation","research","scout"],["venues","cover","hooks"],["copy","partners"],["promo","produce","outreach"],["media","briefing"]];
+const CREW = [["validation","research","scout"],["venues","cover","hooks"],["copy","partners"],["promo","produce","outreach"],["media","briefing"],["pitch"]];
 async function autopilot(){
   if(!sample){ toast("Open this page in claude.ai while signed in to run Autopilot."); return }
   if(!draft.concept.trim()){ step=1; renderStep(); toast("Describe the experience first, then run Autopilot."); return }
@@ -951,7 +1011,7 @@ async function saveEvent(){
 function renderHeader(){
   $("#draftTitle").textContent = draft.name || "Untitled experience";
   $("#draftLabel").textContent = draft.example ? "Example draft · Ridgeline (fictional brand)" : (draft.id ? "Saved event · "+(draft.brand||"No brand") : "Draft · not saved yet");
-  const done={1:!!draft.concept,2:!!out("validation"),3:!!out("copy"),4:!!out("promo"),5:!!out("produce"),6:draft.guests.some(g=>g.status!=="Not invited"),7:draft.status==="done"};
+  const done={1:!!(curStrategy()||draft.concept),2:!!out("validation"),3:!!out("copy"),4:!!out("promo"),5:!!out("produce"),6:draft.guests.some(g=>g.status!=="Not invited"),7:draft.status==="done"};
   $$(".rail button[data-step]").forEach(b=>{ const s=+b.dataset.step; b.setAttribute("aria-current",s===step?"step":"false"); b.classList.toggle("done",!!done[s]) });
   drawClock(done);
 }
@@ -970,7 +1030,7 @@ setInterval(()=>{ if(!isGuestRoute()&&$("#clock")) renderHeader() },60000);
 // ==================================================================
 function renderStep(){
   if(isGuestRoute()) return;
-  renderHeader();
+  renderHeader(); drawPitch();
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6})[step](host);
 }
@@ -999,7 +1059,7 @@ function wireNext(host){ $$("[data-next]",host).forEach(b=>b.onclick=()=>{step=+
 // STEP 1 · Imagine (a brainstorming game) ----------------------------
 const DIAL = ["","Safe bet","Fresh","Bold","Wild","Big swing"];
 const ING = {vibes:["Cozy","Adrenaline","Curious","Luxe","Playful"],settings:["Kitchen","Outdoors","Rooftop","On the water","Museum","Workshop"],twists:["Plus-ones","Small group","Learn a craft","Give back","Surprise guest"]};
-function step1(host){
+function deckStep(host){
   const d=draft, sp=d.spark; ["vibes","settings","twists"].forEach(k=>sp[k]=sp[k]||[]);
   const X=draft.intel||(draft.example?EXAMPLE_OUT.intel:null);
   host.innerHTML=`
@@ -1064,7 +1124,7 @@ function step1(host){
   bindInput($("#f-name"),"name",renderHeader); bindInput($("#f-concept"),"concept"); bindInput($("#f-goal"),"goal"); bindInput($("#f-format"),"format");
   bindInput($("#f-city"),"city"); bindInput($("#f-date"),"date"); bindInput($("#f-head"),"headcount"); bindInput($("#f-budget"),"budget");
   wireNext(host); drawDeck(); drawHistLine();
-  if(!out("ideas")&&sample&&!d._autoDealt&&(d.intel||d.spark.target)){ d._autoDealt=true; spinDeck($("#spin2")) }
+  if(false&&!out("ideas")){ d._autoDealt=true; spinDeck($("#spin2")) }
 }
 function personaPicker(){
   const P=brandProfile?.audience?.personas||[]; if(!P.length) return "";
@@ -1186,6 +1246,11 @@ const CONNECT={
   yelp:{label:"Yelp",server:"Yelp",tool:"yelp_search_local_businesses",name:"search_yelp",desc:"Search Yelp for local businesses: ratings, review counts, price level. One signal among several; not the best for premium venues."},
   browseNav:{label:"Browser",server:"host:claude_browser",tool:"navigate",name:"open_page",desc:"Open a web page in the browser (use before reading it)."},
   browseText:{label:"Browser",server:"host:claude_browser",tool:"get_page_text",name:"read_page_text",desc:"Read the text of the page currently open in the browser."},
+  pweb:{label:"Web",server:"Parallel Search",tool:"web_search",name:"search_web",desc:"Search the live web. Use for news, launches, press, reviews, public posts."},
+  pfetch:{label:"Web",server:"Parallel Search",tool:"web_fetch",name:"read_web_page",desc:"Read a web page by URL (company site, press release, review page)."},
+  exa:{label:"Web",server:"Exa",tool:"web_search_exa",name:"search_web_exa",desc:"Search the live web with Exa."},
+  fsearch:{label:"Web",server:"Firecrawl",tool:"firecrawl_search",name:"search_web_firecrawl",desc:"Search the live web with Firecrawl."},
+  fscrape:{label:"Web",server:"Firecrawl",tool:"firecrawl_scrape",name:"scrape_page",desc:"Scrape the content of a web page by URL."},
   web:{label:"Web",server:"AWS Web Search",tool:"amazon-web-search___WebSearch",name:"web_search",desc:"Search the live web for recent news, interviews, talks and public posts. Cite URLs."},
   peers:{label:"Practitioners",server:"Superme",tool:"ask",name:"ask_practitioners",desc:"Ask experienced operators (field marketers, sales leaders, executives) for their honest perspective. Slow: call at most once.",
     schema:{type:"object",properties:{question:{type:"string",description:"The full question, with context"}},required:["question"]},
@@ -1197,6 +1262,7 @@ const CONNECT={
     schema:{type:"object",properties:{query:{type:"string"},limit:{type:"number"}},required:["query"]}},
 };
 const INTEL_KEYS=["email","docs","notes","calls","crm","sfdc","web"];
+function webOn(){ return WEB_KEYS.some(k=>srcState[k]==="on") }
 let srcState={}, srcProbed=null;
 async function getMcp(){ try{ return await window.claude?.use?.("mcp") ?? null }catch{ return null } }
 async function probeSources(force=false){
@@ -1207,17 +1273,22 @@ async function probeSources(force=false){
     return srcState })();
   return srcProbed;
 }
+const WEB_KEYS=["pweb","pfetch","exa","fsearch","fscrape","web"];
 async function toolsFor(keys,used){
+  keys=[...new Set(keys.flatMap(k=>k==="web"?WEB_KEYS:[k]))];
   await probeSources(); const mcp=await getMcp(), tools=[]; if(!mcp) return tools;
   for(const k of keys){ const c=CONNECT[k]; if(srcState[k]!=="on") continue;
     let schema=c.schema; if(!schema){ try{ schema=(await mcp.describeTool(c.server,c.tool)).inputSchema }catch{ continue } }
     tools.push({name:c.name,description:c.desc,inputSchema:schema,execute:async input=>{ used&&used.add(c.label);
       try{ const t=c.run? await c.run(mcp,input||{}) : JSON.stringify((r=>r.payload??r.content)(await mcp.callTool(c.server,c.tool,input||{}))); return t.length>7000?t.slice(0,7000)+"…(truncated)":t }
       catch(e){ return `Error from ${c.server}: ${e?.code||"failed"}` } }}) }
+  // one web source is enough: keep the first connected provider's tools
+  const webProv=WEB_KEYS.map(k=>CONNECT[k].server).find(sv=>tools.some(t=>CONNECT[Object.keys(CONNECT).find(k=>CONNECT[k].name===t.name)]?.server===sv));
+  if(webProv) return tools.filter(t=>{ const k=Object.keys(CONNECT).find(k=>CONNECT[k].name===t.name); return !WEB_KEYS.includes(k)||CONNECT[k].server===webProv });
   return tools;
 }
 function sourceChips(keys){ return keys.map(k=>{const c=CONNECT[k], st=srcState[k]; return `<span class="chip ${st==="on"?"on":""}" title="${esc(c.server)}">${st==="on"?"● ":"○ "}${esc(c.label)}${st==="connect"?` <span class="note">connect ${esc(c.server.replace(" - Beta",""))}</span>`:""}</span>`}).join("") }
-async function drawSources(){ await probeSources(); const el=$("#srcChips"); if(el) el.innerHTML=sourceChips(INTEL_KEYS)+`<span class="chip on">● Encore history</span>` }
+async function drawSources(){ await probeSources(); const el=$("#srcChips"); if(el) el.innerHTML=sourceChips(["email","docs","notes","calls","crm","sfdc"])+`<span class="chip ${webOn()?"on":""}">${webOn()?"● ":"○ "}Web${webOn()?"":` <span class="note">connect Parallel Search</span>`}</span><span class="chip on">● Encore history</span>` }
 // Persona: a buyer as a character, not a paragraph --------------------
 const PERSONA_SCHEMA=`{"name":"the person's name, or a label for the audience","archetype":"The ___ (2-3 words, vivid)","tagline":"max 8 words","metaphors":{"drink":"max 3 words","place":"max 4 words","weekend":"max 5 words","motto":"max 6 words, in their voice"},"traits":[{"left":"Introvert","right":"Life of the party","value":0-100},{"left":"Hands-on","right":"Hands-off","value":0-100},{"left":"Substance","right":"Status","value":0-100},{"left":"Cautious","right":"Adventurous","value":0-100}],"lightsUp":[{"t":"max 3 words","why":"evidence, max 12 words"}] (4),"drains":[{"t":"max 3 words","why":"max 12 words"}] (3),"pressures":[max 5 words each] (3),"fears":[max 5 words each] (2),"feelSeen":[max 6 words each] (3),"evidence":[{"source":"Email|Docs|Notes|Calls|HubSpot|Salesforce|Web|Marketer|Encore","fact":"max 12 words"}],"gaps":[max 6 words each]}`;
 function personaCard(P,key="p"){
@@ -1306,6 +1377,101 @@ function burst(){
   const x=c.getContext("2d"), cs=getComputedStyle(document.documentElement), cols=[cs.getPropertyValue("--accent"),cs.getPropertyValue("--teal"),cs.getPropertyValue("--warn")];
   const ps=Array.from({length:90},()=>({x:innerWidth/2,y:innerHeight*.35,vx:(Math.random()-.5)*14,vy:Math.random()*-12-3,r:Math.random()*5+3,c:cols[Math.floor(Math.random()*3)],a:Math.random()*6}));
   let t=0; (function f(){ x.clearRect(0,0,c.width,c.height); ps.forEach(p=>{p.vy+=.45;p.x+=p.vx;p.y+=p.vy;p.a+=.2; x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r,-p.r/2,p.r*2,p.r);x.restore()}); if(++t<70) requestAnimationFrame(f); else c.remove() })();
+}
+
+// STEP 1 · Strategy: a researched thesis on where events fit ------------
+const STRAT_KEYS=["web","browseNav","browseText","docs","notes","email","crm","sfdc","calls","playbook"];
+let stratBusy=false, challenges=[];
+function curStrategy(){ return draft.strategy||brandProfile?.strategy||(draft.example?EXAMPLE_OUT.strategy:null) }
+function step1(host){
+  const S=curStrategy(), co=brandProfile?.company||draft.brand;
+  host.innerHTML=`
+  <div class="strat-head"><div><small class="eyebrow">Step 1 · Strategy</small><h2>${co?`Where events fit for ${esc(co)}`:"Where events fit"}</h2></div>
+    <div class="btns">${S?exTag(S):""}<button class="btn ${S?"":"primary"}" id="stratRun"><span class="spark">✦</span>${S?"Redo the research":"Research and build the strategy"}</button></div></div>
+  ${!co&&!draft.example?`<div class="banner"><span>Tell Encore your company first. It does the research from there.</span><a href="#brand">Set up brand →</a></div>`:""}
+  <div id="stratProg" hidden></div>
+  <div id="stratOut">${S?strategyHTML(S):`<p class="empty">Encore researches your latest launches and marketing, then tells you where events fit and which formats your buyers will show up for.</p>`}</div>
+  <details class="drawer" id="deckDrawer"><summary><b>More ideas</b> <span class="note">shuffle the idea deck</span></summary><div id="deckHost" style="margin-top:14px"></div></details>`;
+  $("#stratRun").onclick=e=>runStrategy(e.currentTarget);
+  wireStrategy(host,S);
+  const dd=$("#deckDrawer"); dd.ontoggle=()=>{ if(dd.open&&!$("#deckHost").innerHTML) deckStep($("#deckHost")) };
+  if(!S&&sample&&co&&!stratBusy&&!draft._stratAuto){ draft._stratAuto=true; runStrategy($("#stratRun")) }
+}
+function strategyHTML(S){
+  const conf=(S.hypothesis?.confidence||"").toLowerCase(), cn={high:3,medium:2,low:1}[conf]||0;
+  return `
+  <article class="thesis"><small class="eyebrow">Our thesis</small><h3>${esc(S.headline)}</h3>
+    <div class="fitrow"><div class="fitbars conf">${[1,2,3].map(k=>`<i class="${k<=cn?"on":""}"></i>`).join("")}</div><b>${esc(conf||"")} confidence</b></div>
+    ${S.hypothesis?.why?.length?`<ol class="reasons">${S.hypothesis.why.map(r=>`<li><b>${esc(r.point)}</b><span class="note">${esc(r.evidence)}${r.source?` · <span class="tag">${esc(r.source)}</span>`:""}</span></li>`).join("")}</ol>`:""}
+  </article>
+  ${S.moments?.length?`<section><small class="eyebrow">Moments to ride</small><div class="timeline big">${S.moments.map(m=>`<div class="tp"><b>${esc(m.date||"")}</b><strong>${esc(m.name)}</strong><span class="note">${esc(m.what)}</span>${m.source?`<span class="tag">${esc(m.source)}</span>`:""}</div>`).join("")}</div></section>`:""}
+  <section><small class="eyebrow">Three plays</small><div class="plays">${(S.plays||[]).map((p,i)=>`<article class="play"><canvas width="560" height="240" data-part="${i}" aria-hidden="true"></canvas><div class="ib">
+      <div class="btns" style="justify-content:space-between"><span class="tag">${esc(p.format)}</span><span class="score" title="Confidence">${esc(p.confidence)}/10</span></div>
+      <h3>${esc(p.name)}</h3><p>${esc(p.concept)}</p>
+      <div class="kv"><small>For</small><span>${esc(p.forPersona)}</span><small>When</small><span>${esc(p.whenInGTM)}</span><small>Why</small><span>${esc(p.why)}</span><small>Proof</small><span class="note">${esc(p.evidence)}</span><small>Success</small><span><b>${esc(p.kpi)}</b></span></div>
+      <div class="btns"><button class="btn primary sm" data-deploy="${i}">Deploy</button><button class="btn ghost sm" data-ask="Why ${esc(p.name)} and not something else?">Why this?</button></div></div></article>`).join("")}</div></section>
+  ${S.notFit?.length?`<section><small class="eyebrow">What we'd skip</small><div class="skips">${S.notFit.map(n=>`<div class="skip"><b>${esc(n.idea)}</b><span class="note">${esc(n.why)}</span></div>`).join("")}</div></section>`:""}
+  <div class="two">
+    <section class="panel stack"><div><h3>Pressure-test it</h3><p class="note">What a skeptical CMO or CFO would ask, and our answer.</p></div>
+      ${(S.skeptic||[]).map(q=>`<details class="qa"><summary>${esc(q.q)}</summary><p>${esc(q.a)}</p></details>`).join("")}
+      <div id="thread" class="stack" style="gap:10px">${challenges.map(c=>challengeHTML(c)).join("")}</div>
+      <form class="composer" id="chalForm" style="border:none;padding:0"><input id="chalIn" placeholder="Challenge it: why not a webinar instead?" aria-label="Challenge the strategy"><button class="btn primary sm" type="submit">Ask</button></form>
+    </section>
+    <section class="panel stack talk"><div><h3>Say this in the room</h3><p class="note">Three lines for your next planning meeting.</p></div>
+      <ol class="tps">${(S.talkingPoints||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ol>
+      <div class="btns"><button class="btn sm" id="cpTalk">Copy talking points</button><button class="btn ghost sm" id="cpBrief">Copy the whole brief</button></div>
+      ${S.sources?.length?`<details><summary class="note" style="cursor:pointer">Sources (${S.sources.length})</summary><ul class="clean" style="margin-top:6px;font-size:.82rem">${S.sources.map(x=>`<li>${/^https?:/.test(x)?`<a href="${esc(x)}" target="_blank" rel="noopener">${esc(x)}</a>`:esc(x)}</li>`).join("")}</ul></details>`:""}
+    </section>
+  </div>`;
+}
+function challengeHTML(c){ return `<div class="chal"><div class="bubble user">${esc(c.q)}</div>${c.a?`<div class="bubble assistant"><b>${esc(c.a.answer)}</b>${c.a.evidence?.length?`<ul class="clean" style="margin-top:6px;font-size:.82rem">${c.a.evidence.map(e=>`<li><span class="tag">${esc(e.source)}</span> ${esc(e.fact)}</li>`).join("")}</ul>`:""}${c.a.concede?`<p class="note" style="margin-top:6px"><b>Fair point:</b> ${esc(c.a.concede)}</p>`:""}</div>`:`<div class="bubble assistant typing"><i></i><i></i><i></i></div>`}</div>` }
+function wireStrategy(host,S){
+  if(!S) return;
+  $$("canvas[data-part]",host).forEach(c=>{ const i=+c.dataset.part; drawCover(c,{...draft,name:S.plays[i].name,cover:{motif:SUITS[(i*2+1)%SUITS.length]}},{mini:true}) });
+  $$("[data-deploy]",host).forEach(b=>b.onclick=()=>{ const p=S.plays[+b.dataset.deploy];
+    const per=(brandProfile?.audience?.personas||[]).find(x=>x.title===p.forPersona); if(per){ draft.intel={...per,name:per.title}; draft.audience.roles=[per.title] }
+    useIdea({name:p.name,concept:p.concept,format:p.format}) });
+  $$("[data-ask]",host).forEach(b=>b.onclick=()=>challenge(b.dataset.ask));
+  const f=$("#chalForm",host); f&&(f.onsubmit=e=>{ e.preventDefault(); const v=$("#chalIn").value.trim(); if(v){ $("#chalIn").value=""; challenge(v) } });
+  $("#cpTalk",host)&&($("#cpTalk",host).onclick=()=>copyTxt((S.talkingPoints||[]).map((t,i)=>`${i+1}. ${t}`).join("\n")));
+  $("#cpBrief",host)&&($("#cpBrief",host).onclick=()=>copyTxt([`Thesis: ${S.headline} (${S.hypothesis?.confidence||""} confidence)`,...(S.hypothesis?.why||[]).map(r=>`- ${r.point}: ${r.evidence}`),"","Plays:",...(S.plays||[]).map(p=>`- ${p.name} (${p.format}) for ${p.forPersona}, ${p.whenInGTM}. ${p.why} Success: ${p.kpi}`),"","Skip:",...(S.notFit||[]).map(n=>`- ${n.idea}: ${n.why}`),"","Talking points:",...(S.talkingPoints||[]).map(t=>`- ${t}`)].join("\n")));
+}
+async function runStrategy(btn){
+  if(!sample){ toast("Open this page in claude.ai while signed in to run the research."); return }
+  if(stratBusy) return; stratBusy=true;
+  const B=brandProfile||{}, d=draft, used=new Set(), tools=await toolsFor(STRAT_KEYS,used);
+  const prog=$("#stratProg"); if(prog){ prog.hidden=false; prog.innerHTML=`<div class="scan big">${["Latest launches","Marketing campaigns","Press and news","Customer conversations","What buyers attend","Your event history"].map((t,i)=>`<span style="--d:${i*.2}s">${t}</span>`).join("")}</div><p class="note">${tools.length?`Reading ${[...new Set(tools.map(t=>CONNECT[Object.keys(CONNECT).find(k=>CONNECT[k].name===t.name)]?.label))].join(", ")}`:"No research connectors on, so this uses Claude's general knowledge"}.${webOn()?"":" Connect Parallel Search in claude.ai for live web research."}</p>` }
+  const label=btn?.innerHTML; if(btn){btn.disabled=true;btn.innerHTML="Researching…"}
+  try{
+    const o=await sample.json(`You are a field marketing strategist who has run events at the best B2B companies. Build a rigorous, evidence-backed point of view on where field marketing events fit for this company right now, so the marketer walks into planning as the best-prepared person there.
+COMPANY: ${B.company||d.brand||"(unknown)"} ${B.url||""}. ${B.oneLiner||d.product||""}
+BUYERS: ${(B.audience?.personas||[]).map(p=>`${p.title} (${p.archetype})`).join("; ")||d.audience.roles.join(", ")||"unknown"}
+WHAT WE KNOW: ${(B.audience?.surprises||[]).map(x=>x.fact).join(" ")} Buyers gather at: ${(B.audience?.gather||[]).join(", ")}. Buying triggers: ${(B.audience?.triggers||[]).join(", ")}. Launching next: ${B.nextLaunch||"unknown"}. Goals: ${(B.goals||[]).join(", ")||d.goal||"unknown"}. Field-fit read: ${B.fieldFit?`${B.fieldFit.verdict}, ${B.fieldFit.why}`:"none yet"}.
+PAST EVENTS ON ENCORE FOR THESE BUYERS:
+${historyFor(d.audience.roles)}
+${tools.length?`Research first, in several rounds: the company's latest product launches and announcements, its current marketing initiatives (campaigns, conferences it sponsors, content themes, webinars, community programs), recent press, and the marketer's own docs, notes, email and CRM for launch plans and customer conversations. Use search_playbooks for proven field marketing practice.`:`No research tools are available: reason from what you know about this company and say "general knowledge" as the source. Be explicit about uncertainty.`}
+Then form a hypothesis. Tie every play to a real moment in their go-to-market. Name what NOT to do. Be honest: if events are a weak fit, say so in the headline. Cite a source for every fact; never invent launches, numbers or quotes.
+Reply with only JSON: {"headline":"the thesis in one sentence, max 22 words","hypothesis":{"confidence":"high|medium|low","why":[{"point":"max 10 words","evidence":"max 18 words","source":""}] (3)},"moments":[{"date":"YYYY-MM","name":"max 6 words","what":"max 14 words","source":""}] (3-4),"plays":[{"name":"max 4 words","format":"one of ${FORMATS.join(", ")}","concept":"max 18 words","forPersona":"buyer title","whenInGTM":"max 8 words","why":"max 18 words","evidence":"max 16 words with source","kpi":"max 10 words","confidence":1-10}] (3),"notFit":[{"idea":"max 6 words","why":"max 14 words"}] (2),"skeptic":[{"q":"a tough question a CMO or CFO would ask","a":"evidence-backed answer, max 35 words"}] (3),"talkingPoints":[max 18 words each] (3),"sources":[URLs or source names]}`+STYLE,{tools,modelTier:"complex"});
+    if(o?.headline&&o?.plays?.length){ o._used=[...used]; challenges=[]; if(brandProfile){ brandProfile.strategy=o; saveBrand(true) } draft.strategy=o; draft.example=false; renderStep(); burst() }
+    else toast("The research came back incomplete. Try again.");
+  }catch(e){ toast(e?.code==="rate_limited"?"Too many requests. Wait a minute.":"Research failed: "+(e?.message||"try again")) }
+  finally{ stratBusy=false; if(btn&&btn.isConnected){btn.disabled=false;btn.innerHTML=label} if(prog&&prog.isConnected) prog.hidden=true }
+}
+async function challenge(q){
+  const S=curStrategy(); if(!S) return;
+  if(!sample){ toast("Open this page in claude.ai to challenge the strategy."); return }
+  const c={q}; challenges.push(c); const th=$("#thread"); th&&(th.innerHTML=challenges.map(challengeHTML).join(""));
+  const tools=await toolsFor(STRAT_KEYS,null);
+  try{
+    c.a=await sample.json(`You built this field marketing strategy and the marketer is pressure-testing it. Defend it rigorously with evidence. If the challenge has merit, say so plainly and say what you would change. Don't be defensive; be right.
+STRATEGY: ${JSON.stringify({headline:S.headline,hypothesis:S.hypothesis,plays:S.plays,notFit:S.notFit,moments:S.moments})}
+${brief(draft)}
+EARLIER CHALLENGES: ${challenges.slice(0,-1).map(x=>`Q: ${x.q} A: ${x.a?.answer||""}`).join(" | ")||"none"}
+CHALLENGE: ${q}
+${tools.length?"Use the tools to check facts before answering.":"No tools: rely on what you know and say so."}
+Reply with only JSON: {"answer":"direct answer, max 60 words","evidence":[{"source":"","fact":"max 16 words"}] (1-3),"concede":"what you'd change if they have a point, else empty"}`+STYLE,{tools,modelTier:"complex"});
+  }catch(e){ c.a={answer:"I couldn't answer that just now. Try again in a minute.",evidence:[]} }
+  const t2=$("#thread"); t2&&(t2.innerHTML=challenges.map(challengeHTML).join(""));
 }
 
 // STEP 2 · Validate -------------------------------------------------
@@ -1410,6 +1576,30 @@ function step3(host){
   wireRuns(host); wireNext(host);
 }
 async function copyTxt(t){ try{ await navigator.clipboard.writeText(t); toast("Copied") }catch{ toast("Couldn't copy. Select the text instead.") } }
+
+// Proposal ------------------------------------------------------------
+function pitchText(P){ return [`# ${P.title}`,P.oneLiner,"",`## Why now`,P.whyNow,"",`## Who`,P.audience,"",`## The experience`,P.experience,"",`## Budget`,`Total ${money(P.budget?.total)} (${money(P.budget?.perGuest)} per guest)${P.budget?.coHostSaves?`, co-host saves ${money(P.budget.coHostSaves)}`:""}`,...(P.budget?.lines||[]).map(l=>`- ${l.line}: ${money(l.amount)}`),"",`## What success looks like`,...(P.outcomes||[]).map(o=>`- ${o.metric}: ${o.target}`),"",`## Risks`,...(P.risks||[]).map(r=>`- ${r.risk}. ${r.mitigation}`),"",`## Timeline`,...(P.timeline||[]).map(t=>`- ${t.when}: ${t.what}`),"",`## The ask`,P.ask].join("\n") }
+function drawPitch(){
+  const el=$("#pitchHost"); if(!el) return; const P=draft.pitch;
+  if(!P){ el.innerHTML=draft.concept&&!draft.example?`<div class="pitchbar"><span><b>Need sign-off?</b> Turn this event into a one-page proposal.</span><button class="btn sm" data-run="pitch"><span class="spark">✦</span>Write the proposal</button><pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div></div>`:""; wireRuns(el); return }
+  const tot=P.budget?.total||0;
+  el.innerHTML=`<details class="pitch" open><summary><span class="eyebrow">Proposal</span> <b>${esc(P.title)}</b></summary>
+    <div class="pitchbody">
+      <canvas width="1200" height="380" id="pitchCv" aria-hidden="true"></canvas>
+      <h3>${esc(P.title)}</h3><p class="big">${esc(P.oneLiner)}</p>
+      <div class="kpis">${(P.outcomes||[]).map(o=>`<div class="kpi"><small>${esc(o.metric)}</small><b>${esc(o.target)}</b></div>`).join("")}<div class="kpi"><small>Budget</small><b>${money(tot)}</b><small>${money(P.budget?.perGuest)} per guest${P.budget?.coHostSaves?` · co-host saves ${money(P.budget.coHostSaves)}`:""}</small></div></div>
+      <div class="two"><div class="stack" style="gap:10px"><div><small class="eyebrow">Why now</small><p>${esc(P.whyNow)}</p></div><div><small class="eyebrow">Who</small><p>${esc(P.audience)}</p></div><div><small class="eyebrow">The experience</small><p>${esc(P.experience)}</p></div></div>
+        <div class="stack" style="gap:10px"><div><small class="eyebrow">Risks and how we handle them</small>${(P.risks||[]).map(r=>`<div class="kv" style="margin-top:6px"><small>Risk</small><span>${esc(r.risk)}</span><small>Plan</small><span>${esc(r.mitigation)}</span></div>`).join("")}</div>
+          <div><small class="eyebrow">Timeline</small><div class="timeline">${(P.timeline||[]).map(t=>`<div class="tp"><b>${esc(t.when)}</b>${esc(t.what)}</div>`).join("")}</div></div></div></div>
+      <div class="askbox"><small class="eyebrow">The ask</small><p>${esc(P.ask)}</p></div>
+      <div class="btns"><button class="btn primary sm" id="pCopy">Copy proposal</button>${downloads?'<button class="btn sm" id="pDl">Download as Markdown</button>':""}<button class="btn ghost sm" data-run="pitch">Rewrite</button></div>
+      <pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div>
+    </div></details>`;
+  drawCover($("#pitchCv"),{...draft,cover:{...draft.cover,headline:P.title}});
+  $("#pCopy").onclick=()=>copyTxt(pitchText(P).replace(/\\n/g,"\n"));
+  $("#pDl")&&($("#pDl").onclick=async()=>{ try{ await downloads.save({filename:(P.title||"proposal").replace(/\W+/g,"-").toLowerCase()+".md",data:new Blob([pitchText(P).replace(/\\n/g,"\n")],{type:"text/markdown"})}) }catch{ toast("Download cancelled") } });
+  wireRuns(el);
+}
 
 // Media, co-hosts, cheat sheets ------------------------------------------
 function drawMedia(host,d){

@@ -48,7 +48,7 @@ export function loginPage() {
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
   // the server. Send those visitors to the guest copy of the page instead.
-  if (/^#(rsvp|survey)-/.test(location.hash)) location.replace("/g" + location.hash);
+  if (/^#(rsvp-|survey-|nominate-|plan-|roadmap)/.test(location.hash)) location.replace("/g" + location.hash);
 </script>
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}

@@ -512,6 +512,12 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
 .lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 .lmore{display:flex;flex-direction:column;gap:6px}
+.lowconf{padding:10px 12px;border-radius:12px;background:#FFF7E0}
+.funnel{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}@media(max-width:820px){.funnel{grid-template-columns:repeat(2,1fr)}}
+.fstep{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:14px;background:var(--bg)}.fstep b{font-size:1.4rem;font-family:var(--f-display)}.fstep span{font-size:.85rem;font-weight:600}.fstep small{font-size:.72rem;color:var(--muted)}
+.fstep.buyer{background:#E8F8F2}.fbar{height:6px;border-radius:99px;background:#fff;overflow:hidden}.fbar i{display:block;height:100%;background:var(--cobalt)}.fstep.buyer .fbar i{background:var(--teal)}
+.hoursrow input{width:100%}select.rej{width:auto;padding:2px 4px;margin-left:4px;font-size:.8rem}
+
 body{padding-bottom:84px}
 .dlog{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--bg)}.dlog ul{margin:6px 0 0;font-size:.88rem;display:flex;flex-direction:column;gap:3px}
 #commitsHost input:not([type=checkbox]),#commitsHost select{min-width:0;width:100%;padding:6px 8px}#commitsHost td{vertical-align:top}#commitsHost input.mini{width:90px}
@@ -1339,6 +1345,8 @@ Aim for a good room: mostly target accounts, a few happy customers, one or two r
 ${brief(d)}
 ${d.spark.target?`PRIORITY TARGETS: ${d.spark.target}`:""}
 ALREADY ON THE LIST: ${d.guests.map(g=>g.name).join(", ")||"nobody"}
+${(d.scoutRejects||[]).length?`SALES REJECTED THESE SUGGESTIONS (learn the pattern; don't suggest them again): ${d.scoutRejects.map(r=>`${r.name} at ${r.company}: ${r.reason}`).join("; ")}`:""}${(d.holdout||[]).length?`
+HELD-OUT ACCOUNTS (never suggest anyone from these): ${d.holdout.join(", ")}`:""}
 Reply with only JSON: {"contacts":[{"name":"","title":"","company":"","relationship":"Customer|Open opportunity|Prospect|Partner|Former customer|Outside expert","why":"why they fit this event, max 14 words","city":"where they're based","cityCheck":"verified|likely|unverified|elsewhere","cityEvidence":"max 10 words","email":"only if found","owner":"AE owner if known","sample":boolean,"readiness":0-100 (how ready their account is for a sales conversation, from real signals),"signals":[{"s":"max 10 words","src":"CRM|Product usage|Call notes|Email|Web|Inferred"}] (1 to 3; label anything you reasoned rather than found as Inferred)}],"mix":"one sentence on the room mix"}`},
 
 };
@@ -1350,7 +1358,7 @@ function readyCell(c){ const R=readiness(c), cls=R.score>=70?"good":R.score>=50?
   return `<div class="rdy"><span class="pchip ${cls}" title="${R.est?"Estimated from relationship and location":"From the guest scout's signals"}">${R.score}${R.est?"*":""}</span><div class="sigs">${R.signals.slice(0,3).map(x=>`<span class="sig ${x.src==="Inferred"?"inf":""}" title="${esc(x.src)}">${esc(x.src)}: ${esc(x.s)}</span>`).join("")}</div></div>` }
 function acctCell(g){ const dd=g.renewalDate?Math.ceil((new Date(g.renewalDate+"T12:00:00")-Date.now())/864e5):null;
   return `<div class="sigs">${g.arr?`<span class="pchip">ARR ${money(+g.arr)}</span>`:""}${g.renewalDate?`<span class="pchip ${dd!=null&&dd<=120?"warn":""}">Renews ${esc(fmtDate(g.renewalDate))}${dd!=null&&dd<=120&&dd>=0?` · ${dd}d`:""}</span>`:""}${g.health?`<span class="pchip ${/red|risk|poor/i.test(g.health)?"bad":/green|good|healthy/i.test(g.health)?"good":"warn"}">${esc(g.health)}</span>`:""}${g.region?`<span class="note">${esc(g.region)}</span>`:""}</div>` }
-function chaseHTML(d){ const wait=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Invited"), going=d.guests.filter(g=>g.status==="Going"||g.status==="Attended");
+function chaseHTML(d){ const wait=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Invited"&&!(d.holdout||[]).includes(x.g.company)), going=d.guests.filter(g=>g.status==="Going"||g.status==="Attended");
   const K=brandProfile?.knowledge?.accounts?.accounts||[], have=new Set(d.guests.map(g=>(g.company||"").toLowerCase())), miss=K.filter(a=>!have.has((a.name||"").toLowerCase())).slice(0,12);
   if(!wait.length&&!K.length) return `<div class="panel stack"><div><h3>Who's missing</h3><p class="note">Connect your target account list in Set up to see which accounts have nobody invited yet.</p></div></div>`;
   const by={}; wait.forEach(x=>(by[x.g.owner||"You"]=by[x.g.owner||"You"]||[]).push(x));
@@ -1359,7 +1367,13 @@ function chaseHTML(d){ const wait=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.sta
     ${K.length?`<div><small class="eyebrow">Target accounts with nobody invited · ${miss.length} of ${K.length}</small>${miss.length?`<div class="chips">${miss.map(a=>`<span class="pchip">${esc(a.name)}${a.owner?` · ${esc(a.owner)}`:""}</span>`).join("")}</div><span class="note">Ask each owner for one name, or run the guest scout again.</span>`:`<p class="note">Every target account has someone invited.</p>`}</div>`:""}</div>` }
 function nudgeText(d,g){ const going=d.guests.filter(x=>x.status==="Going"||x.status==="Attended"), cos=[...new Set(going.map(x=>x.company).filter(Boolean))].slice(0,3);
   return `Hi ${(g.name||"").split(" ")[0]}, quick nudge on ${d.copy?.title||d.name}${d.date?` on ${fmtDate(d.date)}`:""}. ${going.length?`${going.length} ${going.length===1?"person is":"people are"} coming${cos.length?`, including folks from ${cos.join(", ")}`:""}. `:""}I'd love to save you a seat. Can you make it? ${d.id?ART_URL+"#rsvp-"+d.id+".g"+d.guests.indexOf(g):""}`.trim() }
-function wireChase(host){ $$("[data-chase]",host).forEach(b=>b.onclick=()=>{ const o=b.dataset.chase, d=draft; copyTxt(d.guests.filter(g=>g.status==="Invited"&&(g.owner||"You")===o).map(g=>`To ${g.name}:\n${nudgeText(d,g)}`).join("\n\n")) }) }
+function holdoutHTML(d){ const K=(brandProfile?.knowledge?.accounts?.accounts||[]).map(a=>a.name), pool=[...new Set([...K,...d.guests.map(g=>g.company)].filter(Boolean))], H=d.holdout||[];
+  return `<div class="panel stack"><div><h3>Measure real lift (optional)</h3><p class="note">Pick your eligible accounts, then hold out a random ${H.length?"":"20% "}group you won't invite this time. After the event, compare new opportunities in both groups. It's the only fair way to tell whether the event made a difference.</p></div>
+    ${H.length?`<div><small class="eyebrow">Held out · ${H.length} of ${pool.length+H.filter(x=>!pool.includes(x)).length} accounts</small><div class="chips">${H.map(a=>`<span class="pchip">${esc(a)}</span>`).join("")}</div></div><div class="btns"><button class="btn ghost sm" id="hoClear">Clear holdout</button></div>`
+      :`<div class="btns"><button class="btn sm" id="hoPick" ${pool.length<10?"disabled":""}>Hold out 20% of ${pool.length} eligible accounts</button>${pool.length<10?`<span class="note">Needs at least 10 eligible accounts (connect your target account list in Set up).</span>`:""}</div>`}</div>` }
+function wireChase(host){ $("#hoPick",host)&&($("#hoPick",host).onclick=()=>{ const d=draft, inv=new Set(d.guests.filter(g=>g.status!=="Not invited").map(g=>g.company)), K=(brandProfile?.knowledge?.accounts?.accounts||[]).map(a=>a.name), pool=[...new Set([...K,...d.guests.map(g=>g.company)].filter(Boolean))].filter(a=>!inv.has(a));
+    const sh=[...pool].sort(()=>Math.random()-.5); d.holdout=sh.slice(0,Math.max(1,Math.round(pool.length*.2))); logDecision(d,`held out ${d.holdout.length} accounts at random for a lift test`); renderStep() });
+  $("#hoClear",host)&&($("#hoClear",host).onclick=()=>{ draft.holdout=[]; draft.holdoutOpps=[]; renderStep() }); $$("[data-chase]",host).forEach(b=>b.onclick=()=>{ const o=b.dataset.chase, d=draft; copyTxt(d.guests.filter(g=>g.status==="Invited"&&(g.owner||"You")===o).map(g=>`To ${g.name}:\n${nudgeText(d,g)}`).join("\n\n")) }) }
 function editor(d){
   const F=brandProfile?.founderVoice, P=d.intel;
   return `You are an expert editor and the keeper of ${d.brand||"this company"}'s voice. You know how its founders write${F?`: ${F.who?F.who+". ":""}Tone: ${(F.traits||[]).join(", ")}. Words they use: ${(F.words||[]).join(", ")}. They never: ${(F.avoid||[]).join(", ")}. A line in their style: "${F.sample||""}"`:`. If tools are available, read a few of the founders' public posts or the company blog first and match their style.`}
@@ -2424,11 +2438,12 @@ function parseCSV(text){ const lines=text.trim().split(/\r?\n/).filter(Boolean);
 const col=(o,...ks)=>{ for(const k of ks){ const hit=Object.keys(o).find(x=>x.replace(/[^a-z]/g,"").includes(k)); if(hit&&o[hit]) return o[hit] } return "" };
 function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date+"T12:00:00"):null, W=90*864e5; let matched=0, infl=0, src=0, dup=0; d.opps=d.opps||[];
   rows.forEach(r=>{ const email=col(r,"email").toLowerCase(), co=col(r,"account","company").toLowerCase(), amt=+String(col(r,"amount","value")).replace(/[^0-9.]/g,"")||0, stage=col(r,"stage"), cs=col(r,"created","createddate"), created=new Date(cs), moved=new Date(col(r,"laststage","stagechange","modified")||cs), id=col(r,"opportunityid","dealid","recordid","id"), url=col(r,"url","link");
-    const byEmail=email?d.guests.find(x=>x.status==="Attended"&&x.email&&x.email.toLowerCase()===email):null, g=byEmail||(co?d.guests.find(x=>x.status==="Attended"&&(x.company||"").toLowerCase()===co):null); if(!g) return;
+    const byEmail=email?d.guests.find(x=>x.status==="Attended"&&x.email&&x.email.toLowerCase()===email):null, g=byEmail||(co?d.guests.find(x=>x.status==="Attended"&&(x.company||"").toLowerCase()===co):null);
+    if(!g){ const H=new Set((d.holdout||[]).map(a=>a.toLowerCase())); if(co&&H.has(co)&&ev&&!isNaN(created)&&created>=ev&&created-ev<=W){ d.holdoutOpps=d.holdoutOpps||[]; const hk=id||[co,amt,cs].join("|"); if(!d.holdoutOpps.some(o=>o.key===hk)) d.holdoutOpps.push({key:hk,account:col(r,"account","company"),amount:amt,created:created.toISOString().slice(0,10)}) } return }
     const key=id||[(co||g.company||"").toLowerCase(),amt,cs].join("|"); if(d.opps.some(o=>o.key===key)){ dup++; return }
     const inWin=t=>ev&&!isNaN(t)&&t>=ev&&t-ev<=W, before=ev&&!isNaN(created)&&created<ev, lost=/lost/i.test(stage);
     const bucket=inWin(created)?"created":before&&!lost&&(inWin(moved)||!/closed/i.test(stage))?"existing":null; if(!bucket) return;
-    matched++; d.opps.push({key,id,url,account:g.company||co,contact:g.name,amount:amt,stage,created:isNaN(created)?"":created.toISOString().slice(0,10),bucket,match:byEmail?"contact":"company"});
+    matched++; d.opps.push({key,id,url,account:g.company||co,contact:g.name,amount:amt,stage,created:isNaN(created)?"":created.toISOString().slice(0,10),bucket,match:byEmail?"contact":"company",evidence:[`${g.name} attended ${d.date||"the event"}${g.code?` (check-in ${g.code})`:""}`,...(g.contactedAt?[`AE follow-up ${new Date(g.contactedAt).toISOString().slice(0,10)}`]:[]),...(!isNaN(moved)&&moved>=ev?[`Stage moved ${moved.toISOString().slice(0,10)}`]:[])],at:Date.now()});
     g.outcome=/won/i.test(stage)?"Closed won":"Opportunity"; g.value=amt; g.source=bucket==="created"?"Sourced":"Influenced" });
   d.opps.forEach(o=>{ if(o.bucket==="created"&&d.opps.some(x=>x!==o&&x.bucket==="existing"&&x.account===o.account)){ o.bucket="existing"; o.note="Account already had an open opportunity before the event" } });
   d.opps.forEach(o=>o.bucket==="created"?src+=o.amount:o.bucket==="existing"?infl+=o.amount:0);
@@ -2442,11 +2457,17 @@ function repOpps(d){ if(d.opps?.length||!d.example||!showSampleRep) return d.opp
   const pick=i=>P[i%Math.max(1,P.length)]||{}; return [{key:"s1",account:pick(0).company,contact:pick(0).name,amount:85000,stage:"Discovery",created:"2027-03-04",bucket:"created",match:"contact",sample:true},
     {key:"s2",account:pick(3).company,contact:pick(3).name,amount:140000,stage:"Proposal",created:"2026-11-12",bucket:"existing",match:"contact",sample:true},
     {key:"s3",account:pick(4).company,contact:pick(4).name,amount:60000,stage:"Discovery",created:"2027-03-20",bucket:"created",match:"company",sample:true}] }
+function liftHTML(d){ const H=d.holdout||[]; if(!H.length) return `For real lift, hold out a random group of eligible accounts before inviting (Guests step) and compare.`;
+  const inv=[...new Set(d.guests.filter(g=>g.status!=="Not invited").map(g=>(g.company||"").toLowerCase()).filter(Boolean))].filter(a=>!H.map(x=>x.toLowerCase()).includes(a));
+  const invOpp=new Set((d.opps||[]).filter(o=>o.bucket==="created").map(o=>(o.account||"").toLowerCase())), hOpp=new Set((d.holdoutOpps||[]).map(o=>(o.account||"").toLowerCase()));
+  const ri=inv.length?Math.round(100*inv.filter(a=>invOpp.has(a)).length/inv.length):0, rh=Math.round(100*H.filter(a=>hOpp.has(a.toLowerCase())).length/H.length);
+  return `<b>Holdout test:</b> ${ri}% of ${inv.length} invited accounts got a new opportunity within 90 days, vs ${rh}% of ${H.length} held-out accounts (difference ${ri-rh>=0?"+":""}${ri-rh} points).${Math.min(inv.length,H.length)<30?" With fewer than 30 accounts per group this is directional; repeat across a series before calling it lift.":""}` }
 function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d), sampleMode=O.some(o=>o.sample);
   const accts=new Set(O.map(o=>(o.account||"").toLowerCase())), rank=o=>OUTCOMES.indexOf(o||"None yet");
   if(!O.length&&!d.guests.some(g=>g.status==="Attended")){ h.innerHTML=`<div><small class="eyebrow">Pipeline report · 90 days</small><h3>Pipeline you can defend</h3><p class="note">After the event, import opportunities (or pull them from your CRM) and Encore sorts them into three buckets with fixed definitions: created after the event, existing deals with attendees, and meetings with no deal yet. Nothing is counted twice, and every deal links to its CRM record.</p></div>${d.example?`<div class="btns"><button class="btn sm" id="repSample">Show a sample report</button></div>`:""}`; $("#repSample",h)&&($("#repSample",h).onclick=()=>{ showSampleRep=true; drawPipeRep(d) }); return }
   const meet=(sampleMode?[{company:(d.guests[1]||{}).company||"Sample account",name:(d.guests[1]||{}).name||""}]:d.guests.filter(g=>g.status==="Attended"&&rank(g.outcome)===1&&!accts.has((g.company||"").toLowerCase())));
-  const sum=b=>O.filter(o=>o.bucket===b).reduce((a,o)=>a+(+o.amount||0),0), n=b=>O.filter(o=>o.bucket===b).length;
+  const sure=o=>o.match==="contact"||o.confirmedBy, low=O.filter(o=>!sure(o)), lowSum=low.reduce((a,o)=>a+(+o.amount||0),0);
+  const sum=b=>O.filter(o=>o.bucket===b&&sure(o)).reduce((a,o)=>a+(+o.amount||0),0), n=b=>O.filter(o=>o.bucket===b&&sure(o)).length;
   const spend=actualOf(d)||eventCost(d)||0, hours=d.hours??40, rate=d.hourRate??75, cost=spend+hours*rate, per=v=>cost?`$${(v/cost).toFixed(1)}`:"–";
   const inv=d.guests.filter(g=>g.status!=="Not invited"), att=inv.filter(g=>g.status==="Attended"), noShow=inv.filter(g=>g.status!=="Attended");
   const rate2=L=>{ const A=[...new Set(L.map(g=>g.company))]; return A.length?Math.round(100*A.filter(a=>L.some(g=>g.company===a&&rank(g.outcome)>=1)).length/A.length):null };
@@ -2454,19 +2475,47 @@ function drawPipeRep(d){ const h=$("#pipeRep"); if(!h) return; const O=repOpps(d
   h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">${objOf(d)==="expansion"?"Customer impact":"Pipeline report"} · 90 days</small><h3>${objOf(d)==="expansion"?"What the event did for your customers":"Pipeline you can defend"}</h3><p class="note">Three buckets with fixed definitions. Each deal links back to its CRM record. Nothing is counted twice.</p></div><button class="btn sm" id="repCsv">Export report (CSV)</button></div>
     ${sampleMode?`<div class="samplebar">Sample deals to show the report. Import opportunities above, or pull them from your CRM, to see yours.</div>`:""}
     <div class="buckets">${Object.entries(bucketsFor(d)).map(([k,[t,def]])=>`<div class="bucket b-${k}"><small>${t}</small><b>${k==="meeting"?meet.length:money(sum(k))}</b><span class="note">${k==="meeting"?`${meet.length} account${meet.length===1?"":"s"}`:`${n(k)} deal${n(k)===1?"":"s"}`}</span><p class="note">${def}</p></div>`).join("")}</div>
+    ${low.length?`<div class="lowconf"><b>${money(lowSum)} in ${low.length} lower-confidence deal${low.length===1?"":"s"}</b> <span class="note">matched by company name only. Not in the totals above until someone confirms the attendee is involved.</span></div>`:""}
     <div class="costrow"><span>Cost: <b>${money(spend)}</b> spend + <input class="mini" type="number" min="0" id="repH" value="${hours}" aria-label="Team hours"> team hours × $<input class="mini" type="number" min="0" id="repR" value="${rate}" aria-label="Hourly cost"> = <b>${money(cost)}</b></span>
       <span>New pipeline per $1: <b>${per(sum("created"))}</b></span><span>All connected pipeline per $1: <b>${per(sum("created")+sum("existing"))}</b></span></div>
     ${O.length?`<div class="tscroll"><table><thead><tr><th>Account</th><th>Attendee</th><th class="num">Amount</th><th>Stage</th><th>Created</th><th>Bucket</th><th>How we matched</th></tr></thead><tbody>${O.map((o,i)=>`<tr><td><b>${esc(o.account||"")}</b>${o.url?` <a href="${esc(o.url)}" target="_blank" rel="noopener">CRM ↗</a>`:o.id?`<div class="note">${esc(o.id)}</div>`:""}</td><td>${esc(o.contact||"")}</td><td class="num">${money(o.amount)}</td><td>${esc(o.stage||"")}</td><td>${esc(o.created||"")}</td>
       <td><select data-ob="${i}" ${o.sample?"disabled":""} aria-label="Bucket for ${esc(o.account||"")}">${["created","existing","exclude"].map(b=>`<option value="${b}" ${o.bucket===b?"selected":""}>${b==="exclude"?"Exclude":bucketsFor(d)[b][0]}</option>`).join("")}</select>${o.note?`<div class="note">${esc(o.note)}</div>`:""}</td>
-      <td>${o.match==="contact"?`<span class="pchip good">Attendee is on the deal</span>`:`<span class="pchip warn" title="Matched only by company name. Check the CRM record.">Company name only · check</span>`}</td></tr>`).join("")}</tbody></table></div>`:""}
+      <td>${o.match==="contact"?`<span class="pchip good">Attendee is on the deal</span>`:o.confirmedBy?`<span class="pchip good">Confirmed by ${esc(o.confirmedBy)}</span>`:`<span class="pchip warn" title="Matched only by company name. Check the CRM record.">Company name only</span> ${o.sample?"":`<button class="mini-btn" data-oconf="${i}">Confirm</button>`}`}${o.evidence?.length?`<div class="note">${o.evidence.map(esc).join(" · ")}</div>`:""}</td></tr>`).join("")}</tbody></table></div>`:""}
+    ${(d.oppLog||[]).length?`<details><summary class="note" style="cursor:pointer">${d.oppLog.length} correction${d.oppLog.length===1?"":"s"} to this report</summary><ul class="clean">${d.oppLog.slice(0,20).map(x=>`<li><b>${esc(x.who)}</b> ${esc(x.what)} <span class="note">· ${new Date(x.at).toLocaleString()}</span></li>`).join("")}</ul></details>`:""}
     <div class="caveat"><b>Read this before you share it.</b> This report shows pipeline connected to people who attended. It doesn't prove the event caused it: the accounts you invite are often the ones already closest to buying.
-      ${!sampleMode&&ra!=null&&rn!=null?` Attended accounts reached a meeting or better ${ra}% of the time; invited accounts that didn't come, ${rn}%.${small?" Fewer than 20 accounts in a group, so treat the gap as a hint, not a result.":""}`:""}</div>`;
+      ${!sampleMode&&ra!=null&&rn!=null?` Attended accounts reached a meeting or better ${ra}% of the time and no-shows ${rn}%, but that gap can't show lift: people who show up were more interested to begin with.`:""} ${liftHTML(d)}</div>`;
   $("#repH",h).onchange=e=>{ d.hours=+e.target.value||0; drawPipeRep(d) }; $("#repR",h).onchange=e=>{ d.hourRate=+e.target.value||0; drawPipeRep(d) };
-  $$("[data-ob]",h).forEach(x=>x.onchange=()=>{ const o=d.opps[+x.dataset.ob]; if(x.value==="exclude") d.opps.splice(+x.dataset.ob,1); else o.bucket=x.value; drawPipeRep(d) });
+  const olog=what=>{ d.oppLog=d.oppLog||[]; d.oppLog.unshift({at:Date.now(),who:me()||"Someone",what}) };
+  $$("[data-ob]",h).forEach(x=>x.onchange=()=>{ const o=d.opps[+x.dataset.ob]; if(x.value==="exclude"){ d.opps.splice(+x.dataset.ob,1); olog(`excluded ${o.account} (${money(o.amount)})`) } else { olog(`moved ${o.account} from "${bucketsFor(d)[o.bucket]?.[0]}" to "${bucketsFor(d)[x.value][0]}"`); o.bucket=x.value } drawPipeRep(d) });
+  $$("[data-oconf]",h).forEach(b=>b.onclick=()=>{ if(!me()){ toast("Add your name in the decision log (Produce) first, so confirmations have an owner."); return } const o=d.opps[+b.dataset.oconf]; o.confirmedBy=me(); olog(`confirmed an attendee is involved in the ${o.account} deal`); drawPipeRep(d) });
   $("#repCsv",h).onclick=async()=>{ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, csv=["Account,Attendee,Amount,Stage,Created,Bucket,Match,CRM link",...O.map(o=>[o.account,o.contact,o.amount,o.stage,o.created,BUCKETS[o.bucket]?.[0]||o.bucket,o.match==="contact"?"Attendee on deal":"Company name only",o.url||o.id||""].map(q).join(","))].join("\n");
     if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-pipeline.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) } }
 // ---------- 2. Hand off to sales: notes, next step, AE-approved follow-up, gift with cost ----------
 const NEXT=["Book a meeting","Send what they asked for","Intro to an exec","Invite to the next event","Expansion conversation","Renewal: at risk","Reference or case study","Roadmap feedback: close the loop","Nurture","No follow-up"];
+const isPriority=g=>g.tier==="A"||readiness(g).score>=70;
+function funnelOf(L){ const replied=g=>/Going|Declined|Maybe|Attended/.test(g.status)||allRsvps.some(r=>r.name===g.name);
+  return [["Invited","seller",L.filter(g=>g.status!=="Not invited")],["Replied","buyer",L.filter(replied)],["Confirmed","buyer",L.filter(g=>g.status==="Going"||g.status==="Attended")],["Attended","buyer",L.filter(g=>g.status==="Attended")],
+    ["Conversation logged","seller",L.filter(g=>g.status==="Attended"&&g.note)],["Next step agreed","buyer",L.filter(g=>g.status==="Attended"&&(g.fuState==="Approved"||g.fuState==="Sent"||g.nsDoneAt))],["Next step done","buyer",L.filter(g=>g.nsDoneAt)]] }
+function drawFunnel(d){ const h=$("#funnel"); if(!h) return; const P=d.guests.filter(isPriority), F=funnelOf(P), top=Math.max(1,F[0][2].length);
+  h.innerHTML=`<div><small class="eyebrow">Priority accounts</small><h3>From invite to a next step that actually happened</h3><p class="note">Your ${P.length} priority guests (tier A or readiness 70+). Seller steps are what your team sent; buyer steps are what the guest did. An AI draft is not a conversation: only AE-confirmed steps count.</p></div>
+    ${P.length?`<div class="funnel">${F.map(([t,who,L])=>`<div class="fstep ${who}"><div class="fbar"><i style="width:${Math.round(100*L.length/top)}%"></i></div><b>${L.length}</b><span>${t}</span><small>${who==="seller"?"Your team":"The guest"}</small></div>`).join("")}</div>
+    <p class="note">Biggest drop: ${(()=>{ let w=null,dl=-1; for(let i=1;i<F.length;i++){ const x=F[i-1][2].length-F[i][2].length; if(x>dl){dl=x;w=[F[i-1][0],F[i][0]]} } return w&&dl>0?`${esc(w[0])} → ${esc(w[1])} (${dl} accounts)`:"none yet" })()}</p>`:`<p class="empty">Mark tier A guests, or run the guest scout to score readiness.</p>`}` }
+function pilotStats(d){ const P=d.guests.filter(isPriority), F=funnelOf(P), n=i=>F[i][2].length, pc=(a,b)=>b?Math.round(100*a/b):null, fb=allFeedback.filter(f=>f.eventId===d.id&&f.gotValue!=null);
+  const att=F[3][2], in24=att.filter(g=>g.contactedAt&&g.leadAt&&g.contactedAt-g.leadAt<=864e5).length;
+  return {rsvp:pc(n(2),n(0)),show:pc(n(3),n(2)),in24:pc(in24,att.length),done:pc(n(6),att.length),value:fb.length?pc(fb.filter(f=>f.gotValue).length,fb.length):null,hours:Object.values(d.hoursB||{}).reduce((a,b)=>a+(+b||0),0)||null} }
+const BASELINE_SAMPLE={name:"Creator Budget Breakfast (sample)",rsvp:38,show:62,in24:40,done:25,value:70,hours:46};
+function drawPilot(d){ const h=$("#pilot"); if(!h) return; const cur=pilotStats(d), others=allEvents.filter(e=>e.id!==d.id&&!e.example&&(e.guests||[]).length), bid=d.baselineId||"";
+  const base=bid&&bid!=="manual"?(()=>{ const e=allEvents.find(x=>x.id===bid); return e?{name:e.name,...pilotStats(hydrate(e))}:null })():bid==="manual"?{name:"Your last comparable event",...(d.baseline||{})}:BASELINE_SAMPLE;
+  const HB=d.hoursB||{}, rows=[["rsvp","Priority invites that RSVP'd yes","%"],["show","Priority RSVPs who showed","%"],["in24","Attendees followed up within 24h","%"],["done","Attendees with a completed next step","%"],["value","Attendees who met a useful peer or learned something","%"],["hours","Team hours on the event","h"]];
+  h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Pilot scorecard</small><h3>Is this better than how you ran it before?</h3><p class="note">The numbers a head of events checks before paying for a tool: priority guests who came, follow-up that happened, value guests felt, and hours spent.</p></div>
+      <label class="f" style="max-width:280px">Compare with<select id="pilBase"><option value="">${esc(BASELINE_SAMPLE.name)}</option>${others.map(e=>`<option value="${esc(e.id)}" ${bid===e.id?"selected":""}>${esc(e.name)}</option>`).join("")}<option value="manual" ${bid==="manual"?"selected":""}>Enter numbers by hand</option></select></label></div>
+    <div class="tscroll"><table><thead><tr><th>Measure</th><th class="num">This event</th><th class="num">${esc(base?.name||"Before")}</th><th class="num">Change</th></tr></thead><tbody>${rows.map(([k,l,u])=>{ const a=cur[k], b=base?.[k], dlt=a!=null&&b!=null?a-b:null, good=k==="hours"?dlt<0:dlt>0;
+      return `<tr><td>${l}</td><td class="num"><b>${a==null?"–":a+u}</b></td><td class="num">${bid==="manual"?`<input class="mini" type="number" data-bl="${k}" value="${b??""}">`:b==null?"–":b+u}</td><td class="num">${dlt==null?"–":`<span class="pchip ${dlt===0?"":good?"good":"bad"}">${dlt>0?"+":""}${dlt}${u==="%"?" pts":"h"}</span>`}</td></tr>` }).join("")}</tbody></table></div>
+    <div class="row hoursrow">${[["list","List building and cleanup"],["chase","Invites and chasing"],["onsite","Onsite"],["follow","Follow-up"],["report","Reporting"]].map(([k,l])=>`<label class="f">${l} (hours)<input type="number" min="0" data-hb="${k}" value="${HB[k]??""}"></label>`).join("")}</div>
+    <p class="note">Hours also go into the cost in the pipeline report. "Useful peer or learned something" comes from the guest survey.</p>`;
+  $("#pilBase",h).onchange=e=>{ d.baselineId=e.target.value; drawPilot(d) };
+  $$("[data-bl]",h).forEach(x=>x.onchange=()=>{ d.baseline={...(d.baseline||{}),[x.dataset.bl]:x.value===""?null:+x.value}; drawPilot(d) });
+  $$("[data-hb]",h).forEach(x=>x.onchange=()=>{ d.hoursB={...(d.hoursB||{}),[x.dataset.hb]:+x.value||0}; d.hours=Object.values(d.hoursB).reduce((a,b)=>a+(+b||0),0); drawPilot(d); drawPipeRep(d) }) }
 function drawHandoff(d){ const h=$("#handoff"); if(!h) return; const att=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Attended");
   const S=out("briefing"), owners=aeList(d), st=g=>g.fuState||(g.fuDraft?"Draft":"Not started");
   const sent24=att.filter(x=>x.g.contactedAt&&x.g.leadAt&&x.g.contactedAt-x.g.leadAt<=864e5).length, gifts=att.reduce((a,x)=>a+(+x.g.giftCost||0),0);
@@ -2478,18 +2527,19 @@ function drawHandoff(d){ const h=$("#handoff"); if(!h) return; const att=d.guest
       <label class="f">What they said<textarea data-hnote="${i}" rows="2" placeholder="e.g. Budget frozen until Q2; wants the measurement template; asked about EU creators">${esc(g.note||"")}</textarea></label>
       <div class="row"><label class="f">Gift (optional)<input data-hgift="${i}" value="${esc(g.gift||"")}" placeholder="e.g. the cookbook from dinner"></label><label class="f">Cost<input type="number" min="0" data-hgc="${i}" value="${+g.giftCost||""}"></label></div>
       ${g.fuDraft?`<label class="f">Follow-up for ${esc(g.owner||"the AE")} to send<textarea data-hdraft="${i}" rows="6">${esc(g.fuDraft)}</textarea></label>`:""}
-      <div class="btns"><button class="btn sm ${g.fuDraft?"ghost":"primary"}" data-hai="${i}"><span class="spark">✦</span>${g.fuDraft?"Redraft":"Draft follow-up"}</button>${g.fuDraft?`<button class="btn sm" data-happ="${i}">${st(g)==="Approved"||st(g)==="Sent"?"Approved ✓":"AE approves"}</button><button class="btn sm ghost" data-hcp="${i}">Copy</button><button class="btn sm ghost" data-hsent="${i}">Mark sent</button>`:""}</div></div>` }).join("")}</div>`
+      <div class="btns"><button class="btn sm ${g.fuDraft?"ghost":"primary"}" data-hai="${i}"><span class="spark">✦</span>${g.fuDraft?"Redraft":"Draft follow-up"}</button>${g.fuDraft?`<button class="btn sm" data-happ="${i}">${st(g)==="Approved"||st(g)==="Sent"?"Approved ✓":"AE approves"}</button><button class="btn sm ghost" data-hcp="${i}">Copy</button><button class="btn sm ghost" data-hsent="${i}">Mark sent</button>`:""}<button class="btn sm ${g.nsDoneAt?"":"ghost"}" data-hdone="${i}">${g.nsDoneAt?`✓ Next step done ${new Date(g.nsDoneAt).toLocaleDateString()}`:"AE: next step done"}</button></div></div>` }).join("")}</div>`
     :`<p class="empty">Check guests in at the door (Guests step) or tick "Came?" above. Each attendee gets a card here for notes, the next step and an AE-approved follow-up.</p>`}`;
   const G=i=>d.guests[+i];
   $$("[data-hown]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hown).owner=x.value });
   $$("[data-hnext]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hnext).nextStep=x.value });
-  $$("[data-hnote]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hnote).note=x.value.trim(); drawHandoff(d) });
+  $$("[data-hnote]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hnote).note=x.value.trim(); drawHandoff(d); drawFunnel(d) });
   $$("[data-hgift]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hgift).gift=x.value.trim() });
   $$("[data-hgc]",h).forEach(x=>x.onchange=()=>{ G(x.dataset.hgc).giftCost=+x.value||0; drawHandoff(d) });
   $$("[data-hdraft]",h).forEach(x=>x.onchange=()=>{ const g=G(x.dataset.hdraft); g.fuDraft=x.value; if(g.fuState==="Approved") g.fuState="Draft" });
   $$("[data-happ]",h).forEach(b=>b.onclick=()=>{ G(b.dataset.happ).fuState="Approved"; drawHandoff(d) });
   $$("[data-hcp]",h).forEach(b=>b.onclick=()=>copyTxt(G(b.dataset.hcp).fuDraft));
   $$("[data-hsent]",h).forEach(b=>b.onclick=()=>{ const g=G(b.dataset.hsent); g.fuState="Sent"; g.contactedAt=Date.now(); if(!g.leadAt) g.leadAt=g.contactedAt; drawHandoff(d) });
+  $$("[data-hdone]",h).forEach(b=>b.onclick=()=>{ const g=G(b.dataset.hdone); g.nsDoneAt=g.nsDoneAt?null:Date.now(); logDecision(d,`${g.nsDoneAt?"confirmed":"reopened"} the next step with ${g.name} (${g.nextStep||"Book a meeting"})`); drawHandoff(d); drawFunnel(d); drawPilot(d) });
   $$("[data-hai]",h).forEach(b=>b.onclick=async()=>{ const g=G(b.dataset.hai); if(!g.note){ toast("Add a line about what they said first. That's what makes the follow-up land."); return }
     const o=await askJSON(`${editor(d)}
 Write the follow-up email ${g.owner&&g.owner!=="Unassigned"?g.owner:"their account exec"} sends to ${g.name} (${g.title||""}, ${g.company||""}) the morning after this event. Start from what they actually said, deliver something useful first, then make one clear ask matching the next step: "${g.nextStep||"Book a meeting"}". Max 110 words, plain text, no subject-line clichés.${g.gift?` Mention the gift naturally: ${g.gift}.`:""}
@@ -3223,7 +3273,7 @@ function step5(host){
         <div class="btns"><button class="btn" id="gAdd">Add to list</button></div>
       </div></details>
   </div>
-  ${chaseHTML(d)}
+  ${chaseHTML(d)}${holdoutHTML(d)}
   ${agentBox("scout","Guest scout","Your invite list, row by row: who they are, how you know them, why they fit, and whether they're in town.","Build the guest list")}
   <div class="panel stack"><div><h3>Ask sales for nominations</h3><p class="note">Each AE gets a link with suggestions from their accounts. They approve or add up to 3 people in a minute. You see who's in and who's holding up.</p></div>${nominationsHTML(d)}</div>
   <div class="btns"><button class="btn" id="checkinBtn">Onsite check-in mode</button><span class="note">Big tap targets for the door on the day. Every check-in starts that lead's 24-hour follow-up clock.</span></div><div id="checkinHost"></div>
@@ -3248,14 +3298,16 @@ function step5(host){
     const cc={verified:["good","✓ Verified"],likely:["warn","Likely"],unverified:["","Unverified"],elsewhere:["bad","Lives elsewhere"]};
     $("#out-scout").innerHTML=`${S.contacts.some(c=>c.sample)?`<div class="samplebar">Sample contacts: fictional people to show how the list works. Connect your CRM or Gmail and run it again for real names.</div>`:""}
     <div class="tscroll"><table class="guestlist"><thead><tr><th></th><th>Person</th><th>Readiness</th><th>Relationship</th><th>Why they fit</th><th>${esc(d.city||"City")} check</th></tr></thead><tbody>
-    ${S.contacts.map((c,i)=>[c,i]).sort((a,b)=>readiness(b[0]).score-readiness(a[0]).score).map(([c,i])=>{const [cls,lab]=cc[c.cityCheck]||cc.unverified, on=d.guests.some(g=>g.name===c.name);return `<tr class="${c.cityCheck==="elsewhere"?"dim":""}"><td><input type="checkbox" data-pick="${i}" ${sel.has(i)?"checked":""} ${on?"disabled":""} aria-label="Select ${esc(c.name)}"></td>
+    ${S.contacts.map((c,i)=>[c,i]).sort((a,b)=>readiness(b[0]).score-readiness(a[0]).score).map(([c,i])=>{const [cls,lab]=cc[c.cityCheck]||cc.unverified, on=d.guests.some(g=>g.name===c.name);return `<tr class="${c.cityCheck==="elsewhere"?"dim":""}"><td><input type="checkbox" data-pick="${i}" ${sel.has(i)&&!(d.scoutRejects||[]).some(r=>r.name===c.name)?"checked":""} ${on?"disabled":""} aria-label="Select ${esc(c.name)}">${on?"":`<select class="rej" data-rej="${i}" aria-label="Sales says no to ${esc(c.name)}" title="Sales says no"><option value="">✕</option>${["Wrong person","Bad timing","Already engaged","Not our ICP","Relationship risk"].map(x=>`<option ${(d.scoutRejects||[]).find(r=>r.name===c.name)?.reason===x?"selected":""}>${x}</option>`).join("")}</select>`}</td>
       <td><div class="who"><canvas width="64" height="64" data-av="${esc(c.name)}"></canvas><div><b>${esc(c.name)}</b>${c.sample?' <span class="tag ex">Sample</span>':""}<div class="note">${esc(c.title)} · ${esc(c.company)}</div></div></div></td><td>${readyCell(c)}</td>
       <td><span class="rel rel-${esc((c.relationship||"").split(" ")[0].toLowerCase())}">${esc(c.relationship)}</span></td><td>${esc(c.why)}</td>
       <td><span class="pchip ${cls}" title="${esc(c.cityEvidence||"")}">${lab}</span><div class="note">${esc(c.city||"")}${c.cityEvidence?` · ${esc(c.cityEvidence)}`:""}</div></td></tr>`}).join("")}</tbody></table></div>
     <div class="btns"><button class="btn primary sm" id="addPicked">Add selected to guest list</button><span class="note">${esc(S.mix||"")}</span></div>
+    ${(d.scoutRejects||[]).length?`<div class="lowconf"><b>Sales said no to ${d.scoutRejects.length}</b> <span class="note">${Object.entries(d.scoutRejects.reduce((a,r)=>(a[r.reason]=(a[r.reason]||0)+1,a),{})).map(([k,v])=>`${esc(k)} ×${v}`).join(" · ")}. ${d.scoutRejects.filter(r=>r.readiness>=70).length?`${d.scoutRejects.filter(r=>r.readiness>=70).length} of them scored 70+, so the next run weighs these reasons.`:"The next run learns from these."}</span></div>`:""}
     <p class="note">Readiness comes from real signals where the scout found them (CRM, product usage, calls). Grey dashed signals are inferred, and * means estimated. Ask account owners to rank this list in Nominations before you invite.</p>`;
     $$("canvas[data-av]",$("#out-scout")).forEach(c=>drawAvatar(c,c.dataset.av,d.brandColors));
     $$("[data-pick]",host).forEach(x=>x.onchange=()=>{ const i=+x.dataset.pick; x.checked?sel.add(i):sel.delete(i) });
+    $$("[data-rej]",host).forEach(x=>x.onchange=()=>{ const c=S.contacts[+x.dataset.rej]; d.scoutRejects=(d.scoutRejects||[]).filter(r=>r.name!==c.name); if(x.value){ d.scoutRejects.push({name:c.name,company:c.company,reason:x.value,by:me()||"Sales",at:Date.now(),readiness:readiness(c).score}); sel.delete(+x.dataset.rej) } renderStep() });
     $("#addPicked").onclick=()=>{ let n=0; sel.forEach(i=>{ const c=S.contacts[i]; if(d.guests.some(g=>g.name===c.name)) return; d.guests.push({name:c.name,title:c.title,company:c.company,email:c.email||"",owner:c.owner||"",tier:/Open|Customer/.test(c.relationship)?"A":"B",status:"Not invited",outcome:"None yet",value:0,relationship:c.relationship,why:c.why,cityCheck:c.cityCheck,...(c.readiness!=null?{readiness:c.readiness,signals:c.signals}:{})}); n++ }); toast(`Added ${n} guest${n===1?"":"s"}`); renderStep() } }
   $$("[data-gd]",host).forEach(b=>b.onclick=()=>{d.guests.splice(+b.dataset.gd,1); renderStep()});
   $("#gAdd").onclick=()=>{ const rows=$("#gPaste").value.split("\n").map(l=>l.split(",").map(s=>s.trim())).filter(r=>r[0]);
@@ -3304,6 +3356,8 @@ function step6(host){
     <div id="attrib"></div>
   </div>
   <div class="panel stack" id="handoff"></div>
+  <div class="panel stack" id="funnel"></div>
+  <div class="panel stack" id="pilot"></div>
   <div class="panel"><div class="btns" style="justify-content:space-between"><div><b>Keep the momentum</b><p class="note">Start the next event with these people already on the list: attendees, scanned leads and no-shows, each tagged with where they came from.</p></div><div class="btns"><select id="fuKind" aria-label="Follow-up event type">${Object.entries(KINDS).map(([k,K])=>`<option value="${k}" ${k==="webinar"?"selected":""}>${esc(K.label)}</option>`).join("")}</select><button class="btn sm" id="fuEvent">Create follow-up event</button></div></div></div>
   <div class="panel stack" id="pipeRep"></div>
   ${agentBox("followup","Follow-up","A personal follow-up for each guest, drafted for you or their AE.","Draft follow-ups")}
@@ -3338,7 +3392,7 @@ function step6(host){
       <td><select data-ao="${g.i}" aria-label="Outcome for ${esc(g.name)}">${OUTCOMES.map(o=>`<option ${o===(g.outcome||"None yet")?"selected":""}>${o}</option>`).join("")}</select></td>
       <td class="num"><input class="mini" type="number" min="0" step="1000" data-av="${g.i}" value="${+g.value||0}" aria-label="Opportunity value for ${esc(g.name)}"></td></tr>`).join("")}</tbody></table></div>
     <div class="btns"><button class="btn sm" id="useAttr">Use these totals in the results</button></div>`;
-    $$("[data-ac]").forEach(c=>c.onchange=()=>{ const g=d.guests[+c.dataset.ac]; g.status=c.checked?"Attended":"Going"; if(c.checked&&!g.leadAt) g.leadAt=Date.now(); drawAttrib(); drawHandoff(d); drawPipeRep(d) });
+    $$("[data-ac]").forEach(c=>c.onchange=()=>{ const g=d.guests[+c.dataset.ac]; g.status=c.checked?"Attended":"Going"; if(c.checked&&!g.leadAt) g.leadAt=Date.now(); drawAttrib(); drawHandoff(d); drawPipeRep(d); drawFunnel(d); drawPilot(d) });
     $$("[data-asrc]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.asrc].source=c.value; drawAttrib() });
     $$("[data-contact]").forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.contact]; g.contactedAt=Date.now(); if(!g.leadAt) g.leadAt=g.contactedAt; drawAttrib() });
     const readF=(id,ta)=>{ const f=$(id)?.files?.[0]; return f?f.text():Promise.resolve($(ta).value) };
@@ -3355,7 +3409,7 @@ function step6(host){
     $$("[data-ao]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.ao].outcome=c.value; drawAttrib() });
     $$("[data-av]").forEach(c=>c.onchange=()=>{ d.guests[+c.dataset.av].value=+c.value||0; drawAttrib() });
     $("#useAttr")&&($("#useAttr").onclick=()=>{ const t=tally(); Object.assign(m,{attended:t.att,meetings:t.meet,pipeline:t.pipe}); renderStep(); toast("Results updated from guest outcomes") }) };
-  drawAttrib(); drawHandoff(d); drawPipeRep(d);
+  drawAttrib(); drawHandoff(d); drawPipeRep(d); drawFunnel(d); drawPilot(d);
   $("#fuEvent")&&($("#fuEvent").onclick=()=>{ const k=$("#fuKind").value, src=d.guests.filter(g=>g.status!=="Not invited"&&g.status!=="Declined");
     const n=hydrate(cloneForReuse(d,{kind:k,name:`${(KINDS[k]||KINDS.dinner).label} for ${d.name} guests`,date:"",parentId:d.id||null,followsFrom:d.name,venues:null,venuePick:0,scout:null,produce:null,copy:null,launchCopy:null,dist:null}));
     n.guests=src.map(g=>({name:g.name,title:g.title||"",company:g.company||"",email:g.email||"",owner:g.owner||"",tier:g.tier||"B",status:"Not invited",outcome:"None yet",value:0,source:g.scanned?"Badge scan":g.status==="Attended"?`Attended ${d.name}`:`No-show at ${d.name}`,arr:g.arr,renewalDate:g.renewalDate,health:g.health,note:g.note}));
@@ -3402,6 +3456,7 @@ function surveyForm(el,ev,{role="",onDone,guest=false}={}){
     <div class="row">
       <label class="f">${guest?"Your role":"Attendee role"}<input id="sv-role" value="${esc(role)}" placeholder="e.g. VP of Marketing"></label>
       <label class="f">${guest?"Would you come to another one?":"Would come again?"}<select id="sv-ret"><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <label class="f">${guest?"Did you meet a useful peer or learn something you'll use?":"Got value (useful peer or learning)?"}<select id="sv-val"><option value="yes">Yes</option><option value="no">No</option></select></label>
     </div>
     <label class="f">${guest?"Anything we should know?":"Comment"}<textarea id="sv-text" placeholder="The best part was…"></textarea></label>
     <div class="btns"><button type="button" class="btn primary" id="sv-send">${guest?"Send feedback":"Add feedback"}</button></div></div>`;
@@ -3411,7 +3466,7 @@ function surveyForm(el,ev,{role="",onDone,guest=false}={}){
     if(!rating){toast("Pick a star rating first");return}
     if(!db){toast("Open this link in claude.ai while signed in to send feedback.");return}
     const btn=$("#sv-send",el); btn.disabled=true;
-    try{ await db.collection("feedback").add({eventId:ev.id,rating,highlights:[...hl],role:$("#sv-role",el).value.trim(),wouldReturn:$("#sv-ret",el).value==="yes",comment:$("#sv-text",el).value.trim(),source:guest?"guest":"organizer",createdAt:Date.now()}); onDone&&onDone() }
+    try{ await db.collection("feedback").add({eventId:ev.id,rating,highlights:[...hl],role:$("#sv-role",el).value.trim(),wouldReturn:$("#sv-ret",el).value==="yes",gotValue:$("#sv-val",el).value==="yes",comment:$("#sv-text",el).value.trim(),source:guest?"guest":"organizer",createdAt:Date.now()}); onDone&&onDone() }
     catch(e){ toast(e?.code==="permission_denied"?"You don't have permission to send feedback on this page.":"Couldn't send: "+(e?.message||"try again")); btn.disabled=false }
   };
 }

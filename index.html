@@ -507,6 +507,22 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.hostbar{padding:10px 14px 0}
+.hostbar.onart{position:absolute;left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:16px;background:rgba(15,13,40,.55);backdrop-filter:blur(4px)}
+.hostbar.onart .hostrow small,.hostbar.onart .x{color:#fff}
+.hostrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hostrow small{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.hostrow .x{color:var(--muted);font-weight:800}
+.hostchip{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.86rem;padding:3px 10px 3px 3px;border-radius:99px;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--line)}
+.hostchip img{width:22px;height:22px;border-radius:50%;background:#fff;object-fit:contain}
+.hostchip img + i{display:none}
+.hostchip i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.66rem}
+.hostchip.light{background:#fff;color:var(--ink)}
+.stext .hostrow small{color:#fff;opacity:.85}.stext .hostrow .x{color:#fff}
+.hosttile{padding:6px 12px 6px 6px}
+.hosttile .hostchip{box-shadow:none;background:transparent;padding:0}
+.hosttile.on .hostchip{color:inherit}
+
 .catb{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:3px 9px 3px 7px;border-radius:99px;background:color-mix(in srgb,var(--cc) 14%,#fff);color:color-mix(in srgb,var(--cc) 80%,#1B1740);white-space:nowrap}
 .catb.light{background:#fff}
 .audb{display:inline-flex;font-size:.7rem;font-weight:800;padding:2px 9px;border-radius:99px;border:1.5px solid var(--ac);color:color-mix(in srgb,var(--ac) 75%,#1B1740);align-self:flex-start}
@@ -3136,13 +3152,15 @@ function feed(){ if(!inspFeed) inspFeed=LIB.map((x,i)=>({...x,id:"lib"+i,starter
 function laneOf(a){ return LANES.find(l=>l[0]===a)||LANES[0] }
 function renderInspire(){
   const el=$("#view-inspire"); if(!el) return;
-  const F=feed().filter(x=>(inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter))&&(!inspType||catOf(x.format)===inspType));
+  const hostsAll={}; feed().filter(x=>x.peer).forEach(x=>hostsOf(x).forEach(h=>hostsAll[h]=(hostsAll[h]||0)+1));
+  const F=feed().filter(x=>(!inspHost||(x.peer&&hostsOf(x).includes(inspHost)))&&(inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter))&&(!inspType||catOf(x.format)===inspType));
   el.innerHTML=`
   <div class="canvas-head"><div><small class="eyebrow">Inspire</small><h2>What could you host next?</h2><p class="lede">Watch the stories, save what sparks something, and open any card for a playbook.</p></div>
     <div class="btns"><button class="btn primary big" id="playStories">▶ Watch stories</button><button class="btn" id="inspMore"><span class="spark">✦</span>Inspire me</button></div></div>
   <div class="peerbar"><div style="flex:1;min-width:240px"><small class="eyebrow">Learn from peers</small><input id="peerIn" placeholder="Companies you respect, e.g. Clay, Ramp, Notion" value="${esc(peerCompanies())}"><span class="note">Encore finds real events these companies (or comparable ones in your space) have hosted, with sources.</span></div><button class="btn primary" id="peerGo"><span class="spark">✦</span>Find their events</button></div>
   <pre class="stream" id="st-peers" hidden></pre>
   <div class="storyrow">${feed().slice(0,10).map((x,i)=>`<button class="bubble-s" data-story="${i}" style="--lc:${laneOf(x.audience)[2]}"><canvas width="120" height="120" data-sart="${x.id}"></canvas><span>${esc(x.name)}</span></button>`).join("")}</div>
+  ${Object.keys(hostsAll).length?`<div class="filters"><small class="eyebrow">Hosted by</small><button class="tile2 ${!inspHost?"on":""}" data-hfilt="">Everyone</button>${Object.entries(hostsAll).sort((a,b)=>b[1]-a[1]).map(([h,n])=>`<button class="tile2 hosttile ${inspHost===h?"on":""}" data-hfilt="${esc(h)}">${hostChip(h,"")} <span class="cnt">${n}</span></button>`).join("")}</div>`:""}
   <div class="filters typef"><small class="eyebrow">Type</small><button class="tile2 ${!inspType?"on":""}" data-tfilt="">All types</button>${Object.entries(CATS).filter(([k])=>feed().some(x=>catOf(x.format)===k)).map(([k,C])=>`<button class="tile2 cattile ${inspType===k?"on":""}" style="--cc:${C.color}" data-tfilt="${k}">${C.label} <span class="cnt">${feed().filter(x=>catOf(x.format)===k).length}</span></button>`).join("")}</div>
   <div class="filters"><small class="eyebrow">Audience</small>${[["all","All"],...LANES.map(l=>[l[0],l[1]]),["peers",`From peers (${feed().filter(x=>x.peer).length})`],["saved",`Saved (${inspSaved.size})`]].map(([k,l])=>`<button class="tile2 ${inspFilter===k?"on":""}" data-filt="${k}">${esc(l)}</button>`).join("")}</div>
   <div class="pins">${F.length?F.map(x=>pinCard(x)).join(""):`<p class="empty">Nothing here yet. Save cards with ♥.</p>`}</div>
@@ -3153,18 +3171,23 @@ function renderInspire(){
   $$("[data-story]",el).forEach(b=>b.onclick=()=>openStories(+b.dataset.story));
   $$("[data-filt]",el).forEach(b=>b.onclick=()=>{inspFilter=b.dataset.filt;renderInspire()});
   $$("[data-tfilt]",el).forEach(b=>b.onclick=()=>{inspType=b.dataset.tfilt;renderInspire()});
+  $$("[data-hfilt]",el).forEach(b=>b.onclick=()=>{inspHost=b.dataset.hfilt;renderInspire()});
   $("#inspMore").onclick=e=>inspireMore(e.currentTarget);
   $("#peerGo").onclick=e=>findPeerEvents(e.currentTarget);
   wirePinActions(el);
 }
-let peerData=null;
+let peerData=null, inspHost="";
+function hostsOf(x){ return (x.hosts?.length?x.hosts:[x.company]).filter(Boolean) }
+function hostChip(name,dom,light){ const hue=[...name].reduce((a,c)=>a+c.charCodeAt(0),0)%360, ini=name.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  return `<span class="hostchip ${light?"light":""}">${window.ENCORE_SERVER&&dom?`<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" onerror="this.remove()">`:""}<i style="background:hsl(${hue} 70% 90%);color:hsl(${hue} 60% 30%)">${esc(ini)}</i>${esc(name)}</span>` }
+function hostRow(x,light){ const H=hostsOf(x); return `<span class="hostrow"><small>Hosted by</small>${H.map((h,i)=>hostChip(h,i===0?x.domain:(x.domains||[])[i],light)).join(`<b class="x">×</b>`)}</span>` }
 function peerCompanies(){ return peerData?.companies||brandProfile?.respects||"" }
 async function findPeerEvents(btn){
   if(!sample){ toast("Turn on the AI (claude.ai or the server with a key) to research peers."); return }
   const names=$("#peerIn").value.trim(), used=new Set(), tools=await toolsFor(["web","playbook"],used);
   const o=await askJSON(`Find real B2B experiences that these companies have hosted in the last 2 years: ${names||"(none named)"}. ${names?"Also include 2-3 comparable companies":"Pick 4-6 comparable companies"} in the same space as ${brandProfile?.company||draft.brand||"this company"} (${brandProfile?.oneLiner||draft.product||""}), selling to ${(brandProfile?.titles||draft.audience.roles).slice(0,4).join(", ")||"similar buyers"}. Look for executive dinners, summits, owned conferences, community events, launch events, and creative experiences. ${tools.length?"Use web search; only include events you can cite with a URL.":"No web tools are available: only include events you are confident happened, and leave url empty when unsure."} Never invent events.
 ${brief(draft)}
-Reply with only JSON: {"companies":"comma-separated list of the companies you covered","ideas":[{"company":"","name":"the event's name, max 6 words","date":"YYYY-MM or empty","url":"source URL","audience":"customers|prospects|employees|partners|community","format":"one of ${FORMATS.join(", ")}","line":"what happened, max 22 words","why":"why it worked for their buyers, max 12 words","ambition":1-5,"cost":"$ range estimate","lead":"lead time estimate","steps":[4 short steps to run something similar],"kpis":[2],"pitfalls":[2]}] (8-12)}`+(tools.length?"":""),btn,$("#st-peers"),{tools,tier:"complex"});
+Reply with only JSON: {"companies":"comma-separated list of the companies you covered","ideas":[{"company":"the main host","hosts":["every company that hosted or co-hosted it, main host first"],"domain":"main host's website domain, e.g. clay.com","domains":["domain for each host, same order"],"name":"the event's name, max 6 words","date":"YYYY-MM or empty","url":"source URL","audience":"customers|prospects|employees|partners|community","format":"one of ${FORMATS.join(", ")}","line":"what happened, max 22 words","why":"why it worked for their buyers, max 12 words","ambition":1-5,"cost":"$ range estimate","lead":"lead time estimate","steps":[4 short steps to run something similar],"kpis":[2],"pitfalls":[2]}] (8-12)}`+(tools.length?"":""),btn,$("#st-peers"),{tools,tier:"complex"});
   if(!o?.ideas?.length) return;
   const ideas=o.ideas.map((x,i)=>({...x,id:"peer"+Date.now()+i,peer:true,proven:true}));
   peerData={companies:names||o.companies||"",items:ideas,at:Date.now(),used:[...used]};
@@ -3174,8 +3197,8 @@ Reply with only JSON: {"companies":"comma-separated list of the companies you co
 }
 function artFor(c,x){ if(!c||!x) return; const C=CATS[catOf(x.format)]; drawCover(c,{...draft,name:x.name,brand:"",cover:{motif:C.motif},brandColors:[C.color,"#FFFFFF"]},{mini:true}) }
 function pinCard(x){ const L=laneOf(x.audience), h=[260,320,380][[...x.name].length%3];
-  return `<article class="pin" style="--lc:${L[2]};--cc:${CATS[catOf(x.format)].color}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${catBadge(x.format)}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}</div>
-    <div class="ib">${audBadge(x.audience)}${x.peer?`<span class="by">By ${esc(x.company)}${x.date?` · ${esc(x.date)}`:""}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
+  return `<article class="pin" style="--lc:${L[2]};--cc:${CATS[catOf(x.format)].color}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${catBadge(x.format)}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}${x.peer?`<div class="hostbar onart">${hostRow(x,true)}</div>`:""}</div>
+    <div class="ib">${audBadge(x.audience)}${x.peer?`<span class="by">${x.date?esc(x.date)+" · ":""}${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">See the source</a>`:"No source link"}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
     <div class="btns"><button class="round sm ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn sm" data-pb="${x.id}">Playbook</button><button class="btn ghost sm" data-addc="${x.id}">+ Canvas</button></div></div></article>` }
 function wirePinActions(root){
   $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; inspSaved.has(id)?inspSaved.delete(id):inspSaved.add(id); b.classList.toggle("keep"); toast(inspSaved.has(id)?"Saved":"Removed") });
@@ -3198,7 +3221,7 @@ function drawStory(){
     <canvas width="540" height="960" id="sArt" aria-hidden="true"></canvas>
     <div class="sshade"></div>
     <button class="sclose" aria-label="Close stories">✕</button>
-    <div class="stext"><div class="btns" style="gap:6px">${catBadge(x.format,true)}${audBadge(x.audience)}</div>${x.peer?`<span class="by light">By ${esc(x.company)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
+    <div class="stext"><div class="btns" style="gap:6px">${catBadge(x.format,true)}${audBadge(x.audience)}</div>${x.peer?`${hostRow(x,true)}${x.url?`<a class="by light" href="${esc(x.url)}" target="_blank" rel="noopener">See the source</a>`:""}`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
       <div class="sstats"><span>${"★".repeat(x.ambition||3)}</span><span>${esc(x.cost||"")}</span><span>${esc(x.lead||"")}</span><span>${x.proven?"Proven motion":"New motion"}</span></div>
       <div class="btns"><button class="round ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn" data-pb="${x.id}">Playbook ↑</button><button class="btn" data-addc="${x.id}">+ Canvas</button><button class="btn primary" data-dep="${x.id}">Deploy</button></div></div>
     <button class="szone l" aria-label="Previous"></button><button class="szone r" aria-label="Next"></button></div></div>`;

@@ -9,7 +9,7 @@ import { parsePath, httpError, randomId } from "./db.js";
 import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, findServer, callTool } from "./integrations/index.js";
 import { runPm } from "./pm.js";
-import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler } from "./auth.js";
+import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users } from "./auth.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, "..");
@@ -96,6 +96,28 @@ export function createApp({ store, dataDir }) {
   });
 
   const json = express.json({ limit: "2mb" });
+
+  // ---------- who's signed in; append-only audit log ----------
+  app.get("/api/me", (req, res) => {
+    const u = currentUser(req);
+    res.json(u ? { name: u.name, email: u.email, roles: u.roles, verified: true } : { verified: false, teamConfigured: users().length > 0 });
+  });
+  // The audit log can only be appended to, and the server stamps who and when.
+  const AUDIT = /^audit(\/|$)/;
+  app.use("/api/db", (req, res, next) => {
+    if (req.method !== "GET" && AUDIT.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted", message: "The audit log is append-only. Use /api/audit." });
+    next();
+  });
+  app.post("/api/audit", json, (req, res) => {
+    const u = currentUser(req), b = req.body || {};
+    const eventId = String(b.eventId || "").slice(0, 80), what = String(b.what || "").trim().slice(0, 500);
+    if (!what) return res.status(400).json({ code: "invalid", message: "what is required" });
+    res.json(store.add("audit", { eventId, what, who: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now() }));
+  });
+  app.get("/api/audit", (req, res) => {
+    const id = String(req.query.eventId || "");
+    res.json({ entries: store.list("audit").map((d) => d.data).filter((e) => !id || e.eventId === id).sort((a, b) => b.at - a.at).slice(0, 500) });
+  });
 
   // ---------- db ----------
   app.get("/api/db/doc", (req, res) => {

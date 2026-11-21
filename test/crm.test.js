@@ -41,9 +41,9 @@ test("CRM integrations are not listed without their env vars", () => {
   assert.ok(servers().includes("Salesforce - Beta"));
   process.env.HUBSPOT_TOKEN = "test";
   const hs = configured().find((s) => s.server === "HubSpot");
-  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline"]);
+  assert.deepEqual(hs.tools.map((t) => t.name), ["search_crm_objects", "upsert_event_attendees", "event_pipeline", "log_followups"]);
   const sf = configured().find((s) => s.server === "Salesforce - Beta");
-  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline"]);
+  assert.deepEqual(sf.tools.map((t) => t.name), ["dispatch_readonly", "upsert_event_attendees", "event_pipeline", "log_followups"]);
 });
 
 test("HubSpot search sends the CRM v3 search body with a bearer token", async () => {
@@ -216,4 +216,46 @@ test("Salesforce event_pipeline filters to the window and flags campaign-sourced
   assert.ok(oq.some((q) => q.includes("AccountId IN ('001A')")));
   assert.ok(oq.some((q) => q.includes("Id IN ('006B')")));
   assert.ok(oq.some((q) => q.includes("CampaignId = '701C'")));
+});
+
+test("HubSpot log_followups creates a task per known contact and a note for gifts", async () => {
+  process.env.HUBSPOT_TOKEN = "test-token";
+  mockFetch((u) => {
+    if (u.pathname === "/crm/v3/objects/contacts/batch/read") return [207, { results: [{ id: "1", properties: { email: "ana@acme.com" } }] }];
+    if (u.pathname === "/crm/v3/objects/tasks") return { id: "t1" };
+    if (u.pathname === "/crm/v3/objects/notes") return { id: "n1" };
+    return [404, {}];
+  });
+  const r = await callTool("HubSpot", "log_followups", { eventName: "Creator Kitchen", items: [
+    { email: "Ana@acme.com", subject: "Book a meeting", body: "Wants the template", dueDate: "2027-02-19", gift: "Cookbook", giftCost: 40 },
+    { email: "nobody@x.com", subject: "Nurture" },
+    { email: "ana@acme.com", subject: "duplicate is dropped" },
+  ] });
+  assert.deepEqual(r.payload, { tasksCreated: 1, notesCreated: 1, missing: ["nobody@x.com"], errors: [] });
+  const task = calls.find((c) => c.url.pathname === "/crm/v3/objects/tasks");
+  assert.equal(task.body.properties.hs_task_subject, "Book a meeting (Creator Kitchen)");
+  assert.equal(task.body.properties.hs_timestamp, "2027-02-19T17:00:00.000Z");
+  assert.equal(task.body.associations[0].to.id, "1");
+  await assert.rejects(callTool("HubSpot", "log_followups", { eventName: "X", items: [{ email: "a@b.com", subject: "s", dueDate: "tomorrow" }] }), (e) => /dueDate/.test(e.message));
+});
+
+test("Salesforce log_followups creates Tasks on Contacts or Leads", async () => {
+  process.env.SF_INSTANCE_URL = "https://acme.my.salesforce.com";
+  process.env.SF_ACCESS_TOKEN = "tok";
+  mockFetch((u, init, body) => {
+    if (u.pathname.endsWith("/query")) {
+      const q = u.searchParams.get("q");
+      if (/FROM Contact/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "003A", Email: "ana@acme.com" }] };
+      if (/FROM Lead/.test(q)) return { totalSize: 1, done: true, records: [{ Id: "00QB", Email: "ben@b.com" }] };
+    }
+    if (u.pathname.endsWith("/composite/sobjects")) return [200, body.records.map(() => ({ success: true }))];
+    return [404, {}];
+  });
+  const r = await callTool("Salesforce - Beta", "log_followups", { eventName: "Creator Kitchen", items: [
+    { email: "ana@acme.com", subject: "Book a meeting", gift: "Apron", giftCost: 30 }, { email: "ben@b.com", subject: "Renewal: at risk", dueDate: "2027-02-20" }, { email: "zed@z.com", subject: "Nurture" } ] });
+  assert.deepEqual(r.payload, { tasksCreated: 2, missing: ["zed@z.com"], errors: [] });
+  const post = calls.find((c) => c.url.pathname.endsWith("/composite/sobjects"));
+  assert.deepEqual(post.body.records.map((x) => x.WhoId), ["003A", "00QB"]);
+  assert.match(post.body.records[0].Description, /Gift: Apron \(\$30\)/);
+  assert.equal(post.body.records[1].ActivityDate, "2027-02-20");
 });

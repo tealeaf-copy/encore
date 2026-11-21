@@ -60,3 +60,20 @@ test("events SSE fires on write", async () => {
   ac.abort();
   assert.deepEqual(got[0], { path: "canvas/main", parent: "canvas" });
 });
+
+test("audit log is append-only and stamped by the server", async () => {
+  let r = await j("POST", "/api/audit", { eventId: "ev1", what: "approved the plan as Event lead" });
+  assert.equal(r.status, 200);
+  r = await j("GET", "/api/audit?eventId=ev1");
+  assert.equal(r.body.entries.length, 1);
+  assert.equal(r.body.entries[0].who, "Unverified user");
+  assert.equal(r.body.entries[0].verified, false);
+  for (const [m, body] of [["PUT", { what: "x" }], ["PATCH", { what: "x" }], ["DELETE", undefined]]) {
+    r = await j(m, "/api/db/doc?path=audit/anything", body);
+    assert.equal(r.status, 403, m);
+  }
+  r = await j("POST", "/api/db/collection?path=audit", { what: "forged" });
+  assert.equal(r.status, 403);
+  r = await j("GET", "/api/me");
+  assert.equal(r.body.verified, false);
+});

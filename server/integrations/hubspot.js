@@ -1,6 +1,6 @@
 // HubSpot: CRM search, event attendee sync (contacts + marketing event states)
 // and event pipeline (deals associated with attendees). Private app token.
-import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, validateFollowups, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA } from "./crm-common.js";
 
 const API = "https://api.hubapi.com";
 const OBJECT_TYPES = ["contacts", "companies", "deals"];
@@ -176,6 +176,43 @@ async function eventPipeline(input) {
   return out;
 }
 
+// HubSpot-defined association type ids: task -> contact, note -> contact.
+const TASK_TO_CONTACT = 204, NOTE_TO_CONTACT = 202;
+
+async function logFollowups(input) {
+  const { eventName, items } = validateFollowups(input, "HubSpot");
+  const errors = [], ids = new Map();
+  for (const part of chunk(items, 100)) {
+    try {
+      const { json } = await hs("POST", "/crm/v3/objects/contacts/batch/read", { idProperty: "email", properties: ["email"], inputs: part.map((i) => ({ id: i.email })) }, { allow: [207] });
+      for (const c of json?.results || []) ids.set(String(c.properties?.email || "").toLowerCase(), c.id);
+    } catch (e) { errors.push(`contacts: ${errText(e)}`); }
+  }
+  let tasksCreated = 0, notesCreated = 0;
+  const missing = items.filter((i) => !ids.has(i.email)).map((i) => i.email);
+  for (const it of items) {
+    const id = ids.get(it.email); if (!id) continue;
+    const due = new Date((it.dueDate || new Date().toISOString().slice(0, 10)) + "T17:00:00Z").toISOString();
+    try {
+      await hs("POST", "/crm/v3/objects/tasks", {
+        properties: { hs_timestamp: due, hs_task_subject: `${it.subject} (${eventName})`.slice(0, 250), hs_task_body: it.body, hs_task_status: "NOT_STARTED", hs_task_priority: "HIGH" },
+        associations: [{ to: { id }, types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: TASK_TO_CONTACT }] }],
+      });
+      tasksCreated++;
+    } catch (e) { errors.push(`task ${it.email}: ${errText(e)}`); }
+    if (it.gift || it.giftCost) {
+      try {
+        await hs("POST", "/crm/v3/objects/notes", {
+          properties: { hs_timestamp: new Date().toISOString(), hs_note_body: `Gift from ${eventName}: ${it.gift || "gift"}${it.giftCost ? ` ($${it.giftCost})` : ""}` },
+          associations: [{ to: { id }, types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: NOTE_TO_CONTACT }] }],
+        });
+        notesCreated++;
+      } catch (e) { errors.push(`note ${it.email}: ${errText(e)}`); }
+    }
+  }
+  return { tasksCreated, notesCreated, missing, errors };
+}
+
 export default function hubspot() {
   if (!process.env.HUBSPOT_TOKEN) return null;
   return {
@@ -215,6 +252,12 @@ export default function hubspot() {
         description: "Deals associated with these contacts that were created or changed stage in the date window.",
         inputSchema: PIPELINE_SCHEMA,
         run: eventPipeline,
+      },
+      {
+        name: "log_followups",
+        description: "Create a HubSpot task on each attendee's contact for their AE-approved next step, plus a note recording any gift and its cost.",
+        inputSchema: FOLLOWUPS_SCHEMA,
+        run: logFollowups,
       },
     ],
   };

@@ -2,6 +2,14 @@
  * uses (window.claude.use(name)) against this server. Loaded before the page's
  * own script, so window.claude exists synchronously. */
 window.ENCORE_SERVER = true; // tells the page it runs on this server (guest links use location.origin)
+// Who's signed in (named team members only), so approvals and the audit log record a real person.
+if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash || "")) {
+  fetch("/api/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((m) => {
+    if (!m?.verified) return;
+    window.ENCORE_ME = m;
+    if (typeof window.renderStep === "function" && location.hash === "#studio") window.renderStep();
+  }).catch(() => {});
+}
 (function () {
   "use strict";
 
@@ -292,7 +300,7 @@ window.ENCORE_SERVER = true; // tells the page it runs on this server (guest lin
       }
       return uid;
     },
-    async me() { return { id: user.id(), name: "" }; },
+    async me() { return { id: user.id(), name: window.ENCORE_ME?.name || "" }; },
     isOwner() { return true; },
     canEdit() { return true; },
     async profiles() { return {}; },

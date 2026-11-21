@@ -64,3 +64,43 @@ export const PIPELINE_SCHEMA = {
   },
   required: ["emails", "since", "until"],
 };
+
+export const FOLLOWUPS_SCHEMA = {
+  type: "object",
+  properties: {
+    eventName: { type: "string" },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          email: { type: "string" },
+          subject: { type: "string", description: "Task subject, e.g. the next step" },
+          body: { type: "string", description: "What the guest said, the next step, and the approved follow-up" },
+          dueDate: { type: "string", description: "YYYY-MM-DD" },
+          giftCost: { type: "number" },
+          gift: { type: "string" },
+        },
+        required: ["email", "subject"],
+      },
+    },
+  },
+  required: ["eventName", "items"],
+};
+
+/** Validate log_followups input: one item per email, subject and email required, dates checked. */
+export function validateFollowups(input, who) {
+  const eventName = String(input?.eventName || "").trim();
+  if (!eventName) throw bad(who, "eventName is required");
+  if (!Array.isArray(input.items)) throw bad(who, "items must be an array");
+  const seen = new Set(), items = [];
+  for (const it of input.items) {
+    const email = String(it?.email || "").trim().toLowerCase();
+    const subject = String(it?.subject || "").trim().slice(0, 250);
+    if (!email || !subject || seen.has(email)) continue;
+    if (it.dueDate && !isDate(it.dueDate)) throw bad(who, `item ${email}: dueDate must be YYYY-MM-DD`);
+    seen.add(email);
+    items.push({ email, subject, body: String(it.body || "").slice(0, 30000), dueDate: it.dueDate || null, gift: String(it.gift || ""), giftCost: +it.giftCost || 0 });
+  }
+  return { eventName, items };
+}

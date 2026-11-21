@@ -106,3 +106,17 @@ Any host that runs a Node 20 container and gives you a persistent disk works. Mo
 - **Railway:** deploy from the repo (Dockerfile), attach a Volume at `/app/data`, set the variables.
 
 Put the app behind HTTPS (all three do this for you) and set `APP_PASSWORD` before sharing the URL. The scheduled job runs inside the web process, so keep at least one instance always on.
+
+## Named team members and the audit log
+
+Set `ENCORE_USERS` so approvals and the decision log record a real person:
+
+```
+ENCORE_USERS="Maya Chen|maya@acme.com|Event lead+Account execs;Sam Lee|sam@acme.com|Exec sponsor"
+```
+
+Each person signs in with their work email plus the team password (`APP_PASSWORD`). Plan approvals are limited to the roles listed for each person, and reset when the plan's cost or committed spend moves more than 5%. Every approval, spend change and report correction is also written to an append-only audit log (`GET /api/audit?eventId=…`); the server stamps who and when, and the log can't be edited through the data API.
+
+## CRM write-back
+
+With HubSpot or Salesforce connected, "Log approved next steps" in Measure creates a task on each attendee's contact (HubSpot task, Salesforce Task) for their AE-approved next step, and records any gift and its cost.

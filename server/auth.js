@@ -7,6 +7,31 @@ const MAX_AGE_S = 60 * 60 * 24 * 30;
 export function authEnabled() {
   return !!process.env.APP_PASSWORD;
 }
+
+/**
+ * Named team members, so approvals and the audit log record a real person.
+ * ENCORE_USERS="Maya Chen|maya@acme.com|Event lead+Account execs;Sam Lee|sam@acme.com|Exec sponsor"
+ * Each person signs in with their work email plus the team password (APP_PASSWORD).
+ */
+export function users() {
+  return String(process.env.ENCORE_USERS || "").split(";").map((x) => x.trim()).filter(Boolean).map((x) => {
+    const [name, email, roles = ""] = x.split("|").map((y) => y.trim());
+    return { name, email: String(email || "").toLowerCase(), roles: roles.split("+").map((r) => r.trim()).filter(Boolean) };
+  }).filter((u) => u.name && u.email);
+}
+const findUser = (email) => users().find((u) => u.email === String(email || "").trim().toLowerCase()) || null;
+function sign(email) {
+  const secret = process.env.SESSION_SECRET || process.env.APP_PASSWORD;
+  return createHmac("sha256", secret).update("encore-user:" + email + ":" + process.env.APP_PASSWORD).digest("hex");
+}
+/** The signed-in team member, or null (no users configured, or not signed in as one). */
+export function currentUser(req) {
+  if (!authEnabled() || !users().length) return null;
+  const c = readCookie(req, COOKIE), i = c.lastIndexOf(".");
+  if (i < 1) return null;
+  const email = c.slice(0, i);
+  return same(c.slice(i + 1), sign(email)) ? findUser(email) : null;
+}
 function token() {
   const secret = process.env.SESSION_SECRET || process.env.APP_PASSWORD;
   return createHmac("sha256", secret).update("encore-session:" + process.env.APP_PASSWORD).digest("hex");
@@ -24,6 +49,7 @@ function readCookie(req, name) {
 }
 export function isAuthed(req) {
   if (!authEnabled()) return true;
+  if (users().length) return !!currentUser(req);
   const c = readCookie(req, COOKIE);
   return !!c && same(c, token());
 }
@@ -34,8 +60,14 @@ export function loginHandler(req, res) {
   if (!same(password, process.env.APP_PASSWORD)) {
     return isForm ? res.redirect(303, "/login?error=1") : res.status(401).json({ code: "not_granted", message: "Wrong password." });
   }
+  let value = token();
+  if (users().length) {
+    const u = findUser(req.body?.email);
+    if (!u) return isForm ? res.redirect(303, "/login?error=2") : res.status(401).json({ code: "not_granted", message: "That email isn't on the team list." });
+    value = `${u.email}.${sign(u.email)}`;
+  }
   const secure = req.secure ? "; Secure" : "";
-  res.setHeader("Set-Cookie", `${COOKIE}=${token()}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
+  res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
   return isForm ? res.redirect(303, "/") : res.json({ ok: true });
 }
 export function logoutHandler(req, res) {
@@ -61,7 +93,8 @@ export function loginPage() {
 </style></head><body>
 <form method="post" action="/api/login">
   <h1>encore</h1>
-  <script>if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
+  <script>if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
+  ${users().length ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" required>` : ""}
   <input type="password" name="password" placeholder="Team password" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
 </form></body></html>`;

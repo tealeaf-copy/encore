@@ -1,7 +1,7 @@
 // Salesforce: read-only SOQL, event attendee sync (Campaign + CampaignMembers,
 // Leads for unknown emails) and event pipeline (Opportunities). REST API with
 // either a ready access token or the OAuth 2.0 client-credentials flow.
-import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA } from "./crm-common.js";
+import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, FOLLOWUPS_SCHEMA } from "./crm-common.js";
 
 const STATUS_LABELS = ["Invited", "Registered", "Attended", "Declined"];
 const RESPONDED = new Set(["Registered", "Attended"]);
@@ -125,6 +125,24 @@ async function lookupPeople(emails) {
   return { contacts, leads };
 }
 
+async function logFollowups(input) {
+  const { eventName, items } = validateFollowups(input, "Salesforce");
+  const { contacts, leads } = await lookupPeople(items.map((i) => i.email));
+  const errors = [], missing = [], records = [];
+  for (const it of items) {
+    const who = contacts.get(it.email) || leads.get(it.email);
+    if (!who) { missing.push(it.email); continue; }
+    const desc = [it.body, it.gift || it.giftCost ? `Gift: ${it.gift || "gift"}${it.giftCost ? ` ($${it.giftCost})` : ""}` : ""].filter(Boolean).join("\n\n");
+    records.push({ attributes: { type: "Task" }, WhoId: who.Id, Subject: `${it.subject} (${eventName})`.slice(0, 255), Description: desc.slice(0, 32000), ActivityDate: it.dueDate || new Date().toISOString().slice(0, 10), Status: "Not Started", Priority: "High" });
+  }
+  let tasksCreated = 0;
+  if (records.length) {
+    const res = await collection("POST", records);
+    res.forEach((r, i) => { if (r.success) tasksCreated++; else errors.push(`task ${records[i].WhoId}: ${collErrors(r)}`); });
+  }
+  return { tasksCreated, missing, errors };
+}
+
 async function upsertEventAttendees(input) {
   const { eventName, eventDate, members } = validateMembers(input, "Salesforce");
   const errors = [];
@@ -244,6 +262,12 @@ export default function salesforce() {
         description: "Opportunities on these contacts' accounts or contact roles, created or changed stage in the date window.",
         inputSchema: PIPELINE_SCHEMA,
         run: eventPipeline,
+      },
+      {
+        name: "log_followups",
+        description: "Create a Salesforce Task on each attendee's Contact or Lead for their AE-approved next step, with any gift and its cost in the description.",
+        inputSchema: FOLLOWUPS_SCHEMA,
+        run: logFollowups,
       },
     ],
   };

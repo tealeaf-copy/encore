@@ -507,6 +507,49 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .panel{border:2px solid var(--line)}
 
 [hidden]{display:none!important}
+.peerbar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:16px;border-radius:22px;background:var(--surface);box-shadow:var(--puff)}
+.peerbar input{margin:6px 0 4px}
+.by{font-size:.74rem;font-weight:800;color:var(--cobalt)}
+.by.light{color:#fff;opacity:.9}.by.light a{color:#fff}
+
+.guest.wide{max-width:1200px}
+.ptabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+[data-edit][contenteditable="true"]{outline:2px dashed color-mix(in srgb,var(--cobalt) 45%,transparent);outline-offset:3px;border-radius:6px;min-width:2em;display:inline-block}
+.who-sec{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:var(--bg)}
+.whoP{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}
+.whoP canvas{width:64px;height:64px;border-radius:50%}
+.whoP > div{display:flex;flex-direction:column;gap:4px}
+.logowall{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.logo-tile{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:14px;background:var(--surface);box-shadow:inset 0 -2px 0 rgba(27,23,64,.06);min-width:0}
+.logo-tile img{width:28px;height:28px;border-radius:8px;object-fit:contain}
+.logo-tile img + .mono{display:none}
+.logo-tile .mono{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:.78rem;flex:none}
+.logo-tile b{font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.people{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))}
+.person{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:center;padding:8px;border-radius:14px;background:var(--surface)}
+.person canvas{width:44px;height:44px;border-radius:50%}
+.person > div{display:flex;flex-direction:column;min-width:0}
+.plandoc{display:flex;flex-direction:column;gap:18px}
+.plansec{display:flex;flex-direction:column;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.plansec h3{font-size:1.1rem}
+.plannote{padding:10px 12px;border-radius:12px;background:#FFF0C2;font-size:.9rem}
+.planedit{min-height:60px}
+.roadmap{display:flex;flex-direction:column;gap:18px}
+.rmhead{display:flex;gap:16px;align-items:center;padding:22px;border-radius:24px;background:linear-gradient(135deg,var(--b1),color-mix(in srgb,var(--b1) 70%,#000));color:var(--b1ink)}
+.rmhead h2{color:inherit;font-size:1.8rem}.rmhead .eyebrow,.rmhead .note{color:inherit;opacity:.85}
+.rmhead img{height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:12px;padding:6px 10px}
+.rmgrid{display:grid;gap:14px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.rmq{display:flex;flex-direction:column;gap:10px}
+.rmql{font-family:var(--f-display);font-size:1.1rem;color:var(--b1)}
+.rmcard{padding:14px;border-radius:20px;background:var(--surface);box-shadow:var(--puff);display:flex;flex-direction:column;gap:6px}
+.rmcard h3{font-size:1.05rem}.rmcard p{font-size:.88rem}
+.rmcard .btn{align-self:flex-start;margin-top:4px}
+.shimgs{display:grid;gap:12px;grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}
+.pa{display:flex;flex-direction:column;gap:8px}
+.salescopy{padding:14px;border-radius:18px;background:color-mix(in srgb,var(--b2) 18%,#fff)}
+.shimgs canvas{width:100%;height:auto;border-radius:12px;display:block}
+@media (max-width:900px){.rmgrid{grid-template-columns:minmax(0,1fr)}.shimgs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .facts span{display:flex;flex-direction:column;padding:8px 14px;border-radius:16px;background:var(--surface);box-shadow:var(--puff);min-width:110px}
 .facts small{font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
@@ -993,6 +1036,8 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.collection("feedback").onSnapshot(snap=>{ allFeedback=snap.docs.map(d=>({id:d.id,...d.data()})); refreshAll() });
   db.doc("brands/main").onSnapshot(sn=>{ if(sn.exists){ brandProfile=sn.data(); syncLogo(); if(location.hash==="#brand") renderBrand(); if(step===1&&!isGuestRoute()) renderStep() } });
   db.doc("canvas/main").onSnapshot(sn=>{ if(sn.exists){ canvasData=sn.data(); if(location.hash==="#canvas"||!location.hash) renderCanvas() } });
+  db.collection("interest").onSnapshot(sn=>{ allInterest=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#canvas") renderCanvas() });
+  db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
   db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
   db.collection("rsvps").onSnapshot(snap=>{ allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
 })();
@@ -1135,7 +1180,8 @@ ${g.map(x=>`${x.i}: ${x.name}, ${x.title}, ${x.company}, ${x.owner||"no owner"},
 Respect word limits. Reply with only JSON: {"sheets":[{"guestIndex":integer,"oneLiner":"who they are, max 12 words","stage":"Prospect|Open opp|Customer|Churn risk|unknown","news":"recent company news, max 14 words","history":"our history with them, max 14 words","opener":"a natural first line, max 15 words","ask":["questions to ask, max 8 words"] (2),"avoid":"max 8 words","introTo":"who at the event to introduce them to, max 10 words","goal":"our goal with them tonight, max 10 words"}],"roomPlan":"seating or flow tip, max 20 words"}`}},
   pitch:{label:"Proposal",av:"PP",uses:["playbook"],ok:o=>!!o?.title&&Array.isArray(o?.outcomes),sum:()=>"Proposal ready",
     prompt:d=>{ const P=d.produce, S=curStrategy(), V=venuePicked(d), pr=d.partners?.partners?.[0];
-      return `Write an internal proposal that a field marketer sends to their CMO and sales leadership to get this event approved. Plain, confident, specific, in full sentences. Every number must come from the plan below; if something is unknown, say "to confirm". The budget total must equal the sum of the budget lines and match everywhere it appears. Always give 3 risks with mitigations and at least 4 timeline steps.
+      return `${editor(d)}
+Write an internal proposal that a field marketer sends to their CMO and sales leadership to get this event approved. Plain, confident, specific, in full sentences. Every number must come from the plan below; if something is unknown, say "to confirm". The budget total must equal the sum of the budget lines and match everywhere it appears. Always give 3 risks with mitigations and at least 4 timeline steps.
 ${brief(d)}
 STRATEGY THESIS: ${S?.headline||"none"}
 VALIDATION: ${d.validation?`conviction ${d.validation.conviction}/100. ${d.validation.verdict}`:"not run"}; teaser replies ${d.signals.interested}/${d.signals.sent}, calls ${d.signals.callsYes}/${d.signals.calls}.
@@ -1144,8 +1190,9 @@ AGENDA: ${(d.copy?.agenda||[]).map(a=>a.time+" "+a.item).join("; ")||"to confirm
 BUDGET LINES: ${(P?.budget||[]).map(b=>`${b.line} $${b.amount}`).join("; ")||"to confirm"}
 CO-HOST: ${pr?`${pr.name}, covers ${pr.split}%`:"none"}
 MEDIA: ${(d.media?.moments||[]).map(m=>m.name).join(", ")||"none"}
-GUESTS: ${d.guests.length} on the list, ${d.guests.filter(g=>g.status==="Going").length} going.
-Reply with only JSON: {"title":"","oneLiner":"max 22 words","whyNow":"max 45 words","audience":"max 25 words","experience":"max 50 words","budget":{"total":number,"perGuest":number,"coHostSaves":number,"lines":[{"line":"","amount":number}]},"outcomes":[{"metric":"max 5 words","target":"max 6 words"}] (3),"risks":[{"risk":"max 10 words","mitigation":"max 14 words"}] (3),"timeline":[{"when":"","what":"max 8 words"}] (4),"ask":"the decision you need and by when, max 25 words"}`}},
+GUESTS: ${d.guests.length} on the list, ${d.guests.filter(g=>g.status==="Going").length} going: ${d.guests.slice(0,20).map(g=>`${g.name} (${g.title}, ${g.company}${g.value?`, open deal ${money(g.value)}`:""})`).join("; ")}.
+STRATEGY PLAYS AND WHAT TO SKIP: ${(curStrategy()?.plays||[]).map(p=>p.name+" ("+p.format+")").join("; ")} | skip: ${(curStrategy()?.notFit||[]).map(n=>n.idea).join("; ")}
+Reply with only JSON: {"title":"","oneLiner":"max 22 words","whyNow":"max 45 words","audience":"max 25 words","experience":"max 50 words","budget":{"total":number,"perGuest":number,"coHostSaves":number,"lines":[{"line":"","amount":number}]},"outcomes":[{"metric":"max 5 words","target":"max 6 words"}] (3),"risks":[{"risk":"max 10 words","mitigation":"max 14 words"}] (3),"timeline":[{"when":"","what":"max 8 words"}] (4),"ask":"the decision you need and by when, max 25 words","impact":{"pipelineLow":number,"pipelineHigh":number,"deals":"e.g. 2 to 4","rationale":"how you got the range, using the guest list and deal sizes, max 30 words"},"whyThis":"why this playbook beats the alternatives for these buyers, max 35 words","alternatives":[{"option":"","whyNot":"max 14 words"}] (2-3),"budgetRange":{"low":number,"high":number,"assumptions":"max 20 words"},"salesCopy":{"subject":"","body":"the email an account exec sends a customer or prospect to invite them, 80-120 words, first person from the AE, in the brand voice, with [first name] and [personal reason] placeholders"}}`}},
   scout:{label:"Guest scout",av:"GS",uses:["crm","sfdc","email","docs","notes","calls","web"],ok:o=>Array.isArray(o?.contacts),sum:o=>`${o.contacts.length} contacts`,
     prompt:d=>`Build the actual invite list for this event, row by row: 12 to 15 people. Search the CRM, email, docs, notes and call recordings for real customers, open opportunities, prospects and partners who match the target audience. For each person, check that they live or work in ${d.city||"the event city"}: use their CRM address, email signature, LinkedIn location or company office found on the web. Mark the city check honestly: "verified" (evidence found), "likely" (company office there, person unconfirmed), "unverified" (no data) or "elsewhere" (they're based in another city; say where).
 If you can't find real people with the tools (or no tools are available), fill the list with clearly fictional sample contacts with realistic titles and companies, and set "sample": true on each. Never present invented people as real.
@@ -1210,7 +1257,7 @@ $("#autoBtn").onclick=autopilot;
 // ==================================================================
 // Routing
 // ==================================================================
-function isGuestRoute(){ return /^#(rsvp|survey|nominate)-/.test(location.hash) }
+function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap)/.test(location.hash) }
 function route(){
   const h=location.hash.slice(1);
   if(isGuestRoute()){
@@ -1981,7 +2028,7 @@ function applyOpps(d,text){ const rows=parseCSV(text), ev=d.date?new Date(d.date
     if(!newOpp&&!movedOpp&&ev) return; matched++;
     g.outcome=/won/i.test(stage)?"Closed won":"Opportunity"; g.value=amt; g.source=newOpp&&g.source==="Sourced"?"Sourced":"Influenced"; g.source==="Sourced"?src+=amt:infl+=amt });
   return {rows:rows.length,matched,infl,src} }
-function crmOn(){ const k=["crm","sfdc"].find(k=>srcState[k]==="on"); return k&&CONNECT[k] }
+function crmOn(){ if(!window.ENCORE_SERVER) return null; const k=["crm","sfdc"].find(k=>srcState[k]==="on"); return k&&CONNECT[k] }
 function crmMembers(d){ return d.guests.filter(g=>crmStatus(g)&&g.email).map(g=>{ const [f,...l]=(g.name||"").split(" "); return {email:g.email,firstName:f||"",lastName:l.join(" "),company:g.company||"",title:g.title||"",status:crmStatus(g)} }) }
 function dealsCSV(deals){ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
   return ["Account,Amount,Stage,Created Date,Last Stage Change,Contact Email",...deals.map(x=>[x.company,x.amount,x.stage,x.createdate,x.lastStageChange,x.contactEmail].map(q).join(","))].join("\n") }
@@ -1995,6 +2042,54 @@ function importLeads(d,text){ const rows=parseCSV(text); let added=0,dupes=0;
     const owner=d.guests.find(g=>g.company&&g.company.toLowerCase()===company.toLowerCase()&&g.owner)?.owner||"Unassigned", tier=targets.has(company.toLowerCase())?"A":seniority(title);
     d.guests.push({name,title,company,email,owner,tier,status:"Attended",source:"Sourced",leadAt:Date.now(),outcome:"None yet",value:0,scanned:true}); added++ });
   return {added,dupes} }
+
+// Public event roadmap: share link, sign-ups, social images ----------------------
+let allInterest=[];
+const SOCIAL=[["linkedin","LinkedIn",1200,627],["x","X",1600,900],["ig","Instagram post",1080,1350],["story","Instagram story",1080,1920]];
+function publicItems(C){ return (C?.items||[]).filter(i=>i.public!==false&&i.audience!=="employees") }
+function rmYear(){ const Q=quarters(); return Q[0].y===Q[3].y?String(Q[0].y):`${Q[0].y}–${String(Q[3].y).slice(2)}` }
+function roadmapHTML(C,B,preview){ const Q=quarters(), its=publicItems(C), co=B?.company||C?.company||"Our";
+  return `<div class="roadmap" style="${brandStyle()}"><header class="rmhead">${B?.logo?`<img src="${B.logo}" alt="${esc(co)} logo">`:""}<div><small class="eyebrow">${esc(co)} events · ${rmYear()}</small><h2>Where to meet us this year</h2><p class="note">Small rooms, good conversations. Request an invite to anything that fits.</p></div></header>
+    <div class="rmgrid">${Q.map((q,qi)=>`<div class="rmq"><b class="rmql">${q.label}</b>${its.filter(i=>i.quarter===qi).map(i=>{ const n=allInterest.filter(x=>x.item===i.name).length; return `<article class="rmcard"><span class="tag">${esc(i.format)}</span><h3>${esc(i.name)}</h3><p>${esc(i.concept||"")}</p><span class="note">${esc([i.city,i.date&&fmtDate(i.date),i.size].filter(Boolean).join(" · "))}</span>${preview?(n?`<span class="pchip good">${n} request${n>1?"s":""}</span>`:""):`<button class="btn primary sm" data-req="${esc(i.name)}">Request an invite</button>`}</article>` }).join("")||`<p class="note">More soon.</p>`}</div>`).join("")}</div></div>` }
+function drawRoadmapImage(cvs,C,B){ const x=cvs.getContext("2d"),W=cvs.width,H=cvs.height,[c1,c2]=B?.colors?.length===2?B.colors:(draft.brandColors||["#3B5BFF","#FFC93C"]),ink=inkOn(c1),pad=W*.06,tall=H>W;
+  const g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,c1); g.addColorStop(1,shade(c1,-.35)); x.fillStyle=g; x.fillRect(0,0,W,H);
+  x.fillStyle=c2; x.globalAlpha=.9; x.beginPath(); x.arc(W*.92,H*.08,Math.min(W,H)*.18,0,7); x.fill(); x.globalAlpha=1;
+  let y=pad; if(logoImg?.complete&&logoImg.naturalWidth){ const lh=Math.min(W,H)*.08,lw=lh*logoImg.naturalWidth/logoImg.naturalHeight; x.fillStyle="#fff"; x.beginPath(); x.roundRect?x.roundRect(pad-lh*.25,y-lh*.2,lw+lh*.5,lh*1.4,lh*.35):x.rect(pad,y,lw,lh); x.fill(); x.drawImage(logoImg,pad,y,lw,lh); y+=lh*1.6 }
+  const F=s=>`800 ${s}px "Plus Jakarta Sans", Inter, sans-serif`, f=Math.min(W,H);
+  x.fillStyle=ink; x.textBaseline="top"; x.font=`600 ${f*.035}px Inter, sans-serif`; x.globalAlpha=.85; x.fillText(`${(B?.company||C?.company||"").toUpperCase()} EVENTS · ${rmYear()}`,pad,y); x.globalAlpha=1; y+=f*.06;
+  x.font=F(f*.075); x.fillText("Where to meet us",pad,y); y+=f*.1;
+  const Q=quarters(), its=publicItems(C), cols=tall?2:4, rowsN=tall?2:1, gap=pad*.4, cw=(W-pad*2-(cols-1)*gap)/cols, cellH=(H-y-pad*2)/rowsN, bh=f*(tall?.1:.105), lab=f*.05;
+  Q.forEach((q,qi)=>{ const cx=pad+(qi%cols)*(cw+gap); let cy=y+Math.floor(qi/cols)*cellH; const fit=Math.max(1,Math.floor((cellH-lab)/(bh+f*.02)));
+    x.fillStyle=c2; x.font=F(f*.032); x.fillText(q.label,cx,cy); cy+=lab;
+    its.filter(i=>i.quarter===qi).slice(0,Math.min(fit,4)).forEach(i=>{ x.fillStyle="rgba(255,255,255,.14)"; x.beginPath(); x.roundRect?x.roundRect(cx,cy,cw,bh,f*.02):x.rect(cx,cy,cw,bh); x.fill();
+      x.fillStyle=ink; x.font=F(f*.03); let nm=i.name; while(x.measureText(nm).width>cw-f*.04&&nm.length>4) nm=nm.slice(0,-2); x.fillText(nm===i.name?nm:nm+"…",cx+f*.02,cy+f*.018);
+      x.globalAlpha=.8; x.font=`500 ${f*.022}px Inter, sans-serif`; x.fillText([i.format,i.city].filter(Boolean).join(" · ").slice(0,40),cx+f*.02,cy+f*(tall?.052:.06)); x.globalAlpha=1; cy+=bh+f*.02 }) });
+  x.fillStyle=c2; x.font=F(f*.032); x.textBaseline="bottom"; x.fillText("Request an invite →",pad,H-pad*.7) }
+function socialCaption(C,B){ const its=publicItems(C).slice(0,5); return `Where to find ${B?.company||"us"} this year:\n\n${its.map(i=>`• ${i.name}${i.city?` (${i.city})`:""}`).join("\n")}\n\nSmall rooms, good conversations. Request an invite: ${ART_URL}#roadmap` }
+function openShare(){ const h=$("#shareHost"); if(!h) return; const C=cv(), B=brandProfile;
+  h.innerHTML=`<div class="pbsheet" role="dialog" aria-label="Share your event roadmap"><div class="pbinner" style="width:min(1100px,100%)">
+    <div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Share your roadmap</small><h3>What customers, prospects and partners will see</h3></div><button class="btn ghost sm" id="shClose">Close</button></div>
+    <div class="btns"><button class="btn primary sm" id="shLink">Copy public link</button><button class="btn sm" id="shCap">Copy caption</button><span class="note">Employee events and anything you switch off stay private. Budgets and goals never show.</span></div>
+    <div class="shimgs">${SOCIAL.map(([k,l,w,hh])=>`<figure><canvas width="${w}" height="${hh}" data-soc="${k}"></canvas><figcaption class="btns" style="justify-content:space-between"><span class="note">${l} · ${w}×${hh}</span>${downloads?`<button class="btn ghost sm" data-socdl="${k}">Download</button>`:""}</figcaption></figure>`).join("")}</div>
+    <div><small class="eyebrow">Show on the roadmap</small><div class="chips" style="margin-top:6px">${(C?.items||[]).map((i,ix)=>`<label class="chip"><input type="checkbox" data-pub="${ix}" ${i.public!==false&&i.audience!=="employees"?"checked":""} ${i.audience==="employees"?"disabled":""}> ${esc(i.name)}</label>`).join("")}</div></div>
+    ${roadmapHTML(C,B,true)}</div></div>`;
+  $$("canvas[data-soc]",h).forEach(c=>drawRoadmapImage(c,C,B));
+  $("#shClose").onclick=()=>h.innerHTML=""; $("#shLink").onclick=()=>copyTxt(`${ART_URL}#roadmap`); $("#shCap").onclick=()=>copyTxt(socialCaption(C,B));
+  $$("[data-pub]",h).forEach(cb=>cb.onchange=()=>{ C.items[+cb.dataset.pub].public=cb.checked; C.example=false; saveCanvas(); openShare() });
+  $$("[data-socdl]",h).forEach(b=>b.onclick=()=>{ const c=$(`canvas[data-soc="${b.dataset.socdl}"]`,h); c.toBlob(async bl=>{ try{ await downloads.save({filename:`${slug(B?.company||"events")}-roadmap-${b.dataset.socdl}.png`,data:bl}) }catch{ toast("Download cancelled") } },"image/png") });
+}
+async function renderRoadmapPublic(host){ let C=canvasData, B=brandProfile;
+  if(db){ try{ const a=await db.doc("canvas/main").get(); if(a.exists) C=a.data() }catch{} try{ const b=await db.doc("brands/main").get(); if(b.exists){ B=b.data(); brandProfile=brandProfile||B; syncLogo() } }catch{} }
+  C=C||(EXAMPLE_CANVAS);
+  host.innerHTML=`<div style="padding-block:8px 40px">${roadmapHTML(C,B,false)}<div id="reqHost"></div><p class="note" style="text-align:center;margin-top:18px">Powered by Encore</p></div>`;
+  $$("[data-req]",host).forEach(b=>b.onclick=()=>{ const item=b.dataset.req, r=$("#reqHost");
+    r.innerHTML=`<div class="pbsheet"><div class="pbinner"><div class="btns" style="justify-content:space-between"><h3>Request an invite: ${esc(item)}</h3><button class="btn ghost sm" id="rqX">Close</button></div>
+      <div class="row"><label class="f">Name<input id="rq-n" autocomplete="name"></label><label class="f">Work email<input id="rq-e" type="email" autocomplete="email"></label><label class="f">Company<input id="rq-c" autocomplete="organization"></label><label class="f">Title<input id="rq-t"></label></div>
+      <div class="btns"><button class="btn primary" id="rqGo">Request invite</button></div></div></div>`;
+    $("#rqX").onclick=()=>r.innerHTML="";
+    $("#rqGo").onclick=async()=>{ const n=$("#rq-n").value.trim(), e=$("#rq-e").value.trim(); if(!n||!/@/.test(e)){ toast("Add your name and work email."); return }
+      try{ await db.collection("interest").add({item,name:n,email:e,company:$("#rq-c").value.trim(),title:$("#rq-t").value.trim(),createdAt:Date.now()}); r.innerHTML=`<div class="pbsheet"><div class="pbinner"><h3>Thanks, ${esc(n.split(" ")[0])}.</h3><p class="note">The team will reach out with details for ${esc(item)}.</p><div class="btns"><button class="btn sm" id="rqX2">Close</button></div></div></div>`; $("#rqX2").onclick=()=>r.innerHTML="" }
+      catch(err){ toast("Couldn't send: "+(err?.message||"try again")) } } }) }
 
 // Chief-of-staff coach ----------------------------------------------------
 function nextAction(){ const d=draft;
@@ -2031,27 +2126,102 @@ async function setDate(v){ const d=draft; d.date=v; d.example=false; renderStep(
 
 // Proposal ------------------------------------------------------------
 function pitchText(P){ return [`# ${P.title}`,P.oneLiner,"",`## Why now`,P.whyNow,"",`## Who`,P.audience,"",`## The experience`,P.experience,"",`## Budget`,`Total ${money(P.budget?.total)} (${money(P.budget?.perGuest)} per guest)${P.budget?.coHostSaves?`, co-host saves ${money(P.budget.coHostSaves)}`:""}`,...(P.budget?.lines||[]).map(l=>`- ${l.line}: ${money(l.amount)}`),"",`## What success looks like`,...(P.outcomes||[]).map(o=>`- ${o.metric}: ${o.target}`),"",`## Risks`,...(P.risks||[]).map(r=>`- ${r.risk}. ${r.mitigation}`),"",`## Timeline`,...(P.timeline||[]).map(t=>`- ${t.when}: ${t.what}`),"",`## The ask`,P.ask].join("\n") }
+// Proposal (editable one-pager) + full execution plan ------------------------
+let pitchTab="one", pitchEditing=false;
+function pget(o,path){ return path.split(".").reduce((a,k)=>a==null?a:a[k],o) }
+function pset(o,path,v){ const ks=path.split("."); let x=o; ks.slice(0,-1).forEach(k=>{ x=x[k]=x[k]??{} }); x[ks.at(-1)]=v }
+function ed(path,tag="span",cls=""){ const v=pget(draft.pitch,path)??""; return `<${tag} class="${cls}" data-edit="${path}" ${pitchEditing?'contenteditable="true"':""}>${esc(v)}</${tag}>` }
+function domainOf(g){ const m=/@([^@\s]+)$/.exec(g.email||""); return m&&!/gmail|yahoo|outlook|hotmail|icloud|example/.test(m[1])?m[1]:"" }
+function logoTile(co,dom){ const hue=[...co].reduce((a,c)=>a+c.charCodeAt(0),0)%360, ini=co.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  return `<div class="logo-tile" title="${esc(co)}">${window.ENCORE_SERVER&&dom?`<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(dom)}&sz=64" alt="" onerror="this.remove()">`:""}<span class="mono" style="background:hsl(${hue} 70% 92%);color:hsl(${hue} 60% 32%)">${esc(ini)}</span><b>${esc(co)}</b></div>` }
+function whoHTML(d){
+  const X=d.intel||(d.example?EXAMPLE_OUT.intel:null), people=[...d.guests.filter(g=>g.status!=="Declined"),...((out("scout")?.contacts)||[]).filter(c=>!d.guests.some(g=>g.name===c.name)).map(c=>({...c,fromScout:true}))];
+  const cos=[]; people.forEach(p=>{ if(p.company&&!cos.some(c=>c.co===p.company)) cos.push({co:p.company,dom:domainOf(p)}) });
+  const rel=k=>people.filter(p=>(p.relationship||"").startsWith(k)||(k==="Customer"&&p.tier==="A"&&!p.relationship)).length;
+  return `<section class="who-sec"><small class="eyebrow">Who we're bringing together</small>
+    <p class="big">${esc(d.headcount)} seats · ${cos.length} companies${rel("Open")?` · ${rel("Open")} open deals`:""}${rel("Customer")?` · ${rel("Customer")} customers`:""}</p>
+    ${X?`<div class="whoP"><canvas width="120" height="120" data-av="${esc(X.name||X.archetype)}"></canvas><div><b>${esc(X.archetype||"")}</b><span class="note">${esc(X.name||"")} · ${esc(X.tagline||"")}</span><div class="chips">${(X.lightsUp||[]).slice(0,3).map(c=>`<span class="pchip good">${esc(c.t||c)}</span>`).join("")}${(X.drains||[]).slice(0,2).map(c=>`<span class="pchip bad">${esc(c.t||c)}</span>`).join("")}</div></div></div>`:""}
+    ${cos.length?`<div class="logowall">${cos.slice(0,16).map(c=>logoTile(c.co,c.dom)).join("")}</div>`:""}
+    ${people.length?`<div class="people">${people.slice(0,8).map(p=>`<div class="person"><canvas width="96" height="96" data-av="${esc(p.name)}"></canvas><div><b>${esc(p.name)}</b><span class="note">${esc(p.title||"")} · ${esc(p.company||"")}</span><span class="note">${esc(p.why||p.relationship||(p.owner?`Invited by ${p.owner}`:""))}</span></div></div>`).join("")}</div>`:`<p class="note">Build the guest list in step 6 to show who's coming.</p>`}</section>`;
+}
+function actionableHTML(d,P,tot){
+  const inv=d.guests.filter(g=>g.status!=="Declined"), I=P.impact||{}, BR=P.budgetRange||{}, lines=(out("produce")?.budget||[]), roi=v=>tot?(v/tot).toFixed(1)+"x":"–", SC=P.salesCopy||{}, nInv=(out("outreach")?.invites||[]).length;
+  return `<section class="pa"><small class="eyebrow">The invite list (${inv.length})</small>${inv.length?`<div class="tscroll"><table><thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Relationship</th><th>Owner</th><th>Why them</th></tr></thead><tbody>${inv.map(g=>{ const c=((out("scout")?.contacts)||[]).find(x=>x.name===g.name); return `<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.title)}</td><td>${esc(g.company)}</td><td>${esc(c?.relationship||(g.tier==="A"?"Target account":"Prospect"))}</td><td>${esc(g.owner||"")}</td><td>${esc(c?.why||g.why||"")}</td></tr>` }).join("")}</tbody></table></div>`:`<p class="note">Build the guest list in step 6.</p>`}</section>
+  <section class="pa"><small class="eyebrow">Potential business impact</small><div class="kpis"><div class="kpi"><small>Pipeline</small><b>${I.pipelineLow?`${money(I.pipelineLow)}–${money(I.pipelineHigh)}`:"–"}</b></div><div class="kpi"><small>ROI</small><b>${I.pipelineLow?`${roi(I.pipelineLow)}–${roi(I.pipelineHigh)}`:"–"}</b><small>pipeline ÷ ${money(tot)}</small></div><div class="kpi"><small>Likely deals</small><b>${ed("impact.deals")}</b></div></div>${I.rationale?`<p class="note">${ed("impact.rationale")}</p>`:""}</section>
+  <section class="pa two"><div><small class="eyebrow">Why this playbook</small>${ed("whyThis","p")}</div><div><small class="eyebrow">What we considered instead</small>${(P.alternatives||[]).map((a,i)=>`<div class="skip"><b>${ed(`alternatives.${i}.option`)}</b><span class="note">${ed(`alternatives.${i}.whyNot`)}</span></div>`).join("")||`<p class="note">–</p>`}</div></section>
+  <section class="pa"><small class="eyebrow">Budget: ${money(tot)}${BR.low?` (range ${money(BR.low)}–${money(BR.high)})`:""}</small>${lines.length?`<div class="tscroll"><table><tbody>${lines.map(b=>`<tr><td>${esc(b.line)}<div class="note">${esc(b.note||"")}</div></td><td class="num">${money(b.amount)}</td><td class="num note">${tot?Math.round(100*b.amount/tot)+"%":""}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${money(tot)}</b></td><td></td></tr></tbody></table></div>`:`<p class="note">Build the plan in step 5 for line items.</p>`}${BR.assumptions?`<p class="note">${ed("budgetRange.assumptions")}</p>`:""}</section>
+  <section class="pa salescopy"><div class="btns" style="justify-content:space-between"><small class="eyebrow">Copy for sales to send</small>${SC.body?`<button class="btn ghost sm" id="scCopy">Copy</button>`:""}</div>${SC.body?`<p><b>Subject: ${ed("salesCopy.subject")}</b></p>${ed("salesCopy.body","p","channel")}`:`<p class="note">Rewrite with AI to add the email AEs send.</p>`}${nInv?`<p class="note">Plus ${nInv} personal invites drafted in step 6.</p>`:""}</section>`;
+}
+function planData(d){
+  const P=out("produce"), S=P?taskStatus(pmState(d),P):[], V=venuePicked(d), C=out("copy"), M=out("media"), H=out("hooks"), F=d.followup, A=d.planAI||{}, cost=eventCost(d), K=d.pitch?.outcomes||[];
+  const tbl=(cols,rows)=>rows.length?`<div class="tscroll"><table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${esc(v??"")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:`<p class="note">Not planned yet.</p>`;
+  return [
+    ["overview","Overview",`<p><b>${esc(d.name)}</b> · ${esc(KINDS[kindOf(d)].label)} · ${esc(fmtDate(d.date))}${d.city?` · ${esc(d.city)}`:""} · ${esc(d.headcount)} guests · ${money(cost)}</p><p>${esc(d.concept||"")}</p>${curStrategy()?`<p class="note">Why: ${esc(curStrategy().headline)}</p>`:""}`],
+    ["goals","Goals and success metrics",`<p>${esc(d.goal||"")}</p>${tbl(["Metric","Target"],K.map(o=>[o.metric,o.target]))}`],
+    ["audience","Audience and guest list",`${tbl(["Name","Title","Company","Owner","Status"],d.guests.map(g=>[g.name,g.title,g.company,g.owner,g.status]))}`],
+    ["team","Team and owners",tbl(["Role","Who","Owns","Hours"],(P?.team||[]).map(m=>[m.role,m.who,(m.owns||[]).join("; "),m.hours]))],
+    ["tasks","Tasks and deadlines",tbl(["Due","Task","Owner","Workstream","Status"],S.sort((a,b)=>a.days-b.days).map(t=>[t.due?t.due.toLocaleDateString():(t.days<0?"T"+t.days:"T+"+t.days),t.task,t.owner,t.workstream||"",t.st]))],
+    ["ros","Run of show",tbl(["Time","What","Owner"],(P?.runOfShow||[]).map(r=>[r.time,r.item,r.owner]))],
+    ["venue","Venue",V?`<p><b>${esc(V.name)}</b> · ${esc(V.address||V.area||"")}</p><p>Capacity: ${esc(V.capacity||"–")}. ${esc(V.ask||"")}</p>`:`<p class="note">Not chosen yet.</p>`],
+    ["vendors","Vendors",d.mods?.vendors?sectionsHTML(d.mods.vendors,"vendors"):`<p class="note">Run the Vendors specialist in Design.</p>`],
+    ["budget","Budget",tbl(["Line","Amount","Note"],(P?.budget||[]).map(b=>[b.line,money(b.amount),b.note]).concat([["Total",money(cost),""],["Actual so far",money(d.actualSpend||0),""]]))],
+    ["content","Content and assets",`<p>${C?`Invite: <b>${esc(C.title)}</b>. ${esc(C.tagline)}`:"Invite copy not written yet."}</p>${M?.moments?.length?`<p>Photo moments: ${M.moments.map(m=>esc(m.name)).join(", ")}</p>`:""}${H?.gifts?.length?`<p>Gift: ${esc(H.gifts[0].gift)}</p>`:""}`],
+    ["comms","Communications schedule",tbl(["When","Channel","Audience","Message"],(A.comms||[]).map(c=>[c.when,c.channel,c.audience,c.message]))],
+    ["staffing","Staffing and day-of checklist",`${tbl(["Role","Who","Shift","Duties"],(A.staffing||[]).map(s=>[s.role,s.who,s.shift,s.duties]))}${tbl(["Time","Task","Owner"],(A.dayof||[]).map(t=>[t.time,t.task,t.owner]))}`],
+    ["risks","Risks and contingencies",tbl(["Risk","Plan","Owner"],[...(d.pitch?.risks||[]).map(r=>[r.risk,r.mitigation,""]),...(A.contingencies||[]).map(c=>[c.risk,c.plan,c.owner])])],
+    ["followup","Follow-up and measurement",`<p>Every attended guest gets a personal follow-up within 24 hours from their AE. Attendees sync to the CRM; pipeline is counted as sourced or influenced within 90 days.</p>${F?.principles?.length?`<ul class="clean">${F.principles.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}`]];
+}
+function planHTMLDoc(d,readOnly){ const E=d.planEdits||{};
+  return planData(d).map(([id,t,html],i)=>`<section class="plansec" id="ps-${id}"><h3>${i+1}. ${esc(t)}</h3>${html}${E[id]?`<div class="plannote">${esc(E[id]).replace(/\n/g,"<br>")}</div>`:""}${!readOnly&&pitchEditing?`<textarea class="planedit" data-pnote="${id}" placeholder="Add notes, changes or decisions for this section">${esc(E[id]||"")}</textarea>`:""}</section>`).join("") }
+function planText(d){ const tmp=document.createElement("div"); tmp.innerHTML=planHTMLDoc(d,true); return tmp.innerText }
 function drawPitch(){
-  const el=$("#pitchHost"); if(!el) return; const P=draft.pitch;
-  if(!P){ el.innerHTML=draft.concept&&!draft.example?`<div class="pitchbar"><span><b>Need sign-off?</b> Turn this event into a one-page proposal.</span><button class="btn sm" data-run="pitch"><span class="spark">✦</span>Write the proposal</button><pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div></div>`:""; wireRuns(el); return }
-  const tot=eventCost(draft), per=tot/(+draft.headcount||1); P.budget={...(P.budget||{}),total:tot,perGuest:Math.round(per)};
-  el.innerHTML=`<details class="pitch onbrand" open style="${brandStyle()}"><summary>${brandProfile?.logo?`<img class="plogo" src="${brandProfile.logo}" alt="${esc(brandProfile.company||"")} logo">`:""}<span class="eyebrow">${esc(brandProfile?.company||draft.brand||"")} · Proposal</span> <b>${esc(P.title)}</b></summary>
+  const el=$("#pitchHost"); if(!el) return; const P=draft.pitch, d=draft;
+  if(!P){ el.innerHTML=d.concept&&!d.example?`<div class="pitchbar"><span><b>Need sign-off?</b> Turn this event into a one-page proposal and a full plan.</span><button class="btn sm" data-run="pitch"><span class="spark">✦</span>Write the proposal</button><pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div></div>`:""; wireRuns(el); return }
+  const tot=eventCost(d); P.budget={...(P.budget||{}),total:tot,perGuest:Math.round(tot/(+d.headcount||1))};
+  el.innerHTML=`<details class="pitch onbrand" open style="${brandStyle()}"><summary>${brandProfile?.logo?`<img class="plogo" src="${brandProfile.logo}" alt="${esc(brandProfile.company||"")} logo">`:""}<span class="eyebrow">${esc(brandProfile?.company||d.brand||"")} · Proposal</span> <b>${esc(P.title)}</b></summary>
     <div class="pitchbody">
+      <div class="ptabs"><button class="tile2 ${pitchTab==="one"?"on":""}" data-ptab="one">One-page overview</button><button class="tile2 ${pitchTab==="plan"?"on":""}" data-ptab="plan">Full plan</button><span style="flex:1"></span><button class="btn ${pitchEditing?"primary":""} sm" id="pEdit">${pitchEditing?"Done editing":"Edit"}</button></div>
+      ${pitchTab==="one"?`
       <canvas width="1200" height="380" id="pitchCv" aria-hidden="true"></canvas>
-      <h3>${esc(P.title)}</h3><p class="big">${esc(P.oneLiner)}</p>
-      <div class="kpis">${(P.outcomes||[]).map(o=>`<div class="kpi"><small>${esc(o.metric)}</small><b>${esc(o.target)}</b></div>`).join("")}<div class="kpi"><small>Budget</small><b>${money(tot)}</b><small>${money(P.budget?.perGuest)} per guest${P.budget?.coHostSaves?` · co-host saves ${money(P.budget.coHostSaves)}`:""}</small></div></div>
-      <div class="two"><div class="stack" style="gap:10px"><div><small class="eyebrow">Why now</small><p>${esc(P.whyNow)}</p></div><div><small class="eyebrow">Who</small><p>${esc(P.audience)}</p></div><div><small class="eyebrow">The experience</small><p>${esc(P.experience)}</p></div></div>
-        <div class="stack" style="gap:10px"><div><small class="eyebrow">Risks and how we handle them</small>${(P.risks||[]).map(r=>`<div class="kv" style="margin-top:6px"><small>Risk</small><span>${esc(r.risk)}</span><small>Plan</small><span>${esc(r.mitigation)}</span></div>`).join("")}</div>
-          <div><small class="eyebrow">Timeline</small><div class="timeline">${(P.timeline||[]).map(t=>`<div class="tp"><b>${esc(t.when)}</b>${esc(t.what)}</div>`).join("")}</div></div></div></div>
-      <div class="askbox"><small class="eyebrow">The ask</small><p>${esc(P.ask)}</p></div>
-      <div class="btns"><button class="btn primary sm" id="pCopy">Copy proposal</button>${downloads?'<button class="btn sm" id="pDl">Download as Markdown</button>':""}<button class="btn ghost sm" data-run="pitch">Rewrite</button></div>
+      ${ed("title","h3")}${ed("oneLiner","p","big")}
+      ${whoHTML(d)}
+      ${actionableHTML(d,P,tot)}
+      <div class="kpis">${(P.outcomes||[]).map((o,i)=>`<div class="kpi"><small>${ed(`outcomes.${i}.metric`)}</small><b>${ed(`outcomes.${i}.target`)}</b></div>`).join("")}<div class="kpi"><small>Budget</small><b>${money(tot)}</b><small>${money(P.budget.perGuest)} per guest${P.budget.coHostSaves?` · co-host saves ${money(P.budget.coHostSaves)}`:""}</small></div></div>
+      <div class="two"><div class="stack" style="gap:10px"><div><small class="eyebrow">Why now</small>${ed("whyNow","p")}</div><div><small class="eyebrow">The experience</small>${ed("experience","p")}</div></div>
+        <div class="stack" style="gap:10px"><div><small class="eyebrow">Risks and how we handle them</small>${(P.risks||[]).map((r,i)=>`<div class="kv" style="margin-top:6px"><small>Risk</small>${ed(`risks.${i}.risk`)}<small>Plan</small>${ed(`risks.${i}.mitigation`)}</div>`).join("")}</div>
+          <div><small class="eyebrow">Timeline</small><div class="timeline">${(P.timeline||[]).map((t,i)=>`<div class="tp"><b>${ed(`timeline.${i}.when`)}</b>${ed(`timeline.${i}.what`)}</div>`).join("")}</div></div></div></div>
+      <div class="askbox"><small class="eyebrow">The ask</small>${ed("ask","p")}</div>
+      <div class="btns"><button class="btn primary sm" id="pCopy">Copy proposal</button>${downloads?'<button class="btn sm" id="pDl">Download as Markdown</button>':""}<button class="btn ghost sm" data-run="pitch">Rewrite with AI</button></div>`
+      :`<div class="btns"><button class="btn primary sm" id="planFill"><span class="spark">✦</span>Fill the gaps</button><button class="btn sm" id="planShare">Share with the team</button><button class="btn sm" id="planCopy">Copy plan</button>${downloads?'<button class="btn sm" id="planDl">Download</button>':""}<span class="note" id="planNote">${d.id?"":"Save the event to get a share link."}</span></div>
+      <pre class="stream" id="st-plan" hidden></pre><div class="plandoc">${planHTMLDoc(d)}</div>`}
       <pre class="stream" id="st-pitch" hidden></pre><div id="out-pitch" hidden></div>
     </div></details>`;
-  drawCover($("#pitchCv"),{...draft,cover:{...draft.cover,headline:P.title}});
-  $("#pCopy").onclick=()=>copyTxt(pitchText(P).replace(/\\n/g,"\n"));
-  $("#pDl")&&($("#pDl").onclick=async()=>{ try{ await downloads.save({filename:(P.title||"proposal").replace(/\W+/g,"-").toLowerCase()+".md",data:new Blob([pitchText(P).replace(/\\n/g,"\n")],{type:"text/markdown"})}) }catch{ toast("Download cancelled") } });
+  $("#pitchCv")&&drawCover($("#pitchCv"),{...d,cover:{...d.cover,headline:P.title}});
+  $$("canvas[data-av]",el).forEach(c=>drawAvatar(c,c.dataset.av,d.brandColors));
+  $$("[data-ptab]",el).forEach(b=>b.onclick=()=>{ pitchTab=b.dataset.ptab; drawPitch() });
+  $("#pEdit").onclick=()=>{ pitchEditing=!pitchEditing; drawPitch(); if(!pitchEditing) toast("Changes saved. Save the event to keep them.") };
+  $$("[data-edit]",el).forEach(x=>x.oninput=()=>pset(P,x.dataset.edit,x.innerText.trim()));
+  $$("[data-pnote]",el).forEach(x=>x.oninput=()=>{ d.planEdits=d.planEdits||{}; d.planEdits[x.dataset.pnote]=x.value });
+  $("#scCopy")&&($("#scCopy").onclick=()=>copyTxt(`Subject: ${P.salesCopy.subject}\n\n${P.salesCopy.body}`));
+  $("#pCopy")&&($("#pCopy").onclick=()=>copyTxt(pitchText(P).replace(/\\n/g,"\n")));
+  $("#pDl")&&($("#pDl").onclick=async()=>{ try{ await downloads.save({filename:slug(P.title)+"-proposal.md",data:new Blob([pitchText(P).replace(/\\n/g,"\n")],{type:"text/markdown"})}) }catch{ toast("Download cancelled") } });
+  $("#planCopy")&&($("#planCopy").onclick=()=>copyTxt(planText(d)));
+  $("#planDl")&&($("#planDl").onclick=async()=>{ try{ await downloads.save({filename:slug(d.name)+"-plan.txt",data:new Blob([planText(d)],{type:"text/plain"})}) }catch{ toast("Download cancelled") } });
+  $("#planShare")&&($("#planShare").onclick=async()=>{ if(!d.id){ if(!(await saveEvent())) return } else await saveEvent(); copyTxt(`${ART_URL}#plan-${d.id}`); $("#planNote")&&($("#planNote").textContent="Read-only link copied. Anyone with access to Encore can open it.") });
+  $("#planFill")&&($("#planFill").onclick=e=>fillPlan(e.currentTarget));
   wireRuns(el);
 }
+async function fillPlan(btn){ const d=draft;
+  const o=await askJSON(`You are an event producer writing the execution details a team needs to run this event flawlessly. Fill what's missing: the communications schedule (invites, reminders, day-before logistics, thank-you, follow-up, with channel and audience), staffing with shifts and duties, a timed day-of checklist from setup to teardown, and contingency plans for the most likely problems. Use the plan below; owners must be roles that appear in it.
+${brief(d)}
+TEAM: ${(out("produce")?.team||[]).map(m=>`${m.role} (${m.who})`).join(", ")||"event lead, account execs"}
+RUN OF SHOW: ${(out("produce")?.runOfShow||[]).map(r=>`${r.time} ${r.item}`).join("; ")||"to plan"}
+Reply with only JSON: {"comms":[{"when":"","channel":"","audience":"","message":"max 14 words"}] (6-9),"staffing":[{"role":"","who":"","shift":"","duties":"max 14 words"}] (3-6),"dayof":[{"time":"","task":"","owner":""}] (10-16),"contingencies":[{"risk":"","plan":"max 18 words","owner":""}] (4-6)}`,btn,$("#st-plan"),{tier:"complex"});
+  if(o){ d.planAI=o; drawPitch(); burst(); toast("Plan filled in. Review and edit anything.") } }
+function renderPlanShare(host,id){ (async()=>{ let ev=allEvents.find(e=>e.id===id); if(!ev&&db){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
+  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady?"We couldn't find this plan.":"Loading…"}</p></div>`; return }
+  const keep=draft; draft=hydrate(ev); draft.example=false;
+  host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel"><small class="eyebrow">Event plan · read only</small><h2>${esc(ev.name)}</h2><p class="note">${esc(fmtDate(ev.date))}${ev.city?` · ${esc(ev.city)}`:""}</p></div><div class="panel plandoc">${planHTMLDoc(draft,true)}</div></div>`; draft=keep })() }
 
 // Media, co-hosts, cheat sheets ------------------------------------------
 function drawMedia(host,d){
@@ -2514,7 +2684,10 @@ function fmtDate(s){ if(!s) return "Date TBD"; const d=new Date(s+"T12:00:00"); 
 // Guest-facing pages (#rsvp-ID, #survey-ID)
 // ==================================================================
 async function renderGuest(){
-  const host=$("#view-guest"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
+  const host=$("#view-guest");
+  if(location.hash==="#roadmap"){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
+  const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
+  host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
   const [,kind,id]=location.hash.match(/^#(rsvp|survey)-(.+)$/)||[];
   const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore · <a href="#studio">Organizer view</a></p></div>`;
@@ -2815,7 +2988,7 @@ function renderCanvas(){
   const items=C.items||[], tot=items.reduce((a,b)=>a+(+b.budget||0),0);
   el.innerHTML=`
   <div class="canvas-head"><div><small class="eyebrow">Creative canvas</small><h2>${esc(brandProfile?.company||C.company||"Your")} year of experiences</h2><p class="lede">Drag ideas around, dream up new ones, and deploy the ones you love.</p></div>
-    <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn" id="terrBtn"><span class="spark">✦</span>Plan by territory</button><button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
+    <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn" id="shareRm">Share roadmap</button><button class="btn" id="terrBtn"><span class="spark">✦</span>Plan by territory</button><button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
   <div class="cv-stats">
     <div class="kpi"><small>Experiences</small><b>${items.length}</b></div>
     <div class="kpi"><small>Program budget</small><b>${money(tot)}</b></div>
@@ -2826,11 +2999,11 @@ function renderCanvas(){
   <div class="cv-wrap"><div class="cv-grid" style="--cols:${Q.length}">
     <div class="cv-corner"></div>${Q.map((q,i)=>`<div class="cv-qh"><b>${q.label}</b>${moments.filter(m=>m.qi===i).map(m=>`<span class="moment-pin" title="${esc(m.what||"")}">◆ ${esc(m.name)}</span>`).join("")}</div>`).join("")}
     ${LANES.map(([k,l,c])=>`<div class="cv-lane" style="--lc:${c}"><b>${l}</b></div>${Q.map((_,qi)=>`<div class="cv-cell" data-cell="${k}|${qi}" style="--lc:${c}">
-        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${c}"><span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span><b>${esc(it.name)}</b><small>${it.region?`${esc(it.region)} · `:""}${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
+        ${items.map((it,ix)=>({it,ix})).filter(({it})=>it.audience===k&&it.quarter===qi).map(({it,ix})=>`<button class="xcard ${canvasPick===ix?"sel":""}" draggable="true" data-item="${ix}" style="--lc:${c}"><span class="stars">${"★".repeat(Math.max(1,Math.min(5,+it.ambition||3)))}</span><b>${esc(it.name)}</b>${allInterest.filter(x=>x.item===it.name).length?`<span class="pchip good" style="align-self:flex-start;font-size:.7rem">${allInterest.filter(x=>x.item===it.name).length} invite requests</span>`:""}<small>${it.region?`${esc(it.region)} · `:""}${esc(it.format)} · ${esc(it.size||"")}${it.budget?` · ${money(it.budget)}`:""}</small></button>`).join("")}
         <button class="dream" data-dream="${k}|${qi}" aria-label="Dream up an experience for ${l} in ${Q[qi].label}">+ Dream one up</button></div>`).join("")}`).join("")}
   </div></div>
-  <div id="cvDetail"></div><div id="terrHost">${C.territory?terrHTML(C.territory):""}</div>`;
-  $("#terrBtn").onclick=e=>planTerritory(e.currentTarget);
+  <div id="cvDetail"></div><div id="shareHost"></div><div id="terrHost">${C.territory?terrHTML(C.territory):""}</div>`;
+  $("#terrBtn").onclick=e=>planTerritory(e.currentTarget); $("#shareRm").onclick=openShare;
   $("#terrAdd")&&($("#terrAdd").onclick=()=>{ const T=cv().territory; (T.regions||[]).forEach(r=>(r.events||[]).forEach(ev=>cv().items.push({...ev,region:r.region,quarter:Math.max(0,Math.min(3,+ev.quarter||0)),audience:LANES.some(l=>l[0]===ev.audience)?ev.audience:"prospects"}))); cv().example=false; saveCanvas(); renderCanvas(); toast("Territory events added to your canvas") });
   $("#fillYear").onclick=e=>fillYear(e.currentTarget);
   $$("[data-item]",el).forEach(b=>{ b.onclick=()=>{ canvasPick=+b.dataset.item; renderCanvas() }; b.ondragstart=e=>{ e.dataTransfer.setData("text/plain",b.dataset.item); b.classList.add("drag") } });
@@ -2943,12 +3116,14 @@ function feed(){ if(!inspFeed) inspFeed=LIB.map((x,i)=>({...x,id:"lib"+i,starter
 function laneOf(a){ return LANES.find(l=>l[0]===a)||LANES[0] }
 function renderInspire(){
   const el=$("#view-inspire"); if(!el) return;
-  const F=feed().filter(x=>inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):x.audience===inspFilter));
+  const F=feed().filter(x=>inspFilter==="all"||(inspFilter==="saved"?inspSaved.has(x.id):inspFilter==="peers"?x.peer:x.audience===inspFilter));
   el.innerHTML=`
   <div class="canvas-head"><div><small class="eyebrow">Inspire</small><h2>What could you host next?</h2><p class="lede">Watch the stories, save what sparks something, and open any card for a playbook.</p></div>
     <div class="btns"><button class="btn primary big" id="playStories">▶ Watch stories</button><button class="btn" id="inspMore"><span class="spark">✦</span>Inspire me</button></div></div>
+  <div class="peerbar"><div style="flex:1;min-width:240px"><small class="eyebrow">Learn from peers</small><input id="peerIn" placeholder="Companies you respect, e.g. Clay, Ramp, Notion" value="${esc(peerCompanies())}"><span class="note">Encore finds real events these companies (or comparable ones in your space) have hosted, with sources.</span></div><button class="btn primary" id="peerGo"><span class="spark">✦</span>Find their events</button></div>
+  <pre class="stream" id="st-peers" hidden></pre>
   <div class="storyrow">${feed().slice(0,10).map((x,i)=>`<button class="bubble-s" data-story="${i}" style="--lc:${laneOf(x.audience)[2]}"><canvas width="120" height="120" data-sart="${x.id}"></canvas><span>${esc(x.name)}</span></button>`).join("")}</div>
-  <div class="filters">${[["all","All"],...LANES.map(l=>[l[0],l[1]]),["saved",`Saved (${inspSaved.size})`]].map(([k,l])=>`<button class="tile2 ${inspFilter===k?"on":""}" data-filt="${k}">${esc(l)}</button>`).join("")}</div>
+  <div class="filters">${[["all","All"],...LANES.map(l=>[l[0],l[1]]),["peers",`From peers (${feed().filter(x=>x.peer).length})`],["saved",`Saved (${inspSaved.size})`]].map(([k,l])=>`<button class="tile2 ${inspFilter===k?"on":""}" data-filt="${k}">${esc(l)}</button>`).join("")}</div>
   <div class="pins">${F.length?F.map(x=>pinCard(x)).join(""):`<p class="empty">Nothing here yet. Save cards with ♥.</p>`}</div>
   <div id="pbHost"></div><div id="storyHost"></div>`;
   $$("canvas[data-sart]",el).forEach(c=>artFor(c,feed().find(x=>x.id===c.dataset.sart)));
@@ -2957,12 +3132,28 @@ function renderInspire(){
   $$("[data-story]",el).forEach(b=>b.onclick=()=>openStories(+b.dataset.story));
   $$("[data-filt]",el).forEach(b=>b.onclick=()=>{inspFilter=b.dataset.filt;renderInspire()});
   $("#inspMore").onclick=e=>inspireMore(e.currentTarget);
+  $("#peerGo").onclick=e=>findPeerEvents(e.currentTarget);
   wirePinActions(el);
+}
+let peerData=null;
+function peerCompanies(){ return peerData?.companies||brandProfile?.respects||"" }
+async function findPeerEvents(btn){
+  if(!sample){ toast("Turn on the AI (claude.ai or the server with a key) to research peers."); return }
+  const names=$("#peerIn").value.trim(), used=new Set(), tools=await toolsFor(["web","playbook"],used);
+  const o=await askJSON(`Find real B2B experiences that these companies have hosted in the last 2 years: ${names||"(none named)"}. ${names?"Also include 2-3 comparable companies":"Pick 4-6 comparable companies"} in the same space as ${brandProfile?.company||draft.brand||"this company"} (${brandProfile?.oneLiner||draft.product||""}), selling to ${(brandProfile?.titles||draft.audience.roles).slice(0,4).join(", ")||"similar buyers"}. Look for executive dinners, summits, owned conferences, community events, launch events, and creative experiences. ${tools.length?"Use web search; only include events you can cite with a URL.":"No web tools are available: only include events you are confident happened, and leave url empty when unsure."} Never invent events.
+${brief(draft)}
+Reply with only JSON: {"companies":"comma-separated list of the companies you covered","ideas":[{"company":"","name":"the event's name, max 6 words","date":"YYYY-MM or empty","url":"source URL","audience":"customers|prospects|employees|partners|community","format":"one of ${FORMATS.join(", ")}","line":"what happened, max 22 words","why":"why it worked for their buyers, max 12 words","ambition":1-5,"cost":"$ range estimate","lead":"lead time estimate","steps":[4 short steps to run something similar],"kpis":[2],"pitfalls":[2]}] (8-12)}`+(tools.length?"":""),btn,$("#st-peers"),{tools,tier:"complex"});
+  if(!o?.ideas?.length) return;
+  const ideas=o.ideas.map((x,i)=>({...x,id:"peer"+Date.now()+i,peer:true,proven:true}));
+  peerData={companies:names||o.companies||"",items:ideas,at:Date.now(),used:[...used]};
+  inspFeed=[...ideas,...feed().filter(x=>!x.peer)]; inspFilter="peers"; renderInspire(); burst();
+  if(db) db.doc("inspire/peers").set(peerData).catch(()=>{});
+  toast(`Found ${ideas.length} events from ${new Set(ideas.map(x=>x.company)).size} companies${used.size?` using ${[...used].join(", ")}`:""}.`);
 }
 function artFor(c,x){ if(!c||!x) return; const L=laneOf(x.audience); drawCover(c,{...draft,name:x.name,brand:"",cover:{motif:SUITS[[...x.name].reduce((a,ch)=>a+ch.charCodeAt(0),0)%SUITS.length]},brandColors:[L[2],"#FFC93C"]},{mini:true}) }
 function pinCard(x){ const L=laneOf(x.audience), h=[260,320,380][[...x.name].length%3];
   return `<article class="pin" style="--lc:${L[2]}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${esc(L[1])}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}</div>
-    <div class="ib"><b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
+    <div class="ib">${x.peer?`<span class="by">By ${esc(x.company)}${x.date?` · ${esc(x.date)}`:""}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
     <div class="btns"><button class="round sm ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn sm" data-pb="${x.id}">Playbook</button><button class="btn ghost sm" data-addc="${x.id}">+ Canvas</button></div></div></article>` }
 function wirePinActions(root){
   $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; inspSaved.has(id)?inspSaved.delete(id):inspSaved.add(id); b.classList.toggle("keep"); toast(inspSaved.has(id)?"Saved":"Removed") });
@@ -2985,7 +3176,7 @@ function drawStory(){
     <canvas width="540" height="960" id="sArt" aria-hidden="true"></canvas>
     <div class="sshade"></div>
     <button class="sclose" aria-label="Close stories">✕</button>
-    <div class="stext"><span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
+    <div class="stext">${x.peer?`<span class="by light">By ${esc(x.company)}${x.url?` · <a href="${esc(x.url)}" target="_blank" rel="noopener">source</a>`:""}</span>`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
       <div class="sstats"><span>${"★".repeat(x.ambition||3)}</span><span>${esc(x.cost||"")}</span><span>${esc(x.lead||"")}</span><span>${x.proven?"Proven motion":"New motion"}</span></div>
       <div class="btns"><button class="round ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn" data-pb="${x.id}">Playbook ↑</button><button class="btn" data-addc="${x.id}">+ Canvas</button><button class="btn primary" data-dep="${x.id}">Deploy</button></div></div>
     <button class="szone l" aria-label="Previous"></button><button class="szone r" aria-label="Next"></button></div></div>`;
@@ -3016,7 +3207,8 @@ async function openPlaybook(id){
     const tools=await toolsFor(["playbook","peers","web"],null);
     const o=await askJSON(`Build a deployable playbook for this B2B experience. First check whether it's a proven motion: search MKT1's playbook archive and the web, and ask practitioners if that tool is available. Base the steps on what people who've run it actually recommend, and cite sources. If it's a new motion with little precedent, say so and assign Encore's agents (Audience panel, Trend scout, Venue scout, Hooks, Copywriter, Producer, Media crew, Co-host scout, Guest scout, Sales lead, Outreach, Follow-up) to de-risk it.
 ${brief(draft)}
-EXPERIENCE: ${x.name}: ${x.line} (${x.format}, for ${L[1]})
+${x.peer?`This is a real event by ${x.company}${x.url?` (${x.url})`:""}. Adapt it for our brand and buyers: keep what made it work, change what doesn't fit us, and say what you changed and why.
+`:""}EXPERIENCE: ${x.name}: ${x.line} (${x.format}, for ${L[1]})
 Reply with only JSON: {"proven":boolean,"evidence":"how common it is and where it's been run, max 22 words","budget":"range","steps":[{"phase":"e.g. 8 weeks out","what":"max 12 words","owner":"role"}] (6-8),"kpis":[3],"pitfalls":[3],"expertTips":[{"tip":"max 16 words","source":"URL, post title or practitioner"}] (2-4),"crew":[{"agent":"","job":"max 10 words"}] (only if not proven)}`,null,null,{tools,tier:"complex"});
     if(o?.steps){ x.pb={...o,source:"expert"}; x.proven=!!o.proven } drawPB(x.pb||starter,false) };
   drawPB(x.pb||starter,false);

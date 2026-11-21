@@ -512,6 +512,7 @@ nav.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
 .lbulb{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--cobalt);color:#fff;font-size:.8rem}
 .lesson ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 .lmore{display:flex;flex-direction:column;gap:6px}
+.aecard textarea{width:100%}
 .gonogo{margin-bottom:12px}.rubric{display:flex;flex-direction:column;gap:8px;margin-top:10px}.rrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg)}.rrow>div:first-child{display:flex;flex-direction:column}.rrow small{grid-column:1/-1}
 .gaccs{margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--line);display:grid;gap:6px}.gaccs p{margin:0;font-size:.92rem}
 @media(max-width:560px){.rrow{grid-template-columns:1fr}}
@@ -1185,6 +1186,7 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.doc("canvas/main").onSnapshot(sn=>{ if(sn.exists){ canvasData=sn.data(); if(location.hash==="#canvas"||!location.hash) renderCanvas() } });
   db.collection("interest").onSnapshot(sn=>{ allInterest=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#canvas") renderCanvas() });
   db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
+  db.collection("aeactions").onSnapshot(sn=>{ allAe=sn.docs.map(d=>d.data()); if(draft.id&&allAe.some(a=>a.eventId===draft.id)){ applyAeActions(draft); if(step===7&&!isGuestRoute()) renderStep() } },()=>{});
   db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
   db.collection("wall").onSnapshot(sn=>{ allWall=sn.docs.map(d=>d.data()) },()=>{});
   db.collection("rsvps").onSnapshot(snap=>{ const before=new Map(allRsvps.map(r=>[r.id,r.response])); snap.docs.forEach(x=>{ const r=x.data(), b=before.get(x.id); if(before.size&&b&&b!==r.response&&r.response==="no"&&!isGuestRoute()) toast(`${r.name} can't make it anymore. A seat opened up.`) }); allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
@@ -1442,7 +1444,7 @@ $("#autoBtn").onclick=autopilot;
 // ==================================================================
 // Routing
 // ==================================================================
-function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash) }
+function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash) }
 function route(){
   const h=location.hash.slice(1);
   if(isGuestRoute()){
@@ -2364,8 +2366,8 @@ function journeySteps(){ const d=draft, mine=!d.example, P=out("produce");
 function journeyGo(k){ if(k==="brand") return location.hash="brand"; if(k==="idea") return location.hash="inspire";
   if(draft.example){ draft=brandDraft() } step={plan:1,signoff:8,invite:6,run:6,measure:7}[k]||1; location.hash="studio"; renderStep() }
 function homeHero(){ const S=journeySteps(), next=S.find(x=>!x.done), n=S.filter(x=>x.done).length;
-  return `<section class="hero-home"><div><small class="eyebrow">Encore</small><h1>Plan and launch your first event in a day.</h1>
-    <p class="lede">Encore is your events team in one place. It researches your buyers, suggests what to host, writes the copy, builds the plan and the guest list with sales, keeps everyone on schedule, and shows the pipeline it created.</p>
+  return `<section class="hero-home"><div><small class="eyebrow">Encore</small><h1>Fill the right room. Prove what it was worth.</h1>
+    <p class="lede">Encore builds the guest list with sales from your CRM, gets the right people to show up, hands every attendee to their AE the next morning, and reports pipeline your CFO won't pick apart. The planning (concept, venue, page, plan) takes a day instead of weeks.</p>
     ${draft.example?`<p class="note">The app is filled with a sample Passionfroot event so you can look around. Your own work replaces it as you go.</p>`:""}</div>
     <div class="journey"><div class="btns" style="justify-content:space-between"><b>Your first event in a day</b><span class="note">${n} of ${S.length} done</span></div>
       <ol>${S.map((x,i)=>`<li class="${x.done?"done":x===next?"next":""}"><span class="jn">${x.done?"✓":i+1}</span><div><b>${esc(x.t)}</b><span class="note">${esc(x.why)} · ${esc(x.min)}</span></div>${x===next?`<button class="btn primary sm" data-journey="${x.k}">Start</button>`:x.done?`<button class="btn ghost sm" data-journey="${x.k}">Open</button>`:""}</li>`).join("")}</ol></div></section>` }
@@ -2380,6 +2382,9 @@ const SAMPLE_PROGRAM=[{name:"The Creator Kitchen",kind:"dinner",city:"Chicago",d
 function qOf(date){ if(!date) return null; const m=+date.slice(5,7); return "Q"+Math.ceil(m/3)+" "+date.slice(0,4) }
 function programRows(){ const real=allEvents.filter(e=>!e.example); if(!real.length){ const X=hydrate({...EXAMPLE,example:true}); return {sample:true,rows:SAMPLE_PROGRAM.map(r=>({...r,...(r.name===EXAMPLE.name?{plan:eventCost(X),act:actualOf(X),committed:committedOf(X)}:{committed:r.done?r.act:0}),q:qOf(r.date)}))} }
   return {sample:false,rows:real.map(e=>{ const h=hydrate(e), O=e.opps||[]; return {id:e.id,parentId:e.parentId||null,name:e.name,kind:kindOf(e),city:e.city,date:e.date,plan:eventCost(h),act:actualOf(h),committed:committedOf(h),currency:e.currency||"USD",owner:e.owner||"",pipe:O.length?O.filter(o=>o.bucket==="created").reduce((a,o)=>a+(+o.amount||0),0):+(e.metrics?.pipeline||0),region:e.region||"",done:e.status==="done",q:qOf(e.date)} })} }
+function benchHTML(){ const done=allEvents.filter(e=>!e.example&&e.status==="done"), sample=!done.length;
+  const rows=sample?[{k:"Executive dinner",show:82,rsvp:31,n:1},{k:"Webinar",show:45,rsvp:8,n:1}]:Object.entries(done.reduce((a,e)=>{ const k=(KINDS[kindOf(e)]||KINDS.dinner).label, m=e.metrics||{}; a[k]=a[k]||{s:0,r:0,i:0,a:0,n:0}; a[k].a+=+m.attended||0; a[k].r+=+m.rsvps||0; a[k].i+=+m.invited||0; a[k].n++; return a },{})).map(([k,v])=>({k,show:v.r?Math.round(100*v.a/v.r):null,rsvp:v.i?Math.round(100*v.r/v.i):null,n:v.n}));
+  return rows.length?`<div><small class="eyebrow">Your benchmarks${sample?" (sample)":""}</small><div class="chips">${rows.map(r=>`<span class="pchip">${esc(r.k)}: ${r.rsvp??"–"}% of invites RSVP, ${r.show??"–"}% show · ${r.n} event${r.n===1?"":"s"}</span>`).join("")}</div><span class="note">From your finished events. Encore uses these as the starting rates in Distribution.</span></div>`:"" }
 function programHTML(){ const P=brandProfile?.program||{annual:400000}, {sample,rows}=programRows(), annual=+P.annual||0, qs=[...new Set(rows.map(r=>r.q).filter(Boolean))].sort((a,b)=>a.slice(3)+a[1]<b.slice(3)+b[1]?-1:1);
   const qa=q=>+(P.q?.[q]??annual/4), qc=q=>rows.filter(r=>r.q===q).reduce((a,r)=>a+Math.max(r.plan,r.act),0), tot=rows.reduce((a,r)=>a+Math.max(r.plan,r.act),0), pipe=rows.reduce((a,r)=>a+r.pipe,0), spent=rows.reduce((a,r)=>a+r.act,0);
   const D=rows.filter(r=>r.done), dPipe=D.reduce((a,r)=>a+r.pipe,0), dSpent=D.reduce((a,r)=>a+r.act,0), signed=rows.reduce((a,r)=>a+(r.committed||0),0);
@@ -2389,6 +2394,7 @@ function programHTML(){ const P=brandProfile?.program||{annual:400000}, {sample,
     ${sample?`<div class="samplebar">Sample program. Your saved events replace it.</div>`:""}
     <div class="kpis"><div class="kpi"><small>Planned</small><b>${money(tot)}</b><small>of ${money(annual)} (${annual?Math.round(100*tot/annual):0}%)</small></div><div class="kpi"><small>Committed (signed vendors)</small><b>${money(signed)}</b></div><div class="kpi"><small>Spent so far</small><b>${money(spent)}</b></div><div class="kpi"><small>New pipeline, finished events</small><b>${money(dPipe)}</b></div><div class="kpi"><small>Per $1 spent, finished events</small><b>${dSpent?"$"+(dPipe/dSpent).toFixed(1):"–"}</b></div></div>
     <div class="qbars">${qs.map(q=>{ const c=qc(q), a=qa(q), over=c>a; return `<div class="qbar ${over?"over":""}"><div class="btns" style="justify-content:space-between"><b>${q}</b><span class="note">${money(c)} of ${money(a)}</span></div><div class="btns" style="justify-content:flex-end"><input class="mini" type="number" min="0" step="5000" data-qa="${q}" value="${Math.round(a)}" aria-label="${q} allocation" title="Edit the ${q} allocation"></div><div class="bar"><i style="width:${a?Math.min(100,100*c/a):100}%"></i></div>${over?`<span class="note" style="color:var(--bad)">Over by ${money(c-a)}. Move an event or raise the allocation.</span>`:""}</div>` }).join("")}</div>
+    ${benchHTML()}
     ${Object.keys(byKind).length?`<div><small class="eyebrow">Finished events: new pipeline per $1, by format</small><div class="chips">${Object.entries(byKind).map(([k,v])=>`<span class="pchip">${esc(k)}: $${(v.p/Math.max(1,v.a)).toFixed(1)}</span>`).join("")}</div></div>`:""}
     <div class="tscroll"><table><thead><tr><th>Event</th><th>Format</th><th>When</th><th>Owner</th><th>Region</th><th class="num">Plan</th><th class="num">Actual</th><th class="num">New pipeline</th><th class="num">Per $1</th></tr></thead><tbody>${(()=>{ const top=rows.filter(r=>!r.parentId||!rows.some(x=>x.id===r.parentId)).sort((a,b)=>(a.date||"").localeCompare(b.date||"")); return top.flatMap(r=>[r,...rows.filter(c=>c.parentId&&c.parentId===r.id).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(c=>({...c,_child:true}))]) })().map(r=>`<tr ${r._child?'class="child"':""}><td>${r._child?"↳ ":""}<b>${esc(r.name||"Untitled")}</b>${r.parentId?` <span class="tag">series</span>`:""}${r.done?` <span class="tag">done</span>`:""}<div class="note">${esc(r.city||"")}</div></td><td>${esc((KINDS[r.kind||"dinner"]||{label:r.kind||""}).label)}</td><td>${esc(r.q||"")}</td><td>${esc(r.owner||"")}</td><td>${esc(r.region||"")}</td><td class="num">${money(toUSD(r.plan,r.currency))}</td><td class="num" style="${r.act>r.plan?"color:var(--bad)":""}">${money(toUSD(r.act,r.currency))}</td><td class="num">${r.pipe?money(r.pipe):"–"}</td><td class="num">${r.act&&r.pipe?"$"+(r.pipe/r.act).toFixed(1):"–"}</td></tr>`).join("")}</tbody></table></div></section>` }
 function wireProgram(el){ const save=()=>{ saveBrand(true); renderPrograms() };
@@ -2549,11 +2555,11 @@ function drawPilot(d){ const h=$("#pilot"); if(!h) return; const cur=pilotStats(
   $("#pilBase",h).onchange=e=>{ d.baselineId=e.target.value; drawPilot(d) };
   $$("[data-bl]",h).forEach(x=>x.onchange=()=>{ d.baseline={...(d.baseline||{}),[x.dataset.bl]:x.value===""?null:+x.value}; drawPilot(d) });
   $$("[data-hb]",h).forEach(x=>x.onchange=()=>{ d.hoursB={...(d.hoursB||{}),[x.dataset.hb]:+x.value||0}; d.hours=Object.values(d.hoursB).reduce((a,b)=>a+(+b||0),0); drawPilot(d); drawPipeRep(d) }) }
-function drawHandoff(d){ const h=$("#handoff"); if(!h) return; const att=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Attended");
+function drawHandoff(d){ const h=$("#handoff"); if(!h) return; applyAeActions(d); const att=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Attended");
   const S=out("briefing"), owners=aeList(d), st=g=>g.fuState||(g.fuDraft?"Draft":"Not started");
   const sent24=att.filter(x=>x.g.contactedAt&&x.g.leadAt&&x.g.contactedAt-x.g.leadAt<=864e5).length, gifts=att.reduce((a,x)=>a+(+x.g.giftCost||0),0);
   h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">The morning after</small><h3>Hand off to sales</h3><p class="note">Capture what each guest said, pick the next step, and let the AE approve the follow-up before it goes out. The follow-up starts from the conversation, not a template.</p></div>
-      <div class="btns">${att.length?`${crmOn()?`<button class="btn sm primary" id="hoCrm">Log approved next steps in ${esc(crmOn().label)}</button>`:""}<button class="btn sm" id="hoCsv">Export handoff (CSV)</button>${srcState.slack==="on"?`<button class="btn sm" id="hoSlack">Send each AE their list on Slack</button>`:""}`:""}</div></div>
+      <div class="btns">${att.length?`${d.id?`<button class="btn sm" id="hoLinks">Copy AE links</button>`:""}${crmOn()?`<button class="btn sm primary" id="hoCrm">Log approved next steps in ${esc(crmOn().label)}</button>`:""}<button class="btn sm" id="hoCsv">Export handoff (CSV)</button>${srcState.slack==="on"?`<button class="btn sm" id="hoSlack">Send each AE their list on Slack</button>`:""}`:""}</div></div>
     ${att.length?`<div class="kpis"><div class="kpi"><small>Attended</small><b>${att.length}</b></div><div class="kpi"><small>With notes</small><b>${att.filter(x=>x.g.note).length}</b></div><div class="kpi"><small>AE approved</small><b>${att.filter(x=>/Approved|Sent/.test(st(x.g))).length}</b></div><div class="kpi"><small>Followed up in 24h</small><b>${sent24}/${att.length}</b></div><div class="kpi"><small>Gift spend</small><b>${money(gifts)}</b></div></div>
     <div class="hogrid">${att.map(({g,i})=>{ const c=(S?.sheets||S?.attendees||[]).find?.(x=>x.name===g.name); return `<div class="hocard"><div class="btns" style="justify-content:space-between"><div><b>${esc(g.name)}</b><div class="note">${esc(g.title||"")} · ${esc(g.company||"")}</div>${g.arr||g.renewalDate||g.health?acctCell(g):""}</div><span class="pchip ${st(g)==="Sent"?"good":st(g)==="Approved"?"":"warn"}">${st(g)}</span></div>
       <div class="row"><label class="f">Owner<select data-hown="${i}">${[...new Set([g.owner||"Unassigned",...owners])].map(o=>`<option ${o===g.owner?"selected":""}>${esc(o)}</option>`).join("")}</select></label><label class="f">Next step<select data-hnext="${i}">${NEXT.map(o=>`<option ${o===(g.nextStep||"Book a meeting")?"selected":""}>${o}</option>`).join("")}</select></label></div>
@@ -2581,6 +2587,8 @@ WHAT THEY SAID: ${g.note}
 ${brief(d)}
 Reply with only JSON: {"subject":"max 8 words","body":"the email"}`,b,null);
     if(o?.body){ g.fuDraft=`Subject: ${o.subject||""}\n\n${o.body}`; g.fuState="Draft"; drawHandoff(d) } });
+  $("#hoLinks",h)&&($("#hoLinks",h).onclick=()=>{ const by=[...new Set(att.map(x=>x.g.owner).filter(o=>o&&o!=="Unassigned"))]; if(!by.length){ toast("Assign an owner to each attendee first."); return }
+    copyTxt(by.map(o=>`${o}: your follow-ups from ${d.name} (${att.filter(x=>x.g.owner===o).length}). Approve the drafts and tick next steps here, no login: ${aeLink(d,o)}`).join("\n\n")) });
   $("#hoCrm",h)&&($("#hoCrm",h).onclick=async e=>{ const crm=crmOn(), L=att.map(x=>x.g).filter(g=>g.email&&(g.fuState==="Approved"||g.fuState==="Sent"));
     if(!L.length){ toast("Approve at least one follow-up for a guest with an email first."); return } const due=new Date(Date.now()+864e5).toISOString().slice(0,10); e.currentTarget.disabled=true;
     try{ const r=crmPayload(await (await getMcp()).callTool(crm.server,"log_followups",{eventName:d.name,items:L.map(g=>({email:g.email,subject:g.nextStep||"Book a meeting",body:[`What they said: ${g.note||"(no notes)"}`,g.fuApprovedBy?`Follow-up approved by ${g.fuApprovedBy}`:"",g.fuDraft||""].filter(Boolean).join("\n\n"),dueDate:due,gift:g.gift?`${g.gift}${g.giftStatus?` (${g.giftStatus})`:""}`:"",giftCost:+g.giftCost||0}))}));
@@ -2589,7 +2597,7 @@ Reply with only JSON: {"subject":"max 8 words","body":"the email"}`,b,null);
   $("#hoCsv",h)&&($("#hoCsv",h).onclick=async()=>{ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, csv=["Owner,Attendee,Title,Company,Email,What they said,Next step,Gift,Gift cost,Gift delivery,Follow-up status,Approved by,Next step done,Follow-up",...att.map(({g})=>[g.owner,g.name,g.title,g.company,g.email,g.note,g.nextStep||"Book a meeting",g.gift,g.giftCost,g.giftStatus||"",st(g),g.fuApprovedBy||"",g.nsDoneAt?new Date(g.nsDoneAt).toISOString().slice(0,10):"",g.fuDraft].map(q).join(","))].join("\n");
     if(downloads){ try{ await downloads.save({filename:`${slug(d.name)}-handoff.csv`,data:new Blob([csv],{type:"text/csv"})}) }catch{ copyTxt(csv) } } else copyTxt(csv) });
   $("#hoSlack",h)&&($("#hoSlack",h).onclick=async e=>{ const by={}; att.forEach(({g})=>(by[g.owner||"Unassigned"]=by[g.owner||"Unassigned"]||[]).push(g)); e.currentTarget.disabled=true; let n=0;
-    for(const [o,L] of Object.entries(by)){ try{ await slackPost(`*${d.name}: your follow-ups* (${o})\n${L.map(g=>`• *${g.name}*, ${g.company}: ${g.note||"no notes"} → ${g.nextStep||"Book a meeting"}${g.fuDraft?" (draft ready to approve in Encore)":""}`).join("\n")}\nPlease follow up within 24 hours.`); n++ }catch{} }
+    for(const [o,L] of Object.entries(by)){ try{ await slackPost(`*${d.name}: your follow-ups* (${o})\n${L.map(g=>`• *${g.name}*, ${g.company}: ${g.note||"no notes"} → ${g.nextStep||"Book a meeting"}`).join("\n")}\nApprove the drafts and tick next steps here (no login): ${d.id?aeLink(d,o):"save the event first"}\nPlease follow up within 24 hours.`); n++ }catch{} }
     toast(`Sent ${n} list${n===1?"":"s"} on Slack`); e.currentTarget&&(e.currentTarget.disabled=false) }) }
 function crmOn(){ if(!window.ENCORE_SERVER) return null; const k=["crm","sfdc"].find(k=>srcState[k]==="on"); return k&&CONNECT[k] }
 function crmMembers(d){ return d.guests.filter(g=>crmStatus(g)&&g.email).map(g=>{ const [f,...l]=(g.name||"").split(" "); return {email:g.email,firstName:f||"",lastName:l.join(" "),company:g.company||"",title:g.title||"",status:crmStatus(g)} }) }
@@ -3529,6 +3537,33 @@ function fmtDate(s){ if(!s) return "Date TBD"; const d=new Date(s+"T12:00:00"); 
 // Guest-facing pages (#rsvp-ID, #survey-ID)
 // ==================================================================
 
+// ---------------- AE follow-up page: one link per AE, no login ----------------
+let allAe=[];
+function aeLink(d,ae){ return `${ART_URL}#approve-${d.id}-${slug(ae)}` }
+function applyAeActions(d){ if(!d.id) return; allAe.filter(a=>a.eventId===d.id).sort((a,b)=>a.at-b.at).forEach(a=>{ const g=d.guests.find(x=>x.name===a.guest); if(!g) return;
+  if(a.action==="approve"&&(!g.fuApprovedAt||g.fuApprovedAt<a.at)){ g.fuState=g.fuState==="Sent"?"Sent":"Approved"; g.fuApprovedBy=a.ae; g.fuApprovedAt=a.at; if(a.draft) g.fuDraft=a.draft }
+  if(a.action==="sent"&&(!g.contactedAt||g.contactedAt<a.at)){ g.fuState="Sent"; g.contactedAt=a.at; if(!g.leadAt) g.leadAt=a.at }
+  if(a.action==="done"&&!g.nsDoneAt){ g.nsDoneAt=a.at }
+  if(a.action==="note"&&a.note&&(g.noteAt||0)<a.at){ g.note=a.note; g.noteAt=a.at } }) }
+async function renderApprove(host,eventId,aeSlug){
+  let ev=allEvents.find(e=>e.id===eventId); if(!ev&&db){ try{ const s=await db.doc("events/"+eventId).get(); if(s.exists) ev={id:eventId,...s.data()} }catch{} }
+  if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady||!db?"We couldn't find this event.":"Loading…"}</p></div>`; return }
+  const e=hydrate(ev); try{ const s=await db.collection("aeactions").where("eventId","==",eventId).get(); const got=s.docs.map(x=>x.data()), key=a=>a.guest+a.action+a.at; allAe=[...allAe.filter(a=>a.eventId!==eventId||!got.some(g=>key(g)===key(a))),...got] }catch{} applyAeActions(e);
+  const L=e.guests.filter(g=>g.status==="Attended"&&slug(g.owner||"")===aeSlug), ae=L[0]?.owner||aeSlug.replace(/-/g," ");
+  const send=async(g,action,extra={})=>{ try{ await db.collection("aeactions").add({eventId,guest:g.name,ae,action,at:Date.now(),...extra}); allAe.push({eventId,guest:g.name,ae,action,at:Date.now(),...extra}); toast({approve:"Approved",sent:"Marked sent",done:"Next step marked done",note:"Notes saved"}[action]); renderApprove(host,eventId,aeSlug) }catch(err){ toast("Couldn't save: "+(err?.message||"try again")) } };
+  host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel stack"><small class="eyebrow">${esc(e.brand||"")} · ${esc(e.name)}</small><h2>${esc(ae)}, your follow-ups</h2><p class="note">${L.length} of your accounts came. Check each draft, edit it if you like, approve it, and tick the next step when it's happened. Marketing sees it right away.</p></div>
+    ${L.length?L.map((g,i)=>`<div class="panel stack aecard"><div class="btns" style="justify-content:space-between"><div><b>${esc(g.name)}</b><div class="note">${esc(g.title||"")} · ${esc(g.company||"")}</div></div><span class="pchip ${g.nsDoneAt?"good":g.fuState==="Sent"?"good":g.fuState==="Approved"?"":"warn"}">${g.nsDoneAt?"Next step done":g.fuState==="Sent"?"Sent":g.fuState==="Approved"?"Approved":"Needs you"}</span></div>
+      <label class="f">What they said<textarea data-aen="${i}" rows="2">${esc(g.note||"")}</textarea></label>
+      <p class="note">Next step: <b>${esc(g.nextStep||"Book a meeting")}</b>${g.gift?` · Gift: ${esc(g.gift)}${g.giftStatus?` (${esc(g.giftStatus)})`:""}`:""}</p>
+      <label class="f">Follow-up<textarea data-aed="${i}" rows="7" placeholder="No draft yet. Write yours here, or ask marketing to draft one.">${esc(g.fuDraft||"")}</textarea></label>
+      <div class="btns"><button class="btn primary sm" data-aea="${i}">${g.fuState==="Approved"||g.fuState==="Sent"?"Approve again":"Approve"}</button><button class="btn sm" data-aes="${i}">I sent it</button><button class="btn sm ${g.nsDoneAt?"":"ghost"}" data-aedone="${i}" ${g.nsDoneAt?"disabled":""}>${g.nsDoneAt?"✓ Next step done":"Next step happened"}</button><button class="btn ghost sm" data-aec="${i}">Copy</button></div></div>`).join(""):`<div class="panel"><p class="empty">None of your accounts are marked as attended yet. Check back after the event.</p></div>`}
+    <p class="note" style="text-align:center">Hosted on Encore</p></div>`;
+  $$("[data-aea]",host).forEach(b=>b.onclick=()=>{ const g=L[+b.dataset.aea]; const t=$(`[data-aed="${b.dataset.aea}"]`,host).value.trim(); if(!t){ toast("Add or paste the follow-up first."); return } send(g,"approve",{draft:t}) });
+  $$("[data-aes]",host).forEach(b=>b.onclick=()=>send(L[+b.dataset.aes],"sent"));
+  $$("[data-aedone]",host).forEach(b=>b.onclick=()=>send(L[+b.dataset.aedone],"done"));
+  $$("[data-aec]",host).forEach(b=>b.onclick=()=>copyTxt($(`[data-aed="${b.dataset.aec}"]`,host).value));
+  $$("[data-aen]",host).forEach(x=>x.onchange=()=>send(L[+x.dataset.aen],"note",{note:x.value.trim()})) }
+
 // ---------------- Guest wall: who's coming ----------------
 let allWall=[];
 function wallId(r){ return `${r.eventId}--${slug(r.name)}-${String(r.code||"").toLowerCase()}` }
@@ -3570,6 +3605,7 @@ async function renderGuest(){
   const host=$("#view-guest");
   if(location.hash==="#roadmap"){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
   const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
+  const am=location.hash.match(/^#approve-([A-Za-z0-9_]+)-([a-z0-9-]+)$/); if(am){ host.classList.remove("wide"); if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link on your Encore server or in claude.ai.</p></div>`; return } if(host.dataset.key!=="ae"+am[1]+am[2]){ host.dataset.key="ae"+am[1]+am[2]; renderApprove(host,am[1],am[2]) } return }
   const wm=location.hash.match(/^#guests-([A-Za-z0-9_]+)$/); if(wm){ host.classList.add("wide"); if(host.dataset.key!=="wall"+wm[1]){ host.dataset.key="wall"+wm[1]; renderWall(host,wm[1]) } return }
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
@@ -3626,6 +3662,7 @@ async function renderGuest(){
     <label class="f">Dietary needs<input id="g-diet" placeholder="None"></label>
     <div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
     <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall" checked> Show my name, role and photo on the guest page</label>
+    <p class="note">${esc(e.brand||"Your host")} uses your details to run this event and follow up with you about it. Your photo and answers aren't shared beyond the guest page you opt into.</p>
     <div class="btns"><button type="button" class="btn primary" id="g-send">${e.approvalRequired?"Request a seat":"Send RSVP"}</button></div></div>`;
   $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("Couldn't read that image") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});

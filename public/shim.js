@@ -3,7 +3,7 @@
  * own script, so window.claude exists synchronously. */
 window.ENCORE_SERVER = true; // tells the page it runs on this server (guest links use location.origin)
 // Who's signed in (named team members only), so approvals and the audit log record a real person.
-if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash || "")) {
+if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash || "")) {
   fetch("/api/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((m) => {
     if (!m?.verified) return;
     window.ENCORE_ME = m;
@@ -13,7 +13,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash || "
 (function () {
   "use strict";
 
-  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-)/.test(location.hash || "");
+  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash || "");
   const capError = (code, message, extra) => Object.assign({ code, message }, extra || {});
 
   async function api(method, url, body, { raw = false, headers = {} } = {}) {

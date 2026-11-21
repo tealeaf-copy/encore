@@ -32,3 +32,21 @@ test("named users sign in with their email and the team password", async () => {
   assert.equal(log.entries[0].verified, true);
   assert.equal((await fetch(srv.base + "/api/me")).status, 401, "signed out");
 });
+
+test("approvals are checked against roles and recorded by the server", async () => {
+  const r = await login({ password: "team-pass", email: "maya@acme.com" });
+  const cookie = r.headers.get("set-cookie").split(";")[0];
+  const post = (body, c = cookie) => fetch(srv.base + "/api/approve", { method: "POST", headers: { cookie: c, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  let x = await post({ eventId: "ev9", eventName: "Kitchen", role: "Exec sponsor", cost: 18000 });
+  assert.equal(x.status, 403, "Maya isn't an exec sponsor");
+  x = await post({ eventId: "ev9", eventName: "Kitchen", role: "Event lead", cost: 18000, committed: 9800 });
+  assert.equal(x.status, 200);
+  const roles = await fetch(srv.base + "/api/approvals?eventId=ev9", { headers: { cookie } }).then((y) => y.json());
+  assert.equal(roles.roles["Event lead"].by, "Maya Chen");
+  assert.equal(roles.roles["Event lead"].cost, 18000);
+  const put = await fetch(srv.base + "/api/db/doc?path=approvals/ev9", { method: "PUT", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({ roles: { "Exec sponsor": { by: "forged" } } }) });
+  assert.equal(put.status, 403, "approvals can't be written through the data API");
+  const log = await fetch(srv.base + "/api/audit?eventId=ev9", { headers: { cookie } }).then((y) => y.json());
+  assert.match(log.entries[0].what, /approved the plan at \$18,000 planned, \$9,800 committed as Event lead/);
+  assert.equal((await post({ eventId: "ev9", role: "Event lead" }, "")).status, 401);
+});

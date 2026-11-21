@@ -103,7 +103,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, verified: true } : { verified: false, teamConfigured: users().length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^audit(\/|$)/;
+  const AUDIT = /^(audit|approvals)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     if (req.method !== "GET" && AUDIT.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted", message: "The audit log is append-only. Use /api/audit." });
     next();
@@ -113,6 +113,25 @@ export function createApp({ store, dataDir }) {
     const eventId = String(b.eventId || "").slice(0, 80), what = String(b.what || "").trim().slice(0, 500);
     if (!what) return res.status(400).json({ code: "invalid", message: "what is required" });
     res.json(store.add("audit", { eventId, what, who: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now() }));
+  });
+  // Plan approvals are recorded by the server: it checks the signed-in person's roles,
+  // keeps the approval in a collection the data API can't write, and logs it.
+  app.post("/api/approve", json, (req, res) => {
+    const u = currentUser(req), b = req.body || {};
+    const eventId = String(b.eventId || "").slice(0, 80), role = String(b.role || "").trim().slice(0, 80);
+    if (!eventId || !role) return res.status(400).json({ code: "invalid", message: "eventId and role are required" });
+    if (users().length && !u) return res.status(401).json({ code: "not_granted", message: "Sign in as a team member to approve." });
+    if (u && u.roles.length && !u.roles.some((r) => r.toLowerCase() === role.toLowerCase())) return res.status(403).json({ code: "not_granted", message: `${u.name} doesn't have the "${role}" role.` });
+    const path = "approvals/" + eventId.replace(/[^A-Za-z0-9_-]/g, "_"), cur = store.get(path)?.data || { eventId, roles: {} };
+    const approval = { by: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now(), cost: +b.cost || 0, committed: +b.committed || 0 };
+    if (b.withdraw) delete cur.roles[role]; else cur.roles[role] = approval;
+    store.set(path, cur);
+    store.add("audit", { eventId, what: `${String(b.eventName || eventId).slice(0, 120)}: ${b.withdraw ? "withdrew approval" : `approved the plan at $${approval.cost.toLocaleString("en-US")} planned, $${approval.committed.toLocaleString("en-US")} committed`} as ${role}`, who: approval.by, email: approval.email, verified: approval.verified, at: approval.at });
+    res.json({ ok: true, approval, roles: cur.roles });
+  });
+  app.get("/api/approvals", (req, res) => {
+    const id = String(req.query.eventId || "").replace(/[^A-Za-z0-9_-]/g, "_");
+    res.json({ roles: store.get("approvals/" + id)?.data?.roles || {} });
   });
   app.get("/api/audit", (req, res) => {
     const id = String(req.query.eventId || "");

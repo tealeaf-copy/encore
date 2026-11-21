@@ -1,0 +1,91 @@
+{
+  "venues": [
+    {
+      "name": "The Chopping Block (Lincoln Square)",
+      "type": "Cooking school / demonstration kitchen",
+      "area": "Lincoln Square (North Side), not West Loop",
+      "address": "4747 N Lincoln Ave, Chicago, IL 60625",
+      "url": "https://www.thechoppingblock.com/",
+      "usedFor": "Recreational cooking school running public hands-on and demo classes plus private cooking parties, corporate team building and client entertaining.",
+      "capacity": "Private events for 6 to 50 guests. Thyme Kitchen: hands-on parties up to 30; Eggplant Kitchen up to 20; both floors up to 50; all three spaces 50-65 depending on event type (venue website).",
+      "price": "$1,700 minimum, based on menu and beverage choices; food and drink minimums vary by group size, day and time. Events last 2.5 hours incl. 1.5 hours hands-on cooking plus multi-course meal; beverage packages extra.",
+      "priceSource": "https://www.thechoppingblock.com/events",
+      "rating": {"site": "CourseHorse", "stars": 4.7, "count": 285, "seenOn": "2026-11-21", "note": "Yelp listing shows 4.3 stars / 242 reviews per a search-index snapshot titled 'Updated June 2026'; Yelp page itself returned 403 and was not opened."},
+      "reviews": [
+        {"date": "2026-08", "site": "CourseHorse", "author": "tom t.", "quote": "good class, good, teacher/chef. Would like to have discussed more about the different flavors and spices interacting with each other and taste profiles", "sentiment": "mixed", "url": "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square"},
+        {"date": "2026-06", "site": "CourseHorse", "author": "Michael S.", "quote": "Excellent space. Great instruction by Chef David and his outstanding assistant Alexi.", "sentiment": "positive", "url": "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square"},
+        {"date": "2026-05", "site": "CourseHorse", "author": "Anonymous", "quote": "Hands-on is always better, and that is what I received.", "sentiment": "positive", "url": "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square"},
+        {"date": "2025-12", "site": "CourseHorse", "author": "Linda S.", "quote": "Organized extremely well. Good student to chef ratio. Only reason I didn’t give it a 5 is felt rushed to eat what we made.", "sentiment": "mixed", "url": "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square"},
+        {"date": "2025-12", "site": "CourseHorse", "author": "Tiffani B.", "quote": "the class started later and it seemed like the instructor was rushing the process due to that.", "sentiment": "mixed", "url": "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square"}
+      ],
+      "photosUrl": "https://www.thechoppingblock.com/explore-our-location",
+      "photo": {"file": "the-chopping-block.jpg", "sourceUrl": "https://www.thechoppingblock.com/hubfs/2025-website-redesign/imagery/location/Thyme%20Kitchen%201.jpg", "rights": "Venue's own website (Thyme Kitchen photo); all rights reserved. Not openly licensed."},
+      "foundOn": ["Web search", "Venue website", "CourseHorse", "Yelp (search index only)", "Tripadvisor (search index only)", "Tripleseat", "The Vendry"],
+      "sources": [
+        "https://www.thechoppingblock.com/events",
+        "https://www.thechoppingblock.com/events/private",
+        "https://www.thechoppingblock.com/explore-our-location",
+        "https://coursehorse.com/chicago/schools/cooking/the-chopping-block-lincoln-square",
+        "https://www.yelp.com/biz/the-chopping-block-chicago",
+        "https://www.yelp.com/biz/the-chopping-block-chicago-2"
+      ],
+      "notes": "The former Merchandise Mart location is listed as CLOSED on Yelp; only Lincoln Square operates."
+    },
+    {
+      "name": "Tortello (DeSora private event space)",
+      "type": "Restaurant with private upstairs event space and dedicated kitchen",
+      "area": "Wicker Park, not West Loop",
+      "address": "1746 W Division St, Chicago, IL 60622",
+      "url": "https://www.tortellopasta.com/private-events",
+      "usedFor": "Fresh-pasta shop and counter-service Italian restaurant whose upstairs space, DeSora, hosts hands-on pasta classes and family-style seated dinners for team-building, celebrations and client entertaining.",
+      "capacity": "DeSora suits groups of 10-48 people (private events page); hands-on pasta-making classes for up to 40 people upstairs in DeSora (pasta classes page).",
+      "price": null,
+      "priceSource": null,
+      "priceNote": "Event packages are in a PDF linked from the private events page that redirects to a filesusr.com host this session could not reach. The only published prices found are for the small pasta-window class (4-6 people; Tock: $600 buyout for 4), not DeSora.",
+      "rating": {"site": "Yelp", "stars": 4.2, "count": 628, "seenOn": "2026-11-21", "note": "From a search-index snapshot of the Yelp page titled 'Updated November 2026 - 628 Reviews'; Yelp page itself was not opened (403). Treat as unverified."},
+      "reviews": [
+        {"date": null, "site": "Tortello website (venue-curated testimonial)", "author": "Paul S.", "quote": "Perfect spot for our board dinner. Private space with just the right level of attentive service.", "sentiment": "positive", "url": "https://www.tortellopasta.com/private-events"}
+      ],
+      "reviewsNote": "Could not open Yelp, Google, Tripadvisor or Tock to copy dated independent reviews verbatim. Only the venue's own undated testimonial is included.",
+      "photosUrl": "https://www.tortellopasta.com/private-events",
+      "photo": {"file": "tortello-desora.jpg", "sourceUrl": "https://static.wixstatic.com/media/805d7d_8974c666280c4ddf94c4a6e984873262~mv2.jpg", "rights": "Venue's own website (image on its private events page, shows the upstairs dining/class room); all rights reserved. Not openly licensed."},
+      "foundOn": ["Web search", "Venue website", "Choose Chicago (search index)", "Tock (search index)", "OpenTable (search index)", "Yelp (search index only)", "Time Out (search index)"],
+      "sources": [
+        "https://www.tortellopasta.com/private-events",
+        "https://www.tortellopasta.com/pasta-classes",
+        "https://www.tortellopasta.com/",
+        "https://www.choosechicago.com/listing/tortello/",
+        "https://www.exploretock.com/tortello/event/567108",
+        "https://www.yelp.com/biz/tortello-chicago"
+      ]
+    },
+    {
+      "name": "Chicago Chefs' Table",
+      "type": "Loft event space with professional kitchen (private dining / culinary event venue)",
+      "area": "Near North Side (per Tagvenue); on W Division St near Goose Island",
+      "address": "1071 W Division St, Chicago, IL 60642",
+      "url": "https://www.tagvenue.com/us/venues/chicago/34896/chicago-chefs-table",
+      "usedFor": "Rentable private event venue for chef-led dinners, demonstrations, corporate gatherings and showers; can also be rented to host and cook your own event without staff.",
+      "capacity": "Skyline Loft: dining up to 60, 70 seats / 100 standing; '10 guests interacting with the chef at the kitchen counter'. Grand Oak Room: 120 seats / 200 standing (Tagvenue). Hands-on capacity not stated.",
+      "price": "Skyline Loft from $550 minimum spend per session (also listed as $550 + $100 hire fee + per person); Grand Oak Room from $3,500 minimum spend. No alcohol provided; BYO with corkage fee.",
+      "priceSource": "https://www.tagvenue.com/us/rooms/chicago/66694/chicago-chefs-table/the-skyline-loft",
+      "rating": {"site": "Tagvenue", "stars": 5.0, "count": 3, "seenOn": "2026-11-21", "note": "Peerspace shows 5.0 / 6 reviews per search-index snippet (not opened). No Google rating found."},
+      "reviews": [
+        {"date": null, "site": "Tagvenue", "author": "Ryan M.", "quote": "Excellent communication", "sentiment": "positive", "url": "https://www.tagvenue.com/us/venues/chicago/34896/chicago-chefs-table", "dateNote": "Shown as 'Submitted 2 months ago' on 2026-11-21 (about 2026-09)."},
+        {"date": null, "site": "Tagvenue", "author": "Latoya W.", "quote": "Excellent communication", "sentiment": "positive", "url": "https://www.tagvenue.com/us/venues/chicago/34896/chicago-chefs-table", "dateNote": "Shown as 'Submitted 1 year ago' on 2026-11-21."}
+      ],
+      "reviewsNote": "Tagvenue reviews are star ratings with a 'communication' label only; no substantive written reviews found. No official venue website found.",
+      "photosUrl": "https://www.tagvenue.com/us/venues/chicago/34896/chicago-chefs-table",
+      "photo": {"file": "chicago-chefs-table.jpg", "sourceUrl": "https://www.tagvenue.com/resize/18/70/widen-1680-noupsize;34896-chicago-chefs-table-venue.jpg", "rights": "Venue-supplied listing photo on Tagvenue; all rights reserved. Not from the venue's own website (none found), not openly licensed."},
+      "foundOn": ["Tagvenue", "Peerspace (search index)", "LiquidSpace (search index)", "PartySlate (search index)"],
+      "sources": [
+        "https://www.tagvenue.com/us/venues/chicago/34896/chicago-chefs-table",
+        "https://www.tagvenue.com/us/rooms/chicago/66694/chicago-chefs-table/the-skyline-loft",
+        "https://www.tagvenue.com/us/rooms/chicago/79211/chicago-chefs-table/the-grand-oak-room",
+        "https://www.peerspace.com/pages/listings/68f16f2c894826f1d0ecc185",
+        "https://liquidspace.com/us/il/chicago/chicago-chefs-table",
+        "https://www.partyslate.com/venues/chicago-chef-s-table"
+      ]
+    }
+  ]
+}

@@ -7223,6 +7223,27 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
   }catch(err){ console.warn(err) } return r } }
 // links to host pages use the storefront URL
 { const _rg14=renderGuest; renderGuest=async function(){ const r=await _rg14.apply(this,arguments); try{ $$('#view-guest a[href^="/h/"]').forEach(a=>a.setAttribute("href",a.getAttribute("href").replace(/^\/h\//,"/@"))) }catch{} return r } }
+
+// ==================================================================
+// Guest pages like a good host: greet by name, and keep the one action within reach on phones.
+// ==================================================================
+{ const _rg15=renderGuest; renderGuest=async function(){ const r=await _rg15.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), today=new Date().toISOString().slice(0,10), past=e.date&&e.date<today&&e.stage!=="interest";
+    // a greeting from the host, at the very top
+    if(!$("#hostHello")&&!past){ const H=window.__gHostInfo||{}, name=hostFirst(e), paid=e.price&&e.price!=="chip"; const g=document.createElement("div"); g.id="hostHello"; g.className="host-hello";
+      const line=e.stage==="interest"?`${esc(name)} is seeing who's in for`:paid?`${esc(name)} is saving you a seat at`:e.approvalRequired?`${esc(name)} would love you to join`:`${esc(name)} is hosting`;
+      g.innerHTML=`<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#C4532F",40):pipSVG("happy",34)}</span><span>${line}</span>`; const inv=host.querySelector(".invite")||host.firstElementChild; inv?.before(g) }
+    // a booking bar that stays on screen on phones until they've replied
+    const form=$("#g-send",host)?.closest(".stack")||$("#gResp",host)?.closest(".stack")||$("#ic-pick",host)?.closest(".stack"); $("#gBar")?.remove();
+    if(form&&!form.hidden&&!M&&!past&&window.innerWidth<760){ const R=(e.headcount&&e.guests)?Math.max(0,(+e.headcount||0)-(e.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length):null, paid=e.price&&e.price!=="chip";
+      const left=paid?`<b>${esc(e.price)}</b>${e.headcount?`<small>${esc(e.headcount)} seats</small>`:""}`:e.stage==="interest"?`<b>Free</b><small>If enough people are in, it's on</small>`:`<b>Free</b><small>${e.approvalRequired?`${esc(hostFirst(e))} approves each spot`:"Tap to say yes"}</small>`;
+      const label=e.stage==="interest"?"I'd come":e.approvalRequired?(paid?"Request a seat":"Ask to join"):paid?"Book a seat":"I'm in";
+      const bar=document.createElement("div"); bar.id="gBar"; bar.className="g-bar"; bar.innerHTML=`<div>${left}</div><button class="btn primary" type="button">${label}</button>`; document.body.appendChild(bar);
+      $("button",bar).onclick=()=>{ form.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("#g-name",host)?.focus(),450) };
+      const io=new IntersectionObserver(([en])=>{ bar.classList.toggle("hide",en.isIntersecting) },{threshold:.15}); io.observe(form) } }catch(err){ console.warn(err) } return r } }
+// the event-host lookup keeps the host's portrait for the greeting
+{ const _f2=window.fetch; window.fetch=function(u,o){ const p=_f2.apply(this,arguments); try{ if(String(u).includes("/api/public/event-host/")) p.then(r=>r.clone().json()).then(j=>{ if(j?.host){ window.__gHostInfo={...(window.__gHostInfo||{}),...j.host,avatarArt:j.host.avatarArt||window.__gHostInfo?.avatarArt}; if(j.person) window.__gHostName=window.__gHostName||j.person; const hv=document.querySelector("#hostHello .hh-av"); if(hv&&j.host.avatarArt&&window.EncoreAvatars) hv.innerHTML=window.EncoreAvatars.svg(j.host.avatarArt,j.host.accent||"#C4532F",40) } }).catch(()=>{}) }catch{} return p } }
+// one title for Pip
+{ const _hy=hypeHTML; hypeHTML=function(d){ return _hy(d).replace("Pip, your hype man","Pip, your hype pig") } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7489,4 +7510,7 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .wc-reqs{border:2px solid #5B7FD6;border-radius:14px;padding:10px 12px;margin:10px 0;background:#F5F8FF}.wc-reqs h4{margin:0 0 6px}.wc-req{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px dashed var(--line)}.wc-req>div:first-child{display:flex;flex-direction:column;min-width:0}.wc-req small{color:#5F5650}.wc-req small i{color:#2B211C}
 .youre-in{display:flex;gap:12px;align-items:center;border-radius:18px;padding:14px;margin:10px 0;background:#EAF3EC;border:1px solid #BCD8C3}.youre-in h3{margin:2px 0}.youre-in p{margin:0}
 .recap{display:flex;gap:12px;align-items:flex-start;border-radius:18px;padding:16px;margin:12px 0;background:#FFF7E6;border:1px solid #F2D48F}.recap p{margin:4px 0 10px}.new-ok{margin:6px 0 0}
+.host-hello{display:flex;gap:10px;align-items:center;margin:0 0 10px;font:400 17px "Fraunces",Georgia,serif;color:#5F5650}.host-hello .hh-av{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.g-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#F7F1E8;border-top:1px solid #E4D9C8;box-shadow:0 -12px 30px -20px rgba(31,26,23,.4);transition:transform .18s ease-out}.g-bar.hide{transform:translateY(110%)}.g-bar div{display:flex;flex-direction:column}.g-bar b{font:500 20px "Fraunces",Georgia,serif}.g-bar small{color:#75685F;font-size:12px}.g-bar .btn{padding:12px 20px}
+@media (prefers-reduced-motion:reduce){.g-bar{transition:none}}
 </style>

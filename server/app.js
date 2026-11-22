@@ -376,7 +376,7 @@ export function createApp({ store, dataDir }) {
     const u = ownerOnly(req, res); if (!u) return;
     const plan = String(req.body?.plan || "");
     if (!PLANS.includes(plan)) return res.status(400).json({ code: "invalid", message: `plan must be ${PLANS.join(" or ")}` });
-    // Billing isn't wired: this records the request; an operator sets plan to "team"/"program" once paid.
+    // Billing isn't wired: this records the request; an operator sets plan to "team"/"program" once paid (team, growth or program).
     const W = updateWorkspace(u.ws, { plan: "pending_" + plan, upgradeRequest: { plan, by: u.email, at: Date.now() } });
     S(req).add("audit", { eventId: "", what: `asked to upgrade to ${plan}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
     res.json({ ok: true, plan: W.plan, upgradeRequest: W.upgradeRequest, ...trialState(W) });

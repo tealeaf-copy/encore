@@ -88,6 +88,7 @@ body.is-owner{padding-bottom:110px}
 </div>
 <footer>Hosted on Encore · <a href="/discover">Find more hosts</a></footer>
 <script src="/community.js"></script>
+<script src="/account.js"></script>
 <script src="/avatars.js"></script>
 <script src="/storefront.js"></script>
 <script src="/storeshop.js"></script>
@@ -112,8 +113,8 @@ body.is-owner{padding-bottom:110px}
     ${d.past.length ? `<div class="s-past"><h2 class="sec" style="margin-top:22px">Past gatherings</h2><div class="grid past">${d.past.map((e) => C.eventCard(e)).join("")}</div></div>` : ""}
     <div id="extras"></div>
   </div><aside class="side"><div id="sideExtras"></div>
-    <div class="card" id="follow"><h3>Join ${esc(first)}'s regulars</h3><p class="muted" style="margin:0;font-size:14px">Get a note when ${esc(first)} hosts something. No account needed. One tap to leave.</p>
-      <form class="fform" id="ff"><div class="row"><input name="name" placeholder="First name" autocomplete="given-name"><input name="email" type="email" placeholder="Email" required autocomplete="email"></div>
+    <div class="card" id="follow"><h3>Join ${esc(first)}'s regulars</h3><p class="muted" style="margin:0;font-size:14px">Get a note when ${esc(first)} hosts something, and first dibs on seats. Takes a free account; ${esc(first)}'s page is your invite. One tap to leave.</p>
+      <form class="fform" id="ff"><div class="row"><input name="name" placeholder="First name" autocomplete="given-name"><input name="email" type="email" placeholder="Email" autocomplete="email"></div>
       ${tastes.length ? `<div class="chips" aria-label="What you'd come for">${tastes.map((t) => `<label><input type="checkbox" name="t" value="${esc(t)}"><span>${esc(t)}</span></label>`).join("")}</div>` : ""}
       <button class="btn" type="submit">Follow ${esc(first)}</button><small class="muted" id="ferr" role="alert"></small></form></div>
     ${h.fanclubUrl || h.supportUrl ? `<div class="card"><h3>Support ${esc(first)}</h3>${h.fanclubPerks ? `<p class="perk">${esc(h.fanclubPerks)}</p>` : `<p class="perk">Hosting costs ingredients and time. Chip in if you've enjoyed one.</p>`}
@@ -140,7 +141,7 @@ body.is-owner{padding-bottom:110px}
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You follow ${esc(first)}.</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff);
-    try { const j = await C.follow({ handle: h.handle, email: fd.get("email"), name: fd.get("name"), tastes: fd.getAll("t"), via: new URLSearchParams(location.search).get("via") || "page" });
+    try { const j = await C.follow({ handle: h.handle, hostName: h.name, email: fd.get("email"), name: fd.get("name"), tastes: fd.getAll("t"), via: new URLSearchParams(location.search).get("via") || "page" });
       C.oink(); document.getElementById("fc").textContent = j.followers; document.getElementById("topFollow").textContent = "Following ✓";
       try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(h.handle)) L.push(h.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
       ff.innerHTML = `<div class="done"><span class="hop">${C.pipSVG("happy", 40)}</span><div><b>You're in.</b><div class="muted" style="font-size:14px">${esc(first)} can now tell you about the next one first.</div></div></div>`;

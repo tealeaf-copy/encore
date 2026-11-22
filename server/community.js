@@ -112,7 +112,10 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   app.get("/api/signup/config", (req, res) => res.json({ inviteOnly: inviteOnly() }));
   app.get("/api/codes/:code", (req, res) => { if (limited(req, 60)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const r = C.checkCode(req.params.code); const host = r.c ? C.profileOf(r.c.ownerWs) : null; res.json({ valid: r.ok, ...(r.ok ? {} : { message: r.message }), ...(r.c ? { from: first(r.c.ownerName), host: host?.handle ? { handle: host.handle, name: host.name } : null } : {}) }); });
-  app.get("/api/codes", (req, res) => { const u = me(req, res); if (!u) return; let L = C.codesOf(u.email); if (!L.length) { C.issueCodes({ ws: u.ws, email: u.email, name: u.name }); L = C.codesOf(u.email); }
+  // a regular who gets a code can start hosting
+  app.post("/api/me/unlock", small, (req, res) => { const u = me(req, res); if (!u) return; const code = clean(req.body?.code, 20).toUpperCase(), r = C.checkCode(code); if (!r.ok) return res.status(400).json({ code: "invalid", message: r.message });
+    if (r.c) C.useCode(code, { ws: u.ws, email: u.email, name: u.name }); updateWorkspace(u.ws, { regularOnly: false }); C.issueCodes({ ws: u.ws, email: u.email, name: u.name }); res.json({ ok: true }); });
+  app.get("/api/codes", (req, res) => { const u = me(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.json({ codes: [], regularOnly: true }); let L = C.codesOf(u.email); if (!L.length) { C.issueCodes({ ws: u.ws, email: u.email, name: u.name }); L = C.codesOf(u.email); }
     const o = publicOrigin(req); res.json({ codes: L.map((c) => ({ code: c.code, used: !!c.usedAt, usedBy: c.usedByName ? first(c.usedByName) : null, link: `${o}/join?code=${c.code}` })) }); });
   app.post("/api/waitlist", small, (req, res) => { if (limited(req, 5)) return res.status(429).json({ code: "rate_limited", message: "Too many requests from here." }); const b = req.body || {}, email = clean(b.email, 200).toLowerCase();
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email so a host can send you a code." }); C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants: clean(b.wants, 140) }); res.json({ ok: true }); });
@@ -126,12 +129,15 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     res.json({ ok: true, emailed, link, code: free.code }); });
   // Host page: the owner edits it; anyone can read it.
   app.get("/api/host/profile", (req, res) => { const u = me(req, res); if (!u) return; res.json({ host: C.profileOf(u.ws), followers: C.followersOf(u.ws).length }); });
-  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
+  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Hosting on Encore is invite-only. Add an invite code to set up your page." }); const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), host: h, followers: C.followersOf(ws).length, upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
-  app.post("/api/public/follow", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), email = clean(b.email, 200).toLowerCase();
-    if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." }); if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add your email so the host can tell you about the next one." });
+  app.post("/api/public/follow", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), acct = currentUser(req);
+    if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+    // regulars have accounts: the host knows who they are, and they can leave or come back from any device
+    if (!acct || acct.ws === DEFAULT_WS) return res.status(401).json({ code: "account_required", message: "Create a free account to join their regulars." });
+    const email = clean(acct.email, 200).toLowerCase(); b.name = b.name || acct.name;
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [] }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
     res.json({ ok: true, followers: C.followersOf(ws).length }); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));

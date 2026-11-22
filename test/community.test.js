@@ -37,7 +37,7 @@ test("Invite-only: the first member gets in, then everyone needs a code, and cod
   assert.equal(red.status, 302); assert.match(red.headers.get("location"), /\/signup\?code=/);
 });
 
-test("Host pages: a handle, followers without an account, discover, and announcing to followers", async () => {
+test("Host pages: a handle, regulars with accounts (the page is the invite), discover, and announcing to followers", async () => {
   // Make a member (codes from the first member in the previous test, or bootstrap).
   let A = await join("Mai Pham", "mai@example.com");
   if (A.r.status !== 200) { const seed = await post("/api/login", { email: "linh@example.com", password: "long-password-1" }); const codes = (await (await get("/api/codes", cookieOf(seed))).json()).codes; A = await join("Mai Pham", "mai@example.com", codes.find((c) => !c.used).code); }
@@ -56,10 +56,17 @@ test("Host pages: a handle, followers without an account, discover, and announci
   assert.equal(page.host.name, "Mai's Kitchen"); assert.equal(page.upcoming.length, 1); assert.equal(page.upcoming[0].title, "Free pandan honeycomb cake");
   assert.equal((await get("/h/pandan-mai")).status, 200);
   // follow, twice (no double count), and bad email
-  assert.equal((await post("/api/public/follow", { handle: "pandan-mai", email: "fan@example.com", name: "Fan One", tastes: ["baking"] })).status, 200);
-  const f2 = await (await post("/api/public/follow", { handle: "pandan-mai", email: "FAN@example.com", name: "Fan One" })).json();
+  // following takes an account; signing up from a host's page needs no code and joins their regulars
+  const anon = await post("/api/public/follow", { handle: "pandan-mai", email: "fan@example.com" });
+  assert.equal(anon.status, 401); assert.equal((await anon.json()).code, "account_required");
+  const fanSignup = await post("/api/signup", { name: "Fan One", email: "fan@example.com", password: "long-password-1", mode: "friends", regularOf: "pandan-mai" });
+  assert.equal(fanSignup.status, 200, "the host's page is the invite"); const fan = cookieOf(fanSignup);
+  const f2 = await (await post("/api/public/follow", { handle: "pandan-mai", tastes: ["baking"] }, fan)).json();
   assert.equal(f2.followers, 2, "the inviter plus one fan, counted once");
-  assert.equal((await post("/api/public/follow", { handle: "pandan-mai", email: "nope" })).status, 400);
+  assert.equal((await post("/api/signup", { name: "No Host", email: "nohost@example.com", password: "long-password-1", mode: "friends", regularOf: "nobody-here" })).status, 403, "a made-up handle is no invite");
+  // a regular can't open a host page or hand out codes until they have a code of their own
+  assert.equal((await post("/api/host/profile", { handle: "fan-one", name: "Fan" }, fan)).status, 403);
+  assert.deepEqual((await (await get("/api/codes", fan)).json()).codes, []);
   // followers can't be written through the data API
   assert.equal((await put("followers/x", { email: "fake@example.com" }, A.cookie)).status, 403);
   const fl = await (await get("/api/host/followers", A.cookie)).json();

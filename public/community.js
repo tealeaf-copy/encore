@@ -40,8 +40,9 @@
     return `<a class="hc" href="/@${encodeURIComponent(h.handle)}" style="--c:${esc(ac)}"><span class="hc-av">${av}</span><b>${esc(h.name || "@" + h.handle)}</b><small>${esc([h.hood, h.city].filter(Boolean).join(", "))}</small><span class="hc-n">${h.followers || 0} follower${h.followers === 1 ? "" : "s"}${h.hosted ? ` · ${h.hosted} hosted` : ""}</span>${(h.tags || []).length ? `<span class="tags">${h.tags.slice(0, 3).map((t) => `<i>${esc(t)}</i>`).join("")}</span>` : ""}</a>`;
   }
   async function follow({ handle, email, name, tastes, via, eventId }) {
-    const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle, email, name, tastes, via, eventId }) });
-    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again.");
+    let j; if (window.EncoreAccount) { j = await window.EncoreAccount.follow({ handle, email, name, tastes, via, eventId }, { hostName: arguments[0]?.hostName || "" }); if (!j) { const e = new Error(""); e.cancelled = true; throw e; } }
+    else { const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle, email, name, tastes, via, eventId }) });
+      j = await r.json().catch(() => ({})); if (r.status === 401) { location.href = "/signup?mode=friends&regularOf=" + encodeURIComponent(handle); return j; } if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again."); }
     try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(handle)) L.push(handle); localStorage.setItem("encore.following", JSON.stringify(L)); if (email) localStorage.setItem("encore.email", email); } catch {}
     return j;
   }

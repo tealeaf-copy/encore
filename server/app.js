@@ -34,7 +34,7 @@ const PAGE_FILE = path.join(ROOT, "index.html");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const TOOL_TIMEOUT_MS = 120_000;
 
-const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/shim.js"></script><script src="/avatars.js"></script></head><body>';
+const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/shim.js"></script><script src="/avatars.js"></script><script src="/account.js"></script></head><body>';
 const TAIL = "</body></html>";
 
 // Nominations come from AEs, who sign in; they are not guest-writable.
@@ -198,11 +198,12 @@ export function createApp({ store, dataDir }) {
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && allWorkspaceIds().length > 1;
-    let codeCheck = null;
-    if (needCode || code) { codeCheck = C.checkCode(code); if (needCode && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
+    let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
+    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if (needCode && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
-    C.issueCodes({ ws: W.id, email, name });
+    if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }
+    if (!regular || !needCode) C.issueCodes({ ws: W.id, email, name });
     if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
     // A brand's first minute: Encore starts researching the company while they look around.
     else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }

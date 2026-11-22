@@ -30,6 +30,7 @@ export function cleanProfile(p = {}) {
     othersDid: list(p.othersDid, 5, (x) => (clean(x?.brand, 60) && clean(x?.what, 400) ? { brand: clean(x.brand, 60), what: clean(x.what, 400), takeaway: clean(x.takeaway, 400), source: /^https?:\/\//.test(String(x.source || "")) ? clean(x.source, 400) : "" } : null)),
     ideas: list(p.ideas, 6, (x) => (clean(x?.name, 80) ? { name: clean(x.name, 80), line: clean(x.line, 320), why: clean(x.why, 320), insight: clean(x.insight, 320), category: CAT_KEYS.includes(x.category) ? x.category : "culture", people: Math.max(0, Math.min(2000, Math.round(+x.people || 0))), city: clean(x.city, 60) } : null)),
     cities: list(p.cities, 4, (s) => clean(s, 60)),
+    homeCity: clean(p.homeCity, 80),
     sources: list(p.sources, 8, (s) => (/^https?:\/\//.test(String(s?.url || "")) ? { title: clean(s.title || s.url, 120), url: clean(s.url, 400) } : null)),
     confidence: ["high", "medium", "low"].includes(p.confidence) ? p.confidence : "medium",
     unsure: list(p.unsure, 4, (s) => clean(s, 300)),

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Encore: security and data</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1B1740;--muted:#4E4B73;--bg:#F3F5FF;--line:#D9DCF2;--cobalt:#3B5BFF}
+*{box-sizing:border-box}body{margin:0;font:16px/1.65 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:780px;margin:0 auto;padding:48px 20px 80px}
+h1,h2{font-family:"Plus Jakarta Sans",Inter,sans-serif;letter-spacing:-.02em;line-height:1.15}
+h1{font-size:clamp(1.9rem,4vw,2.6rem);margin:8px 0 12px}h2{font-size:1.25rem;margin:34px 0 8px}
+p,li{color:var(--muted)}b{color:var(--ink)}a{color:var(--cobalt)}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cobalt)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:12px}
+</style></head><body><main>
+<a href="/">← Encore</a>
+<p class="eyebrow" style="margin-top:24px">Security and data</p>
+<h1>What Encore stores, where it goes, and what we don't do yet</h1>
+<p>Written for the security reviewer who gets the vendor questionnaire. If something you need isn't here, <a href="/#talk" onclick="location.href='/?contact=security#talk';return false">ask us</a>.</p>
+
+<h2>Where your data lives</h2>
+<ul>
+<li><b>Hosted by us, or in your own cloud.</b> Encore is one Node.js service with a single database file. You can run it in your own AWS, GCP or Azure account (a Dockerfile is included), in the region you choose, so event and guest data never leaves your environment.</li>
+<li><b>Workspaces are isolated.</b> Each company's data is stored under its own workspace. Every read and write is checked against the signed-in person's workspace, including files, the audit log and the Claude connector.</li>
+</ul>
+
+<h2>What data Encore needs</h2>
+<p>Names, titles, companies and work emails of the people you invite; your event plans and budgets; and, if you connect them, accounts and deals from your CRM. Running an event needs no patient, health or payment-card data.</p>
+<ul>
+<li><b>Call recordings are optional and governed by rules per market.</b> You decide whether Gong, Fathom or Granola can inform guest lists (summaries only, full transcripts, or off). Every use is written to the audit log, and nothing from a call is ever placed in text a guest reads.</li>
+<li><b>Guest pages are allowlisted.</b> RSVP pages, the guest wall and public roadmaps only receive fields meant for guests. Internal notes, revenue, budgets and deal data are stripped on the server, not just hidden in the browser.</li>
+</ul>
+
+<h2>Access and accounts</h2>
+<table><tr><th style="width:34%">Control</th><th>How it works today</th></tr>
+<tr><td>Sign-in</td><td>Personal accounts with passwords hashed using scrypt; sessions can be revoked on the server; sign-in attempts are rate-limited per address and per account.</td></tr>
+<tr><td>Approvals</td><td>Budget and plan approvals are tied to named people and roles, reset automatically when the cost changes, and can require a different person for each role.</td></tr>
+<tr><td>Audit log</td><td>Append-only record of approvals, AI runs that used call data, changes made from Claude, and admin actions. Exportable.</td></tr>
+<tr><td>Integrations</td><td>CRM tokens are encrypted at rest (AES-256-GCM) and used only for the workspace that added them. Claude connector tokens are per person, stored hashed, and revocable.</td></tr>
+<tr><td>Uploads</td><td>Limited to images, PDFs, video and plain data files, served with a restrictive content-security policy so an upload can't run code.</td></tr></table>
+
+<h2>AI processing</h2>
+<p>AI features send the relevant event details to Anthropic's Claude API to draft plans, copy and follow-ups. Nothing is sent to a guest or an AE until a person approves it. If your policy restricts AI vendors, you can run Encore without AI features and keep the planning, guest management and measurement.</p>
+
+<h2>What we don't have yet</h2>
+<div class="box">
+<ul>
+<li><b>SOC 2:</b> Encore does not have a SOC 2 report yet. If your review requires one today, running Encore in your own cloud keeps all data inside your environment and your controls.</li>
+<li><b>Single sign-on (SAML/OIDC):</b> not yet available.</li>
+<li><b>HIPAA:</b> Encore is not designed to hold protected health information, and we don't sign BAAs. Don't put patient data in guest notes.</li>
+<li><b>Salesforce sync for trial workspaces:</b> import CSV exports for now; native sync is configured with your admin.</li>
+</ul>
+</div>
+<p style="margin-top:28px"><a href="/?contact=security">Request a security review</a> · <a href="/method">Measurement method</a> · <a href="/signup">Start a free trial</a></p>
+</main></body></html>

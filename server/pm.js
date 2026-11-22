@@ -53,7 +53,8 @@ export async function runPm(store, { now = Date.now(), log = console.log } = {})
     log("[pm] skipped: no ANTHROPIC_API_KEY (set ENCORE_FAKE_AI=1 for a demo run)");
     return { ...summary, skipped: "missing_key" };
   }
-  const slackOn = configured().some((s) => s.server === "Slack");
+  // This server's Slack belongs to the default workspace; other workspaces' nudges aren't posted there.
+  const slackOn = (!store.ws || store.ws === "default") && configured().some((s) => s.server === "Slack");
   for (const { id, data } of store.list("events")) {
     if (!data?.produce?.tasks?.length || !data.date || data.status === "done") continue;
     summary.events++;

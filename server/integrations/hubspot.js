@@ -2,6 +2,8 @@
 // and event pipeline (deals associated with attendees). Private app token.
 import { chunk, errText, validateMembers, validateWindow, validateFollowups, validateVerify, validateRollup, MEMBERS_SCHEMA, PIPELINE_SCHEMA, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA, ROLLUP_SCHEMA } from "./crm-common.js";
 
+import { crmToken } from "./context.js";
+
 const API = "https://api.hubapi.com";
 const OBJECT_TYPES = ["contacts", "companies", "deals"];
 // Our member status -> HubSpot marketing event subscriber states to record.
@@ -12,7 +14,10 @@ export const EXTERNAL_ACCOUNT_ID = "encore";
 function fail(message) { return { code: "tool_error", message: `HubSpot: ${message}` }; }
 
 async function hs(method, path, body, { allow = [] } = {}) {
-  const init = { method, headers: { Authorization: `Bearer ${process.env.HUBSPOT_TOKEN}` } };
+  // The caller's workspace connection when there is one (see context.js), else this server's HUBSPOT_TOKEN.
+  const token = crmToken("hubspot", process.env.HUBSPOT_TOKEN);
+  if (!token) throw fail("not connected");
+  const init = { method, headers: { Authorization: `Bearer ${token}` } };
   if (body !== undefined) {
     init.headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(body);
@@ -277,8 +282,9 @@ async function rollupAccountSpend(input) {
   return { updated, missing, errors };
 }
 
-export default function hubspot() {
-  if (!process.env.HUBSPOT_TOKEN) return null;
+/** force: list the tools even without HUBSPOT_TOKEN (a workspace brings its own token). */
+export default function hubspot({ force = false } = {}) {
+  if (!force && !process.env.HUBSPOT_TOKEN) return null;
   return {
     server: "HubSpot",
     tools: [

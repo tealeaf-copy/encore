@@ -54,7 +54,7 @@ footer{padding:40px 0 60px;border-top:1px solid var(--line)}
 <header class="top"><div class="wrap">
   <a class="logo" href="/"><svg viewBox="0 0 44 32" width="34" height="25" aria-hidden="true"><circle cx="12" cy="18" r="11" fill="#FF4F64"/><circle cx="30" cy="13" r="12" fill="#3B5BFF"/><circle cx="24" cy="25" r="6" fill="#FFC93C"/></svg>encore</a>
   <nav class="links" aria-label="Sections"><a href="#how">How it works</a><a href="#measure">Measurement</a><a href="#conferences">Conferences</a><a href="#pricing">Pricing</a><a href="/login">Sign in</a></nav>
-  <div class="hdr-cta"><a class="btn ghost sm" href="#talk">Talk to the founders</a><a class="btn primary sm" href="/signup">Start free</a></div>
+  <div class="hdr-cta"><button class="btn ghost sm" type="button" data-contact="talk">Talk to the founders</button><a class="btn primary sm" href="/signup">Start free</a></div>
 </div></header>
 
 <section class="hero"><div class="wrap">
@@ -147,7 +147,7 @@ footer{padding:40px 0 60px;border-top:1px solid var(--line)}
     <p class="lede" style="margin-top:14px">Encore reads accounts and deals from your CRM, writes follow-ups back, and prepares launch copy for the event platform you already pay for. You can also run it from Claude: ask who hasn't replied, or whether last quarter's dinners were worth it.</p>
     <div class="stack-logos"><span>HubSpot</span><span>Salesforce</span><span>Attio</span><span>Gong</span><span>Fathom</span><span>Granola</span><span>Slack</span><span>Gmail</span><span>Luma</span><span>Sequel</span><span>Goldcast</span><span>Eventbrite</span><span>Claude</span></div>
   </div>
-  <div class="card"><h3>Security and data</h3><ul class="clean"><li>Nothing is sent to a guest, AE or exec without a person approving it</li><li>Call recordings can be turned off per market, and every use is logged. Running an event needs no patient or customer health data.</li><li>Guest pages never show internal notes, revenue or deal data</li><li>Named sign-ins, approval by role, and an audit log you can export</li><li>Each company's workspace is isolated from every other's. Ask us for the security packet: data flows, subprocessors and our SOC 2 status.</li></ul><a class="note" href="#talk">Request the security packet</a></div>
+  <div class="card"><h3>Security and data</h3><ul class="clean"><li>Nothing is sent to a guest, AE or exec without a person approving it</li><li>Call recordings can be turned off per market, and every use is logged. Running an event needs no patient or customer health data.</li><li>Guest pages never show internal notes, revenue or deal data</li><li>Named sign-ins, approval by role, and an audit log you can export</li><li>Each company's workspace is isolated from every other's, and Encore can run in your own cloud if your security team prefers.</li></ul><a class="note" href="/security">Read how we handle your data</a> · <a class="note" href="#talk" data-contact="security">Request a security review</a></div>
 </div></section>
 
 <section id="pricing"><div class="wrap">
@@ -155,8 +155,8 @@ footer{padding:40px 0 60px;border-top:1px solid var(--line)}
   <h2 style="margin-top:8px">Priced on how many events you run, never on the pipeline we report</h2>
   <div class="grid3" style="margin-top:28px">
     <div class="card price"><h3>Free trial</h3><span class="amt">$0</span><p class="note">14 days, everything included, no card. Plan a real event with your team.</p><a class="btn ghost" href="/signup">Start free</a></div>
-    <div class="card price featured"><h3>Team</h3><span class="amt">$2,000<span class="note">/mo</span></span><p class="note">For one events lead in one market, up to 12 events a year: plans and budgets, AE follow-up, launch copy, conference roadmap and the Claude connector.</p><a class="btn primary" href="/signup?plan=team">Start free, then Team</a></div>
-    <div class="card price"><h3>Program</h3><span class="amt">$10,000<span class="note">/mo</span></span><p class="note">Everything in Team, for events teams across up to 3 markets and 30 events a year, plus pooled holdouts, market status for leadership and call-data rules by country.</p><a class="btn ghost" href="#talk">Talk to the founders</a></div>
+    <div class="card price featured"><h3>Team</h3><span class="amt">$2,000<span class="note">/mo</span></span><p class="note">For an events lead or a small team, up to 15 events a year in up to 2 markets: plans and budgets, AE follow-up, launch copy, conference roadmap, CRM connection and the Claude connector.</p><a class="btn primary" href="/signup?plan=team">Start free, then Team</a></div>
+    <div class="card price"><h3>Program</h3><span class="amt">$10,000<span class="note">/mo</span></span><p class="note">Everything in Team, for events teams running up to 40 events a year across more markets, plus pooled holdouts, market status for leadership, call-data rules by country and a named contact for security reviews.</p><button class="btn ghost" type="button" data-contact="talk">Talk to the founders</button></div>
   </div>
   <p class="note" style="margin-top:14px">On Program, you and finance set the 90-day bar on day one. If Encore misses it, you can cancel at day 90. If your volume is too low to read a holdout, we'll say so and recommend Team.</p>
 </div></section>
@@ -176,9 +176,26 @@ footer{padding:40px 0 60px;border-top:1px solid var(--line)}
 <section id="talk" style="padding-top:0"><div class="wrap"><div class="final">
   <h2>Plan your next event in Encore this week</h2>
   <p class="lede">Start with a template or a one-line description. Invite one AE to see what the morning-after follow-up looks like.</p>
-  <div class="cta" style="justify-content:center;margin-top:6px"><a class="btn primary" href="/signup">Start a 14-day free trial</a><a class="btn ghost" href="mailto:founders@encore.example?subject=Encore%20for%20our%20events%20team">Talk to the founders</a></div>
-  <!-- Replace founders@encore.example with the real address before launch. -->
+  <div class="cta" style="justify-content:center;margin-top:6px"><a class="btn primary" href="/signup">Start a 14-day free trial</a><button class="btn ghost" type="button" data-contact="talk">Talk to the founders</button></div>
 </div></div></section>
 
-<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px"><span class="note">Encore</span><span class="note"><a href="/method">Measurement method</a> · <a href="/login">Sign in</a></span></div></footer>
+<footer><div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px"><span class="note">Encore</span><span class="note"><a href="/method">Measurement method</a> · <a href="/security">Security and data</a> · <a href="/login">Sign in</a></span></div></footer>
+<dialog id="contactDlg" style="border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100vw - 32px)"><form id="contactForm" style="padding:22px;display:grid;gap:10px">
+  <h3 id="cTitle">Talk to the founders</h3><p class="note" id="cSub">Tell us about your events program. We reply within one business day.</p>
+  <input name="name" placeholder="Your name" required style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit">
+  <input name="email" type="email" placeholder="Work email" required style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit">
+  <input name="company" placeholder="Company" style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit">
+  <textarea name="message" rows="4" required style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit"></textarea>
+  <input type="hidden" name="kind" value="talk"><p class="note" id="cMsg" aria-live="polite"></p>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost sm" id="cClose">Cancel</button><button class="btn primary sm" type="submit">Send</button></div></form></dialog>
+<script>
+(function(){ const dlg=document.getElementById("contactDlg"), f=document.getElementById("contactForm"), msg=document.getElementById("cMsg");
+  const copy={talk:["Talk to the founders","Tell us about your events program. We reply within one business day.","How many events a year, which markets, what you'd like to see"],security:["Request a security review","Tell us what your security team needs. We reply within one business day.","e.g. our vendor questionnaire, a DPA, where data is stored, self-hosting"]};
+  document.querySelectorAll("[data-contact]").forEach(b=>b.addEventListener("click",e=>{ e.preventDefault(); const k=b.dataset.contact, c=copy[k]||copy.talk; f.kind.value=k; document.getElementById("cTitle").textContent=c[0]; document.getElementById("cSub").textContent=c[1]; f.message.placeholder=c[2]; msg.textContent=""; if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","") }));
+  document.getElementById("cClose").onclick=()=>{ if(dlg.close) dlg.close(); else dlg.removeAttribute("open") };
+  try{ const k=new URLSearchParams(location.search).get("contact"); if(k){ const b=document.querySelector(`[data-contact="${k==="security"?"security":"talk"}"]`); b&&b.click() } }catch{}
+  f.addEventListener("submit",async e=>{ e.preventDefault(); const data=Object.fromEntries(new FormData(f)); msg.textContent="Sending…";
+    try{ const r=await fetch("/api/contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}); if(r.status===429){ msg.textContent="Too many messages from here. Try again in an hour."; return } if(!r.ok) throw 0; msg.textContent="Thanks. We'll reply by email within one business day."; f.reset() }catch{ msg.textContent="Couldn't send. Try again in a moment." } });
+})();
+</script>
 </body></html>

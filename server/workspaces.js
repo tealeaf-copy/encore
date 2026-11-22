@@ -2,7 +2,7 @@
 // "ws/<id>/..." in the same store; the env-configured team is workspace "default" and keeps
 // the plain paths, so existing installs see no change. Accounts, invites, MCP tokens and the
 // event -> workspace index live in "system/" docs, which the data API can't read or write.
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, hkdfSync, createCipheriv, createDecipheriv } from "node:crypto";
 import { randomId } from "./db.js";
 
 export const DEFAULT_WS = "default";
@@ -72,9 +72,9 @@ export function membersOf(ws) {
 
 // ---------- invites: one-time join tokens, stored hashed ----------
 export const INVITE_DAYS = 7;
-export function createInvite({ ws, email, role, by, now = Date.now() }) {
+export function createInvite({ ws, email, role, defaultRole = false, by, now = Date.now() }) {
   const token = randomBytes(24).toString("hex");
-  need().set("system/inv-" + sha(token).slice(0, 40), { kind: "invite", ws, email, role, by, createdAt: now, expiresAt: now + INVITE_DAYS * 864e5, usedAt: null });
+  need().set("system/inv-" + sha(token).slice(0, 40), { kind: "invite", ws, email, role, defaultRole, by, createdAt: now, expiresAt: now + INVITE_DAYS * 864e5, usedAt: null });
   return { token, expiresAt: now + INVITE_DAYS * 864e5 };
 }
 export function getInvite(token) {
@@ -92,7 +92,66 @@ export function createMcpToken({ ws, name, email, now = Date.now() }) {
 }
 export function findMcpToken(token) {
   if (!raw || !token) return null;
-  return raw.get("system/mcp-" + sha(token).slice(0, 40))?.data || null;
+  const p = "system/mcp-" + sha(token).slice(0, 40), d = raw.get(p)?.data;
+  if (!d || d.revokedAt) return null;
+  if (!d.lastUsedAt || Date.now() - d.lastUsedAt > 60_000) raw.update(p, { lastUsedAt: Date.now() }); // at most once a minute
+  return d;
+}
+/** A workspace's MCP tokens, without the tokens: [{id, name, email, createdAt, lastUsedAt}]. */
+export function listMcpTokens(ws) {
+  return need().list("system").filter((d) => d.data?.kind === "mcptoken" && d.data.ws === ws && !d.data.revokedAt)
+    .map((d) => ({ id: d.id.slice(4), name: d.data.name, email: d.data.email || null, createdAt: d.data.createdAt, lastUsedAt: d.data.lastUsedAt || null }))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+/** Revoke one of a workspace's tokens by id. False when it isn't that workspace's. */
+export function revokeMcpToken(ws, id) {
+  if (!/^[a-f0-9]{40}$/.test(String(id))) return false;
+  const p = "system/mcp-" + id, d = need().get(p)?.data;
+  if (!d || d.kind !== "mcptoken" || d.ws !== ws || d.revokedAt) return false;
+  need().delete(p);
+  return true;
+}
+
+// ---------- CRM connections: provider tokens, encrypted at rest (AES-256-GCM) ----------
+export const CONNECTION_PROVIDERS = ["hubspot", "attio"];
+function connKey() {
+  let base = process.env.SESSION_SECRET;
+  if (!base) { base = need().get("system/secret")?.data?.v; if (!base) { base = randomBytes(32).toString("hex"); need().set("system/secret", { v: base }); } }
+  return Buffer.from(hkdfSync("sha256", base, "encore-connections", "aes-256-gcm", 32));
+}
+export function encryptSecret(text) {
+  const iv = randomBytes(12), c = createCipheriv("aes-256-gcm", connKey(), iv);
+  const ct = Buffer.concat([c.update(String(text), "utf8"), c.final()]);
+  return { v: 1, iv: iv.toString("base64"), tag: c.getAuthTag().toString("base64"), ct: ct.toString("base64") };
+}
+export function decryptSecret(box) {
+  try {
+    const d = createDecipheriv("aes-256-gcm", connKey(), Buffer.from(box.iv, "base64"));
+    d.setAuthTag(Buffer.from(box.tag, "base64"));
+    return Buffer.concat([d.update(Buffer.from(box.ct, "base64")), d.final()]).toString("utf8");
+  } catch { return null; } // wrong key (SESSION_SECRET changed) or tampered
+}
+const connPath = (ws, provider) => `system/conn-${ws}-${provider}`;
+export function saveConnection(ws, provider, token, by) {
+  need().set(connPath(ws, provider), { kind: "connection", ws, provider, secret: encryptSecret(token), connectedAt: Date.now(), by });
+}
+export function deleteConnection(ws, provider) { return need().delete(connPath(ws, provider)).deleted; }
+export function listConnections(ws) {
+  return CONNECTION_PROVIDERS.map((provider) => { const d = need().get(connPath(ws, provider))?.data; return { provider, connected: !!d, connectedAt: d?.connectedAt || null, by: d?.by || null }; });
+}
+/** { hubspot: "<token>", ... } for a workspace's working connections. */
+export function connectionTokens(ws) {
+  const out = {};
+  if (!raw) return out;
+  for (const provider of CONNECTION_PROVIDERS) { const d = raw.get(connPath(ws, provider))?.data; const t = d ? decryptSecret(d.secret) : null; if (t) out[provider] = t; }
+  return out;
+}
+
+// ---------- contact / security-review inbox ----------
+export function saveContact(msg) { const id = randomId(); need().set("system/contact-" + id, { kind: "contact", id, ...msg }); return id; }
+export function listContacts() {
+  return need().list("system").map((d) => d.data).filter((d) => d?.kind === "contact").sort((a, b) => b.at - a.at)
+    .map(({ kind, msgKind, ...m }) => ({ ...m, kind: msgKind }));
 }
 
 // ---------- event id -> workspace, so guest links find the right workspace ----------

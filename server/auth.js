@@ -75,16 +75,28 @@ export function teamOf(ws = DEFAULT_WS) {
   if (ws === DEFAULT_WS) return users().map((u) => ({ ...u, ws: DEFAULT_WS }));
   return store ? membersOf(ws) : [];
 }
-/** Roles whose approval a plan needs: ENCORE_APPROVER_ROLES (default workspace) or the workspace's own
- * approverRoles if set, else every role on the team list. */
+/** Role names that read like someone who signs off on a plan. Generic roles ("Team member", "AE") never do. */
+export const APPROVER_LIKE = /\b(lead|sponsor|exec|executive|vp|head|director|owner|approver|chief|cmo|cfo|ceo|coo|finance|budget|manager)\b/i;
+const uniq = (list) => [...new Map(list.map((r) => [r.toLowerCase(), r])).values()];
+const parseRoles = (v) => String(v || "").split(",").map((r) => r.trim()).filter(Boolean);
+/**
+ * Roles whose approval a plan needs.
+ * Default workspace: ENCORE_APPROVER_ROLES if set, else every role on the ENCORE_USERS list.
+ * Sign-up workspaces: the workspace's approverRoles, else ENCORE_APPROVER_ROLES, else the members' roles that read
+ * like approvers and weren't filled in by default. Empty means "use the plan's own team leads" (requiredApprovers).
+ */
 export function approverRoles(ws = DEFAULT_WS) {
-  const conf = ws === DEFAULT_WS ? String(process.env.ENCORE_APPROVER_ROLES || "") : (getWorkspace(ws)?.approverRoles || []).join(",");
-  const set = conf.split(",").map((r) => r.trim()).filter(Boolean);
-  if (set.length) return [...new Map(set.map((r) => [r.toLowerCase(), r])).values()];
-  return [...new Map(teamOf(ws).flatMap((u) => u.roles || []).map((r) => [r.toLowerCase(), r])).values()];
+  if (ws === DEFAULT_WS) {
+    const set = parseRoles(process.env.ENCORE_APPROVER_ROLES);
+    return uniq(set.length ? set : teamOf(ws).flatMap((u) => u.roles || []));
+  }
+  const own = getWorkspace(ws)?.approverRoles || [], env = parseRoles(process.env.ENCORE_APPROVER_ROLES);
+  if (own.length) return uniq(own);
+  if (env.length) return uniq(env);
+  return uniq(teamOf(ws).filter((u) => !u.defaultRole).flatMap((u) => u.roles || []).filter((r) => APPROVER_LIKE.test(r)));
 }
 /** Whether approver roles are explicitly configured for this workspace (then other roles can't approve). */
-export const approverRolesConfigured = (ws = DEFAULT_WS) => ws === DEFAULT_WS ? !!String(process.env.ENCORE_APPROVER_ROLES || "").trim() : !!getWorkspace(ws)?.approverRoles?.length;
+export const approverRolesConfigured = (ws = DEFAULT_WS) => !!parseRoles(process.env.ENCORE_APPROVER_ROLES).length || (ws !== DEFAULT_WS && !!getWorkspace(ws)?.approverRoles?.length);
 export const hasPersonalPassword = (u) => /^scrypt\$[^$]+\$[a-f0-9]+$/.test(String(u?.pw || ""));
 export const isApprover = (u) => { const A = approverRoles().map((r) => r.toLowerCase()); return !!u && u.roles.some((r) => A.includes(r.toLowerCase())); };
 /** Reasons the server must not start with this team configuration (empty when it's fine). */

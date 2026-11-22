@@ -247,3 +247,57 @@ test("/demo runs the page without the shim, no login; sign-up passes template an
   assert.equal(bad.redirect, "/?welcome=1");
   assert.match(await (await get("/signup?template=x")).text(), /location\.search/);
 });
+
+test("AE nomination links work without a login, with the signed AE token", async () => {
+  await put("events/evN1", { name: "Nom", updatedAt: undefined, guests: [
+    { name: "Ana", title: "VP", company: "Acme", email: "ana@acme.com", owner: "Sam Lee", note: "secret" },
+    { name: "Bo", company: "Beta", owner: "Kim Park" }],
+    scout: { contacts: [{ name: "Cy", title: "CMO", company: "Gamma", owner: "Sam Lee", why: "renewal", email: "cy@g.com" }, { name: "Ana", company: "Acme", owner: "Sam Lee" }] } }, A.cookie);
+  const { token, slug } = await (await get("/api/aelink?eventId=evN1&ae=Sam%20Lee", A.cookie)).json();
+  const G = { "x-encore-guest": "1", "x-encore-key": "k", "x-encore-view": "nominate", "Content-Type": "application/json" };
+  const ev = (await (await get("/api/db/doc?path=events/evN1", null, { ...G, "x-encore-token": token })).json()).data;
+  assert.equal(ev.nomFor, "sam-lee");
+  assert.deepEqual(ev.nomSuggest, [{ name: "Ana", title: "VP", company: "Acme" }, { name: "Cy", title: "CMO", company: "Gamma" }], "only Sam's people, deduped, name/title/company");
+  assert.equal(ev.scout, undefined);
+  for (const bad of [null, "0".repeat(32)]) {
+    const d = (await (await get("/api/db/doc?path=events/evN1", null, { ...G, ...(bad ? { "x-encore-token": bad } : {}) })).json()).data;
+    assert.equal(d.nomSuggest, undefined);
+  }
+  const nom = (headers, id = `evN1--${slug}`) => fetch(srv.base + "/api/db/doc?path=nominations/" + id, { method: "PUT", headers, body: JSON.stringify({ eventId: "other", ae: "kim-park", picks: [{ name: "Cy" }] }) });
+  assert.equal((await nom(G)).status, 401, "no token");
+  assert.equal((await nom({ ...G, "x-encore-token": "0".repeat(32) })).status, 401, "forged token");
+  assert.equal((await nom({ ...G, "x-encore-token": token }, "evN1--kim-park")).status, 401, "Sam's token can't write Kim's nominations");
+  assert.equal((await nom({ ...G, "x-encore-token": token })).status, 200);
+  const saved = (await (await get(`/api/db/doc?path=nominations/evN1--${slug}`, A.cookie)).json()).data;
+  assert.equal(saved.eventId, "evN1");
+  assert.equal(saved.ae, "sam-lee", "the link decides whose nominations these are");
+  assert.equal(saved.source, "ae-link");
+  assert.equal((await (await get(`/api/db/doc?path=nominations/evN1--${slug}`, B.cookie)).json()).exists, false, "stored in the event's workspace");
+  const tokB = (await (await get("/api/aelink?eventId=evB1&ae=Sam%20Lee", B.cookie)).json()).token;
+  assert.equal((await nom({ ...G, "x-encore-token": tokB })).status, 401, "another workspace's AE token doesn't work");
+});
+
+test("an invite with no role never becomes a required approver", async () => {
+  const W = await signup("Gamma", "owner@gamma.com");
+  srv.store.set(`ws/${W.ws}/events/evG1`, { name: "G", produce: { team: [{ role: "Event lead" }, { role: "VP Marketing" }, { role: "Designer" }] } });
+  const required = async () => (await (await get("/api/approvals?eventId=evG1", W.cookie)).json()).required;
+  assert.deepEqual(await required(), ["Event lead"], "the owner's lead role");
+  const i1 = await (await post("/api/invite", { email: "plain@gamma.com" }, W.cookie)).json();
+  assert.equal(i1.role, "Team member");
+  assert.equal(i1.approverRole, false);
+  await post("/api/join", { token: i1.token, name: "Plain", password: "plain-password" });
+  const i2 = await (await post("/api/invite", { email: "ae@gamma.com", role: "AE" }, W.cookie)).json();
+  await post("/api/join", { token: i2.token, name: "Ae", password: "ae-password-1" });
+  assert.deepEqual(await required(), ["Event lead"], "generic roles never count");
+  const i3 = await (await post("/api/invite", { email: "cfo@gamma.com", role: "Finance approver" }, W.cookie)).json();
+  assert.equal(i3.approverRole, true);
+  await post("/api/join", { token: i3.token, name: "Cf", password: "cfo-password-1" });
+  assert.deepEqual(await required(), ["Event lead", "Finance approver"]);
+  // a role literally named "Team member" by default stays out even if approver roles are later read from members
+  assert.equal((await (await get("/api/workspace", W.cookie)).json()).members.find((m) => m.email === "plain@gamma.com").roles[0], "Team member");
+  process.env.ENCORE_APPROVER_ROLES = "Exec sponsor";
+  try { assert.deepEqual(await required(), ["Exec sponsor"], "ENCORE_APPROVER_ROLES wins"); } finally { delete process.env.ENCORE_APPROVER_ROLES; }
+  // with no approver-like member roles at all, the plan's own team leads are required (the old fallback)
+  srv.store.list("system").filter((d) => d.data.kind === "user" && d.data.ws === W.ws).forEach((d) => srv.store.update("system/" + d.id, { roles: ["Designer"] }));
+  assert.deepEqual(await required(), ["Event lead", "VP Marketing"]);
+});

@@ -7,11 +7,12 @@ import { fileURLToPath } from "node:url";
 import { randomUUID, randomBytes, createHmac, timingSafeEqual } from "node:crypto";
 import { parsePath, httpError, randomId } from "./db.js";
 import { runToolLoop, toCapError, aiMode } from "./ai.js";
-import { configured, findServer, callTool } from "./integrations/index.js";
+import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { runPm } from "./pm.js";
 import { mountMcp } from "./mcp.js";
-import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, useAuthStore, approverRoles, approverRolesConfigured, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
-import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, workspaceOfEvent, claimEvent, PLANS } from "./workspaces.js";
+import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
+import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS,
+  CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, "..");
@@ -101,6 +102,8 @@ function guestAllowed(req) {
   if (route === "/api/db/doc") {
     if (req.method === "GET") return GUEST_READABLE(segs);
     if ((req.method === "PUT" || req.method === "PATCH") && segs.length === 2 && OWNED.has(segs[0])) return true; // ownership checked in the handler
+    // An AE's nomination link (#nominate-<event>-<ae>~<token>): the signed AE token is checked in the handler.
+    if ((req.method === "PUT" || req.method === "PATCH") && segs.length === 2 && segs[0] === "nominations" && req.get("x-encore-token")) return true;
     if (req.method === "PUT" || req.method === "PATCH") return segs.length === 2 && GUEST_COLLECTIONS.has(segs[0]);
   }
   if (route === "/api/db/collection" && req.method === "POST") return segs.length === 1 && GUEST_COLLECTIONS.has(segs[0]);
@@ -191,10 +194,27 @@ export function createApp({ store, dataDir }) {
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account." });
     useInvite(inv);
-    putDbUser({ kind: "user", ws: inv.ws, name, email: inv.email, roles: [inv.role], owner: false, pw: hashPassword(b.password), createdAt: Date.now(), invitedBy: inv.by });
+    putDbUser({ kind: "user", ws: inv.ws, name, email: inv.email, roles: [inv.role], ...(inv.defaultRole ? { defaultRole: true } : {}), owner: false, pw: hashPassword(b.password), createdAt: Date.now(), invitedBy: inv.by });
     scopeStore(store, inv.ws).add("audit", { eventId: "", what: `${name} joined as ${inv.role}`, kind: "team", who: name, email: inv.email, verified: true, at: Date.now() });
     startSession(req, res, inv.email, inv.ws);
     res.json({ ok: true, email: inv.email, redirect: "/?welcome=1" });
+  });
+  // Contact / security-review inbox, open to signed-out visitors.
+  const contactHits = new Map();
+  app.post("/api/contact", small, (req, res) => {
+    const k = req.ip || "?", now = Date.now(); let h = contactHits.get(k);
+    if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; contactHits.set(k, h); }
+    if (++h.n > Number(process.env.ENCORE_CONTACT_PER_HOUR || 5)) return res.status(429).json({ code: "rate_limited", message: "Too many messages from here. Try again later." });
+    const b = req.body || {}, kind = String(b.kind || ""), email = String(b.email || "").trim().toLowerCase();
+    if (!["talk", "security", "billing"].includes(kind)) return res.status(400).json({ code: "invalid", message: "kind must be talk, security or billing" });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email so we can reply." });
+    const message = String(b.message || "").trim().slice(0, 5000);
+    if (!message) return res.status(400).json({ code: "invalid", message: "Add a message." });
+    const u = authEnabled() ? currentUser(req) : null;
+    const rec = { msgKind: kind, name: String(b.name || "").trim().slice(0, 120), email, company: String(b.company || "").trim().slice(0, 120), message, at: now, ...(u ? { ws: u.ws, from: u.email } : {}) };
+    const id = saveContact(rec);
+    console.log(`[contact] ${kind} from ${rec.name || "?"} <${email}>${rec.company ? ` (${rec.company})` : ""}${u ? ` ws=${u.ws}` : ""}: ${message.slice(0, 200).replace(/\s+/g, " ")}`);
+    res.json({ ok: true, id });
   });
   // Static pages for signed-out visitors. The guest-link redirect is added to them, so #rsvp-… links keep working.
   const GUEST_REDIRECT = `<script>if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash)) location.replace("/g" + location.search + location.hash);</script>`;
@@ -206,6 +226,7 @@ export function createApp({ store, dataDir }) {
   app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
   app.get("/join", (req, res) => sendStatic(res, "join.html", loginPage()));
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
+  app.get("/security", (req, res) => sendStatic(res, "security.html", "<p>Security page missing.</p>"));
 
   const sendPage = async (req, res, next) => {
     try {
@@ -273,12 +294,13 @@ export function createApp({ store, dataDir }) {
   });
   app.post("/api/invite", json, (req, res) => {
     const u = ownerOnly(req, res); if (!u) return;
-    const email = String(req.body?.email || "").trim().toLowerCase(), role = String(req.body?.role || "Team member").trim().slice(0, 80) || "Team member";
+    const email = String(req.body?.email || "").trim().toLowerCase(), given = String(req.body?.role ?? "").trim().slice(0, 80), role = given || "Team member";
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That person already has an Encore account." });
-    const { token, expiresAt } = createInvite({ ws: u.ws, email, role, by: u.email });
+    // An empty role becomes "Team member" for display, flagged so it never counts as an approver role.
+    const { token, expiresAt } = createInvite({ ws: u.ws, email, role, defaultRole: !given, by: u.email });
     S(req).add("audit", { eventId: "", what: `invited ${email} as ${role}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
-    res.json({ link: "/join#" + token, token, email, role, expiresAt });
+    res.json({ link: "/join#" + token, token, email, role, expiresAt, approverRole: !!given && APPROVER_LIKE.test(given) });
   });
   app.post("/api/mcptoken", json, (req, res) => {
     const u = ownerOnly(req, res); if (!u) return;
@@ -295,6 +317,58 @@ export function createApp({ store, dataDir }) {
     const W = updateWorkspace(u.ws, { plan: "pending_" + plan, upgradeRequest: { plan, by: u.email, at: Date.now() } });
     S(req).add("audit", { eventId: "", what: `asked to upgrade to ${plan}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
     res.json({ ok: true, plan: W.plan, upgradeRequest: W.upgradeRequest, ...trialState(W) });
+  });
+
+  // Who may manage a workspace's connections: a sign-up workspace's owner; in the default workspace, any signed-in
+  // ENCORE_USERS person (or anyone signed in with the shared password when there's no team list).
+  const adminOf = (req, res) => {
+    const u = currentUser(req), ws = sessionWorkspace(req);
+    if (ws !== DEFAULT_WS) { if (u?.owner) return { u, ws }; res.status(403).json({ code: "not_granted", message: "Only the workspace owner can do that." }); return null; }
+    if (u || !teamOf(DEFAULT_WS).length) return { u, ws };
+    res.status(403).json({ code: "not_granted", message: "Sign in as a team member." }); return null;
+  };
+  app.get("/api/mcptoken", (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    res.json({ tokens: listMcpTokens(u.ws) });
+  });
+  app.delete("/api/mcptoken/:id", (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    if (!revokeMcpToken(u.ws, req.params.id)) return res.status(404).json({ code: "not_found", message: "No such token." });
+    S(req).add("audit", { eventId: "", what: "revoked an MCP token", kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+    res.json({ ok: true, revoked: req.params.id });
+  });
+
+  // ---------- CRM connections (a workspace's own provider tokens) ----------
+  const CHECKS = { hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
+  app.get("/api/connections", (req, res) => { const a = adminOf(req, res); if (!a) return; res.json({ connections: listConnections(a.ws) }); });
+  app.post("/api/connections", json, async (req, res) => {
+    const a = adminOf(req, res); if (!a) return;
+    const provider = String(req.body?.provider || ""), token = String(req.body?.token || "").trim();
+    if (!CONNECTION_PROVIDERS.includes(provider)) return res.status(400).json({ code: "invalid", message: `provider must be ${CONNECTION_PROVIDERS.join(" or ")}` });
+    if (!token || token.length > 500) return res.status(400).json({ code: "invalid", message: "token is required" });
+    // A cheap read proves the token works before it's stored.
+    let r;
+    try { r = await fetch(CHECKS[provider].url, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }, signal: AbortSignal.timeout(10_000) }); }
+    catch { return res.status(502).json({ code: "upstream_error", message: `Couldn't reach ${CHECKS[provider].name} to check the token.` }); }
+    if (r.status === 401 || r.status === 403) return res.status(400).json({ code: "invalid_token", message: `${CHECKS[provider].name} didn't accept that token. Check it and its scopes.` });
+    if (!r.ok) return res.status(502).json({ code: "upstream_error", message: `${CHECKS[provider].name} answered ${r.status} when checking the token.` });
+    const by = a.u?.email || "team";
+    saveConnection(a.ws, provider, token, by);
+    S(req).add("audit", { eventId: "", what: `connected ${CHECKS[provider].name}`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
+    res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === provider) });
+  });
+  app.delete("/api/connections/:provider", (req, res) => {
+    const a = adminOf(req, res); if (!a) return;
+    const provider = req.params.provider;
+    if (!CONNECTION_PROVIDERS.includes(provider)) return res.status(404).json({ code: "not_found" });
+    const removed = deleteConnection(a.ws, provider);
+    if (removed) S(req).add("audit", { eventId: "", what: `disconnected ${CHECKS[provider].name}`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
+    res.json({ ok: true, removed });
+  });
+  // The contact inbox is for this server's operator: the default workspace's team.
+  app.get("/api/contact", (req, res) => {
+    if (sessionWorkspace(req) !== DEFAULT_WS || (!currentUser(req) && teamOf(DEFAULT_WS).length) || req.guest) return res.status(403).json({ code: "not_granted" });
+    res.json({ messages: listContacts().slice(0, 500) });
   });
 
   mountMcp(app, { scoped: (ws) => scopeStore(store, ws), afterEventWrite, json, findToken: findMcpToken, writable: (ws) => trialState(getWorkspace(ws)).writable, claimEvent });
@@ -421,6 +495,22 @@ export function createApp({ store, dataDir }) {
     return (data.guests || []).find((g) => guestKeyOf(g) === key) || null;
   }
   const aeOk = (ws, eventId, slug, token) => eq(aeToken(ws, eventId, slug), token);
+  /** On a nominate view with a signed AE token: which AE it is (found among the event's owners, or x-encore-ae) and up to
+   * 12 of their own people (event guests and scout contacts they own), name/title/company only. */
+  function nominatingAe(req, eventId, data) {
+    const t = req.get("x-encore-token"); if (!t) return null;
+    const owners = [req.get("x-encore-ae"), ...(data.guests || []).map((g) => g.owner), ...(data.scout?.contacts || []).map((c) => c.owner)].filter(Boolean);
+    const slug = [...new Set(owners.map(aeSlug))].find((s0) => aeOk(req.ws, eventId, s0, t));
+    if (!slug) return null;
+    const seen = new Set(), suggest = [];
+    for (const p of [...(data.guests || []), ...(data.scout?.contacts || [])]) {
+      if (!p?.name || !p.owner || aeSlug(p.owner) !== slug) continue;
+      const k = (p.name + "|" + (p.company || "")).toLowerCase(); if (seen.has(k)) continue; seen.add(k);
+      suggest.push({ name: String(p.name), title: String(p.title || ""), company: String(p.company || "") });
+      if (suggest.length >= 12) break;
+    }
+    return { slug, suggest };
+  }
   app.get("/api/aelink", (req, res) => {
     const eventId = String(req.query.eventId || ""), slug = aeSlug(req.query.ae);
     if (!ownEvent(req, res, eventId)) return;
@@ -460,7 +550,9 @@ export function createApp({ store, dataDir }) {
       // Plan links are signed: an unsigned or forged plan view gets nothing.
       if (view === "plan" && !signedOk(req.ws, "plan", doc.id, req.get("x-encore-token"))) return res.status(403).json({ code: "not_granted", message: "This plan link isn't valid. Ask the event owner for a new one." });
       const invited = invitedGuest(req, doc.id, doc.data);
+      const nom = view === "nominate" ? nominatingAe(req, doc.id, doc.data) : null;
       data = publicEvent(data, view);
+      if (nom) { data.nomFor = nom.slug; data.nomSuggest = nom.suggest; }
       if (invited) {
         const first = (x) => String(x || "").trim().split(/\s+/)[0] || "";
         data.me = { name: invited.name || "", title: invited.title || "", company: invited.company || "", email: invited.email || "", owner: first(invited.owner) };
@@ -497,8 +589,19 @@ export function createApp({ store, dataDir }) {
     if (collection === "wall" && b.status != null && !GUEST_WALL_STATUSES.has(String(b.status))) { res.status(400).json({ code: "invalid", message: "Not a wall status." }); return false; }
     return true;
   };
+  /** For a guest write to nominations/<eventId>--<aeSlug>: the AE token must verify for that event and AE. */
+  const nominationOk = (req, res) => {
+    const id = String(req.query.path || "").split("/")[1] || "", i = id.lastIndexOf("--");
+    const eventId = i > 0 ? id.slice(0, i) : "", slug = i > 0 ? id.slice(i + 2) : "";
+    req.ws = workspaceOfEvent(eventId);
+    if (!eventId || !slug || !S(req).get("events/" + eventId) || !aeOk(req.ws, eventId, slug, req.get("x-encore-token"))) { res.status(401).json({ code: "not_granted", message: "This nomination link isn't valid. Ask marketing for a new one." }); return false; }
+    const b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+    req.body = { ...b, eventId, ae: slug, source: "ae-link", at: Date.now() }; // the link decides whose nominations these are
+    return true;
+  };
   const ownedWrite = (req, res) => {
     if (!req.guest) return true;
+    if (String(req.query.path || "").startsWith("nominations/")) return nominationOk(req, res);
     if (!guestShape(req, res, String(req.query.path || "").split("/")[0])) return false;
     const p = String(req.query.path || ""), cur = S(req).get(p), k = guestKey(req);
     if (!k) { res.status(403).json({ code: "not_granted", message: "Missing guest key." }); return false; }
@@ -624,8 +727,8 @@ export function createApp({ store, dataDir }) {
   // ---------- mcp ----------
   // Server integrations (Slack, Linear, CRMs) run on this deployment's own keys, so only the default workspace
   // gets them; sign-up workspaces get web search only.
-  const SHARED_OK = new Set(["Parallel Search"]);
-  const serversFor = (req) => configured().filter((x) => sessionWorkspace(req) === DEFAULT_WS || SHARED_OK.has(x.server));
+  // A workspace that connected its own HubSpot token gets the HubSpot tools, running on that token.
+  const serversFor = (req) => { const ws = sessionWorkspace(req); return configuredFor({ isDefault: ws === DEFAULT_WS, connected: connectionTokens(ws) }); };
   app.get("/api/mcp/tools", (req, res) => {
     let servers = serversFor(req);
     if (req.query.server) { const one = servers.find((x) => x.server === String(req.query.server)); if (!one) throw { code: "server_not_connected", message: `"${req.query.server}" is not connected on this server.` }; servers = [one]; }
@@ -640,7 +743,8 @@ export function createApp({ store, dataDir }) {
   app.post("/api/mcp/call", json, async (req, res) => {
     const { server, tool, input } = req.body || {};
     if (!serversFor(req).some((x) => x.server === String(server || ""))) throw { code: "server_not_connected", message: `"${server}" is not connected on this server.` };
-    res.json(await callTool(String(server || ""), String(tool || ""), input));
+    const ws = sessionWorkspace(req);
+    res.json(await withCrm(connectionTokens(ws), ws === DEFAULT_WS, () => callTool(String(server || ""), String(tool || ""), input, serversFor(req))));
   });
 
   // ---------- pm ----------

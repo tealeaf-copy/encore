@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Find a host · Encore</title>
+<meta name="description" content="Hosts who run real communities: run clubs, supper clubs, hikes, café mornings. See who came back and what guests said, then get in touch.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+.hero{padding:28px 0 18px}.hero h1{font-size:clamp(32px,5.5vw,50px);line-height:1.04;max-width:760px}.hero p{font-size:17px;color:var(--soft);max-width:620px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 18px}.filters input,.filters select{min-width:0}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.hcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px;text-decoration:none;transition:transform .15s,border-color .15s}.hcard:hover{transform:translateY(-2px);border-color:var(--c)}
+.hcard .top2{display:flex;gap:10px;align-items:center}.hcard .av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.hcard .nums{display:flex;gap:14px;font-size:12.5px;color:var(--soft)}.hcard .nums b{display:block;font:600 19px "Fraunces",Georgia,serif;color:var(--ink)}
+.hcard q{font:600 15px/1.35 "Fraunces",Georgia,serif}.hcard small{color:var(--soft)}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
+    <nav><a href="/discover">Discover</a><a href="/hosts" aria-current="page">Find a host</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
+  <div class="hero"><h1>Hosts who already have a community.</h1><p>Run clubs, supper clubs, hikes and café mornings run by people their guests keep coming back to. Every number here comes from real RSVPs and kudos on Encore.</p></div>
+  <div class="filters"><input id="city" placeholder="City"><select id="kind"><option value="">Any kind of event</option><option value="run">Runs</option><option value="hike">Hikes</option><option value="cook">Supper clubs and cooking</option><option value="cafe">Café mornings</option><option value="games">Game nights</option><option value="bake">Bakes and giveaways</option><option value="concert">Concerts and nights out</option></select></div>
+  <div class="hgrid" id="list"><div class="empty">Loading…</div></div>
+</div>
+<footer>Encore · <a href="/discover">Discover</a></footer>
+<script src="/community.js"></script>
+<script>
+(function () { const C = window.EncoreCommunity, esc = C.esc, $ = (s) => document.querySelector(s);
+  const KW = { run: "Runs", hike: "Hikes", bike: "Rides", cook: "Supper clubs", potluck: "Potlucks", games: "Game nights", movie: "Movie nights", concert: "Nights out", cafe: "Café mornings", bake: "Bakes", picnic: "Picnics", book: "Book club", club: "Club meetups" };
+  let t; const load = async () => { const q = new URLSearchParams({ city: $("#city").value.trim(), kind: $("#kind").value }); const j = await (await fetch("/api/public/hosts?" + q)).json().catch(() => ({ hosts: [] }));
+    $("#list").innerHTML = j.hosts.length ? j.hosts.map((h) => `<a class="hcard" href="/h/${esc(h.handle)}#hire" style="--c:${esc(h.color || "#E26D8E")}"><div class="top2"><span class="av">${esc(h.emoji || "🎉")}</span><div><b>${esc(h.name)}</b><br><small>${esc(h.city || "")}${h.kinds.length ? " · " + h.kinds.map((k) => KW[k.kind] || k.kind).join(", ") : ""}</small></div></div>${h.services ? `<div>${esc(h.services)}</div>` : ""}<div class="nums"><span><b>${h.events}</b>events</span><span><b>${h.guests}</b>guests</span><span><b>${h.guests ? Math.round((100 * h.returning) / h.guests) : 0}%</b>came back</span><span><b>${h.kudos}</b>kudos</span></div>${h.quote ? `<q>${esc(h.quote)}</q>` : ""}</a>`).join("") : `<div class="empty">No hosts match yet. Try another city, or <a href="/discover">see what's on</a>.</div>`; };
+  $("#city").oninput = () => { clearTimeout(t); t = setTimeout(load, 300); }; $("#kind").onchange = load; load(); })();
+</script></body></html>

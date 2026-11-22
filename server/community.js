@@ -47,7 +47,9 @@ export function makeCommunity(store) {
     for (const k of ["supportUrl", "fanclubUrl"]) if (!URL_OK(p[k] ?? cur[k])) return { error: "Links must start with https://" };
     if (cur.handle && cur.handle !== h) store.delete(handlePath(cur.handle));
     store.set(handlePath(h), { ws });
-    const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200), updatedAt: Date.now() };
+    const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200),
+      venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
+      forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
   // ---- followers (the fan club) ----
@@ -58,11 +60,11 @@ export function makeCommunity(store) {
     return !cur;
   }
   // ---- public events and discover ----
-  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji"];
+  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil"];
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.color } : null }; }
   function eventsOf(ws, { upcoming = true, discoverableOnly = true } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);
-    return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && (!discoverableOnly || e.discoverable) && (upcoming ? (e.date || "9999") >= today : (e.date || "") < today)).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).map(({ id, e }) => publicCard(id, e, host));
+    return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && (!discoverableOnly || e.discoverable) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).map(({ id, e }) => publicCard(id, e, host));
   }
   function discover() {
     const hosts = [], events = [];
@@ -107,7 +109,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     res.json({ ok: true, followers: C.followersOf(ws).length }); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
   // The host of an event, for its guest page (name, handle, follower count).
-  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); res.json(h ? { host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks }, followers: C.followersOf(ws).length } : { host: null }); });
+  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); res.json(h ? { host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
   // Announce an event to followers (email when it's set up; otherwise a list to send yourself).
   app.post("/api/host/announce", small, async (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), ev = scopeStore(store, u.ws).get("events/" + id)?.data; if (!ev) return res.status(404).json({ code: "not_found", message: "No such event." });
     const F = C.followersOf(u.ws), h = C.profileOf(u.ws), cfg = emailConfig(u.ws, u.ws === DEFAULT_WS), link = `${publicOrigin(req)}/g#rsvp-${id}`; let sent = 0;

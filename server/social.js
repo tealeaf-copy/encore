@@ -16,7 +16,7 @@ const PHONE_OK = (p) => /^\+?[0-9 ()-]{7,20}$/.test(String(p || "").trim());
 
 // What an event is "about", for alerts, Discover and profiles.
 export const LANES = { run: ["run", "5k", "jog"], hike: ["hike", "trail", "walk"], bike: ["bike", "cycle", "ride"], cook: ["cook", "dinner", "tasting", "dishes", "supper", "dinner party"], potluck: ["potluck"], games: ["game", "board game"], movie: ["movie", "film"], concert: ["concert", "gig", "show", "festival"], cafe: ["cafe", "café", "coffee", "matcha", "tea"], bake: ["bake", "cake", "giveaway", "cookie", "bread"], picnic: ["picnic", "bbq", "cookout"], book: ["book"], club: ["club", "meetup"] };
-export function lanesOf(text) { const t = lc(text); return Object.entries(LANES).filter(([, w]) => w.some((x) => t.includes(x))).map(([k]) => k); }
+export function lanesOf(text) { const t = lc(text), L = Object.entries(LANES).filter(([, w]) => w.some((x) => t.includes(x))).map(([k]) => k); return L.length > 1 ? L.filter((k) => k !== "club") : L; }
 const miles = (a, b) => { const R = 3958.8, r = (x) => (x * Math.PI) / 180, dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng), h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 
 /** "notify me whenever there's a run event happening within 5 miles away from me that is public" → a rule. */
@@ -161,8 +161,9 @@ export function makeSocial(store, { C, saveBlob }) {
     const returning = [...guests].filter((em) => (I.att.get(em) || []).filter((a) => a.ws === ws).length > 1).length;
     const tagList = Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => { const T = KUDOS_TAGS.find((x) => x[0] === t); return { tag: t, emoji: T?.[1] || "✨", label: T?.[2] || t, n }; });
     const vibe = tagList.slice(0, 3).map((t) => t.label.toLowerCase());
-    return { kinds: Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([kind, n]) => ({ kind, n })), tags: tagList, vibe, guests: guests.size, returning, kudosCount: K.length,
-      kudos: K.slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: k.love || "", tags: k.tags || [], at: k.at, event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
+    const tippers = K.filter((k) => k.tipped).length, hostedN = ev.filter((x) => x.e.casual && x.e.date && x.e.date <= today()).length;
+    return { tippers, events: hostedN, kinds: Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([kind, n]) => ({ kind, n })), tags: tagList, vibe, guests: guests.size, returning, kudosCount: K.length,
+      kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: k.love || "", tags: k.tags || [], at: k.at, event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
       moments: I.moments.filter((m) => m.ws === ws && isPublic(I.events.get(m.eventId)?.e)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
   }
   // ---- guests prove who they are with the RSVP id and code they got back ----
@@ -191,9 +192,10 @@ export function makeSocial(store, { C, saveBlob }) {
     const out = { kudosAsks: 0, prepAlerts: 0, texts: 0 }, I = index(), sms = smsConfig();
     for (const x of I.events.values()) {
       const e = x.e; if (!e.casual || !e.date) continue; const S = scopeStore(store, x.ws), done = (k) => !!S.get("jobs/" + k), mark = (k) => S.set("jobs/" + k, { at: now });
+      const endAt = Date.parse(`${e.date}T${/^\d{2}:\d{2}$/.test(e.endTime || "") ? e.endTime : /^\d{2}:\d{2}$/.test(e.startTime || "") ? String(Math.min(23, +e.startTime.slice(0, 2) + 3)).padStart(2, "0") + e.startTime.slice(2) : "21:00"}:00`), hoursAfter = (now - endAt) / 3600e3;
       const daysSince = Math.floor((now - Date.parse(e.date + "T12:00:00")) / DAY), title = e.pubTitle || e.name, host = C.profileOf(x.ws), hostName = first(host?.name || person(x.owner).name) || "your host";
       // the day after: ask guests for kudos
-      if (daysSince >= 1 && daysSince <= 3 && !done("kudos-" + x.id)) {
+      if (((hoursAfter >= 1.5) || daysSince >= 1) && daysSince <= 3 && !done("kudos-" + x.id)) {
         mark("kudos-" + x.id); const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true);
         for (const [em, L] of I.att) { if (!L.some((a) => a.eventId === x.id)) continue; out.kudosAsks++;
           notify(em, { kind: "kudos", key: "kudos-" + x.id, text: `How was ${title}? Send ${hostName} some kudos.`, link: `/g#rsvp-${x.id}`, eventId: x.id });
@@ -255,7 +257,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500);
     if (!tags.length && !love) return bad(res, "Pick at least one thing you liked.");
-    P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, at: Date.now() }); X.bust();
+    P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
     const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "kudos-in", text: `${first(P.r.name) || "A guest"} sent kudos for ${P.ev?.pubTitle || P.ev?.name}${love ? `: "${love.slice(0, 80)}"` : ""} ${tags.map((t) => KUDOS_TAGS.find((k) => k[0] === t)[1]).join("")}`, link: "/#studio", eventId: P.r.eventId });
     const h = C.profileOf(P.ws); res.json({ ok: true, host: h?.handle ? { handle: h.handle, name: h.name } : null }); });
   app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); res.json({ kudos: S.list("kudos").map((d) => d.data).filter((k) => k.eventId === id).sort((a, b) => b.at - a.at), vibes: S.list("vibes").map((d) => d.data).filter((v) => v.eventId === id) }); });
@@ -263,9 +265,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const email = lc(clean(b.email, 200)), tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => VIBE_TAGS.some((k) => k[0] === t)); if (!email) return bad(res, "Which guest?");
     S.set("vibes/" + id + "--" + hash(email), { eventId: id, email, tags, at: Date.now() }); X.bust(); if (tags.length) X.notify(email, { kind: "vibe", key: `vibe-${id}-${tags.join()}`, text: `${first(u.name)} says you ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[2].toLowerCase()).join(" and ")} at ${S.get("events/" + id).data.pubTitle || S.get("events/" + id).data.name} ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[1]).join("")}`, link: "/feed" }); res.json({ ok: true }); });
   // the group chat: guests who RSVP'd (or are interested) and the host; giveaway messages are private to the host
-  const chatList = (S, eventId, viewerRid) => S.list("chat").map((d) => ({ id: d.id, ...d.data })).filter((m) => m.eventId === eventId && (!m.private || m.rid === viewerRid || viewerRid === "host")).sort((a, b) => a.at - b.at).slice(-200).map(({ rid, email, ...m }) => ({ ...m, mine: viewerRid !== "host" && rid === viewerRid }));
-  app.get("/api/public/chat/:eventId", (req, res) => { const P = X.rsvpProof(req.params.eventId, req.query.rid, req.query.code); if (!P || P.r.response === "no") return bad(res, "The chat opens once you've said yes.", 403, "not_granted"); res.json({ messages: chatList(P.S, P.r.eventId, P.rid), getThere: P.ev?.getThere || [], private: /giveaway/.test(P.ev?.activity || "") }); });
-  app.post("/api/public/chat/:eventId", small, (req, res) => { if (limited(req, 60)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(req.params.eventId, b.rid, b.code); if (!P || P.r.response === "no") return bad(res, "The chat opens once you've said yes.", 403, "not_granted");
+  const chatList = (S, eventId, viewerRid) => S.list("chat").map((d) => ({ id: d.id, ...d.data })).filter((m) => m.eventId === eventId && (!m.private || m.rid === viewerRid || viewerRid === "host")).sort((a, b) => a.at - b.at).slice(-200).map(({ rid, email, ...m }) => ({ ...m, mine: viewerRid !== "host" && rid === viewerRid, ...(m.poll ? { poll: { ...m.poll, votes: Object.fromEntries(Object.entries(m.poll.votes || {}).map(([o, L]) => [o, L.map((v) => v.name)])), myVotes: Object.entries(m.poll.votes || {}).filter(([, L]) => L.some((v) => v.rid === viewerRid)).map(([o]) => o) } } : {}) }));
+  app.get("/api/public/chat/:eventId", (req, res) => { const P = X.rsvpProof(req.params.eventId, req.query.rid, req.query.code); if (!P || P.r.response !== "going") return bad(res, P?.r.response === "requested" ? "The chat opens once the host approves you." : "The chat opens once you've said yes.", 403, "not_granted"); res.json({ messages: chatList(P.S, P.r.eventId, P.rid), getThere: P.ev?.getThere || [], private: /giveaway/.test(P.ev?.activity || "") }); });
+  app.post("/api/public/chat/:eventId", small, (req, res) => { if (limited(req, 60)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(req.params.eventId, b.rid, b.code); if (!P || P.r.response !== "going") return bad(res, "The chat opens once you've said yes.", 403, "not_granted");
     const kind = ["late", "release", "text"].includes(b.kind) ? b.kind : "text", text = clean(b.text, 600), give = /giveaway/.test(P.ev?.activity || "");
     if (kind === "text" && !text) return bad(res, "Say something first.");
     const body = kind === "late" ? `Running late${text ? `: ${text}` : ""}` : kind === "release" ? `Can't make it. Please give my ${give ? "slice" : "spot"} to someone else.${text ? ` ${text}` : ""}` : text;
@@ -295,6 +297,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     else if (u) { const I = X.index(); if ((I.att.get(lc(u.email)) || []).some((a) => a.eventId === id)) { ws = workspaceOfEvent(id); email = lc(u.email); name = u.name; } }
     if (!ws) return bad(res, "Only the host and people who went can add photos.", 403, "not_granted");
     const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");
-    const meta = await X.saveBlob(body, ct, ws); scopeStore(store, ws).add("moments", { eventId: id, authorEmail: email, authorName: name, url: meta.url, type: ct.startsWith("video") ? "video" : "image", caption: clean(req.query.caption, 200), at: Date.now() }); X.bust();
+    const meta = await X.saveBlob(body, ct, ws); { const I = X.index(), evT = I.events.get(id)?.e; for (const [em, L] of I.att) if (em !== email && L.some((a) => a.eventId === id)) X.notify(em, { kind: "photos", key: `ph-${id}-${new Date().toISOString().slice(0, 13)}`, text: `📸 New photos from ${evT?.pubTitle || evT?.name || "your get-together"}${name ? `, from ${first(name)}` : ""}`, link: `/g#rsvp-${id}`, eventId: id }); }
+    scopeStore(store, ws).add("moments", { eventId: id, authorEmail: email, authorName: name, url: meta.url, type: ct.startsWith("video") ? "video" : "image", caption: clean(req.query.caption, 200), at: Date.now() }); X.bust();
     res.json({ ok: true, url: meta.url }); });
 }

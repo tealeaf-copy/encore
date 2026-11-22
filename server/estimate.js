@@ -18,6 +18,11 @@ export function extractDeclarations(html, names = ESTIMATE_NAMES) {
     for (let j = k + 1; j < lines.length && /^[\s\]})]/.test(lines[j]) && lines[j].trim(); j++) out.push(lines[j]);
     if (!found.includes(out.join("\n"))) found.push(out.join("\n"));
   }
+  // Later statements that add to a declaration (e.g. BUDGET_MODEL.summit = ...)
+  for (const name of names) {
+    const re = new RegExp(`^${name}(?:\\.|\\[)`);
+    lines.forEach((l, k) => { if (!re.test(l)) return; const out = [l]; for (let j = k + 1; j < lines.length && /^[\s\]})]/.test(lines[j]) && lines[j].trim(); j++) out.push(lines[j]); found.push(out.join("\n")); });
+  }
   return { code: found.join("\n"), missing };
 }
 

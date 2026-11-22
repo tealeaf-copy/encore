@@ -138,7 +138,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
       <div class="chips" id="dChips">
         <button type="button" class="chip" aria-pressed="true" data-s="A dinner for 14 CFOs in New York, about $28k">Executive dinner</button>
         <button type="button" class="chip" aria-pressed="false" data-s="A roundtable for 10 CISOs in London, under £15k">Roundtable</button>
-        <button type="button" class="chip" aria-pressed="false" data-s="A breakfast roadshow for VPs of Finance in 3 cities, about $60k">Roadshow</button>
+        <button type="button" class="chip" aria-pressed="false" data-s="A breakfast roadshow for VPs of Finance in New York, Chicago and Boston, about $60k">Roadshow</button>
         <button type="button" class="chip" aria-pressed="false" data-s="A booth and a side dinner for 20 at a Las Vegas conference, about $90k">Booth + dinner</button>
       </div>
       <div class="plan" id="dOut" aria-live="polite">
@@ -272,7 +272,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
   function render(x){ if(!x.trim()){ tryP.hidden=false; return } tryP.hidden=true;
     if(!window.EncorePlan) return renderLocal(x);
     const P=window.EncorePlan.planFromText(x), o=P.o, d=P.d, c=SYM[d.currency]||(d.currency+" "), m=v=>c+Math.round(v).toLocaleString("en-US");
-    const what=o.label?o.label.replace(/^./,ch=>ch.toUpperCase()):/advisory|\bcab\b/i.test(x)?"Customer advisory board":o.meal&&d.kind==="dinner"?"Executive "+o.meal:(KL[d.kind]||"Event");
+    const what=o.label?o.label.replace(/^./,ch=>ch.toUpperCase()):/advisory|\bcab\b/i.test(x)?"Customer advisory board":/roundtable/i.test(x)?"Executive roundtable":P.cities.length>1?(o.meal?o.meal.replace(/^./,ch=>ch.toUpperCase())+" roadshow":"City roadshow"):o.meal&&d.kind==="dinner"?"Executive "+o.meal:(KL[d.kind]||"Event");
     const who=(o.roles||[])[0]||"guests", where=P.cities.length>1?P.cities.join(", "):(d.city||"");
     const title=`${esc(what)} · ${d.headcount} ${esc(who)}${o.headcount?"":'<span class="as">assumed</span>'}${where?` · ${esc(where)}`:""}`;
     const vs=o.budget?(P.over>0?`vs. your ${m(o.budget)}: still ${m(P.over)} over. Fewer seats or a lower-cost city closes it.`:`within your ${m(o.budget)}${P.trims.length?", after trimming":""}: ${m(o.budget-P.total)} to spare`):"No budget given: this is what it usually costs";

@@ -4,3 +4,4 @@ data/
 venues/*.jpg
 venues/*.png
 venues/*.webp
+vercel-out/

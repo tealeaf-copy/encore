@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'Encore runs on Render; Vercel only forwards requests'",
+  "buildCommand": "mkdir -p vercel-out && echo ok > vercel-out/vercel-ok.txt",
+  "outputDirectory": "vercel-out",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "https://REPLACE-WITH-YOUR-RENDER-APP.onrender.com/$1" }
+  ]
+}

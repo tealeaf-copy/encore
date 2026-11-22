@@ -122,6 +122,8 @@ Any host that runs a Node 20 container and gives you a persistent disk works. Mo
 - **Fly.io:** `fly launch` (uses the Dockerfile), `fly volumes create encore_data`, mount it at `/app/data` in `fly.toml`, `fly secrets set ANTHROPIC_API_KEY=... APP_PASSWORD=...`.
 - **Railway:** deploy from the repo (Dockerfile), attach a Volume at `/app/data`, set the variables.
 
+- **Vercel in front of Render:** Vercel can't hold Encore's database, uploads or scheduled reminders (no lasting disk, no always-on process), so the server runs on Render and Vercel forwards every request to it. Deploy on Render first (above). Then put your Render address in `vercel.json` in place of `REPLACE-WITH-YOUR-RENDER-APP.onrender.com`, push, and import the repo in Vercel (Add New > Project, no settings to change). On Render, set `ENCORE_PUBLIC_URL` to the Vercel address so links in emails use it, and set `ENCORE_TRUST_PROXY=2` (Vercel, then Render's proxy). Sign-in cookies belong to the Vercel domain, so use that address, not the Render one.
+
 Put the app behind HTTPS (all three do this for you) and set `APP_PASSWORD` before sharing the URL. The scheduled job runs inside the web process, so keep at least one instance always on.
 
 ## Named team members and the audit log

@@ -162,6 +162,18 @@ export function listContacts() {
 // ---------- event id -> workspace, so guest links find the right workspace ----------
 const evxPath = (id) => "system/evx-" + id;
 /** The workspace an event id belongs to. Events from before workspaces belong to the default one. */
+/** Everything a workspace holds, for the owner to download. No secrets: connection keys and password hashes stay out. */
+export function exportWorkspace(ws) {
+  const pre = `ws/${ws}/`, docs = need().dumpPrefix(pre).map((d) => ({ path: d.path.slice(pre.length), data: d.data, updated: d.updated }));
+  const members = membersOf(ws).map(({ passwordHash, hash, salt, ...u }) => u);
+  return { workspace: getWorkspace(ws), exportedAt: new Date().toISOString(), members, connections: listConnections(ws), docs };
+}
+/** Delete a workspace and everything in it: data, members, invites, tokens, connections, event index. */
+export function deleteWorkspace(ws) {
+  const st = need(); let n = st.deletePrefix(`ws/${ws}/`);
+  for (const d of st.list("system")) { if (d.data?.ws === ws) { st.delete("system/" + d.id); n++; } }
+  st.delete("system/ws-" + ws); return n + 1;
+}
 export function workspaceOfEvent(id) {
   if (!raw || !/^[A-Za-z0-9_-]{1,200}$/.test(String(id || ""))) return DEFAULT_WS;
   return raw.get(evxPath(id))?.data?.ws || DEFAULT_WS;

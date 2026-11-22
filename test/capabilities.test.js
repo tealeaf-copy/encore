@@ -132,3 +132,20 @@ test("CRM writes: reads are open; writes need RevOps or go to RevOps for approva
   assert.ok(audit.some((w) => /Omar Ali approved a CRM write.*Looks clean/.test(w)));
   assert.ok(audit.some((w) => /wrote to the CRM/.test(w)));
 });
+
+test("your data: the owner can export everything (no secrets) and delete the workspace", async () => {
+  const A = await signup("Dataco", "own@dataco.com", "Dee Owner");
+  const sam = await member(A, "sam@dataco.com", "Sam Lee", "AE");
+  await put("events/evD", { name: "Dinner", guests: [{ name: "Ana", email: "ana@x.com" }], updatedAt: 1 }, A.cookie);
+  assert.equal((await get("/api/workspace/export", sam)).status, 403, "only the owner");
+  const ex = await (await get("/api/workspace/export", A.cookie)).json();
+  assert.ok(ex.docs.some((d) => d.path === "events/evD" && d.data.guests[0].email === "ana@x.com"));
+  assert.equal(JSON.stringify(ex).includes("passwordHash"), false);
+  assert.ok(ex.members.some((m) => m.email === "sam@dataco.com"));
+  assert.equal((await post("/api/workspace/delete", { confirm: "wrong" }, A.cookie)).status, 400);
+  const del = await post("/api/workspace/delete", { confirm: "dataco" }, A.cookie);
+  assert.equal(del.status, 200);
+  assert.ok(!srv.store.get(`ws/${A.ws}/events/evD`), "event gone");
+  assert.equal(srv.store.list("system").filter((d) => d.data?.ws === A.ws).length, 0, "members, tokens and connections gone");
+  assert.notEqual((await get("/api/workspace", A.cookie)).status, 200, "old session no longer works");
+});

@@ -16,6 +16,7 @@ import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVIC
 import { runReminders } from "./reminders.js";
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
+import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
@@ -505,6 +506,24 @@ export function createApp({ store, dataDir }) {
     res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === provider) });
   });
   const CHECKS = { email: { name: "Email sending" }, salesforce: { name: "Salesforce" }, slack: { name: "Slack" }, linear: { name: "Linear" }, gong: { name: "Gong" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
+  // ---------- Your data: export and delete (GDPR) ----------
+  app.get("/api/workspace/export", (req, res) => {
+    const a = adminOf(req, res); if (!a) return;
+    if (a.ws === DEFAULT_WS) return res.status(409).json({ code: "not_available", message: "Export the default workspace from the server's database instead." });
+    const out = exportWorkspace(a.ws);
+    S(req).add("audit", { eventId: "", what: "exported the workspace's data", kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
+    res.setHeader("Content-Disposition", `attachment; filename="encore-${a.ws}-${new Date().toISOString().slice(0, 10)}.json"`);
+    res.json(out);
+  });
+  app.post("/api/workspace/delete", json, (req, res) => {
+    const a = adminOf(req, res); if (!a) return;
+    if (a.ws === DEFAULT_WS) return res.status(409).json({ code: "not_available", message: "The default workspace can't be deleted from the app." });
+    const W = getWorkspace(a.ws), want = String(W?.company || "").trim().toLowerCase();
+    if (!want || String(req.body?.confirm || "").trim().toLowerCase() !== want) return res.status(400).json({ code: "confirm", message: `Type the company name (${W?.company || ""}) to confirm.` });
+    const n = deleteWorkspace(a.ws);
+    res.setHeader("Set-Cookie", "encore_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+    res.json({ ok: true, deleted: n });
+  });
   app.get("/api/connections", (req, res) => { const a = adminOf(req, res); if (!a) return; res.json({ connections: listConnections(a.ws) }); });
   app.post("/api/connections", json, async (req, res) => {
     const a = adminOf(req, res); if (!a) return;

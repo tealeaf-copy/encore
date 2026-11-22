@@ -52,6 +52,8 @@ export function openStore(file) {
       ON CONFLICT(path) DO UPDATE SET data = excluded.data, updated = excluded.updated`),
     del: db.prepare("DELETE FROM docs WHERE path = ?"),
     list: db.prepare("SELECT id, data, updated FROM docs WHERE parent = ? ORDER BY id"),
+    dumpP: db.prepare("SELECT path, data, updated FROM docs WHERE substr(path, 1, ?) = ? ORDER BY path"),
+    delP: db.prepare("DELETE FROM docs WHERE substr(path, 1, ?) = ?"),
   };
   const events = new EventEmitter();
   events.setMaxListeners(0);
@@ -105,6 +107,10 @@ export function openStore(file) {
       store.set(`${collection}/${id}`, data);
       return { id, path: `${collection}/${id}` };
     },
+    /** Every document under a path prefix (for workspace export). */
+    dumpPrefix(prefix) { return q.dumpP.all(prefix.length, prefix).map((r) => ({ path: r.path, data: JSON.parse(r.data), updated: r.updated })); },
+    /** Delete every document under a path prefix (for workspace deletion). Returns how many. */
+    deletePrefix(prefix) { return q.delP.run(prefix.length, prefix).changes; },
     list(collection) {
       parsePath(collection, "collection");
       return q.list.all(collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated }));

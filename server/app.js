@@ -10,6 +10,7 @@ import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
+import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
 import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE } from "./email.js";
@@ -272,6 +273,12 @@ export function createApp({ store, dataDir }) {
   app.get("/join", (req, res) => sendStatic(res, "join.html", loginPage()));
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
+  // The homepage demo runs the app's own planner, read from the current index.html.
+  let estimateJs = null, estimateAt = 0;
+  app.get("/estimate.js", async (req, res) => {
+    try { const st = await fsp.stat(PAGE_FILE); if (!estimateJs || st.mtimeMs !== estimateAt) { estimateJs = buildEstimateScript(PAGE_FILE); estimateAt = st.mtimeMs; } res.type("application/javascript").set("Cache-Control", "public, max-age=300").send(estimateJs); }
+    catch (e) { res.status(500).type("application/javascript").send("/* estimate unavailable */"); }
+  });
   app.get("/security", (req, res) => sendStatic(res, "security.html", "<p>Security page missing.</p>"));
 
   const sendPage = async (req, res, next) => {

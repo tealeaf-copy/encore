@@ -267,7 +267,23 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
     const fx=FX[o.cur]||1; return L.map(([a,v,f])=>[a,r50(v*fx),f]) }
   const money=(v,c)=>c+Math.round(v).toLocaleString("en-US");
   const label={booth:"Conference booth + side dinner",roadshow:"City roadshow",roundtable:"Executive roundtable",cab:"Customer advisory board",dinner:"Executive dinner",reception:"Reception"};
-  function render(x){ const o=parse(x); if(!x.trim()){ tryP.hidden=false; return } tryP.hidden=true;
+  const SYM={USD:"$",EUR:"€",GBP:"£",CAD:"CA$",AUD:"A$",SGD:"S$",JPY:"¥",CHF:"CHF "};
+  const KL={dinner:"Executive dinner",conference:"Conference booth",roadshow:"City roadshow",summit:"Executive summit",webinar:"Live session",owned:"Your own conference",launch:"Launch event",experience:"Experience"};
+  function render(x){ if(!x.trim()){ tryP.hidden=false; return } tryP.hidden=true;
+    if(!window.EncorePlan) return renderLocal(x);
+    const P=window.EncorePlan.planFromText(x), o=P.o, d=P.d, c=SYM[d.currency]||(d.currency+" "), m=v=>c+Math.round(v).toLocaleString("en-US");
+    const what=o.label?o.label.replace(/^./,ch=>ch.toUpperCase()):/advisory|\bcab\b/i.test(x)?"Customer advisory board":o.meal&&d.kind==="dinner"?"Executive "+o.meal:(KL[d.kind]||"Event");
+    const who=(o.roles||[])[0]||"guests", where=P.cities.length>1?P.cities.join(", "):(d.city||"");
+    const title=`${esc(what)} · ${d.headcount} ${esc(who)}${o.headcount?"":'<span class="as">assumed</span>'}${where?` · ${esc(where)}`:""}`;
+    const vs=o.budget?(P.over>0?`vs. your ${m(o.budget)}: still ${m(P.over)} over. Fewer seats or a lower-cost city closes it.`:`within your ${m(o.budget)}${P.trims.length?", after trimming":""}: ${m(o.budget-P.total)} to spare`):"No budget given: this is what it usually costs";
+    out.innerHTML=`<div class="ttl fade"><b>${title}</b><span class="note">Same estimate you'll see in the app</span></div><div class="lines fade">${P.rows.map(r=>`<div class="ln"><span>${esc(r.line)}</span><b>${m(r.amount)}</b><small>${esc(r.note||"")}</small></div>`).join("")}</div>
+      ${P.trims.length?`<div class="note fade" style="background:#F6EDDC;border-radius:10px;padding:8px 10px"><b>Trimmed to fit your budget:</b> ${P.trims.map(t=>esc(t.why)+` (−${m(t.saved)})`).join("; ")}. Add anything back in the app.</div>`:""}
+      <div class="ttl fade"><span class="tot">${m(P.total)}</span><span class="note">${esc(vs)}</span></div>
+      <div class="dates fade"><div>Invites out<b>${d.kind==="conference"?"8 weeks before":"6 weeks before"}</b></div><div>${d.kind==="conference"?"Staff agendas":d.kind==="experience"?"Promotion starts":"AE picks due"}<b>${d.kind==="conference"?"2 weeks before":"5 weeks before"}</b></div><div>Follow-up<b>Next morning</b></div></div>
+      <p class="note">Every line is an assumption until you replace it with a vendor quote.</p><a class="keep" href="/signup" id="dKeep">Keep this plan in a free trial</a>`;
+    keep().onclick=()=>{ try{ localStorage.setItem("encore.brief",x.trim()) }catch{} } }
+  const _parseLocal=parse;
+  function renderLocal(x){ const o=_parseLocal(x);  
     const L=estimate(o), tot=L.reduce((a,l)=>a+l[1],0), A=k=>o.as[k]?'<span class="as">assumed</span>':"";
     const title=`${o.kind==="dinner"&&o.meal?"Executive "+o.meal:(label[o.kind]||"Event")}${A("kind")} · ${o.n} ${esc(o.who||"guests")}${A("n")}${o.kind==="roadshow"?` · ${o.cities} cities`:` · ${esc(o.city)}${A("city")}`}`;
     const vs=o.budget?(()=>{ const d=Math.round(o.budget-tot); return d>=0?`vs. about ${money(o.budget,o.cur)}: ${money(d,o.cur)} left for guest travel or a bigger room`:`vs. about ${money(o.budget,o.cur)}: ${money(-d,o.cur)} over, so Encore suggests where to trim` })():"No budget given: this is what it usually costs";
@@ -279,6 +295,8 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
   form.addEventListener("submit",e=>{ e.preventDefault(); chips.forEach(c=>c.setAttribute("aria-pressed",c.dataset.s===inp.value)); render(inp.value) });
   chips.forEach(c=>c.onclick=()=>{ inp.value=c.dataset.s; chips.forEach(x=>x.setAttribute("aria-pressed",x===c)); render(c.dataset.s) });
   keep().onclick=()=>{ try{ localStorage.setItem("encore.brief",inp.value.trim()) }catch{} };
+  window.addEventListener("load",()=>{ if(window.EncorePlan) render(inp.value) });
 })();
 </script>
+<script src="/estimate.js" defer></script>
 </body></html>

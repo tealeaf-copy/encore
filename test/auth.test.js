@@ -23,7 +23,7 @@ test("named users sign in with their email and the team password", async () => {
   assert.equal(r.status, 200);
   const cookie = r.headers.get("set-cookie").split(";")[0];
   const me = await fetch(srv.base + "/api/me", { headers: { cookie } }).then((x) => x.json());
-  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true });
+  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], approverRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true });
   const forged = cookie.replace("maya%40acme.com", "sam%40acme.com");
   assert.equal((await fetch(srv.base + "/api/me", { headers: { cookie: forged } })).status, 401, "a cookie can't be re-pointed at someone else");
   await fetch(srv.base + "/api/audit", { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({ eventId: "e1", what: "approved the plan" }) });
@@ -34,7 +34,11 @@ test("named users sign in with their email and the team password", async () => {
 });
 
 test("approvals are checked against roles and recorded by the server", async () => {
-  const r = await login({ password: "team-pass", email: "maya@acme.com" });
+  const { hashPassword } = await import("../server/auth.js");
+  const usersBefore = process.env.ENCORE_USERS;
+  process.env.ENCORE_USERS = `Maya Chen|maya@acme.com|Event lead+Account execs|${hashPassword("maya-pw")};Sam Lee|sam@acme.com|Exec sponsor`;
+  try {
+  const r = await login({ password: "maya-pw", email: "maya@acme.com" });
   const cookie = r.headers.get("set-cookie").split(";")[0];
   const post = (body, c = cookie) => fetch(srv.base + "/api/approve", { method: "POST", headers: { cookie: c, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const put = (path, body) => fetch(srv.base + "/api/db/doc?path=" + path, { method: "PUT", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -59,6 +63,7 @@ test("approvals are checked against roles and recorded by the server", async () 
   const log2 = await fetch(srv.base + "/api/audit?eventId=ev9", { headers: { cookie } }).then((y) => y.json());
   assert.match(log2.entries[0].what, /approvals reset \(Event lead\)/);
   assert.equal(log2.entries[0].who, "Encore server");
+  } finally { process.env.ENCORE_USERS = usersBefore; }
 });
 
 test("guest links get a redacted event; AE links are signed and scoped to the AE's guests", async () => {
@@ -66,7 +71,7 @@ test("guest links get a redacted event; AE links are signed and scoped to the AE
   const cookie = r.headers.get("set-cookie").split(";")[0];
   await fetch(srv.base + "/api/db/doc?path=events/ev7", { method: "PUT", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({
     name: "Kitchen", budget: 18000, pitch: { ask: "Approve $18k" }, opps: [{ amount: 1 }], commits: [{ amount: 9800 }],
-    guests: [{ name: "Ana Diaz", title: "VP", company: "Acme", email: "ana@acme.com", note: "Budget is $2M", owner: "Sam Lee", status: "Attended", fuDraft: "Hi Ana" },
+    guests: [{ name: "Ana Diaz", title: "VP", company: "Acme", email: "ana@acme.com", note: "Budget is $2M", owner: "Sam Lee", status: "Attended", fuDraft: "Hi Ana", optIn: true },
              { name: "Bo Chan", title: "CMO", company: "Beta", email: "bo@beta.com", owner: "Kim Park", status: "Attended" }] }) });
   const g = await fetch(srv.base + "/api/db/doc?path=events/ev7", { headers: { "x-encore-guest": "1" } }).then((y) => y.json());
   assert.equal(g.data.guests[0].email, undefined);
@@ -75,6 +80,8 @@ test("guest links get a redacted event; AE links are signed and scoped to the AE
   assert.equal(g.data.pitch, undefined);
   assert.equal(g.data.opps, undefined);
   assert.equal(g.data.guests[0].name, "Ana Diaz");
+  assert.equal(g.data.guests[0].owner, undefined, "guests never see who owns a relationship");
+  assert.deepEqual(g.data.guests.map((x) => x.name), ["Ana Diaz"], "only guests who opted in and are going are listed");
   const full = await fetch(srv.base + "/api/db/doc?path=events/ev7", { headers: { cookie } }).then((y) => y.json());
   assert.equal(full.data.guests[0].email, "ana@acme.com", "signed-in team members still see everything");
   const { token, slug } = await fetch(srv.base + "/api/aelink?eventId=ev7&ae=Sam%20Lee", { headers: { cookie } }).then((y) => y.json());
@@ -101,10 +108,13 @@ test("personal passwords, signed plan links, scoped guest wall, save conflicts",
     const r = await login({ password: "maya-only", email: "maya@acme.com" });
     assert.equal(r.status, 200);
     const cookie = r.headers.get("set-cookie").split(";")[0], H = { cookie, "Content-Type": "application/json" };
-    await fetch(srv.base + "/api/db/doc?path=events/evP", { method: "PUT", headers: H, body: JSON.stringify({ name: "P", budget: 9000, notes: "secret", pitch: { ask: "x" }, updatedAt: 1, guests: [{ name: "A", email: "a@x.com", note: "n" }] }) });
-    const plain = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan" } }).then((y) => y.json());
-    assert.equal(plain.data.budget, undefined, "an unsigned plan view gets the guest view");
-    assert.equal(plain.data.notes, undefined, "unknown fields never reach guests");
+    await fetch(srv.base + "/api/db/doc?path=events/evP", { method: "PUT", headers: H, body: JSON.stringify({ name: "P", budget: 9000, notes: "secret", pitch: { ask: "x" }, updatedAt: 1, guests: [{ name: "A", email: "a@x.com", note: "n", optIn: true, status: "Going" }] }) });
+    const plain = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan" } });
+    assert.equal(plain.status, 403, "an unsigned plan view gets nothing");
+    const forgedPlan = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan", "x-encore-token": "0".repeat(32) } });
+    assert.equal(forgedPlan.status, 403, "a forged plan token gets nothing");
+    const rsvpView = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "rsvp" } }).then((y) => y.json());
+    assert.equal(rsvpView.data.notes, undefined, "unknown fields never reach guests");
     const { token } = await fetch(srv.base + "/api/plantoken?eventId=evP", { headers: H }).then((y) => y.json());
     const signed = await fetch(srv.base + "/api/db/doc?path=events/evP", { headers: { "x-encore-guest": "1", "x-encore-view": "plan", "x-encore-token": token } }).then((y) => y.json());
     assert.equal(signed.data.budget, 9000);

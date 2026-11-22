@@ -42,6 +42,11 @@ if (process.env.ENCORE_USERS && !process.env.SESSION_SECRET) {
   console.error("Refusing to start: ENCORE_USERS is set but SESSION_SECRET isn't. Set a long random SESSION_SECRET so sign-ins can't be forged.");
   process.exit(1);
 }
+{
+  const { startupProblems } = await import("./auth.js");
+  const problems = startupProblems();
+  if (problems.length) { console.error("Refusing to start: " + problems.join(" ")); process.exit(1); }
+}
 if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data.");
 const server = app.listen(port, host, () => {
   console.log(`[encore] http://localhost:${port}  ai=${aiMode()}  integrations=[${configured().map((s) => s.server).join(", ")}]  auth=${process.env.APP_PASSWORD ? "on" : "off"}`);

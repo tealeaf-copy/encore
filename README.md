@@ -41,6 +41,10 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ASSET_MAX_MB` | `15` | Upload size limit |
 | `APP_PASSWORD` | unset | Turns on a shared-password login |
 | `SESSION_SECRET` | `APP_PASSWORD` | Signs the login cookie |
+| `ENCORE_USERS` | unset | Named team members: `Name\|email\|role+role\|scrypt$…`, separated by `;` |
+| `ENCORE_APPROVER_ROLES` | every team role | Comma list of the roles whose approval a plan needs |
+| `ENCORE_MCP_TOKEN` | unset | Shared bearer token for `/mcp` (audit log says "Claude (shared MCP token)") |
+| `ENCORE_MCP_TOKENS` | unset | Per-person MCP tokens: `Name\|email\|token`, comma separated (tokens of 16+ characters) |
 | `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
 | `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |
 | `SLACK_BOT_TOKEN` | unset | Slack Web API (send messages, DMs by email, find users) |
@@ -85,7 +89,7 @@ The `dispatch_readonly` tool only accepts a single SOQL `SELECT`. CRM errors com
 
 ### Login and guest links
 
-With `APP_PASSWORD` set, visitors see a password form and get a 30-day cookie. RSVP and survey links (`/#rsvp-…`, `/#survey-…`) keep working without a login: the login page forwards them to `/g`, which serves the page, and the shim marks their requests as guest requests. Guests can only read single event documents and write to `rsvps` and `feedback`.
+With `APP_PASSWORD` set, visitors see a password form and get a 30-day cookie. RSVP and survey links (`/#rsvp-…`, `/#survey-…`) keep working without a login: the login page forwards them to `/g`, which serves the page, and the shim marks their requests as guest requests. Guests can only read single event documents (an allowlisted view), the public part of the brand profile (name, logo, colors, fonts, voice, tagline), and the guest wall for one event (people going who opted in); and write to `rsvps`, `feedback`, `interest` and `wall`. Guest RSVPs are stamped `source: "guest"` (plus `utm` when sent) and can only be going, maybe, declined (`no`) or requested. Nominations need a signed-in team member.
 
 ### The daily project-manager job
 
@@ -115,7 +119,7 @@ Set `ENCORE_USERS` so approvals and the decision log record a real person:
 ENCORE_USERS="Maya Chen|maya@acme.com|Event lead+Account execs;Sam Lee|sam@acme.com|Exec sponsor"
 ```
 
-Each person signs in with their work email plus the team password (`APP_PASSWORD`). Plan approvals are limited to the roles listed for each person, and reset when the plan's cost or committed spend moves more than 5%. Every approval, spend change and report correction is also written to an append-only audit log (`GET /api/audit?eventId=…`); the server stamps who and when, and the log can't be edited through the data API.
+Each person signs in with their work email plus their personal password (or the team password, `APP_PASSWORD`, if they have none). Plan approvals are limited to the roles listed for each person and to `ENCORE_APPROVER_ROLES` (default: every role on the team list). Approving needs a personal password, and the server refuses to start if anyone holding an approver role has none. `GET /api/approvals?eventId=…` returns the `required` roles and whether the plan is `fullyApproved`. Approvals reset when the plan's cost or committed spend moves more than 5%. Every approval, spend change and report correction is also written to an append-only audit log (`GET /api/audit?eventId=…`); the server stamps who and when, and the log can't be edited through the data API.
 
 ## CRM write-back
 
@@ -125,19 +129,21 @@ With HubSpot or Salesforce connected, "Log approved next steps" in Measure creat
 
 Encore runs as an MCP server, so a field marketer can plan, chase and report from a Claude chat.
 
-1. On the server, set `ENCORE_MCP_TOKEN` to a long random value.
-2. In Claude, add a custom connector: URL `https://<your-encore-host>/mcp`, header `Authorization: Bearer <ENCORE_MCP_TOKEN>`.
+1. On the server, give each person a token with `ENCORE_MCP_TOKENS="Maya Chen|maya@acme.com|<long random>,…"`, or set one shared `ENCORE_MCP_TOKEN`.
+2. In Claude, add a custom connector: URL `https://<your-encore-host>/mcp`, header `Authorization: Bearer <token>`.
 3. Add the skill in `claude/skills/encore-events/` so Claude knows which tool to use for which request.
 
-Tools: `list_events`, `get_event`, `create_event`, `update_event`, `add_guests`, `guest_list`, `followups_due`, `pipeline_report`, `launch_kit`, `program_summary`. Anyone with the token can read and change events; treat it like a password.
+Tools: `list_events`, `get_event`, `create_event`, `update_event`, `add_guests`, `guest_list`, `followups_due`, `pipeline_report`, `launch_kit`, `program_summary`. Anyone with a token can read and change events; treat it like a password. Every `create_event`, `update_event` and `add_guests` call is written to the audit log with the token's owner. Tools refuse bad input (dates must be real `YYYY-MM-DD`, currencies one of USD EUR GBP CAD AUD SGD JPY INR CHF SEK, amounts 0 or more). Setting `budget` on an event whose plan has budget lines scales the lines to the new total. Batched JSON-RPC requests are accepted.
 
 ## Sign-in and security
 
 - `APP_PASSWORD` is required unless the server listens on localhost (or `ENCORE_ALLOW_OPEN=1` is set on purpose).
-- With `ENCORE_USERS`, `SESSION_SECRET` is required. Give each person their own password by adding a 4th field: `Name|email|roles|scrypt$...` (generate it with `node server/hash-password.js 'their password'`). People without one sign in with the team password.
-- Guest links (RSVP, guest wall, nomination, survey) only see an allowlisted view of an event: no emails, notes, money or deals. Plan links are signed per event.
+- With `ENCORE_USERS`, `SESSION_SECRET` is required. Give each person their own password by adding a 4th field: `Name|email|roles|scrypt$...` (generate it with `node server/hash-password.js 'their password'`). People without one sign in with the team password, and can't approve plans.
+- Sign-in allows 10 failed tries per IP and email in 15 minutes, then answers 429. Signing out revokes that session on the server.
+- Uploads must be images, video, PDF, CSV, text, Markdown or JSON. Files are served with `nosniff` and a sandboxing CSP; anything but images (not SVG), video and PDF is served as a download.
+- Guest links (RSVP, guest wall, nomination, survey) only see an allowlisted view of an event: no emails, notes, money or deals. Plan links are signed per event; a plan view without a valid signature gets 403. Personal invites can be signed too: `POST /api/invitetoken` (team only) returns a token per guest, and a guest request for the event with `x-encore-invite: <encodeURIComponent(guestKey)>~<token>` also gets `me` (that guest's name, title, company, email and owner's first name) and `hosts`.
 - Guests can only change responses they created (a per-browser key), and AE follow-up links are signed per AE.
-- Saves carry the version they started from; a stale save is refused instead of overwriting someone else's change.
+- Saves carry the version they started from (`_base`); a stale save, or an event save without `_base` over an existing versioned event, is refused (409) instead of overwriting someone else's change.
 
 ## More integrations
 

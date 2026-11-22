@@ -71,7 +71,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -590,6 +590,10 @@ export function createApp({ store, dataDir }) {
   // When a saved event's cost or commitments move more than 5% from what was approved, the server clears the approvals.
   function afterEventWrite(st, p) {
     const m = /^events\/([A-Za-z0-9_-]+)$/.exec(p); if (!m) return;
+    const so = st.get("signoffs/" + m[1]), evN = st.get(p);
+    if (so && evN) { const nowM = eventMoney(evN.data); let changed = false;
+      for (const r of so.data.requests || []) if (r.status === "approved" && Math.abs(nowM.cost - (r.decidedCost ?? r.cost)) > Math.max(500, (r.decidedCost ?? r.cost) * 0.05)) { r.status = "stale"; r.staleAt = Date.now(); r.staleCost = nowM.cost; changed = true; }
+      if (changed) { st.set("signoffs/" + m[1], so.data); st.add("audit", { eventId: m[1], what: `${evN.data.name || m[1]}: sign-off needs renewing; the plan is now ${nowM.currency} ${nowM.cost.toLocaleString("en-US")}`, who: "Encore server", email: null, verified: true, at: Date.now() }); } }
     const ap = st.get("approvals/" + m[1]); if (!ap || !Object.keys(ap.data.roles || {}).length) return;
     const ev = st.get(p); if (!ev) return;
     const now = eventMoney(ev.data), moved = (a, b) => Math.abs(a - b) > Math.max(500, b * 0.05);
@@ -686,7 +690,7 @@ export function createApp({ store, dataDir }) {
     req.ws = workspaceOfEvent(eventId); // AE links work signed in or not: the event decides the workspace
     if (!aeOk(req.ws, eventId, slug, req.query.t)) return res.status(403).json({ code: "not_granted", message: "This link isn't valid. Ask marketing for a new one." });
     const ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? S(req).get("events/" + eventId) : null; if (!ev) return res.status(404).json({ code: "not_found" });
-    const mine = (ev.data.guests || []).filter((g) => aeSlug(g.owner) === slug).map((g) => ({ name: g.name, title: g.title, company: g.company, status: g.status, owner: g.owner, note: g.note, nextStep: g.nextStep, gift: g.gift, giftStatus: g.giftStatus, fuDraft: g.fuDraft, fuState: g.fuState, nsDoneAt: g.nsDoneAt, nudge: g.nudge, nudgeOkAt: g.nudgeOkAt }));
+    const all = ev.data.guests || [], mine = all.filter((g) => aeSlug(g.owner) === slug).map((g) => ({ gi: all.indexOf(g), ikey: guestKeyOf(g), itok: inviteToken(req.ws, eventId, guestKeyOf(g)), name: g.name, title: g.title, company: g.company, status: g.status, owner: g.owner, note: g.note, nextStep: g.nextStep, gift: g.gift, giftStatus: g.giftStatus, fuDraft: g.fuDraft, fuState: g.fuState, nsDoneAt: g.nsDoneAt, nudge: g.nudge, nudgeOkAt: g.nudgeOkAt }));
     const actions = S(req).list("aeactions").map((d) => d.data).filter((a) => a.eventId === eventId && a.aeSlug === slug);
     res.json({ event: { id: eventId, name: ev.data.name, brand: ev.data.brand, date: ev.data.date, copy: ev.data.copy ? { title: ev.data.copy.title } : null, audience: ev.data.audience, guests: mine, goingCount: (ev.data.guests || []).filter((g) => g.status === "Going" || g.status === "Attended").length }, actions });
   });
@@ -782,7 +786,7 @@ export function createApp({ store, dataDir }) {
 
   // ---------- Sign-off requests: a signed, no-login link for the person who says yes to the budget ----------
   const soToken = (ws, eventId, rid, email) => hmac32(`so:${tag(ws)}${eventId}:${rid}:${String(email).toLowerCase()}`);
-  const soClean = (r) => ({ id: r.id, name: r.name, email: r.email, requestedBy: r.requestedBy, at: r.at, status: r.status, decidedAt: r.decidedAt || null, comment: r.comment || "", cost: r.cost, currency: r.currency, remindedAt: r.remindedAt || null });
+  const soClean = (r) => ({ id: r.id, name: r.name, email: r.email, requestedBy: r.requestedBy, at: r.at, status: r.status, staleCost: r.staleCost || null, decidedAt: r.decidedAt || null, comment: r.comment || "", cost: r.cost, currency: r.currency, remindedAt: r.remindedAt || null });
   app.post("/api/signoff/request", json, async (req, res) => {
     const u = currentUser(req), b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
     if (!ownEvent(req, res, eventId)) return;
@@ -824,9 +828,9 @@ export function createApp({ store, dataDir }) {
     if (!f) return res.status(403).json({ code: "not_granted", message: "This sign-off link isn't valid. Ask for a new one." });
     const ev = S(req).get("events/" + eventId); if (!ev) return res.status(404).json({ code: "not_found" });
     const d = ev.data, money = eventMoney(d);
-    res.json({ request: { ...soClean(f.r), note: f.r.note || "" }, now: money, event: { name: d.name, kind: d.kind, date: d.date, city: d.city, headcount: d.headcount, budget: d.budget, currency: d.currency, goal: d.goal, audience: d.audience, concept: String(d.concept || "").slice(0, 600), pitch: d.pitch ? { summary: d.pitch.summary, why: d.pitch.why, ask: d.pitch.ask } : null, lines: (d.produce?.budget || []).slice(0, 14).map((l) => ({ label: l.line || l.item || l.label || "", amount: +l.amount || 0 })) } });
+    res.json({ request: { ...soClean(f.r), note: f.r.note || "" }, now: money, event: { name: d.name, kind: d.kind, date: d.date, city: d.city, headcount: d.headcount, budget: d.budget, currency: d.currency, goal: d.goal, audience: d.audience, concept: String(d.concept || "").slice(0, 600), pitch: d.pitch ? { summary: d.pitch.oneLiner || d.pitch.summary, why: d.pitch.whyNow || d.pitch.why, ask: d.pitch.ask, outcomes: (d.pitch.outcomes || []).slice(0, 4), risks: (d.pitch.risks || []).slice(0, 4), impact: d.pitch.impact || null } : null, pubTitle: d.pubTitle, startTime: d.startTime, venueName: d.venueName, guestCount: (d.guests || []).length, tierA: (d.guests || []).filter((g) => g.tier === "A").map((g) => g.company).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i).slice(0, 12), lines: (d.produce?.budget || []).slice(0, 14).map((l) => ({ label: l.line || l.item || l.label || "", amount: +l.amount || 0 })) } });
   });
-  app.post("/api/signoff/decide", json, (req, res) => {
+  app.post("/api/signoff/decide", json, async (req, res) => {
     const b = req.body || {}, eventId = String(b.eventId || ""), f = soFind(req, eventId, String(b.rid || ""), b.t);
     if (!f) return res.status(403).json({ code: "not_granted", message: "This sign-off link isn't valid." });
     const decision = String(b.decision || ""); if (!["approved", "changes", "declined"].includes(decision)) return res.status(400).json({ code: "invalid" });
@@ -837,6 +841,12 @@ export function createApp({ store, dataDir }) {
     S(req).set("signoffs/" + eventId, f.cur);
     const verb = { approved: "signed off", changes: "asked for changes to", declined: "declined" }[decision];
     S(req).add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: ${f.r.name} ${verb} the plan at ${money.currency} ${money.cost.toLocaleString("en-US")}${f.r.comment ? `: "${f.r.comment.slice(0, 200)}"` : ""}`, who: f.r.name, email: f.r.email, verified: true, via: "signed link", at: f.r.decidedAt });
+    const cfgM = emailConfig(req.ws, req.ws === DEFAULT_WS), toR = f.cur.requests.find((x) => x.id === f.r.id)?.requestedByEmail;
+    if (cfgM && toR) {
+      const word = { approved: "approved", changes: "asked for changes to", declined: "declined" }[decision];
+      const m = await sendEmail(cfgM, { to: toR, replyTo: f.r.email, subject: `${f.r.name} ${word} ${ev.data.name || "the plan"}`, text: `${f.r.name} ${word} the plan for ${ev.data.name || "your event"} at ${money.currency} ${money.cost.toLocaleString("en-US")}.${f.r.comment ? `\n\n"${f.r.comment}"` : ""}\n\nIt's in the event's decision log.` });
+      S(req).add("outbox", { kind: "signoff-answer", eventId, to: [toR], subject: `${f.r.name} ${word} the plan`, at: Date.now(), status: m.ok ? "sent" : "failed", error: m.error || null });
+    }
     res.json({ ok: true, request: soClean(f.r) });
   });
 

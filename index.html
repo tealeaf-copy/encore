@@ -7575,7 +7575,7 @@ function ckPanelHTML(d,j){ const link=j?.link?location.origin+j.link:"", T=j?.ta
   </section>` }
 async function drawCheck(host){ const d=draft; if(!d?.id||d.casual) return; $("#ckPanel")?.remove(); const w=document.createElement("div"); w.id="ckWrap"; host.prepend(w); let j=await ckLoad(d.id);
   const render=()=>{ w.innerHTML=ckPanelHTML(d,j); const mk=$("#ckMake",w); if(mk) mk.onclick=async()=>{ mk.disabled=true; if(!d.id){ toast("Save the event first."); mk.disabled=false; return } try{ await saveEvent?.(true) }catch{}
-      const body={ title:guestTitle?.(d)||d.name, pitch:$("#ckPitch",w).value.trim(), city:$("#ckCity",w).value.trim(), dates:$("#ckDates",w).value.split(",").map(s=>s.trim()).filter(Boolean) };
+      const body={ title:d.pubTitle||d.name||guestTitle?.(d), pitch:$("#ckPitch",w).value.trim(), city:$("#ckCity",w).value.trim(), dates:$("#ckDates",w).value.split(",").map(s=>s.trim()).filter(Boolean) };
       const r=await fetch("/api/check/"+encodeURIComponent(d.id),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const k=await r.json(); if(!r.ok){ toast(k.message); mk.disabled=false; return } j=await ckLoad(d.id); render(); toast("Your would-you-come page is ready. Send it to 8 to 10 people.") };
     $("#ckRefresh",w)&&($("#ckRefresh",w).onclick=async()=>{ j=await ckLoad(d.id); render() });
     $$("[data-ckcopy]",w).forEach(b=>b.onclick=()=>{ const link=location.origin+j.link, M=CK_MSG(d,link); copyTxt(b.dataset.ckcopy==="link"?link:M[b.dataset.ckcopy]); toast("Copied.") }) };
@@ -7664,6 +7664,54 @@ function brandFeedItems(){ const p=brandP?.(); if(!p?.ideas?.length) return []; 
 { const _feed=feed; feed=function(){ const base=_feed(); const B=brandFeedItems(); return B.length?[...B,...base.filter(x=>!x.brandIdea)]:base } }
 { const _cgi=cgIdeas; cgIdeas=function(key,goal,budget){ const r=_cgi.apply(this,arguments).filter(x=>!x.brandIdea); return [...brandFeedItems(),...r] } }
 document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-cgdraft^='brand-']"); if(!b) return; e.preventDefault(); e.stopImmediatePropagation(); const x=brandP()?.ideas?.[+b.dataset.cgdraft.slice(6)]; if(x) planFromIdea(x) },true);
+
+// ==================================================================
+// Round 2 (field marketers): read what people type, speak each brand's language everywhere, track what matters, one honest Pip.
+// ==================================================================
+const CITY_CUR=[[/sydney|melbourne|brisbane|perth|australia/i,"AUD"],[/singapore/i,"SGD"],[/london|manchester|edinburgh|\buk\b|united kingdom/i,"GBP"],[/dublin|paris|berlin|amsterdam|madrid|lisbon|milan|munich|barcelona|europe/i,"EUR"],[/toronto|vancouver|montreal|canada/i,"CAD"],[/tokyo|japan/i,"JPY"],[/são paulo|sao paulo|brazil/i,"BRL"],[/mexico city|cdmx|mexico/i,"MXN"]];
+{ const _qs10=quickStart; quickStart=function(text){ const r=_qs10.apply(this,arguments); try{ if(!window.__wsPersonal&&draft){ const t=String(text||""), lo=t.toLowerCase();
+    // currency: an explicit code wins, then the city
+    const code=(t.match(/\b(AUD|SGD|GBP|EUR|CAD|JPY|USD|BRL|MXN)\b/i)||[])[1]||(/A\$/.test(t)?"AUD":/S\$/.test(t)?"SGD":"");
+    const city=`${draft.city||""} ${t}`; const cc=code?code.toUpperCase():(CITY_CUR.find(([re])=>re.test(city))||[])[1]; if(cc&&(!draft.currency||draft.currency==="USD")) draft.currency=cc;
+    const amt=t.replace(/,/g,"").match(/(?:AUD|SGD|GBP|EUR|CAD|USD|A\$|S\$|€|£|\$)\s?(\d+(?:\.\d+)?)\s*(k|m)?\b|(\d+(?:\.\d+)?)\s*(k|m)\s*(?:AUD|SGD|GBP|EUR|CAD|USD)/i); if(amt){ const v=+(amt[1]||amt[3])*((amt[2]||amt[4]||"").toLowerCase()==="k"?1e3:(amt[2]||amt[4]||"").toLowerCase()==="m"?1e6:1); if(v>=300) draft.budget=v }
+    // morning formats are not dinners
+    if(/\bbreakfast|brunch|morning|coffee briefing|briefing\b/.test(lo)&&!/dinner/.test(lo)){ draft.meal=/brunch/.test(lo)?"lunch":"breakfast"; if(/dinner/i.test(draft.name||"")) draft.name=draft.name.replace(/dinner/i,/brunch/.test(lo)?"brunch":"breakfast"); if(/dinner/i.test(draft.format||"")) draft.format="Breakfast briefing" }
+    // "3 ideas", "two cities", "4 nights" are not headcounts
+    const bad=lo.match(/\b(\d{1,2}|two|three|four|five)\s+(?:co-hosted\s+)?(ideas?|options|events?|cities|nights?|dinners|sessions|partners)\b/); if(bad){ const n={two:2,three:3,four:4,five:5}[bad[1]]||+bad[1]; if(draft.headcount===n) draft.headcount=TPL_SEATS?.[draft.kind]||20 }
+  } }catch(e){ console.warn(e) } return r } }
+// more of the studio speaks the brand's language
+for(const m of ["consumer","community"]) MODE_SWAP[m].push([/\ban teammate/g,"a teammate"],[/(^|[.!?]\s+)teammate/g,(x,a)=>a+"Teammate"],[/what most C-level guests expect/g,"what guests expect"],[/C-level/g,"guests"],[/\bexecs\b/g,"guests"]);
+for(const m of ["consumer","community"]) { const L=MODE_SWAP[m]; const i=L.findIndex(([a])=>String(a)===String(/\bNew pipeline\b/g)); if(i>=0) L[i]=[/\bNew pipeline\b/g,"Revenue from guests"]; const j=L.findIndex(([a])=>String(a)===String(/\bpipeline\b/g)); if(j>=0) L[j]=[/\bpipeline\b/g,"revenue"] }
+// the invitation title is the idea's name, not "An evening with peers"
+{ const _pfi=planFromIdea; planFromIdea=function(x){ const r=_pfi.apply(this,arguments); try{ if(draft&&!draft.pubTitle) draft.pubTitle=x.name }catch{} return r } }
+// tracking that ties an event to signups and sales: a link and a code per event
+function trackingHTML(d){ const p=brandP?.(); if(!p) return ""; const slug=String(d.name||"event").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40), site=(p.website||"").replace(/^https?:\/\//,"").replace(/\/$/,""), co=String(p.company||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8), yr=String(new Date().getFullYear()).slice(2);
+  const link=site?`https://${site}/?utm_source=encore&utm_medium=event&utm_campaign=${slug}`:"", code=`${co}-${slug.split("-").slice(0,2).join("").toUpperCase().slice(0,8)}${yr}`;
+  return `<div class="trk"><b>Tie it to results</b><p class="note">Put this link on the invite, the table cards and the follow-up, and give guests this code. Then signups and sales from this event show up in your analytics under its name.</p>${link?`<div class="ck-link"><input readonly value="${esc(link)}"><button class="btn sm" type="button" data-trk="${esc(link)}">Copy link</button></div>`:""}<div class="ck-link"><input readonly value="${esc(code)}"><button class="btn sm" type="button" data-trk="${esc(code)}">Copy code</button></div></div>` }
+{ const _gmh=goalMetricsHTML; goalMetricsHTML=function(d){ const h=_gmh(d); return h?h.replace(/<\/section>$/,trackingHTML(d)+"</section>"):h } }
+document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-trk]"); if(b){ copyTxt(b.dataset.trk); toast("Copied.") } });
+// one Pip on Home: the list (it covers the old brief), and it notices events that ended without a wrap-up
+{ const _pli=pipListItems; pipListItems=function(C){ const I=_pli(C), today=new Date().toISOString().slice(0,10);
+    for(const e of allEvents.filter(e=>!e.example&&!e.casual&&e.date&&e.date<today&&e.status!=="done")){ const att=(e.guests||[]).some(g=>/Attended|No-show/.test(g.status||"")); if(!att&&!I.some(x=>x.ev?.id===e.id&&/Wrap up/.test(x.t))) I.unshift({pri:0,ev:e,t:`Wrap up "${e.name}"`,w:`It was ${Math.round((Date.now()-new Date(e.date+"T12:00:00"))/864e5)} days ago. Mark who came and log what happened, so results and Impact are right.`,open:7,act:"Wrap it up"}) }
+    return I.sort((a,b)=>a.pri-b.pri).slice(0,6) } }
+{ const _dph=drawPipHome; drawPipHome=async function(){ const r=await _dph.apply(this,arguments); try{ const v=$("#view-programs"); v?.querySelectorAll(".pipbrief").forEach(x=>x.hidden=true); const h=v?.querySelector(".piplist h3"); if(h){ const n=v.querySelectorAll(".pl-i").length; h.textContent=n===1?"One thing I'd do today":`${n} things I'd do today` } }catch{} return r } }
+// Impact for consumer and community brands: what they measure, from surveys and goal metrics
+{ const _ri2=renderImpact; renderImpact=function(){ const r=_ri2.apply(this,arguments); try{ const m=brandMode(); const k=$("#portKpis"); if(!k||m==="sales") return r; const today=new Date().toISOString().slice(0,10), ran=allEvents.filter(e=>!e.example&&!e.casual&&e.date&&e.date<today);
+    const F=allFeedback.filter(f=>ran.some(e=>e.id===f.eventId)), N=F.filter(f=>Number.isFinite(f.nps)), nps=N.length?Math.round((N.filter(x=>x.nps>=9).length-N.filter(x=>x.nps<=6).length)/N.length*100):null, L=F.filter(f=>f.lift), lift=L.length?Math.round(L.filter(f=>f.lift==="more").length/L.length*100):null;
+    const sumG=key=>ran.reduce((a,e)=>a+(+e.goalMetrics?.[key]||0),0), spend=ran.reduce((a,e)=>a+(+e.budget||0),0), att=ran.reduce((a,e)=>a+(e.guests||[]).filter(g=>g.status==="Attended").length,0);
+    const main=m==="consumer"?[["Posts tagging you",sumG("posts")],["Views and reach",sumG("views").toLocaleString()],["Promo code redemptions",sumG("codes")]]:[["Signups",sumG("signups")],["Activated",sumG("activated")],["Community joins",sumG("joins")]];
+    const per=main[0][1]&&spend?`$${Math.round(spend/main[0][1]).toLocaleString()}`:"–";
+    k.innerHTML=[["Events run",ran.length],["Attendees",att],["NPS",nps==null?"–":(nps>0?"+":"")+nps],["Feel better about you after",lift==null?"–":lift+"%"],...main,[`Cost per ${m==="consumer"?"post":"signup"}`,per]].map(([a,b])=>`<div class="kpi"><small>${esc(a)}</small><b>${esc(String(b))}</b></div>`).join("") }catch(e){ console.warn(e) } return r } }
+
+// asking for ideas is a brainstorm, not an event draft
+{ const _cel=cgEventLike; cgEventLike=function(t){ if(/\bideas?\b|brainstorm|suggest|inspire|what (?:should|could) we/i.test(String(t||""))) return false; return _cel.apply(this,arguments) } }
+// co-host with a brand that shares your audience: one click to a co-hosted draft with the partner and a cost split
+function planCohost(a){ const p=brandP(); if(!p||!a) return; const i0=(p.ideas||[]).find(x=>x.category!=="dining")||p.ideas?.[0]||{};
+  planFromIdea({ name:`${p.company} × ${a.name}`, line:`A co-hosted ${(i0.name||"evening").toLowerCase()} for the customers you share. ${a.why||""}`.trim(), why:`${a.name} sells to the same people. Two guest lists, half the cost each.`, insight:a.why||"", category:i0.category||"culture", people:i0.people||40, city:i0.city||p.cities?.[0]||"" });
+  try{ draft.cohost={ partner:a.name, split:50, why:a.why||"" }; draft.budgetNote=`Split 50/50 with ${a.name}.`; saveEvent(true) }catch{} toast(`Drafted with ${a.name} as co-host. Check it with both audiences before you pitch them.`) }
+{ const _bch=brandCardHTML; brandCardHTML=function(){ let h=_bch.apply(this,arguments); const p=brandP(); if(!p?.adjacent?.length) return h;
+    p.adjacent.forEach((c,i)=>{ const tag=`<p class="br-co"><b>${esc(c.name)}</b> ${esc(c.why)}</p>`; if(h.includes(tag)) h=h.replace(tag,`<p class="br-co"><b>${esc(c.name)}</b> ${esc(c.why)} <button class="linkbtn" type="button" data-cohost="${i}">Co-host with them</button></p>`) }); return h } }
+document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-cohost]"); if(b) planCohost(brandP()?.adjacent?.[+b.dataset.cohost]) });
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7979,4 +8027,5 @@ body.simple .rail button[data-step="2"]{display:flex!important}body.simple nav.t
 .gm{border:1.5px solid #D9E8DD;background:#F7FBF8}.gm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px;margin-top:8px}
 .ai-err{background:#FFF3D6;color:#6A4D00;border-radius:10px;padding:8px 12px;margin:8px 0}
 .pl-mail{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;color:#6F6259;margin:0 0 4px}.pl-mail label{display:flex;gap:6px;align-items:center}
+.trk{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #DCEADF}
 </style>

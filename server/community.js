@@ -70,6 +70,9 @@ export function makeCommunity(store) {
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
       theme: cleanTheme(p.theme || {}, cur.theme || {}), sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 90),
       shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences),
+      gallery: Array.isArray(p.gallery) ? p.gallery.filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) : cur.gallery || [],
+      insuranceDoc: p.insuranceDoc != null ? (/^\/_blob\/[A-Za-z0-9]{20}$/.test(p.insuranceDoc) ? p.insuranceDoc : "") : cur.insuranceDoc || "",
+      legalName: clean(p.legalName ?? cur.legalName, 100), taxId: clean(p.taxId ?? cur.taxId, 40),
       gigs: Array.isArray(p.gigs) ? p.gigs.slice(0, 8).map((g) => ({ client: clean(g?.client, 60), what: clean(g?.what, 100), when: clean(g?.when, 30) })).filter((g) => g.client || g.what) : cur.gigs || [],
       insured: p.insured != null ? !!p.insured : !!cur.insured, respondsIn: clean(p.respondsIn ?? cur.respondsIn, 30), terms: clean(p.terms ?? cur.terms, 400), invoices: p.invoices != null ? !!p.invoices : !!cur.invoices,
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };

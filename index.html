@@ -7269,6 +7269,39 @@ async function hostInboxHTML(){ let B=[],O=[],P=null; try{ const [b,o,p]=await P
     $("#shareIt").onclick=async()=>{ const url=location.origin+"/g#rsvp-"+e.id, text=`${guestTitle(e)}${e.date?`, ${fmtDate(e.date)}`:""}. Come with me?`; try{ if(navigator.share){ await navigator.share({title:guestTitle(e),text,url}); return } }catch{} copyTxt(`${text} ${url}`); toast("Link copied. Send it to someone you'd like there.") } }catch(err){ console.warn(err) } return r } }
 // copy that fits: nothing about "what you're bringing" when there's nothing to bring
 { const _rg17=renderGuest; renderGuest=async function(){ const r=await _rg17.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e||!host||!isCasual(e)) return r; if(!(e.slots||[]).length) $$(".note",host).forEach(n=>{ if(/and what you're bringing\. Nothing else/.test(n.textContent)) n.textContent=`${hostFirst(e)} sees your name and email. Nothing else.` }) }catch{} return r } }
+
+// ==================================================================
+// Round 6: Pip plans what the host actually said. Drafts stay private until published.
+// ==================================================================
+ACT["workshop"]={emoji:"🌷",bring:["Nothing: everything's provided"],ros:[["0:00","Welcome, a drink, find a seat"],["0:15","Show and tell: what we're making"],["0:30","Everyone makes theirs"],["1:30","Photos, wrap up, take it home"]],tasks:[[-14,"Open booking"],[-7,"Order materials for the headcount"],[-2,"Prep the tables"],[-1,"Send the reminder with what to wear"],[1,"Share photos; open the next date"]],tips:"Cap it at a number you can help one by one. People pay for the attention."};
+const WEEKDAYS=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+function nextWeekday(w){ const i=WEEKDAYS.indexOf(w); if(i<0) return ""; const d=new Date(); d.setHours(12); let k=(i-d.getDay()+7)%7; if(k<2) k+=7; d.setDate(d.getDate()+k); return d.toISOString().slice(0,10) }
+function friendlyTitle(text){ let t=String(text||"").trim().replace(/^(?:please\s+)?(?:let'?s\s+|i(?:'m| am)\s+(?:hosting|running|planning|doing)\s+|(?:plan|host|run|throw|make|organi[sz]e|set up)\s+(?:a|an|my|our)?\s*)/i,"").replace(/^(?:a|an|my|our)\s+/i,"").replace(/^public\s+/i,"");
+  t=t.split(/[,.;!]|\s+(?:for|with|at|in|on)\s+(?:\d|about|around|my|our|the|a\s|an\s)|\s+\$|\s+\d+\s*(?:people|guests|friends|ppl|spots|seats|sandwiches|cakes)/i)[0].trim(); if(t.length>48) t=t.slice(0,48).replace(/\s+\S*$/,"");
+  return t?t.replace(/^./,c=>c.toUpperCase()):"" }
+{ const _pe5=parseEventText; parseEventText=function(t){ const o=_pe5(t), lo=String(t||"").toLowerCase();
+  if(window.__wsPersonal&&!o.casual){ o.kind="social"; o.casual=true; o.label=/workshop|class|lesson|bouquet|flower|pottery|ceramic|candle|painting|sewing|knit|cupping|tasting/.test(lo)?"workshop":/pop-?up|sell|stall|market/.test(lo)?"pop-up":"get-together" }
+  if(o.casual&&/workshop|class|lesson|bouquet|flower|pottery|ceramic|candle|painting/.test(lo)&&!/run|hike|potluck|game/.test(lo)) o.label="workshop";
+  const pr=lo.match(/\$\s?(\d{1,4})\s*(?:each|a person|per person|pp|a head|a seat|a ticket|per ticket)/); if(pr) o.seatPrice=+pr[1];
+  const wd=WEEKDAYS.find(w=>new RegExp(`\\b${w}\\b`).test(lo)); if(wd&&!o.date) o.weekday=wd; return o } }
+{ const _qs4=quickStart; quickStart=function(text){ const r=_qs4.apply(this,arguments); try{ if(!isCasual(draft)) return r; const o=parseEventText(text), d=draft, title=friendlyTitle(text);
+    if(title&&!/^(get-together|pop-up|workshop|gathering at my place)$/i.test(title)){ d.pubTitle=title; d.name=title }
+    if(o.label==="workshop"){ d.activity="workshop"; if(o.seatPrice){ d.price="$"+o.seatPrice; d.free=false } }
+    if(o.seatPrice&&!d.price){ d.price="$"+o.seatPrice; d.free=false }
+    if(!d.date&&o.weekday) d.date=nextWeekday(o.weekday);
+    d.discoverable=false; // private until the host publishes
+    if(window.__meName&&!d.hostName) d.hostName=window.__meName }catch(e){ console.warn(e) } return r } }
+// a clear publish switch at the top of the host kit
+{ const _hk5=hostKitHTML; hostKitHTML=function(d){ const h=_hk5(d); return h.replace('<section class="panel stack hostkit" id="hostKit">',`<section class="panel stack hostkit" id="hostKit"><div class="pub-row ${d.discoverable?"on":""}"><div><b>${d.discoverable?"Published":"Private draft"}</b><small>${d.discoverable?"On your page and Discover. Anyone with the link can say yes.":"Only people with the link can see it. Publish when it's ready."}</small></div><button type="button" class="btn ${d.discoverable?"ghost":"primary"} sm" id="pubBtn">${d.discoverable?"Unpublish":"Publish to my page"}</button></div>`) } }
+{ const _dhk5=drawHostKit; drawHostKit=function(){ const r=_dhk5.apply(this,arguments); try{ const b=$("#pubBtn"); if(b) b.onclick=async()=>{ const d=draft; if(!d.discoverable&&!d.date&&d.stage!=="interest"&&!confirm("There's no date yet. Publish anyway?")) return; d.discoverable=!d.discoverable; await saveEvent(true).catch(()=>{}); redrawKit(); pipToast(d.discoverable?"Published. It's on your page and Discover.":"Back to a private draft.","happy"); try{ if(d.discoverable) pipSound?.("oink") }catch{} } }catch(e){ console.warn(e) } return r } }
+
+// guest pages: no "you're invited" or "saving you a seat" for strangers; say when you pay; no follow-to-book once you follow
+{ const _rg18=renderGuest; renderGuest=async function(){ const r=await _rg18.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const paid=e.price&&e.price!=="chip";
+    $$(".eyebrow,small",host).forEach(x=>{ if(/^You're invited$/.test(x.textContent.trim())) x.textContent=e.approvalRequired?"Ask to join":"Open to all" });
+    const hh=$("#hostHello span:last-child"); if(hh&&/saving you a seat/.test(hh.textContent)) hh.textContent=`${hostFirst(e)} has ${e.headcount?e.headcount+" ":""}seats at`;
+    if(paid&&e.approvalRequired&&!$("#payWhen")){ const send=$("#g-send",host); if(send){ const n=document.createElement("p"); n.id="payWhen"; n.className="note"; n.textContent=`No payment now. If ${hostFirst(e)} says yes, you'll get the ${e.price} payment link here and the seat is yours once it's paid.`; send.closest(".btns")?.before(n) } }
+    try{ const F=JSON.parse(localStorage.getItem("encore.following")||"[]"); if(window.__gFollowing||F.length){ const eb=$("#earlyBox"); if(eb&&(window.__gFollowing)) eb.remove() } }catch{}
+  }catch(err){ console.warn(err) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7541,4 +7574,6 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .host-inbox{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 18px;margin:0 0 18px}.hi-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}.hi-head h3{margin:2px 0 0}
 .hi-row{display:flex;gap:12px;align-items:center;padding:10px 4px;border-top:1px dashed var(--line);text-decoration:none;color:inherit}.hi-row span{font-size:22px}.hi-row div{flex:1;display:flex;flex-direction:column;min-width:0}.hi-row small{color:#75685F}.hi-row em{font-style:normal;font-weight:600;color:#C4532F}.hi-row.new b::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#C4532F;margin-left:8px;vertical-align:middle}
 .social-conf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}.social-conf p{margin:0}
+.pub-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:#FFF7E6;border:1px solid #F2D48F}.pub-row.on{background:#EAF3EC;border-color:#BCD8C3}.pub-row div{display:flex;flex-direction:column}.pub-row small{color:#75685F}
+.gx-hero .date,.guest-hero small{font-size:14px!important}
 </style>

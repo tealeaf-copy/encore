@@ -3299,7 +3299,7 @@ function guestTitle(d){ if(d.pubTitle) return d.pubTitle; if(d.copy?.title) retu
   return `${lead}${co&&k!=="conference"?` hosted by ${co}`:""}${d.city&&k!=="webinar"?` · ${d.city}`:""}` }
 function noMaybeOf(d){ return d.noMaybe??["dinner","summit"].includes(kindOf(d)) }
 function defTheme(d){ return d.theme||(brandProfile?.colors?.length?"brand":"linen") }
-function inviteStudioHTML(d){ const C=d.copy||{}, t=defTheme(d), fx=d.effect||"none", W=rsvpWords(d), title=d.pubTitle||C.title||d.name||"An evening with peers";
+function inviteStudioHTML(d){ const C=d.copy||{}, t=defTheme(d), fx=d.effect||"none", W=rsvpWords(d), title=guestTitle(d);
   return `<section class="panel studio2" id="inviteStudio" style="${brandStyle()}"><div class="s2grid"><div class="stack" style="gap:14px"><div><small class="eyebrow">Invite studio</small><h3 style="margin:2px 0 4px">Make the invitation feel like the evening</h3><p class="note">Pick a look. This is the guest page, at phone size. Nothing is sent until you invite.</p></div>
     <div><small class="eyebrow">Theme</small><div class="thgrid">${THEMES.map(([k,l,dsc])=>`<button type="button" class="thcard th-${k} ${k===t?"on":""}" data-theme="${k}" aria-pressed="${k===t}"><span class="thsw"></span><b>${l}</b><span>${dsc}</span></button>`).join("")}</div></div>
     <div class="row"><label class="f">Effect<select id="isFx">${EFFECTS.map(([k,l])=>`<option value="${k}" ${k===fx?"selected":""}>${l}</option>`).join("")}</select></label><label class="f">Title font<select id="isFont">${brandFont()?`<option value="" ${!d.titleFont?"selected":""}>Your brand font (${esc(brandFont())})</option>`:""}${TITLE_FONTS.map(f=>`<option ${f===(d.titleFont||(brandFont()?"":"Fraunces"))?"selected":""}>${f}</option>`).join("")}</select></label>
@@ -5982,7 +5982,7 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 .lift{border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:10px;background:var(--surface)}
 .lift.good{border-color:color-mix(in srgb,var(--good,#2E7D4F) 45%,var(--line))}
 .liftnums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.liftnums span{display:grid;gap:2px}.liftnums b{font-size:26px;line-height:30px;font-family:var(--f-display,inherit)}
-.liftv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.liftv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.lift>div:first-child{display:grid;gap:2px}.lift>div:first-child b{font-size:17px}
 @media (max-width:860px){.studio2 .phone{position:static!important;order:0!important;max-width:280px}}
 @media (max-width:520px){.liftnums{grid-template-columns:1fr 1fr}}
 

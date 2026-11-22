@@ -259,7 +259,7 @@ export function createApp({ store, dataDir }) {
   });
 
   // Static pages for signed-out visitors. The guest-link redirect is added to them, so #rsvp-… links keep working.
-  const GUEST_REDIRECT = `<script>if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash);</script>`;
+  const GUEST_REDIRECT = `<script>if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash);</script>`;
   const sendStatic = async (res, file, fallback) => {
     let html; try { html = await fsp.readFile(path.join(PUBLIC_DIR, file), "utf8"); } catch { html = fallback; }
     html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + GUEST_REDIRECT) : GUEST_REDIRECT + html;
@@ -306,7 +306,7 @@ export function createApp({ store, dataDir }) {
   app.use("/api", (req, res, next) => {
     if (isAuthed(req)) return next();
     if (guestAllowed(req)) { req.guest = true; return next(); }
-    if (/^\/aeaction$|^\/aepage$/.test(req.path)) { req.guest = true; return next(); } // checked by signed token
+    if (/^\/aeaction$|^\/aepage$|^\/signoff\/(view|decide)$/.test(req.path)) { req.guest = true; return next(); } // checked by signed token
     res.status(401).json({ code: "not_granted", message: "Sign in first." });
   });
 
@@ -692,6 +692,62 @@ export function createApp({ store, dataDir }) {
     const rec = { eventId, guest: g.name, ae: g.owner, aeSlug: slug, action, at: Date.now(), ...(b.draft ? { draft: String(b.draft).slice(0, 8000) } : {}), ...(b.note ? { note: String(b.note).slice(0, 4000) } : {}), ...(b.nudge ? { nudge: String(b.nudge).slice(0, 4000) } : {}) };
     S(req).add("aeactions", rec);
     res.json({ ok: true, action: rec });
+  });
+
+  // ---------- Sign-off requests: a signed, no-login link for the person who says yes to the budget ----------
+  const soToken = (ws, eventId, rid, email) => hmac32(`so:${tag(ws)}${eventId}:${rid}:${String(email).toLowerCase()}`);
+  const soClean = (r) => ({ id: r.id, name: r.name, email: r.email, requestedBy: r.requestedBy, at: r.at, status: r.status, decidedAt: r.decidedAt || null, comment: r.comment || "", cost: r.cost, currency: r.currency, remindedAt: r.remindedAt || null });
+  app.post("/api/signoff/request", json, (req, res) => {
+    const u = currentUser(req), b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
+    if (!ownEvent(req, res, eventId)) return;
+    const email = String(b.email || "").trim().toLowerCase().slice(0, 200), name = String(b.name || "").trim().slice(0, 120) || email.split("@")[0];
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ code: "invalid", message: "Add the approver's work email." });
+    if (u?.email && u.email.toLowerCase() === email) return res.status(409).json({ code: "self_approval", message: "You can't sign off your own plan. Ask your manager or budget owner." });
+    const ev = S(req).get("events/" + eventId); if (!ev) return res.status(404).json({ code: "not_found", message: "Save the event first." });
+    const money = eventMoney(ev.data), path = "signoffs/" + eventId, cur = S(req).get(path)?.data || { eventId, requests: [] };
+    const r = { id: randomBytes(5).toString("hex"), email, name, note: String(b.note || "").slice(0, 1000), requestedBy: u?.name || "Event lead", requestedByEmail: u?.email || null, at: Date.now(), status: "pending", cost: money.cost, committed: money.committed, currency: money.currency };
+    cur.requests = [r, ...cur.requests.filter((x) => !(x.email === email && x.status === "pending"))].slice(0, 20);
+    S(req).set(path, cur);
+    S(req).add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: asked ${name} <${email}> to sign off ${money.currency} ${money.cost.toLocaleString("en-US")}`, who: r.requestedBy, email: r.requestedByEmail, verified: !!u, at: r.at });
+    res.json({ request: soClean(r), token: soToken(ws, eventId, r.id, email), ws: ws === DEFAULT_WS ? null : ws });
+  });
+  app.post("/api/signoff/remind", json, (req, res) => {
+    const b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
+    if (!ownEvent(req, res, eventId)) return;
+    const path = "signoffs/" + eventId, cur = S(req).get(path)?.data; const r = cur?.requests?.find((x) => x.id === b.id && x.status === "pending");
+    if (!r) return res.status(404).json({ code: "not_found" });
+    r.remindedAt = Date.now(); S(req).set(path, cur);
+    res.json({ request: soClean(r), token: soToken(ws, eventId, r.id, r.email) });
+  });
+  app.get("/api/signoff", (req, res) => {
+    const eventId = String(req.query.eventId || ""); if (!ownEvent(req, res, eventId)) return;
+    res.json({ requests: (S(req).get("signoffs/" + eventId)?.data?.requests || []).map(soClean) });
+  });
+  const soFind = (req, eventId, rid, t) => {
+    req.ws = workspaceOfEvent(eventId);
+    const cur = /^[A-Za-z0-9_-]+$/.test(eventId) ? S(req).get("signoffs/" + eventId)?.data : null, r = cur?.requests?.find((x) => x.id === rid);
+    if (!r || !eq(soToken(req.ws, eventId, rid, r.email), t)) return null;
+    return { cur, r };
+  };
+  app.get("/api/signoff/view", (req, res) => {
+    const eventId = String(req.query.eventId || ""), f = soFind(req, eventId, String(req.query.rid || ""), req.query.t);
+    if (!f) return res.status(403).json({ code: "not_granted", message: "This sign-off link isn't valid. Ask for a new one." });
+    const ev = S(req).get("events/" + eventId); if (!ev) return res.status(404).json({ code: "not_found" });
+    const d = ev.data, money = eventMoney(d);
+    res.json({ request: { ...soClean(f.r), note: f.r.note || "" }, now: money, event: { name: d.name, kind: d.kind, date: d.date, city: d.city, headcount: d.headcount, budget: d.budget, currency: d.currency, goal: d.goal, audience: d.audience, concept: String(d.concept || "").slice(0, 600), pitch: d.pitch ? { summary: d.pitch.summary, why: d.pitch.why, ask: d.pitch.ask } : null, lines: (d.produce?.budget || []).slice(0, 14).map((l) => ({ label: l.line || l.item || l.label || "", amount: +l.amount || 0 })) } });
+  });
+  app.post("/api/signoff/decide", json, (req, res) => {
+    const b = req.body || {}, eventId = String(b.eventId || ""), f = soFind(req, eventId, String(b.rid || ""), b.t);
+    if (!f) return res.status(403).json({ code: "not_granted", message: "This sign-off link isn't valid." });
+    const decision = String(b.decision || ""); if (!["approved", "changes", "declined"].includes(decision)) return res.status(400).json({ code: "invalid" });
+    if (f.r.status !== "pending") return res.status(409).json({ code: "conflict", message: "This request already has an answer." });
+    const ev = S(req).get("events/" + eventId); if (!ev) return res.status(404).json({ code: "not_found" });
+    const money = eventMoney(ev.data);
+    Object.assign(f.r, { status: decision, decidedAt: Date.now(), comment: String(b.comment || "").slice(0, 2000), decidedCost: money.cost });
+    S(req).set("signoffs/" + eventId, f.cur);
+    const verb = { approved: "signed off", changes: "asked for changes to", declined: "declined" }[decision];
+    S(req).add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: ${f.r.name} ${verb} the plan at ${money.currency} ${money.cost.toLocaleString("en-US")}${f.r.comment ? `: "${f.r.comment.slice(0, 200)}"` : ""}`, who: f.r.name, email: f.r.email, verified: true, via: "signed link", at: f.r.decidedAt });
+    res.json({ ok: true, request: soClean(f.r) });
   });
 
   // ---------- db ----------

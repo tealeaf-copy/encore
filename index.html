@@ -1070,6 +1070,20 @@ body:not(.simple) .simple-only{display:none!important}
 .hero2 .sdot{width:auto;height:auto;white-space:nowrap}
 .h2meta{flex-wrap:wrap;row-gap:8px}
 .status #aiDot,.status #aiStatus{display:none}
+
+.gx .gxhi{color:var(--fg);font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:1.5rem}
+.savenote{font-size:12px;color:var(--night-muted)}
+.hostchip{font-weight:500}
+
+.sochip{align-self:flex-start;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.sochip.approved{background:#E7F0E6;color:#2F5D34}.sochip.changes,.sochip.declined{background:#F6E5DF;color:var(--accent)}
+
+.gflag{display:inline-block;margin:4px 6px 0 0;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.gflag.bad{background:#F6E5DF;color:var(--accent)}.gflag.vip{background:#F3EAD6;color:var(--gold)}.gflag.soft{background:transparent;border:1px solid var(--line)}
+.ciflags{font-size:11px;font-weight:600;color:var(--accent)}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+@media (max-width:700px){.gtable thead{display:none}.gtable,.gtable tbody{display:block;width:100%}.gtable tr{display:flex;flex-wrap:wrap;gap:6px 10px;padding:12px 0;border-bottom:1px solid var(--line)}.gtable td{display:block;border:0!important;padding:0!important}.gtable td:first-child{flex-basis:100%}}
+@media (max-width:700px){.gtable td:nth-child(2){display:none!important}}
 </style>
 
 <header class="top" id="appHeader"><div class="wrap">
@@ -1218,7 +1232,7 @@ const outcomesFor=d=>objOf(d)==="expansion"?OUTCOMES_X:OUTCOMES;
 const ASSETS = [["linkedin","LinkedIn / link preview",1200,627],["square","Square post",1080,1080],["story","Story",1080,1920],["email","Email header",1200,400]];
 const MOTIFS = ["table","waves","grid","sun","peaks","orbit"];
 const HIGHLIGHTS = ["The people","The conversation","Practical takeaways","The venue","Food and drink","The format","Small group","The host"];
-const GSTATUS = ["Not invited","Invited","Going","Maybe","Declined","Attended"];
+const GSTATUS = ["Not invited","Invited","Going","Maybe","Waitlist","Declined","Attended","No-show"];
 
 const EXAMPLE = {
   id:null, name:"The Creator Kitchen", brand:"Passionfroot", brandColors:["#C2553A","#E9C98C"],
@@ -1361,7 +1375,7 @@ function evKind(v){ v=String(v||"").toLowerCase(); return /infer|ai|guess|predic
 const EVK={logged:"Logged meeting",touch:"Call or email record",inferred:"AI-inferred"};
 function guestKeyOf(g){ return g.id?String(g.id):(g.email||"").trim().toLowerCase()||(g.name||"").trim().toLowerCase() }
 const b64u=t=>btoa(unescape(encodeURIComponent(t))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-async function personalLink(d,i){ const base=`${ART_URL}#rsvp-${d.id}.g${i}`; if(!window.ENCORE_SERVER) return base; const g=d.guests[i], key=guestKeyOf(g||{}); if(!key) return base;
+async function personalLink(d,i){ const base=`${ART_URL}#rsvp-${d.id}.g${i}`; if(!window.ENCORE_SERVER) return base; const g=d.guests[i]; if(g&&!g.id){ g.id="g"+Math.random().toString(36).slice(2,12); try{ await saveEvent(true) }catch{} } const key=guestKeyOf(g||{}); if(!key) return base;
   try{ const r=await fetch("/api/invitetoken",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:d.id,guestKey:key})}); if(!r.ok) return base; const j=await r.json(); return `${base}.i-${b64u(key)}~${j.token}` }catch{ return base } }
 function sureOpp(o){ return o.match==="contact"||o.confirmedBy||o.sample }
 function newPipe(e){ const O=e.opps||[]; if(O.length) return O.filter(o=>o.bucket==="created"&&sureOpp(o)).reduce((a,o)=>a+(+o.amount||0),0);
@@ -1539,7 +1553,7 @@ Respect word limits. Reply with only JSON: {"moments":[{"name":"max 4 words","wh
 ${brief(d)}
 Respect word limits. Reply with only JSON: {"partners":[{"name":"company or type","kind":"Co-host vendor|Local brand|Community|Media partner","why":"max 14 words","overlap":1-5 (audience overlap),"split":integer percent of cost they'd cover,"gives":"what they bring, max 8 words","pitch":"a 50-70 word outreach note"}] (3-4),"rules":[ground rules for co-hosting, max 8 words each] (3)}`},
   briefing:{label:"Sales lead",av:"SL",uses:["email","docs","notes","calls","fathom","granola","slackSearch","crm","sfdc","web"],ok:o=>Array.isArray(o?.sheets),sum:o=>`${o.sheets.length} cheat sheets`,
-    prompt:d=>{ const g=d.guests.map((x,i)=>({...x,i})).filter(x=>["Going","Maybe","Invited","Attended"].includes(x.status)).slice(0,10);
+    prompt:d=>{ const g=d.guests.map((x,i)=>({...x,i})).filter(x=>["Going","Attended"].includes(x.status)).slice(0,40);
       const said=n=>allRsvps.find(r=>r.eventId===d.id&&r.name?.toLowerCase()===n.toLowerCase())?.topic||"";
       return `You are a sales lead preparing the whole team (hosts and account execs) for a B2B experience. For each attendee, research them with the tools (email history, docs, notes, call recordings, CRM, recent company news) and write a one-glance cheat sheet so everyone knows who they are talking to. Stay professional: no sensitive personal data, nothing that would feel like surveillance. Only state facts you found; mark unknowns as "unknown".
 ${brief(d)}
@@ -1578,11 +1592,11 @@ const optedInG=c=>!!(c.optIn||(c.name&&allWall.some(w=>w.name===c.name&&(w.statu
 // Readiness uses only what's known before the invite. Post-RSVP signals (like opting in) are shown separately.
 function readiness(c){
   if(c.readiness!=null) return {score:+c.readiness,signals:c.signals||[],est:false};
-  if(!c.relationship&&c.tier){ const sc=({A:70,B:55,C:40}[c.tier]??50)+(c.owner?3:0)+(c.health&&/red|risk/i.test(c.health)?-5:0); return {score:Math.min(95,sc)+(c.renewalDate&&(new Date(c.renewalDate)-Date.now())/864e5<=120?10:0),signals:[...(c.usage?[{s:`Product usage: ${c.usage}`,src:"Your list"}]:[]),{s:`Tier ${c.tier}${c.owner?`, owned by ${c.owner}`:""}`,src:c.tierSrc==="crm"?"CRM":c.tierSrc==="list"?"Your list":c.tierSrc==="title"?"From job title":"CRM"},...(c.health?[{s:`Health: ${c.health}`,src:"CRM"}]:[])],est:true} }
+  if(!c.relationship&&c.tier){ const sc=({A:70,B:55,C:40}[c.tier]??50)+(c.owner?3:0)+(c.health&&/red|risk/i.test(c.health)?-5:0); return {score:Math.min(95,sc)+(c.renewalDate&&(new Date(c.renewalDate)-Date.now())/864e5<=120?10:0),signals:[...(c.usage?[{s:`Product usage: ${c.usage}`,src:"Your list"}]:[]),{s:`Tier ${c.tier}${c.owner?`, owned by ${c.owner}`:""}`,src:c.tierSrc==="crm"?"CRM":c.tierSrc==="list"?"Your list":c.tierSrc==="title"?"From job title":"Your list"},...(c.health?[{s:`Health: ${c.health}`,src:c.tierSrc==="crm"?"CRM":"Your list"}]:[])],est:true} }
   const base={"Open opportunity":80,"Customer":68,"Prospect":55,"Former customer":50,"Partner":45,"Outside expert":35}[c.relationship]??45, adj={verified:5,likely:0,unverified:-5,elsewhere:-20}[c.cityCheck]??0;
-  return {score:Math.max(5,Math.min(95,base+adj)),signals:[{s:c.relationship||"Contact",src:"CRM"},...(c.why?[{s:c.why,src:"Inferred"}]:[])],est:true} }
+  return {score:Math.max(5,Math.min(95,base+adj)),signals:[...(c.relationship?[{s:c.relationship,src:c.tierSrc==="crm"?"CRM":"Your list"}]:c.source?[{s:c.source,src:"Source"}]:[]),...(c.why?[{s:c.why,src:"Inferred"}]:[])],est:true} }
 function readyCell(c){ const post=c.status&&c.status!=="Not invited"?`<span class="sig post" title="After the invite: not part of the score">${optedInG(c)?"Opted in to be named":/Going|Attended/.test(c.status)?"RSVP'd yes":/Maybe/.test(c.status)?"Maybe":/Declined/.test(c.status)?"Declined":"No reply yet"}</span>`:"", R=readiness(c), cls=R.score>=70?"good":R.score>=50?"warn":"";
-  return `<div class="rdy"><span class="pchip ${cls}" title="${R.est?"Estimated from relationship and location":"From the guest scout's signals"}">${R.score}${R.est?"*":""}</span><div class="sigs">${R.signals.slice(0,3).map(x=>`<span class="sig ${x.src==="Inferred"?"inf":""}" title="${esc(x.src)}">${esc(x.src)}: ${esc(x.s)}</span>`).join("")}${post}</div></div>` }
+  return `<div class="rdy"><span class="pchip ${cls}" title="${R.est?"Estimated from relationship and location":"From the guest scout's signals"}">${R.est?"~":""}${R.score}</span><div class="sigs">${R.signals.slice(0,3).map(x=>`<span class="sig ${x.src==="Inferred"?"inf":""}" title="${esc(x.src)}">${esc(x.src)}: ${esc(x.s)}</span>`).join("")}${post}</div></div>` }
 function acctCell(g){ const dd=g.renewalDate?Math.ceil((new Date(g.renewalDate+"T12:00:00")-Date.now())/864e5):null;
   return `<div class="sigs">${g.arr?`<span class="pchip">ARR ${money(+g.arr)}</span>`:""}${g.renewalDate?`<span class="pchip ${dd!=null&&dd<=120?"warn":""}">Renews ${esc(fmtDate(g.renewalDate))}${dd!=null&&dd<=120&&dd>=0?` · ${dd}d`:""}</span>`:""}${g.health?`<span class="pchip ${/red|risk|poor/i.test(g.health)?"bad":/green|good|healthy/i.test(g.health)?"good":"warn"}">${esc(g.health)}</span>`:""}${g.region?`<span class="note">${esc(g.region)}</span>`:""}</div>` }
 function acctLine(x){ const dd=x.renewalDate?Math.ceil((new Date(x.renewalDate+"T12:00:00")-Date.now())/864e5):null; return `${x.arr?`, ARR ${money(+x.arr)}`:""}${x.renewalDate?`, renews ${x.renewalDate}${dd!=null?` (in ${dd} days)`:""}`:""}${x.health?`, account health ${x.health}`:""}` }
@@ -1706,7 +1720,7 @@ $("#autoBtn").onclick=autopilot;
 // ==================================================================
 // Routing
 // ==================================================================
-function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|confnom)/.test(location.hash) }
+function isGuestRoute(){ return /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash) }
 async function renderConfNom(host){ let L=[]; try{ const s2=await db?.collection("conferences").get(); L=(s2?.docs||[]).map(x=>x.data()) }catch{}
   host.innerHTML=`<div class="stack" style="padding-block:8px 40px"><div class="panel stack"><small class="eyebrow">Conference roadmap${brandProfile?.company?` · ${esc(brandProfile.company)}`:""}</small><h2>Nominate a conference</h2><p class="note">Going to a show this year, or hearing customers talk about one? Add it here. Marketing researches each one against our buyers and target accounts, and the team reviews the recommendations together.</p>
     <div class="row"><label class="f">Conference<input id="cn-name" list="cn-cal" placeholder="e.g. HIMSS"><datalist id="cn-cal">${CONF_CAL.map(c=>`<option value="${esc(c[0])}">`).join("")}</datalist></label><label class="f">Dates (if known)<input id="cn-date" type="date"></label></div>
@@ -1816,9 +1830,10 @@ $("#seriesBtn").onclick=()=>{ const h=$("#factsHost"); if(!h) return; const box=
       if(db){ try{ await db.collection("events").add(c); n++ }catch{} } else { allEvents.push({...c,id:"local_"+Math.random().toString(36).slice(2,8)}); n++ } }
     box.remove(); renderStep(); toast(`Created ${n} event${n===1?"":"s"} in the series. They're listed above and on Home.`) } };
 
-let lastSavedSig="", autosaveOn=true;
+let lastSavedSig="", autosaveOn=true, lastSavedAt="";
 function draftSig(){ try{ const c=clone(draft); delete c.updatedAt; delete c.log; return JSON.stringify(c) }catch{ return "" } }
-setInterval(async()=>{ if(!autosaveOn||!db||draft.example||location.hash!=="#studio"||document.hidden) return; if(!draft.id&&!(draft.concept||draft.guests.length||draft.produce)) return; const sig=draftSig(); if(sig===lastSavedSig) return; if(await saveEvent(true)) { lastSavedSig=draftSig(); const l=$("#draftLabel"); if(l) l.textContent="Saved automatically · "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) } },15000);
+setInterval(async()=>{ if(!autosaveOn||!db||draft.example||location.hash!=="#studio"||document.hidden) return; if(!draft.id&&!(draft.concept||draft.guests.length||draft.produce)) return; const sig=draftSig(); if(sig===lastSavedSig) return; if(await saveEvent(true)) { lastSavedSig=draftSig(); const l=$("#draftLabel"); if(l) l.textContent="Saved automatically · "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); lastSavedAt=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}); const n=$("#saveNote"); if(n) n.textContent="Saved "+lastSavedAt } },2000);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden&&autosaveOn&&db&&!draft.example&&(draft.id||draft.guests.length)&&draftSig()!==lastSavedSig) saveEvent(true) });
 async function saveEvent(quiet){ if(draft.example&&quiet===true) return false;
   if(draft.example&&!(window.confirm?.("This is the Passionfroot sample. Save a copy of it into your workspace? (It will count in your program totals.)")??false)) return false;
   if(!db){ toast("To save, open this page in claude.ai and sign in."); return false }
@@ -1848,7 +1863,7 @@ function heroCTA(d){ const go=s2=>()=>{ step=s2; renderStep(); window.scrollTo({
   if(nx) return {label:`Continue to ${STEP_NAMES[nx].toLowerCase()}`,why:"",fn:go(nx)};
   return {label:"Back to Home",why:"",fn:()=>location.hash="#programs"} }
 function drawHero(){ const h=$("#heroHost"); if(!h) return; const d=draft; if(location.hash!=="#studio"&&location.hash!==""){ } const [st,cls]=eventStatus(d), days=d.date?Math.ceil((new Date(d.date+"T12:00:00")-Date.now())/864e5):null, P=out("produce"), tasks=(P?.tasks||[]).length, cta=heroCTA(d), L=isSimple()?SIMPLE_STEPS:RAIL_ORDER, idx=L.indexOf(step);
-  h.innerHTML=`<section class="hero2" aria-label="Event status"><div class="btns" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0;flex:1"><div class="h2meta"><span class="sdot ${cls}"><i></i>${esc(st)}</span>${idx>=0?`<button class="stepbtn" id="stepBtn" type="button">Step ${idx+1} of ${L.length} · ${esc(STEP_NAMES[step]||"")} ▾</button>`:""}</div>
+  h.innerHTML=`<section class="hero2" aria-label="Event status"><div class="btns" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0;flex:1"><div class="h2meta"><span class="sdot ${cls}"><i></i>${esc(st)}</span>${SO[d.id]?.[0]?`<span class="savenote">${esc(soChip(d.id))}</span>`:""}${d.example?"":`<span class="savenote" id="saveNote">${d.id?(lastSavedAt?"Saved "+lastSavedAt:"Saved"):"Not saved yet"}</span>`}${idx>=0?`<button class="stepbtn" id="stepBtn" type="button">Step ${idx+1} of ${L.length} · ${esc(STEP_NAMES[step]||"")} ▾</button>`:""}</div>
     <h1>${esc(d.name||"Untitled event")}</h1><p class="h2sub">${[d.date?fmtDate(d.date):(d.dateHint?new Date(d.dateHint+"-01T12:00:00").toLocaleDateString(undefined,{month:"long",year:"numeric"})+", day to confirm":"Date to confirm"),d.city||"",days!=null&&days>=0?(days===0?"today":`in ${days} day${days===1?"":"s"}`):""].filter(Boolean).map(esc).join(" · ")}</p></div></div>
     <div class="h2stats"><div><b>${regCount(d)}/${+d.headcount||0}</b><span>Confirmed</span></div><div><b>${esc(cmoney(eventCost(d)||+d.budget||0,d.currency).replace(/ \\(≈.*\\)$/,""))}</b><span>Budget</span></div><div><b>${(d.tasksDone||[]).length}/${tasks}</b><span>Tasks done</span></div></div>
     <div class="h2cta"><button class="btn primary" id="heroGo">${esc(cta.label)}</button>${cta.why?`<span class="why">${esc(cta.why)}</span>`:""}${d.example?"":`<button class="h2link" id="heroEdit" type="button">Edit details</button>`}</div></section>`;
@@ -1900,7 +1915,7 @@ function renderStep(){
   const sb=$("#sampleBar"); if(sb){ sb.innerHTML=draft.example?`<div class="samplebar btns" style="justify-content:space-between"><span>This is a sample event with made-up guests and numbers. Look around, then start your own.</span><button class="btn primary sm" id="startOwn">Start your own event</button></div>`:""; $("#startOwn")&&($("#startOwn").onclick=()=>{ draft=brandDraft(); step=1; renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6,8:stepSignoff,9:stepDistribution})[step](host);
-  wireChase(host);
+  wireChase(host); if(step===1&&!draft.example) drawSignoff(host);
   $$("[id^=out-]",host).forEach(el=>{ const k=el.id.slice(4); if(AGENTS[k]) el.insertAdjacentHTML("afterbegin",needsHTML(k,out(k))) }); wireMods(host); wireNeeds(host);
   host.insertAdjacentHTML("afterbegin",lessonStrip(step)); $$("[data-teach]",host).forEach(b=>b.onclick=()=>teachMore(+b.dataset.teach,b));
   const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ const nk=b.dataset.kind; if(!draft.example&&draft.kind!==nk&&draft.produce&&(window.confirm?.(`Switch to ${KINDS[nk].label.toLowerCase()} and rebuild the budget lines and task list for it? Your guests, copy and notes stay.`)??true)){ draft.kind=nk; draft.format=KINDS[nk].label; draft.produce={...starterProduce(draft),budget:budgetModel(draft).rows.map(r=>({line:r.line,amount:r.amt,note:r.formula}))}; draft.headcount=draft.headcount||TPL_SEATS[nk]; logDecision(draft,`changed the event type to ${KINDS[nk].label} and rebuilt the plan`) } if(draft.example){ if(!(window.confirm?.(`Start a new ${KINDS[b.dataset.kind].label.toLowerCase()} of your own? The sample stays as it is.`)??true)) return; draft=brandDraft({kind:b.dataset.kind}); }
@@ -1969,6 +1984,47 @@ function chipEditor(host,arr,placeholder){
 const RAIL_ORDER=[1,6,2,3,4,9,5,8,7], SIMPLE_STEPS=[1,6,4,5,7], STEP_NAMES={1:"Plan",6:"Guests",2:"Test the idea",3:"Venue and design",4:"Event page",9:"Promotion",5:"Budget and tasks",8:"Approval",7:"Follow-up and results"};
 function isSimple(){ return document.body.classList.contains("simple") }
 function nextStepOf(cur){ const L=isSimple()?SIMPLE_STEPS:RAIL_ORDER, i=L.indexOf(cur); return i>=0&&i<L.length-1?L[i+1]:null }
+const SO={}, SOt={};
+async function loadSO(id){ if(!window.ENCORE_SERVER||!id) return []; SOt[id]=Date.now(); try{ const r=await fetch("/api/signoff?eventId="+encodeURIComponent(id),{credentials:"same-origin"}); SO[id]=r.ok?((await r.json()).requests||[]):[] }catch{ SO[id]=[] } return SO[id] }
+function soChip(id){ const r=(SO[id]||[])[0]; if(!r) return ""; const days=Math.floor((Date.now()-r.at)/864e5);
+  return r.status==="pending"?`Awaiting ${r.name} · ${days?days+"d":"today"}`:r.status==="approved"?`Signed off by ${r.name}`:r.status==="changes"?`${r.name} asked for changes`:`${r.name} declined` }
+function mailTo(to,subject,body){ const a=document.createElement("a"); a.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`; a.click() }
+function drawSignoff(host){ const d=draft, box=document.createElement("section"); box.className="panel stack"; box.id="soCard"; host.appendChild(box);
+  const paint=()=>{ const r=(SO[d.id]||[])[0], late=r?.status==="pending"&&Date.now()-(r.remindedAt||r.at)>48*36e5;
+    box.innerHTML=`<div><small class="eyebrow">Sign-off</small><h3>${r?.status==="approved"?"Signed off":r?.status==="pending"?"Waiting for a yes":"Get a yes on the budget"}</h3>
+      <p class="note">${r?`${esc(soChip(d.id))}${r.comment?`: "${esc(r.comment)}"`:""}.${r.status==="pending"?` Asked for ${money(r.cost)}.${late?" It's been two days. A short reminder usually does it.":""}`:""}`:"Send the one-page plan to whoever owns the budget. They approve, ask for changes or decline from a link. No login, and it's logged."}</p></div>
+      ${r?.status==="approved"?"":`<div class="row"><label class="f">Approver's name<input id="soName" value="${esc(r?.name||"")}" placeholder="Dana Lee"></label><label class="f">Work email<input id="soEmail" type="email" value="${esc(r?.email||"")}" placeholder="dana@company.com"></label></div>
+      <label class="f">A line for them (optional)<input id="soNote" placeholder="We need a yes by Friday to hold the venue."></label>
+      <div class="btns">${r?.status==="pending"?`<button class="btn ${late?"primary":""}" id="soRemind">Remind ${esc(r.name)}</button>`:""}<button class="btn ${r?.status==="pending"?"ghost":"primary"}" id="soSend">${r?"Send a new request":"Send for sign-off"}</button></div>`}`;
+    const msg=(link,name,note)=>`Hi ${name.split(" ")[0]},\n\nCould you sign off the plan for ${d.name}${d.date?` on ${fmtDate(d.date)}`:""}? It's ${money(eventCost(d))}${+d.budget?` against a ${money(+d.budget)} budget`:""}.${note?"\n\n"+note:""}\n\nThe one-page plan, with Approve and Ask for changes buttons (no login):\n${link}\n\nThank you,\n${me()||""}`;
+    $("#soSend",box)&&($("#soSend",box).onclick=async ev=>{ const e={currentTarget:ev.currentTarget}, name=$("#soName",box).value.trim(), email=$("#soEmail",box).value.trim(), note=$("#soNote",box).value.trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast("Add the approver's work email."); return }
+      if(!window.ENCORE_SERVER){ mailTo(email,`Sign-off: ${d.name}`,msg(`${ART_URL}#plan-${d.id||""}`,name||email,note)); return }
+      if(!d.id&&!(await saveEvent(true))){ toast("Save the event first."); return } e.currentTarget.disabled=true;
+      try{ const r=await fetch("/api/signoff/request",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:d.id,name,email,note})}), j=await r.json();
+        if(!r.ok){ toast(j.message||"Couldn't send. Try again."); e.currentTarget.disabled=false; return }
+        SO[d.id]=[j.request,...(SO[d.id]||[]).filter(x=>x.id!==j.request.id)]; const link=`${location.origin}/g#signoff-${d.id}-${j.request.id}~${j.token}`;
+        mailTo(email,`Sign-off: ${d.name}`,msg(link,j.request.name,note)); copyTxt(link); paint(); drawHero() }catch{ toast("Couldn't send. Check your connection."); e.currentTarget.disabled=false } });
+    $("#soRemind",box)&&($("#soRemind",box).onclick=async()=>{ try{ const r=await fetch("/api/signoff/remind",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:d.id,id:(SO[d.id]||[])[0]?.id})}), j=await r.json(); if(!r.ok){ toast(j.message||"Couldn't remind."); return }
+        SO[d.id][0]=j.request; mailTo(j.request.email,`Reminder: sign-off for ${d.name}`,msg(`${location.origin}/g#signoff-${d.id}-${j.request.id}~${j.token}`,j.request.name,"A quick reminder, in case this got buried.")); paint() }catch{ toast("Couldn't remind. Check your connection.") } }) };
+  paint(); if(window.ENCORE_SERVER&&d.id&&!SO[d.id]) loadSO(d.id).then(()=>{ if($("#soCard")===box){ paint(); drawHero() } }) }
+async function renderSignoff(host,eventId,rid,tok){ host.innerHTML=`<div class="panel"><p class="empty">Loading the plan…</p></div>`;
+  let j; try{ const r=await fetch(`/api/signoff/view?eventId=${encodeURIComponent(eventId)}&rid=${encodeURIComponent(rid)}&t=${encodeURIComponent(tok)}`); j=await r.json(); if(!r.ok){ host.innerHTML=`<div class="panel"><p class="empty">${esc(j.message||"This link isn't valid. Ask for a new one.")}</p></div>`; return } }catch{ host.innerHTML=`<div class="panel"><p class="empty">Couldn't load the plan. Check your connection.</p></div>`; return }
+  const e=j.event, q=j.request, cur=j.now, M=n=>(cur.currency&&cur.currency!=="USD"?cur.currency+" ":"$")+Math.round(n||0).toLocaleString(), moved=Math.abs((cur.cost||0)-(q.cost||0))>Math.max(500,(q.cost||0)*.05);
+  const paint=()=>{ host.innerHTML=`<div class="stack" style="padding-block:8px 40px">
+    <section class="hero2"><div class="h2meta"><span class="sdot"><i></i>Sign-off request</span></div><h1 style="margin:10px 0 4px">${esc(e.name||"Event plan")}</h1>
+      <p class="note" style="color:var(--night-muted)">${[e.date?fmtDate(e.date):"",e.city,e.headcount?e.headcount+" seats":""].filter(Boolean).map(esc).join(" · ")}</p>
+      <div class="h2stats"><div><b>${M(cur.cost)}</b><small>Planned cost</small></div>${+e.budget?`<div><b>${M(+e.budget)}</b><small>Budget</small></div>`:""}<div><b>${M(cur.committed)}</b><small>Already committed</small></div></div></section>
+    <section class="panel stack"><p><b>${esc(q.requestedBy)}</b> is asking you to sign off this plan.${q.note?` "${esc(q.note)}"`:""}</p>${moved?`<p class="note" style="color:var(--bad)">The plan changed since this was sent: it was ${M(q.cost)}, it's now ${M(cur.cost)}.</p>`:""}
+      ${e.pitch?.summary?`<p>${esc(e.pitch.summary)}</p>`:e.concept?`<p>${esc(e.concept)}</p>`:""}${e.goal?`<p class="note"><b>Goal:</b> ${esc(e.goal)}</p>`:""}
+      ${e.lines?.length?`<div class="tscroll"><table><thead><tr><th>Line</th><th class="num">Amount</th></tr></thead><tbody>${e.lines.map(l=>`<tr><td>${esc(l.label)}</td><td class="num">${M(l.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${M(cur.cost)}</b></td></tr></tbody></table></div>`:""}</section>
+    ${q.status!=="pending"?`<section class="panel"><h3>${q.status==="approved"?"You signed off this plan.":q.status==="changes"?"You asked for changes.":"You declined this plan."}</h3><p class="note">${q.comment?`"${esc(q.comment)}" · `:""}${esc(q.requestedBy)} has been told. It's in the event's decision log.</p></section>`:
+    `<section class="panel stack"><label class="f">Comment (optional)<textarea id="soC" rows="3" placeholder="Approved. Keep the venue under $8k."></textarea></label>
+      <div class="btns"><button class="btn primary" data-dec="approved">Approve ${M(cur.cost)}</button><button class="btn" data-dec="changes">Ask for changes</button><button class="btn ghost" data-dec="declined">Decline</button></div>
+      <p class="note">Your answer and comment go to ${esc(q.requestedBy)} and into the event's decision log with your name.</p></section>`}</div>`;
+    $$("[data-dec]",host).forEach(b=>b.onclick=async()=>{ const c=$("#soC",host).value.trim(); if(b.dataset.dec!=="approved"&&!c){ toast("Add a line so they know what to change."); $("#soC",host).focus(); return } $$("[data-dec]",host).forEach(x=>x.disabled=true);
+      try{ const r=await fetch("/api/signoff/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId,rid,t:tok,decision:b.dataset.dec,comment:c})}), k=await r.json(); if(!r.ok){ toast(k.message||"Couldn't record that."); $$("[data-dec]",host).forEach(x=>x.disabled=false); return } Object.assign(q,k.request); paint() }catch{ toast("Couldn't record that. Check your connection."); $$("[data-dec]",host).forEach(x=>x.disabled=false) } }) };
+  paint() }
 function nextBtn(n,label){ const nx=nextStepOf(step); return nx?`<div class="btns"><button class="btn" data-next="${nx}">Next: ${STEP_NAMES[nx]} →</button></div>`:"" }
 function wireNext(host){ $$("[data-next]",host).forEach(b=>b.onclick=()=>{step=+b.dataset.next;renderStep();window.scrollTo({top:0,behavior:"smooth"})}) }
 
@@ -2585,7 +2641,7 @@ const OBJECTIVES={pipeline:{label:"New pipeline",line:"create new opportunities 
   awareness:{label:"Brand and community",line:"build reputation and community with the right people; pipeline is a secondary signal"},mixed:{label:"A mix",line:"balance new pipeline with customer expansion"}};
 const objOf=d=>OBJECTIVES[d.objective]?d.objective:"pipeline";
 const KPROF={
-  dinner:{show:70},roadshow:{show:70},experience:{show:70},
+  dinner:{show:88,dist:[["AE personal invites",55,30],["Exec-to-exec notes",30,40],["Customer 'bring a peer'",15,30]]},roadshow:{show:70},experience:{show:70},
   summit:{show:75,dist:[["AE personal invites",30,25],["Exec-to-exec notes",25,35],["Customer 'bring a peer'",15,30],["Speaker and partner networks",15,15],["Community & newsletters",10,4],["LinkedIn (posts + targeted ads)",5,1.5]]},
   owned:{show:55,dist:[["Email to your list",30,4],["AE personal invites",20,20],["Speakers and partners promote",20,8],["Customer 'bring a peer'",10,25],["Community & newsletters",10,3],["Paid social",10,0.8]]},
   conference:{show:65,unit:"meetings",dist:[["Pre-booked meetings from AE outreach",40,12],["Side-event invites",25,20],["Partner co-promotion",10,10],["Customer intros",10,25],["LinkedIn and community",10,2],["Show app and organizer listing",5,3]],
@@ -2779,7 +2835,15 @@ function kindPicker(){ const k=kindOf(), o=objOf(draft); return `<div class="kin
 // ==================================================================
 function slug(x){ return String(x||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"ae" }
 function eventCost(d){ const P=d.produce||(d.example?EXAMPLE_OUT.produce:null); return (P?.budget||[]).reduce((a,b)=>a+(+b.amount||0),0)||+d.budget||0 }
-function regCount(e){ return (e.guests||[]).filter(g=>g.status==="Going"||g.status==="Attended").length+allRsvps.filter(r=>r.eventId===e.id&&r.response==="going").length }
+function regCount(e){ const G=e.guests||[], seen=new Set(G.flatMap(g=>[(g.email||"").toLowerCase(),(g.name||"").toLowerCase()]).filter(Boolean));
+  return G.filter(g=>g.status==="Going"||g.status==="Attended").length+allRsvps.filter(r=>r.eventId===e.id&&r.response==="going"&&!seen.has((r.email||"").toLowerCase())&&!seen.has((r.name||"").toLowerCase())).length }
+function mergeRsvps(d){ if(!d||d.example||!d.id) return 0; let n=0; const ST={going:"Going",maybe:"Maybe",no:"Declined"};
+  allRsvps.filter(r=>r.eventId===d.id&&r.name).forEach(r=>{ const em=(r.email||"").toLowerCase(), nm=r.name.toLowerCase();
+    let g=(r.guestIndex!=null&&d.guests[r.guestIndex]&&d.guests[r.guestIndex].name?.toLowerCase()===nm?d.guests[r.guestIndex]:null)||d.guests.find(x=>em&&(x.email||"").toLowerCase()===em)||d.guests.find(x=>(x.name||"").toLowerCase()===nm);
+    if(!g){ g={name:r.name,title:r.title||"",company:r.company||"",email:r.email||"",tier:"",owner:"Unassigned",status:"Invited",source:r.introducedBy?`Referred by ${r.introducedBy}`:"RSVP page"}; d.guests.push(g); n++ }
+    const st=ST[r.response]; if(st&&g.status!=="Attended"&&g.status!==st&&(g.rsvpAt||0)<(r.changedAt||r.createdAt||0)){ g.status=st; g.rsvpAt=r.changedAt||r.createdAt||Date.now(); n++ }
+    ["dietary","access","ea"].forEach(k=>{ if(r[k]&&!g[k]){ g[k]=r[k]; n++ } }); if(r.severe&&!g.severe){ g.severe=true; n++ } if(r.plusOne&&!g.plusOne){ g.plusOne=true; n++ } });
+  return n }
 function distInvites(d){ const KP=kprof(d), D=d.dist||{show:KP.show,ch:(KP.dist||DIST_DEFAULT).map(([n,sh,ac])=>({n,sh,ac}))}, need=Math.ceil((+d.headcount||0)/((D.show||70)/100)), tot=D.ch.reduce((a,c)=>a+(+c.sh||0),0)||1;
   return D.ch.reduce((a,c)=>{ const rs=Math.ceil(need*(+c.sh||0)/tot); return a+(c.ac>0?Math.ceil(rs/(c.ac/100)):0) },0) }
 function launchConfidence(d){ const s=d.signals||{}, P=d.produce||(d.example?EXAMPLE_OUT.produce:null), going=regCount(d), inv=d.guests.filter(g=>g.status!=="Not invited").length, aes=[...new Set(d.guests.map(g=>g.owner).filter(Boolean))], noms=allNoms.filter(n=>n.eventId===d.id).length;
@@ -2904,12 +2968,13 @@ const SAMPLE_PROGRAM=[{name:"The Creator Kitchen",kind:"dinner",city:"Chicago",d
   {name:"SaaStr Annual: booth and dinner",kind:"conference",city:"San Mateo",date:"2027-05-12",plan:65000,act:12000,committed:41000,pipe:0,region:"North America",owner:"Maya (Field)"},
   {name:"OMR side event",kind:"experience",city:"Hamburg",date:"2027-05-05",plan:14000,act:0,pipe:0,region:"EMEA",owner:"Lena (EMEA)"}];
 function qOf(date){ if(!date) return null; const m=+date.slice(5,7); return "Q"+Math.ceil(m/3)+" "+date.slice(0,4) }
+function isDone(e){ if(e.status==="done") return true; const past=e.date&&new Date(e.date+"T23:59:59")<new Date(); return !!past&&((e.guests||[]).some(g=>g.status==="Attended")||(e.opps||[]).length>0) }
 function programRows(){ const real=allEvents.filter(e=>!e.example); if(!real.length){ const X=hydrate({...EXAMPLE,example:true}); return {sample:true,rows:SAMPLE_PROGRAM.map(r=>({...r,...(r.name===EXAMPLE.name?{plan:eventCost(X),act:actualOf(X),committed:committedOf(X)}:{committed:r.committed??r.act}),q:qOf(r.date)}))} }
   const parents=new Set(real.filter(e=>e.parentId).map(e=>e.parentId));
-  return {sample:false,rows:real.filter(e=>!(e.isSeries&&parents.has(e.id))).map(e=>{ const h=hydrate(e), O=e.opps||[]; return {id:e.id,parentId:e.parentId||null,name:e.name,kind:kindOf(e),city:e.city,date:e.date,plan:toUSD(eventCost(h),e.currency),act:toUSD(actualOf(h),e.currency),committed:toUSD(committedOf(h),e.currency),currency:e.currency||"USD",localPlan:eventCost(h),owner:e.owner||"",pipe:newPipe(e),infl:inflPipe(e),region:e.region||"",done:e.status==="done",q:qOf(e.date)} })} }
-function benchHTML(){ const done=allEvents.filter(e=>!e.example&&e.status==="done"), sample=!done.length;
+  return {sample:false,rows:real.filter(e=>!(e.isSeries&&parents.has(e.id))).map(e=>{ const h=hydrate(e), O=e.opps||[]; return {id:e.id,parentId:e.parentId||null,name:e.name,kind:kindOf(e),city:e.city,date:e.date,plan:toUSD(eventCost(h),e.currency),act:toUSD(actualOf(h),e.currency),committed:toUSD(committedOf(h),e.currency),currency:e.currency||"USD",localPlan:eventCost(h),owner:e.owner||"",pipe:newPipe(e),infl:inflPipe(e),region:e.region||"",done:isDone(e),q:qOf(e.date)} })} }
+function benchHTML(){ const done=allEvents.filter(e=>!e.example&&isDone(e)), sample=!done.length;
   const rows=sample?[{k:"Executive dinner",show:82,rsvp:31,n:1},{k:"Webinar",show:45,rsvp:8,n:1}]:Object.entries(done.reduce((a,e)=>{ const k=(KINDS[kindOf(e)]||KINDS.dinner).label, m=liveMetrics(e); a[k]=a[k]||{s:0,r:0,i:0,a:0,n:0}; a[k].a+=+m.attended||0; a[k].r+=+m.rsvps||0; a[k].i+=+m.invited||0; a[k].n++; return a },{})).map(([k,v])=>({k,show:v.r?Math.round(100*v.a/v.r):null,rsvp:v.i?Math.round(100*v.r/v.i):null,n:v.n}));
-  return rows.length?`<div><small class="eyebrow">Your benchmarks${sample?" (sample)":""}</small><div class="chips">${rows.map(r=>`<span class="pchip">${esc(r.k)}: ${r.rsvp??"–"}% of invites RSVP, ${r.show??"–"}% show · ${r.n} event${r.n===1?"":"s"}</span>`).join("")}</div><span class="note">From your finished events. Encore starts each new plan from these rates.</span></div>`:"" }
+  return rows.length?`<div><small class="eyebrow">${sample?"Typical benchmarks":"Your benchmarks"}</small><div class="chips">${rows.map(r=>`<span class="pchip">${esc(r.k)}: ${r.rsvp??"–"}% of invites RSVP, ${r.show??"–"}% show · ${r.n} event${r.n===1?"":"s"}</span>`).join("")}</div><span class="note">${sample?"Typical rates for B2B field events, until you have your own. Encore replaces them with yours after your first event.":"From your finished events. Encore starts each new plan from these rates."}</span></div>`:"" }
 function accountSpend(){ const evs=allEvents.filter(e=>!e.example), map={};
   evs.forEach(e=>{ const h=hydrate(e), att=h.guests.filter(g=>g.status==="Attended"), per=att.length?toUSD(actualOf(h)||eventCost(h),e.currency)/att.length:0;
     att.forEach(g=>{ const k=(g.company||"").trim(); if(!k) return; const dm=(g.email||"").split("@")[1]||"", m=map[k]=map[k]||{account:k,events:new Set(),head:0,gifts:0,pipe:0,domain:""}; if(!m.domain&&dm&&!/^(gmail|googlemail|yahoo|outlook|hotmail|icloud|proton|aol)\./i.test(dm)) m.domain=dm; m.events.add(e.name); m.head+=per; m.gifts+=toUSD(+g.giftLanded||+g.giftCost||0,e.currency) });
@@ -2927,7 +2992,7 @@ function programHTML(){ const P=brandProfile?.program||{}, {sample,rows}=program
       <label class="f" style="max-width:220px">Annual events budget<input type="number" min="0" step="10000" id="progAnnual" value="${annual}"><span class="h">${money(annual)}</span></label></div>
     ${sample?`<div class="samplebar">This is a sample program. Your saved events will take its place.</div>`:""}
     <div class="kpis"><div class="kpi"><small>Planned</small><b>${money(tot)}</b><small>${annual?`of ${money(annual)} (${Math.round(100*tot/annual)}%)`:`<a href="#programs" onclick="document.getElementById('annualIn')?.focus();return false">Set your annual budget</a>`}</small></div><div class="kpi"><small>Committed (signed vendors)</small><b>${money(signed)}</b></div><div class="kpi"><small>Spent so far</small><b>${money(spent)}</b></div><div class="kpi"><small>New pipeline, finished events</small><b>${money(dPipe)}</b></div><div class="kpi"><small>Influenced (existing deals with attendees)</small><b>${money(rows.reduce((a,r)=>a+(r.infl||0),0))}</b></div><div class="kpi"><small>Pipeline per $1, finished events (not counting team time)</small><b>${dSpent?"$"+(dPipe/dSpent).toFixed(1):"–"}</b></div></div>
-    <div class="pqbars">${qs.map(q=>{ const c=qc(q), a=qa(q), over=c>a; return `<div class="qbar ${over?"over":""}"><div class="btns" style="justify-content:space-between"><b>${q}</b><span class="note">${money(c)} of ${money(a)}</span></div><div class="btns" style="justify-content:flex-end"><input class="mini" type="number" min="0" step="5000" data-qa="${q}" value="${Math.round(a)}" aria-label="${q} allocation" title="Edit the ${q} allocation"></div><div class="bar"><i style="width:${a?Math.min(100,100*c/a):100}%"></i></div>${over?`<span class="note" style="color:var(--bad)">Over by ${money(c-a)}. Move an event or raise this quarter's budget.</span>`:""}</div>` }).join("")}</div>
+    <div class="pqbars">${qs.map(q=>{ const c=qc(q), a=qa(q), over=a>0&&c>a; return `<div class="qbar ${over?"over":""}"><div class="btns" style="justify-content:space-between"><b>${q}</b><span class="note">${money(c)} of ${money(a)}</span></div><div class="btns" style="justify-content:flex-end"><input class="mini" type="number" min="0" step="5000" data-qa="${q}" value="${Math.round(a)}" aria-label="${q} allocation" title="Edit the ${q} allocation"></div><div class="bar"><i style="width:${a?Math.min(100,100*c/a):100}%"></i></div>${over?`<span class="note" style="color:var(--bad)">Over by ${money(c-a)}. Move an event or raise this quarter's budget.</span>`:""}</div>` }).join("")}</div>
     ${benchHTML()}${accountSpendHTML()}
     ${Object.keys(byKind).length?`<div><small class="eyebrow">Finished events: new pipeline per $1, by format</small><div class="chips">${Object.entries(byKind).map(([k,v])=>`<span class="pchip">${esc(k)}: $${(v.p/Math.max(1,v.a)).toFixed(1)}</span>`).join("")}</div></div>`:""}
     <div class="tscroll"><table><thead><tr><th>Event</th><th>Format</th><th>When</th><th>Owner</th><th>Region</th><th class="num">Plan</th><th class="num">Actual</th><th class="num">New pipeline</th><th class="num">Influenced</th><th class="num">Per $1</th></tr></thead><tbody>${(()=>{ const top=rows.filter(r=>!r.parentId||!rows.some(x=>x.id===r.parentId)).sort((a,b)=>(a.date||"").localeCompare(b.date||"")); const orphans=rows.filter(r=>r.parentId&&!rows.some(x=>x.id===r.parentId)), groups=[...new Set(orphans.map(r=>r.parentId))];
@@ -3003,18 +3068,19 @@ function renderPrograms(){
     days=e.date?Math.ceil((new Date(e.date+"T12:00:00")-Date.now())/864e5):null, health=bl?"blocked":od||(days!=null&&days<21&&reg<tgt*.5)?"at risk":"on track";
     return {e,od,bl,nx,reg,tgt,plan,act,noms,aes,days,health} });
   const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
+  if(window.ENCORE_SERVER){ const miss=rows.filter(r=>r.e.id&&!r.e.example&&(!SO[r.e.id]||Date.now()-(SOt[r.e.id]||0)>20000)); if(miss.length) Promise.all(miss.map(r=>loadSO(r.e.id))).then(()=>{ if(!location.hash||location.hash==="#programs") renderPrograms() }) }
   el.innerHTML=`${weeklyHTML()}${quickStartHTML()}${allEvents.some(e=>!e.example)?"":`<div class="adv">${homeHero()}</div><p class="note simple-only" style="margin:10px 4px">Want to see a finished event first? <a href="#studio" id="seeSample">Open the sample dinner</a>.</p>`}<div class="canvas-head ${allEvents.some(e=>!e.example)?"":"adv"}" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Who's registered, what's spent, what's stuck and what's next, for every event.</p></div>
     <div class="btns adv"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
     <div class="kpis" style="margin:18px 0" ${rows.length?"":"hidden"}><div class="kpi"><small>Events in progress</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs. goal</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Spent vs. planned</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Stuck or late</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
     <div class="adv">${programHTML()}</div>
     <div class="adv">${programTierHTML()}</div>
     ${rows.length?`<div class="progs big">${rows.map(r=>`<article class="prog ${r.health.replace(" ","")}">
-      <div class="btns" style="justify-content:space-between"><span class="tag">${esc((KINDS[r.e.kind]||KINDS.dinner).label)}</span><span class="pchip ${r.health==="on track"?"good":r.health==="at risk"?"warn":"bad"}">${r.health}</span></div>
+      <div class="btns" style="justify-content:space-between"><span class="tag">${esc((KINDS[r.e.kind]||KINDS.dinner).label)}</span><span class="pchip ${r.health==="on track"?"good":r.health==="at risk"?"warn":"bad"}">${r.health}</span></div>${SO[r.e.id]?.[0]?`<span class="sochip ${SO[r.e.id][0].status}">${esc(soChip(r.e.id))}</span>`:""}
       <b class="big">${esc(r.e.name||"Untitled")}</b><span class="note">${esc(r.e.city||"")}${r.e.date?` · ${esc(fmtDate(r.e.date))}`:""}${r.days!=null?` · ${r.days} days`:""}${r.e._draft?" · not saved":""}</span>
       <div class="meterrow"><small>Registered</small><div class="bar"><i style="width:${r.tgt?Math.min(100,100*r.reg/r.tgt):0}%"></i></div><span>${r.reg}/${r.tgt}</span></div>
       <div class="meterrow"><small>Spend</small><div class="bar"><i style="width:${r.plan?Math.min(100,100*r.act/r.plan):0}%;background:${r.act>r.plan?"var(--bad)":"var(--cobalt)"}"></i></div><span>${money(r.act)}</span></div>
-      ${r.aes?`<span class="note">AEs who've suggested guests: ${r.noms} of ${r.aes}</span>`:""}<span class="note"><b>Launch confidence ${launchConfidence(hydrate(r.e)).score}</b></span>
-      ${r.nx?`<span class="note">Next: ${esc(r.nx.task)} · ${esc(r.nx.owner)}</span>`:""}${r.od||r.bl?`<span class="note" style="color:var(--bad)">${r.od} overdue · ${r.bl} blocked</span>`:""}
+      ${r.aes?`<span class="note">AEs who've suggested guests: ${r.noms} of ${r.aes}</span>`:""}
+      ${(()=>{ const G=r.e.guests||[], t=!G.length?"Add your guests":!G.some(g=>g.status!=="Not invited")?"Write the invites":r.nx?`${r.nx.task} · ${r.nx.owner}`:""; return t?`<span class="note">Next: ${esc(t)}</span>`:"" })()}${r.od||r.bl?`<span class="note" style="color:var(--bad)">${r.od} overdue · ${r.bl} blocked</span>`:""}
       <button class="btn sm" data-popen="${esc(r.e.id||"")}">Open</button></article>`).join("")}</div>`:`<p class="empty adv">You haven't planned an event yet.</p>`}`;
   $("#newEv").onclick=()=>{ draft=brandDraft(); step=1; location.hash="studio" };
   $$("[data-journey]",el).forEach(b=>b.onclick=()=>journeyGo(b.dataset.journey));
@@ -3314,7 +3380,13 @@ function drawPilot(d){ const h=$("#pilot"); if(!h) return; const cur=pilotStats(
   $("#pilBase",h).onchange=e=>{ d.baselineId=e.target.value; drawPilot(d) };
   $$("[data-bl]",h).forEach(x=>x.onchange=()=>{ d.baseline={...(d.baseline||{}),[x.dataset.bl]:x.value===""?null:+x.value}; drawPilot(d) });
   $$("[data-hb]",h).forEach(x=>x.onchange=()=>{ d.hoursB={...(d.hoursB||{}),[x.dataset.hb]:+x.value||0}; d.hours=Object.values(d.hoursB).reduce((a,b)=>a+(+b||0),0); drawPilot(d); drawPipeRep(d) }) }
+function noShows(d,h){ const past=d.date&&new Date(d.date+"T23:59:59")<new Date(), L=past?d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Going"):[]; if(!L.length||$("#noShows",h)) return;
+  h.insertAdjacentHTML("beforeend",`<div class="stack" id="noShows" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)"><div><small class="eyebrow">Said yes, didn't come</small><h3 style="margin-top:2px">${L.length} ${L.length===1?"guest":"guests"} to send a kind word</h3><p class="note">One short note from the host, not a sales email. They stay out of the nurture campaign.</p></div>
+    ${L.map(({g,i})=>`<div class="btns" style="justify-content:space-between"><span><b>${esc(g.name)}</b> <span class="note">${esc(g.company||"")}</span></span><button class="btn sm" data-ns="${i}">Copy note</button></div>`).join("")}</div>`);
+  $$("[data-ns]",h).forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.ns], first=(g.name||"").split(" ")[0]||"there";
+    copyTxt(`Hi ${first},\n\nWe missed you at ${d.name}${d.city?` in ${d.city}`:""}. I hope all is well. I'd love to save you a seat at the next one, and I'm happy to share what came up at the table if it's useful.\n\n${me()||""}`); g.noShow=true; g.status="No-show" }) }
 function drawHandoff(d){ const h=$("#handoff"); if(!h) return; applyAeActions(d); const att=d.guests.map((g,i)=>({g,i})).filter(x=>x.g.status==="Attended");
+  setTimeout(()=>noShows(d,h),0);
   const S=out("briefing"), owners=aeList(d), st=g=>g.fuState||(g.fuDraft?"Draft":"Not started");
   const sent24=att.filter(x=>x.g.contactedAt&&x.g.leadAt&&x.g.contactedAt-x.g.leadAt<=864e5).length, gifts=att.reduce((a,x)=>a+(+x.g.giftLanded||+x.g.giftCost||0),0);
   h.innerHTML=`<div class="btns" style="justify-content:space-between"><div><small class="eyebrow">The morning after</small><h3>Hand off to sales</h3><p class="note">Note what each guest said and pick the next step. The AE approves the follow-up before it goes out, so it picks up where the conversation left off.</p></div>
@@ -3341,6 +3413,9 @@ function drawHandoff(d){ const h=$("#handoff"); if(!h) return; applyAeActions(d)
   $$("[data-hsent]",h).forEach(b=>b.onclick=()=>{ const g=G(b.dataset.hsent); g.fuState="Sent"; g.contactedAt=Date.now(); if(!g.leadAt) g.leadAt=g.contactedAt; drawHandoff(d) });
   $$("[data-hdone]",h).forEach(b=>b.onclick=()=>{ const g=G(b.dataset.hdone); g.nsDoneAt=g.nsDoneAt?null:Date.now(); logDecision(d,`${g.nsDoneAt?"confirmed":"reopened"} the next step with ${g.name} (${g.nextStep||"Book a meeting"})`); drawHandoff(d); drawFunnel(d); drawPilot(d) });
   $$("[data-hai]",h).forEach(b=>b.onclick=async()=>{ const g=G(b.dataset.hai); if(!g.note){ toast("Add a line about what they said first. It's what makes the follow-up feel personal."); return }
+    if(!sample){ const first=(g.name||"").split(" ")[0]||"there", said=g.note.trim().replace(/[.!]+$/,""), ask=g.nextStep&&g.nextStep!=="Book a meeting"?g.nextStep:"a 20-minute call next week to pick this up";
+      g.fuDraft=`Subject: Picking up from ${d.name}\n\nHi ${first},\n\nThank you for joining us${d.city?` in ${d.city}`:""}. You mentioned ${said.charAt(0).toLowerCase()+said.slice(1)}, and it stayed with me.\n\nWould you be open to ${ask.charAt(0).toLowerCase()+ask.slice(1)}? I'll bring what we've seen work for teams like yours.\n\n${g.owner&&g.owner!=="Unassigned"?g.owner:""}`;
+      g.fuState="Draft"; drawHandoff(d); toast("Drafted from your note. Read it once before it goes."); return }
     const o=await askJSON(`${editor(d)}
 Write the follow-up email ${g.owner&&g.owner!=="Unassigned"?g.owner:"their account exec"} sends to ${g.name} (${g.title||""}, ${g.company||""}${acctLine(g)}) the morning after this event. Start from what they actually said, deliver something useful first, then make one clear ask matching the next step: "${g.nextStep||"Book a meeting"}". Max 110 words, plain text, no subject-line clichés.${g.gift?` Mention the gift naturally: ${g.gift}.`:""}
 WHAT THEY SAID: ${g.note}${g.source?`\nHOW WE MET: ${g.source}`:""}
@@ -3921,9 +3996,11 @@ const OWNER_COLORS=["#3B5BFF","#FF4F64","#13A884","#F5A700","#8B5CF6","#0EA5E9",
 function drawCheckin(d){ const h=$("#checkinHost"); if(!h) return; let q="";
   const draw=()=>{ const L=d.guests.map((g,i)=>({...g,i})).filter(g=>g.status!=="Not invited"&&g.status!=="Declined"&&(!q||(g.name+g.company+(allRsvps.find(r=>r.eventId===d.id&&r.name===g.name)?.code||"")).toLowerCase().includes(q)));
     const n=d.guests.filter(g=>g.status==="Attended").length;
-    h.innerHTML=`<div class="checkin"><div class="btns" style="justify-content:space-between"><b class="big">${n} checked in</b><input id="ciQ" placeholder="Search a name" value="${esc(q)}" style="max-width:260px"><button class="btn ghost sm" id="ciClose">Done</button></div>
-      <div class="citiles">${L.map(g=>`<button class="citile ${g.status==="Attended"?"in":""}" data-ci="${g.i}"><canvas width="96" height="96" data-av="${esc(g.name)}"></canvas><b>${esc(g.name)}</b><span>${esc(g.company)}</span><em>${g.status==="Attended"?"✓ Checked in":"Tap to check in"}</em></button>`).join("")||`<p class="empty">No guests yet.</p>`}</div></div>`;
+    h.innerHTML=`<div class="checkin"><div class="btns" style="justify-content:space-between"><b class="big">${n} checked in</b><input id="ciQ" placeholder="Search a name" value="${esc(q)}" style="max-width:260px"><button class="btn sm" id="ciWalk">+ Walk-in</button><button class="btn ghost sm" id="ciClose">Done</button></div>
+      <div class="citiles">${L.map(g=>`<button class="citile ${g.status==="Attended"?"in":""}" data-ci="${g.i}"><canvas width="96" height="96" data-av="${esc(g.name)}"></canvas><b>${esc(g.name)}</b><span>${esc(g.company)}</span>${g.vip||g.severe||g.access?`<span class="ciflags">${g.vip?"VIP":""}${g.severe?" · Allergy":""}${g.access?" · Access":""}</span>`:""}<em>${g.status==="Attended"?"✓ Checked in":"Tap to check in"}</em></button>`).join("")||`<p class="empty">No guests yet.</p>`}</div></div>`;
     $$("canvas[data-av]",h).forEach(c=>drawAvatar(c,c.dataset.av,d.brandColors));
+    $("#ciWalk").onclick=()=>{ const nm=(window.prompt?.("Walk-in's name")||"").trim(); if(!nm) return; const co=(window.prompt?.(`${nm.split(" ")[0]}'s company`)||"").trim();
+      d.guests.push({name:nm,company:co,title:"",email:"",tier:"",owner:"Unassigned",status:"Attended",source:"Walk-in",checkedInAt:Date.now()}); toast(`${nm} checked in as a walk-in. Give them an owner for follow-up.`); draw() };
     $("#ciQ").oninput=e=>{ q=e.target.value.toLowerCase(); const pos=e.target.selectionStart; draw(); const x=$("#ciQ"); x.focus(); x.setSelectionRange(pos,pos) };
     $("#ciClose").onclick=()=>{ h.innerHTML=""; renderStep() };
     $$("[data-ci]",h).forEach(b=>b.onclick=()=>{ const g=d.guests[+b.dataset.ci]; if(g.status==="Attended"){ g.status="Going" } else { g.status="Attended"; g.leadAt=g.leadAt||Date.now() } draw() }) };
@@ -4158,17 +4235,17 @@ function step4(host){
 
 // STEP 5 · Guests ---------------------------------------------------
 function step5(host){
-  const d=draft, live=d.id?allRsvps.filter(r=>r.eventId===d.id):[];
-  const going=d.guests.filter(g=>g.status==="Going").length+live.filter(r=>r.response==="going").length;
+  const d=draft; mergeRsvps(d); const live=d.id?allRsvps.filter(r=>r.eventId===d.id):[];
+  const going=d.guests.filter(g=>g.status==="Going").length, needs=d.guests.filter(g=>g.dietary&&!/^none$/i.test(g.dietary)||g.access);
   host.innerHTML=`
   <div class="panel stack">
     <div class="btns" style="justify-content:space-between"><div><div class="eyebrow">Guests</div><h3>Guest list</h3></div>
-      <p class="note guestline" style="margin:0;font-size:14px"><b style="color:var(--fg)">${d.guests.length}</b> on the list · <b style="color:var(--fg)">${going}</b> going · ${d.headcount} seats</p></div>
-    ${d.guests.length?`<div class="tscroll"><table><thead><tr><th>Guest</th><th>Readiness</th>${d.guests.some(g=>g.arr||g.renewalDate||g.health)?"<th>Account</th>":""}<th>Tier</th><th>Sales owner</th><th>Status</th><th></th></tr></thead><tbody>${d.guests.map((g,i)=>[g,i]).sort((a,b)=>readiness(b[0]).score-readiness(a[0]).score).map(([g,i])=>`<tr><td><b>${esc(g.name)}</b><div class="note">${esc(g.title)} · ${esc(g.company)}</div></td><td>${readyCell(g)}</td>${d.guests.some(x=>x.arr||x.renewalDate||x.health)?`<td>${acctCell(g)}</td>`:""}<td><span class="tag">${esc(g.tier)}</span></td><td><input class="mini" data-go="${i}" value="${esc(g.owner||"")}" placeholder="AE" aria-label="Sales owner for ${esc(g.name)}"></td>
+      <p class="note guestline" style="margin:0;font-size:14px"><b style="color:var(--fg)">${d.guests.length}</b> on the list · <b style="color:var(--fg)">${going}</b> going · ${d.headcount} seats${needs.length?` · <button class="linkbtn" id="venueSheet" type="button">Venue sheet (${needs.length} needs)</button>`:""}</p></div>
+    ${d.guests.length?`<div class="tscroll"><table class="gtable"><thead><tr><th>Guest</th><th>Readiness</th>${d.guests.some(g=>g.arr||g.renewalDate||g.health)?"<th>Account</th>":""}<th>Tier</th><th>Sales owner</th><th>Status</th><th></th></tr></thead><tbody>${d.guests.map((g,i)=>[g,i]).sort((a,b)=>readiness(b[0]).score-readiness(a[0]).score).map(([g,i])=>`<tr><td><b>${esc(g.name)}</b>${g.vip?` <span class="gflag vip">VIP</span>`:""}<div class="note">${[g.title,g.company].filter(Boolean).map(esc).join(" · ")}</div>${g.severe?`<span class="gflag bad">Severe allergy: ${esc(g.dietary||"see notes")}</span>`:g.dietary&&!/^none$/i.test(g.dietary)?`<span class="gflag">${esc(g.dietary)}</span>`:""}${g.access?`<span class="gflag">Access: ${esc(g.access)}</span>`:""}${g.ea?`<span class="gflag">EA: ${esc(g.ea)}</span>`:""}${g.source&&/RSVP|Walk-in|Referred/.test(g.source)?`<span class="gflag soft">${esc(g.source)}</span>`:""}</td><td>${readyCell(g)}</td>${d.guests.some(x=>x.arr||x.renewalDate||x.health)?`<td>${acctCell(g)}</td>`:""}<td><span class="tag">${esc(g.tier)}</span></td><td><input class="mini" data-go="${i}" value="${esc(g.owner||"")}" placeholder="AE" aria-label="Sales owner for ${esc(g.name)}"></td>
       <td><select data-gs="${i}" aria-label="Status for ${esc(g.name)}">${GSTATUS.map(s=>`<option ${s===g.status?"selected":""}>${s}</option>`).join("")}</select></td><td><div class="btns" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost sm" data-plink="${i}" title="Copy ${esc(g.name)}'s personal invite link">Personal link</button><button class="btn ghost sm" data-gd="${i}" aria-label="Remove ${esc(g.name)}">Remove</button></div></td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">No guests yet. Start with your target accounts below.</p>`}
     <details ${d.guests.length?"":"open"}><summary style="cursor:pointer;font-weight:600">Add guests</summary>
       <div class="stack" style="margin-top:12px;gap:10px">
-        <label class="f">Paste one guest per line: Name, Title, Company, Tier (A/B/C), Email, and optionally ARR, Renewal date (YYYY-MM-DD), Health, Region<textarea id="gPaste" placeholder="Jordan Lee, VP of Marketing, Acme Software, A, jordan@acmesoftware.com"></textarea></label>
+        <label class="f">Paste one guest per line: Name, Title, Company, Tier (A/B/C), Email. Or paste with a header row, including Owner, ARR, Renewal date, Health or Region.<textarea id="gPaste" placeholder="Jordan Lee, VP of Marketing, Acme Software, A, jordan@acmesoftware.com"></textarea></label>
         <div class="btns"><button class="btn" id="gAdd">Add to list</button></div>
       </div></details>
   </div>
@@ -4211,6 +4288,9 @@ function step5(host){
     $$("[data-rej]",host).forEach(x=>x.onchange=()=>{ const c=S.contacts[+x.dataset.rej]; d.scoutRejects=(d.scoutRejects||[]).filter(r=>r.name!==c.name); if(x.value){ d.scoutRejects.push({name:c.name,company:c.company,reason:x.value,by:me()||"Sales",at:Date.now(),readiness:readiness(c).score}); sel.delete(+x.dataset.rej) } renderStep() });
     $("#addPicked").onclick=()=>{ let n=0; sel.forEach(i=>{ const c=S.contacts[i]; if(d.guests.some(g=>g.name===c.name)) return; d.guests.push({name:c.name,title:c.title,company:c.company,email:c.email||"",owner:c.owner||"",tier:/Open|Customer/.test(c.relationship)?"A":"B",status:"Not invited",outcome:"None yet",value:0,relationship:c.relationship,why:c.why,cityCheck:c.cityCheck,...(c.readiness!=null?{readiness:c.readiness,signals:c.signals}:{})}); n++ }); toast(`Added ${n} guest${n===1?"":"s"}`); renderStep() } }
   $$("[data-gd]",host).forEach(b=>b.onclick=()=>{d.guests.splice(+b.dataset.gd,1); renderStep()});
+  $("#venueSheet")&&($("#venueSheet").onclick=()=>{ const G=d.guests.filter(g=>g.status==="Going"||g.status==="Attended"||g.status==="Maybe"), cnt={};
+    G.forEach(g=>{ const k=(g.dietary||"").trim(); if(k&&!/^none$/i.test(k)) cnt[k.toLowerCase()]=(cnt[k.toLowerCase()]||0)+1 });
+    copyTxt([`${d.name}${d.date?" · "+fmtDate(d.date):""}`,`Expected guests: ${G.length} of ${d.headcount} seats`,``,`Dietary:`,...Object.entries(cnt).map(([k,n])=>`  ${n} × ${k}`),...(Object.keys(cnt).length?[]:["  None noted"]),`Severe allergies: ${G.filter(g=>g.severe).length} (please confirm the kitchen can handle these)`,``,`Access and arrival:`,...G.filter(g=>g.access).map(g=>`  ${g.access}`),...(G.some(g=>g.access)?[]:["  None noted"]),``,`No guest names are included. Contact ${me()||"the event lead"} with questions.`].join("\n")); toast("Venue sheet copied. It has counts and needs, no names.") });
   $("#gAdd").onclick=()=>{ const raw=$("#gPaste").value.trim(); if(!raw){ toast("Nothing to add yet. Use one guest per line: Name, Title, Company."); return }
     const P=parseCSV(raw), hasHead=P.length&&!P[0]._;
     if(hasHead&&Object.keys(P[0]).every(h=>guessCol(h)!=="ignored")&&Object.keys(P[0]).some(h=>/name/.test(guessCol(h)))){ const H=Object.keys(P[0]), M=H.map(guessCol); let added=0; P.forEach(r=>{ const g=mapRow(r,H,M); if(!g.name) return; delete g.arrBad; delete g.rdBad; d.guests.push({...g,status:"Not invited"}); added++ }); $("#gPaste").value=""; toast(`Added ${added} guest${added===1?"":"s"}.`); renderStep(); return }
@@ -4512,17 +4592,19 @@ async function renderGuest(){
   if(/^#confnom/.test(location.hash)){ if(host.dataset.key!=="confnom"){ host.dataset.key="confnom"; renderConfNom(host) } return }
   if(/^#roadmap(~ws-[A-Za-z0-9_-]+)?$/.test(location.hash)){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
   const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)(?:~[a-f0-9]+)?$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
+  const so=location.hash.match(/^#signoff-([A-Za-z0-9_]+)-([a-f0-9]+)~([a-f0-9]+)/); if(so){ host.classList.remove("wide"); if(host.dataset.key!=="so"+so[2]){ host.dataset.key="so"+so[2]; renderSignoff(host,so[1],so[2],so[3]) } return }
   const am=location.hash.match(/^#approve-([A-Za-z0-9_]+)-([a-z0-9-]+)(?:~([a-f0-9]+))?$/); if(am){ host.classList.remove("wide"); if(!db&&!window.ENCORE_SERVER){ host.innerHTML=`<div class="panel"><p class="empty">Open this link on your Encore server or in claude.ai.</p></div>`; return } if(host.dataset.key!=="ae"+am[1]+am[2]+(am[3]||"")){ host.dataset.key="ae"+am[1]+am[2]+(am[3]||""); renderApprove(host,am[1],am[2],am[3]) } return }
   const wm=location.hash.match(/^#guests-([A-Za-z0-9_]+)$/); if(wm){ host.classList.add("wide"); if(host.dataset.key!=="wall"+wm[1]){ host.dataset.key="wall"+wm[1]; renderWall(host,wm[1]) } return }
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)(?:~[a-f0-9]+)?$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
   const gm=location.hash.match(/^#(rsvp|survey)-([A-Za-z0-9_]+)(?:\.g(\d+))?(?:\.i-[A-Za-z0-9_-]+~[a-f0-9]+)?$/)||[], kind=gm[1], id=gm[2], gi=gm[3]!=null?+gm[3]:null;
-  const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Encore</a> · plan your own events free`:"Made with Encore"}</p></div>`;
+  let EXEC=false; const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}${EXEC?"":`<p class="note" style="text-align:center;font-size:12px">${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Encore</a>`:"Made with Encore"}</p>`}</div>`;
   if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Open this invite while signed in to respond.":"Loading your invite…"}</p></div>`); return }
   let ev=allEvents.find(e=>e.id===id);
   if(!ev){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
   if(!ev){ host.innerHTML=shell(`<div class="panel"><p class="empty">${dbReady?"We couldn't find this event. Check the link with your host.":"Loading your invite…"}</p></div>`); return }
   const e=hydrate(ev), C=e.copy, V=e.venues?.venues?.[e.venuePick??0], me=ev.me||(gi!=null&&!window.ENCORE_SERVER?e.guests[gi]:null), why=me?((e.scout?.contacts||[]).find(c=>c.name===me.name)?.why||me.why||""):"";
+  EXEC=["dinner","summit"].includes(kindOf(e))||!!e.discreet;
   if(host.dataset.key===kind+id+(gi??"")+(host.dataset.sent||"")) return;
   host.dataset.key=kind+id+(gi??"")+(host.dataset.sent||"");
   const going=[...e.guests.filter(g=>g.status==="Going"||g.status==="Attended"),...allRsvps.filter(r=>r.eventId===e.id&&r.response==="going")];
@@ -4530,15 +4612,16 @@ async function renderGuest(){
   const hosts=[e.brand||brandProfile?.company||"",...new Set((ev.hosts||e.guests.map(g=>g.owner)).filter(Boolean))].slice(0,3);
   const GA=guestAgenda(C?.agenda), start=(GA[0]?.time)||"18:00", dt=e.date?e.date.replace(/-/g,"")+"T"+(/^(\d{1,2}):(\d{2})/.test(start)?start.replace(/^(\d):/,"0$1:").replace(":","").slice(0,4)+"00":"180000"):"";
   const cal=e.date?`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(C?.title||e.name)}&dates=${dt}/${dt}&details=${encodeURIComponent((C?.tagline||"")+" "+location.href)}&location=${encodeURIComponent(V?(V.address||V.name):e.city||"")}`:"";
+  const ics=e.date?"data:text/calendar;charset=utf-8,"+encodeURIComponent(["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Encore//EN","BEGIN:VEVENT","UID:"+e.id+"@encore","DTSTART:"+dt,"SUMMARY:"+(C?.title||e.name),"LOCATION:"+(V?(V.address||V.name):e.city||""),"END:VEVENT","END:VCALENDAR"].join("\r\n")):"";
   const map=V||e.city?`https://www.google.com/maps/search/${encodeURIComponent(V?(V.address||V.name+" "+(e.city||"")):e.city)}`:"";
   host.innerHTML=shell(`<div class="invite gx" style="${brandStyle()}"><div class="gxcover"><canvas class="cover" id="gCv" width="1200" height="630" aria-label="Event cover"></canvas></div>
     <div class="in">
       ${me?`<p class="gxhi">${esc(me.name.split(" ")[0])}, you're invited.</p>${why?`<p class="gxwhy">Why you: ${esc(why)}</p>`:""}`:`<span class="eyebrow">${esc(e.brand)} ${kind==="rsvp"?"invites you":"· thank you for coming"}</span>`}
       <h3>${esc(C?.title||e.name)}</h3>${C?.tagline?`<p class="note">${esc(C.tagline)}</p>`:""}
-      <div class="gxfacts"><span><small>When</small><b>${esc(fmtDate(e.date))}${GA[0]?` · ${esc(start)}`:""}</b></span><span><small>Where</small><b>${esc(V?V.name:"")}${V?" · ":""}${esc(e.city||"")}</b></span><span><small>Size</small><b>${esc(e.headcount)} guests</b></span></div>
-      <div class="btns">${cal?`<a class="btn sm" href="${esc(cal)}" target="_blank" rel="noopener">Add to Google Calendar</a>`:""}${map?`<a class="btn ghost sm" href="${esc(map)}" target="_blank" rel="noopener">Map</a>`:""}</div>
-      <div class="gxhosts"><small>Hosted by</small>${hosts.map(h=>`<span class="hostchip"><canvas width="44" height="44" data-av="${esc(h)}"></canvas>${esc(h)}</span>`).join("")}</div>
-      ${kind==="rsvp"?`${going.length?`<div class="gxwho"><b>${going.length} ${going.length===1?"person is":"people are"} coming from ${cos.size} ${cos.size===1?"company":"companies"}</b><div class="avstack">${going.slice(0,8).map(g=>`<canvas width="64" height="64" data-av="${esc(g.name)}"></canvas>`).join("")}</div>${titles.length?`<div class="chips">${titles.map(t=>`<span class="pchip">${esc(t)}</span>`).join("")}</div>`:""}</div>`:""}
+      <div class="gxfacts"><span><small>When</small><b>${esc(fmtDate(e.date))}${GA[0]?` · ${esc(start)}`:""}</b></span><span><small>Where</small><b>${esc(V?V.name:"")}${V?" · ":""}${esc(V?.address||e.city||"")}</b></span>${EXEC?`<span><small>Dress</small><b>${esc(e.dress||"Business casual")}</b></span>`:`<span><small>Size</small><b>${esc(e.headcount)} guests</b></span>`}</div>
+      <div class="btns">${cal?`<a class="btn sm" href="${esc(ics)}" download="invitation.ics">Add to calendar</a><a class="btn ghost sm" href="${esc(cal)}" target="_blank" rel="noopener">Google Calendar</a>`:""}${map?`<a class="btn ghost sm" href="${esc(map)}" target="_blank" rel="noopener">Map</a>`:""}</div>
+      <div class="gxhosts"><small>Hosted by</small>${hosts.filter(Boolean).map(h=>`<span class="hostchip">${esc(h)}</span>`).join("")}</div>
+      ${kind==="rsvp"?`${going.length&&!EXEC?`<div class="gxwho"><b>${going.length} ${going.length===1?"person is":"people are"} coming from ${cos.size} ${cos.size===1?"company":"companies"}</b><div class="avstack">${going.slice(0,8).map(g=>`<canvas width="64" height="64" data-av="${esc(g.name)}"></canvas>`).join("")}</div>${titles.length?`<div class="chips">${titles.map(t=>`<span class="pchip">${esc(t)}</span>`).join("")}</div>`:""}</div>`:""}
       <p>${esc(C?.description||e.concept)}</p>${GA.length?`<div class="agenda">${GA.map(a=>`<span>${esc(a.time)}</span><span>${esc(a.item)}</span>`).join("")}</div>`:""}`:""}
     </div></div>
     <div class="panel" id="gForm"></div>`);
@@ -4558,7 +4641,7 @@ async function renderGuest(){
   const mine=(()=>{ try{ return JSON.parse(localStorage.getItem("encore-rsvp-"+e.id)||"null") }catch{ return null } })();
   if(!host.dataset.sent&&mine&&kind==="rsvp"){ host.dataset.sent="1"; host.dataset.ticket=mine.code; host.dataset.resp=mine.response }
   if(host.dataset.sent){ const t=host.dataset.ticket||"", cur=host.dataset.resp||"going";
-    f.innerHTML=`<div class="ticket" style="${brandStyle()}"><div><small class="eyebrow">${e.approvalRequired?"Request received":"You're on the list"}</small><h3>${esc(C?.title||e.name)}</h3><p class="note">${esc(fmtDate(e.date))}${e.city?` · ${esc(e.city)}`:""}</p><p>${e.approvalRequired?`${esc(e.brand)} will confirm your seat shortly.`:"Show this code at the door."}</p></div><div class="tcode"><small>Check-in code</small><b>${esc(t)}</b></div></div><div class="btns" style="margin-top:10px"><a class="btn ghost sm" href="#guests-${esc(e.id)}">See who's coming</a></div>
+    f.innerHTML=`<div class="ticket" style="${brandStyle()}"><div><small class="eyebrow">${e.approvalRequired?"Request received":EXEC?"Your seat is confirmed":"You're on the list"}</small><h3>${esc(C?.title||e.name)}</h3><p class="note">${esc(fmtDate(e.date))}${e.city?` · ${esc(e.city)}`:""}</p><p>${e.approvalRequired?`${esc(e.brand)} will confirm your seat shortly.`:EXEC?"We look forward to welcoming you. Your host will meet you at the door.":"Show this code at the door."}</p></div>${EXEC?"":`<div class="tcode"><small>Check-in code</small><b>${esc(t)}</b></div>`}</div>${EXEC?"":`<div class="btns" style="margin-top:10px"><a class="btn ghost sm" href="#guests-${esc(e.id)}">See who's coming</a></div>`}
     ${mine&&!e.approvalRequired?`${mine?.wall?`<div class="gchange"><label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-unwall" ${mine.hidden?"":"checked"}> Show my name and company to other guests</label></div>`:""}<div class="gchange"><small class="eyebrow">Plans changed?</small><div class="chips">${[["going","I'm going"],["maybe","Maybe"],["no","Can't make it"]].map(([v,l])=>`<button type="button" class="chip" data-chg="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")}</div><span class="note">${cur==="no"?"Thank you for letting us know. We'll offer your seat to someone on the waitlist.":"Your host sees changes right away."}</span></div>`:""}${cal?`<div class="btns" style="margin-top:10px"><a class="btn sm" href="${esc(cal)}" target="_blank" rel="noopener">Add to Google Calendar</a></div>`:""}`; wireChange(); return }
   const cqs=(e.launch?.qsOnRsvp===false?[]:(e.launchQs?.questions||[])).filter(q=>!/diet|allerg|excited|learn|discuss/i.test(q.q)).slice(0,4); let photo="";
   let resp="going"; const plus=/plus-one|family|partner/i.test(e.format+" "+(e.concept||""))||e.plusOnes;
@@ -4567,21 +4650,23 @@ async function renderGuest(){
     <div class="row"><label class="f">Name<input id="g-name" autocomplete="name" value="${esc(me?.name||"")}"></label><label class="f">Title<input id="g-title" value="${esc(me?.title||"")}"></label><label class="f">Company<input id="g-co" autocomplete="organization" value="${esc(me?.company||"")}"></label><label class="f">Work email<input id="g-email" type="email" autocomplete="email" value="${esc(me?.email||"")}"></label></div>
     ${plus?`<label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-plus"> I'll bring a plus-one</label>`:""}
     <label class="f">Who introduced you? (optional)<input id="g-introby" placeholder="A name, if someone suggested you come" value="${esc(me?.source&&/^Referred by /.test(me.source)?me.source.replace(/^Referred by /,""):"")}"></label>
-    <label class="f">What are you most excited to learn about?<span class="h">Your host uses this to plan the conversation and seat you well.</span><input id="g-topic"></label>
+    ${EXEC?`<input id="g-topic" type="hidden">`:`<label class="f">What would you like to talk about?<span class="h">Your host uses this to plan the conversation and seat you well.</span><input id="g-topic"></label>`}
     ${cqs.map((q,i)=>`<label class="f">${esc(q.q)}${q.required?" *":""}${q.type==="short"?`<input data-cq="${i}">`:`<select data-cq="${i}"><option value=""></option>${(q.type==="yesno"?["Yes","No"]:(q.options||[])).map(o=>`<option>${esc(o)}</option>`).join("")}</select>`}</label>`).join("")}
-    <label class="f">Dietary needs<input id="g-diet" placeholder="None"></label>
-    <div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
-    <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> Show my name, company and photo to other guests</label>
-    <p class="note">${esc(e.brand||"Your host")} uses your details to host this event and follow up with you about it. Your photo and answers appear only on the guest page, and only if you opt in.</p>
+    <label class="f">Dietary needs or allergies<input id="g-diet" placeholder="None"></label><label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-severe"> It's a severe allergy</label>
+    <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="None"></label>
+    ${EXEC?`<label class="f">Your assistant's email (optional)<span class="h">We'll copy them on logistics only.</span><input id="g-ea" type="email"></label>`:""}
+    ${EXEC?`<input id="g-li" type="hidden" value="${esc(me?.linkedin||"")}"><input id="g-photo" type="file" hidden><input type="checkbox" id="g-wall" hidden>`:`<div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
+    <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> Show my name, company and photo to other guests</label>`}
     <p class="note">${esc(e.brand||brandProfile?.company||"The host")} uses your details only to run this event and follow up about it.${(e.privacyUrl||brandProfile?.privacyUrl)?` <a href="${esc(e.privacyUrl||brandProfile.privacyUrl)}" target="_blank" rel="noopener">Privacy notice</a>.`:""} You can ask to be removed at any time.</p>
     <div class="btns"><button type="button" class="btn primary" id="g-send">${e.approvalRequired?"Request a seat":"Send my RSVP"}</button></div></div>`;
+  if(EXEC&&me){ ["#g-title","#g-co","#g-email"].forEach(q=>{ const x=$(q,f); if(x&&x.value) x.closest("label").hidden=true }) }
   $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("We couldn't read that image. Try another one.") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   $("#g-send").onclick=async()=>{
     const name=$("#g-name").value.trim(); if(!name){toast("Please add your name so your host knows to expect you");return}
     const answers=cqs.map((q,i)=>({q:q.q,a:$(`[data-cq="${i}"]`).value.trim()})); const miss=cqs.find((q,i)=>q.required&&!answers[i].a); if(miss){ toast("Please answer: "+miss.q); return }
     const code=(e.id.slice(0,2)+[...name].reduce((a,c)=>(a*31+c.charCodeAt(0))%46656,7).toString(36)).toUpperCase().padEnd(5,"X").slice(0,5);
-    const data={eventId:e.id,response:e.approvalRequired?"requested":resp,name,title:$("#g-title").value.trim(),company:$("#g-co").value.trim(),email:$("#g-email").value.trim(),plusOne:!!$("#g-plus")?.checked,topic:$("#g-topic").value.trim(),dietary:$("#g-diet").value.trim(),code,guestIndex:gi,createdAt:Date.now(),utm:(()=>{ try{ const q=new URLSearchParams(location.search), o={}; ["utm_source","utm_medium","utm_campaign"].forEach(k=>q.get(k)&&(o[k]=q.get(k).slice(0,80))); return Object.keys(o).length?o:undefined }catch{ return undefined } })(),introducedBy:($("#g-introby")?.value||"").trim(),answers,linkedin:$("#g-li").value.trim(),photo,showOnWall:$("#g-wall").checked};
+    const data={eventId:e.id,response:e.approvalRequired?"requested":resp,name,title:$("#g-title").value.trim(),company:$("#g-co").value.trim(),email:$("#g-email").value.trim(),plusOne:!!$("#g-plus")?.checked,topic:$("#g-topic").value.trim(),dietary:$("#g-diet").value.trim(),access:($("#g-access")?.value||"").trim(),severe:!!$("#g-severe")?.checked,ea:($("#g-ea")?.value||"").trim(),code,guestIndex:gi,createdAt:Date.now(),utm:(()=>{ try{ const q=new URLSearchParams(location.search), o={}; ["utm_source","utm_medium","utm_campaign"].forEach(k=>q.get(k)&&(o[k]=q.get(k).slice(0,80))); return Object.keys(o).length?o:undefined }catch{ return undefined } })(),introducedBy:($("#g-introby")?.value||"").trim(),answers,linkedin:$("#g-li").value.trim(),photo,showOnWall:$("#g-wall").checked};
     $("#g-send").disabled=true;
     try{
       let uid=null; try{ uid=await user?.id?.() }catch{}
@@ -4622,7 +4707,7 @@ function drawCover(cv,d,{square=false,mini=false,motif}={}){
   const L=lines.slice(0,4), top=square?H-pad-L.length*fs*1.05:pad*1.6;
   if(square){ x.fillStyle="rgba(0,0,0,.3)"; x.fillRect(0,top-pad*.6,W,H) }
   x.fillStyle="#fff"; L.forEach((l,i)=>x.fillText(l,pad,top+i*fs*1.05));
-  x.font=`600 ${fs*.28}px Inter, sans-serif`; x.fillStyle=c2; x.fillText((d.brand||"BRAND").toUpperCase(),pad,square?pad:H-pad-fs*.3);
+  x.font=`600 ${fs*.28}px Inter, sans-serif`; x.fillStyle=c2; x.fillText((d.brand||"").toUpperCase(),pad,square?pad:H-pad-fs*.3);
   if(logoImg?.complete&&logoImg.naturalWidth&&(!d.brand||!brandProfile?.company||d.brand===brandProfile.company)){ const lh=Math.min(W,H)*.13, lw=Math.min(lh*logoImg.naturalWidth/logoImg.naturalHeight,W*.3), px=W-pad-lw-lh*.3, py=square?pad*.7:pad*.8;
     x.fillStyle="rgba(255,255,255,.95)"; x.beginPath(); x.roundRect?x.roundRect(px-lh*.25,py-lh*.2,lw+lh*.5,lh*1.4,lh*.35):x.rect(px-lh*.25,py-lh*.2,lw+lh*.5,lh*1.4); x.fill(); x.drawImage(logoImg,px,py,lw,lh) }
   if(!square){ x.fillStyle="rgba(255,255,255,.82)"; x.font=`500 ${fs*.26}px Inter, sans-serif`; x.fillText([fmtDate(d.date),d.city].filter(Boolean).join("  ·  "),pad,top+L.length*fs*1.05+fs*.3) }
@@ -5215,7 +5300,7 @@ function hbars(rows,val,fmt,tip){
 }
 function renderImpact(){
   const ev=[...allEvents].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const done=ev.filter(e=>e.status==="done"), sum=k=>done.reduce((a,e)=>a+(e.metrics?.[k]||0),0), PRd=programRows().rows.filter(r=>r.done), pipeD=PRd.reduce((a,r)=>a+r.pipe,0), spend=PRd.reduce((a,r)=>a+r.act,0);
+  const done=ev.filter(e=>!e.example&&isDone(e)), mOf=e=>{ if(e.metrics) return e.metrics; const G=e.guests||[]; return {attended:G.filter(g=>g.status==="Attended").length,rsvps:G.filter(g=>/Going|Attended|No-show/.test(g.status)).length,meetings:(e.opps||[]).filter(o=>/meeting/i.test(o.bucket||o.type||"")).length} }, sum=k=>done.reduce((a,e)=>a+(mOf(e)[k]||0),0), PRd=programRows().rows.filter(r=>r.done), pipeD=PRd.reduce((a,r)=>a+r.pipe,0), spend=PRd.reduce((a,r)=>a+r.act,0);
   $("#portKpis").innerHTML=[["Events run",done.length],["Attendees",sum("attended")],["Show rate",pct(sum("attended"),sum("rsvps"))],["Meetings booked",sum("meetings")],["New pipeline",money(pipeD)],["Per $1 (excl. team time)",spend?"$"+(pipeD/spend).toFixed(1):"–"]]
     .map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join("");
   if(!done.length&&!ev.some(e=>!e.example)){ const PR=programRows().rows, S=PR.filter(r=>r.done), att=S.map(r=>r.attended||0), rsv=S.map(r=>r.rsvps||0);

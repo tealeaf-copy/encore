@@ -183,7 +183,7 @@ test("conference nominations by link: one clean doc per post, token-bound to the
   assert.equal((await (await get("/api/db/collection?path=conferences", B.cookie)).json()).docs.length, 0);
   assert.equal((await (await get("/api/db/collection?path=conferences", A.cookie)).json()).docs[0].data.why !== undefined, true, "the team sees everything");
   // the guest-link redirect knows the route
-  assert.match(await (await get("/login")).text(), /approve-\|confnom\)/);
+  assert.match(await (await get("/login")).text(), /signoff-\|confnom\)/);
   process.env.ENCORE_CONFNOM_PER_HOUR = "3";
   try { assert.equal((await nominate(G(A.ws, link.token), { name: "Y" })).status, 429); } finally { delete process.env.ENCORE_CONFNOM_PER_HOUR; }
 });
@@ -351,4 +351,31 @@ test("Gong per workspace: .gong.io only, Basic-auth check, a read-only call sear
   // default base URL when none is given
   mock((u) => reply(u === "https://api.gong.io/v2/users?limit=1" ? 200 : 404, {}));
   assert.equal((await post("/api/connections", { provider: "gong", accessKey: "k", accessKeySecret: "s" }, B.cookie)).status, 200);
+});
+
+test("sign-off requests: no self-approval, signed no-login link, one answer, logged", async () => {
+  const S = await signup("Signco", "lead@signco.com");
+  await fetch(srv.base + "/api/db/doc?path=events/evS", { method: "PUT", headers: { ...J, cookie: S.cookie }, body: JSON.stringify({ name: "CFO dinner", budget: 28000, produce: { budget: [{ line: "Food", amount: 9000 }, { line: "Room", amount: 4000 }] }, updatedAt: 1 }) });
+  const self = await post("/api/signoff/request", { eventId: "evS", email: "LEAD@signco.com", name: "Me" }, S.cookie);
+  assert.equal(self.status, 409); assert.equal((await self.json()).code, "self_approval");
+  assert.equal((await post("/api/signoff/request", { eventId: "evS", email: "nope" }, S.cookie)).status, 400);
+  assert.equal((await post("/api/signoff/request", { eventId: "evS", email: "dana@signco.com" })).status, 401);
+  const r = await (await post("/api/signoff/request", { eventId: "evS", email: "dana@signco.com", name: "Dana", note: "By Friday" }, S.cookie)).json();
+  assert.equal(r.request.status, "pending"); assert.equal(r.request.cost, 13000);
+  const q = `eventId=evS&rid=${r.request.id}`;
+  assert.equal((await get(`/api/signoff/view?${q}&t=bad`)).status, 403);
+  const v = await (await get(`/api/signoff/view?${q}&t=${r.token}`)).json();
+  assert.equal(v.event.name, "CFO dinner"); assert.deepEqual(v.event.lines.map((l) => l.label), ["Food", "Room"]); assert.equal(v.request.note, "By Friday");
+  assert.equal(v.event.guests, undefined);
+  assert.equal((await post("/api/signoff/decide", { eventId: "evS", rid: r.request.id, t: r.token, decision: "maybe" })).status, 400);
+  const d = await post("/api/signoff/decide", { eventId: "evS", rid: r.request.id, t: r.token, decision: "approved", comment: "Keep the room under 5k" });
+  assert.equal(d.status, 200); assert.equal((await d.json()).request.status, "approved");
+  assert.equal((await post("/api/signoff/decide", { eventId: "evS", rid: r.request.id, t: r.token, decision: "declined" })).status, 409);
+  const list = await (await get("/api/signoff?eventId=evS", S.cookie)).json();
+  assert.equal(list.requests[0].comment, "Keep the room under 5k");
+  const audit = (await (await get("/api/audit?eventId=evS", S.cookie)).json()).entries.map((e) => e.what);
+  assert.ok(audit.some((w) => /Dana signed off the plan at USD 13,000/.test(w)));
+  // another workspace can't read or request on this event
+  const O = await signup("Otherco", "x@otherco.com");
+  assert.notEqual((await get("/api/signoff?eventId=evS", O.cookie)).status, 200);
 });

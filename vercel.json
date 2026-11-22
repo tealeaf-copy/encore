@@ -5,6 +5,6 @@
   "buildCommand": "mkdir -p vercel-out && echo ok > vercel-out/vercel-ok.txt",
   "outputDirectory": "vercel-out",
   "rewrites": [
-    { "source": "/(.*)", "destination": "https://REPLACE-WITH-YOUR-RENDER-APP.onrender.com/$1" }
+    { "source": "/(.*)", "destination": "https://encore-2qzx.onrender.com/$1" }
   ]
 }

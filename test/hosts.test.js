@@ -75,3 +75,17 @@ test("Eric: followers get first dibs on a ticketed dinner", async () => {
   const pub = await (await fetch(srv.base + "/api/db/doc?path=events/omakase1", { headers: { "x-encore-guest": "1" } })).json();
   assert.deepEqual(pub.data.courses, ["Hamachi crudo", "Miso black cod"]); assert.ok(pub.data.earlyUntil);
 });
+
+test("Storefronts: curated theme with guardrails, https-only links, the /@handle URL, and signed-in members can open guest links", async () => {
+  const jo = await join("Jo Park", "jo@example.com"), kim = await join("Kim Ho", "kim2@example.com");
+  const ok = await (await post("/api/host/profile", { handle: "jo-bakes", theme: { accent: "#3E9C6E", font: "playful", bg: "night", cover: "dots", buttons: "square", avatarUrl: "javascript:alert(1)" }, links: [{ label: "Instagram", url: "https://instagram.com/jobakes" }], tagline: "Bread on Sundays", sections: { kudos: false } }, jo.cookie)).json();
+  assert.equal(ok.host.theme.accent, "#3E9C6E"); assert.equal(ok.host.theme.font, "playful"); assert.equal(ok.host.theme.avatarUrl, "", "only uploaded photos"); assert.equal(ok.host.sections.kudos, false); assert.equal(ok.host.tagline, "Bread on Sundays");
+  const off = await (await post("/api/host/profile", { theme: { accent: "#123456", font: "comic-sans" } }, jo.cookie)).json();
+  assert.equal(off.host.theme.accent, "#3E9C6E", "colours outside the set are ignored"); assert.equal(off.host.theme.font, "playful");
+  assert.equal((await post("/api/host/profile", { links: [{ label: "x", url: "http://bad.example" }] }, jo.cookie)).status, 400);
+  assert.equal((await get("/@jo-bakes")).status, 200);
+  // a signed-in member opening someone else's invite is a guest there
+  assert.equal((await put("events/bread1", { name: "Sourdough Sunday", activity: "bake", kind: "social", casual: true, date: day(5) }, jo.cookie)).status, 200);
+  const r = await fetch(srv.base + "/api/db/doc?path=events/bread1", { headers: { cookie: kim.cookie, "x-encore-guest": "1" } });
+  assert.equal(r.status, 200); assert.equal((await r.json()).data.name, "Sourdough Sunday");
+});

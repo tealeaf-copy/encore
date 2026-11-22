@@ -289,6 +289,8 @@ export function createApp({ store, dataDir }) {
   app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
   app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
+  // Every host's storefront: encore.example/@claire-runs
+  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
   // The homepage demo runs the app's own planner, read from the current index.html.
@@ -341,6 +343,9 @@ export function createApp({ store, dataDir }) {
 
   // ---------- gate ----------
   app.use("/api", (req, res, next) => {
+    // A signed-in member opening someone else's guest link is a guest there (their own workspace doesn't have the event).
+    if (req.get("x-encore-guest") === "1" && guestAllowed(req)) { const segs = String(req.query.path || "").split("/"), evId = segs[0] === "events" ? segs[1] : (req.body?.eventId || req.query.eventId || "");
+      const owner = evId ? workspaceOfEvent(String(evId)) : null; if (!evId || !isAuthed(req) || owner !== sessionWorkspace(req)) { req.guest = true; return next(); } }
     if (isAuthed(req)) return next();
     if (guestAllowed(req)) { req.guest = true; return next(); }
     if (/^\/aeaction$|^\/aepage$|^\/signoff\/(view|decide)$/.test(req.path)) { req.guest = true; return next(); } // checked by signed token

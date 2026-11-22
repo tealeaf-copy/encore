@@ -40,10 +40,10 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
       const likes = lanes.filter((l) => P.loves.some((x) => x.kind === l) || alerts.some((a) => (a.lanes || []).includes(l)) || (h.tags || []).some((t) => lanesOf(t).includes(l)));
       const bio = words(`${h.bio || ""} ${(h.tags || []).join(" ")}`), fit = want.filter((w2) => bio.includes(w2));
       let score = 0; if (sameCity) { score += 2; why.push(`in ${h.city || ev.city}`); } if (likes.length) { score += 2; why.push(`likes ${likes[0]}`); } if (fit.length) { score += 1.5; why.push(`"${fit[0]}"`); } if (followers.has(em)) { score += 2; why.push("follows you"); } if (friends.has(em)) { score += 1.5; why.push("your friend"); }
-      if (city && !sameCity && !followers.has(em) && !friends.has(em)) continue; if (score < 2) continue;
+      if (city && theirCity && !sameCity) continue; if (city && !sameCity && !followers.has(em) && !friends.has(em)) continue; if (score < 2) continue;
       out.push({ email: em, name: X.person(em).name, handle: h.handle, why: why.slice(0, 3), score, top: P.top ? { emoji: P.top.emoji, name: P.top.name } : null });
     }
-    for (const f of C.followersOf(u.ws)) if (!out.some((o) => o.email === lc(f.email))) out.push({ email: lc(f.email), name: f.name, why: ["follows you"], score: 2, follower: true });
+    for (const f of C.followersOf(u.ws)) if (!out.some((o) => o.email === lc(f.email)) && !(city && (() => { const w2 = X.userOf(f.email); const c2 = lc(w2 ? C.profileOf(w2.ws)?.city : ""); return c2 && !c2.includes(city) && !city.includes(c2); })())) out.push({ email: lc(f.email), name: f.name, why: ["follows you"], score: 2, follower: true });
     return out.sort((a, b) => b.score - a.score).slice(0, 300);
   }
   app.get("/api/host/audience/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const ev = evOf(u, req.params.eventId); if (!ev) return bad(res, "No such event.", 404, "not_found");
@@ -64,8 +64,8 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
       return { rid: r.id, name: r.name || "Someone", response: r.response, interest: r.interest || (r.response === "going" ? "in" : r.response === "maybe" ? "maybe" : r.response === "requested" ? "requested" : "no"), dates: r.dates || [], answers: r.answers || [], at: r.createdAt || 0,
         follower: followers.has(em), friend: friends.has(em), regular: past >= 2, past, newFace: !past, top: P?.top ? { emoji: P.top.emoji, name: P.top.name } : null, traits: (P?.traits || []).slice(0, 2).map((t) => t.emoji + " " + t.name.replace("The ", "")) }; });
     const opts = ev.dateOptions || [], dates = opts.map((o) => ({ date: o, yes: people.filter((p) => p.interest !== "no" && p.dates.includes(o)).length, names: people.filter((p) => p.interest !== "no" && p.dates.includes(o)).map((p) => first(p.name)) }));
-    const st = S.get("stats/" + id)?.data || { views: 0 }, bc = S.get("broadcasts/" + id)?.data, inN = people.filter((p) => ["in", "requested"].includes(p.interest) || p.response === "going").length, goal = +ev.interestGoal || Math.max(4, Math.round((+ev.headcount || 8) * 0.6));
-    res.json({ goal, in: inN, maybe: people.filter((p) => p.interest === "maybe").length, views: st.views || 0, viewsToday: (st.byDay || {})[today()] || 0, reached: bc?.reached || 0, people: people.sort((a, b) => (a.interest === "in" ? 0 : 1) - (b.interest === "in" ? 0 : 1) || a.at - b.at), dates, bestDate: dates.slice().sort((a, b) => b.yes - a.yes)[0] || null,
+    const st = S.get("stats/" + id)?.data || { views: 0 }, bc = S.get("broadcasts/" + id)?.data, inN = people.filter((p) => p.interest === "in" || p.response === "going").length, asked = people.filter((p) => p.response === "requested").length, goal = +ev.interestGoal || Math.max(4, Math.round((+ev.headcount || 8) * 0.6));
+    res.json({ goal, in: inN, asked, maybe: people.filter((p) => p.interest === "maybe").length, views: st.views || 0, viewsToday: (st.byDay || {})[today()] || 0, reached: bc?.reached || 0, people: people.sort((a, b) => (a.interest === "in" ? 0 : 1) - (b.interest === "in" ? 0 : 1) || a.at - b.at), dates, bestDate: dates.slice().sort((a, b) => b.yes - a.yes)[0] || null,
       newFaces: people.filter((p) => p.newFace && p.interest !== "no").length, regulars: people.filter((p) => p.regular).length }); });
 
   // ---- polls: "who can bring chairs?", "which date?" ----

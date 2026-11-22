@@ -1,7 +1,7 @@
 // Community: invite-only membership, host pages people can follow, a Discover feed, and announcements.
 // Hosts build a following (a "fan club") event by event; guests become hosts through invite codes.
 import crypto from "node:crypto";
-import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
+import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
@@ -11,6 +11,20 @@ const HANDLE_OK = (h) => /^[a-z0-9][a-z0-9-]{1,29}$/.test(h) && !/^(api|g|h|join
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
 const URL_OK = (u) => !u || /^https:\/\/[^\s<>"]{3,300}$/i.test(u);
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
+// Storefront choices: curated, so every page looks good and stays readable.
+export const STORE = {
+  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C"],
+  fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold"],
+  backgrounds: ["cream", "white", "blush", "sage", "night"],
+  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain"],
+  buttons: ["round", "soft", "square"],
+};
+const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u);
+const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
+function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "" }; }
+function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : true; return out; }
+function cleanLinks(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 4).map((x) => ({ label: clean(x?.label, 24), url: clean(x?.url, 300) })).filter((x) => x.label && LINK_OK(x.url)); }
 
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
 
@@ -45,10 +59,12 @@ export function makeCommunity(store) {
     if (!HANDLE_OK(h)) return { error: "Pick a handle of 2–30 lowercase letters, numbers or dashes." };
     const owner = wsOfHandle(h); if (owner && owner !== ws) return { error: "That handle is taken. Try another." };
     for (const k of ["supportUrl", "fanclubUrl"]) if (!URL_OK(p[k] ?? cur[k])) return { error: "Links must start with https://" };
+    if (Array.isArray(p.links) && p.links.some((x) => x?.url && !LINK_OK(String(x.url).trim()))) return { error: "Links must start with https://" };
     if (cur.handle && cur.handle !== h) store.delete(handlePath(cur.handle));
     store.set(handlePath(h), { ws });
     const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200),
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
+      theme: cleanTheme(p.theme || {}, cur.theme || {}), sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 90),
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
@@ -109,7 +125,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     res.json({ ok: true, followers: C.followersOf(ws).length }); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
   // The host of an event, for its guest page (name, handle, follower count).
-  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); res.json(h ? { host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
+  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); const W0 = ws && getWorkspace(ws); res.json(h ? { person: first(W0?.ownerEmail ? getDbUser(W0.ownerEmail)?.name || "" : ""), host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
   // Announce an event to followers (email when it's set up; otherwise a list to send yourself).
   app.post("/api/host/announce", small, async (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), ev = scopeStore(store, u.ws).get("events/" + id)?.data; if (!ev) return res.status(404).json({ code: "not_found", message: "No such event." });
     const F = C.followersOf(u.ws), h = C.profileOf(u.ws), cfg = emailConfig(u.ws, u.ws === DEFAULT_WS), link = `${publicOrigin(req)}/g#rsvp-${id}`; let sent = 0;

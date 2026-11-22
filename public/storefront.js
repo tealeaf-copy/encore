@@ -1,0 +1,73 @@
+// A host's storefront: their colours, fonts, cover, photo, links and sections, chosen from curated options so every page
+// stays readable. The owner customizes it in place.
+(function () {
+  const FONTS = {
+    classic: { label: "Classic", head: "Fraunces", body: "DM Sans", q: "Fraunces:opsz,wght@9..144,600&family=DM+Sans:wght@400;500;600" },
+    editorial: { label: "Editorial", head: "Playfair Display", body: "Lato", q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
+    modern: { label: "Modern", head: "Space Grotesk", body: "Inter", q: "Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600" },
+    playful: { label: "Playful", head: "Bricolage Grotesque", body: "DM Sans", q: "Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;600" },
+    handmade: { label: "Handmade", head: "Caveat", body: "Nunito", q: "Caveat:wght@600;700&family=Nunito:wght@400;600;700" },
+    bold: { label: "Bold", head: "Archivo Black", body: "Archivo", q: "Archivo+Black&family=Archivo:wght@400;500;600" },
+  };
+  const BGS = { cream: { label: "Cream", bg: "#FBF6EF", card: "#FFFFFF", ink: "#2B211C", soft: "#75685F", line: "#EEE4D8" }, white: { label: "White", bg: "#FFFFFF", card: "#FAF8F5", ink: "#1F1A17", soft: "#6F655E", line: "#ECE6DF" }, blush: { label: "Blush", bg: "#FFF1F3", card: "#FFFFFF", ink: "#2B1D21", soft: "#7A6267", line: "#F5DCE1" }, sage: { label: "Sage", bg: "#F1F6F1", card: "#FFFFFF", ink: "#1E2A22", soft: "#5F6F64", line: "#DCE7DE" }, night: { label: "Night", bg: "#17120F", card: "#221B17", ink: "#F6EDE6", soft: "#B9AA9E", line: "#3A2F29" } };
+  const ACCENTS = ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C"];
+  const COVERS = { wash: "Soft wash", sunrise: "Sunrise", dusk: "Dusk", dots: "Dots", waves: "Waves", confetti: "Confetti", plain: "Plain" };
+  const BUTTONS = { round: "999px", soft: "12px", square: "4px" };
+  const lum = (hex) => { const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const loaded = new Set(); const loadFont = (k) => { if (loaded.has(k) || !FONTS[k]) return; loaded.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${FONTS[k].q}&display=swap`; document.head.appendChild(l); };
+  function cover(t) { const a = t.accent; if (t.coverUrl) return `center/cover no-repeat url("${t.coverUrl}")`;
+    return { wash: `linear-gradient(135deg, color-mix(in srgb, ${a} 55%, #fff), color-mix(in srgb, ${a} 18%, #fff))`, sunrise: `linear-gradient(120deg, ${a}, #F7C59F 60%, #FFE6A7)`, dusk: `linear-gradient(135deg, #2B211C, ${a})`, dots: `radial-gradient(color-mix(in srgb, ${a} 70%, #fff) 2px, transparent 2.5px) 0 0/18px 18px, color-mix(in srgb, ${a} 14%, #fff)`, waves: `repeating-radial-gradient(circle at 10% 120%, color-mix(in srgb, ${a} 30%, #fff) 0 14px, color-mix(in srgb, ${a} 12%, #fff) 14px 28px)`, confetti: `radial-gradient(circle at 20% 30%, ${a} 4px, transparent 5px), radial-gradient(circle at 70% 60%, #E0A030 4px, transparent 5px), radial-gradient(circle at 45% 80%, #5B7FD6 3px, transparent 4px), radial-gradient(circle at 85% 20%, #3E9C6E 3px, transparent 4px) 0 0/120px 90px, color-mix(in srgb, ${a} 10%, #fff)`, plain: `color-mix(in srgb, ${a} 22%, #fff)` }[t.cover] || "none"; }
+  const DEF = { accent: "#E26D8E", font: "classic", bg: "cream", cover: "wash", buttons: "round", coverUrl: "", avatarUrl: "" };
+  function apply(h) { const t = { ...DEF, ...(h.theme || {}) }, B = BGS[t.bg] || BGS.cream, F = FONTS[t.font] || FONTS.classic, root = document.documentElement.style; loadFont(t.font);
+    // Guardrail: the accent is used for buttons; text on it is white or ink, whichever reads better. Accent text on the page darkens if it would be hard to read.
+    const onAccent = contrast(t.accent, "#FFFFFF") >= 3 ? "#FFFFFF" : "#1F1A17", accentText = contrast(t.accent, B.bg) >= 3 ? t.accent : t.bg === "night" ? `color-mix(in srgb, ${t.accent} 60%, #fff)` : `color-mix(in srgb, ${t.accent} 60%, #000)`;
+    Object.entries({ "--bg": B.bg, "--card": B.card, "--ink": B.ink, "--soft": B.soft, "--line": B.line, "--brand": t.accent, "--brand2": accentText, "--on-brand": onAccent, "--c": t.accent, "--pink": `color-mix(in srgb, ${t.accent} 14%, ${B.card})`, "--radius": BUTTONS[t.buttons] || "999px", "--head": `"${F.head}", Georgia, serif`, "--body": `"${F.body}", system-ui, sans-serif` }).forEach(([k, v]) => root.setProperty(k, v));
+    document.documentElement.dataset.theme = t.bg === "night" ? "dark" : "light"; document.body.classList.add("store");
+    const cv = document.querySelector(".cover"); if (cv) cv.style.background = cover(t);
+    const av = document.querySelector(".av"); if (av) { av.innerHTML = t.avatarUrl ? `<img src="${t.avatarUrl}" alt="">` : (h.emoji || "🎉"); }
+    const S = { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: true, past: true, ...(h.sections || {}) };
+    document.body.classList.toggle("no-kudos", !S.kudos); document.body.classList.toggle("no-photos", !S.photos); document.body.classList.toggle("no-hire", !S.hire); document.body.classList.toggle("no-tips", !S.tips); document.body.classList.toggle("no-profile", !S.profile); document.body.classList.toggle("no-past", !S.past);
+    let ln = document.getElementById("storeLinks"); const head = document.querySelector(".head > div");
+    if (!ln && head) { ln = document.createElement("div"); ln.id = "storeLinks"; ln.className = "store-links"; head.appendChild(ln); }
+    if (ln) ln.innerHTML = (h.links || []).map((l) => `<a href="${l.url.replace(/"/g, "&quot;")}" target="_blank" rel="noopener nofollow">${l.label.replace(/[<>&]/g, "")}</a>`).join("");
+    let tg = document.getElementById("storeTag"); const h1 = document.querySelector(".head h1"); if (!tg && h1) { tg = document.createElement("div"); tg.id = "storeTag"; tg.className = "store-tag"; h1.after(tg); } if (tg) tg.textContent = h.tagline || "";
+  }
+  // ---- the editor, for the owner only ----
+  async function editor(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
+    const st = { theme: { ...DEF, ...(h.theme || {}) }, sections: { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: true, past: true, ...(h.sections || {}) }, links: [...(h.links || [])], tagline: h.tagline || "" };
+    Object.keys(FONTS).forEach(loadFont);
+    const fab = document.createElement("button"); fab.className = "store-fab"; fab.type = "button"; fab.innerHTML = "✏️ Customize your page"; document.body.appendChild(fab);
+    const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
+    const live = () => apply({ ...h, theme: st.theme, sections: st.sections, links: st.links.filter((l) => l.label && /^https:\/\//.test(l.url)), tagline: st.tagline });
+    const sw = (k, v, inner, title) => `<button type="button" class="sw" data-k="${k}" data-v="${v}" aria-pressed="${st.theme[k] === v}" title="${title || v}">${inner}</button>`;
+    function draw() { const t = st.theme;
+      pane.innerHTML = `<div class="sp-head"><b>Your storefront</b><button type="button" class="sp-x" aria-label="Close">✕</button></div>
+        <p class="sp-url">${location.host}/@${h.handle} <button type="button" id="sp-copy">Copy</button></p>
+        <h4>Colour</h4><div class="sws">${ACCENTS.map((a) => sw("accent", a, `<i style="background:${a}"></i>`)).join("")}</div>
+        <h4>Font</h4><div class="sws fonts">${Object.entries(FONTS).map(([k, f]) => sw("font", k, `<span style="font-family:'${f.head}'">Aa</span><small>${f.label}</small>`, f.label)).join("")}</div>
+        <h4>Background</h4><div class="sws">${Object.entries(BGS).map(([k, b]) => sw("bg", k, `<i style="background:${b.bg};border:1px solid ${b.line}"></i><small>${b.label}</small>`, b.label)).join("")}</div>
+        <h4>Cover</h4><div class="sws covers">${Object.entries(COVERS).map(([k, l]) => sw("cover", k, `<i style="background:${cover({ ...t, cover: k, coverUrl: "" })}"></i><small>${l}</small>`, l)).join("")}</div>
+        <div class="sp-up"><label class="sp-btn">📷 Your photo<input type="file" accept="image/*" data-up="avatarUrl" hidden></label><label class="sp-btn">🖼 Cover photo<input type="file" accept="image/*" data-up="coverUrl" hidden></label>${t.avatarUrl || t.coverUrl ? `<button type="button" class="sp-btn" id="sp-clear">Use emoji and pattern</button>` : ""}</div>
+        <h4>Buttons</h4><div class="sws">${Object.entries(BUTTONS).map(([k, r]) => sw("buttons", k, `<span class="bt" style="border-radius:${r}">Follow</span>`, k)).join("")}</div>
+        <h4>Tagline</h4><input id="sp-tag" maxlength="90" value="${(st.tagline || "").replace(/"/g, "&quot;")}" placeholder="e.g. Saturday runs, no one left behind">
+        <h4>Links (up to 4)</h4>${[0, 1, 2, 3].map((i) => `<div class="sp-link"><input data-ll="${i}" placeholder="Label" value="${(st.links[i]?.label || "").replace(/"/g, "&quot;")}" maxlength="24"><input data-lu="${i}" placeholder="https://instagram.com/…" value="${(st.links[i]?.url || "").replace(/"/g, "&quot;")}"></div>`).join("")}
+        <h4>Show on my page</h4><div class="sp-tog">${[["past", "Past gatherings"], ["kudos", "Kudos wall"], ["photos", "Photos"], ["tips", "Tip jar"], ["hire", "Work with me"], ["profile", "My event profile"]].map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" ${st.sections[k] ? "checked" : ""}> ${l}</label>`).join("")}</div>
+        <p class="sp-note">Colours and fonts come from a set that always reads well. Text on your buttons switches between white and dark to stay readable.</p>
+        <div class="sp-actions"><button type="button" class="sp-save" id="sp-save">Save my page</button><span id="sp-msg"></span></div>`;
+      pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
+      pane.querySelector("#sp-copy").onclick = () => { navigator.clipboard?.writeText(`${location.origin}/@${h.handle}`); pane.querySelector("#sp-copy").textContent = "Copied"; };
+      pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; live(); draw(); }));
+      pane.querySelectorAll("[data-sec]").forEach((c) => (c.onchange = () => { st.sections[c.dataset.sec] = c.checked; live(); }));
+      pane.querySelector("#sp-tag").oninput = (e) => { st.tagline = e.target.value; live(); };
+      pane.querySelectorAll("[data-ll],[data-lu]").forEach((x) => (x.oninput = () => { const i = +(x.dataset.ll ?? x.dataset.lu); st.links[i] = { label: pane.querySelector(`[data-ll="${i}"]`).value.trim(), url: pane.querySelector(`[data-lu="${i}"]`).value.trim() }; live(); }));
+      pane.querySelector("#sp-clear") && (pane.querySelector("#sp-clear").onclick = () => { st.theme.avatarUrl = ""; st.theme.coverUrl = ""; live(); draw(); });
+      pane.querySelectorAll("[data-up]").forEach((inp) => (inp.onchange = async () => { const f = inp.files[0]; if (!f) return; if (f.size > 8e6) { msg("That photo is over 8 MB."); return; } msg("Uploading…"); try { const r = await fetch("/api/assets", { method: "POST", headers: { "Content-Type": f.type || "image/jpeg" }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message); st.theme[inp.dataset.up] = j.url; live(); draw(); msg("Looks good. Save when you're happy."); } catch (e) { msg(e.message || "Upload failed."); } }));
+      pane.querySelector("#sp-save").onclick = async () => { const bad = st.links.find((l) => l?.url && !/^https:\/\//.test(l.url)); if (bad) { msg("Links need to start with https://"); return; } msg("Saving…");
+        try { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: st.theme, sections: st.sections, links: st.links.filter((l) => l?.label && l?.url), tagline: st.tagline }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message); Object.assign(h, j.host); window.EncoreCommunity?.oink?.(); msg("Saved. This is your page now. ✨"); } catch (e) { msg(e.message); } }; }
+    const msg = (t) => { const m = pane.querySelector("#sp-msg"); if (m) m.textContent = t; };
+    fab.onclick = () => { pane.hidden = !pane.hidden; if (!pane.hidden) draw(); };
+    if (/[?&]customize=1/.test(location.search)) fab.click();
+  }
+  window.EncoreStore = { apply, editor };
+})();

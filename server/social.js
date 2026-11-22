@@ -156,7 +156,7 @@ export function makeSocial(store, { C, saveBlob }) {
   }
   // ---- a host's strengths: what they host, what people say, the vibe ----
   function hostStrengths(ws) {
-    const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws), K = I.kudos.filter((k) => k.ws === ws).sort((a, b) => b.at - a.at);
+    const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws && x.e.date && x.e.date <= today() && x.e.stage !== "interest"), K = I.kudos.filter((k) => k.ws === ws).sort((a, b) => b.at - a.at);
     const kinds = {}; for (const x of ev) for (const l of lanesOf(`${x.e.activity || ""} ${x.e.name || ""}`)) kinds[l] = (kinds[l] || 0) + 1;
     const tags = {}; for (const k of K) for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1;
     const guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === ws)) guests.add(em);

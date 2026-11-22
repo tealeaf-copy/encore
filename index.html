@@ -1130,6 +1130,7 @@ body:not(.simple) .simple-only{display:none!important}
 .crew .m .seeit{font-style:normal;font-size:12px;font-weight:600;color:var(--accent);display:block;margin-top:4px}
 .flash{animation:flash 2.2s ease}@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:reduce){.flash{animation:none;outline:3px solid var(--accent)}}
+.pastev{margin-top:10px}.pastev ul{margin-top:6px}
 </style>
 
 <header class="top" id="appHeader"><div class="wrap">
@@ -1474,8 +1475,9 @@ async function askJSON(prompt, btn, streamEl, extra={}){
   const label = btn?.innerHTML; if(btn){btn.disabled=true;btn.innerHTML="Working…"}
   if(streamEl){streamEl.hidden=false;streamEl.textContent="Thinking…"}
   try{
-    return await sample.json(prompt+STYLE,{modelTier:extra.tier||"default",...(extra.tools?.length?{tools:extra.tools}:{}),onText:({text})=>{ if(streamEl){streamEl.textContent=text;streamEl.scrollTop=1e9} }});
+    return await sample.json(prompt+STYLE,{modelTier:extra.tier||"default",...(extra.tools?.length?{tools:extra.tools}:{}),...(extra.signal?{signal:extra.signal}:{}),onText:({text})=>{ if(streamEl){streamEl.textContent=text;streamEl.scrollTop=1e9} }});
   }catch(e){
+    if(extra.signal?.aborted) return null;
     const m = e?.code==="not_granted" ? "AI access was declined for this page." : e?.code==="rate_limited" ? "Too many requests. Wait a minute and try again." : e?.code==="invalid_json" ? "The agent's answer came back malformed. Try again." : "The agent couldn't finish: "+(e?.message||"unknown error");
     toast(m); return null;
   }finally{ if(btn){btn.disabled=false;btn.innerHTML=label} if(streamEl) streamEl.hidden=true }
@@ -1719,11 +1721,12 @@ function complianceLine(d){ return (d.ceCredits?`CONTINUING EDUCATION: the sessi
 const LANGS=["English","French","German","Spanish","Dutch","Italian","Portuguese","Swedish","Japanese"];
 const CALLK=["calls","fathom","granola"];
 function callRule(d){ const R=brandProfile?.dataRules||{}; return R[d?.region||""]||R[d?.city||""]||R.default||"summaries" }
-async function runAgent(key,btn,stream){
-  const a=AGENTS[key], used=new Set(), rule=callRule(draft), keys0=[...new Set([...(a.uses||[]),"web"])].filter(k=>!(rule==="off"&&CALLK.includes(k))), tools=await toolsFor(keys0,used);
+const FAST_TOOLS={venues:["yelp","web"],scout:["crm","web"]}, FAST_QUICK=new Set(["hooks","promo","media","briefing","cover","partners","research"]);
+async function runAgent(key,btn,stream,opt={}){
+  const a=AGENTS[key], used=new Set(), rule=callRule(draft), want=opt.fast?(FAST_TOOLS[key]||[]):[...new Set([...(a.uses||[]),"web"])], keys0=want.filter(k=>!(rule==="off"&&CALLK.includes(k))), tools=keys0.length?await toolsFor(keys0,used):[];
   const ans=answersFor(key);
   const note=`\n${ASK}${ans}`+(tools.length?`\nTOOLS: you can call ${tools.map(t=>t.name).join(", ")}. Use them before answering, and cite what you found in the "sources" field as [{"source":"","detail":"short, with URL if any"}].`:"");
-  const o=await askJSON(a.prompt(draft)+note+(rule!=="off"&&keys0.some(k=>CALLK.includes(k))?"\nCALL RECORDINGS: use them only as private context to decide who and why. Never quote, paraphrase or hint at anything a person said on a call in text a guest could read.":""),btn,stream,{tools});
+  const o=await askJSON(a.prompt(draft)+note+(rule!=="off"&&keys0.some(k=>CALLK.includes(k))?"\nCALL RECORDINGS: use them only as private context to decide who and why. Never quote, paraphrase or hint at anything a person said on a call in text a guest could read.":"")+(opt.fast?"\nBe quick: answer from what you know and the brief; keep it short.":""),btn,stream,{tools,...(opt.fast&&FAST_QUICK.has(key)?{tier:"quick"}:{}),...(opt.signal?{signal:opt.signal}:{})});
   if(used.size&&[...used].some(u=>/gong|fathom|granola|call/i.test(u))) logDecision(draft,`${a.label} used call-recording data (${[...used].filter(u=>/gong|fathom|granola|call/i.test(u)).join(", ")}) under the "${rule}" rule`);
   if(!o || !a.ok(o)){ if(o) toast(a.label+" returned something unexpected. Try again."); return null }
   if(used.size) o._used=[...used];
@@ -1746,16 +1749,23 @@ async function autopilot(){
   const draw=(fin)=>{ host.innerHTML=`<div class="auto">
     <div class="btns" style="justify-content:space-between"><div><div class="eyebrow" style="color:inherit;opacity:.7">Autopilot</div><h3>${fin?(CREW.flat().every(k=>st[k].s==="ok")?"Your event is planned. Review each step.":CREW.flat().some(k=>st[k].s==="ok")?"Partly planned. Some agents didn't finish.":"The AI couldn't be reached. Nothing was drafted."):"Your crew is planning the event…"}</h3>
     <p class="note">Agents run in waves. Each wave reads what the earlier ones decided.</p></div>
-    <span class="note">${Math.round((Date.now()-t0)/1000)}s</span></div>
+    <span class="btns" style="gap:8px"><span class="note" id="autoT">${Math.round((Date.now()-t0)/1000)}s</span>${fin?"":`<button class="btn ghost sm" id="autoStop" type="button">Stop</button>`}</span></div>
     ${fin?`<p class="note" style="margin:0">Click any agent to see what it made. Everything is also on its step in the left menu.</p>`:""}<div class="crew">${CREW.flat().map(k=>[k,AGENTS[k]]).map(([k,a])=>`<button type="button" data-agentgo="${k}" class="m ${({run:"run",ok:"ok",err:"err"})[st[k].s]||""}" ${st[k].s==="ok"||st[k].s==="err"?"":"disabled"}><span class="ic">${({wait:"○",run:"◔",ok:"●",err:"✕"})[st[k].s]}</span><span style="min-width:0"><b>${a.label}</b><small>${esc(st[k].msg)}</small><em class="seeit">${st[k].s==="ok"?"See it →":st[k].s==="err"?"Run it again →":""}</em></span></button>`).join("")}</div>
     ${fin?`<div class="btns"><button class="btn sm" id="autoClose">Hide</button></div>`:""}</div>`;
-    $("#autoClose")&&($("#autoClose").onclick=()=>host.hidden=true); $$("[data-agentgo]",host).forEach(b=>b.onclick=()=>showAgent(b.dataset.agentgo)) };
-  draw(); const tick=setInterval(()=>draw(),1000);
+    $("#autoClose")&&($("#autoClose").onclick=()=>host.hidden=true); $("#autoStop")&&($("#autoStop").onclick=()=>{ stopped=true; ctrl.forEach(c=>c.abort()) }); $$("[data-agentgo]",host).forEach(b=>b.onclick=()=>showAgent(b.dataset.agentgo)) };
+  let stopped=false, dirty=true; const ctrl=new Set();
+  draw(); const tick=setInterval(()=>{ if(dirty){ dirty=false; draw() } else { const t=$("#autoT",host); if(t) t.textContent=Math.round((Date.now()-t0)/1000)+"s" } },1000);
   $("#autoBtn").disabled=true;
-  for(const wave of CREW){
-    await Promise.all(wave.map(async k=>{ st[k]={s:"run",msg:"Working…"};
-      const o=await runAgent(k); st[k]= o?{s:"ok",msg:AGENTS[k].sum(o)}:{s:"err",msg:"Didn't finish. Run it from its step."}; }));
-  }
+  const ALL=CREW.flat(), DEPS={copy:["validation"],promo:["copy"],outreach:["copy","scout"],briefing:["scout"],produce:["venues"],pitch:["produce","copy"]}, LIMIT=5, done=new Set();
+  await new Promise(resolve=>{ let running=0;
+    const next=()=>{ if(stopped){ ALL.forEach(k=>{ if(st[k].s==="wait"){ st[k]={s:"err",msg:"Stopped. Run it from its step."} } }); dirty=true; if(!running) resolve(); return }
+      const ready=ALL.filter(k=>st[k].s==="wait"&&(DEPS[k]||[]).every(x=>done.has(x)));
+      while(running<LIMIT&&ready.length){ const k=ready.shift(); running++; st[k]={s:"run",msg:"Working…"}; dirty=true;
+        const c=new AbortController(); ctrl.add(c); const tm=setTimeout(()=>c.abort(),60000);
+        runAgent(k,null,null,{fast:true,signal:c.signal}).catch(()=>null).then(o=>{ clearTimeout(tm); ctrl.delete(c); running--; done.add(k);
+          st[k]=o?{s:"ok",msg:AGENTS[k].sum(o)}:{s:"err",msg:c.signal.aborted&&!stopped?"Took too long. Run it again.":"Didn't finish. Run it again."}; dirty=true; next() }) }
+      if(!running&&!ALL.some(k=>st[k].s==="wait"||st[k].s==="run")) resolve() };
+    next() });
   clearInterval(tick); draw(true); $("#autoBtn").disabled=false;
   if(draft.copy?.title && (!draft.name || draft.name==="Untitled event")) draft.name=draft.copy.title;
   draft.status = draft.status==="idea" ? "planning" : draft.status;
@@ -2138,6 +2148,12 @@ function showAgent(k){ const find=()=>{ let e=$("#out-"+k)||(k==="cover"?$("#cov
   if(!el.offsetParent&&document.body.classList.contains("simple")){ $("#viewToggle")?.click(); renderStep(); el=find(); toast("Showing every step so you can see it. Switch back with Simple view.") }
   let x=el?.parentElement; while(x){ if(x.tagName==="DETAILS") x.open=true; x=x.parentElement }
   const box=el?.closest(".panel")||el; if(!box) return; setTimeout(()=>{ box.scrollIntoView({behavior:"smooth",block:"start"}); box.classList.add("flash"); setTimeout(()=>box.classList.remove("flash"),2200) },80) }
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+/** The day a strategy moment happens (YYYY-MM-DD), from its date or, for month-only dates, a day named in its text; month-only means the month's last day. */
+function momentDay(m){ const d=String(m?.date||""); if(/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0,10);
+  const t=`${m?.what||""} ${m?.name||""}`, x=t.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?/i);
+  if(/^\d{4}-\d{2}/.test(d)){ if(x&&MON[x[1].toLowerCase()]===+d.slice(5,7)) return `${x[3]||d.slice(0,4)}-${d.slice(5,7)}-${String(+x[2]).padStart(2,"0")}`; const e=new Date(+d.slice(0,4),+d.slice(5,7),0); return `${d.slice(0,7)}-${String(e.getDate()).padStart(2,"0")}` }
+  if(x&&x[3]) return `${x[3]}-${String(MON[x[1].toLowerCase()]).padStart(2,"0")}-${String(+x[2]).padStart(2,"0")}`; return null }
 function nextBtn(n,label){ const nx=nextStepOf(step); return nx?`<div class="btns"><button class="btn" data-next="${nx}">Next: ${STEP_NAMES[nx]} →</button></div>`:"" }
 function wireNext(host){ $$("[data-next]",host).forEach(b=>b.onclick=()=>{step=+b.dataset.next;renderStep();window.scrollTo({top:0,behavior:"smooth"})}) }
 
@@ -2572,7 +2588,10 @@ function strategyHTML(S){
     <div class="fitrow"><div class="fitbars conf">${[1,2,3].map(k=>`<i class="${k<=cn?"on":""}"></i>`).join("")}</div><b>${esc(conf||"")} confidence</b></div>
     ${S.hypothesis?.why?.length?`<ol class="reasons">${S.hypothesis.why.map(r=>`<li><b>${esc(r.point)}</b><span class="note">${esc(r.evidence)}${r.source?` · <span class="tag">${esc(r.source)}</span>`:""}</span></li>`).join("")}</ol>`:""}
   </article>
-  ${S.moments?.length?`<section><small class="eyebrow">Moments to ride</small><div class="timeline big">${S.moments.map(m=>`<div class="tp"><b>${esc(m.date||"")}</b><strong>${esc(m.name)}</strong><span class="note">${esc(m.what)}</span>${m.source?`<span class="tag">${esc(m.source)}</span>`:""}</div>`).join("")}</div></section>`:""}
+  ${(()=>{ const today=new Date().toISOString().slice(0,10), fmtM=x=>/^\d{4}-\d{2}-\d{2}/.test(x||"")?new Date(x.slice(0,10)+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):/^\d{4}-\d{2}/.test(x||"")?new Date(x.slice(0,7)+"-15T12:00:00").toLocaleDateString(undefined,{month:"short",year:"numeric"}):(x||""), isPast=m=>{ const d=momentDay(m); return !!d&&d<today },
+    up=(S.moments||[]).filter(m=>!isPast(m)).sort((a,b)=>(momentDay(a)||"9").localeCompare(momentDay(b)||"9")), past=[...(S.recent||[]),...(S.moments||[]).filter(isPast)];
+  return `<section><small class="eyebrow">Coming up: moments to plan around</small>${up.length?`<div class="timeline big">${up.map(m=>`<div class="tp"><b>${esc(fmtM(m.date))}</b><strong>${esc(m.name)}</strong><span class="note">${esc(m.what)}</span>${m.source?`<span class="tag">${esc(m.source)}</span>`:""}</div>`).join("")}</div>`:`<p class="note">No upcoming launches or buyer moments found yet. Redo the research, or add your next launch date in Setup so plays line up with it.</p>`}
+    ${past.length?`<details class="pastev"><summary class="note">What you've already run (${past.length}), used as context</summary><ul class="clean note">${past.map(m=>`<li><b>${esc(fmtM(m.date))}</b> · ${esc(m.name)}${m.source?` <span class="note">(${esc(m.source)})</span>`:""}</li>`).join("")}</ul></details>`:""}</section>` })()}
   <section><small class="eyebrow">Three plays</small><div class="plays">${(S.plays||[]).map((p,i)=>`<article class="play"><canvas width="560" height="240" data-part="${i}" aria-hidden="true"></canvas><div class="ib">
       <div class="btns" style="justify-content:space-between"><span class="tag">${esc(p.format)}</span><span class="score" title="Confidence">${esc(p.confidence)}/10</span></div>
       <h3>${esc(p.name)}</h3><p>${esc(p.concept)}</p>
@@ -2611,7 +2630,8 @@ async function runStrategy(btn){
   const prog=$("#stratProg"); if(prog){ prog.hidden=false; prog.innerHTML=`<div class="scan big">${["Latest launches","Marketing campaigns","Press and news","Customer conversations","What buyers attend","Your event history"].map((t,i)=>`<span style="--d:${i*.2}s">${t}</span>`).join("")}</div><p class="note">${tools.length?`Reading ${[...new Set(tools.map(t=>CONNECT[Object.keys(CONNECT).find(k=>CONNECT[k].name===t.name)]?.label))].join(", ")}`:"No research connectors on, so this uses Claude's general knowledge"}.${webOn()?"":" Connect Parallel Search in claude.ai for live web research."}</p>` }
   const label=btn?.innerHTML; if(btn){btn.disabled=true;btn.innerHTML="Researching…"}
   try{
-    const o=await sample.json(`You are a field marketing strategist who has run events at the best B2B companies. Build a rigorous, evidence-backed point of view on where field marketing events fit for this company right now, so the marketer walks into planning as the best-prepared person there.
+    const o=await sample.json(`TODAY: ${new Date().toISOString().slice(0,10)}.
+You are a field marketing strategist who has run events at the best B2B companies. Build a rigorous, evidence-backed point of view on where field marketing events fit for this company right now, so the marketer walks into planning as the best-prepared person there.
 COMPANY: ${B.company||d.brand||"(unknown)"} ${B.url||""}. ${B.oneLiner||d.product||""}
 BUYERS: ${(B.audience?.personas||[]).map(p=>`${p.title} (${p.archetype})`).join("; ")||d.audience.roles.join(", ")||"unknown"}
 WHAT WE KNOW: ${(B.audience?.surprises||[]).map(x=>x.fact).join(" ")} Buyers gather at: ${(B.audience?.gather||[]).join(", ")}. Buying triggers: ${(B.audience?.triggers||[]).join(", ")}. Launching next: ${B.nextLaunch||"unknown"}. Goals: ${(B.goals||[]).join(", ")||d.goal||"unknown"}. Field-fit read: ${B.fieldFit?`${B.fieldFit.verdict}, ${B.fieldFit.why}`:"none yet"}.
@@ -2619,7 +2639,7 @@ PAST EVENTS ON ENCORE FOR THESE BUYERS:
 ${historyFor(d.audience.roles)}
 ${tools.length?`Research first, in several rounds: the company's latest product launches and announcements, its current marketing initiatives (campaigns, conferences it sponsors, content themes, webinars, community programs), recent press, and the marketer's own docs, notes, email and CRM for launch plans and customer conversations. Use search_playbooks for proven field marketing practice.`:`No research tools are available: reason from what you know about this company and say "general knowledge" as the source. Be explicit about uncertainty.`}
 Then form a hypothesis. Tie every play to a real moment in their go-to-market. Name what NOT to do. Be honest: if events are a weak fit, say so in the headline. Cite a source for every fact; never invent launches, numbers or quotes.
-Reply with only JSON: {"headline":"the thesis in one sentence, max 22 words","hypothesis":{"confidence":"high|medium|low","why":[{"point":"max 10 words","evidence":"max 18 words","source":""}] (3)},"moments":[{"date":"YYYY-MM","name":"max 6 words","what":"max 14 words","source":""}] (3-4),"plays":[{"name":"max 4 words","format":"one of ${FORMATS.join(", ")}","concept":"max 18 words","forPersona":"buyer title","whenInGTM":"max 8 words","why":"max 18 words","evidence":"max 16 words with source","kpi":"max 10 words","confidence":1-10}] (3),"notFit":[{"idea":"max 6 words","why":"max 14 words"}] (2),"skeptic":[{"q":"a tough question a CMO or CFO would ask","a":"evidence-backed answer, max 35 words"}] (3),"talkingPoints":[max 18 words each] (3),"sources":[URLs or source names]}`+STYLE,{tools,modelTier:"complex"});
+Reply with only JSON: {"headline":"the thesis in one sentence, max 22 words","hypothesis":{"confidence":"high|medium|low","why":[{"point":"max 10 words","evidence":"max 18 words","source":""}] (3)},"moments":[{"date":"YYYY-MM-DD if known, else YYYY-MM; after today","name":"max 6 words","what":"max 14 words: why this is a moment to build an event around","source":""}] (3-4: UPCOMING only, in the next 9 months: product launches, industry conferences their buyers attend, budget and planning cycles, seasonal buying moments; never an event that already happened),"recent":[{"date":"YYYY-MM","name":"max 6 words","source":""}] (0-4: events this company already ran, found in email, docs or CRM; context only),"plays":[{"name":"max 4 words","format":"one of ${FORMATS.join(", ")}","concept":"max 18 words","forPersona":"buyer title","whenInGTM":"max 8 words","why":"max 18 words","evidence":"max 16 words with source","kpi":"max 10 words","confidence":1-10}] (3),"notFit":[{"idea":"max 6 words","why":"max 14 words"}] (2),"skeptic":[{"q":"a tough question a CMO or CFO would ask","a":"evidence-backed answer, max 35 words"}] (3),"talkingPoints":[max 18 words each] (3),"sources":[URLs or source names]}`+STYLE,{tools,modelTier:"complex"});
     if(o?.headline&&o?.plays?.length){ o._used=[...used]; challenges=[]; if(brandProfile){ brandProfile.strategy=o; saveBrand(true) } draft.strategy=o; draft.example=false; renderStep(); burst() }
     else toast("The research came back incomplete. Try again.");
   }catch(e){ toast(e?.code==="rate_limited"?"Too many requests. Wait a minute.":"Research failed: "+(e?.message||"try again")) }

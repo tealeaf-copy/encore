@@ -7434,7 +7434,7 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
 // ==================================================================
 { const _dh2=drawHype; drawHype=async function(){ try{ if(draft?.date&&new Date(draft.date+"T23:59:00")<Date.now()){ $("#pipHype")?.remove(); return } }catch{} return _dh2.apply(this,arguments) } }
 { const _hi2=hostInboxHTML; hostInboxHTML=async function(){ let h=await _hi2.apply(this,arguments); if(!h) return h; try{ const B=(await (await fetch("/api/host/bookings")).json()).bookings||[], P=(await (await fetch("/api/host/profile")).json()).host||{};
-    for(const x of B.filter(x=>x.status==="booked"&&x.depositPaid)){ const n=esc(x.company||x.name||""); h=h.replace(`<b>Accepted: ${n}</b>`,`<b>Booked ✓ ${n}${x.when?` · ${esc(x.when)}`:""}</b>`) }
+    for(const x of B.filter(x=>x.status==="booked"&&x.depositPaid)){ const n=esc(x.company||x.name||""); h=h.replace(`<b>Accepted: ${n}</b>`,`<b>Booked ✓ ${n}</b>`) }
     const ask=B.filter(x=>(x.thread||[]).length&&x.thread.at(-1).by!=="host").map(x=>`<a class="hi-row new" href="/@${esc(P.handle)}?bookings=1"><span>💬</span><div><b>${esc(x.company||x.name||"A client")} asked you something</b><small>"${esc(String(x.thread.at(-1).text).slice(0,90))}"</small></div><em>Reply</em></a>`).join("");
     if(ask) h=h.replace(/(<\/a>\s*<\/section>|<p class="note">)/,m=>m.startsWith("<p")?ask+m:m.replace("</section>",ask+"</section>"));
   }catch{} return h } }

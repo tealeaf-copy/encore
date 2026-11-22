@@ -7406,6 +7406,28 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
     $$(".ticket p",host).forEach(p=>{ const m=p.textContent.match(/^See you there! Meet at (.+)\.$/); if(m) p.textContent=`See you there. Where: ${m[1].replace(/^./,c=>c.toLowerCase()==="r"?c.toUpperCase():c)}` });
     if($("#typeCover")){ const t=host.querySelector(".invite .in h1, .invite .in h2, .invite .in .gtitle"); if(t&&t.textContent.trim()===guestTitle(e)) t.hidden=true }
   }catch(err){ console.warn(err) } return r } }
+
+// ==================================================================
+// Round 11: what needs you comes first; the guest page says each thing once; past events rest.
+// ==================================================================
+// a finished event: Pip stops nagging about payment and headcount
+{ const _ci8=cosItems; cosItems=function(d){ try{ if(isCasual(d)&&d.date&&new Date(d.date+"T23:59:00")<Date.now()) return [{sev:"soon",t:"This one's done.",w:"Thank everyone and read the kudos in After. Want another? Start the next one from Home.",acts:[]}] }catch{} return _ci8(d) } }
+// Home: brand requests, bookings and orders sit at the top whenever something's waiting
+{ const _rp3=renderPrograms; renderPrograms=function(){ const r=_rp3.apply(this,arguments); try{ if(window.__wsPersonal){ let n=0; const t=setInterval(()=>{ const ib=$("#hostInbox"), v=$("#view-programs"); if(ib&&v){ clearInterval(t); if(ib.querySelector(".hi-row")){ ib.classList.add("needs"); const tabs=v.querySelector(".hw-tabs"); tabs?tabs.after(ib):v.prepend(ib) } } if(++n>30) clearInterval(t) },150) } }catch{} return r } }
+{ const _hi=hostInboxHTML; hostInboxHTML=async function(){ const h=await _hi.apply(this,arguments); return h.replace(/<span>🎉<\/span><div><b>Booked: /g,'<span>💼</span><div><b>Accepted: ').replace('<small class="eyebrow">Your page</small>','<small class="eyebrow">Needs you</small>') } }
+// guest page: one title, one date, the neighbourhood in "Where", and followers know they're in the early window
+{ const _rg23=renderGuest; renderGuest=async function(){ const r=await _rg23.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r;
+    const T=guestTitle(e); $$("h3",host).forEach(h=>{ if(h.textContent.trim()===T||h.textContent.trim()===e.name) h.hidden=true });
+    $$("small",host).forEach(s=>{ if(s.textContent.trim()==="Where"){ const b=s.parentElement?.querySelector("b"); const w=[e.hood,e.city].filter(Boolean).join(", "); if(b&&w&&!b.textContent.includes(e.hood||"~")) b.textContent=w } if(s.textContent.trim()==="Size"&&$$("small",host).some(x=>/seats · host approves|seats$/.test(x.textContent))) s.parentElement.hidden=true });
+    $$(".price",host).forEach(p=>{ if(/a seat · \d+ seats/.test(p.textContent)&&$$("small",host).some(x=>/seats · host approves/.test(x.textContent))) p.hidden=true });
+    const handle=window.__gHostInfo?.handle; let F=[]; try{ F=JSON.parse(localStorage.getItem("encore.following")||"[]") }catch{}
+    if(handle&&F.includes(handle)) $$("b",host).forEach(b=>{ if(/^Followers get first dibs until/.test(b.textContent)&&!b.dataset.me){ b.dataset.me=1; b.textContent=b.textContent.replace("Followers get first dibs","You follow "+hostFirst(e)+", so you're in the first-dibs window"); const n=b.closest("div,p")?.parentElement?.querySelector(".note"); if(n&&/Follow .* with your email below/.test(n.textContent)) n.hidden=true } });
+    const M=myRsvp(e.id); if(M&&window.__justSent!==e.id&&host.dataset.sentAt!==String(M.at||1)){ host.dataset.sentAt=String(M.at||1); const tk=$(".ticket",host)||$("#statusPill"); if(tk&&tk.getBoundingClientRect().top<0||tk&&tk.getBoundingClientRect().top>innerHeight) tk.scrollIntoView({block:"center"}) }
+  }catch(err){ console.warn(err) } return r } }
+// the approval list: no italics
+{ const _wc4=whoComingHTML; whoComingHTML=function(d){ return _wc4(d).replace(/<(\/?)(em|i)>/g,"<$1span>") } }
+// unpublish asks in Encore's own words, not a browser box
+{ const _dhk9=drawHostKit; drawHostKit=function(){ const r=_dhk9.apply(this,arguments); try{ const b=$("#pubBtn"); if(b&&draft.discoverable&&!b.dataset.soft){ b.dataset.soft=1; const h0=b.onclick; let armed=0; b.onclick=e=>{ if(!armed){ armed=1; const old=b.textContent; b.textContent="Tap again to take it off your page"; setTimeout(()=>{ armed=0; if(b.isConnected) b.textContent=old },3500); return } const c=window.confirm; window.confirm=()=>true; try{ return h0?.call(b,e) }finally{ window.confirm=c } } } }catch{} return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7688,4 +7710,5 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .gxcover.typed{position:relative}.type-cover{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:22px;background:radial-gradient(90% 120% at 85% 0%,color-mix(in srgb,var(--tc) 70%,#fff) 0%,transparent 60%),linear-gradient(150deg,var(--tc),color-mix(in srgb,var(--tc) 55%,#15110E));color:#fff}.type-cover span{font:400 clamp(26px,7vw,44px)/1.05 "Fraunces",Georgia,serif}.type-cover small{font-size:15px;opacity:.92;color:#fff!important}
 .gxcover.typed canvas{visibility:hidden}
 .wc-notes{margin:10px 0;padding:10px 12px;border-radius:12px;background:#FFF7E6}.wc-notes p{margin:4px 0;font-size:14px}
+.host-inbox.needs{border:1.5px solid #E0A030;background:#FFFBF2;margin-bottom:16px}
 </style>

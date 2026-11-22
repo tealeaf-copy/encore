@@ -47,6 +47,8 @@
     if ((up || []).length === 1) { const hs = [...document.querySelectorAll("h2.sec")].find((x) => /Coming up/.test(x.textContent)); if (hs) { hs.style.display = "none"; if (hs.nextElementSibling) hs.nextElementSibling.style.display = "none"; } } }
   // ---- the editor, for the owner only ----
   async function editor(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
+    ["topFollow", "follow"].forEach((id) => { const el = document.getElementById(id); if (el) el.hidden = true; });
+    if ((mine.gallery || []).length < 3 && !document.getElementById("photoNudge")) { const n = document.createElement("div"); n.id = "photoNudge"; n.className = "photo-nudge"; n.innerHTML = `<b>${(mine.gallery || []).length ? `Add ${3 - mine.gallery.length} more photo${3 - mine.gallery.length === 1 ? "" : "s"}` : "Add 3 photos of your work"}</b><span>Guests and brands look at photos before anything else. The first one becomes your banner.</span><a class="btn" href="?bookings=1#photos">Add photos</a>`; (document.querySelector("main") || document.body).prepend(n); }
     const st = { theme: { ...DEF, ...(h.theme || {}) }, sections: { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: true, past: true, ...(h.sections || {}) }, links: [...(h.links || [])], tagline: h.tagline || "" };
     Object.keys(FONTS).forEach(loadFont);
     const fab = document.createElement("button"); fab.className = "store-fab"; fab.type = "button"; fab.innerHTML = "✏️ Customize your page"; document.body.appendChild(fab);

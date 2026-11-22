@@ -44,13 +44,14 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   // "Tell Pip what you're planning": a ranked shortlist with reasons
   app.post("/api/public/match", small, (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const text = clean(req.body?.brief, 600); if (text.length < 6) return bad(res, "Tell Pip a little about the event.");
     const B = parseBrief(text), city = lc(B.city || req.body?.city || ""), cat0 = catalog(), knownCity = !!city && cat0.some((x) => lc(`${x.host.city} ${x.host.hood}`).includes(city));
-    const L = cat0.map((x) => { let s = 0; const why = []; const blob = lc(`${x.name} ${x.desc} ${x.host.tagline} ${(x.includes || []).join(" ")}`);
+    const L0 = cat0.map((x) => { let s = 0; const why = []; const blob = lc(`${x.name} ${x.desc} ${x.host.tagline} ${(x.includes || []).join(" ")}`);
       if (B.cats.includes(x.category)) { s += 4; why.push(CATEGORIES.find(([k]) => k === x.category)[1].toLowerCase()); }
       const hitWords = B.words.filter((w) => hasWord(blob, w)); if (hitWords.length) { s += Math.min(4, hitWords.length * 1.5); why.push(`"${hitWords.slice(0, 2).join(", ")}"`); }
       if (B.people) { if (B.people >= x.min && B.people <= x.max) { s += 2; why.push(`fits ${B.people}`); } else if (B.people > x.max * 1.2 || B.people < x.min * 0.6) s -= 6; }
       if (city && knownCity) { if (lc(`${x.host.city} ${x.host.hood}`).includes(city)) { s += 2; why.push(`in ${x.host.city}`); } else if (!x.travels) s -= 4; }
       if (B.budget && B.people && x.perHead) { const est = x.perHead * B.people; if (est <= B.budget * 1.1) { s += 1; why.push(`about $${Math.round(est).toLocaleString("en-US")} for ${B.people}`); } else s -= 1; }
-      s += Math.min(2, x.trust.kudos * 0.3 + x.trust.booked * 0.5); return { ...x, score: s, why }; }).filter((x) => x.score > 1).sort((a, b) => b.score - a.score).slice(0, 6);
+      s += Math.min(2, x.trust.kudos * 0.3 + x.trust.booked * 0.5); return { ...x, score: s, why, on: B.cats.includes(x.category) || hitWords.length > 0 }; }).filter((x) => x.score > 1).sort((a, b) => b.score - a.score);
+    const L = (L0.some((x) => x.on) ? L0.filter((x) => x.on) : L0).slice(0, 6);
     res.json({ brief: { people: B.people, budget: B.budget, city: knownCity ? B.city : "", when: B.when, where: B.where, categories: B.cats }, matches: L }); });
 
   // ---- booking requests: request → quote → accept ----

@@ -159,9 +159,10 @@ test("RSVPs: seats are enforced on the server and each guest has one reply", asy
   const r2 = await (await g({ name: "Ben", email: "ben@x.com", response: "going" })).json();
   assert.equal(r2.response, "waitlist", "table of 2 is full (Gia + Ann)");
   const r3 = await (await g({ name: "Ann", email: "ANN@x.com", response: "no" })).json();
-  assert.equal(r3.id, r1.id, "same guest updates the same reply"); assert.equal(r3.merged, true);
+  assert.equal(r3.id, r1.id, "same guest updates the same reply"); assert.equal(r3.merged, true); assert.equal(r3.promoted, true, "Ann's seat goes to Ben");
   const all = srv.store.list(`ws/${A.ws}/rsvps`).map((d) => d.data).filter((d) => d.eventId === "evC");
-  assert.deepEqual(all.map((d) => `${d.name}=${d.response}`).sort(), ["Ann=no", "Ben=waitlist"]);
+  assert.deepEqual(all.map((d) => `${d.name}=${d.response}`).sort(), ["Ann=no", "Ben=going"], "the freed seat went to the waitlist");
+  assert.ok(all.find((d) => d.name === "Ben").promotedAt);
 });
 
 test("RSVPs: invited guests who say yes before the host opens the app still fill seats", async () => {
@@ -172,5 +173,7 @@ test("RSVPs: invited guests who say yes before the host opens the app still fill
   assert.equal((await (await g({ name: "Bo", email: "bo@x.com", response: "going" })).json()).response, "going");
   assert.equal((await (await g({ name: "Cy", email: "cy@x.com", response: "going" })).json()).response, "waitlist", "third yes for two seats");
   assert.equal((await (await g({ name: "Ana", email: "ana@x.com", response: "no" })).json()).merged, true);
-  assert.equal((await (await g({ name: "Dee", email: "dee@x.com", response: "going" })).json()).response, "going", "Ana's seat freed up");
+  const cy = srv.store.list(`ws/${A.ws}/rsvps`).map((d) => d.data).find((d) => d.name === "Cy");
+  assert.equal(cy.response, "going", "Ana's seat went to Cy, first on the waitlist");
+  assert.equal((await (await g({ name: "Dee", email: "dee@x.com", response: "going" })).json()).response, "waitlist", "the table is full again");
 });

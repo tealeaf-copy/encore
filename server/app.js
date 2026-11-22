@@ -885,6 +885,13 @@ export function createApp({ store, dataDir }) {
       if (invited) {
         const first = (x) => String(x || "").trim().split(/\s+/)[0] || "";
         data.me = { name: invited.name || "", title: invited.title || "", company: invited.company || "", email: invited.email || "", owner: first(invited.owner) };
+        // Their latest reply, so reopening the invitation shows it instead of a blank form.
+        const inv = String(req.get("x-encore-invite") || "").split("~")[0], em = String(invited.email || "").trim().toLowerCase();
+        const mine = S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && ((inv && d.data._inv === inv) || (em && String(d.data.email || "").trim().toLowerCase() === em))).sort((x, y) => (y.data.changedAt || y.data.createdAt || 0) - (x.data.changedAt || x.data.createdAt || 0))[0];
+        const hostSt = { Going: "going", Attended: "going", Declined: "no", Maybe: "maybe", Waitlist: "waitlist", Requested: "requested" }[invited.status];
+        const resp = mine?.data?.response || hostSt;
+        if (resp) data.me.response = resp;
+        if (mine) for (const k of ["dietary", "access", "plusOne"]) if (mine.data[k] != null) data.me[k] = mine.data[k];
         data.hosts = [...new Set((doc.data.guests || []).filter(shownToGuests).map((g) => first(g.owner)).filter(Boolean))];
       }
     }
@@ -1007,13 +1014,27 @@ export function createApp({ store, dataDir }) {
     if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && going >= +ev.headcount) out.response = "waitlist";
     return { body: out, prior };
   }
-  app.post("/api/db/collection", json, (req, res) => {
+  // A seat freed by a decline goes to the first person on the waitlist, who is told by email when email is on.
+  async function promoteWaitlist(req, eventId) {
+    const ev = S(req).get("events/" + eventId)?.data; if (!ev || ev.autoWait === false || !(+ev.headcount > 0)) return null;
+    const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), G = ev.guests || [];
+    const keyOf = (x) => String(x.email || x.name || "").trim().toLowerCase(), held = new Set(G.filter((g) => g.status === "Going" || g.status === "Attended").map(keyOf).filter(Boolean));
+    for (const d of all) { const k = keyOf(d.data); if (!k) continue; if (d.data.response === "going") held.add(k); else if (["no", "waitlist"].includes(d.data.response) && !G.some((g) => keyOf(g) === k && g.status === "Attended")) held.delete(k); }
+    if (held.size >= +ev.headcount) return null;
+    const next = all.filter((d) => d.data.response === "waitlist").sort((a, b) => (a.data.changedAt || a.data.createdAt || 0) - (b.data.changedAt || b.data.createdAt || 0))[0];
+    if (!next) return null;
+    S(req).set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() });
+    const to = String(next.data.email || "").trim(), title = ev.pubTitle || ev.copy?.title || "the event";
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A seat opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a seat opened up and it's yours. You're now confirmed for ${title}${ev.date ? " on " + ev.date : ""}.\n\nIf you can no longer make it, reply to this email or use your invitation link to let us know, so we can offer the seat to someone else.\n`, eventId, kind: "waitlist" }); } catch {} }
+    return next.id;
+  }
+  app.post("/api/db/collection", json, async (req, res) => {
     const p = String(req.query.path || "");
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
     if (p === "rsvps") { const pol = rsvpPolicy(req, body); body = pol.body;
-      if (pol.prior) { S(req).set("rsvps/" + pol.prior.id, { ...pol.prior.data, ...body, _k: pol.prior.data._k || body._k, changedAt: Date.now() }); return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, response: body.response, merged: true }); }
+      if (pol.prior) { const freed = pol.prior.data.response === "going" && body.response !== "going"; S(req).set("rsvps/" + pol.prior.id, { ...pol.prior.data, ...body, _k: pol.prior.data._k || body._k, changedAt: Date.now() }); const promoted = freed ? await promoteWaitlist(req, String(body.eventId || "")) : null; return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, response: body.response, merged: true, ...(promoted ? { promoted: true } : {}) }); }
       const r0 = S(req).add(p, body); return res.json({ ...r0, response: body.response }); }
     const r = S(req).add(p, body);
     if (p === "events" && !req.guest) claimEvent(r.id, req.ws);

@@ -47,12 +47,13 @@ export function mountChecks(app, { store, small, currentUser, publicOrigin = () 
 
 
   // ---- Pip's morning list by email: the same legwork as the Home list, for people who live in their inbox ----
-  function digestItems(ws, origin) { const S = scopeStore(store, ws), today = new Date().toISOString().slice(0, 10), soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10), back = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+  function digestItems(ws, origin) { const S = scopeStore(store, ws), today = new Date().toISOString().slice(0, 10), soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10), back = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
     const R = S.list("checkReplies").map((d) => d.data), F = S.list("feedback").map((d) => d.data), I = [];
     for (const c of S.list("checks").map((d) => d.data).filter(Boolean)) { const T = tally(R.filter((r) => r.eventId === c.eventId));
       if (T.n < 8) I.push(`Get ${8 - T.n} more answers on "${c.title}" (${T.n} so far). Forward this: ${origin}/check/${encodeURIComponent(c.eventId)}?t=${c.token}`);
       else I.push(`"${c.title}": ${T.verdict.label}. ${T.yes} of ${T.n} would come.${T.must[0] ? ` Top ask: "${T.must[0].text}".` : ""}`); }
     for (const d of S.list("events")) { const e = d.data || {}; if (e.example || e.casual || !e.date) continue;
+      if (e.date < today && e.date >= back && e.status !== "done" && !(e.guests || []).some((g) => /Attended|No-show/.test(g.status || ""))) I.push(`Wrap up "${e.name}": mark who came and log what happened.`);
       if (e.date < today && e.date >= back && !F.some((f) => f.eventId === d.id)) I.push(`Ask "${e.name}" guests how it went. The survey link: ${origin}/#survey-${d.id}`);
       else if (e.date >= today && e.date <= soon) { const yes = (e.guests || []).filter((g) => /Confirmed|Attended|Going/i.test(g.status || "")).length; I.push(`"${e.name}" is ${e.date === today ? "today" : `on ${e.date}`}${yes ? `: ${yes} confirmed${e.headcount ? ` of ${e.headcount}` : ""}` : ""}.`); } }
     return I.slice(0, 8); }

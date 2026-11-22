@@ -72,7 +72,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -998,7 +998,10 @@ export function createApp({ store, dataDir }) {
     const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), em = String(body.email || "").trim().toLowerCase(), inv = String(req.get("x-encore-invite") || "").split("~")[0];
     const prior = all.find((d) => (em && String(d.data.email || "").trim().toLowerCase() === em) || (inv && d.data._inv === inv));
     const G = ev.guests || [], seen = new Set(G.flatMap((g) => [String(g.email || "").toLowerCase(), String(g.name || "").toLowerCase()]).filter(Boolean));
-    const going = G.filter((g) => g.status === "Going" || g.status === "Attended").length + all.filter((d) => d !== prior && d.data.response === "going" && !seen.has(String(d.data.email || "").toLowerCase()) && !seen.has(String(d.data.name || "").toLowerCase())).length;
+    // Everyone holding a seat, counted once: host-marked guests plus the latest yes from each RSVP, whether or not the host has opened the app since.
+    const keyOf = (x) => String(x.email || x.name || "").trim().toLowerCase(), held = new Set(G.filter((g) => g.status === "Going" || g.status === "Attended").map(keyOf).filter(Boolean));
+    for (const d of all) { if (d === prior) continue; const k = keyOf(d.data); if (!k) continue; if (d.data.response === "going") held.add(k); else if (["no", "waitlist"].includes(d.data.response) && !G.some((g) => keyOf(g) === k && g.status === "Attended")) held.delete(k); }
+    const going = held.size - (held.has(em) ? 1 : 0);
     const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
     const out = { ...body, ...(inv ? { _inv: inv } : {}) };
     if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && going >= +ev.headcount) out.response = "waitlist";

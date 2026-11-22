@@ -163,3 +163,14 @@ test("RSVPs: seats are enforced on the server and each guest has one reply", asy
   const all = srv.store.list(`ws/${A.ws}/rsvps`).map((d) => d.data).filter((d) => d.eventId === "evC");
   assert.deepEqual(all.map((d) => `${d.name}=${d.response}`).sort(), ["Ann=no", "Ben=waitlist"]);
 });
+
+test("RSVPs: invited guests who say yes before the host opens the app still fill seats", async () => {
+  const A = await signup("Seat2co", "own@seat2.com", "Sia Owner");
+  await put("events/evS2", { name: "Dinner", headcount: 2, guests: [{ name: "Ana", email: "ana@x.com", status: "Invited" }, { name: "Bo", email: "bo@x.com", status: "Invited" }, { name: "Cy", email: "cy@x.com", status: "Invited" }], updatedAt: 1 }, A.cookie);
+  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evS2", ...body }) });
+  assert.equal((await (await g({ name: "Ana", email: "ana@x.com", response: "going" })).json()).response, "going");
+  assert.equal((await (await g({ name: "Bo", email: "bo@x.com", response: "going" })).json()).response, "going");
+  assert.equal((await (await g({ name: "Cy", email: "cy@x.com", response: "going" })).json()).response, "waitlist", "third yes for two seats");
+  assert.equal((await (await g({ name: "Ana", email: "ana@x.com", response: "no" })).json()).merged, true);
+  assert.equal((await (await g({ name: "Dee", email: "dee@x.com", response: "going" })).json()).response, "going", "Ana's seat freed up");
+});

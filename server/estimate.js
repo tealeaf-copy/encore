@@ -4,7 +4,7 @@
 // continuation lines) and wraps them as a small browser script.
 import fs from "node:fs";
 
-export const ESTIMATE_NAMES = ["planFromText", "fitRows", "TPL_SEATS", "budgetModel", "BUDGET_MODEL", "METRIC_CUR", "cityIdx", "CITY_T1", "fxRate", "kindOf", "parseEventText", "parseMoney", "MONTHS", "confFromText", "CONF_CAL", "KINDS", "brandProfile", "FX", "SHOW_SIZE", "TIERS", "TRIM_ORDER", "NICE", "lineTierOf", "budgetRows", "budgetTotal", "customTotal", "fitByTiers", "lastPerLine", "applyPicks", "BUDGET_PICK"];
+export const ESTIMATE_NAMES = ["planFromText", "fitRows", "TPL_SEATS", "budgetModel", "BUDGET_MODEL", "METRIC_CUR", "cityIdx", "CITY_T1", "fxRate", "kindOf", "parseEventText", "parseMoney", "MONTHS", "confFromText", "CONF_CAL", "KINDS", "brandProfile", "FX", "SHOW_SIZE", "TIERS", "TRIM_ORDER", "NICE", "lineTierOf", "budgetRows", "budgetTotal", "customTotal", "fitByTiers", "lastPerLine", "applyPicks", "BUDGET_PICK", "SOCIAL_PICK"];
 
 export function extractDeclarations(html, names = ESTIMATE_NAMES) {
   const start = html.indexOf("<script>");

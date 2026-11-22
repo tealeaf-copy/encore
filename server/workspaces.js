@@ -44,8 +44,9 @@ export function getWorkspace(id) {
   if (!/^[A-Za-z0-9]{20}$/.test(id)) return null;
   return need().get("system/ws-" + id)?.data || null;
 }
-export function createWorkspace({ company, ownerEmail, now = Date.now() }) {
-  const ws = { kind: "workspace", id: randomId(), company: String(company).slice(0, 120), plan: "trial", trialEndsAt: now + TRIAL_DAYS * 864e5, createdAt: now, ownerEmail };
+export function createWorkspace({ company, ownerEmail, personal = false, ref = "", now = Date.now() }) {
+  // Hosting with friends is free and has no trial clock; work workspaces start a 14-day trial.
+  const ws = { kind: "workspace", id: randomId(), company: String(company).slice(0, 120), plan: personal ? "friends" : "trial", ...(personal ? {} : { trialEndsAt: now + TRIAL_DAYS * 864e5 }), createdAt: now, ownerEmail, ...(ref ? { ref: String(ref).slice(0, 80) } : {}) };
   need().set("system/ws-" + ws.id, ws);
   return ws;
 }
@@ -58,6 +59,7 @@ const PAID = new Set(PLANS);
 /** Trial and plan state. Writes stop when a trial has ended and no paid plan is active (a pending upgrade doesn't unlock). */
 export function trialState(ws, now = Date.now()) {
   if (!ws || ws.id === DEFAULT_WS) return { trial: false, trialEnded: false, daysLeft: null, writable: true };
+  if (ws.plan === "friends") return { trial: false, trialEnded: false, daysLeft: null, writable: true, friends: true };
   const trial = !PAID.has(ws.plan), ended = trial && !!ws.trialEndsAt && now >= ws.trialEndsAt;
   return { trial, trialEnded: ended, daysLeft: trial && ws.trialEndsAt ? Math.max(0, Math.ceil((ws.trialEndsAt - now) / 864e5)) : null, writable: !ended };
 }

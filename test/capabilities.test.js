@@ -177,3 +177,24 @@ test("RSVPs: invited guests who say yes before the host opens the app still fill
   assert.equal(cy.response, "going", "Ana's seat went to Cy, first on the waitlist");
   assert.equal((await (await g({ name: "Dee", email: "dee@x.com", response: "going" })).json()).response, "waitlist", "the table is full again");
 });
+
+test("Hosting with friends: free, no trial clock, no company needed, and a guest page can bring in a new host", async () => {
+  const r = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Maya Ortiz", email: "maya@friends.example", password: "longpassword123", mode: "friends" }) });
+  assert.equal(r.status, 200); const j = await r.json();
+  assert.equal(j.workspace.plan, "friends"); assert.equal(j.workspace.trialEndsAt, undefined);
+  assert.match(j.workspace.company, /Maya's gatherings/);
+  const cookie = r.headers.get("set-cookie").split(";")[0];
+  const ws = await (await fetch(srv.base + "/api/workspace", { headers: { cookie } })).json();
+  assert.equal(ws.personal, true); assert.equal(ws.trial, false);
+  // A guest of Maya's run club signs up from the event's page; Maya's workspace hears about it.
+  await put("events/runclub1", { name: "Saturday run club", kind: "social", casual: true, meetPoint: "North gate", bring: ["Water"], slots: ["Coffee"], updatedAt: 1 }, cookie);
+  const pub = await (await fetch(srv.base + "/api/db/doc?path=events/runclub1", { headers: { "x-encore-guest": "1", "x-encore-workspace": j.workspace.id } })).json();
+  assert.equal(pub.data.meetPoint, "North gate"); assert.deepEqual(pub.data.slots, ["Coffee"]);
+  const r2 = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Sam Lee", email: "sam@friends.example", password: "longpassword123", mode: "friends", ref: "runclub1" }) });
+  assert.equal(r2.status, 200);
+  const audit = srv.store.list(`ws/${j.workspace.id}/audit`).map((d) => d.data.what);
+  assert.ok(audit.some((w) => /Sam started hosting with Encore/.test(w)), "the host sees who started hosting from their event");
+  // Work sign-ups still need a company
+  const r3 = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Ria", email: "ria@work.example", password: "longpassword123", company: "Acme" }) });
+  assert.equal((await r3.json()).workspace.plan, "trial");
+});

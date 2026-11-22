@@ -73,7 +73,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -180,12 +180,15 @@ export function createApp({ store, dataDir }) {
   app.post("/api/signup", small, (req, res) => {
     if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
-    const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), company = String(b.company || "").trim().slice(0, 120);
-    if (!name || !company) return res.status(400).json({ code: "invalid", message: "Name and company are required." });
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid work email." });
+    const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || !String(b.company || "").trim();
+    const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s gatherings`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
+    if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account. Sign in instead." });
-    const W = createWorkspace({ company, ownerEmail: email });
+    const W = createWorkspace({ company, ownerEmail: email, personal, ref });
+    // Word of mouth: count who came to Encore from a guest page, on the event's own workspace.
+    if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Encore from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
     scopeStore(store, W.id).add("audit", { eventId: "", what: `${company} workspace created`, kind: "team", who: name, email, verified: true, at: Date.now() });
     startSession(req, res, email, W.id);
@@ -340,7 +343,7 @@ export function createApp({ store, dataDir }) {
   };
   app.get("/api/workspace", (req, res) => {
     const ws = sessionWorkspace(req), W = getWorkspace(ws), T = trialState(W);
-    res.json({ id: ws, company: W?.company || "", plan: W?.plan || "self-hosted", trialEndsAt: W?.trialEndsAt || null, daysLeft: T.daysLeft, trial: T.trial, trialEnded: T.trialEnded,
+    res.json({ id: ws, company: W?.company || "", personal: W?.plan === "friends", plan: W?.plan || "self-hosted", trialEndsAt: W?.trialEndsAt || null, daysLeft: T.daysLeft, trial: T.trial, trialEnded: T.trialEnded,
       writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
       approverRoles: approverRoles(ws), approverRolesSet: ws === DEFAULT_WS ? null : W?.approverRoles || [],
       members: teamOf(ws).map((m) => ({ name: m.name, email: m.email, roles: m.roles || [], ...(m.owner ? { owner: true } : {}) })),

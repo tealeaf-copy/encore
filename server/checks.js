@@ -40,6 +40,10 @@ export function mountChecks(app, { store, small, currentUser }) {
     if (!c) return res.json({ check: null }); const R = S.list("checkReplies").map((d) => d.data).filter((r) => r.eventId === id);
     res.json({ check: c, link: `/check/${encodeURIComponent(id)}?t=${c.token}`, tally: tally(R), replies: R.sort((a, b) => b.at - a.at).slice(0, 200).map((r) => ({ answer: r.answer, name: r.name, role: r.role, company: r.company, why: r.why, must: r.must, stop: r.stop, dates: r.dates, at: r.at, via: r.via })) }); });
 
+  // every check in the workspace, tallied: feeds Pip's list and "what your audience is telling you"
+  app.get("/api/checks", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), R = S.list("checkReplies").map((d) => d.data);
+    res.json({ checks: S.list("checks").map((d) => d.data).filter(Boolean).map((c) => ({ eventId: c.eventId, title: c.title, createdAt: c.createdAt, link: `/check/${encodeURIComponent(c.eventId)}?t=${c.token}`, tally: tally(R.filter((r) => r.eventId === c.eventId)) })) }); });
+
   // the public page
   const open = (req, res) => { const id = String(req.params.id); if (!ID_OK(id)) { res.status(404).json({ code: "not_found", message: "This link isn't valid." }); return null; } const ws = workspaceOfEvent(id);
     const S = ws && ws !== DEFAULT_WS ? scopeStore(store, ws) : null, c = S?.get("checks/" + id)?.data; const t = String(req.query.t || req.body?.t || "");

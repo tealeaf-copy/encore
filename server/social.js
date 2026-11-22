@@ -118,6 +118,11 @@ export function makeSocial(store, { C, saveBlob }) {
     const momentsSeen = I.moments.filter((m) => (F.includes(lc(m.authorEmail)) || lc(m.authorEmail) === me || myEvents.has(m.eventId)) && canSee(m.eventId) && m.at > now - 30 * DAY).sort((a, b) => b.at - a.at);
     for (const m of momentsSeen) if (lc(m.authorEmail) !== me) items.push({ kind: "moment", at: m.at, who: people.get(lc(m.authorEmail)) || person(m.authorEmail), media: { url: m.url, type: m.type }, caption: m.caption || "", event: evCard(I.events.get(m.eventId)) });
     for (const k of I.kudos) if (F.includes(lc(k.email)) && k.love && canSee(k.eventId) && k.at > recent) items.push({ kind: "kudos", at: k.at, who: people.get(lc(k.email)), love: k.love, tags: k.tags || [], event: evCard(I.events.get(k.eventId)) });
+    const followedWs = []; for (const x of new Set([...I.events.values()].map((v) => v.ws))) if (C.followersOf(x).some((f) => f.email === me)) followedWs.push(x);
+    for (const w of followedWs) { const hp = C.profileOf(w), hostP = { name: hp?.name || "", handle: hp?.handle, emoji: hp?.emoji || "🎉", color: hp?.color, email: getWorkspace(w)?.ownerEmail || "" };
+      for (const x of I.events.values()) { if (x.ws !== w || !isPublic(x.e)) continue; if (F.includes(lc(x.owner))) continue;
+        if ((x.e.date || "9") >= today()) items.push({ kind: "hosting", at: x.e.updatedAt || x.e.createdAt || now, who: hostP, event: evCard(x) });
+        else if (Date.parse(x.e.date) > recent) { const K = I.kudos.filter((k) => k.eventId === x.id && k.love), n = [...I.att.values()].filter((L) => L.some((a) => a.eventId === x.id)).length; items.push({ kind: "recap", at: Date.parse(x.e.date) + 20 * 3600e3, who: hostP, event: evCard(x), count: n, love: K[0]?.love || "", kudos: K.length }); } } }
     items.sort((a, b) => b.at - a.at);
     // stories: one ring per friend (and you) with photos from the last week
     const ring = new Map(); for (const m of momentsSeen.filter((m) => m.at > now - 7 * DAY)) { const k = lc(m.authorEmail); if (!ring.has(k)) ring.set(k, []); ring.get(k).push({ url: m.url, type: m.type, caption: m.caption || "", at: m.at, event: evCard(I.events.get(m.eventId)) }); }
@@ -128,7 +133,7 @@ export function makeSocial(store, { C, saveBlob }) {
     const upcoming = [...I.events.values()].filter((x) => isPublic(x.e) && (x.e.date || "") >= today()).sort((a, b) => String(a.e.date).localeCompare(String(b.e.date))).slice(0, 20).map((x) => ({ ...evCard(x), friendsGoing: F.filter((f) => (I.att.get(f) || []).some((a) => a.eventId === x.id)).map((f) => first(people.get(f)?.name)).filter(Boolean) }));
     const mine = [...myEvents].map((id) => I.events.get(id)).filter((x) => x && (x.e.date || "") <= today() && (x.e.date || "") >= today(now - 21 * DAY)).sort((a, b) => String(b.e.date).localeCompare(String(a.e.date))).slice(0, 8).map(evCard);
     const pub = (p) => (p ? { name: p.name, handle: p.handle, emoji: p.emoji, color: p.color, key: Buffer.from(lc(p.email)).toString("base64url"), ...(p.together ? { together: p.together } : {}), ...(p.mutual != null ? { mutual: p.mutual } : {}) } : p);
-    return { me: pub(person(me)), mine, friends: F.map((e) => pub({ ...people.get(e), mutual: friendsOf(e).some((x) => x.email === me) })), stories: stories.map((x) => ({ ...x, who: pub(x.who) })), items: items.slice(0, 80).map((x) => ({ ...x, who: pub(x.who) })), suggestions: suggestions.map(pub), upcoming, unread: inbox(me).filter((x) => !x.read).length };
+    return { following: followedWs.map((w) => C.profileOf(w)?.handle).filter(Boolean), me: pub(person(me)), mine, friends: F.map((e) => pub({ ...people.get(e), mutual: friendsOf(e).some((x) => x.email === me) })), stories: stories.map((x) => ({ ...x, who: pub(x.who) })), items: items.slice(0, 80).map((x) => ({ ...x, who: pub(x.who) })), suggestions: suggestions.map(pub), upcoming, unread: inbox(me).filter((x) => !x.read).length };
   }
   // ---- event profile: what kind of guest and host someone is ----
   function eventProfile(email) {
@@ -263,7 +268,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.post("/api/me/prefs", small, (req, res) => { const u = me(req, res); if (!u) return; const p = { kind: "prefs", emails: req.body?.emails !== false, at: Date.now() }; store.set("system/prefs-" + hash(u.email), p); res.json(p); });
   // "Priya and 2 friends are going" for a signed-in member looking at an invite
   app.get("/api/me/mutuals/:eventId", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ friends: [] }); const id = clean(req.params.eventId, 80), I = X.index(), F = X.friendsOf(u.email).map((f) => f.email);
-    res.json({ friends: F.filter((f) => (I.att.get(f) || []).some((a) => a.eventId === id)).map((f) => ({ name: first(X.person(f).name), emoji: X.person(f).emoji })) }); });
+    const ws = workspaceOfEvent(id), following = !!ws && C.followersOf(ws).some((x) => x.email === String(u.email).toLowerCase());
+    res.json({ following, friends: F.filter((f) => (I.att.get(f) || []).some((a) => a.eventId === id)).map((f) => ({ name: first(X.person(f).name), emoji: X.person(f).emoji })) }); });
   app.get("/api/me/profile", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); res.json({ person: X.person(u.email), profile: X.eventProfile(u.email) }); });
   app.post("/api/me/profile/self", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, A = {};
     for (const [k, ok] of [["host", ["often", "sometimes", "rarely"]], ["rsvp", ["first", "planner", "last"]], ["room", ["spark", "chill", "helper"]], ["bring", ["food", "friend", "self"]]]) if (ok.includes(b[k])) A[k] = b[k];

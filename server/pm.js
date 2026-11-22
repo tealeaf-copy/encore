@@ -111,7 +111,11 @@ export function schedulePm(store, { stores } = {}) {
     return null;
   }
   const task = cron.schedule(expr, async () => {
-    for (const st of stores ? stores() : [store]) await runPm(st).catch((e) => console.error("[pm] run failed:", e?.message || e));
+    const { runReminders } = await import("./reminders.js");
+    for (const st of stores ? stores() : [store]) {
+      await runReminders(st).catch((e) => console.error("[reminders] run failed:", e?.message || e));
+      await runPm(st).catch((e) => console.error("[pm] run failed:", e?.message || e));
+    }
   }, { timezone });
   console.log(`[pm] scheduled "${expr}" (${timezone})`);
   return task;

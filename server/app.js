@@ -12,6 +12,8 @@ import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
+import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE } from "./email.js";
+import { runReminders } from "./reminders.js";
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS,
@@ -453,6 +455,15 @@ export function createApp({ store, dataDir }) {
     catch { return null; }
   };
   const VERIFY = {
+    email: async (b) => {
+      const service = String(b.service || "").trim().toLowerCase(), key = String(b.key || b.token || "").trim(), from = String(b.from || "").trim().toLowerCase(), fromName = String(b.fromName || "").replace(/[<>"\r\n]/g, "").trim().slice(0, 80);
+      if (!EMAIL_SERVICES[service]) return { error: [400, "invalid", "Choose Resend, Postmark or SendGrid."] };
+      if (!key || key.length > 400) return { error: [400, "invalid", "Paste the API key."] };
+      if (!EMAIL_RE.test(from)) return { error: [400, "invalid", "Add the address emails come from, on a domain you've verified with the service."] };
+      const v = await verifyEmailKey(service, key);
+      if (!v.ok) return { error: [v.status, v.code || "invalid", v.message] };
+      return { secret: JSON.stringify({ service, key, from, fromName }), meta: { service, from } };
+    },
     slack: async (b) => {
       const token = String(b.token || "").trim(), channel = String(b.channel || "").trim().slice(0, 80);
       if (!/^xox[bp]-[A-Za-z0-9-]{10,300}$/.test(token)) return { error: [400, "invalid", "token must be a Slack bot token (xoxb-…)."] };
@@ -493,7 +504,7 @@ export function createApp({ store, dataDir }) {
     S(req).add("audit", { eventId: "", what: `connected ${CHECKS[provider].name}`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
     res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === provider) });
   });
-  const CHECKS = { salesforce: { name: "Salesforce" }, slack: { name: "Slack" }, linear: { name: "Linear" }, gong: { name: "Gong" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
+  const CHECKS = { email: { name: "Email sending" }, salesforce: { name: "Salesforce" }, slack: { name: "Slack" }, linear: { name: "Linear" }, gong: { name: "Gong" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
   app.get("/api/connections", (req, res) => { const a = adminOf(req, res); if (!a) return; res.json({ connections: listConnections(a.ws) }); });
   app.post("/api/connections", json, async (req, res) => {
     const a = adminOf(req, res); if (!a) return;
@@ -535,7 +546,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(audit|approvals|aeactions|system)(\/|$)/;
+  const AUDIT = /^(audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -694,10 +705,85 @@ export function createApp({ store, dataDir }) {
     res.json({ ok: true, action: rec });
   });
 
+  // ---------- Email from Encore ----------
+  const originOf = (req) => process.env.ENCORE_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+  /** Send as the signed-in person (reply-to them), log it in the outbox and the audit log. */
+  async function mailFrom(req, { to, cc, subject, text, eventId = "", kind = "email" }) {
+    const ws = sessionWorkspace(req), cfg = emailConfig(ws, ws === DEFAULT_WS), u = currentUser(req);
+    if (!cfg) return { ok: false, code: "email_off", error: "Email isn't set up. Connect a sending service in Setup." };
+    const hour = Date.now() - 36e5, recent = S(req).list("outbox").filter((d) => d.data?.at > hour).length;
+    if (recent >= +(process.env.ENCORE_EMAIL_PER_HOUR || 300)) return { ok: false, code: "rate_limited", error: "Hourly email limit reached. Try again later." };
+    const r = await sendEmail(cfg, { to, cc, subject, text, replyTo: u?.email, fromName: u?.name ? `${u.name}${getWorkspace(ws)?.company ? " at " + getWorkspace(ws).company : ""}` : "" });
+    const rec = { kind, eventId, to: [].concat(to), subject: String(subject || "").slice(0, 200), by: u?.email || null, at: Date.now(), status: r.ok ? "sent" : "failed", error: r.error || null, providerId: r.id || null };
+    S(req).add("outbox", rec);
+    if (r.ok) S(req).add("audit", { eventId, what: `emailed ${[].concat(to).join(", ")}: "${rec.subject}"`, kind: "email", who: u?.name || "Team", email: u?.email || null, verified: !!u, at: rec.at });
+    return r;
+  }
+  app.get("/api/email/status", (req, res) => { const ws = sessionWorkspace(req); res.json(publicEmailConfig(emailConfig(ws, ws === DEFAULT_WS))); });
+  app.post("/api/email/send", json, async (req, res) => {
+    if (req.guest) return res.status(403).json({ code: "not_granted" });
+    const b = req.body || {}, to = [].concat(b.to || []).map((x) => String(x).trim()).filter(Boolean);
+    if (!to.length || to.length > 5 || !to.every((x) => EMAIL_RE.test(x))) return res.status(400).json({ code: "invalid", message: "Add one to five valid email addresses." });
+    if (!String(b.subject || "").trim() || !String(b.text || "").trim()) return res.status(400).json({ code: "invalid", message: "Subject and message are required." });
+    const eventId = String(b.eventId || "").slice(0, 80);
+    if (eventId && !/^[A-Za-z0-9_-]+$/.test(eventId)) return res.status(400).json({ code: "invalid" });
+    const r = await mailFrom(req, { to, cc: b.cc, subject: b.subject, text: b.text, eventId, kind: String(b.kind || "email").slice(0, 40) });
+    if (!r.ok) return res.status(r.code === "email_off" ? 409 : r.code === "rate_limited" ? 429 : 502).json({ code: r.code || "send_failed", message: r.error });
+    res.json({ ok: true, id: r.id });
+  });
+  app.get("/api/email/outbox", (req, res) => {
+    if (req.guest) return res.status(403).json({ code: "not_granted" });
+    const id = String(req.query.eventId || "");
+    res.json({ messages: S(req).list("outbox").map((d) => d.data).filter((m) => !id || m.eventId === id).sort((a, b) => b.at - a.at).slice(0, 200) });
+  });
+  // ---------- Deadline reminders (email, weekday mornings) ----------
+  app.get("/api/reminders", async (req, res) => {
+    if (req.guest) return res.status(403).json({ code: "not_granted" });
+    const st = S(req), ws = sessionWorkspace(req), on = st.get("settings/reminders")?.data?.on !== false;
+    const preview = await runReminders(st, { dryRun: true, origin: originOf(req) });
+    res.json({ on, email: publicEmailConfig(emailConfig(ws, ws === DEFAULT_WS)), schedule: process.env.PM_CRON === "off" ? null : (process.env.PM_CRON || "0 8 * * 1-5") + " " + (process.env.PM_TZ || "America/Chicago"), people: preview.people.map(({ preview: text, ...p }) => ({ ...p, text })), skipped: preview.skipped.slice(0, 20) });
+  });
+  app.post("/api/reminders", json, async (req, res) => {
+    const a = adminOf(req, res); if (!a) return;
+    if (typeof req.body?.on === "boolean") { S(req).set("settings/reminders", { on: req.body.on, by: a.u?.email || "team", at: Date.now() }); S(req).add("audit", { eventId: "", what: `${req.body.on ? "turned on" : "turned off"} deadline reminder emails`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() }); }
+    if (req.body?.sendNow) return res.json(await runReminders(S(req), { origin: originOf(req), ...(req.body.now ? { now: Number(req.body.now) } : {}) }));
+    res.json({ ok: true, on: S(req).get("settings/reminders")?.data?.on !== false });
+  });
+  // ---------- CRM writes: RevOps only, or queued for RevOps to approve ----------
+  const CRM_WRITES = new Set(["upsert_event_attendees", "log_followups", "rollup_account_spend"]);
+  const isRevOps = (u) => !!u && (u.roles || []).some((r) => /^(rev\s?ops|revenue operations|crm admin|sales ?ops)$/i.test(String(r).trim()));
+  const canWriteCrm = (req) => isRevOps(currentUser(req)) || (!authEnabled() && sessionWorkspace(req) === DEFAULT_WS && !teamOf(DEFAULT_WS).length);
+  const crmSummary = (tool, input) => tool === "upsert_event_attendees" ? `add ${(input?.members || []).length} attendees to the "${input?.eventName || "event"}" campaign`
+    : tool === "log_followups" ? `log ${(input?.items || []).length} follow-up next steps for ${input?.eventName || "an event"}`
+    : `write event spend onto ${(input?.accounts || []).length} accounts`;
+  app.get("/api/crmwrites", (req, res) => {
+    if (req.guest) return res.status(403).json({ code: "not_granted" });
+    res.json({ canApprove: canWriteCrm(req), requests: S(req).list("crmwrites").map((d) => ({ id: d.id, ...d.data, input: undefined, rows: d.data.rows })).sort((a, b) => b.at - a.at).slice(0, 100) });
+  });
+  app.post("/api/crmwrites/:id", json, async (req, res) => {
+    if (!canWriteCrm(req)) return res.status(403).json({ code: "not_granted", message: "Only RevOps can approve CRM writes." });
+    const path = "crmwrites/" + String(req.params.id).replace(/[^A-Za-z0-9_-]/g, ""), cur = S(req).get(path);
+    if (!cur) return res.status(404).json({ code: "not_found" });
+    if (cur.data.status !== "pending") return res.status(409).json({ code: "conflict", message: "Already decided." });
+    const u = currentUser(req), decision = req.body?.decision === "approve" ? "approved" : req.body?.decision === "reject" ? "rejected" : null;
+    if (!decision) return res.status(400).json({ code: "invalid" });
+    const rec = { ...cur.data, status: decision, decidedBy: u?.name || "RevOps", decidedByEmail: u?.email || null, decidedAt: Date.now(), note: String(req.body?.note || "").slice(0, 500) };
+    let result = null;
+    if (decision === "approved") {
+      const ws = sessionWorkspace(req);
+      if (!serversFor(req).some((x) => x.server === rec.server)) return res.status(409).json({ code: "server_not_connected", message: "The CRM isn't connected any more." });
+      try { result = await withCrm(connectionTokens(ws), ws === DEFAULT_WS, () => callTool(rec.server, rec.tool, rec.input, serversFor(req))); rec.result = "written"; }
+      catch (e) { rec.status = "failed"; rec.result = String(e?.message || e?.code || "failed").slice(0, 300); }
+    }
+    S(req).set(path, rec);
+    S(req).add("audit", { eventId: rec.eventId || "", what: `${rec.decidedBy} ${rec.status === "approved" ? "approved" : rec.status} a CRM write: ${rec.summary}${rec.note ? ` ("${rec.note}")` : ""}`, kind: "crm", who: rec.decidedBy, email: rec.decidedByEmail, verified: !!u, at: rec.decidedAt });
+    res.json({ ok: rec.status !== "failed", request: { id: req.params.id, ...rec, input: undefined }, result });
+  });
+
   // ---------- Sign-off requests: a signed, no-login link for the person who says yes to the budget ----------
   const soToken = (ws, eventId, rid, email) => hmac32(`so:${tag(ws)}${eventId}:${rid}:${String(email).toLowerCase()}`);
   const soClean = (r) => ({ id: r.id, name: r.name, email: r.email, requestedBy: r.requestedBy, at: r.at, status: r.status, decidedAt: r.decidedAt || null, comment: r.comment || "", cost: r.cost, currency: r.currency, remindedAt: r.remindedAt || null });
-  app.post("/api/signoff/request", json, (req, res) => {
+  app.post("/api/signoff/request", json, async (req, res) => {
     const u = currentUser(req), b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
     if (!ownEvent(req, res, eventId)) return;
     const email = String(b.email || "").trim().toLowerCase().slice(0, 200), name = String(b.name || "").trim().slice(0, 120) || email.split("@")[0];
@@ -709,15 +795,19 @@ export function createApp({ store, dataDir }) {
     cur.requests = [r, ...cur.requests.filter((x) => !(x.email === email && x.status === "pending"))].slice(0, 20);
     S(req).set(path, cur);
     S(req).add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: asked ${name} <${email}> to sign off ${money.currency} ${money.cost.toLocaleString("en-US")}`, who: r.requestedBy, email: r.requestedByEmail, verified: !!u, at: r.at });
-    res.json({ request: soClean(r), token: soToken(ws, eventId, r.id, email), ws: ws === DEFAULT_WS ? null : ws });
+    const token = soToken(ws, eventId, r.id, email);
+    const emailed = b.message ? await mailFrom(req, { to: email, subject: `Sign-off: ${ev.data.name || "event plan"}`, text: String(b.message).replace("{{link}}", `${originOf(req)}/g#signoff-${eventId}-${r.id}~${token}`), eventId, kind: "signoff" }) : null;
+    res.json({ request: soClean(r), token, ws: ws === DEFAULT_WS ? null : ws, emailed: !!emailed?.ok, emailError: emailed && !emailed.ok ? emailed.error : undefined });
   });
-  app.post("/api/signoff/remind", json, (req, res) => {
+  app.post("/api/signoff/remind", json, async (req, res) => {
     const b = req.body || {}, eventId = String(b.eventId || ""), ws = sessionWorkspace(req);
     if (!ownEvent(req, res, eventId)) return;
     const path = "signoffs/" + eventId, cur = S(req).get(path)?.data; const r = cur?.requests?.find((x) => x.id === b.id && x.status === "pending");
     if (!r) return res.status(404).json({ code: "not_found" });
     r.remindedAt = Date.now(); S(req).set(path, cur);
-    res.json({ request: soClean(r), token: soToken(ws, eventId, r.id, r.email) });
+    const token = soToken(ws, eventId, r.id, r.email), ev = S(req).get("events/" + eventId);
+    const emailed = b.message ? await mailFrom(req, { to: r.email, subject: `Reminder: sign-off for ${ev?.data?.name || "the event plan"}`, text: String(b.message).replace("{{link}}", `${originOf(req)}/g#signoff-${eventId}-${r.id}~${token}`), eventId, kind: "signoff-reminder" }) : null;
+    res.json({ request: soClean(r), token, emailed: !!emailed?.ok, emailError: emailed && !emailed.ok ? emailed.error : undefined });
   });
   app.get("/api/signoff", (req, res) => {
     const eventId = String(req.query.eventId || ""); if (!ownEvent(req, res, eventId)) return;
@@ -992,7 +1082,15 @@ export function createApp({ store, dataDir }) {
     const { server, tool, input } = req.body || {};
     if (!serversFor(req).some((x) => x.server === String(server || ""))) throw { code: "server_not_connected", message: `"${server}" is not connected on this server.` };
     const ws = sessionWorkspace(req);
-    res.json(await withCrm(connectionTokens(ws), ws === DEFAULT_WS, () => callTool(String(server || ""), String(tool || ""), input, serversFor(req))));
+    if (CRM_WRITES.has(String(tool || "")) && !canWriteCrm(req)) {
+      const u = currentUser(req), summary = crmSummary(String(tool), input), rows = (input?.members || input?.items || input?.accounts || []).slice(0, 200).map((x) => [x.email, x.name, x.company, x.subject, x.status].filter(Boolean).join(" · ").slice(0, 160));
+      const doc = S(req).add("crmwrites", { server: String(server), tool: String(tool), input, summary, rows, eventId: String(req.body?.eventId || input?.eventId || "").slice(0, 80), requestedBy: u?.name || "Team", requestedByEmail: u?.email || null, at: Date.now(), status: "pending" });
+      S(req).add("audit", { eventId: "", what: `asked RevOps to approve a CRM write: ${summary}`, kind: "crm", who: u?.name || "Team", email: u?.email || null, verified: !!u, at: Date.now() });
+      return res.json({ queued: true, id: doc?.id || null, message: `Sent to RevOps for approval: ${summary}. Nothing is written to the CRM until they approve.` });
+    }
+    const out = await withCrm(connectionTokens(ws), ws === DEFAULT_WS, () => callTool(String(server || ""), String(tool || ""), input, serversFor(req)));
+    if (CRM_WRITES.has(String(tool || ""))) { const u = currentUser(req); S(req).add("audit", { eventId: "", what: `wrote to the CRM: ${crmSummary(String(tool), input)}`, kind: "crm", who: u?.name || "Team", email: u?.email || null, verified: !!u, at: Date.now() }); }
+    res.json(out);
   });
 
   // ---------- pm ----------

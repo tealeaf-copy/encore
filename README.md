@@ -64,6 +64,14 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `SF_API_VERSION` | `v61.0` | Salesforce REST API version |
 | `PM_CRON` | `0 8 * * 1-5` | When the daily project-manager job runs (`off` disables it) |
 | `PM_TZ` | `America/Chicago` | Time zone for `PM_CRON` |
+| `ENCORE_EMAIL_SERVICE` | `resend` | Default workspace only: `resend`, `postmark` or `sendgrid`. Other workspaces connect their own key in Setup |
+| `ENCORE_EMAIL_KEY` | unset | Default workspace only: the sending service's API key |
+| `ENCORE_EMAIL_FROM` | unset | Default workspace only: the From address, on a domain verified with the service |
+| `ENCORE_EMAIL_PER_HOUR` | `300` | Most emails one workspace can send per hour |
+| `ENCORE_FAKE_EMAIL` | `0` | `1` = record emails in the outbox without sending (demos and tests) |
+| `ENCORE_PUBLIC_URL` | request host | Base URL used in links inside emails |
+
+**Email, reminders and CRM writes.** With a sending service connected (Setup → Email from Encore), sign-off requests, guest invites and deadline reminders go from Encore, with replies to the sender; every message is logged in the outbox and the audit log. Deadline reminders run with `PM_CRON` (weekdays at 8am by default): each task owner gets one email listing what's late or due in two days, matched to teammates by name or role, at most once a day. Reading the CRM is open to the team; writing to it (attendee sync, follow-up tasks, account spend) is limited to people with the RevOps role, and anyone else's write waits in Setup → CRM writes until RevOps approves it.
 
 `.env` is loaded at start-up; variables already set in the environment win.
 

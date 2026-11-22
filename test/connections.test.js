@@ -30,7 +30,7 @@ async function signup(company, email) {
 test("workspaces connect their own HubSpot token; it's checked, encrypted, and used for their tool calls", async () => {
   A = await signup("Acme", "owner@acme.com"); B = await signup("Beta", "owner@beta.com");
   mock((u, init) => (init.headers.Authorization === "Bearer good-token" ? reply(200, { results: [] }) : reply(401, { message: "bad" })));
-  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false], ["salesforce", false], ["slack", false], ["linear", false], ["gong", false]]);
+  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false], ["salesforce", false], ["slack", false], ["linear", false], ["gong", false], ["email", false]]);
   assert.equal((await post("/api/connections", { provider: "salesforce", token: "x" }, A.cookie)).status, 400);
   const bad = await post("/api/connections", { provider: "hubspot", token: "wrong" }, A.cookie);
   assert.equal(bad.status, 400);

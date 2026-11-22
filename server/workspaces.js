@@ -113,7 +113,7 @@ export function revokeMcpToken(ws, id) {
 }
 
 // ---------- CRM connections: provider tokens, encrypted at rest (AES-256-GCM) ----------
-export const CONNECTION_PROVIDERS = ["hubspot", "attio", "salesforce", "slack", "linear", "gong"];
+export const CONNECTION_PROVIDERS = ["hubspot", "attio", "salesforce", "slack", "linear", "gong", "email"];
 function connKey() {
   let base = process.env.SESSION_SECRET;
   if (!base) { base = need().get("system/secret")?.data?.v; if (!base) { base = randomBytes(32).toString("hex"); need().set("system/secret", { v: base }); } }

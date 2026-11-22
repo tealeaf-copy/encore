@@ -99,7 +99,7 @@ test("password gate and guest exemptions", async () => {
 test("GET / wraps index.html with the shim", async () => {
   const html = await (await fetch(srv.base + "/")).text();
   assert.ok(html.startsWith('<!doctype html><html><head><meta charset="utf-8">'));
-  assert.match(html, /<script src="\/shim.js"><\/script><\/head><body><title>/);
+  assert.match(html, /<script src="\/shim.js"><\/script><script src="\/avatars.js"><\/script><\/head><body><title>/);
   assert.ok(html.endsWith("</body></html>"));
   const shim = await fetch(srv.base + "/shim.js");
   assert.equal(shim.status, 200);

@@ -2018,7 +2018,7 @@ function drawClock(done){
 }
 setInterval(()=>{ if(!isGuestRoute()&&$("#clock")) renderHeader() },60000);
 
-function subTabs(group,cur){ const T=group==="ideas"?[["inspire","Inspiration"],["canvas","Your year"]]:[["impact","Impact"],["insights","Audience insights"]];
+function subTabs(group,cur){ const T=group==="ideas"?[["inspire","Inspiration"],["canvas","Ideas board"]]:[["impact","Impact"],["insights","Audience insights"]];
   return `<div class="subtabs" role="tablist">${T.map(([h,l])=>`<a href="#${h}" class="${h===cur?"on":""}" role="tab" aria-selected="${h===cur}">${l}</a>`).join("")}</div>` }
 // ==================================================================
 // Studio steps
@@ -2165,7 +2165,7 @@ async function renderSignoff(host,eventId,rid,tok){ host.innerHTML=`<div class="
       ${e.lines?.length?`<div class="tscroll"><table><thead><tr><th>Line</th><th class="num">Amount</th></tr></thead><tbody>${e.lines.map(l=>`<tr><td>${esc(l.label)}</td><td class="num">${M(l.amount)}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${M(cur.cost)}</b></td></tr></tbody></table></div>`:""}</section>
     ${q.status!=="pending"?`<section class="panel"><h3>${q.status==="approved"?"You signed off this plan.":q.status==="changes"?"You asked for changes.":"You declined this plan."}</h3><p class="note">${q.comment?`"${esc(q.comment)}" · `:""}${esc(q.requestedBy)} has been told. It's in the event's decision log.</p></section>`:
     `<section class="panel stack"><label class="f">Comment (optional)<textarea id="soC" rows="3" placeholder="Approved. Keep the venue under $8k."></textarea></label>
-      <div class="btns"><button class="btn primary" data-dec="approved">Approve ${M(cur.cost)}</button><button class="btn" data-dec="changes">Ask for changes</button><button class="btn ghost" data-dec="declined">Decline</button></div>
+      ${+e.budget&&cur.cost>+e.budget*1.02?`<p class="caveat"><b>Over budget:</b> this plan is ${M(cur.cost-(+e.budget))} over the ${M(+e.budget)} budget. Approving it approves the higher amount.</p>`:""}<div class="btns"><button class="btn primary" data-dec="approved">Approve ${M(cur.cost)}</button><button class="btn" data-dec="changes">Ask for changes</button><button class="btn ghost" data-dec="declined">Decline</button></div>
       <p class="note">Your answer and comment go to ${esc(q.requestedBy)} and into the event's decision log with your name.</p></section>`}</div>`;
     $$("[data-dec]",host).forEach(b=>b.onclick=async()=>{ const c=$("#soC",host).value.trim(); if(b.dataset.dec!=="approved"&&!c){ toast("Add a line so they know what to change."); $("#soC",host).focus(); return } $$("[data-dec]",host).forEach(x=>x.disabled=true);
       try{ const r=await fetch("/api/signoff/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId,rid,t:tok,decision:b.dataset.dec,comment:c})}), k=await r.json(); if(!r.ok){ toast(k.message||"Couldn't record that."); $$("[data-dec]",host).forEach(x=>x.disabled=false); return } Object.assign(q,k.request); paint() }catch{ toast("Couldn't record that. Check your connection."); $$("[data-dec]",host).forEach(x=>x.disabled=false) } }) };
@@ -2937,7 +2937,7 @@ const BUDGET_MODEL={
     ["Swag","guests × per item",{sw:["Per person",15,"$"]},(x,d)=>d.headcount*x.sw,"Stickers or a t-shirt; skip if the budget is tight."],
     ["Prizes or speaker thanks","flat",{pz:["Prizes",800,"$"]},(x)=>x.pz,"Hack-night prizes or a thank-you for speakers."],
     ["Contingency","subtotal × contingency",{c:["Contingency",10,"%"]},null,"Covers headcount creep and last-minute changes."]],
-  dinner:[["Food and drink","guests × per-head × city × (1 + service and tax)",{pp:["Per-head food and drink",150,"$"],svc:["Service and tax",22,"%"]},(x,d,ci)=>d.headcount*(/hcp|pharma|gov/.test(d.compliance||"")?Math.min(x.pp,95):x.pp)*ci*(1+x.svc/100),"Private dining menus with wine typically run $120–220 a head before service in US cities; top-cost cities run ~30% higher. Estimate: confirm with the venue's minimum spend."],
+  dinner:[["Food and drink","guests × per-head × city × (1 + service and tax)",{pp:["Per-head food and drink",150,"$"],svc:["Service and tax",22,"%"]},(x,d,ci)=>((+d.headcount||0)+Math.max(1,+d.hostSeats||2))*(/hcp|pharma|gov/.test(d.compliance||"")?Math.min(x.pp,95):x.pp)*(d.meal==="lunch"?.55:d.meal==="breakfast"?.4:1)*ci*(1+x.svc/100),"Guests plus your hosts. Private dining menus with wine typically run $120–220 a head before service in US cities; top-cost cities run ~30% higher. Estimate: confirm with the venue's minimum spend."],
     ["Private room or venue fee","flat fee × city",{fee:["Room fee or minimum top-up",1500,"$"]},(x,d,ci)=>x.fee*ci,"Many restaurants waive the room fee if you hit the minimum spend; experience venues (cooking schools, galleries) charge a hire fee."],
     ["Gifts and take-homes","guests × per-gift (zero under no-gift guest rules)",{g:["Per gift",60,"$"]},(x,d)=>/hcp|gov|pharma/.test(d.compliance||"")?0:d.headcount*(d.compliance==="fin"?Math.min(100,x.g):x.g),"A book, local food or a useful object; $40–80 lands well with execs. Shipping excluded."],
     ["Photo and video","day rate",{ph:["Photographer (3–4 hours)",1200,"$"]},(x,d,ci)=>x.ph*ci,"Event photographer half-day; add video only if you'll publish it."],
@@ -2995,7 +2995,7 @@ function fitTasks(d,tasks){ if(!d.date||!tasks?.length) return tasks; const L=Ma
   return tasks.map(t=>+t.days<0?{...t,days:-Math.max(1,Math.round(-t.days*k)),dur:Math.max(1,Math.round((t.dur||1)*k)),squeezed:true}:t) }
 function starterProduce(d){ const T=TEMPLATES[kindOf(d)]||TEMPLATES.dinner, B=+d.budget||15000;
   return {starter:true,team:[{role:"Event lead",who:"You",owns:kindOf(d)==="webinar"?["Plan and budget","Speaker and platform","Run of show"]:["Plan and budget","Venue and vendors","Run of show"],hours:30},{role:"Account execs",who:"Sales",owns:["Nominate and invite","Follow up in 24h"],hours:6},{role:"Exec sponsor",who:"A leader",owns:["Welcome","Personal notes"],hours:3},{role:"Sales lead",who:"Sales leadership",owns:["Cheat sheets","Pipeline review"],hours:4}],
-    timeRisk:"",runOfShow:T.ros.map(([time,item,owner,cue])=>({time,item,owner,cue:cue||""})),budget:T.split.map(([line,pc,note])=>({line,amount:Math.round(B*pc/100/50)*50,note})),tasks:fitTasks(d,T.tasks.map(([days,task,owner,workstream])=>({days,dur:Math.max(1,Math.min(7,Math.round(Math.abs(days)/6))),task,owner,workstream})))} }
+    timeRisk:"",runOfShow:T.ros.filter(([,item])=>!(/hcp|pharma|gov/.test(d.compliance||"")&&/gift|take-home|swag/i.test(item))).map(([time,item,owner,cue])=>({time,item:d.meal&&kindOf(d)==="dinner"?String(item).replace(/\bdinner\b/gi,d.meal):item,owner,cue:cue||""})),budget:T.split.map(([line,pc,note])=>({line,amount:Math.round(B*pc/100/50)*50,note})),tasks:fitTasks(d,T.tasks.map(([days,task,owner,workstream])=>({days,dur:Math.max(1,Math.min(7,Math.round(Math.abs(days)/6))),task,owner,workstream})))} }
 function starterPitch(d){ const T=starterProduce(d), cost=eventCost(d)||T.budget.reduce((a,b)=>a+b.amount,0), BM=budgetModel(d), ex=objOf(d)==="expansion";
   return {starter:true,title:d.copy?.title||d.name,oneLiner:d.concept||`A ${KINDS[kindOf(d)].label.toLowerCase()} for ${d.audience.roles.join(", ")||"your target buyers"}.`,whyNow:"Say why this quarter: a launch, a renewal window or a budget cycle.",audience:d.audience.roles.join(", ")||"Target roles",experience:d.concept||"",
     outcomes:ex?[{metric:"Customers attending",target:String(d.headcount)},{metric:"Renewals covered",target:"Set a number"},{metric:"Expansion conversations",target:"Set a number"}]:[{metric:"Target accounts attending",target:"Set a number"},{metric:"Meetings within 2 weeks",target:"Set a number"},{metric:"New opportunities in 90 days",target:"Set a number"}],
@@ -3177,6 +3177,7 @@ const CONF_CAL=[["ProMat","Chicago",3,"flagship"],["MODEX","Atlanta",3,"major"],
 function confFromText(t){ const lo=String(t||"").toLowerCase(); return CONF_CAL.slice().sort((a,b)=>b[0].length-a[0].length).find(([n])=>lo.includes(n.toLowerCase())) }
 const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
 function parseEventText(t){ const x=String(t||""), lo=x.toLowerCase(), o={}; { const bs=x.match(/(\d{1,3})\s*(?:x|×|by)\s*(\d{1,3})\s*(?:ft|foot|feet|')?\s*(?:booth|stand|space|island)/i); if(bs) o.boothSq=+bs[1]*+bs[2] }
+  o.meal=(lo.match(/\b(breakfast|brunch|lunch)\b/)||[])[1]||""; if(o.meal==="brunch") o.meal="lunch"; if(/advisory board|\bcab\b/.test(lo)) o.cab=true;
   const side=/\b(dinner|breakfast|lunch|brunch|happy hour|reception|roundtable|drinks)\b/.test(lo)&&!/\b(booth|stand|sponsor|exhibit)/.test(lo);
   const multi=(x.match(/\b(?:in|across)\s+([A-Z][A-Za-z.]+(?:\s[A-Z][a-z.]+)?(?:\s*,\s*[A-Z][A-Za-z.]+(?:\s[A-Z][a-z.]+)?)*\s*(?:,?\s*and\s+)[A-Z][A-Za-z.]+(?:\s[A-Z][a-z.]+)?)/)||[])[1];
   if(multi){ const cs=multi.split(/\s*,\s*|\s+and\s+/).map(c=>c.trim()).filter(c=>c&&!MONTHS.includes(c.slice(0,3).toLowerCase())); if(cs.length>1) o.cities=cs }
@@ -3197,7 +3198,7 @@ function parseEventText(t){ const x=String(t||""), lo=x.toLowerCase(), o={}; { c
   const cf=confFromText(x); if(cf){ o.conf=cf[0]; if(!o.city&&!/varies/.test(cf[1])) o.city=cf[1]; if(!mm){ const now=new Date(); let y=now.getFullYear(); if(new Date(y,cf[2]-1,12)<now) y++; o.month=`${y}-${String(cf[2]).padStart(2,"0")}` } o.showSize=cf[3]; o.confWeek=true }
   if(o.kind==="conference"&&o.headcount&&o.headcount>60&&!/seat|dinner|guest/i.test(lo)){ o.audience=o.headcount; o.headcount=20 }
   return o }
-function quickStart(text){ const o=parseEventText(text), d=hydrate(brandDraft({kind:o.kind})); d.example=false; d.compliance=window.__qsComp||(/\b(physician|doctor|cmio|cmo of|hcp|clinician|nurse|pharmacist|oncologist|cardiologist|kol)\b/i.test(text)?"hcp":""); window.__qsComp=""; const clean=text.trim().replace(/,?\s*(?:for\s+)?(?:about|around|roughly|~|budget(?: of)?|up to)?\s*(?:\$|€|£)\s?[\d.,]+\s?k?\b|,?\s*(?:about|around|roughly|~)?\s*\b\d+(?:\.\d+)?\s?k\b(?:\s*budget)?/gi," ").replace(/\s{2,}/g," ").replace(/\s+([.,])/g,"$1").replace(/\.(?=[A-Z])/g,". ").replace(/[,\s]+$/,""); d.concept=clean;
+function quickStart(text){ const o=parseEventText(text), d=hydrate(brandDraft({kind:o.kind})); if(o.meal) d.meal=o.meal; if(o.cab) d.cab=true; d.example=false; d.compliance=window.__qsComp||(/\b(physician|doctor|cmio|cmo of|hcp|clinician|nurse|pharmacist|oncologist|cardiologist|kol)\b/i.test(text)?"hcp":""); window.__qsComp=""; const clean=text.trim().replace(/,?\s*(?:for\s+)?(?:about|around|roughly|~|budget(?: of)?|up to)?\s*(?:\$|€|£)\s?[\d.,]+\s?k?\b|,?\s*(?:about|around|roughly|~)?\s*\b\d+(?:\.\d+)?\s?k\b(?:\s*budget)?/gi," ").replace(/\s{2,}/g," ").replace(/\s+([.,])/g,"$1").replace(/\.(?=[A-Z])/g,". ").replace(/[,\s]+$/,""); d.concept=clean;
   const nm=clean.replace(/^(an?|we('| a)re (hosting|running|doing)|host(ing)?|plan(ning)?)\s+/i,""); d.name=(nm.length>60?nm.slice(0,60).replace(/\s+\S*$/,""):nm).replace(/(\s+(on|in|at|for|with|and|the|a|of|during))+$/i,"").replace(/^./,c=>c.toUpperCase());
   if(d.name.length>34){ const who=((o.roles||[])[0]||"").replace(/^([A-Z]{2,4})s\b/,"$1").replace(/^VPs\b/,"VP")||(o.kind==="conference"&&o.conf?o.conf:""), what={dinner:"dinner",conference:o.conf?"booth":"conference",roadshow:"roadshow",summit:"summit",webinar:"live session",owned:"conference",launch:"launch",experience:"experience"}[o.kind]||"event"; d.name=(o.kind==="conference"&&o.conf?`${o.conf} booth`:who?`${who} ${what}`:`${KINDS[o.kind].label}`).replace(/^./,c=>c.toUpperCase())+(o.city&&!/online/i.test(o.city)?` · ${o.city}`:"") }
   if(o.cities?.length>1){ d.cities=o.cities; d.name=`Roadshow · ${o.cities.join(", ")}`; }
@@ -3220,12 +3221,11 @@ function startTemplate(k){ if(!KINDS[k]) k="dinner"; const d=hydrate(brandDraft(
 const INTERNAL_ROS=/\b(team|staff|crew|setup|set-up|load[- ]in|walk-?through|briefing|seating cards|tear ?down|pack|vendor|av check|sound check|arrive early|debrief|internal)\b/i;
 function guestAgenda(L){ return (L||[]).filter(a=>a&&a.time&&!/^-/.test(String(a.time))&&!INTERNAL_ROS.test(a.item||"")) }
 function quickStartHTML(){ const mine=allEvents.some(e=>!e.example), TPL=[["dinner","Executive dinner","20 seats, AE-nominated"],["conference","Conference booth","Booth, team, side dinner"],["roadshow","City roadshow","One plan, several cities"],["summit","Advisory board","Customers, roadmap, renewals"],["webinar","Live session","Speakers, sign-ups, clips"]];
-  return `<section class="welcome" id="qsPanel"><div><h1>${mine?"What's next on the calendar?":"What are you hosting next?"}</h1><p class="note" style="font-size:15px;line-height:24px;margin-top:6px">Tell Encore in a sentence. It drafts the plan, a line-by-line budget, the timeline and the event page.</p></div>
-    <div class="askrow"><input id="qsText" aria-label="Describe your event" placeholder="A dinner for 20 CFOs in Chicago on April 9, about $20k"><button class="btn primary" id="qsGo">Draft the plan</button></div>
+  return `${typeof conciergeHTML==="function"?conciergeHTML():""}<details class="cg-more"><summary>More ways to start</summary><div class="stack" style="gap:14px;margin-top:12px">
     <div><p class="note" style="margin-bottom:6px">Who's coming?</p><div class="pills" role="group" aria-label="Guest rules">${[["","Business guests"],["hcp","Healthcare professionals"],["gov","Government officials"],["fin","Financial services"],["pharma","Pharma"]].map(([k,l],ix)=>`<button type="button" data-comp="${k}" aria-pressed="${ix===0}">${l}</button>`).join("")}</div><select id="qsComp" hidden>${COMPLIANCE.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>
     <div class="tryrow"><span class="note">Try one:</span>${EXAMPLES.map((x,ix)=>`<button type="button" class="trychip" data-try="${ix}">${esc(x.chip)}</button>`).join("")}</div>
     <div><p class="note" style="margin-bottom:6px">Or start from a plan that works</p><div class="tplgrid">${TPL.map(([k,l,d])=>`<button type="button" data-tpl="${k}">${l}<span>${d}</span></button>`).join("")}</div></div>
-    <p class="note" style="margin:0">New to Encore? <button class="linkbtn" type="button" data-tour>See how it works</button> (1 minute) or <a href="#studio" id="seeSample2">open a sample event</a>.</p></section>` }
+    <p class="note" style="margin:0">New to Encore? <button class="linkbtn" type="button" data-tour>See how it works</button> (1 minute) or <a href="#studio" id="seeSample2">open a sample event</a>.</p></div></details>${typeof ideaLibraryHTML==="function"?ideaLibraryHTML():""}` }
 const EXAMPLES=[
   {chip:"CFO dinner, New York",text:"A dinner for 14 CFOs in New York the week before budget season, about $28k",get:"A seated dinner plan, $28k budget in 8 lines, 12 tasks counted back from the date, and an invite your AEs can personalize."},
   {chip:"Dreamforce booth + side dinner",text:"Booth at Dreamforce plus a side dinner for 20 CIOs, about $150k",get:"Booth, freight and hotel lines, a staffing rota, pre-booked meetings, and a separate side-dinner guest list."},
@@ -5412,7 +5412,7 @@ function renderCanvas(){
   const moments=(curStrategy()?.moments||[]).map(m=>({...m,qi:Q.findIndex(q=>{ const [yy,mm]=(m.date||"").split("-").map(Number); return yy===q.y&&Math.ceil(mm/3)===q.q })})).filter(m=>m.qi>=0);
   const items=C.items||[], tot=items.reduce((a,b)=>a+(+b.budget||0),0);
   el.innerHTML=`${subTabs("ideas","canvas")}
-  <div class="canvas-head"><div><small class="eyebrow">Ideas · Your year</small><h2>${esc(brandProfile?.company||C.company||"Your")} year of experiences</h2><p class="lede">Drag ideas around, dream up new ones, and deploy the ones you love.</p></div>
+  <div class="canvas-head"><div><small class="eyebrow">Ideas board</small><h2>Events you'd love to run</h2><p class="lede">Your wish list. Save ideas from Inspiration with ♡ Save idea, drag each one into the quarter it fits, and press Deploy when you're ready to plan it. Nothing here is booked or sent.</p></div>
     <div class="btns">${C.example?'<span class="tag ex">Example canvas</span>':""}<button class="btn" id="shareRm">Share roadmap</button><button class="btn" id="terrBtn"><span class="spark">✦</span>Plan by territory</button><button class="btn primary big" id="fillYear"><span class="spark">✦</span>${items.length?"Reimagine my year":"Fill my year"}</button></div></div>
   <div class="cv-stats">
     <div class="kpi"><small>Experiences</small><b>${items.length}</b></div>
@@ -5586,17 +5586,20 @@ Reply with only JSON: {"companies":"comma-separated list of the companies you co
 function artFor(c,x){ if(!c||!x) return; const C=CATS[catOf(x.format)]; drawCover(c,{...draft,name:x.name,brand:"",cover:{motif:C.motif},brandColors:[C.color,"#FFFFFF"]},{mini:true}) }
 function pinCard(x){ const L=laneOf(x.audience), h=[260,320,380][[...x.name].length%3];
   return `<article class="pin" style="--lc:${L[2]};--cc:${CATS[catOf(x.format)].color}"><div class="pinart" style="height:${h}px"><canvas width="400" height="${Math.round(h*1.25)}" data-part2="${x.id}" aria-hidden="true"></canvas><span class="aud">${catBadge(x.format)}</span>${x.proven?`<span class="prov">Proven motion</span>`:`<span class="prov new">New motion</span>`}${x.peer?`<div class="hostbar onart">${hostRow(x,true)}</div>`:""}</div>
-    <div class="ib">${audBadge(x.audience)}${x.peer?`<span class="by">${x.date?esc(x.date)+" · ":""}${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">See the source</a>`:"No source link"}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
-    <div class="btns"><button class="round sm ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn sm" data-pb="${x.id}">Playbook</button><button class="btn ghost sm" data-addc="${x.id}">+ Canvas</button></div></div></article>` }
+    <div class="ib">${audBadge(x.audience)}${x.peer?`<span class="by">${x.date?esc(x.date)+" · ":""}${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">See the source</a>`:"From public mentions"}</span>`:""}<b>${esc(x.name)}</b><p>${esc(x.line)}</p><span class="note">${"★".repeat(x.ambition||3)} · ${esc(x.cost||"")} · ${esc(x.lead||"")}</span>
+    <div class="btns"><button class="btn sm" data-pb="${x.id}">${x.peer?"How to run it":"Playbook"}</button><button class="btn ghost sm" data-addc="${x.id}" title="Keep this idea on your Ideas board, a wish list of events you might run">${onBoard(x)?"✓ On your Ideas board":"♡ Save idea"}</button></div></div></article>` }
 function wirePinActions(root){
-  $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; inspSaved.has(id)?inspSaved.delete(id):inspSaved.add(id); b.classList.toggle("keep"); toast(inspSaved.has(id)?"Saved":"Removed") });
+  $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; if(inspSaved.has(id)||onBoard({id})){ inspSaved.delete(id); dropFromBoard(id); b.classList.toggle("keep",false); toast("Taken off your Ideas board") } else { inspSaved.add(id); addToCanvas(id); b.classList.toggle("keep",true) } });
   $$("[data-pb]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeStories(); openPlaybook(b.dataset.pb) });
-  $$("[data-addc]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); addToCanvas(b.dataset.addc) });
+  $$("[data-addc]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(b.textContent.includes("✓")){ location.hash="#canvas"; return } addToCanvas(b.dataset.addc); inspSaved.add(b.dataset.addc); b.textContent="✓ On your Ideas board" });
   $$("[data-dep]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeStories(); const x=feed().find(y=>y.id===b.dataset.dep); deployPlay({name:x.name,concept:x.line,format:x.format},b) });
 }
 function addToCanvas(id){ const x=feed().find(y=>y.id===id); const C=cv()||(canvasData={items:[]}); C.example=false;
   const b=parseInt(String(x.cost||"").replace(/[^0-9k–-]/g,"").split(/[–-]/)[0])||0;
-  C.items.push({name:x.name,audience:x.audience,quarter:0,format:x.format,concept:x.line,goal:(x.kpis||[])[0]||"",size:"",budget:b*1000,ambition:x.ambition,tiedTo:""}); saveCanvas(); toast(`Added "${x.name}" to your canvas, Q1. Drag it where it fits.`) }
+  if((C.items||[]).some(i=>i.fromId===x.id||i.name===x.name)){ toast(`"${x.name}" is already on your Ideas board.`); return }
+  C.items.push({fromId:x.id,name:x.name,audience:x.audience,quarter:0,format:x.format,concept:x.line,goal:(x.kpis||[])[0]||"",size:"",budget:b*1000,ambition:x.ambition,tiedTo:""}); saveCanvas(); toast(`Saved "${x.name}" to your Ideas board, your wish list of events. Open it from Ideas, and plan it when you're ready.`) }
+function onBoard(x){ const C=cv(); return !!(C&&!C.example&&(C.items||[]).some(i=>i.fromId===x.id||(x.name&&i.name===x.name))) }
+function dropFromBoard(id){ const C=cv(); if(!C) return; C.items=(C.items||[]).filter(i=>i.fromId!==id); saveCanvas() }
 // Stories ---------------------------------------------------------------
 function openStories(i){ storyIx=i; drawStory() }
 function closeStories(){ clearTimeout(storyTimer); const h=$("#storyHost"); if(h) h.innerHTML=""; document.onkeydown=null }
@@ -5611,7 +5614,7 @@ function drawStory(){
     <button class="sclose" aria-label="Close stories">✕</button>
     <div class="stext"><div class="btns" style="gap:6px">${catBadge(x.format,true)}${audBadge(x.audience)}</div>${x.peer?`${hostRow(x,true)}${x.url?`<a class="by light" href="${esc(x.url)}" target="_blank" rel="noopener">See the source</a>`:""}`:""}<span class="aud">${esc(L[1])}</span><h3>${esc(x.name)}</h3><p>${esc(x.line)}</p><p class="why">${esc(x.why)}</p>
       <div class="sstats"><span>${"★".repeat(x.ambition||3)}</span><span>${esc(x.cost||"")}</span><span>${esc(x.lead||"")}</span><span>${x.proven?"Proven motion":"New motion"}</span></div>
-      <div class="btns"><button class="round ${inspSaved.has(x.id)?"keep":""}" data-save="${x.id}" aria-label="Save">♥</button><button class="btn" data-pb="${x.id}">Playbook ↑</button><button class="btn" data-addc="${x.id}">+ Canvas</button><button class="btn primary" data-dep="${x.id}">Deploy</button></div></div>
+      <div class="btns"><button class="btn" data-pb="${x.id}">${x.peer?"How to run it ↑":"Playbook ↑"}</button><button class="btn" data-addc="${x.id}" title="Keep this idea on your Ideas board, a wish list of events you might run">${onBoard(x)?"✓ On your Ideas board":"♡ Save idea"}</button><button class="btn primary" data-dep="${x.id}">Deploy</button></div></div>
     <button class="szone l" aria-label="Previous"></button><button class="szone r" aria-label="Next"></button></div></div>`;
   artFor($("#sArt"),x);
   $(".sclose",h).onclick=closeStories; $(".szone.l",h).onclick=()=>{storyIx--;drawStory()}; $(".szone.r",h).onclick=()=>{storyIx++;drawStory()};
@@ -5623,7 +5626,7 @@ function drawStory(){
 async function openPlaybook(id){
   const x=feed().find(y=>y.id===id), h=$("#pbHost"); if(!x||!h) return; const L=laneOf(x.audience);
   const drawPB=(P,loading)=>{ h.innerHTML=`<div class="pbsheet" role="dialog" aria-label="Playbook for ${esc(x.name)}"><div class="pbinner" style="--lc:${L[2]}">
-    <div class="btns" style="justify-content:space-between"><div><small class="eyebrow">Playbook · ${esc(L[1])}</small><h3>${esc(x.name)}</h3></div><button class="btn ghost sm" id="pbClose">Close</button></div>
+    <div class="btns" style="justify-content:space-between"><div><small class="eyebrow">${x.peer?`Encore's version · inspired by ${esc((hostsOf(x)||[])[0]||x.company||"another company")}`:`Playbook · ${esc(L[1])}`}</small><h3>${esc(x.name)}</h3>${x.peer?`<p class="note" style="margin:4px 0 0">Built by Encore from what ${esc((hostsOf(x)||[])[0]||x.company||"the host")} has shared publicly about this event. It's our own plan for running something similar, not their internal playbook.</p>`:""}</div><button class="btn ghost sm" id="pbClose">Close</button></div>
     <div class="chips"><span class="pchip ${P.proven?"good":"warn"}">${P.proven?"Proven motion":"New motion"}</span><span class="pchip">${esc(P.budget||x.cost||"")}</span><span class="pchip">${esc(x.lead||"")}</span>${P.source==="starter"?`<span class="pchip">Encore starter notes</span>`:""}</div>
     ${P.evidence?`<p class="note">${esc(P.evidence)}</p>`:""}
     <ol class="pbsteps">${(P.steps||[]).map(st=>`<li>${typeof st==="string"?esc(st):`<b>${esc(st.phase||"")}</b> ${esc(st.what||"")}${st.owner?` <span class="tag">${esc(st.owner)}</span>`:""}`}</li>`).join("")}</ol>
@@ -5632,7 +5635,7 @@ async function openPlaybook(id){
     ${P.expertTips?.length?`<div><small class="eyebrow">From people who've run it</small><div class="stack" style="gap:8px;margin-top:6px">${P.expertTips.map(t=>`<div class="surprise"><b>${esc(t.tip)}</b><span class="note">${/^https?:/.test(t.source||"")?`<a href="${esc(t.source)}" target="_blank" rel="noopener">source</a>`:esc(t.source||"")}</span></div>`).join("")}</div></div>`:""}
     ${!P.proven&&P.crew?.length?`<div class="crewbox"><small class="eyebrow">New motion: Encore assigns a crew</small><div class="cards" style="margin-top:8px">${P.crew.map(c=>`<div class="card"><b>${esc(c.agent)}</b><span class="note">${esc(c.job)}</span></div>`).join("")}</div></div>`:""}
     ${loading?`<p class="note">Asking the playbook library${sample?" and practitioners":""}…</p>`:""}
-    <div class="btns"><button class="btn primary" data-dep="${x.id}">${!P.proven&&P.crew?.length?"Run the crew":"Deploy"}</button><button class="btn" data-addc="${x.id}">+ Canvas</button>${sample&&!loading&&P.source==="starter"?`<button class="btn ghost" id="pbDeep"><span class="spark">✦</span>Get the expert playbook</button>`:""}</div>
+    <div class="btns"><button class="btn primary" data-dep="${x.id}">${!P.proven&&P.crew?.length?"Run the crew":"Deploy"}</button><button class="btn" data-addc="${x.id}" title="Keep this idea on your Ideas board, a wish list of events you might run">${onBoard(x)?"✓ On your Ideas board":"♡ Save idea"}</button>${sample&&!loading&&P.source==="starter"?`<button class="btn ghost" id="pbDeep"><span class="spark">✦</span>Get the expert playbook</button>`:""}</div>
   </div></div>`;
     $("#pbClose").onclick=()=>h.innerHTML=""; wirePinActions(h); $("#pbDeep")&&($("#pbDeep").onclick=()=>deep()) };
   const starter={proven:x.proven,steps:x.steps,kpis:x.kpis,pitfalls:x.pitfalls,source:"starter",crew:x.proven?null:[{agent:"Audience panel",job:"Test the idea with simulated buyers first"},{agent:"Venue scout",job:"Find a place that has hosted something similar"},{agent:"Producer",job:"Build a run-of-show with buffers for the unknowns"},{agent:"Media crew",job:"Capture it so the next one is easier to sell"}]};
@@ -5890,10 +5893,10 @@ function giftCapNotes(d){ if(d.compliance!=="fin") return []; const yr=String(ne
   return d.guests.map(g=>({g,v:tot.get((g.email||g.name||"").toLowerCase())||0})).filter(x=>x.v>=80) }
 function audienceNotes(d){ const G=(d.guests||[]).filter(g=>g.name||g.company), N=[], past=allEvents.filter(e=>e.id!==d.id&&!e.example);
   if(!G.length&&!(d.audience?.roles||[]).length) return N;
-  const sen=t=>/\b(chief|cfo|ceo|cmo|cro|cto|cio|ciso|coo|chro|president|founder|gc|general counsel)\b/i.test(t||"")?"C-level":/\b(svp|evp|vp|vice president|head of)\b/i.test(t||"")?"VP":/\bdirector\b/i.test(t||"")?"Director":t?"Manager or other":"";
+  const sen=t=>/\b(chief|c[a-z]{1,3}o|president|founder|gc|general counsel)\b/i.test(t||"")?"C-level":/\b(svp|evp|vp|vice president|head of)\b/i.test(t||"")?"VP":/\bdirector\b/i.test(t||"")?"Director":t?"Manager or other":"";
   const S={}; G.forEach(g=>{ const k=sen(g.title); if(k) S[k]=(S[k]||0)+1 }); const tot=Object.values(S).reduce((a,b)=>a+b,0), top=Object.entries(S).sort((a,b)=>b[1]-a[1])[0];
   const want=(d.audience?.roles||[]).join(" ");
-  if(top&&tot>=4){ const share=Math.round(100*top[1]/tot); if(/chief|cfo|ceo|cmo|cro|cio|ciso/i.test(want)&&top[0]!=="C-level") N.push({t:`Your list is ${share}% ${top[0]}, not the ${want} you're pitching to`,w:"Either retitle the invite so it fits who's actually coming, or ask AEs for more C-level names. Mixed rooms work when the host says why each person is there."}); else N.push({t:`${share}% of your list is ${top[0]}`,w:top[0]==="C-level"?"C-level guests decline more but bring more pipeline. Invite about 1.6× the seats and confirm through assistants a week out.":"Peers at this level come for each other. Name two or three confirmed guests in reminders; it lifts replies."}) }
+  if(top&&tot>=4){ const share=Math.round(100*top[1]/tot); const wantS=new Set((d.audience?.roles||[]).map(sen).filter(Boolean)); if(wantS.size&&!wantS.has(top[0])&&wantS.has("C-level")) N.push({t:`Your list is ${share}% ${top[0]}, not the ${want} you're pitching to`,w:"Either retitle the invite so it fits who's actually coming, or ask AEs for more C-level names. Mixed rooms work when the host says why each person is there."}); else N.push({t:`${share}% of your list is ${top[0]}`,w:top[0]==="C-level"?"C-level guests decline more but bring more pipeline. Invite about 1.6× the seats and confirm through assistants a week out.":"Peers at this level come for each other. Name two or three confirmed guests in reminders; it lifts replies."}) }
   const co={}; G.forEach(g=>{ const c=(g.company||"").trim(); if(c) co[c]=(co[c]||0)+1 }); const dup=Object.entries(co).filter(([,n])=>n>1);
   if(dup.length) N.push({t:`${dup.length} ${dup.length===1?"company has":"companies have"} more than one guest (${dup.slice(0,3).map(([c,n])=>`${c} ×${n}`).join(", ")})`,w:"Seat colleagues at different tables so each meets someone new, and agree with the AE who leads that account."});
   const away=G.filter(g=>g.region&&d.city&&!new RegExp(d.city.split(" ")[0],"i").test(g.region)); if(away.length>=2) N.push({t:`${away.length} guests are based outside ${d.city}`,w:"Out-of-town executives say yes when the dinner lines up with a trip. Ask AEs about travel plans before you count on them."});
@@ -5903,6 +5906,7 @@ function audienceNotes(d){ const G=(d.guests||[]).filter(g=>g.name||g.company), 
   if(back.length) N.push({t:`${back.length} ${back.length===1?"guest has":"guests have"} come to your events before`,w:`${back.slice(0,3).map(g=>g.name).join(", ")}${back.length>3?"…":""}. Ask them to bring a peer; returning guests are your best recruiters.`});
   if(flaky.length) N.push({t:`${flaky.length} ${flaky.length===1?"guest":"guests"} said yes before and didn't come`,w:"Confirm them personally two days out, and keep a waitlist name ready for each."});
   const tierA=G.filter(g=>g.tier==="A").length; if(G.length>=5&&tierA<Math.min(5,Math.ceil((+d.headcount||20)/4))) N.push({t:`Only ${tierA} tier A ${tierA===1?"account":"accounts"} on the list`,w:"Decide the accounts before the venue. Ask each AE for two tier A names this week."});
+  if(/gov/.test(d.compliance||"")&&+d.headcount){ const per=Math.round(eventCost(d)/(+d.headcount)); if(per>150) N.unshift({t:`$${per} per guest is high for government guests`,w:"Officials usually have strict limits on meals and anything of value. Check their agency's rule, keep the meal modest, and offer to let them pay their share. Encore has removed gifts from the plan."}) }
   const cap=giftCapNotes(d); if(cap.length) N.unshift({t:`${cap.length} ${cap.length===1?"guest is":"guests are"} near the $100 annual gift cap`,w:`${cap.slice(0,3).map(x=>`${x.g.name} ($${x.v})`).join(", ")}. Skip gifts for them this year or keep them under the cap.`});
   if(!G.length&&(d.audience?.roles||[]).length) N.push({t:`Who's in the room decides everything`,w:`Paste the ${d.audience.roles.join(", ")} you have in mind, or send your AEs their nomination links. Encore will tell you what it sees in the list.`});
   return N.slice(0,4) }
@@ -5935,6 +5939,98 @@ document.addEventListener("change",e=>{ const el=e.target; if(el?.id==="fe-tz"&&
 if(typeof audienceNotes==="function"){ const _an=audienceNotes; audienceNotes=function(d){ const N=_an(d)||[], ch=(d.guests||[]).filter(g=>g.needsChanged);
   if(ch.length) N.unshift({t:`${ch.length} ${ch.length===1?"guest changed their":"guests changed their"} dietary or access needs`,w:ch.slice(0,3).map(g=>`${g.name}: ${g.needsChanged}, now "${g.dietary||g.access}"`).join("; ")+". Send the venue the new kitchen sheet."});
   return N } }
+
+// ---------------- Concierge: onboarding chat and brainstorm on Home ----------------
+const CG_KEY="encore.cg", CG_DRAFT="encore.cgDraft";
+const CG_WHO=[["Finance leaders","finance","CFOs and VPs of Finance"],["Security leaders","security","CISOs and security leaders"],["Marketing leaders","marketing","CMOs and marketing leaders"],["Our best customers","customers","customer champions and their bosses"],["Developers and builders","community","engineers and builders"],["Healthcare leaders","health","CMIOs and health system leaders"]];
+const CG_GOAL=[["Open new pipeline","pipeline"],["Grow existing customers","expansion"],["Launch something new","launch"],["Build community","community"]];
+const CG_WHERE=[["New York, next quarter","New York"],["London","London"],["San Francisco","San Francisco"],["Not sure yet",""]];
+const CG_TIP={finance:"Finance leaders say yes less often in the last two weeks of a quarter. Aim for the first half of a month, keep it to two hours, and invite about 1.6 times the seats you want filled.",
+  security:"Security leaders prefer small, off-the-record rooms. Promise Chatham House rules and no vendor pitch, and the replies come faster.",
+  marketing:"Marketing leaders come for peers and fresh ideas. Name two or three confirmed guests in your reminders; it lifts replies more than any subject line.",
+  customers:"Customers who help shape the roadmap renew more often. Invite the champion and their boss, and close the loop on every idea within 30 days.",
+  community:"Builders come for hands-on time and good food. Free evening events often see about half of RSVPs show, so plan for roughly twice the sign-ups.",
+  health:"Health system leaders often can't accept gifts and meals have limits. Encore applies healthcare guest rules and keeps a meal log for you."};
+const CG_LANE={finance:"prospects",security:"prospects",marketing:"prospects",customers:"customers",community:"community",health:"prospects"};
+function cgState(){ try{ return JSON.parse(localStorage.getItem(CG_KEY)||"null")||{step:-1,a:{},msgs:[]} }catch{ return {step:-1,a:{},msgs:[]} } }
+function cgSave(S){ try{ localStorage.setItem(CG_KEY,JSON.stringify({...S,msgs:S.msgs.slice(-24)})) }catch{} }
+function cgFirst(){ const n=(me()||window.ENCORE_ME?.name||"").trim().split(/\s+/)[0]; return n?n[0].toUpperCase()+n.slice(1):"" }
+function cgCo(){ return brandProfile?.company||window.__wsCompany||"" }
+function cgHello(){ const h=new Date().getHours(); return `${h<12?"Good morning":h<18?"Good afternoon":"Good evening"}${cgFirst()?", "+esc(cgFirst()):""}` }
+function conciergeHTML(){ const S=cgState(), mine=allEvents.some(e=>!e.example), last=allEvents.filter(e=>!e.example).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+  const sugg=[["✦","Brainstorm our next event with me","brainstorm"],["▤","Plan a dinner for 14 CFOs in New York, about $28k","fill:A dinner for 14 CFOs in New York, about $28k"],["⌕","See what another company hosts, like Clay","peer:Clay"],...(last?[["→",`Pick up ${last.name}`,"open:"+last.id]]:[["◎","Open a sample event to look around","sample"]])];
+  return `<section class="cg" id="qsPanel" aria-label="Encore concierge"><p class="cg-hi"><span class="spark">✦</span> ${cgHello()}</p><h1>${mine?"What are we hosting next?":"Let's plan something people remember"}</h1>
+    <div class="cg-thread" id="cgThread" ${S.msgs.length?"":"hidden"} aria-live="polite"></div>
+    <div class="cg-box"><label class="vh" for="qsText">Message the Encore concierge</label><textarea id="qsText" rows="2" placeholder="Describe an event, ask for ideas, or name a company to see what they host"></textarea>
+      <div class="cg-bar"><span class="cg-mode"><span class="spark">✦</span> Encore concierge</span><span class="note cg-hint">Enter to send</span><button class="cg-send" id="qsGo" aria-label="Send" type="button">↑</button></div></div>
+    <div class="cg-sugg" id="cgSugg" ${S.msgs.length>2?"hidden":""}>${sugg.map(([ic,t,a])=>`<button type="button" data-cg="${esc(a)}"><span class="cg-ic">${ic}</span>${esc(t)}</button>`).join("")}</div></section>` }
+function ideaLibraryHTML(){ const tabs=[["suggested","Suggested"],...LANES.map(l=>[l[0],l[1]])], cur=window.__libTab||"suggested", F=feed().filter(x=>!x.peer);
+  const pick=cur==="suggested"?F.filter(x=>x.proven).slice(0,6):F.filter(x=>x.audience===cur).slice(0,6);
+  return `<section class="lib" id="ideaLib"><div class="lib-head"><h2>Ideas to steal from</h2><a href="#inspire" class="linkbtn">Explore all ideas →</a></div>
+    <div class="lib-tabs" role="tablist">${tabs.map(([k,l])=>{ const n=k==="suggested"?F.filter(x=>x.proven).length:F.filter(x=>x.audience===k).length; return n?`<button type="button" role="tab" aria-selected="${k===cur}" data-libtab="${k}">${esc(l)} <span>${n}</span></button>`:"" }).join("")}</div>
+    <div class="lib-grid">${pick.map(x=>{ const L=laneOf(x.audience); return `<article class="lib-card" style="--lc:${L[2]}"><div class="lib-av" aria-hidden="true">${esc((x.format||"E")[0])}</div><h3>${esc(x.name)}</h3><p class="note lib-by">${esc(x.format||"")} · for ${esc(L[1].toLowerCase())}</p><p class="lib-line">${esc(x.line)}</p><p class="note">${esc(x.cost||"")}${x.lead?` · ${esc(x.lead)} lead time`:""}</p>
+      <div class="btns"><button class="btn sm" type="button" data-libpb="${x.id}">Playbook</button><button class="btn ghost sm" type="button" data-libsave="${x.id}">${onBoard(x)?"✓ Saved":"♡ Save idea"}</button></div></article>` }).join("")}</div></section>` }
+function cgIdeas(key,goal){ const lane=CG_LANE[key]||"prospects", other={finance:/secur|ciso|market|cmo|develop|engineer/i,security:/financ|cfo|market|cmo/i,marketing:/financ|cfo|secur|ciso/i}[key], F=feed().filter(x=>!x.peer&&!(other&&other.test(x.name+" "+x.line))), pref=F.filter(x=>x.audience===lane);
+  const score=x=>(x.proven?2:0)+(goal==="launch"&&/launch|premiere|reveal/i.test(x.name+x.line)?3:0)+(goal==="community"&&/community|meetup|club|build/i.test(x.name+x.line+x.format)?3:0)+(goal==="expansion"&&x.audience==="customers"?3:0)+(x.ambition||0)*.3;
+  return [...(pref.length>=3?pref:[...pref,...F.filter(x=>x.audience!==lane)])].sort((a,b)=>score(b)-score(a)).slice(0,3) }
+function cgSentence(x,S){ const who=(CG_WHO.find(w=>w[1]===S.a.who)||[])[2]||S.a.whoText||"target buyers", n=+((x.name+" "+x.line).match(/\bfor (\d{1,3})\b/i)||[])[1]||(/^twelve|\btwelve\b/i.test(x.line)?12:0)||(/advisory|retreat|board/i.test(x.name+x.format)?12:/meetup|community|club|build|hack/i.test(x.name+x.format)?40:16);
+  return `${x.format||"A dinner"} for ${n} ${who}${S.a.where?` in ${S.a.where}`:""}${S.a.budget?`, about ${S.a.budget}`:""}` }
+function drawConcierge(){ const T=$("#cgThread"); if(!T) return; const S=cgState(); T.hidden=!S.msgs.length;
+  T.innerHTML=S.msgs.map((m,ix)=>m.who==="me"?`<div class="cg-msg me">${esc(m.text)}</div>`:`<div class="cg-msg enc"><span class="cg-av" aria-hidden="true">✦</span><div class="stack" style="gap:10px;min-width:0">${m.text?`<p>${esc(m.text)}</p>`:""}${m.tip?`<p class="cg-tip"><b>Worth knowing:</b> ${esc(m.tip)}</p>`:""}
+    ${m.cards?`<div class="cg-cards">${m.cards.map(id=>{ const x=feed().find(y=>y.id===id); if(!x) return ""; return `<div class="cg-card"><small class="eyebrow">${esc(x.format||"")}</small><b>${esc(x.name)}</b><p class="note">${esc(x.line)}</p><p class="note">${esc(x.cost||"")}${x.lead?` · ${esc(x.lead)}`:""}</p><p class="note"><i>${esc(x.why||"")}</i></p><div class="btns"><button class="btn primary sm" type="button" data-cgdraft="${id}">Draft this plan</button><button class="btn ghost sm" type="button" data-libsave="${id}">${onBoard(x)?"✓ Saved":"♡ Save idea"}</button></div></div>` }).join("")}</div>`:""}
+    ${m.chips&&ix===S.msgs.length-1?`<div class="cg-chips">${m.chips.map(([l,v])=>`<button type="button" class="trychip" data-cgchip="${esc(v)}">${esc(l)}</button>`).join("")}</div>`:""}</div></div>`).join("")+(window.__cgBusy?`<div class="cg-msg enc"><span class="cg-av">✦</span><p class="cg-typing"><i></i><i></i><i></i></p></div>`:"");
+  wireConcierge(document.getElementById("view-programs")); T.scrollTop=1e9 }
+function cgSay(S,m){ S.msgs.push({who:"enc",...m}); cgSave(S); drawConcierge() }
+function cgStep(S){ const co=cgCo();
+  if(S.step===0) cgSay(S,{text:`Hi${cgFirst()?" "+cgFirst():""}. I'm your Encore concierge. I'll help you dream up ${co?co+"'s":"your"} next event and have a full plan ready in about a minute. First, who do you most want in the room?`,chips:CG_WHO.map(([l,v])=>[l,"who:"+v])});
+  else if(S.step===1) cgSay(S,{text:"Good. What should the event do for you?",chips:CG_GOAL.map(([l,v])=>[l,"goal:"+v])});
+  else if(S.step===2) cgSay(S,{text:"Where, roughly? Add a budget if you have one, like \"Chicago, about $25k\".",chips:CG_WHERE.map(([l,v])=>[l,"where:"+v])});
+  else if(S.step===3) cgBrainstorm(S) }
+async function cgBrainstorm(S,bolder){ const key=S.a.who||"marketing", who=(CG_WHO.find(w=>w[1]===key)||[])[2]||S.a.whoText||"your buyers";
+  let ideas=cgIdeas(key,S.a.goal).filter(x=>!(S.seen||[]).includes(x.id)); if(ideas.length<3) ideas=cgIdeas(key,S.a.goal);
+  if(typeof sample!=="undefined"&&sample&&!window.__cgNoAI){ window.__cgBusy=1; drawConcierge();
+    try{ const o=await askJSON(`You are a creative B2B event concierge. Company: ${cgCo()||"a B2B software company"} (${brandProfile?.oneLiner||""}). Audience: ${who}. Goal: ${(CG_GOAL.find(g=>g[1]===S.a.goal)||["pipeline"])[0]}. City: ${S.a.where||"open"}. Budget: ${S.a.budget||"open"}.${bolder?" Make these bolder and more surprising than usual.":""} Propose 3 distinct, memorable, realistic event concepts this audience would clear their calendar for. Reply with only JSON: {"ideas":[{"name":"max 5 words","format":"e.g. Hosted dinner, Hands-on workshop, Roundtable, Outing","line":"one sentence: what happens","why":"one sentence: why this audience says yes","cost":"$Xk–Yk","lead":"N weeks"}]}`,null,null,{tier:"quick"});
+      if(o?.ideas?.length){ inspFeed=feed(); ideas=o.ideas.slice(0,3).map((x,k)=>{ const id="cg"+Date.now()+k; const it={...x,id,audience:CG_LANE[key]||"prospects",ambition:3,steps:[],kpis:[],pitfalls:[]}; inspFeed.unshift(it); return it }) } }catch{}
+    window.__cgBusy=0 }
+  S.seen=[...(S.seen||[]),...ideas.map(x=>x.id)]; S.step=4;
+  cgSay(S,{text:`Here are three ideas for ${who}${S.a.where?` in ${S.a.where}`:""}. Each one turns into a full plan: budget line by line, timeline, invite page and follow-up.`,tip:CG_TIP[key]||"",cards:ideas.map(x=>x.id),chips:[["More ideas","more"],["Something bolder","bolder"],["Start over","restart"]]}) }
+function cgEventLike(t){ const o=parseEventText(t); return t.length>=12&&(o.headcount||o.budget)&&/dinner|lunch|breakfast|roundtable|booth|summit|workshop|meetup|roadshow|reception|happy hour|webinar|session|board|retreat|conference|party|event/i.test(t) }
+function cgPeer(t){ const m=t.match(/(?:what (?:events? )?(?:has|does|did)\s+(.+?)\s+(?:host|run|do|throw)|events?\s+(?:by|from|at)\s+(.+?)$|like\s+([A-Z][\w.&-]+(?:\s[A-Z][\w.&-]+)?)\s+(?:does|did|hosts?))/i); return m?(m[1]||m[2]||m[3]).replace(/[?.!]+$/,"").trim():"" }
+function cgPeerGo(co){ location.hash="#inspire"; setTimeout(()=>{ const i=$("#peerIn"), b=$("#peerGo"); if(i&&b){ i.value=co; b.click(); i.scrollIntoView({block:"center"}) } },150) }
+function cgHandle(text){ const S=cgState(), t=text.trim(); if(!t) return;
+  if(cgEventLike(t)&&S.step<1){ try{ localStorage.removeItem(CG_DRAFT) }catch{} quickStart(t); return }
+  const co=cgPeer(t); if(co){ S.msgs.push({who:"me",text:t}); cgSay(S,{text:`Opening ideas inspired by ${co}'s public events. Encore writes its own version of each one, so it's yours to run.`}); cgPeerGo(co); return }
+  if(cgEventLike(t)){ S.msgs.push({who:"me",text:t}); cgSay(S,{text:"Drafting that plan now."}); quickStart(t); return }
+  S.msgs.push({who:"me",text:t});
+  if(S.step<=0){ const k=(CG_WHO.find(([l,v])=>new RegExp(v==="finance"?"cfo|financ":v==="security"?"ciso|secur":v==="marketing"?"cmo|market":v==="customers"?"customer":v==="community"?"develop|engineer|builder":"health|cmio|clinic|hospital","i").test(t))||[])[1]; S.a.who=k||"marketing"; if(!k) S.a.whoText=t; S.step=1 }
+  else if(S.step===1){ S.a.goal=/launch/i.test(t)?"launch":/custom|expan|renew|upsell/i.test(t)?"expansion":/communit/i.test(t)?"community":"pipeline"; S.step=2 }
+  else if(S.step===2){ const o=parseEventText(t); S.a.where=o.city||""; if(o.budget) S.a.budget=money(o.budget); S.step=3 }
+  else { S.a.whoText=t; S.a.who=(CG_WHO.find(([l,v])=>new RegExp(v,"i").test(t))||[])[1]||S.a.who; S.step=3 }
+  cgSave(S); drawConcierge(); setTimeout(()=>cgStep(cgState()),350) }
+function cgChip(v){ const S=cgState(), [k,val]=v.split(/:(.*)/s); const label=(x)=>{ S.msgs.push({who:"me",text:x}) };
+  if(k==="who"){ label((CG_WHO.find(w=>w[1]===val)||[val])[0]); S.a.who=val; S.step=1; if(val==="health") window.__qsComp="hcp" }
+  else if(k==="goal"){ label((CG_GOAL.find(g=>g[1]===val)||[val])[0]); S.a.goal=val; S.step=2 }
+  else if(k==="where"){ label(val||"Not sure yet"); S.a.where=val; S.step=3 }
+  else if(k==="more"||k==="bolder"){ label(k==="more"?"More ideas":"Something bolder"); cgSave(S); drawConcierge(); setTimeout(()=>cgBrainstorm(cgState(),k==="bolder"),300); return }
+  else if(k==="restart"){ cgSave({step:0,a:{},msgs:[]}); cgStep(cgState()); return }
+  cgSave(S); drawConcierge(); setTimeout(()=>cgStep(cgState()),350) }
+function wireConcierge(el){ if(!el) return; const box=$("#qsText",el), go=$("#qsGo",el); if(!box||!go) return;
+  if(!box.value){ try{ const d=localStorage.getItem(CG_DRAFT); if(d) box.value=d }catch{} }
+  box.oninput=()=>{ try{ localStorage.setItem(CG_DRAFT,box.value) }catch{} };
+  box.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); go.click() } };
+  go.onclick=()=>{ const t=box.value.trim(); if(!t){ box.focus(); return } box.value=""; try{ localStorage.removeItem(CG_DRAFT) }catch{} $("#cgSugg",el)&&($("#cgSugg",el).hidden=true); cgHandle(t) };
+  $$("[data-cg]",el).forEach(b=>b.onclick=()=>{ const a=b.dataset.cg; if(a==="brainstorm"){ const S={step:0,a:{},msgs:[]}; cgSave(S); $("#cgSugg",el).hidden=true; cgStep(S) } else if(a.startsWith("fill:")){ box.value=a.slice(5); box.focus() } else if(a.startsWith("peer:")) cgPeerGo(a.slice(5)); else if(a.startsWith("open:")){ const e=allEvents.find(x=>x.id===a.slice(5)); if(e) openEvent(e,1) } else if(a==="sample") openSample() });
+  $$("[data-cgchip]",el).forEach(b=>b.onclick=()=>cgChip(b.dataset.cgchip));
+  $$("[data-cgdraft]",el).forEach(b=>b.onclick=()=>{ const S=cgState(), x=feed().find(y=>y.id===b.dataset.cgdraft); if(!x) return; quickStart(cgSentence(x,S)); draft.concept=x.line; draft.name=`${x.name}${draft.city?" · "+draft.city:""}`; if(typeof renderStep==="function") renderStep() });
+  $$("[data-libsave]",el).forEach(b=>b.onclick=()=>{ const id=b.dataset.libsave; if(b.textContent.includes("✓")){ location.hash="#canvas"; return } addToCanvas(id); b.textContent="✓ Saved" });
+  $$("[data-libpb]",el).forEach(b=>b.onclick=()=>{ const id=b.dataset.libpb; location.hash="#inspire"; setTimeout(()=>openPlaybook(id),120) });
+  $$("[data-libtab]",el).forEach(b=>b.onclick=()=>{ window.__libTab=b.dataset.libtab; const L=$("#ideaLib",el); if(L){ L.outerHTML=ideaLibraryHTML(); wireConcierge(el) } }) }
+{ const _rp2=renderPrograms; renderPrograms=function(){ _rp2.apply(this,arguments); const el=$("#view-programs"); drawConcierge(); wireConcierge(el);
+  const S=cgState(); let brief=""; try{ brief=localStorage.getItem("encore.brief")||"" }catch{}
+  if(brief&&!S.briefSeen){ S.briefSeen=1; if(S.step<0) S.step=4; cgSay(S,{text:`Welcome in. On our site you described: "${brief}". Want me to turn it into your plan?`,chips:[["Draft it","brief"],["Brainstorm instead","restart"]]}); try{ localStorage.removeItem("encore.brief") }catch{} window.__cgBrief=brief }
+  else if(S.step<0&&!allEvents.some(e=>!e.example)){ S.step=0; cgSave(S); cgStep(S) } };
+  const _c=cgChip; cgChip=function(v){ if(v==="brief"&&window.__cgBrief){ quickStart(window.__cgBrief); return } return _c(v) };
+  if(!$("#view-programs")?.hidden) renderPrograms() }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -5987,4 +6083,35 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 @media (max-width:520px){.liftnums{grid-template-columns:1fr 1fr}}
 
 .citable{font-size:12px;font-weight:600;color:var(--accent)}
+
+.cg{max-width:780px;margin:24px auto 8px;display:grid;gap:14px}
+.cg-hi{margin:0;color:var(--muted);font-size:15px;text-align:center}
+.cg h1{text-align:center;font-family:var(--f-display,"Fraunces"),Georgia,serif;font-size:clamp(28px,4vw,44px);line-height:1.1;margin:0 0 8px;font-weight:500}
+.cg-box{background:var(--surface,#fff);border:1px solid var(--line);border-radius:22px;padding:14px 14px 10px;box-shadow:0 18px 50px -28px rgba(43,33,28,.35)}
+.cg-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 18px 50px -28px rgba(43,33,28,.35)}
+.cg-box textarea{width:100%;border:0;background:transparent;resize:none;font:inherit;font-size:16px;line-height:24px;outline:none;color:var(--fg);min-height:48px;padding:4px 6px}
+.cg-bar{display:flex;align-items:center;gap:10px}.cg-mode{font-size:13px;font-weight:600;color:var(--muted)}.cg-hint{margin-left:auto;font-size:12px}.cg-hint+.cg-send{margin-left:0}
+.cg-box textarea,.cg-box textarea:focus{border:0!important;box-shadow:none!important;background:transparent!important;padding:4px 6px!important}
+.cg-send{margin-left:auto;flex:none;width:38px;height:38px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:18px;cursor:pointer}
+.cg-sugg{display:grid;gap:2px}.cg-sugg button{display:flex;gap:12px;align-items:center;text-align:left;background:transparent;border:0;border-radius:12px;padding:10px 12px;font:inherit;color:var(--fg);cursor:pointer}
+.cg-sugg button:hover{background:var(--surface,#fff)}.cg-ic{width:22px;text-align:center;color:var(--accent)}
+.cg-thread{display:grid;gap:14px;max-height:min(62vh,620px);overflow:auto;padding:6px 2px}
+.cg-msg{display:flex;gap:10px;align-items:flex-start;animation:cgin .3s ease}.cg-msg p{margin:0;line-height:24px}
+.cg-msg.me{justify-content:flex-end;margin-left:20%;background:var(--accent);color:#fff;border-radius:18px 18px 4px 18px;padding:10px 14px;justify-self:end}
+.cg-av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:14px}
+.cg-tip{background:color-mix(in srgb,var(--accent) 7%,var(--surface,#fff));border-radius:12px;padding:10px 12px;font-size:14px}
+.cg-chips{display:flex;flex-wrap:wrap;gap:8px}
+.cg-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.cg-card{background:var(--surface,#fff);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:6px;align-content:start}.cg-card b{font-size:16px}
+.cg-typing{display:flex;gap:4px;padding:10px 0}.cg-typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:cgdot 1s infinite}.cg-typing i:nth-child(2){animation-delay:.15s}.cg-typing i:nth-child(3){animation-delay:.3s}
+@keyframes cgdot{50%{opacity:.25}}@keyframes cgin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.cg-more{max-width:780px;margin:0 auto 8px;color:var(--muted)}.cg-more summary{cursor:pointer;font-size:14px;text-align:center;list-style:none}.cg-more summary::-webkit-details-marker{display:none}
+.lib{max-width:1080px;margin:36px auto 12px}.lib-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.lib-head h2{margin:0;font-size:22px}
+.lib-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 14px}.lib-tabs button{border:0;background:transparent;border-radius:10px;padding:7px 12px;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}.lib-tabs button span{opacity:.6;margin-left:3px}.lib-tabs button[aria-selected=true]{background:var(--surface,#fff);color:var(--fg);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.lib-card{background:var(--surface,#fff);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:6px;align-content:start}
+.lib-av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--lc) 16%,#fff);color:var(--lc);font:600 18px var(--f-display,"Fraunces"),serif;margin-bottom:4px}
+.lib-card h3{margin:0;font-size:18px}.lib-by{margin:0}.lib-line{margin:4px 0;font-size:14px;line-height:21px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:600px){.cg-msg.me{margin-left:10%}.cg-hint{display:none}.cg{margin-top:8px}}
 </style>

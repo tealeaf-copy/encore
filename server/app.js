@@ -271,6 +271,7 @@ export function createApp({ store, dataDir }) {
   app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
   app.get("/join", (req, res) => sendStatic(res, "join.html", loginPage()));
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
+  app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
   app.get("/security", (req, res) => sendStatic(res, "security.html", "<p>Security page missing.</p>"));
 
   const sendPage = async (req, res, next) => {

@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Your booking · Encore</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,0..100;1,9..144,300..600,0..100&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#75685F;--ember:#C4532F;--sage:#6F7F5E;--line:#E4D9C8}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif}
+.wrap{max-width:620px;margin:0 auto;padding:24px 20px 60px}h1,h2{font-family:"Fraunces",Georgia,serif;font-weight:380;letter-spacing:-.015em;margin:0}
+.brand{display:flex;gap:8px;align-items:center;font:500 20px "Fraunces",Georgia,serif;text-decoration:none;color:inherit;margin-bottom:24px}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;padding:22px;margin-top:14px}.eyebrow{font:500 11px "Instrument Sans";letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
+.host{display:flex;gap:12px;align-items:center}.host .av{width:52px;height:52px;border-radius:50%;overflow:hidden;border:1px solid var(--line);display:grid;place-items:center;font-size:26px;flex:none}
+.steps{display:flex;gap:6px;margin:16px 0}.steps span{flex:1;height:6px;border-radius:9px;background:var(--linen)}.steps span.on{background:var(--ember)}.steps span.done{background:var(--sage)}
+.meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:10px 0;font-size:15px}.meta b{color:var(--smoke);font-weight:500}
+.quote{background:var(--linen);border-radius:18px;padding:16px;margin-top:12px}.quote .total{font:500 34px "Fraunces",Georgia,serif}
+.btn{display:inline-flex;border:0;border-radius:999px;padding:13px 22px;font:500 15px "Instrument Sans";cursor:pointer;background:var(--ember);color:#fff;text-decoration:none}.ok{background:#EAF3EC;border:1px solid #BCD8C3;border-radius:18px;padding:16px;margin-top:12px}
+.hist{font-size:13px;color:var(--smoke);margin-top:12px}
+</style></head><body><div class="wrap"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><div id="m">Loading…</div></div>
+<script src="/community.js"></script><script src="/avatars.js"></script>
+<script>
+(async function () { const esc = window.EncoreCommunity.esc, A = window.EncoreAvatars, id = location.pathname.split("/").pop(), t = new URLSearchParams(location.search).get("t") || "", m = document.getElementById("m");
+  async function draw() { let j; try { const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}?t=${encodeURIComponent(t)}`); j = await r.json(); if (!r.ok) throw new Error(j.message); } catch (e) { m.innerHTML = `<p>${esc(e.message || "This link isn't valid.")}</p>`; return; }
+    const b = j.booking, h = j.host, st = b.status, idx = { requested: 1, quoted: 2, booked: 3, done: 3, declined: 0 }[st];
+    const head = { requested: `${esc(h.name)} has your request`, quoted: `${esc(h.name)} sent a quote`, booked: "You're booked 🎉", done: "That's a wrap", declined: `${esc(h.name)} can't take this one` }[st];
+    m.innerHTML = `<span class="eyebrow">Your booking${b.company ? ` for ${esc(b.company)}` : ""}</span><h1 style="font-size:40px;line-height:1.05;margin-top:6px">${head}</h1>
+      <div class="steps"><span class="${idx >= 1 ? (idx > 1 ? "done" : "on") : ""}"></span><span class="${idx >= 2 ? (idx > 2 ? "done" : "on") : ""}"></span><span class="${idx >= 3 ? "done" : ""}"></span></div>
+      <div class="card"><div class="host"><span class="av">${h.avatarArt && A ? A.svg(h.avatarArt, h.accent, 52) : esc(h.emoji || "✨")}</span><div><b>${esc(b.experience?.name || "An experience")}</b><br><a href="/@${esc(h.handle)}" style="color:var(--smoke);font-size:14px">with ${esc(h.name)}</a></div></div>
+        <div class="meta">${b.when ? `<b>When</b><span>${esc(b.when)}</span>` : ""}${b.people ? `<b>People</b><span>${esc(b.people)}</span>` : ""}${b.where ? `<b>Where</b><span>${esc(b.where)}</span>` : ""}${b.budget ? `<b>Budget</b><span>${esc(b.budget)}</span>` : ""}</div>
+        ${b.quote ? `<div class="quote"><span class="eyebrow">The quote</span><div class="total">${esc(b.quote.total)}</div>${b.quote.includes ? `<p style="margin:6px 0">${esc(b.quote.includes)}</p>` : ""}${b.quote.note ? `<p style="margin:6px 0;color:var(--smoke)">${esc(b.quote.note)}</p>` : ""}</div>` : st === "requested" ? `<p style="color:var(--smoke)">Hosts usually reply within a couple of days. You'll get an email when the quote's ready.</p>` : ""}
+        ${st === "quoted" ? `<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" id="acc">Accept and book</button><span style="color:var(--smoke);font-size:14px">Questions? Reply to ${esc(h.name)}'s email.</span></div>` : ""}
+        ${st === "booked" ? `<div class="ok"><b>${esc(h.name)} has it in the diary.</b> They'll be in touch about the details and how to pay.</div>` : ""}</div>
+      <div class="hist">${(b.history || []).map((x) => `${new Date(x.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}: ${x.by === "host" ? esc(h.name) : "You"} ${esc(x.what)}`).join(" · ")}</div>`;
+    const a = document.getElementById("acc"); if (a) a.onclick = async () => { a.disabled = true; try { const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}/accept`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }) }); const k = await r.json(); if (!r.ok) throw new Error(k.message); window.EncoreCommunity.oink?.(); draw(); } catch (e) { alert(e.message); a.disabled = false; } }; }
+  draw(); })();
+</script></body></html>

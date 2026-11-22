@@ -114,7 +114,7 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   assert.equal((await post("/api/public/order/eric-bakes", { name: "Priya", phone: "415 555 0101", slot: "Sat 10–12", items: [{ id: whole, qty: 3 }] })).status, 400, "max 2 per order");
   assert.equal((await post("/api/public/order/eric-bakes", { name: "Priya", phone: "415 555 0101", items: [{ id: whole, qty: 1 }] })).status, 400, "needs a pickup time");
   const o = await (await post("/api/public/order/eric-bakes", { name: "Priya Shah", phone: "415 555 0101", slot: "Sat 10–12", items: [{ id: whole, qty: 2 }, { id: shop.items[1].id, qty: 3 }] })).json();
-  assert.equal(o.total, "$82"); assert.equal(o.payUrl, "https://venmo.com/eric"); assert.match(o.code, /^[0-9A-F]{4}$/);
+  assert.equal(o.total, "$82"); assert.match(o.payUrl, /^https:\/\/venmo\.com\/eric\?txn=pay&amount=82&note=.*%23/, "the amount and order number are filled in"); assert.match(o.code, /^[0-9A-F]{4}$/);
   const so = await post("/api/public/order/eric-bakes", { name: "Dev", email: "dev@example.com", slot: "Sun 10–12", items: [{ id: whole, qty: 2 }] });
   assert.equal(so.status, 409, "only 1 left");
   assert.equal((await (await get("/api/public/shop/eric-bakes")).json()).shop.items[0].left, 1);
@@ -131,4 +131,26 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   const inq = (await (await get("/api/host/inquiries", er.cookie)).json()).inquiries[0]; assert.equal(inq.experience.name, "Private omakase for your team"); assert.equal(inq.people, 12);
   // link previews
   const html = await (await get("/@eric-bakes")).text(); assert.match(html, /og:title" content="[^"]*"/); assert.match(html, /Order Whole cake/);
+});
+
+test("Brands book experience hosts: browse by category, describe it to Pip, request, get a quote, accept", async () => {
+  const cart = await join("Linh Vo", "linh.vo@example.com"), flower = await join("Hoa Tran", "hoa@example.com");
+  assert.equal((await post("/api/host/profile", { handle: "banhmi-cart", name: "Bánh Mì Cart", city: "New York", insured: true, respondsIn: "a day", experiences: [{ name: "Bánh mì pop-up cart at your office", desc: "A Vietnamese street-food cart, made to order", category: "food", includes: "Cart and crew\nBánh mì and iced coffee", min: 30, max: 200, price: "from $28 a person", length: "2 hours", travels: true }] }, cart.cookie)).status, 200);
+  assert.equal((await post("/api/host/profile", { handle: "hoa-flowers", name: "Hoa Flower Studio", city: "New York", experiences: [{ name: "Bouquet workshop", desc: "Everyone makes a bouquet to take home", category: "workshop", min: 8, max: 40, price: "from $65 a person", length: "90 minutes" }] }, flower.cookie)).status, 200);
+  const food = (await (await get("/api/public/experiences?category=food")).json()).experiences; assert.ok(food.some((x) => x.name.startsWith("Bánh mì")) && !food.some((x) => x.name === "Bouquet workshop"));
+  assert.ok(food[0].host.insured);
+  const m = await (await post("/api/public/match", { brief: "Vietnamese street food for 60 people at our office in New York, about $2,000" })).json();
+  assert.equal(m.brief.people, 60); assert.equal(m.brief.budget, 2000); assert.equal(m.matches[0].host.handle, "banhmi-cart", JSON.stringify(m.matches.map((x) => x.name)));
+  const m2 = await (await post("/api/public/match", { brief: "a flower workshop for our team of 20" })).json(); assert.equal(m2.matches[0].name, "Bouquet workshop");
+  const expId = food.find((x) => x.host.handle === "banhmi-cart").id;
+  const r = await (await post("/api/public/book/banhmi-cart", { name: "Dana", company: "Loop", email: "dana@loop.example", experienceId: expId, people: 60, when: "March 12", where: "Our office in SoHo", message: "Lunar New Year lunch for the team, something fun and not catered." })).json();
+  assert.ok(r.ok); const [, id, t] = r.status.match(/booking\/([a-f0-9]+)\?t=([a-f0-9]+)/);
+  assert.equal((await get(`/api/public/booking/${id}?t=bad`)).status, 403);
+  let bk = (await (await get(`/api/public/booking/${id}?t=${t}`)).json()).booking; assert.equal(bk.status, "requested"); assert.equal(bk.email, undefined);
+  assert.equal((await post(`/api/public/booking/${id}/accept`, { t })).status, 400, "nothing to accept yet");
+  assert.equal((await post(`/api/host/bookings/${id}`, { status: "quoted", quote: { total: "$1,680", includes: "Cart, two cooks, 60 bánh mì, iced coffee", note: "We arrive 30 minutes early" } }, cart.cookie)).status, 200);
+  bk = (await (await get(`/api/public/booking/${id}?t=${t}`)).json()).booking; assert.equal(bk.quote.total, "$1,680");
+  assert.equal((await post(`/api/public/booking/${id}/accept`, { t })).status, 200);
+  const hb = (await (await get("/api/host/bookings", cart.cookie)).json()).bookings[0]; assert.equal(hb.status, "booked");
+  assert.ok((await (await get("/api/me/inbox", cart.cookie)).json()).items.some((n) => n.kind === "booked"));
 });

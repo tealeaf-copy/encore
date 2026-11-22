@@ -11,6 +11,12 @@ const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 const EMAIL_OK = (e) => /^[^\s@"<>()[\],;:]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(e || "");
 const PHONE_OK = (p) => /^\+?[0-9 ()-]{7,20}$/.test(String(p || "").trim());
 const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
+/** The host's pay link with the amount and a note filled in, for Venmo, PayPal.me and Cash App. Other links pass through. */
+export function payLink(url, cents, note) { if (!url) return ""; const amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;
+  if ((m = url.match(/^https:\/\/(?:www\.|account\.)?venmo\.com\/(?:u\/)?([A-Za-z0-9_-]+)\/?$/i))) return `https://venmo.com/${m[1]}?txn=pay&amount=${amt}&note=${encodeURIComponent(note)}`;
+  if ((m = url.match(/^https:\/\/(?:www\.)?paypal\.me\/([A-Za-z0-9_-]+)\/?$/i))) return `https://paypal.me/${m[1]}/${amt}`;
+  if ((m = url.match(/^https:\/\/cash\.app\/\$([A-Za-z0-9_-]+)\/?$/i))) return `https://cash.app/$${m[1]}/${amt}`;
+  return url; }
 const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u);
 
 export function cleanShop(s = {}, cur = {}) {
@@ -20,7 +26,7 @@ export function cleanShop(s = {}, cur = {}) {
     cents: Math.max(0, Math.min(100000, Math.round(+x?.cents || 0))), stock: Math.max(0, Math.min(999, Math.round(+x?.stock || 0))), max: Math.max(1, Math.min(50, Math.round(+x?.max || 6))), order: i,
   })).filter((x) => x.name);
   const slots = (Array.isArray(s.slots) ? s.slots : cur.slots || []).map((x) => clean(x, 60)).filter(Boolean).slice(0, 8);
-  return { open: s.open != null ? !!s.open : !!cur.open, title: clean(s.title ?? cur.title ?? "", 60), note: clean(s.note ?? cur.note ?? "", 240), where: clean(s.where ?? cur.where ?? "", 120), slots, items, payUrl: /^https:\/\/[^\s<>"]{3,300}$/i.test(s.payUrl ?? cur.payUrl ?? "") ? s.payUrl ?? cur.payUrl : "", dropId: clean(s.dropId ?? cur.dropId ?? "", 20) || crypto.randomBytes(3).toString("hex") };
+  return { open: s.open != null ? !!s.open : !!cur.open, title: clean(s.title ?? cur.title ?? "", 60), note: clean(s.note ?? cur.note ?? "", 240), where: clean(s.where ?? cur.where ?? "", 120), address: clean(s.address ?? cur.address ?? "", 160), slots, items, payUrl: /^https:\/\/[^\s<>"]{3,300}$/i.test(s.payUrl ?? cur.payUrl ?? "") ? s.payUrl ?? cur.payUrl : "", dropId: clean(s.dropId ?? cur.dropId ?? "", 20) || crypto.randomBytes(3).toString("hex") };
 }
 
 export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }) {
@@ -45,9 +51,9 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     const r = scopeStore(store, ws).add("orders", o); const W = getWorkspace(ws);
     X.notify(W?.ownerEmail, { kind: "order", text: `🛍 ${first(name)} ordered ${lines.map((l) => `${l.qty} × ${l.name}`).join(", ")}${slot ? ` for ${slot}` : ""} (${money(total)})`, link: `/@${h.handle}?orders=1`, eventId: "" });
     const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (cfg && EMAIL_OK(email) && X.canEmail(email)) sendEmail(cfg, { to: email, subject: `Your order from ${h.name}: #${code}`, text: `Thanks ${first(name)}!\n\n${lines.map((l) => `${l.qty} × ${l.name}`).join("\n")}\nTotal: ${money(total)}\n${slot ? `Pickup: ${slot}${s.where ? ` at ${s.where}` : ""}\n` : ""}${s.payUrl ? `\nPay here: ${s.payUrl}\n` : ""}\nOrder #${code}. Show this at pickup.`, fromName: h.name }).catch(() => {});
-    res.json({ ok: true, id: r.id, code, total: money(total), slot, where: s.where, payUrl: s.payUrl || "" }); });
+    res.json({ ok: true, id: r.id, code, total: money(total), slot, where: s.address || s.where, payUrl: payLink(s.payUrl, total, `${h.name} order #${code}`) }); });
   app.get("/api/host/orders", (req, res) => { const u = me(req, res); if (!u) return; const s = C.profileOf(u.ws)?.shop; const L = scopeStore(store, u.ws).list("orders").map((d) => ({ id: d.id, ...d.data })).sort((a, b) => b.at - a.at);
-    res.json({ orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId })) }); });
+    res.json({ address: s?.address || "", where: s?.where || "", orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId })) }); });
   app.post("/api/host/orders/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "orders/" + clean(req.params.id, 40), o = S.get(p)?.data; if (!o) return bad(res, "No such order.", 404, "not_found");
     const st = ["new", "paid", "ready", "picked", "cancelled"].includes(req.body?.status) ? req.body.status : o.status; S.update(p, { status: st, [st + "At"]: Date.now() }); res.json({ ok: true, status: st }); });
   // a new batch: sold counts start again

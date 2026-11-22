@@ -27,7 +27,7 @@ function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes
   return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: STORE.avatars.includes(t.avatarArt) ? t.avatarArt : STORE.avatars.includes(cur.avatarArt) ? cur.avatarArt : "" }; }
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
 // Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
-function cleanExperiences(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 6).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 4), min: Math.max(1, Math.min(500, Math.round(+x?.min || 1))), max: Math.max(1, Math.min(1000, Math.round(+x?.max || 20))), price: clean(x?.price, 50), length: clean(x?.length, 40) })).filter((x) => x.name); }
+function cleanExperiences(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 6).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 4), min: Math.max(1, Math.min(500, Math.round(+x?.min || 1))), max: Math.max(1, Math.min(1000, Math.round(+x?.max || 20))), price: clean(x?.price, 50), length: clean(x?.length, 40), category: ["food", "dining", "movement", "workshop", "drinks", "culture"].includes(x?.category) ? x.category : "", includes: (Array.isArray(x?.includes) ? x.includes : String(x?.includes || "").split("\n")).map((i) => clean(i, 80)).filter(Boolean).slice(0, 8), photo: /^\/_blob\/[A-Za-z0-9]{20}$/.test(x?.photo || "") ? x.photo : "", travels: !!x?.travels })).filter((x) => x.name); }
 function cleanLinks(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 4).map((x) => ({ label: clean(x?.label, 24), url: clean(x?.url, 300) })).filter((x) => x.label && LINK_OK(x.url)); }
 
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
@@ -70,6 +70,7 @@ export function makeCommunity(store) {
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
       theme: cleanTheme(p.theme || {}, cur.theme || {}), sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 90),
       shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences),
+      insured: p.insured != null ? !!p.insured : !!cur.insured, respondsIn: clean(p.respondsIn ?? cur.respondsIn, 30), terms: clean(p.terms ?? cur.terms, 400), invoices: p.invoices != null ? !!p.invoices : !!cur.invoices,
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
@@ -89,7 +90,7 @@ export function makeCommunity(store) {
   }
   function discover() {
     const hosts = [], events = [];
-    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const up = eventsOf(ws), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length;
+    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const up = eventsOf(ws), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
       hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past }); events.push(...up); }
     hosts.sort((a, b) => (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     events.sort((a, b) => String(a.date || "9").localeCompare(String(b.date || "9")));

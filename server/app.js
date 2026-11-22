@@ -14,6 +14,7 @@ import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { makeSocial, mountSocial } from "./social.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountShop } from "./shop.js";
+import { mountMarket } from "./market.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -344,6 +345,8 @@ export function createApp({ store, dataDir }) {
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
   app.get("/hosts", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));
   app.get("/feed", (req, res) => (isAuthed(req) ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : res.redirect(302, "/login")));
 

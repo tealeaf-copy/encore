@@ -6125,7 +6125,7 @@ function cgStep(S){ const co=cgCo();
 async function cgBrainstorm(S,bolder){ const key=S.a.who||"marketing", who=(CG_WHO.find(w=>w[1]===key)||[])[2]||S.a.whoText||"your buyers";
   const seen=S.seen||[], other={finance:/secur|ciso|market|cmo|develop|engineer/i,security:/financ|cfo|market|cmo/i,marketing:/financ|cfo|secur|ciso/i,health:/secur|ciso|financ|cfo|develop/i,community:/cfo|ciso|cmo|exec|advisory/i,customers:/hack|develop/i}[key];
   const bud=(()=>{ const t=S.a.budget||""; const n=parseFloat(t.replace(/[^\d.]/g,"")); return n?(n*(/k/i.test(t)?1000:1)):0 })();
-  let ideas=cgIdeas(key,S.a.goal,bud).filter(x=>!seen.includes(x.id)); const lanes={community:["community"],customers:["customers"]}[key]||["prospects"], execOnly=!["community"].includes(key);
+  let ideas=cgIdeas(key,S.a.goal,bud).filter(x=>!seen.includes(x.id)).slice(0,3); const lanes={community:["community"],customers:["customers"]}[key]||["prospects"], execOnly=!["community"].includes(key);
   if(ideas.length<3) ideas=[...ideas,...feed().filter(x=>!x.peer&&!seen.includes(x.id)&&!ideas.includes(x)&&lanes.includes(x.audience)&&(!bud||!cgLow(x)||cgLow(x)<=bud*1.2)&&!(other&&other.test(x.name+" "+x.line))&&!(execOnly&&/hack|builder|pizza|power strip/i.test(x.name+" "+x.line)))].slice(0,3);
   const ranOut=ideas.length===0; if(ranOut){ window.__cgNoAI=0 }
   if(typeof sample!=="undefined"&&sample&&!window.__cgNoAI){ window.__cgBusy=1; drawConcierge();
@@ -7652,6 +7652,16 @@ function homeSwap(){ const p=brandP?.(), v=$("#view-programs"); if(!p||!v) retur
   textSwap(v,R); const q=$("#qsText"); if(q&&/CFO/.test(q.placeholder||"")) q.placeholder=`Describe an event, e.g. "${ex}"` }
 { const _rp7=renderPrograms; renderPrograms=function(){ const r=_rp7.apply(this,arguments); try{ setTimeout(homeSwap,350); setTimeout(homeSwap,1500); setTimeout(homeSwap,3500) }catch{} return r } }
 { const _dbh=drawBrandHome; drawBrandHome=function(){ const r=_dbh.apply(this,arguments); try{ homeSwap(); modeSwap($("#view-programs")) }catch{} return r } }
+
+// ==================================================================
+// The brand's researched ideas are part of the idea library: Pip's brainstorm offers them first, and they plan as themselves.
+// ==================================================================
+const BR_FMT={dining:"Hosted dinner",workshop:"Hands-on workshop",movement:"Outdoor / active",food:"Pop-up",drinks:"Coffee and drinks",culture:"Experience"};
+function brandFeedItems(){ const p=brandP?.(); if(!p?.ideas?.length) return []; const m=brandMode(), aud=m==="consumer"?"customers":m==="community"?"community":"prospects";
+  return p.ideas.map((x,i)=>({ id:"brand-"+i, brandIdea:true, idx:i, name:x.name, line:x.line, why:x.why, format:BR_FMT[x.category]||"Experience", audience:aud, proven:false, ambition:3, cost:"", lead:"", hosts:[p.company], insight:x.insight })) }
+{ const _feed=feed; feed=function(){ const base=_feed(); const B=brandFeedItems(); return B.length?[...B,...base.filter(x=>!x.brandIdea)]:base } }
+{ const _cgi=cgIdeas; cgIdeas=function(key,goal,budget){ const r=_cgi.apply(this,arguments).filter(x=>!x.brandIdea); return [...brandFeedItems(),...r] } }
+document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-cgdraft^='brand-']"); if(!b) return; e.preventDefault(); e.stopImmediatePropagation(); const x=brandP()?.ideas?.[+b.dataset.cgdraft.slice(6)]; if(x) planFromIdea(x) },true);
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

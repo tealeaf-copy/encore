@@ -6239,22 +6239,23 @@ if(typeof drawConcierge==="function"){ const _dc=drawConcierge; drawConcierge=fu
   const _ch=cgChip; cgChip=function(v){ if(v.startsWith("tdraft:")){ const id=v.slice(7), S=cgState(), x=feed().find(y=>y.id===id), m=(S.mods||{})[id]||{}; if(!x) return; let t=cgSentence(x,{...S,a:{...S.a,...(m.budget?{budget:m.budget}:{})}}); if(m.n) t=t.replace(/for \d+/,"for "+m.n); if(m.plus) t+=", with plus-ones"; quickStart(t); draft.concept=x.line+(m.plus?" Partners welcome.":""); draft.name=`${m.n?x.name.replace(/for \d+/i,"for "+m.n):x.name}${draft.city?" · "+draft.city:""}`; cgDrafted(draft.name); renderStep(); return } return _ch(v) } }
 
 // ================= Pip: Encore's concierge and chief of staff =================
-// A small fluffy owl in a bow tie: a creative host and a sharp-eyed critic. Short messages, an honest opinion, one question at a time.
+// A cheerful piglet in a bow tie: a creative host and an honest critic. Short messages, an honest opinion, one question at a time.
 function pipSVG(mood="happy",size=36){
-  const px=mood==="side"||mood==="skeptic"?1.7:0, py=mood==="think"?-1.9:0;
-  const eye=(cx,closed,lid)=>closed?`<circle cx="${cx}" cy="33" r="8.6" fill="#FFF8F1"/><path d="M${cx-4.6} 34.5q4.6-5.6 9.2 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/>`:
-    `<circle cx="${cx}" cy="33" r="8.6" fill="#FFF8F1"/><circle class="pip-pupil" cx="${cx+px}" cy="${33.6+py}" r="5.6" fill="#3A2A22"/><circle cx="${cx+px+1.9}" cy="${31.4+py}" r="2" fill="#fff"/><circle cx="${cx+px-1.8}" cy="${36+py}" r=".9" fill="#fff"/>${lid?`<path d="M${cx-8.8} 31.5q8.8-6.5 17.6 0v-6h-17.6z" fill="#F2B38F"/><path d="M${cx-8.4} 31.6q8.4-3.4 16.8 0" stroke="#C9845F" stroke-width="1.3" fill="none" stroke-linecap="round"/>`:""}`;
+  const px=mood==="side"||mood==="skeptic"?1.6:0, py=mood==="think"?-1.8:0;
+  const eye=cx=>mood==="happy"?`<path d="M${cx-4.2} 30.5q4.2-5 8.4 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/>`:
+    `<ellipse class="pip-pupil" cx="${cx+px}" cy="${30+py}" rx="3.6" ry="4.2" fill="#3A2A22"/><circle cx="${cx+px+1.3}" cy="${28.4+py}" r="1.4" fill="#fff"/><circle cx="${cx+px-1.1}" cy="${31.8+py}" r=".7" fill="#fff"/>`;
   const tilt=mood==="skeptic"?"rotate(-8 32 40)":mood==="think"?"rotate(5 32 40)":"";
-  return `<svg class="pip ${mood}" viewBox="2 4 60 60" width="${size}" height="${size}" aria-hidden="true"><g class="pip-body" transform="${tilt}">
-  <circle cx="20" cy="15" r="5" fill="#EFA987"/><circle cx="44" cy="15" r="5" fill="#EFA987"/>
-  <ellipse cx="32" cy="37" rx="24" ry="23" fill="#F2B38F"/>
-  <ellipse cx="11" cy="42" rx="5" ry="9" fill="#E79B76" transform="rotate(14 11 42)"/><ellipse cx="53" cy="42" rx="5" ry="9" fill="#E79B76" transform="rotate(-14 53 42)"/>
-  <ellipse cx="32" cy="46" rx="14" ry="11" fill="#FFF1E4"/>
-  <path d="M27 45q2.5 2 5 0M32 49q2.5 2 5 0M27 52q2.5 1.6 5 0" stroke="#F0C9AB" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-  ${eye(23,mood==="happy",false)}${eye(41,mood==="happy",false)}
-  <ellipse cx="15.5" cy="41" rx="3.6" ry="2.2" fill="#F07C6C" opacity=".45"/><ellipse cx="48.5" cy="41" rx="3.6" ry="2.2" fill="#F07C6C" opacity=".45"/>
-  <path d="M29.6 39.5h4.8l-2.4 3.4z" fill="#E7834A" stroke="#E7834A" stroke-width="1.2" stroke-linejoin="round"/>
-  <path d="M25.8 56.4l6.2-2.6 6.2 2.6-6.2 2.6z" fill="#3A2A22"/><circle cx="32" cy="56.4" r="1.4" fill="#E3B67A"/></g></svg>` }
+  const mouth=mood==="skeptic"?'<path d="M28 50.2q4 2.4 7.6 -1.4" stroke="#B5485A" stroke-width="1.9" fill="none" stroke-linecap="round"/>':mood==="think"?'<ellipse cx="32" cy="50.6" rx="1.8" ry="1.4" fill="#B5485A"/>':'<path d="M27.5 49.5q4.5 4.2 9 0" stroke="#B5485A" stroke-width="2" fill="#E8798A" stroke-linecap="round" stroke-linejoin="round"/>';
+  return `<svg class="pip piglet ${mood}" viewBox="2 4 60 60" width="${size}" height="${size}" aria-hidden="true"><g class="pip-body" transform="${tilt}">
+  <path d="M13 22c-3-8 0-14 4-15 3 3 7 7 8 11z" fill="#F7A9B6"/><path d="M51 22c3-8 0-14-4-15-3 3-7 7-8 11z" fill="#F7A9B6"/>
+  <path d="M15.5 18.5c-1-4 0-7 1.8-7.8 1.6 1.8 3.5 4 4.3 6z" fill="#F48CA0"/><path d="M48.5 18.5c1-4 0-7-1.8-7.8-1.6 1.8-3.5 4-4.3 6z" fill="#F48CA0"/>
+  <ellipse cx="32" cy="36" rx="23" ry="21.5" fill="#FBC0C9"/>
+  <ellipse cx="32" cy="20" rx="9" ry="3" fill="#fff" opacity=".35"/>
+  ${eye(22.5)}${eye(41.5)}
+  <ellipse cx="15.5" cy="39" rx="4.2" ry="2.6" fill="#F48CA0" opacity=".7"/><ellipse cx="48.5" cy="39" rx="4.2" ry="2.6" fill="#F48CA0" opacity=".7"/>
+  <ellipse cx="32" cy="41" rx="8.4" ry="6" fill="#F7A0B0"/><ellipse cx="29" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><ellipse cx="35" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/>
+  ${mouth}
+  <path d="M25.8 58.6l6.2-2.6 6.2 2.6-6.2 2.6z" fill="#3A2A22"/><circle cx="32" cy="58.6" r="1.4" fill="#E3B67A"/></g></svg>` }
 const PIP_NAME="Pip";
 
 // ---------- Memory you can see, edit and forget ----------

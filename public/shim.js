@@ -13,7 +13,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
 (function () {
   "use strict";
 
-  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash || "");
+  const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|confnom)/.test(location.hash || "");
   const capError = (code, message, extra) => Object.assign({ code, message }, extra || {});
 
   const guestKey = () => { try { let k = localStorage.getItem("encore.gkey"); if (!k) { k = randomId().slice(0, 32); localStorage.setItem("encore.gkey", k); } return k; } catch { return ""; } };

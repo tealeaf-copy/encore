@@ -144,10 +144,33 @@ With `ENCORE_SIGNUP=1`, signed-out visitors get `public/landing.html` at `/`, an
   - `POST /api/connections {provider:"hubspot"|"attio", token}` (owner only) checks the token with one cheap read (HubSpot: list 1 company; Attio: `/v2/self`). It then stores the token encrypted (AES-256-GCM, key derived from `SESSION_SECRET`) in `system/`.
   - `GET /api/connections` returns `{connections:[{provider, connected, connectedAt, by}]}`. `DELETE /api/connections/:provider` removes one.
   - A workspace with a HubSpot token gets the HubSpot tools, run on its own token. This server's `HUBSPOT_TOKEN` is only used by the default workspace.
-  - Attio tokens are checked and stored, but there are no Attio tools yet. Salesforce connections aren't supported for sign-up workspaces yet: Salesforce stays a server-wide setting for the default workspace.
+  - Attio tokens are checked and stored, but there are no Attio tools yet.
+  - Salesforce uses the OAuth 2.0 client-credentials flow: `POST /api/connections {provider:"salesforce", instanceUrl, clientId, clientSecret}`.
+    - `instanceUrl` must be `https://…salesforce.com` or `https://…force.com`, so the server can't be pointed anywhere else.
+    - The server gets a token from `<instanceUrl>/services/oauth2/token` and checks it with `GET /services/data/v60.0/limits`. It stores only the encrypted client credentials and fetches new access tokens when needed.
+    - The Salesforce tools then run against that workspace's org. The `SF_*` env settings are only used by the default workspace.
   - If `SESSION_SECRET` changes, stored tokens can't be decrypted and must be connected again.
+- **Approver roles.** Owner only: `POST /api/workspace/approvers {roles:[…]}` sets the roles whose approval a plan needs (an empty list goes back to the automatic rule), and `PATCH /api/members/:email {roles:[…]}` changes a member's roles. `GET /api/workspace` returns `approverRoles` (the roles in effect) and `approverRolesSet` (the list set explicitly). Approver-like names include CFO, CRO, VP/SVP Sales, Finance, Manager, Exec sponsor, RevOps, Head of …, Director, Founder.
+- **Conference nominations by link.** Sales and execs can nominate without a login.
+  - `GET /api/confnomlink` (signed in) returns `{token, ws, link:"/g#confnom~ws-<ws>~<token>"}`.
+  - A guest request with `x-encore-workspace: <ws>` and `x-encore-token: <token>` may POST one conference at a time to `/api/db/collection?path=conferences`, up to 20 per IP per hour. Only `name, url, date, city, why, accounts[], nominatedBy[]` are kept; `stage` is set to `nominated`, `votes` to `{}` and `source` to `link`.
+  - With the same headers, a GET of that collection returns only each conference's `name, date, city, stage`.
 - **MCP tokens.** `GET /api/mcptoken` returns `{tokens:[{id, name, email, createdAt, lastUsedAt}]}`, never the token. `DELETE /api/mcptoken/:id` revokes one.
 - **Contact inbox.** `POST /api/contact {kind:"talk"|"security"|"billing", name, email, company, message}` is open to signed-out visitors: 5 per IP per hour (`ENCORE_CONTACT_PER_HOUR`), name and company capped at 120 characters, message at 5000. Messages are logged as `[contact] …` and stored in `system/`. Signed-in senders' messages carry their workspace. `GET /api/contact` is for the default workspace's own team.
+- **Single sign-on (OpenID Connect).** Works with Okta, Google Workspace, Microsoft Entra, OneLogin and other OIDC providers.
+  - **Setup (owner only).** `POST /api/sso {issuer, clientId, clientSecret, domain, enforce?}`.
+    - The server fetches `<issuer>/.well-known/openid-configuration`. It must be https on a public address, with no private or metadata IPs and no redirects. It must list `authorization_endpoint`, `token_endpoint` and `jwks_uri`, and its `issuer` must match.
+    - `domain` must be the owner's own email domain and can't be a public mail domain. One workspace per domain.
+    - The client secret is stored encrypted.
+    - `GET /api/sso` returns `{configured, issuer, domain, enforce, configuredBy, redirectUri}`. `DELETE /api/sso` turns it off.
+    - Register `redirectUri` (`<ENCORE_PUBLIC_URL or this host>/sso/callback`) with the provider. Set `ENCORE_PUBLIC_URL` behind a proxy.
+  - **Sign-in.** `/sso/start?email=…` (linked from the login page) sends the person to their provider using PKCE (S256), `state` and `nonce`, kept in a 10-minute encrypted cookie. `/sso/callback` exchanges the code and checks the ID token:
+    - The signature is RS256 or ES256, checked against the provider's JWKS.
+    - `iss`, `aud`/`azp`, `exp` and `nonce` must match.
+    - `email_verified` can't be false, and the email (or Entra's `preferred_username`) must be on the configured domain.
+    - On first sign-in the person joins the workspace as "Team member", which never counts as an approver role.
+  - **Enforce.** With `enforce:true`, password sign-in for the domain answers `401 {code:"sso_required", sso:"/sso/start?email=…"}` (the login form shows a message). The one exception is the owner who set SSO up: they keep their password as a break-glass in case the provider breaks, and should keep it strong.
+  - `ENCORE_SSO_ALLOW_LOCAL=1` allows http and local providers. It's for tests only.
 - **Trials.** Every feature works during the trial. After `trialEndsAt`, changes get `402 {code:"trial_ended"}` (MCP writes too), and reading still works. Guest RSVPs keep working.
 - **Billing isn't wired.** `/api/upgrade` only records the request and sets `plan` to `pending_<plan>`, and that doesn't unlock writes. Once a customer has paid, an operator sets the workspace's `plan` to `team` or `program` in its `system/ws-<id>` document.
 - Sign-up workspaces don't get this server's own Slack, Linear or CRM keys. Only web search is shared. AI calls do use the server's Anthropic key.

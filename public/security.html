@@ -33,10 +33,11 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th
 
 <h2>Access and accounts</h2>
 <table><tr><th style="width:34%">Control</th><th>How it works today</th></tr>
+<tr><td>Single sign-on</td><td>OpenID Connect with PKCE, signature checks on every ID token, and optional enforcement for your email domain.</td></tr>
 <tr><td>Sign-in</td><td>Personal accounts with passwords hashed using scrypt; sessions can be revoked on the server; sign-in attempts are rate-limited per address and per account.</td></tr>
 <tr><td>Approvals</td><td>Budget and plan approvals are tied to named people and roles, reset automatically when the cost changes, and can require a different person for each role.</td></tr>
 <tr><td>Audit log</td><td>Append-only record of approvals, AI runs that used call data, changes made from Claude, and admin actions. Exportable.</td></tr>
-<tr><td>Integrations</td><td>CRM tokens are encrypted at rest (AES-256-GCM) and used only for the workspace that added them. Claude connector tokens are per person, stored hashed, and revocable.</td></tr>
+<tr><td>Integrations</td><td>HubSpot, Attio and Salesforce (client-credentials connected app) credentials are encrypted at rest (AES-256-GCM) and used only for the workspace that added them. Claude connector tokens are per person, stored hashed, and revocable.</td></tr>
 <tr><td>Uploads</td><td>Limited to images, PDFs, video and plain data files, served with a restrictive content-security policy so an upload can't run code.</td></tr></table>
 
 <h2>AI processing</h2>
@@ -46,9 +47,9 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th
 <div class="box">
 <ul>
 <li><b>SOC 2:</b> Encore does not have a SOC 2 report yet. If your review requires one today, running Encore in your own cloud keeps all data inside your environment and your controls.</li>
-<li><b>Single sign-on (SAML/OIDC):</b> not yet available.</li>
+<li><b>SAML:</b> not yet available. Single sign-on works today through OpenID Connect (Okta, Google Workspace, Microsoft Entra, OneLogin), and can be required for everyone on your domain.</li>
 <li><b>HIPAA:</b> Encore is not designed to hold protected health information, and we don't sign BAAs. Don't put patient data in guest notes.</li>
-<li><b>Salesforce sync for trial workspaces:</b> import CSV exports for now; native sync is configured with your admin.</li>
+<li><b>Data processing agreement:</b> ask us for ours, or send yours with the security review request.</li>
 </ul>
 </div>
 <p style="margin-top:28px"><a href="/?contact=security">Request a security review</a> · <a href="/method">Measurement method</a> · <a href="/signup">Start a free trial</a></p>

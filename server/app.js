@@ -8,9 +8,11 @@ import { randomUUID, randomBytes, createHmac, timingSafeEqual } from "node:crypt
 import { parsePath, httpError, randomId } from "./db.js";
 import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
+import { clientCredentialsToken } from "./integrations/salesforce.js";
+import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
 import { mountMcp } from "./mcp.js";
-import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
+import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
@@ -106,6 +108,8 @@ function guestAllowed(req) {
     if ((req.method === "PUT" || req.method === "PATCH") && segs.length === 2 && segs[0] === "nominations" && req.get("x-encore-token")) return true;
     if (req.method === "PUT" || req.method === "PATCH") return segs.length === 2 && GUEST_COLLECTIONS.has(segs[0]);
   }
+  // Conference nominations from a signed workspace link (#confnom~ws-<ws>~<token>): the token is checked in the handler.
+  if (route === "/api/db/collection" && p === "conferences" && (req.method === "POST" || req.method === "GET") && req.get("x-encore-token")) return true;
   if (route === "/api/db/collection" && req.method === "POST") return segs.length === 1 && GUEST_COLLECTIONS.has(segs[0]);
   // The guest wall only holds what guests chose to show (name, role, photo, topic), so anyone with the link may read it.
   if (route === "/api/db/collection" && req.method === "GET") return p === "wall";
@@ -216,8 +220,45 @@ export function createApp({ store, dataDir }) {
     console.log(`[contact] ${kind} from ${rec.name || "?"} <${email}>${rec.company ? ` (${rec.company})` : ""}${u ? ` ws=${u.ws}` : ""}: ${message.slice(0, 200).replace(/\s+/g, " ")}`);
     res.json({ ok: true, id });
   });
+  // ---------- single sign-on (OIDC) ----------
+  const SSO_COOKIE = "encore_sso";
+  const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const ssoPage = (inner) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in with SSO · Encore</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}form,.box{background:#fff;padding:28px;border-radius:16px;box-shadow:0 6px 30px rgba(30,50,120,.12);width:min(320px,calc(100vw - 32px));box-sizing:border-box}h1{margin:0 0 16px;font-size:22px}input,button{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border-radius:10px}input{border:1px solid #cfd6ea;margin-bottom:12px}button{border:0;background:#3355ff;color:#fff;font-weight:600;cursor:pointer}p{margin:0 0 12px;font-size:13px}.err{color:#b3261e}a{display:block;margin-top:14px;text-align:center;color:#3355ff;font-size:13px;text-decoration:none}</style></head><body>${inner}</body></html>`;
+  const ssoForm = (msg = "") => ssoPage(`<form method="get" action="/sso/start"><h1>Sign in with SSO</h1>${msg ? `<p class="err">${esc(msg)}</p>` : ""}<input type="email" name="email" placeholder="Work email" autocomplete="email" autofocus required><button type="submit">Continue</button><a href="/login">Sign in with a password instead</a></form>`);
+  app.get("/sso/start", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const email = String(req.query.email || "").trim().toLowerCase();
+    if (!email) return res.type("html").send(ssoForm());
+    if (!EMAIL_OK(email)) return res.status(400).type("html").send(ssoForm("Enter your work email."));
+    const cfg = ssoForEmail(email);
+    if (!cfg) return res.status(404).type("html").send(ssoForm(`Single sign-on isn't set up for @${email.split("@")[1]}. Sign in with your password instead.`));
+    const { url, cookie } = startSso(cfg, email, redirectUriFor(req));
+    res.setHeader("Set-Cookie", `${SSO_COOKIE}=${cookie}; Path=/sso; HttpOnly; SameSite=Lax; Max-Age=600${req.secure ? "; Secure" : ""}`);
+    res.redirect(302, url);
+  });
+  app.get("/sso/callback", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    const clear = `${SSO_COOKIE}=; Path=/sso; HttpOnly; SameSite=Lax; Max-Age=0`;
+    const cookie = String(req.headers.cookie || "").split(";").map((x) => x.trim()).find((x) => x.startsWith(SSO_COOKIE + "="))?.slice(SSO_COOKIE.length + 1);
+    try {
+      if (req.query.error) throw Object.assign(new Error(`The identity provider said: ${String(req.query.error_description || req.query.error).slice(0, 200)}`), { code: "sso_failed" });
+      const who = await finishSso(readState(cookie), { code: req.query.code, returnedState: String(req.query.state || "") });
+      const u = ensureSsoMember(who, (e) => users().some((x) => x.email === e));
+      scopeStore(store, who.ws).add("audit", { eventId: "", what: `${u.name} signed in with SSO`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+      startSession(req, res, u.email, who.ws);
+      res.append("Set-Cookie", clear);
+      res.redirect(302, "/");
+    } catch (e) {
+      if (!e.code) console.error("[sso]", e);
+      else console.warn(`[sso] sign-in failed: ${e.message}`);
+      res.append("Set-Cookie", clear);
+      res.status(e.status && e.status < 500 ? e.status : 400).type("html").send(ssoPage(`<div class="box"><h1>Single sign-on didn't work</h1><p class="err">${esc(e.code ? e.message : "Something went wrong.")}</p><a href="/sso/start">Try again</a><a href="/login">Sign in with a password</a></div>`));
+    }
+  });
+
   // Static pages for signed-out visitors. The guest-link redirect is added to them, so #rsvp-… links keep working.
-  const GUEST_REDIRECT = `<script>if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash)) location.replace("/g" + location.search + location.hash);</script>`;
+  const GUEST_REDIRECT = `<script>if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash);</script>`;
   const sendStatic = async (res, file, fallback) => {
     let html; try { html = await fsp.readFile(path.join(PUBLIC_DIR, file), "utf8"); } catch { html = fallback; }
     html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + GUEST_REDIRECT) : GUEST_REDIRECT + html;
@@ -289,6 +330,7 @@ export function createApp({ store, dataDir }) {
     const ws = sessionWorkspace(req), W = getWorkspace(ws), T = trialState(W);
     res.json({ id: ws, company: W?.company || "", plan: W?.plan || "self-hosted", trialEndsAt: W?.trialEndsAt || null, daysLeft: T.daysLeft, trial: T.trial, trialEnded: T.trialEnded,
       writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
+      approverRoles: approverRoles(ws), approverRolesSet: ws === DEFAULT_WS ? null : W?.approverRoles || [],
       members: teamOf(ws).map((m) => ({ name: m.name, email: m.email, roles: m.roles || [], ...(m.owner ? { owner: true } : {}) })),
       limits: { features: "all", members: null, events: null, writes: T.writable } }); // no feature gates during the trial
   });
@@ -301,6 +343,27 @@ export function createApp({ store, dataDir }) {
     const { token, expiresAt } = createInvite({ ws: u.ws, email, role, defaultRole: !given, by: u.email });
     S(req).add("audit", { eventId: "", what: `invited ${email} as ${role}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
     res.json({ link: "/join#" + token, token, email, role, expiresAt, approverRole: !!given && APPROVER_LIKE.test(given) });
+  });
+  // Approvers: the owner can name the roles whose approval a plan needs, and change members' roles.
+  const cleanRoles = (v) => { const seen = new Set(); return (Array.isArray(v) ? v : []).map((r) => String(r ?? "").trim().slice(0, 80)).filter((r) => r && !seen.has(r.toLowerCase()) && seen.add(r.toLowerCase())).slice(0, 20); };
+  app.post("/api/workspace/approvers", json, (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    if (!Array.isArray(req.body?.roles)) return res.status(400).json({ code: "invalid", message: "roles must be a list (empty clears it)" });
+    const roles = cleanRoles(req.body.roles);
+    updateWorkspace(u.ws, { approverRoles: roles });
+    S(req).add("audit", { eventId: "", what: roles.length ? `set approver roles: ${roles.join(", ")}` : "cleared approver roles", kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+    res.json({ ok: true, approverRolesSet: roles, approverRoles: approverRoles(u.ws) });
+  });
+  app.patch("/api/members/:email", json, (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    const email = String(req.params.email || "").trim().toLowerCase(), m = getDbUser(email);
+    if (!m || m.ws !== u.ws) return res.status(404).json({ code: "not_found", message: "No such member in your workspace." });
+    if (!Array.isArray(req.body?.roles)) return res.status(400).json({ code: "invalid", message: "roles must be a list" });
+    const roles = cleanRoles(req.body.roles);
+    const { defaultRole, ...rest } = m;
+    putDbUser({ ...rest, roles });
+    S(req).add("audit", { eventId: "", what: `${m.name}'s roles: ${roles.join(", ") || "none"}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+    res.json({ ok: true, member: { name: m.name, email: m.email, roles, ...(m.owner ? { owner: true } : {}) }, approverRoles: approverRoles(u.ws) });
   });
   app.post("/api/mcptoken", json, (req, res) => {
     const u = ownerOnly(req, res); if (!u) return;
@@ -327,6 +390,22 @@ export function createApp({ store, dataDir }) {
     if (u || !teamOf(DEFAULT_WS).length) return { u, ws };
     res.status(403).json({ code: "not_granted", message: "Sign in as a team member." }); return null;
   };
+  // SSO settings (owner only). The client secret is stored encrypted and never returned.
+  app.get("/api/sso", (req, res) => { const u = ownerOnly(req, res); if (!u) return; res.json(publicSso(getSso(u.ws), redirectUriFor(req))); });
+  app.post("/api/sso", json, async (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    try {
+      const cfg = await configureSso(u.ws, req.body || {}, u.email);
+      S(req).add("audit", { eventId: "", what: `set up single sign-on for @${cfg.domain} (${cfg.issuer})${cfg.enforce ? ", enforced" : ""}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+      res.json({ ok: true, ...publicSso(cfg, redirectUriFor(req)) });
+    } catch (e) { res.status(e.status || 400).json({ code: e.code || "invalid", message: e.message }); }
+  });
+  app.delete("/api/sso", (req, res) => {
+    const u = ownerOnly(req, res); if (!u) return;
+    const removed = removeSso(u.ws);
+    if (removed) S(req).add("audit", { eventId: "", what: "turned off single sign-on", kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
+    res.json({ ok: true, removed });
+  });
   app.get("/api/mcptoken", (req, res) => {
     const u = ownerOnly(req, res); if (!u) return;
     res.json({ tokens: listMcpTokens(u.ws) });
@@ -339,7 +418,35 @@ export function createApp({ store, dataDir }) {
   });
 
   // ---------- CRM connections (a workspace's own provider tokens) ----------
-  const CHECKS = { hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
+  /** https://<anything>.my.salesforce.com or *.force.com only, so a connection can't point the server elsewhere. */
+  const salesforceOrigin = (v) => {
+    let u; try { u = new URL(String(v || "")); } catch { return null; }
+    if (u.protocol !== "https:" || u.username || u.password || (u.port && u.port !== "443")) return null;
+    const h = u.hostname.toLowerCase();
+    if (!/^[a-z0-9.-]+$/.test(h) || !(h.endsWith(".salesforce.com") || h.endsWith(".force.com"))) return null;
+    return "https://" + h;
+  };
+  app.post("/api/connections", json, async (req, res, next) => {
+    if (req.body?.provider !== "salesforce") return next();
+    const a = adminOf(req, res); if (!a) return;
+    const b = req.body, inst = salesforceOrigin(b.instanceUrl), clientId = String(b.clientId || "").trim(), clientSecret = String(b.clientSecret || "").trim();
+    if (!inst) return res.status(400).json({ code: "invalid", message: "instanceUrl must be your https://<domain>.my.salesforce.com (or .force.com) address." });
+    if (!clientId || !clientSecret || clientId.length > 500 || clientSecret.length > 500) return res.status(400).json({ code: "invalid", message: "clientId and clientSecret are required." });
+    // Exchange the client credentials, then make one cheap read with the token.
+    let token;
+    try { token = (await clientCredentialsToken(inst, clientId, clientSecret)).token; }
+    catch (e) { return res.status(e.status && e.status < 500 ? 400 : 502).json({ code: e.status && e.status < 500 ? "invalid_token" : "upstream_error", message: e.message }); }
+    let r;
+    try { r = await fetch(`${inst}/services/data/v60.0/limits`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }, signal: AbortSignal.timeout(10_000) }); }
+    catch { return res.status(502).json({ code: "upstream_error", message: "Couldn't reach Salesforce to check the connection." }); }
+    if (r.status === 401 || r.status === 403) return res.status(400).json({ code: "invalid_token", message: "Salesforce issued a token but refused a read with it. Check the connected app's run-as user and its permissions." });
+    if (!r.ok) return res.status(502).json({ code: "upstream_error", message: `Salesforce answered ${r.status} when checking the connection.` });
+    // Only the credentials are kept (encrypted); access tokens are fetched again when they expire.
+    saveConnection(a.ws, "salesforce", JSON.stringify({ instanceUrl: inst, clientId, clientSecret }), a.u?.email || "team", { instanceUrl: inst });
+    S(req).add("audit", { eventId: "", what: `connected Salesforce (${inst})`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
+    res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === "salesforce") });
+  });
+  const CHECKS = { salesforce: { name: "Salesforce" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
   app.get("/api/connections", (req, res) => { const a = adminOf(req, res); if (!a) return; res.json({ connections: listConnections(a.ws) }); });
   app.post("/api/connections", json, async (req, res) => {
     const a = adminOf(req, res); if (!a) return;
@@ -612,6 +719,44 @@ export function createApp({ store, dataDir }) {
   app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).set(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
   app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).update(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
   app.delete("/api/db/doc", (req, res) => res.json(S(req).delete(String(req.query.path || ""))));
+  // ---------- conference nominations by link (sales and execs, no login) ----------
+  const confnomToken = (ws) => hmac32("confnom|" + ws);
+  app.get("/api/confnomlink", (req, res) => {
+    if (req.guest) return res.status(401).json({ code: "not_granted" });
+    const ws = sessionWorkspace(req), token = confnomToken(ws);
+    res.json({ token, ws, link: `/g#confnom~ws-${ws}~${token}` });
+  });
+  /** A guest conference request: the workspace from x-encore-workspace, proven by the link's token. */
+  const confnomGuest = (req, res) => {
+    const ws = String(req.get("x-encore-workspace") || "");
+    if (!(ws === DEFAULT_WS || (/^[A-Za-z0-9]{20}$/.test(ws) && getWorkspace(ws))) || !eq(confnomToken(ws), req.get("x-encore-token"))) { res.status(401).json({ code: "not_granted", message: "This nomination link isn't valid. Ask for a new one." }); return false; }
+    req.ws = ws;
+    return true;
+  };
+  const confHits = new Map();
+  const cleanConference = (b) => {
+    const str = (v, n) => String(v ?? "").trim().slice(0, n);
+    const list = (v, n, each) => (Array.isArray(v) ? v : []).map((x) => str(x, each)).filter(Boolean).slice(0, n);
+    const url = str(b.url, 500), date = str(b.date, 10);
+    return { name: str(b.name, 200), url: /^https?:\/\//i.test(url) ? url : "", date: /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date + "T00:00:00Z")) && new Date(date + "T00:00:00Z").toISOString().slice(0, 10) === date ? date : "",
+      city: str(b.city, 120), why: str(b.why, 2000), accounts: list(b.accounts, 50, 120), nominatedBy: list(b.nominatedBy, 10, 120), stage: "nominated", votes: {}, createdAt: Date.now(), source: "link" };
+  };
+  app.get("/api/db/collection", (req, res, next) => {
+    if (!(req.guest && String(req.query.path || "") === "conferences")) return next();
+    if (!confnomGuest(req, res)) return;
+    // Enough to show "already on the list", nothing more.
+    res.json({ docs: S(req).list("conferences").map((d) => ({ id: d.id, data: { name: d.data.name || "", date: d.data.date || "", city: d.data.city || "", stage: d.data.stage || "" } })) });
+  });
+  app.post("/api/db/collection", json, (req, res, next) => {
+    if (!(req.guest && String(req.query.path || "") === "conferences")) return next();
+    if (!confnomGuest(req, res)) return;
+    const k = req.ip || "?", now = Date.now(); let h = confHits.get(k);
+    if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; confHits.set(k, h); }
+    if (++h.n > Number(process.env.ENCORE_CONFNOM_PER_HOUR || 20)) return res.status(429).json({ code: "rate_limited", message: "Too many nominations from here. Try again later." });
+    const doc = cleanConference(req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {});
+    if (!doc.name) return res.status(400).json({ code: "invalid", message: "Name the conference." });
+    res.json(S(req).add("conferences", doc));
+  });
   app.get("/api/db/collection", (req, res) => {
     let docs = S(req).list(String(req.query.path || ""));
     if (req.guest) {

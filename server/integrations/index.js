@@ -19,6 +19,7 @@ export { withCrm } from "./context.js";
 export function configuredFor({ isDefault, connected = {} }) {
   const base = configured().filter((x) => isDefault || x.server === "Parallel Search");
   if (connected.hubspot && !base.some((x) => x.server === "HubSpot")) base.push(hubspot({ force: true }));
+  if (connected.salesforce && !base.some((x) => x.server === "Salesforce - Beta")) base.push(salesforce({ force: true }));
   return base;
 }
 

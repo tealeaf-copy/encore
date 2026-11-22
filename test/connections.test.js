@@ -30,7 +30,7 @@ async function signup(company, email) {
 test("workspaces connect their own HubSpot token; it's checked, encrypted, and used for their tool calls", async () => {
   A = await signup("Acme", "owner@acme.com"); B = await signup("Beta", "owner@beta.com");
   mock((u, init) => (init.headers.Authorization === "Bearer good-token" ? reply(200, { results: [] }) : reply(401, { message: "bad" })));
-  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false]]);
+  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false], ["salesforce", false]]);
   assert.equal((await post("/api/connections", { provider: "salesforce", token: "x" }, A.cookie)).status, 400);
   const bad = await post("/api/connections", { provider: "hubspot", token: "wrong" }, A.cookie);
   assert.equal(bad.status, 400);
@@ -146,4 +146,107 @@ test("MCP tokens: listed without the secret, revocable", async () => {
   assert.equal((await del("/api/mcptoken/" + list[0].id, A.cookie)).status, 200);
   assert.equal((await ping()).status, 401, "revoked");
   assert.deepEqual((await (await get("/api/mcptoken", A.cookie)).json()).tokens.map((x) => x.name), ["CI"]);
+});
+
+test("conference nominations by link: one clean doc per post, token-bound to the workspace", async () => {
+  const link = await (await get("/api/confnomlink", A.cookie)).json();
+  assert.equal(link.ws, A.ws);
+  assert.match(link.token, /^[a-f0-9]{32}$/);
+  assert.equal(link.link, `/g#confnom~ws-${A.ws}~${link.token}`);
+  assert.equal((await get("/api/confnomlink")).status, 401, "signed-in only");
+  const G = (ws, token) => ({ "x-encore-guest": "1", "x-encore-workspace": ws, ...(token ? { "x-encore-token": token } : {}), "Content-Type": "application/json" });
+  const nominate = (headers, body) => fetch(srv.base + "/api/db/collection?path=conferences", { method: "POST", headers, body: JSON.stringify(body) });
+  const body = { name: "SaaStr Annual", url: "https://saastr.com", date: "2027-09-10", city: "San Mateo", why: "Our ICP goes", accounts: ["Acme", "Beta"], nominatedBy: ["Sam (AE)"],
+    stage: "approved", votes: { x: 9 }, budget: 99999, owner: "hacker", createdAt: 1, source: "crm" };
+  assert.equal((await nominate(G(A.ws), body)).status, 401, "no token");
+  assert.equal((await nominate(G(A.ws, "0".repeat(32)), body)).status, 401, "forged");
+  const tB = (await (await get("/api/confnomlink", B.cookie)).json()).token;
+  assert.equal((await nominate(G(A.ws, tB), body)).status, 401, "B's token can't write into A");
+  const r = await nominate(G(A.ws, link.token), body);
+  assert.equal(r.status, 200);
+  const saved = srv.store.get(`ws/${A.ws}/conferences/${(await r.json()).id}`).data;
+  assert.deepEqual(Object.keys(saved).sort(), ["accounts", "city", "createdAt", "date", "name", "nominatedBy", "source", "stage", "url", "votes", "why"]);
+  assert.equal(saved.stage, "nominated");
+  assert.deepEqual(saved.votes, {});
+  assert.equal(saved.source, "link");
+  assert.ok(saved.createdAt > 1);
+  assert.equal((await nominate(G(A.ws, link.token), { name: "" })).status, 400);
+  const odd = await nominate(G(A.ws, link.token), { name: "X", url: "javascript:alert(1)", date: "2027-02-30" });
+  const o = srv.store.get(`ws/${A.ws}/conferences/${(await odd.json()).id}`).data;
+  assert.equal(o.url, ""); assert.equal(o.date, "");
+  // the guest list view: names only, with the token
+  const list = await (await fetch(srv.base + "/api/db/collection?path=conferences", { headers: G(A.ws, link.token) })).json();
+  assert.deepEqual(list.docs.map((d) => Object.keys(d.data).sort()), [["city", "date", "name", "stage"], ["city", "date", "name", "stage"]]);
+  assert.equal((await fetch(srv.base + "/api/db/collection?path=conferences", { headers: G(A.ws) })).status, 401);
+  assert.equal((await fetch(srv.base + `/api/db/doc?path=conferences/${list.docs[0].id}`, { headers: G(A.ws, link.token) })).status, 401, "no single-doc reads");
+  assert.equal((await fetch(srv.base + `/api/db/doc?path=conferences/${list.docs[0].id}`, { method: "PUT", headers: G(A.ws, link.token), body: "{}" })).status, 401, "no edits");
+  assert.equal((await (await get("/api/db/collection?path=conferences", B.cookie)).json()).docs.length, 0);
+  assert.equal((await (await get("/api/db/collection?path=conferences", A.cookie)).json()).docs[0].data.why !== undefined, true, "the team sees everything");
+  // the guest-link redirect knows the route
+  assert.match(await (await get("/login")).text(), /approve-\|confnom\)/);
+  process.env.ENCORE_CONFNOM_PER_HOUR = "3";
+  try { assert.equal((await nominate(G(A.ws, link.token), { name: "Y" })).status, 429); } finally { delete process.env.ENCORE_CONFNOM_PER_HOUR; }
+});
+
+test("Salesforce per workspace: client credentials checked, stored encrypted, used by the tools", async () => {
+  const SF = "https://acme.my.salesforce.com";
+  let tokenCalls = 0;
+  mock((u, init) => {
+    if (u === SF + "/services/oauth2/token") { tokenCalls++; const p = new URLSearchParams(init.body); return p.get("client_secret") === "good-secret" ? reply(200, { access_token: "sf-at-" + tokenCalls }) : reply(400, { error: "invalid_client", error_description: "invalid client credentials" }); }
+    if (u === SF + "/services/data/v60.0/limits") return reply(200, { DailyApiRequests: {} });
+    if (u.startsWith(SF + "/services/data/") && u.includes("/query")) return reply(200, { totalSize: 1, done: true, records: [{ attributes: {}, Name: "Acme Corp" }] });
+    return reply(404, {});
+  });
+  const conn = (b) => post("/api/connections", { provider: "salesforce", ...b }, A.cookie);
+  for (const bad of ["http://acme.my.salesforce.com", "https://evil.com", "https://acme.my.salesforce.com.evil.com", "https://user:pw@acme.my.salesforce.com", "https://acme.my.salesforce.com:8443", "https://169.254.169.254"]) {
+    assert.equal((await conn({ instanceUrl: bad, clientId: "id", clientSecret: "good-secret" })).status, 400, bad);
+  }
+  assert.equal(calls.length, 0, "nothing was fetched for a bad instance URL");
+  const wrong = await conn({ instanceUrl: SF, clientId: "id", clientSecret: "nope" });
+  assert.equal(wrong.status, 400);
+  assert.equal((await wrong.json()).code, "invalid_token");
+  const ok = await conn({ instanceUrl: SF + "/some/path", clientId: "id", clientSecret: "good-secret" });
+  assert.equal(ok.status, 200);
+  const c = (await ok.json()).connection;
+  assert.equal(c.connected, true);
+  assert.equal(c.instanceUrl, SF);
+  const raw = JSON.stringify(srv.store.get(`system/conn-${A.ws}-salesforce`).data);
+  assert.equal(raw.includes("good-secret") || raw.includes("sf-at-"), false, "credentials encrypted, no access token stored");
+  assert.ok((await (await get("/api/mcp/tools", A.cookie)).json()).servers.some((x) => x.server === "Salesforce - Beta"));
+  assert.equal((await (await get("/api/mcp/tools", B.cookie)).json()).servers.some((x) => x.server === "Salesforce - Beta"), false);
+  calls = [];
+  const q = await post("/api/mcp/call", { server: "Salesforce - Beta", tool: "dispatch_readonly", input: { soql: "SELECT Name FROM Account LIMIT 1" } }, A.cookie);
+  assert.equal(q.status, 200, await q.clone().text());
+  assert.ok(calls.some((x) => x.url.startsWith(SF + "/services/data/") && /^Bearer sf-at-/.test(x.auth)));
+  assert.equal((await post("/api/mcp/call", { server: "Salesforce - Beta", tool: "dispatch_readonly", input: { soql: "SELECT Id FROM Account" } }, B.cookie)).status, 404);
+  await del("/api/connections/salesforce", A.cookie);
+});
+
+test("approver roles: approver-like invites, explicit workspace roles, member role changes", async () => {
+  for (const role of ["CFO", "CRO", "VP Sales", "Finance", "Manager", "Exec sponsor", "RevOps", "Head of Events"]) {
+    const r = await (await post("/api/invite", { email: `${role.replace(/\W/g, "").toLowerCase()}@acme.com`, role }, A.cookie)).json();
+    assert.equal(r.approverRole, true, role);
+  }
+  for (const role of ["AE", "Designer", "Team member", "SDR"]) assert.equal((await (await post("/api/invite", { email: `${role.replace(/\W/g, "").toLowerCase()}@acme.com`, role }, A.cookie)).json()).approverRole, false, role);
+  let w = await (await get("/api/workspace", A.cookie)).json();
+  assert.deepEqual(w.approverRolesSet, []);
+  assert.ok(w.approverRoles.includes("Event lead"));
+  const set = await post("/api/workspace/approvers", { roles: ["CFO", " cfo ", "Event lead", ""] }, A.cookie);
+  assert.equal(set.status, 200);
+  assert.deepEqual((await set.json()).approverRolesSet, ["CFO", "Event lead"]);
+  w = await (await get("/api/workspace", A.cookie)).json();
+  assert.deepEqual(w.approverRoles, ["CFO", "Event lead"]);
+  srv.store.set(`ws/${A.ws}/events/evAp`, { name: "Ap" });
+  assert.deepEqual((await (await get("/api/approvals?eventId=evAp", A.cookie)).json()).required, ["CFO", "Event lead"]);
+  // the member who joined as "AE" earlier (m@acme.com) becomes CFO
+  const p = await fetch(srv.base + "/api/members/m@acme.com", { method: "PATCH", headers: { ...J, cookie: A.cookie }, body: JSON.stringify({ roles: ["CFO"] }) });
+  assert.equal(p.status, 200);
+  assert.deepEqual((await p.json()).member.roles, ["CFO"]);
+  const m = (await post("/api/login", { email: "m@acme.com", password: "member-password" })).headers.get("set-cookie").split(";")[0];
+  assert.equal((await post("/api/approve", { eventId: "evAp", role: "cfo" }, m)).status, 200);
+  assert.equal((await post("/api/workspace/approvers", { roles: ["x"] }, m)).status, 403, "owner only");
+  assert.equal((await fetch(srv.base + "/api/members/owner@beta.com", { method: "PATCH", headers: { ...J, cookie: A.cookie }, body: JSON.stringify({ roles: ["CFO"] }) })).status, 404, "not A's member");
+  assert.equal((await post("/api/workspace/approvers", { roles: "CFO" }, A.cookie)).status, 400);
+  await post("/api/workspace/approvers", { roles: [] }, A.cookie);
+  assert.deepEqual((await (await get("/api/workspace", A.cookie)).json()).approverRolesSet, []);
 });

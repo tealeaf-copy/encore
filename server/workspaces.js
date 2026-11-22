@@ -113,7 +113,7 @@ export function revokeMcpToken(ws, id) {
 }
 
 // ---------- CRM connections: provider tokens, encrypted at rest (AES-256-GCM) ----------
-export const CONNECTION_PROVIDERS = ["hubspot", "attio"];
+export const CONNECTION_PROVIDERS = ["hubspot", "attio", "salesforce"];
 function connKey() {
   let base = process.env.SESSION_SECRET;
   if (!base) { base = need().get("system/secret")?.data?.v; if (!base) { base = randomBytes(32).toString("hex"); need().set("system/secret", { v: base }); } }
@@ -132,12 +132,13 @@ export function decryptSecret(box) {
   } catch { return null; } // wrong key (SESSION_SECRET changed) or tampered
 }
 const connPath = (ws, provider) => `system/conn-${ws}-${provider}`;
-export function saveConnection(ws, provider, token, by) {
-  need().set(connPath(ws, provider), { kind: "connection", ws, provider, secret: encryptSecret(token), connectedAt: Date.now(), by });
+/** token: the secret to keep (Salesforce: a JSON string of its client credentials). meta: non-secret details to show. */
+export function saveConnection(ws, provider, token, by, meta = {}) {
+  need().set(connPath(ws, provider), { kind: "connection", ws, provider, secret: encryptSecret(token), connectedAt: Date.now(), by, meta });
 }
 export function deleteConnection(ws, provider) { return need().delete(connPath(ws, provider)).deleted; }
 export function listConnections(ws) {
-  return CONNECTION_PROVIDERS.map((provider) => { const d = need().get(connPath(ws, provider))?.data; return { provider, connected: !!d, connectedAt: d?.connectedAt || null, by: d?.by || null }; });
+  return CONNECTION_PROVIDERS.map((provider) => { const d = need().get(connPath(ws, provider))?.data; return { provider, connected: !!d, connectedAt: d?.connectedAt || null, by: d?.by || null, ...(d?.meta && Object.keys(d.meta).length ? d.meta : {}) }; });
 }
 /** { hubspot: "<token>", ... } for a workspace's working connections. */
 export function connectionTokens(ws) {

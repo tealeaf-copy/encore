@@ -1,6 +1,7 @@
 // Salesforce: read-only SOQL, event attendee sync (Campaign + CampaignMembers,
 // Leads for unknown emails) and event pipeline (Opportunities). REST API with
 // either a ready access token or the OAuth 2.0 client-credentials flow.
+import { crmToken } from "./context.js";
 import { chunk, errText, validateMembers, validateWindow, MEMBERS_SCHEMA, PIPELINE_SCHEMA, validateFollowups, validateVerify, validateRollup, FOLLOWUPS_SCHEMA, VERIFY_SCHEMA, ROLLUP_SCHEMA } from "./crm-common.js";
 
 const STATUS_LABELS = ["Invited", "Registered", "Attended", "Declined"];
@@ -10,37 +11,55 @@ const RESPONDED = new Set(["Registered", "Attended"]);
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 
 function fail(message) { return { code: "tool_error", message: `Salesforce: ${message}` }; }
-const instance = () => String(process.env.SF_INSTANCE_URL || "").replace(/\/+$/, "");
+/**
+ * Where and how to sign in: a workspace's own connection (client credentials, from context.js) when there is
+ * one, else this server's SF_* env settings (default workspace only).
+ */
+function conf() {
+  const ws = crmToken("salesforce", null);
+  if (ws) { try { const c = JSON.parse(ws); return { instance: String(c.instanceUrl).replace(/\/+$/, ""), clientId: c.clientId, clientSecret: c.clientSecret, accessToken: null }; } catch {} }
+  if (crmToken("salesforce-env", "env") !== "env") return null; // inside another workspace: never the server's org
+  return { instance: String(process.env.SF_INSTANCE_URL || "").replace(/\/+$/, ""), clientId: process.env.SF_CLIENT_ID, clientSecret: process.env.SF_CLIENT_SECRET, accessToken: process.env.SF_ACCESS_TOKEN || null };
+}
+const need = () => { const c = conf(); if (!c?.instance) throw fail("not connected"); return c; };
+const instance = () => need().instance;
 const version = () => process.env.SF_API_VERSION || "v61.0";
 
-let cached = null; // { key, token, exp }
-export function _resetTokenCache() { cached = null; }
+const cache = new Map(); // instance|clientId -> { token, exp }
+export function _resetTokenCache() { cache.clear(); }
 
-async function getToken({ fresh = false } = {}) {
-  if (process.env.SF_ACCESS_TOKEN) return process.env.SF_ACCESS_TOKEN;
-  const key = `${instance()}|${process.env.SF_CLIENT_ID}`;
-  if (!fresh && cached && cached.key === key && cached.exp > Date.now()) return cached.token;
+/** Exchange client credentials for an access token at <instance>/services/oauth2/token. */
+export async function clientCredentialsToken(inst, clientId, clientSecret) {
   let res;
-  try { res = await fetch(`${instance()}/services/oauth2/token`, {
+  try { res = await fetch(`${inst}/services/oauth2/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "client_credentials", client_id: process.env.SF_CLIENT_ID, client_secret: process.env.SF_CLIENT_SECRET }).toString(),
-  }); } catch (e) { throw fail(`can't reach ${instance()} (${errText(e)})`); }
+    body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }).toString(),
+  }); } catch (e) { throw fail(`can't reach ${inst} (${errText(e)})`); }
   let json = null;
   try { json = await res.json(); } catch {}
-  if (!res.ok || !json?.access_token) throw fail(`token request failed: ${json?.error_description || json?.error || `HTTP ${res.status}`}`);
-  const ttl = +json.expires_in > 0 ? json.expires_in * 1000 - 60000 : DEFAULT_TTL_MS;
-  cached = { key, token: json.access_token, exp: Date.now() + ttl };
-  return cached.token;
+  if (!res.ok || !json?.access_token) throw Object.assign(fail(`token request failed: ${json?.error_description || json?.error || `HTTP ${res.status}`}`), { status: res.status });
+  return { token: json.access_token, ttl: +json.expires_in > 0 ? json.expires_in * 1000 - 60000 : DEFAULT_TTL_MS };
+}
+
+async function getToken({ fresh = false } = {}) {
+  const c = need();
+  if (c.accessToken) return c.accessToken;
+  const key = `${c.instance}|${c.clientId}`, hit = cache.get(key);
+  if (!fresh && hit && hit.exp > Date.now()) return hit.token;
+  const { token, ttl } = await clientCredentialsToken(c.instance, c.clientId, c.clientSecret);
+  cache.set(key, { token, exp: Date.now() + ttl });
+  return token;
 }
 
 async function sf(method, path, body, retried = false) {
-  const url = path.startsWith("/services/") ? instance() + path : `${instance()}/services/data/${version()}${path}`;
+  const c = need();
+  const url = path.startsWith("/services/") ? c.instance + path : `${c.instance}/services/data/${version()}${path}`;
   const init = { method, headers: { Authorization: `Bearer ${await getToken()}`, Accept: "application/json" } };
   if (body !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(body); }
   let res;
-  try { res = await fetch(url, init); } catch (e) { throw fail(`can't reach ${instance()} (${errText(e)})`); }
-  if (res.status === 401 && !retried && !process.env.SF_ACCESS_TOKEN) { cached = null; return sf(method, path, body, true); }
+  try { res = await fetch(url, init); } catch (e) { throw fail(`can't reach ${c.instance} (${errText(e)})`); }
+  if (res.status === 401 && !retried && !c.accessToken) { cache.delete(`${c.instance}|${c.clientId}`); return sf(method, path, body, true); }
   if (res.status === 204) return null;
   let json = null;
   try { json = await res.json(); } catch {}
@@ -300,9 +319,10 @@ async function eventPipeline(input) {
   return out;
 }
 
-export default function salesforce() {
-  if (!process.env.SF_INSTANCE_URL) return null;
-  if (!process.env.SF_ACCESS_TOKEN && !(process.env.SF_CLIENT_ID && process.env.SF_CLIENT_SECRET)) return null;
+/** force: list the tools without SF_* env settings (a workspace brings its own connection). */
+export default function salesforce({ force = false } = {}) {
+  if (!force && !process.env.SF_INSTANCE_URL) return null;
+  if (!force && !process.env.SF_ACCESS_TOKEN && !(process.env.SF_CLIENT_ID && process.env.SF_CLIENT_SECRET)) return null;
   return {
     server: "Salesforce - Beta",
     tools: [

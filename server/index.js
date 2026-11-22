@@ -38,6 +38,7 @@ if (!process.env.APP_PASSWORD && process.env.ENCORE_SIGNUP !== "1" && !loopback 
   console.error("Refusing to start: APP_PASSWORD is not set and the server listens on " + host + ". Set APP_PASSWORD (and SESSION_SECRET), or HOST=127.0.0.1 for local use, or ENCORE_ALLOW_OPEN=1 to run open on purpose.");
   process.exit(1);
 }
+if (process.env.ENCORE_SSO_ALLOW_LOCAL === "1") console.warn("Warning: ENCORE_SSO_ALLOW_LOCAL=1 lets SSO settings point at http and private addresses. It's for tests only.");
 if (process.env.ENCORE_SIGNUP === "1" && !process.env.SESSION_SECRET) {
   console.error("Refusing to start: ENCORE_SIGNUP=1 needs a long random SESSION_SECRET so sign-ins can't be forged.");
   process.exit(1);

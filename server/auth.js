@@ -1,5 +1,6 @@
 // Optional shared-password gate. Off unless APP_PASSWORD is set.
 import { createHmac, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
+import { useSsoStore, ssoForEmail } from "./sso.js";
 import { DEFAULT_WS, useWorkspaceStore, signupEnabled, getDbUser, getWorkspace, membersOf } from "./workspaces.js";
 
 const COOKIE = "encore_auth";
@@ -9,7 +10,7 @@ const MAX_AGE_S = 60 * 60 * 24 * 30;
 // records it as revoked in the store (system/ docs, which the data API can't read or write).
 let store = null;
 const revokedCache = new Set();
-export function useAuthStore(s) { store = s; revokedCache.clear(); useWorkspaceStore(s); }
+export function useAuthStore(s) { store = s; revokedCache.clear(); useWorkspaceStore(s); useSsoStore(s); }
 const revokedPath = (sid) => "system/revoked-" + sid;
 function isRevoked(sid) {
   if (revokedCache.has(sid)) return true;
@@ -76,7 +77,7 @@ export function teamOf(ws = DEFAULT_WS) {
   return store ? membersOf(ws) : [];
 }
 /** Role names that read like someone who signs off on a plan. Generic roles ("Team member", "AE") never do. */
-export const APPROVER_LIKE = /\b(lead|sponsor|exec|executive|vp|head|director|owner|approver|chief|cmo|cfo|ceo|coo|finance|budget|manager)\b/i;
+export const APPROVER_LIKE = /\b(lead|sponsor|exec|executive|vp|svp|evp|head|director|owner|approver|chief|president|founder|gm|cmo|cfo|ceo|coo|cro|cto|cpo|finance|controller|budget|manager|revops|rev\s?ops|revenue\s+operations)\b/i;
 const uniq = (list) => [...new Map(list.map((r) => [r.toLowerCase(), r])).values()];
 const parseRoles = (v) => String(v || "").split(",").map((r) => r.trim()).filter(Boolean);
 /**
@@ -188,6 +189,9 @@ export function loginHandler(req, res) {
   if (named) {
     const u = findUser(req.body?.email);
     if (!u) return deny(2, "That email isn't on the team list.");
+    // Enforced SSO: password sign-in is off for the domain, except for the owner who set SSO up (break-glass).
+    const sso = u.ws !== DEFAULT_WS ? ssoForEmail(u.email) : null;
+    if (sso && sso.enforce && sso.ws === u.ws && sso.configuredBy !== u.email) return isForm ? res.redirect(303, "/login?error=4") : res.status(401).json({ code: "sso_required", message: "Your company signs in with single sign-on. Use \"Sign in with SSO\".", sso: "/sso/start?email=" + encodeURIComponent(u.email) });
     // A personal password, when set, is required; the shared team password then doesn't work for that person.
     // Accounts made by sign-up or invite always have one.
     const personal = checkPersonal(u, password);
@@ -213,7 +217,7 @@ export function loginPage() {
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
   // the server. Send those visitors to the guest copy of the page instead.
-  if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
+  if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
 </script>
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}
@@ -227,10 +231,10 @@ export function loginPage() {
 </style></head><body>
 <form method="post" action="/api/login">
   <h1>encore</h1>
-  <script>if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
+  <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
   ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
   <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
-  ${signupEnabled() ? `<a class="alt" href="/signup">New to Encore? Start a free trial</a>` : ""}
+  ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Encore? Start a free trial</a>` : ""}
 </form></body></html>`;
 }

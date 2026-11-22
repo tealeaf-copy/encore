@@ -11,3 +11,4 @@ export function crmToken(provider, envValue) {
   if (!c) return envValue;
   return c.tokens[provider] || (c.allowEnv ? envValue : undefined);
 }
+// Salesforce's tokens[provider] is a JSON string of {instanceUrl, clientId, clientSecret}.

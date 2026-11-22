@@ -89,3 +89,15 @@ test("Storefronts: curated theme with guardrails, https-only links, the /@handle
   const r = await fetch(srv.base + "/api/db/doc?path=events/bread1", { headers: { cookie: kim.cookie, "x-encore-guest": "1" } });
   assert.equal(r.status, 200); assert.equal((await r.json()).data.name, "Sourdough Sunday");
 });
+
+test("Pip calls it: once enough people are in, it locks the most popular date and tells them", async () => {
+  const cl = await join("Cleo Ray", "cleo@example.com");
+  assert.equal((await put("events/auto1", { name: "Picnic", activity: "picnic", kind: "social", casual: true, stage: "interest", dateOptions: [day(8), day(9)], interestGoal: 2, autoGo: true }, cl.cookie)).status, 200);
+  await guest(cl.ws, { eventId: "auto1", name: "A One", email: "a1@example.com", response: "maybe", interest: "in", dates: [day(9)], code: "A1" });
+  let h = await (await get("/api/host/hype/auto1", cl.cookie)).json(); assert.equal(h.in, 1);
+  await guest(cl.ws, { eventId: "auto1", name: "B Two", email: "b2@example.com", response: "maybe", interest: "in", dates: [day(8), day(9)], code: "B2" });
+  h = await (await get("/api/host/hype/auto1", cl.cookie)).json(); assert.equal(h.autoWent, true);
+  const ev = (await (await get("/api/db/doc?path=events/auto1", cl.cookie)).json()).data;
+  assert.equal(ev.stage, ""); assert.equal(ev.date, day(9));
+  assert.ok((await (await get("/api/me/inbox", cl.cookie)).json()).items.some((n) => n.kind === "itson"));
+});

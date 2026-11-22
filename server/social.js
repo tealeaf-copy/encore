@@ -192,6 +192,7 @@ export function makeSocial(store, { C, saveBlob }) {
   // ---- the hourly job: kudos nudges, prep alerts, pickup texts ----
   async function runJobs(now = Date.now(), origin = process.env.ENCORE_PUBLIC_URL || "") {
     const out = { kudosAsks: 0, prepAlerts: 0, texts: 0 }, I = index(), sms = smsConfig();
+    for (const x of I.events.values()) if (x.e.stage === "interest" && x.e.autoGo) { try { if (await X.autoGo?.(x.ws, x.id, origin)) out.autoGo = (out.autoGo || 0) + 1; } catch {} }
     for (const x of I.events.values()) {
       const e = x.e; if (!e.casual || !e.date) continue; const S = scopeStore(store, x.ws), done = (k) => !!S.get("jobs/" + k), mark = (k) => S.set("jobs/" + k, { at: now });
       const endAt = Date.parse(`${e.date}T${/^\d{2}:\d{2}$/.test(e.endTime || "") ? e.endTime : /^\d{2}:\d{2}$/.test(e.startTime || "") ? String(Math.min(23, +e.startTime.slice(0, 2) + 3)).padStart(2, "0") + e.startTime.slice(2) : "21:00"}:00`), hoursAfter = (now - endAt) / 3600e3;
@@ -302,13 +303,17 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (req.body?.sms && smsConfig()) { const slot = clean(req.body?.slot, 40); for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId === id && r.response === "going" && PHONE_OK(r.phone) && (!slot || r.slot === slot)) { const ok = await sendSms(smsConfig(), { to: r.phone, text: `${first(u.name)} (${ev.pubTitle || ev.name}): ${text}` }); if (ok.ok) texted++; } } }
     res.json({ ok: true, texted }); });
   // interest check → it's on: tell everyone who said they were in or maybe
-  app.post("/api/host/its-on", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.body?.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
-    const R = S.list("rsvps").map((d) => d.data).filter((r) => r.eventId === id && ["in", "maybe"].includes(r.interest)), link = `${publicOrigin(req)}/g#rsvp-${id}`, title = ev.pubTitle || ev.name, when = ev.date ? new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "soon";
+  // interest check → it's on: tell everyone who said they were in or maybe (the host's button, or Pip on its own)
+  async function itsOn({ ws, id, hostName, origin }) { const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev) return null; const u = { name: hostName, ws };
+    const R = S.list("rsvps").map((d) => d.data).filter((r) => r.eventId === id && ["in", "maybe"].includes(r.interest)), link = `${origin}/g#rsvp-${id}`, title = ev.pubTitle || ev.name, when = ev.date ? new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "soon";
     const cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(); let told = 0, texted = 0;
     for (const r of R) { let ok = false; if (r.email && cfg) { const e1 = await sendEmail(cfg, { to: r.email, subject: `It's on: ${title}, ${when}`, text: `Hi ${first(r.name) || "there"},\n\nEnough of you were in, so ${title} is happening on ${when}.\n\nLock in your spot: ${link}\n\nThe group chat and the getting-there plan are on that page once you say yes.`, fromName: u.name }).catch(() => ({})); ok = !!e1.ok; }
       if (sms && PHONE_OK(r.phone)) { const t = await sendSms(sms, { to: r.phone, text: `It's on! ${title}, ${when}. Lock in your spot: ${link}` }); if (t.ok) { texted++; ok = true; } } if (r.email) X.notify(r.email, { kind: "itson", key: "itson-" + id, text: `It's on: ${title}, ${when}. Lock in your spot.`, link: `/g#rsvp-${id}`, eventId: id }); if (ok || r.email) told++; }
     S.add("chat", { eventId: id, by: first(u.name) || "Host", role: "host", text: `It's on: ${when}! Say yes on the invite to lock in your spot.`, private: false, pinned: true, at: Date.now() });
-    res.json({ ok: true, told, texted, interested: R.length }); });
+    return { ok: true, told, texted, interested: R.length }; }
+  X.itsOn = itsOn;
+  app.post("/api/host/its-on", small, async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.body?.eventId, 80); if (!scopeStore(store, u.ws).get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
+    res.json(await itsOn({ ws: u.ws, id, hostName: u.name, origin: publicOrigin(req) })); });
   // photos and short videos from the day: the host, or a guest who said yes
   app.post("/api/moments", raw, async (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const id = clean(req.query.eventId, 80), ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(ct)) return bad(res, "Photos (JPEG, PNG, WebP) or short videos (MP4, WebM, MOV).", 415, "unsupported_type");

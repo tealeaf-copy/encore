@@ -57,12 +57,20 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
     S.add("audit", { eventId: id, what: `Pip shared it with ${A.length} people it suits`, kind: "growth", at: Date.now() });
     res.json({ ok: true, reached: A.length, emailed }); });
 
+  // ---- Pip calls it: when enough people are in and the host allowed it, lock the best date and tell everyone ----
+  X.autoGo = async (ws, id, origin = process.env.ENCORE_PUBLIC_URL || "") => { const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.stage !== "interest" || !ev.autoGo) return false;
+    const R = S.list("rsvps").map((d) => d.data).filter((r) => r.eventId === id && r.interest === "in"), goal = +ev.interestGoal || Math.max(4, Math.round((+ev.headcount || 8) * 0.6)); if (R.length < goal) return false;
+    const opts = ev.dateOptions || [], best = opts.map((o) => [o, R.filter((r) => (r.dates || []).includes(o)).length]).sort((a, b) => b[1] - a[1])[0];
+    S.set("events/" + id, { ...ev, stage: "", ...(best?.[1] ? { date: best[0] } : {}), autoWentAt: Date.now(), updatedAt: Date.now() });
+    const W = getWorkspace(ws), name = X.person(W?.ownerEmail).name; await X.itsOn?.({ ws, id, hostName: name, origin });
+    X.notify(W?.ownerEmail, { kind: "itson", key: "auto-" + id, text: `🎉 ${goal} people are in, so Pip called it: ${ev.pubTitle || ev.name}${best?.[1] ? ` is on ${best[0]}` : ""}. Everyone's been told.`, link: "/#studio", eventId: id }); X.bust(); return true; };
   // ---- the hype report: who's in, when they're free, who to nudge ----
-  app.get("/api/host/hype/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.params.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
+  app.get("/api/host/hype/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.params.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id), followers = new Set(C.followersOf(u.ws).map((f) => lc(f.email))), friends = new Set(X.friendsOf(u.email).map((f) => f.email)), I = X.index();
     const people = R.map((r) => { const em = lc(r.email), P = em ? X.eventProfile(em) : null, past = em ? (I.att.get(em) || []).filter((a) => a.ws === u.ws && a.eventId !== id).length : 0;
       return { rid: r.id, name: r.name || "Someone", response: r.response, interest: r.interest || (r.response === "going" ? "in" : r.response === "maybe" ? "maybe" : r.response === "requested" ? "requested" : "no"), dates: r.dates || [], answers: r.answers || [], at: r.createdAt || 0,
         follower: followers.has(em), friend: friends.has(em), regular: past >= 2, past, newFace: !past, top: P?.top ? { emoji: P.top.emoji, name: P.top.name } : null, traits: (P?.traits || []).slice(0, 2).map((t) => t.emoji + " " + t.name.replace("The ", "")) }; });
+    if (ev.autoGo && ev.stage === "interest") { try { if (await X.autoGo(u.ws, id, publicOrigin(req))) return res.json({ autoWent: true }); } catch {} }
     const opts = ev.dateOptions || [], dates = opts.map((o) => ({ date: o, yes: people.filter((p) => p.interest !== "no" && p.dates.includes(o)).length, names: people.filter((p) => p.interest !== "no" && p.dates.includes(o)).map((p) => first(p.name)) }));
     const st = S.get("stats/" + id)?.data || { views: 0 }, bc = S.get("broadcasts/" + id)?.data, inN = people.filter((p) => p.interest === "in" || p.response === "going").length, asked = people.filter((p) => p.response === "requested").length, goal = +ev.interestGoal || Math.max(4, Math.round((+ev.headcount || 8) * 0.6));
     res.json({ goal, in: inN, asked, maybe: people.filter((p) => p.interest === "maybe").length, views: st.views || 0, viewsToday: (st.byDay || {})[today()] || 0, reached: bc?.reached || 0, people: people.sort((a, b) => (a.interest === "in" ? 0 : 1) - (b.interest === "in" ? 0 : 1) || a.at - b.at), dates, bestDate: dates.slice().sort((a, b) => b.yes - a.yes)[0] || null,

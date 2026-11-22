@@ -25,12 +25,12 @@
     explorer: { name: "The Explorer", emoji: "🧭", color: "#8C62C9", line: "Tries anything once. New neighborhood, new crowd.", host: "Your best bet for a first-timer event." },
   };
   const LANES = { move: ["run", "hike", "walk", "bike", "yoga", "swim", "climb", "sport"], make: ["bake", "giveaway", "cook", "craft", "paint", "garden", "pottery", "food"], gather: ["cafe", "dinner", "potluck", "brunch", "picnic", "games", "book", "movie", "wine", "tea"], discover: ["tour", "market", "museum", "music", "workshop", "talk", "new"] };
-  const ACT_EMOJI = { run: "🏃", hike: "🥾", walk: "🚶", bike: "🚲", yoga: "🧘", giveaway: "🎁", bake: "🍰", cook: "🍳", craft: "✂️", cafe: "☕", dinner: "🍝", potluck: "🥘", brunch: "🥞", picnic: "🧺", games: "🎲", book: "📚", movie: "🎬", music: "🎶", market: "🛍️", swim: "🏊", garden: "🌱", tea: "🍵", wine: "🍷" };
+  const ACT_EMOJI = { run: "🏃", hike: "🥾", walk: "🚶", bike: "🚲", yoga: "🧘", giveaway: "🎁", bake: "🍰", cook: "🍳", craft: "✂️", cafe: "☕", cook: "🍽️", dinner: "🍽️", potluck: "🥘", brunch: "🥞", picnic: "🧺", games: "🎲", book: "📚", movie: "🎬", music: "🎶", market: "🛍️", swim: "🏊", garden: "🌱", tea: "🍵", wine: "🍷" };
   const actOf = (e) => { const a = String(e.activity || "").toLowerCase(); for (const k of Object.keys(ACT_EMOJI)) if (a.includes(k)) return k; const t = `${e.activity || ""} ${e.title || ""} ${(e.tags || []).join(" ")}`.toLowerCase(); for (const k of Object.keys(ACT_EMOJI)) if (t.includes(k)) return k; if (/cake|cookie|bread|mochi|pie/.test(t)) return "bake"; if (/coffee|café/.test(t)) return "cafe"; return e.activity || "gather"; };
   const laneOf = (e) => { const a = actOf(e); for (const [l, L] of Object.entries(LANES)) if (L.includes(a)) return l; return "gather"; };
   const fmtDate = (d) => { if (!d) return "Date TBA"; const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); };
   function eventCard(e, why) {
-    const a = actOf(e), em = e.emoji || ACT_EMOJI[a] || "✨", free = e.free || !e.price;
+    const a = actOf(e), em = e.emoji || e.host?.emoji || ACT_EMOJI[a] || "✨", free = e.free || !e.price;
     return `<a class="ev" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="ev-ic" style="--c:${esc(e.host?.color || "#E26D8E")}">${esc(em)}</span><span class="ev-b"><b>${esc(e.title)}</b><small>${esc(fmtDate(e.date))}${e.startTime ? " · " + esc(e.startTime) : ""}${e.city ? " · " + esc(e.city) : ""}</small>${e.host ? `<small class="ev-h">by ${esc(e.host.name || "@" + e.host.handle)}</small>` : ""}${why ? `<small class="why">${esc(why)}</small>` : ""}</span><span class="ev-p ${free ? "free" : ""}">${free ? "Free" : esc(e.price)}</span></a>`;
   }
   function hostCard(h) {

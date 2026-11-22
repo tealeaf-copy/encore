@@ -11,6 +11,7 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
+import { makeSocial, mountSocial } from "./social.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -74,7 +75,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free", "stage", "interestGoal", "dateOptions", "getThere", "geo", "askPhone", "ticketNote"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -147,6 +148,8 @@ function sseStart(res) {
 
 export function createApp({ store, dataDir }) {
   const C = makeCommunity(store);
+  const assetsDirFor = () => assetsDir;
+  const X = makeSocial(store, { C, saveBlob: async (body, contentType, ws) => { const id = randomId(), meta = { id, url: "/_blob/" + id, sizeBytes: body.length, contentType, createdAt: Date.now(), ws }; await fsp.writeFile(path.join(assetsDirFor(), id), body); await fsp.writeFile(path.join(assetsDirFor(), id + ".json"), JSON.stringify(meta)); return meta; } });
   // Every request works in one workspace's slice of the store (see server/workspaces.js).
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
@@ -193,8 +196,9 @@ export function createApp({ store, dataDir }) {
     let codeCheck = null;
     if (needCode || code) { codeCheck = C.checkCode(code); if (needCode && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
-    if (codeCheck?.ok && codeCheck.c) C.useCode(code, { ws: W.id, email, name });
+    if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     C.issueCodes({ ws: W.id, email, name });
+    if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
     // Word of mouth: count who came to Encore from a guest page, on the event's own workspace.
     if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Encore from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
@@ -328,6 +332,9 @@ export function createApp({ store, dataDir }) {
 
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
   mountCommunity(app, { store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
+  app.locals.social = X;
+  mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
+  app.get("/feed", (req, res) => (isAuthed(req) ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : res.redirect(302, "/login")));
 
   // ---------- gate ----------
   app.use("/api", (req, res, next) => {
@@ -589,7 +596,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(followers|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
+  const AUDIT = /^(followers|kudos|vibes|chat|moments|jobs|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -633,6 +640,7 @@ export function createApp({ store, dataDir }) {
   // When a saved event's cost or commitments move more than 5% from what was approved, the server clears the approvals.
   function afterEventWrite(st, p) {
     const m = /^events\/([A-Za-z0-9_-]+)$/.exec(p); if (!m) return;
+    if (st.ws && st.ws !== DEFAULT_WS) X.onEventChange(st.ws, m[1], process.env.ENCORE_PUBLIC_URL || "").catch(() => {});
     const so = st.get("signoffs/" + m[1]), evN = st.get(p);
     if (so && evN) { const nowM = eventMoney(evN.data); let changed = false;
       for (const r of so.data.requests || []) if (r.status === "approved" && Math.abs(nowM.cost - (r.decidedCost ?? r.cost)) > Math.max(500, (r.decidedCost ?? r.cost) * 0.05)) { r.status = "stale"; r.staleAt = Date.now(); r.staleCost = nowM.cost; changed = true; }

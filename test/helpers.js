@@ -13,7 +13,7 @@ export async function startServer() {
   const server = await new Promise((res) => { const s = app.listen(0, "127.0.0.1", () => res(s)); });
   const base = `http://127.0.0.1:${server.address().port}`;
   return {
-    base, store, dir,
+    base, store, dir, app,
     async close() {
       server.closeAllConnections?.();
       await new Promise((r) => server.close(r));

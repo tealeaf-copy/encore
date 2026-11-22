@@ -61,6 +61,9 @@ const { allWorkspaceIds, scopeStore, trialState, getWorkspace } = await import("
 // The daily job runs for every workspace that can still make changes.
 const pmTask = schedulePm(store, { stores: () => allWorkspaceIds().filter((id) => trialState(getWorkspace(id)).writable).map((id) => scopeStore(store, id)) });
 
+// Hosting with friends: kudos asks the day after, prep alerts, pickup texts. Hourly.
+const friendJobs = setInterval(() => app.locals.social?.runJobs().catch((e) => console.warn("[friends]", e.message)), 3600e3); friendJobs.unref?.();
+setTimeout(() => app.locals.social?.runJobs().catch(() => {}), 60e3).unref?.();
 function shutdown() {
   pmTask?.stop?.();
   server.close(() => { store.close(); process.exit(0); });

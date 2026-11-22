@@ -16,7 +16,13 @@
 .chips label:has(input:checked){border-color:var(--brand);background:var(--pink)}
 .done{display:flex;gap:10px;align-items:center}
 .perk{font-size:14px;color:var(--soft);margin:4px 0 10px}
-h2.sec{font-size:22px;margin:4px 0 10px}.past .ev{opacity:.85}
+h2.sec{font-size:22px;margin:4px 0 10px}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px}.kq{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;position:relative}.kq p{font:600 16px/1.35 "Fraunces",Georgia,serif;margin:6px 0}.kq small{color:var(--soft)}.kq .t{font-size:18px;letter-spacing:2px}
+.kq:nth-child(3n+1){transform:rotate(-.6deg)}.kq:nth-child(3n+2){transform:rotate(.5deg)}
+.vibe{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}.vibe span{padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,var(--card));font-weight:600;font-size:14px}.vibe span b{opacity:.6;font-weight:500;margin-left:4px}
+.strip{display:flex;gap:16px;flex-wrap:wrap;color:var(--soft);font-size:14px;margin:8px 0 0}.strip b{color:var(--ink);font-size:20px;font-family:"Fraunces",Georgia,serif;display:block}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(46%,150px),1fr));gap:6px}.gal img,.gal video{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px}
+.tr{display:flex;gap:10px;align-items:center;padding:6px 0}.tr .e{font-size:26px;width:34px;text-align:center}.tr small{display:block;color:var(--soft)}.past .ev{opacity:.85}
 @media (max-width:760px){.head{grid-template-columns:minmax(0,1fr);text-align:left;padding:0 4px}.av{width:88px;height:88px;font-size:44px}.cols{grid-template-columns:minmax(0,1fr)}.bio{margin:14px 4px 0}.fform .row{grid-template-columns:minmax(0,1fr)}}
 </style></head><body>
 <div class="wrap">
@@ -43,7 +49,8 @@ h2.sec{font-size:22px;margin:4px 0 10px}.past .ev{opacity:.85}
   <div class="cols"><div>
     <h2 class="sec">Coming up</h2><div class="grid">${d.upcoming.length ? d.upcoming.map((e) => C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. Follow ${esc(first)} and you'll hear about the next one first.</div>`}</div>
     ${d.past.length ? `<h2 class="sec" style="margin-top:22px">Past gatherings</h2><div class="grid past">${d.past.map((e) => C.eventCard(e)).join("")}</div>` : ""}
-  </div><aside class="side">
+    <div id="extras"></div>
+  </div><aside class="side"><div id="sideExtras"></div>
     <div class="card" id="follow"><h3>Join ${esc(first)}'s regulars</h3><p class="muted" style="margin:0;font-size:14px">Get a note when ${esc(first)} hosts something. No account needed. One tap to leave.</p>
       <form class="fform" id="ff"><div class="row"><input name="name" placeholder="First name" autocomplete="given-name"><input name="email" type="email" placeholder="Email" required autocomplete="email"></div>
       ${tastes.length ? `<div class="chips" aria-label="What you'd come for">${tastes.map((t) => `<label><input type="checkbox" name="t" value="${esc(t)}"><span>${esc(t)}</span></label>`).join("")}</div>` : ""}
@@ -52,6 +59,14 @@ h2.sec{font-size:22px;margin:4px 0 10px}.past .ev{opacity:.85}
       <div style="display:flex;gap:8px;flex-wrap:wrap">${h.fanclubUrl ? `<a class="btn" href="${esc(h.fanclubUrl)}" target="_blank" rel="noopener nofollow">Join the fan club</a>` : ""}${h.supportUrl ? `<a class="btn ghost" href="${esc(h.supportUrl)}" target="_blank" rel="noopener nofollow">Tip ${esc(first)}</a>` : ""}</div></div>` : ""}
     <div class="card"><div class="done">${C.pipSVG("happy", 40)}<div style="font-size:14px">Want to host your own? Encore is invite-only. Ask ${esc(first)} for a code, or <a href="/signup?mode=friends">join the waitlist</a>.</div></div></div>
   </aside></div>`;
+  // kudos wall, what they host, the vibe, their event profile, photos
+  fetch("/api/public/profile/" + encodeURIComponent(h.handle)).then((r) => r.json()).then((x) => { const S = x.strengths || {}, P = x.profile || {}, W = { run: "Runs", hike: "Hikes", bike: "Bike rides", cook: "Cooking nights", potluck: "Potlucks", games: "Game nights", movie: "Movie nights", concert: "Concerts", cafe: "Café mornings", bake: "Bakes and giveaways", picnic: "Picnics", book: "Book club", club: "Club meetups" };
+    const ex = document.getElementById("extras"), se = document.getElementById("sideExtras");
+    ex.innerHTML = `${S.kudosCount || S.guests ? `<h2 class="sec" style="margin-top:22px">The vibe</h2><div class="strip"><span><b>${S.guests || 0}</b>${S.guests === 1 ? "person has" : "people have"} come</span><span><b>${S.returning || 0}</b>came back</span><span><b>${S.kudosCount || 0}</b>kudos</span></div>${S.tags?.length ? `<div class="vibe">${S.tags.slice(0, 6).map((t) => `<span>${t.emoji} ${esc(t.label)}<b>×${t.n}</b></span>`).join("")}</div>` : ""}${S.kinds?.length ? `<p class="muted" style="margin:6px 0 0">Hosts mostly: ${S.kinds.slice(0, 4).map((k) => esc(W[k.kind] || k.kind) + ` (${k.n})`).join(", ")}</p>` : ""}` : ""}
+      ${S.kudos?.length ? `<h2 class="sec" style="margin-top:22px">Kudos wall</h2><div class="wall">${S.kudos.filter((k) => k.love || k.tags.length).slice(0, 18).map((k) => `<div class="kq"><div class="t">${(k.tags || []).map((t) => ({ food: "🍜", welcome: "🤗", vibe: "✨", organized: "📋", met: "👋", fun: "😂", spot: "📍", again: "🔁" })[t] || "").join("")}</div>${k.love ? `<p>"${esc(k.love)}"</p>` : ""}<small>${esc(k.name)}${k.event ? ` · ${esc(k.event)}` : ""}</small></div>`).join("")}</div>` : ""}
+      ${S.moments?.length ? `<h2 class="sec" style="margin-top:22px">Photos</h2><div class="gal">${S.moments.map((m) => m.type === "video" ? `<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>` : `<img src="${esc(m.url)}" alt="${esc(m.caption || "")}" loading="lazy">`).join("")}</div>` : ""}`;
+    if (P.traits?.length) se.innerHTML = `<div class="card" style="margin-bottom:12px"><h3>${esc(first)}'s event profile</h3><p class="muted" style="margin:0 0 6px;font-size:13px">${P.attended} get-together${P.attended === 1 ? "" : "s"} as a guest · ${P.hosted} hosted</p>${P.traits.slice(0, 4).map((t) => `<div class="tr"><span class="e">${t.emoji}</span><div><b>${esc(t.name)}</b><small>${esc(t.line)}</small></div></div>`).join("")}</div>`;
+  }).catch(() => {});
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You follow ${esc(first)}.</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff);

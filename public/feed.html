@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Friends · Encore</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+.wrap{max-width:680px}
+.top{position:sticky;top:0;background:var(--bg);z-index:5}
+.bell{position:relative;background:none;border:0;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--ink)}.bell i{position:absolute;top:0;right:0;background:var(--brand);color:#fff;font:600 11px "DM Sans",system-ui;border-radius:99px;padding:1px 6px;font-style:normal}
+.rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+.ring{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;cursor:pointer;color:var(--ink);font:500 12px "DM Sans",system-ui;width:72px}
+.ring span{width:66px;height:66px;border-radius:50%;padding:3px;background:conic-gradient(#F7A9B6,#E0A030,#C2553A,#F7A9B6);display:grid;place-items:center}.ring span b{width:100%;height:100%;border-radius:50%;background:var(--card);border:3px solid var(--bg);display:grid;place-items:center;font-size:28px;overflow:hidden}
+.ring span b img{width:100%;height:100%;object-fit:cover}.ring.add span{background:var(--line)}.ring small{max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:6px;margin:4px 0 14px;overflow-x:auto}.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font:600 13px "DM Sans",system-ui;cursor:pointer;white-space:nowrap}.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.post{background:var(--card);border:1px solid var(--line);border-radius:20px;margin-bottom:14px;overflow:hidden}.post-h{display:flex;gap:10px;align-items:center;padding:12px 14px}.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--c,#E26D8E) 18%,transparent);flex:none;text-decoration:none}
+.post-h div{flex:1;min-width:0}.post-h small{color:var(--soft);display:block;font-size:12.5px}.post img,.post video{width:100%;max-height:520px;object-fit:cover;display:block;background:#000}
+.post-b{padding:10px 14px 14px}.post-b p{margin:0 0 8px}.quote{font:600 17px/1.35 "Fraunces",Georgia,serif}
+.acts{display:flex;gap:6px;flex-wrap:wrap}.acts .btn{padding:7px 12px;font-size:13px}
+.card h3{font-size:19px;margin-bottom:4px}.card+.card{margin-top:14px}
+.alerts .ex{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.alerts .ex button{border:1px dashed var(--line);background:none;color:var(--soft);border-radius:999px;padding:5px 10px;font:13px "DM Sans",system-ui;cursor:pointer}
+.alerts form{display:flex;gap:8px}.alerts form input{flex:1}.al{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}.al small{display:block;color:var(--soft)}.x{background:none;border:0;color:var(--soft);cursor:pointer;font-size:16px}
+.trait{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0}.trait .e{font-size:28px;text-align:center}.trait small{color:var(--soft);display:block}.meter{height:6px;border-radius:9px;background:var(--line);margin-top:4px}.meter i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#F7A9B6,#C2553A)}
+.hero-trait{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:linear-gradient(135deg,#FFF5F7,#FFFBF2);margin-bottom:10px;color:#2B211C}.hero-trait .e{font-size:44px}.hero-trait h2{font-size:24px}
+.quiz .q{font:600 16px "Fraunces",Georgia,serif;margin:12px 0 6px}.quiz .o{display:flex;flex-wrap:wrap;gap:6px}.quiz .o button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:8px 12px;font:500 14px "DM Sans",system-ui;cursor:pointer}.quiz .o button[aria-pressed=true]{border-color:var(--brand);background:var(--pink)}
+.people{display:flex;flex-direction:column}.person{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}.person div{flex:1;min-width:0}.person small{color:var(--soft);display:block}
+.notes{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;display:flex;justify-content:flex-end}.notes>div{width:min(420px,100%);background:var(--bg);height:100%;overflow:auto;padding:16px;box-sizing:border-box}.note-i{display:block;padding:10px;border-radius:12px;text-decoration:none;margin-bottom:6px;border:1px solid var(--line)}.note-i.unread{background:var(--pink)}.note-i small{color:var(--soft);display:block}
+.story{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column;color:#fff}.story .bars{display:flex;gap:4px;padding:10px 10px 0}.story .bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35);overflow:hidden}.story .bars i b{display:block;height:100%;width:0;background:#fff}
+.story .sh{display:flex;align-items:center;gap:10px;padding:10px 14px}.story .sh div{flex:1}.story .sh small{opacity:.75;display:block}.story .close{background:none;border:0;color:#fff;font-size:26px;cursor:pointer}
+.story .media{flex:1;display:grid;place-items:center;position:relative;min-height:0}.story .media img,.story .media video{max-width:100%;max-height:100%;object-fit:contain}.story .tapl,.story .tapr{position:absolute;top:0;bottom:0;width:40%;background:none;border:0;cursor:pointer}.story .tapl{left:0}.story .tapr{right:0}
+.story .sf{padding:12px 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;background:linear-gradient(transparent,rgba(0,0,0,.6))}.story .sf p{margin:0;font-size:16px}.story .sf .acts .btn.ghost{color:#fff;border-color:rgba(255,255,255,.4)}
+.empty-feed{text-align:center;padding:30px 16px}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
+    <nav><button class="bell" id="bell" aria-label="Notifications">🔔<i id="bellN" hidden></i></button><a href="/discover">Discover</a><a class="cta" href="/">Host something</a></nav></header>
+  <div class="rail" id="rail" aria-label="Stories"></div>
+  <div class="tabs" role="tablist"><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">My event profile</button><button data-t="alerts" aria-selected="false">Alerts</button><button data-t="friends" aria-selected="false">Friends</button></div>
+  <main id="m"><div class="empty">Loading…</div></main>
+</div>
+<input type="file" id="storyFile" accept="image/*,video/*" hidden>
+<script src="/community.js"></script>
+<script>
+(function () {
+  const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  let F = null, P = null, A = null, tab = "feed";
+  const api = async (u, o) => { const r = await fetch(u, o); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "Something went wrong."), { code: j.code }); return j; };
+  const post = (u, b) => api(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
+  const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 3600 ? `${Math.max(1, Math.round(s / 60))}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
+  const av = (p) => `<a class="av" style="--c:${esc(p?.color || "#E26D8E")}" ${p?.handle ? `href="/h/${esc(p.handle)}"` : ""}>${esc(p?.emoji || "🙂")}</a>`;
+  const nm = (p) => esc(p?.name || "Someone"), fn = (p) => esc(String(p?.name || "Someone").split(" ")[0]);
+  const toast = (t) => { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B211C;color:#fff;padding:10px 16px;border-radius:14px;z-index:40;max-width:90vw;font-size:14px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3200); };
+  const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club meetup" };
+  const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
+  const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")} within 5 miles of me that are public`;
+  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") location.href = "/login"; $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); }
+  function drawBell() { const n = F.unread || 0, b = $("#bellN"); b.hidden = !n; b.textContent = n; }
+  // ---- stories ----
+  function drawRail() { const me = F.me, mine = F.stories.find((s) => s.mine);
+    $("#rail").innerHTML = `<button class="ring ${mine ? "" : "add"}" id="addStory"><span><b>${mine ? (mine.items.at(-1).type === "image" ? `<img src="${esc(mine.items.at(-1).url)}" alt="">` : "🎬") : "＋"}</b></span><small>${mine ? "Your story" : "Add photos"}</small></button>` +
+      F.stories.filter((s) => !s.mine).map((s, i) => `<button class="ring" data-st="${i}"><span><b>${s.items.at(-1).type === "image" ? `<img src="${esc(s.items.at(-1).url)}" alt="">` : esc(s.who.emoji)}</b></span><small>${fn(s.who)}</small></button>`).join("");
+    $("#addStory").onclick = () => { if (mine && !confirm("Add another photo? (Cancel to watch your story)")) { openStory(F.stories.indexOf(mine)); return; } if (!F.mine.length) { toast("Photos go with a get-together you went to or hosted. Once you've been to one, add yours here."); return; } pickEvent(); };
+    $$("[data-st]").forEach((b) => (b.onclick = () => openStory(F.stories.indexOf(F.stories.filter((s) => !s.mine)[+b.dataset.st])))); }
+  function pickEvent() { const L = F.mine; const pick = L.length === 1 ? L[0] : null; const go = (e) => { const f = $("#storyFile"); f.onchange = async () => { const file = f.files[0]; f.value = ""; if (!file) return; const cap = prompt("Caption? (optional)") || ""; try { const r = await fetch(`/api/moments?eventId=${encodeURIComponent(e.id)}&caption=${encodeURIComponent(cap)}`, { method: "POST", headers: { "Content-Type": file.type || "image/jpeg" }, body: file }); const j = await r.json(); if (!r.ok) throw new Error(j.message); C.oink(); toast("Added to your story. Friends see it for a week."); load(); } catch (err) { toast(err.message); } }; f.click(); };
+    if (pick) return go(pick); const i = prompt("Which one?\n" + L.map((e, i) => `${i + 1}. ${e.title} (${C.fmtDate(e.date)})`).join("\n"), "1"); const e = L[(+i || 1) - 1]; if (e) go(e); }
+  function openStory(si) { let s = F.stories[si], k = 0, t0 = 0, raf = 0; if (!s) return; const el = document.createElement("div"); el.className = "story"; document.body.appendChild(el); document.body.style.overflow = "hidden";
+    const close = () => { cancelAnimationFrame(raf); el.remove(); document.body.style.overflow = ""; }, next = () => { if (k < s.items.length - 1) { k++; show(); } else if (si < F.stories.length - 1) { si++; s = F.stories[si]; k = 0; show(); } else close(); }, prev = () => { if (k > 0) { k--; show(); } else if (si > 0) { si--; s = F.stories[si]; k = 0; show(); } };
+    function show() { const it = s.items[k], e = it.event || {};
+      el.innerHTML = `<div class="bars">${s.items.map((_, i) => `<i><b style="width:${i < k ? 100 : 0}%"></b></i>`).join("")}</div><div class="sh">${av(s.who)}<div><b>${s.mine ? "Your story" : nm(s.who)}</b><small>${esc(e.title || "")} · ${ago(it.at)}</small></div><button class="close" aria-label="Close">✕</button></div>
+        <div class="media">${it.type === "video" ? `<video src="${esc(it.url)}" autoplay playsinline muted></video>` : `<img src="${esc(it.url)}" alt="${esc(it.caption || e.title || "")}">`}<button class="tapl" aria-label="Previous"></button><button class="tapr" aria-label="Next"></button></div>
+        <div class="sf">${it.caption ? `<p>${esc(it.caption)}</p>` : ""}${!s.mine && e.host ? `<div class="acts"><a class="btn" href="/h/${esc(e.host.handle)}">${esc(e.host.emoji || "🎉")} Follow ${esc(e.host.name || "the host")}</a><button class="btn ghost" id="stAlert">🔔 Tell me about ones like this</button></div>` : ""}</div>`;
+      $(".close", el).onclick = close; $(".tapl", el).onclick = prev; $(".tapr", el).onclick = next; $("#stAlert", el) && ($("#stAlert", el).onclick = () => { close(); tab = "alerts"; selTab(); draw(); setTimeout(() => { $("#alIn").value = alertFor(e); $("#alIn").focus(); }, 50); });
+      cancelAnimationFrame(raf); t0 = performance.now(); const dur = it.type === "video" ? 12000 : 5000, bar = $$(".bars b", el)[k];
+      const tick = (t) => { const p = Math.min(1, (t - t0) / dur); bar.style.width = p * 100 + "%"; if (p >= 1) next(); else raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); }
+    el.onkeydown = (e) => { if (e.key === "Escape") close(); }; show(); }
+  // ---- tabs ----
+  function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
+  $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
+  function draw() { const m = $("#m"); if (tab === "feed") return drawFeed(m); if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
+  function drawFeed(m) {
+    const items = F.items.map((it) => { const e = it.event || {}, h = e.host;
+      const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${it.kind === "went" ? `went to <b>${esc(e.title)}</b>` : it.kind === "hosting" ? `is hosting <b>${esc(e.title)}</b>` : it.kind === "kudos" ? `sent kudos for <b>${esc(e.title)}</b>` : `at <b>${esc(e.title)}</b>`}${h && it.kind !== "hosting" ? ` by ${esc(h.name || "@" + h.handle)}` : ""} · ${ago(it.at)}</small></div></div>`;
+      const media = it.media ? (it.media.type === "video" ? `<video src="${esc(it.media.url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(it.media.url)}" alt="${esc(it.caption || e.title)}" loading="lazy">`) : "";
+      const body = it.kind === "kudos" ? `<p class="quote">"${esc(it.love)}"</p>` : it.caption ? `<p>${esc(it.caption)}</p>` : it.kind === "hosting" ? `<p>${esc(C.fmtDate(e.date))}${e.startTime ? " · " + esc(e.startTime) : ""}${e.city ? " · " + esc(e.city) : ""} · ${e.free ? "Free" : esc(e.price)}</p>` : "";
+      const acts = `<div class="acts">${it.kind === "hosting" ? `<a class="btn" href="/g#rsvp-${esc(e.id)}">I'm in</a>` : ""}${h ? `<a class="btn ghost" href="/h/${esc(h.handle)}">Follow ${esc(String(h.name || "host").split(/[\s']/)[0])}</a>` : ""}<button class="btn ghost" data-al="${esc(e.id)}">🔔 Ones like this</button></div>`;
+      return `<article class="post">${head}${media}<div class="post-b">${body}${acts}</div></article>`; }).join("");
+    const up = F.upcoming.filter((e) => e.friendsGoing.length).slice(0, 4);
+    m.innerHTML = (up.length ? `<div class="card" style="margin-bottom:14px"><h3>Your friends are going</h3>${up.map((e) => C.eventCard(e, `${e.friendsGoing.slice(0, 3).join(", ")} going`)).join("")}</div>` : "") +
+      (items || `<div class="card empty-feed">${C.pipSVG("happy", 60)}<h3>Your feed fills up with your friends</h3><p class="muted">Add people you've been to things with, and you'll see where they went, their photos and what they're hosting next.</p><button class="btn" id="goFriends">Find friends</button></div>`);
+    $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); });
+    const all = [...F.items.map((i) => i.event), ...F.upcoming]; $$("[data-al]").forEach((b) => (b.onclick = () => { const e = all.find((x) => x?.id === b.dataset.al) || {}; tab = "alerts"; selTab(); draw(); setTimeout(() => { $("#alIn").value = alertFor(e); $("#alIn").focus(); }, 50); })); }
+  // ---- my event profile ----
+  const QZ = [["host", "How often are you the host?", [["often", "🏡 Most of the time"], ["sometimes", "🔁 Now and then"], ["rarely", "🙋 I'm usually a guest"]]], ["rsvp", "When do you usually say yes?", [["first", "🐣 Right away"], ["planner", "📅 After checking my week"], ["last", "🪑 Last minute, if there's a spot"]]], ["room", "At a get-together you're the one who…", [["spark", "⚡ Gets everyone going"], ["chill", "🧘 Keeps it easy"], ["helper", "🙌 Helps out"]]], ["bring", "You usually bring…", [["food", "🧺 Something to share"], ["friend", "🔗 A friend"], ["self", "😊 Just me, happy to be there"]]]];
+  async function drawMe(m) { if (!P) { m.innerHTML = `<div class="empty">Loading…</div>`; try { P = await api("/api/me/profile"); } catch (e) { m.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } }
+    const pr = P.profile, top = pr.top, quiz = !pr.built || m._quiz;
+    m.innerHTML = `<div class="card">${top ? `<div class="hero-trait"><span class="e">${top.emoji}</span><div><small>You're</small><h2>${esc(top.name)}</h2><div>${esc(top.line)}</div></div></div>` : `<div class="hero-trait"><span class="e">✨</span><div><h2>Build your event profile</h2><div>Four taps. Hosts see it when you RSVP, so they know what you bring to the room.</div></div></div>`}
+      <p class="muted" style="margin:4px 0 8px">${pr.attended} get-together${pr.attended === 1 ? "" : "s"} · hosted ${pr.hosted} · ${pr.kudosGiven} kudos sent</p>
+      ${pr.traits.map((t) => `<div class="trait"><span class="e">${t.emoji}</span><div><b>${esc(t.name)}</b><small>${esc(t.why)}</small><div class="meter"><i style="width:${t.strength}%"></i></div></div></div>`).join("")}
+      ${pr.loves.length ? `<p style="margin-top:10px"><b>Goes to</b> ${pr.loves.map((l) => esc(LANE_WORD[l.kind] || l.kind) + ` ×${l.n}`).join(" · ")}</p>` : ""}
+      ${P.person.handle ? `<div class="acts" style="margin-top:10px"><a class="btn ghost" href="/h/${esc(P.person.handle)}">See my public page</a><button class="btn ghost" id="reQuiz">${pr.built ? "Retake the four questions" : ""}</button></div>` : ""}</div>
+      ${quiz ? `<div class="card quiz" id="quiz"><h3>${pr.built ? "Update your answers" : "Four quick questions"}</h3><p class="muted">What you do at real get-togethers counts more over time. This gets you started.</p>${QZ.map(([k, q, o]) => `<div class="q">${q}</div><div class="o">${o.map(([v, l]) => `<button data-q="${k}" data-v="${v}" aria-pressed="${pr.self[k] === v}">${l}</button>`).join("")}</div>`).join("")}<div class="acts" style="margin-top:12px"><button class="btn" id="saveQuiz">Build my profile</button></div></div>` : ""}`;
+    const ans = { ...pr.self }; $$("[data-q]").forEach((b) => (b.onclick = () => { ans[b.dataset.q] = b.dataset.v; $$(`[data-q="${b.dataset.q}"]`).forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
+    $("#reQuiz") && !pr.built && $("#reQuiz").remove(); $("#reQuiz") && ($("#reQuiz").onclick = () => { m._quiz = true; drawMe(m); });
+    $("#saveQuiz") && ($("#saveQuiz").onclick = async () => { try { const j = await post("/api/me/profile/self", ans); P.profile = j.profile; m._quiz = false; C.oink(); drawMe(m); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { toast(e.message); } }); }
+  // ---- alerts in plain words ----
+  async function drawAlerts(m) { if (!A) { try { A = (await api("/api/me/alerts")).alerts; } catch { A = []; } }
+    m.innerHTML = `<div class="card alerts"><div style="display:flex;gap:10px;align-items:center">${C.pipSVG("think", 44)}<div><h3>Tell Pip what to watch for</h3><p class="muted" style="margin:0">In your own words. Pip tells you when something matching goes up.</p></div></div>
+      <div class="ex">${["Notify me whenever there's a run event within 5 miles of me that is public", "Free board game nights in my city", "Hikes on weekends within 20 miles", "Concerts friends are going to"].map((x) => `<button data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+      <form id="alF"><input id="alIn" placeholder="e.g. cooking nights within 3 miles" maxlength="300"><button class="btn" type="submit">Save</button></form><p class="muted" id="alMsg" style="font-size:13px;margin:6px 0 0"></p>
+      <div style="margin-top:10px">${A.length ? A.map((a) => `<div class="al"><div>🔔 <b>${esc(a.summary)}</b><small>"${esc(a.text)}"</small></div><button class="x" data-del="${esc(a.id)}" aria-label="Delete">✕</button></div>`).join("") : `<p class="muted">No alerts yet.</p>`}</div></div>`;
+    $$("[data-ex]").forEach((b) => (b.onclick = () => { $("#alIn").value = b.dataset.ex; $("#alIn").focus(); }));
+    $$("[data-del]").forEach((b) => (b.onclick = async () => { await fetch("/api/me/alerts/" + b.dataset.del, { method: "DELETE" }); A = A.filter((a) => a.id !== b.dataset.del); drawAlerts(m); }));
+    $("#alF").onsubmit = async (ev) => { ev.preventDefault(); const text = $("#alIn").value.trim(); if (!text) return; const msg = $("#alMsg"); const needLoc = /\b\d+\s*(mi|mile|km)|near me|nearby|close to me/i.test(text);
+      const send = async (geo) => { try { const j = await post("/api/me/alerts", { text, ...geo }); A = [j.alert, ...A]; C.oink(); drawAlerts(m); $("#alMsg").textContent = j.matches.length ? `Saved. Already coming up: ${j.matches.map((x) => x.title).join(", ")}.` : "Saved. Pip will tell you here (and by email) when one goes up."; } catch (e) { msg.textContent = e.message; } };
+      if (needLoc && navigator.geolocation) { msg.textContent = "Asking for your location (only a rough area is kept)…"; navigator.geolocation.getCurrentPosition((p) => send({ lat: p.coords.latitude, lng: p.coords.longitude }), () => send({})); } else send({}); }; }
+  // ---- friends ----
+  function drawFriends(m) {
+    m.innerHTML = `<div class="card"><h3>Add friends</h3><input id="pq" placeholder="Name or @handle" style="width:100%"><div class="people" id="pres"></div></div>
+      ${F.suggestions.length ? `<div class="card"><h3>You've been to things together</h3><div class="people">${F.suggestions.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.together} get-together${p.together === 1 ? "" : "s"} together</small></div><button class="btn" data-add="${esc(p.key)}">Add</button></div>`).join("")}</div></div>` : ""}
+      <div class="card"><h3>Your friends</h3><div class="people">${F.friends.length ? F.friends.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.handle ? "@" + esc(p.handle) : ""}${p.mutual ? " · friends with you too" : ""}</small></div></div>`).join("") : `<p class="muted">Nobody yet. Search above, or add people from the get-togethers you go to.</p>`}</div></div>`;
+    let t; $("#pq").oninput = () => { clearTimeout(t); t = setTimeout(async () => { const q = $("#pq").value.trim(); if (q.length < 2) { $("#pres").innerHTML = ""; return; } const j = await api("/api/people?q=" + encodeURIComponent(q)).catch(() => ({ people: [] })); $("#pres").innerHTML = j.people.length ? j.people.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.handle ? "@" + esc(p.handle) : ""}${p.city ? " · " + esc(p.city) : ""}</small></div><button class="btn" data-add="${esc(p.key)}">Add</button></div>`).join("") : `<p class="muted">Nobody by that name yet. Encore is invite-only, so send them one of your codes.</p>`; wireAdd(); }, 250); };
+    wireAdd(); }
+  function wireAdd() { $$("[data-add],[data-add-email]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends", { key: b.dataset.add || b.dataset.addEmail }); C.oink(); b.textContent = "Added ✓"; F = await api("/api/me/feed"); drawRail(); } catch (e) { toast(e.message); b.disabled = false; } })); }
+  // ---- notifications ----
+  $("#bell").onclick = async () => { const j = await api("/api/me/inbox").catch(() => ({ items: [] })); const el = document.createElement("div"); el.className = "notes";
+    el.innerHTML = `<div><div style="display:flex;justify-content:space-between;align-items:center"><h3>Notifications</h3><button class="x" aria-label="Close">✕</button></div>${j.items.length ? j.items.map((n) => `<a class="note-i ${n.read ? "" : "unread"}" href="${esc(n.link || "#")}">${esc(n.text)}<small>${ago(n.at)} ago</small></a>`).join("") : `<p class="muted">Nothing yet.</p>`}</div>`;
+    document.body.appendChild(el); el.onclick = (e) => { if (e.target === el || e.target.classList.contains("x")) el.remove(); }; post("/api/me/inbox/read").then(() => { F.unread = 0; drawBell(); }).catch(() => {}); };
+  load();
+})();
+</script></body></html>

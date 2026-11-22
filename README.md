@@ -222,3 +222,11 @@ Tools: `list_events`, `get_event`, `create_event`, `update_event`, `add_guests`,
 - `ENCORE_INVITE_ONLY=1` (set in `render.yaml`): the first person to sign up gets in; after that, sign-up needs an invite code. Every member gets five codes (Host kit → Pip can help → Your regulars, or `GET /api/codes`). A shared link looks like `/join?code=ABCD-EFGH`. People without a code can join the waitlist, and members can send them a code. The inviter and the new member follow each other.
 - `ENCORE_FOUNDER_CODES`: optional comma-separated codes that always work (for seeding a city or a launch list).
 - Host pages live at `/h/<handle>`. Anyone can follow with just an email. `/discover` lists hosts and the get-togethers they chose to show there.
+
+## Friends, feed and kudos
+
+- `/feed` (signed in): stories from friends' get-togethers, a feed of where friends went and what they're hosting, alerts in plain words ("tell me about runs within 5 miles that are public"), notifications, and your event profile (the kind of guest and host you are, built from what you actually do plus four quick questions).
+- Joining with someone's invite code makes you friends with them. Every member gets a public page at `/h/<handle>` with a kudos wall, what they host, the vibe and photos.
+- The day after a get-together, guests are asked for kudos (in their inbox, and by email when sending is set up). Hosts see the kudos, the private "for next time" notes, and can say what each guest brought, which feeds that guest's event profile.
+- An hourly job sends kudos asks, prep-checklist reminders and giveaway pickup texts.
+- Texting is optional: set `ENCORE_TWILIO_SID`, `ENCORE_TWILIO_TOKEN` and `ENCORE_TWILIO_FROM` (an E.164 number). Without them, hosts get tap-to-text links on their phone instead.

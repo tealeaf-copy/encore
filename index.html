@@ -7821,6 +7821,47 @@ function evPublicName(d){ const n=String(d.pubTitle||d.name||"").replace(/\s·\s
 
 // Impact for consumer and community brands: no CFO lift-test sample
 { const _ri4=renderImpact; renderImpact=function(){ const r=_ri4.apply(this,arguments); try{ if(brandMode()!=="sales"){ const v=$("#view-impact"); ["#liftTop"].forEach(sel=>{ const x=$(sel,v); if(x) x.hidden=true }); v?.querySelectorAll(".samplebar").forEach(x=>x.hidden=true); modeSwap(v) } }catch{} return r } }
+
+// ==================================================================
+// Round 3b: Pip uses what you typed; verdicts wait for evidence; yen; co-hosts and stolen ideas read cleanly; past events stop nagging.
+// ==================================================================
+// a full brief in the first message becomes the draft, with its city, size, budget and format, instead of a questionnaire
+{ const _cel2=cgEventLike; cgEventLike=function(t){ const s=String(t||""); if(/\bideas?\b|brainstorm|suggest|inspire|what (?:should|could) we/i.test(s)) return false; if(_cel2.apply(this,arguments)) return true; const o=parseEventText(s); return s.length>=12&&!!(o.headcount||o.budget||/[£€¥$]\s?\d|\d\s?(?:k|kr|chf|sek|jpy|aud|sgd)\b/i.test(s))&&/golf|pop-?up|brunch|tour|trip|activation|run club|\brun\b|hike|tasting|launch|party|night|cart|market|clinic|hack|class|supper|picnic|salon|crawl/i.test(s) } }
+// yen and won: whole numbers, no cents
+{ const _qs12=quickStart; quickStart=function(text){ const r=_qs12.apply(this,arguments); try{ if(!window.__wsPersonal&&draft){ const t=String(text||""), m=t.replace(/,/g,"").match(/(?:¥|JPY\s?|円)\s?(\d{3,})|(\d{3,})\s?(?:円|yen|JPY)\b/i); if(m){ draft.currency="JPY"; draft.budget=+(m[1]||m[2]) }
+    if(/golf/i.test(t)){ draft.kind=draft.kind==="dinner"?"experience":draft.kind; draft.format="Golf outing"; draft.name=String(draft.name||"").replace(/^[^·]+/,"Golf outing ") }
+    else if(/pop-?up/i.test(t)){ draft.format="Pop-up"; if(/dinner/i.test(draft.name||"")) draft.name=String(draft.name).replace(/^[^·]+/,"Pop-up ") }
+    if(/brixton|shoreditch|hackney|soho|peckham|camden/i.test(t)&&!/,\s*london/i.test(draft.city||"")){ draft.city=`${draft.city||""}`.trim()||"London"; if(!draft.currency||draft.currency==="USD") draft.currency="GBP" } } }catch(e){ console.warn(e) } return r } }
+// show rate counts guests marked Attended even without RSVP timestamps
+showRate=function(d){ const noStamps=!(d.guests||[]).some(x=>x.rsvpAt||x.invitedAt); const Y=(d.guests||[]).filter(g=>/Going|Attended|No-show/.test(g.status||"")&&g.source!=="Walk-in"&&(noStamps||g.rsvpAt||g.status!=="Attended"||g.invitedAt)), C=Y.filter(g=>g.status==="Attended"); return Y.length&&(d.guests||[]).some(g=>g.status==="Attended")?Math.min(100,Math.round(100*C.length/Y.length))+"%":"–" };
+// follow-up clocks start when the event ended, not when you opened the page
+{ const _sla=slaCell; slaCell=function(g){ if(g&&!g.leadAt&&draft?.date){ const end=new Date(draft.date+"T21:00:00").getTime(); if(end<Date.now()) g={...g,leadAt:end} } return _sla(g) } }
+// the verdict needs evidence: survey answers, outcomes or goal metrics; otherwise it says so
+{ const _wid=worthItData; worthItData=async function(e){ const r=await _wid.apply(this,arguments); const hasOut=(r.m.meetings||0)+(r.m.pipeline||0)>0||Object.values(r.G||{}).some(v=>+v>0), marked=(r.d.guests||[]).some(g=>/Attended|No-show/.test(g.status||""));
+    if(!r.n&&!hasOut) r.verdict={k:"early",t:"Too early to call",w:marked?"Send the survey and log what happened (meetings, posts, signups). The verdict fills in from there.":"Mark who came, send the survey and log what happened. The verdict fills in from there."};
+    if(r.mode==="sales"&&r.m.pipeline&&r.spend) r.main={...r.main,v:r.m.pipeline/r.spend}; r.pipeline=r.m.pipeline||0; return r } }
+{ const _owi=openWorthIt; openWorthIt=async function(e){ await _owi.apply(this,arguments); try{ const d=hydrate(JSON.parse(JSON.stringify(e))), m=liveMetrics(d); if(brandMode()==="sales"&&m.pipeline){ const g=$(".wi-grid"); if(g&&!g.querySelector(".wi-pipe")) g.insertAdjacentHTML("afterbegin",`<div class="wi-k wi-pipe"><small>Pipeline</small><b>${esc(cmoney(m.pipeline,"USD"))}</b><span>${m.meetings||0} meeting${m.meetings===1?"":"s"} booked</span></div>`) } }catch{} } }
+// "did it pay off?", "how did X go?", "ROI" all open the one-pager
+{ const _cgh2=cgHandle; cgHandle=function(text){ const t=String(text||""); if(!window.__wsPersonal&&/pa(?:y|id) off|how did .{0,60}\b(?:go|land|do)\b|\broi\b|was it a success|results? (?:for|of)/i.test(t)&&!/worth it/i.test(t)) return _cgh2.call(this,"Was it worth it? "+t); return _cgh2.apply(this,arguments) } }
+// co-hosts: a clean partner name, a cost split, a partner note
+function partnerShort(n){ const s=String(n||""); const m=s.match(/(?:like|such as|e\.g\.)\s+([A-Z][\w&.'-]*(?:\s[A-Z][\w&.'-]*)*)/); return (m?m[1]:s.split(/[,(;]| and /)[0]).trim().slice(0,40) }
+{ const _pc2=planCohost; planCohost=function(a){ const short=partnerShort(a?.name); return _pc2.call(this,{...a,name:short,why:a?.why}) } }
+function cohostHTML(d){ if(!d.cohost) return ""; const c=d.cohost, total=eventCost(d)||+d.budget||0, mine=Math.round(total*(100-(+c.split||50))/100);
+  return `<section class="panel ck" id="cohostP"><small class="eyebrow">Co-hosted with ${esc(c.partner)}</small><h3>Who brings what</h3>
+    <div class="row"><label class="f">Partner<input id="chName" value="${esc(c.partner)}"></label><label class="f">Their share of the cost (%)<input id="chSplit" type="number" min="0" max="100" value="${esc(c.split??50)}"></label><label class="f">Partner contact email<input id="chEmail" type="email" value="${esc(c.email||"")}"></label></div>
+    <p class="note">Your share: <b>${esc(cmoney(mine,d.currency))}</b> of ${esc(cmoney(total,d.currency))}. Guests come from both lists; tag theirs as "Partner" on the Guests step so each side sees its own results.</p>
+    <button class="btn sm" type="button" id="chNote">Copy a note to ${esc(c.partner)}</button></section>` }
+{ const _s1=step1; step1=function(host){ const r=_s1.apply(this,arguments); try{ const d=draft; if(d?.cohost&&!d.casual){ host.insertAdjacentHTML("afterbegin",cohostHTML(d)); const P=$("#cohostP",host); const save=()=>{ d.cohost={...d.cohost,partner:$("#chName",P).value.trim()||d.cohost.partner,split:Math.max(0,Math.min(100,+$("#chSplit",P).value||0)),email:$("#chEmail",P).value.trim()}; try{ saveEvent(true) }catch{} };
+      $$("input",P).forEach(i=>i.onchange=()=>{ save(); renderStep() });
+      $("#chNote",P).onclick=()=>{ save(); const c=d.cohost; copyTxt(`Hi ${c.partner} team,\n\nWe'd love to co-host "${d.pubTitle||d.name}"${d.date?` on ${fmtDate(d.date)}`:""}${d.city?` in ${d.city}`:""} for the people we both serve. Plan: about ${d.headcount||40} guests from both our lists, costs split ${100-(+c.split||50)}/${+c.split||50}. Each side invites its own guests and sees its own results.\n\nWould you be up for it? Happy to share the full plan.`); toast("Copied. Paste it into an email to your partner.") } } }catch(e){ console.warn(e) } return r } }
+// "Steal this": a real title, the city and currency agree
+{ const _pfi3=planFromIdea; planFromIdea=function(x){ if(x&&/^Our take:/.test(x.name||"")){ const raw=String(x.line||x.name).split(/[.;:]/)[0].replace(/^(a|an|the)\s+/i,"").split(/\s+(?:such as|like|including|where|with|for)\s+/i)[0].trim(); const by=String(x.insight||"").split(" did this")[0].split(/,| and | x | × /)[0].trim(), fmt=(BR_FMT[x.category]||"event").toLowerCase().replace("hands-on ",""); x={...x,name:by?`${by}-style ${fmt}`:raw.split(/\s+/).slice(0,6).join(" ").replace(/^./,c=>c.toUpperCase())} } const r=_pfi3.call(this,x); try{ if(draft?.city){ const cc=(CITY_CUR.find(([re])=>re.test(draft.city))||[])[1]; if(cc) draft.currency=cc; else if(/san francisco|new york|austin|chicago|boston|seattle|los angeles|miami|houston|atlanta|denver/i.test(draft.city)) draft.currency="USD" } }catch{} return r } }
+// tracking codes are unique and never repeat the brand name
+{ const _th2=trackingHTML; trackingHTML=function(d){ const h=_th2(d); try{ const co=String(brandP?.()?.company||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8); if(co) return h.replace(new RegExp(`${co}-${co}`,"g"),`${co}-${String(d.city||"EVT").toUpperCase().replace(/[^A-Z]/g,"").slice(0,3)}${String(d.id||"").slice(-3).toUpperCase()}`) }catch{} return h } }
+// the tracking link and code show on the Event page too, before the event
+{ const _s4=step4; step4=function(host){ const r=_s4.apply(this,arguments); try{ if(!draft.casual&&brandMode()!=="sales"){ const h=trackingHTML({...draft,name:evPublicName(draft)}); if(h) host.insertAdjacentHTML("afterbegin",`<section class="panel gm">${h}</section>`) } }catch{} return r } }
+// Pip's list: past events don't ask for more would-you-come answers
+{ const _pli2=pipListItems; pipListItems=function(C){ const today=new Date().toISOString().slice(0,10); return _pli2(C).filter(x=>!(x.ev?.date&&x.ev.date<today&&/more answers on/.test(x.t))) } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

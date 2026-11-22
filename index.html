@@ -7364,6 +7364,29 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
 { const _dwc2=drawWhoComing; drawWhoComing=function(){ _dwc2.apply(this,arguments); try{ $$("[data-paid]").forEach(c=>c.onchange=async()=>{ try{ await db.doc("rsvps/"+c.dataset.paid).update({paid:c.checked,paidAt:c.checked?Date.now():null}); const R=(allRsvps||[]).find(x=>x.id===c.dataset.paid); if(R) R.paid=c.checked; drawWhoComing() }catch(e){ toast(e.message||"Couldn't update.") } }) }catch{} } }
 // one Pip voice: the planner header says "Pip" not "chief of staff"
 { const _ch3=cosHTML; cosHTML=function(d){ return isCasual(d)?_ch3(d).replace(/Chief of staff/gi,"Pip"):_ch3(d) } }
+
+// ==================================================================
+// Round 9: what the guest sees matches what's true (paid, requested, in); one calendar button; real covers.
+// ==================================================================
+{ const _ch4=cosHTML; cosHTML=function(d){ return _ch4(d).replace(/Pip, your Pip/g,"Pip") } }
+{ const _rg21=renderGuest; renderGuest=async function(){ const r=await _rg21.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), paid=e.price&&e.price!=="chip";
+    // the guest's real status (approved, paid) every visit
+    if(M?.rid&&M.code&&!window.__statusFresh){ window.__statusFresh=true; try{ const j=await (await fetch(`/api/public/rsvp-status/${encodeURIComponent(e.id)}?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`)).json(); let ch=false; if(j.response&&j.response!==M.response){ M.response=j.response; ch=true } if(!!j.paid!==!!M.paid){ M.paid=!!j.paid; ch=true } if(ch){ try{ localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify(M)) }catch{} host.dataset.resp=M.response; renderGuest(); return r } }catch{} }
+    // a status pill at the top for returning guests
+    if(M&&!$("#statusPill")){ const lab=M.response==="going"?(paid?(M.paid?"You're in ✓ · paid":"You're in ✓ · pay to hold your seat"):"You're in ✓"):M.response==="requested"?"Requested ✓ · waiting for the host":M.response==="maybe"?(M.interest==="in"?"You said you're in ✓":"Maybe"):M.response==="waitlist"?"On the waitlist":""; if(lab){ const p=document.createElement("div"); p.id="statusPill"; p.className="status-pill"+(M.response==="going"?" in":""); p.textContent=lab; ($("#hostHello")||host.querySelector(".invite"))?.before(p) } }
+    if(M?.paid){ $("#payBox")?.remove(); $$(".ticket p",host).forEach(x=>{ if(/pay for your seat/i.test(x.textContent)) x.textContent="Paid. Your seat is yours." }) }
+    // one calendar button
+    const cal=$$("a,button",host).filter(x=>/^(Add to calendar|Google Calendar|Add to Google Calendar)$/.test(x.textContent.trim())&&!x.hidden&&x.offsetParent!==null); cal.slice(1).forEach(x=>x.hidden=true);
+    // paid seats: book, don't "maybe"
+    if(paid){ const gr=$("#gResp",host); if(gr){ $$('[data-v="maybe"]',gr).forEach(b=>b.remove()); const g=$('[data-v="going"]',gr); if(g) g.textContent=`Book a seat · ${e.price}` } const h3=$("#gResp",host)?.closest(".stack")?.querySelector("h3"); if(h3&&/Will you join us/.test(h3.textContent)) h3.textContent="Book your seat" }
+    // the allergy line only when there's an allergy field
+    const ah=$("#g-access",host)?.closest("label")?.querySelector(".h"); if(ah&&/Allergies go above/.test(ah.textContent)&&!($("#g-diet",host)?.closest("label")?.offsetParent)) ah.textContent=`Anything ${hostFirst(e)} should know?`;
+    // covers: the host's photo, or a clean typographic cover in their colour; no orbits, no confetti
+    const inv=host.querySelector(".invite"); inv?.classList.remove("fx-confetti","fx-sparkle","fx-glow"); const cv=$(".gxcover",host);
+    if(cv&&!cv.classList.contains("has-photo")&&!$("#typeCover")){ const H=window.__gHostInfo||{}; const tc=document.createElement("div"); tc.id="typeCover"; tc.className="type-cover"; tc.style.setProperty("--tc",H.accent||"#C4532F"); tc.innerHTML=`<span>${esc(guestTitle(e))}</span><small>${esc(e.date?fmtDate(e.date):"")}${e.startTime?` · ${esc(clock12(e.startTime))}`:""}${e.hood||e.city?` · ${esc(e.hood||e.city)}`:""}</small>`; cv.appendChild(tc); cv.classList.add("typed") }
+  }catch(err){ console.warn(err) } return r } }
+// Pip keeps what the host typed as the concept (not a half-trimmed sentence)
+{ const _qs5=quickStart; quickStart=function(text){ const r=_qs5.apply(this,arguments); try{ if(isCasual(draft)) draft.concept=String(text||"").trim() }catch{} return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7642,4 +7665,7 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .gxcover.has-photo{position:relative}.gcover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gxcover.has-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.45))}
 .wc-paid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}.wc-paid b{margin-right:6px}
 .gxcover.has-photo::after{background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.28))}
+.status-pill{display:inline-block;margin:0 0 10px;padding:6px 12px;border-radius:999px;background:#F3EFE8;font-weight:600;font-size:14px}.status-pill.in{background:#EAF3EC;color:#2F7A4F}
+.gxcover.typed{position:relative}.type-cover{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:22px;background:radial-gradient(90% 120% at 85% 0%,color-mix(in srgb,var(--tc) 70%,#fff) 0%,transparent 60%),linear-gradient(150deg,var(--tc),color-mix(in srgb,var(--tc) 55%,#15110E));color:#fff}.type-cover span{font:400 clamp(26px,7vw,44px)/1.05 "Fraunces",Georgia,serif}.type-cover small{font-size:15px;opacity:.92;color:#fff!important}
+.gxcover.typed canvas{visibility:hidden}
 </style>

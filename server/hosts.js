@@ -97,7 +97,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
     res.json({ ok: true }); });
 
   // ---- a guest's own status, so an approval shows up on their page ----
-  app.get("/api/public/rsvp-status/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." }); res.json({ response: P.r.response, decidedAt: P.r.decidedAt || null }); });
+  app.get("/api/public/rsvp-status/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." }); res.json({ response: P.r.response, paid: !!P.r.paid, decidedAt: P.r.decidedAt || null }); });
   // ---- "your 4th with Claire" ----
   app.get("/api/public/regular/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || !P.r.email) return res.json({ count: 0 });
     const L = (X.index().att.get(lc(P.r.email)) || []).filter((a) => a.ws === P.ws); res.json({ count: L.length + (L.some((a) => a.eventId === P.r.eventId) ? 0 : 1) }); });

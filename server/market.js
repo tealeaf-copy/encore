@@ -21,7 +21,7 @@ export function parseBrief(text) { const t = lc(text), people = +(t.match(/(\d{1
   const budget = (() => { const m = t.replace(/,/g, "").match(/\$\s?(\d+(?:\.\d+)?)\s*(k)?/); return m ? +m[1] * (m[2] ? 1000 : 1) : 0; })();
   const cats = Object.entries(CAT_WORDS).filter(([, w]) => w.some((x) => hasWord(t, x))).map(([k]) => k);
   const MONTHS = /^(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)$/;
-  const cm = [...String(text).matchAll(/\bin ([A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)?)/g)].map((m) => m[1]).filter((c) => !MONTHS.test(c.split(" ")[0])), city = cm[0] || "";
+  const cm = [...String(text).matchAll(/(?:^|[^A-Za-zÀ-ÿ])in ([A-ZÀ-Ý][A-Za-zÀ-ÿ]+(?: [A-ZÀ-Ý][A-Za-zÀ-ÿ]+)?)/g)].map((m) => m[1]).filter((c) => !MONTHS.test(c.split(" ")[0])), city = cm[0] || "";
   const when = (String(text).match(/\b((?:on |in )?(?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,? )?(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?(?: \d{1,2}(?:st|nd|rd|th)?)?)\b/) || [])[1]?.replace(/^(on|in) /, "") || "";
   const where = (String(text).match(/\b(?:at|in) (our office(?: in [A-Z][A-Za-z]+)?|the office|our studio|[A-Z][A-Za-z]+ (?:Park|Hall|Rooftop|Studio))/) || [])[1] || "";
   const words = t.split(/[^a-zà-ỹ0-9]+/).filter((w) => w.length > 3 && !STOP.has(w));

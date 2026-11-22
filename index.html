@@ -7559,7 +7559,7 @@ function brandInspire(){ const el=$("#view-inspire"); if(!el||window.__wsPersona
 const CK_MSG=(d,link,co)=>{ const t=guestTitle?.(d)||d.name||"this", p=brandP?.(); const who=p?.audience?.segments?.[0]||"people like you"; return {
   customer:`Quick one: we're thinking about hosting "${t}"${d.city?` in ${d.city}`:""}. Before we plan it, would you come? It takes 20 seconds: ${link}&via=customer`,
   ae:`Hi team, I'm testing an event idea before we commit budget: "${t}". Could you send this to 2 or 3 of your accounts this week? One question, no signup: ${link}&via=ae\nSuggested note to them: "We're thinking of hosting this${d.city?` in ${d.city}`:""} and I thought of you. Would you come? ${link}&via=ae"`,
-  social:`Thinking about hosting "${t}"${d.city?` in ${d.city}`:""} for ${who.toLowerCase()}. Would you come? Tell us in one tap: ${link}&via=social` } };
+  social:`We're thinking about hosting "${t}"${d.city?` in ${d.city}`:""}. Would you come? Tell us in one tap: ${link}&via=social` } };
 async function ckLoad(id){ try{ const r=await fetch("/api/check/"+encodeURIComponent(id)); return r.ok?await r.json():null }catch{ return null } }
 function ckPanelHTML(d,j){ const link=j?.link?location.origin+j.link:"", T=j?.tally, M=link?CK_MSG(d,link):null, pct=(n)=>T?.n?Math.round(n/T.n*100):0;
   if(!j?.check) return `<section class="panel ck" id="ckPanel"><div class="ck-h"><div><small class="eyebrow">Before you spend a dollar</small><h3>Ask the people you want in the room</h3><p class="note">Make a one-question page: "Would you come?" Send it to a few target guests or have your sales reps send it. You'll see who says yes, which dates work, and what would make it a must-go. Most checks get enough answers in two or three days.</p></div></div>
@@ -7579,15 +7579,16 @@ async function drawCheck(host){ const d=draft; if(!d?.id||d.casual) return; $("#
       const r=await fetch("/api/check/"+encodeURIComponent(d.id),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const k=await r.json(); if(!r.ok){ toast(k.message); mk.disabled=false; return } j=await ckLoad(d.id); render(); toast("Your would-you-come page is ready. Send it to 8 to 10 people.") };
     $("#ckRefresh",w)&&($("#ckRefresh",w).onclick=async()=>{ j=await ckLoad(d.id); render() });
     $$("[data-ckcopy]",w).forEach(b=>b.onclick=()=>{ const link=location.origin+j.link, M=CK_MSG(d,link); copyTxt(b.dataset.ckcopy==="link"?link:M[b.dataset.ckcopy]); toast("Copied.") }) };
-  render(); if(j?.check){ clearInterval(window.__ckPoll); window.__ckPoll=setInterval(async()=>{ if(step!==2||location.hash!=="#studio"){ clearInterval(window.__ckPoll); return } j=await ckLoad(d.id); render() },15000) } }
+  const syncSig=()=>{ const T=j?.tally; if(!T?.n) return; d.signals={...(d.signals||{}),sent:Math.max(+d.signals?.sent||0,T.n),interested:T.yes}; const a=$("#s-sent"), b=$("#s-int"); if(a&&+a.value<T.n){ a.value=T.n; a.dispatchEvent(new Event("input",{bubbles:true})) } if(b&&+b.value!==T.yes){ b.value=T.yes; b.dispatchEvent(new Event("input",{bubbles:true})) } };
+  render(); syncSig(); if(j?.check){ clearInterval(window.__ckPoll); window.__ckPoll=setInterval(async()=>{ if(step!==2||location.hash!=="#studio"){ clearInterval(window.__ckPoll); return } j=await ckLoad(d.id); render() },15000) } }
 { const _s2=step2; step2=function(host){ const r=_s2.apply(this,arguments); try{ drawCheck(host) }catch(e){ console.warn(e) } return r } }
 
 // "Plan it" on a brand idea drafts that idea: its name, concept, city, size and format, not a generic dinner
 window.__forceKind="";
 { const _pe10=parseEventText; parseEventText=function(t){ const o=_pe10(t); if(window.__forceKind){ o.kind=window.__forceKind; o.casual=false } return o } }
-function planFromIdea(x){ const p=brandP(); const k=x.category==="dining"||/dinner|supper|chef'?s table/i.test(x.name+" "+x.line)?"dinner":kindFromFormat(`${x.name} ${x.line}`); window.__forceKind=k;
+function planFromIdea(x){ const p=brandP(); const tx=x.name+" "+x.line, k=/roundtable|summit|forum|advisory/i.test(tx)?"summit":x.category==="dining"||/dinner|supper|chef'?s table|brunch|breakfast/i.test(tx)?"dinner":"experience"; window.__forceKind=k;
   try{ quickStart(`${x.name}: ${x.line}${x.people?` for ${x.people} people`:""}${x.city?` in ${x.city}`:""}`) }finally{ window.__forceKind="" }
-  try{ draft.name=x.name; draft.concept=x.line; draft.brief=x.why||""; draft.insight=x.insight||""; if(x.city) draft.city=x.city; if(x.people) draft.headcount=x.people; draft.casual=false; if(p&&!p.audience.b2b) draft.objective="awareness"; draft.fromIdea={ name:x.name, why:x.why, insight:x.insight, category:x.category } }catch(e){ console.warn(e) }
+  try{ draft.name=x.name; draft.concept=x.line; draft.brief=x.why||""; draft.insight=x.insight||""; if(x.city) draft.city=x.city; if(x.people) draft.headcount=x.people; draft.casual=false; if(p&&!p.audience.b2b) draft.objective="awareness"; draft.fromIdea={ name:x.name, why:x.why, insight:x.insight, category:x.category }; draft.format=(typeof BR_FMT!=="undefined"&&BR_FMT[x.category])||draft.format; if(/brunch/i.test(tx)) draft.meal="lunch"; else if(/breakfast|morning|sunrise/i.test(tx)) draft.meal="breakfast" }catch(e){ console.warn(e) }
   step=1; if(typeof db!=="undefined"&&db) setTimeout(()=>saveEvent(true),60); location.hash="#studio"; setTimeout(()=>{ try{ renderStep() }catch{} },80); toast(`"${x.name}" is drafted. Next: check it with real people before you commit.`) }
 { const _wbi2=wireBrandIdeas; wireBrandIdeas=function(root){ _wbi2(root); $$("[data-brplan]",root).forEach(b=>b.onclick=()=>planFromIdea(brandP().ideas[+b.dataset.brplan])) } }
 
@@ -7680,7 +7681,7 @@ const CITY_CUR=[[/sydney|melbourne|brisbane|perth|australia/i,"AUD"],[/singapore
     const bad=lo.match(/\b(\d{1,2}|two|three|four|five)\s+(?:co-hosted\s+)?(ideas?|options|events?|cities|nights?|dinners|sessions|partners)\b/); if(bad){ const n={two:2,three:3,four:4,five:5}[bad[1]]||+bad[1]; if(draft.headcount===n) draft.headcount=TPL_SEATS?.[draft.kind]||20 }
   } }catch(e){ console.warn(e) } return r } }
 // more of the studio speaks the brand's language
-for(const m of ["consumer","community"]) MODE_SWAP[m].push([/\ban teammate/g,"a teammate"],[/(^|[.!?]\s+)teammate/g,(x,a)=>a+"Teammate"],[/what most C-level guests expect/g,"what guests expect"],[/C-level/g,"guests"],[/\bexecs\b/g,"guests"]);
+for(const m of ["consumer","community"]) MODE_SWAP[m].push([/Executive dinner/g,"Dinner"],[/the sweet spot for executives/g,"the sweet spot for this crowd"],[/for executives/g,"for your guests"],[/\bexecutives\b/g,"guests"],[/Creative experience/g,"Experience"],[/\ban teammate/g,"a teammate"],[/(^|[.!?]\s+)teammate/g,(x,a)=>a+"Teammate"],[/what most C-level guests expect/g,"what guests expect"],[/C-level/g,"guests"],[/\bexecs\b/g,"guests"]);
 for(const m of ["consumer","community"]) { const L=MODE_SWAP[m]; const i=L.findIndex(([a])=>String(a)===String(/\bNew pipeline\b/g)); if(i>=0) L[i]=[/\bNew pipeline\b/g,"Revenue from guests"]; const j=L.findIndex(([a])=>String(a)===String(/\bpipeline\b/g)); if(j>=0) L[j]=[/\bpipeline\b/g,"revenue"] }
 // the invitation title is the idea's name, not "An evening with peers"
 { const _pfi=planFromIdea; planFromIdea=function(x){ const r=_pfi.apply(this,arguments); try{ if(draft&&!draft.pubTitle) draft.pubTitle=x.name }catch{} return r } }
@@ -7720,6 +7721,61 @@ document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-cohost]
         :m==="community"?`Hi all, we're hosting "${t}"${when}${where}. Who are two builders you'd love to see there? Reply with names or handles by Friday and I'll take it from there.`
         :`Hi team, we're putting together "${t}"${when}${where}. Who are two customers or creators you'd love there? Send names or handles by Friday and I'll handle the invites.`;
       x.w=x.w.replace(/\s*Want me to draft that note\?/,""); x.acts=[["Copy the note I wrote",()=>{ copyTxt(note); toast("Copied. Paste it into Slack or email.") }],...(x.acts||[])] } }catch(e){ console.warn(e) } return I } }
+
+// ==================================================================
+// "Was it worth it?" A one-page answer for the boss: verdict, numbers, their words, what to do next. Copy or print.
+// ==================================================================
+async function worthItData(e){ const d=hydrate(JSON.parse(JSON.stringify(e))), m=liveMetrics(d), s=fbStats(d.id), mode=brandMode(), G=d.goalMetrics||{}, spend=+d.budget||0, cur=d.currency;
+  let ck=null; try{ ck=(await (await fetch("/api/check/"+encodeURIComponent(d.id))).json()).tally||null }catch{}
+  const att=m.attended||(d.guests||[]).filter(g=>g.status==="Attended").length, sr=showRate(d), nps=m.nps??s.nps, lift=s.lift?Math.round(s.lift.more/s.lift.n*100):null;
+  const main=mode==="sales"?{k:"Pipeline per $1",v:spend&&m.pipeline?(m.pipeline/spend):null,fmt:x=>`$${x.toFixed(1)}`,good:x=>x>=3}
+    :mode==="consumer"?{k:"Cost per post",v:spend&&+G.posts?spend/+G.posts:null,fmt:x=>cmoney(Math.round(x),cur),good:x=>x<=150}
+    :{k:"Cost per signup",v:spend&&+G.signups?spend/+G.signups:null,fmt:x=>cmoney(Math.round(x),cur),good:x=>x<=60};
+  const signals=[nps!=null?(nps>=30?1:nps>=0?0:-1):null, lift!=null?(lift>=50?1:lift>=25?0:-1):null, main.v!=null?(main.good(main.v)?1:-1):null, att&&d.headcount?(att/d.headcount>=.7?1:att/d.headcount>=.45?0:-1):null].filter(x=>x!=null);
+  const sc=signals.length?signals.reduce((a,b)=>a+b,0)/signals.length:null;
+  const verdict=sc==null?{k:"early",t:"Not enough logged yet to call it",w:"Mark who came and send the survey; the verdict fills in from there."}:sc>=.5?{k:"go",t:"Worth it. Run it again.",w:"Guests rated it highly and the numbers hold up."}:sc>=-.25?{k:"tweak",t:"Worth it with changes",w:"Some signals are strong, some aren't. Keep what worked and fix the rest before repeating."}:{k:"rethink",t:"Not worth repeating as is",w:"The numbers and guests' answers both point to changing the format or the audience."};
+  const keep=s.highlights?.[0]?.[0], fix=ck?.stop?.[0]?.text, next=s.next?.[0], top=(s.comments||[]).filter(c=>c.rating>=4).slice(0,2).map(c=>c.text), low=(s.comments||[]).filter(c=>c.rating&&c.rating<=3).slice(0,1).map(c=>c.text);
+  return { d, m, s, mode, spend, cur, att, sr, nps, lift, main, verdict, quotes:[...top,...low,...(ck?.must||[]).slice(0,1).map(q=>q.text)].slice(0,4), keep, fix, next, n:s.n, G } }
+function worthItText(r){ const d=r.d, L=[`${d.name}${d.date?`, ${fmtDate(d.date)}`:""}${d.city?`, ${d.city}`:""}`, `Verdict: ${r.verdict.t}`, "",
+  `Spend: ${r.spend?cmoney(r.spend,r.cur):"not logged"}. Attended: ${r.att||0}${d.headcount?` of ${d.headcount} seats`:""}. Show rate: ${r.sr}.`,
+  `NPS: ${r.nps==null?"no survey answers yet":(r.nps>0?"+":"")+r.nps} (${r.n} answer${r.n===1?"":"s"}). ${r.lift!=null?`${r.lift}% feel better about us after.`:""}`,
+  r.main.v!=null?`${r.main.k}: ${r.main.fmt(r.main.v)}.`:"", r.mode==="sales"&&r.m.meetings?`Meetings booked: ${r.m.meetings}.`:"", ...(r.mode!=="sales"?Object.entries(r.G).filter(([,v])=>+v>0).map(([k,v])=>`${k}: ${v}`):[]), "",
+  r.quotes.length?"In their words:":"", ...r.quotes.map(q=>`  "${q}"`), "", "Next time:", r.keep?`  Keep: ${r.keep}.`:"", r.fix?`  Fix: ${r.fix}.`:"", r.next?`  Guests asked for: ${r.next}.`:"", "", "Numbers are what the team logged in Encore and guests reported in the survey."].filter((x,i,a)=>x!==""||a[i-1]!=="");
+  return L.join("\n").replace(/\n{3,}/g,"\n\n").trim() }
+async function openWorthIt(e){ const r=await worthItData(e), d=r.d; $("#wiBg")?.remove(); const bg=document.createElement("div"); bg.id="wiBg"; bg.className="wi-bg";
+  const tile=(k,v,sub="")=>`<div class="wi-k"><small>${esc(k)}</small><b>${esc(String(v))}</b>${sub?`<span>${esc(sub)}</span>`:""}</div>`;
+  bg.innerHTML=`<article class="wi" role="dialog" aria-label="Results one-pager"><button class="wi-x" type="button" aria-label="Close">×</button>
+    <small class="eyebrow">Results · ${esc(brandP?.()?.company||window.__wsCompany||"")}</small><h2>${esc(d.name)}</h2><p class="note">${esc([d.date?fmtDate(d.date):"",d.city,d.format||(KINDS[d.kind]||{}).label].filter(Boolean).join(" · "))}</p>
+    <div class="wi-v ${r.verdict.k}"><b>${esc(r.verdict.t)}</b><span>${esc(r.verdict.w)}</span></div>
+    <div class="wi-grid">${tile("Spend",r.spend?cmoney(r.spend,r.cur):"–")}${tile("Attended",r.att||0,d.headcount?`of ${d.headcount} seats`:"")}${tile("Show rate",r.sr)}${tile("NPS",r.nps==null?"–":(r.nps>0?"+":"")+r.nps,`${r.n} survey answer${r.n===1?"":"s"}`)}${tile("Feel better about you",r.lift==null?"–":r.lift+"%")}${tile(r.main.k,r.main.v==null?"–":r.main.fmt(r.main.v))}${r.mode==="sales"?tile("Meetings booked",r.m.meetings||0):""}</div>
+    ${r.quotes.length?`<div class="wi-q"><b>In their words</b>${r.quotes.map(q=>`<p>"${esc(q)}"</p>`).join("")}</div>`:""}
+    <div class="wi-n"><b>Next time</b>${[r.keep&&`<p><span>Keep</span>${esc(r.keep)}</p>`,r.fix&&`<p><span>Fix</span>${esc(r.fix)}</p>`,r.next&&`<p><span>Guests asked for</span>${esc(r.next)}</p>`].filter(Boolean).join("")||`<p class="note">Send the survey and this fills in from guests' answers.</p>`}</div>
+    <p class="note wi-foot">Numbers are what your team logged in Encore and what guests reported in the survey.</p>
+    <div class="btns"><button class="btn primary" type="button" id="wiCopy">Copy for Slack or email</button><button class="btn" type="button" id="wiPrint">Save as PDF</button></div></article>`;
+  document.body.appendChild(bg); bg.onclick=ev=>{ if(ev.target===bg) bg.remove() }; $(".wi-x",bg).onclick=()=>bg.remove();
+  $("#wiCopy",bg).onclick=()=>{ copyTxt(worthItText(r)); toast("Copied. Paste it into Slack or an email to your boss.") }; $("#wiPrint",bg).onclick=()=>{ document.body.classList.add("wi-printing"); setTimeout(()=>{ window.print(); document.body.classList.remove("wi-printing") },50) } }
+// results step and Impact: one button
+{ const _s6b=step6; step6=function(host){ const r=_s6b.apply(this,arguments); try{ if(draft?.id&&!draft.casual){ host.insertAdjacentHTML("afterbegin",`<div class="wi-cta"><div><b>Was it worth it?</b><span class="note">A one-page answer for your boss: verdict, numbers, guests' words and what to do next.</span></div><button class="btn primary" type="button" id="wiOpen">Make the one-pager</button></div>`); $("#wiOpen",host).onclick=()=>openWorthIt(draft) } }catch(e){ console.warn(e) } return r } }
+// Pip answers "was it worth it?" with the one-pager instead of the planning wizard
+{ const _cgh=cgHandle; cgHandle=function(text){ const t=String(text||""); if(!window.__wsPersonal&&/worth it|how did .{0,60}(go|do)\b|results? (?:for|of|from)|report on|was .{0,60} a success|roi\b/i.test(t)){ const mine=allEvents.filter(e=>!e.example&&!e.casual); const lo=t.toLowerCase(); const e=mine.find(x=>x.name&&lo.includes(String(x.name).toLowerCase().slice(0,14)))||mine.filter(x=>x.date&&x.date<=new Date().toISOString().slice(0,10)).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0]||mine[0];
+      const S=cgState(); S.msgs.push({who:"me",text:t}); if(e){ S.msgs.push({who:"enc",text:`Here's the one-pager for "${e.name}": a verdict, the numbers, what guests said and what to do next. Copy it for your boss or save it as a PDF.`}); cgSave(S); drawConcierge?.(); openWorthIt(e) } else { S.msgs.push({who:"enc",text:"You don't have an event with results yet. Once one has run, ask me again and I'll write the one-pager."}); cgSave(S); drawConcierge?.() } return } return _cgh.apply(this,arguments) } }
+
+{ const _ri3=renderImpact; renderImpact=function(){ const r=_ri3.apply(this,arguments); try{ const k=$("#portKpis"); if(!k) return r; const old=$("#wiList"); if(old) old.outerHTML=""; const today=new Date().toISOString().slice(0,10), ran=allEvents.filter(e=>!e.example&&!e.casual&&e.date&&e.date<=today).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8); if(!ran.length) return r;
+  const w=document.createElement("div"); w.id="wiList"; w.className="wi-list"; w.innerHTML=`<b>Was it worth it?</b>${ran.map((e,i)=>`<button class="btn sm" type="button" data-wi="${i}">${esc(e.name)}</button>`).join("")}`; k.after(w); $$("[data-wi]",w).forEach(b=>b.onclick=()=>openWorthIt(ran[+b.dataset.wi])) }catch(e){ console.warn(e) } return r } }
+
+// ==================================================================
+// Inspiration that connects: hosts on Encore who could run each idea, and what peers actually ran, one click to steal.
+// ==================================================================
+let __xps=null; async function xpsAll(){ if(__xps) return __xps; try{ __xps=(await (await fetch("/api/public/experiences")).json()).experiences||[] }catch{ __xps=[] } return __xps }
+async function decorateIdeaHosts(root){ const p=brandP?.(); if(!p||!root) return; const X=await xpsAll(); if(!X.length) return;
+  $$(".br-idea",root).forEach((card,i)=>{ if(card.querySelector(".br-hosts")) return; const x=p.ideas[i]; if(!x) return; const city=String(x.city||"").toLowerCase();
+    const fit=X.filter(e=>e.category===x.category||(x.category==="dining"&&e.category==="food")).map(e=>({e,local:city&&`${e.host.city} ${e.host.hood}`.toLowerCase().includes(city)})).filter(o=>o.local||o.e.travels).sort((a,b)=>b.local-a.local).slice(0,2);
+    if(!fit.length) return; const h=document.createElement("p"); h.className="br-hosts"; h.innerHTML=`<span>Could run it:</span> ${fit.map(o=>`<a href="/@${esc(o.e.host.handle)}" target="_blank" rel="noopener">${esc(o.e.host.name)}</a>${o.local?"":" (travels)"}`).join(", ")}`; card.querySelector(".br-act")?.before(h) }) }
+{ const _wbi3=wireBrandIdeas; wireBrandIdeas=function(root){ _wbi3(root); decorateIdeaHosts(root) } }
+function othersDidHTML(p){ const O=p.othersDid||[]; if(!O.length) return ""; return `<section class="br-ideas od"><div class="br-ih"><small class="eyebrow">Real events, with sources</small><h3>What brands near ${esc(p.company)} actually ran</h3><p class="note">Competitors and brands with the same audience. Steal the part that fits.</p></div>
+  <div class="br-grid">${O.map((x,i)=>`<article class="br-idea"><b>${esc(x.brand)}</b><p>${esc(x.what)}</p>${x.takeaway?`<p class="br-why"><b>Takeaway:</b> ${esc(x.takeaway)}</p>`:""}<div class="br-act"><button class="btn sm" type="button" data-steal="${i}">Steal this</button>${x.source?`<a class="btn ghost sm" href="${esc(x.source)}" target="_blank" rel="noopener nofollow">Source</a>`:""}</div></article>`).join("")}</div></section>` }
+{ const _bi=brandInspire; brandInspire=function(){ const r=_bi.apply(this,arguments); try{ const p=brandP(), w=$("#brInsp"); const old=$("#brOD"); if(old) old.outerHTML=""; if(p&&w){ const d=document.createElement("div"); d.id="brOD"; d.innerHTML=othersDidHTML(p); w.after(d);
+      $$("[data-steal]",d).forEach(b=>b.onclick=()=>{ const x=p.othersDid[+b.dataset.steal], first=String(x.what).split(/[.;:]/)[0].replace(/^(a|an|the)\s+/i,""); planFromIdea({ name:`Our take: ${first.slice(0,52)}`, line:x.what, why:x.takeaway||`${x.brand} ran this for the same audience.`, insight:`${x.brand} did this${x.source?` (${x.source})`:""}.`, category:/dinner|supper|table|brunch/i.test(x.what)?"dining":/run|hike|walk|yoga/i.test(x.what)?"movement":/workshop|class|clinic|hack/i.test(x.what)?"workshop":/coffee|cafe|tea|matcha|happy hour|drinks/i.test(x.what)?"drinks":/pop-?up|cart|truck|market/i.test(x.what)?"food":"culture", people:0, city:p.cities?.[0]||"" }) }) } }catch(e){ console.warn(e) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -8036,4 +8092,14 @@ body.simple .rail button[data-step="2"]{display:flex!important}body.simple nav.t
 .ai-err{background:#FFF3D6;color:#6A4D00;border-radius:10px;padding:8px 12px;margin:8px 0}
 .pl-mail{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px;color:#6F6259;margin:0 0 4px}.pl-mail label{display:flex;gap:6px;align-items:center}
 .trk{display:grid;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #DCEADF}
+.wi-bg{position:fixed;inset:0;background:rgba(20,16,14,.45);display:flex;align-items:flex-start;justify-content:center;z-index:9000;overflow:auto;padding:24px 12px}
+.wi{position:relative;background:#FFFCF7;border-radius:22px;padding:26px 26px 22px;width:min(760px,100%);box-shadow:0 24px 70px rgba(0,0,0,.25)}.wi h2{margin:4px 0}.wi-x{position:absolute;right:14px;top:10px;background:none;border:0;font-size:24px;cursor:pointer}
+.wi-v{display:grid;gap:2px;border-radius:16px;padding:14px 16px;margin:14px 0}.wi-v b{font-size:20px}.wi-v.go{background:#EAF3EC}.wi-v.tweak{background:#FFF3D6}.wi-v.rethink{background:#FBE7E3}.wi-v.early{background:#F1ECE5}
+.wi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.wi-k{background:#fff;border:1px solid #EFE7DB;border-radius:14px;padding:10px 12px}.wi-k small{display:block;color:#8A7E74;font-size:12px}.wi-k b{font-size:22px}.wi-k span{display:block;font-size:12px;color:#8A7E74}
+.wi-q,.wi-n{margin-top:14px}.wi-q p{margin:6px 0;font-size:15px}.wi-n p{margin:6px 0}.wi-n span{display:inline-block;min-width:120px;font-weight:600;color:#6F6259}.wi-foot{margin:14px 0 10px}
+.wi-cta{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1.5px solid #E8D9C2;background:#FFFCF6;border-radius:16px;padding:14px 16px;margin-bottom:14px}.wi-cta>div{display:grid}
+.wi-list{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+@media print{body.wi-printing>*:not(#wiBg){display:none!important}body.wi-printing .wi-bg{position:static;background:none;padding:0}body.wi-printing .wi{box-shadow:none}body.wi-printing .wi .btns,body.wi-printing .wi-x{display:none}}
+.br-hosts{font-size:13px;margin:4px 0 0}.br-hosts span{color:#8A7E74}.od .br-idea{background:#FBF8F3}
+body:not(.friends-ws) .tile2[data-kind="social"]{display:none}
 </style>

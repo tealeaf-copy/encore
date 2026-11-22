@@ -22,7 +22,7 @@ const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u);
 export function cleanShop(s = {}, cur = {}) {
   const items = (Array.isArray(s.items) ? s.items : cur.items || []).slice(0, 12).map((x, i) => ({
     id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"),
-    name: clean(x?.name, 60), desc: clean(x?.desc, 200), emoji: clean(x?.emoji, 4), photo: BLOB_OK(x?.photo) ? x?.photo || "" : "",
+    name: clean(x?.name, 60), desc: clean(x?.desc, 200), emoji: clean(x?.emoji, 16), photo: BLOB_OK(x?.photo) ? x?.photo || "" : "",
     cents: Math.max(0, Math.min(100000, Math.round(+x?.cents || 0))), stock: Math.max(0, Math.min(999, Math.round(+x?.stock || 0))), max: Math.max(1, Math.min(50, Math.round(+x?.max || 6))), order: i,
   })).filter((x) => x.name);
   const slots = (Array.isArray(s.slots) ? s.slots : cur.slots || []).map((x) => clean(x, 60)).filter(Boolean).slice(0, 8);

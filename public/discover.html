@@ -15,6 +15,7 @@
 section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede{color:var(--soft);margin:0 0 14px}
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.filters button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:500 13px "DM Sans",system-ui,sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px}.cast div{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--card)}.cast b{display:block}.cast span{font-size:26px}.cast small{color:var(--soft);font-size:13px}
+.hc-wrap{position:relative;display:flex;flex-direction:column}.hc-wrap .hc{flex:1}.hc-f{position:absolute;top:14px;right:14px;padding:6px 12px;font-size:13px}
 .invite{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
 @media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.invite{grid-template-columns:minmax(0,1fr)}}
 </style></head><body>
@@ -33,7 +34,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   <section id="shopsSec" hidden><h2>Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="grid g2" id="shops"></div></section>
 
   <section><h2>Coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
-    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div>
+    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div><div style="margin:-4px 0 12px"><input id="cityF" placeholder="Your city" style="width:200px"></div>
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
 
   <section><h2>Hosts worth following</h2><p class="lede">Ranked by people who came back, not by ads.</p><div class="grid g4" id="hosts"></div></section>
@@ -88,11 +89,15 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
     $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
-    const L = data.events.filter((e) => filter === "all" || C.laneOf(e) === filter);
+    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const L = data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && (!cf || `${e.city || ""} ${e.hood || ""}`.toLowerCase().includes(cf)));
     $("#events").innerHTML = L.length ? L.map((e) => C.eventCard(e)).join("") : `<div class="empty">${data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`;
   }
-  function drawHosts() { $("#hosts").innerHTML = data.hosts.length ? data.hosts.map(C.hostCard).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`; }
+  function drawHosts() { const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(), H = data.hosts.filter((h) => !cf || `${h.city || ""} ${h.hood || ""}`.toLowerCase().includes(cf)); let F = []; try { F = JSON.parse(localStorage.getItem("encore.following") || "[]"); } catch {}
+    $("#hosts").innerHTML = H.length ? H.map((h) => `<div class="hc-wrap">${C.hostCard(h)}<button class="btn ghost hc-f" type="button" data-fh="${C.esc(h.handle)}">${F.includes(h.handle) ? "Following ✓" : "Follow"}</button></div>`).join("") : `<div class="empty">${cf ? "No hosts there yet." : "The first hosts are setting up their pages."}</div>`;
+    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {} if (!email) { email = prompt("Your email, so they can tell you about the next one:") || ""; if (!email) return; try { localStorage.setItem("encore.email", email); } catch {} }
+      try { await C.follow({ handle: b.dataset.fh, email, tastes: [], via: "discover" }); C.oink(); b.textContent = "Following ✓"; const L2 = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L2.includes(b.dataset.fh)) L2.push(b.dataset.fh); localStorage.setItem("encore.following", JSON.stringify(L2)); } catch (e) { alert(e.message); } })); }
   fetch("/api/public/shops").then((r) => r.json()).then((j) => { if (!j.shops?.length) return; $("#shopsSec").hidden = false; $("#shops").innerHTML = j.shops.map((s) => `<a class="ev" href="/@${esc(s.handle)}#shop"><span class="ev-ic" style="--c:${esc(s.accent || "#E26D8E")}">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 44) : esc(s.emoji || "🛍")}</span><span class="ev-b"><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><small class="why">${s.soldOut ? "Sold out. Subscribe for the next batch" : s.items.map((x) => `${esc(x.name)} ${esc(x.price)}`).join(" · ")}</small></span><span class="ev-p">${s.soldOut ? "Sold out" : "Order"}</span></a>`).join(""); }).catch(() => {});
+  try { const c0 = localStorage.getItem("encore.city"); if (c0) $("#cityF").value = c0; } catch {} $("#cityF").oninput = () => { try { localStorage.setItem("encore.city", $("#cityF").value); } catch {} drawEvents(); drawHosts(); drawForYou(); };
   drawQuiz(ans.lane ? (ans.persona ? 2 : 1) : 0);
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();

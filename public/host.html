@@ -26,6 +26,8 @@ h2.sec{font-size:22px;margin:4px 0 10px}
 .tips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 @media (max-width:760px){.hire .row2{grid-template-columns:minmax(0,1fr)}}
 /* storefront */
+.bthr{border-top:1px dashed #EEE4D8;margin-top:8px;padding-top:6px;display:grid;gap:4px}.bthr input{flex:1;min-width:0;border:1px solid #E6DDD2;border-radius:10px;padding:6px 8px;font:inherit}
+.gigs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}.gigs span{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--card)}
 .your-order{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between;background:color-mix(in srgb,var(--accent,var(--c)) 12%,var(--card));border-radius:16px;padding:12px 14px;margin-bottom:14px}.your-order span{color:var(--soft);font-size:14px}
 .trust-line{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.trust-line span{font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
 .sp-3.lab small{font-size:11px;color:#75685F}.slot-sum{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 0;border-bottom:1px dashed #EEE4D8}.slot-sum small{color:#75685F;flex:1}
@@ -49,7 +51,7 @@ h2.sec{font-size:22px;margin:4px 0 10px}
 .next-up::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--accent,var(--c))}
 .nu-eyebrow{font:600 12px var(--body,inherit);letter-spacing:.14em;text-transform:uppercase;color:var(--brand2)}.nu-title{font-size:clamp(28px,4.5vw,44px);line-height:1.05;margin:8px 0 4px}.nu-sub{color:var(--soft);font-size:15px}
 .nu-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0;color:var(--ink);font-size:15px}.nu-meta span{display:inline-flex;align-items:center;gap:6px}.nu-meta span+span::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--soft);margin-right:12px;opacity:.6}
-.nu-menu{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px;counter-reset:c}.nu-menu li{counter-increment:c;display:grid;grid-template-columns:28px minmax(0,1fr);font:400 18px/1.35 var(--head,inherit)}.nu-menu li::before{content:counter(c,upper-roman);font:600 11px var(--body,inherit);color:var(--soft);padding-top:5px;letter-spacing:.06em}
+.nu-menu{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px;counter-reset:c}.nu-menu li{counter-increment:c;display:grid;grid-template-columns:28px minmax(0,1fr);font:400 18px/1.35 var(--head,inherit)}.nu-menu li::before{content:"·";font-size:22px;line-height:1;padding-top:0;font:600 11px var(--body,inherit);color:var(--soft);padding-top:5px;letter-spacing:.06em}
 .nu-for{font:400 18px/1.4 var(--head,inherit);margin:14px 0}
 .nu-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding-top:16px;margin-top:6px}.nu-price{font:600 26px var(--head,inherit)}.nu-price small{font:500 14px var(--body,inherit);color:var(--soft)}.nu-go{padding:13px 26px;font-size:15px}
 .nu-early{margin:12px 0 0;font-size:13px;color:var(--soft)}.nu-early a{color:var(--brand2)}
@@ -89,7 +91,7 @@ body.no-past .s-past,body.no-kudos .s-kudos,body.no-photos .s-photos,body.no-hir
   const tastes = (h.tags || []).slice(0, 5);
   m.innerHTML = `<div class="cover"></div>
   <div class="head"><span class="av">${esc(h.emoji || "🎉")}</span><div><h1>${esc(h.name || "@" + h.handle)}</h1><div class="handle">@${esc(h.handle)}${h.hood || h.city ? " · " + esc([h.hood, h.city].filter(Boolean).join(", ")) : ""}</div>
-    <div class="stats"><span><b id="fc">${d.followers}</b> follower${d.followers === 1 ? "" : "s"}</span><span><b>${d.past.length}</b> hosted</span><span><b>${d.upcoming.length}</b> coming up</span></div></div>
+    <div class="stats">${d.followers ? `<span><b id="fc">${d.followers}</b> follower${d.followers === 1 ? "" : "s"}</span>` : `<span id="fc" hidden>0</span>`}${d.past.length ? `<span><b>${d.past.length}</b> hosted</span>` : ""}${d.upcoming.length ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div>${(h.gigs || []).length ? `<div class="gigs">${h.gigs.slice(0, 4).map((g) => `<span>Worked with ${esc(g.client)}${g.what ? `: ${esc(g.what)}` : ""}</span>`).join("")}</div>` : ""}</div>
     <a class="btn" href="#follow" id="topFollow">${followed ? "Following ✓" : "Follow"}</a></div>
   ${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}
   ${tastes.length ? `<div class="tags" style="margin:10px 20px 0">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}

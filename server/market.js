@@ -52,7 +52,8 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
       if (B.budget && B.people && x.perHead) { const est = x.perHead * B.people; if (est <= B.budget * 1.1) { s += 1; why.push(`about $${Math.round(est).toLocaleString("en-US")} for ${B.people}`); } else s -= 1; }
       s += Math.min(2, x.trust.kudos * 0.3 + x.trust.booked * 0.5); return { ...x, score: s, why, on: B.cats.includes(x.category) || hitWords.length > 0 }; }).filter((x) => x.score > 1).sort((a, b) => b.score - a.score);
     const L = (L0.some((x) => x.on) ? L0.filter((x) => x.on) : L0).slice(0, 6);
-    res.json({ brief: { people: B.people, budget: B.budget, city: knownCity ? B.city : "", when: B.when, where: B.where, categories: B.cats }, matches: L }); });
+    const away = !!city && !knownCity, M = away ? L.filter((x) => x.travels) : L;
+    res.json({ brief: { people: B.people, budget: B.budget, city: knownCity ? B.city : "", cityAsked: B.city || "", noLocal: away, when: B.when, where: B.where, categories: B.cats }, matches: M }); });
 
   // ---- booking requests: request → quote → accept ----
   const token = (id) => crypto.createHmac("sha256", String(process.env.SESSION_SECRET || "encore-bookings")).update("booking:" + id).digest("hex").slice(0, 24);

@@ -146,4 +146,12 @@ body.is-owner{padding-bottom:110px}
       ff.innerHTML = `<div class="done"><span class="hop">${C.pipSVG("happy", 40)}</span><div><b>You're in.</b><div class="muted" style="font-size:14px">${esc(first)} can now tell you about the next one first.</div></div></div>`;
     } catch (err) { fe.textContent = err.message; } });
 })();
-</script></body></html>
+</script>
+<script>
+// Signed in to a work account: the nav goes back to the app, and request forms already know who you are.
+(async function () { let me; try { me = await (await fetch("/api/me")).json(); } catch { return; } if (!me?.verified || me.workspace?.plan === "friends") return;
+  document.querySelectorAll(".top nav a").forEach((a) => { const h = a.getAttribute("href"); if (h === "/login") { a.href = "/"; a.textContent = "Back to Encore"; } else if (h === "/plans" || h === "/discover") a.remove(); else if (/^\/signup/.test(h || "")) { a.href = "/"; a.textContent = "Your events"; } });
+  const fill = (f) => { if (!f || f.dataset.me) return; f.dataset.me = "1"; const set = (n, v) => { const el = f.elements[n]; if (el && !el.value && v) el.value = v; }; set("name", me.name); set("email", me.email); set("company", me.workspace?.company); };
+  const scan = () => document.querySelectorAll("form#bk, form.book-form").forEach(fill); scan(); new MutationObserver(scan).observe(document.body, { childList: true, subtree: true }); })();
+</script>
+</body></html>

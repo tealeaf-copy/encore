@@ -42,7 +42,7 @@ const shownToGuests = (g) => !!g?.optIn && (g.status === "Going" || g.status ===
 const WALL_FIELDS = ["eventId", "name", "title", "company", "status", "learn", "linkedin", "photo", "createdAt", "updatedAt"];
 // What any visitor may see of the brand profile: the visual identity and public voice, nothing internal
 // (budgets, target accounts, call notes, playbooks, knowledge, strategy...).
-export const PUBLIC_BRAND_FIELDS = ["name", "company", "logo", "colors", "palette", "fonts", "voice", "tone", "tagline", "oneLiner", "adjectives", "website"];
+export const PUBLIC_BRAND_FIELDS = ["name", "company", "logo", "colors", "palette", "fonts", "fontFiles", "voiceLine", "voice", "tone", "tagline", "oneLiner", "adjectives", "website"];
 export const publicBrand = (data) => Object.fromEntries(PUBLIC_BRAND_FIELDS.filter((k) => data?.[k] != null).map((k) => [k, data[k]]));
 // Values a guest may give their own RSVP / wall entry. ("no" and "requested" are what the RSVP page sends
 // for "Can't make it" and approval-required events.)

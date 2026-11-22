@@ -7387,6 +7387,25 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
   }catch(err){ console.warn(err) } return r } }
 // Pip keeps what the host typed as the concept (not a half-trimmed sentence)
 { const _qs5=quickStart; quickStart=function(text){ const r=_qs5.apply(this,arguments); try{ if(isCasual(draft)) draft.concept=String(text||"").trim() }catch{} return r } }
+
+// ==================================================================
+// Round 10: polish that builds trust. Counts agree, paid seats read like bookings, notes reach the host.
+// ==================================================================
+const uniqGoing=d=>{ const S=new Set(); for(const g of d.guests||[]) if(/Going|Attended/.test(g.status||"")) S.add(String(g.email||g.name||"").toLowerCase()); for(const r of (allRsvps||[]).filter(x=>x.eventId===d.id&&x.response==="going")) S.add(String(r.email||r.name||"").toLowerCase()); S.delete(""); return S.size };
+if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ const I=_ci7(d); if(!isCasual(d)) return I; const n=uniqGoing(d); I.forEach(x=>{ if(/people are in so far|person is in so far/.test(x.t)) x.t=`${n} ${n===1?"person is":"people are"} in so far.` }); return I } }
+// unpublishing asks first
+{ const _dhk8=drawHostKit; drawHostKit=function(){ const r=_dhk8.apply(this,arguments); try{ const b=$("#pubBtn"); if(b&&draft.discoverable){ const h0=b.onclick; b.onclick=e=>{ if(!confirm("Take it off your page and Discover? People with the link can still see it.")) return; return h0?.call(b,e) } } }catch{} return r } }
+// who's coming: guests' notes and answers, where the host looks
+{ const _wc3=whoComingHTML; whoComingHTML=function(d){ let h=_wc3(d); const R=(allRsvps||[]).filter(x=>x.eventId===d.id&&(x.access||x.dietary||(x.answers||[]).some(a=>a.a))&&x.response!=="no"); if(!R.length) return h;
+  return h.replace('<details class="wc-add">',`<div class="wc-notes"><b>Notes from guests</b>${R.map(x=>`<p><b>${esc(String(x.name||"Guest").split(" ")[0])}</b> ${[x.access,x.dietary?`🍽 ${x.dietary}`:"",...(x.answers||[]).filter(a=>a.a).map(a=>a.a)].filter(Boolean).map(esc).join(" · ")}</p>`).join("")}</div><details class="wc-add">`) } }
+// guest pages: bookings read like bookings; a working map; natural "meet" copy; one title
+{ const _rg22=renderGuest; renderGuest=async function(){ const r=await _rg22.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const paid=e.price&&e.price!=="chip";
+    if(paid){ const s=$("#g-send",host); if(s&&/Send my RSVP/.test(s.textContent)) s.textContent=`Book my seat · ${e.price}`; $$('[data-chg="maybe"]',host).forEach(b=>b.remove()) }
+    const place=[e.venueAddr,e.venueName,e.meetPoint].map(x=>String(x||"").split(/\s*[(;]|\s+-\s+|\.\s/)[0].replace(/^(ring|buzz|knock|look for)\b.*$/i,"").trim()).find(Boolean)||"";
+    $$('a[href*="google.com/maps/search"]',host).forEach(a=>{ const q=`${place} ${e.hood||""} ${e.city||""}`.trim(); if(q) a.href=`https://www.google.com/maps/search/${encodeURIComponent(q)}`; else a.hidden=true });
+    $$(".ticket p",host).forEach(p=>{ const m=p.textContent.match(/^See you there! Meet at (.+)\.$/); if(m) p.textContent=`See you there. Where: ${m[1].replace(/^./,c=>c.toLowerCase()==="r"?c.toUpperCase():c)}` });
+    if($("#typeCover")){ const t=host.querySelector(".invite .in h1, .invite .in h2, .invite .in .gtitle"); if(t&&t.textContent.trim()===guestTitle(e)) t.hidden=true }
+  }catch(err){ console.warn(err) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7664,8 +7683,9 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .pub-miss{margin:8px 0;padding:10px 12px;border-radius:12px;background:#fff;border:1px dashed #F2D48F}.pub-miss .row{margin-top:6px}
 .gxcover.has-photo{position:relative}.gcover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gxcover.has-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.45))}
 .wc-paid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}.wc-paid b{margin-right:6px}
-.gxcover.has-photo::after{background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.28))}
+.gxcover.has-photo::after{display:none}
 .status-pill{display:inline-block;margin:0 0 10px;padding:6px 12px;border-radius:999px;background:#F3EFE8;font-weight:600;font-size:14px}.status-pill.in{background:#EAF3EC;color:#2F7A4F}
 .gxcover.typed{position:relative}.type-cover{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:22px;background:radial-gradient(90% 120% at 85% 0%,color-mix(in srgb,var(--tc) 70%,#fff) 0%,transparent 60%),linear-gradient(150deg,var(--tc),color-mix(in srgb,var(--tc) 55%,#15110E));color:#fff}.type-cover span{font:400 clamp(26px,7vw,44px)/1.05 "Fraunces",Georgia,serif}.type-cover small{font-size:15px;opacity:.92;color:#fff!important}
 .gxcover.typed canvas{visibility:hidden}
+.wc-notes{margin:10px 0;padding:10px 12px;border-radius:12px;background:#FFF7E6}.wc-notes p{margin:4px 0;font-size:14px}
 </style>

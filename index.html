@@ -6316,6 +6316,37 @@ if(typeof wireBudgetStudio==="function"){ const _wb=wireBudgetStudio; wireBudget
 { const _qs=quickStart; quickStart=function(t){ const r=_qs.apply(this,arguments); try{ pipLearnFromDraft(draft) }catch{} return r } }
 // Pip gives an honest first take right after a draft
 { const _qs2=quickStart; quickStart=function(t){ const r=_qs2.apply(this,arguments); try{ const d=draft, I=cosItems(d).filter(x=>x.sev!=="idea"); setTimeout(()=>pipToast(I.length?`Honest take: ${I[0].t} ${I[0].w.split(". ")[0]}.`:`Love it. Budget fits and the timing works. Next I'd lock the guest list.`,I.length?"skeptic":"happy"),900) }catch{} return r } }
+
+// ---------------- Pip's voice: little oinks made with Web Audio (no files), only after you've interacted ----------------
+const PIP_SND={ ctx:null, unlocked:false, muted:(()=>{ try{ return localStorage.getItem("encore.pipMuted")==="1" }catch{ return false } })() };
+["pointerdown","keydown"].forEach(ev=>addEventListener(ev,()=>{ PIP_SND.unlocked=true },{once:true,capture:true}));
+function pipAudio(){ if(!PIP_SND.ctx){ const A=window.AudioContext||window.webkitAudioContext; if(!A) return null; PIP_SND.ctx=new A() } if(PIP_SND.ctx.state==="suspended") PIP_SND.ctx.resume().catch(()=>{}); return PIP_SND.ctx }
+function pipTone(c,t0,{from,to,dur,vol=.16,type="sawtooth",bp=950,q=5,vib=0}){ const o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter(), lp=c.createBiquadFilter();
+  o.type=type; o.frequency.setValueAtTime(from,t0); o.frequency.exponentialRampToValueAtTime(to,t0+dur);
+  if(vib){ const l=c.createOscillator(), lg=c.createGain(); l.frequency.value=vib; lg.gain.value=from*.06; l.connect(lg); lg.connect(o.frequency); l.start(t0); l.stop(t0+dur+.02) }
+  f.type="bandpass"; f.frequency.value=bp; f.Q.value=q; lp.type="lowpass"; lp.frequency.value=2400;
+  g.gain.setValueAtTime(.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+.025); g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(f); f.connect(lp); lp.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+dur+.03) }
+function pipSound(kind="blip"){ if(PIP_SND.muted||!PIP_SND.unlocked) return; const c=pipAudio(); if(!c) return; const t=c.currentTime+.01;
+  try{
+    if(kind==="oink"){ pipTone(c,t,{from:330,to:190,dur:.2,vib:28}) }
+    else if(kind==="oink2"){ pipTone(c,t,{from:360,to:220,dur:.15,vib:30}); pipTone(c,t+.19,{from:420,to:240,dur:.17,vib:30}) }
+    else if(kind==="squeal"){ pipTone(c,t,{from:620,to:1150,dur:.22,vol:.1,bp:1500,q:3,vib:22}) }
+    else if(kind==="hmm"){ pipTone(c,t,{from:170,to:120,dur:.32,vol:.18,bp:520,q:4,vib:9}) }
+    else { pipTone(c,t,{from:520,to:440,dur:.08,vol:.07,type:"triangle",bp:900,q:2}) }
+  }catch{} }
+function pipHop(){ const L=[...document.querySelectorAll("#cgThread .cg-av .pip, .pipbrief .pb-head .pip, #pipToast .pip, .cg-hi .pip")].pop(); if(!L) return; L.classList.remove("hop"); void L.getBoundingClientRect(); L.classList.add("hop") }
+function pipSay(mood){ pipSound(mood==="happy"?"oink2":mood==="skeptic"?"hmm":mood==="think"?"blip":"blip"); setTimeout(pipHop,10) }
+// Speak with each message and toast
+if(typeof cgSay==="function"){ const _say=cgSay; cgSay=function(S,m){ const r=_say(S,m); const mood=m.mood||(m.cards?"happy":/honest|worry|careful|watch out|will ask|over\b/i.test(m.text||"")?"skeptic":"side"); setTimeout(()=>pipSay(S.msgs.filter(x=>x.who!=="me").length===1?"hello":mood),60); return r } }
+{ const _pt=pipToast; pipToast=function(msg,mood,undo){ _pt(msg,mood,undo); pipSay(mood) } }
+const _pipSay=pipSay; pipSay=function(mood){ if(mood==="hello"){ pipSound("oink"); setTimeout(pipHop,10); return } _pipSay(mood) };
+// A squeal when an event is drafted, and a pat on the head
+document.addEventListener("click",e=>{ const pip=e.target.closest?.(".pip"); if(pip){ pipSound(Math.random()<.25?"squeal":"oink"); pip.classList.remove("hop"); void pip.getBoundingClientRect(); pip.classList.add("hop") } if(e.target.closest?.("[data-cgdraft],[data-cgchip^='tdraft:'],[data-cgchip='brief']")) setTimeout(()=>pipSound("squeal"),120) },true);
+// Mute toggle next to "Ask Pip", remembered
+function pipMuteBtn(){ return `<button type="button" class="pip-mute" id="pipMute" aria-pressed="${!PIP_SND.muted}" aria-label="${PIP_SND.muted?"Turn Pip's sounds on":"Mute Pip"}" title="${PIP_SND.muted?"Sounds off":"Sounds on"}">${PIP_SND.muted?"🔇":"🔊"}</button>` }
+if(typeof conciergeHTML==="function"){ const _chm=conciergeHTML; conciergeHTML=function(){ return _chm().replace(/(Ask \$\{PIP_NAME\}|Ask Pip)<\/span>/,"$1</span>"+pipMuteBtn()) } }
+document.addEventListener("click",e=>{ const b=e.target.closest?.("#pipMute"); if(!b) return; PIP_SND.muted=!PIP_SND.muted; try{ localStorage.setItem("encore.pipMuted",PIP_SND.muted?"1":"0") }catch{} b.textContent=PIP_SND.muted?"🔇":"🔊"; b.setAttribute("aria-pressed",String(!PIP_SND.muted)); b.setAttribute("aria-label",PIP_SND.muted?"Turn Pip's sounds on":"Mute Pip"); if(!PIP_SND.muted){ PIP_SND.unlocked=true; pipSound("oink") } });
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -6511,4 +6542,8 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 .bs-tier[data-usual]::before{content:"Your usual";font-size:11px;font-weight:700;color:var(--accent)}
 @media (max-width:700px){.pb-list li{grid-template-columns:1fr}#pipToast{bottom:84px}}
 .cg-mode{display:inline-flex;align-items:center;gap:6px}.cg-hi{display:flex;flex-direction:column;align-items:center;gap:6px}.cg-hi .pip{margin:0 auto}
+
+.pip.hop .pip-body{animation:piphop .5s cubic-bezier(.3,1.6,.5,1)}@keyframes piphop{0%{transform:translateY(0)}35%{transform:translateY(-4px) scale(1.05,.96)}70%{transform:translateY(0) scale(.97,1.03)}100%{transform:none}}
+.pip{cursor:pointer}.pip-mute{border:0;background:transparent;font-size:15px;cursor:pointer;padding:2px 6px;border-radius:8px;line-height:1}.pip-mute:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+@media (prefers-reduced-motion:reduce){.pip.hop .pip-body{animation:none}}
 </style>

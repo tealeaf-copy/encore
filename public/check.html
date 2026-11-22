@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Would you come? · Encore</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+main{max-width:560px;margin:0 auto;padding:28px 0 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px}
+.eyebrow{font-size:13px;color:var(--soft);font-weight:600;letter-spacing:.02em}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.08;margin:8px 0 10px}
+.pitch{font-size:17px;line-height:1.5;color:var(--ink);margin:0 0 18px}
+.q{font:600 19px "Fraunces",Georgia,serif;margin:18px 0 10px}
+.ans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ans button{border:1.5px solid var(--line);background:var(--bg);border-radius:16px;padding:14px 8px;font:600 15px "DM Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}
+.ans button span{display:block;font-size:22px;margin-bottom:4px}
+.ans button[aria-pressed="true"]{border-color:var(--brand);background:var(--pink)}
+.more{display:grid;gap:10px;margin-top:16px}
+.more label{display:grid;gap:4px;font-size:14px;font-weight:600}
+.more input,.more textarea{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:15px "DM Sans",system-ui,sans-serif;background:#fff;width:100%;box-sizing:border-box}
+.dates{display:flex;flex-wrap:wrap;gap:6px}.dates label{display:flex;gap:6px;align-items:center;font-weight:500;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:#fff}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media (max-width:480px){.row2{grid-template-columns:1fr}.ans button{padding:12px 4px;font-size:14px}}
+.send{margin-top:16px;width:100%;border:0;border-radius:999px;padding:14px;background:var(--brand);color:#fff;font:600 16px "DM Sans",system-ui,sans-serif;cursor:pointer}
+.small{font-size:13px;color:var(--soft)}
+.done{text-align:center;padding:12px 0}.done h2{font-size:28px;margin:10px 0 6px}
+.err{color:#B3261E;font-size:14px;min-height:1em}
+</style></head><body>
+<div class="wrap"><header class="top"><span class="brand">encore</span></header>
+<main><div class="card" id="m"><p class="small">Loading…</p></div>
+<p class="small" style="text-align:center;margin-top:14px">Nothing is booked yet. Your answer helps decide whether this happens.</p></main></div>
+<script src="/community.js"></script>
+<script>
+(async function () { const C = window.EncoreCommunity, esc = C.esc, m = document.getElementById("m"), id = location.pathname.split("/").pop(), t = new URLSearchParams(location.search).get("t") || "", via = new URLSearchParams(location.search).get("via") || "";
+  let c; try { const r = await fetch(`/api/public/check/${encodeURIComponent(id)}?t=${encodeURIComponent(t)}`); const j = await r.json(); if (!r.ok) throw new Error(j.message); c = j.check; } catch (e) { m.innerHTML = `<p>${esc(e.message || "This link isn't valid.")}</p>`; return; }
+  document.title = `${c.title} · Would you come?`;
+  if (!c.open) { m.innerHTML = `<span class="eyebrow">${esc(c.brand)}</span><h1>${esc(c.title)}</h1><p>This check has closed. Thanks for looking.</p>`; return; }
+  let ans = ""; const N = (() => { try { return { name: localStorage.getItem("encore.name") || "", email: localStorage.getItem("encore.email") || "" }; } catch { return {}; } })();
+  m.innerHTML = `<span class="eyebrow">${c.brand ? `${esc(c.brand)} is thinking about hosting` : "Someone is thinking about hosting"}${c.city ? ` · ${esc(c.city)}` : ""}</span><h1>${esc(c.title)}</h1>${c.pitch ? `<p class="pitch">${esc(c.pitch)}</p>` : ""}
+    <div class="q">${esc(c.question)}</div>
+    <div class="ans" role="group" aria-label="Your answer">${[["yes", "🙌", "I'd come"], ["maybe", "🤔", "Maybe"], ["no", "🙅", "Not for me"]].map(([k, e, l]) => `<button type="button" data-a="${k}" aria-pressed="false"><span>${e}</span>${l}</button>`).join("")}</div>
+    <form class="more" id="f" hidden>
+      ${c.dates.length ? `<div><b style="font-size:14px">Which dates could you make?</b><div class="dates" style="margin-top:6px">${c.dates.map((d) => `<label><input type="checkbox" name="dates" value="${esc(d)}"> ${esc(d)}</label>`).join("")}</div></div>` : ""}
+      <label id="whyL">What makes you say that?<textarea name="why" rows="2" placeholder="One line is plenty"></textarea></label>
+      ${c.asks.must !== false ? `<label id="mustL">What would make it a must-go?<input name="must" placeholder="A person you'd want to meet, a topic, the place…"></label>` : ""}
+      ${c.asks.stop !== false ? `<label>What might stop you?<input name="stop" placeholder="Timing, travel, approval…"></label>` : ""}
+      <div class="row2"><label>Your name <span class="small">(optional)</span><input name="name" autocomplete="name" value="${esc(N.name || "")}"></label><label>Role <span class="small">(optional)</span><input name="role" autocomplete="organization-title"></label></div>
+      <div class="row2"><label>Company <span class="small">(optional)</span><input name="company" autocomplete="organization"></label><label>Email <span class="small">(optional)</span><input name="email" type="email" autocomplete="email" value="${esc(N.email || "")}"></label></div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" name="notify" style="width:auto"> Tell me if it happens</label>
+      <p class="err" id="err"></p><button class="send" type="submit">Send my answer</button>
+    </form>`;
+  const f = document.getElementById("f");
+  m.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => { ans = b.dataset.a; m.querySelectorAll("[data-a]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); f.hidden = false; document.getElementById("whyL").firstChild.textContent = ans === "no" ? "What would you come to instead?" : ans === "maybe" ? "What would tip it to a yes?" : "What makes it appealing?"; f.querySelector("textarea").focus(); }));
+  f.onsubmit = async (ev) => { ev.preventDefault(); const fd = new FormData(f), body = { t, via, answer: ans, dates: fd.getAll("dates"), why: fd.get("why"), must: fd.get("must"), stop: fd.get("stop"), name: fd.get("name"), role: fd.get("role"), company: fd.get("company"), email: fd.get("email"), notify: !!fd.get("notify") };
+    try { const r = await fetch(`/api/public/check/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.message);
+      try { if (body.name) localStorage.setItem("encore.name", body.name); if (body.email) localStorage.setItem("encore.email", body.email); } catch {}
+      m.innerHTML = `<div class="done">${C.pipSVG ? C.pipSVG("happy", 64) : ""}<h2>Thank you${body.name ? `, ${esc(String(body.name).split(" ")[0])}` : ""}.</h2><p>${ans === "no" ? "Honest answers are the most useful ones." : "That helps a lot."} ${body.notify ? "You'll hear if it happens." : ""}</p></div>`; }
+    catch (e) { document.getElementById("err").textContent = e.message; } };
+})();
+</script></body></html>

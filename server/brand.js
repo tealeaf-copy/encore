@@ -7,7 +7,9 @@ import { CATEGORIES } from "./market.js";
 import fs from "node:fs";
 import path from "node:path";
 
-const clean = (v, n = 300) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+const clean0 = (v) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").replace(/\s+/g, " ").trim();
+// Long text is cut at a word, with an ellipsis, never mid-word.
+const clean = (v, n = 300) => { const t = clean0(v); if (t.length <= n) return t; const c = t.slice(0, n - 1), i = c.lastIndexOf(" "); return (i > n * 0.6 ? c.slice(0, i) : c).replace(/[,;:.\s]+$/, "") + "…"; };
 const list = (a, n, f) => (Array.isArray(a) ? a : []).slice(0, n).map(f).filter(Boolean);
 const CAT_KEYS = CATEGORIES.map(([k]) => k);
 const domainOf = (u) => { try { return new URL(/^https?:\/\//i.test(u) ? u : "https://" + u).hostname.replace(/^www\./, ""); } catch { return ""; } };
@@ -16,21 +18,21 @@ const domainOf = (u) => { try { return new URL(/^https?:\/\//i.test(u) ? u : "ht
 export function cleanProfile(p = {}) {
   const v = p.voice || {}, a = p.audience || {};
   return {
-    company: clean(p.company, 120), website: clean(p.website, 200), oneLiner: clean(p.oneLiner, 240), category: clean(p.category, 80), stage: clean(p.stage, 80),
-    audience: { summary: clean(a.summary, 300), segments: list(a.segments, 5, (s) => clean(s, 120)), whereTheyAre: list(a.whereTheyAre, 6, (s) => clean(s, 100)), b2b: !!a.b2b,
-      interests: list(a.interests, 8, (s) => clean(s, 60)), values: list(a.values, 5, (s) => clean(s, 160)), tiredOf: list(a.tiredOf, 4, (s) => clean(s, 160)), shareTriggers: list(a.shareTriggers, 4, (s) => clean(s, 160)), moments: list(a.moments, 4, (s) => clean(s, 160)),
-      personas: list(a.personas, 3, (x) => (clean(x?.name, 60) ? { name: clean(x.name, 60), who: clean(x.who, 200), wants: clean(x.wants, 200), weekend: clean(x.weekend, 200), wouldShowUpFor: clean(x.wouldShowUpFor, 200) } : null)) },
-    positioning: clean(p.positioning, 400),
-    voice: { adjectives: list(v.adjectives, 5, (s) => clean(s, 30)), tone: clean(v.tone, 240), soundsLike: list(v.soundsLike, 3, (s) => clean(s, 160)), avoid: list(v.avoid, 4, (s) => clean(s, 80)) },
-    competitors: list(p.competitors, 6, (c) => (clean(c?.name, 60) ? { name: clean(c.name, 60), note: clean(c.note, 160) } : null)),
-    adjacent: list(p.adjacent, 6, (c) => (clean(c?.name, 60) ? { name: clean(c.name, 60), why: clean(c.why, 160) } : null)),
-    insights: list(p.insights, 5, (x) => (clean(x?.fact, 300) ? { fact: clean(x.fact, 300), soWhat: clean(x.soWhat, 240), source: /^https?:\/\//.test(String(x.source || "")) ? clean(x.source, 400) : "" } : null)),
-    othersDid: list(p.othersDid, 5, (x) => (clean(x?.brand, 60) && clean(x?.what, 240) ? { brand: clean(x.brand, 60), what: clean(x.what, 240), takeaway: clean(x.takeaway, 240), source: /^https?:\/\//.test(String(x.source || "")) ? clean(x.source, 400) : "" } : null)),
-    ideas: list(p.ideas, 6, (x) => (clean(x?.name, 80) ? { name: clean(x.name, 80), line: clean(x.line, 200), why: clean(x.why, 200), insight: clean(x.insight, 200), category: CAT_KEYS.includes(x.category) ? x.category : "culture", people: Math.max(0, Math.min(2000, Math.round(+x.people || 0))), city: clean(x.city, 60) } : null)),
+    company: clean(p.company, 120), website: clean(p.website, 200), oneLiner: clean(p.oneLiner, 360), category: clean(p.category, 80), stage: clean(p.stage, 80),
+    audience: { summary: clean(a.summary, 700), segments: list(a.segments, 5, (s) => clean(s, 220)), whereTheyAre: list(a.whereTheyAre, 6, (s) => clean(s, 160)), b2b: !!a.b2b,
+      interests: list(a.interests, 8, (s) => clean(s, 100)), values: list(a.values, 5, (s) => clean(s, 280)), tiredOf: list(a.tiredOf, 4, (s) => clean(s, 280)), shareTriggers: list(a.shareTriggers, 4, (s) => clean(s, 280)), moments: list(a.moments, 4, (s) => clean(s, 280)),
+      personas: list(a.personas, 3, (x) => (clean(x?.name, 60) ? { name: clean(x.name, 60), who: clean(x.who, 320), wants: clean(x.wants, 320), weekend: clean(x.weekend, 320), wouldShowUpFor: clean(x.wouldShowUpFor, 320) } : null)) },
+    positioning: clean(p.positioning, 700),
+    voice: { adjectives: list(v.adjectives, 5, (s) => clean(s, 30)), tone: clean(v.tone, 400), soundsLike: list(v.soundsLike, 3, (s) => clean(s, 240)), avoid: list(v.avoid, 4, (s) => clean(s, 160)) },
+    competitors: list(p.competitors, 6, (c) => (clean(c?.name, 60) ? { name: clean(c.name, 60), note: clean(c.note, 280) } : null)),
+    adjacent: list(p.adjacent, 6, (c) => (clean(c?.name, 60) ? { name: clean(c.name, 60), why: clean(c.why, 280) } : null)),
+    insights: list(p.insights, 5, (x) => (clean(x?.fact, 500) ? { fact: clean(x.fact, 500), soWhat: clean(x.soWhat, 400), source: /^https?:\/\//.test(String(x.source || "")) ? clean(x.source, 400) : "" } : null)),
+    othersDid: list(p.othersDid, 5, (x) => (clean(x?.brand, 60) && clean(x?.what, 400) ? { brand: clean(x.brand, 60), what: clean(x.what, 400), takeaway: clean(x.takeaway, 400), source: /^https?:\/\//.test(String(x.source || "")) ? clean(x.source, 400) : "" } : null)),
+    ideas: list(p.ideas, 6, (x) => (clean(x?.name, 80) ? { name: clean(x.name, 80), line: clean(x.line, 320), why: clean(x.why, 320), insight: clean(x.insight, 320), category: CAT_KEYS.includes(x.category) ? x.category : "culture", people: Math.max(0, Math.min(2000, Math.round(+x.people || 0))), city: clean(x.city, 60) } : null)),
     cities: list(p.cities, 4, (s) => clean(s, 60)),
     sources: list(p.sources, 8, (s) => (/^https?:\/\//.test(String(s?.url || "")) ? { title: clean(s.title || s.url, 120), url: clean(s.url, 400) } : null)),
     confidence: ["high", "medium", "low"].includes(p.confidence) ? p.confidence : "medium",
-    unsure: list(p.unsure, 3, (s) => clean(s, 160)),
+    unsure: list(p.unsure, 4, (s) => clean(s, 300)),
   };
 }
 

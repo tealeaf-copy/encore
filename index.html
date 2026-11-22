@@ -2120,7 +2120,7 @@ function chipEditor(host,arr,placeholder){
     const inp=$("input",host); inp.onkeydown=e=>{ if(e.key==="Enter"&&inp.value.trim()){e.preventDefault();arr.push(inp.value.trim());draw();$("input",host).focus()} };
   }; draw();
 }
-const RAIL_ORDER=[1,6,2,3,4,9,5,8,7], SIMPLE_STEPS=[1,6,4,5,7], STEP_NAMES={1:"Plan",6:"Guests",2:"Test the idea",3:"Venue and design",4:"Event page",9:"Promotion",5:"Budget and tasks",8:"Approval",7:"Follow-up and results"};
+const RAIL_ORDER=[1,6,2,3,4,9,5,8,7], SIMPLE_STEPS=[1,2,6,4,5,7], STEP_NAMES={1:"Plan",6:"Guests",2:"Test the idea",3:"Venue and design",4:"Event page",9:"Promotion",5:"Budget and tasks",8:"Approval",7:"Follow-up and results"};
 function isSimple(){ return document.body.classList.contains("simple") }
 function nextStepOf(cur){ const L=isSimple()?SIMPLE_STEPS:RAIL_ORDER, i=L.indexOf(cur); return i>=0&&i<L.length-1?L[i+1]:null }
 const SO={}, SOt={}; let EMAIL={enabled:false};
@@ -7543,6 +7543,44 @@ function brandInspire(){ const el=$("#view-inspire"); if(!el||window.__wsPersona
 { const _qs9=quickStart; quickStart=function(text){ const r=_qs9.apply(this,arguments); try{ if(!window.__wsPersonal&&draft){ draft.casual=false; if(draft.activity==="pop-up"||/^\$\d{1,3}$/.test(String(draft.price||""))) { delete draft.activity; delete draft.price } const lo=String(text||"").toLowerCase(), hc=lo.match(/(\d{1,4})\s*(?:people|guests|creators|execs|attendees|customers|employees|founders|ciso|cfos?)/); if(hc) draft.headcount=+hc[1]; if(/team event|team-building|team building|offsite|off-site|employees|our team|staff|all-hands|culture/.test(lo)&&!/customer|prospect|cfo|ciso|exec/.test(lo)){ draft.kind="experience"; draft.audienceLane="employees"; draft.name=/flower|bouquet/.test(lo)?"Team flower workshop":/\brun\b|running|hike/.test(lo)?"Team run and breakfast":/cook|dinner|food/.test(lo)?"Team cooking night":"Team event"; draft.objective="team" } const b=lo.replace(/,/g,"").match(/\$\s?(\d+(?:\.\d+)?)\s*(k|m)?/); if(b&&(b[2]||+b[1]>=1000)) draft.budget=+b[1]*(b[2]==="k"?1e3:b[2]==="m"?1e6:1) } }catch(e){ console.warn(e) } return r } }
 // "Plan it" on an idea card takes you to the chat so you can see Pip pick it up
 { const _wbi=wireBrandIdeas; wireBrandIdeas=function(root){ _wbi(root); $$("[data-brplan]",root).forEach(b=>{ const h0=b.onclick; b.onclick=e=>{ h0?.(e); setTimeout(()=>{ ($("#qsText")||$(".cg-box"))?.scrollIntoView({behavior:"smooth",block:"center"}) },600) } }) } }
+
+// ==================================================================
+// Check the idea with real people: a one-question "would you come?" page, tallied live, with a go / tweak / rethink call.
+// ==================================================================
+const CK_MSG=(d,link,co)=>{ const t=guestTitle?.(d)||d.name||"this", p=brandP?.(); const who=p?.audience?.segments?.[0]||"people like you"; return {
+  customer:`Quick one: we're thinking about hosting "${t}"${d.city?` in ${d.city}`:""}. Before we plan it, would you come? It takes 20 seconds: ${link}&via=customer`,
+  ae:`Hi team, I'm testing an event idea before we commit budget: "${t}". Could you send this to 2 or 3 of your accounts this week? One question, no signup: ${link}&via=ae\nSuggested note to them: "We're thinking of hosting this${d.city?` in ${d.city}`:""} and I thought of you. Would you come? ${link}&via=ae"`,
+  social:`Thinking about hosting "${t}"${d.city?` in ${d.city}`:""} for ${who.toLowerCase()}. Would you come? Tell us in one tap: ${link}&via=social` } };
+async function ckLoad(id){ try{ const r=await fetch("/api/check/"+encodeURIComponent(id)); return r.ok?await r.json():null }catch{ return null } }
+function ckPanelHTML(d,j){ const link=j?.link?location.origin+j.link:"", T=j?.tally, M=link?CK_MSG(d,link):null, pct=(n)=>T?.n?Math.round(n/T.n*100):0;
+  if(!j?.check) return `<section class="panel ck" id="ckPanel"><div class="ck-h"><div><small class="eyebrow">Before you spend a dollar</small><h3>Ask the people you want in the room</h3><p class="note">Make a one-question page: "Would you come?" Send it to a few target guests or have your sales reps send it. You'll see who says yes, which dates work, and what would make it a must-go. Most checks get enough answers in two or three days.</p></div></div>
+    <label class="f">What you'd tell them<textarea id="ckPitch" rows="3">${esc(d.concept||d.brief||d.objectiveNote||"")}</textarea></label>
+    <div class="row"><label class="f">Where<input id="ckCity" value="${esc(d.city||"")}"></label><label class="f">Possible dates (optional, comma separated)<input id="ckDates" placeholder="e.g. Thu Mar 12, Tue Mar 17" value="${esc((d.dateOptions||[]).join(", ")||(d.date?fmtDate(d.date):""))}"></label></div>
+    <button class="btn primary" type="button" id="ckMake">Make my would-you-come page</button></section>`;
+  return `<section class="panel ck" id="ckPanel"><div class="ck-h"><div><small class="eyebrow">Would you come? · ${T.n} ${T.n===1?"answer":"answers"}</small><h3><span class="ck-v ${T.verdict.k}">${esc(T.verdict.label)}</span></h3><p class="note">${esc(T.verdict.line)}</p></div><button class="btn ghost sm" type="button" id="ckRefresh">Refresh</button></div>
+    ${T.n?`<div class="ck-bar"><span class="y" style="width:${pct(T.yes)}%">${T.yes?`${T.yes} yes`:""}</span><span class="m" style="width:${pct(T.maybe)}%">${T.maybe?`${T.maybe} maybe`:""}</span><span class="n" style="width:${pct(T.no)}%">${T.no?`${T.no} no`:""}</span></div>`:""}
+    <div class="ck-grid">${T.must.length?`<div><b>What would make it a must-go</b>${T.must.slice(0,5).map(q=>`<p>"${esc(q.text)}"${q.who?` <span>${esc(q.who)}</span>`:""}</p>`).join("")}</div>`:""}${T.stop.length?`<div><b>What might stop them</b>${T.stop.slice(0,5).map(q=>`<p>"${esc(q.text)}"${q.who?` <span>${esc(q.who)}</span>`:""}</p>`).join("")}</div>`:""}${T.why.length?`<div><b>In their words</b>${T.why.slice(0,5).map(q=>`<p>"${esc(q.text)}" <span>${q.answer==="yes"?"would come":q.answer==="maybe"?"maybe":"wouldn't"}${q.who?`, ${esc(q.who)}`:""}</span></p>`).join("")}</div>`:""}
+      ${T.dates.length?`<div><b>Dates that work</b>${T.dates.map(x=>`<p>${esc(x.date)} <span>${x.votes} ${x.votes===1?"vote":"votes"}</span></p>`).join("")}</div>`:""}${T.roles.length?`<div><b>Who answered</b>${T.roles.slice(0,6).map(x=>`<p>${esc(x.role)} <span>${x.count}</span></p>`).join("")}</div>`:""}</div>
+    <div class="ck-send"><b>Send it</b><div class="ck-link"><input readonly value="${esc(link)}" id="ckLink"><button class="btn sm" type="button" data-ckcopy="link">Copy link</button><a class="btn ghost sm" href="${esc(link)}" target="_blank" rel="noopener">Preview</a></div>
+      ${[["customer","To a customer or target guest"],["ae","To your sales reps (they forward it)"],["social","For Slack, LinkedIn or a community"]].map(([k,l])=>`<details><summary>${l}</summary><pre class="ck-msg">${esc(M[k])}</pre><button class="btn ghost sm" type="button" data-ckcopy="${k}">Copy message</button></details>`).join("")}</div>
+  </section>` }
+async function drawCheck(host){ const d=draft; if(!d?.id||d.casual) return; $("#ckPanel")?.remove(); const w=document.createElement("div"); w.id="ckWrap"; host.prepend(w); let j=await ckLoad(d.id);
+  const render=()=>{ w.innerHTML=ckPanelHTML(d,j); const mk=$("#ckMake",w); if(mk) mk.onclick=async()=>{ mk.disabled=true; if(!d.id){ toast("Save the event first."); mk.disabled=false; return } try{ await saveEvent?.(true) }catch{}
+      const body={ title:guestTitle?.(d)||d.name, pitch:$("#ckPitch",w).value.trim(), city:$("#ckCity",w).value.trim(), dates:$("#ckDates",w).value.split(",").map(s=>s.trim()).filter(Boolean) };
+      const r=await fetch("/api/check/"+encodeURIComponent(d.id),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const k=await r.json(); if(!r.ok){ toast(k.message); mk.disabled=false; return } j=await ckLoad(d.id); render(); toast("Your would-you-come page is ready. Send it to 8 to 10 people.") };
+    $("#ckRefresh",w)&&($("#ckRefresh",w).onclick=async()=>{ j=await ckLoad(d.id); render() });
+    $$("[data-ckcopy]",w).forEach(b=>b.onclick=()=>{ const link=location.origin+j.link, M=CK_MSG(d,link); copyTxt(b.dataset.ckcopy==="link"?link:M[b.dataset.ckcopy]); toast("Copied.") }) };
+  render(); if(j?.check){ clearInterval(window.__ckPoll); window.__ckPoll=setInterval(async()=>{ if(step!==2||location.hash!=="#studio"){ clearInterval(window.__ckPoll); return } j=await ckLoad(d.id); render() },15000) } }
+{ const _s2=step2; step2=function(host){ const r=_s2.apply(this,arguments); try{ drawCheck(host) }catch(e){ console.warn(e) } return r } }
+
+// "Plan it" on a brand idea drafts that idea: its name, concept, city, size and format, not a generic dinner
+window.__forceKind="";
+{ const _pe10=parseEventText; parseEventText=function(t){ const o=_pe10(t); if(window.__forceKind){ o.kind=window.__forceKind; o.casual=false } return o } }
+function planFromIdea(x){ const p=brandP(); const k=x.category==="dining"||/dinner|supper|chef'?s table/i.test(x.name+" "+x.line)?"dinner":kindFromFormat(`${x.name} ${x.line}`); window.__forceKind=k;
+  try{ quickStart(`${x.name}: ${x.line}${x.people?` for ${x.people} people`:""}${x.city?` in ${x.city}`:""}`) }finally{ window.__forceKind="" }
+  try{ draft.name=x.name; draft.concept=x.line; draft.brief=x.why||""; draft.insight=x.insight||""; if(x.city) draft.city=x.city; if(x.people) draft.headcount=x.people; draft.casual=false; if(p&&!p.audience.b2b) draft.objective="awareness"; draft.fromIdea={ name:x.name, why:x.why, insight:x.insight, category:x.category } }catch(e){ console.warn(e) }
+  step=1; if(typeof db!=="undefined"&&db) setTimeout(()=>saveEvent(true),60); location.hash="#studio"; setTimeout(()=>{ try{ renderStep() }catch{} },80); toast(`"${x.name}" is drafted. Next: check it with real people before you commit.`) }
+{ const _wbi2=wireBrandIdeas; wireBrandIdeas=function(root){ _wbi2(root); $$("[data-brplan]",root).forEach(b=>b.onclick=()=>planFromIdea(brandP().ideas[+b.dataset.brplan])) } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7844,4 +7882,10 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .br-lede{font-weight:600;margin:16px 0 8px}.br-personas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px;margin-bottom:12px}.br-persona{border:1px solid var(--line,#E7DFD3);border-radius:16px;padding:14px 16px;background:#fff}.br-persona b{font-size:17px}.br-persona p{margin:6px 0;font-size:14px;line-height:1.45}.br-persona span,.br-so span{font-weight:600;color:#8A7E74;margin-right:4px}.br-show{background:#FFF7E6;border-radius:10px;padding:8px 10px}
 .br-tiles2{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))!important;margin-top:12px}.br-tiles2>.br-t{grid-column:auto!important}
 .br-ins{display:grid;gap:10px}.br-in{background:#FBF8F3;border-radius:14px;padding:12px 14px}.br-in p{margin:4px 0;font-size:15px;line-height:1.45}.br-in a{font-size:13px}
+body.simple .rail button[data-step="2"]{display:flex!important}body.simple nav.tabs a[data-view="impact"]{display:inline-flex!important}
+.ck{border:1.5px solid #E8D9C2;background:#FFFCF6}.ck h3{margin:4px 0}.ck-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ck-v{display:inline-block;padding:4px 12px;border-radius:999px;font-size:16px}.ck-v.go{background:#EAF3EC;color:#2F7A4F}.ck-v.tweak{background:#FFF3D6;color:#7A5A00}.ck-v.rethink{background:#FBE7E3;color:#9A3A26}.ck-v.early{background:#F1ECE5;color:#6F6259}
+.ck-bar{display:flex;height:30px;border-radius:10px;overflow:hidden;margin:10px 0;background:#F1ECE5;font-size:13px;font-weight:600}.ck-bar span{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}.ck-bar .y{background:#BFE3C9}.ck-bar .m{background:#FBE3A8}.ck-bar .n{background:#F3C7BE}
+.ck-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:10px 0}.ck-grid>div{background:#fff;border:1px solid var(--line,#E7DFD3);border-radius:14px;padding:10px 12px}.ck-grid p{margin:6px 0;font-size:14px}.ck-grid span{color:#8A7E74;font-size:12px}
+.ck-send{display:grid;gap:8px;margin-top:6px}.ck-link{display:flex;gap:8px;flex-wrap:wrap}.ck-link input{flex:1;min-width:220px}.ck-msg{white-space:pre-wrap;font:14px/1.5 inherit;background:#fff;border:1px solid var(--line,#E7DFD3);border-radius:12px;padding:10px;margin:6px 0}.ck-send summary{cursor:pointer;font-size:14px}
 </style>

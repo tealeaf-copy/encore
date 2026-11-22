@@ -7712,6 +7712,14 @@ function planCohost(a){ const p=brandP(); if(!p||!a) return; const i0=(p.ideas||
 { const _bch=brandCardHTML; brandCardHTML=function(){ let h=_bch.apply(this,arguments); const p=brandP(); if(!p?.adjacent?.length) return h;
     p.adjacent.forEach((c,i)=>{ const tag=`<p class="br-co"><b>${esc(c.name)}</b> ${esc(c.why)}</p>`; if(h.includes(tag)) h=h.replace(tag,`<p class="br-co"><b>${esc(c.name)}</b> ${esc(c.why)} <button class="linkbtn" type="button" data-cohost="${i}">Co-host with them</button></p>`) }); return h } }
 document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-cohost]"); if(b) planCohost(brandP()?.adjacent?.[+b.dataset.cohost]) });
+
+// when Pip offers to draft something, the yes is one click: the note is written and copied
+{ const _ci9=cosItems; cosItems=function(d){ const I=_ci9(d); try{ if(d.casual) return I; const m=brandMode(), when=d.date?` on ${fmtDate(d.date)}`:"", where=d.city?` in ${d.city}`:"", t=d.pubTitle||d.name||"our event";
+    for(const x of I){ if(!/Want me to draft/i.test(x.w||"")||x.acts?.some(a=>/note/i.test(a[0]))) continue;
+      const note=m==="sales"?`Hi team, we're hosting "${t}"${when}${where} for ${d.headcount||"about 15"} people. Could you each send me two names you'd most want in the room, with one line on why, by Friday? I'll handle the invites and tell you who says yes.`
+        :m==="community"?`Hi all, we're hosting "${t}"${when}${where}. Who are two builders you'd love to see there? Reply with names or handles by Friday and I'll take it from there.`
+        :`Hi team, we're putting together "${t}"${when}${where}. Who are two customers or creators you'd love there? Send names or handles by Friday and I'll handle the invites.`;
+      x.w=x.w.replace(/\s*Want me to draft that note\?/,""); x.acts=[["Copy the note I wrote",()=>{ copyTxt(note); toast("Copied. Paste it into Slack or email.") }],...(x.acts||[])] } }catch(e){ console.warn(e) } return I } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

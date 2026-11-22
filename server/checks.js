@@ -2,7 +2,8 @@
 // the room (customers, prospects, creators, or through its sales reps). Replies are tallied for the event owner,
 // with reasons in the guests' own words, so the go / tweak / rethink call is made on real signal.
 import crypto from "node:crypto";
-import { scopeStore, workspaceOfEvent, getWorkspace, DEFAULT_WS } from "./workspaces.js";
+import { scopeStore, workspaceOfEvent, getWorkspace, updateWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
+import { emailConfig, sendEmail } from "./email.js";
 
 const clean = (v, n = 300) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 const EMAIL_OK = (e) => /^[^\s@"<>()[\],;:]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(e || "");
@@ -23,7 +24,7 @@ export function tally(replies) {
   return { n, yes, maybe, no, score, verdict, dates: Object.entries(dates).sort((a, b) => b[1] - a[1]).map(([date, votes]) => ({ date, votes })), roles: Object.entries(roles).sort((a, b) => b[1] - a[1]).map(([role, count]) => ({ role, count })), why: quotes("why"), must: quotes("must"), stop: quotes("stop") };
 }
 
-export function mountChecks(app, { store, small, currentUser }) {
+export function mountChecks(app, { store, small, currentUser, publicOrigin = () => "" }) {
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const hits = new Map(); const limited = (req, n) => { const k = req.ip || "?", now = Date.now(); const h = (hits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); hits.set(k, h); return h.length > n; };
   const view = (c) => ({ title: c.title, pitch: c.pitch, question: c.question, dates: c.dates || [], city: c.city || "", brand: c.brand || "", open: c.open !== false, asks: c.asks || {} });
@@ -43,6 +44,31 @@ export function mountChecks(app, { store, small, currentUser }) {
   // every check in the workspace, tallied: feeds Pip's list and "what your audience is telling you"
   app.get("/api/checks", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), R = S.list("checkReplies").map((d) => d.data);
     res.json({ checks: S.list("checks").map((d) => d.data).filter(Boolean).map((c) => ({ eventId: c.eventId, title: c.title, createdAt: c.createdAt, link: `/check/${encodeURIComponent(c.eventId)}?t=${c.token}`, tally: tally(R.filter((r) => r.eventId === c.eventId)) })) }); });
+
+
+  // ---- Pip's morning list by email: the same legwork as the Home list, for people who live in their inbox ----
+  function digestItems(ws, origin) { const S = scopeStore(store, ws), today = new Date().toISOString().slice(0, 10), soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10), back = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+    const R = S.list("checkReplies").map((d) => d.data), F = S.list("feedback").map((d) => d.data), I = [];
+    for (const c of S.list("checks").map((d) => d.data).filter(Boolean)) { const T = tally(R.filter((r) => r.eventId === c.eventId));
+      if (T.n < 8) I.push(`Get ${8 - T.n} more answers on "${c.title}" (${T.n} so far). Forward this: ${origin}/check/${encodeURIComponent(c.eventId)}?t=${c.token}`);
+      else I.push(`"${c.title}": ${T.verdict.label}. ${T.yes} of ${T.n} would come.${T.must[0] ? ` Top ask: "${T.must[0].text}".` : ""}`); }
+    for (const d of S.list("events")) { const e = d.data || {}; if (e.example || e.casual || !e.date) continue;
+      if (e.date < today && e.date >= back && !F.some((f) => f.eventId === d.id)) I.push(`Ask "${e.name}" guests how it went. The survey link: ${origin}/#survey-${d.id}`);
+      else if (e.date >= today && e.date <= soon) { const yes = (e.guests || []).filter((g) => /Confirmed|Attended|Going/i.test(g.status || "")).length; I.push(`"${e.name}" is ${e.date === today ? "today" : `on ${e.date}`}${yes ? `: ${yes} confirmed${e.headcount ? ` of ${e.headcount}` : ""}` : ""}.`); } }
+    return I.slice(0, 8); }
+  async function sendDigest(ws, origin) { const W = getWorkspace(ws), to = W?.ownerEmail, items = digestItems(ws, origin); if (!to || !items.length) return { sent: false, items };
+    const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (!cfg) return { sent: false, items, error: "Email isn't set up on this server." };
+    const r = await sendEmail(cfg, { to, subject: `Pip's list: ${items.length} thing${items.length === 1 ? "" : "s"} for today`, text: `Good morning. Here's what I'd do today:\n\n${items.map((x, i) => `${i + 1}. ${x}`).join("\n")}\n\nOpen Encore: ${origin}/\n\nTo stop these, switch off "Email me this list" on Home.`, fromName: "Pip at Encore" });
+    return { sent: !!r.ok, items, error: r.error || "" }; }
+  app.get("/api/pip/digest", (req, res) => { const u = me(req, res); if (!u) return; res.json({ on: !!getWorkspace(u.ws)?.pipDigest, items: digestItems(u.ws, publicOrigin(req)) }); });
+  app.post("/api/pip/digest", small, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};
+    if (b.on != null) updateWorkspace(u.ws, { pipDigest: !!b.on, pipDigestOrigin: publicOrigin(req) });
+    if (b.test) return res.json(await sendDigest(u.ws, publicOrigin(req)));
+    res.json({ on: !!getWorkspace(u.ws)?.pipDigest }); });
+  // weekday mornings, around 8 in the server's time, once a day per workspace
+  const tick = async () => { const now = new Date(), day = now.toISOString().slice(0, 10); if (now.getDay() === 0 || now.getDay() === 6 || now.getHours() !== 8) return;
+    for (const ws of allWorkspaceIds()) { const W = getWorkspace(ws); if (!W?.pipDigest || W.pipDigestDay === day) continue; try { updateWorkspace(ws, { pipDigestDay: day }); await sendDigest(ws, W.pipDigestOrigin || ""); } catch (e) { console.warn("[pip] digest failed", e?.message); } } };
+  const iv = setInterval(() => tick().catch(() => {}), 20 * 60e3); iv.unref?.();
 
   // the public page
   const open = (req, res) => { const id = String(req.params.id); if (!ID_OK(id)) { res.status(404).json({ code: "not_found", message: "This link isn't valid." }); return null; } const ws = workspaceOfEvent(id);

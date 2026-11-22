@@ -353,7 +353,7 @@ export function createApp({ store, dataDir }) {
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });
-  mountChecks(app, { store, small, currentUser });
+  mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
   app.get("/hosts", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));

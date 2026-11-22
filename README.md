@@ -216,3 +216,9 @@ Tools: `list_events`, `get_event`, `create_event`, `update_event`, `add_guests`,
 
 - Webinars: Sequel (launch kit and, when connected, registrants and attendance).
 - Call intelligence: Gong, Granola and Fathom, plus Slack search, feed account intel, the guest scout and sales briefs.
+
+## Invite-only and host pages
+
+- `ENCORE_INVITE_ONLY=1` (set in `render.yaml`): the first person to sign up gets in; after that, sign-up needs an invite code. Every member gets five codes (Host kit → Pip can help → Your regulars, or `GET /api/codes`). A shared link looks like `/join?code=ABCD-EFGH`. People without a code can join the waitlist, and members can send them a code. The inviter and the new member follow each other.
+- `ENCORE_FOUNDER_CODES`: optional comma-separated codes that always work (for seeding a city or a launch list).
+- Host pages live at `/h/<handle>`. Anyone can follow with just an email. `/discover` lists hosts and the get-togethers they chose to show there.

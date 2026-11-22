@@ -12,6 +12,7 @@
   button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:hover{background:#A9462E}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
+.ok{display:block;font-weight:500;color:#2F7A4F;font-size:12.5px;margin-top:5px}.ok.bad{color:#A93A3A}.ok:empty{display:none}#wl .done{font-size:15px;line-height:1.5}
 .modes{display:flex;gap:6px;background:rgba(0,0,0,.04);border-radius:12px;padding:4px;margin:4px 0 10px}.modes button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px;font:inherit;font-weight:600;cursor:pointer;color:inherit;opacity:.7}.modes button[aria-selected=true]{background:#fff;opacity:1;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 </style></head><body>
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
@@ -19,6 +20,7 @@
   <p class="sub" id="sub">14 days, every feature, no card.</p>
   <div class="modes" role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
   <p class="err" id="err" role="alert"></p>
+  <label id="codeWrap" hidden><span>Invite code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small></label>
   <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
   <label><span id="emL">Work email</span><input name="email" type="email" placeholder="Email" autocomplete="email" required></label>
   <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>
@@ -26,6 +28,18 @@
   <label>Password (10+ characters)<input name="password" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Create my workspace</button>
   <a href="/login">Already have an account? Sign in</a>
+  <a href="#" id="noCode" hidden>No code yet? Join the waitlist</a>
+</form>
+<form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
+  <h1>Encore is invite-only</h1>
+  <p class="sub">Every member gets five codes to give to people they'd love to see host. Tell us what you'd host and a member nearby can send you one.</p>
+  <p class="err" id="wlErr" role="alert"></p>
+  <label>Your name<input name="name" autocomplete="name"></label>
+  <label>Email<input name="email" type="email" autocomplete="email" required></label>
+  <label>City<input name="city" placeholder="e.g. Oakland" autocomplete="address-level2"></label>
+  <label>What would you host?<input name="wants" placeholder="e.g. a Sunday hike, free cake on my stoop"></label>
+  <button type="submit">Ask for a code</button>
+  <a href="#" id="haveCode">I have a code</a>
 </form>
 <script>
   (function () { const q = new URLSearchParams(location.search), f = document.getElementById("f");
@@ -36,6 +50,18 @@
       f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
     if (q.get("mode") === "friends" || q.get("ref")) set("friends");
+    const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), nc = document.getElementById("noCode"), wl = document.getElementById("wl");
+    let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That code doesn't work."; } catch {} }, 250); };
+    ci.addEventListener("input", check);
+    if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
+    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = false; } }).catch(() => {});
+    nc.onclick = (e) => { e.preventDefault(); f.hidden = true; wl.hidden = false; };
+    document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
+    wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
+      try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
+        if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
+        wl.innerHTML = `<div class="brand">encore</div><h1>You're on the list</h1><p class="done">Members near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see that you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. When one sends you a code, it'll land in your inbox.</p><p class="done">Know someone on Encore? Ask them for a code. It's faster.</p>`;
+      } catch { er.textContent = "Can't reach Encore. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");

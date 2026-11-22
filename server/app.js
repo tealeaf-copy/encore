@@ -10,6 +10,7 @@ import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
+import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -18,7 +19,7 @@ import { runReminders } from "./reminders.js";
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
-import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS,
+import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -73,7 +74,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -145,6 +146,7 @@ function sseStart(res) {
 }
 
 export function createApp({ store, dataDir }) {
+  const C = makeCommunity(store);
   // Every request works in one workspace's slice of the store (see server/workspaces.js).
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
@@ -186,7 +188,13 @@ export function createApp({ store, dataDir }) {
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account. Sign in instead." });
+    // Invite-only: everyone after the first member needs a code from someone already here.
+    const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && allWorkspaceIds().length > 1;
+    let codeCheck = null;
+    if (needCode || code) { codeCheck = C.checkCode(code); if (needCode && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
+    if (codeCheck?.ok && codeCheck.c) C.useCode(code, { ws: W.id, email, name });
+    C.issueCodes({ ws: W.id, email, name });
     // Word of mouth: count who came to Encore from a guest page, on the event's own workspace.
     if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Encore from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
@@ -273,7 +281,9 @@ export function createApp({ store, dataDir }) {
     res.set("Cache-Control", "no-store").type("html").send(html);
   };
   app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
-  app.get("/join", (req, res) => sendStatic(res, "join.html", loginPage()));
+  app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
+  app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
+  app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
   // The homepage demo runs the app's own planner, read from the current index.html.
@@ -315,6 +325,9 @@ export function createApp({ store, dataDir }) {
     } catch { res.status(404).end(); }
   });
   app.use(express.static(PUBLIC_DIR, { index: false }));
+
+  // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
+  mountCommunity(app, { store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
 
   // ---------- gate ----------
   app.use("/api", (req, res, next) => {
@@ -576,7 +589,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
+  const AUDIT = /^(followers|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -892,6 +905,8 @@ export function createApp({ store, dataDir }) {
       const invited = invitedGuest(req, doc.id, doc.data);
       const nom = view === "nominate" ? nominatingAe(req, doc.id, doc.data) : null;
       data = publicEvent(data, view);
+      // Get-togethers: which bring-list items or pickup windows are already taken (no names), so guests don't double up.
+      if (doc.data.casual && !/giveaway/.test(doc.data.activity || "") && Array.isArray(doc.data.slots) && doc.data.slots.length) { const taken = new Set([...(doc.data.guests || []).map((g) => g.slot), ...S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && d.data.response === "going").map((d) => d.data.slot)].filter(Boolean)); data.claimed = doc.data.slots.filter((x) => taken.has(x)); }
       if (nom) { data.nomFor = nom.slug; data.nomSuggest = nom.suggest; }
       if (invited) {
         const first = (x) => String(x || "").trim().split(/\s+/)[0] || "";

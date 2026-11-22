@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discover hosts · Encore</title>
+<meta name="description" content="Small gatherings hosted by people near you: run clubs, hikes, free cake on a stoop. Follow the hosts you like.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+.hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:center;padding:28px 0 36px}
+.hero h1{font-size:clamp(34px,6vw,56px);line-height:1.02}.hero p{font-size:17px;color:var(--soft);max-width:460px}
+.quiz{position:relative}.quiz .q{font:600 18px "Fraunces",Georgia,serif;margin:4px 0 12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.opts button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:12px;text-align:left;font:500 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
+.opts button:hover,.opts button:focus-visible{border-color:var(--brand);background:var(--pink)}.opts button span{display:block;font-size:22px}
+.qhead{display:flex;align-items:center;gap:10px;color:var(--soft);font-size:13px}.dots{display:flex;gap:4px;margin-left:auto}.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--brand)}
+.you{display:flex;gap:14px;align-items:center}.you .badge{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;font-size:34px;flex:none}
+.you h2{font-size:24px}.again{background:none;border:0;color:var(--soft);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;padding:0;margin-top:8px}
+section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede{color:var(--soft);margin:0 0 14px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.filters button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:500 13px "DM Sans",system-ui,sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px}.cast div{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--card)}.cast b{display:block}.cast span{font-size:26px}.cast small{color:var(--soft);font-size:13px}
+.invite{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+@media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.invite{grid-template-columns:minmax(0,1fr)}}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
+    <nav><a href="/discover" aria-current="page">Discover</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
+
+  <div class="hero">
+    <div><h1>Small gatherings, hosted by people near you.</h1>
+      <p>Run clubs, hikes, a stoop with free pandan cake. Follow the hosts you like and hear about the next one first. Encore is invite-only, so every host here was brought in by someone.</p></div>
+    <div class="card quiz" id="quiz" aria-live="polite"></div>
+  </div>
+
+  <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="grid g2" id="fyList"></div></section>
+
+  <section><h2>Coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
+    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div>
+    <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
+
+  <section><h2>Hosts worth following</h2><p class="lede">Ranked by people who came back, not by ads.</p><div class="grid g4" id="hosts"></div></section>
+
+  <section><h2>Who shows up</h2><p class="lede">Every gathering needs a mix. Hosts on Encore see their guests this way, not as a list of emails.</p><div class="cast" id="cast"></div></section>
+
+  <section><div class="card invite"><span id="pipI"></span><div><h2 style="font-size:20px">Want to host?</h2><p class="muted" style="margin:4px 0 0">Ask a member for one of their five invite codes, or get on the waitlist. Hosting with friends is free.</p></div><a class="btn" href="/signup?mode=friends">I have a code</a></div></section>
+</div>
+<footer>Encore · <a href="/">Home</a> · <a href="/security">Security</a></footer>
+<script src="/community.js"></script>
+<script>
+(function () {
+  const C = window.EncoreCommunity, $ = (s) => document.querySelector(s), esc = C.esc;
+  $("#pipI").innerHTML = C.pipSVG("happy", 52);
+  $("#cast").innerHTML = Object.values(C.PERSONAS).map((p) => `<div><span>${p.emoji}</span><b>${p.name}</b><small>${p.line}</small></div>`).join("");
+  // ---- the three-tap quiz: what you like, how you show up, how many people ----
+  const Q = [
+    { q: "A good Saturday morning is…", k: "lane", o: [["move", "🏃", "Moving: a run, a hike"], ["make", "🍰", "Making or tasting something"], ["gather", "☕", "Coffee and long talks"], ["discover", "🧭", "Somewhere I've never been"]] },
+    { q: "At a new event, you're the one who…", k: "persona", o: [["early", "🐣", "Gets there first"], ["connector", "🔗", "Brings a friend"], ["contributor", "🧺", "Brings snacks"], ["explorer", "🎲", "Came alone, curious"]] },
+    { q: "The right size is…", k: "size", o: [["s", "🫖", "4 to 8, cozy"], ["m", "🪑", "10 to 25"], ["l", "🎪", "The more the merrier"], ["any", "🤷", "Depends on the vibe"]] },
+  ];
+  let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
+  let data = { events: [], hosts: [] }, filter = "all";
+  function drawQuiz(i = 0) {
+    const el = $("#quiz");
+    if (ans.lane && ans.persona && ans.size) { const P = C.PERSONAS[ans.persona] || C.PERSONAS.explorer;
+      el.innerHTML = `<div class="you"><span class="badge" style="background:color-mix(in srgb,${P.color} 18%,transparent)">${P.emoji}</span><div><small class="muted">You're</small><h2>${P.name}</h2><div class="muted">${P.line}</div></div></div><div style="display:flex;gap:10px;align-items:center;margin-top:14px">${C.pipSVG("happy", 40)}<div style="font-size:14px">Pip picked events below for you. Follow a host to hear about the next one first.</div></div><button class="again" id="again">Retake</button>`;
+      $("#again").onclick = () => { ans = {}; save(); drawQuiz(0); drawForYou(); }; return; }
+    const s = Q[i];
+    el.innerHTML = `<div class="qhead">${C.pipSVG(i ? "side" : "happy", 34)}<span>Three taps and Pip finds your kind of thing</span><span class="dots">${Q.map((_, j) => `<i class="${j <= i ? "on" : ""}"></i>`).join("")}</span></div><div class="q">${s.q}</div><div class="opts">${s.o.map(([v, e, t]) => `<button data-v="${v}"><span>${e}</span>${t}</button>`).join("")}</div>`;
+    el.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { ans[s.k] = b.dataset.v; C.oink(); save(); el.querySelector(".pip")?.classList.add("hop"); setTimeout(() => { drawQuiz(i + 1); drawForYou(); }, 180); });
+  }
+  const save = () => { try { localStorage.setItem("encore.taste", JSON.stringify(ans)); } catch {} };
+  function fits(e) {
+    let s = 0, why = ""; const lane = C.laneOf(e), n = Number(e.headcount) || 0;
+    if (ans.lane && lane === ans.lane) { s += 3; why = { move: "You like to move", make: "You like making and tasting", gather: "You like long talks", discover: "Somewhere new" }[ans.lane]; }
+    if (ans.lane === "discover") s += 1;
+    if (ans.size && n) { const ok = ans.size === "s" ? n <= 10 : ans.size === "m" ? n > 6 && n <= 30 : ans.size === "l" ? n >= 15 : true; if (ok) { s += 1; why = why || "The size you like"; } }
+    if (ans.persona === "early") { const days = (new Date(e.date + "T12:00:00") - Date.now()) / 864e5; if (days > 4) { s += .5; why = why ? why + " · early spots open" : "Early spots open"; } }
+    if (ans.persona === "contributor" && C.laneOf(e) !== "discover") s += .3;
+    return { s, why };
+  }
+  function drawForYou() {
+    const box = $("#forYou"); if (!(ans.lane && ans.persona) || !data.events.length) { box.hidden = true; return; }
+    const ranked = data.events.map((e) => ({ e, ...fits(e) })).filter((x) => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 4);
+    box.hidden = false; const P = C.PERSONAS[ans.persona];
+    $("#fyL").textContent = ranked.length ? `${P.name.replace(/^The /,"")}s tend to love these.` : "Nothing nearby fits yet. Follow a host below and you'll hear first.";
+    $("#fyList").innerHTML = ranked.map((x) => C.eventCard(x.e, x.why)).join("");
+  }
+  function drawEvents() {
+    const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
+    $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
+    $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
+    const L = data.events.filter((e) => filter === "all" || C.laneOf(e) === filter);
+    $("#events").innerHTML = L.length ? L.map((e) => C.eventCard(e)).join("") : `<div class="empty">${data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`;
+  }
+  function drawHosts() { $("#hosts").innerHTML = data.hosts.length ? data.hosts.map(C.hostCard).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`; }
+  drawQuiz(ans.lane ? (ans.persona ? 2 : 1) : 0);
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
+})();
+</script></body></html>

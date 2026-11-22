@@ -15,6 +15,11 @@ services:
         generateValue: true
       - key: ENCORE_SIGNUP
         value: "1"
+      # Invite-only: after the first member, sign-up needs a member's code (or join the waitlist).
+      - key: ENCORE_INVITE_ONLY
+        value: "1"
+      - key: ENCORE_FOUNDER_CODES
+        sync: false
       - key: ENCORE_TRUST_PROXY
         value: "1"
       - key: ANTHROPIC_API_KEY

@@ -149,3 +149,17 @@ test("your data: the owner can export everything (no secrets) and delete the wor
   assert.equal(srv.store.list("system").filter((d) => d.data?.ws === A.ws).length, 0, "members, tokens and connections gone");
   assert.notEqual((await get("/api/workspace", A.cookie)).status, 200, "old session no longer works");
 });
+
+test("RSVPs: seats are enforced on the server and each guest has one reply", async () => {
+  const A = await signup("Seatco", "own@seatco.com", "Sia Owner");
+  await put("events/evC", { name: "Dinner", headcount: 2, guests: [{ name: "Gia", email: "gia@x.com", status: "Going" }], updatedAt: 1 }, A.cookie);
+  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evC", ...body }) });
+  const r1 = await (await g({ name: "Ann", email: "ann@x.com", response: "going" })).json();
+  assert.equal(r1.response, "going");
+  const r2 = await (await g({ name: "Ben", email: "ben@x.com", response: "going" })).json();
+  assert.equal(r2.response, "waitlist", "table of 2 is full (Gia + Ann)");
+  const r3 = await (await g({ name: "Ann", email: "ANN@x.com", response: "no" })).json();
+  assert.equal(r3.id, r1.id, "same guest updates the same reply"); assert.equal(r3.merged, true);
+  const all = srv.store.list(`ws/${A.ws}/rsvps`).map((d) => d.data).filter((d) => d.eventId === "evC");
+  assert.deepEqual(all.map((d) => `${d.name}=${d.response}`).sort(), ["Ann=no", "Ben=waitlist"]);
+});

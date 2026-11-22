@@ -990,11 +990,28 @@ export function createApp({ store, dataDir }) {
     }
     res.json({ docs });
   });
+  /** Seats are enforced here, not in the guest's browser: a yes past the seat count becomes a waitlist place.
+   * One reply per guest: the same email (or the same personal link) updates the earlier reply. */
+  function rsvpPolicy(req, body) {
+    const eventId = String(body?.eventId || ""); if (!/^[A-Za-z0-9_-]+$/.test(eventId)) return { body };
+    const ev = S(req).get("events/" + eventId)?.data; if (!ev) return { body };
+    const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), em = String(body.email || "").trim().toLowerCase(), inv = String(req.get("x-encore-invite") || "").split("~")[0];
+    const prior = all.find((d) => (em && String(d.data.email || "").trim().toLowerCase() === em) || (inv && d.data._inv === inv));
+    const G = ev.guests || [], seen = new Set(G.flatMap((g) => [String(g.email || "").toLowerCase(), String(g.name || "").toLowerCase()]).filter(Boolean));
+    const going = G.filter((g) => g.status === "Going" || g.status === "Attended").length + all.filter((d) => d !== prior && d.data.response === "going" && !seen.has(String(d.data.email || "").toLowerCase()) && !seen.has(String(d.data.name || "").toLowerCase())).length;
+    const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
+    const out = { ...body, ...(inv ? { _inv: inv } : {}) };
+    if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && going >= +ev.headcount) out.response = "waitlist";
+    return { body: out, prior };
+  }
   app.post("/api/db/collection", json, (req, res) => {
     const p = String(req.query.path || "");
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
-    const body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
+    let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
+    if (p === "rsvps") { const pol = rsvpPolicy(req, body); body = pol.body;
+      if (pol.prior) { S(req).set("rsvps/" + pol.prior.id, { ...pol.prior.data, ...body, _k: pol.prior.data._k || body._k, changedAt: Date.now() }); return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, response: body.response, merged: true }); }
+      const r0 = S(req).add(p, body); return res.json({ ...r0, response: body.response }); }
     const r = S(req).add(p, body);
     if (p === "events" && !req.guest) claimEvent(r.id, req.ws);
     res.json(r);

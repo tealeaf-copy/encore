@@ -248,7 +248,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
       doc: (id) => docRef(`${path}/${id || randomId()}`),
       async add(obj) {
         const r = await api("POST", `/api/db/collection?path=${enc(path)}`, clone(obj));
-        return docRef(`${path}/${r.id}`);
+        const ref = docRef(`${path}/${r.id}`); if (r.response) ref.response = r.response; return ref;
       },
     };
   }

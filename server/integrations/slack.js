@@ -1,8 +1,14 @@
 // Slack: bot token (Web API) or, failing that, an incoming webhook (send only).
+// A workspace's own bot token and default channel (POST /api/connections) win over the env settings.
+import { crmToken } from "./context.js";
+
 const API = "https://slack.com/api/";
+const botToken = () => crmToken("slack", process.env.SLACK_BOT_TOKEN);
+const defaultChannel = () => crmToken("slack-channel", process.env.SLACK_DEFAULT_CHANNEL);
+const webhook = () => crmToken("slack-webhook", process.env.SLACK_WEBHOOK_URL);
 
 async function slackApi(method, body, { get = false } = {}) {
-  const token = process.env.SLACK_BOT_TOKEN;
+  const token = botToken();
   const url = new URL(API + method);
   const init = { headers: { Authorization: `Bearer ${token}` } };
   if (get) {
@@ -22,17 +28,18 @@ async function slackApi(method, body, { get = false } = {}) {
 async function sendMessage(input) {
   const text = String(input?.text || "").trim();
   if (!text) throw { code: "tool_error", message: "text is required" };
-  if (process.env.SLACK_BOT_TOKEN) {
-    let channel = input.channel || process.env.SLACK_DEFAULT_CHANNEL;
+  if (botToken()) {
+    let channel = input.channel || defaultChannel();
     if (input.user_email) {
       const u = await slackApi("users.lookupByEmail", { email: input.user_email }, { get: true });
       channel = u.user.id; // posting to a user id opens a DM from the bot
     }
-    if (!channel) throw { code: "tool_error", message: "No channel: pass channel or user_email, or set SLACK_DEFAULT_CHANNEL." };
+    if (!channel) throw { code: "tool_error", message: "No channel: pass channel or user_email, or set a default channel for Slack." };
     const r = await slackApi("chat.postMessage", { channel, text });
     return { ok: true, channel: r.channel, ts: r.ts };
   }
-  const res = await fetch(process.env.SLACK_WEBHOOK_URL, {
+  if (!webhook()) throw { code: "tool_error", message: "Slack isn't connected." };
+  const res = await fetch(webhook(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
@@ -60,8 +67,9 @@ async function searchUsers(input) {
   return { users: out.slice(0, 20) };
 }
 
-export default function slack() {
-  const bot = !!process.env.SLACK_BOT_TOKEN;
+/** force: a workspace connected its own bot token, so list the bot tools without env settings. */
+export default function slack({ force = false } = {}) {
+  const bot = force || !!process.env.SLACK_BOT_TOKEN;
   const hook = !!process.env.SLACK_WEBHOOK_URL;
   if (!bot && !hook) return null;
   const tools = [{

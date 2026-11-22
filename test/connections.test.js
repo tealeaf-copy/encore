@@ -30,7 +30,7 @@ async function signup(company, email) {
 test("workspaces connect their own HubSpot token; it's checked, encrypted, and used for their tool calls", async () => {
   A = await signup("Acme", "owner@acme.com"); B = await signup("Beta", "owner@beta.com");
   mock((u, init) => (init.headers.Authorization === "Bearer good-token" ? reply(200, { results: [] }) : reply(401, { message: "bad" })));
-  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false], ["salesforce", false]]);
+  assert.deepEqual((await (await get("/api/connections", A.cookie)).json()).connections.map((c) => [c.provider, c.connected]), [["hubspot", false], ["attio", false], ["salesforce", false], ["slack", false], ["linear", false], ["gong", false]]);
   assert.equal((await post("/api/connections", { provider: "salesforce", token: "x" }, A.cookie)).status, 400);
   const bad = await post("/api/connections", { provider: "hubspot", token: "wrong" }, A.cookie);
   assert.equal(bad.status, 400);
@@ -249,4 +249,106 @@ test("approver roles: approver-like invites, explicit workspace roles, member ro
   assert.equal((await post("/api/workspace/approvers", { roles: "CFO" }, A.cookie)).status, 400);
   await post("/api/workspace/approvers", { roles: [] }, A.cookie);
   assert.deepEqual((await (await get("/api/workspace", A.cookie)).json()).approverRolesSet, []);
+});
+
+test("Slack per workspace: checked with auth.test, used by the Slack tool and the daily nudges", async () => {
+  mock((u, init) => {
+    if (u === "https://slack.com/api/auth.test") return reply(200, init.headers.Authorization === "Bearer xoxb-good-token-123" ? { ok: true, team: "Acme", user_id: "B1" } : { ok: false, error: "invalid_auth" });
+    if (u.startsWith("https://slack.com/api/chat.postMessage")) return reply(200, { ok: true, channel: JSON.parse(init.body).channel, ts: "1.2" });
+    return reply(404, {});
+  });
+  assert.equal((await post("/api/connections", { provider: "slack", token: "not-a-slack-token" }, A.cookie)).status, 400);
+  const bad = await post("/api/connections", { provider: "slack", token: "xoxb-bad-token-1234" }, A.cookie);
+  assert.equal((await bad.json()).code, "invalid_token");
+  const ok = await post("/api/connections", { provider: "slack", token: "xoxb-good-token-123", channel: "#events" }, A.cookie);
+  assert.equal(ok.status, 200);
+  const c = (await ok.json()).connection;
+  assert.equal(c.channel, "#events");
+  assert.equal(c.team, "Acme");
+  assert.equal(JSON.stringify(srv.store.get(`system/conn-${A.ws}-slack`).data).includes("xoxb-good"), false);
+  const tools = (await (await get("/api/mcp/tools", A.cookie)).json()).servers.find((x) => x.server === "Slack");
+  assert.deepEqual(tools.tools.map((t) => t.name), ["slack_send_message", "slack_search_users"]);
+  assert.equal((await (await get("/api/mcp/tools", B.cookie)).json()).servers.some((x) => x.server === "Slack"), false);
+  calls = [];
+  const sent = await (await post("/api/mcp/call", { server: "Slack", tool: "slack_send_message", input: { text: "Hi" } }, A.cookie)).json();
+  assert.equal(sent.payload.channel, "#events", "the connection's default channel");
+  assert.equal(calls[0].auth, "Bearer xoxb-good-token-123");
+  // the daily job posts this workspace's nudges to its own Slack
+  const { runPm } = await import("../server/pm.js");
+  const { scopeStore } = await import("../server/workspaces.js");
+  const st = scopeStore(srv.store, A.ws);
+  st.set("events/evPm", { name: "Dinner", date: "2026-12-10", status: "planning", produce: { tasks: [{ task: "Order swag", owner: "Ben", days: -25 }] }, tasksDone: [] });
+  process.env.ENCORE_FAKE_AI = "1";
+  calls = [];
+  const sum = await runPm(st, { now: new Date("2026-11-21T09:00:00").getTime(), log: () => {} });
+  assert.equal(sum.flaggedEvents, 1);
+  assert.equal(st.get("events/evPm").data.pmReport.slack, true);
+  assert.ok(calls.every((x) => x.auth === "Bearer xoxb-good-token-123"));
+  // B (no Slack) never posts
+  const stB = scopeStore(srv.store, B.ws);
+  stB.set("events/evPmB", { name: "B", date: "2026-12-10", status: "planning", produce: { tasks: [{ task: "x", owner: "y", days: -25 }] } });
+  calls = [];
+  await runPm(stB, { now: new Date("2026-11-21T09:00:00").getTime(), log: () => {} });
+  assert.equal(stB.get("events/evPmB").data.pmReport.slack, false);
+  assert.equal(calls.filter((x) => x.url.includes("slack.com")).length, 0);
+});
+
+test("Linear per workspace: checked with a viewer query; issues go to its team on its key", async () => {
+  mock((u, init) => {
+    const q = JSON.parse(init.body || "{}").query || "";
+    if (init.headers.Authorization !== "lin_api_good") return reply(200, { errors: [{ message: "Authentication required" }] });
+    if (q.includes("viewer")) return reply(200, { data: { viewer: { id: "u1" } } });
+    if (q.includes("teams")) return reply(200, { data: { teams: { nodes: [{ id: "team-1", name: "Events" }] } } });
+    if (q.includes("issueCreate")) return reply(200, { data: { issueCreate: { success: true, issue: { id: "i1", identifier: "EV-1", url: "https://linear.app/x", teamId: JSON.parse(init.body).variables.input.teamId } } } });
+    return reply(400, {});
+  });
+  assert.equal((await (await post("/api/connections", { provider: "linear", token: "lin_api_bad" }, A.cookie)).json()).code, "invalid_token");
+  assert.equal(calls[0].body, JSON.stringify({ query: "{ viewer { id } }" }));
+  const ok = await (await post("/api/connections", { provider: "linear", token: "lin_api_good" }, A.cookie)).json();
+  assert.equal(ok.connection.teamId, "team-1");
+  calls = [];
+  const r = await (await post("/api/mcp/call", { server: "Linear", tool: "create_issue", input: { title: "Book venue" } }, A.cookie)).json();
+  assert.equal(r.payload.identifier, "EV-1");
+  assert.equal(JSON.parse(calls.at(-1).body).variables.input.teamId, "team-1");
+  assert.equal(calls.at(-1).auth, "lin_api_good");
+  assert.equal((await post("/api/mcp/call", { server: "Linear", tool: "create_issue", input: { title: "x" } }, B.cookie)).status, 404);
+});
+
+test("Gong per workspace: .gong.io only, Basic-auth check, a read-only call search with briefs", async () => {
+  const G = "https://us-123.api.gong.io", auth = "Basic " + Buffer.from("key1:sec1").toString("base64");
+  mock((u, init) => {
+    if (init.headers.Authorization !== auth) return reply(401, { errors: ["unauthorized"] });
+    if (u === G + "/v2/users?limit=1") return reply(200, { users: [{ id: "1" }] });
+    if (u === G + "/v2/calls/extensive") {
+      const b = JSON.parse(init.body);
+      if (!b.cursor) return reply(200, { records: { cursor: "c2" }, calls: [
+        { metaData: { id: "1", title: "Acme QBR", started: "2027-01-05T15:00:00Z", duration: 1800 }, parties: [{ emailAddress: "rep@us.com", affiliation: "Internal" }, { emailAddress: "cfo@acme.com", affiliation: "External" }], content: { brief: "Talked renewal." }, transcript: "SECRET" },
+        { metaData: { id: "2", title: "Beta intro", started: "2027-01-06T15:00:00Z" }, parties: [{ emailAddress: "x@beta.com", affiliation: "External" }], content: { brief: "Intro." } }] });
+      return reply(200, { records: {}, calls: [{ metaData: { id: "3", title: "Acme follow-up", started: "2027-01-09T10:00:00Z" }, parties: [{ emailAddress: "vp@acme.com" }], content: { brief: "Next steps." } }] });
+    }
+    return reply(404, {});
+  });
+  for (const baseUrl of ["http://us-1.api.gong.io", "https://gong.io.evil.com", "https://evil.com", "https://u:p@api.gong.io"]) assert.equal((await post("/api/connections", { provider: "gong", accessKey: "key1", accessKeySecret: "sec1", baseUrl }, A.cookie)).status, 400, baseUrl);
+  assert.equal(calls.length, 0);
+  assert.equal((await (await post("/api/connections", { provider: "gong", accessKey: "key1", accessKeySecret: "wrong", baseUrl: G }, A.cookie)).json()).code, "invalid_token");
+  const ok = await (await post("/api/connections", { provider: "gong", accessKey: "key1", accessKeySecret: "sec1", baseUrl: G + "/x" }, A.cookie)).json();
+  assert.equal(ok.connection.baseUrl, G);
+  assert.equal(JSON.stringify(srv.store.get(`system/conn-${A.ws}-gong`).data).includes("sec1"), false);
+  const tools = (await (await get("/api/mcp/tools", A.cookie)).json()).servers.find((x) => x.server === "Gong");
+  assert.deepEqual(tools.tools.map((t) => t.name), ["gong_search_calls"]);
+  assert.equal((await (await get("/api/mcp/tools", B.cookie)).json()).servers.some((x) => x.server === "Gong"), false);
+  calls = [];
+  const r = await (await post("/api/mcp/call", { server: "Gong", tool: "gong_search_calls", input: { fromDate: "2027-01-01", toDate: "2027-01-31", domains: ["@Acme.com"] } }, A.cookie)).json();
+  assert.deepEqual(r.payload.calls, [
+    { id: "1", title: "Acme QBR", date: "2027-01-05", durationMin: 30, companies: ["acme.com"], brief: "Talked renewal." },
+    { id: "3", title: "Acme follow-up", date: "2027-01-09", durationMin: null, companies: ["acme.com"], brief: "Next steps." }]);
+  assert.equal(JSON.stringify(r).includes("SECRET"), false, "no transcripts");
+  const first = JSON.parse(calls[0].body);
+  assert.deepEqual(first.filter, { fromDateTime: "2027-01-01T00:00:00Z", toDateTime: "2027-01-31T23:59:59Z" });
+  assert.equal(first.contentSelector.exposedFields.content.brief, true);
+  const badDate = await post("/api/mcp/call", { server: "Gong", tool: "gong_search_calls", input: { fromDate: "Jan", toDate: "2027-01-31" } }, A.cookie);
+  assert.equal(badDate.status, 502);
+  // default base URL when none is given
+  mock((u) => reply(u === "https://api.gong.io/v2/users?limit=1" ? 200 : 404, {}));
+  assert.equal((await post("/api/connections", { provider: "gong", accessKey: "k", accessKeySecret: "s" }, B.cookie)).status, 200);
 });

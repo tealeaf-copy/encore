@@ -9,6 +9,7 @@ import { parsePath, httpError, randomId } from "./db.js";
 import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { clientCredentialsToken } from "./integrations/salesforce.js";
+import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
 import { mountMcp } from "./mcp.js";
@@ -446,7 +447,53 @@ export function createApp({ store, dataDir }) {
     S(req).add("audit", { eventId: "", what: `connected Salesforce (${inst})`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
     res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === "salesforce") });
   });
-  const CHECKS = { salesforce: { name: "Salesforce" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
+  // Slack, Linear and Gong: each checked with one cheap call before anything is stored.
+  const check = async (url, init) => {
+    try { const r = await fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }); let j = null; try { j = await r.json(); } catch {} return { status: r.status, ok: r.ok, json: j }; }
+    catch { return null; }
+  };
+  const VERIFY = {
+    slack: async (b) => {
+      const token = String(b.token || "").trim(), channel = String(b.channel || "").trim().slice(0, 80);
+      if (!/^xox[bp]-[A-Za-z0-9-]{10,300}$/.test(token)) return { error: [400, "invalid", "token must be a Slack bot token (xoxb-…)."] };
+      const r = await check("https://slack.com/api/auth.test", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" } });
+      if (!r) return { error: [502, "upstream_error", "Couldn't reach Slack to check the token."] };
+      if (!r.ok || !r.json?.ok) return { error: [400, "invalid_token", `Slack didn't accept that token (${r.json?.error || "HTTP " + r.status}).`] };
+      return { secret: token, meta: { team: r.json.team || null, ...(channel ? { channel } : {}) } };
+    },
+    linear: async (b) => {
+      const token = String(b.token || "").trim(), teamId = String(b.teamId || "").trim().slice(0, 80);
+      if (!token || token.length > 300) return { error: [400, "invalid", "token is required"] };
+      const gql = (query) => check("https://api.linear.app/graphql", { method: "POST", headers: { Authorization: token, "Content-Type": "application/json" }, body: JSON.stringify({ query }) });
+      const r = await gql("{ viewer { id } }");
+      if (!r) return { error: [502, "upstream_error", "Couldn't reach Linear to check the key."] };
+      if (!r.ok || r.json?.errors?.length || !r.json?.data?.viewer?.id) return { error: [400, "invalid_token", "Linear didn't accept that API key."] };
+      let team = teamId ? { id: teamId } : null;
+      if (!team) { const t = await gql("{ teams(first: 1) { nodes { id name } } }"); team = t?.json?.data?.teams?.nodes?.[0] || null; } // issues go to the first team unless one is given
+      return { secret: token, meta: team ? { teamId: team.id, ...(team.name ? { teamName: team.name } : {}) } : {} };
+    },
+    gong: async (b) => {
+      const key = String(b.accessKey || "").trim(), sec = String(b.accessKeySecret || "").trim(), base = gongOrigin(b.baseUrl);
+      if (!base) return { error: [400, "invalid", "baseUrl must be an https://….gong.io address."] };
+      if (!key || !sec || key.length > 300 || sec.length > 500) return { error: [400, "invalid", "accessKey and accessKeySecret are required."] };
+      const r = await check(`${base}/v2/users?limit=1`, { headers: { Authorization: gongAuth(key, sec), Accept: "application/json" } });
+      if (!r) return { error: [502, "upstream_error", "Couldn't reach Gong to check the keys."] };
+      if (r.status === 401 || r.status === 403) return { error: [400, "invalid_token", "Gong didn't accept those keys."] };
+      if (!r.ok) return { error: [502, "upstream_error", `Gong answered ${r.status} when checking the keys.`] };
+      return { secret: JSON.stringify({ accessKey: key, accessKeySecret: sec, baseUrl: base }), meta: { baseUrl: base } };
+    },
+  };
+  app.post("/api/connections", json, async (req, res, next) => {
+    const provider = String(req.body?.provider || ""), verify = VERIFY[provider];
+    if (!verify) return next();
+    const a = adminOf(req, res); if (!a) return;
+    const v = await verify(req.body);
+    if (v.error) { const [status, code, message] = v.error; return res.status(status).json({ code, message }); }
+    saveConnection(a.ws, provider, v.secret, a.u?.email || "team", v.meta);
+    S(req).add("audit", { eventId: "", what: `connected ${CHECKS[provider].name}`, kind: "team", who: a.u?.name || "Team", email: a.u?.email || null, verified: !!a.u, at: Date.now() });
+    res.json({ ok: true, connection: listConnections(a.ws).find((c) => c.provider === provider) });
+  });
+  const CHECKS = { salesforce: { name: "Salesforce" }, slack: { name: "Slack" }, linear: { name: "Linear" }, gong: { name: "Gong" }, hubspot: { url: "https://api.hubapi.com/crm/v3/objects/companies?limit=1", name: "HubSpot" }, attio: { url: "https://api.attio.com/v2/self", name: "Attio" } };
   app.get("/api/connections", (req, res) => { const a = adminOf(req, res); if (!a) return; res.json({ connections: listConnections(a.ws) }); });
   app.post("/api/connections", json, async (req, res) => {
     const a = adminOf(req, res); if (!a) return;

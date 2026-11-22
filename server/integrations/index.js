@@ -5,6 +5,7 @@ import slack from "./slack.js";
 import linear from "./linear.js";
 import hubspot from "./hubspot.js";
 import salesforce from "./salesforce.js";
+import gong from "./gong.js";
 
 const factories = [parallelSearch, slack, linear, hubspot, salesforce];
 
@@ -13,13 +14,18 @@ export function configured() {
 }
 export { withCrm } from "./context.js";
 /**
- * The integrations a workspace may use. The default workspace: everything configured on this server, plus HubSpot
- * when it connected its own token. Other workspaces: shared web search, plus the CRMs they connected themselves.
+ * The integrations a workspace may use. The default workspace: everything configured on this server. Other
+ * workspaces: shared web search only. Either way, a provider the workspace connected itself (POST /api/connections)
+ * is listed and runs on that workspace's credentials (see context.js).
  */
+const OWN = { hubspot: ["HubSpot", hubspot], salesforce: ["Salesforce - Beta", salesforce], slack: ["Slack", slack], linear: ["Linear", linear], gong: ["Gong", gong] };
 export function configuredFor({ isDefault, connected = {} }) {
-  const base = configured().filter((x) => isDefault || x.server === "Parallel Search");
-  if (connected.hubspot && !base.some((x) => x.server === "HubSpot")) base.push(hubspot({ force: true }));
-  if (connected.salesforce && !base.some((x) => x.server === "Salesforce - Beta")) base.push(salesforce({ force: true }));
+  let base = configured().filter((x) => isDefault || x.server === "Parallel Search");
+  for (const [provider, [name, factory]] of Object.entries(OWN)) {
+    if (!connected[provider]) continue;
+    base = base.filter((x) => x.server !== name);
+    base.push(factory({ force: true }));
+  }
   return base;
 }
 

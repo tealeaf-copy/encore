@@ -2,7 +2,8 @@
 // asks Claude for short nudges, posts them to Slack, and records a report.
 import cron from "node-cron";
 import { complete, parseJsonLoose, aiMode } from "./ai.js";
-import { configured, callTool } from "./integrations/index.js";
+import { configuredFor, callTool, withCrm } from "./integrations/index.js";
+import { connectionTokens } from "./workspaces.js";
 
 const DAY = 864e5;
 
@@ -53,8 +54,12 @@ export async function runPm(store, { now = Date.now(), log = console.log } = {})
     log("[pm] skipped: no ANTHROPIC_API_KEY (set ENCORE_FAKE_AI=1 for a demo run)");
     return { ...summary, skipped: "missing_key" };
   }
-  // This server's Slack belongs to the default workspace; other workspaces' nudges aren't posted there.
-  const slackOn = (!store.ws || store.ws === "default") && configured().some((s) => s.server === "Slack");
+  // Nudges go to the workspace's own Slack (connected bot, its default channel). This server's env Slack is only
+  // the default workspace's.
+  const ws = store.ws || "default", isDefault = ws === "default";
+  const tokens = (() => { try { return connectionTokens(ws); } catch { return {}; } })();
+  const servers = configuredFor({ isDefault, connected: tokens });
+  const slackOn = servers.some((s) => s.server === "Slack");
   for (const { id, data } of store.list("events")) {
     if (!data?.produce?.tasks?.length || !data.date || data.status === "done") continue;
     summary.events++;
@@ -71,7 +76,7 @@ export async function runPm(store, { now = Date.now(), log = console.log } = {})
         n.posted = false;
         if (!slackOn) continue;
         try {
-          await callTool("Slack", "slack_send_message", { text: `${n.to ? n.to + ": " : ""}${n.message}` });
+          await withCrm(tokens, isDefault, () => callTool("Slack", "slack_send_message", { text: `${n.to ? n.to + ": " : ""}${n.message}` }, servers));
           n.posted = true;
           summary.posted++;
         } catch (err) {

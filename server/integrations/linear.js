@@ -1,10 +1,12 @@
-// Linear: create issues through the GraphQL API.
+// Linear: create issues through the GraphQL API. A workspace's own API key and team win over the env settings.
+import { crmToken } from "./context.js";
+
 const ENDPOINT = "https://api.linear.app/graphql";
 
 async function gql(query, variables) {
   const res = await fetch(ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: process.env.LINEAR_API_KEY },
+    headers: { "Content-Type": "application/json", Authorization: crmToken("linear", process.env.LINEAR_API_KEY) },
     body: JSON.stringify({ query, variables }),
   });
   let json = null;
@@ -20,7 +22,9 @@ async function createIssue(input) {
   const title = String(input?.title || "").trim();
   if (!title) throw { code: "tool_error", message: "title is required" };
   if (input.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)) throw { code: "tool_error", message: "dueDate must be YYYY-MM-DD" };
-  const issue = { teamId: process.env.LINEAR_TEAM_ID, title };
+  const teamId = crmToken("linear-team", process.env.LINEAR_TEAM_ID);
+  if (!teamId) throw { code: "tool_error", message: "Linear: no team set for issues" };
+  const issue = { teamId, title };
   if (input.description) issue.description = String(input.description);
   if (input.dueDate) issue.dueDate = input.dueDate;
   if (input.assigneeEmail) {
@@ -37,8 +41,8 @@ async function createIssue(input) {
   return d.issueCreate.issue;
 }
 
-export default function linear() {
-  if (!process.env.LINEAR_API_KEY || !process.env.LINEAR_TEAM_ID) return null;
+export default function linear({ force = false } = {}) {
+  if (!force && (!process.env.LINEAR_API_KEY || !process.env.LINEAR_TEAM_ID)) return null;
   return {
     server: "Linear",
     tools: [{

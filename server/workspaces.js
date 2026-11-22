@@ -113,7 +113,7 @@ export function revokeMcpToken(ws, id) {
 }
 
 // ---------- CRM connections: provider tokens, encrypted at rest (AES-256-GCM) ----------
-export const CONNECTION_PROVIDERS = ["hubspot", "attio", "salesforce"];
+export const CONNECTION_PROVIDERS = ["hubspot", "attio", "salesforce", "slack", "linear", "gong"];
 function connKey() {
   let base = process.env.SESSION_SECRET;
   if (!base) { base = need().get("system/secret")?.data?.v; if (!base) { base = randomBytes(32).toString("hex"); need().set("system/secret", { v: base }); } }
@@ -145,6 +145,10 @@ export function connectionTokens(ws) {
   const out = {};
   if (!raw) return out;
   for (const provider of CONNECTION_PROVIDERS) { const d = raw.get(connPath(ws, provider))?.data; const t = d ? decryptSecret(d.secret) : null; if (t) out[provider] = t; }
+  // Non-secret settings that ride along with a connection.
+  const meta = (p) => raw.get(connPath(ws, p))?.data?.meta || {};
+  if (out.slack && meta("slack").channel) out["slack-channel"] = meta("slack").channel;
+  if (out.linear && meta("linear").teamId) out["linear-team"] = meta("linear").teamId;
   return out;
 }
 

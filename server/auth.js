@@ -203,7 +203,8 @@ export function loginHandler(req, res) {
   clearFails(req);
   const secure = req.secure ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
-  return isForm ? res.redirect(303, "/") : res.json({ ok: true });
+  const nx = String(req.body?.next || ""); const back = /^\/(?!\/)[^\s]*$/.test(nx) ? nx : "/";
+  return isForm ? res.redirect(303, back) : res.json({ ok: true });
 }
 export function logoutHandler(req, res) {
   const s = authEnabled() ? session(req) : null;
@@ -232,7 +233,7 @@ export function loginPage() {
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
 </style></head><body>
-<form method="post" action="/api/login">
+<form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
   <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div><h1>Welcome back</h1><p class="sub">Sign in to plan your next event.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
   ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}

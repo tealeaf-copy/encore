@@ -89,6 +89,7 @@ body.is-owner{padding-bottom:110px}
 <footer>Hosted on Encore · <a href="/discover">Find more hosts</a></footer>
 <script src="/community.js"></script>
 <script src="/account.js"></script>
+<script src="/collab.js"></script>
 <script src="/avatars.js"></script>
 <script src="/storefront.js"></script>
 <script src="/storeshop.js"></script>
@@ -137,7 +138,7 @@ body.is-owner{padding-bottom:110px}
       t.innerHTML = `<h3>💛 Tip ${esc(first)}</h3><p class="muted" style="margin:0;font-size:14px">${S.tippers ? `${S.tippers} ${S.tippers === 1 ? "person has" : "people have"} said thanks this way.` : "Hosting takes hours. A few dollars says you noticed."}</p><div class="tips">${[3, 5, 10, 20].map((a) => `<a class="btn ghost" href="${esc(L(a)[1])}" target="_blank" rel="noopener nofollow">$${a}</a>`).join("")}</div>`; se.before(t); }
     if (P.traits?.length) se.innerHTML = `<div class="card s-profile" style="margin-bottom:12px"><h3>${esc(first)}'s event profile</h3><p class="muted" style="margin:0 0 6px;font-size:13px">${P.attended} get-together${P.attended === 1 ? "" : "s"} as a guest · ${P.hosted} hosted</p>${P.traits.slice(0, 4).map((t) => `<div class="tr"><span class="e">${t.emoji}</span><div><b>${esc(t.name)}</b><small>${esc(t.line)}</small></div></div>`).join("")}</div>`;
   }).catch(() => {});
-  window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, d.upcoming); window.EncoreShop?.shop(h, first); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
+  window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, d.upcoming); window.EncoreShop?.shop(h, first); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You follow ${esc(first)}.</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff);

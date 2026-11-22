@@ -17,6 +17,7 @@ import { mountShop } from "./shop.js";
 import { mountMarket } from "./market.js";
 import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
+import { mountCollabs } from "./collabs.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -354,6 +355,7 @@ export function createApp({ store, dataDir }) {
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });
+  mountCollabs(app, { store, small, currentUser, C, X });
   mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));

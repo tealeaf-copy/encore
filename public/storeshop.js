@@ -53,7 +53,7 @@
     const st = { shop: JSON.parse(JSON.stringify(mine.shop || { open: false, title: "", note: "", where: "", slots: [], items: [], payUrl: "" })), exps: JSON.parse(JSON.stringify(mine.experiences || [])) };
     let tab = /[?&]orders=1/.test(location.search) ? "orders" : "shop";
     async function draw() { const s = st.shop;
-      pane.innerHTML = `<div class="sp-head"><b>Shop and bookings</b><button type="button" class="sp-x" aria-label="Close">✕</button></div><div class="sp-tabs">${[["shop", "Shop"], ["orders", "Orders"], ["book", "Team bookings"]].map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div><div id="spBody"></div>`;
+      pane.innerHTML = `<div class="sp-head"><b>Shop and bookings</b><button type="button" class="sp-x" aria-label="Close">✕</button></div><div class="sp-tabs">${[["shop", "Shop"], ["orders", "Orders"], ["book", "Team bookings"], ["collab", "Collabs"]].map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div><div id="spBody"></div>`;
       pane.querySelector(".sp-x").onclick = () => (pane.hidden = true); $$("[data-t]", pane).forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));
       const B = $("#spBody", pane);
       if (tab === "shop") { B.innerHTML = `<label class="sp-row"><input type="checkbox" id="shOpen" ${s.open ? "checked" : ""}> Taking orders</label>
@@ -70,6 +70,7 @@
         $("#shSave").onclick = async () => { pull(); if (s.payUrl && !/^https:\/\//.test(s.payUrl)) { msg("Payment links start with https://"); return; } const wasOpen = !!(mine.shop && mine.shop.open); try { const j = await post("/api/host/profile", { shop: s }); st.shop = j.host.shop; mine.shop = j.host.shop; C().oink?.();
           if (s.open && !wasOpen && confirm("Your shop is open! Tell your subscribers now?")) { const t = await post("/api/host/shop/announce"); msg(`Open, and ${t.told} subscriber${t.told === 1 ? "" : "s"} told. 🛍`); } else msg(s.open ? "Saved. Your shop is open. 🛍" : "Saved. The shop is closed for now."); } catch (e) { msg(e.message); } };
         $("#shDrop").onclick = async () => { if (!confirm("Start a new batch? Sold counts go back to zero, and your subscribers hear it's open.")) return; try { const j = await post("/api/host/shop/new-drop"); msg(`New batch open. ${j.told} subscriber${j.told === 1 ? "" : "s"} told.`); } catch (e) { msg(e.message); } }; }
+      if (tab === "collab") { window.EncoreCollab?.ownerPane(B); return; }
       if (tab === "orders") { B.innerHTML = `<p class="muted">Loading…</p>`; let L = [], meta = {}; try { meta = await (await fetch("/api/host/orders")).json(); L = meta.orders || []; } catch {} const showAll = pane.dataset.all === "1", all = L; L = showAll ? L : L.filter((o) => o.current);
         const cur = all.filter((o) => o.current && o.status !== "cancelled"), tally = {}, money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0); cur.forEach((o) => o.lines.forEach((l) => (tally[l.name] = (tally[l.name] || 0) + l.qty)));
         const slots = [...new Set(cur.map((o) => o.slot).filter(Boolean))], ios = /iPhone|iPad/.test(navigator.userAgent), where = meta.address || meta.where || "";
@@ -108,7 +109,7 @@
         $("#exSave").onclick = async () => { pull(); try { const j = await post("/api/host/profile", { experiences: E, forHire: E.length > 0 || mine.forHire }); st.exps = j.host.experiences; msg(E.length ? "Saved. Companies can book you now." : "Saved."); C().oink?.(); } catch (e) { msg(e.message); } }; } }
     const msg = (t) => { const m = pane.querySelector("#sp-msg"); if (m) m.textContent = t; };
     fab.onclick = () => { $$(".store-pane").forEach((p) => p !== pane && (p.hidden = true)); pane.hidden = !pane.hidden; if (!pane.hidden) draw(); };
-    if (/[?&]orders=1/.test(location.search)) fab.click(); if (/[?&]bookings=1/.test(location.search)) { tab = "book"; fab.click(); } }
+    if (/[?&]orders=1/.test(location.search)) fab.click(); if (/[?&]bookings=1/.test(location.search)) { tab = "book"; fab.click(); } if (/[?&]collabs=1/.test(location.search)) { tab = "collab"; fab.click(); } }
 
   // ---- share: make the page easy to find ----
   function share(h) { const head = document.querySelector(".head > div"); if (!head || document.getElementById("shareBtn")) return; const b = document.createElement("button"); b.id = "shareBtn"; b.type = "button"; b.className = "share-btn"; b.textContent = "Share";

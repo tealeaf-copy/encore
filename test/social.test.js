@@ -80,7 +80,7 @@ test("Friends, feed, stories, alerts, kudos, vibes, event profiles, chat and pho
   assert.equal((await post("/api/public/chat/cake1", { rid: g1, code: "AD1", kind: "late", text: "10 minutes" })).status, 200);
   const hc = await (await get("/api/host/chat/cake1", mai.cookie)).json();
   assert.match(hc.messages[0].text, /Running late: 10 minutes/); assert.equal(hc.phones[0].phone, "+1 415 555 0101"); assert.equal(hc.sms, true);
-  assert.equal((await post("/api/host/chat/cake1", { text: "Table's out!", sms: true }, mai.cookie)).status, 200);
+  assert.equal((await post("/api/host/chat/cake1", { text: "Table's out!", sms: true, anyway: true }, mai.cookie)).status, 200);
   assert.ok(fakeTexts.some((t) => t.to === "+14155550101" && /Table's out/.test(t.text)));
   const rel = await (await post("/api/public/chat/cake1", { rid: g1, code: "AD1", kind: "release" })).json();
   assert.equal(rel.released, true);

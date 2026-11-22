@@ -77,6 +77,8 @@ export function makeSocial(store, { C, saveBlob }) {
   const iKey = (email) => "inbox-" + hash(email);
   function notify(email, n) { if (!email) return; const L = sys(iKey(email))?.list || []; if (n.key && L.some((x) => x.key === n.key)) return false; L.unshift({ id: crypto.randomBytes(6).toString("hex"), at: Date.now(), read: false, ...n }); put(iKey(email), { kind: "inbox", email: lc(email), list: L.slice(0, 200) }); return true; }
   const inbox = (email) => sys(iKey(email))?.list || [];
+  const prefs = (email) => sys("prefs-" + hash(email)) || { emails: true };
+  const canEmail = (email) => prefs(email).emails !== false;
   function markRead(email) { const L = inbox(email).map((x) => ({ ...x, read: true })); put(iKey(email), { kind: "inbox", email: lc(email), list: L }); }
   // ---- everything that happened, across workspaces (cached briefly) ----
   let cache = null;
@@ -184,7 +186,7 @@ export function makeSocial(store, { C, saveBlob }) {
     for (const a of allAlerts()) { if (lc(a.email) === lc(W?.ownerEmail)) continue; if (!alertMatches(a, e, e.geo)) continue;
       const host = C.profileOf(ws), title = e.pubTitle || e.name;
       if (notify(a.email, { kind: "alert", key: `alert-${a.id}-${id}`, text: `${title}${host?.name ? ` by ${host.name}` : ""}${e.date ? `, ${e.date}` : ""}. Matches "${a.summary}"`, link: `/g#rsvp-${id}`, eventId: id })) { n++;
-        const cfg = emailConfig(DEFAULT_WS, true); if (cfg) sendEmail(cfg, { to: a.email, subject: `Something you'd like: ${title}`, text: `${title}${e.date ? ` on ${e.date}` : ""}${e.city ? ` in ${e.city}` : ""}.\n\nSay yes here: ${origin}/g#rsvp-${id}\n\nYou asked Encore: "${a.text}". Change your alerts at ${origin}/feed` }).catch(() => {}); } }
+        const cfg = canEmail(a.email) && emailConfig(DEFAULT_WS, true); if (cfg) sendEmail(cfg, { to: a.email, subject: `Something you'd like: ${title}`, text: `${title}${e.date ? ` on ${e.date}` : ""}${e.city ? ` in ${e.city}` : ""}.\n\nSay yes here: ${origin}/g#rsvp-${id}\n\nYou asked Encore: "${a.text}". Change your alerts at ${origin}/feed` }).catch(() => {}); } }
     return n;
   }
   // ---- the hourly job: kudos nudges, prep alerts, pickup texts ----
@@ -199,7 +201,7 @@ export function makeSocial(store, { C, saveBlob }) {
         mark("kudos-" + x.id); const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true);
         for (const [em, L] of I.att) { if (!L.some((a) => a.eventId === x.id)) continue; out.kudosAsks++;
           notify(em, { kind: "kudos", key: "kudos-" + x.id, text: `How was ${title}? Send ${hostName} some kudos.`, link: `/g#rsvp-${x.id}`, eventId: x.id });
-          if (cfg) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Hosts rarely hear what landed, so two taps of kudos means a lot: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
+          if (cfg && canEmail(em)) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Hosts rarely hear what landed, so two taps of kudos means a lot: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
         notify(x.owner, { kind: "after", key: "after-" + x.id, text: `You hosted ${title}! Kudos are coming in. Upload a photo or two while it's fresh.`, link: "/#studio", eventId: x.id });
       }
       // prep alerts for the host (the shopping and baking checklist)
@@ -213,7 +215,18 @@ export function makeSocial(store, { C, saveBlob }) {
     }
     return out;
   }
-  return { person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
+  // a year in get-togethers, for guests and hosts
+  function recap(email, year = new Date().getFullYear()) {
+    const I = index(), me = lc(email), inYear = (t) => new Date(t).getFullYear() === year, A = (I.att.get(me) || []).filter((a) => a.at && inYear(a.at) && a.at <= Date.now() + DAY);
+    const hosts = {}; for (const a of A) { const h = C.profileOf(a.ws)?.name || "a friend"; hosts[h] = (hosts[h] || 0) + 1; }
+    const kinds = {}; for (const a of A) for (const l of lanesOf(`${I.events.get(a.eventId)?.e.activity || ""} ${I.events.get(a.eventId)?.e.name || ""}`)) kinds[l] = (kinds[l] || 0) + 1;
+    const hosted = [...I.events.values()].filter((x) => lc(x.owner) === me && x.e.casual && x.e.date && inYear(Date.parse(x.e.date)) && x.e.date <= today()), myWs = userOf(me)?.ws;
+    const guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === myWs && hosted.some((h) => h.id === a.eventId))) guests.add(em);
+    const K = I.kudos.filter((k) => k.ws === myWs && inYear(k.at));
+    const topHost = Object.entries(hosts).sort((a, b) => b[1] - a[1])[0];
+    return { year, went: A.length, hosts: Object.keys(hosts).length, topHost: topHost ? { name: topHost[0], n: topHost[1] } : null, topKind: Object.entries(kinds).sort((a, b) => b[1] - a[1])[0]?.[0] || "", hosted: hosted.length, guests: guests.size, kudos: K.length, tips: K.filter((k) => k.tipped).length, kudosGiven: I.kudos.filter((k) => lc(k.email) === me && inYear(k.at)).length };
+  }
+  return { recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
 }
 
 export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw }) {
@@ -244,6 +257,12 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     res.json({ ok: true, alert: a, matches }); });
   app.delete("/api/me/alerts/:id", (req, res) => { const u = me(req, res); if (!u) return; X.saveAlerts(u.email, X.alertsOf(u.email).filter((a) => a.id !== req.params.id)); res.json({ ok: true }); });
   // event profile
+  app.get("/api/me/recap", (req, res) => { const u = me(req, res); if (!u) return; res.json(X.recap(u.email)); });
+  app.get("/api/me/prefs", (req, res) => { const u = me(req, res); if (!u) return; res.json(X.prefs(u.email)); });
+  app.post("/api/me/prefs", small, (req, res) => { const u = me(req, res); if (!u) return; const p = { kind: "prefs", emails: req.body?.emails !== false, at: Date.now() }; store.set("system/prefs-" + hash(u.email), p); res.json(p); });
+  // "Priya and 2 friends are going" for a signed-in member looking at an invite
+  app.get("/api/me/mutuals/:eventId", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ friends: [] }); const id = clean(req.params.eventId, 80), I = X.index(), F = X.friendsOf(u.email).map((f) => f.email);
+    res.json({ friends: F.filter((f) => (I.att.get(f) || []).some((a) => a.eventId === id)).map((f) => ({ name: first(X.person(f).name), emoji: X.person(f).emoji })) }); });
   app.get("/api/me/profile", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); res.json({ person: X.person(u.email), profile: X.eventProfile(u.email) }); });
   app.post("/api/me/profile/self", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, A = {};
     for (const [k, ok] of [["host", ["often", "sometimes", "rarely"]], ["rsvp", ["first", "planner", "last"]], ["room", ["spark", "chill", "helper"]], ["bring", ["food", "friend", "self"]]]) if (ok.includes(b[k])) A[k] = b[k];
@@ -279,7 +298,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id); res.json({ messages: chatList(S, id, "host"), phones: R.filter((r) => r.response === "going" && r.phone).map((r) => ({ name: r.name, phone: r.phone, slot: r.slot || "" })), sms: !!smsConfig() }); });
   app.post("/api/host/chat/:eventId", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const text = clean(req.body?.text, 600); if (!text) return bad(res, "Say something first."); S.add("chat", { eventId: id, by: first(u.name) || "Host", role: "host", text, private: false, pinned: !!req.body?.pinned, at: Date.now() });
-    let texted = 0; if (req.body?.sms && smsConfig()) { const slot = clean(req.body?.slot, 40); for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId === id && r.response === "going" && PHONE_OK(r.phone) && (!slot || r.slot === slot)) { const ok = await sendSms(smsConfig(), { to: r.phone, text: `${first(u.name)} (${ev.pubTitle || ev.name}): ${text}` }); if (ok.ok) texted++; } } }
+    let texted = 0; const hr = new Date().getHours(); if (req.body?.sms && smsConfig() && (hr >= 21 || hr < 8) && !req.body?.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late, so Pip held the text. Send it in the morning, or tap again to send anyway." });
+    if (req.body?.sms && smsConfig()) { const slot = clean(req.body?.slot, 40); for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId === id && r.response === "going" && PHONE_OK(r.phone) && (!slot || r.slot === slot)) { const ok = await sendSms(smsConfig(), { to: r.phone, text: `${first(u.name)} (${ev.pubTitle || ev.name}): ${text}` }); if (ok.ok) texted++; } } }
     res.json({ ok: true, texted }); });
   // interest check → it's on: tell everyone who said they were in or maybe
   app.post("/api/host/its-on", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.body?.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");

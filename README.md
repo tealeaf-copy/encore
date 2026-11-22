@@ -118,7 +118,7 @@ With `APP_PASSWORD` set, visitors see a password form and get a 30-day cookie. R
 Any host that runs a Node 20 container and gives you a persistent disk works. Mount the disk at the data directory, since the database and uploads live there. Run a single instance: SQLite and the live-update stream are in-process.
 
 - **Docker:** `docker build -t encore . && docker run -p 3000:3000 -v encore-data:/app/data --env-file .env encore`
-- **Render:** new Web Service from the repo (Docker), add a Disk mounted at `/app/data`, set the env vars.
+- **Render (easiest):** New > Blueprint, pick this repo. `render.yaml` sets up the Docker service, a disk at `/app/data`, a generated `SESSION_SECRET` and sign-up; Render asks you for `ANTHROPIC_API_KEY`, `ENCORE_PUBLIC_URL` and the email settings.
 - **Fly.io:** `fly launch` (uses the Dockerfile), `fly volumes create encore_data`, mount it at `/app/data` in `fly.toml`, `fly secrets set ANTHROPIC_API_KEY=... APP_PASSWORD=...`.
 - **Railway:** deploy from the repo (Dockerfile), attach a Volume at `/app/data`, set the variables.
 

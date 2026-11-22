@@ -1,0 +1,29 @@
+# One-click deploy on Render: New > Blueprint > pick this repo.
+# Render asks for the values marked sync: false (your keys never live in the repo).
+services:
+  - type: web
+    name: encore
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: encore-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENCORE_SIGNUP
+        value: "1"
+      - key: ENCORE_TRUST_PROXY
+        value: "1"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ENCORE_PUBLIC_URL
+        sync: false
+      - key: ENCORE_EMAIL_SERVICE
+        value: resend
+      - key: ENCORE_EMAIL_KEY
+        sync: false
+      - key: ENCORE_EMAIL_FROM
+        sync: false

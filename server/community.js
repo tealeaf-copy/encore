@@ -72,7 +72,7 @@ export function makeCommunity(store) {
       shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences),
       gallery: Array.isArray(p.gallery) ? p.gallery.filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) : cur.gallery || [],
       insuranceDoc: p.insuranceDoc != null ? (/^\/_blob\/[A-Za-z0-9]{20}$/.test(p.insuranceDoc) ? p.insuranceDoc : "") : cur.insuranceDoc || "",
-      legalName: clean(p.legalName ?? cur.legalName, 100), taxId: clean(p.taxId ?? cur.taxId, 40),
+      legalName: clean(p.legalName ?? cur.legalName, 100), taxId: clean(p.taxId ?? cur.taxId, 40), bizAddress: clean(p.bizAddress ?? cur.bizAddress, 200),
       gigs: Array.isArray(p.gigs) ? p.gigs.slice(0, 8).map((g) => ({ client: clean(g?.client, 60), what: clean(g?.what, 100), when: clean(g?.when, 30) })).filter((g, i, A) => (g.client || g.what) && A.findIndex((x) => x.client.toLowerCase() === g.client.toLowerCase() && x.what.toLowerCase() === g.what.toLowerCase()) === i) : cur.gigs || [],
       insured: p.insured != null ? !!p.insured : !!cur.insured, respondsIn: clean(p.respondsIn ?? cur.respondsIn, 30), terms: clean(p.terms ?? cur.terms, 400), invoices: p.invoices != null ? !!p.invoices : !!cur.invoices,
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
@@ -87,7 +87,7 @@ export function makeCommunity(store) {
   }
   // ---- public events and discover ----
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood"];
-  function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.color } : null }; }
+  function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   function eventsOf(ws, { upcoming = true, discoverableOnly = true } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && (!discoverableOnly || e.discoverable) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).map(({ id, e }) => publicCard(id, e, host));

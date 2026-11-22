@@ -6,7 +6,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "DM Sans",syst
 a{color:inherit}h1,h2,h3{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-.01em;margin:0}
 .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
 .top{display:flex;align-items:center;justify-content:space-between;padding:16px 0}.top .brand{display:flex;gap:8px;align-items:center;font:600 20px "Fraunces",Georgia,serif;text-decoration:none}
-.top nav{display:flex;gap:14px;align-items:center;font-size:14px}.top nav a{text-decoration:none;color:var(--soft)}.top nav a.cta{color:#fff;background:var(--brand);padding:8px 14px;border-radius:999px}
+.top{gap:12px}.top nav{display:flex;gap:14px;align-items:center;font-size:14px}.top nav a{text-decoration:none;color:var(--soft)}.top nav a.cta{color:#fff;background:var(--brand);padding:8px 14px;border-radius:999px}
 .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:10px 16px;font:600 14px "DM Sans",system-ui,sans-serif;background:var(--brand);color:#fff;cursor:pointer;text-decoration:none}.btn:hover{background:var(--brand2)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn.ghost:hover{background:var(--card)}
 input,select{font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
@@ -14,6 +14,7 @@ input,select{font:inherit;padding:10px 12px;border-radius:12px;border:1px solid 
 .ev{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--card);text-decoration:none;transition:transform .15s,box-shadow .15s}
 .ev:hover{transform:translateY(-2px);box-shadow:0 12px 28px -18px rgba(43,33,28,.45)}
 .ev-ic{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:color-mix(in srgb,var(--c) 16%,transparent)}
+.ev-ic img,.hc-av img{width:100%;height:100%;object-fit:cover;border-radius:inherit}.ev-ic,.hc-av{overflow:hidden}.ev-ic svg,.hc-av svg{width:100%;height:100%}
 .ev-b{flex:1;min-width:0;display:flex;flex-direction:column}.ev-b b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev-b small{color:var(--soft);font-size:13px}.ev-b .why{color:var(--brand2);font-weight:500}
 .ev-p{flex:none;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--pink)}.ev-p.free{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
 .hc{display:flex;flex-direction:column;gap:2px;padding:16px;border-radius:18px;border:1px solid var(--line);background:var(--card);text-decoration:none;transition:transform .15s,border-color .15s}

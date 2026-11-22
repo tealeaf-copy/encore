@@ -7330,6 +7330,40 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
     // stray "null" anywhere
     const w=document.createTreeWalker(host,NodeFilter.SHOW_TEXT); const kill=[]; while(w.nextNode()){ if(w.currentNode.nodeValue.trim()==="null") kill.push(w.currentNode) } kill.forEach(n=>n.remove());
   }catch(err){ console.warn(err) } return r } }
+
+// ==================================================================
+// Round 8: saves never race (no lost "Published", no duplicate drafts); photos everywhere; a sane invoice.
+// ==================================================================
+{ const _se3=saveEvent; let chain=Promise.resolve();
+  saveEvent=function(quiet){ const run=async()=>{ let ok=await _se3.call(this,quiet);
+      // our own earlier save moved the version on: pick up the latest and try once more
+      if(ok===false&&draft.id&&window.ENCORE_SERVER){ try{ const cur=await db.doc("events/"+draft.id).get(); const u=cur?.data?.()?.updatedAt??cur?.data?.updatedAt; if(u&&u!==draft.updatedAt){ draft.updatedAt=u; autosaveOn=true; ok=await _se3.call(this,quiet) } }catch{} }
+      return ok };
+    const p=chain.then(run,run); chain=p.catch(()=>{}); return p } }
+// publishing checks that it stuck, and shows where it lives
+{ const _dhk7=drawHostKit; drawHostKit=function(){ const r=_dhk7.apply(this,arguments); try{ const b=$("#pubBtn"); if(b) b.onclick=async()=>{ const d=draft; if(!d.discoverable&&!d.date&&d.stage!=="interest"&&!confirm("There's no date yet. Publish anyway?")) return; b.disabled=true; const want=!d.discoverable; d.discoverable=want;
+      let ok=await saveEvent(true); try{ const j=await (await fetch("/api/db/doc?path=events/"+encodeURIComponent(d.id))).json(); if(!!j?.data?.discoverable!==want){ d.updatedAt=j?.data?.updatedAt||d.updatedAt; ok=await saveEvent(true) } }catch{}
+      redrawKit(); if(!ok){ toast("Couldn't save that. Try again in a moment."); return } let handle=""; try{ handle=(await (await fetch("/api/host/profile")).json()).host?.handle||"" }catch{}
+      pipToast(want?`Published. It's on ${handle?"/@"+handle:"your page"} and Discover.`:"Back to a private draft.","happy"); try{ if(want) pipSound?.("oink") }catch{} } }catch(e){ console.warn(e) } return r } }
+// host kit: keep the gig rows you typed while photos upload (handled in the shop pane); the map link uses the place, not the note
+{ const _rg20=renderGuest; renderGuest=async function(){ const r=await _rg20.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r;
+    // map: the address part of the meeting point
+    const place=String(e.venueAddr||e.meetPoint||"").split(/\s*[(;]|\s+-\s+|\.\s/)[0].replace(/^(ring|buzz|knock|look for)\b.*$/i,"").trim()||e.city||"";
+    $$('a[href*="google.com/maps/search"]',host).forEach(a=>{ a.href=`https://www.google.com/maps/search/${encodeURIComponent(`${place} ${e.hood||""} ${e.city||""}`.trim())}` });
+    // one "Add to calendar"
+    const cals=$$("a,button",host).filter(x=>/^Add to calendar$/.test(x.textContent.trim())&&!x.hidden); cals.slice(1).forEach(x=>x.hidden=true);
+    // trailing separators
+    $$(".gxfacts *, .gk-row p",host).forEach(x=>{ if(x.children.length===0&&/\s·\s*$/.test(x.textContent)) x.textContent=x.textContent.replace(/\s·\s*$/,"") });
+    // the photo cover: no confetti over it
+    if($(".gxcover.has-photo",host)) host.querySelector(".invite")?.classList.remove("fx-confetti");
+    // paid seats: the host sees who's paid (guest side shows nothing new)
+  }catch(err){ console.warn(err) } return r } }
+// who's coming: mark seats paid
+{ const _wc2=whoComingHTML; whoComingHTML=function(d){ let h=_wc2(d); if(!(d.price&&d.price!=="chip")) return h; const R=(allRsvps||[]).filter(x=>x.eventId===d.id&&x.response==="going"); if(!R.length) return h; const paidN=R.filter(x=>x.paid).length;
+  return h.replace('<details class="wc-add">',`<div class="wc-paid"><b>Paid ${paidN} of ${R.length}</b>${R.map(x=>`<label class="chip"><input type="checkbox" data-paid="${esc(x.id)}" ${x.paid?"checked":""}> ${esc(String(x.name||"Guest").split(" ")[0])}</label>`).join("")}</div><details class="wc-add">`) } }
+{ const _dwc2=drawWhoComing; drawWhoComing=function(){ _dwc2.apply(this,arguments); try{ $$("[data-paid]").forEach(c=>c.onchange=async()=>{ try{ await db.doc("rsvps/"+c.dataset.paid).update({paid:c.checked,paidAt:c.checked?Date.now():null}); const R=(allRsvps||[]).find(x=>x.id===c.dataset.paid); if(R) R.paid=c.checked; drawWhoComing() }catch(e){ toast(e.message||"Couldn't update.") } }) }catch{} } }
+// one Pip voice: the planner header says "Pip" not "chief of staff"
+{ const _ch3=cosHTML; cosHTML=function(d){ return isCasual(d)?_ch3(d).replace(/Chief of staff/gi,"Pip"):_ch3(d) } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -7606,4 +7640,6 @@ body.friends-ws nav.tabs a[href="#impact"],body.friends-ws nav.tabs a[href="#con
 .gx-hero .date,.guest-hero small{font-size:14px!important}
 .pub-miss{margin:8px 0;padding:10px 12px;border-radius:12px;background:#fff;border:1px dashed #F2D48F}.pub-miss .row{margin-top:6px}
 .gxcover.has-photo{position:relative}.gcover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.gxcover.has-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.45))}
+.wc-paid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}.wc-paid b{margin-right:6px}
+.gxcover.has-photo::after{background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.28))}
 </style>

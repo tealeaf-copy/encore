@@ -15,6 +15,7 @@ import { makeSocial, mountSocial } from "./social.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountShop } from "./shop.js";
 import { mountMarket } from "./market.js";
+import { mountBrand, startResearch } from "./brand.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -202,6 +203,8 @@ export function createApp({ store, dataDir }) {
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     C.issueCodes({ ws: W.id, email, name });
     if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
+    // A brand's first minute: Encore starts researching the company while they look around.
+    else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }
     // Word of mouth: count who came to Encore from a guest page, on the event's own workspace.
     if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Encore from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
@@ -347,6 +350,7 @@ export function createApp({ store, dataDir }) {
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountBrand(app, { small, currentUser });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
   app.get("/hosts", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));

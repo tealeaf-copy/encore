@@ -24,6 +24,7 @@
   <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
   <label><span id="emL">Work email</span><input name="email" type="email" placeholder="Email" autocomplete="email" required></label>
   <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>
+  <label id="webWrap"><span>Company website <small style="font-weight:400;color:#75685F">(optional, helps us find you)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
   <input type="hidden" name="mode" value="work">
   <label>Password (10+ characters)<input name="password" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Create my workspace</button>
@@ -47,7 +48,7 @@
       const fr = m === "friends"; document.getElementById("h").textContent = fr ? "Host something with friends" : "Start your free trial";
       document.getElementById("sub").textContent = fr ? "Free for friends. No card. Your invite page is ready in a minute." : "14 days, every feature, no card.";
       document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
-      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; };
+      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; document.getElementById("webWrap").hidden = fr; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
     if (q.get("mode") === "friends" || q.get("ref")) set("friends");
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), nc = document.getElementById("noCode"), wl = document.getElementById("wl");

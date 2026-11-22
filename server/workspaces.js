@@ -7,7 +7,7 @@ import { randomId } from "./db.js";
 
 export const DEFAULT_WS = "default";
 export const TRIAL_DAYS = 14;
-export const PLANS = ["team", "growth", "program"];
+export const PLANS = ["starter", "team", "growth", "program"];
 let raw = null;
 export function useWorkspaceStore(s) { raw = s; }
 export const signupEnabled = () => process.env.ENCORE_SIGNUP === "1";

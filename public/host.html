@@ -77,6 +77,8 @@ body.no-past .s-past,body.no-kudos .s-kudos,body.no-photos .s-photos,body.no-hir
 .photo-nudge{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;max-width:960px;margin:14px auto;padding:14px 18px;border-radius:16px;background:#FFFBF2;border:1.5px solid #E0A030;font-size:15px}.photo-nudge span{flex:1;min-width:220px;color:#75685F}
 body.is-owner{padding-bottom:110px}
 .warm-next{display:flex;gap:10px;align-items:center;text-align:left}
+@media (max-width:600px){body.is-owner .store-fab{font-size:0;width:52px;height:52px;padding:0;border-radius:50%;display:grid;place-items:center}body.is-owner .store-fab::before{content:"✏️";font-size:20px}body.is-owner .store-fab.shop-fab::before{content:"🛍"}}
+.own-gig{border-style:dashed}
 </style></head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>

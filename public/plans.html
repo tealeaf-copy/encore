@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your plans · Encore</title>
+<meta name="description" content="The seats you've asked for and the orders you've placed, in one place.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/community.css">
+<style>
+.plans{display:grid;gap:12px;margin:18px 0 32px}
+.plan{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:14px 16px;background:var(--card);color:var(--ink);text-decoration:none}
+.plan .ic{width:52px;height:52px;border-radius:16px;flex:none;display:grid;place-items:center;font-size:24px;background:var(--pink);overflow:hidden}
+.plan .ic svg,.plan .ic img{width:100%;height:100%;object-fit:cover}
+.plan b{display:block;font-size:16px}.plan small{color:var(--soft);font-size:14px}
+.pill{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#F3EFE8}.pill.in{background:#EAF3EC;color:#2F7A4F}
+.empty{border:1px dashed var(--line);border-radius:18px;padding:22px;color:var(--soft)}
+h2.sub{font-size:20px;margin-top:22px}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/discover">encore</a>
+    <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Your plans</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
+  <main>
+    <h1 style="font-size:clamp(32px,6vw,48px);margin-top:18px">Your plans</h1>
+    <p style="color:var(--soft);max-width:520px">Seats you've asked for and things you've ordered on this phone. No account needed; it's saved right here.</p>
+    <h2 class="sub">Get-togethers</h2><div class="plans" id="ev"></div>
+    <h2 class="sub">Orders</h2><div class="plans" id="ord"></div>
+  </main>
+</div>
+<script src="/community.js"></script>
+<script src="/avatars.js"></script>
+<script>
+(async function () { const C = window.EncoreCommunity, esc = C.esc, A = window.EncoreAvatars;
+  const R = [], O = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); try { if (k.startsWith("encore-rsvp-")) { const v = JSON.parse(localStorage.getItem(k)); if (v && v.response !== "no") R.push({ id: k.slice(12), ...v }); } else if (k.startsWith("encore.order.")) { const v = JSON.parse(localStorage.getItem(k)); if (v) O.push({ handle: k.slice(13), ...v }); } } catch {} } } catch {}
+  let cards = {}; if (R.length) { try { cards = (await (await fetch("/api/public/cards?ids=" + encodeURIComponent(R.map((x) => x.id).slice(0, 20).join(",")))).json()).cards || {}; } catch {} }
+  await Promise.all(R.map(async (x) => { if (!x.rid || !x.code) return; try { const j = await (await fetch(`/api/public/rsvp-status/${encodeURIComponent(x.id)}?rid=${encodeURIComponent(x.rid)}&code=${encodeURIComponent(x.code)}`)).json(); if (j.response) x.response = j.response; x.paid = !!j.paid; } catch {} }));
+  const today = new Date().toISOString().slice(0, 10), when = (c) => [c.date ? new Date(c.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "", c.startTime ? new Date("2000-01-01T" + c.startTime.padStart(5, "0")).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "", c.hood || c.city || ""].filter(Boolean).join(" · ");
+  const lab = (x) => x.response === "going" ? (x.paid ? "You're in ✓ · paid" : "You're in ✓") : x.response === "requested" ? "Requested ✓ · waiting for the host" : x.response === "waitlist" ? "On the waitlist" : x.response === "maybe" ? "Maybe" : "Saved";
+  const ev = R.map((x) => ({ x, c: cards[x.id] || {} })).filter(({ c }) => !c.date || c.date >= today).sort((a, b) => String(a.c.date || "9").localeCompare(String(b.c.date || "9")));
+  document.getElementById("ev").innerHTML = ev.length ? ev.map(({ x, c }) => `<a class="plan" href="/g#rsvp-${encodeURIComponent(x.id)}"><span class="ic">${c.host?.cover ? `<img src="${esc(c.host.cover)}" alt="">` : c.host?.avatarArt && A ? A.svg(c.host.avatarArt, c.host.color, 52) : esc(c.emoji || "🎉")}</span><span><b>${esc(c.title || "A get-together")}</b><small>${esc(when(c))}${c.host?.name ? ` · with ${esc(c.host.name)}` : ""}</small><br><span class="pill ${x.response === "going" ? "in" : ""}">${esc(lab(x))}</span></span></a>`).join("") : `<div class="empty">Nothing yet. <a href="/discover">Find something this week</a>.</div>`;
+  O.sort((a, b) => (b.at || 0) - (a.at || 0));
+  document.getElementById("ord").innerHTML = O.length ? O.map((o) => `<a class="plan" href="/@${encodeURIComponent(o.handle)}#shop"><span class="ic">🍰</span><span><b>Order ${esc(o.code || "")}${o.total ? ` · ${esc(o.total)}` : ""}</b><small>${o.slot ? `Pickup ${esc(o.slot)}` : "Pickup details on the host's page"}${o.where ? ` · ${esc(o.where)}` : ""}</small><br><span class="pill">Show this code at pickup</span></span></a>`).join("") : `<div class="empty">No orders yet.</div>`;
+})();
+</script></body></html>

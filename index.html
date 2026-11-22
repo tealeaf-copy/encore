@@ -7446,6 +7446,9 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
     $$(".ticket p",host).forEach(p=>{ if(/will confirm your seat shortly\./.test(p.textContent)&&!p.dataset.warm){ p.dataset.warm=1; p.innerHTML=`<span class="warm-next">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#C4532F",40):""}<span>${esc(first)} reads every request personally${H.respondsIn?` and usually replies within ${esc(H.respondsIn)}`:", usually within a day"}. You'll get an email the moment it's a yes${e.price&&e.price!=="chip"?`, with the ${esc(e.price)} payment link`:""}.</span></span>` } });
     const gf=host.querySelector(".gk-follow"); if(gf&&gf.querySelector(".ok")) $$("small",gf).forEach(s=>{ const m=s.textContent.match(/^(\d+) followers?\. Follow to hear about the next one first\.$/); if(m) s.textContent=`${m[1]} follower${m[1]==="1"?"":"s"}, including you. You'll hear about the next one first.` });
   }catch(err){ console.warn(err) } return r } }
+
+// Round 14: one place for a guest's plans
+{ const _rg25=renderGuest; renderGuest=async function(){ const r=await _rg25.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!myRsvp(e.id)||$("#plansLink")) return r; const t=$(".ticket",host); if(!t) return r; const a=document.createElement("a"); a.id="plansLink"; a.href="/plans"; a.className="btn ghost sm"; a.textContent="See all your plans"; a.style.marginTop="8px"; t.after(a) }catch{} return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

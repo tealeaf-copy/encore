@@ -291,6 +291,7 @@ export function createApp({ store, dataDir }) {
   app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
   app.get("/work", (req, res) => sendStatic(res, "landing.html", "<p>Page missing.</p>"));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
+  app.get("/plans", (req, res) => sendStatic(res, "plans.html", "<p>Plans page missing.</p>"));
   app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
   // Every host's storefront: encore.example/@claire-runs
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = ws && C.profileOf(ws);

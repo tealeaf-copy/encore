@@ -103,7 +103,8 @@ export function makeCommunity(store) {
   // ---- waitlist ----
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }
   function waitlist() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
-  return { issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, addWaitlist, waitlist, sys };
+  function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
+  return { cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, addWaitlist, waitlist, sys };
 }
 
 export function mountCommunity(app, { store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
@@ -134,6 +135,9 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [] }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
     res.json({ ok: true, followers: C.followersOf(ws).length }); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
+  app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
+    for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }
+    res.json({ cards }); });
   // The host of an event, for its guest page (name, handle, follower count).
   app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); const W0 = ws && getWorkspace(ws); res.json(h ? { person: first(W0?.ownerEmail ? getDbUser(W0.ownerEmail)?.name || "" : ""), host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", cover: (h.gallery || [])[0] || "", supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
   // Announce an event to followers (email when it's set up; otherwise a list to send yourself).

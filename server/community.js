@@ -19,7 +19,7 @@ export const STORE = {
   backgrounds: ["cream", "white", "blush", "sage", "night"],
   covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain"],
   buttons: ["round", "soft", "square"],
-  avatars: ["", "chef", "runner", "barista", "baker", "glasses", "hiker"],
+  avatars: ["", "chef", "runner", "barista", "baker", "glasses", "hiker", "florist", "curls", "bob"],
 };
 const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u);
 const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
@@ -73,7 +73,7 @@ export function makeCommunity(store) {
       gallery: Array.isArray(p.gallery) ? p.gallery.filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) : cur.gallery || [],
       insuranceDoc: p.insuranceDoc != null ? (/^\/_blob\/[A-Za-z0-9]{20}$/.test(p.insuranceDoc) ? p.insuranceDoc : "") : cur.insuranceDoc || "",
       legalName: clean(p.legalName ?? cur.legalName, 100), taxId: clean(p.taxId ?? cur.taxId, 40),
-      gigs: Array.isArray(p.gigs) ? p.gigs.slice(0, 8).map((g) => ({ client: clean(g?.client, 60), what: clean(g?.what, 100), when: clean(g?.when, 30) })).filter((g) => g.client || g.what) : cur.gigs || [],
+      gigs: Array.isArray(p.gigs) ? p.gigs.slice(0, 8).map((g) => ({ client: clean(g?.client, 60), what: clean(g?.what, 100), when: clean(g?.when, 30) })).filter((g, i, A) => (g.client || g.what) && A.findIndex((x) => x.client.toLowerCase() === g.client.toLowerCase() && x.what.toLowerCase() === g.what.toLowerCase()) === i) : cur.gigs || [],
       insured: p.insured != null ? !!p.insured : !!cur.insured, respondsIn: clean(p.respondsIn ?? cur.respondsIn, 30), terms: clean(p.terms ?? cur.terms, 400), invoices: p.invoices != null ? !!p.invoices : !!cur.invoices,
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
@@ -87,7 +87,7 @@ export function makeCommunity(store) {
   }
   // ---- public events and discover ----
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood"];
-  function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.color } : null }; }
+  function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.color } : null }; }
   function eventsOf(ws, { upcoming = true, discoverableOnly = true } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && (!discoverableOnly || e.discoverable) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).map(({ id, e }) => publicCard(id, e, host));
@@ -135,7 +135,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     res.json({ ok: true, followers: C.followersOf(ws).length }); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
   // The host of an event, for its guest page (name, handle, follower count).
-  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); const W0 = ws && getWorkspace(ws); res.json(h ? { person: first(W0?.ownerEmail ? getDbUser(W0.ownerEmail)?.name || "" : ""), host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
+  app.get("/api/public/event-host/:id", (req, res) => { const ws = workspaceOfEvent(req.params.id); const h = ws && C.profileOf(ws); const W0 = ws && getWorkspace(ws); res.json(h ? { person: first(W0?.ownerEmail ? getDbUser(W0.ownerEmail)?.name || "" : ""), host: { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", cover: (h.gallery || [])[0] || "", supportUrl: h.supportUrl, fanclubUrl: h.fanclubUrl, fanclubPerks: h.fanclubPerks, venmo: h.venmo, paypal: h.paypal, cashapp: h.cashapp }, followers: C.followersOf(ws).length } : { host: null }); });
   // Announce an event to followers (email when it's set up; otherwise a list to send yourself).
   app.post("/api/host/announce", small, async (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), ev = scopeStore(store, u.ws).get("events/" + id)?.data; if (!ev) return res.status(404).json({ code: "not_found", message: "No such event." });
     const F = C.followersOf(u.ws), h = C.profileOf(u.ws), cfg = emailConfig(u.ws, u.ws === DEFAULT_WS), link = `${publicOrigin(req)}/g#rsvp-${id}`; let sent = 0;

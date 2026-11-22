@@ -41,7 +41,7 @@
       <div class="nu-meta">${when ? `<span>${esc(when)}${time ? ` · ${esc(time)}` : ""}</span>` : `<span>Date to be voted on</span>`}${e.hood || e.city ? `<span>${esc(e.hood || e.city)}</span>` : ""}${e.headcount ? `<span>${esc(e.headcount)} ${paid ? "seats" : "spots"}</span>` : ""}</div>
       ${(e.courses || []).length ? `<ol class="nu-menu">${e.courses.slice(0, 7).map((c) => `<li>${esc(c)}</li>`).join("")}</ol>` : e.audienceWho ? `<p class="nu-for">For ${esc(e.audienceWho.replace(/^./, (c) => c.toLowerCase()))}</p>` : ""}
       <div class="nu-cta">${paid ? `<b class="nu-price">${esc(e.price)}<small> a seat</small></b>` : `<b class="nu-price">Free</b>`}<a class="btn nu-go" href="/g#rsvp-${encodeURIComponent(e.id)}">${label}</a></div>
-      ${e.earlyUntil && Date.parse(e.earlyUntil) > Date.now() ? `<p class="nu-early">Followers book first until ${esc(new Date(e.earlyUntil).toLocaleString([], { weekday: "short", hour: "numeric" }))}. <a href="#follow">Follow to get in early</a></p>` : ""}`;
+      ${e.earlyUntil && Date.parse(e.earlyUntil) > Date.now() && !(() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })() ? `<p class="nu-early">Followers book first until ${esc(new Date(e.earlyUntil).toLocaleString([], { weekday: "short", hour: "numeric" }))}. <a href="#follow">Follow to get in early</a></p>` : ""}`;
     box.hidden = false;
     // the featured one doesn't need repeating; hide "Coming up" when it's the only one
     if ((up || []).length === 1) { const hs = [...document.querySelectorAll("h2.sec")].find((x) => /Coming up/.test(x.textContent)); if (hs) { hs.style.display = "none"; if (hs.nextElementSibling) hs.nextElementSibling.style.display = "none"; } } }

@@ -90,6 +90,7 @@ body.no-past .s-past,body.no-kudos .s-kudos,body.no-photos .s-photos,body.no-hir
   const h = d.host, first = d.person || (h.name || handle).split(/[\s']/)[0];
   document.title = `${h.name || "@" + h.handle} · Encore`; document.body.style.setProperty("--c", h.color || "#E26D8E");
   const followed = (() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })();
+  const knownEmail = (() => { try { return localStorage.getItem("encore.email") || ""; } catch { return ""; } })();
   const tastes = (h.tags || []).slice(0, 5);
   m.innerHTML = `<div class="cover"></div>
   <div class="head"><span class="av">${esc(h.emoji || "🎉")}</span><div><h1>${esc(h.name || "@" + h.handle)}</h1><div class="handle">@${esc(h.handle)}${h.hood || h.city ? " · " + esc([h.hood, h.city].filter(Boolean).join(", ")) : ""}</div>

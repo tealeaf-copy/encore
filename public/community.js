@@ -38,7 +38,9 @@
   }
   async function follow({ handle, email, name, tastes, via, eventId }) {
     const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle, email, name, tastes, via, eventId }) });
-    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again."); return j;
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again.");
+    try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(handle)) L.push(handle); localStorage.setItem("encore.following", JSON.stringify(L)); if (email) localStorage.setItem("encore.email", email); } catch {}
+    return j;
   }
   window.EncoreCommunity = { esc, pipSVG, oink, PERSONAS, LANES, ACT_EMOJI, actOf, laneOf, fmtDate, eventCard, hostCard, follow };
 })();

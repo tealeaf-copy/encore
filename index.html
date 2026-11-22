@@ -7862,6 +7862,110 @@ function cohostHTML(d){ if(!d.cohost) return ""; const c=d.cohost, total=eventCo
 { const _s4=step4; step4=function(host){ const r=_s4.apply(this,arguments); try{ if(!draft.casual&&brandMode()!=="sales"){ const h=trackingHTML({...draft,name:evPublicName(draft)}); if(h) host.insertAdjacentHTML("afterbegin",`<section class="panel gm">${h}</section>`) } }catch{} return r } }
 // Pip's list: past events don't ask for more would-you-come answers
 { const _pli2=pipListItems; pipListItems=function(C){ const today=new Date().toISOString().slice(0,10); return _pli2(C).filter(x=>!(x.ev?.date&&x.ev.date<today&&/more answers on/.test(x.t))) } }
+
+// ==================================================================
+// Round 4: every format costs like itself. Golf, pop-ups, tastings, runs, cooking classes and craft workshops get their own lines.
+// ==================================================================
+const C_ = (txt) => ["Contingency","subtotal × contingency",{c:["Contingency",10,"%"]},null,txt];
+Object.assign(BUDGET_MODEL,{
+  golf:[["Green fees","golfers × green fee × city",{gf:["Green fee per golfer",180,"$"]},(x,d,ci)=>(+d.headcount||0)*x.gf*ci,"Private and resort courses run $120–300 a round; many waive a fee for a corporate foursome block."],
+    ["Carts and caddies","foursomes × cart fee",{cart:["Per foursome",120,"$"]},(x,d)=>Math.ceil((+d.headcount||0)/4)*x.cart,"Two carts per foursome; caddies are optional and tipped."],
+    ["Breakfast or lunch at the clubhouse","guests × per head × city",{pp:["Per head",55,"$"]},(x,d,ci)=>(+d.headcount||0)*x.pp*ci,"A breakfast before the tee time or lunch at the turn."],
+    ["Prizes and gifts","flat + per guest",{pz:["Prizes",400,"$"],g:["Per guest gift",40,"$"]},(x,d)=>x.pz+(+d.headcount||0)*x.g,"Longest drive, closest to the pin, and a logo ball sleeve for everyone."],
+    ["Club rental","renters × rental",{cr:["Rentals",4,"#"],rf:["Per set",75,"$"]},(x)=>x.cr*x.rf,"Ask who's flying in; most locals bring their own."],
+    C_("Rain plans and range balls.")],
+  popup:[["Space or stall","flat fee × city × days",{fee:["Space or stall fee",900,"$"]},(x,d,ci)=>x.fee*ci*Math.max(1,+d.days||1),"Market stalls run $150–600 a day; a shopfront or gallery takeover $800–3,000."],
+    ["Product and samples","visitors × samples",{v:["Expected visitors",+0||200,"#"],sp:["Cost per sample",2.5,"$"]},(x,d)=>Math.max(x.v,(+d.headcount||0))*x.sp,"Minis or sachets; budget for 1.5 samples per visitor."],
+    ["Staff","people × hours × rate",{st:["Staff",3,"#"],hr:["Hours",6,"#"],rt:["Hourly rate",30,"$"]},(x)=>x.st*x.hr*x.rt,"Brand ambassadors or creators working the stand."],
+    ["Build, signage and props","flat",{bd:["Build and signage",1200,"$"]},(x)=>x.bd,"A backdrop people photograph, a sign, a table and a mirror."],
+    ["Food or drinks to draw a crowd","visitors × per head",{pp:["Per visitor",3,"$"]},(x,d)=>Math.max(200,+d.headcount||0)*x.pp,"A coffee or matcha cart pulls people in; skip it if the product is the draw."],
+    C_("Permits and a second day of stock.")],
+  tasting:[["Venue or private room","flat fee × city",{fee:["Room hire or minimum",800,"$"]},(x,d,ci)=>x.fee*ci,"Wine bars and shops host tastings for a minimum spend."],
+    ["Sommelier or host","flat",{som:["Sommelier",900,"$"]},(x)=>x.som,"A good host makes the tasting; they also pick the flight."],
+    ["Wine or spirits flight","guests × per head",{pp:["Per head",60,"$"]},(x,d,ci)=>(+d.headcount||0)*x.pp*ci,"Five or six pours; $40–90 a head depending on the bottles."],
+    ["Food pairing","guests × per head",{fd:["Per head",35,"$"]},(x,d,ci)=>(+d.headcount||0)*x.fd*ci,"Cheese, charcuterie and bread, not a meal."],
+    ["Take-home bottle","guests × per bottle",{tb:["Per bottle",30,"$"]},(x,d)=>(+d.headcount||0)*x.tb,"Optional; guests remember the bottle on their shelf."],
+    C_("Covers an extra bottle or two.")],
+  run:[["Route, permits and a meeting point","flat",{rt:["Permits and route",150,"$"]},(x)=>x.rt,"Most city parks don't need a permit for under 50 runners; check for races the same morning."],
+    ["Pace leaders","leaders × fee",{pl:["Pace leaders",3,"#"],pf:["Per leader",100,"$"]},(x)=>x.pl*x.pf,"One per pace group plus a sweeper, so nobody runs alone."],
+    ["Coffee and breakfast after","runners × per head × city",{pp:["Per head",22,"$"]},(x,d,ci)=>(+d.headcount||0)*x.pp*ci,"The part where people talk. A café booking or a cart at the finish."],
+    ["Bag drop, water and first aid","flat",{bw:["Bag drop and water",200,"$"]},(x)=>x.bw,"A table, water, bananas and a first-aid kit."],
+    ["Shirts or socks","runners × per item",{sh:["Per runner",25,"$"]},(x,d)=>(+d.headcount||0)*x.sh,"Something they'll actually run in again."],
+    C_("Rain plan: an indoor coffee spot on standby.")],
+  cooking:[["Kitchen or class hire","flat fee × city",{fee:["Kitchen hire",1800,"$"]},(x,d,ci)=>x.fee*ci,"Cooking schools and chef studios hire out for private classes, usually 12–24 cooks."],
+    ["Chef and ingredients","guests × per head × city",{pp:["Per cook",95,"$"]},(x,d,ci)=>(+d.headcount||0)*x.pp*ci,"The chef's fee and everything you cook, then eat."],
+    ["Drinks","guests × per head",{dr:["Per head",30,"$"]},(x,d,ci)=>(+d.headcount||0)*x.dr*ci,"Wine with what you made."],
+    ["Aprons and recipe cards","guests × per item",{ap:["Per guest",20,"$"]},(x,d)=>(+d.headcount||0)*x.ap,"A branded apron and a card of the recipes to take home."],
+    C_("Covers dietary swaps and an extra station.")],
+  craft:[["Studio or space","flat fee × city",{fee:["Studio hire",700,"$"]},(x,d,ci)=>x.fee*ci,"Flower studios, ceramics studios and makerspaces host private sessions."],
+    ["Teacher and materials","guests × per head × city",{pp:["Per guest",65,"$"]},(x,d,ci)=>(+d.headcount||0)*x.pp*ci,"Stems, clay or kits plus the teacher; everyone takes home what they made."],
+    ["Drinks and bites","guests × per head",{dr:["Per head",25,"$"]},(x,d,ci)=>(+d.headcount||0)*x.dr*ci,"Wine and snacks while people make."],
+    ["Boxes and wrap to take home","guests × per item",{bx:["Per guest",8,"$"]},(x,d)=>(+d.headcount||0)*x.bx,"So the bouquet or bowl survives the trip home."],
+    C_("Extra materials for plus-ones and mistakes.")]
+});
+function formatModel(d){ const t=`${d.format||""} ${d.name||""} ${d.pubTitle||""} ${d.concept||""}`.toLowerCase();
+  if(/golf/.test(t)) return "golf"; if(/pop-?up|\bcart\b|stall|market|sampling|activation|campus tour/.test(t)) return "popup"; if(/wine tasting|tasting flight|whisk(?:e)?y|sake tasting|\btasting\b(?! menu)/.test(t)) return "tasting";
+  if(/run club|\brun\b|\b5k\b|hike|walk|yoga|\bride\b|cycling/.test(t)) return "run"; if(/cooking class|cook-?along|cooking/.test(t)) return "cooking"; if(/bouquet|flower|floral|pottery|ceramic|candle|craft|perfume|terrarium/.test(t)&&!/grc|code|rls|sql|automation|hack/.test(t)) return "craft"; return "" }
+{ const _bm=budgetModel; budgetModel=function(d){ const k=formatModel(d||{}); if(k&&BUDGET_MODEL[k]){ const was=d.kind; const saved=BUDGET_MODEL.dinner; try{ BUDGET_MODEL.__f=BUDGET_MODEL[k]; return _bm({...d,kind:"__f"}) }catch(e){ return _bm(d) } } return _bm(d) } }
+KINDS.__f=KINDS.experience;
+// morning, active and hands-on events don't get evening-dinner advice
+{ const _ci10=cosItems; cosItems=function(d){ const I=_ci10(d); try{ if(d.meal||formatModel(d)||brandMode()!=="sales") return I.filter(x=>!/weak nights?|four courses/i.test(`${x.t} ${x.w}`)) }catch{} return I } }
+{ const _rs11=renderStep; renderStep=function(){ const r=_rs11.apply(this,arguments); try{ if(draft&&(draft.meal||formatModel(draft))){ const v=$("#view-studio"); setTimeout(()=>textSwap(v,[[/The sweet spot for executives: four courses[^.]*\./g,"Plenty for a morning without a long sit-down."],[/four courses in about two and a quarter hours/g,"time to talk without a long sit-down"]]),60) } }catch{} return r } }
+// names follow the format; time zone follows the city; day-first dates; Brazilian reals
+const CITY_TZ=[[/london|brixton|shoreditch|hackney|manchester|edinburgh/i,"Europe/London"],[/dublin/i,"Europe/Dublin"],[/paris/i,"Europe/Paris"],[/berlin|munich|münchen|hamburg/i,"Europe/Berlin"],[/amsterdam/i,"Europe/Amsterdam"],[/stockholm/i,"Europe/Stockholm"],[/zürich|zurich|geneva/i,"Europe/Zurich"],[/madrid|barcelona/i,"Europe/Madrid"],[/lisbon/i,"Europe/Lisbon"],[/singapore/i,"Asia/Singapore"],[/tokyo/i,"Asia/Tokyo"],[/sydney|melbourne/i,"Australia/Sydney"],[/são paulo|sao paulo|rio/i,"America/Sao_Paulo"],[/mexico city|cdmx/i,"America/Mexico_City"],[/toronto/i,"America/Toronto"],[/san francisco|\bsf\b|los angeles|seattle|portland/i,"America/Los_Angeles"],[/austin|chicago|houston|dallas/i,"America/Chicago"],[/denver/i,"America/Denver"],[/new york|nyc|boston|atlanta|miami|philadelphia|washington/i,"America/New_York"]];
+function applyPlace(d){ if(!d?.city) return; const tz=(CITY_TZ.find(([re])=>re.test(d.city))||[])[1]; if(tz) d.tz=tz }
+{ const _qs13=quickStart; quickStart=function(text){ const r=_qs13.apply(this,arguments); try{ if(!window.__wsPersonal&&draft){ const t=String(text||""), lo=t.toLowerCase();
+    const brl=t.match(/R\$\s?([\d.]+(?:,\d{1,2})?)\s*(k|mil)?/i); if(brl){ draft.currency="BRL"; draft.budget=+brl[1].replace(/\./g,"").replace(",",".")*(brl[2]?1000:1) }
+    const MON=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"], dm=t.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b/i);
+    if(dm&&!draft.date){ const mi=MON.indexOf(dm[2].slice(0,3).toLowerCase()), now=new Date(); let y=now.getFullYear(); let dt=new Date(Date.UTC(y,mi,+dm[1])); if(dt<now) dt=new Date(Date.UTC(y+1,mi,+dm[1])); draft.date=dt.toISOString().slice(0,10); delete draft.dateHint }
+    const F=[[/creator brunch/,"Creator brunch"],[/wine tasting/,"Wine tasting"],[/run club/,"Run club"],[/cooking class/,"Cooking class"],[/campus pop-?up/,"Campus pop-up"],[/pop-?up/,"Pop-up"],[/golf/,"Golf outing"],[/brunch/,"Brunch"],[/breakfast/,"Breakfast"]].find(([re])=>re.test(lo));
+    if(F){ draft.format=F[1]; if(!/^(golf|pop-up|creator brunch|wine tasting|run club|cooking class|campus pop-up)/i.test(draft.name||"")) draft.name=String(draft.name||"").replace(/^[^·]+/,F[1]+" ").replace(/\s+·/," ·"); if(!/dinner|supper|brunch|breakfast|lunch/i.test(F[1])&&draft.kind==="dinner") draft.kind="experience" }
+    if(brandMode()!=="sales") draft.name=String(draft.name||"").replace(/^Executive (brunch|breakfast|dinner)/,(m,a)=>a[0].toUpperCase()+a.slice(1));
+    draft.name=String(draft.name||"").trim(); if(draft.city&&!/·/.test(draft.name)) draft.name=`${draft.name} · ${String(draft.city).split(",")[0]}`;
+    applyPlace(draft) } }catch(e){ console.warn(e) } return r } }
+{ const _pfi4=planFromIdea; planFromIdea=function(x){ const r=_pfi4.apply(this,arguments); try{ applyPlace(draft) }catch{} return r } }
+
+// ==================================================================
+// Round 4b: Pip's list leads Home; clean guest pages; your city by default; evidence before a "worth it"; a year view.
+// ==================================================================
+// Home: Pip's list first, then the brand
+{ const _dph2=drawPipHome; drawPipHome=async function(){ const r=await _dph2.apply(this,arguments); try{ const v=$("#view-programs"), w=$("#pipHome"), bh=$("#brandHome"); if(v&&w&&bh&&w.querySelector(".piplist")&&bh.compareDocumentPosition(w)&Node.DOCUMENT_POSITION_FOLLOWING) bh.before(w) }catch{} return r } }
+// "what should I do today?" gets Pip's list in the chat
+{ const _cgh3=cgHandle; cgHandle=function(text){ const t=String(text||""); if(!window.__wsPersonal&&/what should i (?:do|work on)|what'?s (?:on )?my (?:list|plate)|to-?do|where do i start|what(?:'s| is) next\b|\btoday\b.*\?/i.test(t)&&!/idea|brainstorm/i.test(t)){ const S=cgState(); S.msgs.push({who:"me",text:t});
+      const I=pipListItems(window.__checksAll||[]); S.msgs.push({who:"enc",text:I.length?`Here's what I'd do, in order:\n${I.map((x,i)=>`${i+1}. ${String(x.t).replace(/[.\s]+$/,"")}. ${x.w}`).join("\n")}\n\nEach one has a button on Home that does the legwork.`:"Nothing needs you right now. Want an idea for the next event? Ask me to brainstorm."}); cgSave(S); drawConcierge?.(); return } return _cgh3.apply(this,arguments) } }
+// guests see an invitation, never the working name or the brief
+function guestPitch(d){ const raw=String(d.concept||""); const looksRaw=!raw||/[$€£¥]|\b\d+\s?k\b|budget|per (?:dinner|head|person)|R\$|\bAUD|SGD|GBP|EUR|USD\b|I want to|we want to|need to/i.test(raw);
+  if(!looksRaw) return raw; const city=String(d.city||"").split(",")[0], fmt=(d.format||(KINDS[d.kind]||{}).label||"evening").replace(/^Executive /,"").toLowerCase();
+  return `A small ${fmt}${city?` in ${city}`:""}${d.headcount?` for about ${d.headcount} people`:""}. ${d.headcount&&d.headcount<=20?"We keep it small so everyone actually talks":"We bring together people who'd enjoy meeting each other"}.` }
+function guestTitleClean(d){ const n=String(d.pubTitle||"").trim(); if(n) return n; const base=String(d.name||"").replace(/\s·\s.*$/,"").trim(); const generic=/^(executive |customer )?(dinner|breakfast|brunch|lunch|event|experience|meetup)$/i.test(base)||/customers? experience|gen z|segment/i.test(base); const city=String(d.city||"").split(",")[0];
+  return generic?`${(d.format||(KINDS[d.kind]||{}).label||"Dinner").replace(/^Executive /,"").replace(/^./,c=>c.toUpperCase())}${city?` in ${city}`:""}`:base }
+{ const _ckp=ckPanelHTML; ckPanelHTML=function(d,j){ let h=_ckp(d,j); if(!j?.check){ h=h.replace(/<textarea id="ckPitch" rows="3">[\s\S]*?<\/textarea>/,`<textarea id="ckPitch" rows="3">${esc(guestPitch(d))}</textarea>`).replace(/(id="ckDates"[^>]*value=")[^"]*(")/,(m,a,b)=>a+esc((d.dateOptions||[]).map(x=>fmtDate(x)).join("; ")||(d.date?fmtDate(d.date):""))+b).replace('placeholder="e.g. Thu Mar 12, Tue Mar 17"','placeholder="e.g. Thu Mar 12; Tue Mar 17"').replace("Possible dates (optional, comma separated)","Possible dates (optional, separate with ;)") ; h=h.replace('<button class="btn primary" type="button" id="ckMake">',`<label class="f">Title guests see<input id="ckTitle" value="${esc(guestTitleClean(d))}"></label><button class="btn primary" type="button" id="ckMake">`) } return h } }
+// make the page with the clean title, and split dates on ; or new lines (dates contain commas)
+document.addEventListener("click",async e=>{ const b=e.target.closest?.("#ckMake"); if(!b||b.dataset.v2) return; e.preventDefault(); e.stopImmediatePropagation(); const d=draft, w=b.closest("#ckWrap")||document; b.disabled=true; try{ await saveEvent?.(true) }catch{}
+  const title=($("#ckTitle",w)?.value||guestTitleClean(d)).trim(); d.pubTitle=d.pubTitle||title;
+  const body={ title, pitch:$("#ckPitch",w).value.trim(), city:$("#ckCity",w).value.trim(), dates:$("#ckDates",w).value.split(/;|\n/).map(s=>s.trim()).filter(Boolean) };
+  const r=await fetch("/api/check/"+encodeURIComponent(d.id),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const k=await r.json(); if(!r.ok){ toast(k.message); b.disabled=false; return } try{ await saveEvent?.(true) }catch{} renderStep(); toast("Your would-you-come page is ready. Send it to 8 to 10 people.") },true);
+// your city by default for co-hosts and stolen ideas
+function userCity(){ const mine=allEvents.filter(e=>!e.example&&!e.casual&&e.city).sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0))[0]; return String(mine?.city||brandP?.()?.cities?.[0]||"").split(/[(,;]/)[0].trim() }
+{ const _pfi5=planFromIdea; planFromIdea=function(x){ if(x&&(/-style /.test(x.name||"")||/ × /.test(x.name||""))){ const c=userCity(); if(c) x={...x,city:c} } const r=_pfi5.call(this,x); try{ if(/-style /.test(draft.name||"")){ delete draft.date; if(+draft.headcount>60) draft.headcount=40 } if(draft.city){ const cc=(CITY_CUR.find(([re])=>re.test(draft.city))||[])[1]; draft.currency=cc||(/san francisco|new york|austin|chicago|boston|seattle|los angeles|miami|houston|atlanta|denver|nyc|sf\b/i.test(draft.city)?"USD":draft.currency); applyPlace(draft) } }catch{} return r } }
+// a "worth it" needs at least three survey answers or logged results; one-pager and Results use the same spend
+{ const _wid2=worthItData; worthItData=async function(e){ const r=await _wid2.apply(this,arguments); const hasOut=(r.m.meetings||0)+(r.m.pipeline||0)>0||Object.values(r.G||{}).some(v=>+v>0);
+    if(r.verdict.k!=="early"&&r.n<3&&!hasOut) r.verdict={k:"early",t:"Early signs, not a verdict yet",w:`${r.n} survey answer${r.n===1?"":"s"} so far. Three or more, or logged results, make the call.`};
+    if(r.verdict.k==="go"&&r.n<3) r.verdict={...r.verdict,w:r.verdict.w+` Based on ${r.n} survey answer${r.n===1?"":"s"} and the results you logged.`};
+    if(r.mode==="sales"&&r.m.pipeline&&r.spend){ r.main={...r.main,v:r.m.pipeline/r.spend} } return r } }
+{ const _gmh2=goalMetricsHTML; goalMetricsHTML=function(d){ return _gmh2({...d,budget:+d.actualSpend||eventCost(d)||+d.budget||0}) } }
+// Impact: a year view for the board, and no "did the events cause meetings?" for consumer and community brands
+{ const _ri5=renderImpact; renderImpact=function(){ const r=_ri5.apply(this,arguments); try{ const v=$("#view-impact"), k=$("#portKpis"); if(!v||!k) return r; const m=brandMode();
+    if(m!=="sales") v.querySelectorAll("section.panel").forEach(s=>{ if(/Did the events cause meetings\?/.test(s.textContent)) s.hidden=true });
+    const old=$("#ytd"); if(old) old.outerHTML=""; const y=new Date().getFullYear(), today=new Date().toISOString().slice(0,10), E=allEvents.filter(e=>!e.example&&!e.casual&&e.date&&e.date.startsWith(String(y)));
+    if(!E.length) return r; const Q=[1,2,3,4].map(q=>{ const L=E.filter(e=>Math.ceil((+e.date.slice(5,7))/3)===q), ran=L.filter(e=>e.date<=today), spend=ran.reduce((a,e)=>a+(+e.actualSpend||eventCost(e)||0),0), plan=L.filter(e=>e.date>today).reduce((a,e)=>a+(eventCost(e)||+e.budget||0),0), att=ran.reduce((a,e)=>a+(e.guests||[]).filter(g=>g.status==="Attended").length,0), F=allFeedback.filter(f=>ran.some(e=>e.id===f.eventId)), N=F.filter(f=>Number.isFinite(f.nps)), nps=N.length?Math.round((N.filter(x=>x.nps>=9).length-N.filter(x=>x.nps<=6).length)/N.length*100):null;
+      const res=m==="sales"?ran.reduce((a,e)=>a+(liveMetrics(e).pipeline||0),0):ran.reduce((a,e)=>a+(+(e.goalMetrics||{})[m==="consumer"?"posts":"signups"]||0),0); return {q,n:ran.length,up:L.length-ran.length,spend,plan,att,nps,res} });
+    const annual=+(window.__annualBudget||brandProfile?.annualBudget||0), spent=Q.reduce((a,x)=>a+x.spend,0), planned=Q.reduce((a,x)=>a+x.plan,0), resL=m==="sales"?"Pipeline":m==="consumer"?"Posts":"Signups";
+    const w=document.createElement("section"); w.id="ytd"; w.className="panel"; w.innerHTML=`<small class="eyebrow">${y} so far</small><h3>The year in one table</h3><p class="note">Spent ${esc(money(spent))}${planned?`, ${esc(money(planned))} more planned`:""}${annual?` of a ${esc(money(annual))} budget (${Math.round((spent+planned)/annual*100)}% committed)`:""}. Spend is actual where logged, otherwise the plan.</p>
+      <table class="ytd-t"><thead><tr><th>Quarter</th><th>Events run</th><th>Coming up</th><th>Spend</th><th>Attended</th><th>NPS</th><th>${resL}</th></tr></thead><tbody>${Q.map(x=>`<tr><td>Q${x.q}</td><td>${x.n}</td><td>${x.up}</td><td>${esc(money(x.spend))}</td><td>${x.att}</td><td>${x.nps==null?"–":(x.nps>0?"+":"")+x.nps}</td><td>${m==="sales"?esc(money(x.res)):x.res}</td></tr>`).join("")}</tbody></table>
+      <button class="btn sm" type="button" id="ytdCsv">Download as CSV</button>`; k.after(w);
+    $("#ytdCsv",w).onclick=()=>{ const rows=[["Event","Date","City","Format","Spend","Attended","NPS",resL],...E.map(e=>{ const s=fbStats(e.id); return [e.name,e.date,e.city||"",e.format||(KINDS[e.kind]||{}).label||"",+e.actualSpend||eventCost(e)||0,(e.guests||[]).filter(g=>g.status==="Attended").length,s.nps??"",m==="sales"?(liveMetrics(e).pipeline||0):(+(e.goalMetrics||{})[m==="consumer"?"posts":"signups"]||0)] })]; const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n"); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=`events-${y}.csv`; a.click() };
+  }catch(e){ console.warn(e) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -8188,4 +8292,5 @@ body.simple .rail button[data-step="2"]{display:flex!important}body.simple nav.t
 @media print{body.wi-printing>*:not(#wiBg){display:none!important}body.wi-printing .wi-bg{position:static;background:none;padding:0}body.wi-printing .wi{box-shadow:none}body.wi-printing .wi .btns,body.wi-printing .wi-x{display:none}}
 .br-hosts{font-size:13px;margin:4px 0 0}.br-hosts span{color:#8A7E74}.od .br-idea{background:#FBF8F3}
 body:not(.friends-ws) .tile2[data-kind="social"]{display:none}
+.ytd-t{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}.ytd-t th,.ytd-t td{text-align:left;padding:6px 8px;border-bottom:1px solid #EFE7DB}.ytd-t th{font-size:12px;color:#8A7E74;font-weight:600}
 </style>

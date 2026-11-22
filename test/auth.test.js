@@ -22,7 +22,9 @@ test("named users sign in with their email and the team password", async () => {
   r = await login({ password: "team-pass", email: "Maya@Acme.com" });
   assert.equal(r.status, 200);
   const cookie = r.headers.get("set-cookie").split(";")[0];
-  const me = await fetch(srv.base + "/api/me", { headers: { cookie } }).then((x) => x.json());
+  const { workspace, owner, ...me } = await fetch(srv.base + "/api/me", { headers: { cookie } }).then((x) => x.json());
+  assert.equal(workspace.id, "default");
+  assert.equal(owner, false);
   assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], approverRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true });
   const forged = cookie.replace("maya%40acme.com", "sam%40acme.com");
   assert.equal((await fetch(srv.base + "/api/me", { headers: { cookie: forged } })).status, 401, "a cookie can't be re-pointed at someone else");

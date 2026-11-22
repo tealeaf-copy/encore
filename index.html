@@ -880,6 +880,7 @@ input,textarea,select{border-radius:14px}
 .bubble{border-radius:22px}
 .ghostcard{border:none;box-shadow:var(--puff);border-radius:26px}
 .thesis{background:radial-gradient(circle at 90% 10%,#ffffff99 0 60px,transparent 61px),linear-gradient(135deg,#FFF0C2,#FFE4E8 60%,var(--lilac))}
+.trialbar{background:#FFF1CC;border-bottom:1px solid #F0D58A;font-size:.92rem}.modal-back{position:fixed;inset:0;background:rgba(27,23,64,.45);z-index:50;overflow:auto;padding:16px}.qs input{font-size:1.05rem}
 </style>
 
 <header class="top" id="appHeader"><div class="wrap">
@@ -889,6 +890,7 @@ input,textarea,select{border-radius:14px}
     <a href="#brand" data-view="brand">Set up</a>
     <a href="#inspire" data-view="inspire">Ideas</a>
     <a href="#studio" data-view="studio">Events</a>
+    <a href="#conferences" data-view="conferences">Conferences</a>
     <a href="#impact" data-view="impact">Results</a>
   </nav>
   <div class="status"><span class="dot" id="aiDot"></span><span id="aiStatus">Connecting AI agents…</span></div>
@@ -897,6 +899,7 @@ input,textarea,select{border-radius:14px}
 <main class="wrap">
 
 <!-- ============ STUDIO ============ -->
+<section class="view" id="view-conferences" hidden></section>
 <section class="view" id="view-studio">
   <div class="btns" style="justify-content:space-between;align-items:end">
     <div style="min-width:0;flex:1">
@@ -1207,6 +1210,7 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
   db.collection("aeactions").onSnapshot(sn=>{ allAe=sn.docs.map(d=>d.data()); if(draft.id&&allAe.some(a=>a.eventId===draft.id)){ applyAeActions(draft); if(step===7&&!isGuestRoute()) renderStep() } },()=>{});
   db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
+  db.collection("conferences").onSnapshot(sn=>{ allConfs=sn.docs.map(d=>({id:d.id,...d.data()})); confsLive=true; if(location.hash==="#conferences") renderConfs() },()=>{});
   db.collection("wall").onSnapshot(sn=>{ allWall=sn.docs.map(d=>d.data()) },()=>{});
   db.collection("rsvps").onSnapshot(snap=>{ const before=new Map(allRsvps.map(r=>[r.id,r.response])); snap.docs.forEach(x=>{ const r=x.data(), b=before.get(x.id); if(before.size&&b&&b!==r.response&&r.response==="no"&&!isGuestRoute()) toast(`${r.name} can't make it anymore. A seat opened up.`) }); allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
 })();
@@ -1512,7 +1516,7 @@ function route(){
     $("#appHeader").hidden=true; $("#coBtn").hidden=true; $("#coPanel").hidden=true; $$(".view").forEach(s=>s.hidden=s.id!=="view-guest"); renderGuest(); return;
   }
   $("#appHeader").hidden=false; $("#coBtn").hidden=false;
-  const name=["studio","insights","impact","brand","canvas","inspire","programs"].includes(h)?h:(h?"studio":"programs");
+  const name=["studio","insights","impact","brand","canvas","inspire","programs","conferences"].includes(h)?h:(h?"studio":"programs");
   $$(".view").forEach(s=>s.hidden = s.id!=="view-"+name);
   const navFor={canvas:"inspire",insights:"impact"}[name]||name;
   $$("nav.tabs a").forEach(a=>{ if(a.dataset.view===navFor) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") });
@@ -1520,6 +1524,7 @@ function route(){
   if(name==="brand") renderBrand();
   if(name==="canvas") renderCanvas();
   if(name==="programs") renderPrograms();
+  if(name==="conferences") renderConfs();
   if(name==="impact") $("#subImp").innerHTML=subTabs("results","impact");
   if(name==="insights") $("#subIns").innerHTML=subTabs("results","insights");
   if(name==="inspire") renderInspire(); else closeStories?.();
@@ -1612,7 +1617,7 @@ async function saveEvent(){
     if(draft.id){ await db.doc("events/"+draft.id).set(data) }
     else { const ref=await db.collection("events").add(data); draft.id=ref.id }
     Object.assign(draft,hydrate({...data,id:draft.id})); toast("Event saved"); renderStep(); return true;
-  }catch(e){ toast(e?.code==="permission_denied"?"You don't have permission to save events here.":e?.code==="conflict"?e.message:"Couldn't save: "+(e?.message||"try again")); return false }
+  }catch(e){ if(e?.code==="trial_ended"||/trial/i.test(e?.message||"")){ window.showUpgrade?.("trial_ended"); return false } toast(e?.code==="permission_denied"?"You don't have permission to save events here.":e?.code==="conflict"?e.message:"Couldn't save: "+(e?.message||"try again")); return false }
 }
 function renderHeader(){
   $("#draftTitle").textContent = draft.name || "Untitled experience";
@@ -2357,6 +2362,51 @@ const TEMPLATES={
   ros:[["9:00","Arrival and coffee","Hosts"],["9:30","Opening: what we'll decide today","Exec sponsor"],["10:00","Roadmap session: what's next and why","Product lead"],["11:30","Working sessions by theme","Facilitators"],["13:00","Lunch with exec 1:1s","Execs"],["14:30","What we heard; commitments","Exec sponsor"]],
   tasks:[[-56,"Pick members and confirm the date","Event lead","Guests"],[-45,"Venue booked","Event lead","Venue"],[-35,"Invites from the exec sponsor","Exec sponsor","Guests"],[-21,"Agenda and pre-read drafted","Product lead","Content"],[-14,"Pre-read sent; 1:1s scheduled","Event lead","Content"],[-7,"Travel and dietary confirmed","Event lead","Logistics"],[-2,"Facilitator run-through","Event lead","Content"],[1,"Thank-you with what we heard","Exec sponsor","Follow-up"],[14,"Close the loop on every roadmap ask","Product lead","Follow-up"],[90,"Renewals and expansion check","Event lead","Follow-up"]]}};
 TEMPLATES.roadshow=TEMPLATES.dinner; TEMPLATES.experience=TEMPLATES.dinner; TEMPLATES.owned=TEMPLATES.summit; TEMPLATES.launch=TEMPLATES.summit;
+const CITY_T1=/new york|nyc|manhattan|san francisco|sf\b|london|zurich|geneva|tokyo|singapore|hong kong|paris|sydney|boston|los angeles|la\b|seattle|washington|dc\b|miami|tel aviv|oslo|copenhagen/i, CITY_T3=/online|virtual|austin|denver|atlanta|dallas|chicago|toronto|berlin|munich|madrid|lisbon|amsterdam|dublin|stockholm|bangalore|mumbai|warsaw|prague/i;
+function cityIdx(d){ const c=d.city||""; return /online|virtual/i.test(c)?{i:1,t:"Online"}:CITY_T1.test(c)?{i:1.3,t:"Top-cost city"}:CITY_T3.test(c)?{i:.95,t:"Mid-cost city"}:{i:1,t:"Typical city"} }
+// Each line: [line, formula label, inputs {key:[label,default,unit]}, fn(inputs,d,ci) -> amount, source note]
+const BUDGET_MODEL={
+  dinner:[["Food and drink","guests × per-head × city × (1 + service and tax)",{pp:["Per-head food and drink",150,"$"],svc:["Service and tax",22,"%"]},(x,d,ci)=>d.headcount*x.pp*ci*(1+x.svc/100),"Private dining menus with wine typically run $120–220 a head before service in US cities; top-cost cities run ~30% higher. Estimate: confirm with the venue's minimum spend."],
+    ["Private room or venue fee","flat fee × city",{fee:["Room fee or minimum top-up",1500,"$"]},(x,d,ci)=>x.fee*ci,"Many restaurants waive the room fee if you hit the minimum spend; experience venues (cooking schools, galleries) charge a hire fee."],
+    ["Gifts and take-homes","guests × per-gift",{g:["Per gift",60,"$"]},(x,d)=>d.headcount*x.g,"A book, local food or a useful object; $40–80 lands well with execs. Shipping excluded."],
+    ["Photo and video","day rate",{ph:["Photographer (3–4 hours)",1200,"$"]},(x,d,ci)=>x.ph*ci,"Event photographer half-day; add video only if you'll publish it."],
+    ["Print, decor and name cards","guests × per-guest",{pr:["Per guest",25,"$"]},(x,d)=>d.headcount*x.pr,"Menus, place cards, florals."],
+    ["Host travel","hosts × trip",{h:["Hosts traveling",2,""],t:["Per trip",700,"$"]},(x)=>x.h*x.t,"Flights and one hotel night for hosts who aren't local."],
+    ["Contingency","subtotal × contingency",{c:["Contingency",10,"%"]},null,"Covers headcount creep, overtime and last-minute changes."]],
+  conference:[["Booth space","square feet × rate",{sq:["Booth size",100,"sq ft"],r:["Rate per sq ft",150,"$"]},(x)=>x.sq*x.r,"10×10 inline booths at major SaaS shows typically list at $120–200 per sq ft; sponsorship packages bundle it."],
+    ["Booth build and graphics","build + graphics",{b:["Build or rental",9000,"$"],g:["Graphics and print",3000,"$"]},(x)=>x.b+x.g,"Rental kits are cheaper than custom builds; reuse across shows."],
+    ["Freight, drayage and electrical","flat",{f:["Freight and drayage",3500,"$"],e:["Electrical, internet, scanners",1500,"$"]},(x)=>x.f+x.e,"Drayage (moving your freight on site) is charged per 100 lbs and is often the surprise line."],
+    ["Staff travel","staff × trip × city",{n:["People staffing",6,""],t:["Per person (flight, 3 nights)",1800,"$"]},(x,d,ci)=>x.n*x.t*ci,"Hotel block rates near the venue; book early."],
+    ["Side dinner for target accounts","guests × per-head × city × (1 + service)",{dg:["Dinner guests",20,""],pp:["Per head",150,"$"]},(x,d,ci)=>x.dg*x.pp*ci*1.22,"The meetings usually happen here, not at the booth."],
+    ["Swag and giveaways","expected visitors × per-item",{v:["Booth visitors",400,""],s:["Per item",8,"$"]},(x)=>x.v*x.s,"Fewer, better items for qualified conversations beat bulk swag."],
+    ["Contingency","subtotal × contingency",{c:["Contingency",10,"%"]},null,"Shows have late fees; keep a buffer."]],
+  webinar:[["Platform","flat",{p:["Platform fee for the event",500,"$"]},(x)=>x.p,"If you already pay for Sequel, Goldcast or Zoom Webinar, set this to 0."],
+    ["Promotion","paid + newsletter swaps",{a:["Paid promotion",1500,"$"]},(x)=>x.a,"LinkedIn or newsletter sponsorships to reach registrants outside your list."],
+    ["Speaker or moderator","flat",{s:["Speaker fee or thank-you",1000,"$"]},(x)=>x.s,"Customer and partner speakers usually get a gift instead of a fee."],
+    ["Editing and clips","flat",{e:["Editing",800,"$"]},(x)=>x.e,"Cut 3–5 clips for social and the recap."],
+    ["Attendee gifts","attendees × gift rate × per-gift",{r:["Share who get a gift",20,"%"],g:["Per gift",25,"$"]},(x,d)=>d.headcount*(x.r/100)*x.g,"Reward live attendance from target accounts."],
+    ["Contingency","subtotal × contingency",{c:["Contingency",5,"%"]},null,""]],
+  owned:[["Venue","days × day rate × city",{days:["Days",1,""],r:["Venue day rate",15000,"$"]},(x,d,ci)=>x.days*x.r*ci,"Hotel ballroom or event space; often tied to a food and drink minimum."],
+    ["Food and drink","guests × days × per-head × city",{pp:["Per head per day",110,"$"]},(x,d,ci)=>d.headcount*(x.days_||1)*x.pp*ci,"Breakfast, lunch, breaks and a reception."],
+    ["AV and production","flat × city",{av:["AV, stage, streaming",12000,"$"]},(x,d,ci)=>x.av*ci,"Get two AV quotes; in-house AV is often marked up."],
+    ["Speakers","speakers × travel",{n:["Outside speakers",4,""],t:["Travel and gift each",1500,"$"]},(x)=>x.n*x.t,""],
+    ["Branding, print and signage","flat",{b:["Branding",4000,"$"]},(x)=>x.b,""],
+    ["Contingency","subtotal × contingency",{c:["Contingency",10,"%"]},null,""]]};
+BUDGET_MODEL.summit=BUDGET_MODEL.owned; BUDGET_MODEL.roadshow=BUDGET_MODEL.dinner; BUDGET_MODEL.experience=BUDGET_MODEL.dinner; BUDGET_MODEL.launch=BUDGET_MODEL.owned;
+function budgetModel(d){ const M=BUDGET_MODEL[kindOf(d)]||BUDGET_MODEL.dinner, ci=cityIdx(d), I=d.budgetInputs||{}; let sub=0; const fx=1/fxRate(d.currency);
+  const rows=M.map(([line,formula,ins,fn,src])=>{ const x={}; Object.entries(ins).forEach(([k,[,def]])=>x[k]=I[line+"|"+k]??def); if(x.days) x.days_=x.days; const usd=fn?Math.round(fn(x,d,ci.i)):Math.round(sub*(x.c||0)/100); if(fn) sub+=usd; return {line,formula,ins,x,amt:Math.round(usd*fx/50)*50,src} });
+  const total=rows.reduce((a,r)=>a+r.amt,0); return {rows,total,ci,low:Math.round(total*.85/100)*100,high:Math.round(total*1.2/100)*100} }
+function budgetDeepHTML(d,P){ const B=budgetModel(d), lines=P?.budget||[], tot=lines.reduce((a,b)=>a+(+b.amount||0),0), V=venuePicked(d), per=B.total/(d.headcount||1);
+  return `<details class="ready" id="budDeep"><summary><b>How this budget was estimated</b><span class="note">Bottom-up estimate ${lm(B.total)} (range ${lm(B.low)}–${lm(B.high)}) vs. ${lm(tot)} in your plan</span></summary>
+    <p class="note">Each line is a formula with inputs you can change. Unit costs are Encore's planning assumptions for ${/^[aeiou]/i.test(KINDS[kindOf(d)].label)?"an":"a"} ${esc(KINDS[kindOf(d)].label.toLowerCase())} in a ${esc(B.ci.t.toLowerCase())} (${d.city?esc(d.city)+", ":""}cost index ×${B.ci.i}), not quotes. Replace them with real quotes as they come in.${V?.estCost?` The venue scout estimated ${lm(V.estCost)} for ${esc(V.name)}; that's the number to verify first.`:""}</p>
+    <div class="tscroll"><table><thead><tr><th>Line</th><th>How it's calculated</th><th>Inputs</th><th class="num">Estimate</th></tr></thead><tbody>${B.rows.map(r=>`<tr><td><b>${esc(r.line)}</b>${r.src?`<div class="note">${esc(r.src)}</div>`:""}</td><td class="note">${esc(r.formula)}</td><td>${Object.entries(r.ins).map(([k,[l,,u]])=>`<label class="note" style="display:block">${esc(l)} <input class="mini" style="width:84px" type="number" min="0" data-bud="${esc(r.line)}|${k}" value="${r.x[k]}">${u&&u!=="$"?" "+esc(u):""}</label>`).join("")}</td><td class="num"><b>${lm(r.amt)}</b></td></tr>`).join("")}
+      <tr><td colspan="3"><b>Total</b> <span class="note">${d.headcount} guests · ${lm(per)} per guest</span></td><td class="num"><b>${lm(B.total)}</b></td></tr></tbody></table></div>
+    <div class="caveat">${+d.budget?`Your budget is ${lm(+d.budget)}: the estimate is ${B.total>+d.budget?`<b>${lm(B.total-+d.budget)} over</b>. Cut seats, pick a mid-cost venue or drop a line before you sign anything.`:`${lm(+d.budget-B.total)} under, with room for ${Math.floor((+d.budget-B.total)/Math.max(1,per))} more guests at the same cost per head.`}`:"Set a budget to compare."} The range (−15% to +20%) reflects how far quotes usually land from planning estimates.</div>
+    <div class="btns"><button class="btn sm" id="budUse">Use these estimates as my budget lines</button><button class="btn ghost sm" id="budReset">Reset inputs</button></div></details>` }
+function wireBudgetDeep(host,d){ const h=$("#budDeep",host); if(!h) return;
+  $$("[data-bud]",h).forEach(x=>x.onchange=()=>{ d.budgetInputs={...(d.budgetInputs||{}),[x.dataset.bud]:+x.value||0}; renderStep(); setTimeout(()=>{ const b=$("#budDeep"); if(b) b.open=true },0) });
+  $("#budReset",h).onclick=()=>{ d.budgetInputs={}; renderStep(); setTimeout(()=>{ const b=$("#budDeep"); if(b) b.open=true },0) };
+  $("#budUse",h).onclick=()=>{ const B=budgetModel(d); d.produce=d.produce||starterProduce(d); d.produce.budget=B.rows.map(r=>({line:r.line,amount:r.amt,note:`${r.formula}: ${Object.entries(r.ins).map(([k,[l,,u]])=>`${l} ${u==="$"?"$":""}${r.x[k]}${u&&u!=="$"?" "+u:""}`).join(", ")}`})); logDecision(d,`replaced budget lines with the bottom-up estimate (${cmoney(B.total,d.currency)})`); toast("Budget lines updated. Each line's note shows its formula and inputs."); renderStep() } }
 function starterProduce(d){ const T=TEMPLATES[kindOf(d)]||TEMPLATES.dinner, B=+d.budget||15000;
   return {starter:true,team:[{role:"Event lead",who:"You",owns:kindOf(d)==="webinar"?["Plan and budget","Speaker and platform","Run of show"]:["Plan and budget","Venue and vendors","Run of show"],hours:30},{role:"Account execs",who:"Sales",owns:["Nominate and invite","Follow up in 24h"],hours:6},{role:"Exec sponsor",who:"A leader",owns:["Welcome","Personal notes"],hours:3},{role:"Sales lead",who:"Sales leadership",owns:["Cheat sheets","Pipeline review"],hours:4}],
     timeRisk:"",runOfShow:T.ros.map(([time,item,owner])=>({time,item,owner})),budget:T.split.map(([line,pc,note])=>({line,amount:Math.round(B*pc/100/50)*50,note})),tasks:T.tasks.map(([days,task,owner,workstream])=>({days,dur:Math.max(1,Math.min(7,Math.round(Math.abs(days)/6))),task,owner,workstream}))} }
@@ -2529,6 +2579,37 @@ function journeySteps(){ const d=draft, mine=!d.example, P=out("produce");
     {k:"measure",t:"Follow up and measure",why:"Follow up within 24 hours, sync to your CRM, and see pipeline and ROI.",min:"30 min",done:mine&&d.status==="done"}] }
 function journeyGo(k){ if(k==="brand") return location.hash="brand"; if(k==="idea") return location.hash="inspire";
   if(draft.example){ draft=brandDraft() } step={plan:1,signoff:8,invite:6,run:6,measure:7}[k]||1; location.hash="studio"; renderStep() }
+const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function parseEventText(t){ const x=String(t||""), lo=x.toLowerCase(), o={};
+  o.kind=/booth|conference|expo|summit booth|trade ?show/.test(lo)?"conference":/webinar|live session|virtual|online session/.test(lo)?"webinar":/roadshow|tour|cities/.test(lo)?"roadshow":/advisory board|\bcab\b|summit|forum|user group/.test(lo)?"summit":/launch/.test(lo)?"launch":/happy hour|experience|tasting|class|workshop/.test(lo)?"experience":"dinner";
+  const hc=x.match(/(\d{1,4})\s*(?:people|guests|seats|execs?|executives|cfos?|cmos?|ctos?|cios?|vps?|leaders|customers|attendees|marketers|buyers)/i); if(hc) o.headcount=+hc[1];
+  const bm=x.match(/(?:\$|€|£)\s?[\d.,]+\s?k?|\b\d+(?:\.\d+)?\s?k\b(?!m)/i); if(bm){ const v=parseMoney(bm[0]); if(v>=500) o.budget=v; if(/€/.test(bm[0])) o.currency="EUR"; if(/£/.test(bm[0])) o.currency="GBP" }
+  const cm=x.match(/\bin ([A-Z][A-Za-z.]+(?: [A-Z][A-Za-z.]+){0,2})/); if(cm&&!MONTHS.includes(cm[1].slice(0,3).toLowerCase())) o.city=cm[1]; else if(o.kind==="webinar") o.city="Online";
+  const mm=lo.match(new RegExp(`\\b(${MONTHS.join("|")})[a-z]*\\.?(?:\\s+(\\d{1,2}))?`)); if(mm){ const now=new Date(), mi=MONTHS.indexOf(mm[1]); let y=now.getFullYear(); if(mi<now.getMonth()||(mi===now.getMonth()&&+(mm[2]||28)<now.getDate())) y++; o.date=`${y}-${String(mi+1).padStart(2,"0")}-${String(+(mm[2]||15)).padStart(2,"0")}` }
+  const who=x.match(/(?:for|with)\s+(?:\d+\s+)?([A-Za-z ,&/-]*?(?:CFOs?|CMOs?|CTOs?|CIOs?|CISOs?|VPs?[A-Za-z ]*|heads? of [A-Za-z ]+|directors?[A-Za-z ]*|leaders|marketers|buyers|customers))/i); if(who) o.roles=[who[1].trim()];
+  return o }
+function quickStart(text){ const o=parseEventText(text), d=hydrate(brandDraft({kind:o.kind})); d.example=false; d.concept=text.trim(); d.name=text.trim().replace(/^(an?|we('| a)re (hosting|running|doing)|host(ing)?|plan(ning)?)\s+/i,"").slice(0,60).replace(/^./,c=>c.toUpperCase());
+  if(o.headcount) d.headcount=o.headcount; if(o.budget) d.budget=o.budget; if(o.currency) d.currency=o.currency; if(o.city) d.city=o.city; if(o.date) d.date=o.date; if(o.roles) d.audience.roles=o.roles;
+  if(!o.budget){ d.produce=null; const B=budgetModel(d); d.budget=Math.round(B.total/500)*500 } d.produce=starterProduce(d); d.produce.budget=budgetModel(d).rows.map(r=>({line:r.line,amount:r.amt,note:r.formula}));
+  draft=d; step=1; logDecision(d,"started from a one-line description"); location.hash="#studio";
+  toast(`Plan drafted: ${KINDS[o.kind].label.toLowerCase()}${o.city?` in ${o.city}`:""}, ${d.headcount} guests, ${cmoney(eventCost(d),d.currency)} budget built line by line. Check the details, then build the guest list.`) }
+function startTemplate(k){ if(!KINDS[k]) k="dinner"; const d=hydrate(brandDraft({kind:k})); d.example=false; d.name=`New ${KINDS[k].label.toLowerCase()}`; if(k==="webinar") d.city="Online"; d.budget=Math.round(budgetModel(d).total/500)*500||d.budget; d.produce=starterProduce(d); d.produce.budget=budgetModel(d).rows.map(r=>({line:r.line,amount:r.amt,note:r.formula})); draft=d; step=1; location.hash="#studio"; toast(`${KINDS[k].label} template loaded: run of show, budget, tasks and owners. Set the city and date to tailor it.`) }
+function quickStartHTML(){ if(allEvents.some(e=>!e.example)) return "";
+  return `<div class="panel stack qs" id="qsPanel"><div><small class="eyebrow">Start in a minute</small><h3>Describe your next event in a sentence</h3><p class="note">Encore drafts the plan, a line-by-line budget, the timeline with owners and the launch page. You can change everything after.</p></div>
+    <div class="row" style="align-items:flex-end"><label class="f" style="flex:3">Your event<input id="qsText" placeholder="e.g. A dinner for 20 CFOs in New York in March, about $25k"></label><button class="btn primary" id="qsGo">Draft my plan</button></div>
+    <div class="chips"><span class="note">Or start from a template:</span>${[["dinner","Executive dinner"],["conference","Conference booth and side dinner"],["roadshow","City roadshow"],["summit","Customer advisory board"],["webinar","Live session"]].map(([k,l])=>`<button class="chip" data-tpl="${k}">${l}</button>`).join("")}</div></div>` }
+function weeklyItems(){ const real=allEvents.filter(e=>!e.example), now=Date.now(), I=[];
+  real.forEach(e=>{ const h=hydrate(e), past=e.date&&new Date(e.date+"T23:59:59")<now;
+    if(past){ const due=h.guests.filter(g=>g.status==="Attended"&&!g.contactedAt), by={}; due.forEach(g=>{ (by[g.owner||"Unassigned"]=by[g.owner||"Unassigned"]||[]).push(g.name) }); Object.entries(by).forEach(([o,L])=>I.push({k:"fu",e,o,n:L.length,t:`${o}: ${L.length} follow-up${L.length===1?"":"s"} not sent from ${e.name}`,a:`Hi ${o.split(" ")[0]}, ${L.length} of your guests from ${e.name} haven't had a follow-up yet (${L.slice(0,4).join(", ")}). Drafts are ready for you to approve: ${aeLink(h,o)}`})) }
+    else { const quiet=h.guests.filter(g=>g.status==="Invited"&&g.invitedAt&&now-g.invitedAt>5*864e5); if(quiet.length) I.push({k:"rsvp",e,n:quiet.length,t:`${quiet.length} invite${quiet.length===1?"":"s"} quiet for 5+ days on ${e.name}`,a:`These invites to ${e.name} have had no reply for 5+ days: ${quiet.slice(0,6).map(g=>`${g.name} (${g.owner||"no owner"})`).join(", ")}. Worth a personal nudge from the owner?`}) }
+    const plan=eventCost(h), act=actualOf(h); if(plan&&act&&Math.abs(act-plan)/plan>.1) I.push({k:"bud",e,t:`${e.name} is ${act>plan?"over":"under"} plan by ${Math.round(100*Math.abs(act-plan)/plan)}% (${cmoney(act,e.currency)} vs ${cmoney(plan,e.currency)})`,a:""}) });
+  const q=qOf(new Date().toISOString().slice(0,10)), touched=new Set(real.filter(e=>qOf(e.date)===q).flatMap(e=>(e.guests||[]).map(g=>(g.company||"").toLowerCase()))), T=(brandProfile?.knowledge?.accounts?.accounts||[]).filter(a=>/^a$|tier ?1|tier ?a/i.test(a.tier||"")&&!touched.has(a.name.toLowerCase()));
+  if(T.length) I.push({k:"acct",t:`${T.length} tier A account${T.length===1?"":"s"} with no event touch this quarter: ${T.slice(0,5).map(a=>a.name).join(", ")}${T.length>5?"…":""}`,a:`Tier A accounts we haven't hosted this quarter: ${T.map(a=>a.name).join(", ")}. Any of them worth a seat at the next dinner?`});
+  const C=(allConfs||[]).filter(c=>confDeadline(c)?.late); if(C.length) I.push({k:"conf",t:`Sponsorship decision due in 14 days: ${C.map(c=>c.name).join(", ")}`,a:""});
+  return I }
+function weeklyHTML(){ const I=weeklyItems(); if(!I.length) return "";
+  return `<div class="panel stack" id="weekly"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">This week</small><h3>${I.length} thing${I.length===1?"":"s"} that need you</h3></div><button class="btn ghost sm" id="wkCopy">Copy as a Slack update</button></div>
+    <ul class="clean">${I.slice(0,8).map((x,i)=>`<li>${esc(x.t)} ${x.a?`<button class="mini-btn" data-wk="${i}">Copy the nudge</button>`:""}${x.e?` <button class="mini-btn" data-wkopen="${esc(x.e.id||"")}">Open</button>`:""}</li>`).join("")}</ul></div>` }
 function homeHero(){ const S=journeySteps(), next=S.find(x=>!x.done), n=S.filter(x=>x.done).length;
   return `<section class="hero-home"><div><small class="eyebrow">Encore</small><h1>Fill the right room. Prove what it was worth.</h1>
     <p class="lede">Encore builds the guest list with sales from your CRM, gets the right people to show up, hands every attendee to their AE the next morning, and reports pipeline your CFO won't pick apart. The planning (concept, venue, page, plan) takes a day instead of weeks.</p>
@@ -2614,6 +2695,13 @@ function programTierHTML(){ const real=allEvents.filter(e=>!e.example), sample=!
       <p class="note">Gong, Fathom and Granola help pick who to invite and why. Set what's allowed per market; every agent run that touches call data is written to the audit log.</p>
       <div class="row">${["default",...new Set(allEvents.filter(e=>!e.example).map(e=>e.region).filter(Boolean))].map(r=>`<label class="f">${r==="default"?"Default":esc(r)}<select data-drule="${esc(r)}">${[["summaries","Summaries only, never quoted"],["full","Full transcripts, never quoted"],["off","Off: don't use call data"]].map(([v,l])=>`<option value="${v}" ${(B.dataRules?.[r]||(r==="default"?"summaries":B.dataRules?.default||"summaries"))===v?"selected":""}>${l}</option>`).join("")}</select></label>`).join("")}</div></details>
   </div>` }
+function wireHomePLG(el){ const I=weeklyItems();
+  $("#qsGo",el)&&($("#qsGo",el).onclick=()=>{ const t=$("#qsText",el).value.trim(); if(t.length<8){ toast("Say what, for whom, where and roughly when."); return } quickStart(t) });
+  $("#qsText",el)&&($("#qsText",el).onkeydown=e=>{ if(e.key==="Enter") $("#qsGo",el).click() });
+  $$("[data-tpl]",el).forEach(b=>b.onclick=()=>startTemplate(b.dataset.tpl));
+  $$("[data-wk]",el).forEach(b=>b.onclick=()=>copyTxt(I[+b.dataset.wk].a));
+  $$("[data-wkopen]",el).forEach(b=>b.onclick=()=>{ const e=allEvents.find(x=>x.id===b.dataset.wkopen); if(e){ draft=hydrate(e); step=7; location.hash="#studio" } });
+  $("#wkCopy",el)&&($("#wkCopy",el).onclick=()=>copyTxt(`*Events this week*\n${I.map(x=>"• "+x.t).join("\n")}`)) }
 function wireProgramTier(el){ const h=$("#progTier",el); if(!h) return; const save=async()=>{ try{ await saveBrand(true) }catch{} renderPrograms() }, B=()=>brandProfile=brandProfile||{};
   $$("[data-tier]",h).forEach(x=>x.onchange=()=>{ const b=B(); b.tier={...(b.tier||{}),[x.dataset.tier]:+x.value||0}; save() });
   $$("[data-fmt]",h).forEach(x=>x.onchange=()=>{ const b=B(), [i,k]=x.dataset.fmt.split("|"); b.formats=clone(progFormats()); b.formats[+i][k]=k==="seats"?+x.value||0:x.value.trim(); save() });
@@ -2633,7 +2721,7 @@ function renderPrograms(){
     days=e.date?Math.ceil((new Date(e.date+"T12:00:00")-Date.now())/864e5):null, health=bl?"blocked":od||(days!=null&&days<21&&reg<tgt*.5)?"at risk":"on track";
     return {e,od,bl,nx,reg,tgt,plan,act,noms,aes,days,health} });
   const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
-  el.innerHTML=`${homeHero()}<div class="canvas-head" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
+  el.innerHTML=`${quickStartHTML()}${weeklyHTML()}${homeHero()}<div class="canvas-head" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Registrations, budget, blockers and what's next, across every event.</p></div>
     <div class="btns"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
     <div class="kpis" style="margin:18px 0" ${rows.length?"":"hidden"}><div class="kpi"><small>Events in flight</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs target</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Budget: actual vs plan</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Blocked or overdue</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
     ${programHTML()}
@@ -2656,6 +2744,76 @@ function renderPrograms(){
 }
 // ---------------- AE nominations ----------------
 let allNoms=[];
+// ---------------- Conference roadmap: nominate, research, score, decide ----------------
+let allConfs=[], confsLive=false, confFilter="all", confSort="date";
+const CONF_STAGES=[["nominated","Nominated"],["researching","Researched"],["recommended","Recommended"],["approved","Approved"],["booked","Booked"],["done","Done"],["passed","Passed"]];
+const CONF_REC={booth:"Sponsor a booth",side:"Side event only",attend:"Send attendees",speak:"Pitch a talk",skip:"Skip"};
+const CONF_RUBRIC=[["icp","Buyers in the room",30],["accounts","Target accounts attending",25],["cost","Cost per qualified conversation",20],["timing","Timing vs. pipeline goals",15],["voice","Speaking or POV opportunity",10]];
+const SAMPLE_CONFS=[["SaaStr Annual","San Mateo","2027-05-12","booked","booth",86,"Maya (Field)",65000,"Sam Lee (AE)"],["Dreamforce","San Francisco","2027-09-14","recommended","side",78,"Maya (Field)",40000,"Priya N (VP Sales)"],["INBOUND","Boston","2027-09-01","approved","booth",81,"Jo (Content)",52000,"Ana Diaz (AE)"],["B2B Marketing Exchange","Scottsdale","2027-02-22","recommended","speak",74,"Jo (Content)",12000,"CMO"],["Web Summit","Lisbon","2027-11-08","researching","attend",58,"Lena (EMEA)",15000,"Lena (EMEA)"],["Cannes Lions","Cannes","2027-06-14","nominated","",null,"",0,"CEO"],["SaaStock","Dublin","2027-10-12","recommended","side",72,"Lena (EMEA)",22000,"Tom (AE EMEA)"],["Pavilion CMO Summit","New York","2027-04-06","approved","attend",76,"Maya (Field)",8000,"CMO"],["Forrester B2B Summit","Austin","2027-05-04","researching","",61,"",0,"VP Demand Gen"],["Gartner CMO Symposium","London","2027-05-18","passed","skip",44,"Lena (EMEA)",0,"CFO"],["MarTech Conference","Online","2027-03-17","done","attend",52,"Jo (Content)",0,"Jo (Content)"],["VidCon Industry Track","Anaheim","2027-06-24","nominated","",null,"",0,"Ana Diaz (AE)"],["Collision","Toronto","2027-06-22","researching","",63,"",0,"Sam Lee (AE)"],["SXSW","Austin","2027-03-12","recommended","side",70,"Maya (Field)",18000,"CEO"],["Hubspot Partner Day","Boston","2027-08-31","nominated","",null,"",0,"Partner lead"],["Creator Economy Expo","Phoenix","2027-05-03","approved","speak",79,"Jo (Content)",6000,"Head of Creator Partnerships"],["DMEXCO","Cologne","2027-09-22","researching","",57,"Lena (EMEA)",0,"Tom (AE EMEA)"],["Advertising Week","New York","2027-10-18","recommended","side",73,"Maya (Field)",20000,"VP Sales"],["Brand Innovators Summit","New York","2027-07-15","nominated","",null,"",0,"CMO"],["MAU Vegas","Las Vegas","2027-05-25","passed","skip",39,"",0,"Growth lead"],["SaaStr Europa","London","2027-06-08","approved","side",77,"Lena (EMEA)",25000,"Tom (AE EMEA)"],["Shoptalk","Las Vegas","2027-03-29","researching","",60,"",0,"AE"],["Pavilion Field Marketing Day","Online","2027-02-10","done","attend",55,"Maya (Field)",0,"Maya (Field)"],["TechCrunch Disrupt","San Francisco","2027-10-26","nominated","",null,"",0,"CEO"]]
+  .map(([name,city,date,stage,rec,score,owner,cost,by],i)=>({id:"sc"+i,sample:true,name,city,date,stage,rec,score,owner,cost,nominatedBy:[by],votes:{},why:"",research:score!=null?{summary:({booth:`Enough of our buyers and ${3+i%5} target accounts attend to justify a booth; pair it with a side dinner.`,side:`Booth traffic skews junior. Host a 20-seat dinner for the ${2+i%4} target accounts in town instead.`,attend:`Worth sending two people with booked meetings; sponsoring wouldn't reach our buyers.`,speak:`Open call for speakers; our creator-marketing data fits the agenda better than a booth.`,skip:`Mostly agencies and junior roles; none of our target accounts listed.`})[rec]||"Research in progress.",confidence:"sample"}:null}));
+function confList(){ return (confsLive||allConfs.length)?allConfs:SAMPLE_CONFS }
+async function saveConf(c){ if(c.sample){ toast("This is sample data. Nominate a real conference to start your own roadmap."); return false } c.updatedAt=Date.now(); if(db){ try{ const {id,...rest}=c; if(id&&!String(id).startsWith("local_")) await db.doc("conferences/"+id).set(rest); else { const r=await db.collection("conferences").add(rest); c.id=r?.id||c.id } }catch(e){ toast("Couldn't save: "+(e?.message||"try again")); return false } } else { if(!c.id) c.id="local_"+Math.random().toString(36).slice(2,8); if(!allConfs.includes(c)) allConfs.push(c) } return true }
+function confDeadline(c){ if(!c.date) return null; const d=new Date(c.date+"T12:00:00"), days=Math.ceil((d-Date.now())/864e5), sponsorBy=new Date(d.getTime()-90*864e5); return {days,sponsorBy:sponsorBy.toISOString().slice(0,10),late:c.stage!=="booked"&&c.stage!=="passed"&&c.stage!=="done"&&(sponsorBy-Date.now())<14*864e5} }
+function renderConfs(){ const el=$("#view-conferences"); if(!el) return; const L=confList(), sample=L===SAMPLE_CONFS, by=k=>L.filter(c=>c.stage===k).length;
+  let rows=L.filter(c=>confFilter==="all"||c.stage===confFilter||(confFilter==="review"&&c.stage==="recommended"&&!(c.votes||{})[me()||"You"]));
+  rows=rows.sort((a,b)=>confSort==="score"?(b.score??-1)-(a.score??-1):(a.date||"9").localeCompare(b.date||"9"));
+  const review=L.filter(c=>c.stage==="recommended"), queue=L.filter(c=>c.stage==="nominated"), spend=L.filter(c=>/approved|booked/.test(c.stage)).reduce((a,c)=>a+(+c.cost||0),0), late=L.filter(c=>confDeadline(c)?.late);
+  el.innerHTML=`<div class="canvas-head"><div><small class="eyebrow">Conferences</small><h2>Every show on the roadmap, in one place</h2><p class="lede">Sales and execs nominate shows. Encore researches and scores each one against your buyers and target accounts, then recommends what to do. Everyone reviews the recommendations here.</p></div>
+    <div class="btns"><button class="btn" id="cfLink">Copy the nomination link for sales</button><button class="btn primary" id="cfNew">+ Nominate a conference</button></div></div>
+    ${sample?`<div class="samplebar">Sample roadmap. Nominate your first conference to start yours.</div>`:""}
+    <div class="kpis" style="margin:14px 0"><div class="kpi"><small>On the roadmap</small><b>${L.filter(c=>c.stage!=="passed").length}</b></div><div class="kpi"><small>Waiting for research</small><b>${queue.length}</b></div><div class="kpi"><small>Recommendations to review</small><b>${review.length}</b></div><div class="kpi"><small>Approved and booked spend</small><b>${money(spend)}</b></div><div class="kpi"><small>Sponsorship deadline in 14 days</small><b style="${late.length?"color:var(--bad)":""}">${late.length}</b></div></div>
+    <div class="panel stack" id="cfForm" hidden><h3>Nominate a conference</h3><div class="row"><label class="f">Conference<input id="cf-name" placeholder="e.g. SaaStr Annual"></label><label class="f">Website<input id="cf-url" type="url" placeholder="https://…"></label></div>
+      <div class="row"><label class="f">Dates<input id="cf-date" type="date"></label><label class="f">City<input id="cf-city"></label><label class="f">Your name<input id="cf-by" value="${esc(me()||"")}"></label></div>
+      <label class="f">Why we should go<input id="cf-why" placeholder="e.g. 3 of my open opps said they're attending"></label><label class="f">Accounts you know will be there<input id="cf-accts" placeholder="Comma-separated"></label>
+      <div class="btns"><button class="btn primary sm" id="cf-save">Add to the queue</button><button class="btn ghost sm" id="cf-x">Cancel</button></div></div>
+    ${review.length?`<div class="panel stack"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">For everyone to review</small><h3>${review.length} recommendation${review.length===1?"":"s"}</h3></div><button class="btn ghost sm" id="cfSlack">Copy a Slack summary</button></div>
+      <div class="cards">${review.map(c=>{ const V=c.votes||{}, yes=Object.values(V).filter(v=>v==="yes").length, no=Object.values(V).filter(v=>v==="no").length; return `<div class="card"><div class="btns" style="justify-content:space-between"><b>${esc(c.name)}</b><span class="pchip ${c.score>=75?"good":c.score>=60?"warn":"bad"}">${c.score??"–"}/100</span></div><span class="note">${esc(fmtDate(c.date))} · ${esc(c.city||"")} · ${esc(CONF_REC[c.rec]||"")}${c.cost?` · ${money(c.cost)}`:""}</span>${c.research?.summary?`<p class="note">${esc(c.research.summary)}</p>`:""}<span class="note">${yes} yes · ${no} no${Object.keys(V).length?` (${esc(Object.keys(V).join(", "))})`:""}</span><div class="btns"><button class="btn sm" data-cfv="${esc(c.id)}|yes">Approve</button><button class="btn ghost sm" data-cfv="${esc(c.id)}|no">Pass</button><button class="btn ghost sm" data-cfopen="${esc(c.id)}">Details</button></div></div>` }).join("")}</div></div>`:""}
+    <div class="panel stack"><div class="btns" style="justify-content:space-between"><div class="chips">${[["all","All"],["review","Needs my review"],...CONF_STAGES].map(([k,l])=>`<button class="chip" aria-pressed="${confFilter===k}" data-cff="${k}">${l}${k==="all"||k==="review"?"":` · ${by(k)}`}</button>`).join("")}</div>
+      <div class="btns"><label class="note">Sort <select id="cfSort"><option value="date" ${confSort==="date"?"selected":""}>By date</option><option value="score" ${confSort==="score"?"selected":""}>By score</option></select></label>${queue.length?`<button class="btn sm primary" id="cfRunAll">Research and score ${queue.length} in the queue</button>`:""}</div></div>
+      <div class="tscroll"><table><thead><tr><th>Conference</th><th>When</th><th>Stage</th><th class="num">Score</th><th>Recommendation</th><th>Owner</th><th class="num">Cost</th><th>Nominated by</th><th></th></tr></thead><tbody>${rows.map(c=>{ const D=confDeadline(c); return `<tr><td><b>${esc(c.name)}</b><div class="note">${esc(c.city||"")}</div></td><td>${esc(fmtDate(c.date))}${D?`<div class="note" ${D.late?'style="color:var(--bad)"':""}>${D.days<0?"past":`${D.days} days`}${D.late?` · sponsor by ${esc(D.sponsorBy)}`:""}</div>`:""}</td><td><select data-cfs="${esc(c.id)}">${CONF_STAGES.map(([k,l])=>`<option value="${k}" ${c.stage===k?"selected":""}>${l}</option>`).join("")}</select></td><td class="num">${c.score!=null?`<span class="pchip ${c.score>=75?"good":c.score>=60?"warn":"bad"}">${c.score}</span>`:"–"}</td><td>${esc(CONF_REC[c.rec]||"–")}</td><td><input class="mini" style="width:120px" data-cfo="${esc(c.id)}" value="${esc(c.owner||"")}" placeholder="Owner"></td><td class="num">${c.cost?money(c.cost):"–"}</td><td class="note">${esc((c.nominatedBy||[]).join(", "))}</td><td><div class="btns" style="flex-wrap:nowrap">${c.stage==="nominated"||!c.research?`<button class="mini-btn" data-cfr="${esc(c.id)}">Research</button>`:`<button class="mini-btn" data-cfopen="${esc(c.id)}">Details</button>`}${/approved|booked/.test(c.stage)&&!c.eventId?`<button class="mini-btn" data-cfev="${esc(c.id)}">Plan it</button>`:""}</div></td></tr>` }).join("")}</tbody></table></div></div>
+    <div id="cfDetail"></div>`;
+  wireConfs(el) }
+function confPrompt(c){ const K=brandProfile||{}, acc=(K.knowledge?.accounts?.accounts||[]).slice(0,40).map(a=>a.name).join(", ");
+  return `You are a field marketing strategist deciding whether ${K.company||"this company"} should invest in a conference. Research it on the web: confirm the dates, city, expected attendance, who attends (titles, seniority, industries), sponsorship tiers and prices, speaking opportunities and deadlines. Check which of the TARGET ACCOUNTS are likely to attend (past sponsor and speaker lists, attendee lists, LinkedIn posts). Never invent numbers: if you can't find one, say "unknown" and lower your confidence.
+CONFERENCE: ${c.name}${c.url?` (${c.url})`:""}. DATES: ${c.date||"find them"}. CITY: ${c.city||"find it"}.
+WHY IT WAS NOMINATED: ${c.why||"not given"}. ACCOUNTS THE NOMINATOR KNOWS WILL ATTEND: ${(c.accounts||[]).join(", ")||"none named"}.
+OUR BUYERS: ${(K.icp||K.knowledge?.icp?.icp?.who||"B2B marketing leaders")}. TARGET ACCOUNTS: ${acc||"not connected"}. ANNUAL EVENTS BUDGET: ${money(+(K.program?.annual||400000))}.
+Score 0-100 with this rubric: ${CONF_RUBRIC.map(([k,l,w])=>`${l} (${w})`).join(", ")}. Recommend one of: booth, side, attend, speak, skip.
+Reply with only JSON: {"date":"YYYY-MM-DD or empty","city":"","attendance":"","audience":"max 25 words","sponsorship":"tiers and prices you found, or unknown","deadline":"sponsorship or CFP deadline, YYYY-MM-DD or empty","accounts":["target accounts likely there, with why in brackets"],"scores":{"icp":0-30,"accounts":0-25,"cost":0-20,"timing":0-15,"voice":0-10},"rec":"booth|side|attend|speak|skip","cost":0,"summary":"max 35 words: what to do and why","risks":["max 12 words"],"confidence":"high|medium|low","sources":[{"source":"","detail":"with URL"}]}` }
+async function researchConf(c,btn){ if(c.sample){ toast("Sample data. Nominate a real conference to research it."); return } const used=new Set(), tools=await toolsFor(["web","crm","sfdc","attio"],used);
+  c.stage="researching"; await saveConf(c); renderConfs(); const o=await askJSON(confPrompt(c),btn,null,{tools}); if(!o?.scores){ toast("Research didn't come back. Try again."); return }
+  const sc=Object.entries(o.scores).reduce((a,[k,v])=>a+Math.max(0,Math.min(CONF_RUBRIC.find(r=>r[0]===k)?.[2]||0,+v||0)),0);
+  Object.assign(c,{research:o,score:sc,rec:o.rec,cost:+o.cost||c.cost||0,date:c.date||o.date||"",city:c.city||o.city||"",stage:sc>=60&&o.rec!=="skip"?"recommended":"passed",researchedAt:Date.now()});
+  if(c.stage==="passed") c.autoPassed=true; await saveConf(c); toast(`${c.name}: ${sc}/100, ${CONF_REC[o.rec]||o.rec}.`); renderConfs() }
+function confDetail(c){ const h=$("#cfDetail"); if(!h) return; const o=c.research||{};
+  h.innerHTML=`<div class="panel stack"><div class="btns" style="justify-content:space-between"><div><small class="eyebrow">${esc(fmtDate(c.date))} · ${esc(c.city||"")}</small><h3>${esc(c.name)}</h3></div><button class="btn ghost sm" id="cfClose">Close</button></div>
+    ${o.summary?`<div class="caveat"><b>${esc(CONF_REC[c.rec]||"")}: ${c.score}/100${o.confidence?` (${esc(o.confidence)} confidence)`:""}.</b> ${esc(o.summary)}</div>`:`<p class="note">Not researched yet.</p>`}
+    ${o.scores?`<div class="tscroll"><table><thead><tr><th>Criterion</th><th class="num">Score</th></tr></thead><tbody>${CONF_RUBRIC.map(([k,l,w])=>`<tr><td>${l}</td><td class="num">${+o.scores[k]||0} / ${w}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <div class="row">${o.attendance?`<div class="kpi"><small>Attendance</small><b style="font-size:1rem">${esc(o.attendance)}</b></div>`:""}${o.deadline?`<div class="kpi"><small>Deadline</small><b style="font-size:1rem">${esc(o.deadline)}</b></div>`:""}${o.sponsorship?`<div class="kpi"><small>Sponsorship</small><b style="font-size:1rem">${esc(o.sponsorship)}</b></div>`:""}</div>
+    ${o.audience?`<p class="note"><b>Who attends:</b> ${esc(o.audience)}</p>`:""}${o.accounts?.length?`<p class="note"><b>Target accounts likely there:</b> ${o.accounts.map(esc).join("; ")}</p>`:""}${o.risks?.length?`<p class="note"><b>Risks:</b> ${o.risks.map(esc).join("; ")}</p>`:""}
+    ${c.why?`<p class="note"><b>Nominated because:</b> ${esc(c.why)} (${esc((c.nominatedBy||[]).join(", "))})</p>`:""}${o.sources?.length?srcList(o):""}
+    <div class="btns"><button class="btn sm" data-cfr="${esc(c.id)}">Research again</button>${/approved|booked/.test(c.stage)&&!c.eventId?`<button class="btn primary sm" data-cfev="${esc(c.id)}">Plan the booth and side event</button>`:""}</div></div>`;
+  $("#cfClose",h).onclick=()=>h.innerHTML=""; wireConfs(h); h.scrollIntoView({behavior:"smooth",block:"start"}) }
+function wireConfs(el){ const find=id=>confList().find(c=>String(c.id)===String(id));
+  $("#cfNew",el)&&($("#cfNew",el).onclick=()=>{ const f=$("#cfForm"); f.hidden=false; $("#cf-name").focus() });
+  $("#cf-x",el)&&($("#cf-x",el).onclick=()=>$("#cfForm").hidden=true);
+  $("#cf-save",el)&&($("#cf-save",el).onclick=async()=>{ const name=$("#cf-name").value.trim(); if(!name){ toast("Name the conference"); return } const by=$("#cf-by").value.trim()||me()||"Someone";
+    const dup=allConfs.find(c=>c.name.toLowerCase()===name.toLowerCase()&&(!$("#cf-date").value||!c.date||c.date.slice(0,4)===$("#cf-date").value.slice(0,4)));
+    if(dup){ dup.nominatedBy=[...new Set([...(dup.nominatedBy||[]),by])]; if($("#cf-why").value.trim()) dup.why=[dup.why,$("#cf-why").value.trim()].filter(Boolean).join(" / "); await saveConf(dup); toast(`${name} was already on the roadmap. Added ${by} as a nominator.`); renderConfs(); return }
+    const c={name,url:$("#cf-url").value.trim(),date:$("#cf-date").value,city:$("#cf-city").value.trim(),why:$("#cf-why").value.trim(),accounts:$("#cf-accts").value.split(",").map(x=>x.trim()).filter(Boolean),nominatedBy:[by],stage:"nominated",votes:{},createdAt:Date.now()};
+    if(await saveConf(c)){ confsLive=true; toast(`${name} is in the queue. Research it now or batch the queue.`); renderConfs() } });
+  $("#cfLink",el)&&($("#cfLink",el).onclick=()=>copyTxt(`Going to a conference this year, or hearing customers talk about one? Nominate it for our events roadmap (takes 1 minute): ${ART_URL}#conferences\nEncore researches each one, scores it against our buyers and target accounts, and we review the recommendations together.`));
+  $("#cfSlack",el)&&($("#cfSlack",el).onclick=()=>copyTxt(`*Conference recommendations to review*\n${confList().filter(c=>c.stage==="recommended").map(c=>`• *${c.name}* (${fmtDate(c.date)}, ${c.city}): ${CONF_REC[c.rec]||""}, ${c.score}/100${c.cost?`, ~${money(c.cost)}`:""}. ${c.research?.summary||""}`).join("\n")}\nApprove or pass: ${ART_URL}#conferences`));
+  $$("[data-cff]",el).forEach(b=>b.onclick=()=>{ confFilter=b.dataset.cff; renderConfs() });
+  $("#cfSort",el)&&($("#cfSort",el).onchange=e=>{ confSort=e.target.value; renderConfs() });
+  $$("[data-cfs]",el).forEach(x=>x.onchange=async()=>{ const c=find(x.dataset.cfs); if(!c) return; c.stage=x.value; if(await saveConf(c)) logDecisionConf(c,`moved to ${x.value}`); renderConfs() });
+  $$("[data-cfo]",el).forEach(x=>x.onchange=async()=>{ const c=find(x.dataset.cfo); if(!c) return; c.owner=x.value.trim(); await saveConf(c) });
+  $$("[data-cfv]",el).forEach(b=>b.onclick=async()=>{ const [id,v]=b.dataset.cfv.split("|"), c=find(id); if(!c) return; const who=me()||window.prompt?.("Your name, so the team sees who voted")||"Someone"; c.votes={...(c.votes||{}),[who]:v}; const yes=Object.values(c.votes).filter(x=>x==="yes").length, no=Object.values(c.votes).filter(x=>x==="no").length; if(yes>=2&&yes>no) c.stage="approved"; if(no>=2&&no>yes) c.stage="passed"; if(await saveConf(c)) toast(`Vote recorded${c.stage==="approved"?". Approved: assign an owner and plan it.":""}`); renderConfs() });
+  $$("[data-cfr]",el).forEach(b=>b.onclick=()=>{ const c=find(b.dataset.cfr); if(c) researchConf(c,b) });
+  $$("[data-cfopen]",el).forEach(b=>b.onclick=()=>{ const c=find(b.dataset.cfopen); if(c) confDetail(c) });
+  $("#cfRunAll",el)&&($("#cfRunAll",el).onclick=async e=>{ const btn=e.currentTarget, Q=confList().filter(c=>c.stage==="nominated"); for(const c of Q){ await researchConf(c,btn) } });
+  $$("[data-cfev]",el).forEach(b=>b.onclick=async()=>{ const c=find(b.dataset.cfev); if(!c) return; draft=hydrate(brandDraft({name:`${c.name}: booth and side dinner`,kind:"conference",city:c.city,date:c.date,budget:+c.cost||+(c.research?.cost)||40000,goal:c.research?.summary||c.why||""})); draft.example=false; draft.fromConference=c.id; if(!c.sample){ c.eventId="pending"; await saveConf(c) } step=1; location.hash="#studio"; toast(`Planning ${c.name}. Booth design, product marketing assets, staff and agendas are in Produce.`) }) }
+function logDecisionConf(c,what){ if(window.ENCORE_SERVER) fetch("/api/audit",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:"",what:`Conference ${c.name}: ${what}`})}).catch(()=>{}) }
 function aeList(d){ return [...new Set([...d.guests.map(g=>g.owner),...((out("scout")?.contacts)||[]).map(c=>c.owner)].filter(Boolean))] }
 function nomLink(d,ae){ return `${ART_URL}#nominate-${d.id}-${slug(ae)}` }
 function nominationsHTML(d){
@@ -2960,7 +3118,7 @@ function openShare(){ const h=$("#shareHost"); if(!h) return; const C=cv(), B=br
     <div><small class="eyebrow">Show on the roadmap</small><div class="chips" style="margin-top:6px">${(C?.items||[]).map((i,ix)=>`<label class="chip"><input type="checkbox" data-pub="${ix}" ${i.public!==false&&i.audience!=="employees"?"checked":""} ${i.audience==="employees"?"disabled":""}> ${esc(i.name)}</label>`).join("")}</div></div>
     ${roadmapHTML(C,B,true)}</div></div>`;
   $$("canvas[data-soc]",h).forEach(c=>drawRoadmapImage(c,C,B));
-  $("#shClose").onclick=()=>h.innerHTML=""; $("#shLink").onclick=()=>copyTxt(`${ART_URL}#roadmap`); $("#shCap").onclick=()=>copyTxt(socialCaption(C,B));
+  $("#shClose").onclick=()=>h.innerHTML=""; $("#shLink").onclick=()=>copyTxt(`${ART_URL}#roadmap${window.ENCORE_ME?.workspace?.id&&window.ENCORE_ME.workspace.id!=="default"?"~ws-"+window.ENCORE_ME.workspace.id:""}`); $("#shCap").onclick=()=>copyTxt(socialCaption(C,B));
   $$("[data-pub]",h).forEach(cb=>cb.onchange=()=>{ C.items[+cb.dataset.pub].public=cb.checked; C.example=false; saveCanvas(); openShare() });
   $$("[data-socdl]",h).forEach(b=>b.onclick=()=>{ const c=$(`canvas[data-soc="${b.dataset.socdl}"]`,h); c.toBlob(async bl=>{ try{ await downloads.save({filename:`${slug(B?.company||"events")}-roadmap-${b.dataset.socdl}.png`,data:bl}) }catch{ toast("Download cancelled") } },"image/png") });
 }
@@ -3675,6 +3833,7 @@ function step4(host){
       <div class="kpi"><small>Cost per guest</small><b>${lm(total/(d.headcount||1))}</b><small>at ${d.headcount} guests</small></div>
       <div class="kpi"><small>Checklist</small><b>${doneN}/${tasks.length}</b><small>tasks done</small></div>
     </div>
+    ${budgetDeepHTML(d,P)}
     <div class="two">
       <div class="stack" style="gap:8px"><div class="eyebrow">Countdown checklist</div>
         ${tasks.map(t=>{const dd=dueDate(t.days), done=d.tasksDone.includes(t.i), late=!done&&dd&&dd<today;
@@ -3687,6 +3846,7 @@ function step4(host){
       </div>
     </div>`;
   const ch=document.createElement("div"); ch.className="panel stack"; ch.id="commitsHost"; const nb=$("[data-next]",host)?.closest(".btns"); nb?nb.before(ch):host.appendChild(ch); drawCommits(d);
+  wireBudgetDeep(host,d);
   $$("[data-bl2]",host).forEach(x=>x.onchange=()=>{ const [i,k]=x.dataset.bl2.split("|"), b=P.budget[+i], old=b[k]; b[k]=k==="amount"?+x.value||0:x.value; if(k==="amount") logDecision(d,`changed budget line "${b.line}" from ${cmoney(old,d.currency)} to ${cmoney(b[k],d.currency)}`); renderStep() });
   wirePM(host,d,P); $("#actSpend")&&($("#actSpend").onchange=e=>{ d.actualSpend=+e.target.value||0; logDecision(d,`set actual spend to ${money(d.actualSpend)}`) });
   $$("[data-t]",host).forEach(c=>c.onchange=()=>{ const i=+c.dataset.t; d.tasksDone=c.checked?[...new Set([...d.tasksDone,i])]:d.tasksDone.filter(x=>x!==i); renderStep() });
@@ -4025,21 +4185,21 @@ async function renderWall(host,id){
       <div class="btns"><a class="btn wbtn" href="#rsvp-${esc(e.id)}">${e.approvalRequired?"Request a seat":"RSVP"}</a></div></header>
     ${sampleMode?`<div class="samplebar">Sample guests. Real guests appear here when they RSVP and opt in.</div>`:""}
     <div class="wbar"><div class="wtabs" role="tablist" id="wTabs"></div><input id="wQ" placeholder="Search by name, company or topic" aria-label="Search guests"><span class="wlive" title="Updates live"><i></i>Live</span></div>
-    <div class="wgrid" id="wGrid"></div><p class="note" style="text-align:center">Guests choose to appear here when they RSVP. Hosted on Encore.</p></div>`;
+    <div class="wgrid" id="wGrid"></div><p class="note" style="text-align:center">Guests choose to appear here when they RSVP. ${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Encore</a> · plan your own events free`:"Made with Encore"}</p></div>`;
   split(); stats(); draw(); $("#wQ").oninput=ev=>{ q=ev.target.value.toLowerCase().trim(); draw() };
   if(db&&id!=="sample"){ const apply=rows=>{ const j=JSON.stringify(rows); if(j===seen||!host.isConnected||location.hash!=="#guests-"+id) return; seen=j; ALL=rows; split(); stats(); draw() };
     try{ db.collection("wall").where("eventId","==",id).onSnapshot(sn=>apply(sn.docs.map(x=>x.data())),()=>{}) }catch{}
     const t=setInterval(async()=>{ if(location.hash!=="#guests-"+id){ clearInterval(t); return } try{ const s=await db.collection("wall").where("eventId","==",id).get(); apply(s.docs.map(x=>x.data())) }catch{} },20000) } }
 async function renderGuest(){
   const host=$("#view-guest");
-  if(location.hash==="#roadmap"){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
+  if(/^#roadmap(~ws-[A-Za-z0-9_-]+)?$/.test(location.hash)){ if(host.dataset.key!=="roadmap"){ host.dataset.key="roadmap"; host.classList.add("wide"); renderRoadmapPublic(host) } return }
   const pm=location.hash.match(/^#plan-([A-Za-z0-9_]+)(?:~[a-f0-9]+)?$/); if(pm){ if(host.dataset.key!=="plan"+pm[1]){ host.dataset.key="plan"+pm[1]; host.classList.add("wide"); renderPlanShare(host,pm[1]) } return }
   const am=location.hash.match(/^#approve-([A-Za-z0-9_]+)-([a-z0-9-]+)(?:~([a-f0-9]+))?$/); if(am){ host.classList.remove("wide"); if(!db&&!window.ENCORE_SERVER){ host.innerHTML=`<div class="panel"><p class="empty">Open this link on your Encore server or in claude.ai.</p></div>`; return } if(host.dataset.key!=="ae"+am[1]+am[2]+(am[3]||"")){ host.dataset.key="ae"+am[1]+am[2]+(am[3]||""); renderApprove(host,am[1],am[2],am[3]) } return }
   const wm=location.hash.match(/^#guests-([A-Za-z0-9_]+)$/); if(wm){ host.classList.add("wide"); if(host.dataset.key!=="wall"+wm[1]){ host.dataset.key="wall"+wm[1]; renderWall(host,wm[1]) } return }
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Encore while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
   const gm=location.hash.match(/^#(rsvp|survey)-([A-Za-z0-9_]+)(?:\.g(\d+))?(?:\.i-[A-Za-z0-9_-]+~[a-f0-9]+)?$/)||[], kind=gm[1], id=gm[2], gi=gm[3]!=null?+gm[3]:null;
-  const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">Hosted on Encore</p></div>`;
+  const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}<p class="note" style="text-align:center">${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Encore</a> · plan your own events free`:"Made with Encore"}</p></div>`;
   if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Open this invite while signed in to respond.":"Loading your invite…"}</p></div>`); return }
   let ev=allEvents.find(e=>e.id===id);
   if(!ev){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
@@ -4751,4 +4911,26 @@ function renderImpact(){
 route();
 </script>
 
-<script>{ const _rp=renderPrograms; renderPrograms=function(){ _rp.apply(this,arguments); wireProgramTier($("#view-programs")) }; wireProgramTier($("#view-programs")) }</script>
+<div id="trialBar" hidden></div>
+<script>{ const _rp=renderPrograms; renderPrograms=function(){ _rp.apply(this,arguments); wireProgramTier($("#view-programs")); wireHomePLG($("#view-programs")) }; wireProgramTier($("#view-programs")); wireHomePLG($("#view-programs")) }</script>
+
+<script>
+(function(){
+  let WS=null;
+  const bar=document.getElementById("trialBar"), hdr=document.getElementById("appHeader"); if(hdr&&bar) hdr.after(bar);
+  window.showUpgrade=function(reason){ const m=document.createElement("div"); m.className="modal-back"; m.innerHTML=`<div class="panel stack" role="dialog" aria-label="Choose a plan" style="max-width:640px;margin:8vh auto"><div class="btns" style="justify-content:space-between"><h3>${reason==="trial_ended"?"Your trial has ended":"Choose a plan"}</h3><button class="btn ghost sm" data-x>Close</button></div>${reason==="trial_ended"?`<p class="note">Everything you made is still here and readable. Pick a plan to keep planning and sending.</p>`:""}
+    <div class="cards"><div class="card"><b>Team · $2,000/mo</b><p class="note">One field marketer or events lead, one market. Unlimited events, AE follow-up, budgets, launch pages, the Claude connector.</p><button class="btn primary sm" data-plan="team">Choose Team</button></div><div class="card"><b>Program · $10,000/mo</b><p class="note">Events teams across markets: up to 30 run events and 3 markets a year, pooled holdouts, market status, conference roadmap, call-data rules by country.</p><button class="btn sm" data-plan="program">Choose Program</button></div></div>
+    <p class="note">We'll confirm billing with you by email; nothing is charged from here.</p></div>`;
+    document.body.appendChild(m); m.querySelector("[data-x]").onclick=()=>m.remove(); m.onclick=e=>{ if(e.target===m) m.remove() };
+    m.querySelectorAll("[data-plan]").forEach(b=>b.onclick=async()=>{ try{ const r=await fetch("/api/upgrade",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:b.dataset.plan})}); if(!r.ok) throw new Error(); toast("Thanks. We'll email you to set up billing; your workspace stays open meanwhile."); m.remove(); loadWS() }catch{ toast("Couldn't send that. Try again.") } }) };
+  async function invite(){ const email=window.prompt?.("Teammate's work email (an AE, your manager, RevOps):"); if(!email) return; try{ const r=await fetch("/api/invite",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,role:""})}), j=await r.json(); if(!r.ok) throw new Error(j.message||"not allowed"); const link=j.link||j.url||(j.token?`${location.origin}/join#${j.token}`:""); copyTxt(`I'm planning our events in Encore. Join the workspace here (link works for 7 days): ${link}`); toast("Invite link copied. Send it to them.") }catch(e){ toast("Couldn't create an invite: "+(e.message||"try again")) } }
+  async function loadWS(){ if(!window.ENCORE_SERVER||!bar) return; try{ const r=await fetch("/api/workspace",{credentials:"same-origin"}); if(!r.ok) return; WS=await r.json() }catch{ return }
+    const trial=WS.plan==="trial"||WS.trial, ended=trial&&WS.daysLeft!=null&&WS.daysLeft<=0, pending=/^pending/.test(WS.plan||"");
+    bar.hidden=!(trial||pending); bar.className="trialbar";
+    bar.innerHTML=`<div class="wrap btns" style="justify-content:space-between;padding:8px 20px"><span>${pending?`Upgrade requested (${esc(String(WS.plan).replace("pending_",""))}). We'll be in touch about billing.`:ended?"<b>Your trial has ended.</b> Your work is saved and readable.":`<b>Free trial:</b> ${WS.daysLeft} day${WS.daysLeft===1?"":"s"} left${WS.company?` for ${esc(WS.company)}`:""}. Everything is included.`}</span><span class="btns"><button class="btn ghost sm" id="tbInvite">Invite a teammate</button>${pending?"":`<button class="btn primary sm" id="tbUp">${ended?"Choose a plan":"Upgrade"}</button>`}</span></div>`;
+    bar.querySelector("#tbInvite").onclick=invite; bar.querySelector("#tbUp")&&(bar.querySelector("#tbUp").onclick=()=>showUpgrade(ended?"trial_ended":""));
+    if(ended&&!sessionStorage?.getItem?.("encore.endShown")){ try{ sessionStorage.setItem("encore.endShown","1") }catch{} showUpgrade("trial_ended") } }
+  window.encoreWorkspace=()=>WS; loadWS();
+  try{ const q=new URLSearchParams(location.search), t=q.get("template"); if(t&&!isGuestRoute()){ startTemplate(t) } else if(q.get("welcome")&&!location.hash){ location.hash="#programs"; setTimeout(()=>{ const x=document.getElementById("qsText"); if(x){ x.focus(); x.scrollIntoView({block:"center"}) } toast("Welcome. Describe your next event, or pick a template, and Encore drafts the plan.") },300) } if(t||q.get("welcome")) history.replaceState(null,"",location.pathname+location.hash) }catch{}
+})();
+</script>

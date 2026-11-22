@@ -80,18 +80,29 @@ const MCP_RATE_PER_MIN = () => Number(process.env.ENCORE_MCP_RATE_PER_MIN || 120
 
 const text = (obj) => ({ content: [{ type: "text", text: typeof obj === "string" ? obj : JSON.stringify(obj, null, 2) }] });
 
-export function mountMcp(app, { store, afterEventWrite, json }) {
+/**
+ * scoped(ws) -> the store for a workspace; findToken(token) -> a per-workspace token record {ws,name,email};
+ * writable(ws) -> false once a trial has ended; claimEvent(id, ws) -> registers a new event id.
+ */
+export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () => null, writable = () => true, claimEvent = () => true }) {
   // Who each token belongs to. The shared ENCORE_MCP_TOKEN can't name a person.
   const tokens = () => {
     const list = String(process.env.ENCORE_MCP_TOKENS || "").split(",").map((x) => x.trim()).filter(Boolean).map((x) => {
       const [name, email, t] = x.split("|").map((y) => y.trim());
-      return { name, email: String(email || "").toLowerCase() || null, token: t, verified: true };
+      return { name, email: String(email || "").toLowerCase() || null, token: t, verified: true, ws: "default" };
     }).filter((x) => x.name && x.token && x.token.length >= MIN_MCP_TOKEN);
-    if (process.env.ENCORE_MCP_TOKEN && process.env.ENCORE_MCP_TOKEN.length >= MIN_MCP_TOKEN) list.push({ name: "Claude (shared MCP token)", email: null, token: process.env.ENCORE_MCP_TOKEN, verified: false });
+    if (process.env.ENCORE_MCP_TOKEN && process.env.ENCORE_MCP_TOKEN.length >= MIN_MCP_TOKEN) list.push({ name: "Claude (shared MCP token)", ws: "default", email: null, token: process.env.ENCORE_MCP_TOKEN, verified: false });
     return list;
   };
   const same = (x, y) => { const a = Buffer.from(String(x)), b = Buffer.from(String(y)); return a.length === b.length && timingSafeEqual(a, b); };
-  const whoIs = (req) => { const got = String(req.get("authorization") || "").replace(/^Bearer\s+/i, ""); if (!got) return null; let hit = null; for (const t of tokens()) if (same(t.token, got)) hit = hit || t; return hit; };
+  const whoIs = (req) => {
+    const got = String(req.get("authorization") || "").replace(/^Bearer\s+/i, ""); if (!got) return null;
+    let hit = null; for (const t of tokens()) if (same(t.token, got)) hit = hit || t;
+    if (hit) return hit;
+    // Tokens a workspace owner created (POST /api/mcptoken), stored hashed.
+    const rec = got.length >= MIN_MCP_TOKEN ? findToken(got) : null;
+    return rec ? { name: rec.name, email: rec.email || null, verified: true, ws: rec.ws, token: got } : null;
+  };
   // Per-token rate limit: ENCORE_MCP_RATE_PER_MIN messages a minute (default 120; each message in a batch counts).
   const hits = new Map(); // token -> { n, start }
   const overLimit = (tok, n) => {
@@ -100,10 +111,12 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
     if (h.n + n > MCP_RATE_PER_MIN()) return Math.ceil((h.start + 60_000 - now) / 1000);
     h.n += n; return 0;
   };
+  // Everything below works on one workspace's store.
+  const ctxFor = (store, ws) => {
   const readLog = (who, eventId, tool) => store.add("audit", { eventId: String(eventId || ""), what: `read ${tool}`, kind: "read", via: "MCP", who: who?.name || "Claude (MCP)", email: who?.email || null, at: Date.now() });
   const audit = (who, eventId, what) => store.add("audit", { eventId: String(eventId || ""), what: String(what).slice(0, 500), kind: "mcp", via: "MCP", who: who?.name || "Claude (MCP)", email: who?.email || null, verified: !!who?.verified, at: Date.now() });
   const getEv = (id) => { if (!/^[A-Za-z0-9_-]+$/.test(String(id || ""))) throw new Error("Unknown event id"); const d = store.get("events/" + id); if (!d) throw new Error("No event with id " + id); return d.data; };
-  const save = (id, e) => { e.updatedAt = Date.now(); store.set("events/" + id, e); afterEventWrite?.("events/" + id); };
+  const save = (id, e) => { e.updatedAt = Date.now(); store.set("events/" + id, e); afterEventWrite?.(store, "events/" + id); };
 
   const run = {
     list_events: ({ status }) => { const R = rsvps(); return store.list("events").filter((d) => !d.data.example && (!status || (d.data.status || "planning") === status)).map((d) => summarize(d.id, d.data, R)); },
@@ -120,7 +133,7 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
       const date = a.date != null && a.date !== "" ? checkDate(a.date) : "";
       const headcount = a.headcount != null ? checkAmount(a.headcount, "headcount") : 20, budget = a.budget != null ? checkAmount(a.budget, "budget") : 0;
       const currency = a.currency != null && a.currency !== "" ? checkCurrency(a.currency) : "USD";
-      const id = randomId();
+      let id = randomId(); while (!claimEvent(id, ws)) id = randomId();
       const e = { name: String(a.name).slice(0, 120), kind: KINDS.includes(a.kind) ? a.kind : "dinner", objective: OBJECTIVES.includes(a.objective) ? a.objective : "pipeline", city: String(a.city || ""), date, headcount, budget, currency, concept: String(a.concept || ""), goal: String(a.goal || ""),
         audience: { roles: Array.isArray(a.audience_roles) ? a.audience_roles.slice(0, 10) : [], industries: [], seniority: "" }, guests: [], status: "planning", createdAt: Date.now(), createdVia: "Claude" };
       save(id, e); return { id, ...summarize(id, e) };
@@ -201,9 +214,13 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
     },
   };
 
-  /** One JSON-RPC message -> its response object, or null for a notification. */
   const rsvps = () => store.list("rsvps").map((d) => d.data);
+  return { run, readLog, audit, getEv };
+  };
+  const tokenExists = () => tokens().length > 0;
+  /** One JSON-RPC message -> its response object, or null for a notification. */
   function handle(msg, who) {
+    const { run, readLog, audit, getEv } = ctxFor(scoped(who.ws), who.ws);
     if (!msg || typeof msg !== "object" || Array.isArray(msg)) return { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid request" } };
     if (msg.id === undefined) return null; // notifications
     const reply = (result) => ({ jsonrpc: "2.0", id: msg.id ?? null, result }), fail = (code, message) => ({ jsonrpc: "2.0", id: msg.id ?? null, error: { code, message } });
@@ -214,6 +231,7 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
       if (msg.method === "tools/call") {
         const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args = msg.params?.arguments || {};
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
+        if (WRITES.has(name) && !writable(who.ws)) return reply({ ...text("This workspace's free trial has ended, so changes are paused. Upgrade in Encore to keep editing; reading still works."), isError: true });
         try {
           const out = fn(args);
           if (!WRITES.has(name)) readLog(who, args.id, name);
@@ -229,7 +247,7 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
   }
 
   app.post("/mcp", json, (req, res, next) => {
-    if (!tokens().length) return res.status(404).json({ error: "MCP is off. Set ENCORE_MCP_TOKENS or ENCORE_MCP_TOKEN to turn it on." });
+    if (!tokenExists() && process.env.ENCORE_SIGNUP !== "1") return res.status(404).json({ error: "MCP is off. Set ENCORE_MCP_TOKENS or ENCORE_MCP_TOKEN to turn it on." });
     const who = whoIs(req);
     if (!who) return res.status(401).json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "Unauthorized" } });
     req.mcpWho = who;

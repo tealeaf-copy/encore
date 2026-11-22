@@ -95,7 +95,8 @@ export async function runPm(store, { now = Date.now(), log = console.log } = {})
   return summary;
 }
 
-export function schedulePm(store) {
+/** stores: optional () => [store, ...] to run over several workspaces; defaults to [store]. */
+export function schedulePm(store, { stores } = {}) {
   const expr = process.env.PM_CRON || "0 8 * * 1-5";
   const timezone = process.env.PM_TZ || "America/Chicago";
   if (process.env.PM_CRON === "off") return null;
@@ -103,7 +104,9 @@ export function schedulePm(store) {
     console.warn(`[pm] invalid PM_CRON "${expr}"; daily job disabled`);
     return null;
   }
-  const task = cron.schedule(expr, () => runPm(store).catch((e) => console.error("[pm] run failed:", e?.message || e)), { timezone });
+  const task = cron.schedule(expr, async () => {
+    for (const st of stores ? stores() : [store]) await runPm(st).catch((e) => console.error("[pm] run failed:", e?.message || e));
+  }, { timezone });
   console.log(`[pm] scheduled "${expr}" (${timezone})`);
   return task;
 }

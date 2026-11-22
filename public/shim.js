@@ -19,7 +19,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
   const guestKey = () => { try { let k = localStorage.getItem("encore.gkey"); if (!k) { k = randomId().slice(0, 32); localStorage.setItem("encore.gkey", k); } return k; } catch { return ""; } };
   async function api(method, url, body, { raw = false, headers = {} } = {}) {
     const h = { ...headers };
-    if (isGuest()) { h["x-encore-guest"] = "1"; h["x-encore-key"] = guestKey(); h["x-encore-view"] = (/^#([a-z]+)/.exec(location.hash || "") || [])[1] || ""; const inv = /\.i-([A-Za-z0-9_-]+)~([a-f0-9]+)$/.exec(location.hash || ""); if (inv) { try { const k = decodeURIComponent(escape(atob(inv[1].replace(/-/g, "+").replace(/_/g, "/")))); h["x-encore-invite"] = encodeURIComponent(k) + "~" + inv[2]; } catch {} } else { const t = /~([a-f0-9]+)$/.exec(location.hash || ""); if (t) h["x-encore-token"] = t[1]; } }
+    if (isGuest()) { const wsq = /[?&]ws=([A-Za-z0-9_-]+)/.exec(location.search) || /~ws-([A-Za-z0-9_-]+)/.exec(location.hash || ""); if (wsq) window.__encoreWs = wsq[1]; if (window.__encoreWs) h["x-encore-workspace"] = window.__encoreWs; h["x-encore-guest"] = "1"; h["x-encore-key"] = guestKey(); h["x-encore-view"] = (/^#([a-z]+)/.exec(location.hash || "") || [])[1] || ""; const inv = /\.i-([A-Za-z0-9_-]+)~([a-f0-9]+)$/.exec(location.hash || ""); if (inv) { try { const k = decodeURIComponent(escape(atob(inv[1].replace(/-/g, "+").replace(/_/g, "/")))); h["x-encore-invite"] = encodeURIComponent(k) + "~" + inv[2]; } catch {} } else { const t = /~([a-f0-9]+)$/.exec(location.hash || ""); if (t) h["x-encore-token"] = t[1]; } }
     let payload = body;
     if (body !== undefined && !raw) { h["Content-Type"] = "application/json"; payload = JSON.stringify(body); }
     let res;
@@ -30,6 +30,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
     }
     let data = null;
     try { data = await res.json(); } catch {}
+    if (res.ok && isGuest() && data && typeof data === "object" && data.workspace && !window.__encoreWs) window.__encoreWs = String(data.workspace);
     if (!res.ok) {
       const code = data?.code || (res.status === 429 ? "rate_limited" : res.status === 401 || res.status === 403 ? "not_granted" : "upstream_error");
       throw capError(code, data?.message || `Request failed (${res.status})`);

@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Join your team · Encore</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}
+  form{background:#fff;padding:28px;border-radius:16px;box-shadow:0 6px 30px rgba(30,50,120,.12);width:min(340px,calc(100vw - 32px));box-sizing:border-box}
+  h1{margin:0 0 16px;font-size:22px}
+  input,button{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border-radius:10px}
+  input{border:1px solid #cfd6ea;margin-bottom:12px}
+  button{border:0;background:#3355ff;color:#fff;font-weight:600;cursor:pointer}button:disabled{opacity:.6;cursor:default}
+  .err{color:#b3261e;margin:0 0 12px;font-size:13px}.err:empty{display:none}
+</style></head><body>
+<form id="f" novalidate>
+  <h1>Join your team on Encore</h1>
+  <p class="err" id="err" role="alert"></p>
+  <input name="name" placeholder="Your name" autocomplete="name" required>
+  <input name="password" type="password" placeholder="Choose a password (10+ characters)" autocomplete="new-password" minlength="10" required>
+  <button type="submit" id="go">Join</button>
+</form>
+<script>
+  const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
+  const token = location.hash.slice(1);
+  if (!/^[a-f0-9]{48}$/.test(token)) { err.textContent = "This invite link looks incomplete. Open the full link from your invite."; go.disabled = true; }
+  f.addEventListener("submit", async (e) => {
+    e.preventDefault(); err.textContent = "";
+    const body = { ...Object.fromEntries(new FormData(f)), token };
+    if (String(body.password || "").length < 10) { err.textContent = "Use a password of at least 10 characters."; return; }
+    go.disabled = true;
+    try {
+      const r = await fetch("/api/join", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { err.textContent = j.message || "Couldn't join. Try again."; go.disabled = false; return; }
+      history.replaceState(null, "", "/join"); location.href = j.redirect || "/?welcome=1";
+    } catch { err.textContent = "Can't reach Encore. Check your connection."; go.disabled = false; }
+  });
+</script></body></html>

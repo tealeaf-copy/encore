@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Encore measures field events</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1B1740;--muted:#4E4B73;--bg:#F3F5FF;--line:#D9DCF2;--cobalt:#3B5BFF}
+*{box-sizing:border-box}body{margin:0;font:16px/1.65 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:760px;margin:0 auto;padding:48px 20px 80px}
+h1,h2{font-family:"Plus Jakarta Sans",Inter,sans-serif;letter-spacing:-.02em;line-height:1.15}
+h1{font-size:clamp(1.9rem,4vw,2.6rem);margin:8px 0 12px}h2{font-size:1.3rem;margin:36px 0 8px}
+p,li{color:var(--muted)}b{color:var(--ink)}a{color:var(--cobalt)}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cobalt)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:12px}
+</style></head><body><main>
+<a href="/">← Encore</a>
+<p class="eyebrow" style="margin-top:24px">Method</p>
+<h1>How Encore measures whether a field event worked</h1>
+<p>This is the full method. It's the same one the app uses, and the same one your RevOps team can rerun from the export.</p>
+
+<h2>1. Decide before anyone is invited</h2>
+<p>Before invites go out, you choose the question (sales-accepted meetings, or new opportunities), the eligible accounts, and a 90-day window. Encore locks all three. Nobody can stop the test early or move the dates after seeing results.</p>
+
+<h2>2. Hold out a random group</h2>
+<p>Encore assigns about 20% of eligible accounts, at random, to a held-out group that isn't invited. Tier A and accounts you mark as protected are never held out. Your CRO signs the split before it's locked. Held-out accounts keep their normal sales, email and ad coverage, so the only difference is the event.</p>
+
+<h2>3. Check the sample is big enough</h2>
+<p>Encore calculates the smallest difference the test can detect, using the usual meeting rate for these accounts and the size of each group (a two-sided test at 95% confidence and 80% power). If that difference is larger than any realistic effect, Encore tells you before you start and suggests pooling the same format across cities and quarters.</p>
+<div class="box"><b>Example.</b> With a 10% usual meeting rate and 270 eligible accounts, a test can only detect a jump of about 13 points. To detect 10% → 15%, you need about 1,760 eligible accounts. At that point Encore recommends pooling, or reporting results without calling them lift.</div>
+
+<h2>4. Count pipeline in three fixed buckets</h2>
+<table><tr><th>Bucket</th><th>Definition</th></tr>
+<tr><td>Created after</td><td>A new opportunity at an attending account, created within 90 days after the event, with an attendee on the deal or confirmed by RevOps.</td></tr>
+<tr><td>Existing deals with attendees</td><td>An opportunity open before the event, with an attendee on it, that moved stage within 90 days.</td></tr>
+<tr><td>Meetings</td><td>Attending accounts with a sales-accepted meeting and no deal yet.</td></tr></table>
+<p>A deal matched by company name alone is shown separately and stays out of every total until someone confirms the attendee is involved. No deal is counted in two buckets.</p>
+
+<h2>5. Keep the evidence types apart</h2>
+<p>Every meeting and deal carries how it's known: a logged CRM meeting, a call or email record, or an AI inference. The result is also shown with AI-inferred records excluded. If the two disagree, trust the stricter one.</p>
+
+<h2>6. Report exposure, not just results</h2>
+<p>If a held-out account is invited anyway, referred by a guest, or contacted by an AE about the event, it stays in the held-out group and is logged as exposure. If more than a quarter of the held-out group was reached, Encore calls the result inconclusive and recommends a new design.</p>
+
+<h2>7. Write down the decision</h2>
+<p>The readout is one of: fund more, cut or change, or inconclusive. Each comes with the rule that produced it, the group sizes and the detectable gap. You record what you'll do (which format or tier gets more budget, which is cut, what to test next), and the next wave is checked against it.</p>
+
+<h2>When Encore refuses to report lift</h2>
+<ul><li>No holdout was locked before invites went out.</li><li>The groups are too small for the difference to be read.</li><li>More than 25% of the held-out group was exposed.</li><li>Only AI-inferred records support the difference.</li></ul>
+<p>In those cases you still get operating results (who came, follow-up speed, meetings booked), labeled as such.</p>
+<p style="margin-top:32px"><a href="/signup">Start a free trial</a> · <a href="/demo">See a sample event</a></p>
+</main></body></html>

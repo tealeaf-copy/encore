@@ -34,8 +34,12 @@ const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 
 const loopback = /^(127\.0\.0\.1|localhost|::1)$/.test(host);
-if (!process.env.APP_PASSWORD && !loopback && process.env.ENCORE_ALLOW_OPEN !== "1") {
+if (!process.env.APP_PASSWORD && process.env.ENCORE_SIGNUP !== "1" && !loopback && process.env.ENCORE_ALLOW_OPEN !== "1") {
   console.error("Refusing to start: APP_PASSWORD is not set and the server listens on " + host + ". Set APP_PASSWORD (and SESSION_SECRET), or HOST=127.0.0.1 for local use, or ENCORE_ALLOW_OPEN=1 to run open on purpose.");
+  process.exit(1);
+}
+if (process.env.ENCORE_SIGNUP === "1" && !process.env.SESSION_SECRET) {
+  console.error("Refusing to start: ENCORE_SIGNUP=1 needs a long random SESSION_SECRET so sign-ins can't be forged.");
   process.exit(1);
 }
 if (process.env.ENCORE_USERS && !process.env.SESSION_SECRET) {
@@ -48,11 +52,13 @@ if (process.env.ENCORE_USERS && !process.env.SESSION_SECRET) {
   const problems = [...startupProblems(), ...mcpTokenProblems()];
   if (problems.length) { console.error("Refusing to start: " + problems.join(" ")); process.exit(1); }
 }
-if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data.");
+if (!process.env.APP_PASSWORD && process.env.ENCORE_SIGNUP !== "1") console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data.");
 const server = app.listen(port, host, () => {
-  console.log(`[encore] http://localhost:${port}  ai=${aiMode()}  integrations=[${configured().map((s) => s.server).join(", ")}]  auth=${process.env.APP_PASSWORD ? "on" : "off"}`);
+  console.log(`[encore] http://localhost:${port}  ai=${aiMode()}  integrations=[${configured().map((s) => s.server).join(", ")}]  auth=${process.env.APP_PASSWORD || process.env.ENCORE_SIGNUP === "1" ? "on" : "off"}${process.env.ENCORE_SIGNUP === "1" ? " signup=on" : ""}`);
 });
-const pmTask = schedulePm(store);
+const { allWorkspaceIds, scopeStore, trialState, getWorkspace } = await import("./workspaces.js");
+// The daily job runs for every workspace that can still make changes.
+const pmTask = schedulePm(store, { stores: () => allWorkspaceIds().filter((id) => trialState(getWorkspace(id)).writable).map((id) => scopeStore(store, id)) });
 
 function shutdown() {
   pmTask?.stop?.();

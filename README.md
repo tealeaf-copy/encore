@@ -48,6 +48,8 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ENCORE_MCP_TOKEN` | unset | Shared bearer token for `/mcp`, 32+ characters (audit log says "Claude (shared MCP token)") |
 | `ENCORE_MCP_TOKENS` | unset | Per-person MCP tokens: `Name\|email\|token`, comma separated, 32+ characters each |
 | `ENCORE_MCP_RATE_PER_MIN` | `120` | MCP messages per minute per token (each message in a batch counts) |
+| `ENCORE_SIGNUP` | `0` | `1` = self-serve sign-up with workspaces and 14-day trials (needs `SESSION_SECRET`) |
+| `ENCORE_SIGNUP_PER_HOUR` | `5` | Sign-ups and invite joins allowed per IP per hour |
 | `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
 | `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |
 | `SLACK_BOT_TOKEN` | unset | Slack Web API (send messages, DMs by email, find users) |
@@ -123,6 +125,22 @@ ENCORE_USERS="Maya Chen|maya@acme.com|Event lead+Account execs;Sam Lee|sam@acme.
 ```
 
 Each person signs in with their work email plus their personal password (or the team password, `APP_PASSWORD`, if they have none). Plan approvals are limited to the roles listed for each person and to `ENCORE_APPROVER_ROLES` (default: every role on the team list). Approving needs a personal password, and the server refuses to start if anyone holding an approver role has none. `GET /api/approvals?eventId=…` returns the `required` roles and whether the plan is `fullyApproved`. Approvals reset when the plan's cost or committed spend moves more than 5%. Every approval, spend change and report correction is also written to an append-only audit log (`GET /api/audit?eventId=…`); the server stamps who and when, and the log can't be edited through the data API.
+
+## Self-serve trials (workspaces)
+
+With `ENCORE_SIGNUP=1`, signed-out visitors get `public/landing.html` at `/`, and anyone can start a 14-day trial at `/signup`. `/login` still works, and `/demo` runs the page on its built-in sample data with no login and nothing saved.
+
+- **Workspaces.** Each sign-up creates a workspace and its owner account. Its data lives under `ws/<id>/…` in the same SQLite file. The page keeps using the same paths, and the server adds the prefix. The team from `ENCORE_USERS` / `APP_PASSWORD` is the `default` workspace, with the plain paths as before. Accounts, invites, MCP tokens and the event-to-workspace index are kept in `system/`, which the data API never serves. Event ids are unique across workspaces, so guest links (`#rsvp-<eventId>`, plan, AE and invite links) find the right workspace from the event. A guest page reads that workspace's brand and roadmap by sending `x-encore-workspace: <id>`: guest event reads return `workspace`. Signed links are signed per workspace.
+- **API.**
+  - `POST /api/signup {name, email, company, password, template?, plan?}` returns `{workspace, redirect}` and signs you in. The password must be 10+ characters.
+  - `GET /api/workspace` returns `{id, company, plan, trialEndsAt, daysLeft, trial, trialEnded, writable, members, limits}`.
+  - Owner only:
+    - `POST /api/invite {email, role}` returns `{link:"/join#<token>", expiresAt}`, a one-time link valid for 7 days. The person opens it and `POST /api/join {token, name, password}` creates their account.
+    - `POST /api/mcptoken {name?}` returns a 40-character token, shown once and stored hashed.
+    - `POST /api/upgrade {plan:"team"|"program"}`.
+- **Trials.** Every feature works during the trial. After `trialEndsAt`, changes get `402 {code:"trial_ended"}` (MCP writes too), and reading still works. Guest RSVPs keep working.
+- **Billing isn't wired.** `/api/upgrade` only records the request and sets `plan` to `pending_<plan>`, and that doesn't unlock writes. Once a customer has paid, an operator sets the workspace's `plan` to `team` or `program` in its `system/ws-<id>` document.
+- Sign-up workspaces don't get this server's own Slack, Linear or CRM keys. Only web search is shared. AI calls do use the server's Anthropic key.
 
 ## CRM write-back
 

@@ -113,6 +113,16 @@ With `APP_PASSWORD` set, visitors see a password form and get a 30-day cookie. R
 - adds a `notifications` document when the event lead needs to decide something,
 - logs a one-line summary.
 
+### Demo data
+
+`scripts/seed-demo.cjs` fills a server with a fictional demo world: Claire's run club (`/@claire-runs`), Eric's supper club and pandan cake shop (`/@eric-cooks`), Hoa Flower Studio (`/@hoa-flowers`), a bánh mì cart (`/@banhmi-cart`), Jackie's apartment café (`/@apartment-cafe`), guests, and a brand marketer (Maya at Fernwood Labs). Everyone in it is made up, so use a demo or staging deployment rather than your real one.
+
+```
+node scripts/seed-demo.cjs https://your-demo-address YOUR-FOUNDER-CODE
+```
+
+The server needs `ENCORE_SIGNUP=1`. If it's invite-only and already has members, pass a code: any value in `ENCORE_FOUNDER_CODES` works. Demo logins all use the password `encore-demo-2026`. Run it once per server.
+
 ### Deploying
 
 Any host that runs a Node 22 container and gives you a persistent disk works. Mount the disk at the data directory, since the database and uploads live there. Run a single instance: SQLite and the live-update stream are in-process.

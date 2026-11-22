@@ -2,142 +2,139 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Encore: run more field events with the same team</title>
 <meta name="description" content="Describe a field event in a sentence. Encore drafts the plan and budget, gets your AEs inviting, and reports the pipeline afterwards.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#2B211C;--muted:#6F625A;--bg:#FAF7F2;--card:#FFFFFF;--line:#E9E1D6;--accent:#B04A30;--accent2:#C2553A;--soft:#F4EEE6;--gold:#A27B3C;--dark:#241C18}
+:root{--bg:#120E0C;--bg2:#1A1512;--ink:#F5EEE6;--muted:#A8998D;--dim:#6F6359;--line:#2E2621;--accent:#E07A55;--gold:#E3B67A;--card:#17120F}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;font:16px/1.6 "DM Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
-a{color:var(--accent)}img{max-width:100%;display:block}
-.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
-h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0;letter-spacing:-.02em;font-weight:600}
-h1{font-size:clamp(2.6rem,6.2vw,4.6rem);line-height:1.02}
-h2{font-size:clamp(1.8rem,3.6vw,2.7rem);line-height:1.08}
-h3{font-size:1.15rem;line-height:1.25}
+html,body{overflow-x:clip}body{margin:0;font:16px/1.6 "DM Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+a{color:inherit}img{max-width:100%;display:block}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0;font-weight:400;letter-spacing:-.03em}
 p{margin:0}
-.eyebrow{font-size:.78rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
-.lede{font-size:clamp(1.05rem,1.5vw,1.2rem);color:var(--muted);max-width:600px}
-.note{color:var(--muted);font-size:.9rem}
+.muted{color:var(--muted)}.dim{color:var(--dim)}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-header.top{position:sticky;top:0;z-index:5;background:rgba(250,247,242,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
-.logo{display:flex;align-items:center;gap:8px;font:700 1.35rem "Fraunces";color:var(--ink);text-decoration:none}
-nav.links{display:flex;gap:22px;align-items:center}nav.links a{color:var(--ink);text-decoration:none;font-weight:500;font-size:.95rem}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:999px;font:600 1rem "DM Sans";text-decoration:none;border:0;cursor:pointer;white-space:nowrap}
-.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{background:#9A3F28}
-.btn.sm{padding:9px 16px;font-size:.92rem}
-.tlink{font-weight:600;text-decoration:none}.tlink:hover{text-decoration:underline}
-section{padding:96px 0}
+header.top{position:sticky;top:0;z-index:10;background:rgba(18,14,12,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.logo{display:flex;align-items:center;gap:8px;font:500 1.3rem "Fraunces";text-decoration:none;color:var(--ink)}
+nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--muted);font-size:.95rem}nav.links a:hover{color:var(--ink)}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:10px 20px;font:500 .95rem "DM Sans";text-decoration:none;border:1px solid var(--line);color:var(--ink);background:transparent;cursor:pointer;white-space:nowrap}
+.pill.light{background:var(--ink);color:#1A1411;border-color:var(--ink)}.pill.light:hover{background:#fff}
+.pill.sm{padding:7px 14px;font-size:.88rem}
+.pill:not(.light):hover{border-color:#4A3E36}
 
 /* hero */
-.hero{padding:72px 0 56px}
-.hero .grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
-.hero h1{margin-top:14px}
-.hero .lede{margin-top:20px}
-.cta{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:28px}
-.assure{margin-top:14px}
-.works{margin-top:44px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
-.works span{font-weight:600;color:#8C7F76;font-size:.95rem}
-.works .lbl{font-weight:500;color:var(--muted);font-size:.85rem;margin-right:4px}
+.hero{position:relative;min-height:calc(100vh - 64px);max-height:860px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:24px;padding-top:40px;padding-bottom:140px}
+.hero h1{font-size:clamp(3rem,6vw,5.4rem);line-height:.98}
+.hero .cta{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
+.glow{position:relative;display:grid;place-items:center;height:420px}
+.glow::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(224,122,85,.32) 0,rgba(227,182,122,.12) 32%,transparent 64%);filter:blur(10px);animation:breathe 7s ease-in-out infinite}
+.mark{position:relative;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#2A1F1A,#0E0A08 70%);box-shadow:0 0 0 1px rgba(227,182,122,.25),0 0 60px rgba(224,122,85,.35),inset 0 -20px 40px rgba(0,0,0,.6)}
+.mark::after{content:"";position:absolute;right:34px;top:30px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#FFE3BC,#E3B67A 55%,#B0703F);box-shadow:0 0 30px 8px rgba(255,214,160,.55),0 0 90px 30px rgba(224,122,85,.35);animation:flick 4s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.07);opacity:.85}}@keyframes flick{40%{opacity:.85}55%{opacity:1}70%{opacity:.92}}
+.uses{display:grid;gap:12px;justify-self:end;font-size:1.05rem}
+.strip{position:absolute;left:24px;right:24px;bottom:36px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center}
+.strip span{font:500 1.15rem "DM Sans";color:#8D8077;letter-spacing:-.01em}.strip small{width:100%;color:var(--dim);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
 
-/* demo */
-.demo{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 30px 80px -30px rgba(43,33,28,.28)}
-.dform{display:flex;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:6px}
-.dform .btn{flex:none}.dform input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1rem;padding:10px 12px;color:var(--ink);outline:none}
-.dform:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,74,48,.15)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:6px 12px;font:500 .88rem "DM Sans";color:var(--ink);cursor:pointer}
-.chip[aria-pressed=true]{border-style:solid;border-color:var(--ink);background:var(--ink);color:#fff}
-.plan{margin-top:16px;border-top:1px solid var(--line);padding-top:16px;display:grid;gap:14px}
-.plan .ttl{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
-.plan .ttl b{font:600 1.2rem "Fraunces"}
-.tot{font:600 1.5rem "Fraunces"}
-.lines{display:grid;gap:2px}
-.ln{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:7px 0;border-bottom:1px solid #F1EBE3;font-size:.93rem}
-.ln small{grid-column:1/-1;color:#9A8D84;font-size:.78rem}
-.ln b{font-weight:600;font-variant-numeric:tabular-nums}
-.dates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dates div{background:var(--soft);border-radius:12px;padding:8px 10px;font-size:.82rem}
-.dates b{display:block;font-size:.9rem}
-.as{font-size:.7rem;font-weight:600;color:var(--gold);background:#F6EDDC;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
-.plan .keep{justify-self:start}
-.fade{animation:fade .35s ease}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* showcase sections */
+.show{padding:120px 0 40px;border-top:1px solid var(--line);position:relative;overflow:hidden}
+.show::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 60% 55%,rgba(224,122,85,.08),transparent 70%);pointer-events:none}
+.show h2{font-size:clamp(2.3rem,4.6vw,4.2rem);line-height:1.02;max-width:900px}
+.sgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:56px;align-items:center;margin-top:56px}
+.sgrid.flip{grid-template-columns:300px minmax(0,1fr)}.sgrid.flip .win{order:2}
+.win{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 40px 120px -40px rgba(0,0,0,.8)}
+.winbar{display:flex;gap:6px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);color:var(--dim);font-size:.8rem}
+.winbar i{width:9px;height:9px;border-radius:50%;background:#3A302A}.winbar span{margin-left:10px}
+.winbody{background:#FAF7F2;color:#2B211C;padding:18px}
+.winbody.dark{background:transparent;color:var(--ink)}
+.proof{font:400 1.55rem/1.25 "Fraunces";letter-spacing:-.02em}.proof .dim{color:#7C6F66}
+.feats{margin-top:34px}.feats small{color:var(--dim);font-size:.85rem}.feats ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}.feats li{font-size:1rem}
+.tag{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.05em;color:#7C6F66;margin-top:10px}
 
-/* how */
-.how{display:grid;grid-template-columns:320px 1fr;gap:40px;margin-top:40px;align-items:start}
-.tabs{display:grid;gap:8px}
-.tab{text-align:left;border:1px solid transparent;background:transparent;border-radius:16px;padding:16px 18px;cursor:pointer;font:inherit;color:var(--ink);position:relative;overflow:hidden}
-.tab h3{font-size:1.05rem}.tab p{color:var(--muted);font-size:.93rem;margin-top:4px}
-.tab ul{display:none;margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:.9rem}
-.tab[aria-selected=true]{background:var(--card);border-color:var(--line);box-shadow:0 10px 30px -18px rgba(43,33,28,.35)}
-.tab[aria-selected=true] ul{display:block}
-.tab .bar{position:absolute;left:0;bottom:0;height:2px;background:var(--accent);width:0}
-.tab[aria-selected=true] .bar.run{animation:bar 6s linear forwards}
-@keyframes bar{to{width:100%}}
-.stage{position:relative;background:var(--soft);border-radius:28px;padding:36px;min-height:460px;display:grid;place-items:center}
-.panel{display:none;width:100%}.panel.on{display:grid;gap:16px;justify-items:center;animation:fade .35s ease}
-.frame{position:relative;background:#fff;border-radius:18px;box-shadow:0 30px 70px -30px rgba(43,33,28,.35);overflow:hidden;border:1px solid var(--line)}
-.frame img{width:100%}
-.frame .tag{position:absolute;bottom:10px;right:10px;background:rgba(36,28,24,.78);color:#fff;font-size:.7rem;font-weight:600;letter-spacing:.04em;border-radius:999px;padding:3px 9px}
-.phone{width:min(280px,80%);border:9px solid #1c1714;border-radius:32px}
-.duo{display:grid;grid-template-columns:1fr 210px;gap:20px;align-items:center;width:100%}
-.duo .phone{width:100%}
-.mstack{display:none}
+/* demo inside window */
+.dform{display:flex;gap:8px;background:#fff;border:1px solid #E9E1D6;border-radius:12px;padding:6px}
+.dform input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1rem;padding:9px 10px;color:#2B211C;outline:none}
+.dform .btn{flex:none;border:0;border-radius:9px;background:#B04A30;color:#fff;font:600 .92rem "DM Sans";padding:0 16px;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:5px 11px;font:500 .85rem "DM Sans";color:#2B211C;cursor:pointer}
+.chip[aria-pressed=true]{border-style:solid;border-color:#2B211C;background:#2B211C;color:#fff}
+.plan{margin-top:14px;border-top:1px solid #E9E1D6;padding-top:12px;display:grid;gap:12px}
+.plan .ttl{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.plan .ttl b{font:500 1.15rem "Fraunces"}
+.plan .note{color:#7A6D64;font-size:.85rem}
+.tot{font:500 1.45rem "Fraunces"}
+.ln{display:grid;grid-template-columns:1fr auto;gap:1px 12px;padding:6px 0;border-bottom:1px solid #F1EBE3;font-size:.92rem}.ln small{grid-column:1/-1;color:#9A8D84;font-size:.76rem}.ln b{font-weight:600;font-variant-numeric:tabular-nums}
+.dates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dates div{background:#F4EEE6;border-radius:10px;padding:7px 10px;font-size:.8rem}.dates b{display:block;font-size:.88rem}
+.as{font-size:.68rem;font-weight:600;color:#A27B3C;background:#F6EDDC;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.keep{justify-self:start;display:inline-flex;border-radius:999px;background:#B04A30;color:#fff;text-decoration:none;font:600 .9rem "DM Sans";padding:9px 16px}
+.fade{animation:fade .35s ease}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.duo{display:grid;grid-template-columns:1fr 200px;gap:18px;align-items:center}.duo .phone{border:8px solid #0B0807;border-radius:28px;overflow:hidden}
 
-/* measurement */
-.band{background:var(--dark);color:#F4EDE4;border-radius:0}
-.band .eyebrow{color:#D9B77A}.band .lede,.band .note{color:#CBBFB4}.band a{color:#F0C9A8}
-.split{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center}
-ul.ticks{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:14px}
-ul.ticks li{padding-left:28px;position:relative}
-ul.ticks li::before{content:"";position:absolute;left:0;top:.45em;width:14px;height:14px;border-radius:50%;background:var(--accent2);box-shadow:inset 0 0 0 4px var(--dark)}
-.links2{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px}
+/* bento */
+.bento{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:20px;margin-top:56px}
+.tile{position:relative;border:1px solid var(--line);border-radius:14px;background:var(--card);padding:28px;min-height:300px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.tile.tall{grid-row:span 2;min-height:620px}
+.tile h3{font:400 1.7rem "Fraunces";letter-spacing:-.02em}.tile p{color:var(--muted);margin-top:6px;max-width:360px}
+.bubbles{position:absolute;right:24px;top:26px;display:grid;gap:10px;justify-items:end;width:min(380px,60%)}
+.bub{border:1px solid var(--line);background:#1F1915;border-radius:16px;padding:11px 15px;font-size:.92rem;line-height:1.45}
+.bub.enc{justify-self:start;border-color:rgba(224,122,85,.35);background:rgba(224,122,85,.08)}
+.bub b{font-weight:600}
+.board{position:absolute;inset:26px 26px auto 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.board div{border:1px solid var(--line);border-radius:12px;padding:12px;background:#1C1613;font-size:.85rem;color:var(--muted);min-height:92px}
+.board div b{display:block;color:var(--ink);font-weight:500;margin-bottom:4px}.board .q{grid-column:1/-1;display:flex;gap:10px;background:transparent;border:0;padding:0;min-height:0}.board .q span{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.75rem}
+.notes{position:absolute;inset:26px 26px auto 26px;display:grid;gap:10px}
+.notes div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#1C1613;font-size:.9rem}.notes div b{display:block;font-weight:500}.notes div span{color:var(--muted);font-size:.84rem}
+.co{position:absolute;inset:26px 26px auto 26px}
+.co .search{border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--muted);font-size:.95rem;display:flex;gap:10px}
+.co .res{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.co .res div{border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.85rem;color:var(--muted);background:#1C1613}.co .res b{display:block;color:var(--ink);font-weight:500}
 
-/* trust */
-.trust{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:36px}
-.tcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;display:grid;gap:8px;align-content:start}
-.tcard svg{width:26px;height:26px;color:var(--accent)}
-.tcard b{font-size:1rem}.tcard span{color:var(--muted);font-size:.92rem}
+/* trust + final */
+.trust{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:120px}
+.trust div{padding:28px 24px;border-right:1px solid var(--line)}.trust div:last-child{border-right:0}.trust b{display:block;font-weight:500}.trust span{color:var(--muted);font-size:.92rem}
+.final{padding:140px 0 120px;text-align:center;position:relative}
+.final::before{content:"";position:absolute;left:50%;top:50%;width:700px;height:400px;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(224,122,85,.18),transparent 65%);pointer-events:none}
+.final h2{font-size:clamp(2.4rem,5vw,4.4rem);line-height:1.02}.final .cta{display:flex;gap:12px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+footer{border-top:1px solid var(--line);padding:48px 0 64px}
+.fcols{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:24px}.fcols b{display:block;font-size:.85rem;font-weight:500;margin-bottom:10px}
+.fcols a{display:block;color:var(--muted);text-decoration:none;font-size:.92rem;padding:3px 0}.fcols a:hover{color:var(--ink)}
 
-/* final */
-.final{background:var(--soft);border-radius:32px;padding:56px 32px;text-align:center;display:grid;gap:14px;justify-items:center}
-.final .lede{margin:0 auto}
-footer{padding:48px 0 64px;border-top:1px solid var(--line)}
-.fcols{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:24px}
-.fcols b{display:block;font-size:.85rem;margin-bottom:8px}
-.fcols a{display:block;color:var(--muted);text-decoration:none;font-size:.92rem;padding:3px 0}
-.fcols a:hover{color:var(--ink)}
-
-@media (max-width:960px){.hero .grid,.split{grid-template-columns:minmax(0,1fr);gap:36px}.how{grid-template-columns:1fr}.trust{grid-template-columns:1fr 1fr}nav.links a:not(.signin){display:none}}
+@media (max-width:1080px){.hero{grid-template-columns:1fr 1fr}.uses{display:none}.sgrid,.sgrid.flip{grid-template-columns:minmax(0,1fr);gap:32px}.sgrid.flip .win{order:0}}
 @media (max-width:760px){
-  .dform{flex-wrap:wrap}.dform input{flex-basis:100%}.dform .btn{width:100%}
-  section{padding:64px 0}.hero{padding:40px 0 40px}
-  .tabs,.stage{display:none}.mstack{display:grid;gap:36px;margin-top:28px}
-  .mstack .frame{margin-top:14px}.mstack .phone{margin:14px auto 0}
-  .mstack ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:.93rem}
-  .dates{grid-template-columns:1fr 1fr}.trust{grid-template-columns:1fr}.fcols{grid-template-columns:1fr 1fr}
-  .final{padding:40px 20px;border-radius:24px}.duo{grid-template-columns:1fr}
+  nav.links{display:none}.right .pill:not(.light){display:none}
+  .hero{grid-template-columns:minmax(0,1fr);min-height:0;padding-top:56px;padding-bottom:170px}.glow{position:absolute;right:-120px;top:20px;opacity:.55;pointer-events:none;height:300px}.glow .mark{width:110px;height:110px}
+  .strip{gap:10px 16px;justify-content:flex-start}.strip span{font-size:1rem}
+  .show{padding:80px 0 20px}.duo{grid-template-columns:1fr}.duo .phone{max-width:220px;margin:0 auto}
+  .dform{flex-wrap:wrap}.dform input{flex-basis:100%}.dform .btn{width:100%;padding:10px}.dates{grid-template-columns:1fr 1fr}
+  .bento{grid-template-columns:1fr}.tile,.tile.tall{grid-row:auto;min-height:0;justify-content:flex-start;padding:20px}.bubbles,.notes,.co{position:static!important;width:auto!important;inset:auto;margin-bottom:22px}
+  .trust{grid-template-columns:1fr 1fr}.trust div:nth-child(2){border-right:0}.fcols{grid-template-columns:1fr 1fr}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
+dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!important}dialog::backdrop{background:rgba(0,0,0,.6)}dialog input,dialog textarea{background:#120E0C!important;color:var(--ink);border-color:var(--line)!important}dialog .note{color:var(--muted);font-size:.9rem}
+.btn{display:inline-flex;align-items:center;border-radius:999px;padding:8px 16px;font:500 .92rem "DM Sans";border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}.btn.primary{background:var(--ink);color:#1A1411}
 </style></head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="logo" href="/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B04A30"/><circle cx="20" cy="11" r="3.2" fill="#F3D9B8"/></svg>encore</a>
-  <nav class="links" aria-label="Main"><a href="#how">How it works</a><a href="/method">Method</a><a href="/pricing">Pricing</a><a href="/security">Security</a><a href="/login" class="signin">Sign in</a><a class="btn primary sm" href="/signup">Start free trial</a></nav>
+  <a class="logo" href="/"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#E07A55"/><circle cx="20" cy="11" r="3.2" fill="#FFE3BC"/></svg>encore</a>
+  <nav class="links" aria-label="Main"><a href="#plan">Product</a><a href="/method">Method</a><a href="/security">Security</a><a href="/pricing">Pricing</a></nav>
+  <div class="right"><a class="pill sm" href="/login">Sign in</a><a class="pill sm light" href="/signup">Start free trial</a></div>
 </div></header>
 
-<section class="hero"><div class="wrap">
-  <div class="grid">
-    <div>
-      <p class="eyebrow">For B2B field marketing and event teams</p>
-      <h1>Run more field events with the same team.</h1>
-      <p class="lede">Describe the event in a sentence. Encore drafts the plan and budget, gets your AEs inviting, and reports the pipeline afterwards.</p>
-      <div class="cta"><a class="btn primary" href="/signup">Start a 14-day free trial</a><a class="tlink" href="/demo">Explore a sample event →</a></div>
-      <p class="note assure">No card needed. Nothing reaches a guest or an AE until you approve it. SOC 2 Type II.</p>
-    </div>
-    <div class="demo" id="demo" aria-label="Try it: describe an event">
-      <form class="dform" id="dForm"><label class="vh" for="dIn">Describe your event</label><input id="dIn" autocomplete="off" placeholder="A dinner for 14 CFOs in New York, about $28k" value="A dinner for 14 CFOs in New York, about $28k"><button class="btn primary sm" type="submit">Draft the plan</button></form>
-      <p class="note" id="dTry" hidden style="margin-top:10px">Try one of these:</p>
+<main>
+<section class="wrap hero">
+  <div>
+    <h1>Field events, from one sentence to pipeline</h1>
+    <div class="cta"><a class="pill light" href="/signup">Start free trial</a><a class="pill" href="#talk" data-contact="talk">Talk to the founders</a></div>
+  </div>
+  <div class="glow" aria-hidden="true"><div class="mark"></div></div>
+  <div class="uses"><span>For executive dinners</span><span>For booths and roadshows</span><span>Measured in pipeline</span></div>
+  <div class="strip"><small>Works with</small><span>HubSpot</span><span>Salesforce</span><span>Attio</span><span>Luma</span><span>Sequel</span><span>Goldcast</span><span>Gong</span><span>Slack</span></div>
+</section>
+
+<section class="show" id="plan"><div class="wrap">
+  <h2>Plan an event from one sentence</h2>
+  <div class="sgrid">
+    <div class="win"><div class="winbar"><i></i><i></i><i></i><span>Try it: describe an event</span></div><div class="winbody" id="demo">
+      <form class="dform" id="dForm"><label class="vh" for="dIn">Describe your event</label><input id="dIn" autocomplete="off" value="A dinner for 14 CFOs in New York, about $28k"><button class="btn" type="submit">Draft the plan</button></form>
+      <p class="note" id="dTry" hidden style="margin-top:10px;color:#7A6D64">Try one of these:</p>
       <div class="chips" id="dChips">
         <button type="button" class="chip" aria-pressed="true" data-s="A dinner for 14 CFOs in New York, about $28k">Executive dinner</button>
         <button type="button" class="chip" aria-pressed="false" data-s="A roundtable for 10 CISOs in London, under £15k">Roundtable</button>
@@ -156,82 +153,75 @@ footer{padding:48px 0 64px;border-top:1px solid var(--line)}
         <div class="ttl"><span class="tot">$10,490</span><span class="note">vs. about $28,000: $17,510 left for guest travel or a bigger room</span></div>
         <div class="dates"><div>Invites out<b>6 weeks before</b></div><div>AE picks due<b>5 weeks before</b></div><div>Follow-up<b>Next morning</b></div></div>
         <p class="note">Every line is an assumption until you replace it with a vendor quote.</p>
-        <a class="btn primary sm keep" href="/signup" id="dKeep">Keep this plan in a free trial</a>
+        <a class="keep" href="/signup" id="dKeep">Keep this plan in a free trial</a>
       </div>
+    </div></div>
+    <div>
+      <p class="proof">One sentence becomes a budget, a timeline and an invite page. <span class="dim">Every number shows its maths, so finance can check it.</span></p>
+      <div class="feats"><small>Features</small><ul><li>Line-by-line budget</li><li>Tasks counted back from the date</li><li>Budget sign-off from a link</li><li>Guest rules for regulated buyers</li></ul></div>
     </div>
   </div>
-  <div class="works"><span class="lbl">Works with</span><span>HubSpot</span><span>Salesforce</span><span>Attio</span><span>Luma</span><span>Sequel</span><span>Goldcast</span><span>Gong</span><span>Slack</span><span>Gmail</span></div>
 </div></section>
 
-<section id="how" style="padding-top:40px"><div class="wrap">
-  <p class="eyebrow">How it works</p>
-  <h2 style="margin-top:10px;max-width:760px">Replace the spreadsheet and the Slack chasing</h2>
-  <p class="lede" style="margin-top:14px">Keep your event platform for registration. Encore runs the rest: the plan, the guest list, the night and the follow-up.</p>
-  <div class="how">
-    <div class="tabs" role="tablist" aria-label="How it works">
-      <button class="tab" role="tab" aria-selected="true" aria-controls="p1" id="t1"><h3>1 · Plan</h3><p>A plan and budget from one sentence.</p><ul><li>Budget built line by line, with every assumption shown</li><li>Tasks, owners and dates up to event day</li><li>Finance approves the budget from a link</li></ul><span class="bar"></span></button>
-      <button class="tab" role="tab" aria-selected="false" aria-controls="p2" id="t2"><h3>2 · Invite</h3><p>Your AEs help fill the room.</p><ul><li>Guest list starts from your CRM accounts</li><li>AEs nominate guests from a link, no login</li><li>Invites go out in the AE's or exec's voice, once approved</li><li>Guests RSVP on a page built for phones</li></ul><span class="bar"></span></button>
-      <button class="tab" role="tab" aria-selected="false" aria-controls="p3" id="t3"><h3>3 · Host</h3><p>Seating and check-in on the night.</p><ul><li>Seating plan built from the final guest list</li><li>Check guests in from a phone at the door</li><li>Works the same for booths and side dinners</li></ul><span class="bar"></span></button>
-      <button class="tab" role="tab" aria-selected="false" aria-controls="p4" id="t4"><h3>4 · Follow up</h3><p>Follow-ups drafted, pipeline reported.</p><ul><li>Each AE gets a drafted follow-up per guest the next morning</li><li>Pipeline report built from your CRM deals</li><li>Optional holdout test shows whether the event made a difference</li></ul><span class="bar"></span></button>
-    </div>
-    <div class="stage">
-      <div class="panel on" id="p1" role="tabpanel" aria-labelledby="t1"><div class="frame"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/plan-summary.jpg" alt="Encore plan for a CFO dinner in New York: $10,900 across 7 budget lines and 12 tasks, with the biggest lines and the next three dated tasks. Sample data."></div></div>
-      <div class="panel" id="p2" role="tabpanel" aria-labelledby="t2"><div class="duo"><div class="frame"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/guests-intel.jpg" alt="Encore's Ahead of you notes on a CFO guest list: half the list is VPs rather than CFOs, one company has two guests, and only 3 tier A accounts are invited, each with a suggested fix. Sample data."></div><div class="frame phone"><img loading="lazy" src="/img/home/invite-phone.jpg" alt="Guest invite on a phone: a private dinner hosted by Northwind in New York, Thursday, February 18 at 7:00 PM at The Lodge Room, with Attending and Regrets buttons. Sample data."></div></div></div>
-      <div class="panel" id="p3" role="tabpanel" aria-labelledby="t3"><div class="frame phone" style="width:300px"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/checkin.jpg" alt="Check-in on a phone: a search box, a walk-in button and a tile for each guest with their company, table and check-in status. Sample data."></div></div>
-      <div class="panel" id="p4" role="tabpanel" aria-labelledby="t4"><div class="frame"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/results.jpg" alt="Encore results for a sample dinner: 7 invited, 7 said yes, 6 came, 5 meetings, 86% show rate. Sample data."></div></div>
+<section class="show"><div class="wrap">
+  <h2>Fill the room with the right people</h2>
+  <div class="sgrid flip">
+    <div class="win"><div class="winbar"><i></i><i></i><i></i><span>Guests · CFO dinner · Sample data</span></div><div class="winbody"><div class="duo"><img loading="lazy" src="/img/home/guests-intel.jpg" alt="Encore's Ahead of you notes on a CFO guest list: half the list is VPs rather than CFOs, one company has two guests, and only 3 tier A accounts are invited, each with a suggested fix. Sample data."><div class="phone"><img loading="lazy" src="/img/home/invite-phone.jpg" alt="Guest invite on a phone: a private dinner hosted by Northwind in New York, with Attending and Regrets buttons. Sample data."></div></div></div></div>
+    <div>
+      <p class="proof">Encore reads your list before you send it. <span class="dim">Wrong seniority, two guests from one company, too few target accounts: you hear it first.</span></p>
+      <div class="feats"><small>Features</small><ul><li>AE nominations from a link</li><li>Invites in the AE's voice, once approved</li><li>RSVP pages built for phones</li><li>Waitlist that fills freed seats</li></ul></div>
     </div>
   </div>
-  <div class="mstack">
-    <div><h3>1 · Plan</h3><p class="note">A plan and budget from one sentence.</p><ul><li>Budget built line by line, with every assumption shown</li><li>Tasks, owners and dates up to event day</li><li>Finance approves the budget from a link</li></ul><div class="frame"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/plan-summary.jpg" alt="Encore plan summary for a CFO dinner. Sample data."></div></div>
-    <div><h3>2 · Invite</h3><p class="note">Your AEs help fill the room.</p><ul><li>AEs nominate guests from a link, no login</li><li>Invites go out in the AE's or exec's voice, once approved</li><li>Guests RSVP on a page built for phones</li></ul><div class="frame phone"><img loading="lazy" src="/img/home/invite-phone.jpg" alt="Guest invite on a phone. Sample data."></div></div>
-    <div><h3>3 · Host</h3><p class="note">Seating and check-in on the night.</p><ul><li>Check guests in from a phone at the door</li><li>Works the same for booths and side dinners</li></ul><div class="frame phone"><img loading="lazy" src="/img/home/checkin.jpg" alt="Check-in tiles on a phone. Sample data."></div></div>
-    <div><h3>4 · Follow up</h3><p class="note">Follow-ups drafted, pipeline reported.</p><ul><li>Each AE gets a drafted follow-up per guest the next morning</li><li>Optional holdout test shows whether the event made a difference</li></ul><div class="frame"><span class="tag">Sample data</span><img loading="lazy" src="/img/home/results.jpg" alt="Results for a sample dinner. Sample data."></div></div>
-  </div>
-  <p style="margin-top:28px"><a class="tlink" href="/demo">Walk through a sample event →</a></p>
 </div></section>
 
-<section id="measure" class="band"><div class="wrap split">
-  <div>
-    <p class="eyebrow">Measurement</p>
-    <h2 style="margin-top:10px">A pipeline report finance can check</h2>
-    <p class="lede" style="margin-top:14px">Pipeline counts against fixed rules, and deals matched only by company name stay out. If a test can't read a difference, Encore says so.</p>
-    <ul class="ticks">
-      <li><b>Three fixed buckets.</b> <span class="note">New opportunities, existing deals with attendees, and meetings.</span></li>
-      <li><b>Optional holdout test.</b> <span class="note">Never your top accounts, and your CRO signs the split.</span></li>
-      <li><b>A warning before invites go out.</b> <span class="note">Short on accounts? Encore suggests pooling across cities.</span></li>
-    </ul>
-    <div class="links2"><a class="tlink" href="/method">Read the method →</a><a class="tlink" href="/demo#impact">See a sample readout →</a></div>
+<section class="show"><div class="wrap">
+  <h2>Host the night, then prove what it made</h2>
+  <div class="sgrid">
+    <div class="win"><div class="winbar"><i></i><i></i><i></i><span>Results · Sample readout</span></div><div class="winbody"><img loading="lazy" src="/img/home/lift.jpg" alt="Sample lift readout for a CFO dinner series: 42 invited accounts booked 0.31 meetings per account against 0.10 for 40 held-out accounts; the decision reads Fund more."></div></div>
+    <div>
+      <p class="proof">Pipeline counted against fixed rules. <span class="dim">Invited accounts against a held-out group, with a verdict: fund more, cut, or keep testing.</span></p>
+      <div class="feats"><small>Features</small><ul><li>Check-in from a phone</li><li>Follow-ups drafted for each AE</li><li>Holdout test, read at day 90</li><li>CRM updates only with approval</li></ul></div>
+      <p style="margin-top:22px"><a href="/method" class="muted">Read the method →</a></p>
+    </div>
   </div>
-  <div class="frame"><img loading="lazy" src="/img/home/lift.jpg" alt="Sample lift readout for a CFO dinner series in Chicago, New York and Boston: 42 invited accounts booked 0.31 meetings per account against 0.10 for 40 held-out accounts. The difference of +0.21 is larger than the ±0.15 the test can resolve, and the decision reads Fund more."></div>
 </div></section>
 
-<section><div class="wrap">
-  <p class="eyebrow">Security and approvals</p>
-  <h2 style="margin-top:10px;max-width:760px">AEs and execs approve every invite and follow-up</h2>
-  <div class="trust">
-    <div class="tcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>SOC 2 Type II</b><span>Report available under NDA.</span></div>
-    <div class="tcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg><b>Approval on every message.</b><span>Nothing reaches a guest, AE or exec unapproved.</span></div>
-    <div class="tcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><b>Guest pages stay clean.</b><span>No internal notes, revenue or deal data.</span></div>
-    <div class="tcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><b>Single sign-on.</b><span>Plus an audit log you can export.</span></div>
+<section class="show"><div class="wrap">
+  <h2>Recently shipped</h2>
+  <div class="bento">
+    <div class="tile tall"><div class="bubbles" style="width:min(440px,calc(100% - 48px));left:24px;right:auto">
+      <div class="bub enc">Hi Le. Who do you most want in the room?</div><div class="bub">Finance leaders, in Chicago, about $25k.</div>
+      <div class="bub enc"><b>Three ideas for CFOs:</b> a chef's table for 12, a sunrise run during the big conference, a plus-one craft morning.</div>
+      <div class="bub enc"><b>Worth knowing:</b> CFOs say yes less often in the last two weeks of a quarter. Invite about 1.6× the seats.</div>
+      <div class="bub">Draft the chef's table.</div></div>
+      <h3>Concierge</h3><p>Brainstorm your next event in a short chat, then turn any idea into a full plan.</p></div>
+    <div class="tile"><div class="notes"><div><b>Your list is 60% VP, not the CFOs you're pitching to</b><span>Retitle the invite, or ask AEs for more C-level names.</span></div><div><b>Northwind ×2</b><span>Seat colleagues at different tables.</span></div></div>
+      <h3>Ahead of you</h3><p>Encore tells you what it sees in your guest list before you do.</p></div>
+    <div class="tile"><div class="co"><div class="search">⌕ What has Clay hosted?</div><div class="res"><div><b>City meetups</b>Encore's version, inspired by public mentions</div><div><b>Live build sessions</b>Encore's version, inspired by public mentions</div></div></div>
+      <h3>Company lookup</h3><p>Name a company, see what it hosts in public, and get Encore's own plan for something similar.</p></div>
   </div>
-  <p style="margin-top:24px"><a class="tlink" href="/security">How we handle your data →</a></p>
 </div></section>
 
-<section id="talk" style="padding-top:0"><div class="wrap"><div class="final">
-  <p class="eyebrow">Pricing</p>
+<div class="wrap trust">
+  <div><b>SOC 2 Type II</b><span>Report available under NDA.</span></div>
+  <div><b>Approval on every message</b><span>Nothing reaches a guest, AE or exec unapproved.</span></div>
+  <div><b>Clean guest pages</b><span>No internal notes, revenue or deal data.</span></div>
+  <div><b>Single sign-on</b><span>Plus an audit log you can export.</span></div>
+</div>
+
+<section class="wrap final" id="talk">
   <h2>Start with your next event</h2>
-  <p class="lede">From $1,000 a month for up to 8 events a year in one market. Priced on events you run, never on pipeline we report.</p>
-  <div class="cta" style="justify-content:center;margin-top:6px"><a class="btn primary" href="/signup">Start a 14-day free trial</a><a class="tlink" href="/pricing">See all plans →</a><a class="tlink" href="#talk" data-contact="talk">Talk to the founders →</a></div>
-  <p class="note">14-day free trial on every plan. No card needed.</p>
-</div></div></section>
+  <p class="muted" style="margin-top:14px">From $1,000 a month for up to 8 events a year. 14-day free trial, no card needed.</p>
+  <div class="cta"><a class="pill light" href="/signup">Start free trial</a><a class="pill" href="/pricing">See pricing</a><a class="pill" href="#talk" data-contact="talk">Talk to the founders</a></div>
+</section>
+</main>
 
 <footer><div class="wrap fcols">
-  <div><a class="logo" href="/" style="padding:0"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B04A30"/><circle cx="20" cy="11" r="3.2" fill="#F3D9B8"/></svg>encore</a><p class="note" style="margin-top:8px">Encore · SOC 2 Type II</p></div>
-  <div><b>Product</b><a href="#how">How it works</a><a href="/demo">Sample event</a><a href="/pricing">Pricing</a></div>
+  <div><a class="logo" href="/"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#E07A55"/><circle cx="20" cy="11" r="3.2" fill="#FFE3BC"/></svg>encore</a><p class="dim" style="margin-top:10px;font-size:.9rem">SOC 2 Type II</p></div>
+  <div><b>Product</b><a href="#plan">How it works</a><a href="/demo">Sample event</a><a href="/pricing">Pricing</a></div>
   <div><b>Trust</b><a href="/method">Measurement method</a><a href="/security">Security and data</a><a href="/?contact=security" data-contact="security">Request a security review</a></div>
   <div><b>Account</b><a href="/login">Sign in</a><a href="/signup">Start free trial</a></div>
 </div></footer>
-
 <dialog id="contactDlg" style="border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100vw - 32px)"><form id="contactForm" style="padding:22px;display:grid;gap:10px">
   <h3 id="cTitle">Talk to the founders</h3><p class="note" id="cSub">Tell us about your events program. We reply within one business day.</p>
   <input name="name" placeholder="Your name" required style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit">
@@ -248,13 +238,6 @@ footer{padding:48px 0 64px;border-top:1px solid var(--line)}
   try{ const k=new URLSearchParams(location.search).get("contact"); if(k){ const b=document.querySelector(`[data-contact="${k==="security"?"security":"talk"}"]`); b&&b.click() } }catch{}
   f.addEventListener("submit",async e=>{ e.preventDefault(); const data=Object.fromEntries(new FormData(f)); msg.textContent="Sending…";
     try{ const r=await fetch("/api/contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}); if(r.status===429){ msg.textContent="Too many messages from here. Try again in an hour."; return } if(!r.ok) throw 0; msg.textContent="Thanks. We'll reply by email within one business day."; f.reset() }catch{ msg.textContent="Couldn't send. Try again in a moment." } });
-})();
-
-// How it works: tabs that advance every 6 seconds until someone clicks one
-(function(){ const T=[...document.querySelectorAll(".tab")], P=[...document.querySelectorAll(".panel")]; if(!T.length) return; let i=0, auto=!matchMedia("(prefers-reduced-motion: reduce)").matches, timer;
-  const show=(k,user)=>{ i=k; T.forEach((t,j)=>{ t.setAttribute("aria-selected",j===k); const b=t.querySelector(".bar"); b.classList.remove("run"); void b.offsetWidth; if(j===k&&auto) b.classList.add("run") }); P.forEach((p,j)=>p.classList.toggle("on",j===k)); if(user){ auto=false; clearInterval(timer); T.forEach(t=>t.querySelector(".bar").classList.remove("run")) } };
-  T.forEach((t,j)=>{ t.onclick=()=>show(j,true); t.onkeydown=e=>{ if(e.key==="ArrowDown"||e.key==="ArrowRight"){ e.preventDefault(); show((j+1)%T.length,true); T[(j+1)%T.length].focus() } if(e.key==="ArrowUp"||e.key==="ArrowLeft"){ e.preventDefault(); show((j+T.length-1)%T.length,true); T[(j+T.length-1)%T.length].focus() } } });
-  show(0); if(auto){ const io=new IntersectionObserver(es=>{ es.forEach(en=>{ clearInterval(timer); if(en.isIntersecting&&auto) timer=setInterval(()=>show((i+1)%T.length),6000) }) }); io.observe(document.querySelector(".how")) }
 })();
 
 // Hero demo: one sentence becomes a sample plan, using the same unit costs as the app's budget model

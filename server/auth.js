@@ -22,24 +22,36 @@ function revoke(sid) {
   store?.set(revokedPath(sid), { exp: Date.now() + MAX_AGE_S * 1000 });
 }
 
-// Login rate limit: 10 failed tries per IP + email in 15 minutes, then 429 until the window passes.
-const LOGIN_WINDOW_MS = 15 * 60 * 1000, LOGIN_MAX_FAILS = 10;
-const fails = new Map(); // key -> { n, first }
-const failKey = (req) => `${req.ip || req.socket?.remoteAddress || "?"}|${String(req.body?.email || "").trim().toLowerCase()}`;
-function limited(key) {
-  const f = fails.get(key);
-  if (!f) return false;
-  if (Date.now() - f.first > LOGIN_WINDOW_MS) { fails.delete(key); return false; }
-  return f.n >= LOGIN_MAX_FAILS;
+// Login rate limits: 10 failed tries per IP + email in 15 minutes, and 20 per email in an hour from any IP;
+// past either, 429 until the window passes.
+const LIMITS = [
+  { fails: new Map(), windowMs: 15 * 60 * 1000, max: 10, key: (req, email) => `${req.ip || req.socket?.remoteAddress || "?"}|${email}` },
+  { fails: new Map(), windowMs: 60 * 60 * 1000, max: 20, key: (req, email) => (email ? email : null) },
+];
+const emailOf = (req) => String(req.body?.email || "").trim().toLowerCase().slice(0, 200);
+/** Seconds until the caller may try again, or 0 when not limited. */
+function limitedFor(req) {
+  const email = emailOf(req); let wait = 0;
+  for (const L of LIMITS) {
+    const k = L.key(req, email); if (k == null) continue;
+    const f = L.fails.get(k); if (!f) continue;
+    if (Date.now() - f.first > L.windowMs) { L.fails.delete(k); continue; }
+    if (f.n >= L.max) wait = Math.max(wait, Math.ceil((f.first + L.windowMs - Date.now()) / 1000));
+  }
+  return wait;
 }
-function noteFail(key) {
-  const f = fails.get(key);
-  if (!f || Date.now() - f.first > LOGIN_WINDOW_MS) fails.set(key, { n: 1, first: Date.now() });
-  else f.n++;
-  if (fails.size > 10000) for (const [k, v] of fails) if (Date.now() - v.first > LOGIN_WINDOW_MS) fails.delete(k);
+function noteFail(req) {
+  const email = emailOf(req);
+  for (const L of LIMITS) {
+    const k = L.key(req, email); if (k == null) continue;
+    const f = L.fails.get(k);
+    if (!f || Date.now() - f.first > L.windowMs) L.fails.set(k, { n: 1, first: Date.now() }); else f.n++;
+    if (L.fails.size > 10000) for (const [x, v] of L.fails) if (Date.now() - v.first > L.windowMs) L.fails.delete(x);
+  }
 }
+function clearFails(req) { const email = emailOf(req); for (const L of LIMITS) { const k = L.key(req, email); if (k != null) L.fails.delete(k); } }
 /** For tests. */
-export function resetLoginLimits() { fails.clear(); }
+export function resetLoginLimits() { for (const L of LIMITS) L.fails.clear(); }
 
 export function authEnabled() {
   return !!process.env.APP_PASSWORD;
@@ -122,12 +134,12 @@ export function loginHandler(req, res) {
   if (!authEnabled()) return res.json({ ok: true });
   const password = req.body?.password ?? "";
   const isForm = req.is("application/x-www-form-urlencoded");
-  const key = failKey(req);
-  if (limited(key)) {
-    res.setHeader("Retry-After", String(Math.ceil((fails.get(key).first + LOGIN_WINDOW_MS - Date.now()) / 1000)));
-    return isForm ? res.redirect(303, "/login?error=3") : res.status(429).json({ code: "rate_limited", message: "Too many sign-in attempts. Try again in 15 minutes." });
+  const wait = limitedFor(req);
+  if (wait) {
+    res.setHeader("Retry-After", String(wait));
+    return isForm ? res.redirect(303, "/login?error=3") : res.status(429).json({ code: "rate_limited", message: "Too many sign-in attempts. Try again later." });
   }
-  const deny = (err, message) => { noteFail(key); return isForm ? res.redirect(303, "/login?error=" + err) : res.status(401).json({ code: "not_granted", message }); };
+  const deny = (err, message) => { noteFail(req); return isForm ? res.redirect(303, "/login?error=" + err) : res.status(401).json({ code: "not_granted", message }); };
   let value;
   if (users().length) {
     const u = findUser(req.body?.email);
@@ -139,7 +151,7 @@ export function loginHandler(req, res) {
   } else if (!same(password, process.env.APP_PASSWORD)) {
     return deny(1, "Wrong password.");
   } else value = makeCookie("*");
-  fails.delete(key);
+  clearFails(req);
   const secure = req.secure ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
   return isForm ? res.redirect(303, "/") : res.json({ ok: true });
@@ -156,7 +168,7 @@ export function loginPage() {
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
   // the server. Send those visitors to the guest copy of the page instead.
-  if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash)) location.replace("/g" + location.hash);
+  if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
 </script>
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}
@@ -169,7 +181,7 @@ export function loginPage() {
 </style></head><body>
 <form method="post" action="/api/login">
   <h1>encore</h1>
-  <script>if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again in 15 minutes.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
+  <script>if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
   ${users().length ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" required>` : ""}
   <input type="password" name="password" placeholder="${users().some((u) => u.pw) ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>

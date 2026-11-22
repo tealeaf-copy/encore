@@ -75,11 +75,19 @@ export function publicEvent(data, view) {
   if (data.launch) e.launch = { platform: data.launch.platform, url: data.launch.url, qsOnRsvp: data.launch.qsOnRsvp };
   const v = data.venues?.venues?.[data.venuePick ?? 0];
   if (v) { e.venues = { venues: [{ name: v.name, address: v.address, area: v.area, photo: v.photo }] }; e.venuePick = 0; }
-  if (view === "nominate" && data.scout?.contacts) e.scout = { contacts: data.scout.contacts.map((c) => ({ name: c.name, title: c.title, company: c.company, owner: c.owner })) };
+  // Nomination pages (target accounts, AE owners) are for signed-in team members only: guests never get scout output, whatever view they claim.
   if (view === "plan") { for (const k of ["budget", "currency", "pitch", "produce", "goal", "concept", "audience", "dist", "mods"]) if (data[k] != null) e[k] = data[k]; }
   return e;
 }
 // Single documents guests may read: any event (RSVP, survey, plan, nomination links) plus the public roadmap and brand.
+// The public roadmap: only items the team left public (the page's publicItems rule), and only the fields the roadmap shows.
+// No budgets, territories, owners or private items.
+const CANVAS_ITEM_FIELDS = ["name", "audience", "quarter", "format", "city", "date", "concept", "size"];
+export const publicCanvasItem = (i) => !!i && typeof i === "object" && i.public !== false && i.private !== true && i.audience !== "employees" && !["private", "internal", "employees"].includes(String(i.visibility || "").toLowerCase());
+export function publicCanvas(data) {
+  return { ...(data?.company != null ? { company: data.company } : {}), ...(data?.example ? { example: true } : {}),
+    items: (Array.isArray(data?.items) ? data.items : []).filter(publicCanvasItem).map((i) => Object.fromEntries(CANVAS_ITEM_FIELDS.filter((k) => i[k] != null).map((k) => [k, i[k]]))) };
+}
 const GUEST_READABLE = (segs) => (segs.length === 2 && segs[0] === "events") || ["canvas/main", "brands/main"].includes(segs.join("/"));
 
 /** Is this request allowed without a login, as a guest RSVP/survey visitor? */
@@ -117,7 +125,10 @@ export function createApp({ store, dataDir }) {
   useAuthStore(store);
 
   app.disable("x-powered-by");
-  app.set("trust proxy", 1);
+  // Only trust X-Forwarded-For when told to (ENCORE_TRUST_PROXY=1 behind one proxy, a hop count, or an Express trust value
+  // such as "loopback"); otherwise anyone could pick their own IP and dodge the login limit.
+  const tp = String(process.env.ENCORE_TRUST_PROXY || "").trim();
+  app.set("trust proxy", !tp || /^(0|false|off|no)$/i.test(tp) ? false : /^\d+$/.test(tp) ? Number(tp) : /^true$/i.test(tp) ? true : tp);
 
   // ---------- public, ungated ----------
   app.get("/api/health", (req, res) => {
@@ -199,6 +210,11 @@ export function createApp({ store, dataDir }) {
     const canonical = configured || (u ? u.roles.find((r) => r.toLowerCase() === role.toLowerCase()) : role);
     const path = "approvals/" + eventId, cur = store.get(path)?.data || { eventId, roles: {} }, money = eventMoney(ev.data);
     const approval = { by: u?.name || "Unverified user", email: u?.email || null, verified: !!u, at: Date.now(), cost: money.cost, committed: money.committed, currency: money.currency };
+    // Separation of duties (ENCORE_ONE_APPROVAL_PER_PERSON=1): one person can't fill two approver roles on the same event.
+    if (!b.withdraw && process.env.ENCORE_ONE_APPROVAL_PER_PERSON === "1") {
+      const same = Object.entries(cur.roles).find(([r, a]) => r !== canonical && (approval.email ? a.email === approval.email : a.by === approval.by));
+      if (same) return res.status(409).json({ code: "conflict", message: `${approval.by} already approved this plan as ${same[0]}. Each approver role needs a different person.` });
+    }
     if (b.withdraw) delete cur.roles[canonical]; else cur.roles[canonical] = approval;
     store.set(path, cur);
     store.add("audit", { eventId, what: `${String(ev.data.name || eventId).slice(0, 120)}: ${b.withdraw ? "withdrew approval" : `approved the plan at ${money.currency} ${approval.cost.toLocaleString("en-US")} planned, ${money.currency} ${approval.committed.toLocaleString("en-US")} committed`} as ${canonical}`, who: approval.by, email: approval.email, verified: approval.verified, at: approval.at });
@@ -228,7 +244,9 @@ export function createApp({ store, dataDir }) {
   });
   app.get("/api/audit", (req, res) => {
     const id = String(req.query.eventId || "");
-    res.json({ entries: store.list("audit").map((d) => d.data).filter((e) => !id || e.eventId === id).sort((a, b) => b.at - a.at).slice(0, 500) });
+    // MCP reads are logged (kind "read") but left out of the decision log unless asked for with ?reads=1.
+    const reads = req.query.reads === "1";
+    res.json({ entries: store.list("audit").map((d) => d.data).filter((e) => (!id || e.eventId === id) && (reads || e.kind !== "read")).sort((a, b) => b.at - a.at).slice(0, 500) });
   });
 
   // ---------- AE follow-up pages: signed per-AE links ----------
@@ -310,6 +328,7 @@ export function createApp({ store, dataDir }) {
       }
     }
     if (doc && req.guest && p === "brands/main") data = publicBrand(data);
+    if (doc && req.guest && p === "canvas/main") data = publicCanvas(data);
     res.json(doc ? { exists: true, id: doc.id, data, updated: doc.updated } : { exists: false, id: p.split("/").pop() });
   });
   const guestKey = (req) => String(req.get("x-encore-key") || "").slice(0, 64);

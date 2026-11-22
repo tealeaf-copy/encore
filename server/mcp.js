@@ -28,10 +28,18 @@ const TOOLS = [
   { name: "program_summary", description: "Totals across every event in USD: planned, committed (signed vendors), spent, new pipeline and pipeline per dollar for finished events.", inputSchema: { type: "object", properties: {} } },
 ];
 
-function summarize(id, e) {
-  const g = e.guests || [], by = (s) => g.filter((x) => x.status === s).length, m = eventMoney(e);
+// A deal counts toward pipeline only when it's tied to an attendee or a person confirmed it (the page's sureOpp).
+export const sureOpp = (o) => !!o && (o.match === "contact" || !!o.confirmedBy || !!o.sample);
+/** Confirmed deals in a bucket ("created" / "existing"), in USD (each deal's own currency, else USD). */
+export const pipeUSD = (e, bucket) => (e.opps || []).filter((o) => o.bucket === bucket && sureOpp(o)).reduce((a, o) => a + usd(o.amount, o.currency), 0);
+/** Registered = guests Going or Attended + guest RSVPs saying going (the page's regCount). */
+export const regCount = (id, e, rsvps) => (e.guests || []).filter((g) => g.status === "Going" || g.status === "Attended").length + rsvps.filter((r) => r.eventId === id && r.response === "going").length;
+// Tokens shorter than this are ignored (and stop the server from starting; see startupProblems in index.js).
+export const MIN_MCP_TOKEN = 32;
+function summarize(id, e, rsvps = []) {
+  const m = eventMoney(e);
   return { id, name: e.name, kind: e.kind || "dinner", objective: e.objective || "pipeline", status: e.status || "planning", date: e.date || null, city: e.city || null,
-    seats: +e.headcount || 0, registered: by("Going") + by("Attended"), plannedCost: m.cost, currency: m.currency, plannedCostUSD: usd(m.cost, m.currency) };
+    seats: +e.headcount || 0, registered: regCount(id, e, rsvps), plannedCost: m.cost, currency: m.currency, plannedCostUSD: usd(m.cost, m.currency) };
 }
 // ---------- input checks: tools refuse bad input instead of guessing ----------
 const bad = (m) => { throw new Error(m); };
@@ -60,6 +68,15 @@ export function tierOf(v) {
   return "C";
 }
 const WRITES = new Set(["create_event", "update_event", "add_guests"]);
+/** Problems with the MCP token settings that should stop the server from starting. */
+export function mcpTokenProblems() {
+  const out = [];
+  if (process.env.ENCORE_MCP_TOKEN && process.env.ENCORE_MCP_TOKEN.length < MIN_MCP_TOKEN) out.push(`ENCORE_MCP_TOKEN must be at least ${MIN_MCP_TOKEN} characters (try \`openssl rand -hex 32\`).`);
+  const short = String(process.env.ENCORE_MCP_TOKENS || "").split(",").map((x) => x.trim()).filter(Boolean).map((x) => x.split("|").map((y) => y.trim())).filter(([n, , t]) => !t || t.length < MIN_MCP_TOKEN).map(([n]) => n || "(no name)");
+  if (short.length) out.push(`ENCORE_MCP_TOKENS entries need a token of at least ${MIN_MCP_TOKEN} characters: ${short.join(", ")}.`);
+  return out;
+}
+const MCP_RATE_PER_MIN = () => Number(process.env.ENCORE_MCP_RATE_PER_MIN || 120);
 
 const text = (obj) => ({ content: [{ type: "text", text: typeof obj === "string" ? obj : JSON.stringify(obj, null, 2) }] });
 
@@ -69,25 +86,34 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
     const list = String(process.env.ENCORE_MCP_TOKENS || "").split(",").map((x) => x.trim()).filter(Boolean).map((x) => {
       const [name, email, t] = x.split("|").map((y) => y.trim());
       return { name, email: String(email || "").toLowerCase() || null, token: t, verified: true };
-    }).filter((x) => x.name && x.token && x.token.length >= 16);
-    if (process.env.ENCORE_MCP_TOKEN) list.push({ name: "Claude (shared MCP token)", email: null, token: process.env.ENCORE_MCP_TOKEN, verified: false });
+    }).filter((x) => x.name && x.token && x.token.length >= MIN_MCP_TOKEN);
+    if (process.env.ENCORE_MCP_TOKEN && process.env.ENCORE_MCP_TOKEN.length >= MIN_MCP_TOKEN) list.push({ name: "Claude (shared MCP token)", email: null, token: process.env.ENCORE_MCP_TOKEN, verified: false });
     return list;
   };
   const same = (x, y) => { const a = Buffer.from(String(x)), b = Buffer.from(String(y)); return a.length === b.length && timingSafeEqual(a, b); };
   const whoIs = (req) => { const got = String(req.get("authorization") || "").replace(/^Bearer\s+/i, ""); if (!got) return null; let hit = null; for (const t of tokens()) if (same(t.token, got)) hit = hit || t; return hit; };
+  // Per-token rate limit: ENCORE_MCP_RATE_PER_MIN messages a minute (default 120; each message in a batch counts).
+  const hits = new Map(); // token -> { n, start }
+  const overLimit = (tok, n) => {
+    const now = Date.now(); let h = hits.get(tok);
+    if (!h || now - h.start >= 60_000) { h = { n: 0, start: now }; hits.set(tok, h); }
+    if (h.n + n > MCP_RATE_PER_MIN()) return Math.ceil((h.start + 60_000 - now) / 1000);
+    h.n += n; return 0;
+  };
+  const readLog = (who, eventId, tool) => store.add("audit", { eventId: String(eventId || ""), what: `read ${tool}`, kind: "read", via: "MCP", who: who?.name || "Claude (MCP)", email: who?.email || null, at: Date.now() });
   const audit = (who, eventId, what) => store.add("audit", { eventId: String(eventId || ""), what: String(what).slice(0, 500), kind: "mcp", via: "MCP", who: who?.name || "Claude (MCP)", email: who?.email || null, verified: !!who?.verified, at: Date.now() });
   const getEv = (id) => { if (!/^[A-Za-z0-9_-]+$/.test(String(id || ""))) throw new Error("Unknown event id"); const d = store.get("events/" + id); if (!d) throw new Error("No event with id " + id); return d.data; };
   const save = (id, e) => { e.updatedAt = Date.now(); store.set("events/" + id, e); afterEventWrite?.("events/" + id); };
 
   const run = {
-    list_events: ({ status }) => store.list("events").filter((d) => !d.data.example && (!status || (d.data.status || "planning") === status)).map((d) => summarize(d.id, d.data)),
+    list_events: ({ status }) => { const R = rsvps(); return store.list("events").filter((d) => !d.data.example && (!status || (d.data.status || "planning") === status)).map((d) => summarize(d.id, d.data, R)); },
     get_event: ({ id }) => {
       const e = getEv(id), g = e.guests || [], counts = {}; g.forEach((x) => { counts[x.status || "Not invited"] = (counts[x.status || "Not invited"] || 0) + 1; });
       const ev = e.date ? new Date(e.date + "T12:00:00") : null, done = new Set(e.tasksDone || []);
       const next = (e.produce?.tasks || []).map((t, i) => ({ ...t, i, due: ev ? new Date(ev.getTime() + t.days * 864e5).toISOString().slice(0, 10) : null })).filter((t) => !done.has(t.i)).sort((a, b) => a.days - b.days).slice(0, 5).map((t) => ({ task: t.task, owner: t.owner, due: t.due }));
       const missing = [!e.date && "date", !(e.venues?.venues?.length) && e.kind !== "webinar" && "venue", !e.produce && "production plan", !g.length && "guest list", !e.launchCopy && !e.copy && "event page copy"].filter(Boolean);
       const ap = store.get("approvals/" + id)?.data?.roles || {};
-      return { ...summarize(id, e), concept: e.concept || "", goal: e.goal || "", guests: counts, nextTasks: next, approvals: Object.entries(ap).map(([role, a]) => ({ role, by: a.by, at: new Date(a.at).toISOString() })), missing, studio: "Open the event in Encore to run its agents." };
+      return { ...summarize(id, e, rsvps()), concept: e.concept || "", goal: e.goal || "", guests: counts, nextTasks: next, approvals: Object.entries(ap).map(([role, a]) => ({ role, by: a.by, at: new Date(a.at).toISOString() })), missing, studio: "Open the event in Encore to run its agents." };
     },
     create_event: (a) => {
       if (!String(a.name || "").trim()) bad("name is required");
@@ -125,7 +151,7 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
           notes.push(`Scaled ${lines.length} budget line${lines.length === 1 ? "" : "s"} from ${lineSum.toLocaleString("en-US")} to ${budget.toLocaleString("en-US")} (x${k.toFixed(3)}).`);
         }
       }
-      save(a.id, e); return { ...summarize(a.id, e), ...(notes.length ? { notes } : {}) };
+      save(a.id, e); return { ...summarize(a.id, e, rsvps()), ...(notes.length ? { notes } : {}) };
     },
     add_guests: ({ id, guests }) => {
       const e = getEv(id); e.guests = e.guests || []; let added = 0; const skipped = [];
@@ -157,8 +183,8 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
       return { byOwner: by, rule: "Follow up within 24 hours of the event, starting from what they said." };
     },
     pipeline_report: ({ id }) => {
-      const e = getEv(id), O = e.opps || [], sure = (o) => o.match === "contact" || o.confirmedBy, sum = (b) => O.filter((o) => o.bucket === b && sure(o)).reduce((a, o) => a + (+o.amount || 0), 0);
-      return { createdAfterEvent: sum("created"), existingDealsWithAttendees: sum("existing"), lowerConfidenceCompanyOnly: O.filter((o) => !sure(o)).map((o) => ({ account: o.account, amount: o.amount })), deals: O.length,
+      const e = getEv(id), O = e.opps || [];
+      return { currency: "USD", createdAfterEvent: pipeUSD(e, "created"), existingDealsWithAttendees: pipeUSD(e, "existing"), lowerConfidenceCompanyOnly: O.filter((o) => !sureOpp(o)).map((o) => ({ account: o.account, amount: o.amount, currency: String(o.currency || "USD").toUpperCase(), amountUSD: usd(o.amount, o.currency) })), deals: O.length, confirmedDeals: O.filter(sureOpp).length,
         caveat: "Pipeline connected to attendees, not proof the event caused it. Use the holdout test for lift.", note: O.length ? "" : "No deals imported yet. Import opportunities or pull them from the CRM in Encore's Measure step." };
     },
     launch_kit: ({ id }) => {
@@ -167,13 +193,16 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
         registrationQuestions: (e.launchQs?.questions || []).map((q) => q.q), capacity: +e.headcount || 0, approvalRequired: !!e.approvalRequired, platforms: ["Luma", "Partiful", "Eventbrite", "Sequel", "Your website"] };
     },
     program_summary: () => {
-      const rows = store.list("events").filter((d) => !d.data.example).map((d) => { const m = eventMoney(d.data), O = d.data.opps || []; return { done: d.data.status === "done", planned: usd(m.cost, m.currency), committed: usd(m.committed, m.currency), spent: usd(+d.data.actualSpend || 0, m.currency), pipe: O.filter((o) => o.bucket === "created").reduce((a, o) => a + (+o.amount || 0), 0) }; });
+      const evs = store.list("events").filter((d) => !d.data.example), parents = new Set(evs.map((d) => d.data.parentId).filter(Boolean));
+      // A series master's budget is the sum of its cities: count the cities, not the master too.
+      const rows = evs.map((d) => { const m = eventMoney(d.data), master = !!d.data.isSeries && parents.has(d.id); return { done: d.data.status === "done", planned: master ? 0 : usd(m.cost, m.currency), committed: usd(m.committed, m.currency), spent: usd(+d.data.actualSpend || 0, m.currency), pipe: pipeUSD(d.data, "created") }; });
       const s = (k, f = () => true) => rows.filter(f).reduce((a, r) => a + r[k], 0), dSpent = s("spent", (r) => r.done), dPipe = s("pipe", (r) => r.done);
       return { events: rows.length, plannedUSD: s("planned"), committedUSD: s("committed"), spentUSD: s("spent"), newPipelineFinishedUSD: dPipe, pipelinePerDollarFinished: dSpent ? +(dPipe / dSpent).toFixed(2) : null };
     },
   };
 
   /** One JSON-RPC message -> its response object, or null for a notification. */
+  const rsvps = () => store.list("rsvps").map((d) => d.data);
   function handle(msg, who) {
     if (!msg || typeof msg !== "object" || Array.isArray(msg)) return { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid request" } };
     if (msg.id === undefined) return null; // notifications
@@ -187,6 +216,7 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
         try {
           const out = fn(args);
+          if (!WRITES.has(name)) readLog(who, args.id, name);
           if (WRITES.has(name)) {
             const id = out?.id || args.id, changed = Object.keys(args).filter((k) => k !== "id" && k !== "guests");
             audit(who, id, name === "create_event" ? `${out.name}: created from Claude` : name === "add_guests" ? `${getEv(id).name || id}: added ${out.added} guest${out.added === 1 ? "" : "s"} from Claude` : `${getEv(id).name || id}: updated from Claude (${changed.join(", ") || "no fields"})${out.notes ? " " + out.notes.join(" ") : ""}`);
@@ -203,6 +233,8 @@ export function mountMcp(app, { store, afterEventWrite, json }) {
     const who = whoIs(req);
     if (!who) return res.status(401).json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "Unauthorized" } });
     req.mcpWho = who;
+    const wait = overLimit(who.token, Array.isArray(req.body) ? Math.max(1, Math.min(req.body.length, 100)) : 1);
+    if (wait) { res.set("Retry-After", String(wait)); return res.status(429).json({ jsonrpc: "2.0", id: null, error: { code: -32029, message: `Too many requests. Try again in ${wait}s.` } }); }
     next();
   }, (req, res) => {
     const body = req.body;

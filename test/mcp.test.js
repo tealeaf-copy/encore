@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { startServer } from "./helpers.js";
 
 let srv;
-before(async () => { process.env.ENCORE_MCP_TOKEN = "mcp-test-token"; srv = await startServer(); });
+before(async () => { process.env.ENCORE_MCP_TOKEN = "mcp-test-token-0123456789abcdef0123456789"; srv = await startServer(); });
 after(async () => { delete process.env.ENCORE_MCP_TOKEN; await srv.close(); });
 
 let n = 0;
-const rpc = (method, params, token = "mcp-test-token") => fetch(srv.base + "/mcp", {
+const rpc = (method, params, token = "mcp-test-token-0123456789abcdef0123456789") => fetch(srv.base + "/mcp", {
   method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
   body: JSON.stringify({ jsonrpc: "2.0", id: ++n, method, params }),
 }).then(async (r) => ({ status: r.status, body: await r.json() }));
@@ -47,11 +47,11 @@ test("MCP is off without a token", async () => {
 });
 
 test("per-person MCP tokens, audited writes", async () => {
-  process.env.ENCORE_MCP_TOKENS = "Maya Chen|maya@acme.com|maya-token-0123456789,Sam Lee|sam@acme.com|sam-token-0123456789";
+  process.env.ENCORE_MCP_TOKENS = "Maya Chen|maya@acme.com|maya-token-0123456789abcdef0123456789,Sam Lee|sam@acme.com|sam-token-0123456789abcdef0123456789";
   try {
-    const asMaya = (name, args) => rpc("tools/call", { name, arguments: args }, "maya-token-0123456789").then((r) => JSON.parse(r.body.result.content[0].text));
-    assert.equal((await rpc("tools/list", {}, "maya-token-0123456789")).status, 200);
-    assert.equal((await rpc("tools/list", {}, "nobody-token-0123456789")).status, 401);
+    const asMaya = (name, args) => rpc("tools/call", { name, arguments: args }, "maya-token-0123456789abcdef0123456789").then((r) => JSON.parse(r.body.result.content[0].text));
+    assert.equal((await rpc("tools/list", {}, "maya-token-0123456789abcdef0123456789")).status, 200);
+    assert.equal((await rpc("tools/list", {}, "nobody-token-0123456789abcdef0123456789")).status, 401);
     const made = await asMaya("create_event", { name: "Audited", date: "2027-03-01" });
     assert.match(made.id, /^[A-Za-z0-9]{20}$/, "event ids are random");
     await asMaya("update_event", { id: made.id, city: "Austin" });
@@ -65,7 +65,9 @@ test("per-person MCP tokens, audited writes", async () => {
     assert.match(log[2].what, /added 1 guest from Claude/);
     assert.equal(log[3].who, "Claude (shared MCP token)");
     assert.equal(log[3].verified, false);
-    assert.equal(srv.store.list("audit").filter((d) => /list_events|get_event/.test(d.data.what)).length, 0, "reads aren't logged");
+    await asMaya("get_event", { id: made.id });
+    const reads = srv.store.list("audit").map((d) => d.data).filter((e) => e.kind === "read" && e.eventId === made.id);
+    assert.deepEqual(reads.map((e) => [e.what, e.who, e.via]), [["read get_event", "Maya Chen", "MCP"]], "reads are logged, lightly");
   } finally { delete process.env.ENCORE_MCP_TOKENS; }
 });
 
@@ -121,12 +123,12 @@ test("add_guests reads CRM-style fields", async () => {
 });
 
 test("MCP accepts JSON-RPC batches", async () => {
-  const r = await fetch(srv.base + "/mcp", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer mcp-test-token" },
+  const r = await fetch(srv.base + "/mcp", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer mcp-test-token-0123456789abcdef0123456789" },
     body: JSON.stringify([{ jsonrpc: "2.0", id: "a", method: "ping" }, { jsonrpc: "2.0", method: "notifications/initialized" }, { jsonrpc: "2.0", id: "b", method: "tools/list" }, { jsonrpc: "2.0", id: "c", method: "nope" }]) });
   const out = await r.json();
   assert.deepEqual(out.map((x) => x.id), ["a", "b", "c"]);
   assert.ok(out[1].result.tools.length);
   assert.equal(out[2].error.code, -32601);
-  const n = await fetch(srv.base + "/mcp", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer mcp-test-token" }, body: JSON.stringify([{ jsonrpc: "2.0", method: "notifications/initialized" }]) });
+  const n = await fetch(srv.base + "/mcp", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer mcp-test-token-0123456789abcdef0123456789" }, body: JSON.stringify([{ jsonrpc: "2.0", method: "notifications/initialized" }]) });
   assert.equal(n.status, 202);
 });

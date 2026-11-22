@@ -44,7 +44,8 @@ if (process.env.ENCORE_USERS && !process.env.SESSION_SECRET) {
 }
 {
   const { startupProblems } = await import("./auth.js");
-  const problems = startupProblems();
+  const { mcpTokenProblems } = await import("./mcp.js");
+  const problems = [...startupProblems(), ...mcpTokenProblems()];
   if (problems.length) { console.error("Refusing to start: " + problems.join(" ")); process.exit(1); }
 }
 if (!process.env.APP_PASSWORD) console.warn("Warning: APP_PASSWORD is not set, so anyone who can reach this server can read and change all data.");

@@ -7449,6 +7449,16 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
 
 // Round 14: one place for a guest's plans
 { const _rg25=renderGuest; renderGuest=async function(){ const r=await _rg25.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!myRsvp(e.id)||$("#plansLink")) return r; const t=$(".ticket",host); if(!t) return r; const a=document.createElement("a"); a.id="plansLink"; a.href="/plans"; a.className="btn ghost sm"; a.textContent="See all your plans"; a.style.marginTop="8px"; t.after(a) }catch{} return r } }
+
+// ==================================================================
+// Round 16: once you're approved, the page says so everywhere and leads with paying.
+// ==================================================================
+{ const _rg26=renderGuest; renderGuest=async function(){ const r=await _rg26.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; document.title=`${guestTitle(e)} · Encore`;
+    const M=myRsvp(e.id); if(M?.response!=="going") return r; const paid=e.price&&e.price!=="chip", t=$(".ticket",host);
+    $$(".eyebrow",host).forEach(x=>{ const s=x.textContent.trim(); if(s==="Request received"||s==="Ask to join") x.textContent="You're in ✓" });
+    if(t) $$("p",t).forEach(p=>{ if(/will confirm your seat|the moment it's a yes|reads every request/.test(p.textContent)) p.textContent=paid&&!M.paid?`${hostFirst(e)} said yes. Pay ${e.price} to hold your seat.`:`${hostFirst(e)} said yes. See you there.` });
+    const pb=$("#payBox"); if(pb){ const a=pb.querySelector("a[href*='venmo.com/']"); const amt=String(e.price||"").replace(/[^\d.]/g,""); if(a&&amt&&!/amount=/.test(a.href)) a.href=a.href.split("?")[0]+`?txn=pay&amount=${amt}&note=${encodeURIComponent(guestTitle(e)+" seat")}`; const top=$("#youreIn")||t; if(top&&pb.previousElementSibling!==top) top.after(pb) }
+  }catch(err){ console.warn(err) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

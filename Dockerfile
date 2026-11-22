@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-slim
 ENV NODE_ENV=production
 WORKDIR /app
 # better-sqlite3 ships prebuilt binaries for linux x64/arm64; build tools are a fallback.

@@ -69,7 +69,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective"];
+const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -77,7 +77,7 @@ export function eventMoney(e) {
 }
 export function publicEvent(data, view) {
   const e = Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]]));
-  e.guests = (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
+  e.guests = data.noWall ? [] : (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
   if (data.launch) e.launch = { platform: data.launch.platform, url: data.launch.url, qsOnRsvp: data.launch.qsOnRsvp };
   const v = data.venues?.venues?.[data.venuePick ?? 0];
   if (v) { e.venues = { venues: [{ name: v.name, address: v.address, area: v.area, photo: v.photo }] }; e.venuePick = 0; }

@@ -1084,6 +1084,42 @@ body:not(.simple) .simple-only{display:none!important}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
 @media (max-width:700px){.gtable thead{display:none}.gtable,.gtable tbody{display:block;width:100%}.gtable tr{display:flex;flex-wrap:wrap;gap:6px 10px;padding:12px 0;border-bottom:1px solid var(--line)}.gtable td{display:block;border:0!important;padding:0!important}.gtable td:first-child{flex-basis:100%}}
 @media (max-width:700px){.gtable td:nth-child(2){display:none!important}}
+
+.deployed{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 18px 40px -28px rgba(43,33,28,.35)}
+.deplist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.deplist li{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);opacity:0;animation:depIn .35s ease forwards}
+.deplist .tick{width:24px;height:24px;border-radius:50%;background:#E7F0E6;color:#2F5D34;display:grid;place-items:center;font-size:13px;flex:none}
+@keyframes depIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.deplist li{animation:none;opacity:1}}
+.tryrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.trychip{border:1px dashed var(--line-strong);background:transparent;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;color:var(--fg);cursor:pointer;min-height:36px}
+.trychip:hover{border-style:solid;background:var(--surface)}
+.tourback{display:grid;place-items:center;padding:16px;z-index:80}
+.tour{background:var(--surface);border-radius:24px;padding:28px;max-width:640px;width:100%;display:flex;flex-direction:column;gap:16px;box-shadow:0 30px 80px -30px rgba(36,28,24,.55);max-height:calc(100vh - 32px);overflow:auto}
+.tour h2{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:28px;line-height:34px;margin:0}
+.tour .lede{font-size:16px;line-height:26px;color:var(--muted);margin:0}
+.tour .dots{display:flex;gap:6px}.tour .dots i{width:8px;height:8px;border-radius:50%;background:var(--line-strong)}.tour .dots i.on{background:var(--accent);width:22px;border-radius:4px}
+.tourstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tourstats div{background:var(--sunk);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.tourstats b{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:22px;line-height:28px}.tourstats span{font-size:13px;color:var(--muted);line-height:18px}
+.tourex{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tourex button{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:16px;padding:14px;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;color:var(--fg)}
+.tourex button:hover{border-color:var(--accent)}.tourex span{font-size:13px;line-height:19px;color:var(--muted)}
+@media (max-width:700px){.tour{padding:20px;border-radius:20px}.tour h2{font-size:23px;line-height:29px}.tourstats,.tourex{grid-template-columns:1fr}.tourback{align-items:end;padding:0}.tour{border-radius:24px 24px 0 0;max-height:92vh}}
+
+.ros{display:flex;flex-direction:column;gap:6px}
+.rosrow{display:grid;grid-template-columns:68px minmax(0,1fr) minmax(0,1fr) 36px;gap:6px;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.rosrow input[data-ros$="|item"]{grid-column:2/4}.rosrow button{grid-column:4;grid-row:1}.rosrow input[data-ros$="|owner"]{grid-column:2/3;grid-row:2}.rosrow input[data-ros$="|cue"]{grid-column:3/4;grid-row:2}
+.rosrow input[data-ros$="|owner"],.rosrow input[data-ros$="|cue"]{font-size:13px;min-height:36px;color:var(--muted)}
+.rosrow input{min-width:0}
+.seatgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr))}
+.seattable{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.seatg{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding-top:8px;border-top:1px solid var(--line)}
+.seatg select{max-width:120px}
+@media (max-width:700px){.rosrow input[data-ros$="|owner"]{grid-column:2/4;grid-row:2}.rosrow input[data-ros$="|cue"]{grid-column:2/4;grid-row:3}}
+
+.toast{top:calc(16px + env(safe-area-inset-top,0px))!important;bottom:auto!important}
+@media (max-width:700px){.tbx{display:none}.trialbar .wrap{flex-wrap:nowrap!important}}
 </style>
 
 <header class="top" id="appHeader"><div class="wrap">
@@ -1694,7 +1730,7 @@ async function autopilot(){
   if(!sample){ toast("Open this page in claude.ai while signed in to run Autopilot."); return }
   if(!draft.concept.trim()){ step=1; renderStep(); toast("Describe the event first, then let Encore plan it."); return }
   if(draft.example){ draft.example=false; draft.venuePick=0 }
-  const host=$("#autoHost"); host.hidden=false;
+  const host=$("#autoHost"); host.hidden=false; setTimeout(()=>host.scrollIntoView({behavior:"smooth",block:"start"}),60);
   const st={}; CREW.flat().forEach(k=>st[k]={s:"wait",msg:"Waiting"});
   const t0=Date.now();
   const draw=(fin)=>{ host.innerHTML=`<div class="auto">
@@ -1915,7 +1951,7 @@ function renderStep(){
   const sb=$("#sampleBar"); if(sb){ sb.innerHTML=draft.example?`<div class="samplebar btns" style="justify-content:space-between"><span>This is a sample event with made-up guests and numbers. Look around, then start your own.</span><button class="btn primary sm" id="startOwn">Start your own event</button></div>`:""; $("#startOwn")&&($("#startOwn").onclick=()=>{ draft=brandDraft(); step=1; renderStep() }) }
   const host=$("#stepHost"); host.innerHTML="";
   ({1:step1,2:step2,3:step3,4:stepPromote,5:step4,6:step5,7:step6,8:stepSignoff,9:stepDistribution})[step](host);
-  wireChase(host); if(step===1&&!draft.example) drawSignoff(host);
+  wireChase(host); if(step===1&&!draft.example) drawSignoff(host); if(step===6&&!draft.example) drawSeating(host);
   $$("[id^=out-]",host).forEach(el=>{ const k=el.id.slice(4); if(AGENTS[k]) el.insertAdjacentHTML("afterbegin",needsHTML(k,out(k))) }); wireMods(host); wireNeeds(host);
   host.insertAdjacentHTML("afterbegin",lessonStrip(step)); $$("[data-teach]",host).forEach(b=>b.onclick=()=>teachMore(+b.dataset.teach,b));
   const kh=$("#kindHost"); if(kh){ kh.innerHTML=kindPicker(); $$("[data-kind]",kh).forEach(b=>b.onclick=()=>{ const nk=b.dataset.kind; if(!draft.example&&draft.kind!==nk&&draft.produce&&(window.confirm?.(`Switch to ${KINDS[nk].label.toLowerCase()} and rebuild the budget lines and task list for it? Your guests, copy and notes stay.`)??true)){ draft.kind=nk; draft.format=KINDS[nk].label; draft.produce={...starterProduce(draft),budget:budgetModel(draft).rows.map(r=>({line:r.line,amount:r.amt,note:r.formula}))}; draft.headcount=draft.headcount||TPL_SEATS[nk]; logDecision(draft,`changed the event type to ${KINDS[nk].label} and rebuilt the plan`) } if(draft.example){ if(!(window.confirm?.(`Start a new ${KINDS[b.dataset.kind].label.toLowerCase()} of your own? The sample stays as it is.`)??true)) return; draft=brandDraft({kind:b.dataset.kind}); }
@@ -2024,6 +2060,45 @@ async function renderSignoff(host,eventId,rid,tok){ host.innerHTML=`<div class="
       <p class="note">Your answer and comment go to ${esc(q.requestedBy)} and into the event's decision log with your name.</p></section>`}</div>`;
     $$("[data-dec]",host).forEach(b=>b.onclick=async()=>{ const c=$("#soC",host).value.trim(); if(b.dataset.dec!=="approved"&&!c){ toast("Add a line so they know what to change."); $("#soC",host).focus(); return } $$("[data-dec]",host).forEach(x=>x.disabled=true);
       try{ const r=await fetch("/api/signoff/decide",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId,rid,t:tok,decision:b.dataset.dec,comment:c})}), k=await r.json(); if(!r.ok){ toast(k.message||"Couldn't record that."); $$("[data-dec]",host).forEach(x=>x.disabled=false); return } Object.assign(q,k.request); paint() }catch{ toast("Couldn't record that. Check your connection."); $$("[data-dec]",host).forEach(x=>x.disabled=false) } }) };
+  paint() }
+function seatPlan(d){ const S=d.seating=d.seating||{tables:[],seat:{}}; const G=d.guests.filter(g=>/Going|Attended|Maybe|Waitlist/.test(g.status));
+  if(!S.tables.length){ const n=G.length<=16?1:Math.ceil(G.length/10); S.tables=Array.from({length:n},(_,i)=>({name:n===1?"The table":`Table ${i+1}`,host:""})) } return {S,G} }
+function autoSeat(d){ const {S,G}=seatPlan(d), n=S.tables.length, cap=Math.ceil(G.length/n)||1, load=Array(n).fill(0), cos=S.tables.map(()=>new Set());
+  const order=[...G].sort((a,b)=>(b.vip?1:0)-(a.vip?1:0)||(a.tier||"Z").localeCompare(b.tier||"Z")); S.seat={};
+  order.forEach(g=>{ const co=(g.company||"").toLowerCase(); let best=-1;
+    for(let t=0;t<n;t++){ if(load[t]>=cap) continue; if(g.vip&&t!==0&&load[0]<cap) continue; if(best<0||(cos[t].has(co)?1:0)-(cos[best].has(co)?1:0)<0||((cos[t].has(co)?1:0)===(cos[best].has(co)?1:0)&&load[t]<load[best])) best=t }
+    if(best<0) best=load.indexOf(Math.min(...load)); S.seat[guestKeyOf(g)]=best; load[best]++; cos[best].add(co) });
+  const hosts=[...new Set(G.map(g=>g.owner).filter(o=>o&&o!=="Unassigned"))]; S.tables.forEach((t,i)=>{ if(!t.host) t.host=i===0?(d.sponsor||"Exec sponsor"):(hosts[i-1]||"") }) }
+function seatWarnings(d){ const {S,G}=seatPlan(d), W=[], n=S.tables.length, cap=Math.ceil((+d.headcount||G.length)/n);
+  S.tables.forEach((t,i)=>{ const at=G.filter(g=>S.seat[guestKeyOf(g)]===i), by={};
+    at.forEach(g=>{ const c=(g.company||"").toLowerCase(); if(c) by[c]=(by[c]||0)+1 });
+    if(n>1) Object.entries(by).filter(([,k])=>k>1).forEach(([c])=>W.push(`${t.name}: two people from ${at.find(g=>(g.company||"").toLowerCase()===c).company}. Split them so each meets someone new.`));
+    if(at.length>cap) W.push(`${t.name}: ${at.length} seats for a table of ${cap}.`);
+    if(at.length&&!t.host) W.push(`${t.name} has no host.`);
+    if(at.some(g=>g.vip)&&i!==0&&n>1) W.push(`${t.name}: a VIP is away from the exec sponsor's table.`) });
+  const un=G.filter(g=>S.seat[guestKeyOf(g)]==null); if(un.length) W.push(`${un.length} confirmed ${un.length===1?"guest isn't":"guests aren't"} seated yet.`);
+  return W }
+function drawSeating(host){ const d=draft; if(!d.guests.length) return; const box=document.createElement("details"); box.className="panel stack addtoplan"; box.id="seatHost";
+  const nb=$("[data-next]",host)?.closest(".btns"); nb?nb.before(box):host.appendChild(box);
+  const paint=()=>{ const {S,G}=seatPlan(d), W=seatWarnings(d), hosts=[...new Set([d.sponsor||"Exec sponsor",me()||"",...d.guests.map(g=>g.owner)].filter(o=>o&&o!=="Unassigned"))];
+    box.innerHTML=`<summary><b>Seating and room rules</b> <span class="note">${G.length?`${G.length} to seat at ${S.tables.length} ${S.tables.length===1?"table":"tables"}${W.length?` · ${W.length} to fix`:" · ready"}`:"Seat guests once they say yes"}</span></summary>
+      <div class="stack" style="margin-top:12px"><div class="chips" role="group" aria-label="Room rules">${[["chatham","Chatham House rule"],["noPhotos","No photography"],["noWall","No public guest page"]].map(([k,l])=>`<label class="chip"><input type="checkbox" data-rule="${k}" ${d[k]?"checked":""}> ${l}</label>`).join("")}</div>
+      ${G.length?`<div class="btns"><button class="btn sm primary" id="seatAuto" type="button">Seat everyone for me</button><label class="note">Tables <input class="mini" id="seatN" type="number" min="1" max="20" value="${S.tables.length}" style="width:64px"></label><button class="btn ghost sm" id="seatBriefs" type="button">Copy host briefs</button><button class="btn ghost sm" id="seatCards" type="button">Copy place cards</button></div>
+      ${W.length?`<div class="stack" style="gap:4px">${W.map(w=>`<p class="note" style="color:var(--accent);margin:0">${esc(w)}</p>`).join("")}</div>`:`<p class="note" style="margin:0">Every guest is seated, every table has a host, no colleagues side by side.</p>`}
+      <div class="seatgrid">${S.tables.map((t,i)=>`<div class="seattable"><div class="btns" style="justify-content:space-between"><input class="mini" data-tname="${i}" value="${esc(t.name)}" aria-label="Table name" style="font-weight:600;width:120px"><select data-thost="${i}" aria-label="Host for ${esc(t.name)}"><option value="">Choose a host</option>${hosts.map(h=>`<option ${t.host===h?"selected":""}>${esc(h)}</option>`).join("")}</select></div>
+        ${G.filter(g=>S.seat[guestKeyOf(g)]===i).map(g=>`<div class="seatg"><span><b>${esc(g.name)}</b>${g.vip?` <span class="gflag vip">VIP</span>`:""}<br><span class="note">${esc([g.title,g.company].filter(Boolean).join(" · "))}</span>${g.severe?`<br><span class="gflag bad">Severe allergy</span>`:""}</span><select data-seat="${esc(guestKeyOf(g))}" aria-label="Move ${esc(g.name)}">${S.tables.map((x,j)=>`<option value="${j}" ${j===i?"selected":""}>${esc(x.name)}</option>`).join("")}</select></div>`).join("")||`<p class="note">No one here yet.</p>`}</div>`).join("")}</div>
+      ${G.some(g=>S.seat[guestKeyOf(g)]==null)?`<div class="stack" style="gap:6px"><small class="eyebrow">Not seated</small>${G.filter(g=>S.seat[guestKeyOf(g)]==null).map(g=>`<div class="seatg"><span><b>${esc(g.name)}</b> <span class="note">${esc(g.company||"")}</span></span><select data-seat="${esc(guestKeyOf(g))}"><option value="">Choose a table</option>${S.tables.map((x,j)=>`<option value="${j}">${esc(x.name)}</option>`).join("")}</select></div>`).join("")}</div>`:""}`:`<p class="note">Seating opens when guests say yes.</p>`}</div>`;
+    $$("[data-rule]",box).forEach(x=>x.onchange=()=>{ const k=x.dataset.rule; d[k]=x.checked;
+      if(k==="noPhotos"&&x.checked&&d.produce?.budget){ const B=d.produce.budget, ph=B.filter(b=>/photo|video/i.test(b.line)), amt=ph.reduce((a,b)=>a+(+b.amount||0),0); if(amt){ d.produce.budget=B.filter(b=>!/photo|video/i.test(b.line)); const c=d.produce.budget.find(b=>/contingency/i.test(b.line)); if(c) c.amount=(+c.amount||0)+amt; else d.produce.budget.push({line:"Contingency",amount:amt}); toast(`No photography: ${money(amt)} moved from photo and video to contingency.`) } }
+      logDecision(d,`${x.checked?"turned on":"turned off"} ${x.parentElement.textContent.trim()}`); paint() });
+    $("#seatAuto",box)&&($("#seatAuto",box).onclick=()=>{ autoSeat(d); logDecision(d,"seated guests"); paint() });
+    $("#seatN",box)&&($("#seatN",box).onchange=e=>{ const n=Math.max(1,Math.min(20,+e.target.value||1)), S=d.seating; while(S.tables.length<n) S.tables.push({name:`Table ${S.tables.length+1}`,host:""}); S.tables.length=n; if(n>1&&S.tables[0].name==="The table") S.tables[0].name="Table 1"; autoSeat(d); paint() });
+    $$("[data-tname]",box).forEach(x=>x.onchange=()=>{ d.seating.tables[+x.dataset.tname].name=x.value.trim()||`Table ${+x.dataset.tname+1}`; paint() });
+    $$("[data-thost]",box).forEach(x=>x.onchange=()=>{ d.seating.tables[+x.dataset.thost].host=x.value; paint() });
+    $$("[data-seat]",box).forEach(x=>x.onchange=()=>{ if(x.value==="") delete d.seating.seat[x.dataset.seat]; else d.seating.seat[x.dataset.seat]=+x.value; paint() });
+    $("#seatCards",box)&&($("#seatCards",box).onclick=()=>{ const {S,G}=seatPlan(d); copyTxt(S.tables.map((t,i)=>`${t.name.toUpperCase()}\n`+G.filter(g=>S.seat[guestKeyOf(g)]===i).map(g=>`  ${g.name}\n  ${g.company||""}`).join("\n\n")).join("\n\n\n")); toast("Place cards copied, grouped by table.") });
+    $("#seatBriefs",box)&&($("#seatBriefs",box).onclick=()=>{ const {S,G}=seatPlan(d); copyTxt(S.tables.map((t,i)=>{ const at=G.filter(g=>S.seat[guestKeyOf(g)]===i);
+      return `${t.name}: host brief for ${t.host||"(no host yet)"}\n${d.name}${d.date?" · "+fmtDate(d.date):""}${d.chatham?"\nHouse rule: Chatham House. Nothing said is attributed.":""}\n\nYour goal: make each guest feel heard, learn their top priority this quarter, and agree one next step only where it's natural.\n\n`+at.map(g=>`• ${g.name}, ${[g.title,g.company].filter(Boolean).join(", ")}${g.vip?" (VIP)":""}\n  Why they're here: ${g.why||g.note||"Tier "+(g.tier||"–")+" account"}${g.owner&&g.owner!=="Unassigned"?`\n  Their AE: ${g.owner}`:""}${g.dietary&&!/^none$/i.test(g.dietary)?`\n  Dietary: ${g.dietary}${g.severe?" (severe)":""}`:""}${g.access?`\n  Access: ${g.access}`:""}`).join("\n\n")+`\n\nAvoid: pricing, product pitches, and anything about other guests' companies.` }).join("\n\n────────\n\n")); toast("Host briefs copied, one per table.") }) };
   paint() }
 function nextBtn(n,label){ const nx=nextStepOf(step); return nx?`<div class="btns"><button class="btn" data-next="${nx}">Next: ${STEP_NAMES[nx]} →</button></div>`:"" }
 function wireNext(host){ $$("[data-next]",host).forEach(b=>b.onclick=()=>{step=+b.dataset.next;renderStep();window.scrollTo({top:0,behavior:"smooth"})}) }
@@ -2171,6 +2246,21 @@ Keep it short. Reply with only JSON: {"name":"max 4 words","format":"one of ${FO
   base.ideas.splice(at,0,o); S.kept=S.kept.map(i=>i>=at?i+1:i); S.passed=S.passed.map(i=>i>=at?i+1:i);
   drawDeck(); burst();
 }
+function kindFromFormat(f){ f=String(f||"").toLowerCase(); return /booth|third-party|trade ?show|conference/.test(f)&&!/owned|user conf/.test(f)?"conference":/owned|user conf/.test(f)?"owned":/summit|forum|advisory|board|council/.test(f)?"summit":/webinar|live session|virtual|online/.test(f)?"webinar":/roadshow|tour|cities/.test(f)?"roadshow":/launch/.test(f)?"launch":/dinner|breakfast|lunch|supper|table/.test(f)?"dinner":"experience" }
+function deployPlay(i,btn){ if(btn){ btn.disabled=true; btn.textContent="Setting it up…" }
+  const k=kindFromFormat((i.format||"")+" "+(i.name||"")), d=hydrate(brandDraft({kind:k,name:i.name,concept:i.concept||"",format:KINDS[k].label,goal:i.goal||""})); d.example=false; d.kind=k; d.name=i.name; d.concept=i.concept||i.name; d.format=KINDS[k].label;
+  if(i.roles?.length) d.audience.roles=i.roles; if(i.intel) d.intel=i.intel; d.headcount=i.headcount||TPL_SEATS[k]||20; if(i.city) d.city=i.city; if(i.date) d.date=i.date;
+  const BM=budgetModel(d); d.budget=+i.budget||Math.round(BM.total/500)*500; d.produce=starterProduce(d); d.produce.budget=BM.rows.map(r=>({line:r.line,amount:r.amt,note:r.formula})); d.modelEstimate=BM.total;
+  d.cover.headline=d.name; logDecision(d,`deployed "${d.name}" from the plan`);
+  draft=d; step=1; $("#autoHost").hidden=true; if(location.hash!=="#studio") location.hash="#studio"; renderStep(); window.scrollTo({top:0,behavior:"smooth"});
+  if(db) setTimeout(()=>saveEvent(true),50);
+  if(sample){ setTimeout(()=>{ autopilot(); setTimeout(()=>$("#autoHost")?.scrollIntoView({behavior:"smooth",block:"start"}),120) },250); return }
+  const P=d.produce, host=$("#autoHost"), go=(n)=>()=>{ step=n; renderStep(); window.scrollTo({top:0,behavior:"smooth"}) };
+  host.hidden=false; host.innerHTML=`<section class="deployed" aria-live="polite"><div class="btns" style="justify-content:space-between;align-items:flex-start"><div><small class="eyebrow">Deployed</small><h3 style="margin-top:2px">"${esc(d.name)}" is set up as a new event</h3><p class="note">Here's what Encore drafted. Change anything; it's yours.</p></div><button class="btn ghost sm" id="depHide" type="button">Hide</button></div>
+    <ol class="deplist">${[[`${/^[aeiou]/i.test(KINDS[k].label)?"An":"A"} ${KINDS[k].label.toLowerCase()} for ${d.headcount} guests`,`Format, size and goal set from the play.`,1,"Review the plan"],[`Budget: ${cmoney(eventCost(d),d.currency)} in ${P.budget.length} lines`,`Each line shows how it was estimated.`,5,"See the budget"],[`${(P.tasks||[]).length} tasks with owners and dates`,`Counted back from the event date.`,5,"See the tasks"],[`Run of show, ${(P.runOfShow||[]).length} moments`,`Minute by minute, with cues.`,5,"See the run of show"]].map(([t,n,st,cta],ix)=>`<li style="animation-delay:${ix*120}ms"><span class="tick">✓</span><span style="flex:1;min-width:0"><b>${esc(t)}</b><br><span class="note">${esc(n)}</span></span><button class="linkbtn" data-depgo="${st}" type="button">${cta}</button></li>`).join("")}</ol>
+    <div class="btns"><button class="btn primary" id="depNext" type="button">Next: add your guests</button>${d.date?"":`<button class="btn" id="depDate" type="button">Set the date</button>`}</div></section>`;
+  $("#depHide",host).onclick=()=>host.hidden=true; $$("[data-depgo]",host).forEach(b=>b.onclick=go(+b.dataset.depgo)); $("#depNext",host).onclick=go(6); $("#depDate",host)&&($("#depDate",host).onclick=()=>$("#factsEdit")?.click());
+  drawHero(); toast(`"${d.name}" is ready to plan.`) }
 function useIdea(i){
   const d=draft;
   Object.assign(d,{name:i.name,concept:i.concept,format:FORMATS.includes(i.format)?i.format:d.format,example:false,validation:null,copy:null,venues:null,hooks:null,promo:null,produce:null,outreach:null,media:null,partners:null,briefing:null});
@@ -2469,8 +2559,8 @@ function wireStrategy(host,S){
   if(!S) return;
   $$("canvas[data-part]",host).forEach(c=>{ const i=+c.dataset.part; drawCover(c,{...draft,name:S.plays[i].name,cover:{motif:SUITS[(i*2+1)%SUITS.length]}},{mini:true}) });
   $$("[data-deploy]",host).forEach(b=>b.onclick=()=>{ const p=S.plays[+b.dataset.deploy];
-    const per=(brandProfile?.audience?.personas||[]).find(x=>x.title===p.forPersona); if(per){ draft.intel={...per,name:per.title}; draft.audience.roles=[per.title] }
-    useIdea({name:p.name,concept:p.concept,format:p.format}) });
+    const per=(brandProfile?.audience?.personas||[]).find(x=>x.title===p.forPersona);
+    deployPlay({name:p.name,concept:p.concept,format:p.format,roles:per?[per.title]:p.forPersona?[p.forPersona]:null,intel:per?{...per,name:per.title}:null},b) });
   $$("[data-ask]",host).forEach(b=>b.onclick=()=>challenge(b.dataset.ask));
   const f=$("#chalForm",host); f&&(f.onsubmit=e=>{ e.preventDefault(); const v=$("#chalIn").value.trim(); if(v){ $("#chalIn").value=""; challenge(v) } });
   $("#cpTalk",host)&&($("#cpTalk",host).onclick=()=>copyTxt((S.talkingPoints||[]).map((t,i)=>`${i+1}. ${t}`).join("\n")));
@@ -2651,11 +2741,11 @@ const KPROF={
 const kprof=d=>KPROF[kindOf(d)]||KPROF.dinner;
 const TEMPLATES={
  dinner:{split:[["Venue, food and drink",62,"Weeknight buyout"],["The experience (chef, host, activity)",12,""],["Gifts",8,"Something useful from the night"],["Photographer",5,"3 hours, photos in 48h"],["Printing and decor",5,""],["Contingency",8,"Usually goes to minimums and service charges"]],
-  ros:[["-0:30","Team arrives, walk-through, seating cards out","Event lead"],["0:00","Guests arrive, welcome drink","Hosts"],["0:20","Two-minute welcome: why this group","Exec sponsor"],["0:30","The experience","Event lead"],["1:30","Dinner and conversation, one host per table","Hosts"],["2:45","Thank-yous; nothing to sign up for","Exec sponsor"]],
+  ros:[["-2:00","Venue walk-through: room, sound, lighting, Wi-Fi","Event lead","Give the chef the allergy list"],["-1:30","Place cards and florals out; seating chart at the door","Event lead","Severe allergies marked on the kitchen copy"],["-1:00","Host huddle: who sits where, each table's goal, what to avoid","Exec sponsor","Hand out host briefs"],["-0:15","Greeter at the door with the guest list","Event lead","Start the late-arrival list"],["0:00","Guests arrive; hosts greet each one by name; welcome drink","Hosts","No badges, music low"],["0:25","Seated; first course","Venue","Event lead cues the kitchen"],["0:35","Two-minute welcome: why this group, house rules","Exec sponsor","No slides"],["0:45","Guided conversation, one question per course","Hosts","Event lead keeps time"],["1:30","Main course","Venue",""],["2:15","Dessert; hosts change seats to meet the other half","Hosts",""],["2:40","Thank-you; gifts at the door, nothing to sign up for","Exec sponsor","Cars for guests who asked"],["3:00","Debrief: one note per guest while it's fresh","Hosts and AEs","Close the check-in list"]],
   tasks:[[-42,"Lock the date and the target accounts","Event lead","Guests"],[-38,"Hold the venue (book once 10 accounts say yes)","Event lead","Venue"],[-35,"AE nominations in","Account execs","Sales"],[-30,"Personal invites out","Account execs","Guests"],[-24,"Event page live","Event lead","Content"],[-14,"Menu, gifts and photographer confirmed","Event lead","Logistics"],[-7,"Headcount to venue; 'who's coming' note","Event lead","Logistics"],[-3,"Seating plan and cheat sheets","Sales lead","Sales"],[-2,"Final headcount and reminders","Event lead","Guests"],[1,"Follow-ups within 24 hours","Account execs","Follow-up"],[2,"Recap and survey to attendees","Event lead","Follow-up"],[90,"90-day pipeline report","Event lead","Follow-up"]]},
- conference:{split:[["Booth space and build",42,""],["Freight, drayage and power",10,"Check the advance-warehouse cutoff"],["Staff travel and passes",15,""],["Side dinner",18,"Small, invite-only, near the venue"],["Lead scanners and swag",7,""],["Contingency",8,""]],
-  ros:[["7:30","Booth set-up and demo check","Booth lead"],["8:30","Doors open; shift 1 on the booth","Booth staff"],["12:00","Shift change; pre-booked meetings in the meeting room","AEs"],["17:00","Booth closes; leads synced to AEs","Booth lead"],["19:00","Side dinner for priority accounts","Exec sponsor"]],
-  tasks:[[-60,"Book booth space and passes","Event lead","Logistics"],[-45,"Target account list for the show","Event lead","Guests"],[-35,"Freight booked before the advance-warehouse cutoff (confirm with the organizer)","Event lead","Logistics"],[-30,"Side-dinner invites out","Account execs","Guests"],[-28,"Pre-book meetings with target accounts","Account execs","Sales"],[-21,"Lead scanner rented; qualifying questions set","Booth lead","Logistics"],[-14,"Staffing rota and booth demo script","Booth lead","Content"],[-21,"Ask product marketing for demos, one-pager and battle card","Event lead","Content"],[-14,"Business cards ordered for everyone attending","Event lead","Logistics"],[-7,"Agenda for every person attending (meetings, sessions, shifts)","Event lead","Sales"],[-5,"Meeting calendar confirmed","Account execs","Sales"],[1,"Every scanned lead routed to an AE","Booth lead","Follow-up"],[2,"Follow-ups within 24 hours","Account execs","Follow-up"],[14,"Follow-up webinar for booth leads","Event lead","Follow-up"],[90,"90-day pipeline report","Event lead","Follow-up"]]},
+ conference:{split:[["Booth space and build",38,"Book 9 to 12 months out for the best spots"],["Freight, drayage and power",9,"Check the advance-warehouse cutoff"],["Staff passes",6,""],["Hotel block and ground transport",10,"Show-week rates; book when you book the booth"],["Side dinner",20,"Its own guest list and run of show; show-week minimum spends are high"],["Lead scanners and swag",7,""],["Contingency",10,""]],
+  ros:[["7:30","Booth set-up and demo check","Booth lead"],["8:30","Doors open; shift 1 on the booth","Booth staff"],["12:00","Shift change; pre-booked meetings in the meeting room","AEs"],["17:00","Booth closes; leads synced to AEs","Booth lead"],["18:30","Cars from the venue to the side dinner","Event lead"],["19:00","Side dinner: hosts greet by name, one host per table","Exec sponsor"],["21:30","Debrief: one note per guest and per booth lead","Hosts and AEs"]],
+  tasks:[[-300,"Book booth space (9 to 12 months out) and the hotel block","Event lead","Logistics"],[-90,"Target account list for the show","Event lead","Guests"],[-75,"Side-dinner venue booked near the show (minimum spend agreed)","Event lead","Venue"],[-63,"Side-dinner invites out to executives (8 to 10 weeks ahead)","Account execs","Guests"],[-60,"Passes for everyone attending","Event lead","Logistics"],[-35,"Freight booked before the advance-warehouse cutoff (confirm with the organizer)","Event lead","Logistics"],[-30,"Side-dinner reminders and seating plan","Event lead","Guests"],[-28,"Pre-book meetings with target accounts","Account execs","Sales"],[-21,"Lead scanner rented; qualifying questions set","Booth lead","Logistics"],[-14,"Staffing rota and booth demo script","Booth lead","Content"],[-21,"Ask product marketing for demos, one-pager and battle card","Event lead","Content"],[-14,"Business cards ordered for everyone attending","Event lead","Logistics"],[-7,"Agenda for every person attending (meetings, sessions, shifts)","Event lead","Sales"],[-5,"Meeting calendar confirmed","Account execs","Sales"],[1,"Every scanned lead routed to an AE","Booth lead","Follow-up"],[2,"Follow-ups within 24 hours","Account execs","Follow-up"],[14,"Follow-up webinar for booth leads","Event lead","Follow-up"],[90,"90-day pipeline report","Event lead","Follow-up"]]},
  webinar:{split:[["Platform and production",20,""],["Promotion (paid and partner)",35,""],["Speaker",20,"Fee or gift"],["Clips and content after",15,""],["Contingency",10,""]],
   ros:[["-0:15","Tech check with every speaker","Producer"],["0:00","Start; housekeeping","Host"],["0:05","Speaker session","Speaker"],["0:40","Q&A (seed two questions)","Host"],["0:55","Close with one clear next step","Host"]],
   tasks:[[-35,"Lock speaker and the one question the session answers","Event lead","Content"],[-28,"Registration page live","Event lead","Content"],[-21,"First promo email and partner posts","Event lead","Guests"],[-14,"AE personal invites to target accounts","Account execs","Guests"],[-7,"Second promo email","Event lead","Guests"],[-2,"Full rehearsal on speakers' own setups","Producer","Logistics"],[-1,"Reminder the day before and an hour before","Event lead","Guests"],[1,"Recording and one clip to attendees and no-shows","Event lead","Follow-up"],[2,"Follow-ups by engagement","Account execs","Follow-up"],[90,"90-day pipeline report","Event lead","Follow-up"]]},
@@ -2723,7 +2813,7 @@ function wireBudgetDeep(host,d){ const h=$("#budDeep",host); if(!h) return;
   $("#budUse",h).onclick=()=>{ const B=budgetModel(d); d.produce=d.produce||starterProduce(d); d.produce.budget=B.rows.map(r=>({line:r.line,amount:r.amt,note:`${r.formula}: ${Object.entries(r.ins).map(([k,[l,,u]])=>`${l} ${u==="$"?"$":""}${r.x[k]}${u&&u!=="$"?" "+u:""}`).join(", ")}`})); logDecision(d,`replaced budget lines with the bottom-up estimate (${cmoney(B.total,d.currency)})`); toast("Budget updated. Each line's note shows how it was worked out."); renderStep() } }
 function starterProduce(d){ const T=TEMPLATES[kindOf(d)]||TEMPLATES.dinner, B=+d.budget||15000;
   return {starter:true,team:[{role:"Event lead",who:"You",owns:kindOf(d)==="webinar"?["Plan and budget","Speaker and platform","Run of show"]:["Plan and budget","Venue and vendors","Run of show"],hours:30},{role:"Account execs",who:"Sales",owns:["Nominate and invite","Follow up in 24h"],hours:6},{role:"Exec sponsor",who:"A leader",owns:["Welcome","Personal notes"],hours:3},{role:"Sales lead",who:"Sales leadership",owns:["Cheat sheets","Pipeline review"],hours:4}],
-    timeRisk:"",runOfShow:T.ros.map(([time,item,owner])=>({time,item,owner})),budget:T.split.map(([line,pc,note])=>({line,amount:Math.round(B*pc/100/50)*50,note})),tasks:T.tasks.map(([days,task,owner,workstream])=>({days,dur:Math.max(1,Math.min(7,Math.round(Math.abs(days)/6))),task,owner,workstream}))} }
+    timeRisk:"",runOfShow:T.ros.map(([time,item,owner,cue])=>({time,item,owner,cue:cue||""})),budget:T.split.map(([line,pc,note])=>({line,amount:Math.round(B*pc/100/50)*50,note})),tasks:T.tasks.map(([days,task,owner,workstream])=>({days,dur:Math.max(1,Math.min(7,Math.round(Math.abs(days)/6))),task,owner,workstream}))} }
 function starterPitch(d){ const T=starterProduce(d), cost=eventCost(d)||T.budget.reduce((a,b)=>a+b.amount,0), BM=budgetModel(d), ex=objOf(d)==="expansion";
   return {starter:true,title:d.copy?.title||d.name,oneLiner:d.concept||`A ${KINDS[kindOf(d)].label.toLowerCase()} for ${d.audience.roles.join(", ")||"your target buyers"}.`,whyNow:"Say why this quarter: a launch, a renewal window or a budget cycle.",audience:d.audience.roles.join(", ")||"Target roles",experience:d.concept||"",
     outcomes:ex?[{metric:"Customers attending",target:String(d.headcount)},{metric:"Renewals covered",target:"Set a number"},{metric:"Expansion conversations",target:"Set a number"}]:[{metric:"Target accounts attending",target:"Set a number"},{metric:"Meetings within 2 weeks",target:"Set a number"},{metric:"New opportunities in 90 days",target:"Set a number"}],
@@ -2939,7 +3029,34 @@ function quickStartHTML(){ const mine=allEvents.some(e=>!e.example), TPL=[["dinn
   return `<section class="welcome" id="qsPanel"><div><h1>${mine?"What's next on the calendar?":"What are you hosting next?"}</h1><p class="note" style="font-size:15px;line-height:24px;margin-top:6px">Tell Encore in a sentence. It drafts the plan, a line-by-line budget, the timeline and the event page.</p></div>
     <div class="askrow"><input id="qsText" aria-label="Describe your event" placeholder="A dinner for 20 CFOs in Chicago on April 9, about $20k"><button class="btn primary" id="qsGo">Draft the plan</button></div>
     <div><p class="note" style="margin-bottom:6px">Who's coming?</p><div class="pills" role="group" aria-label="Guest rules">${[["","Business guests"],["hcp","Healthcare professionals"],["gov","Government officials"],["fin","Financial services"],["pharma","Pharma"]].map(([k,l],ix)=>`<button type="button" data-comp="${k}" aria-pressed="${ix===0}">${l}</button>`).join("")}</div><select id="qsComp" hidden>${COMPLIANCE.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>
-    <div><p class="note" style="margin-bottom:6px">Or start from a plan that works</p><div class="tplgrid">${TPL.map(([k,l,d])=>`<button type="button" data-tpl="${k}">${l}<span>${d}</span></button>`).join("")}</div></div></section>` }
+    <div class="tryrow"><span class="note">Try one:</span>${EXAMPLES.map((x,ix)=>`<button type="button" class="trychip" data-try="${ix}">${esc(x.chip)}</button>`).join("")}</div>
+    <div><p class="note" style="margin-bottom:6px">Or start from a plan that works</p><div class="tplgrid">${TPL.map(([k,l,d])=>`<button type="button" data-tpl="${k}">${l}<span>${d}</span></button>`).join("")}</div></div>
+    <p class="note" style="margin:0">New to Encore? <button class="linkbtn" type="button" data-tour>See how it works</button> (1 minute) or <a href="#studio" id="seeSample2">open a finished sample event</a>.</p></section>` }
+const EXAMPLES=[
+  {chip:"CFO dinner, New York",text:"A dinner for 14 CFOs in New York the week before budget season, about $28k",get:"A seated dinner plan, $28k budget in 8 lines, 12 tasks counted back from the date, and an invite your AEs can personalize."},
+  {chip:"Dreamforce booth + side dinner",text:"Booth at Dreamforce plus a side dinner for 20 CIOs, about $150k",get:"Booth, freight and hotel lines, a staffing rota, pre-booked meetings, and a separate side-dinner guest list."},
+  {chip:"Customer advisory board",text:"Customer advisory board for 25 VPs of RevOps in Austin in May, about $60k",get:"A two-day agenda, travel and hotel budget, renewal-risk seating, and a roadmap feedback survey."},
+  {chip:"Three-city roadshow",text:"A roadshow for heads of data in London, Berlin and Paris in June, about $90k",get:"One master plan, a child event per city with its own venue and list, and results compared city by city."}];
+const TOUR=[
+  {h:"Encore runs your events, from idea to pipeline",p:"You describe the event. Encore drafts the plan, fills the room with the right accounts, keeps the day on track, and shows what it was worth.",ex:[["10 sec","from one sentence to a full plan"],["24 h","follow-up clock for every guest"],["90 days","pipeline tracked after the event"]]},
+  {h:"1. Plan in a sentence",p:"Type something like \"a dinner for 14 CFOs in New York, about $28k\". You get a line-by-line budget with the math shown, a timeline with owners, a run of show, and a one-page plan your boss can approve from a link.",ex:[["$28,000","budget in 8 lines, each one explained"],["12","tasks counted back from the date"],["1 link","for sign-off, no login"]]},
+  {h:"2. Get the right people in the room",p:"Your AEs nominate accounts from a link on their phone. Guests RSVP on a page that looks hand-made, and Encore tracks dietary needs, VIPs and seating for you.",ex:[["Tier A","accounts first, ranked by fit"],["1 tap","AE nominations, no login"],["0","guests who see your internal notes"]]},
+  {h:"3. Follow up and prove it worked",p:"Check guests in at the door. The morning after, each AE gets a note on what their guest said and a draft to approve. Encore counts meetings and pipeline for 90 days.",ex:[["Passionfroot sample","14 guests, 9 meetings"],["$420k","pipeline attributed, rules shown"],["Fund · cut · fix","a decision for the next dollar"]]},
+  {h:"Where do you want to start?",p:"Pick an example to see a real plan in seconds, or describe your own.",start:true}];
+function showTour(at){ let i=at||0; try{ localStorage.setItem("encore.toured","1") }catch{} const m=document.createElement("div"); m.className="modal-back tourback"; document.body.appendChild(m);
+  const close=()=>{ m.remove(); document.removeEventListener("keydown",key) }, key=e=>{ if(e.key==="Escape") close(); if(e.key==="ArrowRight"&&i<TOUR.length-1){ i++; paint() } if(e.key==="ArrowLeft"&&i>0){ i--; paint() } };
+  const paint=()=>{ const t=TOUR[i]; m.innerHTML=`<div class="tour" role="dialog" aria-modal="true" aria-label="How Encore works"><div class="btns" style="justify-content:space-between"><span class="dots">${TOUR.map((_,j)=>`<i class="${j===i?"on":""}"></i>`).join("")}</span><button class="btn ghost sm" data-tx type="button">Skip</button></div>
+    <h2>${esc(t.h)}</h2><p class="lede">${esc(t.p)}</p>
+    ${t.ex?`<div class="tourstats">${t.ex.map(([a,b])=>`<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`:""}
+    ${t.start?`<div class="tourex">${EXAMPLES.map((x,ix)=>`<button type="button" data-tex="${ix}"><b>${esc(x.chip)}</b><span>${esc(x.get)}</span></button>`).join("")}</div>
+      <div class="btns"><button class="btn" data-tsample type="button">Open the finished sample</button><button class="btn ghost" data-tx type="button">I'll describe my own</button></div>`:
+      `<div class="btns" style="justify-content:flex-end">${i?`<button class="btn ghost" data-tb type="button">Back</button>`:""}<button class="btn primary" data-tn type="button">${i===0?"Show me how":"Next"}</button></div>`}</div>`;
+    $$("[data-tx]",m).forEach(b=>b.onclick=()=>{ close(); setTimeout(()=>$("#qsText")?.focus(),50) }); $("[data-tn]",m)&&($("[data-tn]",m).onclick=()=>{ i++; paint() }); $("[data-tb]",m)&&($("[data-tb]",m).onclick=()=>{ i--; paint() });
+    $("[data-tsample]",m)&&($("[data-tsample]",m).onclick=()=>{ close(); openSample() });
+    $$("[data-tex]",m).forEach(b=>b.onclick=()=>{ close(); quickStart(EXAMPLES[+b.dataset.tex].text) }); $("[data-tn],[data-tex]",m)?.focus() };
+  m.onclick=e=>{ if(e.target===m) close() }; document.addEventListener("keydown",key); paint() }
+function openSample(){ draft=hydrate({...EXAMPLE,example:true}); step=1; location.hash="#studio"; renderStep(); window.scrollTo({top:0}) }
+function maybeTour(){ let seen=false; try{ seen=!!localStorage.getItem("encore.toured") }catch{ seen=true } if(seen||isGuestRoute()||allEvents.some(e=>!e.example)||$(".tourback")) return; if(location.hash&&location.hash!=="#programs") return; setTimeout(()=>{ if(!$(".tourback")&&(!location.hash||location.hash==="#programs")) showTour(0) },400) }
 function weeklyItems(){ const real=allEvents.filter(e=>!e.example), now=Date.now(), I=[];
   real.forEach(e=>{ const h=hydrate(e), past=e.date&&new Date(e.date+"T23:59:59")<now;
     if(past){ const due=h.guests.filter(g=>g.status==="Attended"&&!g.contactedAt), by={}; due.forEach(g=>{ (by[g.owner||"Unassigned"]=by[g.owner||"Unassigned"]||[]).push(g.name) }); Object.entries(by).forEach(([o,L])=>I.push({k:"fu",e,o,n:L.length,t:`${o}: ${L.length} follow-up${L.length===1?"":"s"} not sent from ${e.name}`,a:`Hi ${o.split(" ")[0]}, ${L.length} of your guests from ${e.name} haven't had a follow-up yet (${L.slice(0,4).join(", ")}). Drafts are ready for you to approve: ${aeLink(h,o)}`})) }
@@ -3044,6 +3161,10 @@ function wireHomePLG(el){ const I=weeklyItems();
   $("#qsGo",el)&&($("#qsGo",el).onclick=()=>{ const t=$("#qsText",el).value.trim(); if(t.length<8){ toast("Tell us what it is, who it's for, where and roughly when."); return } window.__qsComp=$("#qsComp",el)?.value||""; quickStart(t) });
   $("#qsText",el)&&($("#qsText",el).onkeydown=e=>{ if(e.key==="Enter") $("#qsGo",el).click() });
   $$("[data-tpl]",el).forEach(b=>b.onclick=()=>startTemplate(b.dataset.tpl));
+  $$("[data-try]",el).forEach(b=>b.onclick=()=>{ const x=$("#qsText",el); if(!x) return; x.value=EXAMPLES[+b.dataset.try].text; x.focus(); toast(EXAMPLES[+b.dataset.try].get) });
+  $$("[data-tour]",el).forEach(b=>b.onclick=()=>showTour(0));
+  $("#seeSample2",el)&&($("#seeSample2",el).onclick=e=>{ e.preventDefault(); openSample() });
+  maybeTour();
   $$("[data-comp]",el).forEach(b=>b.onclick=()=>{ $$("[data-comp]",el).forEach(x=>x.setAttribute("aria-pressed",x===b)); const sel=$("#qsComp",el); if(sel) sel.value=b.dataset.comp });
   $$("[data-wk]",el).forEach(b=>b.onclick=()=>copyTxt(I[+b.dataset.wk].a));
   $$("[data-wkopen]",el).forEach(b=>b.onclick=()=>{ const e=allEvents.find(x=>x.id===b.dataset.wkopen); if(e){ draft=hydrate(e); step=7; location.hash="#studio" } });
@@ -3069,7 +3190,7 @@ function renderPrograms(){
     return {e,od,bl,nx,reg,tgt,plan,act,noms,aes,days,health} });
   const sum=k=>rows.reduce((a,r)=>a+(r[k]||0),0);
   if(window.ENCORE_SERVER){ const miss=rows.filter(r=>r.e.id&&!r.e.example&&(!SO[r.e.id]||Date.now()-(SOt[r.e.id]||0)>20000)); if(miss.length) Promise.all(miss.map(r=>loadSO(r.e.id))).then(()=>{ if(!location.hash||location.hash==="#programs") renderPrograms() }) }
-  el.innerHTML=`${weeklyHTML()}${quickStartHTML()}${allEvents.some(e=>!e.example)?"":`<div class="adv">${homeHero()}</div><p class="note simple-only" style="margin:10px 4px">Want to see a finished event first? <a href="#studio" id="seeSample">Open the sample dinner</a>.</p>`}<div class="canvas-head ${allEvents.some(e=>!e.example)?"":"adv"}" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Who's registered, what's spent, what's stuck and what's next, for every event.</p></div>
+  el.innerHTML=`${weeklyHTML()}${quickStartHTML()}${allEvents.some(e=>!e.example)?"":`<div class="adv">${homeHero()}</div><a href="#studio" id="seeSample" hidden></a>`}<div class="canvas-head ${allEvents.some(e=>!e.example)?"":"adv"}" style="margin-top:28px"><div><small class="eyebrow">Your events</small><h2>Everything you're running</h2><p class="lede">Who's registered, what's spent, what's stuck and what's next, for every event.</p></div>
     <div class="btns adv"><button class="btn" id="tplBtn">Start from a template</button><button class="btn primary big" id="newEv">+ New event</button></div></div>
     <div class="kpis" style="margin:18px 0" ${rows.length?"":"hidden"}><div class="kpi"><small>Events in progress</small><b>${rows.length}</b></div><div class="kpi"><small>Registered vs. goal</small><b>${sum("reg")} / ${sum("tgt")}</b></div><div class="kpi"><small>Spent vs. planned</small><b>${money(sum("act"))}</b><small>of ${money(sum("plan"))}</small></div><div class="kpi"><small>Stuck or late</small><b style="color:${sum("bl")+sum("od")?"var(--bad)":"inherit"}">${sum("bl")+sum("od")}</b></div></div>
     <div class="adv">${programHTML()}</div>
@@ -4210,7 +4331,7 @@ function step4(host){
   $("#out-produce").innerHTML=`${P.fromPlaybook||d.pbVendors?.length?`<div class="caveat"><b>From your ${esc(P.fromPlaybook||"")} playbook.</b>${d.pbChange?` Change this time: <b>${esc(d.pbChange)}</b>.`:""}${d.pbVendors?.length?` Vendors you used: ${d.pbVendors.map(v=>`${esc(v.vendor)}${v.what?` (${esc(v.what)})`:""}`).join(", ")}.`:""}</div>`:""}<div class="adv">${planHTML(P,d)}${pmHTML(d,P)}</div>
     <div class="kpis">
       <div class="kpi"><small>Planned spend</small><b>${lm(total)}</b><small>${total>d.budget?`<span style="color:var(--bad)">${lm(total-d.budget)} over budget</span>`:`${lm(d.budget-total)} under budget`}</small></div>
-      <div class="kpi"><small>Cost per guest</small><b>${lm(total/(d.headcount||1))}</b><small>at ${d.headcount} guests</small></div>
+      ${kindOf(d)==="conference"?(()=>{ const sd=(P.budget||[]).find(b=>/side dinner/i.test(b.line)); return `<div class="kpi"><small>Side dinner per guest</small><b>${sd?lm((+sd.amount||0)/(d.headcount||1)):"–"}</b><small>booth costs not included</small></div>` })():`<div class="kpi"><small>Cost per guest</small><b>${lm(total/(d.headcount||1))}</b><small>at ${d.headcount} guests</small></div>`}
       <div class="kpi"><small>Checklist</small><b>${doneN}/${tasks.length}</b><small>tasks done</small></div>
     </div>
     ${budgetDeepHTML(d,P)}
@@ -4221,12 +4342,17 @@ function step4(host){
       </div>
       <div class="stack" style="gap:8px"><div class="eyebrow">Budget</div>
         <div class="tscroll"><table><tbody>${P.budget.map((b,bi)=>`<tr><td><input class="bline" data-bl2="${bi}|line" value="${esc(b.line)}"><div class="note">${esc(b.note||"")}</div></td><td class="num"><span class="note" style="margin-right:2px">${({EUR:"€",GBP:"£"})[d.currency]||"$"}</span><input class="mini" type="number" min="0" step="50" data-bl2="${bi}|amount" value="${+b.amount||0}" aria-label="Amount for ${esc(b.line)}" style="width:96px"><div class="note" style="font-size:11px">${esc(lm(+b.amount||0))}</div>${d.currency&&d.currency!=="USD"?`<div class="note">${esc(d.currency)}</div>`:""}</td></tr>`).join("")}<tr><td><b>Total</b></td><td class="num"><b>${lm(total)}</b></td></tr><tr><td>Actual spend so far</td><td class="num"><input class="mini" type="number" min="0" step="100" id="actSpend" value="${actualOf(d)}" title="Defaults to paid deposits and invoices in Commitments" aria-label="Actual spend so far"></td></tr></tbody></table></div>
-        <div class="eyebrow" style="margin-top:8px">Run-of-show</div>
-        <div class="agenda">${(P.runOfShow||[]).map(r=>`<span>${esc(r.time)}</span><span>${esc(r.item)} <span class="note">· ${esc(r.owner)}</span></span>`).join("")}</div>
+        <div class="btns" style="justify-content:space-between;margin-top:8px"><div class="eyebrow">Run of show</div><span class="btns"><button class="btn ghost sm" id="rosCopy" type="button">Copy for the team</button></span></div>
+        <div class="ros">${(P.runOfShow||[]).map((r,ri)=>`<div class="rosrow"><input class="mini" data-ros="${ri}|time" value="${esc(r.time)}" aria-label="Time"><input data-ros="${ri}|item" value="${esc(r.item)}" aria-label="What happens"><input data-ros="${ri}|owner" value="${esc(r.owner||"")}" aria-label="Owner" placeholder="Owner"><input data-ros="${ri}|cue" value="${esc(r.cue||"")}" aria-label="Cue or backup" placeholder="Cue or backup plan"><button class="btn ghost sm" data-rosx="${ri}" type="button" aria-label="Remove row">✕</button></div>`).join("")}
+        <button class="btn ghost sm" id="rosAdd" type="button" style="align-self:flex-start">+ Add a row</button></div>
       </div>
     </div>`;
   const ch=document.createElement("div"); ch.className="panel stack"; ch.id="commitsHost"; const nb=$("[data-next]",host)?.closest(".btns"); nb?nb.before(ch):host.appendChild(ch); drawCommits(d);
   wireBudgetDeep(host,d);
+  $$("[data-ros]",host).forEach(x=>x.onchange=()=>{ const [i,k]=x.dataset.ros.split("|"); P.runOfShow[+i][k]=x.value.trim() });
+  $$("[data-rosx]",host).forEach(b=>b.onclick=()=>{ P.runOfShow.splice(+b.dataset.rosx,1); renderStep() });
+  $("#rosAdd",host)&&($("#rosAdd",host).onclick=()=>{ (P.runOfShow=P.runOfShow||[]).push({time:"",item:"",owner:"",cue:""}); renderStep(); setTimeout(()=>{ const L=$$("[data-ros$='|time']"); L[L.length-1]?.focus() },60) });
+  $("#rosCopy",host)&&($("#rosCopy",host).onclick=()=>copyTxt(`${d.name}${d.date?" · "+fmtDate(d.date):""}${d.city?" · "+d.city:""}\nRun of show (0:00 = guests arrive)\n\n`+(P.runOfShow||[]).map(r=>`${r.time.padEnd(6)} ${r.item}${r.owner?` (${r.owner})`:""}${r.cue?`\n       ↳ ${r.cue}`:""}`).join("\n")));
   $$("[data-bl2]",host).forEach(x=>x.onchange=()=>{ const [i,k]=x.dataset.bl2.split("|"), b=P.budget[+i], old=b[k]; b[k]=k==="amount"?+x.value||0:x.value; if(k==="amount") logDecision(d,`changed budget line "${b.line}" from ${cmoney(old,d.currency)} to ${cmoney(b[k],d.currency)}`); renderStep() });
   wirePM(host,d,P); $("#actSpend")&&($("#actSpend").onchange=e=>{ d.actualSpend=+e.target.value||0; logDecision(d,`set actual spend to ${money(d.actualSpend)}`) });
   $$("[data-t]",host).forEach(c=>c.onchange=()=>{ const i=+c.dataset.t; d.tasksDone=c.checked?[...new Set([...d.tasksDone,i])]:d.tasksDone.filter(x=>x!==i); renderStep() });
@@ -4562,6 +4688,7 @@ async function renderWall(host,id){
   let ev=id==="sample"?{...EXAMPLE,id:"sample",example:true}:allEvents.find(e=>e.id===id);
   if(!ev&&db){ try{ const s=await db.doc("events/"+id).get(); if(s.exists) ev={id,...s.data()} }catch{} }
   if(!ev){ host.innerHTML=`<div class="panel"><p class="empty">${dbReady||!db?"We couldn't find this guest page. Check the link with your host.":"Loading…"}</p></div>`; if(!dbReady&&db) setTimeout(()=>{ if(location.hash==="#guests-"+id){ host.dataset.key=""; renderGuest() } },1200); return }
+  if(ev.noWall){ host.innerHTML=`<div class="panel"><h3>${esc(ev.copy?.title||ev.name||"This event")}</h3><p class="note">Your host keeps the guest list private for this one. We look forward to seeing you there.</p></div>`; return }
   const e=hydrate(ev), C=e.copy||(e.example?EXAMPLE_OUT.copy:null), V=e.venues?.venues?.[e.venuePick??0]||(e.example?EXAMPLE_OUT.venues.venues[0]:null);
   let ALL=[]; if(db&&id!=="sample"){ try{ const s=await db.collection("wall").where("eventId","==",id).get(); ALL=s.docs.map(x=>x.data()) }catch{ ALL=allWall.filter(w=>w.eventId===id) } }
   const sampleMode=!ALL.length&&e.example; if(sampleMode){ ALL=sampleWall(e); ALL.push({...ALL[0],name:"Chris Webb",company:"Example Co",status:"cancelled",updatedAt:Date.now()-36e5}) }
@@ -4619,6 +4746,7 @@ async function renderGuest(){
       ${me?`<p class="gxhi">${esc(me.name.split(" ")[0])}, you're invited.</p>${why?`<p class="gxwhy">Why you: ${esc(why)}</p>`:""}`:`<span class="eyebrow">${esc(e.brand)} ${kind==="rsvp"?"invites you":"· thank you for coming"}</span>`}
       <h3>${esc(C?.title||e.name)}</h3>${C?.tagline?`<p class="note">${esc(C.tagline)}</p>`:""}
       <div class="gxfacts"><span><small>When</small><b>${esc(fmtDate(e.date))}${GA[0]?` · ${esc(start)}`:""}</b></span><span><small>Where</small><b>${esc(V?V.name:"")}${V?" · ":""}${esc(V?.address||e.city||"")}</b></span>${EXEC?`<span><small>Dress</small><b>${esc(e.dress||"Business casual")}</b></span>`:`<span><small>Size</small><b>${esc(e.headcount)} guests</b></span>`}</div>
+      ${e.chatham||e.noPhotos?`<p class="note" style="margin:0">${[e.chatham?"The conversation is under the Chatham House rule.":"",e.noPhotos?"No photography, so everyone can speak freely.":""].filter(Boolean).join(" ")}</p>`:""}
       <div class="btns">${cal?`<a class="btn sm" href="${esc(ics)}" download="invitation.ics">Add to calendar</a><a class="btn ghost sm" href="${esc(cal)}" target="_blank" rel="noopener">Google Calendar</a>`:""}${map?`<a class="btn ghost sm" href="${esc(map)}" target="_blank" rel="noopener">Map</a>`:""}</div>
       <div class="gxhosts"><small>Hosted by</small>${hosts.filter(Boolean).map(h=>`<span class="hostchip">${esc(h)}</span>`).join("")}</div>
       ${kind==="rsvp"?`${going.length&&!EXEC?`<div class="gxwho"><b>${going.length} ${going.length===1?"person is":"people are"} coming from ${cos.size} ${cos.size===1?"company":"companies"}</b><div class="avstack">${going.slice(0,8).map(g=>`<canvas width="64" height="64" data-av="${esc(g.name)}"></canvas>`).join("")}</div>${titles.length?`<div class="chips">${titles.map(t=>`<span class="pchip">${esc(t)}</span>`).join("")}</div>`:""}</div>`:""}
@@ -5013,8 +5141,7 @@ function drawDetail(){
   drawCover($("#xArt"),{...draft,name:it.name,cover:{motif:SUITS[(canvasPick*3)%SUITS.length]},brandColors:[lane[2],"#FFC93C"]},{mini:true});
   $("#xClose").onclick=()=>{canvasPick=null;renderCanvas()};
   $("#xDel").onclick=()=>{ C.items.splice(canvasPick,1); C.example=false; canvasPick=null; saveCanvas(); renderCanvas() };
-  $("#xDeploy").onclick=()=>{ draft=brandDraft({name:it.name,concept:it.concept||"",format:FORMATS.includes(it.format)?it.format:"Hosted dinner",goal:it.goal||""}); if(it.budget) draft.budget=+it.budget;
-    step=2; location.hash="studio"; setTimeout(()=>useIdea({name:it.name,concept:it.concept||"",format:it.format}),50) };
+  $("#xDeploy").onclick=e=>deployPlay({name:it.name,concept:it.concept||"",format:it.format,goal:it.goal||"",budget:it.budget},e.currentTarget);
   $("#xTwist").onclick=async e=>{ const o=await askJSON(`Make this ${lane[1].toLowerCase()} experience one level more ambitious and memorable to attend, while keeping it doable within its quarter.
 ${brief(draft)}
 EXPERIENCE: ${JSON.stringify(it)}
@@ -5140,7 +5267,7 @@ function wirePinActions(root){
   $$("[data-save]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.save; inspSaved.has(id)?inspSaved.delete(id):inspSaved.add(id); b.classList.toggle("keep"); toast(inspSaved.has(id)?"Saved":"Removed") });
   $$("[data-pb]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeStories(); openPlaybook(b.dataset.pb) });
   $$("[data-addc]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); addToCanvas(b.dataset.addc) });
-  $$("[data-dep]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeStories(); const x=feed().find(y=>y.id===b.dataset.dep); draft=brandDraft({name:x.name,concept:x.line,format:FORMATS.includes(x.format)?x.format:"Hosted dinner"}); step=2; location.hash="studio"; setTimeout(()=>useIdea({name:x.name,concept:x.line,format:x.format}),50) });
+  $$("[data-dep]",root).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeStories(); const x=feed().find(y=>y.id===b.dataset.dep); deployPlay({name:x.name,concept:x.line,format:x.format},b) });
 }
 function addToCanvas(id){ const x=feed().find(y=>y.id===id); const C=cv()||(canvasData={items:[]}); C.example=false;
   const b=parseInt(String(x.cost||"").replace(/[^0-9k–-]/g,"").split(/[–-]/)[0])||0;
@@ -5357,7 +5484,7 @@ route();
   async function loadWS(){ if(!window.ENCORE_SERVER||!bar) return; try{ const r=await fetch("/api/workspace",{credentials:"same-origin"}); if(!r.ok) return; WS=await r.json() }catch{ return }
     const trial=WS.plan==="trial"||WS.trial, ended=trial&&WS.daysLeft!=null&&WS.daysLeft<=0, pending=/^pending/.test(WS.plan||"");
     bar.hidden=!(trial||pending); bar.className="trialbar";
-    bar.innerHTML=`<div class="wrap btns" style="justify-content:space-between;padding:8px 20px"><span>${pending?`Upgrade requested (${esc(String(WS.plan).replace("pending_",""))}). We'll be in touch about billing.`:ended?"<b>Your trial has ended.</b> Your work is saved, and you can still read all of it.":`<b>Free trial:</b> ${WS.daysLeft} day${WS.daysLeft===1?"":"s"} left${WS.company?` for ${esc(WS.company)}`:""}. Every feature is yours to try.`}</span><span class="btns"><button class="btn ghost sm" id="tbInvite">Invite a teammate</button>${pending?"":`<button class="btn primary sm" id="tbUp">${ended?"Choose a plan":"Upgrade"}</button>`}</span></div>`;
+    bar.innerHTML=`<div class="wrap btns" style="justify-content:space-between;padding:8px 20px"><span>${pending?`Upgrade requested (${esc(String(WS.plan).replace("pending_",""))}). We'll be in touch about billing.`:ended?"<b>Your trial has ended.</b> Your work is saved, and you can still read all of it.":`<b>Free trial:</b> ${WS.daysLeft} day${WS.daysLeft===1?"":"s"} left<span class="tbx">${WS.company?` for ${esc(WS.company)}`:""}. Every feature is yours to try.</span>`}</span><span class="btns"><button class="btn ghost sm" id="tbInvite">Invite<span class="tbx"> a teammate</span></button>${pending?"":`<button class="btn ${ended?"primary":"ghost"} sm" id="tbUp">${ended?"Choose a plan":"Upgrade"}</button>`}</span></div>`;
     bar.querySelector("#tbInvite").onclick=invite; bar.querySelector("#tbUp")&&(bar.querySelector("#tbUp").onclick=()=>showUpgrade(ended?"trial_ended":""));
     if(ended&&!sessionStorage?.getItem?.("encore.endShown")){ try{ sessionStorage.setItem("encore.endShown","1") }catch{} showUpgrade("trial_ended") } }
   window.encoreWorkspace=()=>WS; loadWS();

@@ -288,6 +288,7 @@ export function createApp({ store, dataDir }) {
   };
   app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
   app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
+  app.get("/work", (req, res) => sendStatic(res, "landing.html", "<p>Page missing.</p>"));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
   app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
   // Every host's storefront: encore.example/@claire-runs
@@ -322,7 +323,7 @@ export function createApp({ store, dataDir }) {
       res.set("Cache-Control", "no-store").type("html").send(HEAD.replace('<script src="/shim.js"></script>', "") + file + TAIL);
     } catch (err) { next(err); }
   });
-  app.get("/", (req, res, next) => (isAuthed(req) ? sendPage(req, res, next) : signupEnabled() ? sendStatic(res, "landing.html", loginPage()) : res.type("html").send(loginPage())));
+  app.get("/", (req, res, next) => (isAuthed(req) ? sendPage(req, res, next) : signupEnabled() ? sendStatic(res, "home.html", loginPage()) : res.type("html").send(loginPage())));
   app.get("/_blob/:id", async (req, res, next) => {
     const id = req.params.id;
     if (!/^[A-Za-z0-9]{20}$/.test(id)) return res.status(404).end();

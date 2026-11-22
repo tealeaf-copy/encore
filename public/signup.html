@@ -56,6 +56,7 @@
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
     fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = false; } }).catch(() => {});
     nc.onclick = (e) => { e.preventDefault(); f.hidden = true; wl.hidden = false; };
+    if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));

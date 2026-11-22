@@ -25,8 +25,8 @@
     Object.entries({ "--accent": t.accent, "--bg": B.bg, "--card": B.card, "--ink": B.ink, "--soft": B.soft, "--line": B.line, "--brand": t.accent, "--brand2": accentText, "--on-brand": onAccent, "--c": t.accent, "--pink": `color-mix(in srgb, ${t.accent} 14%, ${B.card})`, "--radius": BUTTONS[t.buttons] || "999px", "--head": `"${F.head}", Georgia, serif`, "--body": `"${F.body}", system-ui, sans-serif` }).forEach(([k, v]) => { root.setProperty(k, v); document.body.style.setProperty(k, v); });
     document.documentElement.dataset.theme = t.bg === "night" ? "dark" : "light"; document.body.classList.add("store");
     const cv = document.querySelector(".cover"); if (cv) cv.style.background = cover(t);
-    const av = document.querySelector(".av"); if (av) { av.innerHTML = t.avatarUrl ? `<img src="${t.avatarUrl}" alt="">` : (h.emoji || "🎉"); }
-    const S = { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: true, past: true, ...(h.sections || {}) };
+    const av = document.querySelector(".av"); if (av) { av.innerHTML = t.avatarUrl ? `<img src="${t.avatarUrl}" alt="">` : t.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(t.avatarArt, t.accent, 120) : (h.emoji || "🎉"); av.classList.toggle("drawn", !!(t.avatarArt && !t.avatarUrl)); }
+    const S = { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: false, past: true, ...(h.sections || {}) };
     document.body.classList.toggle("no-kudos", !S.kudos); document.body.classList.toggle("no-photos", !S.photos); document.body.classList.toggle("no-hire", !S.hire); document.body.classList.toggle("no-tips", !S.tips); document.body.classList.toggle("no-profile", !S.profile); document.body.classList.toggle("no-past", !S.past);
     let ln = document.getElementById("storeLinks"); const head = document.querySelector(".head > div");
     if (!ln && head) { ln = document.createElement("div"); ln.id = "storeLinks"; ln.className = "store-links"; head.appendChild(ln); }
@@ -60,6 +60,7 @@
         <h4>Font</h4><div class="sws fonts">${Object.entries(FONTS).map(([k, f]) => sw("font", k, `<span style="font-family:'${f.head}'">Aa</span><small>${f.label}</small>`, f.label)).join("")}</div>
         <h4>Background</h4><div class="sws">${Object.entries(BGS).map(([k, b]) => sw("bg", k, `<i style="background:${b.bg};border:1px solid ${b.line}"></i><small>${b.label}</small>`, b.label)).join("")}</div>
         <h4>Cover</h4><div class="sws covers">${Object.entries(COVERS).map(([k, l]) => sw("cover", k, `<i style="background:${cover({ ...t, cover: k, coverUrl: "" })}"></i><small>${l}</small>`, l)).join("")}</div>
+        <h4>Portrait</h4><div class="sws portraits">${["", ...(window.EncoreAvatars?.keys || [])].map((k) => sw("avatarArt", k, k ? window.EncoreAvatars.svg(k, t.accent, 46) : `<span style="font-size:26px">${h.emoji || "🎉"}</span>`, k ? window.EncoreAvatars.ART[k].label : "Emoji")).join("")}</div>
         <div class="sp-up"><label class="sp-btn">📷 Your photo<input type="file" accept="image/*" data-up="avatarUrl" hidden></label><label class="sp-btn">🖼 Cover photo<input type="file" accept="image/*" data-up="coverUrl" hidden></label>${t.avatarUrl || t.coverUrl ? `<button type="button" class="sp-btn" id="sp-clear">Use emoji and pattern</button>` : ""}</div>
         <h4>Buttons</h4><div class="sws">${Object.entries(BUTTONS).map(([k, r]) => sw("buttons", k, `<span class="bt" style="border-radius:${r}">Follow</span>`, k)).join("")}</div>
         <h4>Tagline</h4><input id="sp-tag" maxlength="90" value="${(st.tagline || "").replace(/"/g, "&quot;")}" placeholder="e.g. Saturday runs, no one left behind">
@@ -69,7 +70,7 @@
         <div class="sp-actions"><button type="button" class="sp-save" id="sp-save">Save my page</button><span id="sp-msg"></span></div>`;
       pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
       pane.querySelector("#sp-copy").onclick = () => { navigator.clipboard?.writeText(`${location.origin}/@${h.handle}`); pane.querySelector("#sp-copy").textContent = "Copied"; };
-      pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; live(); draw(); }));
+      pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; if (b.dataset.k === "avatarArt") st.theme.avatarUrl = ""; live(); draw(); }));
       pane.querySelectorAll("[data-sec]").forEach((c) => (c.onchange = () => { st.sections[c.dataset.sec] = c.checked; live(); }));
       pane.querySelector("#sp-tag").oninput = (e) => { st.tagline = e.target.value; live(); };
       pane.querySelectorAll("[data-ll],[data-lu]").forEach((x) => (x.oninput = () => { const i = +(x.dataset.ll ?? x.dataset.lu); st.links[i] = { label: pane.querySelector(`[data-ll="${i}"]`).value.trim(), url: pane.querySelector(`[data-lu="${i}"]`).value.trim() }; live(); }));

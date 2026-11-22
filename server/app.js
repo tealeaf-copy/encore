@@ -13,6 +13,7 @@ import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { makeSocial, mountSocial } from "./social.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
+import { mountShop } from "./shop.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -290,7 +291,10 @@ export function createApp({ store, dataDir }) {
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
   app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
   // Every host's storefront: encore.example/@claire-runs
-  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
+  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = ws && C.profileOf(ws);
+    try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Encore`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
+        html = html.replace("<title>Host · Encore</title>", `<title>${e(h.name)} · Encore</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
+      res.set("Cache-Control", "no-store").type("html").send(html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
   // The homepage demo runs the app's own planner, read from the current index.html.
@@ -338,6 +342,7 @@ export function createApp({ store, dataDir }) {
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   app.get("/hosts", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));
   app.get("/feed", (req, res) => (isAuthed(req) ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : res.redirect(302, "/login")));
 
@@ -604,7 +609,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(followers|kudos|vibes|chat|moments|jobs|inquiries|stats|broadcasts|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
+  const AUDIT = /^(followers|kudos|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });

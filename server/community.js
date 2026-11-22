@@ -1,6 +1,7 @@
 // Community: invite-only membership, host pages people can follow, a Discover feed, and announcements.
 // Hosts build a following (a "fan club") event by event; guests become hosts through invite codes.
 import crypto from "node:crypto";
+import { cleanShop } from "./shop.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 
@@ -18,12 +19,15 @@ export const STORE = {
   backgrounds: ["cream", "white", "blush", "sage", "night"],
   covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain"],
   buttons: ["round", "soft", "square"],
+  avatars: ["", "chef", "runner", "barista", "baker", "glasses", "hiker"],
 };
 const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u);
 const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
 function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
-  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "" }; }
-function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : true; return out; }
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: STORE.avatars.includes(t.avatarArt) ? t.avatarArt : STORE.avatars.includes(cur.avatarArt) ? cur.avatarArt : "" }; }
+function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
+// Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
+function cleanExperiences(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 6).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 4), min: Math.max(1, Math.min(500, Math.round(+x?.min || 1))), max: Math.max(1, Math.min(1000, Math.round(+x?.max || 20))), price: clean(x?.price, 50), length: clean(x?.length, 40) })).filter((x) => x.name); }
 function cleanLinks(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 4).map((x) => ({ label: clean(x?.label, 24), url: clean(x?.url, 300) })).filter((x) => x.label && LINK_OK(x.url)); }
 
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
@@ -65,6 +69,7 @@ export function makeCommunity(store) {
     const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200),
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
       theme: cleanTheme(p.theme || {}, cur.theme || {}), sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 90),
+      shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences),
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
@@ -118,7 +123,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
-    res.json({ host: h, followers: C.followersOf(ws).length, upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
+    res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), host: h, followers: C.followersOf(ws).length, upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
   app.post("/api/public/follow", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), email = clean(b.email, 200).toLowerCase();
     if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." }); if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add your email so the host can tell you about the next one." });
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [] }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });

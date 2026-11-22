@@ -101,3 +101,34 @@ test("Pip calls it: once enough people are in, it locks the most popular date an
   assert.equal(ev.stage, ""); assert.equal(ev.date, day(9));
   assert.ok((await (await get("/api/me/inbox", cl.cookie)).json()).items.some((n) => n.kind === "itson"));
 });
+
+test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Eric; companies book his experiences", async () => {
+  const er = await join("Eric Lim", "ericlim@example.com");
+  const r = await (await post("/api/host/profile", { handle: "eric-bakes", city: "New York", forHire: true, theme: { avatarArt: "chef" },
+    shop: { open: true, title: "Pandan honeycomb cake", where: "Greenpoint, address after you order", slots: ["Sat 10–12", "Sun 10–12"], payUrl: "https://venmo.com/eric", items: [{ name: "Whole cake (8 slices)", cents: 3200, stock: 3, max: 2, emoji: "🍰" }, { name: "Slice", cents: 600, stock: 0, max: 6 }] },
+    experiences: [{ name: "Private omakase for your team", desc: "Seven courses at your office or mine", min: 8, max: 14, price: "from $120 a person", length: "3 hours" }] }, er.cookie)).json();
+  assert.equal(r.host.theme.avatarArt, "chef"); assert.equal(r.host.shop.items.length, 2); assert.equal(r.host.experiences[0].min, 8);
+  const shop = (await (await get("/api/public/shop/eric-bakes")).json()).shop;
+  assert.equal(shop.items[0].price, "$32"); assert.equal(shop.items[0].left, 3); assert.equal(shop.items[1].left, null, "no limit");
+  const whole = shop.items[0].id;
+  assert.equal((await post("/api/public/order/eric-bakes", { name: "Priya", phone: "415 555 0101", slot: "Sat 10–12", items: [{ id: whole, qty: 3 }] })).status, 400, "max 2 per order");
+  assert.equal((await post("/api/public/order/eric-bakes", { name: "Priya", phone: "415 555 0101", items: [{ id: whole, qty: 1 }] })).status, 400, "needs a pickup time");
+  const o = await (await post("/api/public/order/eric-bakes", { name: "Priya Shah", phone: "415 555 0101", slot: "Sat 10–12", items: [{ id: whole, qty: 2 }, { id: shop.items[1].id, qty: 3 }] })).json();
+  assert.equal(o.total, "$82"); assert.equal(o.payUrl, "https://venmo.com/eric"); assert.match(o.code, /^[0-9A-F]{4}$/);
+  const so = await post("/api/public/order/eric-bakes", { name: "Dev", email: "dev@example.com", slot: "Sun 10–12", items: [{ id: whole, qty: 2 }] });
+  assert.equal(so.status, 409, "only 1 left");
+  assert.equal((await (await get("/api/public/shop/eric-bakes")).json()).shop.items[0].left, 1);
+  const L = (await (await get("/api/host/orders", er.cookie)).json()).orders; assert.equal(L.length, 1); assert.equal(L[0].totalText, "$82");
+  assert.equal((await post("/api/host/orders/" + L[0].id, { status: "paid" }, er.cookie)).status, 200);
+  assert.ok((await (await get("/api/me/inbox", er.cookie)).json()).items.some((n) => n.kind === "order"));
+  assert.ok((await (await get("/api/public/shops")).json()).shops.some((s) => s.handle === "eric-bakes"));
+  // a new batch resets the counts
+  await post("/api/host/shop/new-drop", {}, er.cookie); assert.equal((await (await get("/api/public/shop/eric-bakes")).json()).shop.items[0].left, 3);
+  // companies book an experience
+  const dir = await (await get("/api/public/hosts?city=new york")).json(); const me = dir.hosts.find((h) => h.handle === "eric-bakes"); assert.equal(me.experiences[0].name, "Private omakase for your team");
+  const expId = r.host.experiences[0].id;
+  assert.equal((await post("/api/public/inquiry/eric-bakes", { name: "Jo", company: "Figma", email: "jo@figma.example", experienceId: expId, people: 12, when: "March", message: "Team offsite dinner for our design team." })).status, 200);
+  const inq = (await (await get("/api/host/inquiries", er.cookie)).json()).inquiries[0]; assert.equal(inq.experience.name, "Private omakase for your team"); assert.equal(inq.people, 12);
+  // link previews
+  const html = await (await get("/@eric-bakes")).text(); assert.match(html, /og:title" content="[^"]*"/); assert.match(html, /Order Whole cake/);
+});

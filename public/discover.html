@@ -30,6 +30,8 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 
   <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="grid g2" id="fyList"></div></section>
 
+  <section id="shopsSec" hidden><h2>Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="grid g2" id="shops"></div></section>
+
   <section><h2>Coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
     <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div>
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
@@ -42,6 +44,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 </div>
 <footer>Encore · <a href="/">Home</a> · <a href="/security">Security</a></footer>
 <script src="/community.js"></script>
+<script src="/avatars.js"></script>
 <script>
 (function () {
   const C = window.EncoreCommunity, $ = (s) => document.querySelector(s), esc = C.esc;
@@ -89,6 +92,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     $("#events").innerHTML = L.length ? L.map((e) => C.eventCard(e)).join("") : `<div class="empty">${data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`;
   }
   function drawHosts() { $("#hosts").innerHTML = data.hosts.length ? data.hosts.map(C.hostCard).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`; }
+  fetch("/api/public/shops").then((r) => r.json()).then((j) => { if (!j.shops?.length) return; $("#shopsSec").hidden = false; $("#shops").innerHTML = j.shops.map((s) => `<a class="ev" href="/@${esc(s.handle)}#shop"><span class="ev-ic" style="--c:${esc(s.accent || "#E26D8E")}">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 44) : esc(s.emoji || "🛍")}</span><span class="ev-b"><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><small class="why">${s.soldOut ? "Sold out. Subscribe for the next batch" : s.items.map((x) => `${esc(x.name)} ${esc(x.price)}`).join(" · ")}</small></span><span class="ev-p">${s.soldOut ? "Sold out" : "Order"}</span></a>`).join(""); }).catch(() => {});
   drawQuiz(ans.lane ? (ans.persona ? 2 : 1) : 0);
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();

@@ -359,15 +359,15 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const pk = (r) => (r.email ? lc(r.email) : r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : ""); const d = S.list("rsvps").find((x) => x.data?.eventId === id && pk(x.data) && hash(pk(x.data)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
     const r = d.data, em = lc(r.email), w = String(r.name || "").trim().split(/\s+/).filter(Boolean), name = w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest";
     let P = {}; try { P = X.eventProfile(em) || {}; } catch {}
-    const quizT = r.guestType !== "early" && TRAITS[r.guestType]; const top = quizT ? { ...quizT, quiz: true } : P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
+    const quizT = r.guestType !== "early" && TRAITS[r.guestType]; const top = quizT ? { ...quizT, quiz: true } : P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Encore", emoji: "🌱", line: "New to Encore. A good one to say hi to." };
     const pp = X.person(em), prof = pp?.ws ? C.profileOf(pp.ws) : null, SOC = /instagram|tiktok|x\.com|twitter|threads|linkedin|strava|substack|youtube|bsky|facebook/i;
     const socials = (prof?.links || []).filter((l) => l?.url && SOC.test(l.url)).slice(0, 4).map((l) => ({ label: clean(l.label, 30) || new URL(l.url).hostname.replace(/^www\./, ""), url: l.url }));
     const I = X.index(), kud = I.kudos.filter((k) => em && lc(k.email) === em && k.love).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 2).map((k) => ({ love: clean(k.love, 160), event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" }));
     const LANE = { move: "moving (runs, hikes, walks)", make: "making and tasting things", gather: "long dinners and good conversation", discover: "trying new places" };
     const loves = (P.loves || []).map((l) => LANE[l.kind] || l.kind).slice(0, 2);
     let mutual = []; const u = currentUser(req); if (em && u?.email && lc(u.email) !== em) { const mine = new Set(X.friendsOf(u.email).map((f) => lc(f.email))); mutual = X.friendsOf(em).filter((f) => mine.has(lc(f.email))).map((f) => (X.person(f.email)?.name || "").split(/\s+/)[0]).filter(Boolean); }
-    const first = w[0] || "They", n = P.attended || 0;
-    const take = [P.top || TRAITS[r.guestType] ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ""}.` : `${first} is new to Encore. This is a great one to start with.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
+    const first = w[0] || "They", n = Math.max(P.attended || 0, ev.date && ev.date < new Date().toISOString().slice(0, 10) && r.response === "going" ? 1 : 0);
+    const take = [P.top || TRAITS[r.guestType] ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ""}.` : `${first} is new to Encore. This is a great one to start with.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Their fun fact: “${clean(r.funFact, 120).replace(/[.!]$/, "")}.”` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
   // ---- Pip's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
   app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
@@ -380,7 +380,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});
     const arch = Object.entries(count(G.map((g) => g.arche))).sort((a, b) => b[1] - a[1]), lanes = Object.entries(count(G.flatMap((g) => g.loves))).sort((a, b) => b[1] - a[1]);
     const LANE = { move: "moving: runs, hikes, rides", make: "making and tasting things", gather: "long dinners and good talk", discover: "trying new places" };
-    const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g) => g.fact);
+    const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g, i, A) => g.fact && A.findIndex((h) => lc(h.fact) === lc(g.fact)) === i);
     const common = [], differ = [], prompts = [], pairs = [];
     if (arch[0] && arch[0][1] >= 2 && arch[0][0] !== "New to Encore") common.push(`${arch[0][1] === G.length ? "All" : arch[0][1]} of ${G.length} are ${arch[0][0].replace(/^The /, "")}s.`);
     if (lanes[0] && lanes[0][1] >= 2) common.push(`${lanes[0][1]} of them keep turning up to ${LANE[lanes[0][0]] || lanes[0][0]}.`);
@@ -472,7 +472,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   const answersOf = (S, id) => S.list("rsvps").map((d) => ({ id: d.id, ...(d.data || {}) })).filter((r) => r.eventId === id && r.response === "going" && r.answer).map((r) => ({ name: first(r.name) || "A guest", answer: r.answer }));
   const opened = (e) => !!e?.date && e.date <= new Date().toISOString().slice(0, 10);
   app.get("/api/host/answers", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.query.eventId, 80), e = S.get("events/" + id)?.data; if (!e) return bad(res, "No such event.", 404, "not_found");
-    const A = answersOf(S, id); res.json({ question: e.askQ || "", count: A.length, open: opened(e), answers: A }); });
+    const A = answersOf(S, id), open = opened(e); res.json({ question: e.askQ || "", count: A.length, open, answers: open ? A : [] }); });
   app.get("/api/public/answers/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going") return bad(res, "Say yes to see the answers.", 403, "not_granted");
     const e = P.S.get("events/" + req.params.eventId)?.data, A = answersOf(P.S, req.params.eventId); if (!opened(e)) return res.json({ question: e?.askQ || "", count: A.length, open: false, answers: [] });
     res.json({ question: e.askQ || "", count: A.length, open: true, answers: A.sort(() => Math.random() - 0.5) }); });

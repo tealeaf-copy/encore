@@ -8,7 +8,7 @@
   const mix = (hex, pct, to = "#ffffff") => { const p = (h) => [1, 3, 5].map((i) => parseInt((h || "#888888").replace("#", "").padEnd(6, "0").slice(i - 1, i + 1), 16)); const a = p(hex), b = p(to); return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * pct).toString(16).padStart(2, "0")).join(""); };
   const lum = (hex) => { const h = String(hex || "#888888").replace("#", "").padEnd(6, "0"); return (0.299 * parseInt(h.slice(0, 2), 16) + 0.587 * parseInt(h.slice(2, 4), 16) + 0.114 * parseInt(h.slice(4, 6), 16)) / 255; };
   const wrap = (s, n) => { const out = [""]; for (const w of String(s || "").split(/\s+/)) { if ((out[out.length - 1] + " " + w).trim().length > n && out[out.length - 1]) out.push(w); else out[out.length - 1] = (out[out.length - 1] + " " + w).trim(); } return out.slice(0, 3); };
-  const kindOf = (g) => { const by = (t) => (/plush|plushie|stuffed|cushie|mascot|soft toy/.test(t) ? "plush" : /pop-?up/.test(t) ? "popup" : /instant|photo|polaroid/.test(t) ? "photo" : /\bmug|\bcup\b/.test(t) ? "mug" : /dish|bowl|tray|coaster|plate/.test(t) ? "dish" : /starter|\bjar\b/.test(t) ? "jar" : /loaf|bread|sourdough|boule|bake/.test(t) ? "loaf" : /card|letter|note/.test(t) ? "card" : "");
+  const kindOf = (g) => { const by = (t) => (/iced|cup sleeve|latte cup|to-go/.test(t) ? "cup" : /\bphin\b|filter set|brew kit/.test(t) ? "phin" : /coffee bag|beans|blend|roast/.test(t) ? "bag" : /plush|plushie|stuffed|cushie|mascot|soft toy/.test(t) ? "plush" : /pop-?up/.test(t) ? "popup" : /instant|photo|polaroid/.test(t) ? "photo" : /\bmug|\bcup\b/.test(t) ? "mug" : /dish|bowl|tray|coaster|plate/.test(t) ? "dish" : /starter|\bjar\b/.test(t) ? "jar" : /loaf|bread|sourdough|boule|bake/.test(t) ? "loaf" : /card|letter|note/.test(t) ? "card" : "");
     return by(String(g?.name || "").toLowerCase()) || { "🧸": "plush", "📸": "photo", "☕": "mug", "🫙": "jar", "✉️": "card", "🍞": "loaf" }[g?.emoji] || by(String(g?.desc || "").toLowerCase()) || "card"; };
   const SCRIPT = "Caveat, 'Segoe Script', 'Bradley Hand', cursive", SANS = "'Instrument Sans', system-ui, sans-serif";
 
@@ -112,6 +112,46 @@
       <path d="M100 150h120l-6 22H106z" fill="${dark}"/><text x="160" y="166" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="11" letter-spacing="2.5" fill="#fff">${esc(fit((brand || "THANK YOU").toUpperCase(), 18))}</text>
       <text x="74" y="184" font-family="${SCRIPT}" font-size="14" fill="#3B2A20" transform="rotate(4 74 184)">for ${esc(fit(name, 12))}</text>
       <text x="246" y="184" text-anchor="middle" font-family="${SCRIPT}" font-size="11" fill="#3B2A20" transform="rotate(-4 242 184)">${esc(fit(note || "thank you", 22))}</text></svg>`; }
-  const KINDS = { mug, loaf, jar, card, photo, dish, plush, popup };
+
+  // a Vietnamese phin filter on a glass: condensed milk, coffee dripping through, the name engraved on the chamber
+  function phin({ name = "Alex", brand = "", accent = "#7A4A2A", bg = "#F6EFE6", note = "" }) { const steel = "#C9CED3", steelD = "#9AA1A8";
+    return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phin filter engraved ${esc(brand || name)}"><rect width="320" height="220" fill="${bg}"/>
+      <ellipse cx="150" cy="200" rx="80" ry="9" fill="#000" opacity=".08"/>
+      <path d="M100 98h100l-8 96c-1 6-6 8-11 8h-62c-5 0-10-2-11-8z" fill="#EAF3F4" opacity=".85" stroke="#C9DADC" stroke-width="2"/>
+      <path d="M106 160h88l-3 34c-1 5-5 7-10 7h-62c-5 0-9-2-10-7z" fill="#F4E6C8"/><path d="M104 136h92l-2 24h-88z" fill="#5A3420"/><path d="M104 136h92" stroke="#3B2214" stroke-width="2"/>
+      ${[[118, 110], [178, 116], [146, 122]].map(([x, y]) => `<rect x="${x}" y="${y}" width="16" height="14" rx="3" fill="#fff" opacity=".55" transform="rotate(12 ${x} ${y})"/>`).join("")}
+      <ellipse cx="150" cy="96" rx="64" ry="9" fill="${steelD}"/><ellipse cx="150" cy="94" rx="62" ry="8" fill="${steel}"/>
+      <path d="M118 46h64v46c0 3-14 6-32 6s-32-3-32-6z" fill="${steel}"/><path d="M118 46h64v46c0 3-14 6-32 6s-32-3-32-6z" fill="url(#ps)"/>
+      <defs><linearGradient id="ps" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs>
+      <ellipse cx="150" cy="46" rx="34" ry="6" fill="${steelD}"/><ellipse cx="150" cy="40" rx="30" ry="5" fill="${steel}"/><rect x="144" y="30" width="12" height="9" rx="3" fill="${steelD}"/>
+      <text x="150" y="70" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${(brand || name).length > 8 ? 9 : 11}" letter-spacing="2" fill="#6E767E">${esc(fit((brand || name).toUpperCase(), 12))}</text>
+      <path d="M150 102v8" stroke="#5A3420" stroke-width="3" stroke-linecap="round"/><circle cx="150" cy="118" r="2.5" fill="#5A3420"/>
+      <g transform="rotate(6 254 150)"><rect x="220" y="120" width="70" height="52" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="255" y="144" text-anchor="middle" font-family="${SCRIPT}" font-size="15" fill="#2B211C">for ${esc(fit(name, 9))}</text><text x="255" y="160" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#7A6A5A">${esc(fit((note || "slow drip · 5 min").toUpperCase(), 22))}</text></g></svg>`; }
+
+  // a kraft coffee bag with a custom label
+  function bag({ name = "Alex", brand = "", accent = "#C2553A", bg = "#F6EFE6", note = "" }) {
+    return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coffee bag labeled ${esc(brand || name)}"><rect width="320" height="220" fill="${bg}"/>
+      <ellipse cx="160" cy="202" rx="78" ry="9" fill="#000" opacity=".08"/>
+      <path d="M104 40h112l6 150c0 6-4 10-10 10H108c-6 0-10-4-10-10z" fill="#C9A47A"/><path d="M104 40h112v14H104z" fill="#B48C60"/><path d="M110 46h100" stroke="#9C7448" stroke-dasharray="3 3"/>
+      <circle cx="196" cy="72" r="6" fill="#B48C60" stroke="#9C7448"/>
+      <rect x="114" y="88" width="92" height="88" rx="4" fill="#FFFDF8"/><rect x="114" y="88" width="92" height="16" rx="4" fill="${accent}"/>
+      <text x="160" y="100" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="8" letter-spacing="2" fill="#fff">${esc(fit((brand || "HOUSE BLEND").toUpperCase(), 18))}</text>
+      <text x="160" y="130" text-anchor="middle" font-family="${SCRIPT}" font-size="20" fill="#2B211C">${esc(fit(name, 10))}'s</text>
+      <text x="160" y="146" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="9" letter-spacing="1.5" fill="#2B211C">BLEND</text>
+      <text x="160" y="164" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#7A6A5A">${esc(fit((note || "Vietnamese robusta · 250 g").toUpperCase(), 30))}</text>
+      ${[[72, 188], [86, 196], [238, 190], [252, 182], [246, 198]].map(([x, y], i) => `<g transform="rotate(${i * 40} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="7" ry="5" fill="#4A2A18"/><path d="M${x - 5} ${y}q5 -2 10 0" stroke="#2B160C" stroke-width="1.2" fill="none"/></g>`).join("")}</svg>`; }
+
+  // an iced coffee in a clear cup with a printed sleeve and a name sticker
+  function cup({ name = "Alex", brand = "", accent = "#3E9C6E", bg = "#F6EFE6", note = "" }) {
+    return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Iced coffee cup with ${esc(brand || name)} sleeve"><rect width="320" height="220" fill="${bg}"/>
+      <ellipse cx="160" cy="204" rx="56" ry="8" fill="#000" opacity=".08"/>
+      <path d="M118 40c0-12 84-12 84 0v8h-84z" fill="#EAF3F4" stroke="#C9DADC" stroke-width="2"/><rect x="156" y="12" width="6" height="40" rx="3" fill="${accent}" transform="rotate(10 159 32)"/>
+      <path d="M114 48h92l-10 150c0 4-3 6-7 6h-58c-4 0-7-2-7-6z" fill="#EAF3F4" opacity=".7" stroke="#C9DADC" stroke-width="2"/>
+      <path d="M118 96h84l-6 102c0 3-3 5-6 5h-60c-3 0-6-2-6-5z" fill="#6B3E22"/><path d="M121 150h78l-3 48c0 3-3 5-6 5h-60c-3 0-6-2-6-5z" fill="#E9D9BC" opacity=".9"/><path d="M118 96h84" stroke="#4A2A18" stroke-width="2"/>
+      ${[[130, 70], [164, 62], [178, 84], [140, 92]].map(([x, y]) => `<rect x="${x}" y="${y}" width="18" height="16" rx="3" fill="#fff" opacity=".7" transform="rotate(14 ${x} ${y})"/>`).join("")}
+      <path d="M116 112h88l-3 40h-82z" fill="${accent}"/><text x="160" y="130" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="10" letter-spacing="2" fill="#fff">${esc(fit((brand || "ICED PHIN").toUpperCase(), 14))}</text>
+      <text x="160" y="144" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#fff" opacity=".85">${esc(fit((note || "cà phê sữa đá").toUpperCase(), 24))}</text>
+      <g transform="rotate(-10 222 92)"><circle cx="222" cy="92" r="24" fill="#FFFDF8" stroke="#E4D9C8"/><text x="222" y="96" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(fit(name, 8))}</text></g></svg>`; }
+  const KINDS = { mug, loaf, jar, card, photo, dish, plush, popup, phin, bag, cup };
   window.GiftArt = { kindOf, svg: (kind, o = {}) => (KINDS[kind] || card)(o), forGift: (g, o = {}) => { const t = `${g?.name || ""} ${g?.desc || ""}`.toLowerCase(); return (KINDS[kindOf(g)] || card)({ species: /beaver/.test(t) ? "beaver" : /robot|\bbot\b/.test(t) ? "robot" : "", scene: /launch|invite|rocket/.test(t) ? "launch" : /flower|garden|bloom|bouquet/.test(t) ? "garden" : "", ...o }); } };
 })();

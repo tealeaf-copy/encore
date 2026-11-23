@@ -81,7 +81,7 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
   return a.length ? a : ["Event lead", "Your manager"];
 }
 // Allowlist: only these event fields ever reach a guest link.
-const PUBLIC_FIELDS = ["name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "brandMode", "coverPhoto", "unlisted", "playlistUrl", "hideGuests", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free", "stage", "interestGoal", "dateOptions", "getThere", "geo", "askPhone", "ticketNote", "audienceWho", "earlyUntil", "courses", "dinnerTheme", "autoGo"];
+const PUBLIC_FIELDS = ["why", "askQ", "houseRules", "name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "brandMode", "coverPhoto", "unlisted", "playlistUrl", "hideGuests", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free", "stage", "interestGoal", "dateOptions", "getThere", "geo", "askPhone", "ticketNote", "audienceWho", "earlyUntil", "courses", "dinnerTheme", "autoGo"];
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -961,6 +961,8 @@ export function createApp({ store, dataDir }) {
       const invited = invitedGuest(req, doc.id, doc.data);
       const nom = view === "nominate" ? nominatingAe(req, doc.id, doc.data) : null;
       data = publicEvent(data, view);
+      // guests read "Mina's place", never the host's own "my place"
+      if (doc.data.casual && view !== "plan") { try { const hn = String(getDbUser(getWorkspace(req.ws)?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0]; const fix = (x) => (typeof x === "string" ? x.replace(/\b(my|our) (place|apartment|flat|house|home)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)) : x); for (const k of ["meetPoint", "venueName", "name", "pubTitle"]) if (data[k]) data[k] = fix(data[k]); } catch {} }
       // Get-togethers: which bring-list items or pickup windows are already taken (no names), so guests don't double up.
       if (doc.data.casual && !/giveaway/.test(doc.data.activity || "") && Array.isArray(doc.data.slots) && doc.data.slots.length) { const taken = new Set([...(doc.data.guests || []).map((g) => g.slot), ...S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && d.data.response === "going").map((d) => d.data.slot)].filter(Boolean)); data.claimed = doc.data.slots.filter((x) => taken.has(x)); }
       if (nom) { data.nomFor = nom.slug; data.nomSuggest = nom.suggest; }

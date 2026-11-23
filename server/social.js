@@ -348,7 +348,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/attendees/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example) return bad(res, "No such event.", 404, "not_found"); if (ev.hideGuests) return res.json({ attendees: [], count: 0, hidden: true });
     const short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = []; let total = 0;
-    const arche = (email, gt) => { try { const t = email ? X.eventProfile(email)?.top : null; if (t) return { name: t.name, emoji: t.emoji }; } catch {} const q = TRAITS[gt]; return q ? { name: q.name, emoji: q.emoji } : { name: "New to Encore", emoji: "🌱" }; };
+    const arche = (email, gt) => { if (TRAITS[gt] && gt !== "early") return { name: TRAITS[gt].name, emoji: TRAITS[gt].emoji }; try { const t = email ? X.eventProfile(email)?.top : null; if (t) return { name: t.name, emoji: t.emoji }; } catch {} const q = TRAITS[gt]; return q ? { name: q.name, emoji: q.emoji } : { name: "New to Encore", emoji: "🌱" }; };
     for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = r.response === "going" || (ev.stage === "interest" && r.interest === "in"); if (r.eventId !== id || !yes) continue; const k = lc(r.email || r.name || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
       out.push({ name: short(r.name), archetype: arche(lc(r.email), r.guestType), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email ? { key: hash(lc(r.email)) } : {}) }); }
     for (const g of ev.guests || []) { if (!/^(Going|Attended)$/.test(g.status || "")) continue; const k = lc(g.email || g.name); if (!k || seen.has(k)) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
@@ -359,7 +359,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const d = S.list("rsvps").find((x) => x.data?.eventId === id && x.data?.email && hash(lc(x.data.email)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
     const r = d.data, em = lc(r.email), w = String(r.name || "").trim().split(/\s+/).filter(Boolean), name = w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest";
     let P = {}; try { P = X.eventProfile(em) || {}; } catch {}
-    const top = P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : TRAITS[r.guestType] ? { ...TRAITS[r.guestType], quiz: true } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
+    const quizT = r.guestType !== "early" && TRAITS[r.guestType]; const top = quizT ? { ...quizT, quiz: true } : P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
     const pp = X.person(em), prof = pp?.ws ? C.profileOf(pp.ws) : null, SOC = /instagram|tiktok|x\.com|twitter|threads|linkedin|strava|substack|youtube|bsky|facebook/i;
     const socials = (prof?.links || []).filter((l) => l?.url && SOC.test(l.url)).slice(0, 4).map((l) => ({ label: clean(l.label, 30) || new URL(l.url).hostname.replace(/^www\./, ""), url: l.url }));
     const I = X.index(), kud = I.kudos.filter((k) => lc(k.email) === em && k.love).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 2).map((k) => ({ love: clean(k.love, 160), event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" }));
@@ -374,7 +374,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const seen = new Set(), G = [];
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
       let P = {}; try { P = r.email ? X.eventProfile(lc(r.email)) || {} : {}; } catch {}
-      G.push({ name: first(r.name) || "A guest", response: r.response, arche: P.top?.name || TRAITS[r.guestType]?.name || "New to Encore", archeKey: P.top?.key || r.guestType || "new", loves: (P.loves || []).map((l) => l.kind), attended: P.attended || 0, fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
+      G.push({ name: first(r.name) || "A guest", response: r.response, arche: TRAITS[r.guestType]?.name || P.top?.name || "New to Encore", archeKey: (TRAITS[r.guestType] && r.guestType) || P.top?.key || "new", loves: (P.loves || []).map((l) => l.kind), attended: P.attended || 0, fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
     if (!G.length) return res.json({ guests: 0, empty: true });
     // what's true without AI
     const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});
@@ -387,7 +387,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (firstTimers.length) common.push(`${firstTimers.length === G.length ? "Everyone is" : `${firstTimers.slice(0, 3).join(", ")} ${firstTimers.length === 1 ? "is" : "are"}`} new to Encore, so a warm welcome goes a long way.`);
     if (arch.length >= 3) differ.push(`It's a mixed room: ${arch.slice(0, 3).map(([a, n]) => `${n} ${a.replace(/^The /, "")}`).join(", ")}. Mix them up at the table rather than letting types cluster.`);
     if (regulars.length) differ.push(`${regulars.slice(0, 2).join(" and ")} ${regulars.length === 1 ? "has" : "have"} been to lots of these. Ask them to help pull new people in.`);
-    if (facts.length >= 2) { prompts.push(`Fun-fact roulette: read one fun fact out loud, everyone guesses whose it is. (${facts.length} guests gave you one.)`); pairs.push(`${facts[0].name} and ${facts[1].name} should swap stories: "${facts[0].fact}" meets "${facts[1].fact}".`); }
+    if (facts.length >= 2) { prompts.push(`Fun-fact roulette: read one fun fact out loud, everyone guesses whose it is.`); pairs.push(`${facts[0].name} and ${facts[1].name} should swap stories: "${facts[0].fact}" meets "${facts[1].fact}".`); }
     prompts.push("What's something you changed your mind about this year?", "What's the best thing you've eaten (or made) recently, and who were you with?", "If this group took a trip together, where would we go and who'd plan it?");
     let out = { guests: G.length, going: G.filter((g) => g.response === "going").length, common, differ, prompts: prompts.slice(0, 4), pairs, source: "pip" };
     // sharper with Claude, when it's switched on
@@ -467,7 +467,15 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     out.sort((a, b) => String(a.date || "9").localeCompare(String(b.date || "9"))); res.json({ plans: out }); });
   // a guest adds a fun fact, or hides themselves from the guest list
   app.post("/api/public/rsvp-extra/:eventId", small, (req, res) => { const b = req.body || {}, P = X.rsvpProof(clean(req.params.eventId, 80), b.rid, b.code); if (!P) return bad(res, "No such reply.", 404, "not_found");
-    const patch = {}; if (b.funFact != null) patch.funFact = clean(b.funFact, 120); if (b.showMe != null) patch.showMe = !!b.showMe; if (b.emoji != null) patch.emoji = [...String(b.emoji)].slice(0, 2).join("").slice(0, 8); P.S.update("rsvps/" + String(b.rid).replace(/[^A-Za-z0-9_-]/g, ""), patch); res.json({ ok: true }); });
+    const patch = {}; if (b.funFact != null) patch.funFact = clean(b.funFact, 120); if (b.showMe != null) patch.showMe = !!b.showMe; if (b.answer != null) { patch.answer = clean(b.answer, 200); patch.answeredAt = Date.now(); } if (b.emoji != null) patch.emoji = [...String(b.emoji)].slice(0, 2).join("").slice(0, 8); P.S.update("rsvps/" + String(b.rid).replace(/[^A-Za-z0-9_-]/g, ""), patch); res.json({ ok: true }); });
+  // ---- One question at the door (Priya Parker's priming): answers stay sealed until the day of the event ----
+  const answersOf = (S, id) => S.list("rsvps").map((d) => ({ id: d.id, ...(d.data || {}) })).filter((r) => r.eventId === id && r.response === "going" && r.answer).map((r) => ({ name: first(r.name) || "A guest", answer: r.answer }));
+  const opened = (e) => !!e?.date && e.date <= new Date().toISOString().slice(0, 10);
+  app.get("/api/host/answers", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.query.eventId, 80), e = S.get("events/" + id)?.data; if (!e) return bad(res, "No such event.", 404, "not_found");
+    const A = answersOf(S, id); res.json({ question: e.askQ || "", count: A.length, open: opened(e), answers: A }); });
+  app.get("/api/public/answers/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going") return bad(res, "Say yes to see the answers.", 403, "not_granted");
+    const e = P.S.get("events/" + req.params.eventId)?.data, A = answersOf(P.S, req.params.eventId); if (!opened(e)) return res.json({ question: e?.askQ || "", count: A.length, open: false, answers: [] });
+    res.json({ question: e.askQ || "", count: A.length, open: true, answers: A.sort(() => Math.random() - 0.5) }); });
   // who's going: for guests who are going (approved, on approval events), first names and an initial only
   app.get("/api/public/going/:eventId", (req, res) => { const P = X.rsvpProof(req.params.eventId, req.query.rid, req.query.code); if (!P || P.r.response !== "going") return bad(res, P?.r.response === "requested" ? "You'll see who's going once the host approves you." : "Say yes to see who's going.", 403, "not_granted");
     const id = P.r.eventId, short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = [];

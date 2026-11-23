@@ -8479,6 +8479,10 @@ new MutationObserver(()=>{ try{ if(!draft?.id||!isCasual(draft)) return; const D
 
 // friends events: the guest list without the sales tooling
 new MutationObserver(()=>{ try{ if(!draft||!isCasual(draft)) return; const v=document.querySelector("#view-studio"); if(!v) return; v.querySelectorAll("section.panel,details.panel,.panel,details").forEach(sec=>{ if(sec.hidden||sec.dataset.cz) return; const h=(sec.querySelector("h2,h3,h4,summary,b")?.textContent||"").trim(); if(/^(Rules of engagement|Ask your AEs who to invite|Sales lead|Measure real lift|Guest scout|Outreach|Get a strategy|Who's missing|Accounts|Hand off to sales)/i.test(h)){ sec.hidden=true; sec.dataset.cz=1 } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+
+// friends hosts don't see business tools (stakeholder briefs, email from the founder, sales lead, outreach...)
+const FRIENDS_TOOLS=new Set(["copy","venues"]);
+{ const _ab=agentBox; agentBox=function(key){ const h=_ab.apply(this,arguments); try{ if((window.__wsPersonal||(typeof draft!=="undefined"&&draft&&isCasual(draft)))&&!FRIENDS_TOOLS.has(key)) return String(h).replace('<div class="agent">','<div class="agent" hidden data-friends-hidden="1">') }catch{} return h } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -8813,4 +8817,5 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .cov-f{display:block}.cov-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}.cov-thumb{width:160px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}.cov-empty{font-size:13px;color:var(--muted)}
 .who-going{margin-top:16px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--card,#fff)}.who-going h4{margin:0 0 10px;font-size:16px}.who-going h4 .note{font-weight:400;margin-left:6px}.wg-list{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}.wg-list li{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--sunk,#F3EDE6);font-size:14px}.wg-av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent,#C4532F);color:#fff;font-weight:600;font-size:13px}
 .my-inv{margin-top:18px}.inv-list{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}.inv-list li{display:flex;align-items:center;gap:12px}.inv-list code{font-size:15px;letter-spacing:.06em}
+.agent[data-friends-hidden]{display:none!important}
 </style>

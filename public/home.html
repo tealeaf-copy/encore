@@ -44,6 +44,16 @@ footer{padding:40px 0 60px;color:var(--smoke);font-size:14px;display:flex;justif
 .pipline{margin:28px auto 0}
 .live{grid-template-columns:repeat(3,minmax(0,1fr))}
 .more{margin:18px 0 0}.more a{font-weight:600;color:var(--ember);text-decoration:none}
+
+.asst-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center}
+.asst-list{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:10px}.asst-list li{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}.asst-list b{min-width:150px}.asst-list span{color:var(--smoke)}
+.asst-chat{background:#fff;border:2px solid #1F1A17;border-radius:24px;box-shadow:6px 6px 0 #1F1A17;padding:20px;display:flex;flex-direction:column;gap:10px}
+.asst-chat .msg{max-width:86%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.4}
+.asst-chat .me{align-self:flex-end;background:#1F1A17;color:#fff;border-bottom-right-radius:6px}
+.asst-chat .pip{align-self:flex-start;background:#FFF1C9;border-bottom-left-radius:6px}.asst-chat .pip b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#C4532F;margin-bottom:2px}
+.asst-chat .chip{display:inline-block;margin-top:8px;padding:4px 10px;border-radius:999px;background:#fff;border:1.5px solid #1F1A17;font-size:12.5px;font-weight:600}
+.asst-chat .minis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}.asst-chat .minis i{font-style:normal;background:#fff;border:1.5px solid #1F1A17;border-radius:12px;padding:8px;font-size:12.5px;font-weight:600;line-height:1.25}.asst-chat .minis em{display:block;font-style:normal;font-size:22px}.asst-chat .minis small{display:block;font-weight:400;color:var(--smoke)}
+@media (max-width:860px){.asst-grid{grid-template-columns:minmax(0,1fr);gap:28px}.asst-list b{min-width:0}}
 section.end{text-align:center}section.end h2{margin:0 auto}section.end .lede{margin:14px auto 24px}section.end .ctas{justify-content:center}
 @media (max-width:860px){.stack{justify-self:stretch;max-width:420px;margin:0 auto}.stack .card:nth-child(2){margin:0}.live{grid-template-columns:minmax(0,1fr)}.top nav{gap:12px}}
 </style>
@@ -72,6 +82,21 @@ section.end{text-align:center}section.end h2{margin:0 auto}section.end .lede{mar
     <div class="step"><div class="n">3</div><h3>Remember it after</h3><p>Photos, kudos and tips the morning after. Guests follow you, so the next one fills faster.</p></div>
   </div>
   <div class="pipline"><svg viewBox="2 4 60 60" width="44" height="44" aria-hidden="true"><path d="M13 22c-3-8 0-14 4-15 3 3 7 7 8 11z" fill="#F7A9B6"/><path d="M51 22c3-8 0-14-4-15-3 3-7 7-8 11z" fill="#F7A9B6"/><ellipse cx="32" cy="36" rx="23" ry="21.5" fill="#FBC0C9"/><path d="M18.3 30.5q4.2-5 8.4 0M37.3 30.5q4.2-5 8.4 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="41" rx="8.4" ry="6" fill="#F7A0B0"/><ellipse cx="29" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><ellipse cx="35" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><path d="M27.5 49.5q4.5 4.2 9 0" stroke="#B5485A" stroke-width="2" fill="#E8798A" stroke-linecap="round"/></svg><p><b>Pip:</b> "Four people are in for Saturday. Two more and it's on. Want me to nudge the maybes?"</p></div>
+</div></section>
+<section class="asst"><div class="wrap asst-grid">
+  <div><span class="eyebrow">Your personal assistant</span><h2>Pip is your chief of staff for going out.</h2>
+    <p class="lede">Ask in plain words. Pip keeps an eye on what's happening, reminds you before you forget, and finds more of what you liked.</p>
+    <ul class="asst-list"><li><b>🔔 Alerts</b><span>"Tell me when a run club opens near me."</span></li><li><b>⏰ Reminders</b><span>"Remind me Thursday to buy tortillas."</span></li><li><b>✨ More like this</b><span>"Find nights like the dumpling one."</span></li><li><b>🎟 Conferences</b><span>"Any good design conferences in March?"</span></li></ul></div>
+  <div class="asst-chat" aria-label="Example conversation with Pip">
+    <div class="msg me">Tell me when a run club opens near me</div>
+    <div class="msg pip"><b>Pip</b>Done. I'll ping you when a run within 2 km of Williamsburg opens up.<span class="chip">🔔 Alert set · runs near Williamsburg</span></div>
+    <div class="msg me">Remind me Thursday to buy tortillas</div>
+    <div class="msg pip"><b>Pip</b>Got it. Thursday at 9am: tortillas for Taco night.<span class="chip">⏰ Thu 9:00am</span></div>
+    <div class="msg me">Find more nights like the dumpling one</div>
+    <div class="msg pip"><b>Pip</b>Three coming up near you:<span class="minis"><i><em>🥟</em>Dumpling folding<small>Sat · Greenpoint</small></i><i><em>🍜</em>Ramen at Eric's<small>Tue · Bushwick</small></i><i><em>🫓</em>Bao and board games<small>Fri · Astoria</small></i></span></div>
+    <div class="msg me">Any good design conferences in March?</div>
+    <div class="msg pip"><b>Pip</b>Two in New York and one worth the trip. Want me to save them and tell you when tickets drop?<span class="chip">🎟 3 found · alerts on</span></div>
+  </div>
 </div></section>
 <section id="liveSec" hidden><div class="wrap"><span class="eyebrow">On Encore now</span><h2>Hosts people keep coming back to.</h2><div class="live" id="live"></div><p class="more"><a href="/discover">See what's on →</a></p></div></section>
 <section class="end"><div class="wrap"><h2>Host your first one this week.</h2><p class="lede">It takes about two minutes: say what it is, pick a day, share the link.</p><div class="ctas"><a class="btn primary" href="/signup?mode=friends">I have an invite</a><a class="btn quiet" href="/signup?mode=friends#ask">Ask for one</a></div></div></section>

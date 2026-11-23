@@ -27,7 +27,7 @@ export function tally(replies) {
 export function mountChecks(app, { store, small, currentUser, publicOrigin = () => "" }) {
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const hits = new Map(); const limited = (req, n) => { const k = req.ip || "?", now = Date.now(); const h = (hits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); hits.set(k, h); return h.length > n; };
-  const view = (c) => ({ title: c.title, pitch: c.pitch, question: c.question, dates: c.dates || [], city: c.city || "", brand: c.brand || "", open: c.open !== false, asks: c.asks || {} });
+  const view = (c) => ({ title: c.title, pitch: c.pitch, question: c.question, dates: c.dates || [], city: c.city || "", brand: c.brand || "", open: c.open !== false, asks: c.asks || {}, mode: c.mode || "sales" });
 
   // the owner opens (or updates) the check for an event
   app.post("/api/check/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id); if (!ID_OK(id)) return res.status(400).json({ code: "invalid", message: "Bad event id." });
@@ -35,7 +35,7 @@ export function mountChecks(app, { store, small, currentUser, publicOrigin = () 
     const cur = S.get("checks/" + id)?.data || {}, b = req.body || {};
     const c = { ...cur, eventId: id, title: clean(b.title || cur.title || ev.name, 120), pitch: clean(b.pitch ?? cur.pitch ?? ev.concept ?? "", 700), question: clean(b.question || cur.question || "Would you come to this?", 160),
       dates: (Array.isArray(b.dates) ? b.dates : cur.dates || []).map((d) => clean(d, 40)).filter(Boolean).slice(0, 4), city: clean(b.city ?? cur.city ?? ev.city ?? "", 80), brand: clean(getWorkspace(u.ws)?.company || "", 120),
-      asks: { must: b.asks?.must ?? cur.asks?.must ?? true, stop: b.asks?.stop ?? cur.asks?.stop ?? true }, open: b.open ?? cur.open ?? true, token: cur.token || crypto.randomBytes(9).toString("base64url"), createdAt: cur.createdAt || Date.now(), updatedAt: Date.now(), by: u.email };
+      asks: { must: b.asks?.must ?? cur.asks?.must ?? true, stop: b.asks?.stop ?? cur.asks?.stop ?? true }, open: b.open ?? cur.open ?? true, mode: ["sales", "consumer", "community"].includes(b.mode) ? b.mode : (cur.mode || "sales"), token: cur.token || crypto.randomBytes(9).toString("base64url"), createdAt: cur.createdAt || Date.now(), updatedAt: Date.now(), by: u.email };
     S.set("checks/" + id, c); res.json({ check: c, link: `/check/${encodeURIComponent(id)}?t=${c.token}` }); });
   app.get("/api/check/:id", (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id), S = scopeStore(store, u.ws), c = S.get("checks/" + id)?.data;
     if (!c) return res.json({ check: null }); const R = S.list("checkReplies").map((d) => d.data).filter((r) => r.eventId === id);

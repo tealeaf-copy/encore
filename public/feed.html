@@ -119,7 +119,7 @@
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   function drawFeed(m) { setTimeout(placeChip, 0);
     const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
-    const keep = F.items.filter((it) => it.kind !== "hosting" || !here || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
+    const keep = F.items.filter((it) => it.kind !== "hosting" || !here || (F.following || []).includes(it.who?.handle) || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
     const away = F.items.length - keep.length;
     const items = keep.map((it) => { const e = it.event || {}, h = e.host;
       const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${it.kind === "post" ? `posted` : it.kind === "went" ? `went to <b>${esc(e.title)}</b>` : it.kind === "hosting" ? `is hosting <b>${esc(e.title)}</b>` : it.kind === "kudos" ? `sent kudos for <b>${esc(e.title)}</b>` : it.kind === "recap" ? `hosted <b>${esc(e.title)}</b>` : `at <b>${esc(e.title)}</b>`}${h && it.kind !== "hosting" && it.kind !== "post" ? ` by ${esc(h.name || "@" + h.handle)}` : ""} · ${ago(it.at)}</small></div></div>`;

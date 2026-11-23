@@ -172,6 +172,19 @@ export function createApp({ store, dataDir }) {
   app.set("trust proxy", !tp || /^(0|false|off|no)$/i.test(tp) ? false : /^\d+$/.test(tp) ? Number(tp) : /^true$/i.test(tp) ? true : tp);
 
   // ---------- public, ungated ----------
+  // address search for place fields: OpenStreetMap's Photon (no key), cached; set ENCORE_PLACES_URL to use another Photon-compatible server, or "off"
+  const placeCache = new Map();
+  app.get("/api/places", async (req, res) => { const q = String(req.query.q || "").trim().slice(0, 120); if (q.length < 3) return res.json({ places: [] });
+    const base = process.env.ENCORE_PLACES_URL || "https://photon.komoot.io/api/"; if (base === "off") return res.json({ places: [], off: true });
+    const lat = Number(req.query.lat), lng = Number(req.query.lng), key = q.toLowerCase() + "|" + (Number.isFinite(lat) ? lat.toFixed(1) + "," + lng.toFixed(1) : "");
+    const hit = placeCache.get(key); if (hit && Date.now() - hit.at < 864e5) return res.json({ places: hit.places });
+    try { const u = new URL(base); u.searchParams.set("q", q); u.searchParams.set("limit", "6"); u.searchParams.set("lang", "en"); if (Number.isFinite(lat) && Number.isFinite(lng)) { u.searchParams.set("lat", String(lat)); u.searchParams.set("lon", String(lng)); }
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 3500); const r = await fetch(u, { signal: ctl.signal, headers: { "User-Agent": "Encore (event invites)" } }); clearTimeout(t); if (!r.ok) throw new Error("places " + r.status);
+      const j = await r.json(); const places = (j.features || []).map((f) => { const p = f.properties || {}, c = f.geometry?.coordinates || []; const street = [p.housenumber, p.street].filter(Boolean).join(" "), city = p.city || p.town || p.village || p.district || p.county || "", name = p.name && p.name !== p.street ? p.name : "";
+        const label = [name, street, city, p.state && p.country === "United States" ? p.state : "", p.country].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", ");
+        return { label, name: name || street || city, street, city, hood: p.district || p.locality || "", postcode: p.postcode || "", country: p.country || "", lat: c[1], lng: c[0], kind: p.osm_value || "" }; }).filter((x) => x.label);
+      if (placeCache.size > 2000) placeCache.clear(); placeCache.set(key, { at: Date.now(), places }); res.json({ places }); }
+    catch { res.json({ places: [], unavailable: true }); } });
   app.get("/api/health", (req, res) => {
     res.json({ ok: true, ai: aiMode(), integrations: configured().map((s) => s.server), auth: authEnabled() });
   });

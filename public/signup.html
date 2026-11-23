@@ -17,6 +17,7 @@
 [hidden]{display:none!important}
 </style><script src="/place.js"></script>
 <link rel="stylesheet" href="/playful.css">
+<script src="/placesearch.js"></script>
 </head><body>
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
   <h1 id="h">Start your free trial</h1>
@@ -72,7 +73,7 @@
   })();
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
   try { const P = window.EncorePlace; if (P) { document.getElementById("suCities").innerHTML = P.CITIES.map((c) => `<option value="${c[0]}">`).join(""); const cur = P.get(); if (cur?.city) f.city.value = cur.city; else P.resolve({ prompt: false }).then((p) => { if (p.city && !f.city.value) f.city.value = p.city; });
-    document.getElementById("cityGps").onclick = async () => { const b = document.getElementById("cityGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "📍 Use my location"; if (p.city) f.city.value = p.city; else err.textContent = "Couldn't get your location. Type your city instead."; }; } } catch {}
+    window.EncorePlaces?.attach(f.city, { citiesOnly: true }); document.getElementById("cityGps").onclick = async () => { const b = document.getElementById("cityGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "📍 Use my location"; if (p.city) f.city.value = p.city; else err.textContent = "Couldn't get your location. Type your city instead."; }; } } catch {}
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = Object.fromEntries(new FormData(f)), q = new URLSearchParams(location.search);

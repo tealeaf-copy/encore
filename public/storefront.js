@@ -106,7 +106,7 @@
   function editable(el, { id, get, field, kind = "text", toPatch, show }) {
     if (!el || el.dataset.ie) return; el.dataset.ie = 1; el.classList.add("ie"); el.tabIndex = 0; el.setAttribute("role", "button"); el.setAttribute("aria-label", "Edit " + field);
     const open = () => { if (el.querySelector("input,textarea")) return; const v = get(); const inp = document.createElement(kind === "long" ? "textarea" : "input"); if (kind !== "long") inp.type = kind === "number" ? "number" : kind === "date" ? "date" : kind === "time" ? "time" : "text"; inp.value = v ?? ""; inp.className = "ie-input"; if (kind === "number") inp.min = 1;
-      const before = el.innerHTML; el.innerHTML = ""; el.appendChild(inp); inp.focus(); if (inp.select && kind === "text") inp.select();
+      const before = el.innerHTML; el.innerHTML = ""; el.appendChild(inp); inp.focus(); if (field === "place" && window.EncorePlaces) window.EncorePlaces.attach(inp, { onPick: () => setTimeout(() => inp.blur(), 30) }); if (inp.select && kind === "text") inp.select();
       let done = false; const finish = async (commit) => { if (done) return; done = true; const nv = inp.value.trim(); if (!commit || nv === String(v ?? "")) { el.innerHTML = before; return; }
         el.innerHTML = esc(show ? show(nv) : nv); try { await save(id, toPatch ? toPatch(nv) : { [field]: nv }); flash(el, true, "Saved"); } catch (e) { el.innerHTML = before; flash(el, false, e.message); alert(e.message); } };
       inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && kind !== "long") { ev.preventDefault(); finish(true); } if (ev.key === "Escape") finish(false); }); inp.addEventListener("blur", () => finish(true)); };

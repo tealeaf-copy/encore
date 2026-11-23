@@ -34,7 +34,7 @@
 .es-rail a{width:auto!important;height:44px!important;display:flex!important;align-items:center;gap:12px;padding:10px 12px;border-radius:10px!important;color:#6B5F56!important;font:600 15.2px "DM Sans","Instrument Sans",system-ui,sans-serif;text-decoration:none}
 .es-rail a svg{flex:none;width:22px;height:22px}
 .es-rail a:hover{background:#F6EFE8!important;color:#2B211C!important}.es-rail a[aria-current]{background:#F6E7DF!important;color:#8E3A25!important}
-.es-rail .es-logo{height:auto!important;padding:0 8px!important;margin-bottom:18px!important;font:600 24px Fraunces,Georgia,serif!important;color:#2B211C!important;gap:8px}.es-rail .es-logo:hover{background:none!important}
+.es-rail .es-logo{height:auto!important;padding:0 8px!important;margin-bottom:18px!important;font:600 24px Fredoka,"DM Sans",system-ui,sans-serif!important;color:#2B211C!important;gap:8px}.es-rail .es-logo:hover{background:none!important}
 .es-rail a[data-tip]:hover::after{display:none!important}.es-rail .es-n{position:static!important;margin-left:auto}
 .es-rail .es-out{height:auto!important;justify-content:center;font:400 14px "DM Sans",system-ui!important;text-decoration:underline!important;margin-top:12px;padding:6px!important}
 @media (max-width:860px){.es-rail{display:none}}

@@ -19,7 +19,7 @@ h2.sub{font-size:20px;margin-top:22px}
     <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Your plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
   <main>
     <h1 style="font-size:clamp(32px,6vw,48px);margin-top:18px">Your plans</h1>
-    <p style="color:var(--soft);max-width:520px">Everything you're hosting, said yes to, asked for or ordered. Signed in, it follows you to any device.</p>
+    <p style="color:var(--soft);max-width:520px">Everything you're hosting, said yes to, asked for or ordered, plus the hosts you follow.</p>
     <div id="hostSec" hidden><h2 class="sub">You're hosting</h2><div class="plans" id="host"></div></div>
     <h2 class="sub">Get-togethers</h2><div class="plans" id="ev"></div>
     <p style="margin:18px 0 0"><a href="/requests" style="font-weight:600">Bookings and requests to hosts →</a></p>
@@ -49,6 +49,15 @@ h2.sub{font-size:20px;margin-top:22px}
   O.sort((a, b) => (b.at || 0) - (a.at || 0));
   document.getElementById("ord").innerHTML = O.length ? O.map((o) => `<a class="plan" href="/@${encodeURIComponent(o.handle)}#shop"><span class="ic">🍰</span><span><b>${esc(o.items || "Order")}${o.host ? ` from ${esc(o.host)}` : ""}</b><small>Order ${esc(String(o.code || "").replace(/^#/, "#"))}${o.total ? ` · ${esc(o.total)}${o.payUrl ? " · pay before pickup" : " · pay at pickup"}` : ""}</small><br><small>${o.slot ? `Pickup ${esc(o.slot)}` : "Pickup details on the host's page"}${o.where ? ` · ${esc(o.where)}` : ""}</small><br><span class="pill">Show <b style="display:inline;font-size:15px;letter-spacing:.06em">#${esc(String(o.code || "").replace(/^#/, ""))}</b> at pickup</span></span></a>`).join("") : `<div class="empty">No orders yet.</div>`;
 })();
-</script><script src="/nav.js"></script>
+</script><script>
+// hosts you follow, so you can always get back to them
+(async () => { try { let L = []; try { L = JSON.parse(localStorage.getItem("encore.following") || "[]"); } catch {}
+  try { const F = await (await fetch("/api/me/feed", { credentials: "same-origin" })).json(); if (Array.isArray(F?.following)) L = [...new Set([...F.following, ...L])]; } catch {}
+  if (!L.length) return; const d = await (await fetch("/api/public/discover")).json().catch(() => ({})); const H = new Map((d.hosts || []).map((h) => [h.handle, h])); const E = d.events || [];
+  const sec = document.createElement("section"); sec.innerHTML = `<h2 class="sub">Hosts you follow</h2><div class="plans">${L.slice(0, 12).map((h) => { const x = H.get(h) || { handle: h, name: "@" + h }; const nx = E.filter((e) => e.host?.handle === h && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+    const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); return `<a class="plan" href="/@${esc(h)}"><span class="ic">${esc(x.emoji && x.emoji !== "🎉" ? x.emoji : (x.name || "?").trim()[0].toUpperCase())}</span><span><b>${esc(x.name)}</b><small style="display:block">${nx ? `Next: ${esc(nx.title)}` : "Nothing scheduled yet"}</small></span></a>`; }).join("")}</div>`;
+  const main = document.querySelector("main") || document.body; main.appendChild(sec); } catch {} })();
+</script>
+<script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body></html>

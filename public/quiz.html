@@ -60,7 +60,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     try { localStorage.setItem("encore.guestType", JSON.stringify({ top, second, lane: A.lane, size: A.size, at: Date.now() })); } catch {}
     const shareUrl = `${location.origin}/quiz?t=${top}`;
     m.innerHTML = `<div class="card res" style="background:${t.bg}"><small class="note" style="color:#3A302A">You're</small><div class="big">${t.emoji}</div><h2>${esc(t.name)}</h2><p class="line">${esc(t.line)}</p></div>
-      <div class="facts"><div class="fact"><span class="e">${lane[0]}</span><div><b>You light up ${lane[2] === "move" ? "on the move" : "at " + esc(lane[1])}</b><small>${esc(lane[3])}. As ${esc(t.name.replace(/^The /, "a "))}: ${esc(t.thrive.toLowerCase())}.</small></div></div>
+      <div class="facts"><div class="fact"><span class="e">${lane[0]}</span><div><b>You light up ${lane[2] === "move" ? "on the move" : "at " + esc(lane[1])}</b><small>${esc(lane[3])}. As ${esc(t.name.replace(/^The /, "a "))}: ${esc(t.line.replace(/\.$/, "").replace(/^./, (c) => c.toLowerCase()))}.</small></div></div>
       <div class="fact"><span class="e">${s.emoji}</span><div><b>With a streak of ${esc(s.name)}</b><small>${esc(s.line)}</small></div></div>
       <div class="fact"><span class="e">${mt.emoji}</span><div><b>You click with ${esc(mt.name)}</b><small>${esc(t.why)}</small></div></div>
       <div class="fact"><span class="e">${A.size === "small" ? "🫖" : A.size === "big" ? "🎉" : "🍕"}</span><div><b>Your table: ${A.size === "small" ? "4 to 6 people" : A.size === "big" ? "the more the merrier" : "8 to 12, a proper crew"}</b><small>Pip uses this to pick events for you.</small></div></div></div>

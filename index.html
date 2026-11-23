@@ -8790,7 +8790,7 @@ function ev2Layout(){ try{ const e=window.__gEv, host=document.getElementById("v
     // host card moves up next to the details
     const fol=host.querySelector(".gk-follow"); const btns=inn?.querySelector(":scope > .btns"); if(fol&&inn&&fol.parentElement!==inn){ (btns?btns:inn.lastChild)?.after?.(fol) }
     // the RSVP side: everything that isn't who's coming or questions stacks in one column
-    const gf=document.getElementById("gForm"); if(gf){ let rs=gf.querySelector(":scope > .ev2-rs"); if(!rs){ rs=document.createElement("div"); rs.className="ev2-rs"; gf.appendChild(rs) } [...gf.children].forEach(c=>{ if(c!==rs&&c.id!=="whoGoing"&&c.id!=="evFaq"&&!(c.tagName==="P"&&c.classList.contains("note"))) rs.appendChild(c) }); if(!rs.children.length) rs.remove() }
+    const gf=document.getElementById("gForm"); if(gf){ let rs=gf.querySelector(":scope > .ev2-rs"); if(!rs){ rs=document.createElement("div"); rs.className="ev2-rs"; gf.appendChild(rs) } [...gf.children].forEach(c=>{ if(c!==rs&&c.id!=="whoGoing"&&c.id!=="evFaq"&&!(c.tagName==="P"&&c.classList.contains("note"))) rs.appendChild(c) }); const wg=document.getElementById("whoGoing"), fq=document.getElementById("evFaq"); if(wg&&wg.parentElement!==gf) gf.insertBefore(wg,rs); if(fq&&fq.parentElement!==gf) gf.insertBefore(fq,rs); if(!rs.children.length) rs.remove() }
     // empty rows say nothing: hide them
     inv.querySelectorAll(".gxfacts span").forEach(s=>{ const b=s.querySelector("b"); if(b&&!b.textContent.trim()&&!b.querySelector("form")) s.style.display="none" });
     if(e.stage==="interest"){ const w=inv.querySelector('.gxfacts span[data-k=When] b'); if(w&&/TBD|to be confirmed/i.test(w.textContent)&&!w.querySelector("form")) w.innerHTML=`Date to pick<span class="ev2-when-time">Tap the dates that work for you</span>`; const z=inv.querySelector('.gxfacts span[data-k=Size] b'); if(z&&/guests$/.test(z.textContent.trim())) z.textContent=z.textContent.replace(/(\d+) guests/,"Up to $1 people") }
@@ -9001,6 +9001,9 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
   }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // re-render the regulars tab cleanly when switching tabs
 document.addEventListener("click",e=>{ if(e.target.closest?.("[data-pa]")) setTimeout(()=>{ const b=document.getElementById("paBody"); if(b) delete b.dataset.fr46 },0) },true);
+
+// sections drawn after the page loads (who's coming, questions, the ticket) land in the right column, every time
+{ let t=0; new MutationObserver(()=>{ if(!document.getElementById("view-guest")?.classList.contains("ev2")) return; clearTimeout(t); t=setTimeout(()=>{ try{ ev2Layout() }catch{} },120) }).observe(document.documentElement,{childList:true,subtree:true}) }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

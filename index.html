@@ -9407,6 +9407,23 @@ if(location.pathname==="/g"){ const s=document.createElement("style"); s.textCon
         <p class="lib-line">${esc(x.line)}</p>${x.why?`<p class="note" style="margin:6px 0 0">${esc(x.why)}</p>`:""}<div class="lib-foot"><span class="lib-meta"></span><span class="btn sm">Plan this →</span></div></article>`).join("")}</div></section>` } }
 document.addEventListener("click",ev=>{ const c=ev.target.closest?.("[data-casualidea]"); if(!c) return; ev.preventDefault(); ev.stopPropagation(); try{ quickStart(`${c.dataset.casualidea} with friends`) }catch(err){ console.warn(err) } },true);
 document.addEventListener("keydown",ev=>{ if(ev.key!=="Enter") return; const c=ev.target.closest?.("[data-casualidea]"); if(c) c.click() },true);
+
+// ==================================================================
+// Round 4 fixes: phone numbers never land in an email box; "3 surest yeses" steps aside once people say yes;
+// one guest question (the wizard's), not two; a 5-tab phone bar for hosts; "Who came" stays after the night.
+// ==================================================================
+new MutationObserver(()=>{ try{ const i=document.getElementById("gf-email"); if(i&&i.value&&!/@/.test(i.value)) i.value="" }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+{ const _ss=Storage.prototype.setItem; Storage.prototype.setItem=function(k,v){ if(k==="encore.email"&&v&&!/@/.test(String(v))) return; return _ss.apply(this,arguments) } }
+async function fyStepAside(){ try{ const d=draft, c=document.getElementById("firstYes"); if(!d?.id||!c||c.dataset.chk) return; c.dataset.chk=1; const j=await (await fetch(`/api/public/attendees/${encodeURIComponent(d.id)}`)).json().catch(()=>null); if((j?.count||0)>=2) c.style.display="none" }catch{} }
+new MutationObserver(()=>{ if(document.getElementById("firstYes")) fyStepAside(); try{ if(window.__wsPersonal){ const q=document.getElementById("hy-q"); const l=q?.closest("label"); if(l&&l.style.display!=="none") l.style.display="none" } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// phone: five tabs (Home, Discover, Feed, Plans, Events); My page and Ask live elsewhere
+{ const s=document.createElement("style"); s.textContent=`@media (max-width:700px){body.friends-ws nav.tabs{overflow:visible!important;justify-content:space-between}body.friends-ws nav.tabs a.asktab,body.friends-ws nav.tabs a.searchtab,body.friends-ws nav.tabs a.nav-me{display:none!important}body.friends-ws nav.tabs a{flex:1 1 0;min-width:0;flex-direction:column;gap:2px;font-size:11px!important;padding:4px 2px!important;justify-content:center;text-align:center}body.friends-ws nav.tabs a .nav-ic{margin:0!important}}`; document.head.appendChild(s) }
+new MutationObserver(()=>{ try{ document.querySelectorAll("nav.tabs a").forEach(a=>{ if(!a.classList.contains("nav-me")&&a.textContent.trim()==="My page") a.classList.add("nav-me") }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// after the night: guests still see who came (and can tap them)
+async function whoCame(){ try{ const e=window.__gEv, v=document.getElementById("view-guest"); if(!e?.id||!v||!e.date||e.date>=new Date().toISOString().slice(0,10)) return; let w=v.querySelector("#whoGoing");
+    if(!w||!w.offsetParent){ const host=v.querySelector(".ev2-chat")||v; if(!w){ await drawAttendees(e,host) ; w=v.querySelector("#whoGoing") } if(w&&!w.offsetParent){ const gf=w.closest("#gForm"); if(gf&&gf.hidden){ [...gf.children].forEach(c=>{ if(c!==w&&!c.contains(w)) c.style.display="none" }); gf.hidden=false; gf.dataset.pastOnly=1 } w.style.display="block" } }
+    w?.querySelectorAll("h4,h3").forEach(h=>{ if(/^Who's (coming|going)/.test(h.firstChild?.textContent||h.textContent)) { if(h.firstChild&&h.firstChild.nodeType===3) h.firstChild.textContent="Who came "; else h.textContent=h.textContent.replace(/^Who's (coming|going)/,"Who came") } }); w?.querySelectorAll("small,span").forEach(x=>{ if(/spots? left|^\s*\d+ of \d+/.test(x.textContent)&&!x.children.length) x.textContent=x.textContent.replace(/\s*·?\s*\d+ spots? left/,"").replace(/^(\s*\d+) of \d+/,"$1 came") }) }catch(err){ console.warn(err) } }
+{ const _rgC=renderGuest; renderGuest=async function(){ const r=await _rgC.apply(this,arguments); [1200,2600].forEach(t=>setTimeout(whoCame,t)); return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

@@ -9004,6 +9004,16 @@ document.addEventListener("click",e=>{ if(e.target.closest?.("[data-pa]")) setTi
 
 // sections drawn after the page loads (who's coming, questions, the ticket) land in the right column, every time
 { let t=0; new MutationObserver(()=>{ if(!document.getElementById("view-guest")?.classList.contains("ev2")) return; clearTimeout(t); t=setTimeout(()=>{ try{ ev2Layout() }catch{} },120) }).observe(document.documentElement,{childList:true,subtree:true}) }
+
+// social proof where guests decide: faces of who's going, right above the RSVP button
+{ const s=document.createElement("style"); s.textContent=`.ev2-faces{display:flex;align-items:center;justify-content:center;gap:10px;font:600 15px "Instrument Sans",system-ui;color:#3A302A}.ev2-faces .fc{display:flex;padding-left:8px}.ev2-faces .fc span{width:34px;height:34px;margin-left:-8px;border-radius:50%;border:2px solid #FFFBF5;outline:1.5px solid #1F1A17;display:grid;place-items:center;background:#FFE08A;font-size:16px}.ev2-faces .fc span:nth-child(2){background:#FFCAD6}.ev2-faces .fc span:nth-child(3){background:#C4DEFF}.ev2-faces .fc span:nth-child(4){background:#DCCBFF}.ev2-faces small{color:#8A7D73;font-weight:500}`; document.head.appendChild(s) }
+let __facesFor="", __facesAt=0;
+async function ev2Faces(){ try{ const e=window.__gEv, side=document.querySelector("#view-guest.ev2 .ev2-side"); if(!e?.id||!side) return; if(__facesFor===e.id&&Date.now()-__facesAt<15000&&side.querySelector(".ev2-faces")) return; __facesFor=e.id; __facesAt=Date.now();
+    const j=await (await fetch(`/api/public/attendees/${encodeURIComponent(e.id)}`)).json().catch(()=>null); if(!j||j.hidden) return; const n=j.count||0, A=(j.attendees||[]).slice(0,4), seats=+j.seats||0, left=seats?Math.max(0,seats-n):null;
+    let box=side.querySelector(".ev2-faces"); if(!box){ box=document.createElement("div"); box.className="ev2-faces"; const pill=side.querySelector(".ev2-rsvp"); pill?pill.before(box):side.appendChild(box) }
+    box.innerHTML=n?`<span class="fc">${A.map(a=>`<span title="${esc(a.name)}">${esc(a.emoji||a.archetype?.emoji||"🙂")}</span>`).join("")}</span><span>${n} going${left!=null?` <small>· ${left?`${left} spot${left===1?"":"s"} left`:"full"}</small>`:""}</span>`:`<span>Be the first to say yes${left!=null?` <small>· ${left} spots</small>`:""}</span>`;
+    box.style.cursor="pointer"; box.onclick=()=>document.getElementById("whoGoing")?.scrollIntoView({behavior:"smooth",block:"center"}) }catch{} }
+{ const _rgF2=renderGuest; renderGuest=async function(){ const r=await _rgF2.apply(this,arguments); setTimeout(ev2Faces,800); return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

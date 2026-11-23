@@ -5174,7 +5174,7 @@ async function renderGuest(){
     ${EXEC?`<input id="g-topic" type="hidden">`:`<label class="f">What would you like to talk about?<span class="h">Your host uses this to plan the conversation and seat you well.</span><input id="g-topic"></label>`}
     ${cqs.map((q,i)=>`<label class="f">${esc(q.q)}${q.required?" *":""}${q.type==="short"?`<input data-cq="${i}">`:`<select data-cq="${i}"><option value=""></option>${(q.type==="yesno"?["Yes","No"]:(q.options||[])).map(o=>`<option>${esc(o)}</option>`).join("")}</select>`}</label>`).join("")}
     <label class="f">Dietary needs or allergies<input id="g-diet" placeholder="None" value="${esc(me?.dietary||"")}"></label><label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-severe"> It's a severe allergy</label>
-    <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="None" value="${esc(me?.access||"")}"></label>
+    <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="e.g. vegetarian, running late, bringing a dog" value="${esc(me?.access||"")}"></label>
     ${EXEC?`<label class="f">Your assistant's email (optional)<span class="h">We'll copy them on logistics only.</span><input id="g-ea" type="email"></label>`:""}
     ${EXEC?`<input id="g-li" type="hidden" value="${esc(me?.linkedin||"")}"><input id="g-photo" type="file" hidden><input type="checkbox" id="g-wall" hidden>`:`<div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
     <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> Show my name, company and photo to other guests</label>`}
@@ -7241,7 +7241,7 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
 { const _rg15=renderGuest; renderGuest=async function(){ const r=await _rg15.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), today=new Date().toISOString().slice(0,10), past=e.date&&e.date<today&&e.stage!=="interest";
     // a greeting from the host, at the very top
     if(!$("#hostHello")&&!past){ const H=window.__gHostInfo||{}, name=hostFirst(e), paid=e.price&&e.price!=="chip"; const g=document.createElement("div"); g.id="hostHello"; g.className="host-hello";
-      const line=e.stage==="interest"?`${esc(name)} is seeing who's in for`:paid?`${esc(name)} is saving you a seat at`:e.approvalRequired?`${esc(name)} would love you to join`:`${esc(name)} is hosting`;
+      const line=e.stage==="interest"?`${esc(name)} wants to know who's in`:paid?`${esc(name)} is saving you a seat`:e.approvalRequired?`${esc(name)} would love you to join`:`${esc(name)} is hosting`;
       g.innerHTML=`<span class="hh-av">${H.avatarArt&&window.EncoreAvatars?window.EncoreAvatars.svg(H.avatarArt,H.accent||"#C4532F",40):pipSVG("happy",34)}</span><span>${line}</span>`; const inv=host.querySelector(".invite")||host.firstElementChild; inv?.before(g) }
     // a booking bar that stays on screen on phones until they've replied
     const form=$("#g-send",host)?.closest(".stack")||$("#gResp",host)?.closest(".stack")||$("#ic-pick",host)?.closest(".stack"); $("#gBar")?.remove();
@@ -8548,7 +8548,7 @@ new MutationObserver(()=>{ try{ document.querySelectorAll("#view-guest small, #v
 async function drawAttendees(e,host){ try{ if(!e?.id||!host) return; const M=myRsvp(e.id); const j=await (await fetch(`/api/public/attendees/${encodeURIComponent(e.id)}${M?.rid?`?rid=${encodeURIComponent(M.rid)}`:""}`)).json().catch(()=>null); if(!j||j.hidden) { host.querySelector("#whoGoing")?.remove(); return }
     const box=host.querySelector("#whoGoing")||document.createElement("section"); box.id="whoGoing"; box.className="who-going";
     const A=j.attendees||[], left=j.seats?Math.max(0,j.seats-j.count):null;
-    box.innerHTML=`<h4>Who's coming <span class="note">${j.count}${j.seats?` of ${j.seats}`:""}${left!=null?` · ${left} spot${left===1?"":"s"} left`:""}</span></h4>${A.length?`<ul class="wg-cards">${A.map(a=>`<li><span class="wg-arch" title="${esc(a.archetype?.name||"")}">${esc(a.archetype?.emoji||"🌱")}</span><span><b>${a.emoji?`<span class="wg-emo">${esc(a.emoji)}</span> `:""}${esc(a.name)}${a.you?' <small>(you)</small>':""}${a.plus?' <small>+1</small>':""}</b><small class="wg-type">${esc(a.archetype?.name||"The New Face")}</small>${a.fact?`<span class="wg-fact">“${esc(a.fact)}”</span>`:""}</span></li>`).join("")}</ul>`:`<p class="note">${j.count?"Everyone's keeping it a surprise so far.":"Nobody yet. Be the first, and the rest follow."}</p>`}`;
+    box.innerHTML=`<h4>Who's coming <span class="note">${j.count}${j.seats?` of ${j.seats}`:""}${left!=null?` · ${left} spot${left===1?"":"s"} left`:""}</span></h4>${A.length?`<ul class="wg-cards">${A.map(a=>`<li${a.key&&!a.you?` data-pkey="${esc(a.key)}" tabindex="0" role="button" aria-label="See ${esc(a.name)}'s profile"`:""}><span class="wg-arch" title="${esc(a.archetype?.name||"")}">${esc(a.archetype?.emoji||"🌱")}</span><span><b>${a.emoji?`<span class="wg-emo">${esc(a.emoji)}</span> `:""}${esc(a.name)}${a.you?' <small>(you)</small>':""}${a.plus?' <small>+1</small>':""}</b><small class="wg-type">${esc(a.archetype?.name||"The New Face")}</small>${a.fact?`<span class="wg-fact">“${esc(a.fact)}”</span>`:""}</span></li>`).join("")}</ul>`:`<p class="note">${j.count?"Everyone's keeping it a surprise so far.":"Nobody yet. Be the first, and the rest follow."}</p>`}`;
     if(!box.isConnected){ const anchor=host.querySelector(".ticket")||host.querySelector("#g-send")?.closest(".stack")||host.querySelector(".in"); anchor?anchor.before(box):host.appendChild(box) } }catch(err){ console.warn(err) } }
 drawGoing=async function(e,host){ host.querySelectorAll('a[href^="#guests-"]').forEach(a=>{ const b=a.closest(".btns"); (b&&b.children.length===1?b:a).remove() }); return drawAttendees(e,host) };
 // the RSVP form asks for one fun fact, and whether to be shown
@@ -8728,6 +8728,23 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; document.queryS
 #view-guest.ev2 .in .gk .gk-row small,#view-guest.ev2 .in .gk .gk-row .eyebrow{display:none}
 #view-guest.ev2 #gForm{background:transparent!important;border:0!important;border-top:1px solid #E4D9C8!important;box-shadow:none!important;border-radius:0!important;padding:32px 0 0!important}
 .ev2-rsvp .pill button{text-transform:none!important}
+#view-guest.ev2 .gxfacts > span[data-k=When]{grid-template-columns:minmax(0,1fr)!important;margin-bottom:6px!important}
+#view-guest.ev2 .gxfacts > span[data-k=When] small{display:none!important}
+#view-guest.ev2 .gxfacts > span[data-k=When] b{font:600 clamp(28px,3.4vw,40px)/1.15 Fredoka,"Instrument Sans",system-ui!important;letter-spacing:-.01em}
+#view-guest.ev2 .ev2-when-time{display:block;margin:4px 0 0!important;font:400 clamp(20px,2.2vw,26px)/1.2 "Instrument Sans",system-ui!important;color:#8A7D73!important}
+#view-guest.ev2 .ev2-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#view-guest.ev2 .ev2-acts .btn{background:#F3EEE8!important;color:#1F1A17!important;border:1.5px solid #CFC4B8!important;box-shadow:none!important;border-radius:999px!important;padding:10px 18px!important;font-weight:600;display:inline-flex;gap:8px;align-items:center}
+#view-guest.ev2 .ev2-acts .btn.ev2-ic{width:44px;height:44px;padding:0!important;justify-content:center}
+#view-guest.ev2 .ev2-acts .btn:hover{background:#EAE2D8!important}
+#view-guest.ev2 .invite.gx{grid-template-rows:auto!important;align-items:start}
+#view-guest.ev2 .invite.gx > .in{grid-row:1!important;grid-column:1}
+#view-guest.ev2 .invite.gx > .ev2-side{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:16px;position:sticky;top:20px}
+#view-guest.ev2 .ev2-side > .gxcover{aspect-ratio:4/3;height:auto;border:2px solid #1F1A17;border-radius:22px;box-shadow:6px 6px 0 #1F1A17;overflow:hidden;position:relative}
+#view-guest.ev2 .ev2-side > .ev2-rsvp{grid-column:auto;grid-row:auto}
+@media (max-width:860px){#view-guest.ev2 .invite.gx > .ev2-side{grid-column:1;grid-row:1;position:static}#view-guest.ev2 .invite.gx > .in{grid-row:2!important}}
+#view-guest.ev2 .ev2-rs > *{max-width:none!important}
+html body .ev2-chat > .gk-grow{max-width:none!important;width:100%;box-sizing:border-box;text-align:center}
+.ev2-more .em-art{aspect-ratio:4/3!important;font-size:56px!important}
 .ev2 .in > .eyebrow{display:inline-block}
 .ev2 .in h3{display:block!important;font:700 clamp(40px,5.6vw,72px)/1.02 Fredoka,"Instrument Sans",system-ui;letter-spacing:-.02em;margin:10px 0 18px}
 .ev2 .gxfacts{display:flex!important;flex-direction:column;gap:12px;margin:0 0 14px}
@@ -8743,28 +8760,43 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; document.queryS
 .ev2 .in > p.note:has(b){display:none}
 .ev2 #gForm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;background:transparent;border:0;box-shadow:none;padding:28px 0 0;border-top:1px solid var(--line,#E4D9C8);border-radius:0}
 .ev2 #gForm > #whoGoing,.ev2 #gForm > #evFaq{grid-column:1}
-.ev2 #gForm > :not(#whoGoing):not(#evFaq){grid-column:2;grid-row:1/span 3;background:#fff;border:2px solid #1F1A17;border-radius:22px;box-shadow:6px 6px 0 #1F1A17;padding:22px}
+.ev2 #gForm > .ev2-rs{grid-column:2;grid-row:1/span 3;display:flex;flex-direction:column;gap:16px;min-width:0}
+.ev2 .ev2-rs > .stack{background:#fff;border:2px solid #1F1A17;border-radius:22px;box-shadow:6px 6px 0 #1F1A17;padding:22px}
 .ev2 #gForm > p.note{display:none}
 .ev2 .gk-grow{max-width:none;margin:12px 0 0;padding:40px 20px;text-align:center;border-radius:28px}
 @media (max-width:860px){.ev2-rsvp{display:none!important}.ev2 .invite.gx{grid-template-columns:minmax(0,1fr);column-gap:0}.ev2 .invite.gx > .gxcover{grid-column:1;grid-row:1}.ev2 .invite.gx > .in{grid-column:1;grid-row:2}.ev2-rsvp{grid-column:1;grid-row:3;position:sticky;bottom:12px;z-index:5}
-  .ev2 #gForm{grid-template-columns:minmax(0,1fr)}.ev2 #gForm > :not(#whoGoing):not(#evFaq){grid-column:1;grid-row:auto}.ev2 #gForm > #whoGoing{order:1}.ev2 #gForm > :not(#whoGoing):not(#evFaq){order:2}.ev2 #gForm > #evFaq{order:3}}
+  .ev2 #gForm{grid-template-columns:minmax(0,1fr)}.ev2 #gForm > .ev2-rs{grid-column:1;grid-row:auto;order:2}.ev2 #gForm > #whoGoing{order:1}.ev2 #gForm > #evFaq{order:3}}
 `; document.head.appendChild(s) }
 function ev2Layout(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host) return; const inv=host.querySelector(".invite.gx"); if(!inv) return;
     // every event without a photo gets a bright poster instead of a blank cover
     if(!isCasual(e)){ const cv=inv.querySelector(".gxcover"); if(cv&&!e.coverPhoto&&!cv.querySelector(".ev2-poster")){ cv.classList.add("ev2-cov"); const p=document.createElement("div"); p.className="ev2-poster"; p.innerHTML=`<b style="font-size:clamp(28px,4vw,44px)">${esc(e.pubTitle||e.name||"")}</b>`; cv.appendChild(p) } return }
     host.classList.add("ev2");
+    // a link-only event isn't "open to all": say whose friends it's for
+    { const eb=inv.querySelector(".in > .eyebrow"); if(eb&&e.unlisted&&/open to all/i.test(eb.textContent)) eb.textContent=`${hostFirst(e)}'s friends` }
     const inn=inv.querySelector(".in"), cov=inv.querySelector(".gxcover");
     // facts as rows, with the date big and the time under it
     inv.querySelectorAll(".gxfacts span").forEach(s=>{ const k=s.querySelector("small")?.textContent.trim(); if(k) s.dataset.k=k });
-    const when=inv.querySelector('.gxfacts span[data-k=When] b'); if(when&&!when.dataset.ev2&&!when.querySelector("form")){ const parts=when.textContent.split(" · "); if(parts.length>1){ when.dataset.ev2=1; when.innerHTML=`${esc(parts[0])}<span class="ev2-when-time">${esc(parts.slice(1).join(" · "))}</span>` } }
+    const when=inv.querySelector('.gxfacts span[data-k=When] b'); if(when&&!when.dataset.ev2&&!when.querySelector("form")&&e.date){ when.dataset.ev2=1;
+      const dt=new Date(e.date+"T12:00:00"), far=Math.abs(dt-new Date())>300*864e5, day=dt.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric",...(far?{year:"numeric"}:{})});
+      const t12=x=>{ const m=String(x||"").match(/^(\d{1,2}):(\d{2})/); if(!m) return ""; let h=+m[1]; const ap=h>=12?"pm":"am"; h=h%12||12; return `${h}:${m[2]}${ap}` };
+      const st=t12(e.startTime), en=t12(e.endTime); when.innerHTML=`${esc(day)}<span class="ev2-when-time">${st?esc(st+(en?` – ${en}`:"")):"Time to be confirmed"}</span>` }
+    // round action buttons under the date: add to calendar, copy the link
+    const bt=inn?.querySelector(":scope > .btns"); if(bt&&!bt.dataset.ev2){ bt.dataset.ev2=1; bt.classList.add("ev2-acts"); const cal=[...bt.querySelectorAll("a")].find(a=>/calendar/i.test(a.textContent)&&!a.hidden); if(cal) cal.innerHTML=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Remind me`;
+      const cp=document.createElement("button"); cp.type="button"; cp.className="btn sm ev2-ic"; cp.setAttribute("aria-label","Copy the link"); cp.title="Copy the link"; cp.innerHTML=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>`; cp.onclick=()=>{ try{ navigator.clipboard.writeText(location.origin+"/g#rsvp-"+e.id) }catch{} toast("Link copied. Send it to a friend.") }; bt.appendChild(cp) }
     // no photo: a bright poster instead of a blank cover
     if(cov&&!e.coverPhoto&&!cov.querySelector(".ev2-poster")){ const p=document.createElement("div"); p.className="ev2-poster"; let em="🎉"; try{ const t=`${e.pubTitle||""} ${e.name||""} ${e.concept||""}`.toLowerCase(); const K=[["taco","🌮"],["dumpling","🥟"],["pizza","🍕"],["sushi","🍣"],["ramen","🍜"],["brunch","🥞"],["bbq","🍖"],["barbecue","🍖"],["wine","🍷"],["cocktail","🍸"],["coffee","☕"],["pour-over","☕"],["run","🏃"],["5k","🏃"],["hike","🥾"],["bike","🚲"],["picnic","🧺"],["game","🎲"],["board","🎲"],["movie","🎬"],["film","🎬"],["karaoke","🎤"],["book","📚"],["yoga","🧘"],["swim","🏊"],["beach","🏖️"],["bake","🧁"],["cook","🍳"],["dinner","🍽️"],["supper","🍽️"],["party","🎉"]]; const hit=K.find(([k])=>t.includes(k)); em=hit?hit[1]:(e.emoji||(typeof actOf==="function"&&actOf(e)?.emoji)||"🎉") }catch{} p.innerHTML=`<span class="e">${esc(em)}</span><b>${esc(e.pubTitle||e.name||"")}</b>`; cov.appendChild(p) }
     // the meet point already says where: hide the city-only "Where" row
     const gkTxt=(inn?.querySelector(".gk")?.textContent||"").trim(); const whereS=inv.querySelector(".gxfacts span[data-k=Where]"); if(whereS) whereS.classList.toggle("dup",gkTxt.length>4);
     // host card moves up next to the details
     const fol=host.querySelector(".gk-follow"); const btns=inn?.querySelector(":scope > .btns"); if(fol&&inn&&fol.parentElement!==inn){ (btns?btns:inn.lastChild)?.after?.(fol) }
+    // the RSVP side: everything that isn't who's coming or questions stacks in one column
+    const gf=document.getElementById("gForm"); if(gf){ let rs=gf.querySelector(":scope > .ev2-rs"); if(!rs){ rs=document.createElement("div"); rs.className="ev2-rs"; gf.appendChild(rs) } [...gf.children].forEach(c=>{ if(c!==rs&&c.id!=="whoGoing"&&c.id!=="evFaq"&&!(c.tagName==="P"&&c.classList.contains("note"))) rs.appendChild(c) }); if(!rs.children.length) rs.remove() }
+    // empty rows say nothing: hide them
+    inv.querySelectorAll(".gxfacts span").forEach(s=>{ const b=s.querySelector("b"); if(b&&!b.textContent.trim()&&!b.querySelector("form")) s.style.display="none" });
+    if(e.stage==="interest"){ const w=inv.querySelector('.gxfacts span[data-k=When] b'); if(w&&/TBD|to be confirmed/i.test(w.textContent)&&!w.querySelector("form")) w.innerHTML=`Date to pick<span class="ev2-when-time">Tap the dates that work for you</span>`; const z=inv.querySelector('.gxfacts span[data-k=Size] b'); if(z&&/guests$/.test(z.textContent.trim())) z.textContent=z.textContent.replace(/(\d+) guests/,"Up to $1 people") }
     // one RSVP button under the cover
-    let pr=inv.querySelector(".ev2-rsvp"); if(!pr){ pr=document.createElement("div"); pr.className="ev2-rsvp"; inv.appendChild(pr) }
+    let side=inv.querySelector(":scope > .ev2-side"); if(!side){ side=document.createElement("div"); side.className="ev2-side"; inv.appendChild(side) } if(cov&&cov.parentElement!==side) side.prepend(cov);
+    let pr=inv.querySelector(".ev2-rsvp"); if(!pr){ pr=document.createElement("div"); pr.className="ev2-rsvp" } if(pr.parentElement!==side) side.appendChild(pr);
     const M=(()=>{ try{ return myRsvp(e.id) }catch{ return null } })(), form=document.getElementById("gForm");
     const go=(label)=>{ const chip=[...document.querySelectorAll("#gResp .chip")].find(c=>c.textContent.trim()===label); chip?.click(); form?.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>document.getElementById("g-name")?.focus({preventScroll:true}),450) };
     const sig=M?.response||"none"; if(pr.dataset.sig!==sig){ pr.dataset.sig=sig;
@@ -8834,6 +8866,102 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
 { const _qs41=quickStart; quickStart=function(text){ const r=_qs41.apply(this,arguments); try{ if(window.__wsPersonal&&draft.description&&draft.description.trim()===String(text||"").trim()) draft.description="" }catch{} return r } }
 // typing the same idea twice reopens the draft you just started instead of piling up copies
 { const _qs41b=quickStart; quickStart=function(text){ try{ if(window.__wsPersonal){ const t=String(text||"").trim().toLowerCase(), now=Date.now(); const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x&&!x.published&&!x.example&&String(x.concept||"").trim().toLowerCase()===t&&now-(x.createdAt||x.updatedAt||0)<10*60*1000); if(e){ if(e.id!==draft?.id) openEvent(e,1); setTimeout(()=>{ try{ document.getElementById("wizBg")?.remove(); openWizard?.(2) }catch{} },300); return } } }catch{} return _qs41b.apply(this,arguments) } }
+
+// ==================================================================
+// Event page design pass: one card style, a tidy RSVP card, no dead gaps, and more events to discover.
+// ==================================================================
+{ const s=document.createElement("style"); s.textContent=`
+#view-guest.ev2{--ev-card:#fff;--ev-ink:#1F1A17}
+#view-guest.ev2 #statusPill{display:none!important}
+#view-guest.ev2 .ev2-when-time{padding:0!important}
+#view-guest.ev2 .in > p:empty,#view-guest.ev2 .in > p.note:empty{display:none!important}
+#view-guest.ev2 .invite.gx{padding-bottom:0!important;margin-bottom:0!important;min-height:0!important}
+#view-guest.ev2 #gForm{padding-top:24px!important}
+#view-guest.ev2 .gk .gk-row > div > b{display:none}
+#view-guest.ev2 .gk .gk-row p{margin:0;font-size:18px;font-weight:600}
+/* one card style for every section */
+#view-guest.ev2 #whoGoing,#view-guest.ev2 #evFaq,#view-guest.ev2 #gForm > .ev2-rs,#view-guest.ev2 .in .gk-follow,html body .ev2-chat > #gchat,html body .ev2-chat > .gk-grow,html body .ev2-chat > section.ev2-more{background:#fff!important;border:2px solid #1F1A17!important;border-radius:20px!important;box-shadow:5px 5px 0 #1F1A17!important;padding:22px!important;margin:0!important}
+#view-guest.ev2 #whoGoing h4,#view-guest.ev2 #evFaq h4,.ev2-more h4{font:700 20px/1.2 Fredoka,"Instrument Sans",system-ui;margin:0 0 12px}
+#view-guest.ev2 .wg-cards li{box-shadow:none!important;border:1.5px solid #D9CEC2!important}
+/* the RSVP card: ticket, two buttons in a row, then plans changed */
+#view-guest.ev2 #gForm > .ev2-rs{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start}
+#view-guest.ev2 .ev2-rs > *{flex:0 0 100%;min-width:0}
+#view-guest.ev2 .ev2-rs > .stack{border:0!important;box-shadow:none!important;padding:0!important;background:none!important}
+#view-guest.ev2 .ev2-rs > .ticket{border:0!important;box-shadow:none!important;background:#F3FAF4!important;border-radius:14px!important;padding:16px!important}
+#view-guest.ev2 .ev2-rs > #plansLink,#view-guest.ev2 .ev2-rs > #socialConf{flex:0 0 auto;width:auto!important;margin:0!important}
+#view-guest.ev2 .ev2-rs > .btns{display:none!important}
+#view-guest.ev2 .ev2-rs > .gchange{border-top:1.5px dashed #E4D9C8;padding-top:14px;margin-top:4px}
+/* below the fold: chat, more events, host your own, footer */
+.ev2-chat{max-width:1120px;margin:28px auto 0;display:flex;flex-direction:column;gap:24px}
+.ev2-chat .gk-grow{text-align:center}
+.ev2-more .em-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ev2-more .em-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.ev2-more .em-head a{font-weight:600;color:#C94A30;text-decoration:none}
+.ev2-more .em{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:#1F1A17;min-width:0}
+.ev2-more .em-art{aspect-ratio:1/1;border-radius:14px;border:1.5px solid #1F1A17;overflow:hidden;display:grid;place-items:center;font-size:64px;position:relative}
+.ev2-more .em-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ev2-more .em b{font:600 17px/1.25 Fredoka,"Instrument Sans",system-ui;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ev2-more .em small{color:#6B5F56;font-size:13.5px}
+.ev2-more .em:hover .em-art{transform:translateY(-2px)}
+.ev2-more + .ev2-more{margin-top:0}
+.ev2-foot{text-align:center;margin:8px 0 24px}
+@media (max-width:700px){.ev2-more .em-row{grid-template-columns:repeat(2,minmax(0,1fr))}.ev2-more .em-row .em:nth-child(3){display:none}.ev2-chat{padding:0 4px}}
+`; document.head.appendChild(s) }
+const EM_BG={move:"#C4DEFF",make:"#FFCAD6",gather:"#FFE08A",discover:"#DCCBFF"}, EM_TH={picnic:"#FFCAD6",disco:"#DCCBFF",sunny:"#FFE08A",ocean:"#C4DEFF",linen:"#FFE3B8",candlelight:"#FFD9B0",gallery:"#E3F1DD",midnight:"#DCCBFF"};
+function emLane(e){ const t=`${e.title||""} ${e.activity||""}`.toLowerCase(); if(/run|hike|walk|bike|yoga|swim|climb|5k/.test(t)) return "move"; if(/bake|cook|craft|paint|dumpling|taco|pizza|cake|garden|pottery/.test(t)) return "make"; if(/tour|market|museum|music|workshop|talk|gallery/.test(t)) return "discover"; return "gather" }
+function emCard(e){ const em=(EMOJI_KW.find(([k])=>`${e.title||""} ${e.activity||""}`.toLowerCase().includes(k))||[])[1]||(e.emoji!=="🎉"&&e.emoji)||"🎉"; const dt=e.date?new Date(e.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):"Date coming soon";
+  return `<a class="em" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="em-art" style="background:${EM_TH[e.theme]||EM_BG[emLane(e)]}">${e.coverPhoto?`<img src="${esc(e.coverPhoto)}" alt="">`:esc(em)}</span><b>${esc(e.title||"")}</b><small>${esc([dt,e.host?.name].filter(Boolean).join(" · "))}</small></a>` }
+async function drawMore(e){ try{ if(!e?.id) return; const box=document.querySelector(".ev2-chat"); if(!box||box.dataset.more===e.id) return; box.dataset.more=e.id;
+    const d=await (await fetch("/api/public/discover")).json(); const today=new Date().toISOString().slice(0,10), H=window.__gHostInfo||{};
+    const all=(d.events||[]).filter(x=>x.id!==e.id&&(!x.date||x.date>=today)); const seen=new Set(), uniq=all.filter(x=>{ const k=(x.title||"")+"|"+(x.host?.handle||""); if(seen.has(k)) return false; seen.add(k); return true });
+    const mine=uniq.filter(x=>H.handle&&x.host?.handle===H.handle).slice(0,3);
+    const lane=emLane({title:e.pubTitle||e.name,activity:e.activity}), city=String(e.city||"").toLowerCase();
+    const like=uniq.filter(x=>!mine.includes(x)&&x.host?.handle!==H.handle).map(x=>({x,s:(emLane(x)===lane?2:0)+(city&&String(x.city||"").toLowerCase()===city?1:0)+(x.going?Math.min(1,x.going/5):0)})).filter(o=>o.s>0).sort((a,b)=>b.s-a.s).slice(0,3).map(o=>o.x);
+    const sec=(title,link,L)=>L.length?`<section class="ev2-more"><div class="em-head"><h4>${esc(title)}</h4>${link}</div><div class="em-row">${L.map(emCard).join("")}</div></section>`:"";
+    const html=sec(`More from ${hostFirst(e)}`,H.handle?`<a href="/@${esc(H.handle)}">See all ›</a>`:"",mine)+sec("You might also like",`<a href="/discover">Discover ›</a>`,like);
+    box.querySelectorAll(".ev2-more").forEach(x=>x.remove()); const grow=box.querySelector(".gk-grow"); grow?grow.insertAdjacentHTML("beforebegin",html):box.insertAdjacentHTML("beforeend",html) }catch(err){ console.warn(err) } }
+function ev2Below(){ try{ const host=document.getElementById("view-guest"); if(!host?.classList.contains("ev2")) return; const e=window.__gEv;
+    let w=document.querySelector(".ev2-chat"); if(!w){ w=document.createElement("div"); w.className="ev2-chat"; host.after(w) }
+    const chat=document.getElementById("gchat"); if(chat&&chat.parentElement!==w) w.prepend(chat);
+    // re-renders create fresh copies: keep only the newest "host your own" and footer
+    const grows=[...document.querySelectorAll(".gk-grow")], fresh=grows.find(g=>g.parentElement!==w)||grows[grows.length-1]; grows.forEach(g=>{ if(g!==fresh) g.remove() }); if(fresh&&fresh.parentElement!==w) w.appendChild(fresh);
+    const made=host.querySelector(":scope > .stack > p.note a[href*='encore'], #gForm ~ p.note a")?.closest("p"); if(made){ w.querySelectorAll(".ev2-foot").forEach(x=>{ if(x!==made) x.remove() }); made.classList.add("ev2-foot"); w.appendChild(made) }
+    const fs=document.querySelector(".in .gk-follow small"); if(fs&&/^0 followers\. /.test(fs.textContent)) fs.textContent=fs.textContent.replace(/^0 followers\. /,"");
+    if(e) drawMore(e) }catch(err){ console.warn(err) } }
+{ const _rgB=renderGuest; renderGuest=async function(){ const r=await _rgB.apply(this,arguments); setTimeout(ev2Below,700); setTimeout(ev2Below,2000); return r } }
+
+// ==================================================================
+// Who's coming: tap a guest to see who they are (archetype, socials, kudos, Pip's take, mutual friends).
+// ==================================================================
+{ const s=document.createElement("style"); s.textContent=`
+.wg-cards li[data-pkey]{cursor:pointer;transition:transform .12s}.wg-cards li[data-pkey]:hover{transform:translateY(-2px)}
+.pp-bg{position:fixed;inset:0;z-index:9000;background:rgba(31,26,23,.42);display:grid;place-items:center;padding:16px}
+.pp{width:min(440px,100%);max-height:90vh;overflow:auto;background:#FFFBF5;border:2px solid #1F1A17;border-radius:24px;box-shadow:8px 8px 0 #1F1A17;padding:24px;position:relative}
+.pp-x{position:absolute;top:12px;right:12px;border:0;background:none;font-size:22px;cursor:pointer;color:#6B5F56}
+.pp-head{display:flex;gap:14px;align-items:center}.pp-av{width:64px;height:64px;border-radius:50%;border:2px solid #1F1A17;display:grid;place-items:center;font-size:32px;background:#FFE08A;flex:none}
+.pp-head h3{margin:0;font:700 24px/1.1 Fredoka,"Instrument Sans",system-ui}.pp-head small{color:#6B5F56}
+.pp-arch{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:#FFF1C9}.pp-arch b{display:block;font:600 16px Fredoka,"Instrument Sans",system-ui}.pp-arch span{color:#5E534B;font-size:14px}
+.pp-sec{margin-top:16px}.pp-sec h4{margin:0 0 6px;font:600 12px "Instrument Sans",system-ui;letter-spacing:.08em;text-transform:uppercase;color:#8A7D73}
+.pp-take{font-size:15.5px;line-height:1.5;margin:0}
+.pp-tags{display:flex;gap:6px;flex-wrap:wrap}.pp-tags span,.pp-soc a{padding:5px 11px;border-radius:999px;border:1.5px solid #1F1A17;background:#fff;font-size:13px;font-weight:600;color:#1F1A17;text-decoration:none}
+.pp-soc{display:flex;gap:8px;flex-wrap:wrap}
+.pp-kud{margin:0;padding:10px 12px;border-left:3px solid #E2573A;background:#fff;border-radius:0 12px 12px 0;font-size:14.5px}.pp-kud + .pp-kud{margin-top:8px}.pp-kud small{display:block;color:#8A7D73;margin-top:4px}
+.pp-stats{display:flex;gap:18px}.pp-stats div b{display:block;font:700 22px Fredoka,"Instrument Sans",system-ui}.pp-stats div span{font-size:12.5px;color:#6B5F56}
+`; document.head.appendChild(s) }
+async function openPerson(eventId,key){ try{ const r=await fetch(`/api/public/person/${encodeURIComponent(eventId)}/${encodeURIComponent(key)}`); if(!r.ok){ toast("This guest keeps their profile private."); return } const p=await r.json();
+    document.getElementById("ppBg")?.remove(); const bg=document.createElement("div"); bg.id="ppBg"; bg.className="pp-bg";
+    const mutual=p.signedIn?(p.mutual.count?`${p.mutual.count} mutual friend${p.mutual.count===1?"":"s"}${p.mutual.names.length?`: ${p.mutual.names.map(esc).join(", ")}`:""}`:"No mutual friends yet"):`<a href="/login">Sign in</a> to see friends you share`;
+    bg.innerHTML=`<div class="pp" role="dialog" aria-modal="true" aria-label="${esc(p.name)}"><button class="pp-x" type="button" aria-label="Close">×</button>
+      <div class="pp-head"><span class="pp-av">${esc(p.emoji||"🙂")}</span><div><h3>${esc(p.name)}</h3><small>👥 ${mutual}</small></div></div>
+      <div class="pp-arch"><b>${esc(p.archetype.emoji)} ${esc(p.archetype.name)}</b><span>${esc(p.archetype.line||"")}</span></div>
+      <div class="pp-sec"><h4>Pip's take</h4><p class="pp-take">${esc(p.take)}</p></div>
+      <div class="pp-sec pp-stats"><div><b>${p.attended}</b><span>get-togethers</span></div><div><b>${p.hosted}</b><span>hosted</span></div><div><b>${p.kudos.length}</b><span>kudos sent</span></div></div>
+      ${p.traits.length>1?`<div class="pp-sec"><h4>Also</h4><div class="pp-tags">${p.traits.slice(1).map(t=>`<span>${esc(t.emoji)} ${esc(t.name)}</span>`).join("")}</div></div>`:""}
+      ${p.kudos.length?`<div class="pp-sec"><h4>Kudos they've sent</h4>${p.kudos.map(k=>`<blockquote class="pp-kud">"${esc(k.love)}"${k.event?`<small>after ${esc(k.event)}</small>`:""}</blockquote>`).join("")}</div>`:""}
+      ${p.socials.length?`<div class="pp-sec"><h4>Find them</h4><div class="pp-soc">${p.socials.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener nofollow">${esc(x.label)}</a>`).join("")}${p.page?`<a href="${esc(p.page)}">Their Encore page</a>`:""}</div></div>`:p.page?`<div class="pp-sec"><div class="pp-soc"><a href="${esc(p.page)}">Their Encore page</a></div></div>`:""}
+    </div>`;
+    document.body.appendChild(bg); const close=()=>bg.remove(); bg.onclick=ev=>{ if(ev.target===bg) close() }; bg.querySelector(".pp-x").onclick=close; addEventListener("keydown",function k(ev){ if(ev.key==="Escape"){ close(); removeEventListener("keydown",k) } }); bg.querySelector(".pp-x").focus() }catch(err){ console.warn(err) } }
+document.addEventListener("click",ev=>{ const li=ev.target.closest?.(".wg-cards li[data-pkey]"); if(li&&window.__gEv?.id){ ev.preventDefault(); openPerson(window.__gEv.id,li.dataset.pkey) } });
+document.addEventListener("keydown",ev=>{ if(ev.key!=="Enter") return; const li=ev.target.closest?.(".wg-cards li[data-pkey]"); if(li&&window.__gEv?.id){ ev.preventDefault(); openPerson(window.__gEv.id,li.dataset.pkey) } });
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -9204,3 +9332,4 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .wg-emo{font-size:16px}
 @media (prefers-reduced-motion:reduce){.confetti,.party-pip{display:none!important;animation:none!important}.party{animation:none}}
 </style>
+<script src="/shell.js" defer></script>

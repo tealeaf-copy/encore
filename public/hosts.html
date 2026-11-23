@@ -100,4 +100,5 @@ document.addEventListener("input", (ev) => { const f = ev.target; if (f.name !==
   const fill = (f) => { if (!f || f.dataset.me) return; f.dataset.me = "1"; const set = (n, v) => { const el = f.elements[n]; if (el && !el.value && v) el.value = v; }; set("name", me.name); set("email", me.email); set("company", me.workspace?.company); };
   const scan = () => document.querySelectorAll("form#bk, form.book-form").forEach(fill); scan(); new MutationObserver(scan).observe(document.body, { childList: true, subtree: true }); })();
 </script>
+<script src="/shell.js"></script>
 </body></html>

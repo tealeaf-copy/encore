@@ -107,4 +107,5 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
 </script><script src="/nav.js"></script>
+<script src="/shell.js"></script>
 </body></html>

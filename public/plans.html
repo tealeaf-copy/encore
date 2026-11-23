@@ -47,4 +47,5 @@ h2.sub{font-size:20px;margin-top:22px}
   document.getElementById("ord").innerHTML = O.length ? O.map((o) => `<a class="plan" href="/@${encodeURIComponent(o.handle)}#shop"><span class="ic">🍰</span><span><b>${esc(o.items || "Order")}${o.host ? ` from ${esc(o.host)}` : ""}</b><small>Order ${esc(String(o.code || "").replace(/^#/, "#"))}${o.total ? ` · ${esc(o.total)}${o.payUrl ? " · pay before pickup" : " · pay at pickup"}` : ""}</small><br><small>${o.slot ? `Pickup ${esc(o.slot)}` : "Pickup details on the host's page"}${o.where ? ` · ${esc(o.where)}` : ""}</small><br><span class="pill">Show <b style="display:inline;font-size:15px;letter-spacing:.06em">#${esc(String(o.code || "").replace(/^#/, ""))}</b> at pickup</span></span></a>`).join("") : `<div class="empty">No orders yet.</div>`;
 })();
 </script><script src="/nav.js"></script>
+<script src="/shell.js"></script>
 </body></html>

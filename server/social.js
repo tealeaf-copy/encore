@@ -2,6 +2,7 @@
 // an inbox, kudos after each get-together, event profiles (what kind of guest and host someone is), the group chat,
 // guests messaging the host (running late, give my slot away) and photos from the day.
 import crypto from "node:crypto";
+import express from "express";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
@@ -367,6 +368,43 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const first = w[0] || "They", n = P.attended || 0;
     const take = [`${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ", new to Encore"}.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
+  // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----
+  const normPhone = (p) => { const raw = String(p || "").replace(/^whatsapp:/i, ""), d = raw.replace(/[^\d+]/g, ""); return d.startsWith("+") ? d : d.length === 10 ? "+1" + d : d.length === 11 && d.startsWith("1") ? "+" + d : d ? "+" + d : ""; };
+  const prettyTime = (t) => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}:${m[2]}${ap}`; };
+  const whenOf = (e) => [e.date ? new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", prettyTime(e.startTime)].filter(Boolean).join(" at ");
+  app.post("/api/host/text-invites", small, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 10)) return bad(res, "Slow down.", 429, "rate_limited");
+    const S = scopeStore(store, u.ws), id = clean(req.body?.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
+    const phones = [...new Set((Array.isArray(req.body?.phones) ? req.body.phones : String(req.body?.phones || "").split(/[,\n;]+/)).map(normPhone).filter((p) => /^\+\d{7,16}$/.test(p)))].slice(0, 40);
+    if (!phones.length) return bad(res, "Add at least one phone number.");
+    const cfg = smsConfig(), title = ev.pubTitle || ev.name || "a get-together", host = first(u.name) || "Your friend", link = `${publicOrigin(req)}/g#rsvp-${id}`, out = [];
+    const text = `${host} invited you to ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}${ev.meetPoint ? ` (${ev.meetPoint})` : ""}. Reply YES, MAYBE or NO. Details: ${link}`;
+    for (const ph of phones) { S.set("textinvites/" + hash(ph + id), { phone: ph, eventId: id, at: Date.now(), by: u.email }); const r = cfg ? await sendSms(cfg, { to: ph, text }) : { ok: false }; out.push({ phone: ph, sent: !!r.ok }); }
+    res.json({ ok: true, sent: out.filter((x) => x.sent).length, total: out.length, texting: !!cfg, text, results: out }); });
+  // Twilio posts replies here (SMS and WhatsApp use the same format; WhatsApp numbers arrive as "whatsapp:+1...")
+  function twilioValid(req) { const tok = process.env.ENCORE_TWILIO_TOKEN; if (!tok) return process.env.ENCORE_FAKE_SMS === "1"; const sig = req.get("x-twilio-signature") || "", url = `${publicOrigin(req)}${req.originalUrl}`, params = req.body || {};
+    const data = url + Object.keys(params).sort().map((k) => k + params[k]).join(""); const want = crypto.createHmac("sha1", tok).update(data).digest("base64"); try { return sig.length === want.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want)); } catch { return false; } }
+  const twiml = (res, msg) => res.type("text/xml").send(`<?xml version="1.0" encoding="UTF-8"?><Response>${msg ? `<Message>${String(msg).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c])}</Message>` : ""}</Response>`);
+  app.post("/api/public/sms/inbound", express.urlencoded({ extended: false, limit: "20kb" }), (req, res) => { if (!twilioValid(req)) return res.status(403).send("forbidden");
+    const from = normPhone(req.body?.From), body = String(req.body?.Body || "").trim(), word = body.toLowerCase().replace(/[^a-z' ]/g, " ").trim().split(/\s+/)[0] || "", today = new Date().toISOString().slice(0, 10);
+    if (!from) return twiml(res, "");
+    if (/^(stop|unsubscribe|cancel|end|quit)$/.test(word)) { store.set("system/smsstop-" + hash(from), { phone: from, at: Date.now() }); return twiml(res, ""); }
+    // the most recent upcoming invite or RSVP for this number
+    let best = null; for (const ws of allWorkspaceIds()) { const S = scopeStore(store, ws); for (const d of [...S.list("textinvites"), ...S.list("rsvps")]) { const x = d.data || {}; if (normPhone(x.phone) !== from) continue; const ev = S.get("events/" + x.eventId)?.data; if (!ev || (ev.date && ev.date < today)) continue; const at = x.changedAt || x.at || 0; if (!best || at > best.at) best = { ws, S, ev, eventId: x.eventId, at }; } }
+    if (!best) return twiml(res, "Hi! This is Encore. We couldn't find an invite for this number. Open the link your host sent to RSVP.");
+    const { S, ev, eventId } = best, title = ev.pubTitle || ev.name || "the get-together", link = `${publicOrigin(req)}/g#rsvp-${eventId}`;
+    const mine = S.list("rsvps").find((d) => d.data?.eventId === eventId && normPhone(d.data?.phone) === from);
+    const resp = /^(yes|y|yep|yeah|yup|in|going|sure|ok|okay|absolutely|totally)$/.test(word) || /^(👍|✅|🙌)/u.test(body) ? "going" : /^(maybe|m|perhaps|possibly|prob|probably)$/.test(word) ? "maybe" : /^(no|n|nope|out|cant|can't|sorry|pass)$/.test(word) ? "no" : null;
+    if (!resp) { // a name, after they said yes
+      if (mine && /^Guest/.test(mine.data.name || "") && body.length >= 2 && body.length <= 40) { S.update("rsvps/" + mine.id, { name: clean(body, 60), changedAt: Date.now() }); return twiml(res, `Thanks, ${first(body)}! You're on the list for ${title}. Who's coming and the group chat: ${link}`); }
+      return twiml(res, `Reply YES, MAYBE or NO for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}. Details: ${link}`); }
+    const want = resp === "going" && ev.approvalRequired ? "requested" : resp; const going = S.list("rsvps").filter((d) => d.data?.eventId === eventId && d.data?.response === "going").length, cap = +ev.headcount || 0;
+    const final = want === "going" && cap && going >= cap && !(mine?.data?.response === "going") ? "waitlist" : want;
+    let rid = mine?.id, code = mine?.data?.code; const name = mine?.data?.name || `Guest ${from.slice(-4)}`;
+    if (mine) S.update("rsvps/" + rid, { response: final, changedAt: Date.now(), via: "text" }); else { code = crypto.randomBytes(6).toString("hex"); const r0 = S.add("rsvps", { eventId, name, phone: from, response: final, code, via: from.length ? "text" : "", at: Date.now(), changedAt: Date.now(), showMe: true }); rid = r0.id; }
+    try { X.bust(); } catch {}
+    const pass = `${publicOrigin(req)}/g?r=${encodeURIComponent(rid)}.${encodeURIComponent(code)}#rsvp-${eventId}`, askName = /^Guest/.test(name) ? " Reply with your name so your host knows it's you." : "";
+    const msg = final === "going" ? `You're in for ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}! 🎉 See who's coming and join the group chat: ${pass}${askName}` : final === "requested" ? `Got it! Your host approves each spot and will text you soon. ${pass}${askName}` : final === "waitlist" ? `It's full right now, so you're on the waitlist. We'll text you if a spot opens. ${pass}` : final === "maybe" ? `Marked you as maybe. Reply YES any time to grab a spot. ${pass}` : `No worries, we'll tell your host. Reply YES if plans change.`;
+    return twiml(res, msg); });
   // your RSVP follows your account: open an invite on any device, signed in, and it knows your answer
   app.get("/api/me/rsvp/:eventId", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ rsvp: null }); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return res.json({ rsvp: null });
     const d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data?.email) === lc(u.email)).sort((a, b) => (b.data.changedAt || b.data.at || 0) - (a.data.changedAt || a.data.at || 0))[0];

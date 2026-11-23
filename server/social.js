@@ -314,10 +314,19 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example) return bad(res, "No such event.", 404, "not_found"); if (ev.hideGuests) return res.json({ attendees: [], count: 0, hidden: true });
     const short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = []; let total = 0;
     const arche = (email) => { try { const t = email ? X.eventProfile(email)?.top : null; return t ? { name: t.name, emoji: t.emoji } : { name: "The New Face", emoji: "🌱" }; } catch { return { name: "The New Face", emoji: "🌱" }; } };
-    for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || r.response !== "going") continue; const k = lc(r.email || r.name || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
+    for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = r.response === "going" || (ev.stage === "interest" && r.interest === "in"); if (r.eventId !== id || !yes) continue; const k = lc(r.email || r.name || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
       out.push({ name: short(r.name), archetype: arche(lc(r.email)), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne }); }
     for (const g of ev.guests || []) { if (!/^(Going|Attended)$/.test(g.status || "")) continue; const k = lc(g.email || g.name); if (!k || seen.has(k)) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
     res.json({ attendees: out.slice(0, 40), count: total, seats: +ev.headcount || 0 }); });
+  // your RSVP follows your account: open an invite on any device, signed in, and it knows your answer
+  app.get("/api/me/rsvp/:eventId", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ rsvp: null }); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return res.json({ rsvp: null });
+    const d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data?.email) === lc(u.email)).sort((a, b) => (b.data.changedAt || b.data.at || 0) - (a.data.changedAt || a.data.at || 0))[0];
+    res.json({ rsvp: d ? { rid: d.id, code: d.data.code, response: d.data.response, name: d.data.name, interest: d.data.interest || "" } : null }); });
+  // everything you've said yes to or asked for, from any device
+  app.get("/api/me/plans", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ plans: [] }); const em = lc(u.email), out = [];
+    for (const ws of allWorkspaceIds()) { const S = scopeStore(store, ws); for (const d of S.list("rsvps")) { const r = d.data || {}; if (lc(r.email) !== em || !r.eventId) continue; const card = C.cardOf ? C.cardOf(r.eventId) : null; const ev = S.get("events/" + r.eventId)?.data; if (!ev) continue;
+      out.push({ id: r.eventId, rid: d.id, code: r.code, response: r.response, interest: r.interest || "", title: ev.pubTitle || ev.name, date: ev.date || "", startTime: ev.startTime || "", city: ev.city || "", emoji: ev.emoji || card?.emoji || "", stage: ev.stage || "" }); } }
+    out.sort((a, b) => String(a.date || "9").localeCompare(String(b.date || "9"))); res.json({ plans: out }); });
   // a guest adds a fun fact, or hides themselves from the guest list
   app.post("/api/public/rsvp-extra/:eventId", small, (req, res) => { const b = req.body || {}, P = X.rsvpProof(clean(req.params.eventId, 80), b.rid, b.code); if (!P) return bad(res, "No such reply.", 404, "not_found");
     const patch = {}; if (b.funFact != null) patch.funFact = clean(b.funFact, 120); if (b.showMe != null) patch.showMe = !!b.showMe; if (b.emoji != null) patch.emoji = [...String(b.emoji)].slice(0, 2).join("").slice(0, 8); P.S.update("rsvps/" + String(b.rid).replace(/[^A-Za-z0-9_-]/g, ""), patch); res.json({ ok: true }); });

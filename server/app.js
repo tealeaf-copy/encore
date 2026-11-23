@@ -346,7 +346,7 @@ export function createApp({ store, dataDir }) {
       res.set("Cache-Control", "no-store").type("html").send(HEAD.replace('<script src="/shim.js"></script>', "") + file + TAIL);
     } catch (err) { next(err); }
   });
-  app.get("/", (req, res, next) => (isAuthed(req) ? sendPage(req, res, next) : signupEnabled() ? sendStatic(res, "home.html", loginPage()) : res.type("html").send(loginPage())));
+  app.get("/", (req, res, next) => (isAuthed(req) ? (getWorkspace(sessionWorkspace(req))?.regularOnly && !req.query.app ? res.redirect(302, "/plans") : sendPage(req, res, next)) : signupEnabled() ? sendStatic(res, "home.html", loginPage()) : res.type("html").send(loginPage())));
   app.get("/_blob/:id", async (req, res, next) => {
     const id = req.params.id;
     if (!/^[A-Za-z0-9]{20}$/.test(id)) return res.status(404).end();

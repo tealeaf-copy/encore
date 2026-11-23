@@ -32,48 +32,55 @@ section{padding:72px 0;border-top:1px solid var(--line)}section h2{font-size:cla
 footer{padding:40px 0 60px;color:var(--smoke);font-size:14px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line)}footer a{color:var(--smoke)}
 @media (max-width:860px){.hero{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:24px}.stack{height:auto;max-width:360px;margin:0 auto;width:100%;display:flex;flex-direction:column}.card{position:relative;width:100%;top:auto!important;left:auto!important;right:auto!important}.card+.card{margin-top:-10px}.example{position:static;text-align:right;margin-top:8px}.steps{grid-template-columns:minmax(0,1fr)}.teams{grid-template-columns:minmax(0,1fr);padding:36px 24px}.top nav a.hide-m{display:none}}
 @media (prefers-reduced-motion:reduce){.btn,.lv{transition:none}}
-</style><link rel="stylesheet" href="/playful.css">
-</head><body>
+</style><link rel="stylesheet" href="/playful.css"><style>
+/* tidy layout */
+.home .hero::before,.home .hero::after{display:none!important}
+.top nav .btn.sm{padding:9px 16px;font-size:14px;color:#fff}
+.stack{position:static;height:auto;display:grid;gap:14px;margin:0;max-width:380px;justify-self:end;width:100%}
+.stack .card{position:static;width:100%;transform:none}
+.card .c-top b{display:block;font-weight:600}.card .c-top small{display:block}
+.stack figcaption{font-size:12px;color:var(--smoke);text-align:right}
+.steps .step{display:flex;flex-direction:column}
+.pipline{margin:28px auto 0}
+.live{grid-template-columns:repeat(3,minmax(0,1fr))}
+.more{margin:18px 0 0}.more a{font-weight:600;color:var(--ember);text-decoration:none}
+section.end{text-align:center}section.end h2{margin:0 auto}section.end .lede{margin:14px auto 24px}section.end .ctas{justify-content:center}
+@media (max-width:860px){.stack{justify-self:stretch;max-width:420px;margin:0 auto}.stack .card:nth-child(2){margin:0}.live{grid-template-columns:minmax(0,1fr)}.top nav{gap:12px}}
+</style>
+</head><body class="home">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a>
-    <nav><a href="/discover">What's on</a><a href="/hosts" class="hide-m">For teams</a><a href="/login" class="in">Sign in</a></nav></header>
+    <nav><a href="/discover" class="hide-m">What's on</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends">I have an invite</a></nav></header>
   <div class="hero">
-    <div><span class="eyebrow">Invite-only · for people who host</span>
+    <div><span class="eyebrow">Invite-only · for people who host friends</span>
       <h1>Gatherings worth <span class="hl">coming back</span> to.</h1>
-      <p class="sub">Supper clubs, run clubs, café mornings. Encore gives you a page, a guest list, and Pip, a small pig who gets people to show up.</p>
+      <p class="sub">Dinners, run clubs, game nights. Encore gives you an invite page, a guest list and a group chat, plus Pip, a small pig who gets people to show up.</p>
       <div class="ctas"><a class="btn primary" href="/signup?mode=friends">I have an invite</a><a class="btn quiet" href="/signup?mode=friends#ask">Ask for one</a></div>
-      <p class="small">Free for hosting with friends. Every member gets five invites to give away.</p></div>
-    <div class="stack" aria-hidden="true">
-      <div class="card a"><div class="c-top"><span class="av" id="avA"></span><div><b style="font-weight:600">Saturday Run Crew</b><br><small>Williamsburg</small></div></div><h3>First-timers' 5k</h3><div class="meta">Sat 8am · north gate · no-drop pace</div><div class="go"><b>Free</b><span class="pill">I'm in</span></div></div>
-      <div class="card b"><div class="c-top"><span class="av" id="avB"></span><div><b style="font-weight:600">The Omakase Table</b><br><small>Greenpoint</small></div></div><h3>Autumn in Kyoto</h3><div class="meta">12 seats · seven courses</div><div class="go"><b>$65</b><span class="pill">Request a seat</span></div></div>
-      <div class="card c"><div class="c-top"><span class="av" id="avC"></span><div><b style="font-weight:600">Apartment Café Club</b><br><small>Surry Hills</small></div></div><h3>Sunday pour-overs</h3><div class="meta">For people new to the city</div><div class="go"><b>Free</b><span class="pill">Ask to join</span></div></div>
-      <span class="example">Examples</span>
-    </div>
+      <p class="small">Free for hosting friends. Every member gets five invites to give away.</p></div>
+    <figure class="stack" aria-label="Example invite pages">
+      <div class="card"><div class="c-top"><span class="av" id="avA"></span><div><b>Saturday Run Crew</b><small>Williamsburg</small></div></div><h3>First-timers' 5k</h3><div class="meta">Sat 8am · north gate · no-drop pace</div><div class="go"><b>Free</b><span class="pill">I'm in</span></div></div>
+      <div class="card"><div class="c-top"><span class="av" id="avB"></span><div><b>Hana's Kitchen</b><small>Greenpoint</small></div></div><h3>Dumpling night</h3><div class="meta">8 seats · bring a drink</div><div class="go"><b>Free</b><span class="pill">Ask to join</span></div></div>
+      <div class="card"><div class="c-top"><span class="av" id="avC"></span><div><b>Apartment Café Club</b><small>Surry Hills</small></div></div><h3>Sunday pour-overs</h3><div class="meta">For people new to the city</div><div class="go"><b>Free</b><span class="pill">I'm in</span></div></div>
+      <figcaption>Example invite pages</figcaption>
+    </figure>
   </div>
 </div>
 <section><div class="wrap"><span class="eyebrow">How it works</span><h2>You bring the idea. Pip handles the rest.</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Check who's in</h3><p>Share a "would you come?" page. Pip counts the yeses, finds the best date, and calls it when enough people are in.</p></div>
-    <div class="step"><div class="n">2</div><h3>Welcome the right people</h3><p>Say who it's for and approve each guest. A group chat opens the moment you say yes. Sell seats or a pandan cake if you like.</p></div>
-    <div class="step"><div class="n">3</div><h3>Feel the love after</h3><p>Guests send kudos and tips the morning after. Your page fills with what people said, and they follow you for the next one.</p></div>
+    <div class="step"><div class="n">1</div><h3>See who's in</h3><p>Share a "would you come?" link. Pip counts the yeses, finds the best date, and calls it when enough people are in.</p></div>
+    <div class="step"><div class="n">2</div><h3>Say yes to guests</h3><p>Approve each guest in a tap. Everyone who's going lands in the event's group chat, right in Encore.</p></div>
+    <div class="step"><div class="n">3</div><h3>Remember it after</h3><p>Photos, kudos and tips the morning after. Guests follow you, so the next one fills faster.</p></div>
   </div>
-  <div class="pipline"><svg viewBox="2 4 60 60" width="48" height="48" aria-hidden="true"><path d="M13 22c-3-8 0-14 4-15 3 3 7 7 8 11z" fill="#F7A9B6"/><path d="M51 22c3-8 0-14-4-15-3 3-7 7-8 11z" fill="#F7A9B6"/><ellipse cx="32" cy="36" rx="23" ry="21.5" fill="#FBC0C9"/><path d="M18.3 30.5q4.2-5 8.4 0M37.3 30.5q4.2-5 8.4 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="41" rx="8.4" ry="6" fill="#F7A0B0"/><ellipse cx="29" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><ellipse cx="35" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><path d="M27.5 49.5q4.5 4.2 9 0" stroke="#B5485A" stroke-width="2" fill="#E8798A" stroke-linecap="round"/></svg><p><b>Pip:</b> "Four people are in for Saturday. Two more and it's on. Want me to nudge the maybes?"</p></div>
+  <div class="pipline"><svg viewBox="2 4 60 60" width="44" height="44" aria-hidden="true"><path d="M13 22c-3-8 0-14 4-15 3 3 7 7 8 11z" fill="#F7A9B6"/><path d="M51 22c3-8 0-14-4-15-3 3-7 7-8 11z" fill="#F7A9B6"/><ellipse cx="32" cy="36" rx="23" ry="21.5" fill="#FBC0C9"/><path d="M18.3 30.5q4.2-5 8.4 0M37.3 30.5q4.2-5 8.4 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="41" rx="8.4" ry="6" fill="#F7A0B0"/><ellipse cx="29" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><ellipse cx="35" cy="41.2" rx="1.6" ry="2.2" fill="#C9596E"/><path d="M27.5 49.5q4.5 4.2 9 0" stroke="#B5485A" stroke-width="2" fill="#E8798A" stroke-linecap="round"/></svg><p><b>Pip:</b> "Four people are in for Saturday. Two more and it's on. Want me to nudge the maybes?"</p></div>
 </div></section>
-<section id="liveSec" hidden><div class="wrap"><span class="eyebrow">On Encore now</span><h2>Hosts people keep coming back to.</h2><div class="live" id="live"></div></div></section>
-<section><div class="wrap"><span class="eyebrow">How Encore works</span><h2>Hosts, guests and brands, all in one place.</h2>
-  <div class="fly"><a class="fl" href="/signup?mode=friends"><span class="fl-n">Hosts</span><b>Host what you love</b><p>Run clubs, supper clubs, pop-ups. Your page, your guest list, your regulars.</p><span class="fl-go">Start hosting</span></a>
-    <a class="fl" href="/discover"><span class="fl-n">Guests</span><b>Find your people</b><p>Follow hosts you like, say yes in a tap, and hear first when the next one opens.</p><span class="fl-go">See what's on</span></a>
-    <a class="fl" href="/hosts"><span class="fl-n">Brands</span><b>Book the hosts people love</b><p>Hosts with real followings bring the fun to your team or launch.</p><span class="fl-go">Find a host</span></a></div>
-  <p class="fl-note">Every event a host runs grows their following. A bigger following brings more guests, and the best hosts get booked by brands.</p></div></section>
-<div class="wrap"><div class="teams"><div><span class="eyebrow">For teams</span><h2>Skip the conference room. Book a host.</h2><p>The best team events aren't planned by an agency. They're hosted by the person who already runs the city's favourite run club or supper club. Pick one, request a date, and they make it feel nothing like work.</p><a class="btn primary" href="/hosts" style="margin-top:12px">Find a host for your team</a></div>
-  <ul><li><b>Team run and coffee</b><small>10–60 people · 90 minutes · no-drop pace</small></li><li><b>Private omakase</b><small>8–14 people · seven courses · at your office or theirs</small></li><li><b>Upstate hike day</b><small>8–30 people · train, trail, picnic</small></li></ul></div></div>
-<section><div class="wrap"><p class="quote">The host is the product. Encore just makes sure the right people hear about the next one.</p></div></section>
-<div class="wrap"><footer><span>Encore · invite-only gatherings</span><span><a href="/discover">What's on</a> · <a href="/hosts">For teams</a> · <a href="/work">Field events for B2B</a> · <a href="/security">Security</a></span></footer></div>
+<section id="liveSec" hidden><div class="wrap"><span class="eyebrow">On Encore now</span><h2>Hosts people keep coming back to.</h2><div class="live" id="live"></div><p class="more"><a href="/discover">See what's on →</a></p></div></section>
+<section class="end"><div class="wrap"><h2>Host your first one this week.</h2><p class="lede">It takes about two minutes: say what it is, pick a day, share the link.</p><div class="ctas"><a class="btn primary" href="/signup?mode=friends">I have an invite</a><a class="btn quiet" href="/signup?mode=friends#ask">Ask for one</a></div></div></section>
+<div class="wrap"><footer><span>Encore · invite-only gatherings</span><span><a href="/discover">What's on</a> · <a href="/hosts">Encore for teams</a> · <a href="/security">Security</a></span></footer></div>
 <script src="/community.js"></script><script src="/avatars.js"></script>
 <script>
 (function () { const A = window.EncoreAvatars; if (A) { document.getElementById("avA").innerHTML = A.svg("runner", "#E26D8E", 44); document.getElementById("avB").innerHTML = A.svg("chef", "#E0A030", 44); document.getElementById("avC").innerHTML = A.svg("barista", "#3E9C6E", 44); }
   const esc = window.EncoreCommunity?.esc || ((s) => String(s));
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { const H = (d.hosts || []).filter((h) => h.hosted || h.upcoming).slice(0, 6); if (!H.length) return; document.getElementById("liveSec").hidden = false;
-    document.getElementById("live").innerHTML = H.map((h) => `<a class="lv" href="/@${esc(h.handle)}"><span class="av">${h.theme?.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 52) : esc(h.emoji || "🎉")}</span><div><b>${esc(h.name)}</b><small>${esc([h.hood, h.city].filter(Boolean).join(", "))}${h.followers ? ` · ${h.followers} following` : ""}${h.upcoming ? ` · ${h.upcoming} coming up` : ""}</small></div></a>`).join(""); }).catch(() => {});
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { const H = (d.hosts || []).filter((h, i, all) => h.upcoming && h.city && h.followers && all.findIndex((x) => x.name === h.name) === i).sort((a, b) => (b.followers || 0) - (a.followers || 0)); H.length = Math.min(6, H.length - (H.length % 3)); if (H.length < 3) return; document.getElementById("liveSec").hidden = false;
+    document.getElementById("live").innerHTML = H.map((h) => `<a class="lv" href="/@${esc(h.handle)}"><span class="av">${h.theme?.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 52) : esc(h.emoji || "🎉")}</span><div><b>${esc(h.name)}</b><small>${esc([[h.hood, h.city].filter(Boolean).join(", "), h.followers ? `${h.followers} following` : "", h.upcoming ? `${h.upcoming} coming up` : ""].filter(Boolean).join(" · "))}</small></div></a>`).join(""); }).catch(() => {});
 })();
 </script></body></html>

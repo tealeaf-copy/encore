@@ -19,7 +19,8 @@ h2.sub{font-size:20px;margin-top:22px}
     <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Your plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
   <main>
     <h1 style="font-size:clamp(32px,6vw,48px);margin-top:18px">Your plans</h1>
-    <p style="color:var(--soft);max-width:520px">Everything you've said yes to, asked for or ordered. Signed in, it follows you to any device.</p>
+    <p style="color:var(--soft);max-width:520px">Everything you're hosting, said yes to, asked for or ordered. Signed in, it follows you to any device.</p>
+    <div id="hostSec" hidden><h2 class="sub">You're hosting</h2><div class="plans" id="host"></div></div>
     <h2 class="sub">Get-togethers</h2><div class="plans" id="ev"></div>
     <h2 class="sub">Orders</h2><div class="plans" id="ord"></div>
   </main>
@@ -34,6 +35,11 @@ h2.sub{font-size:20px;margin-top:22px}
   await Promise.all(R.map(async (x) => { if (!x.rid || !x.code) return; try { const j = await (await fetch(`/api/public/rsvp-status/${encodeURIComponent(x.id)}?rid=${encodeURIComponent(x.rid)}&code=${encodeURIComponent(x.code)}`)).json(); if (j.response) x.response = j.response; x.paid = !!j.paid; } catch {} }));
   const today = new Date().toISOString().slice(0, 10), when = (c) => [c.date ? new Date(c.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "", c.startTime ? new Date("2000-01-01T" + c.startTime.padStart(5, "0")).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "", c.hood || c.city || ""].filter(Boolean).join(" · ");
   const lab = (x) => x.response === "maybe" && x.interest === "in" ? "You're in ✓ · waiting on the date" : x.response === "going" ? (x.paid ? "You're in ✓ · paid" : (cards[x.id]?.price && cards[x.id].price !== "chip" ? `You're in ✓ · pay ${cards[x.id].price} to hold it` : "You're in ✓")) : x.response === "requested" ? "Requested ✓ · waiting for the host" : x.response === "waitlist" ? "On the waitlist" : x.response === "maybe" ? "Maybe" : "Saved";
+
+  // what you're hosting (signed in): your own upcoming events, straight to the plan
+  try { const r = await fetch("/api/db/collection?path=events"); if (r.ok) { const j = await r.json(); const L = (Array.isArray(j) ? j : j.docs || j.items || []).map((d) => ({ id: d.id, ...(d.data || d) })).filter((e) => e && e.id && !e.example && e.date && e.date >= today && (e.published || e.stage === "interest")).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (L.length) { document.getElementById("hostSec").hidden = false; document.getElementById("host").innerHTML = L.slice(0, 8).map((e) => `<a class="plan" href="/#studio" data-open="${esc(e.id)}"><span class="ic">${esc(e.emoji || "🎉")}</span><span><b>${esc(e.pubTitle || e.name || "Your event")}</b><small>${esc(when(e))}</small><small style="color:var(--brand2,#C94A30);font-weight:600">You're hosting · open the plan</small></span></a>`).join("");
+      document.querySelectorAll("#host [data-open]").forEach((a) => a.onclick = () => { try { localStorage.setItem("encore-open", JSON.stringify(a.dataset.open)); } catch {} }); } } } catch {}
   const ev = R.map((x) => ({ x, c: cards[x.id] || {} })).filter(({ c }) => !c.date || c.date >= today).sort((a, b) => String(a.c.date || "9").localeCompare(String(b.c.date || "9")));
   document.getElementById("ev").innerHTML = ev.length ? ev.map(({ x, c }) => `<a class="plan" href="/g#rsvp-${encodeURIComponent(x.id)}"><span class="ic">${c.host?.cover ? `<img src="${esc(c.host.cover)}" alt="">` : c.host?.avatarArt && A ? A.svg(c.host.avatarArt, c.host.color, 52) : esc(c.emoji || "🎉")}</span><span><b>${esc(c.title || "A get-together")}</b><small>${esc(when(c))}${c.host?.name ? ` · with ${esc(c.host.name)}` : ""}</small><br><span class="pill ${x.response === "going" ? "in" : ""}">${esc(lab(x))}</span></span></a>`).join("") : `<div class="empty">Nothing yet. <a href="/discover">Find something this week</a>.</div>`;
   O.sort((a, b) => (b.at || 0) - (a.at || 0));

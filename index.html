@@ -8771,6 +8771,41 @@ function ev2Layout(){ try{ const e=window.__gEv, host=document.getElementById("v
       else pr.innerHTML="" }
   }catch(err){ console.warn(err) } }
 { const _rgE=renderGuest; renderGuest=async function(){ const r=await _rgE.apply(this,arguments); ev2Layout(); setTimeout(ev2Layout,600); return r } }
+
+// ==================================================================
+// User research, casual host (round 1): fixes for what a friends host tripped on.
+// ==================================================================
+// "Taco night at my place Saturday 7pm for 8": keep the time and the place
+{ const _qs40=quickStart; quickStart=function(text){ const r=_qs40.apply(this,arguments); try{ const t=String(text||""), d=draft;
+    const m=t.match(/\b(\d{1,2})(?::(\d\d))?\s*(am|pm)\b/i)||t.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(m&&!d.startTime){ let h=+m[1]; const mi=m[2]||"00", ap=(m[3]||"").toLowerCase(); if(ap==="pm"&&h<12) h+=12; if(ap==="am"&&h===12) h=0; if(h<24) d.startTime=String(h).padStart(2,"0")+":"+mi }
+    const p=t.match(/\bat (my place|mine|my apartment|my flat|my house|home|our place)\b/i); if(p&&!d.meetPoint){ d.meetPoint=/our/i.test(p[1])?"Our place":"My place"; d.venueName=d.meetPoint }
+    // a get-together with friends stays off Discover unless the host says otherwise
+    if(window.__wsPersonal&&d.unlisted==null) d.unlisted=true;
+  }catch(err){ console.warn(err) } return r } }
+// Ask Pip talks like a friend for friends hosts
+{ const _cs40=coSuggest; coSuggest=function(){ if(!window.__wsPersonal) return _cs40.apply(this,arguments); return location.hash==="#studio"&&!draft.example?["What am I forgetting?","Write the group-chat invite","Menu ideas for 8 (one vegetarian)","Send everyone a reminder"]:["Plan a game night for Friday","Ideas for a birthday dinner at home","What's easy to host for 10 people?","What am I forgetting?"] } }
+{ const _cd40=coDraw; coDraw=function(){ const r=_cd40.apply(this,arguments); try{ if(window.__wsPersonal){ const m=document.getElementById("coMsgs"), b=m?.querySelector(".bubble.assistant"); if(b&&m.children.length===1&&/I can do the work/.test(b.textContent)) b.textContent="I can write the invite, suggest a menu, nudge the maybes, or tell you what's missing. What's the plan?"; const sm=document.querySelector("#coPanel header small"); if(sm) sm.textContent="Your party sidekick. Ask anything about this plan." } }catch{} return r } }
+// no Pip toasts on top of the wizard
+{ const _pt40=pipToast; pipToast=function(){ if(document.getElementById("wizBg")) return; return _pt40.apply(this,arguments) } }
+// friends hosts: hide business panels, menus and options
+{ const s=document.createElement("style"); s.textContent=`html body.friends-ws #viewToggle,html body.friends-ws details.cg-more{display:none!important}
+@media (max-width:700px){html body.friends-ws #signOut{display:none!important}}`; document.head.appendChild(s) }
+new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
+    // Invite page: no publish-elsewhere kit, ad sizes or B2B guest wall
+    document.querySelectorAll("#stepHost .panel, #view-studio .panel").forEach(p=>{ if(p.dataset.fr40) return; const h=p.querySelector("h3")?.textContent.trim()||""; if(/^(Publish your event page|Asset kit)$/.test(h)){ p.dataset.fr40=1; p.style.display="none" } });
+    document.querySelectorAll(".wallbox").forEach(w=>{ if(!w.dataset.fr40){ w.dataset.fr40=1; w.style.display="none" } });
+    // Edit details: no compliance rules or currency list
+    ["fe-comp","fe-cur"].forEach(id=>{ const el=document.getElementById(id); const l=el?.closest("label")||el; if(l&&!l.dataset.fr40){ l.dataset.fr40=1; l.style.display="none" } });
+    document.querySelectorAll("summary").forEach(s=>{ if(!s.dataset.fr40&&/^More options: currency, guest rules, language/.test(s.textContent)){ s.dataset.fr40=1; s.textContent="More options: language" } });
+    // wizard: Discover is opt-in, and says what it means
+    const dl=document.getElementById("wzDisc")?.parentElement; if(dl&&!dl.dataset.fr40){ dl.dataset.fr40=1; const cb=dl.querySelector("input"); dl.lastChild.textContent=" Let people outside your friends find it on Discover"; }
+    // phone step chip counts the four friends steps
+    const sb=document.getElementById("stepBtn"); if(sb&&isFriendsDraft?.()){ const L=[1,6,4,7], i=L.indexOf(+step); const want=i>=0?`Step ${i+1} of 4 · ${STEP_NAMES[step]||""} ▾`:sb.textContent; if(sb.textContent!==want) sb.textContent=want }
+    // Home: a sign-out link at the bottom on phones
+    const home=document.getElementById("view-programs"); if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a>`; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
+  }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// "Open the plan" links from Your plans and the event page land on that event
+(()=>{ try{ if(isGuestRoute?.()) return; let id=null; try{ id=JSON.parse(localStorage.getItem("encore-open")||"null"); localStorage.removeItem("encore-open") }catch{} if(!id) return; let n=0; const t=setInterval(()=>{ try{ const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x.id===id); if(e){ clearInterval(t); openEvent(e,1) } else if(++n>40) clearInterval(t) }catch{ clearInterval(t) } },250) }catch{} })();
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

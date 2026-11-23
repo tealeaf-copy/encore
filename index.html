@@ -9263,6 +9263,20 @@ document.addEventListener("input",ev=>{ if(ev.target?.id!=="wzWhere") return; co
 { const _op59=openPerson; openPerson=async function(eventId,key){ const r=await _op59.apply(this,arguments); try{ const sheet=document.querySelector("#ppBg .pp"), chat=document.getElementById("gc-in"); const nm=sheet?.querySelector("h3")?.textContent.split(" ")[0]; if(sheet&&chat&&nm&&!sheet.querySelector(".pp-hi")){ const b=document.createElement("button"); b.type="button"; b.className="btn sm primary pp-hi"; b.style.marginTop="16px"; b.textContent=`👋 Say hi to ${nm} in the group chat`; b.onclick=()=>{ document.getElementById("ppBg")?.remove(); chat.value=`Hi ${nm}! 👋 `; chat.scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>chat.focus(),350) }; sheet.appendChild(b) } }catch{} return r } }
 // after kudos: share the night to your story, right there
 new MutationObserver(()=>{ try{ const k=document.getElementById("kudosAsk"), e=window.__gEv; if(!k||!e?.id||!k.dataset.sent||k.querySelector(".ig-glow")) return; const b=document.createElement("button"); b.type="button"; b.className="btn sm ig-glow"; b.style.margin="10px 0 0 8px"; b.textContent="📸 Share the night to your story"; b.onclick=async()=>{ let n=0; try{ n=(await (await fetch(`/api/public/attendees/${encodeURIComponent(e.id)}`)).json()).count||0 }catch{} shareStory({...evStoryBase(e),kind:"recap",big:n?`${n} of us came`:"",host:(window.__gHostInfo||{}).name||hostFirst(e)}) }; (k.querySelector("div")||k).appendChild(b) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+
+// ==================================================================
+// One set of words everywhere: Home, Discover, Feed, Plans, My page (host app matches the public pages);
+// the host's guest list shows each guest's real type instead of a generic "crew" panel.
+// ==================================================================
+new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; const f=document.getElementById("navFeed"); if(f&&f.textContent!=="Feed") f.textContent="Feed";
+    const tabs=f?.parentElement; if(tabs&&!document.getElementById("navDisc")){ const d=document.createElement("a"); d.id="navDisc"; d.href="/discover"; d.className=f.className; d.textContent="Discover"; f.before(d); const p=document.createElement("a"); p.id="navPlans"; p.href="/plans"; p.className=f.className; p.textContent="Plans"; f.after(p) }
+    const crew=document.getElementById("crew"); if(crew&&isFriendsDraft?.()&&crew.style.display!=="none"){ const sec=crew.closest("section")||crew; sec.style.display="none" } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// who's coming (host view): each guest's type next to their name
+let __typesFor="";
+async function annotateWho(){ try{ const d=draft, host=document.getElementById("stepHost"); if(!d?.id||!host||+step!==6) return; const rows=[...host.querySelectorAll("#whoComing .wc-row, #whoComing [data-rid], #whoComing li, #whoComing .wc")]; if(!rows.length) return; if(__typesFor===d.id+rows.length) return; __typesFor=d.id+rows.length;
+    const j=await (await fetch(`/api/public/attendees/${encodeURIComponent(d.id)}`)).json().catch(()=>({})); const by=new Map((j.attendees||[]).map(a=>[a.name.split(" ")[0].toLowerCase(),a]));
+    rows.forEach(r=>{ if(r.querySelector(".wc-type")) return; const nm=(r.querySelector("b")?.textContent||r.textContent).trim().split(/\s+/)[0].toLowerCase(), a=by.get(nm); if(!a) return; const s=document.createElement("small"); s.className="wc-type"; s.style.cssText="display:block;color:#6B5F56;font-size:12.5px"; s.textContent=`${a.archetype?.emoji||"🌱"} ${a.archetype?.name||"New to Encore"}`; (r.querySelector("b")||r.firstElementChild||r).after(s) }) }catch{} }
+{ const _rsW=renderStep; renderStep=function(){ const r=_rsW.apply(this,arguments); setTimeout(annotateWho,900); return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

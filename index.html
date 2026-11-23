@@ -4295,7 +4295,7 @@ function launchFields(d){ const p=lp(d), P=PLATFORMS[p], L=out("launchCopy")||{}
   const when=d.date?`${fmtDate(d.date)}${ag[0]?`, ${ag[0].time}`:""}${ag.length>1?` to ${ag[ag.length-1].time}`:""}`:"";
   const F=[["Event name",L.title||C.title||d.name],["Date and time",when||"Pick a date in Strategy"],["Location",V?`${V.name}${V.address?`, ${V.address}`:""}`:(d.city||"")]];
   if(p==="eventbrite"||p==="site") F.push(["Summary",L.summary||C.tagline||""]);
-  F.push(["Description",fillLinks(L.description||C.description||d.concept||"",d)]);
+  F.push(["Description",fillLinks(L.description||C.description||(window.__wsPersonal?"":d.concept)||"",d)]);
   if(L.faq?.length) F.push(["FAQ",L.faq.map(f=>`${f.q}\n${f.a}`).join("\n\n")]);
   F.push(["Capacity",`${d.headcount} guests`],["Registration",d.approvalRequired?P.appOn:P.appOff]);
   if(Q?.questions?.length) F.push([P.qLabel,Q.questions.map((q,i)=>`${i+1}. ${q.q}${q.type==="choice"&&q.options?.length?` (${q.options.join(" / ")})`:q.type==="yesno"?" (Yes / No)":""}${q.required?" *":""}`).join("\n")]);
@@ -7015,7 +7015,7 @@ function hypeHTML(d){ const qs=(d.launchQs?.questions||[]).map(q=>q.q);
     <div class="hype-col"><h4>2. Rally your people</h4><div id="hy-posts"></div></div></div>
    <div class="hype-report" id="hy-report"><h4>3. Pip's report</h4><p class="note">Who's in, when they're free and who to nudge shows here as replies come in.</p></div></section>` }
 function hypePosts(d){ const link=d.id?EVPATH(d):"(save first)", t=guestTitle(d), A=actOf(d), who=d.audienceWho?` It's for ${d.audienceWho.replace(/^./,c=>c.toLowerCase())}.`:"", ask=d.stage==="interest";
-  return [["Group chat",`${A.emoji} ${ask?"Thinking about this one":"It's on"}: ${t}${d.date&&!ask?`, ${fmtDate(d.date)}`:""}.${who} ${ask?"Who's in? Tap the dates that work:":"Grab a spot:"} ${link}`],
+  return [["Group chat",`${titleEmoji(d)||A.emoji} ${ask?"Thinking about this one":"It's on"}: ${t}${d.date&&!ask?`, ${fmtDate(d.date)}${d.startTime?` at ${clock12(d.startTime)}`:""}${placeOf(d)?`, ${placeOf(d)}`:""}`:""}.${who} ${ask?"Who's in? Tap the dates that work:":"Grab a spot:"} ${link}`],
     ["Story or post",`${A.emoji} ${t}\n${ask?"Gauging interest. If enough of us are in, it's on.":d.date?fmtDate(d.date):""}${d.audienceWho?`\nFor: ${d.audienceWho}`:""}\n${d.approvalRequired?"Request a spot":"Say yes"} → ${link}`],
     ["A personal nudge",`Hey! I'm putting together something and thought of you: ${t}. No pressure at all, but I'd love to have you there: ${link}`]] }
 async function drawHype(){ const d=draft; if(!isCasual(d)||step!==1||$("#pipHype")) return; const kit=$("#hostKit"); if(!kit) return; const w=document.createElement("div"); w.innerHTML=hypeHTML(d); kit.before(w.firstElementChild);
@@ -8507,7 +8507,9 @@ new MutationObserver(()=>{ try{ if(!isFriendsDraft()) return; const box=document
 document.addEventListener("click",e=>{ const b=e.target.closest?.("#pubBtn"); if(!b||!isFriendsDraft()||draft.discoverable) return; if(!draft.startTime||!(placeOf(draft)||draft.city)){ e.stopImmediatePropagation(); e.preventDefault(); toast("Add a start time and where it is first, so guests can say yes."); openWizard(2) } },true);
 // share sheet: the invite link and a message ready for the group chat
 function inviteLink(d){ return location.origin+"/g#rsvp-"+encodeURIComponent(d.id) }
-function inviteText(d){ const t=d.pubTitle||d.name, when=d.date?fmtDate(d.date)+(d.startTime?` at ${d.startTime}`:""):"", where=placeOf(d)||d.city||""; return `${t}${when?`, ${when}`:""}${where?`, ${where}`:""}. ${d.approvalRequired?"Ask for a spot":"Tap to say you're in"}: ${inviteLink(d)}` }
+const EMOJI_KW=[["taco","🌮"],["dumpling","🥟"],["pizza","🍕"],["sushi","🍣"],["omakase","🍣"],["ramen","🍜"],["brunch","🥞"],["bbq","🍖"],["barbecue","🍖"],["wine","🍷"],["cocktail","🍸"],["coffee","☕"],["pour-over","☕"],["hike","🥾"],["run","🏃"],["5k","🏃"],["bike","🚲"],["picnic","🧺"],["game","🎲"],["movie","🎬"],["film","🎬"],["karaoke","🎤"],["book","📚"],["yoga","🧘"],["swim","🏊"],["beach","🏖️"],["birthday","🎂"],["cake","🍰"],["bake","🧁"],["potluck","🥘"],["cook","🍳"],["dinner","🍽️"],["supper","🍽️"]];
+function titleEmoji(d){ const t=`${d.pubTitle||""} ${d.name||""} ${d.concept||""}`.toLowerCase(); return (EMOJI_KW.find(([k])=>t.includes(k))||[])[1]||"" }
+function inviteText(d){ const t=d.pubTitle||d.name, when=d.date?fmtDate(d.date)+(d.startTime?` at ${clock12(d.startTime)}`:""):"", where=placeOf(d)||d.city||"", em=titleEmoji(d); return `${em?em+" ":""}${t}${when?`, ${when}`:""}${where?`, ${where}`:""}. ${d.approvalRequired?"Ask for a spot":"Tap to say you're in"}: ${inviteLink(d)}` }
 function shareSheet(d){ document.getElementById("wizBg")?.remove(); const bg=document.createElement("div"); bg.id="wizBg"; bg.className="wiz-bg"; bg.innerHTML=`<div class="wiz" role="dialog" aria-modal="true" aria-label="Share your invite"><button class="wiz-x" type="button" aria-label="Close">×</button><div class="wiz-pip">${typeof pipSVG==="function"?pipSVG("happy",56):"🐷"}</div><h2>It's live. Send it to your people.</h2><p class="note">Paste this in the group chat. Pip counts the yeses and tells you who's coming.</p><textarea class="wiz-share" readonly>${esc(inviteText(d))}</textarea><div class="wiz-btns"><button class="btn primary" type="button" id="wzCopy">Copy invite</button><a class="btn ghost" href="${esc(inviteLink(d))}" target="_blank" rel="noopener">See what guests see</a></div><button class="linkbtn" type="button" id="wzGuests">Go to the guest list</button></div>`; document.body.appendChild(bg);
   const close=()=>bg.remove(); bg.querySelector(".wiz-x").onclick=close; bg.onclick=e=>{ if(e.target===bg) close() }; bg.querySelector("#wzCopy").onclick=()=>{ copyTxt(inviteText(d)); toast("Copied. Paste it anywhere.") }; bg.querySelector("#wzGuests").onclick=()=>{ close(); step=6; location.hash="#studio"; renderStep() } }
 // the guide
@@ -8806,6 +8808,32 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
   }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // "Open the plan" links from Your plans and the event page land on that event
 (()=>{ try{ if(isGuestRoute?.()) return; let id=null; try{ id=JSON.parse(localStorage.getItem("encore-open")||"null"); localStorage.removeItem("encore-open") }catch{} if(!id) return; let n=0; const t=setInterval(()=>{ try{ const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x.id===id); if(e){ clearInterval(t); openEvent(e,1) } else if(++n>40) clearInterval(t) }catch{ clearInterval(t) } },250) }catch{} })();
+
+// ==================================================================
+// User research, casual host (round 2): the Plan step fits a dinner that's already on.
+// ==================================================================
+const atHome=d=>/\b(my|our) (place|apartment|flat|house|home|backyard|garden)\b|^(home|mine)$/i.test(placeOf(d));
+const isOnFriends=d=>!!(window.__wsPersonal&&d&&d.published&&d.stage!=="interest");
+// no "N more and it's on" hype block once the plan is on
+{ const _dh41=drawHype; drawHype=async function(){ if(isOnFriends(draft)) return; return _dh41.apply(this,arguments) } }
+// at home: no venue hunting, no neighbourhood flyers or stickers, no print shop
+{ const _pa41=pipAgentsHTML; pipAgentsHTML=function(d){ if(window.__wsPersonal&&atHome(d)&&paTab==="spot") paTab="people"; let h=_pa41.apply(this,arguments); if(window.__wsPersonal&&atHome(d)) h=h.replace(/<button role="tab" type="button" data-pa="spot"[^]*?<\/button>/,""); if(window.__wsPersonal) h=h.replace("Vendors and help","Borrow and help"); return h } }
+{ const _pp41=promoPack; promoPack=function(d){ const L=_pp41.apply(this,arguments); return window.__wsPersonal&&atHome(d)?L.filter(([k])=>!/^(Neighbourhood board|Sticker or table sign)$/.test(k)):L } }
+{ const _vf41=vendorsFor; vendorsFor=function(d){ const V=_vf41.apply(this,arguments); return window.__wsPersonal?V.filter(v=>v[1]!=="Print shop"):V } }
+new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
+    // "Check interest first" is for ideas, not plans that are already on
+    if(isOnFriends(draft)) document.querySelectorAll(".ic-off").forEach(x=>{ if(!x.dataset.fr41){ x.dataset.fr41=1; x.style.display="none" } });
+    // flyers make no sense for a home dinner
+    if(atHome(draft)) document.querySelectorAll("#paBody button, #paBody a").forEach(b=>{ if(!b.dataset.fr41&&/flyer/i.test(b.textContent)){ b.dataset.fr41=1; b.style.display="none" } });
+    // Your regulars: money and paid work sit behind one link
+    const body=document.getElementById("paBody"); if(body&&!body.dataset.fr41m){ const cards=["fc-hire","fc-venmo","fc-price"].map(id=>document.getElementById(id)?.closest(".pa-card")||(id==="fc-hire"?document.getElementById(id):null)).filter(Boolean); if(cards.length){ body.dataset.fr41m=1; const open=localStorage.getItem("encore.moneyOpts")==="1"; cards.forEach(c=>c.style.display=open?"":"none"); if(!open){ const a=document.createElement("button"); a.type="button"; a.className="linkbtn"; a.style.margin="10px 0"; a.textContent="Selling something, taking tips or open to paid work? Show those options"; a.onclick=()=>{ try{ localStorage.setItem("encore.moneyOpts","1") }catch{} cards.forEach(c=>c.style.display=""); a.remove() }; body.appendChild(a) } } }
+    // the guest form, said like a friend
+    const acc=document.getElementById("g-access"); if(acc&&acc.placeholder==="None") acc.placeholder="e.g. vegetarian, running late";
+  }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// the description shouldn't repeat the sentence you typed to start
+{ const _qs41=quickStart; quickStart=function(text){ const r=_qs41.apply(this,arguments); try{ if(window.__wsPersonal&&draft.description&&draft.description.trim()===String(text||"").trim()) draft.description="" }catch{} return r } }
+// typing the same idea twice reopens the draft you just started instead of piling up copies
+{ const _qs41b=quickStart; quickStart=function(text){ try{ if(window.__wsPersonal){ const t=String(text||"").trim().toLowerCase(), now=Date.now(); const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x&&!x.published&&!x.example&&String(x.concept||"").trim().toLowerCase()===t&&now-(x.createdAt||x.updatedAt||0)<10*60*1000); if(e){ if(e.id!==draft?.id) openEvent(e,1); setTimeout(()=>{ try{ document.getElementById("wizBg")?.remove(); openWizard?.(2) }catch{} },300); return } } }catch{} return _qs41b.apply(this,arguments) } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

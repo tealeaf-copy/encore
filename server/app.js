@@ -222,6 +222,7 @@ export function createApp({ store, dataDir }) {
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }
     if (!regular || !needCode) C.issueCodes({ ws: W.id, email, name });
+    { const city = String(b.city || "").trim().slice(0, 60); if (city) { try { const W2 = getWorkspace(W.id); updateWorkspace(W.id, { city, host: { ...(W2?.host || {}), city: W2?.host?.city || city } }); } catch {} } }
     if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
     // A brand's first minute: Encore starts researching the company while they look around.
     else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }
@@ -412,7 +413,7 @@ export function createApp({ store, dataDir }) {
   app.get("/api/workspace", (req, res) => {
     const ws = sessionWorkspace(req), W = getWorkspace(ws), T = trialState(W);
     res.json({ id: ws, company: W?.company || "", personal: W?.plan === "friends", plan: W?.plan || "self-hosted", trialEndsAt: W?.trialEndsAt || null, daysLeft: T.daysLeft, trial: T.trial, trialEnded: T.trialEnded,
-      handle: W?.host?.handle || "", regularOnly: !!W?.regularOnly, writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
+      handle: W?.host?.handle || "", city: W?.host?.city || W?.city || "", regularOnly: !!W?.regularOnly, writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
       approverRoles: approverRoles(ws), approverRolesSet: ws === DEFAULT_WS ? null : W?.approverRoles || [],
       members: teamOf(ws).map((m) => ({ name: m.name, email: m.email, roles: m.roles || [], ...(m.owner ? { owner: true } : {}) })),
       limits: { features: "all", members: null, events: null, writes: T.writable } }); // no feature gates during the trial

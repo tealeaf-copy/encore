@@ -8475,7 +8475,7 @@ async function drawInvites(){ try{ const v=document.querySelector("#view-program
 new MutationObserver(()=>{ try{ if(!draft?.id||!isCasual(draft)) return; const D=new Set((allRsvps||[]).filter(r=>r.eventId===draft.id&&r.response==="no"&&r.decidedAt).map(r=>String(r.name||"").trim())); if(!D.size) return; document.querySelectorAll("#view-studio li, #view-studio tr, #view-studio .wc-row, #view-studio .who-row").forEach(row=>{ if(row.dataset.decl) return; const txt=row.textContent; for(const n of D){ if(n&&txt.includes(n)&&/Can.t make it/.test(txt)){ row.dataset.decl=1; row.querySelectorAll("*").forEach(x=>{ if(!x.children.length&&/Can.t make it/.test(x.textContent)) x.textContent=x.textContent.replace(/Can.t make it/,"Not this time (your call)") }) } } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 
 // guest invite pages wear the playful public style
-(()=>{ try{ if(!isGuestRoute?.()) return; if(!document.querySelector('link[href="/playful.css"]')){ const l=document.createElement("link"); l.rel="stylesheet"; l.href="/playful.css"; document.head.appendChild(l) } }catch{} })();
+(()=>{ try{ if(!isGuestRoute?.()) return; if(!document.querySelector('link[href="/playful.css"]')){ const l=document.createElement("link"); l.rel="stylesheet"; l.href="/playful.css"; document.head.appendChild(l) } if(!document.querySelector('link[href="/templates.css"]')){ const t=document.createElement("link"); t.rel="stylesheet"; t.href="/templates.css"; document.head.appendChild(t) } }catch{} })();
 
 // friends events: the guest list without the sales tooling
 new MutationObserver(()=>{ try{ if(!draft||!isCasual(draft)) return; const v=document.querySelector("#view-studio"); if(!v) return; v.querySelectorAll("section.panel,details.panel,.panel,details").forEach(sec=>{ if(sec.hidden||sec.dataset.cz) return; const h=(sec.querySelector("h2,h3,h4,summary,b")?.textContent||"").trim(); if(/^(Rules of engagement|Ask your AEs who to invite|Sales lead|Measure real lift|Guest scout|Outreach|Get a strategy|Who's missing|Accounts|Hand off to sales)/i.test(h)){ sec.hidden=true; sec.dataset.cz=1 } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
@@ -8536,6 +8536,9 @@ window.openWizard=openWizard;
 document.addEventListener("click",e=>{ const b=e.target.closest?.("#newDraft"); if(!b||!window.__wsPersonal) return; e.stopImmediatePropagation(); e.preventDefault(); openWizard(1) },true);
 { const _rs27=renderStep; renderStep=function(){ const r=_rs27.apply(this,arguments); try{ friendsRail(); wireHeroFriends() }catch{} return r } }
 { const _qsW=quickStart; quickStart=function(text){ const fresh=!draft?.id||draft.example; const r=_qsW.apply(this,arguments); try{ if(fresh&&window.__wsPersonal&&!document.getElementById("wizBg")&&!window.__wizBusy){ window.__wizBusy=1; setTimeout(()=>{ window.__wizBusy=0; if(location.hash==="#studio"&&!document.getElementById("wizBg")) openWizard(2) },700) } }catch{} return r } }
+
+// tidy: no leading "· " on guest page meta lines
+new MutationObserver(()=>{ try{ document.querySelectorAll("#view-guest small, #view-guest .meta, #view-guest p").forEach(n=>{ if(n.children.length) return; const t=n.textContent; if(/^\s*·\s+/.test(t)) n.textContent=t.replace(/^\s*·\s+/,"") }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -8885,4 +8888,5 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .wiz-sum{display:grid;gap:4px;padding:14px;border:2px solid #1F1A17;border-radius:16px;background:#fff;margin:8px 0 12px}.wiz-sum b{font-size:18px}
 .wiz-share{min-height:96px;font-size:15px!important}.wiz-pip{margin-bottom:-4px}
 @media (max-width:520px){.wiz-row{grid-template-columns:1fr}.wiz{padding:18px 16px}}
+.logo span{background:none!important;-webkit-text-fill-color:currentColor!important;color:#1F1A17!important}.lib-card :is(.d1,.d2,.d3,.d4){display:none!important}button{font-family:inherit}
 </style>

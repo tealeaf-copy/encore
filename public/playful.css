@@ -1,7 +1,7 @@
 /* Encore, playful: chunky rounded type, ink outlines, sticker shadows, pastel blocks.
    Loaded after each public page's own styles, so it only restyles; it never changes layout or behaviour. */
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap");
-:root{--p-ink:#1F1A17;--p-paper:#FFF8EE;--p-butter:#FFE08A;--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:#E2573A;--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
+:root{--p-ink:#1F1A17;--p-paper:#FFF8EE;--p-butter:#FFE08A;--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:#C94A30;--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
 
 /* paper with a soft dot grid, always light */
 html{color-scheme:light}
@@ -52,8 +52,8 @@ input:focus,select:focus,textarea:focus{outline:3px solid var(--p-butter)!import
 .stack .card.a{animation:p-bob 6s ease-in-out infinite}.stack .card.b{animation:p-bob 7s ease-in-out -2s infinite}.stack .card.c{animation:p-bob 6.5s ease-in-out -4s infinite}
 @keyframes p-bob{0%,100%{translate:0 0}50%{translate:0 -6px}}
 .hero{position:relative}
-.hero::before{content:"✦";position:absolute;left:-6px;top:28px;font-size:28px;color:var(--p-ember);transform:rotate(-12deg)}
-.hero::after{content:"✿";position:absolute;right:4%;bottom:18px;font-size:34px;color:#F29BB0;transform:rotate(10deg)}
+.hero::before{content:"✦";position:absolute;left:-28px;top:-6px;pointer-events:none;font-size:28px;color:var(--p-ember);transform:rotate(-12deg)}
+.hero::after{content:"✿";position:absolute;right:-14px;bottom:-14px;pointer-events:none;z-index:0;font-size:34px;color:#F29BB0;transform:rotate(10deg)}
 
 /* guest invite pages (inside the app) */
 #view-guest .gxcover{border-bottom:var(--p-line)}
@@ -71,3 +71,34 @@ input:focus,select:focus,textarea:focus{outline:3px solid var(--p-butter)!import
 .place-chip .pc-save{background:var(--p-ember)!important;color:#fff!important;padding:6px 12px}
 .place-chip input{border:2px solid var(--p-ink)!important;border-radius:999px!important;padding:6px 12px!important;min-width:150px;font:inherit}
 .pc-note{flex-basis:100%;font-size:13px;color:#6F6259;padding:0 4px 2px}
+
+.card.wrapped{background:linear-gradient(135deg,#2B211C,#5A3A2E)!important;color:#FBF6EF!important}.card.wrapped small{color:#FFE08A!important}
+
+/* ---- design audit fixes ---- */
+h1,h2{text-wrap:balance}
+@media (max-width:700px){.hero::before,.hero::after{display:none}}
+/* one type family: Fredoka for display bits that were still serif */
+.go b,.step .n,.lv b,.fl b,.teams li b,p.quote,.pip-h b,.xp-foot b,span.n,.card .q,.nu-menu li,.nu-price,.type-cover span,.host-hello span,.menu-card p,#view-guest .type-cover span{font-family:"Fredoka","DM Sans",system-ui,sans-serif!important;font-weight:600!important;font-variation-settings:normal!important}
+/* buttons win over older page rules */
+html body .btn,html body .btn.sm,html body a.btn{border:var(--p-line)!important;box-shadow:3px 3px 0 var(--p-ink)!important;border-radius:999px!important;font-weight:600!important}
+html body .btn:active{transform:translate(3px,3px)!important;box-shadow:0 0 0 var(--p-ink)!important}
+html body{background-color:var(--p-paper)!important}
+html body .eyebrow,html body .nu-eyebrow{color:var(--p-ink)!important}
+/* one border system */
+.gk-grow,.pip-box,.lv,.fl,.step,.store-links a,.trychip,.ticket{border:2px solid var(--p-ink)!important;box-shadow:3px 3px 0 var(--p-ink)!important}
+.step{background:var(--p-butter)!important}.ticket{border:var(--p-line)!important}
+/* one chip system */
+#view-guest .chip,.xp .badge,.dates button{border:2px solid var(--p-ink)!important;border-radius:999px!important;background:#fff}
+/* small readability fixes */
+.nu-early a{color:#9A5B14!important}
+.ev-b small{color:#6B5F56!important}
+.ev .ev-b b{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ev{align-items:start!important}
+.tags{margin:10px 0 0!important}
+.menu-card .dot{font-size:0!important;width:6px;height:6px;margin:6px auto!important;opacity:.5}
+/* text on cover images and colour covers stays readable */
+#view-guest .type-cover{position:relative}
+#view-guest .type-cover::before{content:"";position:absolute;inset:0;background:linear-gradient(transparent 35%,rgba(31,26,23,.55));pointer-events:none}
+#view-guest .type-cover>*{position:relative;text-shadow:0 1px 2px rgba(31,26,23,.4)}
+#view-guest .type-cover small{color:#fff!important;opacity:1!important}
+/* the sign-in and sign-up cards */
+body>form,form#f,form#wl{border:var(--p-line)!important;box-shadow:var(--p-shadow-lg)!important;border-radius:22px!important}

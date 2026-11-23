@@ -21,9 +21,22 @@
     bg.querySelector(".x").onclick = close; bg.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { kind = b.dataset.k; bg.querySelectorAll("[data-k]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
     const f = bg.querySelector("form"); setTimeout(() => f.idea.focus(), 30);
     f.onsubmit = async (ev) => { ev.preventDefault(); const err = bg.querySelector(".err"), btn = f.querySelector("button[type=submit]"); btn.disabled = true; err.textContent = "";
-      try { const r = await fetch(`/api/collab/${encodeURIComponent(h.handle)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, idea: f.idea.value, when: f.when.value, city: f.city.value }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message);
-        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>You'll get a note when ${esc(first)} replies. Your requests and replies are on your own page under Shop and bookings, then Collabs.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
-      } catch (e) { err.textContent = e.message; btn.disabled = false; } }; }
+      try { const r = await fetch(`/api/collab/${encodeURIComponent(h.handle)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, idea: f.idea.value, when: f.when.value, city: f.city.value }) }); const j = await r.json(); if (!r.ok) { const e2 = new Error(j.message); e2.code = j.code; throw e2; }
+        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>You'll get a note when ${esc(first)} replies. Track it any time under <a href="/requests">Your requests</a>.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
+      } catch (e) {
+        if (e.code === "host_page_required") { // one step: make a host page right here, then send
+          let me = {}; try { me = await (await fetch("/api/me")).json(); } catch {}
+          const nm = String(me.name || ""), slug = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+          err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see who you are. Make your host page (20 seconds), and we'll send this right after.</span>
+            <span style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><input class="hp-name" placeholder="Page name, e.g. Kevin's Kitchen" value="${esc(nm ? nm.split(" ")[0] + "'s get-togethers" : "")}"><input class="hp-handle" placeholder="your-handle" value="${esc(slug(nm))}"></span>
+            <button type="button" class="hp-go" style="margin-top:8px;width:100%">Create my page and send the request</button><a href="/" style="display:block;text-align:center;margin-top:6px;font-size:13px">Or set it up properly in Encore</a>`;
+          err.querySelector(".hp-go").onclick = async () => { const b2 = err.querySelector(".hp-go"); b2.disabled = true; b2.textContent = "Creating…";
+            try { const pr = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: err.querySelector(".hp-name").value.trim() || nm, handle: slug(err.querySelector(".hp-handle").value) || slug(nm), city: f.city.value }) }); const pj = await pr.json().catch(() => ({}));
+              if (!pr.ok) throw new Error(pr.status === 403 ? "Your account follows hosts but can't host yet. Ask a member for an invite code." : pj.message || "Couldn't create your page.");
+              btn.disabled = false; f.requestSubmit ? f.requestSubmit() : btn.click(); } catch (x) { b2.disabled = false; b2.textContent = "Create my page and send the request"; const m = document.createElement("span"); m.style.cssText = "display:block;color:#B3261E;margin-top:6px"; m.textContent = x.message; err.appendChild(m); } };
+          btn.disabled = true; return; }
+        if (e.code === "account_required" || /sign in/i.test(e.message)) { err.innerHTML = `${esc(e.message)} <a href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a>`; btn.disabled = false; return; }
+        err.textContent = e.message; btn.disabled = false; } }; }
   async function mount(h) { if (!h?.handle) return; style();
     // "Collabs with …" for everyone
     const C = await J(`/api/public/collabs/${encodeURIComponent(h.handle)}`); const A = window.EncoreAvatars;

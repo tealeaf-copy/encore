@@ -14,3 +14,9 @@
 .next-up[class*="tpl-"] .nu-meta span{background:var(--thchip)!important;color:var(--thfg)!important}
 .next-up[class*="tpl-"] .btn:not(.ghost){background:var(--thac)!important;color:var(--thbg)!important}
 .ev[class*="tpl-"]{background:var(--thbg)!important;color:var(--thfg)!important}.ev[class*="tpl-"] *{color:inherit}
+
+/* dark templates: boxes inside the invite take the template colours, so nothing is cream-on-white */
+:is(.tpl-candlelight,.tpl-midnight,.th-candlelight,.th-midnight) :is(.menu-card,.hostchip,.chip,.f input,.card,[class*=fact]>div,.gk-grow,.ticket){background:var(--thchip,rgba(255,255,255,.08))!important;color:var(--thfg)!important;border-color:color-mix(in srgb,var(--thfg) 30%,transparent)!important}
+.th-candlelight{--thchip:#4A3729}.th-midnight{--thchip:#24365A}
+/* the colour cover follows the chosen template */
+[class*="tpl-"] .type-cover,.invite[class*="th-"] .type-cover{--tc:var(--thac)!important}

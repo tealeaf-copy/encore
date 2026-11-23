@@ -43,7 +43,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
       if (city && theirCity && !sameCity) continue; if (city && !sameCity && !followers.has(em) && !friends.has(em)) continue; if (score < 2) continue;
       out.push({ email: em, name: X.person(em).name, handle: h.handle, why: why.slice(0, 3), score, top: P.top ? { emoji: P.top.emoji, name: P.top.name } : null });
     }
-    for (const f of C.followersOf(u.ws)) if (!out.some((o) => o.email === lc(f.email)) && !(city && (() => { const w2 = X.userOf(f.email); const c2 = lc(w2 ? C.profileOf(w2.ws)?.city : ""); return c2 && !c2.includes(city) && !city.includes(c2); })())) out.push({ email: lc(f.email), name: f.name, why: ["follows you"], score: 2, follower: true });
+    for (const f of C.followersOf(u.ws)) if (f.email && !out.some((o) => o.email === lc(f.email)) && !(city && (() => { const w2 = X.userOf(f.email); const c2 = lc(w2 ? C.profileOf(w2.ws)?.city : ""); return c2 && !c2.includes(city) && !city.includes(c2); })())) out.push({ email: lc(f.email), name: f.name, why: ["follows you"], score: 2, follower: true });
     return out.sort((a, b) => b.score - a.score).slice(0, 300);
   }
   app.get("/api/host/audience/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const ev = evOf(u, req.params.eventId); if (!ev) return bad(res, "No such event.", 404, "not_found");

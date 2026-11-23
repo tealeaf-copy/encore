@@ -87,7 +87,7 @@ export function makeCommunity(store) {
   // ---- followers (the fan club) ----
   function followersOf(ws) { return scopeStore(store, ws).list("followers").map((d) => d.data); }
   function follow(ws, { email, name, via = "page", tastes = [], phone = "" }) {
-    const S = scopeStore(store, ws), key = crypto.createHash("sha256").update(String(email).toLowerCase()).digest("hex").slice(0, 24), path = "followers/" + key, cur = S.get(path)?.data;
+    const S = scopeStore(store, ws), key = crypto.createHash("sha256").update(String(email || "tel:" + String(phone).replace(/[^\d+]/g, "")).toLowerCase()).digest("hex").slice(0, 24), path = "followers/" + key, cur = S.get(path)?.data;
     S.set(path, { email: String(email).toLowerCase(), name: clean(name, 80) || cur?.name || "", via: cur?.via || via, tastes: [...new Set([...(cur?.tastes || []), ...tastes.map((t) => clean(t, 24))])].slice(0, 10), phone: clean(phone, 24) || cur?.phone || "", ...(cur?.confirmedAt ? { confirmedAt: cur.confirmedAt } : {}), at: cur?.at || Date.now(), updatedAt: Date.now() });
     return !cur;
   }
@@ -110,6 +110,8 @@ export function makeCommunity(store) {
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
       hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); events.push(...up.filter((c) => !c.unlisted)); }
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
+    // one card per host name (people who signed up twice, or test accounts that share a name)
+    { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase(); if (k && seen.has(k)) { hosts.splice(i, 1); i--; } else seen.add(k); } }
     // no doubles on Discover: one card per host, title and date
     { const seen = new Set(); for (let i = events.length - 1; i >= 0; i--) { const e = events[i], k = `${String(e.host?.name || e.host?.handle || "").toLowerCase()}|${String(e.title || "").toLowerCase()}|${e.date || ""}`; if (seen.has(k)) events.splice(i, 1); else seen.add(k); } }
     // a small, scoped badge: the three most active hosts in each city (events hosted, followers, what's coming), never money
@@ -202,7 +204,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   // Announce an event to followers (email when it's set up; otherwise a list to send yourself).
   app.post("/api/host/announce", small, async (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), ev = scopeStore(store, u.ws).get("events/" + id)?.data; if (!ev) return res.status(404).json({ code: "not_found", message: "No such event." });
     const F = C.followersOf(u.ws), h = C.profileOf(u.ws), cfg = emailConfig(u.ws, u.ws === DEFAULT_WS), link = `${publicOrigin(req)}/g#rsvp-${id}`; let sent = 0;
-    if (cfg) for (const f of F.slice(0, 500)) { try { const r = await sendEmail(cfg, { to: f.email, subject: `New from ${h?.name || u.name}: ${ev.pubTitle || ev.name}`, text: `Hi ${first(f.name) || "there"},\n\n${h?.name || u.name} is hosting ${ev.pubTitle || ev.name}${ev.date ? ` on ${ev.date}` : ""}${ev.city ? ` in ${ev.city}` : ""}.\n\nSay yes here: ${link}\n\nYou're getting this because you follow ${h?.name || "this host"} on Encore.`, fromName: h?.name || u.name }); if (r.ok) sent++; } catch {} }
+    if (cfg) for (const f of F.slice(0, 500)) { if (!f.email) continue; try { const r = await sendEmail(cfg, { to: f.email, subject: `New from ${h?.name || u.name}: ${ev.pubTitle || ev.name}`, text: `Hi ${first(f.name) || "there"},\n\n${h?.name || u.name} is hosting ${ev.pubTitle || ev.name}${ev.date ? ` on ${ev.date}` : ""}${ev.city ? ` in ${ev.city}` : ""}.\n\nSay yes here: ${link}\n\nYou're getting this because you follow ${h?.name || "this host"} on Encore.`, fromName: h?.name || u.name }); if (r.ok) sent++; } catch {} }
     scopeStore(store, u.ws).add("audit", { eventId: id, what: `announced to ${F.length} followers${cfg ? ` (${sent} emailed)` : ""}`, kind: "growth", at: Date.now() });
     res.json({ ok: true, followers: F.length, emailed: sent, link }); });
 }

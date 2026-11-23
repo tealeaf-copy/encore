@@ -407,7 +407,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     for (const [eid, L] of byEv) { const ev = events.get(eid), past = !!ev.date && ev.date < today; L.sort((a, b) => (a.createdAt || a.at || 0) - (b.createdAt || b.at || 0));
       L.forEach((r, i) => { bump(r, "events"); if (r.response === "going" || r.interest === "in") { bump(r, "yes"); if (i < 3) bump(r, "early"); if (past) bump(r, "came"); } else if (r.response === "no") bump(r, "no"); }); }
     for (const d of S.list("kudos")) { const kd = d.data || {}; if (kd.email) bump({ email: kd.email, name: kd.name }, "kudos"); }
-    try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email); if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
+    try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email || f.phone || ""); if (!k2) continue; if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
     const L = [...P.entries()].filter(([k2]) => !already.has(k2)).map(([k2, x]) => { const score = x.early * 3 + x.came * 3 + x.yes * 2 + x.kudos + (x.follows ? 1 : 0) - x.no;
       const why = [x.early ? `said yes first ${x.early === 1 ? "once" : `${x.early} times`}` : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent you kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
       return { name: x.name || (x.email ? x.email.split("@")[0] : "A friend"), email: x.email, phone: x.phone, score, why: why.length ? why.join(" · ") : "follows you", early: x.early >= 1 }; }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
@@ -451,8 +451,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     return twiml(res, msg); });
   // "Keep me posted" on the RSVP form: a guest (no account needed) follows the host, proved by their RSVP code
   app.post("/api/public/keep-posted", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(clean(b.eventId, 80), b.rid, b.code); if (!P) return bad(res, "RSVP first.", 403, "not_granted");
-    const email = lc(P.r.email || ""); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.json({ ok: false, reason: "no_email" });
-    const isNew = C.follow(P.ws, { email, name: clean(P.r.name, 80), via: "rsvp", phone: P.r.phone || "" }); res.json({ ok: true, isNew, followers: C.followersOf(P.ws).length }); });
+    const email = lc(P.r.email || ""); const phone = clean(P.r.phone || "", 24); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && phone.replace(/\D/g, "").length < 7) return res.json({ ok: false, reason: "no_contact" });
+    const isNew = C.follow(P.ws, { email: /@/.test(email) ? email : "", name: clean(P.r.name, 80), via: "rsvp", phone }); res.json({ ok: true, isNew, followers: C.followersOf(P.ws).length }); });
   // the exact address, for guests who are in
   app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
     res.json({ ok: true, meetPoint: P.ev.meetPoint || "", venueName: P.ev.venueName || "", venueAddr: P.ev.venueAddr || "" }); });

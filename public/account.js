@@ -17,7 +17,7 @@
   async function me() { try { const j = await (await fetch("/api/me")).json(); return j?.verified ? j : null; } catch { return null; } }
   /** Make sure there's an account, then resolve true; resolve false if the person closes the sheet. */
   function ensure({ handle = "", hostName = "", name = "", email = "" } = {}) {
-    return new Promise((resolve) => { style(); let mode = "new"; const first = String(hostName || "").split(" ")[0] || "this host";
+    return new Promise((resolve) => { style(); let mode = "new"; const first = String(hostName || "").split(" ")[0].replace(/['’]s$/i, "") || "this host";
       const bg = document.createElement("div"); bg.className = "acct-bg"; document.body.appendChild(bg);
       const close = (v) => { bg.remove(); resolve(v); }; bg.onclick = (e) => { if (e.target === bg) close(false); };
       const draw = () => { bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Create your account"><button class="x" type="button" aria-label="Close">×</button>

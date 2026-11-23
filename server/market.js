@@ -17,6 +17,9 @@ const perHead = (p) => { const m = String(p || "").replace(/,/g, "").match(/\$\s
 /** Read a brief like "Vietnamese food for 40 people in New York, fun and hands-on, about $3k". */
 const STOP = new Set(["people", "about", "with", "team", "something", "want", "would", "like", "that", "this", "event", "events", "then", "than", "person", "persons", "plus", "half", "under", "around", "maybe", "some", "they", "their", "there", "into", "from", "what", "when", "where", "have", "need", "looking", "planning", "company", "office", "offsite", "march", "april", "june", "july", "budget", "thanks", "please", "help", "great", "really", "very", "much", "more", "less", "just"]);
 const hasWord = (t, w) => new RegExp(`(^|[^a-zà-ỹ])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(s|es)?($|[^a-zà-ỹ])`, "i").test(t);
+// neighbourhoods and nicknames count as their city, so "Brooklyn" finds hosts in Greenpoint and Williamsburg
+const CITY_ALIAS = [[/^(brooklyn|manhattan|queens|the bronx|bronx|staten island|nyc|new york city|ny|williamsburg|greenpoint|bushwick|harlem|astoria|soho|lower east side|les|dumbo|park slope)$/, "new york"], [/^(sf|san fran|the bay|bay area|oakland|mission district)$/, "san francisco"], [/^(la|santa monica|silver lake|venice)$/, "los angeles"], [/^(dc|washington dc)$/, "washington"], [/^(shoreditch|hackney|brixton|peckham|soho london)$/, "london"]];
+export function cityAlias(c) { const x = String(c || "").trim().toLowerCase(); for (const [re, to] of CITY_ALIAS) if (re.test(x)) return to; return x; }
 export function parseBrief(text) { const t = lc(text), people = +(t.match(/(\d{1,4})\s*-?\s*(?:people|ppl|guests|persons?|employees|folks|of us|attendees|pax|influencers|creators|clients|customers|staff|colleagues|members|kids|friends|editors|press)/) || [])[1] || +(t.match(/(?:team|group) of (\d{1,4})/) || [])[1] || +(t.match(/(?:for|about|around|~)\s*(\d{1,4})\b(?!\s*(?:k|%|am|pm|min|hours?|\$))/) || [])[1] || 0;
   const budget = (() => { const m = t.replace(/,/g, "").match(/\$\s?(\d+(?:\.\d+)?)\s*(k)?/); return m ? +m[1] * (m[2] ? 1000 : 1) : 0; })();
   const cats = Object.entries(CAT_WORDS).filter(([, w]) => w.some((x) => hasWord(t, x))).map(([k]) => k);
@@ -43,7 +46,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
     L.sort((a, b) => b.trust.kudos * 2 + b.trust.guests + b.trust.booked * 5 - (a.trust.kudos * 2 + a.trust.guests + a.trust.booked * 5)); res.json({ experiences: L.slice(0, 60) }); });
   // "Tell Pip what you're planning": a ranked shortlist with reasons
   app.post("/api/public/match", small, (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const text = clean(req.body?.brief, 600); if (text.length < 6) return bad(res, "Tell Pip a little about the event.");
-    const B = parseBrief(text), city = lc(B.city || req.body?.city || ""), cat0 = catalog(), knownCity = !!city && cat0.some((x) => lc(`${x.host.city} ${x.host.hood}`).includes(city));
+    const B = parseBrief(text), city = cityAlias(lc(B.city || req.body?.city || "")), cat0 = catalog(), knownCity = !!city && cat0.some((x) => lc(`${x.host.city} ${x.host.hood}`).includes(city));
     const L0 = cat0.map((x) => { let s = 0; const why = []; const blob = lc(`${x.name} ${x.desc} ${x.host.tagline} ${(x.includes || []).join(" ")}`);
       if (B.cats.includes(x.category)) { s += 4; why.push(CATEGORIES.find(([k]) => k === x.category)[1].toLowerCase()); }
       const hitWords = B.words.filter((w) => hasWord(blob, w)); if (hitWords.length) { s += Math.min(4, hitWords.length * 1.5); why.push(`"${hitWords.slice(0, 2).join(", ")}"`); }

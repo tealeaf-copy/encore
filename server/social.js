@@ -245,13 +245,19 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   const cleanLink = (u) => { const x = String(u || "").trim().slice(0, 500); return /^https:\/\/[^\s<>"]+$/i.test(x) ? x : ""; };
   app.get("/api/me/feed", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); const F = X.feed(u.email), em = lc(u.email);
     const authors = [em, ...X.friendsOf(em).map((f) => lc(f.email))], pub = (p) => ({ name: p.name, handle: p.handle, emoji: p.emoji, color: p.color });
-    const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
+    const cheerNames = (L) => (L || []).map((c) => (X.person(c).name || "").split(/\s+/)[0]).filter(Boolean);
+    const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, author: Buffer.from(a).toString("base64url"), who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", cheers: cheerNames(p.cheers), cheered: (p.cheers || []).includes(em), ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
     F.items = [...posts, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0)); res.json(F); });
   app.post("/api/me/posts", small, (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {};
     const text = clean(b.text, 1000), link = cleanLink(b.link), photo = /^\/(_blob|assets)\/[A-Za-z0-9._-]+$/.test(String(b.photo || "")) ? String(b.photo) : "";
     if (b.link && !link) return bad(res, "Links must start with https://"); if (!text && !link && !photo) return bad(res, "Write something, or add a photo or link.");
     const em = lc(u.email), L = postsOf(em); const p = { id: crypto.randomBytes(8).toString("hex"), text, link, photo, at: Date.now() }; L.unshift(p);
     store.set("system/" + postsKey(em), { kind: "posts", list: L.slice(0, 200) }); res.json({ ok: true, post: p }); });
+  // cheer a friend's post (or undo): names, not a like count
+  app.post("/api/me/posts/:author/:id/cheer", small, (req, res) => { const u = me(req, res); if (!u) return; let a = ""; try { a = Buffer.from(String(req.params.author), "base64url").toString().toLowerCase(); } catch {} const em = lc(u.email);
+    if (a !== em && !X.friendsOf(em).some((f) => lc(f.email) === a)) return bad(res, "You can cheer friends' posts.", 403, "not_granted");
+    const L = postsOf(a), p = L.find((x) => x.id === req.params.id); if (!p) return bad(res, "No such post.", 404, "not_found"); const C2 = new Set(p.cheers || []); if (C2.has(em)) C2.delete(em); else C2.add(em); p.cheers = [...C2];
+    store.set("system/" + postsKey(a), { kind: "posts", list: L }); res.json({ ok: true, cheered: C2.has(em), count: C2.size }); });
   app.delete("/api/me/posts/:id", (req, res) => { const u = me(req, res); if (!u) return; const em = lc(u.email); store.set("system/" + postsKey(em), { kind: "posts", list: postsOf(em).filter((p) => p.id !== req.params.id) }); res.json({ ok: true }); });
   app.post("/api/me/posts/photo", raw, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!/^image\/(jpeg|png|webp|gif)$/.test(ct)) return bad(res, "Photos only (JPEG, PNG, WebP, GIF).", 415, "unsupported_type"); const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");

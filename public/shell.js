@@ -12,6 +12,7 @@
     plus: I('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>'),
     cal: I('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
     bell: I('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
+    me: I('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
   };
   const css = document.createElement("style");
@@ -28,7 +29,14 @@
 .es-top nav{display:flex;gap:16px;align-items:center;font:500 15px "Instrument Sans",system-ui}.es-top nav a{color:#5E534B;text-decoration:none}
 .es-top nav a.cta{background:#fff;color:#1F1A17;padding:8px 14px;border-radius:999px;border:1px solid #E4D9C8;font-weight:600}
 @media (min-width:861px){body.es-has-rail .es-top .es-brand{visibility:hidden}body.es-has-rail header.top{display:none}}
-@media (min-width:861px){body.es-has-rail{padding-left:72px}}
+@media (min-width:861px){body.es-has-rail{padding-left:224px}}
+.es-rail{width:224px!important;align-items:stretch!important;padding:20px 14px!important;gap:2px!important;background:#FFFDFA!important;border-right:1px solid #E9E1D6!important;backdrop-filter:none!important}
+.es-rail a{width:auto!important;height:44px!important;display:flex!important;align-items:center;gap:12px;padding:10px 12px;border-radius:10px!important;color:#6B5F56!important;font:600 15.2px "DM Sans","Instrument Sans",system-ui,sans-serif;text-decoration:none}
+.es-rail a svg{flex:none;width:22px;height:22px}
+.es-rail a:hover{background:#F6EFE8!important;color:#2B211C!important}.es-rail a[aria-current]{background:#F6E7DF!important;color:#8E3A25!important}
+.es-rail .es-logo{height:auto!important;padding:0 8px!important;margin-bottom:18px!important;font:600 24px Fraunces,Georgia,serif!important;color:#2B211C!important;gap:8px}.es-rail .es-logo:hover{background:none!important}
+.es-rail a[data-tip]:hover::after{display:none!important}.es-rail .es-n{position:static!important;margin-left:auto}
+.es-rail .es-out{height:auto!important;justify-content:center;font:400 14px "DM Sans",system-ui!important;text-decoration:underline!important;margin-top:12px;padding:6px!important}
 @media (max-width:860px){.es-rail{display:none}}
 .es-tabs{display:none}
 @media (max-width:860px){.es-tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;justify-content:space-around;align-items:flex-end;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(255,251,245,.96);backdrop-filter:blur(8px);border-top:1.5px solid #E9DFD2}
@@ -42,19 +50,20 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
   function draw(me, W, alerts) {
     const rail = document.createElement("nav"); rail.className = "es-rail"; rail.setAttribute("aria-label", "Encore");
     const signed = !!me?.verified, host = signed && !W?.regularOnly, ini = String(me?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "🙂";
-    rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Encore home">${logo}</a>` +
-      (signed ? link("/?app=1", ICON.home, "Home") : "") + link("/discover", ICON.search, "Discover") + (signed ? link("/feed", ICON.globe, "Feed") : "") +
-      link(host ? "/?app=1#studio" : "/signup?mode=friends", ICON.plus, host ? "New event" : "Host something") + link("/plans", ICON.cal, "Your plans") +
-      (signed ? link("/feed#alerts", ICON.bell, "Alerts", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") : "") +
-      `<span class="es-sp"></span><span class="es-div"></span>` +
-      (signed ? `<a href="${W?.handle ? "/@" + W.handle : "/?app=1"}" data-tip="${W?.handle ? "My page" : "Account"}" aria-label="My page"><span class="es-av">${ini}</span></a>` : link("/login", ICON.login, "Sign in"));
+    const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
+    rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Encore home">${logo}<span>encore</span></a>` +
+      (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "Events")
+        : signed ? item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1", ICON.plus, "Host something")
+        : item("/discover", ICON.search, "Discover") + item("/plans", ICON.cal, "Plans") + item("/login", ICON.login, "Sign in") + item("/signup?mode=friends", ICON.plus, "Host something")) +
+      (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
+    setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     document.body.prepend(rail); document.body.classList.add("es-has-rail");
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Encore");
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
-      tabs.innerHTML = (signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
+      tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/feed", ICON.globe, "Feed") + tab("/plans", ICON.cal, "Plans") + tab("/?app=1#studio", ICON.plus, "Events") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
         `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Host something"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` +
-        tab("/plans", ICON.cal, "Plans") + (signed ? tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:10px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in"));
+        tab("/plans", ICON.cal, "Plans") + (signed ? tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:10px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in")));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}encore</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Your plans</a>` : `<a href="/login">Sign in</a>`}<a class="cta" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}">Host something</a></nav>`;

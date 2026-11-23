@@ -9316,7 +9316,7 @@ new MutationObserver(()=>{ try{ const n=document.getElementById("wzName"); if(!n
 // guest page: the why under the title, the rules as stickers, and the question once you're going
 async function ppGuest(){ try{ const e=window.__gEv, v=document.getElementById("view-guest"); if(!e?.id||!v) return; const h=v.querySelector(".invite .in h3"); if(!h) return;
     if(e.why&&!v.querySelector(".pp-why")){ const p=document.createElement("p"); p.className="pp-why"; p.textContent=/^so\b/i.test(e.why)?`We're getting together ${e.why}.`:e.why; h.after(p) }
-    if((e.houseRules||[]).length&&!v.querySelector(".pp-rules")){ const r=document.createElement("div"); r.className="pp-rules"; r.innerHTML=`<small class="eyebrow" style="width:100%">House rules for the night</small>`+e.houseRules.map(x=>`<span>${esc(x)}</span>`).join(""); (v.querySelector(".pp-why")||h).after(r) }
+    if((e.houseRules||[]).length&&!v.querySelector(".pp-rules")){ const r=document.createElement("div"); r.className="pp-rules"; r.innerHTML=`<small style="width:100%;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B5F56">House rules for the night</small>`+e.houseRules.map(x=>`<span>${esc(x)}</span>`).join(""); (v.querySelector(".pp-why")||h).after(r) }
     const M=myRsvp(e.id); if(!e.askQ||!M?.rid||v.querySelector(".pp-q")) return;
     const st=await (await fetch(`/api/public/answers/${encodeURIComponent(e.id)}?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`)).json().catch(()=>null); if(!st||st.code==="not_granted"||v.querySelector(".pp-q")) return;
     const c=document.createElement("section"); c.className="pp-q"; const anchor=v.querySelector(".ev2-chat")||v.querySelector("#gForm"); if(!anchor) return; anchor.before(c);

@@ -407,7 +407,7 @@ export function createApp({ store, dataDir }) {
   app.get("/api/workspace", (req, res) => {
     const ws = sessionWorkspace(req), W = getWorkspace(ws), T = trialState(W);
     res.json({ id: ws, company: W?.company || "", personal: W?.plan === "friends", plan: W?.plan || "self-hosted", trialEndsAt: W?.trialEndsAt || null, daysLeft: T.daysLeft, trial: T.trial, trialEnded: T.trialEnded,
-      writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
+      handle: W?.host?.handle || "", regularOnly: !!W?.regularOnly, writable: T.writable, upgradeRequest: W?.upgradeRequest || null,
       approverRoles: approverRoles(ws), approverRolesSet: ws === DEFAULT_WS ? null : W?.approverRoles || [],
       members: teamOf(ws).map((m) => ({ name: m.name, email: m.email, roles: m.roles || [], ...(m.owner ? { owner: true } : {}) })),
       limits: { features: "all", members: null, events: null, writes: T.writable } }); // no feature gates during the trial

@@ -106,4 +106,5 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   drawQuiz(ans.lane ? (ans.persona ? 2 : 1) : 0);
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
-</script></body></html>
+</script><script src="/nav.js"></script>
+</body></html>

@@ -22,6 +22,7 @@ h2.sub{font-size:20px;margin-top:22px}
     <p style="color:var(--soft);max-width:520px">Everything you're hosting, said yes to, asked for or ordered. Signed in, it follows you to any device.</p>
     <div id="hostSec" hidden><h2 class="sub">You're hosting</h2><div class="plans" id="host"></div></div>
     <h2 class="sub">Get-togethers</h2><div class="plans" id="ev"></div>
+    <p style="margin:18px 0 0"><a href="/requests" style="font-weight:600">Bookings and requests to hosts →</a></p>
     <h2 class="sub">Orders</h2><div class="plans" id="ord"></div>
   </main>
 </div>
@@ -45,4 +46,5 @@ h2.sub{font-size:20px;margin-top:22px}
   O.sort((a, b) => (b.at || 0) - (a.at || 0));
   document.getElementById("ord").innerHTML = O.length ? O.map((o) => `<a class="plan" href="/@${encodeURIComponent(o.handle)}#shop"><span class="ic">🍰</span><span><b>${esc(o.items || "Order")}${o.host ? ` from ${esc(o.host)}` : ""}</b><small>Order ${esc(String(o.code || "").replace(/^#/, "#"))}${o.total ? ` · ${esc(o.total)}${o.payUrl ? " · pay before pickup" : " · pay at pickup"}` : ""}</small><br><small>${o.slot ? `Pickup ${esc(o.slot)}` : "Pickup details on the host's page"}${o.where ? ` · ${esc(o.where)}` : ""}</small><br><span class="pill">Show <b style="display:inline;font-size:15px;letter-spacing:.06em">#${esc(String(o.code || "").replace(/^#/, ""))}</b> at pickup</span></span></a>`).join("") : `<div class="empty">No orders yet.</div>`;
 })();
-</script></body></html>
+</script><script src="/nav.js"></script>
+</body></html>

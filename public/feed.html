@@ -137,4 +137,5 @@
     document.body.appendChild(el); el.onclick = (e) => { if (e.target === el || e.target.classList.contains("x")) el.remove(); }; post("/api/me/inbox/read").then(() => { F.unread = 0; drawBell(); }).catch(() => {}); };
   load();
 })();
-</script></body></html>
+</script><script src="/nav.js"></script>
+</body></html>

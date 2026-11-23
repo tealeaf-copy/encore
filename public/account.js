@@ -34,7 +34,7 @@
         f.onsubmit = async (ev) => { ev.preventDefault(); const b = Object.fromEntries(new FormData(f)); err.textContent = ""; const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
           try { const r = mode === "new" ? await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...b, mode: "friends", regularOf: handle }) })
               : await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: b.email, password: b.password }) });
-            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || (mode === "new" ? "Couldn't create the account." : "That email and password don't match."));
+            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || (mode === "new" ? "Couldn't create the account." : "That email and password don't match.")); try { window.dispatchEvent(new Event("encore:signedin")); } catch {}
             try { if (b.name) localStorage.setItem("encore.name", b.name); localStorage.setItem("encore.email", b.email); if (b.phone) localStorage.setItem("encore.phone", b.phone); localStorage.setItem("encore.phoneAsked", "1"); } catch {} close(true);
           } catch (e) { err.textContent = e.message; btn.disabled = false; } }; };
       draw(); }); }

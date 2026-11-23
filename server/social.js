@@ -348,9 +348,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/attendees/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example) return bad(res, "No such event.", 404, "not_found"); if (ev.hideGuests) return res.json({ attendees: [], count: 0, hidden: true });
     const short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = []; let total = 0;
-    const arche = (email) => { try { const t = email ? X.eventProfile(email)?.top : null; return t ? { name: t.name, emoji: t.emoji } : { name: "New to Encore", emoji: "🌱" }; } catch { return { name: "New to Encore", emoji: "🌱" }; } };
+    const arche = (email, gt) => { try { const t = email ? X.eventProfile(email)?.top : null; if (t) return { name: t.name, emoji: t.emoji }; } catch {} const q = TRAITS[gt]; return q ? { name: q.name, emoji: q.emoji } : { name: "New to Encore", emoji: "🌱" }; };
     for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = r.response === "going" || (ev.stage === "interest" && r.interest === "in"); if (r.eventId !== id || !yes) continue; const k = lc(r.email || r.name || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
-      out.push({ name: short(r.name), archetype: arche(lc(r.email)), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email ? { key: hash(lc(r.email)) } : {}) }); }
+      out.push({ name: short(r.name), archetype: arche(lc(r.email), r.guestType), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email ? { key: hash(lc(r.email)) } : {}) }); }
     for (const g of ev.guests || []) { if (!/^(Going|Attended)$/.test(g.status || "")) continue; const k = lc(g.email || g.name); if (!k || seen.has(k)) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
     res.json({ attendees: out.slice(0, 40), count: total, seats: +ev.headcount || 0 }); });
   // a guest's card, opened from Who's coming: only for people who chose to be shown, never their email
@@ -359,7 +359,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const d = S.list("rsvps").find((x) => x.data?.eventId === id && x.data?.email && hash(lc(x.data.email)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
     const r = d.data, em = lc(r.email), w = String(r.name || "").trim().split(/\s+/).filter(Boolean), name = w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest";
     let P = {}; try { P = X.eventProfile(em) || {}; } catch {}
-    const top = P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
+    const top = P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : TRAITS[r.guestType] ? { ...TRAITS[r.guestType], quiz: true } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
     const pp = X.person(em), prof = pp?.ws ? C.profileOf(pp.ws) : null, SOC = /instagram|tiktok|x\.com|twitter|threads|linkedin|strava|substack|youtube|bsky|facebook/i;
     const socials = (prof?.links || []).filter((l) => l?.url && SOC.test(l.url)).slice(0, 4).map((l) => ({ label: clean(l.label, 30) || new URL(l.url).hostname.replace(/^www\./, ""), url: l.url }));
     const I = X.index(), kud = I.kudos.filter((k) => lc(k.email) === em && k.love).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 2).map((k) => ({ love: clean(k.love, 160), event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" }));
@@ -367,14 +367,14 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const loves = (P.loves || []).map((l) => LANE[l.kind] || l.kind).slice(0, 2);
     let mutual = []; const u = currentUser(req); if (u?.email && lc(u.email) !== em) { const mine = new Set(X.friendsOf(u.email).map((f) => lc(f.email))); mutual = X.friendsOf(em).filter((f) => mine.has(lc(f.email))).map((f) => (X.person(f.email)?.name || "").split(/\s+/)[0]).filter(Boolean); }
     const first = w[0] || "They", n = P.attended || 0;
-    const take = [P.top ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ""}.` : `${first} is new to Encore. This is a great one to start with.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
+    const take = [P.top || TRAITS[r.guestType] ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ""}.` : `${first} is new to Encore. This is a great one to start with.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
   // ---- Pip's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
   app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const seen = new Set(), G = [];
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
       let P = {}; try { P = r.email ? X.eventProfile(lc(r.email)) || {} : {}; } catch {}
-      G.push({ name: first(r.name) || "A guest", response: r.response, arche: P.top?.name || "The Explorer", archeKey: P.top?.key || "explorer", loves: (P.loves || []).map((l) => l.kind), attended: P.attended || 0, fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
+      G.push({ name: first(r.name) || "A guest", response: r.response, arche: P.top?.name || TRAITS[r.guestType]?.name || "New to Encore", archeKey: P.top?.key || r.guestType || "new", loves: (P.loves || []).map((l) => l.kind), attended: P.attended || 0, fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
     if (!G.length) return res.json({ guests: 0, empty: true });
     // what's true without AI
     const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});
@@ -382,10 +382,10 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const LANE = { move: "moving: runs, hikes, rides", make: "making and tasting things", gather: "long dinners and good talk", discover: "trying new places" };
     const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g) => g.fact);
     const common = [], differ = [], prompts = [], pairs = [];
-    if (arch[0] && arch[0][1] >= 2) common.push(`${arch[0][1]} of ${G.length} are ${arch[0][0].replace(/^The /, "")}s.`);
+    if (arch[0] && arch[0][1] >= 2 && arch[0][0] !== "New to Encore") common.push(`${arch[0][1] === G.length ? "All" : arch[0][1]} of ${G.length} are ${arch[0][0].replace(/^The /, "")}s.`);
     if (lanes[0] && lanes[0][1] >= 2) common.push(`${lanes[0][1]} of them keep turning up to ${LANE[lanes[0][0]] || lanes[0][0]}.`);
-    if (firstTimers.length) common.push(`${firstTimers.length === G.length ? "Everyone" : firstTimers.slice(0, 3).join(", ")} ${firstTimers.length === 1 ? "is" : "are"} new to Encore, so a warm welcome goes a long way.`);
-    if (arch.length >= 3) differ.push(`It's a mixed room: ${arch.slice(0, 3).map(([a, n]) => `${n} ${a.replace(/^The /, "")}`).join(", ")}. Seat the Connectors next to the Explorers.`);
+    if (firstTimers.length) common.push(`${firstTimers.length === G.length ? "Everyone is" : `${firstTimers.slice(0, 3).join(", ")} ${firstTimers.length === 1 ? "is" : "are"}`} new to Encore, so a warm welcome goes a long way.`);
+    if (arch.length >= 3) differ.push(`It's a mixed room: ${arch.slice(0, 3).map(([a, n]) => `${n} ${a.replace(/^The /, "")}`).join(", ")}. Mix them up at the table rather than letting types cluster.`);
     if (regulars.length) differ.push(`${regulars.slice(0, 2).join(" and ")} ${regulars.length === 1 ? "has" : "have"} been to lots of these. Ask them to help pull new people in.`);
     if (facts.length >= 2) { prompts.push(`Fun-fact roulette: read one fun fact out loud, everyone guesses whose it is. (${facts.length} guests gave you one.)`); pairs.push(`${facts[0].name} and ${facts[1].name} should swap stories: "${facts[0].fact}" meets "${facts[1].fact}".`); }
     prompts.push("What's something you changed your mind about this year?", "What's the best thing you've eaten (or made) recently, and who were you with?", "If this group took a trip together, where would we go and who'd plan it?");
@@ -434,6 +434,10 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const pass = `${publicOrigin(req)}/g?r=${encodeURIComponent(rid)}.${encodeURIComponent(code)}#rsvp-${eventId}`, askName = /^Guest/.test(name) ? " Reply with your name so your host knows it's you." : "";
     const msg = final === "going" ? `You're in for ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}! 🎉 See who's coming and join the group chat: ${pass}${askName}` : final === "requested" ? `Got it! Your host approves each spot and will text you soon. ${pass}${askName}` : final === "waitlist" ? `It's full right now, so you're on the waitlist. We'll text you if a spot opens. ${pass}` : final === "maybe" ? `Marked you as maybe. Reply YES any time to grab a spot. ${pass}` : `No worries, we'll tell your host. Reply YES if plans change.`;
     return twiml(res, msg); });
+  // "Keep me posted" on the RSVP form: a guest (no account needed) follows the host, proved by their RSVP code
+  app.post("/api/public/keep-posted", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(clean(b.eventId, 80), b.rid, b.code); if (!P) return bad(res, "RSVP first.", 403, "not_granted");
+    const email = lc(P.r.email || ""); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.json({ ok: false, reason: "no_email" });
+    const isNew = C.follow(P.ws, { email, name: clean(P.r.name, 80), via: "rsvp", phone: P.r.phone || "" }); res.json({ ok: true, isNew, followers: C.followersOf(P.ws).length }); });
   // the exact address, for guests who are in
   app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
     res.json({ ok: true, meetPoint: P.ev.meetPoint || "", venueName: P.ev.venueName || "", venueAddr: P.ev.venueAddr || "" }); });

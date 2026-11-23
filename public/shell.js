@@ -61,6 +61,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
   }
   const go = async () => { let me = {}, W = {}, alerts = 0; try { me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); } catch {}
     if (me?.verified) { try { W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); } catch {} }
-    draw(me, W, alerts); };
+    document.querySelector(".es-rail")?.remove(); document.querySelector(".es-tabs")?.remove(); document.querySelector(".es-top")?.remove(); draw(me, W, alerts); };
+  window.addEventListener("encore:signedin", () => setTimeout(go, 300));
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go();
 })();

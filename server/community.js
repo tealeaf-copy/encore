@@ -110,7 +110,7 @@ export function makeCommunity(store) {
       hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past }); events.push(...up.filter((c) => !c.unlisted)); }
     hosts.sort((a, b) => (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // no doubles on Discover: one card per host, title and date
-    { const seen = new Set(); for (let i = events.length - 1; i >= 0; i--) { const e = events[i], k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}|${e.date || ""}`; if (seen.has(k)) events.splice(i, 1); else seen.add(k); } }
+    { const seen = new Set(); for (let i = events.length - 1; i >= 0; i--) { const e = events[i], k = `${String(e.host?.name || e.host?.handle || "").toLowerCase()}|${String(e.title || "").toLowerCase()}|${e.date || ""}`; if (seen.has(k)) events.splice(i, 1); else seen.add(k); } }
     // a small, scoped badge: the three most active hosts in each city (events hosted, followers, what's coming), never money
     const byCity = new Map(); for (const h of hosts) { const c = String(h.city || "").trim(); if (!c) continue; const k = c.toLowerCase(); if (!byCity.has(k)) byCity.set(k, []); byCity.get(k).push(h); }
     for (const [, L] of byCity) L.filter((h) => h.followers + h.hosted * 2 + h.upcoming >= 3).slice(0, 3).forEach((h, i) => { h.rising = { rank: i + 1, city: h.city }; });

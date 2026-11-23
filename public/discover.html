@@ -68,6 +68,9 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   ];
   let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
   let data = { events: [], hosts: [] }, filter = "all";
+  const PRM = new URLSearchParams(location.search), QTEXT = (PRM.get("q") || "").trim().toLowerCase(); if (["move", "make", "gather", "discover"].includes(PRM.get("lane"))) filter = PRM.get("lane");
+  const QWORDS = QTEXT.replace(/\b(near|me|in|a|an|the|for|my|of|some|nights?|events?|club)\b/g, " ").split(/\s+/).filter((w) => w.length > 2);
+  const qMatch = (e) => !QWORDS.length || QWORDS.some((w) => `${e.title || ""} ${e.activity || ""} ${e.host?.name || ""} ${e.city || ""} ${e.hood || ""}`.toLowerCase().includes(w.replace(/s$/, "")));
   function drawQuiz(i = 0) {
     const el = $("#quiz");
     if (ans.lane && ans.persona && ans.size) { const P = C.PERSONAS[ans.persona] || C.PERSONAS.explorer;
@@ -103,7 +106,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
     $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
-    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const L = data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && near(e));
+    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const L = data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && near(e) && qMatch(e));
     drawRails(L);
     $("#events").innerHTML = L.length ? L.map((e) => C.eventCard(e)).join("") : `<div class="empty">${cf && data.events.length ? `Nothing in ${C.esc($("#cityF").value)} yet. <button class="btn ghost" type="button" onclick="window.EncorePlace.setManual('');location.reload()">See what's on everywhere</button> <a class="btn" href="/signup?mode=friends">Host the first one</a>` : data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`;
   }
@@ -114,8 +117,16 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   fetch("/api/public/shops").then((r) => r.json()).then((j) => { if (!j.shops?.length) return; $("#shopsSec").hidden = false; $("#shops").innerHTML = j.shops.map((s) => `<a class="ev" href="/@${esc(s.handle)}#shop"><span class="ev-ic" style="--c:${esc(s.accent || "#E26D8E")}">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 44) : esc(s.emoji || "🛍")}</span><span class="ev-b"><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><small class="why">${s.soldOut ? "Sold out. Subscribe for the next batch" : s.items.map((x) => `${esc(x.name)} ${esc(x.price)}`).join(" · ")}</small></span><span class="ev-p">${s.soldOut ? "Sold out" : "Order"}</span></a>`).join(""); }).catch(() => {});
   try { const c0 = localStorage.getItem("encore.city"); if (c0) $("#cityF").value = c0; } catch {} const onCity = (c) => { $("#cityF").value = c || ""; drawEvents(); drawHosts(); drawForYou(); }; if (window.EncorePlace) window.EncorePlace.chip($("#placeBox"), onCity);
   drawQuiz(ans.lane ? (ans.persona ? 2 : 1) : 0);
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou(); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou();
+    if (QTEXT || PRM.get("lane")) { const sec = document.getElementById("events")?.closest("section"); if (sec) { const h = sec.querySelector("h2"); if (h && QTEXT) h.textContent = `Results for "${PRM.get("q")}"`; setTimeout(() => sec.scrollIntoView({ behavior: "smooth", block: "start" }), 200); } } }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
 </script><script src="/nav.js"></script>
 <script src="/shell.js"></script>
+<script>
+// took the guest-type quiz already? show the result instead of asking again
+(function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Host"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Seat Filler"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
+  const L = { move: "Runs, hikes and rides", make: "Making and tasting things", gather: "Long dinners and good talk", discover: "Somewhere new" }[g.lane] || "";
+  const fill = () => { q.innerHTML = `<div style="display:flex;gap:14px;align-items:center"><span style="font-size:44px">${T[0]}</span><div><small style="color:#6B5F56">You're</small><h3 style="margin:0">${T[1]}</h3><small>${L ? `Pip leads with: ${L.toLowerCase()}` : ""} · <a href="/quiz">retake</a></small></div></div>${g.lane ? `<a class="btn" style="margin-top:12px" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
+  fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
+</script>
 </body></html>

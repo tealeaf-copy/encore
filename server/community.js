@@ -86,7 +86,7 @@ export function makeCommunity(store) {
     return !cur;
   }
   // ---- public events and discover ----
-  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood"];
+  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto"];
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   function eventsOf(ws, { upcoming = true, discoverableOnly = true } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);

@@ -7334,7 +7334,7 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
 // guest page: no dietary questions at a flower class; the host's own photo as the cover; a clear way to pay
 { const _rg19=renderGuest; renderGuest=async function(){ const r=await _rg19.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), paid=e.price&&e.price!=="chip";
     if(!isFoodEvent(e)){ const dl=$("#g-diet",host)?.closest("label"); if(dl) dl.hidden=true; $$(".gk-allerg",host).forEach(x=>x.remove()) }
-    const H=window.__gHostInfo; if(H?.cover&&!$("#gCoverImg")){ const cv=$(".gxcover",host); if(cv){ const img=document.createElement("img"); img.id="gCoverImg"; img.src=H.cover; img.alt=""; img.className="gcover-img"; cv.appendChild(img); cv.classList.add("has-photo") } }
+    const H=window.__gHostInfo, csrc=safeCover(e.coverPhoto)||H?.cover; if(csrc&&!$("#gCoverImg")){ const cv=$(".gxcover",host); if(cv){ $("#typeCover",host)?.remove(); const img=document.createElement("img"); img.id="gCoverImg"; img.src=csrc; img.alt=""; img.className="gcover-img"; cv.appendChild(img); cv.classList.add("has-photo") } }
     if(M?.response==="going"&&paid&&!e.ticketUrl&&!$("#payBox")){ const t=$(".ticket",host); if(t){ const b=document.createElement("div"); b.id="payBox"; b.className="lock-in"; b.innerHTML=`<div><b>${esc(e.price)} for your seat</b><p class="note">${esc(hostFirst(e))} will send you a way to pay before the day. Nothing to do yet.</p></div>`; t.after(b) } }
     const hh=$("#hostHello span:last-child"); if(hh&&/has (\d+ )?seats at$/.test(hh.textContent)) hh.textContent=`${hostFirst(e)} is hosting`;
     // stray "null" anywhere
@@ -8420,6 +8420,17 @@ function quarterOf(d){ return Math.ceil((+String(d).slice(5,7))/3) }
 // one-word formats keep their word: "Drinks after VantaCon UK"
 { const _qs20=quickStart; quickStart=function(text){ const r=_qs20.apply(this,arguments); try{ const t=String(text||"").trim(), m=t.match(/^(Drinks|Cocktails|Reception|Lunch|Supper|Brunch|Breakfast|Dinner|Coffee)\b/i); if(draft&&!window.__wsPersonal&&m){ const w=m[1][0].toUpperCase()+m[1].slice(1).toLowerCase(), a=t.match(/\b(after|before|during|at) ((?:[A-Z0-9][\w'’&.-]*\s?){1,4})(?=\s+for\b|\s+with\b|,|\.|$)/); if(a||/experience/i.test(draft.name||"")) draft.name=`${w}${a?` ${a[1]} ${a[2].trim()}`:""}${draft.city?" · "+draft.city:""}` } }catch{} return r } }
 ACTIVITY.push([/\bclinic\b/i,"Workshop"],[/\boffice hours\b/i,"Workshop"]);
+
+// ==================================================================
+// Cover photos: a host can set a photo for each event, shown on the guest page and the storefront.
+// ==================================================================
+function safeCover(u){ u=String(u||"").trim(); return /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u)||/^https:\/\/[^\s"'<>()]+$/.test(u)?u:"" }
+async function uploadCover(file){ if(!file) return ""; if(!/^image\//.test(file.type||"")) throw new Error("Pick a photo (JPG, PNG or WebP)."); if(file.size>8e6) throw new Error("That photo is over 8 MB. Try a smaller one."); const r=await fetch("/api/assets",{method:"POST",headers:{"Content-Type":file.type||"image/jpeg"},body:file}); const j=await r.json().catch(()=>({})); if(!r.ok||!j.url) throw new Error(j.message||"Upload didn't work. Try again."); return j.url }
+function coverFieldHTML(d){ const u=safeCover(d?.coverPhoto); return `<div class="f cov-f" id="covField"><span>Cover photo</span><div class="cov-row">${u?`<img class="cov-thumb" src="${esc(u)}" alt="Current cover">`:`<span class="cov-empty">No photo yet. Guests see a colour cover.</span>`}<label class="btn sm">${u?"Change photo":"Upload a photo"}<input type="file" accept="image/*" id="covFile" hidden></label>${u?`<button type="button" class="linkbtn" id="covRemove">Remove</button>`:""}</div><small class="note">Landscape works best (at least 1200 × 630). It's the first thing guests see.</small></div>` }
+function wireCoverField(box,d){ const f=$("#covFile",box), rm=$("#covRemove",box), redraw=()=>{ const old=$("#covField",box); if(old){ old.outerHTML=coverFieldHTML(d); wireCoverField(box,d) } };
+  if(f) f.onchange=async()=>{ const file=f.files[0]; if(!file) return; const lab=f.closest("label"); lab.firstChild.nodeValue="Uploading…"; try{ d.coverPhoto=await uploadCover(file); await saveEvent(true); toast("Cover photo saved. Guests see it on the event page."); redraw() }catch(err){ toast(err.message); lab.firstChild.nodeValue="Upload a photo" } };
+  if(rm) rm.onclick=async()=>{ d.coverPhoto=""; await saveEvent(true); toast("Cover photo removed."); redraw() } }
+new MutationObserver(()=>{ try{ const box=document.querySelector(".fedit"); if(!box||box.querySelector("#covField")||!draft||draft.example) return; const anchor=box.querySelector("#fe-name")?.closest("label,.row")||box.firstElementChild; if(!anchor) return; const w=document.createElement("div"); w.innerHTML=coverFieldHTML(draft); anchor.after(w.firstElementChild); wireCoverField(box,draft) }catch(e){ console.warn(e) } }).observe(document.documentElement,{childList:true,subtree:true});
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */
@@ -8751,4 +8762,5 @@ body:not(.friends-ws) .tile2[data-kind="social"]{display:none}
 .wi-card input,.wi-card textarea,#ivBox input,.ivlink{max-width:100%;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis}.inv-link,.join-link{word-break:break-all;overflow-wrap:anywhere}
 pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .cg-msg p,.cg-msg .stack>div{white-space:pre-line}
+.cov-f{display:block}.cov-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}.cov-thumb{width:160px;height:84px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}.cov-empty{font-size:13px;color:var(--muted)}
 </style>

@@ -8,8 +8,8 @@
   const mix = (hex, pct, to = "#ffffff") => { const p = (h) => [1, 3, 5].map((i) => parseInt((h || "#888888").replace("#", "").padEnd(6, "0").slice(i - 1, i + 1), 16)); const a = p(hex), b = p(to); return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * pct).toString(16).padStart(2, "0")).join(""); };
   const lum = (hex) => { const h = String(hex || "#888888").replace("#", "").padEnd(6, "0"); return (0.299 * parseInt(h.slice(0, 2), 16) + 0.587 * parseInt(h.slice(2, 4), 16) + 0.114 * parseInt(h.slice(4, 6), 16)) / 255; };
   const wrap = (s, n) => { const out = [""]; for (const w of String(s || "").split(/\s+/)) { if ((out[out.length - 1] + " " + w).trim().length > n && out[out.length - 1]) out.push(w); else out[out.length - 1] = (out[out.length - 1] + " " + w).trim(); } return out.slice(0, 3); };
-  const kindOf = (g) => { const by = (t) => (/instant|photo|polaroid/.test(t) ? "photo" : /\bmug|\bcup\b/.test(t) ? "mug" : /dish|bowl|tray|coaster|plate/.test(t) ? "dish" : /starter|\bjar\b/.test(t) ? "jar" : /loaf|bread|sourdough|boule|bake/.test(t) ? "loaf" : /card|letter|note/.test(t) ? "card" : "");
-    return by(String(g?.name || "").toLowerCase()) || { "📸": "photo", "☕": "mug", "🫙": "jar", "✉️": "card", "🍞": "loaf" }[g?.emoji] || by(String(g?.desc || "").toLowerCase()) || "card"; };
+  const kindOf = (g) => { const by = (t) => (/plush|plushie|stuffed|cushie|mascot|soft toy/.test(t) ? "plush" : /pop-?up/.test(t) ? "popup" : /instant|photo|polaroid/.test(t) ? "photo" : /\bmug|\bcup\b/.test(t) ? "mug" : /dish|bowl|tray|coaster|plate/.test(t) ? "dish" : /starter|\bjar\b/.test(t) ? "jar" : /loaf|bread|sourdough|boule|bake/.test(t) ? "loaf" : /card|letter|note/.test(t) ? "card" : "");
+    return by(String(g?.name || "").toLowerCase()) || { "🧸": "plush", "📸": "photo", "☕": "mug", "🫙": "jar", "✉️": "card", "🍞": "loaf" }[g?.emoji] || by(String(g?.desc || "").toLowerCase()) || "card"; };
   const SCRIPT = "Caveat, 'Segoe Script', 'Bradley Hand', cursive", SANS = "'Instrument Sans', system-ui, sans-serif";
 
   function mug({ name = "Alex", brand = "", accent = "#2F7A8A", bg = "#F6EFE6" }) { const glaze = accent, clay = "#E9DCC9", dark = lum(accent) < 0.25 ? mix(accent, 0.55) : mix(accent, 0.35, "#000000");
@@ -76,6 +76,42 @@
       ${brand ? `<text x="160" y="198" text-anchor="middle" font-family="${SANS}" font-size="9" letter-spacing="3" fill="#7A6A5A">${esc(fit(brand, 24).toUpperCase())}</text>` : ""}
       <circle cx="226" cy="146" r="7" fill="none" stroke="#E8C77A" stroke-width="3"/></svg>`; }
 
-  const KINDS = { mug, loaf, jar, card, photo, dish };
-  window.GiftArt = { kindOf, svg: (kind, o = {}) => (KINDS[kind] || card)(o), forGift: (g, o = {}) => (KINDS[kindOf(g)] || card)(o) };
+
+  // a stitched plush: bear, beaver or robot, with a sewn-in tag
+  function plush({ name = "Alex", brand = "", accent = "#C2553A", bg = "#F6EFE6", species = "", note = "" }) {
+    const sp = species || (/beaver/i.test(name + note) ? "beaver" : /bot|robot/i.test(name + note) ? "robot" : "bear"), body = accent, shade = mix(accent, 0.25, "#000000"), belly = mix(accent, 0.55), stitch = mix(accent, 0.6);
+    const eyes = (y) => `<circle cx="144" cy="${y}" r="6" fill="#1F1A17"/><circle cx="176" cy="${y}" r="6" fill="#1F1A17"/><circle cx="146" cy="${y - 2}" r="2" fill="#fff"/><circle cx="178" cy="${y - 2}" r="2" fill="#fff"/><ellipse cx="132" cy="${y + 12}" rx="7" ry="4" fill="#F29A9A" opacity=".55"/><ellipse cx="188" cy="${y + 12}" rx="7" ry="4" fill="#F29A9A" opacity=".55"/>`;
+    const tag = `<g transform="rotate(-8 228 150)"><rect x="200" y="136" width="62" height="30" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="231" y="150" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(fit(name, 10))}</text><text x="231" y="160" text-anchor="middle" font-family="${SANS}" font-size="6" letter-spacing="1" fill="#7A6A5A">${esc(fit((brand || "handmade").toUpperCase(), 18))}</text><path d="M200 146c-6 0-10 4-14 2" stroke="${shade}" fill="none"/></g>`;
+    let fig;
+    if (sp === "robot") fig = `<rect x="104" y="120" width="112" height="72" rx="30" fill="${body}"/><rect x="126" y="134" width="68" height="40" rx="18" fill="${belly}"/><path d="M160 122v70" stroke="${stitch}" stroke-dasharray="4 4"/>
+      <ellipse cx="104" cy="150" rx="12" ry="20" fill="${shade}"/><ellipse cx="216" cy="150" rx="12" ry="20" fill="${shade}"/>
+      <line x1="160" y1="24" x2="160" y2="42" stroke="${shade}" stroke-width="4"/><circle cx="160" cy="22" r="7" fill="#F2C94C"/>
+      <rect x="98" y="40" width="124" height="92" rx="34" fill="${body}"/><rect x="114" y="58" width="92" height="56" rx="20" fill="#1F1A17"/>
+      <rect x="132" y="76" width="14" height="18" rx="7" fill="#8EE3F5"/><rect x="174" y="76" width="14" height="18" rx="7" fill="#8EE3F5"/><path d="M150 102q10 7 20 0" stroke="#8EE3F5" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M100 86h120" stroke="${stitch}" stroke-dasharray="4 4" opacity=".6"/>`;
+    else if (sp === "beaver") fig = `<ellipse cx="226" cy="176" rx="40" ry="17" fill="#5A3A24" transform="rotate(-18 226 176)"/><path d="M196 170l52-14M200 180l50-14M206 188l40-10" stroke="#7A5236" stroke-width="2"/>
+      <ellipse cx="160" cy="150" rx="62" ry="46" fill="${body}"/><ellipse cx="160" cy="158" rx="38" ry="30" fill="${belly}"/><ellipse cx="108" cy="150" rx="13" ry="18" fill="${shade}"/><ellipse cx="212" cy="150" rx="13" ry="18" fill="${shade}"/>
+      <circle cx="122" cy="52" r="13" fill="${shade}"/><circle cx="198" cy="52" r="13" fill="${shade}"/><circle cx="160" cy="88" r="50" fill="${body}"/>
+      <ellipse cx="160" cy="104" rx="24" ry="17" fill="${belly}"/><ellipse cx="160" cy="96" rx="8" ry="6" fill="#2B211C"/><rect x="152" y="108" width="8" height="12" rx="2" fill="#fff" stroke="#E4D9C8"/><rect x="160" y="108" width="8" height="12" rx="2" fill="#fff" stroke="#E4D9C8"/>${eyes(78)}`;
+    else fig = `<ellipse cx="160" cy="150" rx="60" ry="46" fill="${body}"/><ellipse cx="160" cy="156" rx="36" ry="28" fill="${belly}"/><ellipse cx="110" cy="150" rx="13" ry="18" fill="${shade}"/><ellipse cx="210" cy="150" rx="13" ry="18" fill="${shade}"/>
+      <circle cx="120" cy="50" r="17" fill="${body}"/><circle cx="120" cy="50" r="9" fill="${belly}"/><circle cx="200" cy="50" r="17" fill="${body}"/><circle cx="200" cy="50" r="9" fill="${belly}"/><circle cx="160" cy="88" r="48" fill="${body}"/>
+      <ellipse cx="160" cy="104" rx="18" ry="13" fill="${belly}"/><ellipse cx="160" cy="99" rx="6" ry="4.5" fill="#2B211C"/><path d="M154 108q6 5 12 0" stroke="#2B211C" stroke-width="2" fill="none"/>${eyes(82)}`;
+    return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plush ${esc(sp)} for ${esc(name)}"><rect width="320" height="220" fill="${bg}"/><ellipse cx="160" cy="200" rx="92" ry="10" fill="#000" opacity=".08"/>${fig}
+      <path d="M160 40v0" /><circle cx="160" cy="88" r="${sp === "robot" ? 0 : 50}" fill="none" stroke="${stitch}" stroke-dasharray="3 5" opacity=".5"/>${tag}</svg>`; }
+
+  // a pop-up card: open on the table, paper layers rising from the fold, the brand on a banner
+  function popup({ name = "Alex", brand = "", accent = "#5B7FD6", bg = "#F6EFE6", note = "", scene = "" }) { const l1 = mix(accent, 0.75), l2 = mix(accent, 0.45), l3 = accent, dark = mix(accent, 0.35, "#000000");
+    const sc = scene || "city";
+    const layer = sc === "garden" ? `<path d="M96 150c0-30 20-40 30-40s14 18 14 40zM180 150c0-36 22-48 34-48s16 22 16 48z" fill="${l2}"/>${[[120, 96], [150, 80], [182, 92], [212, 84], [134, 112], [196, 110]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${12 - (i % 3) * 2}" fill="${i % 2 ? "#F6C1C9" : "#F2D48F"}"/><circle cx="${x}" cy="${y}" r="4" fill="${dark}"/><path d="M${x} ${y + 10}v40" stroke="${dark}" stroke-width="2"/>`).join("")}`
+      : sc === "launch" ? `<path d="M160 36c18 18 24 44 18 74h-36c-6-30 0-56 18-74z" fill="${l3}"/><circle cx="160" cy="72" r="8" fill="#fff"/><path d="M142 104l-16 20h18zM178 104l16 20h-18z" fill="${dark}"/><path d="M150 112q10 30 20 0" fill="#F2C94C"/>${[[100, 60], [220, 52], [118, 92], [206, 96], [236, 80]].map(([x, y]) => `<path d="M${x} ${y - 6}l2 5 5 1-5 2-2 5-2-5-5-2 5-1z" fill="#F2C94C"/>`).join("")}`
+      : `${[[96, 92, 26], [124, 70, 22], [148, 56, 26], [176, 80, 20], [198, 64, 24], [224, 96, 22]].map(([x, y, w], i) => `<rect x="${x}" y="${y}" width="${w}" height="${150 - y}" fill="${i % 2 ? l2 : l3}"/>${Array.from({ length: Math.floor((140 - y) / 16) }, (_, k) => `<rect x="${x + 5}" y="${y + 8 + k * 16}" width="${w - 10}" height="6" fill="#fff" opacity=".55"/>`).join("")}`).join("")}`;
+    return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pop-up card for ${esc(name)}"><rect width="320" height="220" fill="${bg}"/>
+      <ellipse cx="160" cy="196" rx="130" ry="10" fill="#000" opacity=".08"/>
+      <path d="M160 150 40 120 34 190 160 200z" fill="#FFFDF8" stroke="#E4D9C8"/><path d="M160 150 280 120 286 190 160 200z" fill="#FFF8EE" stroke="#E4D9C8"/>
+      <path d="M80 150c0-70 160-70 160 0z" fill="${l1}"/>${layer}
+      <path d="M100 150h120l-6 22H106z" fill="${dark}"/><text x="160" y="166" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="11" letter-spacing="2.5" fill="#fff">${esc(fit((brand || "THANK YOU").toUpperCase(), 18))}</text>
+      <text x="74" y="184" font-family="${SCRIPT}" font-size="14" fill="#3B2A20" transform="rotate(4 74 184)">for ${esc(fit(name, 12))}</text>
+      <text x="246" y="184" text-anchor="middle" font-family="${SCRIPT}" font-size="11" fill="#3B2A20" transform="rotate(-4 242 184)">${esc(fit(note || "thank you", 22))}</text></svg>`; }
+  const KINDS = { mug, loaf, jar, card, photo, dish, plush, popup };
+  window.GiftArt = { kindOf, svg: (kind, o = {}) => (KINDS[kind] || card)(o), forGift: (g, o = {}) => { const t = `${g?.name || ""} ${g?.desc || ""}`.toLowerCase(); return (KINDS[kindOf(g)] || card)({ species: /beaver/.test(t) ? "beaver" : /robot|\bbot\b/.test(t) ? "robot" : "", scene: /launch|invite|rocket/.test(t) ? "launch" : /flower|garden|bloom|bouquet/.test(t) ? "garden" : "", ...o }); } };
 })();

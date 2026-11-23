@@ -1,0 +1,199 @@
+{
+  "handle": "bao-and-stitch",
+  "name": "Bao & Stitch",
+  "tagline": "Tiny plushies and pop-up cards, made to look like your mascot.",
+  "bio": "I'm Mai. By day I do product design; nights and weekends I sew plushies and cut paper. Send me a mascot, a logo or a photo of your team and I'll turn it into something people hug. Every plush is drafted, sewn and stuffed by hand in my Brooklyn studio.",
+  "city": "Brooklyn",
+  "hood": "Greenpoint",
+  "tags": [
+    "plush",
+    "custom mascots",
+    "pop-up cards",
+    "paper craft",
+    "gifts"
+  ],
+  "emoji": "🧸",
+  "color": "#E26D8E",
+  "theme": {
+    "accent": "#E26D8E",
+    "font": "playful",
+    "bg": "cream",
+    "cover": "confetti",
+    "buttons": "round",
+    "avatarArt": "bob"
+  },
+  "shop": {
+    "open": true,
+    "title": "Weekend plush drop",
+    "note": "Small batch, sewn this week. Each one has a slightly different face.",
+    "where": "Pickup in Greenpoint, or I ship",
+    "slots": [
+      "Saturday 12:00–15:00"
+    ],
+    "items": [
+      {
+        "name": "Sleepy toast plush",
+        "desc": "A slice of toast with a nap face. 15 cm.",
+        "emoji": "🍞",
+        "cents": 2800,
+        "stock": 8,
+        "max": 2
+      },
+      {
+        "name": "Dumpling buddy",
+        "desc": "Soft, squishy, pleated on top. 12 cm.",
+        "emoji": "🥟",
+        "cents": 2400,
+        "stock": 10,
+        "max": 2
+      },
+      {
+        "name": "Pop-up thank-you card",
+        "desc": "A paper bouquet springs up when you open it.",
+        "emoji": "💐",
+        "cents": 1200,
+        "stock": 20,
+        "max": 4
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "experiences": [
+    {
+      "name": "Sew-your-own mini plush, for your team",
+      "desc": "Everyone sews and stuffs a small plush from a pre-cut kit, in your mascot's colors if you like. No sewing experience needed.",
+      "emoji": "🧸",
+      "min": 6,
+      "max": 24,
+      "price": "$60 a person",
+      "length": "2 hours",
+      "category": "workshop",
+      "travels": true,
+      "includes": [
+        "A pre-cut kit per person",
+        "Needles, thread, stuffing and felt faces",
+        "Help from me the whole time"
+      ],
+      "allIn": "Kits, travel in NYC and tax.",
+      "runOfShow": [
+        "0:00 Pick your kit and colors",
+        "0:15 Running stitch and how to close a seam",
+        "0:30 Sew the body",
+        "1:15 Stuff it, sew the face",
+        "1:45 Naming ceremony and group photo",
+        "2:00 Done"
+      ]
+    }
+  ],
+  "giftNote": "Your mascot, your colors, their name on the tag. You get a hand-sewn prototype to approve before I make the rest.",
+  "gifts": [
+    {
+      "name": "Your mascot, as a plushie",
+      "desc": "I turn your mascot, logo creature or bot into a 20 cm plush with an embroidered face and a sewn-in tag with the recipient's name.",
+      "emoji": "🧸",
+      "cents": 4800,
+      "minQty": 20,
+      "maxQty": 500,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 4200
+        },
+        {
+          "qty": 200,
+          "cents": 3600
+        }
+      ],
+      "lead": "6 weeks, prototype first",
+      "ships": "Ships anywhere, each to its own address",
+      "allIn": "Prototype, gift box and name tags included.",
+      "personalize": [
+        "Your mascot or logo",
+        "Brand colors",
+        "Their name on the tag"
+      ],
+      "occasions": [
+        "clients",
+        "event",
+        "newhire",
+        "holiday"
+      ]
+    },
+    {
+      "name": "Mini-me team plush",
+      "desc": "Each teammate as a small plush bear with their hair color, glasses and your team hoodie. A new-hire gift people keep on their desk for years.",
+      "emoji": "🧸",
+      "cents": 6500,
+      "minQty": 5,
+      "maxQty": 60,
+      "lead": "5 weeks",
+      "ships": "Ships anywhere",
+      "personalize": [
+        "Their hair and glasses",
+        "Your hoodie and logo patch",
+        "Their name on the tag"
+      ],
+      "occasions": [
+        "newhire",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Pop-up card in your brand",
+      "desc": "Laser-cut paper layers that rise when the card opens: your HQ skyline, your product or your mascot, with their name written inside.",
+      "emoji": "💌",
+      "cents": 1400,
+      "minQty": 25,
+      "maxQty": 2000,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 1100
+        },
+        {
+          "qty": 500,
+          "cents": 900
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Mailed with a real stamp, or boxed to your office",
+      "personalize": [
+        "Your logo or skyline in paper",
+        "Their name inside",
+        "Your message"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "thanks",
+        "newhire"
+      ]
+    },
+    {
+      "name": "Pop-up launch invite",
+      "desc": "An invitation that opens into your launch: a paper rocket, the date and the place. Hard to throw away.",
+      "emoji": "🚀",
+      "cents": 1200,
+      "minQty": 50,
+      "maxQty": 1500,
+      "tiers": [
+        {
+          "qty": 300,
+          "cents": 950
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Mailed or hand-delivered in NYC",
+      "personalize": [
+        "Your launch in paper",
+        "Their name",
+        "Date and place"
+      ],
+      "occasions": [
+        "event"
+      ]
+    }
+  ]
+}

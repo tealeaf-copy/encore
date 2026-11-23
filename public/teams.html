@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Team experiences · Encore</title>
+<meta name="description" content="Book a local host for your team: workshops, dinners and runs, with all-in quotes, a replacement-or-refund guarantee and one invoice.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/playful.css">
+<style>
+:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}.wrap{max-width:980px;margin:0 auto;padding:0 18px 70px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}header.top nav{display:flex;gap:14px;align-items:center}header.top nav a{text-decoration:none;color:var(--smoke)}
+.brand{display:flex;gap:8px;align-items:center;font:700 22px Fredoka,system-ui;text-decoration:none}
+h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(32px,6vw,48px);line-height:1.08;margin:18px 0 8px}
+.lede{color:var(--smoke);max-width:640px;margin:0 0 18px}
+.trust{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}.trust span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px}
+form.find{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
+form.find label{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--smoke)}form.find input,form.find select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff;min-width:0}
+form.find button{align-self:end;padding:11px 18px;border-radius:999px;border:0;background:var(--ember);color:#fff;font:600 15px inherit;cursor:pointer}
+@media (max-width:860px){form.find{grid-template-columns:1fr 1fr}form.find button{grid-column:1/-1}}
+.res{display:grid;gap:14px;margin-top:22px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:14px}
+@media (max-width:700px){.card{grid-template-columns:1fr}}
+.card h3{font-size:20px}.card .who{color:var(--smoke);font-size:14px;margin:2px 0 8px}.card p{margin:6px 0}
+.why{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.why span{background:#F1FAF4;border:1px solid #CFE6D7;color:#1E4D36;border-radius:999px;padding:4px 10px;font-size:13px}
+.price{text-align:right;min-width:190px}.price b{display:block;font:700 26px Fredoka,system-ui}.price small{display:block;color:var(--smoke)}
+@media (max-width:700px){.price{text-align:left}}
+.btn{display:inline-block;margin-top:10px;padding:10px 16px;border-radius:999px;background:var(--ember);color:#fff;text-decoration:none;font-weight:600}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;font-weight:600}
+.insight{margin-top:26px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}.insight h2{font-size:22px;margin-bottom:6px}
+.bars{display:grid;gap:8px;margin-top:10px}.bar{display:grid;grid-template-columns:170px 1fr 50px;gap:10px;align-items:center;font-size:14px}.bar i{display:block;height:10px;border-radius:6px;background:#E8D7C3}.bar i b{display:block;height:100%;border-radius:6px;background:var(--ember)}
+.empty{padding:22px;text-align:center;color:var(--smoke);background:#fff;border:1px dashed var(--line);border-radius:18px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}@media (max-width:760px){.how{grid-template-columns:1fr}}.how div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;font-size:14.5px}.how b{display:block;font-family:Fredoka,system-ui;font-size:17px;margin-bottom:4px}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><nav><a href="/discover">Discover</a><a href="/login">Sign in</a></nav></header>
+  <h1>Book a local host for your team</h1>
+  <p class="lede">Workshops, dinners and runs led by people your team will remember, not another private room. Tell us the basics and we'll match three hosts, with all-in prices and real guest feedback.</p>
+  <div class="trust"><span>🛡️ Replacement or full refund if your host can't make it</span><span>🧾 One invoice: card or PO</span><span>📄 Insurance certificate and W-9 on request</span><span>💬 Quotes within a day</span></div>
+  <form class="find" id="find">
+    <label>City<input name="city" placeholder="e.g. Brooklyn" required></label>
+    <label>How many people<input name="people" type="number" min="2" max="500" value="20" required></label>
+    <label>What's it for<select name="goal"><option value="bonding">Team bonding</option><option value="clients">Client or customer appreciation</option><option value="offsite">Offsite afternoon</option><option value="wellbeing">Wellbeing week</option><option value="activation">Brand moment or launch</option></select></label>
+    <label>Your crowd is mostly<select name="crowd"><option value="">A mix</option><option value="spark">High-energy, social</option><option value="chill">Low-key, easygoing</option><option value="connector">Connectors who bring people together</option><option value="helper">Hands-on, likes to make things</option><option value="early">Early risers</option></select></label>
+    <button type="submit">Match hosts</button>
+  </form>
+  <div class="res" id="res"></div>
+  <div class="insight" id="insight" hidden></div>
+  <div class="how"><div><b>1. Match</b>Three vetted hosts for your city, headcount and goal, with what their guests actually say.</div><div><b>2. Request</b>Pick a date. The host confirms with an all-in quote, usually within a day.</div><div><b>3. Relax</b>Pay by card or PO on one invoice. If anything falls through, we replace the host or refund you.</div></div>
+</div>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const f = $("#find"); try { const c = localStorage.getItem("encore.city"); if (c) f.city.value = c; } catch {}
+  const q = new URLSearchParams(location.search); for (const k of ["city", "people", "goal", "crowd"]) if (q.get(k)) f[k].value = q.get(k);
+  const TYPEL = { spark: "high-energy, social crowds", chill: "low-key crowds", connector: "connectors", helper: "hands-on crowds", early: "early risers" };
+  async function run() { const p = new URLSearchParams(new FormData(f)); history.replaceState(null, "", "?" + p); $("#res").innerHTML = `<div class="empty">Matching hosts…</div>`;
+    const j = await (await fetch("/api/public/teams/shortlist?" + p)).json().catch(() => ({ results: [] })); const R = j.results || [], n = +f.people.value || 0;
+    if (!R.length) { $("#res").innerHTML = `<div class="empty">No vetted hosts for that yet in ${esc(f.city.value)}. Tell us what you need and we'll find one within two days.<form id="ask" style="display:flex;gap:8px;max-width:460px;margin:12px auto 0"><input name="email" type="email" required placeholder="Work email" style="flex:1;min-width:0;padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit"><button style="padding:10px 16px;border-radius:999px;border:0;background:#C94A30;color:#fff;font:600 15px inherit">Ask us</button></form></div>`; $("#ask").onsubmit = async (e) => { e.preventDefault(); await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e.target.email.value, city: f.city.value, wants: `Team: ${f.goal.value}, ${f.people.value} people` }) }).catch(() => {}); e.target.outerHTML = "<p><b>Got it.</b> We'll email you a match within two days.</p>"; }; $("#insight").hidden = true; return; }
+    $("#res").innerHTML = R.map((r, i) => { const x = r.experience, h = r.host; const why = [...(r.why || [])]; if (h.insured) why.push(h.coi ? "Insurance certificate on file" : "Insured"); if (h.invoices) why.push("Invoices");
+      return `<div class="card"><div><small style="color:#75685F;font-weight:600">${i === 0 ? "Best match" : "Also great"}</small><h3>${esc(x.emoji || h.emoji || "✨")} ${esc(x.name)}</h3><div class="who">with <a href="/@${esc(h.handle)}">${esc(h.name)}</a>${h.city ? ` · ${esc(h.hood ? h.hood + ", " : "")}${esc(h.city)}` : ""} · ${x.min}–${x.max} people${x.length ? ` · ${esc(x.length)}` : ""}${x.travels ? " · comes to you" : ""}</div>${x.desc ? `<p>${esc(x.desc)}</p>` : ""}
+        <div class="why">${why.map((w) => `<span>${esc(w)}</span>`).join("")}</div>
+        ${(x.runOfShow || []).length ? `<details class="ros"><summary>What happens, minute by minute</summary><ol>${x.runOfShow.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></details>` : ""}</div>
+        <div class="price">${r.estimate ? `<b>$${r.estimate.total.toLocaleString()}</b><small>all-in for ${n} people · $${r.estimate.perPerson}/person</small>` : `<b>${esc(x.price || "Quote")}</b>`}${x.allIn ? `<small>${esc(x.allIn)}</small>` : ""}<a class="btn" href="/@${esc(h.handle)}#book">Request a date</a><br><a class="btn ghost" href="/@${esc(h.handle)}">See ${esc(((w) => (/['’]s$/.test(w) ? w : w + "'s"))(String(h.name).split(" ")[0]))} page</a></div></div>`; }).join("") + `<p style="font-size:13.5px;color:#5A4E45">🛡️ ${esc(j.guarantee || "")}</p>`;
+    // what your crowd responds to: from real guests' kudos and guest types across these hosts
+    const tags = {}, types = {}; let ag = 0, an = 0; for (const r of R) { const P = r.proof || {}; for (const t of P.topTags || []) tags[t] = (tags[t] || 0) + 1; for (const t of P.types || []) types[t.label] = (types[t.label] || 0) + t.share; if (P.againPct != null && P.kudos) { ag += P.againPct * P.kudos; an += P.kudos; } }
+    const T = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 4), tot = T.reduce((a, b) => a + b[1], 0) || 1;
+    if (an || T.length) { $("#insight").hidden = false; $("#insight").innerHTML = `<h2>What guests like yours respond to</h2><p class="lede" style="margin:0">From kudos and guest types at these hosts' own get-togethers${f.crowd.value ? `, weighted toward ${esc(TYPEL[f.crowd.value] || "your crowd")}` : ""}.</p>${an ? `<p><b>${Math.round(ag / an)}%</b> of guests said they'd go again${Object.keys(tags).length ? `. Most-mentioned: ${Object.keys(tags).slice(0, 4).map(esc).join(", ")}` : ""}.</p>` : ""}${T.length ? `<div class="bars">${T.map(([l, v]) => `<div class="bar"><span>${esc(l)}</span><i><b style="width:${Math.round((100 * v) / tot)}%"></b></i><span>${Math.round((100 * v) / tot)}%</span></div>`).join("")}</div>` : ""}<p style="font-size:13.5px;color:#5A4E45;margin:10px 0 0">Want this for your own customers or team? We run a short panel match: tell us who's coming and we'll show which formats people like them rate highest.</p>`; } else $("#insight").hidden = true; }
+  f.onsubmit = (e) => { e.preventDefault(); run(); }; if (q.get("city") || f.city.value) run();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

@@ -40,3 +40,12 @@ test("Keep in touch after the night: a guest who went can ask to stay connected 
   const jo = att.attendees.find((x) => /^Jo/.test(x.name)); assert.ok(jo?.key, "phone guests have a key");
   const r = await post("/api/public/keep-in-touch", { eventId: id, rid: a, code: "ca1", pkey: jo.key }); assert.equal(r.status, 200); const j = await r.json(); assert.equal(j.ok, true, JSON.stringify(j)); assert.equal(j.mutual, false);
 });
+
+test("Private events never appear on Discover, even if they were once marked discoverable", async () => {
+  const h = await post("/api/signup", { name: "Priv Host", email: "priv.host@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
+  const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  await post("/api/host/profile", { handle: "priv-host", name: "Priv Host", city: "Brooklyn" }, hc);
+  const id = (await (await post("/api/db/collection?path=events", { name: "Secret supper", date: day(5), startTime: "19:00", casual: true, published: true, discoverable: true, unlisted: true }, hc)).json()).id;
+  const d = await (await fetch(srv.base + "/api/public/discover")).json();
+  assert.ok(!d.events.some((e) => e.id === id), "unlisted events stay off Discover");
+});

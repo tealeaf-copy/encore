@@ -31,7 +31,7 @@ export function parseAlert(text) {
   return { lanes, radiusMi, city, free, weekend, publicOnly: true, summary: parts.join(", ").replace(/, and open/, " and open") };
 }
 export function alertMatches(a, ev, evGeo) {
-  if (!ev?.discoverable) return false;
+  if (!ev?.discoverable || ev.unlisted) return false; // private events never reach strangers' alerts
   const lanes = lanesOf(`${ev.activity || ""} ${ev.pubTitle || ""} ${ev.name || ""}`);
   if (a.lanes?.length && !a.lanes.some((l) => lanes.includes(l))) return false;
   if (a.free && !(ev.free || !ev.price)) return false;

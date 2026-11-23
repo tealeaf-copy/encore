@@ -9564,6 +9564,31 @@ new MutationObserver(()=>{ try{ document.querySelectorAll(".pp-why, .wiz-sum spa
 #wizBg .wiz{padding-bottom:28px}
 #kudosAsk .chip.on,#kudosAsk [aria-pressed=true],#kudosAsk .k-chip.on{background:#1F1A17!important;color:#fff!important;border-color:#1F1A17!important}
 #kudosAsk .chip.on::before,#kudosAsk [aria-pressed=true]::before{content:"✓ "}`; document.head.appendChild(s) }
+
+// ==================================================================
+// Round 11 fixes: a short RSVP form (extras behind "Add more"); after the night the kudos card leads;
+// After asks who came before claiming a count; Pip's Home note catches up when an event goes live;
+// "my place" without an address gets a nudge; phone sheets and the chat never hide their last line.
+// ==================================================================
+function rsvpFold(){ try{ const f=document.getElementById("gForm"); if(!f||f.dataset.fold) return; const extras=["g-fact","g-access","g-diet","g-showme","g-photo"].map(id=>document.getElementById(id)).filter(Boolean).map(el=>el.closest("label,.f,.row,div")||el).filter((el,i,A)=>el&&A.indexOf(el)===i&&f.contains(el)&&!el.contains(document.getElementById("g-name"))&&!el.contains(document.getElementById("g-send")));
+    if(extras.length<2) return; f.dataset.fold=1; const det=document.createElement("details"); det.className="g-more"; det.innerHTML=`<summary class="linkbtn" style="cursor:pointer;margin:6px 0">Add more (optional): a fun fact, food needs</summary>`; extras[0].before(det); extras.forEach(x=>det.appendChild(x)) }catch{} }
+function kudosFirst(){ try{ const v=document.getElementById("view-guest"), k=document.getElementById("kudosAsk"); if(!v||!k||k.dataset.top) return; k.dataset.top=1; const anchor=v.querySelector(".invite"); if(anchor) anchor.before(k) }catch{} }
+{ const _rgF=renderGuest; renderGuest=async function(){ const r=await _rgF.apply(this,arguments); [400,1400].forEach(t=>setTimeout(()=>{ rsvpFold(); kudosFirst() },t)); return r } }
+// After: "N said yes. Who actually came?" until the host has checked
+new MutationObserver(()=>{ try{ if(+step!==7) return; const h=document.querySelector("#stepHost .ap-hero h2"); const cc=document.getElementById("cameCheck"); if(h&&cc&&!draft?.cameChecked&&!h.dataset.q){ const m=h.textContent.match(/^(\d+) (people|person) came/); if(m){ h.dataset.q=1; h.textContent=`${m[1]} said yes. Who actually came?` } } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("click",ev=>{ if(ev.target.closest?.("[data-came]")&&draft){ draft.cameChecked=true; try{ saveEvent(true) }catch{} } },true);
+// Pip's note on Home catches up once the invite is live
+{ const _ssP=shareSheet; shareSheet=function(d){ const r=_ssP.apply(this,arguments); try{ if(window.__wsPersonal){ const S=cgState(); const last=S.msgs[S.msgs.length-1]; if(!last||!/is live/.test(last.text||"")){ S.msgs.push({who:"enc",mood:"happy",text:`${guestTitle(d)} is live 🎉 Send it to your 3 surest yeses first. I'll tell you as people say yes.`}); cgSave(S) } } }catch{} return r } }
+// "my place" with no address: one nudge on the Guests step
+async function addrNudge(){ try{ const d=draft, host=document.getElementById("stepHost"); if(!d?.id||!host||+step!==6||host.querySelector("#addrNudge")) return; if(!/my place|our place|mine|home/i.test(String(d.meetPoint||""))||d.venueAddr) return; if(d.date&&d.date<new Date().toISOString().slice(0,10)) return;
+    const c=document.createElement("section"); c.id="addrNudge"; c.className="panel"; c.style.cssText="border:1px solid #E4D9C8;background:#FFF9EC"; c.innerHTML=`<small class="eyebrow">Where should guests ring?</small><p class="note" style="margin:2px 0 8px">Add your address. Only guests who are going see it.</p><span style="display:flex;gap:8px"><input id="anIn" placeholder="12 Elm St, apt 4B (buzz 4)" style="flex:1;min-width:0;padding:10px 12px;border:1px solid #E4D9C8;border-radius:10px"><button class="btn primary sm" type="button" id="anGo">Save</button></span>`;
+    (host.querySelector(".gr-line")||host.firstChild)?.after?.(c); c.querySelector("#anGo").onclick=async()=>{ const v=c.querySelector("#anIn").value.trim(); if(!v) return; d.venueAddr=v; await saveEvent(true); c.innerHTML=`<small class="eyebrow">Address saved ✓</small><p class="note" style="margin:2px 0 0">Guests who are going see it on their invite.</p>` } }catch{} }
+{ const _rsN=renderStep; renderStep=function(){ const r=_rsN.apply(this,arguments); setTimeout(addrNudge,800); return r } }
+{ const s=document.createElement("style"); s.textContent=`
+@media (max-width:700px){.wiz .wiz-body{padding-bottom:84px}#wizBg .wiz{max-height:86vh;padding-bottom:40px}#gchat .gc-list,#gchat .gc-msgs,#gchat [class*=msgs]{padding-bottom:56px}}
+#wzAskChips button.on{background:#FFE08A}
+#view-guest .pp-why,#view-guest .ev2-free,#view-guest .stk-price{font-family:inherit!important}`; document.head.appendChild(s) }
+document.addEventListener("click",ev=>{ const b=ev.target.closest?.("#wzAskChips button"); if(!b) return; b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)) },true);
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

@@ -177,6 +177,7 @@
     document.body.appendChild(el); el.onclick = (e) => { if (e.target === el || e.target.classList.contains("x")) el.remove(); }; post("/api/me/inbox/read").then(() => { F.unread = 0; drawBell(); }).catch(() => {}); };
   load();
 })();
-</script><script src="/nav.js"></script>
+</script><script>(async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); location.reload(); } } } catch {} })();</script>
+<script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body></html>

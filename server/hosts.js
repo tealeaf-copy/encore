@@ -47,7 +47,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
     return out.sort((a, b) => b.score - a.score).slice(0, 300);
   }
   app.get("/api/host/audience/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const ev = evOf(u, req.params.eventId); if (!ev) return bad(res, "No such event.", 404, "not_found");
-    const A = audienceFor(u, ev); res.json({ count: A.length, sample: A.slice(0, 8).map((a) => ({ name: first(a.name) || "Someone", why: a.why, top: a.top })) }); });
+    const A = audienceFor(u, ev).filter((a) => String(a.email || "").toLowerCase() !== String(u.email || "").toLowerCase() && String(a.name || "").trim().toLowerCase() !== String(u.name || "").trim().toLowerCase()); res.json({ count: A.length, sample: A.slice(0, 8).map((a) => ({ name: first(a.name) || "Someone", why: a.why, top: a.top })) }); });
   app.post("/api/host/broadcast", small, async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     if (!ev.audienceWho && !ev.discoverable) return bad(res, "Say who it's for first, so Pip only tells people it suits.");
     const A = audienceFor(u, ev), host = C.profileOf(u.ws), title = ev.pubTitle || ev.name, link = `${publicOrigin(req)}/g#rsvp-${id}`, cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true); let emailed = 0;

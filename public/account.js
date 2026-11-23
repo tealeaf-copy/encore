@@ -57,7 +57,7 @@
     let r = await go(); const wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again.");
     try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(body.handle)) L.push(body.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
-    if (!body.phone && !wasSignedIn) { const ph = await askPhone(hostName); if (ph) { try { await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, phone: ph }) }); j.texted = true; } catch {} } }
+    if (!body.phone && !wasSignedIn) { setTimeout(async () => { const ph = await askPhone(hostName); if (ph) { try { await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, phone: ph }) }); } catch {} } }, 0); }
     return j; }
   window.EncoreAccount = { ensure, follow, me };
 })();

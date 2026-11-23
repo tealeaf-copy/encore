@@ -30,6 +30,7 @@
 .wrapped{background:linear-gradient(135deg,#2B211C,#5A3A2E);color:#FBF6EF}.wrapped small{color:#E9C98C}.wr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}.wr-grid div{font-size:13px;opacity:.9}.wr-grid b{display:block;font:600 30px "Fraunces",Georgia,serif;color:#fff}
 .empty-feed{text-align:center;padding:30px 16px}
 </style><link rel="stylesheet" href="/playful.css">
+<script src="/place.js"></script>
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
@@ -78,15 +79,19 @@
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
   $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
   function draw() { const m = $("#m"); if (tab === "feed") return drawFeed(m); if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
-  function drawFeed(m) {
-    const items = F.items.map((it) => { const e = it.event || {}, h = e.host;
+  function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
+  function drawFeed(m) { setTimeout(placeChip, 0);
+    const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
+    const keep = F.items.filter((it) => it.kind !== "hosting" || !here || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
+    const away = F.items.length - keep.length;
+    const items = keep.map((it) => { const e = it.event || {}, h = e.host;
       const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${it.kind === "went" ? `went to <b>${esc(e.title)}</b>` : it.kind === "hosting" ? `is hosting <b>${esc(e.title)}</b>` : it.kind === "kudos" ? `sent kudos for <b>${esc(e.title)}</b>` : it.kind === "recap" ? `hosted <b>${esc(e.title)}</b>` : `at <b>${esc(e.title)}</b>`}${h && it.kind !== "hosting" ? ` by ${esc(h.name || "@" + h.handle)}` : ""} · ${ago(it.at)}</small></div></div>`;
       const media = it.media ? (it.media.type === "video" ? `<video src="${esc(it.media.url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(it.media.url)}" alt="${esc(it.caption || e.title)}" loading="lazy">`) : "";
       const body = it.kind === "recap" ? `<p>${it.count} came${it.kudos ? ` · ${it.kudos} kudos` : ""}</p>${it.love ? `<p class="quote">"${esc(it.love)}"</p>` : ""}` : it.kind === "kudos" ? `<p class="quote">"${esc(it.love)}"</p>` : it.caption ? `<p>${esc(it.caption)}</p>` : it.kind === "hosting" ? `<p>${esc(C.fmtDate(e.date))}${e.startTime ? " · " + esc(e.startTime) : ""}${e.city ? " · " + esc(e.city) : ""} · ${e.free ? "Free" : esc(e.price)}</p>` : "";
       const acts = `<div class="acts">${it.kind === "hosting" ? `<a class="btn" href="/g#rsvp-${esc(e.id)}">I'm in</a>` : ""}${h ? ((F.following || []).includes(h.handle) ? `<a class="btn ghost" href="/@${esc(h.handle)}">See ${esc(String(h.name || "host").split(/[\s']/)[0])}'s page</a>` : `<a class="btn ghost" href="/@${esc(h.handle)}">Follow ${esc(String(h.name || "host").split(/[\s']/)[0])}</a>`) : ""}<button class="btn ghost" data-al="${esc(e.id)}">🔔 Ones like this</button></div>`;
       return `<article class="post">${head}${media}<div class="post-b">${body}${acts}</div></article>`; }).join("");
     const up = F.upcoming.filter((e) => e.friendsGoing.length).slice(0, 4);
-    m.innerHTML = (up.length ? `<div class="card" style="margin-bottom:14px"><h3>Your friends are going</h3>${up.map((e) => C.eventCard(e, `${e.friendsGoing.slice(0, 3).join(", ")} going`)).join("")}</div>` : "") +
+    m.innerHTML = `<div id="feedPlace" style="margin:0 0 12px"></div>${away ? `<p class="muted" style="margin:-4px 0 12px;font-size:13px">${away} event${away === 1 ? "" : "s"} elsewhere hidden. Change your city to see them.</p>` : ""}` + (up.length ? `<div class="card" style="margin-bottom:14px"><h3>Your friends are going</h3>${up.map((e) => C.eventCard(e, `${e.friendsGoing.slice(0, 3).join(", ")} going`)).join("")}</div>` : "") +
       (items || `<div class="card empty-feed">${C.pipSVG("happy", 60)}<h3>Your feed fills up with your friends</h3><p class="muted">Add people you've been to things with, and you'll see where they went, their photos and what they're hosting next.</p><button class="btn" id="goFriends">Find friends</button></div>`);
     $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); });
     const all = [...F.items.map((i) => i.event), ...F.upcoming]; $$("[data-al]").forEach((b) => (b.onclick = () => { const e = all.find((x) => x?.id === b.dataset.al) || {}; tab = "alerts"; selTab(); draw(); setTimeout(() => { $("#alIn").value = alertFor(e); $("#alIn").focus(); }, 50); })); }

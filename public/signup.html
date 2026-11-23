@@ -15,7 +15,8 @@
 .ok{display:block;font-weight:500;color:#2F7A4F;font-size:12.5px;margin-top:5px}.ok.bad{color:#A93A3A}.ok:empty{display:none}#wl .done{font-size:15px;line-height:1.5}
 .modes{display:flex;gap:6px;background:rgba(0,0,0,.04);border-radius:12px;padding:4px;margin:4px 0 10px}.modes button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px;font:inherit;font-weight:600;cursor:pointer;color:inherit;opacity:.7}.modes button[aria-selected=true]{background:#fff;opacity:1;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 [hidden]{display:none!important}
-</style></head><body>
+</style><script src="/place.js"></script>
+</head><body>
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
   <h1 id="h">Start your free trial</h1>
   <p class="sub" id="sub">14 days, every feature, no card.</p>
@@ -25,6 +26,7 @@
   <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
   <label><span id="emL">Work email</span><input name="email" type="email" placeholder="Email" autocomplete="email" required></label>
   <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>
+  <label id="cityWrap"><span>Your city <small style="font-weight:400;color:#75685F">(so we show what's on near you)</small></span><span style="display:flex;gap:8px"><input name="city" id="cityIn" list="suCities" placeholder="e.g. New York" autocomplete="address-level2" style="flex:1"><button type="button" id="cityGps" style="white-space:nowrap;border:1px solid #E7DFD3;background:#fff;border-radius:12px;padding:0 12px;font:inherit;cursor:pointer">📍 Use my location</button></span><datalist id="suCities"></datalist></label>
   <label id="webWrap"><span>Company website <small style="font-weight:400;color:#75685F">(optional, helps us find you)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
   <input type="hidden" name="mode" value="work">
   <label>Password (10+ characters)<input name="password" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
@@ -68,6 +70,8 @@
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
+  try { const P = window.EncorePlace; if (P) { document.getElementById("suCities").innerHTML = P.CITIES.map((c) => `<option value="${c[0]}">`).join(""); const cur = P.get(); if (cur?.city) f.city.value = cur.city; else P.resolve({ prompt: false }).then((p) => { if (p.city && !f.city.value) f.city.value = p.city; });
+    document.getElementById("cityGps").onclick = async () => { const b = document.getElementById("cityGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "📍 Use my location"; if (p.city) f.city.value = p.city; else err.textContent = "Couldn't get your location. Type your city instead."; }; } } catch {}
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = Object.fromEntries(new FormData(f)), q = new URLSearchParams(location.search);
@@ -81,6 +85,7 @@
       const r = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { err.textContent = j.message || "Couldn't create your workspace. Try again."; go.disabled = false; return; }
+      try { if (body.city && window.EncorePlace) window.EncorePlace.setManual(window.EncorePlace.find(body.city)?.[0] || body.city); } catch {}
       location.href = j.redirect || "/?welcome=1";
     } catch { err.textContent = "Can't reach Encore. Check your connection."; go.disabled = false; }
   });

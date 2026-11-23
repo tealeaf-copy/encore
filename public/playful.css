@@ -63,3 +63,11 @@ input:focus,select:focus,textarea:focus{outline:3px solid var(--p-butter)!import
 .wg-av{border:2px solid var(--p-ink)}
 
 @media (prefers-reduced-motion:reduce){.stack .card{animation:none!important}.btn,.ev,.hc{transition:none!important}}
+
+/* the "where you are" chip */
+.place-chip{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px 6px 12px;border:var(--p-line);border-radius:999px;background:#fff;box-shadow:3px 3px 0 var(--p-ink);font-size:15px}
+.place-chip b{font-family:"Fredoka","DM Sans",system-ui;font-weight:600;font-size:16px}
+.place-chip button{border:0;background:none;color:var(--p-ember);font:600 14px inherit;cursor:pointer;padding:4px 6px;border-radius:999px;box-shadow:none!important}.place-chip button:hover{background:var(--p-butter)}
+.place-chip .pc-save{background:var(--p-ember)!important;color:#fff!important;padding:6px 12px}
+.place-chip input{border:2px solid var(--p-ink)!important;border-radius:999px!important;padding:6px 12px!important;min-width:150px;font:inherit}
+.pc-note{flex-basis:100%;font-size:13px;color:#6F6259;padding:0 4px 2px}

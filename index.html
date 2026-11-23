@@ -8696,6 +8696,81 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; const b=documen
 // friends rail: only Plan, Guests, Invite page, After; no "Next: Budget" either
 { const s=document.createElement("style"); s.textContent=`html body.friends-ws .rail button[data-step="2"],html body.friends-ws .rail button[data-step="3"],html body.friends-ws .rail button[data-step="5"],html body.friends-ws .rail button[data-step="8"],html body.friends-ws .rail button[data-step="9"]{display:none!important}`; document.head.appendChild(s) }
 new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; document.querySelectorAll("#stepHost button, #view-studio button").forEach(b=>{ if(!b.dataset.fwn&&/^Next: (Budget|Check the idea|Venue|Promotion|Approval)/.test(b.textContent.trim())){ b.dataset.fwn=1; b.style.display="none" } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+
+// ==================================================================
+// Event pages for friends hosts: the landing-page layout. Title, when, where and host on the left;
+// the cover and one RSVP button on the right; who's coming, questions and the RSVP form below.
+// ==================================================================
+{ const s=document.createElement("style"); s.textContent=`
+#view-guest.ev2{max-width:1120px;margin-left:auto;margin-right:auto}
+#view-guest.ev2 > .stack{gap:28px}
+.ev2 #hostHello{margin-bottom:-6px}
+.ev2 .invite.gx{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);column-gap:56px;row-gap:16px;align-items:start;background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 0 0;overflow:visible}
+.ev2 .invite.gx > .in{grid-column:1;grid-row:1/span 3;padding:0;background:transparent}
+.ev2 .invite.gx > .gxcover{grid-column:2;grid-row:1;aspect-ratio:4/3;height:auto;border:2px solid var(--p-ink,#1F1A17);border-radius:22px;box-shadow:6px 6px 0 var(--p-ink,#1F1A17);overflow:hidden;position:relative}
+.ev2 .gxcover canvas,.ev2 .gxcover img{width:100%;height:100%;object-fit:cover;display:block}
+.ev2 .gxcover .type-cover,.ev2-cov .type-cover{display:none}.ev2-cov{position:relative;min-height:220px}
+.ev2-poster{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:6px;text-align:center;padding:24px;background:var(--ev2-bg,#FFE08A)}
+.ev2-poster .e{font-size:clamp(72px,10vw,120px);line-height:1}.ev2-poster b{font:700 clamp(22px,2.6vw,30px)/1.1 Fredoka,"Instrument Sans",system-ui;color:#1F1A17;max-width:90%}
+.ev2-rsvp{grid-column:2;grid-row:2;display:flex;justify-content:center}
+.ev2-rsvp .pill{display:inline-flex;align-items:center;border-radius:999px;background:#1F1A17;color:#fff;box-shadow:4px 4px 0 #E2573A;overflow:hidden}
+.ev2-rsvp .pill button{all:unset;cursor:pointer;padding:16px 26px;font:600 18px Fredoka,"Instrument Sans",system-ui;color:#fff}.ev2-rsvp .pill button:hover{background:#3A302A}.ev2-rsvp .pill i{width:1px;height:26px;background:#5A4E46}
+.ev2-rsvp .pill.done{background:#E8F7EC;color:#1F1A17;box-shadow:4px 4px 0 #1F1A17;border:2px solid #1F1A17}.ev2-rsvp .pill.done button{color:#1F1A17}
+#view-guest.ev2 .invite.gx .in h3{display:block!important;font-family:Fredoka,"Instrument Sans",system-ui!important;font-weight:700!important;font-size:clamp(40px,5.6vw,72px)!important;line-height:1.02!important;letter-spacing:-.02em;margin:12px 0 22px!important;color:#1F1A17}
+#view-guest.ev2 .gxfacts > span{display:grid!important;grid-template-columns:28px minmax(0,1fr);gap:4px 10px!important;align-items:baseline;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;margin:0!important}
+#view-guest.ev2 .gxfacts > span small{display:block!important;width:auto!important;margin:0!important;padding:0!important;font-size:0!important;line-height:1}
+#view-guest.ev2 .gxfacts > span small::before{font-size:20px}
+#view-guest.ev2 .gxfacts > span b{display:block;margin:0!important;padding:0!important}
+#view-guest.ev2 .gxfacts > span[data-k=Where].dup{display:none!important}
+#view-guest.ev2 .in .gk .gk-row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:baseline;font-size:18px}
+#view-guest.ev2 .in .gk .gk-row small,#view-guest.ev2 .in .gk .gk-row .eyebrow{display:none}
+#view-guest.ev2 #gForm{background:transparent!important;border:0!important;border-top:1px solid #E4D9C8!important;box-shadow:none!important;border-radius:0!important;padding:32px 0 0!important}
+.ev2-rsvp .pill button{text-transform:none!important}
+.ev2 .in > .eyebrow{display:inline-block}
+.ev2 .in h3{display:block!important;font:700 clamp(40px,5.6vw,72px)/1.02 Fredoka,"Instrument Sans",system-ui;letter-spacing:-.02em;margin:10px 0 18px}
+.ev2 .gxfacts{display:flex!important;flex-direction:column;gap:12px;margin:0 0 14px}
+.ev2 .gxfacts span{display:flex;gap:12px;align-items:baseline}
+.ev2 .gxfacts small{flex:none;width:22px;font-size:0}.ev2 .gxfacts small::before{font-size:18px}
+.ev2 .gxfacts span[data-k=When] small::before{content:"🗓"}.ev2 .gxfacts span[data-k=Where] small::before{content:"📍"}.ev2 .gxfacts span[data-k=Size] small::before{content:"👥"}.ev2 .gxfacts span[data-k=Price] small::before{content:"🏷"}
+.ev2 .gxfacts span[data-k=When] b{font:600 clamp(22px,2.4vw,30px)/1.2 Fredoka,"Instrument Sans",system-ui}
+.ev2 .gxfacts span:not([data-k=When]) b{font-size:18px;font-weight:600}
+.ev2 .ev2-when-time{display:block;font:500 18px "Instrument Sans",system-ui;color:#6B5F56;margin-top:2px}
+.ev2 .in .gk{margin:4px 0 12px}.ev2 .in .btns{margin:6px 0 18px}
+.ev2 .in > p:not(.note){font-size:18px;line-height:1.55;max-width:560px}
+.ev2 .in .gk-follow{margin:4px 0 18px;padding:14px;border-radius:18px}
+.ev2 .in > p.note:has(b){display:none}
+.ev2 #gForm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;background:transparent;border:0;box-shadow:none;padding:28px 0 0;border-top:1px solid var(--line,#E4D9C8);border-radius:0}
+.ev2 #gForm > #whoGoing,.ev2 #gForm > #evFaq{grid-column:1}
+.ev2 #gForm > :not(#whoGoing):not(#evFaq){grid-column:2;grid-row:1/span 3;background:#fff;border:2px solid #1F1A17;border-radius:22px;box-shadow:6px 6px 0 #1F1A17;padding:22px}
+.ev2 #gForm > p.note{display:none}
+.ev2 .gk-grow{max-width:none;margin:12px 0 0;padding:40px 20px;text-align:center;border-radius:28px}
+@media (max-width:860px){.ev2-rsvp{display:none!important}.ev2 .invite.gx{grid-template-columns:minmax(0,1fr);column-gap:0}.ev2 .invite.gx > .gxcover{grid-column:1;grid-row:1}.ev2 .invite.gx > .in{grid-column:1;grid-row:2}.ev2-rsvp{grid-column:1;grid-row:3;position:sticky;bottom:12px;z-index:5}
+  .ev2 #gForm{grid-template-columns:minmax(0,1fr)}.ev2 #gForm > :not(#whoGoing):not(#evFaq){grid-column:1;grid-row:auto}.ev2 #gForm > #whoGoing{order:1}.ev2 #gForm > :not(#whoGoing):not(#evFaq){order:2}.ev2 #gForm > #evFaq{order:3}}
+`; document.head.appendChild(s) }
+function ev2Layout(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host) return; const inv=host.querySelector(".invite.gx"); if(!inv) return;
+    // every event without a photo gets a bright poster instead of a blank cover
+    if(!isCasual(e)){ const cv=inv.querySelector(".gxcover"); if(cv&&!e.coverPhoto&&!cv.querySelector(".ev2-poster")){ cv.classList.add("ev2-cov"); const p=document.createElement("div"); p.className="ev2-poster"; p.innerHTML=`<b style="font-size:clamp(28px,4vw,44px)">${esc(e.pubTitle||e.name||"")}</b>`; cv.appendChild(p) } return }
+    host.classList.add("ev2");
+    const inn=inv.querySelector(".in"), cov=inv.querySelector(".gxcover");
+    // facts as rows, with the date big and the time under it
+    inv.querySelectorAll(".gxfacts span").forEach(s=>{ const k=s.querySelector("small")?.textContent.trim(); if(k) s.dataset.k=k });
+    const when=inv.querySelector('.gxfacts span[data-k=When] b'); if(when&&!when.dataset.ev2&&!when.querySelector("form")){ const parts=when.textContent.split(" · "); if(parts.length>1){ when.dataset.ev2=1; when.innerHTML=`${esc(parts[0])}<span class="ev2-when-time">${esc(parts.slice(1).join(" · "))}</span>` } }
+    // no photo: a bright poster instead of a blank cover
+    if(cov&&!e.coverPhoto&&!cov.querySelector(".ev2-poster")){ const p=document.createElement("div"); p.className="ev2-poster"; let em="🎉"; try{ const t=`${e.pubTitle||""} ${e.name||""} ${e.concept||""}`.toLowerCase(); const K=[["taco","🌮"],["dumpling","🥟"],["pizza","🍕"],["sushi","🍣"],["ramen","🍜"],["brunch","🥞"],["bbq","🍖"],["barbecue","🍖"],["wine","🍷"],["cocktail","🍸"],["coffee","☕"],["pour-over","☕"],["run","🏃"],["5k","🏃"],["hike","🥾"],["bike","🚲"],["picnic","🧺"],["game","🎲"],["board","🎲"],["movie","🎬"],["film","🎬"],["karaoke","🎤"],["book","📚"],["yoga","🧘"],["swim","🏊"],["beach","🏖️"],["bake","🧁"],["cook","🍳"],["dinner","🍽️"],["supper","🍽️"],["party","🎉"]]; const hit=K.find(([k])=>t.includes(k)); em=hit?hit[1]:(e.emoji||(typeof actOf==="function"&&actOf(e)?.emoji)||"🎉") }catch{} p.innerHTML=`<span class="e">${esc(em)}</span><b>${esc(e.pubTitle||e.name||"")}</b>`; cov.appendChild(p) }
+    // the meet point already says where: hide the city-only "Where" row
+    const gkTxt=(inn?.querySelector(".gk")?.textContent||"").trim(); const whereS=inv.querySelector(".gxfacts span[data-k=Where]"); if(whereS) whereS.classList.toggle("dup",gkTxt.length>4);
+    // host card moves up next to the details
+    const fol=host.querySelector(".gk-follow"); const btns=inn?.querySelector(":scope > .btns"); if(fol&&inn&&fol.parentElement!==inn){ (btns?btns:inn.lastChild)?.after?.(fol) }
+    // one RSVP button under the cover
+    let pr=inv.querySelector(".ev2-rsvp"); if(!pr){ pr=document.createElement("div"); pr.className="ev2-rsvp"; inv.appendChild(pr) }
+    const M=(()=>{ try{ return myRsvp(e.id) }catch{ return null } })(), form=document.getElementById("gForm");
+    const go=(label)=>{ const chip=[...document.querySelectorAll("#gResp .chip")].find(c=>c.textContent.trim()===label); chip?.click(); form?.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>document.getElementById("g-name")?.focus({preventScroll:true}),450) };
+    const sig=M?.response||"none"; if(pr.dataset.sig!==sig){ pr.dataset.sig=sig;
+      if(M?.response==="going"||M?.response==="requested"){ pr.innerHTML=`<span class="pill done"><button type="button">${M.response==="requested"?"⏳ Request sent":"✅ You're going"}</button></span>`; pr.querySelector("button").onclick=()=>form?.scrollIntoView({behavior:"smooth",block:"start"}) }
+      else if(document.querySelector("#gResp")){ pr.innerHTML=`<span class="pill"><button type="button" data-go="I'm going">👍 I'm going</button><i></i><button type="button" data-go="Maybe">🤔 Maybe</button></span>`; pr.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go)) }
+      else pr.innerHTML="" }
+  }catch(err){ console.warn(err) } }
+{ const _rgE=renderGuest; renderGuest=async function(){ const r=await _rgE.apply(this,arguments); ev2Layout(); setTimeout(ev2Layout,600); return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

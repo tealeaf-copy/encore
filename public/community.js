@@ -29,11 +29,25 @@
   const actOf = (e) => { const a = String(e.activity || "").toLowerCase(); for (const k of Object.keys(ACT_EMOJI)) if (a.includes(k)) return k; const t = `${e.activity || ""} ${e.title || ""} ${(e.tags || []).join(" ")}`.toLowerCase(); for (const k of Object.keys(ACT_EMOJI)) if (t.includes(k)) return k; if (/cake|cookie|bread|mochi|pie/.test(t)) return "bake"; if (/coffee|café/.test(t)) return "cafe"; return e.activity || "gather"; };
   const laneOf = (e) => { const a = actOf(e); for (const [l, L] of Object.entries(LANES)) if (L.includes(a)) return l; return "gather"; };
   const fmtDate = (d) => { if (!d) return "Date TBA"; const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); };
+  // Event preview: a poster on top (cover photo, or a bright poster with the title and the host's sketch),
+  // then the date as the headline, the faces of who's going, and one quiet line.
+  const KW = [["taco","🌮"],["dumpling","🥟"],["pizza","🍕"],["sushi","🍣"],["omakase","🍣"],["ramen","🍜"],["brunch","🥞"],["bbq","🍖"],["wine","🍷"],["cocktail","🍸"],["coffee","☕"],["pour-over","☕"],["café","☕"],["hike","🥾"],["run","🏃"],["5k","🏃"],["bike","🚲"],["picnic","🧺"],["board game","🎲"],["game","🎲"],["movie","🎬"],["film","🎬"],["karaoke","🎤"],["book","📚"],["yoga","🧘"],["swim","🏊"],["beach","🏖️"],["cake","🍰"],["bake","🧁"],["cook","🍳"],["dinner","🍽️"],["supper","🍽️"]];
+  const titleEmoji = (e) => { const t = `${e.title || ""} ${e.activity || ""}`.toLowerCase(); return (KW.find(([k]) => t.includes(k)) || [])[1] || ""; };
+  const THEME_BG = { picnic: "#FFCAD6", disco: "#DCCBFF", sunny: "#FFE08A", ocean: "#C4DEFF", linen: "#FFE3B8", candlelight: "#FFD9B0", gallery: "#E3F1DD", midnight: "#DCCBFF", sticker: "#FFE08A" };
+  const LANE_BG = { move: "#C4DEFF", make: "#FFCAD6", gather: "#FFE08A", discover: "#DCCBFF" };
   function eventCard(e, why) {
-    const a = actOf(e), em = e.emoji || e.host?.emoji || ACT_EMOJI[a] || "✨", free = e.free || !e.price;
-    const ic = e.host?.cover ? `<img src="${esc(e.host.cover)}" alt="">` : e.host?.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(e.host.avatarArt, e.host.color, 46) : esc(em);
+    const a = actOf(e), em = titleEmoji(e) || ACT_EMOJI[a] || (e.emoji !== "🎉" && e.emoji) || "🎉", free = e.free || !e.price, H = e.host || {};
+    const sketch = (art, color, size) => (art && window.EncoreAvatars ? window.EncoreAvatars.svg(art, color || "#E26D8E", size) : "");
+    const hostAv = H.cover ? `<img src="${esc(H.cover)}" alt="">` : sketch(H.avatarArt, H.color, 40) || esc(H.emoji || "🎉");
     const tm = e.startTime && /^\d{1,2}:\d{2}$/.test(e.startTime) ? new Date("2000-01-01T" + e.startTime.padStart(5, "0")).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : e.startTime;
-    return `<a class="ev${/^[a-z]{3,14}$/.test(e.theme || "") ? " tpl-" + e.theme : ""}" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="ev-ic${e.host?.cover ? " photo" : ""}" style="--c:${esc(e.host?.color || "#E26D8E")}">${ic}</span><span class="ev-b"><b>${esc(e.title)}</b><small>${esc(fmtDate(e.date))}${tm ? " · " + esc(tm) : ""}${e.city ? " · " + esc(e.city) : ""}</small>${e.host ? `<small class="ev-h">by ${esc(e.host.name || "@" + e.host.handle)}</small>` : ""}${why ? `<small class="why">${esc(why)}</small>` : ""}</span><span class="ev-p ${free ? "free" : ""}">${free ? "Free" : esc(e.price)}</span></a>`;
+    const when = e.date ? `${fmtDate(e.date)}${tm ? " · " + tm : ""}` : "Date coming soon";
+    const art = e.coverPhoto ? `<img class="ev-photo" src="${esc(e.coverPhoto)}" alt="">` : `<span class="ev-em" aria-hidden="true">${esc(em)}</span>`;
+    const going = Math.max(0, +e.going || +e.goingCount || 0), faces = (e.faces || []).slice(0, 3);
+    const stack = `<span class="ev-faces"><span class="ev-face host" style="--c:${esc(H.color || "#E26D8E")}">${hostAv}</span>${faces.map((f) => `<span class="ev-face" style="--c:${esc(f.color || "#FFE08A")}">${f.art ? sketch(f.art, f.color, 40) : esc(f.emoji || "🙂")}</span>`).join("")}${going > faces.length ? `<span class="ev-face more">+${going - faces.length}</span>` : ""}</span>`;
+    const quiet = [H.name || (H.handle ? "@" + H.handle : ""), e.city, free ? "Free" : e.price].filter(Boolean).map(esc).join(" · ");
+    return `<a class="ev ev-poster" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#FFE08A"}">
+      <span class="ev-art${e.coverPhoto ? " has-photo" : ""}">${art}${e.coverPhoto ? "" : `<b class="ev-title">${esc(e.title)}</b>`}${H.name ? `<span class="ev-by"><span class="ev-by-av">${hostAv}</span>${esc(H.name)}</span>` : ""}</span>
+      <span class="ev-b"><b class="ev-when">${esc(when)}</b>${e.coverPhoto ? `<span class="ev-t2">${esc(e.title)}</span>` : ""}${stack}<small class="ev-q">${quiet}</small>${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;
   }
   function hostCard(h) {
     const ac = h.theme?.accent || h.color || "#E26D8E", av = (h.gallery || [])[0] ? `<img src="${esc(h.gallery[0])}" alt="">` : h.theme?.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.theme.avatarArt, ac, 48) : esc(h.emoji || "🎉");

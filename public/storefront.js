@@ -9,7 +9,7 @@
     handmade: { label: "Handmade", head: "Caveat", body: "Nunito", q: "Caveat:wght@600;700&family=Nunito:wght@400;600;700" },
     bold: { label: "Bold", head: "Archivo Black", body: "Archivo", q: "Archivo+Black&family=Archivo:wght@400;500;600" },
   };
-  const BGS = { cream: { label: "Cream", bg: "#FBF6EF", card: "#FFFFFF", ink: "#2B211C", soft: "#75685F", line: "#EEE4D8" }, white: { label: "White", bg: "#FFFFFF", card: "#FAF8F5", ink: "#1F1A17", soft: "#6F655E", line: "#ECE6DF" }, blush: { label: "Blush", bg: "#FFF1F3", card: "#FFFFFF", ink: "#2B1D21", soft: "#7A6267", line: "#F5DCE1" }, sage: { label: "Sage", bg: "#F1F6F1", card: "#FFFFFF", ink: "#1E2A22", soft: "#5F6F64", line: "#DCE7DE" }, night: { label: "Night", bg: "#17120F", card: "#221B17", ink: "#F6EDE6", soft: "#B9AA9E", line: "#3A2F29" } };
+  const BGS = { cream: { label: "Cream", bg: "#FBF6EF", card: "#FFFFFF", ink: "#2B211C", soft: "#75685F", line: "#EEE4D8" }, white: { label: "White", bg: "#FFFFFF", card: "#FAF8F5", ink: "#1F1A17", soft: "#6F655E", line: "#ECE6DF" }, blush: { label: "Blush", bg: "#FFF1F3", card: "#FFFFFF", ink: "#2B1D21", soft: "#7A6267", line: "#F5DCE1" }, sage: { label: "Sage", bg: "#F1F6F1", card: "#FFFFFF", ink: "#1E2A22", soft: "#5F6F64", line: "#DCE7DE" } };
   const ACCENTS = ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C"];
   const COVERS = { wash: "Soft wash", sunrise: "Sunrise", dusk: "Dusk", dots: "Dots", waves: "Waves", confetti: "Confetti", plain: "Plain" };
   const BUTTONS = { round: "999px", soft: "12px", square: "4px" };
@@ -23,7 +23,7 @@
     // Guardrail: the accent is used for buttons; text on it is white or ink, whichever reads better. Accent text on the page darkens if it would be hard to read.
     const onAccent = contrast(t.accent, "#FFFFFF") >= 3 ? "#FFFFFF" : "#1F1A17", accentText = contrast(t.accent, B.bg) >= 3 ? t.accent : t.bg === "night" ? `color-mix(in srgb, ${t.accent} 60%, #fff)` : `color-mix(in srgb, ${t.accent} 60%, #000)`;
     Object.entries({ "--accent": t.accent, "--bg": B.bg, "--card": B.card, "--ink": B.ink, "--soft": B.soft, "--line": B.line, "--brand": t.accent, "--brand2": accentText, "--on-brand": onAccent, "--c": t.accent, "--pink": `color-mix(in srgb, ${t.accent} 14%, ${B.card})`, "--radius": BUTTONS[t.buttons] || "999px", "--head": `"${F.head}", Georgia, serif`, "--body": `"${F.body}", system-ui, sans-serif` }).forEach(([k, v]) => { root.setProperty(k, v); document.body.style.setProperty(k, v); });
-    document.documentElement.dataset.theme = t.bg === "night" ? "dark" : "light"; document.body.classList.add("store");
+    document.documentElement.dataset.theme = "light"; document.body.classList.add("store");
     const cv = document.querySelector(".cover"); if (cv) cv.style.background = cover(t);
     const av = document.querySelector(".av"); if (av) { av.innerHTML = t.avatarUrl ? `<img src="${t.avatarUrl}" alt="">` : t.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(t.avatarArt, t.accent, 120) : (h.emoji || "🎉"); av.classList.toggle("drawn", !!(t.avatarArt && !t.avatarUrl)); }
     const S = { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: false, past: true, ...(h.sections || {}) };

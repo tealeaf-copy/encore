@@ -8473,6 +8473,9 @@ async function drawInvites(){ try{ const v=document.querySelector("#view-program
   }catch(err){ console.warn(err) } return r } }
 // host lists: a guest the host declined reads "Not this time", not "Can't make it"
 new MutationObserver(()=>{ try{ if(!draft?.id||!isCasual(draft)) return; const D=new Set((allRsvps||[]).filter(r=>r.eventId===draft.id&&r.response==="no"&&r.decidedAt).map(r=>String(r.name||"").trim())); if(!D.size) return; document.querySelectorAll("#view-studio li, #view-studio tr, #view-studio .wc-row, #view-studio .who-row").forEach(row=>{ if(row.dataset.decl) return; const txt=row.textContent; for(const n of D){ if(n&&txt.includes(n)&&/Can.t make it/.test(txt)){ row.dataset.decl=1; row.querySelectorAll("*").forEach(x=>{ if(!x.children.length&&/Can.t make it/.test(x.textContent)) x.textContent=x.textContent.replace(/Can.t make it/,"Not this time (your call)") }) } } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+
+// guest invite pages wear the playful public style
+(()=>{ try{ if(!isGuestRoute?.()) return; if(!document.querySelector('link[href="/playful.css"]')){ const l=document.createElement("link"); l.rel="stylesheet"; l.href="/playful.css"; document.head.appendChild(l) } }catch{} })();
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

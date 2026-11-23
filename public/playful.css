@@ -1,0 +1,64 @@
+/* Encore, playful: chunky rounded type, ink outlines, sticker shadows, pastel blocks.
+   Loaded after each public page's own styles, so it only restyles; it never changes layout or behaviour. */
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap");
+:root{--p-ink:#1F1A17;--p-paper:#FFF8EE;--p-butter:#FFE08A;--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:#E2573A;--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
+
+/* paper with a soft dot grid, always light */
+html{color-scheme:light}
+body{background-color:var(--p-paper)!important;background-image:radial-gradient(color-mix(in srgb,var(--p-ink) 9%,transparent) 1.2px,transparent 1.3px)!important;background-size:22px 22px!important;color:var(--p-ink)}
+
+/* chunky rounded headings */
+h1,h2,h3,.brand,.nu-title,.hero h1{font-family:"Fredoka","DM Sans",system-ui,sans-serif!important;font-weight:600!important;letter-spacing:-.01em!important;font-variation-settings:normal!important}
+h1{line-height:1.02}
+.hero h1 .hl,.hero h1 em,h1 .hl{color:var(--p-ember)!important;font-style:normal!important;background:linear-gradient(transparent 62%,var(--p-butter) 62%,var(--p-butter) 92%,transparent 92%);padding:0 .08em;border-radius:6px}
+
+/* buttons: outlined, with a shadow that presses in */
+.btn,.pill,.cta,a.cta,.sp-btn,button.chip,.chip,.filters button,.opts button,.trychip{border:var(--p-line)!important;box-shadow:3px 3px 0 var(--p-ink)!important;border-radius:999px!important;font-weight:600!important;transition:transform .12s ease-out,box-shadow .12s ease-out,background .12s!important}
+.btn:hover,.pill:hover,.cta:hover,.sp-btn:hover,.chip:hover,.filters button:hover,.opts button:hover,.trychip:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--p-ink)!important}
+.btn:active,.pill:active,.cta:active,.sp-btn:active,.chip:active,.filters button:active,.opts button:active,.trychip:active{transform:translate(3px,3px)!important;box-shadow:0 0 0 var(--p-ink)!important}
+.btn.primary,.btn:not(.ghost):not(.quiet):not(.light),.pill.light,a.cta{background:var(--p-ember)!important;color:#fff!important}
+.btn.ghost,.btn.quiet{background:#fff!important;color:var(--p-ink)!important}
+.filters button[aria-pressed="true"],.filters button.on,.chip[aria-pressed="true"]{background:var(--p-butter)!important;color:var(--p-ink)!important}
+.opts button{border-radius:18px!important}
+
+/* cards become stickers */
+.card,.ev,.hc,.next-up,.shop,.qcard,.xp,.panel.ck,.ticket,.lock-in,.who-going,.my-inv,.invite.gx,.cast div,.sec>.card{border:var(--p-line)!important;box-shadow:var(--p-shadow)!important;border-radius:22px!important;background:#fff}
+.ev,.hc,.xp{transition:transform .15s ease-out,box-shadow .15s ease-out!important}
+.ev:hover,.hc:hover,.xp:hover{transform:translate(-2px,-2px) rotate(-.4deg)!important;box-shadow:var(--p-shadow-lg)!important}
+.next-up{box-shadow:var(--p-shadow-lg)!important}
+
+/* pastel blocks, in turn, so lists feel like a sticker sheet */
+.hc:nth-child(5n+1) .hc-av,.ev:nth-child(5n+1) .ev-ic{background:var(--p-butter)!important}
+.hc:nth-child(5n+2) .hc-av,.ev:nth-child(5n+2) .ev-ic{background:var(--p-mint)!important}
+.hc:nth-child(5n+3) .hc-av,.ev:nth-child(5n+3) .ev-ic{background:var(--p-sky)!important}
+.hc:nth-child(5n+4) .hc-av,.ev:nth-child(5n+4) .ev-ic{background:var(--p-pink)!important}
+.hc:nth-child(5n) .hc-av,.ev:nth-child(5n) .ev-ic{background:var(--p-lilac)!important}
+.hc-av,.ev-ic,.av,.hh-av{border:var(--p-line)!important;box-shadow:2px 2px 0 var(--p-ink)}
+.tags i,.ev-p,.nu-meta span,.perk{border:2px solid var(--p-ink)!important;background:var(--p-butter)!important;color:var(--p-ink)!important;font-weight:600}
+.ev-p.free{background:var(--p-mint)!important}
+.eyebrow,.nu-eyebrow{display:inline-block;width:fit-content;max-width:100%;align-self:flex-start;background:var(--p-pink);color:var(--p-ink)!important;border:2px solid var(--p-ink);border-radius:999px;padding:3px 10px;letter-spacing:.06em!important;font-weight:700!important}
+
+/* inputs: friendly and outlined */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{border:2px solid var(--p-ink)!important;border-radius:14px!important;background:#fff!important}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--p-butter)!important;outline-offset:1px}
+
+/* the top bar sits on its own sticker */
+.top{position:relative}
+.top .brand svg circle:first-child{stroke:var(--p-ink);stroke-width:2}
+
+/* landing page: the three example cards wobble a little */
+.stack .card{border:var(--p-line)!important;box-shadow:var(--p-shadow-lg)!important}
+.stack .card.a{animation:p-bob 6s ease-in-out infinite}.stack .card.b{animation:p-bob 7s ease-in-out -2s infinite}.stack .card.c{animation:p-bob 6.5s ease-in-out -4s infinite}
+@keyframes p-bob{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.hero{position:relative}
+.hero::before{content:"✦";position:absolute;left:-6px;top:28px;font-size:28px;color:var(--p-ember);transform:rotate(-12deg)}
+.hero::after{content:"✿";position:absolute;right:4%;bottom:18px;font-size:34px;color:#F29BB0;transform:rotate(10deg)}
+
+/* guest invite pages (inside the app) */
+#view-guest .gxcover{border-bottom:var(--p-line)}
+#view-guest .chip,#view-guest .rsvpbig .chip{background:#fff}
+#view-guest .chip[aria-pressed="true"]{background:var(--p-butter)!important}
+.wg-list li{border:2px solid var(--p-ink)}
+.wg-av{border:2px solid var(--p-ink)}
+
+@media (prefers-reduced-motion:reduce){.stack .card{animation:none!important}.btn,.ev,.hc{transition:none!important}}

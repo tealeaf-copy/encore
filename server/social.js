@@ -118,7 +118,7 @@ export function makeSocial(store, { C, saveBlob }) {
       for (const [id, x] of I.events) if (lc(x.owner) === f && isPublic(x.e) && (x.e.date || "") >= today()) items.push({ kind: "hosting", at: x.e.updatedAt || x.e.createdAt || now, who: p, event: evCard(x) });
     }
     const momentsSeen = I.moments.filter((m) => (F.includes(lc(m.authorEmail)) || lc(m.authorEmail) === me || myEvents.has(m.eventId)) && canSee(m.eventId) && m.at > now - 30 * DAY).sort((a, b) => b.at - a.at);
-    for (const m of momentsSeen) if (lc(m.authorEmail) !== me) items.push({ kind: "moment", at: m.at, who: people.get(lc(m.authorEmail)) || person(m.authorEmail), media: { url: m.url, type: m.type }, caption: m.caption || "", event: evCard(I.events.get(m.eventId)) });
+    for (const m of momentsSeen) if (lc(m.authorEmail) !== me) items.push({ kind: "moment", at: m.at, who: (() => { const p = people.get(lc(m.authorEmail)) || person(m.authorEmail); return p?.name ? p : { ...(p || {}), name: m.authorName || "A guest" }; })(), media: { url: m.url, type: m.type }, caption: m.caption || "", event: evCard(I.events.get(m.eventId)) });
     for (const k of I.kudos) if (F.includes(lc(k.email)) && k.love && canSee(k.eventId) && k.at > recent) items.push({ kind: "kudos", at: k.at, who: people.get(lc(k.email)), love: k.love, tags: k.tags || [], event: evCard(I.events.get(k.eventId)) });
     const followedWs = []; for (const x of new Set([...I.events.values()].map((v) => v.ws))) if (C.followersOf(x).some((f) => f.email === me)) followedWs.push(x);
     for (const w of followedWs) { const hp = C.profileOf(w), hostP = { name: hp?.name || "", handle: hp?.handle, emoji: hp?.emoji || "🎉", color: hp?.color, email: getWorkspace(w)?.ownerEmail || "" };
@@ -127,8 +127,8 @@ export function makeSocial(store, { C, saveBlob }) {
         else if (Date.parse(x.e.date) > recent) { const K = I.kudos.filter((k) => k.eventId === x.id && k.love), n = [...I.att.values()].filter((L) => L.some((a) => a.eventId === x.id)).length; items.push({ kind: "recap", at: Date.parse(x.e.date) + 20 * 3600e3, who: hostP, event: evCard(x), count: n, love: K[0]?.love || "", kudos: K.length }); } } }
     items.sort((a, b) => b.at - a.at);
     // stories: one ring per friend (and you) with photos from the last week
-    const ring = new Map(); for (const m of momentsSeen.filter((m) => m.at > now - 7 * DAY)) { const k = lc(m.authorEmail); if (!ring.has(k)) ring.set(k, []); ring.get(k).push({ url: m.url, type: m.type, caption: m.caption || "", at: m.at, event: evCard(I.events.get(m.eventId)) }); }
-    const stories = [...ring].map(([e, L]) => ({ who: people.get(e) || person(e), items: L.sort((a, b) => a.at - b.at), mine: e === me })).sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || b.items.at(-1).at - a.items.at(-1).at);
+    const ring = new Map(), ringName = new Map(); for (const m of momentsSeen.filter((m) => m.at > now - 7 * DAY)) { const k = lc(m.authorEmail); if (!ring.has(k)) ring.set(k, []); if (m.authorName) ringName.set(k, m.authorName); ring.get(k).push({ url: m.url, type: m.type, caption: m.caption || "", at: m.at, event: evCard(I.events.get(m.eventId)) }); }
+    const stories = [...ring].map(([e, L]) => ({ who: (() => { const p = people.get(e) || person(e); return p?.name ? p : { ...(p || {}), name: ringName.get(e) || "A guest" }; })(), items: L.sort((a, b) => a.at - b.at), mine: e === me })).sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || b.items.at(-1).at - a.items.at(-1).at);
     // people you've been to things with, who aren't friends yet
     const coAtt = new Map(); for (const id of myEvents) { for (const [em, L] of I.att) if (em !== me && !F.includes(em) && L.some((a) => a.eventId === id) && userOf(em)) coAtt.set(em, (coAtt.get(em) || 0) + 1); const ow = lc(I.events.get(id)?.owner); if (ow && ow !== me && !F.includes(ow) && userOf(ow)) coAtt.set(ow, (coAtt.get(ow) || 0) + 1); }
     const suggestions = [...coAtt].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([e, n]) => ({ ...person(e), together: n }));
@@ -166,8 +166,8 @@ export function makeSocial(store, { C, saveBlob }) {
     const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws && x.e.date && x.e.date <= today() && x.e.stage !== "interest"), K = I.kudos.filter((k) => k.ws === ws).sort((a, b) => b.at - a.at);
     const kinds = {}; for (const x of ev) for (const l of lanesOf(`${x.e.activity || ""} ${x.e.name || ""}`)) kinds[l] = (kinds[l] || 0) + 1;
     const tags = {}; for (const k of K) for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1;
-    const guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === ws)) guests.add(em);
-    const returning = [...guests].filter((em) => (I.att.get(em) || []).filter((a) => a.ws === ws).length > 1).length;
+    const pastIds = new Set(ev.map((x) => x.id)), guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === ws && pastIds.has(a.eventId))) guests.add(em);
+    const returning = [...guests].filter((em) => (I.att.get(em) || []).filter((a) => a.ws === ws && pastIds.has(a.eventId)).length > 1).length;
     const tagList = Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => { const T = KUDOS_TAGS.find((x) => x[0] === t); return { tag: t, emoji: T?.[1] || "✨", label: T?.[2] || t, n }; });
     const vibe = tagList.slice(0, 3).map((t) => t.label.toLowerCase());
     const tippers = K.filter((k) => k.tipped).length, hostedN = ev.filter((x) => x.e.casual && x.e.date && x.e.date <= today()).length;
@@ -348,7 +348,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/attendees/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example) return bad(res, "No such event.", 404, "not_found"); if (ev.hideGuests) return res.json({ attendees: [], count: 0, hidden: true });
     const short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = []; let total = 0;
-    const arche = (email) => { try { const t = email ? X.eventProfile(email)?.top : null; return t ? { name: t.name, emoji: t.emoji } : { name: "The Explorer", emoji: "🧭" }; } catch { return { name: "The Explorer", emoji: "🧭" }; } };
+    const arche = (email) => { try { const t = email ? X.eventProfile(email)?.top : null; return t ? { name: t.name, emoji: t.emoji } : { name: "New to Encore", emoji: "🌱" }; } catch { return { name: "New to Encore", emoji: "🌱" }; } };
     for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = r.response === "going" || (ev.stage === "interest" && r.interest === "in"); if (r.eventId !== id || !yes) continue; const k = lc(r.email || r.name || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
       out.push({ name: short(r.name), archetype: arche(lc(r.email)), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email ? { key: hash(lc(r.email)) } : {}) }); }
     for (const g of ev.guests || []) { if (!/^(Going|Attended)$/.test(g.status || "")) continue; const k = lc(g.email || g.name); if (!k || seen.has(k)) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
@@ -359,7 +359,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const d = S.list("rsvps").find((x) => x.data?.eventId === id && x.data?.email && hash(lc(x.data.email)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
     const r = d.data, em = lc(r.email), w = String(r.name || "").trim().split(/\s+/).filter(Boolean), name = w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest";
     let P = {}; try { P = X.eventProfile(em) || {}; } catch {}
-    const top = P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "The Explorer", emoji: "🧭", line: "Tries anything once. New neighborhood, new crowd." };
+    const top = P.top ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Encore", emoji: "🌱", line: "First get-together here. Say hi in the group chat!" };
     const pp = X.person(em), prof = pp?.ws ? C.profileOf(pp.ws) : null, SOC = /instagram|tiktok|x\.com|twitter|threads|linkedin|strava|substack|youtube|bsky|facebook/i;
     const socials = (prof?.links || []).filter((l) => l?.url && SOC.test(l.url)).slice(0, 4).map((l) => ({ label: clean(l.label, 30) || new URL(l.url).hostname.replace(/^www\./, ""), url: l.url }));
     const I = X.index(), kud = I.kudos.filter((k) => lc(k.email) === em && k.love).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 2).map((k) => ({ love: clean(k.love, 160), event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" }));
@@ -367,7 +367,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const loves = (P.loves || []).map((l) => LANE[l.kind] || l.kind).slice(0, 2);
     let mutual = []; const u = currentUser(req); if (u?.email && lc(u.email) !== em) { const mine = new Set(X.friendsOf(u.email).map((f) => lc(f.email))); mutual = X.friendsOf(em).filter((f) => mine.has(lc(f.email))).map((f) => (X.person(f.email)?.name || "").split(/\s+/)[0]).filter(Boolean); }
     const first = w[0] || "They", n = P.attended || 0;
-    const take = [`${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ", new to Encore"}.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
+    const take = [P.top ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ""}.` : `${first} is new to Encore. This is a great one to start with.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
   // ---- Pip's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
   app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");

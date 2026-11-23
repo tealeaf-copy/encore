@@ -19,6 +19,8 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 .hc-wrap{position:relative;display:flex;flex-direction:column}.hc-wrap .hc{flex:1}.hc-f{position:absolute;top:14px;right:14px;padding:6px 12px;font-size:13px}
 .invite{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
 @media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.invite{grid-template-columns:minmax(0,1fr)}}
+.rail-sec{margin:0 0 26px}.rail-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 10px}.rail-h h2{margin:0}.rail-h .lede{margin:0}
+.rail-row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,260px);gap:16px;overflow-x:auto;padding:4px 8px 12px 2px;scroll-snap-type:x mandatory;scrollbar-width:thin}.rail-row > *{scroll-snap-align:start}
 </style><link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
 <script src="/place.js"></script>
@@ -37,7 +39,9 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 
   <section id="shopsSec" hidden><h2>Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="grid g2" id="shops"></div></section>
 
-  <section><h2>Coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
+  <section id="railsSec" hidden><div id="rails"></div></section>
+
+  <section><h2>Everything coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
     <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div><div style="margin:-4px 0 12px" id="placeBox"></div><input id="cityF" type="hidden">
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
 
@@ -90,11 +94,17 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     $("#fyL").textContent = ranked.length ? `${P.name.replace(/^The /,"")}s tend to love these.` : "Nothing nearby fits yet. Follow a host below and you'll hear first.";
     $("#fyList").innerHTML = ranked.map((x) => C.eventCard(x.e, x.why)).join("");
   }
+  // themed rows in Encore's voice, like a friend's shortlist (only when there's enough to fill them)
+  function drawRails(L) { const sec = $("#railsSec"), box = $("#rails"); if (!sec || !box) return; if (filter !== "all") { sec.hidden = true; return; }
+    const now = new Date(), fri = new Date(now); fri.setDate(now.getDate() + ((5 - now.getDay() + 7) % 7)); const iso = (d) => d.toISOString().slice(0, 10), wk = [0, 1, 2].map((n) => iso(new Date(fri.getTime() + n * 864e5)));
+    const R = [["This weekend", "Friday to Sunday, near you", L.filter((e) => wk.includes(e.date))], ["Seats at the table", "Dinners, coffee and long talks", L.filter((e) => C.laneOf(e) === "gather")], ["Make something, taste something", "Kitchens, bakes and workshops", L.filter((e) => C.laneOf(e) === "make")], ["Lace up", "Runs, hikes and rides", L.filter((e) => C.laneOf(e) === "move")], ["Somewhere new", "Tours, markets and first times", L.filter((e) => C.laneOf(e) === "discover")]].filter((r) => r[2].length >= 2);
+    sec.hidden = !R.length; box.innerHTML = R.map(([t, sub, E]) => `<div class="rail-sec"><div class="rail-h"><h2>${C.esc(t)}</h2><span class="lede">${C.esc(sub)}</span></div><div class="rail-row">${E.slice(0, 10).map((e) => C.eventCard(e)).join("")}</div></div>`).join(""); }
   function drawEvents() {
     const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
     $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
     const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const L = data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && near(e));
+    drawRails(L);
     $("#events").innerHTML = L.length ? L.map((e) => C.eventCard(e)).join("") : `<div class="empty">${cf && data.events.length ? `Nothing in ${C.esc($("#cityF").value)} yet. <button class="btn ghost" type="button" onclick="window.EncorePlace.setManual('');location.reload()">See what's on everywhere</button> <a class="btn" href="/signup?mode=friends">Host the first one</a>` : data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`;
   }
   function drawHosts() { const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(), H = data.hosts.filter((h) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${h.city || ""}`, cf) || window.EncorePlace.near(`${h.hood || ""}`, cf) : `${h.city || ""} ${h.hood || ""}`.toLowerCase().includes(cf))); let F = []; try { F = JSON.parse(localStorage.getItem("encore.following") || "[]"); } catch {}

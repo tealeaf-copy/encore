@@ -1,0 +1,93 @@
+{
+  "handle": "tram",
+  "name": "Tram",
+  "tagline": "Matcha, home-cooked Vietnamese, and bánh patê sô warm from the oven.",
+  "bio": "I whisk matcha the slow way and cook the Vietnamese dishes I grew up on. Come for a bowl of bún, stay for a second bánh patê sô. Small tables, big flavours, everyone leaves full.",
+  "city": "Brooklyn",
+  "hood": "",
+  "tags": [
+    "matcha",
+    "vietnamese",
+    "home cooking",
+    "pastries",
+    "workshops"
+  ],
+  "emoji": "🍵",
+  "color": "#3E9C6E",
+  "theme": {
+    "accent": "#3E9C6E",
+    "font": "playful",
+    "bg": "sage",
+    "cover": "waves",
+    "buttons": "round",
+    "avatarArt": "barista"
+  },
+  "shop": {
+    "open": true,
+    "title": "This week's bake",
+    "note": "Small batch, pick up only. Order by Thursday night.",
+    "where": "Pickup in Brooklyn (address sent after you order)",
+    "slots": [
+      "Saturday 10:00–12:00",
+      "Sunday 10:00–12:00"
+    ],
+    "items": [
+      {
+        "name": "Bánh patê sô (box of 4)",
+        "desc": "Flaky puff pastry with a peppery pork filling, baked that morning.",
+        "emoji": "🥐",
+        "cents": 2000,
+        "stock": 12,
+        "max": 3
+      },
+      {
+        "name": "Matcha kit for two",
+        "desc": "Ceremonial-grade matcha, a bamboo whisk and my step-by-step card.",
+        "emoji": "🍵",
+        "cents": 3500,
+        "stock": 6,
+        "max": 2
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "terms": "Free to cancel up to 7 days before. 50% deposit holds the date.",
+  "services": "Matcha workshops for teams and brands: I bring the bowls, whisks and matcha, and everyone leaves knowing how to make a proper cup.",
+  "experiences": [
+    {
+      "name": "Matcha workshop for your team",
+      "desc": "A hands-on hour: the story of matcha, whisking your own bowl, and a matcha latte to finish. Great for launches, offsites and team socials.",
+      "emoji": "🍵",
+      "min": 8,
+      "max": 30,
+      "price": "from $45 a person",
+      "length": "75 minutes",
+      "category": "workshop",
+      "includes": [
+        "Ceremonial-grade matcha",
+        "Bowls and bamboo whisks for everyone",
+        "A tasting of two grades",
+        "Take-home matcha card"
+      ],
+      "travels": true
+    },
+    {
+      "name": "Vietnamese home-cooking table",
+      "desc": "A family-style spread of the dishes I grew up on, served at your office or event.",
+      "emoji": "🍜",
+      "min": 8,
+      "max": 25,
+      "price": "from $55 a person",
+      "length": "2 hours",
+      "category": "dining",
+      "includes": [
+        "Three dishes and rice",
+        "Bánh patê sô to finish",
+        "Vegetarian options"
+      ],
+      "travels": true
+    }
+  ]
+}

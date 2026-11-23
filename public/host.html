@@ -53,6 +53,7 @@ h2.sec{font-size:22px;margin:4px 0 10px}
 .next-up::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--accent,var(--c))}
 .next-up{--nu-pad:28px}@media (max-width:760px){.next-up{--nu-pad:20px}}
 .nu-cover{display:block;width:calc(100% + 2*var(--nu-pad,24px));margin:calc(-1*var(--nu-pad,24px)) calc(-1*var(--nu-pad,24px)) 16px;max-width:none;aspect-ratio:1200/630;object-fit:cover;border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.ie{cursor:text;border-radius:8px;outline:2px dashed transparent;outline-offset:3px;transition:outline-color .15s,background .15s}.is-owner .ie:hover,.is-owner .ie:focus-visible{outline-color:color-mix(in srgb,var(--accent,#C4532F) 60%,transparent);background:color-mix(in srgb,var(--accent,#C4532F) 6%,transparent)}.ie-input{font:inherit;color:inherit;width:100%;min-width:9ch;padding:4px 8px;border-radius:10px;border:2px solid var(--accent,#C4532F);background:#fff}textarea.ie-input{min-height:3.2em;resize:vertical}.ie-saved{outline-color:#2F7A4F!important}.ie-bad{outline-color:#B3261E!important}.ie-hint{margin:0 0 10px;font-size:13px;color:var(--soft,#75685F)}.ie-empty{color:var(--soft,#75685F);font-style:italic}
 .nu-eyebrow{font:600 12px var(--body,inherit);letter-spacing:.14em;text-transform:uppercase;color:var(--brand2)}.nu-title{font-size:clamp(28px,4.5vw,44px);line-height:1.05;margin:8px 0 4px}.nu-sub{color:var(--soft);font-size:15px}
 .nu-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0;color:var(--ink);font-size:15px}.nu-meta span{display:inline-flex;align-items:center;gap:6px}.nu-meta span+span::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--soft);margin-right:12px;opacity:.6}
 .nu-menu{list-style:none;padding:0;margin:18px 0;display:grid;gap:8px;counter-reset:c}.nu-menu li{counter-increment:c;display:grid;grid-template-columns:28px minmax(0,1fr);font:400 18px/1.35 var(--head,inherit)}.nu-menu li::before{content:"·";font-size:22px;line-height:1;padding-top:0;font:600 11px var(--body,inherit);color:var(--soft);padding-top:5px;letter-spacing:.06em}
@@ -87,7 +88,7 @@ body.is-owner{padding-bottom:110px}
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
-    <nav><a href="/discover">Discover</a><a href="/plans">Your plans</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
+    <nav><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
   <main id="m"><div class="empty">Loading…</div></main>
 </div>
 <footer>Hosted on Encore · <a href="/discover">Find more hosts</a></footer>

@@ -43,12 +43,12 @@
       ${(e.courses || []).length ? `<ol class="nu-menu">${e.courses.slice(0, 7).map((c) => `<li>${esc(c)}</li>`).join("")}</ol>` : e.audienceWho ? `<p class="nu-for">For ${esc(e.audienceWho.replace(/^./, (c) => c.toLowerCase()))}</p>` : ""}
       <div class="nu-cta">${paid ? `<b class="nu-price">${esc(e.price)}<small> a seat</small></b>` : `<b class="nu-price">Free</b>`}<a class="btn nu-go" href="/g#rsvp-${encodeURIComponent(e.id)}">${(() => { try { const M = JSON.parse(localStorage.getItem("encore-rsvp-" + e.id) || "null"); return M ? (M.response === "requested" ? "Requested ✓" : M.response === "going" ? "You're in ✓" : label) : label; } catch { return label; } })()}</a></div>
       ${e.earlyUntil && Date.parse(e.earlyUntil) > Date.now() && !(() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })() ? `<p class="nu-early">Followers book first until ${esc(new Date(e.earlyUntil).toLocaleString([], { weekday: "short", hour: "numeric" }))}. <a href="#follow">Follow to get in early</a></p>` : ""}`;
-    box.hidden = false;
+    box.hidden = false; window.__nextUpEvent = e; if (document.body.classList.contains("is-owner")) setTimeout(() => window.EncoreInlineEdit?.(e), 50);
     // the featured one doesn't need repeating; hide "Coming up" when it's the only one
     if ((up || []).length === 1) { const hs = [...document.querySelectorAll("h2.sec")].find((x) => /Coming up/.test(x.textContent)); if (hs) { hs.style.display = "none"; if (hs.nextElementSibling) hs.nextElementSibling.style.display = "none"; } } }
   // ---- the editor, for the owner only ----
   async function editor(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
-    document.body.classList.add("is-owner"); ["topFollow", "follow"].forEach((id) => { const el = document.getElementById(id); if (el) { el.hidden = true; el.style.display = "none"; } });
+    document.body.classList.add("is-owner"); setTimeout(() => { try { if (window.__nextUpEvent) window.EncoreInlineEdit?.(window.__nextUpEvent); } catch {} }, 300); ["topFollow", "follow"].forEach((id) => { const el = document.getElementById(id); if (el) { el.hidden = true; el.style.display = "none"; } });
     setTimeout(() => { document.querySelectorAll(".card").forEach((c) => { if (/Want to host your own\?/.test(c.textContent)) c.style.display = "none"; }); document.querySelectorAll("[data-book]").forEach((b) => { b.textContent = "Edit this offering"; b.onclick = (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); location.href = "?bookings=1"; }; });
       fetch("/api/host/bookings").then((r) => (r.ok ? r.json() : {})).then((j) => { const B = (j.bookings || []).filter((b) => b.status === "booked"); if (!B.length) return; const sec = [...document.querySelectorAll("h2.sec")].find((x) => /Coming up/.test(x.textContent)); const grid = sec?.nextElementSibling; if (!grid) return; grid.querySelector(".empty")?.remove(); const esc = window.EncoreCommunity.esc;
         grid.insertAdjacentHTML("afterbegin", B.map((b) => `<a class="ev own-gig" href="?bookings=1"><span class="ev-ic" style="--c:#2F7A4F">💼</span><span class="ev-b"><b>${esc(b.company || b.name || "Team booking")}</b><small>${esc(b.when || "")}${b.people ? ` · ${esc(b.people)} people` : ""}</small><small>${b.depositPaid ? "Booked ✓" : "Accepted, deposit due"} · only you see this</small></span></a>`).join("")); }).catch(() => {});
@@ -91,4 +91,39 @@
     if (/[?&]customize=1/.test(location.search)) fab.click();
   }
   window.EncoreStore = { apply, editor, feature };
+})();
+
+// ---- the host edits their next event right on their page: click a detail, change it, it saves ----
+(function () {
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  async function save(id, patch) {
+    const r = await fetch("/api/db/doc?path=events/" + encodeURIComponent(id)); const j = await r.json(); const cur = j.data || j; if (!cur || !r.ok) throw new Error("Couldn't load the event.");
+    const next = { ...cur, ...patch, _base: cur.updatedAt || null, updatedAt: Date.now() }; delete next.id;
+    const w = await fetch("/api/db/doc?path=events/" + encodeURIComponent(id), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+    if (!w.ok) { const k = await w.json().catch(() => ({})); throw new Error(k.message || "Couldn't save."); }
+  }
+  function flash(el, ok, msg) { el.classList.add(ok ? "ie-saved" : "ie-bad"); el.title = msg || ""; setTimeout(() => el.classList.remove("ie-saved", "ie-bad"), 1400); }
+  function editable(el, { id, get, field, kind = "text", toPatch, show }) {
+    if (!el || el.dataset.ie) return; el.dataset.ie = 1; el.classList.add("ie"); el.tabIndex = 0; el.setAttribute("role", "button"); el.setAttribute("aria-label", "Edit " + field);
+    const open = () => { if (el.querySelector("input,textarea")) return; const v = get(); const inp = document.createElement(kind === "long" ? "textarea" : "input"); if (kind !== "long") inp.type = kind === "number" ? "number" : kind === "date" ? "date" : kind === "time" ? "time" : "text"; inp.value = v ?? ""; inp.className = "ie-input"; if (kind === "number") inp.min = 1;
+      const before = el.innerHTML; el.innerHTML = ""; el.appendChild(inp); inp.focus(); if (inp.select && kind === "text") inp.select();
+      let done = false; const finish = async (commit) => { if (done) return; done = true; const nv = inp.value.trim(); if (!commit || nv === String(v ?? "")) { el.innerHTML = before; return; }
+        el.innerHTML = esc(show ? show(nv) : nv); try { await save(id, toPatch ? toPatch(nv) : { [field]: nv }); flash(el, true, "Saved"); } catch (e) { el.innerHTML = before; flash(el, false, e.message); alert(e.message); } };
+      inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && kind !== "long") { ev.preventDefault(); finish(true); } if (ev.key === "Escape") finish(false); }); inp.addEventListener("blur", () => finish(true)); };
+    el.addEventListener("click", (ev) => { if (ev.target.closest("input,textarea,a")) return; open(); }); el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !el.querySelector("input,textarea")) { ev.preventDefault(); open(); } });
+  }
+  window.EncoreInlineEdit = function (e) {
+    const box = document.getElementById("nextUp"); if (!box || !e?.id) return; const id = e.id;
+    if (!box.querySelector(".ie-hint")) box.insertAdjacentHTML("afterbegin", `<p class="ie-hint">✏️ Click any detail to change it. It saves as you go.</p>`);
+    editable(box.querySelector(".nu-title"), { id, field: "title", get: () => e.dinnerTheme || e.title, toPatch: (v) => { e.title = v; return e.dinnerTheme ? { dinnerTheme: v } : { pubTitle: v }; } });
+    const spans = [...box.querySelectorAll(".nu-meta span")];
+    const dateSpan = spans[0]; if (dateSpan) { const d0 = document.createElement("span"); const t0 = document.createElement("span"); d0.textContent = e.date ? new Date(e.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : "Pick a date"; t0.textContent = e.startTime ? new Date("2000-01-01T" + e.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "Add a time"; dateSpan.replaceWith(d0); d0.after(t0);
+      editable(d0, { id, field: "date", kind: "date", get: () => e.date, toPatch: (v) => { e.date = v; return { date: v }; }, show: (v) => new Date(v + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) });
+      editable(t0, { id, field: "time", kind: "time", get: () => e.startTime, toPatch: (v) => { e.startTime = v; return { startTime: v }; }, show: (v) => new Date("2000-01-01T" + v).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) }); }
+    const place = spans.find((s) => !/spots|seats/.test(s.textContent) && s !== spans[0]); if (place) editable(place, { id, field: "place", get: () => e.hood || e.city, toPatch: (v) => (e.hood ? { hood: v } : { city: v }) });
+    const seats = spans.find((s) => /spots|seats/.test(s.textContent)); if (seats) editable(seats, { id, field: "spots", kind: "number", get: () => e.headcount, toPatch: (v) => ({ headcount: +v }), show: (v) => `${v} ${/seats/.test(seats.textContent) ? "seats" : "spots"}` });
+    let forEl = box.querySelector(".nu-for"); if (!forEl && !(e.courses || []).length) { forEl = document.createElement("p"); forEl.className = "nu-for ie-empty"; forEl.textContent = "Add who it's for"; box.querySelector(".nu-meta")?.after(forEl); }
+    if (forEl) editable(forEl, { id, field: "who it's for", kind: "long", get: () => e.audienceWho || "", toPatch: (v) => ({ audienceWho: v }), show: (v) => "For " + v.replace(/^./, (c) => c.toLowerCase()) });
+    const price = box.querySelector(".nu-price"); if (price) editable(price, { id, field: "price", get: () => (e.price && e.price !== "chip" ? e.price : "Free"), toPatch: (v) => (/^free$/i.test(v) || !v ? { price: "", free: true } : { price: /^[^0-9]/.test(v) ? v : "$" + v, free: false }) });
+  };
 })();

@@ -9395,6 +9395,18 @@ window.addEventListener("hashchange",casualRoute); setTimeout(casualRoute,300); 
 if(location.pathname==="/g"){ const s=document.createElement("style"); s.textContent=`#view-guest{transition:opacity .25s ease}`; document.head.appendChild(s); document.documentElement.classList.add("g-loading");
   const show=()=>document.documentElement.classList.remove("g-loading"); setTimeout(show,3500);
   { const _rgS=renderGuest; renderGuest=async function(){ const r=await _rgS.apply(this,arguments); setTimeout(show,450); return r } } }
+
+// ==================================================================
+// Casual hosts: Home's idea shelf is just get-together ideas. No audience tabs, company search, costs or Ideas board;
+// tapping one starts planning it.
+// ==================================================================
+{ const _ilh=ideaLibraryHTML; ideaLibraryHTML=function(){ if(!window.__wsPersonal) return _ilh.apply(this,arguments);
+    const F=feed().filter(x=>x.audience==="friends"&&!x.peer).slice(0,6); if(!F.length) return `<section class="lib" id="ideaLib" hidden></section>`;
+    return `<section class="lib" id="ideaLib"><div class="lib-head"><div><h2>Ideas for your next get-together</h2><p class="note" style="margin:4px 0 0">Tap one and Pip sets it up. Change anything after.</p></div></div>
+      <div class="lib-grid">${F.map(x=>`<article class="lib-card" tabindex="0" role="button" style="--tint:#F6E7D8" data-casualidea="${esc(x.name)}" data-line="${esc(x.line||"")}"><span class="lib-ic">${evIcon(x)}</span><h3>${esc(x.name)}</h3>
+        <p class="lib-line">${esc(x.line)}</p>${x.why?`<p class="note" style="margin:6px 0 0">${esc(x.why)}</p>`:""}<div class="lib-foot"><span class="lib-meta"></span><span class="btn sm">Plan this →</span></div></article>`).join("")}</div></section>` } }
+document.addEventListener("click",ev=>{ const c=ev.target.closest?.("[data-casualidea]"); if(!c) return; ev.preventDefault(); ev.stopPropagation(); try{ quickStart(`${c.dataset.casualidea} with friends`) }catch(err){ console.warn(err) } },true);
+document.addEventListener("keydown",ev=>{ if(ev.key!=="Enter") return; const c=ev.target.closest?.("[data-casualidea]"); if(c) c.click() },true);
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

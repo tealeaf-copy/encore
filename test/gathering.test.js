@@ -29,3 +29,14 @@ test("One question at the door: answers stay sealed until the day, then open to 
   assert.equal(open.open, true); assert.deepEqual(open.answers, [{ name: "Rita", answer: "My sourdough rose" }]);
   void ev;
 });
+
+test("Keep in touch after the night: a guest who went can ask to stay connected with another guest", async () => {
+  const h = await post("/api/signup", { name: "Kit Host", email: "kit.host@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
+  const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  const id = (await (await post("/api/db/collection?path=events", { name: "Taco night", date: day(-2), startTime: "19:00", casual: true, published: true }, hc)).json()).id;
+  const a = (await (await post("/api/db/collection?path=rsvps", { eventId: id, name: "Ana", email: "ana.k@example.com", response: "going", code: "ca1" }, hc)).json()).id;
+  await post("/api/db/collection?path=rsvps", { eventId: id, name: "Jo", phone: "+15550100777", response: "going", code: "cj1" }, hc);
+  const att = await (await fetch(`${srv.base}/api/public/attendees/${id}?rid=${a}`)).json();
+  const jo = att.attendees.find((x) => /^Jo/.test(x.name)); assert.ok(jo?.key, "phone guests have a key");
+  const r = await post("/api/public/keep-in-touch", { eventId: id, rid: a, code: "ca1", pkey: jo.key }); assert.equal(r.status, 200); const j = await r.json(); assert.equal(j.ok, true, JSON.stringify(j)); assert.equal(j.mutual, false);
+});

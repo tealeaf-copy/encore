@@ -6923,7 +6923,7 @@ const VIBES=[["spark","⚡","Brought energy"],["chill","🧘","Easy company"],["
 async function drawAfterParty(){ const d=draft; if(!d.id||$("#afterParty")) return; const host=$("#stepHost")||$("#view-studio"); if(!host) return;
   const el=document.createElement("section"); el.className="panel after-party"; el.id="afterParty"; host.prepend(el);
   let K={kudos:[],vibes:[]}; try{ const r=await fetch("/api/host/kudos/"+encodeURIComponent(d.id)); if(r.ok) K=await r.json() }catch{}
-  const going=(()=>{ const R=(allRsvps||[]).filter(r=>r.eventId===d.id&&r.response==="going"), G=(d.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")), seen=new Set(), out=[]; for(const x of [...G,...R]){ const k=String(x.email||(x.phone?"tel:"+String(x.phone).replace(/[^\d+]/g,""):"")).toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push({name:x.name||k,email:k}) } return out })();
+  const going=(()=>{ const R=(allRsvps||[]).filter(r=>r.eventId===d.id&&r.response==="going"&&!r.noShow), G=(d.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")), seen=new Set(), out=[]; for(const x of [...G,...R]){ const k=String(x.email||(x.phone?"tel:"+String(x.phone).replace(/[^\d+]/g,""):"")).toLowerCase(); if(!k||seen.has(k)) continue; seen.add(k); out.push({name:x.name||k,email:k}) } return out })();
   const past=d.date&&d.date<=new Date().toISOString().slice(0,10), tagN={}; K.kudos.forEach(k=>(k.tags||[]).forEach(t=>tagN[t]=(tagN[t]||0)+1));
   const hp=__hostProfile?.handle;
   el.innerHTML=`<div class="ap-hero">${pipSVG("happy",64)}<div><small class="eyebrow">${past?"You did it":"After the day"}</small><h2>${past?`${going.length?`${going.length} ${going.length===1?"person":"people"}`:"Everyone"} came to ${esc(guestTitle(d))}.`:"This fills up after the day."}</h2><p>${K.kudos.length?`${K.kudos.length} ${K.kudos.length===1?"person has":"people have"} sent kudos so far. ${Object.entries(tagN).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>{ const T=KUDOS.find(x=>x[0]===t); return `${T?.[1]||""} ${T?.[2]||t} ×${n}` }).join(" · ")}`:past?"Guests get a nudge the day after to send kudos. They'll show up here and on your page.":"The day after, Pip asks everyone who came what they loved, and shows you here."}</p></div></div>
@@ -9501,6 +9501,18 @@ function inviteOrder(){ try{ const v=document.getElementById("view-guest"); if(!
     let nm=String(d.pubTitle||d.name||""); const n0=nm;
     nm=nm.replace(/,.*$/,"").replace(/\s+\d{1,2}(?::\d\d)?\s*(am|pm)\b/gi,"").replace(/\s+at (mine|my place|home|our place)\b/gi,"").replace(/\s+(tonight|tomorrow|this weekend)\b/gi,"").trim();
     if(nm&&nm!==n0){ d.name=d.pubTitle=nm.charAt(0).toUpperCase()+nm.slice(1) } }catch(err){ console.warn(err) } return r } }
+
+// ==================================================================
+// After: "Who actually came?" One tap marks a no-show; counts and lists use who really came.
+// ==================================================================
+function cameCheck(){ try{ const d=draft, host=document.getElementById("stepHost"); if(!d?.id||!host||+step!==7||host.querySelector("#cameCheck")) return; if(!(d.date&&d.date<new Date().toISOString().slice(0,10))) return;
+    const R=(allRsvps||[]).filter(r=>r.eventId===d.id&&r.response==="going"); if(!R.length) return;
+    const c=document.createElement("section"); c.id="cameCheck"; c.className="panel"; c.style.cssText="border:1px solid #E4D9C8;background:#fff";
+    const draw=()=>{ const L=(allRsvps||[]).filter(r=>r.eventId===d.id&&r.response==="going"); const came=L.filter(r=>!r.noShow).length;
+      c.innerHTML=`<small class="eyebrow">Who actually came?</small><h3 style="margin:2px 0 6px">${came} of ${L.length} came</h3><p class="note" style="margin:0 0 8px">Tap anyone who didn't make it. Pip uses this for your early birds and regulars.</p><div class="btns" style="flex-wrap:wrap;gap:8px">${L.map(r=>`<button type="button" class="btn sm ${r.noShow?"ghost":""}" data-came="${esc(r.id)}" aria-pressed="${!r.noShow}">${r.noShow?"✗":"✓"} ${esc(String(r.name||"Guest").split(" ")[0])}</button>`).join("")}</div>`;
+      c.querySelectorAll("[data-came]").forEach(b=>b.onclick=async()=>{ const r=(allRsvps||[]).find(x=>x.id===b.dataset.came); if(!r) return; r.noShow=!r.noShow; draw(); try{ await db.doc("rsvps/"+r.id).update({noShow:r.noShow}) }catch{ try{ await fetch("/api/db/doc?path=rsvps/"+encodeURIComponent(r.id),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({noShow:r.noShow})}) }catch{} } }) };
+    draw(); const top=host.querySelector("#kudosHero")||host.querySelector(".ap-hero"); (top||host.firstChild)?.after?.(c) }catch(err){ console.warn(err) } }
+{ const _rsC=renderStep; renderStep=function(){ const r=_rsC.apply(this,arguments); setTimeout(cameCheck,900); return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

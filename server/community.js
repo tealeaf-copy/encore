@@ -106,15 +106,17 @@ export function makeCommunity(store) {
       return n ? { going: n, faces } : {}; } catch { return {}; } }
   function discover() {
     const hosts = [], events = [];
-    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const up = eventsOf(ws), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
-      hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past }); events.push(...up.filter((c) => !c.unlisted)); }
-    hosts.sort((a, b) => (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
+    const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
+    for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
+      hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); events.push(...up.filter((c) => !c.unlisted)); }
+    hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // no doubles on Discover: one card per host, title and date
     { const seen = new Set(); for (let i = events.length - 1; i >= 0; i--) { const e = events[i], k = `${String(e.host?.name || e.host?.handle || "").toLowerCase()}|${String(e.title || "").toLowerCase()}|${e.date || ""}`; if (seen.has(k)) events.splice(i, 1); else seen.add(k); } }
     // a small, scoped badge: the three most active hosts in each city (events hosted, followers, what's coming), never money
     const byCity = new Map(); for (const h of hosts) { const c = String(h.city || "").trim(); if (!c) continue; const k = c.toLowerCase(); if (!byCity.has(k)) byCity.set(k, []); byCity.get(k).push(h); }
     for (const [, L] of byCity) L.filter((h) => h.followers + h.hosted * 2 + h.upcoming >= 3).slice(0, 3).forEach((h, i) => { h.rising = { rank: i + 1, city: h.city }; });
-    events.sort((a, b) => String(a.date || "9").localeCompare(String(b.date || "9")));
+    // real hosts first; the sample hosts (seeded demo accounts) fill in behind them and are labelled
+    events.sort((a, b) => (!!a.sample - !!b.sample) || String(a.date || "9").localeCompare(String(b.date || "9")));
     return { hosts: hosts.slice(0, 24), events: events.slice(0, 60) };
   }
   // ---- waitlist ----

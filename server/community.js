@@ -59,6 +59,10 @@ export function makeCommunity(store) {
   const handlePath = (h) => "system/handle-" + h;
   function wsOfHandle(h) { return store.get(handlePath(String(h || "").toLowerCase()))?.data?.ws || null; }
   function profileOf(ws) { const W = getWorkspace(ws); return W?.host || null; }
+  // supporter tiers: amounts in whole dollars; 0 hides a tier. Nobody is charged until the host turns on payments.
+  function cleanSupport(p, cur) { if (p == null) return cur || null; const n = (v) => Math.max(0, Math.min(999, Math.round(+v || 0))); return { on: !!p.on, monthly: n(p.monthly), yearly: n(p.yearly), founding: n(p.founding), note: clean(p.note, 200) }; }
+  // a wishlist of fun things guests can gift the host: name, rough price, an https link and an emoji
+  function cleanWish(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: clean(x?.id, 16) || Math.random().toString(36).slice(2, 10), name: clean(x?.name, 60), price: clean(x?.price, 12), url: /^https:\/\/[^\s<>"]+$/i.test(String(x?.url || "").trim()) ? String(x.url).trim().slice(0, 400) : "", emoji: clean(x?.emoji, 4) || "🎁" })).filter((x) => x.name); }
   function setProfile(ws, p) {
     const W = getWorkspace(ws), cur = W?.host || {}, h = clean(p.handle ?? cur.handle, 30).toLowerCase();
     if (!HANDLE_OK(h)) return { error: "Pick a handle of 2–30 lowercase letters, numbers or dashes." };
@@ -70,6 +74,7 @@ export function makeCommunity(store) {
     const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200),
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
       theme: cleanTheme(p.theme || {}, cur.theme || {}), sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 90),
+      support: cleanSupport(p.support, cur.support), wishlist: cleanWish(p.wishlist, cur.wishlist),
       shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences),
       gallery: Array.isArray(p.gallery) ? p.gallery.filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) : cur.gallery || [],
       insuranceDoc: p.insuranceDoc != null ? (/^\/_blob\/[A-Za-z0-9]{20}$/.test(p.insuranceDoc) ? p.insuranceDoc : "") : cur.insuranceDoc || "",
@@ -139,7 +144,18 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Hosting on Encore is invite-only. Add an invite code to set up your page." }); const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
-    res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), host: h, followers: C.followersOf(ws).length, upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
+    res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), host: h, followers: C.followersOf(ws).length, supporters: scopeStore(store, ws).list("pledges").filter((d) => d.data?.tier && d.data.tier !== "none").length, gifted: scopeStore(store, ws).list("gifts").reduce((m, d) => { const k = d.data?.itemId; if (k) m[k] = (m[k] || 0) + 1; return m; }, {}), upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
+  // pledge support: records the tier and follows the host; no card is taken
+  app.post("/api/public/pledge", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+    const acct = currentUser(req), email = String(acct?.email || b.email || "").trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ code: "invalid", message: "Add your email so the host knows who you are." });
+    const tier = ["monthly", "yearly", "founding", "none"].includes(b.tier) ? b.tier : "none", amount = tier === "none" ? 0 : +(h.support?.[tier] || 0); if (tier !== "none" && !amount) return res.status(400).json({ code: "invalid", message: "That tier isn't offered." });
+    const key = crypto.createHash("sha256").update(email).digest("hex").slice(0, 24); scopeStore(store, ws).set("pledges/" + key, { email, name: clean(b.name || acct?.name, 80), tier, amount, at: Date.now() });
+    try { C.follow(ws, { email, name: clean(b.name || acct?.name, 80), via: "pledge" }); } catch {}
+    res.json({ ok: true, tier, amount, supporters: scopeStore(store, ws).list("pledges").filter((d) => d.data?.tier && d.data.tier !== "none").length }); });
+  // someone is gifting a wishlist item: remember it so the host can say thanks (and others see it's taken care of)
+  app.post("/api/public/gift", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+    const item = (h.wishlist || []).find((x) => x.id === b.itemId); if (!item) return res.status(404).json({ code: "not_found", message: "That item isn't on the wishlist." }); const acct = currentUser(req);
+    scopeStore(store, ws).add("gifts", { itemId: item.id, item: item.name, name: clean(b.name || acct?.name, 80), email: String(acct?.email || b.email || "").toLowerCase().slice(0, 200), note: clean(b.note, 300), at: Date.now() }); res.json({ ok: true, url: item.url }); });
   app.post("/api/public/follow", small, async (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), acct = currentUser(req);
     if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device

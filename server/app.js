@@ -639,7 +639,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(followers|kudos|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
+  const AUDIT = /^(faq|followers|kudos|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });

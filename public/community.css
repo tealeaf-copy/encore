@@ -63,3 +63,11 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .bx-quote{margin:10px 0 6px;font-size:14.5px}.bx-quote input{width:64px;padding:4px 6px;border:1px solid #DCCFBE;border-radius:8px;font:inherit}.bx-quote small{display:block;color:#75685F;margin-top:3px}.bx-quote b{font-size:17px}
 .bx-ros{margin:6px 0 10px;font-size:14px}.bx-ros summary{cursor:pointer;font-weight:600}.bx-ros ol{margin:6px 0 0;padding-left:20px}
 .b2b-fine{display:grid;gap:6px;margin-top:12px;font-size:13.5px;color:#5A4E45}
+
+/* custom gifts */
+.gift-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.gx{background:#fff;border:1px solid #E4D9C8;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.gx-top{display:flex;gap:10px;align-items:center}.gx-top b{display:block;font-size:16px}.gx-top small{color:#75685F;font-size:12.5px}.gx-em{font-size:28px;width:44px;height:44px;display:grid;place-items:center;background:#FBF5EC;border-radius:12px}
+.gx p{margin:2px 0;font-size:14.5px;line-height:1.45}.gx-pers{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.gx-pers small{width:100%;color:#75685F;font-size:12.5px}.gx-pers span{font-size:12.5px;border:1px dashed #CDBBA4;border-radius:999px;padding:3px 9px;background:#FFFCF7}
+.gx-tiers,.gx-meta{color:#75685F;font-size:12.5px}.gx-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.gift-form textarea{width:100%}

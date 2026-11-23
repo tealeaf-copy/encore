@@ -1,0 +1,152 @@
+{
+  "handle": "ken",
+  "name": "Ken's Sourdough",
+  "tagline": "Software engineer turned baker. I debug dough now.",
+  "bio": "I spent ten years writing code, then fell for a jar of flour and water. Now I bake naturally leavened bread in small batches: long ferments, dark crusts, open crumb. Every loaf gets a git-style commit message on the bag.",
+  "city": "San Francisco",
+  "hood": "Mission",
+  "tags": [
+    "sourdough",
+    "bread",
+    "baking",
+    "workshops",
+    "gifts"
+  ],
+  "emoji": "🍞",
+  "color": "#E0A030",
+  "theme": {
+    "accent": "#E0A030",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "baker"
+  },
+  "shop": {
+    "open": true,
+    "title": "This week's bake",
+    "note": "Mixed Thursday, shaped Friday, baked Saturday at 6am. Order by Thursday noon.",
+    "where": "Pickup in the Mission (address sent after you order)",
+    "slots": [
+      "Saturday 9:00–11:00",
+      "Sunday 9:00–11:00"
+    ],
+    "items": [
+      {
+        "name": "Country loaf",
+        "desc": "The main branch. 48-hour ferment, 80% hydration, dark bake.",
+        "emoji": "🍞",
+        "cents": 1200,
+        "stock": 20,
+        "max": 3
+      },
+      {
+        "name": "Seeded rye",
+        "desc": "Sunflower, flax and sesame. Dense, tangy, keeps for a week.",
+        "emoji": "🌾",
+        "cents": 1400,
+        "stock": 10,
+        "max": 2
+      },
+      {
+        "name": "Fork my starter",
+        "desc": "A jar of my 6-year-old starter, flour for the first week, and a printed README.",
+        "emoji": "🫙",
+        "cents": 1800,
+        "stock": 8,
+        "max": 2
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "terms": "Free to cancel up to 7 days before.",
+  "experiences": [
+    {
+      "name": "Sourdough 101 for your team",
+      "desc": "Everyone mixes, folds and shapes their own loaf, then takes home dough and a jar of starter. Engineers love the debugging part.",
+      "emoji": "🍞",
+      "min": 6,
+      "max": 20,
+      "price": "$75 a person",
+      "length": "2.5 hours",
+      "category": "workshop",
+      "travels": true,
+      "includes": [
+        "Dough, flour and a banneton per person",
+        "A jar of starter to take home",
+        "Fresh bread and butter to eat on the day"
+      ],
+      "allIn": "Ingredients, take-home kits, travel in SF and tax.",
+      "runOfShow": [
+        "0:00 Coffee and warm bread",
+        "0:15 How wild yeast works (no slides)",
+        "0:35 Everyone mixes and folds",
+        "1:20 Shaping, with a lot of flour",
+        "1:50 Taste three loaves at different ages",
+        "2:15 Pack your dough and starter",
+        "2:30 Done"
+      ]
+    }
+  ],
+  "giftNote": "Bread you can't buy in a store, made for the people you want to thank. Every box has a handwritten card and an instant photo of that batch coming out of the oven.",
+  "gifts": [
+    {
+      "name": "Thank-you loaf box",
+      "desc": "A country loaf with your logo or their initials scored into the crust, a jar of cultured butter, a handwritten card and an instant photo of the bake.",
+      "emoji": "🍞",
+      "cents": 3800,
+      "minQty": 10,
+      "maxQty": 300,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 3400
+        },
+        {
+          "qty": 100,
+          "cents": 3100
+        }
+      ],
+      "lead": "2 weeks",
+      "ships": "Hand-delivered in SF; overnight shipping nationwide",
+      "allIn": "Box, card and SF delivery included. Shipping outside SF quoted.",
+      "personalize": [
+        "Logo or initials in the crust",
+        "Their name on the card",
+        "Your note, handwritten"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Fork my starter kit",
+      "desc": "A jar of live starter labeled with their name, flour for the first week, a banneton and a printed README with a feeding schedule.",
+      "emoji": "🫙",
+      "cents": 2800,
+      "minQty": 10,
+      "maxQty": 200,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 2500
+        }
+      ],
+      "lead": "10 days",
+      "ships": "Ships nationwide",
+      "personalize": [
+        "Their name on the jar",
+        "Your logo on the README"
+      ],
+      "occasions": [
+        "newhire",
+        "holiday",
+        "thanks"
+      ]
+    }
+  ]
+}

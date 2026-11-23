@@ -56,6 +56,27 @@
     if (location.hash === "#shop") setTimeout(() => document.getElementById("shop")?.scrollIntoView({ behavior: "smooth", block: "start" }), 500);
     if (location.hash === "#book" || location.hash === "#hire") setTimeout(() => box.scrollIntoView({ behavior: "smooth", block: "start" }), 400); }
 
+  // ---- custom gifts: made-to-order pieces for clients or a team, priced by quantity ----
+  function gifts(h, first) { const L = h.gifts || []; if (!L.length) return;
+    const OCC = { clients: "Client thank-you", newhire: "New-hire welcome", holiday: "Holiday", event: "Event takeaway", thanks: "Team thank-you" };
+    const unit = (g, n) => ((g.tiers || []).filter((t) => n >= t.qty).pop()?.cents || g.cents) / 100, money = (v) => "$" + (Math.round(v * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+    const box = document.createElement("section"); box.className = "book gifts-sec"; box.id = "gifts";
+    box.innerHTML = `<small class="nu-eyebrow">Custom gifts</small><h2>Gifts from ${esc(first)}, made for your people</h2><p class="muted">${esc(h.giftNote || `Made by hand, one name at a time. ${first} personalizes each piece and ships it to every address, or to your office.`)}</p>
+      <div class="gift-grid">${L.map((g) => { const n0 = Math.max(g.minQty, Math.min(g.maxQty, 25)); return `<div class="gx"><div class="gx-top"><span class="gx-em">${esc(g.emoji || "🎁")}</span><div><b>${esc(g.name)}</b>${g.occasions.length ? `<small>${g.occasions.map((o) => OCC[o]).join(" · ")}</small>` : ""}</div></div>
+        ${g.desc ? `<p>${esc(g.desc)}</p>` : ""}${g.personalize.length ? `<div class="gx-pers"><small>Personalize with</small>${g.personalize.map((p) => `<span>${esc(p)}</span>`).join("")}</div>` : ""}
+        <div class="bx-quote">For <input type="number" min="${g.minQty}" max="${g.maxQty}" value="${n0}" data-gift="${esc(g.id)}" aria-label="How many"> people: <b data-total>${money(unit(g, n0) * n0)}</b> <span data-each>(${money(unit(g, n0))} each)</span>${g.allIn ? `<small>${esc(g.allIn)}</small>` : ""}</div>
+        ${(g.tiers || []).length ? `<small class="gx-tiers">${[{ qty: g.minQty, cents: g.cents }, ...g.tiers].map((t) => `${t.qty}+ ${money(t.cents / 100)}`).join(" · ")}</small>` : ""}
+        <small class="gx-meta">${[`Min ${g.minQty}`, g.lead, g.ships].filter(Boolean).map(esc).join(" · ")}</small>
+        <div class="gx-btns"><button class="btn" type="button" data-gq="${esc(g.id)}">Get a quote</button><button class="btn ghost" type="button" data-gs="${esc(g.id)}">Send me a sample</button></div></div>`; }).join("")}</div>
+      <form class="book-form gift-form" hidden><input type="hidden" name="experienceId"><input type="hidden" name="sample"><p class="bf-what"></p><div class="row2"><input name="name" placeholder="Your name" autocomplete="name"><input name="company" placeholder="Company"></div><div class="row2"><input name="email" type="email" placeholder="Work email" required autocomplete="email"><input name="when" placeholder="Needed by (a date)"></div><div class="row2"><input name="people" type="number" min="1" placeholder="How many"><input name="budget" placeholder="Budget per gift (optional)"></div><textarea name="personalize" rows="3" placeholder="Names, a logo, or a line to print. Paste a list or say you'll send a spreadsheet."></textarea><textarea name="message" placeholder="Who is it for and what's the occasion?" required></textarea><button class="btn" type="submit">Send request</button><p class="err" id="giftMsg"></p></form>`;
+    const anchor = document.getElementById("book") || document.getElementById("extras") || document.querySelector(".cols > div"); anchor?.id === "book" ? anchor.before(box) : anchor?.appendChild(box);
+    box.querySelectorAll("[data-gift]").forEach((i) => (i.oninput = () => { const g = L.find((x) => x.id === i.dataset.gift), n = Math.max(0, +i.value || 0), q = i.closest(".bx-quote"); q.querySelector("[data-total]").textContent = money(unit(g, n) * n); q.querySelector("[data-each]").textContent = `(${money(unit(g, n))} each)`; }));
+    const f = box.querySelector(".gift-form");
+    const open = (id, sample) => { const g = L.find((x) => x.id === id); f.hidden = false; f.elements.experienceId.value = id; f.elements.sample.value = sample ? "1" : ""; box.querySelector(".bf-what").innerHTML = sample ? `A sample of <b>${esc(g.name)}</b>, so you can hold one before you order` : `A quote for <b>${esc(g.name)}</b>`; f.elements.people.value = sample ? 1 : box.querySelector(`[data-gift="${id}"]`)?.value || g.minQty; f.elements.message.placeholder = sample ? "Where should the sample go, and what are you thinking of ordering?" : "Who is it for and what's the occasion?"; f.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => f.elements.name.focus(), 300); };
+    $$("[data-gq]", box).forEach((b) => (b.onclick = () => open(b.dataset.gq, false))); $$("[data-gs]", box).forEach((b) => (b.onclick = () => open(b.dataset.gs, true)));
+    f.onsubmit = async (ev) => { ev.preventDefault(); const d = Object.fromEntries(new FormData(f)); d.sample = d.sample === "1"; try { const j = await post("/api/public/book/" + encodeURIComponent(h.handle), d); C().oink?.(); f.innerHTML = `<p><b>Sent.</b> ${esc(first)} replies ${d.sample ? "about the sample" : "with a quote and a proof"}, usually within ${esc(h.respondsIn || "a couple of days")}.</p><a class="btn" href="${esc(j.status)}">Track your request</a>`; } catch (e) { $("#giftMsg", box).textContent = e.message; } };
+    if (location.hash === "#gifts") setTimeout(() => box.scrollIntoView({ behavior: "smooth", block: "start" }), 400); }
+
   // ---- owner: shop and bookings ----
   async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
@@ -127,5 +148,5 @@
     b.onclick = async () => { const url = `${location.origin}/@${h.handle}`; try { if (navigator.share) { await navigator.share({ title: h.name, text: h.tagline || h.bio || "", url }); return; } } catch {} navigator.clipboard?.writeText(url); b.textContent = "Link copied"; setTimeout(() => (b.textContent = "Share"), 1800); };
     (document.getElementById("storeLinks") || head).appendChild(b); }
 
-  window.EncoreShop = { shop, experiences, owner, share };
+  window.EncoreShop = { shop, gifts, experiences, owner, share };
 })();

@@ -1,0 +1,187 @@
+{
+  "handle": "little-kiln",
+  "name": "Noor's Little Kiln",
+  "tagline": "Hand-thrown pottery and hand-lettered cards, with your name on them.",
+  "bio": "I throw mugs and small dishes on a wheel in my garage and letter cards at the kitchen table. Every piece is made for one person: their name pressed into the clay, their note in ink. Nothing comes from a warehouse.",
+  "city": "Oakland",
+  "hood": "Temescal",
+  "tags": [
+    "pottery",
+    "ceramics",
+    "cards",
+    "lettering",
+    "custom gifts"
+  ],
+  "emoji": "🏺",
+  "color": "#2F7A8A",
+  "theme": {
+    "accent": "#2F7A8A",
+    "font": "playful",
+    "bg": "cream",
+    "cover": "waves",
+    "buttons": "round",
+    "avatarArt": "curls"
+  },
+  "shop": {
+    "open": true,
+    "title": "Seconds sale",
+    "note": "Mugs with tiny glaze quirks. Still perfect for coffee.",
+    "where": "Pickup in Temescal, Oakland",
+    "slots": [
+      "Saturday 11:00–14:00"
+    ],
+    "items": [
+      {
+        "name": "Speckled mug (second)",
+        "desc": "12 oz, speckled white glaze.",
+        "emoji": "☕",
+        "cents": 2400,
+        "stock": 9,
+        "max": 2
+      },
+      {
+        "name": "Set of 6 lettered cards",
+        "desc": "Blank inside, a different word on each front.",
+        "emoji": "✉️",
+        "cents": 1800,
+        "stock": 15,
+        "max": 3
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within 2 days",
+  "invoices": true,
+  "experiences": [
+    {
+      "name": "Paint-your-own mug, for your team",
+      "desc": "I bring bisque mugs, glazes and stamps. Everyone decorates their own; I fire them and ship them back two weeks later.",
+      "emoji": "🏺",
+      "min": 8,
+      "max": 30,
+      "price": "$55 a person",
+      "length": "2 hours",
+      "category": "workshop",
+      "travels": true,
+      "includes": [
+        "A mug per person",
+        "Glazes, stamps and brushes",
+        "Firing and delivery back to you"
+      ],
+      "allIn": "Materials, two firings, delivery and tax.",
+      "runOfShow": [
+        "0:00 Pick a mug and a glaze",
+        "0:15 Stamping and lettering demo",
+        "0:30 Decorate",
+        "1:40 Group photo with the mugs",
+        "2:00 Done; mugs come back fired in 2 weeks"
+      ]
+    }
+  ],
+  "giftNote": "Made by hand, one name at a time. You get a photo proof of the lettering before anything goes in the kiln.",
+  "gifts": [
+    {
+      "name": "Name mug",
+      "desc": "A hand-thrown 12 oz mug with their name pressed into the clay before it's fired. Pick a glaze; each one comes out a little different.",
+      "emoji": "☕",
+      "cents": 4200,
+      "minQty": 12,
+      "maxQty": 150,
+      "tiers": [
+        {
+          "qty": 25,
+          "cents": 3800
+        },
+        {
+          "qty": 50,
+          "cents": 3500
+        }
+      ],
+      "lead": "4 weeks (two firings)",
+      "ships": "Ships anywhere in the US, each to its own address",
+      "allIn": "Gift box, tissue and a handwritten tag included.",
+      "personalize": [
+        "Their name in the clay",
+        "Your logo stamp on the base",
+        "Glaze colour"
+      ],
+      "occasions": [
+        "clients",
+        "newhire",
+        "holiday",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Stamped ring dish",
+      "desc": "A small dish for keys or rings, stamped with a word or their initials.",
+      "emoji": "🫙",
+      "cents": 1800,
+      "minQty": 20,
+      "maxQty": 300,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 1500
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Ships anywhere in the US",
+      "personalize": [
+        "Initials or one word",
+        "Glaze colour"
+      ],
+      "occasions": [
+        "event",
+        "thanks",
+        "holiday"
+      ]
+    },
+    {
+      "name": "Hand-lettered card",
+      "desc": "Their name lettered on the front, your message written inside in ink. Optional: an instant photo of your team tucked in the corner.",
+      "emoji": "✉️",
+      "cents": 900,
+      "minQty": 10,
+      "maxQty": 500,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 700
+        }
+      ],
+      "lead": "1 week",
+      "ships": "Mailed with a real stamp",
+      "personalize": [
+        "Their name on the front",
+        "Your message inside",
+        "An instant photo of your team"
+      ],
+      "occasions": [
+        "clients",
+        "newhire",
+        "thanks",
+        "holiday"
+      ]
+    },
+    {
+      "name": "Instant-photo keepsake",
+      "desc": "I shoot an instant photo at your offsite or launch, mount it on a lettered card with each person's name, and mail it to them a week later.",
+      "emoji": "📸",
+      "cents": 1600,
+      "minQty": 10,
+      "maxQty": 120,
+      "lead": "Shot on the day, mailed within a week",
+      "ships": "Mailed to each person",
+      "personalize": [
+        "Their name",
+        "The date and place",
+        "Your note"
+      ],
+      "occasions": [
+        "event",
+        "thanks"
+      ]
+    }
+  ]
+}

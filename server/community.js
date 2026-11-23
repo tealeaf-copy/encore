@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { cleanShop } from "./shop.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
+import { smsConfig, sendSms } from "./sms.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 5;
@@ -80,9 +81,9 @@ export function makeCommunity(store) {
   }
   // ---- followers (the fan club) ----
   function followersOf(ws) { return scopeStore(store, ws).list("followers").map((d) => d.data); }
-  function follow(ws, { email, name, via = "page", tastes = [] }) {
+  function follow(ws, { email, name, via = "page", tastes = [], phone = "" }) {
     const S = scopeStore(store, ws), key = crypto.createHash("sha256").update(String(email).toLowerCase()).digest("hex").slice(0, 24), path = "followers/" + key, cur = S.get(path)?.data;
-    S.set(path, { email: String(email).toLowerCase(), name: clean(name, 80) || cur?.name || "", via: cur?.via || via, tastes: [...new Set([...(cur?.tastes || []), ...tastes.map((t) => clean(t, 24))])].slice(0, 10), at: cur?.at || Date.now(), updatedAt: Date.now() });
+    S.set(path, { email: String(email).toLowerCase(), name: clean(name, 80) || cur?.name || "", via: cur?.via || via, tastes: [...new Set([...(cur?.tastes || []), ...tastes.map((t) => clean(t, 24))])].slice(0, 10), phone: clean(phone, 24) || cur?.phone || "", ...(cur?.confirmedAt ? { confirmedAt: cur.confirmedAt } : {}), at: cur?.at || Date.now(), updatedAt: Date.now() });
     return !cur;
   }
   // ---- public events and discover ----
@@ -133,13 +134,21 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), host: h, followers: C.followersOf(ws).length, upcoming: C.eventsOf(ws), past: C.eventsOf(ws, { upcoming: false }).slice(-12).reverse() }); });
-  app.post("/api/public/follow", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), acct = currentUser(req);
+  app.post("/api/public/follow", small, async (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), acct = currentUser(req);
     if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device
     if (!acct || acct.ws === DEFAULT_WS) return res.status(401).json({ code: "account_required", message: "Create a free account to join their regulars." });
     const email = clean(acct.email, 200).toLowerCase(); b.name = b.name || acct.name;
-    const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [] }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
-    res.json({ ok: true, followers: C.followersOf(ws).length }); });
+    const phone = /^\+?[0-9 ()-]{7,20}$/.test(String(b.phone || "").trim()) ? String(b.phone).trim() : "", prev = scopeStore(store, ws).list("followers").map((d) => d.data).find((f) => f.email === email);
+    const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [], phone }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
+    const out = { ok: true, followers: C.followersOf(ws).length, emailed: false, texted: false };
+    // confirmations: the new regular gets an email and a text; the host hears about it too
+    const h = C.profileOf(ws) || {}, hostName = h.name || "your host", page = `${publicOrigin(req)}/@${h.handle || ""}`, cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(), newPhone = phone && phone !== (prev?.phone || "");
+    const tasks = [], first1 = isNew || !prev?.confirmedAt;
+    if (first1 && cfg) tasks.push(sendEmail(cfg, { to: email, subject: `You're following ${hostName} on Encore`, text: `Hi ${first(b.name) || "there"},\n\nYou're now one of ${hostName}'s regulars. You'll hear first when they post something new${phone ? ", by email and by text" : ""}.\n\nTheir page: ${page}\n\nChanged your mind? Open their page and tap Following to stop.`, fromName: "Encore" }).then((r) => { out.emailed = !!r?.ok; }).catch(() => {}));
+    if ((first1 || newPhone) && phone && sms) tasks.push(sendSms(sms, { to: phone, text: `Encore: you're following ${hostName}. You'll get a text when they post something new. Reply STOP to stop texts.` }).then((r) => { out.texted = !!r?.ok; }).catch(() => {}));
+    if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Encore`, text: `${b.name || "Someone"} is now one of your regulars. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Encore" }).catch(() => {})); }
+    await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
   app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
     for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }

@@ -1,4 +1,5 @@
 <title>Encore Event Studio</title>
+<script>if(location.pathname==="/g")document.documentElement.classList.add("g-loading")</script><style>html.g-loading #view-guest{opacity:0!important;transition:none!important}</style>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
@@ -9358,6 +9359,42 @@ function pastTidy(){ try{ const d=draft, host=document.getElementById("stepHost"
 { const _rsT=renderStep; renderStep=function(){ const r=_rsT.apply(this,arguments); [400,1200,2500].forEach(t=>setTimeout(pastTidy,t)); return r } }
 // a little room at the bottom on phones so sticky bars never cover a button
 { const s=document.createElement("style"); s.textContent=`@media (max-width:700px){#stepHost{padding-bottom:96px}}`; document.head.appendChild(s) }
+
+// ==================================================================
+// Calm event page: one palette (cream page, dark ink, one accent). The host's theme colours the cover card only,
+// so dark themes (Midnight, Candlelight) can never put light text on the cream page.
+// ==================================================================
+{ const s=document.createElement("style"); s.textContent=`
+#view-guest.ev2{--ink:#2B211C;--muted:#75685F;--accent:#C94A30}
+#view-guest.ev2 .invite.gx{--thfg:#2B211C!important;color:#2B211C!important;background:transparent!important}
+#view-guest.ev2 .invite.gx>.in,#view-guest.ev2 .invite.gx>.in *:not(a):not(.btn):not(button):not(.ev2-pill){color:#2B211C;-webkit-text-fill-color:currentColor;text-shadow:none}
+#view-guest.ev2 .invite.gx>.in small,#view-guest.ev2 .invite.gx>.in .note,#view-guest.ev2 .invite.gx>.in .lede{color:#75685F}
+#view-guest.ev2 .invite.gx>.in a:not(.btn){color:#C94A30}
+#view-guest.ev2 .invite.gx{background:transparent}
+#view-guest.ev2 .eyebrow,#view-guest .pp-q .eyebrow,#view-guest .ev2-chat .eyebrow{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;color:#75685F!important;font-size:12px!important;font-weight:700!important;letter-spacing:.06em;text-transform:uppercase}
+#view-guest.ev2 .pp-rules span{background:#fff;border:1px solid #E4D9C8;transform:none!important;color:#2B211C}
+#view-guest .pp-q{background:#fff;border:1px solid #E4D9C8}
+.ge-bar{background:#fff!important;border:1px solid #E4D9C8!important;font-weight:500!important}
+`; document.head.appendChild(s) }
+
+// ==================================================================
+// Casual hosts: the sidebar uses the same icons as the rest of Encore; Inspiration and the Ideas board
+// (business planning tools) are not part of their app; the guest page fades in once, fully laid out.
+// ==================================================================
+const NAV_ICONS=(()=>{ const I=d=>`<svg class="nav-ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  return { home:I('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'), search:I('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'), globe:I('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
+    plus:I('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>'), cal:I('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'), me:I('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>') } })();
+{ const s=document.createElement("style"); s.textContent=`body.friends-ws nav.tabs a .nav-ic{flex:none;margin-right:12px;vertical-align:-5px}body.friends-ws nav.tabs a{display:flex;align-items:center}`; document.head.appendChild(s) }
+function navIcons(){ try{ if(!window.__wsPersonal) return; document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.querySelector(".nav-ic")) return; const t=a.textContent.trim(), v=a.dataset.view||"", h=a.getAttribute("href")||"";
+    const ic=v==="programs"||t==="Home"?NAV_ICONS.home:t==="Discover"||/\/discover/.test(h)?NAV_ICONS.search:t==="Feed"||/\/feed/.test(h)?NAV_ICONS.globe:t==="My page"||/\/@/.test(h)?NAV_ICONS.me:t==="Plans"||/\/plans/.test(h)?NAV_ICONS.cal:v==="studio"||t==="Events"?NAV_ICONS.plus:""; if(ic) a.insertAdjacentHTML("afterbegin",ic) }) }catch{} }
+new MutationObserver(()=>{ clearTimeout(window.__niT); window.__niT=setTimeout(navIcons,80) }).observe(document.documentElement,{childList:true,subtree:true});
+// business-only pages send casual hosts home
+function casualRoute(){ try{ if(!window.__wsPersonal) return; const h=location.hash.replace("#",""); if(["inspire","canvas","impact","insights","conferences"].includes(h)){ history.replaceState(null,"","#programs"); try{ route() }catch{ location.hash="programs" } } }catch{} }
+window.addEventListener("hashchange",casualRoute); setTimeout(casualRoute,300); setTimeout(casualRoute,1500);
+// guest page: render hidden, show once laid out (no jump from one layout to another)
+if(location.pathname==="/g"){ const s=document.createElement("style"); s.textContent=`#view-guest{transition:opacity .25s ease}`; document.head.appendChild(s); document.documentElement.classList.add("g-loading");
+  const show=()=>document.documentElement.classList.remove("g-loading"); setTimeout(show,3500);
+  { const _rgS=renderGuest; renderGuest=async function(){ const r=await _rgS.apply(this,arguments); setTimeout(show,450); return r } } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

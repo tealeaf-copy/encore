@@ -100,10 +100,14 @@ export function makeCommunity(store) {
   }
   // who's going, for event previews: a count and up to three sketch faces (never names)
   const ARTS = ["florist", "curls", "bob", "chef", "runner", "barista", "baker", "glasses", "hiker"], TINTS = ["#E26D8E", "#E0A030", "#5B7FD6", "#3E9C6E", "#8C62C9"];
+const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "Seat Filler", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
   function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0;
       for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || r.name || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n++;
         if (r.showMe !== false && faces.length < 3) { const h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); faces.push({ art: ARTS[h % ARTS.length], color: TINTS[(h >> 4) % TINTS.length] }); } }
-      return n ? { going: n, faces } : {}; } catch { return {}; } }
+      // the crowd in one line: the two most common guest types (from the quiz), never names
+      const T = {}; for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId === id && r.response === "going" && TYPE_NAMES[r.guestType]) T[r.guestType] = (T[r.guestType] || 0) + 1; }
+      const crowd = Object.entries(T).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, c]) => (c === 1 ? `a ${TYPE_NAMES[k]}` : `${c} ${TYPE_NAMES[k]}s`));
+      return n ? { going: n, faces, ...(crowd.length ? { crowd: crowd.join(" and ") + " going" } : {}) } : {}; } catch { return {}; } }
   function discover() {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";

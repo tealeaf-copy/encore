@@ -198,9 +198,9 @@ export function createApp({ store, dataDir }) {
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
-    const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && allWorkspaceIds().length > 1;
+    const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
-    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if (needCode && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
+    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }

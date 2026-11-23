@@ -236,9 +236,9 @@ export function loginPage() {
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
   <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div><h1>Welcome back</h1><p class="sub">Sign in to plan your next event.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
-  ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Work email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
+  ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
   <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
-  ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Encore? Start a free trial</a>` : ""}
+  ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Encore? Join with an invite code</a>` : ""}
 </form></body></html>`;
 }

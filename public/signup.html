@@ -51,12 +51,12 @@
       document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
       f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? "Start hosting" : "Create my workspace"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
-    if (q.get("mode") === "friends" || q.get("ref")) set("friends");
+    if (q.get("mode") !== "work") set("friends");
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), nc = document.getElementById("noCode"), wl = document.getElementById("wl");
     let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That code doesn't work."; } catch {} }, 250); };
     ci.addEventListener("input", check);
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
-    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = false; } }).catch(() => {});
+    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = !!q.get("code"); window.__inviteOnly = true; } }).catch(() => {});
     nc.onclick = (e) => { e.preventDefault(); f.hidden = true; wl.hidden = false; };
     if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
@@ -74,6 +74,8 @@
     for (const k of ["template", "plan", "ref"]) if (q.get(k)) body[k] = q.get(k); // passed through to the welcome screen
     if (body.mode === "work" && !String(body.company || "").trim()) { err.textContent = "Add your company, or choose \"With friends\"."; return; }
     if (String(body.password || "").length < 10) { err.textContent = "Use a password of at least 10 characters."; return; }
+    if (window.__inviteOnly && !String(body.code || "").trim() && !q.get("regularOf")) { err.textContent = "Add your invite code. No code yet? Join the waitlist below."; f.code.focus(); return; }
+    if (document.getElementById("codeOk").classList.contains("bad")) { err.textContent = "That invite code doesn't work. Check it with the person who sent it."; f.code.focus(); return; }
     go.disabled = true;
     try {
       const r = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });

@@ -125,7 +125,7 @@ details{background:var(--card);border:1px solid var(--line);border-radius:14px;p
 <body>
 <header class="top"><div class="wrap">
   <a class="logo" href="/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B04A30"/><circle cx="20" cy="11" r="3.2" fill="#F3D9B8"/></svg>encore</a>
-  <nav class="links" aria-label="Main"><a href="#how">How it works</a><a href="/method">Method</a><a href="/pricing">Pricing</a><a href="/security">Security</a><a href="/login" class="signin">Sign in</a><a class="btn primary sm" href="/signup">Start free trial</a></nav>
+  <nav class="links" aria-label="Main"><a href="#how">How it works</a><a href="/method">Method</a><a href="/pricing">Pricing</a><a href="/security">Security</a><a href="/login" class="signin">Sign in</a><a class="btn primary sm" href="/signup?mode=work">Start free trial</a></nav>
 </div></header>
 
 <section style="padding-top:64px"><div class="wrap">
@@ -133,9 +133,9 @@ details{background:var(--card);border:1px solid var(--line);border-radius:14px;p
   <h1 style="font-size:clamp(2.2rem,5vw,3.4rem);margin-top:10px">Priced on events you run, never on pipeline we report</h1>
   <p class="lede" style="margin-top:14px">Every plan starts with a 14-day free trial. No card needed.</p>
   <div class="grid4p" style="margin-top:28px">
-    <div class="card price"><h3>Starter</h3><span class="amt">$1,000<span class="note">/mo</span></span><p class="note">For a lighter program, up to 8 events a year in 1 market: plans and budgets, guest lists and RSVP pages, AE follow-up and the pipeline report. Start with a 14-day free trial, no card.</p><a class="btn ghost" href="/signup">Start free</a></div>
-    <div class="card price featured"><h3>Team</h3><span class="amt">$2,000<span class="note">/mo</span></span><p class="note">For an events lead or a small team, up to 15 events a year in up to 2 markets: plans and budgets, AE follow-up, launch copy, conference roadmap, CRM connection and the Claude connector.</p><a class="btn primary" href="/signup?plan=team">Start free, then Team</a></div>
-    <div class="card price"><h3>Growth</h3><span class="amt">$5,000<span class="note">/mo</span></span><p class="note">Up to 40 events a year in up to 4 markets: everything in Team plus pooled holdouts across markets and market status for leadership.</p><a class="btn ghost" href="/signup?plan=growth">Start free, then Growth</a></div>
+    <div class="card price"><h3>Starter</h3><span class="amt">$1,000<span class="note">/mo</span></span><p class="note">For a lighter program, up to 8 events a year in 1 market: plans and budgets, guest lists and RSVP pages, AE follow-up and the pipeline report. Start with a 14-day free trial, no card.</p><a class="btn ghost" href="/signup?mode=work">Start free</a></div>
+    <div class="card price featured"><h3>Team</h3><span class="amt">$2,000<span class="note">/mo</span></span><p class="note">For an events lead or a small team, up to 15 events a year in up to 2 markets: plans and budgets, AE follow-up, launch copy, conference roadmap, CRM connection and the Claude connector.</p><a class="btn primary" href="/signup?mode=work&plan=team">Start free, then Team</a></div>
+    <div class="card price"><h3>Growth</h3><span class="amt">$5,000<span class="note">/mo</span></span><p class="note">Up to 40 events a year in up to 4 markets: everything in Team plus pooled holdouts across markets and market status for leadership.</p><a class="btn ghost" href="/signup?mode=work&plan=growth">Start free, then Growth</a></div>
     <div class="card price"><h3>Program</h3><span class="amt">$10,000<span class="note">/mo</span></span><p class="note">Everything in Growth with no event or market limits, plus single sign-on enforcement, call-data rules by country and a named contact for security reviews.</p><button class="btn ghost" type="button" data-contact="talk">Talk to the founders</button></div>
   </div>
   <p class="note" style="margin-top:14px">On Growth and Program, you and finance set the 90-day bar on day one. If Encore misses it, you can cancel at day 90. If your volume is too low to read a holdout, we'll say so and recommend Starter or Team. Every plan starts with a 14-day free trial, no card, and Encore is SOC 2 Type II.</p>
@@ -153,7 +153,7 @@ details{background:var(--card);border:1px solid var(--line);border-radius:14px;p
   <div><a class="logo" href="/" style="padding:0"><svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#B04A30"/><circle cx="20" cy="11" r="3.2" fill="#F3D9B8"/></svg>encore</a><p class="note" style="margin-top:8px">Encore · SOC 2 Type II</p></div>
   <div><b>Product</b><a href="#how">How it works</a><a href="/demo">Sample event</a><a href="/pricing">Pricing</a></div>
   <div><b>Trust</b><a href="/method">Measurement method</a><a href="/security">Security and data</a><a href="/?contact=security" data-contact="security">Request a security review</a></div>
-  <div><b>Account</b><a href="/login">Sign in</a><a href="/signup">Start free trial</a></div>
+  <div><b>Account</b><a href="/login">Sign in</a><a href="/signup?mode=work">Start free trial</a></div>
 </div></footer>
 
 <dialog id="contactDlg" style="border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100vw - 32px)"><form id="contactForm" style="padding:22px;display:grid;gap:10px">
@@ -215,7 +215,7 @@ details{background:var(--card);border:1px solid var(--line);border-radius:14px;p
     out.innerHTML=`<div class="ttl fade"><b>${title}</b><span class="note">Sample estimate</span></div><div class="lines fade">${L.map(([a,v,f])=>`<div class="ln"><span>${esc(a)}</span><b>${money(v,o.cur)}</b><small>${esc(f)}</small></div>`).join("")}</div>
       <div class="ttl fade"><span class="tot">${money(tot,o.cur)}</span><span class="note">${esc(vs)}</span></div>
       <div class="dates fade"><div>Invites out<b>${o.kind==="booth"?"8 weeks before":"6 weeks before"}</b></div><div>${o.kind==="booth"?"Staff agendas":"AE picks due"}<b>${o.kind==="booth"?"2 weeks before":"5 weeks before"}</b></div><div>Follow-up<b>Next morning</b></div></div>
-      <p class="note">Every line is an assumption until you replace it with a vendor quote.</p><a class="btn primary sm keep" href="/signup" id="dKeep">Keep this plan in a free trial</a>`;
+      <p class="note">Every line is an assumption until you replace it with a vendor quote.</p><a class="btn primary sm keep" href="/signup?mode=work" id="dKeep">Keep this plan in a free trial</a>`;
     keep().onclick=()=>{ try{ localStorage.setItem("encore.brief",x.trim()) }catch{} } }
   form.addEventListener("submit",e=>{ e.preventDefault(); chips.forEach(c=>c.setAttribute("aria-pressed",c.dataset.s===inp.value)); render(inp.value) });
   chips.forEach(c=>c.onclick=()=>{ inp.value=c.dataset.s; chips.forEach(x=>x.setAttribute("aria-pressed",x===c)); render(c.dataset.s) });

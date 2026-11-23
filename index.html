@@ -8840,7 +8840,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
     // wizard: Discover is opt-in, and says what it means
     const dl=document.getElementById("wzDisc")?.parentElement; if(dl&&!dl.dataset.fr40){ dl.dataset.fr40=1; const cb=dl.querySelector("input"); dl.lastChild.textContent=" Let people outside your friends find it on Discover"; }
     // phone step chip counts the four friends steps
-    const sb=document.getElementById("stepBtn"); if(sb&&isFriendsDraft?.()){ const L=[1,6,4,7], i=L.indexOf(+step); const want=i>=0?`Step ${i+1} of 4 · ${STEP_NAMES[step]||""} ▾`:sb.textContent; if(sb.textContent!==want) sb.textContent=want }
+    const sb=document.getElementById("stepBtn"); if(sb&&isFriendsDraft?.()){ const L=[1,6,4,7], i=L.indexOf(+step); const want=i>=0?`${STEP_NAMES[step]||""} ▾`:sb.textContent; if(sb.textContent!==want) sb.textContent=want }
     // Home: a sign-out link at the bottom on phones
     const home=document.getElementById("view-programs"); if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a>`; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
   }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
@@ -9450,6 +9450,31 @@ async function kudosHero(){ try{ const d=draft, host=document.getElementById("st
 { const _rsK=renderStep; renderStep=function(){ const r=_rsK.apply(this,arguments); setTimeout(kudosHero,700); return r } }
 // open answers in the app's own type
 { const s=document.createElement("style"); s.textContent=`.pp-card{font-family:inherit!important}`; document.head.appendChild(s) }
+
+// ==================================================================
+// Round 6 fixes (host): "Saturday at 7" sets a time; "in Prospect Park" is a place, "in Brooklyn" a city;
+// Guests step: the guest list first (once anyone has replied)
+function whoFirst(){ try{ const host=document.getElementById("stepHost"); if(!host||+step!==6||!window.__wsPersonal) return; const w=host.querySelector("#whoComing"); if(!w||w.dataset.first) return; const sec=w.closest("section,.panel")||w; if(!/\d+ going/.test(w.textContent)||/^\D*0 going/.test(w.textContent)) return; w.dataset.first=1; const anchor=host.querySelector(".gr-line"); if(anchor) anchor.after(sec); else host.prepend(sec) }catch{} }
+{ const _rsW2=renderStep; renderStep=function(){ const r=_rsW2.apply(this,arguments); [500,1500,3000].forEach(t=>setTimeout(whoFirst,t)); return r } }
+// After: each thing once, and no settings or invite nudges once it has happened
+function afterTidy(){ try{ const host=document.getElementById("stepHost"); if(!host||+step!==7) return; const d=draft; const past=d?.date&&d.date<new Date().toISOString().slice(0,10); if(!past) return;
+    host.querySelector(".gr-line")?.style.setProperty("display","none"); document.querySelectorAll(".sticky-next,.next-bar,[data-sticky-next]").forEach(x=>x.style.display="none");
+    const kh=host.querySelector("#kudosHero"); if(kh){ const quotes=[...kh.querySelectorAll("p")].map(p=>p.textContent.replace(/[“”"]/g,"").trim()); host.querySelectorAll(".ap-stats ~ * blockquote, .ap-love, .ap-quote, .kq").forEach(q=>{ if(quotes.includes(q.textContent.replace(/[“”"]/g,"").trim())) q.style.display="none" }) }
+    const pp=host.querySelector("#ppHost"); if(pp&&/1 answer is open/.test(pp.textContent)){ pp.querySelector("#ppNext")?.style.setProperty("display","none"); pp.querySelector("#ppAll")?.style.setProperty("display","none") } }catch{} }
+{ const _rsT2=renderStep; renderStep=function(){ const r=_rsT2.apply(this,arguments); [1500,3000].forEach(t=>setTimeout(afterTidy,t)); return r } }
+// the copied invite carries the why and the house rules
+if(typeof inviteText==="function"){ const _it=inviteText; inviteText=function(d){ let s=_it.apply(this,arguments); try{ if(d?.why&&!s.includes(d.why)) s=s.replace(/(Tap to say|Grab a spot|RSVP)/,(m)=>`${/^so\b/i.test(d.why)?"We're getting together "+d.why:d.why}. ${m}`); if((d?.houseRules||[]).length&&!s.includes(d.houseRules[0])) s+=`\nHouse rules: ${d.houseRules.join(" · ")}` }catch{} return s } }
+
+// one sentence, read better: "Saturday at 7" is 7pm, "in Prospect Park" is the place, "in Brooklyn" the city; no weekday in the name
+{ const _qs70=quickStart; quickStart=function(text){ const r=_qs70.apply(this,arguments); try{ const t=String(text||""), d=draft;
+    if(!d.startTime){ const m=t.match(/\bat (\d{1,2})(?::([0-5]\d))?(?!\s*(?:am|pm|people|friends|guests|of|\d))\b/i); if(m){ let h=+m[1]; const morning=/\b(run|hike|walk|coffee|breakfast|brunch|yoga|matcha|sunrise|swim|ride|market)\b/i.test(t); if(h>=1&&h<=11&&!(morning&&h>=5)) h+=12; if(h<24) d.startTime=String(h).padStart(2,"0")+":"+(m[2]||"00") } }
+    const pm=t.match(/\b(?:in|at) ((?:[A-Z][\w'.-]+ ){0,3}(?:Park|Beach|Garden|Gardens|Square|Pier|Hall|Bar|Café|Cafe|Club|Studio|Library|Lake|Trail|Market|Field))\b/); if(pm){ if(!d.meetPoint||d.meetPoint===d.city) d.meetPoint=pm[1]; d.venueName=d.venueName||pm[1]; if(d.city===pm[1]) d.city="" }
+    const cm=t.match(/\bin (Brooklyn|Queens|Manhattan|the Bronx|Bronx|Oakland|Berkeley|Sydney|Melbourne|London|Toronto)\b/); if(cm) d.city=cm[1];
+    let nm=String(d.pubTitle||d.name||""); const n0=nm;
+    nm=nm.replace(/\s+(?:in|at) (?:the )?[A-Z][\w'.-]*(?: [A-Z][\w'.-]*)*(?=\s|$)/g,"").replace(/\s+(?:this|next)\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|week|weekend)\b/gi,"").replace(/\s+(?:on\s+)?(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi,"").trim();
+    if(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) /i.test(nm)&&nm.split(" ").length>=2){ nm=nm.replace(/^\w+ /,""); nm=nm.charAt(0).toUpperCase()+nm.slice(1) }
+    if(nm&&nm!==n0){ d.name=d.pubTitle=nm }
+  }catch(err){ console.warn(err) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

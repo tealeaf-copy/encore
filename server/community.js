@@ -115,7 +115,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
       hosts.push({ ...h, followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); events.push(...up.filter((c) => !c.unlisted)); }
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
-    { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase(); if (k && seen.has(k)) { hosts.splice(i, 1); i--; } else seen.add(k); } }
+    { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }
     // no doubles on Discover: one card per host, title and date
     { const seen = new Set(); for (let i = events.length - 1; i >= 0; i--) { const e = events[i], k = `${String(e.host?.name || e.host?.handle || "").toLowerCase()}|${String(e.title || "").toLowerCase()}|${e.date || ""}`; if (seen.has(k)) events.splice(i, 1); else seen.add(k); } }
     // a small, scoped badge: the three most active hosts in each city (events hosted, followers, what's coming), never money
@@ -123,7 +123,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
     for (const [, L] of byCity) L.filter((h) => h.followers + h.hosted * 2 + h.upcoming >= 3).slice(0, 3).forEach((h, i) => { h.rising = { rank: i + 1, city: h.city }; });
     // real hosts first; the sample hosts (seeded demo accounts) fill in behind them and are labelled
     events.sort((a, b) => (!!a.sample - !!b.sample) || String(a.date || "9").localeCompare(String(b.date || "9")));
-    return { hosts: hosts.slice(0, 24), events: events.slice(0, 60) };
+    return { hosts: hosts.slice(0, 80), events: events.slice(0, 60) };
   }
   // ---- waitlist ----
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }

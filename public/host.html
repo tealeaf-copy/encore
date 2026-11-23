@@ -181,4 +181,14 @@ body.is-owner{padding-bottom:110px}
 </script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
+<script>
+// regulars card: signed-in people follow in one tap; people who already follow see a thank-you
+(function () { const handle = decodeURIComponent(location.pathname.replace(/^\/@/, "").split("/")[0]); let tries = 0;
+  const go = async () => { const card = document.getElementById("follow"), f = document.getElementById("ff"); if (!card || !f) { if (tries++ < 20) setTimeout(go, 300); return; }
+    let following = false; try { following = JSON.parse(localStorage.getItem("encore.following") || "[]").includes(handle); } catch {}
+    const nm = (card.querySelector("h3")?.textContent || "").replace(/^Join (.+)'s regulars$/, "$1");
+    if (following) { card.innerHTML = `<h3>✓ You're one of ${nm}'s regulars</h3><p class="muted" style="margin:0;font-size:14px">You'll hear first when ${nm} hosts something.</p>`; return; }
+    try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified && me.email) { const row = f.querySelector(".row"); if (row) { row.style.display = "none"; f.name.value = me.name || ""; f.email.value = me.email; } } } catch {} };
+  go(); })();
+</script>
 </body></html>

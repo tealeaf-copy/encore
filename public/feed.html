@@ -86,7 +86,7 @@
     m.querySelectorAll("[data-pdel]").forEach((b) => (b.onclick = async () => { if (!confirm("Delete this post?")) return; await fetch("/api/me/posts/" + b.dataset.pdel, { method: "DELETE" }); load(); })); }
   // ---- the right-hand column ----
   async function drawSide() { const el = $("#side"); if (!el) return; let S; try { S = await api("/api/me/sidebar"); } catch { el.innerHTML = ""; return; }
-    const hostRow = (h) => `<div class="sr">${av({ emoji: h.emoji, color: h.color, handle: h.handle })}<div><b>${esc(h.name)}</b><small>${esc([h.city, h.upcoming ? `${h.upcoming} coming up` : "", h.followers ? `${h.followers} following` : ""].filter(Boolean).join(" · "))}</small></div><a class="btn" href="/@${esc(h.handle)}">Follow</a></div>`;
+    const hostRow = (h) => `<div class="sr">${av({ emoji: h.emoji, color: h.color, handle: h.handle })}<div><b>${esc(h.name)}</b><small>${esc([h.city, h.upcoming ? `${h.upcoming} coming up` : "", h.followers ? `${h.followers} follower${h.followers === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · "))}</small></div><a class="btn" href="/@${esc(h.handle)}">Follow</a></div>`;
     const personRow = (p) => `<div class="sr">${av(p)}<div><b>${esc(p.name)}</b><small>${esc(p.why)}</small></div><button class="btn ghost" data-addf="${esc(p.key)}">Add</button></div>`;
     const chatRow = (c) => `<a class="sr chat" href="/g#rsvp-${esc(c.id)}"><span class="ci">💬</span><div><b>${esc(c.title)}</b><small>${esc(c.last || (c.date ? C.fmtDate(c.date) : "Say hi to the group"))}</small></div></a>`;
     el.innerHTML = (S.hosts.length ? `<section class="sc"><h3>Hosts to follow <a href="/discover">See all</a></h3>${S.hosts.map(hostRow).join("")}</section>` : "") +

@@ -36,7 +36,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     contributor: { name: "The Contributor", emoji: "🧺", line: "Brings snacks, a dish, a speaker, the folding table.", bg: "#FFCAD6", thrive: "Potlucks, cooking nights, picnics", match: "spark", why: "Sparks make your snacks a party." },
     helper: { name: "The Helper", emoji: "🙌", line: "Stays to wash up and stack the chairs.", bg: "#E3F1DD", thrive: "Dinners at someone's place, community days", match: "host", why: "Every host needs one of you." },
   };
-  const LANES = { move: ["🏃", "moving: runs, hikes, rides", "move", "Run clubs, sunrise hikes, the coffee after"], make: ["🍰", "making and tasting things", "make", "Dumpling nights, bake-offs, potlucks"], gather: ["☕", "long dinners and good talk", "gather", "Supper clubs, wine nights, brunch that runs late"], discover: ["🧭", "trying somewhere new", "discover", "Markets, gallery walks, a neighbourhood you've never been to"] };
+  const LANES = { move: ["🏃", "getting out and moving: runs, hikes, rides", "move", "Run clubs, sunrise hikes, the coffee after"], make: ["🍰", "making and tasting things", "make", "Dumpling nights, bake-offs, potlucks"], gather: ["☕", "long dinners and good talk", "gather", "Supper clubs, wine nights, brunch that runs late"], discover: ["🧭", "trying somewhere new", "discover", "Markets, gallery walks, a neighbourhood you've never been to"] };
   const Q = [
     ["lane", "A perfect Saturday is…", [["move", "🏃", "A run, then coffee"], ["make", "🥟", "Cooking something with friends"], ["gather", "🍷", "A long dinner that turns into 1am"], ["discover", "🧭", "A neighbourhood I've never been to"]]],
     ["rsvp", "Someone texts 'who's in?' You…", [["first", "🐣", "Reply YES before finishing the message"], ["planner", "📅", "Check my week, then commit"], ["last", "🪑", "Say maybe, then show up anyway"]]],
@@ -60,7 +60,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     try { localStorage.setItem("encore.guestType", JSON.stringify({ top, second, lane: A.lane, size: A.size, at: Date.now() })); } catch {}
     const shareUrl = `${location.origin}/quiz?t=${top}`;
     m.innerHTML = `<div class="card res" style="background:${t.bg}"><small class="note" style="color:#3A302A">You're</small><div class="big">${t.emoji}</div><h2>${esc(t.name)}</h2><p class="line">${esc(t.line)}</p></div>
-      <div class="facts"><div class="fact"><span class="e">${lane[0]}</span><div><b>You light up at ${esc(lane[1])}</b><small>${esc(lane[3])}. As ${esc(t.name.replace(/^The /, "a "))}: ${esc(t.thrive.toLowerCase())}.</small></div></div>
+      <div class="facts"><div class="fact"><span class="e">${lane[0]}</span><div><b>You light up ${lane[2] === "move" ? "on the move" : "at " + esc(lane[1])}</b><small>${esc(lane[3])}. As ${esc(t.name.replace(/^The /, "a "))}: ${esc(t.thrive.toLowerCase())}.</small></div></div>
       <div class="fact"><span class="e">${s.emoji}</span><div><b>With a streak of ${esc(s.name)}</b><small>${esc(s.line)}</small></div></div>
       <div class="fact"><span class="e">${mt.emoji}</span><div><b>You click with ${esc(mt.name)}</b><small>${esc(t.why)}</small></div></div>
       <div class="fact"><span class="e">${A.size === "small" ? "🫖" : A.size === "big" ? "🎉" : "🍕"}</span><div><b>Your table: ${A.size === "small" ? "4 to 6 people" : A.size === "big" ? "the more the merrier" : "8 to 12, a proper crew"}</b><small>Pip uses this to pick events for you.</small></div></div></div>

@@ -71,3 +71,5 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .gx p{margin:2px 0;font-size:14.5px;line-height:1.45}.gx-pers{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.gx-pers small{width:100%;color:#75685F;font-size:12.5px}.gx-pers span{font-size:12.5px;border:1px dashed #CDBBA4;border-radius:999px;padding:3px 9px;background:#FFFCF7}
 .gx-tiers,.gx-meta{color:#75685F;font-size:12.5px}.gx-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
 .gift-form textarea{width:100%}
+.gx-art{margin:-14px -14px 4px;line-height:0;border-bottom:1px solid #EFE5D6;border-radius:16px 16px 0 0;overflow:hidden}.gx-art svg{width:100%;height:auto;display:block}
+.gx-pv{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 2px;padding:10px 12px;background:#FFFCF7;border:1px dashed #CDBBA4;border-radius:12px;font-size:14px}.gx-pv input{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid #DCCFBE;border-radius:9px;font:inherit}

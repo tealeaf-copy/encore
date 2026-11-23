@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Custom gifts · Encore</title>
 <meta name="description" content="Handmade, personalized gifts for clients and teams, from local makers: names on mugs, loaves with your logo scored in, hand-lettered cards.">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/playful.css">
 <style>
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
@@ -33,8 +33,9 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
 
 .gres{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:22px}
 .gc{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
-.gc .ph{height:120px;display:grid;place-items:center;font-size:54px;position:relative}
-.gc .ph .pol{position:absolute;right:14px;bottom:-14px;background:#fff;padding:6px 6px 16px;box-shadow:0 4px 14px rgba(0,0,0,.12);transform:rotate(4deg);font:600 11px "Instrument Sans";color:#5A4E45;text-align:center;border-radius:2px}.gc .ph .pol i{display:block;width:54px;height:44px;background:#EADBC8;margin-bottom:4px;font-size:24px;font-style:normal;line-height:44px}
+.gc .ph{display:block;position:relative;line-height:0}.gc .ph svg{width:100%;height:auto;display:block}
+.pv{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 0;padding:12px 14px;background:#fff;border:1px dashed #CDBBA4;border-radius:14px;font-size:14.5px}.pv input{padding:8px 11px;border:1px solid #DCCFBE;border-radius:10px;font:inherit;min-width:0;flex:1 1 150px}.pv b{font-family:Fredoka,system-ui}
+.gc .ph .pol{position:absolute;right:12px;bottom:-12px;line-height:1.2;background:#fff;padding:6px 6px 16px;box-shadow:0 4px 14px rgba(0,0,0,.12);transform:rotate(4deg);font:600 11px "Instrument Sans";color:#5A4E45;text-align:center;border-radius:2px}.gc .ph .pol i{display:block;width:54px;height:44px;background:#EADBC8;margin-bottom:4px;font-size:24px;font-style:normal;line-height:44px}
 .gc .bd{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}.gc h3{font-size:18px}.gc .who{color:var(--smoke);font-size:13.5px}
 .gc .pers{display:flex;flex-wrap:wrap;gap:5px}.gc .pers span{font-size:12.5px;border:1px dashed #CDBBA4;border-radius:999px;padding:2px 9px;background:#FFFCF7}
 .gc .tot{font:700 22px Fredoka,system-ui;margin-top:auto}.gc .tot small{display:block;font:400 13px "Instrument Sans";color:var(--smoke)}
@@ -54,29 +55,36 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
     <label>Occasion<select name="occasion"><option value="">Any</option><option value="clients">Client thank-you</option><option value="newhire">New-hire welcome</option><option value="holiday">Holiday</option><option value="event">Event takeaway</option><option value="thanks">Team thank-you</option></select></label>
     <button>Find makers</button>
   </form>
+  <div class="pv"><b>See it with your names:</b><input id="pvBrand" placeholder="Your company" maxlength="30"><input id="pvName" placeholder="A recipient's name" maxlength="20"></div>
   <div class="gres" id="res"></div>
   <div class="vs"><div><b>The usual gifting catalog</b><ul><li>The same branded tumbler everyone got last year</li><li>Picked from a warehouse</li><li>Your logo, their name nowhere</li></ul></div><div><b>A maker on Encore</b><ul><li>Made for this person: their name, your note</li><li>From someone in their city, with a story to tell</li><li>A photo of the maker at work in every box</li></ul></div></div>
   <div class="how"><div><b>1. Pick a maker</b>Filter by city, quantity, budget and occasion. Prices update with your count.</div><div><b>2. Hold a sample</b>Most makers send one first, so you see the glaze and the lettering for yourself.</div><div><b>3. Send the list</b>Paste names and addresses or share a spreadsheet. The maker sends a proof before anything is made.</div></div>
 </div>
 <script src="/shell.js" defer></script>
+<script src="/giftart.js"></script>
 <script>
 const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const OCC = { clients: "Client thank-you", newhire: "New-hire welcome", holiday: "Holiday", event: "Event takeaway", thanks: "Team thank-you" };
 const money = (v) => "$" + (Math.round(v * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const poss = (w) => (/['’]s$/.test(w) ? w : w + "'s");
+let LAST = [];
+const pv = () => ({ brand: ($("#pvBrand")?.value || "").trim(), name: ($("#pvName")?.value || "").trim() });
+const art = (g, h) => { const P = pv(); return window.GiftArt ? GiftArt.forGift(g, { name: P.name || "Sam", brand: P.brand || "Your company", accent: h.color || "#E0A030", bg: "#F7F0E6" }) : ""; };
+const redraw = () => document.querySelectorAll("[data-art]").forEach((el) => { const [hh, id] = el.dataset.art.split("|"), r = LAST.find((x) => x.host.handle === hh && x.gift.id === id); if (r) el.firstElementChild.outerHTML = art(r.gift, r.host); });
 async function run() { const f = $("#find"), q = new URLSearchParams({ city: f.city.value, qty: f.qty.value, budget: f.budget.value, occasion: f.occasion.value });
   $("#res").innerHTML = '<div class="empty">Finding makers…</div>';
-  const j = await fetch("/api/public/gifts?" + q).then((r) => r.json()).catch(() => ({ results: [] })); const R = j.results || [];
+  const j = await fetch("/api/public/gifts?" + q).then((r) => r.json()).catch(() => ({ results: [] })); const R = (LAST = j.results || []);
   if (!R.length) { $("#res").innerHTML = `<div class="empty" style="grid-column:1/-1">No maker fits that yet. Try a different count or budget, or tell us what you need and we'll find one.<form id="ask" style="display:flex;gap:8px;max-width:460px;margin:12px auto 0"><input name="email" type="email" required placeholder="Work email" style="flex:1;min-width:0;padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit"><button style="padding:10px 16px;border-radius:999px;border:0;background:#C94A30;color:#fff;font:600 15px inherit">Ask us</button></form></div>`;
     $("#ask").onsubmit = async (e) => { e.preventDefault(); await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e.target.email.value, city: f.city.value, wants: `Gifts: ${f.qty.value} × ${OCC[f.occasion.value] || "any"}, ${f.budget.value ? "$" + f.budget.value : "any budget"}` }) }).catch(() => {}); e.target.outerHTML = "<p><b>Got it.</b> We'll email you a maker within two days.</p>"; }; return; }
   $("#res").innerHTML = R.map((r) => { const g = r.gift, h = r.host, first = String(h.name || "").split(" ")[0].replace(/['’]s$/, "");
-    return `<div class="gc"><div class="ph" style="background:color-mix(in srgb, ${esc(h.color || "#E0A030")} 14%, #FFFDF9)">${esc(g.emoji || h.emoji || "🎁")}<span class="pol"><i>${esc(h.emoji || "✋")}</i>made by ${esc(first)}</span></div><div class="bd">
+    return `<div class="gc"><div class="ph" data-art="${esc(h.handle)}|${esc(g.id)}">${art(g, h)}<span class="pol"><i>${esc(h.emoji || "✋")}</i>made by ${esc(first)}</span></div><div class="bd">
       ${r.local ? `<span class="local">Near your people</span>` : ""}<h3>${esc(g.name)}</h3><div class="who">by <a href="/@${esc(h.handle)}#gifts">${esc(h.name)}</a>${h.hood || h.city ? ` · ${esc([h.hood, h.city].filter(Boolean).join(", "))}` : ""}</div>
       ${g.desc ? `<p style="margin:0;font-size:14.5px">${esc(g.desc)}</p>` : ""}
       ${g.personalize.length ? `<div class="pers">${g.personalize.map((p) => `<span>${esc(p)}</span>`).join("")}</div>` : ""}
       <small style="color:var(--smoke)">${[g.occasions.map((o) => OCC[o]).join(" · "), g.lead, h.clients.length ? "Made for " + h.clients.join(" and ") : ""].filter(Boolean).map(esc).join(" · ")}</small>
       <div class="tot">${g.total ? `${money(g.total)} <small>for ${esc(f.qty.value)} · ${money(g.unit / 100)} each${g.allIn ? `. ${esc(g.allIn)}` : ""}</small>` : `${money(g.unit / 100)} <small>each</small>`}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/@${esc(h.handle)}#gifts">Get a quote</a><a class="btn ghost" href="/@${esc(h.handle)}#gifts">See ${esc(poss(first))} work</a></div></div></div>`; }).join(""); }
+$("#pvBrand").oninput = $("#pvName").oninput = redraw;
 $("#find").onsubmit = (e) => { e.preventDefault(); run(); };
 run();
 </script>

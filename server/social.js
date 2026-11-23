@@ -240,7 +240,34 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   // feed, friends, people
-  app.get("/api/me/feed", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); res.json(X.feed(u.email)); });
+  // your own posts (text, a photo, a link) show up for you and your friends
+  const postsKey = (em) => "posts-" + hash(lc(em)), postsOf = (em) => store.get("system/" + postsKey(em))?.data?.list || [];
+  const cleanLink = (u) => { const x = String(u || "").trim().slice(0, 500); return /^https:\/\/[^\s<>"]+$/i.test(x) ? x : ""; };
+  app.get("/api/me/feed", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); const F = X.feed(u.email), em = lc(u.email);
+    const authors = [em, ...X.friendsOf(em).map((f) => lc(f.email))], pub = (p) => ({ name: p.name, handle: p.handle, emoji: p.emoji, color: p.color });
+    const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
+    F.items = [...posts, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0)); res.json(F); });
+  app.post("/api/me/posts", small, (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {};
+    const text = clean(b.text, 1000), link = cleanLink(b.link), photo = /^\/(_blob|assets)\/[A-Za-z0-9._-]+$/.test(String(b.photo || "")) ? String(b.photo) : "";
+    if (b.link && !link) return bad(res, "Links must start with https://"); if (!text && !link && !photo) return bad(res, "Write something, or add a photo or link.");
+    const em = lc(u.email), L = postsOf(em); const p = { id: crypto.randomBytes(8).toString("hex"), text, link, photo, at: Date.now() }; L.unshift(p);
+    store.set("system/" + postsKey(em), { kind: "posts", list: L.slice(0, 200) }); res.json({ ok: true, post: p }); });
+  app.delete("/api/me/posts/:id", (req, res) => { const u = me(req, res); if (!u) return; const em = lc(u.email); store.set("system/" + postsKey(em), { kind: "posts", list: postsOf(em).filter((p) => p.id !== req.params.id) }); res.json({ ok: true }); });
+  app.post("/api/me/posts/photo", raw, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(ct)) return bad(res, "Photos only (JPEG, PNG, WebP, GIF).", 415, "unsupported_type"); const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");
+    const meta = await X.saveBlob(body, ct, u.ws); res.json({ url: meta.url }); });
+  // the right-hand column: hosts to follow, people you may know, your past group chats
+  app.get("/api/me/sidebar", (req, res) => { const u = me(req, res); if (!u) return; const em = lc(u.email), I = X.index(), F = new Set(X.friendsOf(em).map((f) => lc(f.email)));
+    const followed = new Set(); try { for (const ws of allWorkspaceIds()) if ((C.followersOf?.(ws) || []).some((f) => lc(f.email) === em)) followed.add(ws); } catch {}
+    let hosts = []; try { hosts = (C.discover?.().hosts || []).filter((h) => h.handle && !followed.has(C.wsOfHandle?.(h.handle)) && h.handle !== C.profileOf(u.ws)?.handle).slice(0, 4).map((h) => ({ handle: h.handle, name: h.name, emoji: h.emoji, color: h.theme?.accent || h.color, city: [h.hood, h.city].filter(Boolean).join(", "), followers: h.followers || 0, upcoming: h.upcoming || 0 })); } catch {}
+    const mineEv = new Set((I.att.get(em) || []).map((a) => a.eventId)), co = new Map();
+    for (const [other, L] of I.att) { if (other === em || F.has(other)) continue; const n = L.filter((a) => mineEv.has(a.eventId)).length; if (n) co.set(other, (co.get(other) || 0) + n); }
+    for (const f of F) for (const ff of X.friendsOf(f)) { const o = lc(ff.email); if (o !== em && !F.has(o) && !co.has(o)) co.set(o, 0.5); }
+    const people = [...co.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([o, n]) => { const p = X.person(o); return { key: Buffer.from(o).toString("base64url"), name: p.name || "Someone", emoji: p.emoji, color: p.color, why: n >= 1 ? `${Math.floor(n)} get-together${Math.floor(n) === 1 ? "" : "s"} together` : "Friend of a friend" }; }).filter((p) => p.name !== "Someone");
+    const chats = []; for (const a of (I.att.get(em) || []).slice().sort((x, y) => (y.at || 0) - (x.at || 0))) { if (chats.length >= 6 || chats.some((c) => c.id === a.eventId)) continue; const x = I.events.get(a.eventId); if (!x) continue;
+      let last = null; try { last = scopeStore(store, x.ws).list("chat").map((d) => d.data).filter((m) => m.eventId === a.eventId && !m.private && m.text).sort((p, q) => (q.at || 0) - (p.at || 0))[0]; } catch {}
+      chats.push({ id: a.eventId, title: x.e.pubTitle || x.e.name || "Get-together", date: x.e.date || "", last: last ? `${String(last.name || "").split(" ")[0] || "Someone"}: ${clean(last.text, 80)}` : "", at: last?.at || 0 }); }
+    res.json({ hosts, people, chats }); });
   app.get("/api/people", (req, res) => { const u = me(req, res); if (!u) return; const q = lc(req.query.q).replace(/^@/, ""); if (q.length < 2) return res.json({ people: [] });
     const out = []; for (const d of store.list("system")) { const w = d.data; if (w?.kind !== "workspace") continue; const h = C.profileOf(w.id); const p = X.person(w.ownerEmail); if (lc(w.ownerEmail) === lc(u.email)) continue; if ((h?.handle || "").includes(q) || lc(p.name).includes(q) || lc(w.ownerEmail) === q) out.push({ name: p.name, handle: h?.handle || null, emoji: h?.emoji || "🙂", color: h?.color, city: h?.city || "", email: lc(w.ownerEmail) === q ? lc(w.ownerEmail) : undefined, key: Buffer.from(lc(w.ownerEmail)).toString("base64url") }); if (out.length >= 12) break; }
     res.json({ people: out }); });

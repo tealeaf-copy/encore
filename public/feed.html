@@ -3,7 +3,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <style>
-.wrap{max-width:680px}
+.wrap{max-width:1080px}
+.fgrid{display:grid;grid-template-columns:minmax(0,640px) minmax(0,320px);gap:32px;justify-content:center;align-items:start}
+.fside{position:sticky;top:76px;display:flex;flex-direction:column;gap:16px}
+.sc{background:#fff;border:2px solid #1F1A17;border-radius:20px;box-shadow:4px 4px 0 #1F1A17;padding:16px 18px}.sc h3{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 10px;font:700 18px Fredoka,"DM Sans",system-ui}.sc h3 a{font:600 13px "DM Sans",system-ui;color:#C94A30;text-decoration:none}
+.sr{display:flex;gap:10px;align-items:center;padding:7px 0}.sr .av{flex:none}.sr div{flex:1;min-width:0}.sr b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sr small{display:block;color:var(--soft);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sr .btn{padding:6px 12px;font-size:12.5px;flex:none}
+.sr.chat{text-decoration:none;color:inherit;border-radius:12px;padding:7px 6px;margin:0 -6px}.sr.chat:hover{background:#FFF6DE}.sr .ci{width:38px;height:38px;border-radius:12px;background:#FFE08A;display:grid;place-items:center;font-size:18px;flex:none;border:1.5px solid #1F1A17}
+.composer{background:#fff;border:2px solid #1F1A17;border-radius:20px;box-shadow:4px 4px 0 #1F1A17;padding:14px 16px;margin:0 0 16px}.composer textarea{width:100%;border:0;resize:vertical;min-height:58px;font:16px/1.45 "DM Sans",system-ui;background:none;outline:none;color:var(--ink)}
+.composer .cbar{display:flex;gap:8px;align-items:center;border-top:1.5px dashed var(--line);padding-top:10px;margin-top:6px}.composer .cbar .sp{flex:1}.composer .ib{border:1.5px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font:600 13px "DM Sans",system-ui;cursor:pointer;color:var(--ink)}
+.composer .cprev{position:relative;margin-top:8px}.composer .cprev img{max-height:220px;border-radius:12px;display:block}.composer .cprev button{position:absolute;top:6px;left:6px;border:0;background:#1F1A17;color:#fff;border-radius:999px;width:26px;height:26px;cursor:pointer}
+.composer input.clink{width:100%;margin-top:8px}
+.ptext{font-size:16px;line-height:1.5}.plink{display:block;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;margin:4px 0 8px;text-decoration:none;color:var(--ink)}.plink b{display:block}.plink small{color:var(--soft);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdel{font-size:12.5px;color:var(--soft);background:none!important;border:0!important;box-shadow:none!important;padding:0!important;cursor:pointer;text-decoration:underline;margin:0 0 8px}.composer textarea{border:0!important;box-shadow:none!important;padding:4px 2px!important}
+@media (max-width:980px){.fgrid{grid-template-columns:minmax(0,1fr)}.fside{position:static}}
 .top{position:sticky;top:0;background:var(--bg);z-index:5}
 .bell{position:relative;background:none;border:0;font-size:22px;cursor:pointer;padding:4px 8px;color:var(--ink)}.bell i{position:absolute;top:0;right:0;background:var(--brand);color:#fff;font:600 11px "DM Sans",system-ui;border-radius:99px;padding:1px 6px;font-style:normal}
 .rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
@@ -35,9 +46,11 @@
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
     <nav><button class="bell" id="bell" aria-label="Notifications">🔔<i id="bellN" hidden></i></button><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed" aria-current="page">Feed</a><a class="cta" href="/">Host something</a></nav></header>
+  <div class="fgrid"><div class="fcol">
   <div class="rail" id="rail" aria-label="Stories"></div>
   <div class="tabs" role="tablist"><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">My event profile</button><button data-t="alerts" aria-selected="false">Alerts</button><button data-t="friends" aria-selected="false">Friends</button></div>
   <main id="m"><div class="empty">Loading…</div></main>
+  </div><aside class="fside" id="side" aria-label="Suggestions"></aside></div>
 </div>
 <input type="file" id="storyFile" accept="image/*,video/*" hidden>
 <script src="/community.js"></script>
@@ -55,7 +68,27 @@
   const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club meetup" };
   const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")} within 5 miles of me that are public`;
-  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") location.href = "/login"; $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); }
+  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") location.href = "/login"; $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); drawSide(); }
+  // ---- write a post: words, a photo, a link ----
+  let draftPhoto = "";
+  function addComposer(m) { if (m.querySelector(".composer")) return; const c = document.createElement("form"); c.className = "composer";
+    c.innerHTML = `<textarea id="pText" maxlength="1000" placeholder="What did you get up to? Share a photo, a link, or a plan you're cooking up."></textarea><div class="cprev" id="pPrev" hidden></div><input class="clink" id="pLink" type="url" placeholder="https://…" hidden><div class="cbar"><button type="button" class="ib" id="pPhoto">📷 Photo</button><button type="button" class="ib" id="pAddLink">🔗 Link</button><span class="sp"></span><button class="btn" type="submit" id="pSend">Post</button></div><input type="file" id="pFile" accept="image/*" hidden>`;
+    m.prepend(c);
+    $("#pPhoto").onclick = () => $("#pFile").click(); $("#pAddLink").onclick = () => { const l = $("#pLink"); l.hidden = !l.hidden; if (!l.hidden) l.focus(); };
+    $("#pFile").onchange = async () => { const f = $("#pFile").files[0]; if (!f) return; if (f.size > 8e6) { toast("That photo is over 8 MB."); return; } $("#pPhoto").textContent = "Uploading…";
+      try { const r = await fetch("/api/me/posts/photo", { method: "POST", headers: { "Content-Type": f.type }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Couldn't upload."); draftPhoto = j.url; const pv = $("#pPrev"); pv.hidden = false; pv.innerHTML = `<img src="${esc(j.url)}" alt=""><button type="button" aria-label="Remove photo">×</button>`; pv.querySelector("button").onclick = () => { draftPhoto = ""; pv.hidden = true; pv.innerHTML = ""; }; } catch (e) { toast(e.message); } $("#pPhoto").textContent = "📷 Photo"; };
+    c.onsubmit = async (ev) => { ev.preventDefault(); const text = $("#pText").value.trim(), link = $("#pLink").value.trim(); if (!text && !link && !draftPhoto) { toast("Write something first."); return; } $("#pSend").disabled = true;
+      try { await post("/api/me/posts", { text, link, photo: draftPhoto }); draftPhoto = ""; toast("Posted. Your friends see it in their feed."); await load(); } catch (e) { toast(e.message); } $("#pSend") && ($("#pSend").disabled = false); };
+    m.querySelectorAll("[data-pdel]").forEach((b) => (b.onclick = async () => { if (!confirm("Delete this post?")) return; await fetch("/api/me/posts/" + b.dataset.pdel, { method: "DELETE" }); load(); })); }
+  // ---- the right-hand column ----
+  async function drawSide() { const el = $("#side"); if (!el) return; let S; try { S = await api("/api/me/sidebar"); } catch { el.innerHTML = ""; return; }
+    const hostRow = (h) => `<div class="sr">${av({ emoji: h.emoji, color: h.color, handle: h.handle })}<div><b>${esc(h.name)}</b><small>${esc([h.city, h.upcoming ? `${h.upcoming} coming up` : "", h.followers ? `${h.followers} following` : ""].filter(Boolean).join(" · "))}</small></div><a class="btn" href="/@${esc(h.handle)}">Follow</a></div>`;
+    const personRow = (p) => `<div class="sr">${av(p)}<div><b>${esc(p.name)}</b><small>${esc(p.why)}</small></div><button class="btn ghost" data-addf="${esc(p.key)}">Add</button></div>`;
+    const chatRow = (c) => `<a class="sr chat" href="/g#rsvp-${esc(c.id)}"><span class="ci">💬</span><div><b>${esc(c.title)}</b><small>${esc(c.last || (c.date ? C.fmtDate(c.date) : "Say hi to the group"))}</small></div></a>`;
+    el.innerHTML = (S.hosts.length ? `<section class="sc"><h3>Hosts to follow <a href="/discover">See all</a></h3>${S.hosts.map(hostRow).join("")}</section>` : "") +
+      `<section class="sc"><h3>People you may know</h3>${S.people.length ? S.people.map(personRow).join("") : `<p class="muted" style="margin:0;font-size:14px">After your next get-together, people you met show up here.</p>`}</section>` +
+      `<section class="sc"><h3>Your group chats</h3>${S.chats.length ? S.chats.map(chatRow).join("") : `<p class="muted" style="margin:0;font-size:14px">Every event you say yes to gets a group chat. They'll all be here.</p>`}</section>`;
+    $$("[data-addf]", el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends", { key: b.dataset.addf }); b.textContent = "Added ✓"; } catch (e) { toast(e.message); b.disabled = false; } })); }
   function drawBell() { const n = F.unread || 0, b = $("#bellN"); b.hidden = !n; b.textContent = n; }
   // ---- stories ----
   function drawRail() { const me = F.me, mine = F.stories.find((s) => s.mine);
@@ -78,17 +111,17 @@
   // ---- tabs ----
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
   $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
-  function draw() { const m = $("#m"); if (tab === "feed") return drawFeed(m); if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
+  function draw() { const m = $("#m"); if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   function drawFeed(m) { setTimeout(placeChip, 0);
     const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
     const keep = F.items.filter((it) => it.kind !== "hosting" || !here || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
     const away = F.items.length - keep.length;
     const items = keep.map((it) => { const e = it.event || {}, h = e.host;
-      const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${it.kind === "went" ? `went to <b>${esc(e.title)}</b>` : it.kind === "hosting" ? `is hosting <b>${esc(e.title)}</b>` : it.kind === "kudos" ? `sent kudos for <b>${esc(e.title)}</b>` : it.kind === "recap" ? `hosted <b>${esc(e.title)}</b>` : `at <b>${esc(e.title)}</b>`}${h && it.kind !== "hosting" ? ` by ${esc(h.name || "@" + h.handle)}` : ""} · ${ago(it.at)}</small></div></div>`;
+      const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${it.kind === "post" ? `posted` : it.kind === "went" ? `went to <b>${esc(e.title)}</b>` : it.kind === "hosting" ? `is hosting <b>${esc(e.title)}</b>` : it.kind === "kudos" ? `sent kudos for <b>${esc(e.title)}</b>` : it.kind === "recap" ? `hosted <b>${esc(e.title)}</b>` : `at <b>${esc(e.title)}</b>`}${h && it.kind !== "hosting" && it.kind !== "post" ? ` by ${esc(h.name || "@" + h.handle)}` : ""} · ${ago(it.at)}</small></div></div>`;
       const media = it.media ? (it.media.type === "video" ? `<video src="${esc(it.media.url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(it.media.url)}" alt="${esc(it.caption || e.title)}" loading="lazy">`) : "";
-      const body = it.kind === "recap" ? `<p>${it.count} came${it.kudos ? ` · ${it.kudos} kudos` : ""}</p>${it.love ? `<p class="quote">"${esc(it.love)}"</p>` : ""}` : it.kind === "kudos" ? `<p class="quote">"${esc(it.love)}"</p>` : it.caption ? `<p>${esc(it.caption)}</p>` : it.kind === "hosting" ? `<p>${esc(C.fmtDate(e.date))}${e.startTime ? " · " + esc(e.startTime) : ""}${e.city ? " · " + esc(e.city) : ""} · ${e.free ? "Free" : esc(e.price)}</p>` : "";
-      const acts = `<div class="acts">${it.kind === "hosting" ? `<a class="btn" href="/g#rsvp-${esc(e.id)}">I'm in</a>` : ""}${h ? ((F.following || []).includes(h.handle) ? `<a class="btn ghost" href="/@${esc(h.handle)}">See ${esc(String(h.name || "host").split(/[\s']/)[0])}'s page</a>` : `<a class="btn ghost" href="/@${esc(h.handle)}">Follow ${esc(String(h.name || "host").split(/[\s']/)[0])}</a>`) : ""}<button class="btn ghost" data-al="${esc(e.id)}">🔔 Ones like this</button></div>`;
+      const body = it.kind === "post" ? `${it.text ? `<p class="ptext">${esc(it.text).replace(/\n/g, "<br>")}</p>` : ""}${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc((() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })())}</b><small>${esc(it.link)}</small></a>` : ""}${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}` : it.kind === "recap" ? `<p>${it.count} came${it.kudos ? ` · ${it.kudos} kudos` : ""}</p>${it.love ? `<p class="quote">"${esc(it.love)}"</p>` : ""}` : it.kind === "kudos" ? `<p class="quote">"${esc(it.love)}"</p>` : it.caption ? `<p>${esc(it.caption)}</p>` : it.kind === "hosting" ? `<p>${esc(C.fmtDate(e.date))}${e.startTime ? " · " + esc(e.startTime) : ""}${e.city ? " · " + esc(e.city) : ""} · ${e.free ? "Free" : esc(e.price)}</p>` : "";
+      const acts = `<div class="acts">${it.kind === "hosting" ? `<a class="btn" href="/g#rsvp-${esc(e.id)}">I'm in</a>` : ""}${h ? ((F.following || []).includes(h.handle) ? `<a class="btn ghost" href="/@${esc(h.handle)}">See ${esc(String(h.name || "host").split(/[\s']/)[0])}'s page</a>` : `<a class="btn ghost" href="/@${esc(h.handle)}">Follow ${esc(String(h.name || "host").split(/[\s']/)[0])}</a>`) : ""}${it.kind === "post" ? "" : `<button class="btn ghost" data-al="${esc(e.id)}">🔔 Ones like this</button>`}</div>`;
       return `<article class="post">${head}${media}<div class="post-b">${body}${acts}</div></article>`; }).join("");
     const up = F.upcoming.filter((e) => e.friendsGoing.length).slice(0, 4);
     m.innerHTML = `<div id="feedPlace" style="margin:0 0 12px"></div>${away ? `<p class="muted" style="margin:-4px 0 12px;font-size:13px">${away} event${away === 1 ? "" : "s"} elsewhere hidden. Change your city to see them.</p>` : ""}` + (up.length ? `<div class="card" style="margin-bottom:14px"><h3>Your friends are going</h3>${up.map((e) => C.eventCard(e, `${e.friendsGoing.slice(0, 3).join(", ")} going`)).join("")}</div>` : "") +

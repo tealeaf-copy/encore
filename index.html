@@ -9475,6 +9475,18 @@ if(typeof inviteText==="function"){ const _it=inviteText; inviteText=function(d)
     if(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) /i.test(nm)&&nm.split(" ").length>=2){ nm=nm.replace(/^\w+ /,""); nm=nm.charAt(0).toUpperCase()+nm.slice(1) }
     if(nm&&nm!==n0){ d.name=d.pubTitle=nm }
   }catch(err){ console.warn(err) } return r } }
+
+// ==================================================================
+// After the night: a guest's card offers "Keep in touch" (adds them to your friends on Encore).
+// ==================================================================
+{ const _opK=openPerson; openPerson=async function(eventId,key){ const r=await _opK.apply(this,arguments); try{ const e=window.__gEv; const past=e?.date&&e.date<new Date().toISOString().slice(0,10); const sheet=document.querySelector("#ppBg .pp"); if(!past||!sheet||sheet.querySelector(".kit-btn")) return r;
+      const nm=(sheet.querySelector("h2,h3,b")?.textContent||"them").trim().split(/\s+/)[0];
+      sheet.querySelectorAll("button,a").forEach(b=>{ if(/Say hi/.test(b.textContent)) b.style.display="none" });
+      const wrap=document.createElement("div"); wrap.style.cssText="margin-top:12px"; wrap.innerHTML=`<button class="btn primary kit-btn" type="button">🤝 Keep in touch with ${esc(nm)}</button><p class="note kit-note" style="margin:6px 0 0"></p>`; sheet.appendChild(wrap);
+      wrap.querySelector(".kit-btn").onclick=async()=>{ const note=wrap.querySelector(".kit-note"); let me={}; try{ me=await (await fetch("/api/me")).json() }catch{}
+        if(!me?.verified){ note.innerHTML=`Make a free account (no invite needed) and ${esc(nm)} shows up in your friends. <a href="/signup?mode=friends&regularOf=${encodeURIComponent((window.__gHostInfo||{}).handle||"")}">Sign up</a>`; return }
+        const res=await fetch("/api/me/friends",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId,pkey:key})}).catch(()=>null);
+        if(res?.ok){ wrap.querySelector(".kit-btn").textContent=`✓ ${nm} is in your friends`; wrap.querySelector(".kit-btn").disabled=true; note.textContent="You'll see each other's plans in your feed." } else note.textContent=`Couldn't add ${nm} yet. They may not have shared an email.` } }catch(err){ console.warn(err) } return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

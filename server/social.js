@@ -3,6 +3,7 @@
 // guests messaging the host (running late, give my slot away) and photos from the day.
 import crypto from "node:crypto";
 import express from "express";
+import { complete, isFake, parseJsonLoose } from "./ai.js";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
@@ -368,6 +369,34 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const first = w[0] || "They", n = P.attended || 0;
     const take = [`${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Encore` : ", new to Encore"}.`, loves.length ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Fun fact: ${clean(r.funFact, 120)}` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
+  // ---- Pip's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
+  app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
+    const seen = new Set(), G = [];
+    for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
+      let P = {}; try { P = r.email ? X.eventProfile(lc(r.email)) || {} : {}; } catch {}
+      G.push({ name: first(r.name) || "A guest", response: r.response, arche: P.top?.name || "The Explorer", archeKey: P.top?.key || "explorer", loves: (P.loves || []).map((l) => l.kind), attended: P.attended || 0, fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
+    if (!G.length) return res.json({ guests: 0, empty: true });
+    // what's true without AI
+    const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});
+    const arch = Object.entries(count(G.map((g) => g.arche))).sort((a, b) => b[1] - a[1]), lanes = Object.entries(count(G.flatMap((g) => g.loves))).sort((a, b) => b[1] - a[1]);
+    const LANE = { move: "moving: runs, hikes, rides", make: "making and tasting things", gather: "long dinners and good talk", discover: "trying new places" };
+    const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g) => g.fact);
+    const common = [], differ = [], prompts = [], pairs = [];
+    if (arch[0] && arch[0][1] >= 2) common.push(`${arch[0][1]} of ${G.length} are ${arch[0][0].replace(/^The /, "")}s.`);
+    if (lanes[0] && lanes[0][1] >= 2) common.push(`${lanes[0][1]} of them keep turning up to ${LANE[lanes[0][0]] || lanes[0][0]}.`);
+    if (firstTimers.length) common.push(`${firstTimers.length === G.length ? "Everyone" : firstTimers.slice(0, 3).join(", ")} ${firstTimers.length === 1 ? "is" : "are"} new to Encore, so a warm welcome goes a long way.`);
+    if (arch.length >= 3) differ.push(`It's a mixed room: ${arch.slice(0, 3).map(([a, n]) => `${n} ${a.replace(/^The /, "")}`).join(", ")}. Seat the Connectors next to the Explorers.`);
+    if (regulars.length) differ.push(`${regulars.slice(0, 2).join(" and ")} ${regulars.length === 1 ? "has" : "have"} been to lots of these. Ask them to help pull new people in.`);
+    if (facts.length >= 2) { prompts.push(`Fun-fact roulette: read one fun fact out loud, everyone guesses whose it is. (${facts.length} guests gave you one.)`); pairs.push(`${facts[0].name} and ${facts[1].name} should swap stories: "${facts[0].fact}" meets "${facts[1].fact}".`); }
+    prompts.push("What's something you changed your mind about this year?", "What's the best thing you've eaten (or made) recently, and who were you with?", "If this group took a trip together, where would we go and who'd plan it?");
+    let out = { guests: G.length, going: G.filter((g) => g.response === "going").length, common, differ, prompts: prompts.slice(0, 4), pairs, source: "pip" };
+    // sharper with Claude, when it's switched on
+    if (!isFake() && G.length >= 2) { try {
+      const brief = G.map((g, i) => `${i + 1}. ${g.name} (${g.arche}${g.loves.length ? ", into " + g.loves.join("/") : ""}${g.attended ? `, ${g.attended} get-togethers` : ", new"})${g.fact ? ` fun fact: ${g.fact}` : ""}${g.answers.length ? ` | ${g.answers.join(" | ")}` : ""}`).join("\n");
+      const r = await complete({ prompt: `You help a host of a small get-together for friends ("${ev.pubTitle || ev.name}") understand who's coming. Guests (first names only; this is private to the host):\n${brief}\n\nReturn JSON only: {"common":[2-3 short observations of what they share],"differ":[1-2 where their perspectives differ in a fun, kind way],"prompts":[4 provocative but warm questions to ask the whole table that would spark debate given these specific people],"pairs":[1-2 "X and Y should talk about Z" suggestions]}. Be specific to these people, playful, never mean, no stereotypes about protected traits. Under 25 words each.`, effort: "low" });
+      const j = parseJsonLoose(r.text); if (j && Array.isArray(j.prompts)) out = { ...out, common: (j.common || out.common).slice(0, 3), differ: (j.differ || out.differ).slice(0, 2), prompts: j.prompts.slice(0, 4), pairs: (j.pairs || out.pairs).slice(0, 2), source: "ai" };
+    } catch {} }
+    res.json(out); });
   // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----
   const normPhone = (p) => { const raw = String(p || "").replace(/^whatsapp:/i, ""), d = raw.replace(/[^\d+]/g, ""); return d.startsWith("+") ? d : d.length === 10 ? "+1" + d : d.length === 11 && d.startsWith("1") ? "+" + d : d ? "+" + d : ""; };
   const prettyTime = (t) => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}:${m[2]}${ap}`; };

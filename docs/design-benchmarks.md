@@ -14,20 +14,18 @@ How this was gathered (November 2026):
 4. **A bottom tab bar with a big + on phones, and a slim icon rail on desktop.** All four use this pattern. Encore has Feed, Discover, +, Plans and Me. *(Built.)*
 5. **Undecided is a normal path.** Partiful offers "Can't decide when? Poll your guests" under the date field. Encore's planner has "Not sure when? Let friends pick a date", which fills in the next Friday to Sunday. *(Built.)*
 6. **Editorial discovery, not one long list.** Partiful has rows like "side quests" and "move your body", and Substack has Top and Rising lists. Encore's Discover has themed rows: This weekend, Seats at the table, Make something, Lace up, Somewhere new. *(Built.)*
-7. **Generous defaults, explained in one line.** Partiful turns reminders on, allows maybe and +1 by default, and each setting has a one-line explanation. *(Next.)* Encore will show a "Guest rules" summary like "Invite only · +1 ok · Pip reminds everyone".
+7. **Generous defaults, explained in one line.** Partiful turns reminders on, allows maybe and +1 by default, and each setting has a one-line explanation. Encore shows a "Guest rules" line like "Friends with the link · you approve each guest · +1 ok", which opens a short sheet. *(Built.)*
 8. **Pledge now, pay only if it happens.** Substack's pledges don't charge until the writer turns on payments. Encore's host Support card already works this way. *(Built.)*
-9. **Small, scoped status.** Substack shows "#6 Rising in UK"; Beli's leaderboards are by city and friends. *(Next.)* A host badge like "Rising in Brooklyn", ranked on repeat guests, never on money.
-10. **A "Needs you" lane that is never ranked.** This comes from Instagram's notifications. *(Next.)* RSVP requests, pledges and mentions first, then grouped updates, then Pip says you're all caught up.
+9. **Small, scoped status.** Substack shows "#6 Rising in UK"; Beli's leaderboards are by city and friends. Encore gives the three most active hosts per city a "Rising in <city>" badge, ranked on events, followers and what's coming, never on money. *(Built.)*
+10. **A "Needs you" lane that is never ranked.** This comes from Instagram's notifications. Friend requests, messages, questions and kudos asks come first, then everything else, then Pip says you're all caught up. *(Built.)*
 
 ## Still to build, by surface
 
-- **Host planner:**
-  - Add-stickers for optional details (+ Bring list, + Playlist, + Dress code, + FAQ).
-  - A "Guest rules" sheet behind three quick actions.
-- **Event page:**
-  - A lighter "Keep me posted" option next to RSVP.
-  - Host announcements pinned in the group chat.
-  - An "afterglow" mode after the event, with a photo wall and a thank-you from the host.
+- **Built since the first write-up:**
+  - "Keep me posted" next to RSVP.
+  - + Playlist, + Dress code and + FAQ add-ons.
+  - Pinned host announcements at the top of the group chat.
+  - An afterglow page after the event ("You were there", "N came", a photo wall for people who went).
 - **Kudos:** rate, then at most two "which night was more you?" taps, with a visible "can't choose" skip and the whole step optional. This is from Beli.
 - **Feed:** "Maya + 3 friends cheered" instead of like counts, and event photo rings for people who went. This is from Instagram.
 - **Onboarding:** never require invites to continue. Seed the guest's archetype in 3 taps. These are from Beli's most common complaints.

@@ -412,6 +412,11 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   X.itsOn = itsOn;
   app.post("/api/host/its-on", small, async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.body?.eventId, 80); if (!scopeStore(store, u.ws).get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
     res.json(await itsOn({ ws: u.ws, id, hostName: u.name, origin: publicOrigin(req) })); });
+  // the photo wall after an event: only for people who went (proved by their RSVP code) and the host
+  app.get("/api/public/moments/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
+    const P = X.rsvpProof(id, req.query.rid, req.query.code), u = currentUser(req), isHost = u && u.ws === ws; if (!isHost && !(P && P.r.response === "going")) return res.json({ moments: [], locked: true });
+    const L = scopeStore(store, ws).list("moments").map((d) => d.data).filter((m) => m && m.eventId === id).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 60).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "", by: first(m.authorName) || "" }));
+    res.json({ moments: L }); });
   // photos and short videos from the day: the host, or a guest who said yes
   app.post("/api/moments", raw, async (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const id = clean(req.query.eventId, 80), ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(ct)) return bad(res, "Photos (JPEG, PNG, WebP) or short videos (MP4, WebM, MOV).", 415, "unsupported_type");

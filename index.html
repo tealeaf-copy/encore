@@ -9537,6 +9537,14 @@ new MutationObserver(()=>{ try{ const v=document.getElementById("view-guest"); i
 .wiz label.chip{display:flex;gap:8px;align-items:flex-start;background:none!important;border:0!important;padding:6px 0!important;line-height:1.35}
 .ig-btn ~ .ig-btn,.ev2-rs .btn.primary + .btn.primary{background:#fff!important;color:#1F1A17!important;border:1px solid #E4D9C8!important;box-shadow:none!important}`; document.head.appendChild(s) }
 new MutationObserver(()=>{ try{ document.querySelectorAll(".pa-people, #paPeople, [data-pa='people']").forEach(box=>{ const seen=new Set(); box.querySelectorAll("li, .pp-row, .pa-row").forEach(r=>{ const n=(r.querySelector("b")?.textContent||"").trim().toLowerCase(); if(!n) return; if(seen.has(n)) r.style.display="none"; else seen.add(n) }) }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+
+// ==================================================================
+// One Encore: casual hosts' app uses the same rounded headline type as the guest pages and Discover.
+// ==================================================================
+{ const l=document.createElement("link"); l.rel="stylesheet"; l.href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap"; document.head.appendChild(l);
+  const s=document.createElement("style"); s.textContent=`body.friends-ws h1,body.friends-ws h2,body.friends-ws h3,body.friends-ws .wiz h2,body.friends-ws .hero2 h1,body.friends-ws .hero2 h2{font-family:"Fredoka","DM Sans",system-ui,sans-serif!important;font-weight:600!important;letter-spacing:-.01em}
+body.friends-ws .panel,body.friends-ws section.panel{border-radius:18px}
+body.friends-ws .btn.primary{border-radius:999px}`; document.head.appendChild(s) }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

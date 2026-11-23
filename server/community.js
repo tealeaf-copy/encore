@@ -102,7 +102,7 @@ export function makeCommunity(store) {
   const ARTS = ["florist", "curls", "bob", "chef", "runner", "barista", "baker", "glasses", "hiker"], TINTS = ["#E26D8E", "#E0A030", "#5B7FD6", "#3E9C6E", "#8C62C9"];
 const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "Seat Filler", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
   function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0;
-      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || r.name || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n++;
+      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n++;
         if (r.showMe !== false && faces.length < 3) { const h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); faces.push({ art: ARTS[h % ARTS.length], color: TINTS[(h >> 4) % TINTS.length] }); } }
       // the crowd in one line: the two most common guest types (from the quiz), never names
       const T = {}; for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId === id && r.response === "going" && TYPE_NAMES[r.guestType]) T[r.guestType] = (T[r.guestType] || 0) + 1; }

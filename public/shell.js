@@ -27,7 +27,7 @@
 .es-top .es-brand{display:flex;gap:8px;align-items:center;font:700 22px Fredoka,"Instrument Sans",system-ui;color:#1F1A17;text-decoration:none}
 .es-top nav{display:flex;gap:16px;align-items:center;font:500 15px "Instrument Sans",system-ui}.es-top nav a{color:#5E534B;text-decoration:none}
 .es-top nav a.cta{background:#fff;color:#1F1A17;padding:8px 14px;border-radius:999px;border:1px solid #E4D9C8;font-weight:600}
-@media (min-width:861px){body.es-has-rail .es-top .es-brand{visibility:hidden}}
+@media (min-width:861px){body.es-has-rail .es-top .es-brand{visibility:hidden}body.es-has-rail header.top{display:none}}
 @media (min-width:861px){body.es-has-rail{padding-left:72px}}
 @media (max-width:860px){.es-rail{display:none}}
 .es-tabs{display:none}

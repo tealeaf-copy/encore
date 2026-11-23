@@ -58,7 +58,7 @@ test("Host pages: a handle, regulars with accounts (the page is the invite), dis
   // follow, twice (no double count), and bad email
   // following takes an account; signing up from a host's page needs no code and joins their regulars
   const anon = await post("/api/public/follow", { handle: "pandan-mai", email: "fan@example.com" });
-  assert.equal(anon.status, 401); assert.equal((await anon.json()).code, "account_required");
+  assert.equal(anon.status, 200, "an email is enough to follow"); const noEmail = await post("/api/public/follow", { handle: "pandan-mai" }); assert.equal(noEmail.status, 401); assert.equal((await noEmail.json()).code, "email_required");
   const fanSignup = await post("/api/signup", { name: "Fan One", email: "fan@example.com", password: "long-password-1", mode: "friends", regularOf: "pandan-mai" });
   assert.equal(fanSignup.status, 200, "the host's page is the invite"); const fan = cookieOf(fanSignup);
   const f2 = await (await post("/api/public/follow", { handle: "pandan-mai", tastes: ["baking"] }, fan)).json();

@@ -187,8 +187,10 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   app.post("/api/public/follow", small, async (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many follows from here." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), acct = currentUser(req);
     if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device
-    if (!acct || acct.ws === DEFAULT_WS) return res.status(401).json({ code: "account_required", message: "Create a free account to join their regulars." });
-    const email = clean(acct.email, 200).toLowerCase(); b.name = b.name || acct.name;
+    // signed in: one tap. Signed out: an email is enough (the confirmation email says how to stop).
+    const signedIn = acct && acct.ws !== DEFAULT_WS, given = clean(b.email, 200).toLowerCase();
+    if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: "Add your email to follow." });
+    const email = signedIn ? clean(acct.email, 200).toLowerCase() : given; b.name = b.name || (signedIn ? acct.name : "");
     const phone = /^\+?[0-9 ()-]{7,20}$/.test(String(b.phone || "").trim()) ? String(b.phone).trim() : "", prev = scopeStore(store, ws).list("followers").map((d) => d.data).find((f) => f.email === email);
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [], phone }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
     const out = { ok: true, followers: C.followersOf(ws).length, emailed: false, texted: false };

@@ -70,7 +70,7 @@ test("Eric: followers get first dibs on a ticketed dinner", async () => {
   assert.equal((await put("events/omakase1", { name: "Omakase at home", activity: "cooking night", kind: "social", casual: true, date: day(14), headcount: 12, price: "$65", earlyUntil: new Date(Date.now() + 2 * 864e5).toISOString(), courses: ["Hamachi crudo", "Miso black cod"] }, eric.cookie)).status, 200);
   const stranger = await guest(eric.ws, { eventId: "omakase1", name: "Pat", email: "pat@example.com", response: "going", code: "P1" });
   assert.equal(stranger.status, 403); assert.equal((await stranger.json()).code, "early_access");
-  assert.equal((await post("/api/public/follow", { handle, email: "pat@example.com", name: "Pat" })).status, 401, "following takes an account");
+  assert.equal((await post("/api/public/follow", { handle })).status, 401, "following takes at least an email");
   assert.equal((await post("/api/signup", { name: "Pat Lee", email: "pat@example.com", password: "long-password-1", mode: "friends", regularOf: handle })).status, 200, "joining from Eric's page follows him");
   assert.equal((await guest(eric.ws, { eventId: "omakase1", name: "Pat", email: "pat@example.com", response: "going", code: "P1" })).status, 200, "followers can book");
   const pub = await (await fetch(srv.base + "/api/db/doc?path=events/omakase1", { headers: { "x-encore-guest": "1" } })).json();

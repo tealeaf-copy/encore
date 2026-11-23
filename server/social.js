@@ -397,6 +397,21 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
       const j = parseJsonLoose(r.text); if (j && Array.isArray(j.prompts)) out = { ...out, common: (j.common || out.common).slice(0, 3), differ: (j.differ || out.differ).slice(0, 2), prompts: j.prompts.slice(0, 4), pairs: (j.pairs || out.pairs).slice(0, 2), source: "ai" };
     } catch {} }
     res.json(out); });
+  // ---- Invite these first: who, from your own history, says yes early and pulls everyone else in ----
+  app.get("/api/host/first-yes", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.query.eventId, 80), today = new Date().toISOString().slice(0, 10);
+    const events = new Map(S.list("events").map((d) => [d.id, d.data || {}])), R = S.list("rsvps").map((d) => ({ id: d.id, ...(d.data || {}) })).filter((r) => r.eventId && events.has(r.eventId) && !events.get(r.eventId).example);
+    const already = new Set(R.filter((r) => r.eventId === id).map((r) => lc(r.email || r.phone || r.name)));
+    const byEv = new Map(); for (const r of R) { if (!byEv.has(r.eventId)) byEv.set(r.eventId, []); byEv.get(r.eventId).push(r); }
+    const P = new Map(), key = (r) => lc(r.email || r.phone || "");
+    const bump = (r, f, n = 1) => { const k2 = key(r); if (!k2) return; if (!P.has(k2)) P.set(k2, { name: r.name || "", email: r.email || "", phone: r.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: false }); const x = P.get(k2); if (r.name && !x.name) x.name = r.name; if (r.phone && !x.phone) x.phone = r.phone; x[f] += n; };
+    for (const [eid, L] of byEv) { const ev = events.get(eid), past = !!ev.date && ev.date < today; L.sort((a, b) => (a.createdAt || a.at || 0) - (b.createdAt || b.at || 0));
+      L.forEach((r, i) => { bump(r, "events"); if (r.response === "going" || r.interest === "in") { bump(r, "yes"); if (i < 3) bump(r, "early"); if (past) bump(r, "came"); } else if (r.response === "no") bump(r, "no"); }); }
+    for (const d of S.list("kudos")) { const kd = d.data || {}; if (kd.email) bump({ email: kd.email, name: kd.name }, "kudos"); }
+    try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email); if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
+    const L = [...P.entries()].filter(([k2]) => !already.has(k2)).map(([k2, x]) => { const score = x.early * 3 + x.came * 3 + x.yes * 2 + x.kudos + (x.follows ? 1 : 0) - x.no;
+      const why = [x.early ? `said yes first ${x.early === 1 ? "once" : `${x.early} times`}` : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent you kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
+      return { name: x.name || (x.email ? x.email.split("@")[0] : "A friend"), email: x.email, phone: x.phone, score, why: why.length ? why.join(" · ") : "follows you", early: x.early >= 1 }; }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
+    res.json({ people: L, history: R.length }); });
   // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----
   const normPhone = (p) => { const raw = String(p || "").replace(/^whatsapp:/i, ""), d = raw.replace(/[^\d+]/g, ""); return d.startsWith("+") ? d : d.length === 10 ? "+1" + d : d.length === 11 && d.startsWith("1") ? "+" + d : d ? "+" + d : ""; };
   const prettyTime = (t) => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}:${m[2]}${ap}`; };

@@ -8476,6 +8476,9 @@ new MutationObserver(()=>{ try{ if(!draft?.id||!isCasual(draft)) return; const D
 
 // guest invite pages wear the playful public style
 (()=>{ try{ if(!isGuestRoute?.()) return; if(!document.querySelector('link[href="/playful.css"]')){ const l=document.createElement("link"); l.rel="stylesheet"; l.href="/playful.css"; document.head.appendChild(l) } }catch{} })();
+
+// friends events: the guest list without the sales tooling
+new MutationObserver(()=>{ try{ if(!draft||!isCasual(draft)) return; const v=document.querySelector("#view-studio"); if(!v) return; v.querySelectorAll("section.panel,details.panel,.panel,details").forEach(sec=>{ if(sec.hidden||sec.dataset.cz) return; const h=(sec.querySelector("h2,h3,h4,summary,b")?.textContent||"").trim(); if(/^(Rules of engagement|Ask your AEs who to invite|Sales lead|Measure real lift|Guest scout|Outreach|Get a strategy|Who's missing|Accounts|Hand off to sales)/i.test(h)){ sec.hidden=true; sec.dataset.cz=1 } }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

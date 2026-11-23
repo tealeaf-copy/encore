@@ -145,7 +145,7 @@ body.is-owner{padding-bottom:110px}
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You follow ${esc(first)}.</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff);
     try { const j = await C.follow({ handle: h.handle, hostName: h.name, email: fd.get("email"), name: fd.get("name"), tastes: fd.getAll("t"), via: new URLSearchParams(location.search).get("via") || "page" });
-      C.oink(); document.getElementById("fc").textContent = j.followers; document.getElementById("topFollow").textContent = "Following ✓";
+      C.oink(); { const fc = document.getElementById("fc"); fc.textContent = j.followers; fc.hidden = false; const lab = fc.parentElement && fc.parentElement.lastChild; if (lab && lab.nodeType === 3) lab.nodeValue = j.followers === 1 ? " follower" : " followers"; } document.getElementById("topFollow").textContent = "Following ✓";
       try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(h.handle)) L.push(h.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
       ff.innerHTML = `<div class="done"><span class="hop">${C.pipSVG("happy", 40)}</span><div><b>You're in.</b><div class="muted" style="font-size:14px">${esc(first)} can now tell you about the next one first.</div></div></div>`;
     } catch (err) { fe.textContent = err.message; } });

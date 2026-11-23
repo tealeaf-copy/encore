@@ -8962,7 +8962,7 @@ async function openPerson(eventId,key){ try{ const r=await fetch(`/api/public/pe
       <div class="pp-sec"><h4>Pip's take</h4><p class="pp-take">${esc(p.take)}</p></div>
       ${(p.attended||p.hosted||p.kudos.length)?`<div class="pp-sec pp-stats">${p.attended?`<div><b>${p.attended}</b><span>get-together${p.attended===1?"":"s"}</span></div>`:""}${p.hosted?`<div><b>${p.hosted}</b><span>hosted</span></div>`:""}${p.kudos.length?`<div><b>${p.kudos.length}</b><span>kudos sent</span></div>`:""}</div>`:""}
       ${p.traits.length>1?`<div class="pp-sec"><h4>Also</h4><div class="pp-tags">${p.traits.slice(1).map(t=>`<span>${esc(t.emoji)} ${esc(t.name)}</span>`).join("")}</div></div>`:""}
-      ${p.kudos.length?`<div class="pp-sec"><h4>Kudos they've sent</h4>${p.kudos.map(k=>`<blockquote class="pp-kud">"${esc(k.love)}"${k.event?`<small>after ${esc(k.event)}</small>`:""}</blockquote>`).join("")}</div>`:""}
+      ${p.kudos.length?`<div class="pp-sec"><h4>Kudos they've sent</h4>${p.kudos.map(k=>`<blockquote class="pp-kud">${k.love?`"${esc(k.love)}"`:"💌 Sent the host kudos"}${k.event?`<small>after ${esc(k.event)}</small>`:""}</blockquote>`).join("")}</div>`:""}
       ${p.socials.length?`<div class="pp-sec"><h4>Find them</h4><div class="pp-soc">${p.socials.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener nofollow">${esc(x.label)}</a>`).join("")}${p.page?`<a href="${esc(p.page)}">Their Encore page</a>`:""}</div></div>`:p.page?`<div class="pp-sec"><div class="pp-soc"><a href="${esc(p.page)}">Their Encore page</a></div></div>`:""}
     </div>`;
     document.body.appendChild(bg); const close=()=>bg.remove(); bg.onclick=ev=>{ if(ev.target===bg) close() }; bg.querySelector(".pp-x").onclick=close; addEventListener("keydown",function k(ev){ if(ev.key==="Escape"){ close(); removeEventListener("keydown",k) } }); bg.querySelector(".pp-x").focus() }catch(err){ console.warn(err) } }
@@ -9589,6 +9589,26 @@ async function addrNudge(){ try{ const d=draft, host=document.getElementById("st
 #wzAskChips button.on{background:#FFE08A}
 #view-guest .pp-why,#view-guest .ev2-free,#view-guest .stk-price{font-family:inherit!important}`; document.head.appendChild(s) }
 document.addEventListener("click",ev=>{ const b=ev.target.closest?.("#wzAskChips button"); if(!b) return; b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)) },true);
+
+// ==================================================================
+// Round 12 fixes: After updates its headline when you mark who came, and shows kudos once; the "You're in!" sheet
+// has a close button and points to the host's question; your entrance emoji shows straight away;
+// Pip's room read says "Questions for the table" until it knows the crowd; casual hosts see no business copy;
+// "Plan this" ideas without a time start next Friday at 7; one type family on guest pages.
+// ==================================================================
+document.addEventListener("click",ev=>{ if(ev.target.closest?.("[data-came]")) setTimeout(()=>{ try{ if(+step===7){ const y=scrollY; renderStep(); setTimeout(()=>scrollTo(0,y),50) } }catch{} },500) },true);
+new MutationObserver(()=>{ try{
+    const host=document.getElementById("stepHost"); if(host&&host.querySelector("#kudosHero")) host.querySelectorAll(".ap-kudos").forEach(x=>x.style.display="none");
+    const pq=document.querySelector(".party-q"); const sheet=pq?.closest("[role=dialog]")||pq?.parentElement; if(sheet&&!sheet.querySelector(".party-x")){ const x=document.createElement("button"); x.type="button"; x.className="party-x"; x.setAttribute("aria-label","Close"); x.textContent="×"; x.style.cssText="position:absolute;top:10px;right:12px;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:#1F1A17"; if(getComputedStyle(sheet).position==="static") sheet.style.position="relative"; x.onclick=()=>document.getElementById("partyDone")?.click(); sheet.prepend(x);
+      const e=window.__gEv; if(e?.askQ&&!sheet.querySelector(".party-ask")){ const b=document.createElement("button"); b.type="button"; b.className="btn party-ask"; b.style.cssText="margin-top:8px;width:100%"; b.textContent=`✉️ Answer ${(()=>{ try{ return hostFirst(e) }catch{ return "the host" } })()}'s question`; b.onclick=()=>{ document.getElementById("partyDone")?.click(); setTimeout(()=>document.querySelector(".pp-q")?.scrollIntoView({behavior:"smooth",block:"center"}),350) }; (sheet.querySelector("#partyDone")||sheet.lastElementChild).before(b) } }
+    if(window.__wsPersonal){ document.querySelectorAll(".shop-fab,.store-fab").forEach(b=>b.style.display="none"); document.querySelectorAll("#photoNudge").forEach(n=>{ if(/brands/i.test(n.textContent)) n.innerHTML=n.innerHTML.replace(/Guests and brands look at photos before anything else\./,"Friends look at photos before anything else.") }) }
+    document.querySelectorAll("small,p,span,div").forEach(n=>{ if(n.children.length||!window.__wsPersonal) return; if(/Bookings from companies and shop orders show up here/.test(n.textContent)) (n.closest(".panel,section,.card,li")||n).style.display="none" });
+    const rr=[...document.querySelectorAll("#stepHost h3")].find(h=>h.textContent==="Here's your crowd"); if(rr){ const c=rr.closest("section,.panel"); if(c&&!c.querySelector(".rq-pair, .room-pairs li, .room-common li")&&!/swap|Seat|have in common|mixed room|new here/i.test(c.textContent)) rr.textContent="Questions for the table" }
+  }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("click",ev=>{ if(!ev.target.closest?.("[data-emo]")) return; setTimeout(()=>{ try{ const e=window.__gEv, v=document.getElementById("view-guest"); if(e&&v) drawAttendees(e,v) }catch{} },900) },true);
+document.addEventListener("click",ev=>{ const c=ev.target.closest?.("[data-casualidea]"); if(!c) return; setTimeout(()=>{ try{ if(draft&&!draft.date){ const now=new Date(); now.setHours(12,0,0,0); let add=(5-now.getDay()+7)%7; if(add<2) add+=7; draft.date=new Date(now.getTime()+add*864e5).toISOString().slice(0,10); const di=document.getElementById("wzDate"); if(di) di.value=draft.date } if(draft&&!draft.startTime){ draft.startTime="19:00"; const t=document.getElementById("wzTime"); if(t) t.value="19:00" } }catch{} },400) },false);
+{ const s=document.createElement("style"); s.textContent=`#view-guest .party h2,#view-guest h2,.party h2,.party-title,#view-guest .ev2-free b,.lib-card h3,#stepHost .ap-kudos blockquote{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif!important}
+.kit-btn:disabled{opacity:1!important;background:#E8F5EC!important;color:#1E6B45!important;border-color:#BFE3CC!important}`; document.head.appendChild(s) }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

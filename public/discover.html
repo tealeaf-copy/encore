@@ -35,13 +35,14 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     <div class="card quiz" id="quiz" aria-live="polite"></div>
   </div>
 
+  <div style="margin:4px 0 14px" id="placeBox"></div>
   <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="grid g2" id="fyList"></div></section>
 
 
   <section id="railsSec" hidden><div id="rails"></div></section>
 
   <section><h2>Everything coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
-    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div><div style="margin:-4px 0 12px" id="placeBox"></div><input id="cityF" type="hidden">
+    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div><input id="cityF" type="hidden">
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
   <section id="shopsSec" hidden><h2>Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="grid g2" id="shops"></div></section>
 
@@ -111,7 +112,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
     $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
-    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e))), L = base.filter(near), far = cf ? base.filter((e) => !near(e)) : []; drawCityPick(cf);
+    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const realN = data.events.filter((e) => !e.sample).length, base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4))), L = base.filter(near), far = cf ? base.filter((e) => !near(e)) : []; drawCityPick(cf);
     { const exact = (e) => cf && String(e.city || "").trim().toLowerCase() === cf ? 0 : 1; L.sort((a, b) => exact(a) - exact(b) || String(a.date || "9").localeCompare(String(b.date || "9"))); } window.__railIds = null; resetWhy(); drawRails(L); const shown = filter === "all" && !QWORDS.length && window.__railIds?.size ? L.filter((e) => !window.__railIds.has(e.id)) : L; { const allH = $("#events")?.closest("section")?.querySelector("h2"); if (allH) { if (!allH.dataset.o) allH.dataset.o = allH.textContent; if (!QTEXT) allH.textContent = shown !== L ? "More coming up" : allH.dataset.o; } }
     const thin = filter !== "all" && L.length < 3 ? `<div class="empty" style="grid-column:1/-1;text-align:left">Only ${L.length || "a few"} so far${cf ? ` near ${C.esc($("#cityF").value)}` : ""}. <a href="/feed#alerts" style="font-weight:700;color:#C94A30">🔔 Get a ping when a new one opens</a></div>` : ""; $("#events").innerHTML = (shown.length ? shown.map((e) => C.eventCard(e, whyOf(e))).join("") : L.length ? `<div class="empty">That's everything coming up for now.</div>` : `<div class="empty">${cf && data.events.length ? `Nothing in ${C.esc($("#cityF").value)} yet. <button class="btn ghost" type="button" onclick="window.EncorePlace.setManual('');location.reload()">See what's on everywhere</button> <a class="btn" href="/signup?mode=friends">Host the first one</a>` : data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`) + thin;
     // never a dead end: what's further away sits under the local picks instead of disappearing

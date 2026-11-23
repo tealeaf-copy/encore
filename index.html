@@ -9083,7 +9083,7 @@ async function ev2Afterglow(){ try{ const e=window.__gEv, host=document.getEleme
 // Vouch: after a get-together, give a guest who came one of your invite codes so they can host too (no waitlist).
 // ==================================================================
 async function drawVouch(){ try{ const d=draft, host=document.getElementById("stepHost"); if(!d?.id||!host||+step!==7||!window.__wsPersonal||host.querySelector("#vouchCard")) return;
-    const r=await fetch(`/api/db/collection?path=rsvps`); if(!r.ok) return; const j=await r.json(); const L=(Array.isArray(j)?j:j.docs||j.items||[]).map(x=>x.data||x).filter(x=>x.eventId===d.id&&x.response==="going"&&x.email);
+    const r=await fetch(`/api/db/collection?path=rsvps`); if(!r.ok) return; const j=await r.json(); const L=(Array.isArray(j)?j:j.docs||j.items||[]).map(x=>x.data||x).filter(x=>x.eventId===d.id&&x.response==="going"&&x.email&&!x.noShow);
     if(!L.length||host.querySelector("#vouchCard")) return; const seen=new Set(), G=L.filter(x=>{ const k=x.email.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true });
     const c=document.createElement("section"); c.id="vouchCard"; c.className="panel"; c.innerHTML=`<small class="eyebrow">Grow your circle</small><h3 style="margin:2px 0 4px">Who should host next?</h3><p class="note" style="margin:0 0 10px">Send a guest who came one of your invite codes. They skip the waitlist and can host their own get-together. You'll follow each other.</p>${G.map(x=>`<div class="btns" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line,#E4D9C8)"><span><b>${esc(x.name||"Guest")}</b></span><button class="btn sm ghost" type="button" data-vouch="${esc(x.email)}">🎟 Send a code</button></div>`).join("")}`;
     host.appendChild(c);
@@ -9403,7 +9403,7 @@ if(location.pathname==="/g"){ const s=document.createElement("style"); s.textCon
 { const _ilh=ideaLibraryHTML; ideaLibraryHTML=function(){ if(!window.__wsPersonal) return _ilh.apply(this,arguments);
     const F=feed().filter(x=>x.audience==="friends"&&!x.peer).slice(0,6); if(!F.length) return `<section class="lib" id="ideaLib" hidden></section>`;
     return `<section class="lib" id="ideaLib"><div class="lib-head"><div><h2>Ideas for your next get-together</h2><p class="note" style="margin:4px 0 0">Tap one and Pip sets it up. Change anything after.</p></div></div>
-      <div class="lib-grid">${F.map(x=>`<article class="lib-card" tabindex="0" role="button" style="--tint:#F6E7D8" data-casualidea="${esc(x.name)}" data-line="${esc(x.line||"")}"><span class="lib-ic">${evIcon(x)}</span><h3>${esc(x.name)}</h3>
+      <div class="lib-grid">${F.map(x=>`<article class="lib-card" tabindex="0" role="button" style="--tint:#F6E7D8" data-casualidea="${esc(x.name)}" data-line="${esc(x.line||"")}"><span class="lib-ic" style="font-size:24px">${esc(((t)=>[["run","🏃"],["hike","🥾"],["café","☕"],["cafe","☕"],["coffee","☕"],["potluck","🥘"],["picnic","🧺"],["game","🎲"],["dinner","🍽️"],["supper","🍽️"],["bake","🧁"],["movie","🎬"],["matcha","🍵"]].find(([k])=>t.includes(k))?.[1]||"✨")(String(x.name+" "+x.format).toLowerCase()))}</span><h3>${esc(x.name)}</h3>
         <p class="lib-line">${esc(x.line)}</p>${x.why?`<p class="note" style="margin:6px 0 0">${esc(x.why)}</p>`:""}<div class="lib-foot"><span class="lib-meta"></span><span class="btn sm">Plan this →</span></div></article>`).join("")}</div></section>` } }
 document.addEventListener("click",ev=>{ const c=ev.target.closest?.("[data-casualidea]"); if(!c) return; ev.preventDefault(); ev.stopPropagation(); try{ const nm=c.dataset.casualidea; quickStart(`${nm}: ${c.dataset.line||"with friends"}`); try{ draft.name=draft.pubTitle=nm; const w=document.getElementById("wzName"); if(w) w.value=nm; if(!draft.startTime){ const m=String(c.dataset.line||"").match(/\bat (\d{1,2})(?::(\d\d))?\s*(am|pm)?/i); if(m){ let hh=+m[1]; if(/pm/i.test(m[3]||"")&&hh<12) hh+=12; else if(!m[3]&&hh>=1&&hh<=6) hh+=12; draft.startTime=String(hh).padStart(2,"0")+":"+(m[2]||"00"); const t=document.getElementById("wzTime"); if(t) t.value=draft.startTime } } }catch{} }catch(err){ console.warn(err) } },true);
 document.addEventListener("keydown",ev=>{ if(ev.key!=="Enter") return; const c=ev.target.closest?.("[data-casualidea]"); if(c) c.click() },true);
@@ -9722,6 +9722,18 @@ new MutationObserver(()=>{ try{ if(document.getElementById("wizBg")) document.qu
 
 // an event's own emoji follows its title when the title says something specific ("Turkey Trot" → 🦃)
 { const _qs86=quickStart; quickStart=function(text){ const r=_qs86.apply(this,arguments); try{ const em=titleEmoji(draft)||titleEmoji({name:String(text||"")}); if(em&&draft) draft.emoji=em }catch{} return r } }
+
+// ==================================================================
+// Round 20 fixes: WhatsApp/text guests follow with the number they gave; after the night the Guests step drops
+// pre-event tools; an empty photos card doesn't repeat the photo ask; Home shows four starter ideas, not ten.
+// ==================================================================
+new MutationObserver(()=>{ try{
+    const e=window.__gEv, f=document.querySelector("#view-guest .gk-follow #gf"); if(e&&f&&!f.dataset.ph){ const M=myRsvp(e.id); if(M?.rid&&!/@/.test(localStorage.getItem("encore.email")||"")&&(M.phone||!M.email)){ f.dataset.ph=1; const nm=(()=>{ try{ return hostFirst(e) }catch{ return "them" } })(); const b=document.createElement("button"); b.type="button"; b.className="btn primary sm"; b.textContent=`Follow ${nm} with my number`; f.style.display="none"; f.after(b); b.onclick=async()=>{ const r=await fetch("/api/public/keep-posted",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:e.id,rid:M.rid,code:M.code})}).then(r=>r.json()).catch(()=>({})); b.textContent=r?.ok?`✓ You'll hear about ${nm}'s next one`:"Couldn't do that yet"; b.disabled=true } } }
+    const d=draft, host=document.getElementById("stepHost"); if(d?.date&&host&&+step===6&&d.date<new Date().toISOString().slice(0,10)) host.querySelectorAll("button,a,section,.panel").forEach(x=>{ const t=x.textContent.trim(); if(/^(Copy the invite link|Text a reminder|Copy tomorrow's reminder)$/.test(t)) x.style.display="none"; if(x.matches("section,.panel")&&/Pip's read on the room|Questions for the table/.test(x.querySelector("small,h3")?.textContent||"")) x.style.display="none" });
+    const gw=document.querySelector("#view-guest .glow-wall"); if(gw&&/No photos yet/.test(gw.textContent)&&document.querySelector("#view-guest .ig-btn, #view-guest .glow-add")) gw.style.display="none";
+    if(window.__wsPersonal){ const chips=[...document.querySelectorAll("#view-programs .cg-sugg li, #view-programs .cg-ideas li, #view-programs [data-cg-sugg]")]; chips.slice(4).forEach(c=>c.style.display="none") }
+  }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+try{ if(Array.isArray(FRIEND_IDEAS)) FRIEND_IDEAS.splice(5) }catch{}
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

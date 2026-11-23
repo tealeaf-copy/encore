@@ -40,6 +40,7 @@
 .story .sf{padding:12px 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;background:linear-gradient(transparent,rgba(0,0,0,.6))}.story .sf p{margin:0;font-size:16px}.story .sf .acts .btn.ghost{color:#fff;border-color:rgba(255,255,255,.4)}
 .wrapped{background:linear-gradient(135deg,#2B211C,#5A3A2E);color:#FBF6EF}.wrapped small{color:#E9C98C}.wr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}.wr-grid div{font-size:13px;opacity:.9}.wr-grid b{display:block;font:600 30px "Fraunces",Georgia,serif;color:#fff}
 .empty-feed{text-align:center;padding:30px 16px}
+.nt-h{margin:14px 0 8px;font:700 13px "DM Sans",system-ui;letter-spacing:.06em;text-transform:uppercase;color:#8A7D73;display:flex;gap:6px;align-items:center}.nt-h span{background:#C94A30;color:#fff;border-radius:99px;padding:1px 7px;font-size:11px;letter-spacing:0}.nt-done{display:flex;gap:10px;align-items:center;justify-content:center;margin:18px 0 6px;color:var(--soft)}.nt-done p{margin:0;font-size:14px}
 </style><link rel="stylesheet" href="/playful.css">
 <script src="/place.js"></script>
 </head><body>
@@ -166,7 +167,10 @@
   function wireAdd() { $$("[data-add],[data-add-email]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends", { key: b.dataset.add || b.dataset.addEmail }); C.oink(); b.textContent = "Added ✓"; F = await api("/api/me/feed"); drawRail(); } catch (e) { toast(e.message); b.disabled = false; } })); }
   // ---- notifications ----
   $("#bell").onclick = async () => { const j = await api("/api/me/inbox").catch(() => ({ items: [] })); const el = document.createElement("div"); el.className = "notes";
-    el.innerHTML = `<div><div style="display:flex;justify-content:space-between;align-items:center"><h3>Notifications</h3><button class="x" aria-label="Close">✕</button></div>${j.items.length ? j.items.map((n) => `<a class="note-i ${n.read ? "" : "unread"}" href="${esc(n.link || "#")}">${esc(n.text)}<small>${ago(n.at)} ago</small></a>`).join("") : `<p class="muted">Nothing yet.</p>`}</div>`;
+    // "Needs you" first and never hidden (things only you can answer), then everything else, then Pip says you're done
+    const NEED = new Set(["friend", "msg", "faq", "kudos", "prep", "itson", "request", "pledge"]), row = (n) => `<a class="note-i ${n.read ? "" : "unread"}" href="${esc(n.link || "#")}">${esc(n.text)}<small>${ago(n.at)} ago</small></a>`;
+    const need = j.items.filter((n) => !n.read && NEED.has(n.kind)), rest = j.items.filter((n) => !need.includes(n));
+    el.innerHTML = `<div><div style="display:flex;justify-content:space-between;align-items:center"><h3>Notifications</h3><button class="x" aria-label="Close">✕</button></div>${need.length ? `<h4 class="nt-h">Needs you <span>${need.length}</span></h4>${need.map(row).join("")}` : ""}${rest.length ? `${need.length ? `<h4 class="nt-h">Everything else</h4>` : ""}${rest.map(row).join("")}` : ""}<div class="nt-done">${C.pipSVG("happy", 44)}<p>${j.items.length ? "You're all caught up." : "Nothing yet. Pip will tell you when friends post, plans change or someone needs you."}</p></div></div>`;
     document.body.appendChild(el); el.onclick = (e) => { if (e.target === el || e.target.classList.contains("x")) el.remove(); }; post("/api/me/inbox/read").then(() => { F.unread = 0; drawBell(); }).catch(() => {}); };
   load();
 })();

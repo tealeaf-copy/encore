@@ -9424,6 +9424,19 @@ async function whoCame(){ try{ const e=window.__gEv, v=document.getElementById("
     if(!w||!w.offsetParent){ const host=v.querySelector(".ev2-chat")||v; if(!w){ await drawAttendees(e,host) ; w=v.querySelector("#whoGoing") } if(w&&!w.offsetParent){ const gf=w.closest("#gForm"); if(gf&&gf.hidden){ [...gf.children].forEach(c=>{ if(c!==w&&!c.contains(w)) c.style.display="none" }); gf.hidden=false; gf.dataset.pastOnly=1 } w.style.display="block" } }
     w?.querySelectorAll("h4,h3").forEach(h=>{ if(/^Who's (coming|going)/.test(h.firstChild?.textContent||h.textContent)) { if(h.firstChild&&h.firstChild.nodeType===3) h.firstChild.textContent="Who came "; else h.textContent=h.textContent.replace(/^Who's (coming|going)/,"Who came") } }); w?.querySelectorAll("small,span").forEach(x=>{ if(/spots? left|^\s*\d+ of \d+/.test(x.textContent)&&!x.children.length) x.textContent=x.textContent.replace(/\s*·?\s*\d+ spots? left/,"").replace(/^(\s*\d+) of \d+/,"$1 came") }) }catch(err){ console.warn(err) } }
 { const _rgC=renderGuest; renderGuest=async function(){ const r=await _rgC.apply(this,arguments); [1200,2600].forEach(t=>setTimeout(whoCame,t)); return r } }
+
+// ==================================================================
+// Calmer guest pages (thin warm borders, no hard offset shadows on content cards);
+// After: no zero stats, and the sealed-answers game shows there too, near the top.
+// ==================================================================
+{ const s=document.createElement("style"); s.textContent=`
+#view-guest.ev2 #whoGoing,#view-guest.ev2 #evFaq,#view-guest.ev2 #gForm > .ev2-rs,#view-guest.ev2 .in .gk-follow,html body .ev2-chat > #gchat,html body .ev2-chat > .gk-grow,html body .ev2-chat > section.ev2-more,#view-guest.ev2 .panel{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px rgba(31,26,23,.04)!important}
+#view-guest .glow-wall{border:1px solid #E4D9C8!important;box-shadow:none!important}
+#view-guest.ev2 .kudos-ask{background:#fff!important;border:1px solid #E4D9C8!important;box-shadow:none!important}
+#view-guest.ev2 .ev2-more .ev{border-width:1px!important;box-shadow:none!important}
+`; document.head.appendChild(s) }
+new MutationObserver(()=>{ try{ document.querySelectorAll(".ap-stats > div").forEach(x=>{ if(/^\D*\b0\b/.test(x.querySelector("b")?.textContent||"")) x.style.display="none" }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+{ const _rsA=renderStep; renderStep=function(){ const r=_rsA.apply(this,arguments); try{ if(+step===7&&draft?.askQ){ setTimeout(async()=>{ const host=document.getElementById("stepHost"); if(!host||host.querySelector("#ppHost")) return; const was=step; step=6; try{ await ppHost() }finally{ step=was } const c=host.querySelector("#ppHost"); const top=host.querySelector("#hostGlow")||host.querySelector(".ap-hero"); if(c&&top) top.after(c) },1100) } }catch{} return r } }
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

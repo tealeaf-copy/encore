@@ -95,6 +95,10 @@ export function publicEvent(data, view) {
   if (v) { e.venues = { venues: [{ name: v.name, address: v.address, area: v.area, photo: v.photo }] }; e.venuePick = 0; }
   // Nomination pages (target accounts, AE owners) are for signed-in team members only: guests never get scout output, whatever view they claim.
   if (view === "plan") { for (const k of ["budget", "currency", "pitch", "produce", "goal", "concept", "audience", "dist", "mods"]) if (data[k] != null) e[k] = data[k]; }
+  // casual get-togethers: the exact address only goes to people who are in (GET /api/public/address/:id with their RSVP code).
+  // When the host approves each guest, the meeting point waits for the yes too; the page shows the neighbourhood.
+  if (data.casual && view !== "plan") { if (e.venueAddr) { delete e.venueAddr; e.addrHidden = true; }
+    if (data.approvalRequired) { if (e.meetPoint || e.venueName || e.venues) e.addrHidden = true; delete e.meetPoint; delete e.venueName; delete e.venues; } }
   return e;
 }
 // Single documents guests may read: any event (RSVP, survey, plan, nomination links) plus the public roadmap and brand.

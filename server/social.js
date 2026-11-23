@@ -434,6 +434,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const pass = `${publicOrigin(req)}/g?r=${encodeURIComponent(rid)}.${encodeURIComponent(code)}#rsvp-${eventId}`, askName = /^Guest/.test(name) ? " Reply with your name so your host knows it's you." : "";
     const msg = final === "going" ? `You're in for ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}! 🎉 See who's coming and join the group chat: ${pass}${askName}` : final === "requested" ? `Got it! Your host approves each spot and will text you soon. ${pass}${askName}` : final === "waitlist" ? `It's full right now, so you're on the waitlist. We'll text you if a spot opens. ${pass}` : final === "maybe" ? `Marked you as maybe. Reply YES any time to grab a spot. ${pass}` : `No worries, we'll tell your host. Reply YES if plans change.`;
     return twiml(res, msg); });
+  // the exact address, for guests who are in
+  app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
+    res.json({ ok: true, meetPoint: P.ev.meetPoint || "", venueName: P.ev.venueName || "", venueAddr: P.ev.venueAddr || "" }); });
   // your RSVP follows your account: open an invite on any device, signed in, and it knows your answer
   app.get("/api/me/rsvp/:eventId", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ rsvp: null }); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return res.json({ rsvp: null });
     const d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data?.email) === lc(u.email)).sort((a, b) => (b.data.changedAt || b.data.at || 0) - (a.data.changedAt || a.data.at || 0))[0];

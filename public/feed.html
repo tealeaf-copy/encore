@@ -60,7 +60,8 @@
 <script>
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  let F = null, P = null, A = null, tab = "feed";
+  let F = null, P = null, A = null, tab = ["me", "alerts", "friends"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "feed";
+  setTimeout(() => { try { selTab(); } catch {} }, 0);
   const api = async (u, o) => { const r = await fetch(u, o); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "Something went wrong."), { code: j.code }); return j; };
   const post = (u, b) => api(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
   const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 3600 ? `${Math.max(1, Math.round(s / 60))}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
@@ -69,7 +70,7 @@
   const toast = (t) => { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B211C;color:#fff;padding:10px 16px;border-radius:14px;z-index:40;max-width:90vw;font-size:14px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3200); };
   const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club meetup" };
   const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
-  const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")} within 5 miles of me that are public`;
+  const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
   async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") location.href = "/login"; $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); drawSide(); }
   // ---- write a post: words, a photo, a link ----
   let draftPhoto = "";
@@ -151,7 +152,7 @@
   // ---- alerts in plain words ----
   async function drawAlerts(m) { if (!A) { try { A = (await api("/api/me/alerts")).alerts; } catch { A = []; } }
     m.innerHTML = `<div class="card alerts"><div style="display:flex;gap:10px;align-items:center">${C.pipSVG("think", 44)}<div><h3>Tell Pip what to watch for</h3><p class="muted" style="margin:0">In your own words. Pip tells you when something matching goes up.</p></div></div>
-      <div class="ex">${["Notify me whenever there's a run event within 5 miles of me that is public", "Free board game nights in my city", "Hikes on weekends within 20 miles", "Concerts friends are going to"].map((x) => `<button data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+      <div class="ex">${[`Notify me whenever there's a run event ${(window.EncorePlace?.get()?.city) ? "in " + window.EncorePlace.get().city : "near me"} that is public`, "Free board game nights in my city", "Hikes on weekends within 20 miles", "Concerts friends are going to"].map((x) => `<button data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
       <form id="alF"><input id="alIn" placeholder="e.g. cooking nights within 3 miles" maxlength="300"><button class="btn" type="submit">Save</button></form><p class="muted" id="alMsg" style="font-size:13px;margin:6px 0 0"></p>
       <div style="margin-top:10px">${A.length ? A.map((a) => `<div class="al"><div>🔔 <b>${esc(a.summary)}</b><small>"${esc(a.text)}"</small></div><button class="x" data-del="${esc(a.id)}" aria-label="Delete">✕</button></div>`).join("") : `<p class="muted">No alerts yet.</p>`}</div></div>`;
     $$("[data-ex]").forEach((b) => (b.onclick = () => { $("#alIn").value = b.dataset.ex; $("#alIn").focus(); }));

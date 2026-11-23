@@ -11,7 +11,7 @@
 .acct h2{font:600 24px/1.15 "Fraunces",Georgia,serif;margin:0 0 6px}.acct p{margin:0 0 14px;color:#6F6259}
 .acct form{display:grid;gap:10px}.acct label{display:grid;gap:4px;font-size:13px;font-weight:600}
 .acct input{border:1px solid #E7DFD3;border-radius:12px;padding:11px 12px;font:15px inherit;background:#fff}
-.acct,.acct button,.acct input{font-family:"Instrument Sans","DM Sans",system-ui,sans-serif}.acct button[type=submit]{border:2px solid #1F1A17;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font-weight:700;font-size:16px;cursor:pointer;box-shadow:3px 3px 0 #1F1A17}.acct .alt{border:1.5px solid #E4D9C8;border-radius:999px;padding:11px;background:#fff;color:#1F1A17;font-weight:600;font-size:15px;cursor:pointer;width:100%;margin-top:8px}
+.acct,.acct button,.acct input{font-family:"Instrument Sans","DM Sans",system-ui,sans-serif}.acct button[type=submit]{border:2px solid #1F1A17;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(31,26,23,.08)}.acct .alt{border:1.5px solid #E4D9C8;border-radius:999px;padding:11px;background:#fff;color:#1F1A17;font-weight:600;font-size:15px;cursor:pointer;width:100%;margin-top:8px}
 .acct .alt{background:none;border:0;color:#8E3A25;text-decoration:underline;cursor:pointer;font:14px inherit;padding:4px 0}
 .acct .err{color:#B3261E;font-size:14px;min-height:1em;margin:0}.acct .x{float:right;background:none;border:0;font-size:20px;cursor:pointer;color:#6F6259}`; document.head.appendChild(s); }
   async function me() { try { const j = await (await fetch("/api/me")).json(); return j?.verified ? j : null; } catch { return null; } }

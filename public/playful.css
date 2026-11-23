@@ -102,3 +102,22 @@ html body .eyebrow,html body .nu-eyebrow{color:var(--p-ink)!important}
 #view-guest .type-cover small{color:#fff!important;opacity:1!important}
 /* the sign-in and sign-up cards */
 body>form,form#f,form#wl{border:var(--p-line)!important;box-shadow:var(--p-shadow-lg)!important;border-radius:22px!important}
+
+/* ==== Calm pass: one Encore look across public pages and the host app ====
+   thin warm borders, soft shadows, no offset "sticker" shadows or tilts, plain labels, no dotted paper */
+:root{--p-line:1px solid #E4D9C8;--p-shadow:0 1px 2px rgba(31,26,23,.05);--p-shadow-lg:0 6px 18px rgba(31,26,23,.07)}
+body{background-image:none!important}
+.btn,.pill,.cta,a.cta,.sp-btn,button.chip,.chip,.filters button,.opts button,.trychip,html body .btn,html body .btn.sm,html body a.btn{box-shadow:none!important;border:1px solid #E4D9C8!important}
+.btn.primary,a.btn.primary,.cta,a.cta,html body .btn.primary{border-color:transparent!important}
+.btn:hover,.pill:hover,.cta:hover,.sp-btn:hover,.chip:hover,.filters button:hover,.opts button:hover,.trychip:hover{transform:none!important;box-shadow:0 2px 8px rgba(31,26,23,.08)!important}
+.btn:active,.pill:active,.cta:active,.sp-btn:active,.chip:active{transform:translateY(1px)!important;box-shadow:none!important}
+.ev:hover,.hc:hover,.xp:hover{transform:translateY(-2px)!important;box-shadow:var(--p-shadow-lg)!important}
+.hc-av,.ev-ic,.av,.hh-av{border:1px solid #E4D9C8!important;box-shadow:none!important}
+.tags i,.ev-p,.nu-meta span,.perk{border:1px solid #E4D9C8!important;background:#FFF6E0!important}
+.eyebrow,.nu-eyebrow{background:none!important;border:0!important;padding:0!important;border-radius:0!important;color:#75685F!important;font-size:12px!important;font-weight:700!important;letter-spacing:.06em;text-transform:uppercase}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{border:1px solid #DCCFBE!important}
+.wg-list li,.wg-av,.place-chip input{border:1px solid #E4D9C8!important}
+.place-chip{border:1px solid #E4D9C8!important;box-shadow:none!important}
+.gk-grow,.pip-box,.lv,.fl,.step,.store-links a,.trychip,.ticket{border:1px solid #E4D9C8!important;box-shadow:none!important}
+#view-guest .chip,.xp .badge,.dates button{border:1px solid #E4D9C8!important}
+.next-up,.stack .card{box-shadow:var(--p-shadow)!important}

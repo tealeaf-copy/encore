@@ -29,8 +29,8 @@ footer{padding:40px 0;color:var(--soft);font-size:13px;text-align:center}
 
 /* event preview: poster on top, date as the headline, faces, one quiet line */
 .grid:has(> .ev-poster){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important;gap:18px}
-.ev.ev-poster{display:flex!important;flex-direction:column;align-items:stretch;gap:0;padding:0!important;overflow:hidden;border:2px solid #1F1A17!important;border-radius:20px!important;background:#fff!important;box-shadow:5px 5px 0 #1F1A17!important;color:#1F1A17}
-.ev.ev-poster:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 #1F1A17!important}
+.ev.ev-poster{display:flex!important;flex-direction:column;align-items:stretch;gap:0;padding:0!important;overflow:hidden;border:2px solid #1F1A17!important;border-radius:20px!important;background:#fff!important;box-shadow:0 2px 8px rgba(31,26,23,.08)!important;color:#1F1A17}
+.ev.ev-poster:hover{transform:translate(-2px,-2px);box-shadow:0 2px 8px rgba(31,26,23,.08)!important}
 .ev-poster .ev-art,.ev-poster .ev-b{width:100%;box-sizing:border-box;align-self:stretch}
 .ev-poster .ev-art{position:relative;display:grid;place-items:center;align-content:center;gap:4px;aspect-ratio:16/10;padding:14px 16px 42px;background:var(--bg);border-bottom:2px solid #1F1A17;text-align:center;overflow:hidden}
 .ev-poster .ev-art.has-photo{padding:0}.ev-poster .ev-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -48,3 +48,9 @@ footer{padding:40px 0;color:var(--soft);font-size:13px;text-align:center}
 .ev-poster .ev-q{color:#6B5F56!important;font-size:13.5px!important}
 
 .rising{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:999px;background:#E3F1DD;border:1.5px solid #1F1A17;font-size:12px;font-weight:700;color:#1F1A17}
+/* calm pass: event cards match the rest of Encore */
+html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px rgba(31,26,23,.05)!important}
+.ev-poster .ev-face{outline:0!important;border:2px solid #fff!important;box-shadow:0 0 0 1px #E4D9C8}
+.ev-poster .ev-art{border-bottom:1px solid #EFE6DA!important}
+.ev-poster .ev-by{border:1px solid #E4D9C8!important}
+.ev-face{border-width:1.5px!important;border-color:#fff!important}

@@ -21,7 +21,7 @@ test("Invite-only: the first member gets in, then everyone needs a code, and cod
   const A = await join("Linh Tran", "linh@example.com");
   assert.equal(A.r.status, 200, JSON.stringify(A.body));
   const codes = (await (await get("/api/codes", A.cookie)).json()).codes;
-  assert.equal(codes.length, 5); assert.match(codes[0].link, /\/join\?code=/);
+  assert.equal(codes.length, 10); assert.match(codes[0].link, /\/join\?code=/);
   const nope = await join("Sam Lee", "sam@example.com");
   assert.equal(nope.r.status, 403); assert.equal(nope.body.code, "invite_required");
   const peek = await (await get("/api/codes/" + codes[0].code)).json();

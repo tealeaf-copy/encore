@@ -7,7 +7,7 @@ import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
-export const CODES_PER_MEMBER = 5;
+export const CODES_PER_MEMBER = 10;
 const EMAIL_OK = (e) => typeof e === "string" && e.length <= 200 && /^[^\s@"<>()[\],;:]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(e);
 const HANDLE_OK = (h) => /^[a-z0-9][a-z0-9-]{1,29}$/.test(h) && !/^(api|g|h|join|signup|login|discover|method|security|pricing|demo|admin|encore)$/.test(h);
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
@@ -130,7 +130,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   // a regular who gets a code can start hosting
   app.post("/api/me/unlock", small, (req, res) => { const u = me(req, res); if (!u) return; const code = clean(req.body?.code, 20).toUpperCase(), r = C.checkCode(code); if (!r.ok) return res.status(400).json({ code: "invalid", message: r.message });
     if (r.c) C.useCode(code, { ws: u.ws, email: u.email, name: u.name }); updateWorkspace(u.ws, { regularOnly: false }); C.issueCodes({ ws: u.ws, email: u.email, name: u.name }); res.json({ ok: true }); });
-  app.get("/api/codes", (req, res) => { const u = me(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.json({ codes: [], regularOnly: true }); let L = C.codesOf(u.email); if (!L.length) { C.issueCodes({ ws: u.ws, email: u.email, name: u.name }); L = C.codesOf(u.email); }
+  app.get("/api/codes", (req, res) => { const u = me(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.json({ codes: [], regularOnly: true }); let L = C.codesOf(u.email); if (L.length < CODES_PER_MEMBER) { C.issueCodes({ ws: u.ws, email: u.email, name: u.name, n: CODES_PER_MEMBER - L.length }); L = C.codesOf(u.email); }
     const o = publicOrigin(req); res.json({ codes: L.map((c) => ({ code: c.code, used: !!c.usedAt, usedBy: c.usedByName ? first(c.usedByName) : null, link: `${o}/join?code=${c.code}` })) }); });
   app.post("/api/waitlist", small, (req, res) => { if (limited(req, 5)) return res.status(429).json({ code: "rate_limited", message: "Too many requests from here." }); const b = req.body || {}, email = clean(b.email, 200).toLowerCase();
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email so a host can send you a code." }); C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants: clean(b.wants, 140) }); res.json({ ok: true }); });

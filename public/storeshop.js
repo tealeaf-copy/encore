@@ -48,7 +48,7 @@
   // ---- owner: shop and bookings ----
   async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
-    const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button"; fab.innerHTML = "🛍 Shop and bookings"; document.body.appendChild(fab);
+    try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.personal) return; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button"; fab.innerHTML = "🛍 Shop and bookings"; document.body.appendChild(fab);
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const st = { shop: JSON.parse(JSON.stringify(mine.shop || { open: false, title: "", note: "", where: "", slots: [], items: [], payUrl: "" })), exps: JSON.parse(JSON.stringify(mine.experiences || [])) };
     let tab = /[?&]orders=1/.test(location.search) ? "orders" : "shop";

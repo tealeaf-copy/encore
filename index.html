@@ -5224,7 +5224,15 @@ async function renderGuest(){
     const em=$("#g-email",f)?.closest("label"); if(em&&em.firstChild?.nodeType===3) em.firstChild.nodeValue="Email (for updates from the host)";
     const ac=$("#g-access",f)?.closest("label"); if(ac){ const d=document.createElement("details"); d.className="g-more"; d.innerHTML=`<summary style="cursor:pointer;font-weight:600;font-size:14px">Anything the host should know? (optional)</summary>`; ac.before(d); d.appendChild(ac) }
     f.querySelectorAll(".note").forEach(n=>{ if(/uses your details only to run this event/.test(n.textContent)) n.hidden=true });
-    const sv=$("#g-severe",f)?.closest("label"), dt=$("#g-diet",f); if(sv&&dt){ const upd=()=>{ sv.hidden=!dt.value.trim() }; upd(); dt.addEventListener("input",upd) } }
+    const sv=$("#g-severe",f)?.closest("label"), dt=$("#g-diet",f); if(sv&&dt){ const upd=()=>{ sv.hidden=!dt.value.trim() }; upd(); dt.addEventListener("input",upd) }
+    // food on the table: ask about it right after the name, with one-tap answers; no food, no question
+    const dl=dt?.closest("label"), food=FOODY(e)||!!(e.menu&&(e.menu.courses||e.menu.items||[]).length)||(e.slots||[]).length>0;
+    if(dl&&!food){ dl.hidden=true; if(sv) sv.hidden=true }
+    else if(dl){ const nameRow=$("#g-name",f)?.closest(".row"); if(nameRow){ nameRow.after(dl); if(sv) dl.after(sv) }
+      if(dl.firstChild?.nodeType===3) dl.firstChild.nodeValue="Anything you don't eat?"; dt.placeholder="Nothing, I eat everything";
+      const qs=["Vegetarian","Vegan","No pork","Gluten-free","Dairy-free","Nut allergy","Shellfish allergy"], box=document.createElement("div"); box.className="chips diet-q"; box.setAttribute("aria-label","Common answers");
+      box.innerHTML=qs.map(q=>`<button type="button" class="chip" data-dq="${q}" aria-pressed="${new RegExp("\\b"+q.replace(/[-]/g,"\\-")+"\\b","i").test(dt.value)}">${q}</button>`).join(""); dl.after(box); if(sv) box.after(sv);
+      box.onclick=ev=>{ const b=ev.target.closest("[data-dq]"); if(!b) return; const q=b.dataset.dq, on=b.getAttribute("aria-pressed")!=="true", parts=dt.value.split(/,\s*/).map(x=>x.trim()).filter(Boolean).filter(x=>x.toLowerCase()!==q.toLowerCase()); if(on) parts.push(q); dt.value=parts.join(", "); b.setAttribute("aria-pressed",on); dt.dispatchEvent(new Event("input")); if(on&&/allergy/i.test(q)&&sv){ sv.hidden=false } } } }
   $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("We couldn't read that image. Try another one.") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   $("#g-send").onclick=async()=>{
@@ -9726,8 +9734,8 @@ new MutationObserver(()=>{ try{ document.querySelectorAll(".pp-why, .wiz-sum spa
 // After asks who came before claiming a count; Pip's Home note catches up when an event goes live;
 // "my place" without an address gets a nudge; phone sheets and the chat never hide their last line.
 // ==================================================================
-function rsvpFold(){ try{ const f=document.getElementById("gForm"); if(!f||f.dataset.fold) return; const extras=["g-fact","g-access","g-diet","g-showme","g-photo"].map(id=>document.getElementById(id)).filter(Boolean).map(el=>el.closest("label,.f,.row,div")||el).filter((el,i,A)=>el&&A.indexOf(el)===i&&f.contains(el)&&!el.contains(document.getElementById("g-name"))&&!el.contains(document.getElementById("g-send")));
-    if(extras.length<2) return; f.dataset.fold=1; const det=document.createElement("details"); det.className="g-more"; det.innerHTML=`<summary class="linkbtn" style="cursor:pointer;margin:6px 0">Add more (optional): a fun fact, food needs</summary>`; extras[0].before(det); extras.forEach(x=>det.appendChild(x)) }catch{} }
+function rsvpFold(){ try{ const f=document.getElementById("gForm"); if(!f||f.dataset.fold) return; const extras=["g-fact","g-access",...(f.querySelector(".diet-q")?[]:["g-diet"]),"g-showme","g-photo"].map(id=>document.getElementById(id)).filter(Boolean).map(el=>el.closest("label,.f,.row,div")||el).filter((el,i,A)=>el&&A.indexOf(el)===i&&f.contains(el)&&!el.contains(document.getElementById("g-name"))&&!el.contains(document.getElementById("g-send")));
+    if(extras.length<2) return; f.dataset.fold=1; const det=document.createElement("details"); det.className="g-more"; det.innerHTML=`<summary class="linkbtn" style="cursor:pointer;margin:6px 0">Add more (optional): ${f.querySelector(".diet-q")?"a fun fact, anything the host should know":"a fun fact, food needs"}</summary>`; extras[0].before(det); extras.forEach(x=>det.appendChild(x)) }catch{} }
 function kudosFirst(){ try{ const v=document.getElementById("view-guest"), k=document.getElementById("kudosAsk"); if(!v||!k||k.dataset.top) return; k.dataset.top=1; const anchor=v.querySelector(".invite"); if(anchor) anchor.before(k) }catch{} }
 { const _rgF=renderGuest; renderGuest=async function(){ const r=await _rgF.apply(this,arguments); [400,1400].forEach(t=>setTimeout(()=>{ rsvpFold(); kudosFirst() },t)); return r } }
 // After: "N said yes. Who actually came?" until the host has checked

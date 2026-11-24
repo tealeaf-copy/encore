@@ -98,3 +98,20 @@ test("Hosts can recommend other hosts; it shows on both pages", async () => {
   assert.ok(!/[<>]/.test(mo.host.recs[0].note));
   assert.deepEqual(kim.host.recBy.map((x) => x.handle), ["mo-rec"]);
 });
+
+test("Guests' answers to the host's own questions are saved with the RSVP, cleaned", async () => {
+  const r0 = await post("/api/signup", { name: "Ome Host", email: "ome.q@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  const day = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+  const pe = await put("/api/db/doc?path=events/omeq", { kind: "social", casual: true, name: "Pickup", date: day, published: true, questions: [{ id: "q1", q: "how many sets?", type: "number" }] }, c);
+  assert.ok(pe.ok, await pe.text());
+  const G = { ...J, "x-encore-guest": "1", "x-encore-key": "gkq1", "x-encore-workspace": ws };
+  const ev = await (await fetch(srv.base + "/api/db/doc?path=events/omeq", { headers: G })).json();
+  assert.equal(ev.data.questions[0].q, "how many sets?", "guests can see the questions");
+  const w = await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: G, body: JSON.stringify({ eventId: "omeq", name: "Vi", response: "going", answers: { q1: 3, q2: "<script>x</script>chạy chứ 🏃", "bad key!": "x", q3: ["a", "b"] } }) });
+  assert.ok(w.ok, await w.text());
+  const list = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json();
+  const a = (list.docs || list.items || list).find((d) => (d.data || d).name === "Vi");
+  const ans = (a.data || a).answers;
+  assert.equal(ans.q1, 3); assert.ok(!/</.test(ans.q2) && /chạy chứ/.test(ans.q2)); assert.ok(!("bad key!" in ans)); assert.deepEqual(ans.q3, ["a", "b"]);
+});

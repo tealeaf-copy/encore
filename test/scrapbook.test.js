@@ -35,3 +35,11 @@ test("Hosts add past gatherings by hand or from a CSV; the scrapbook is public, 
   await fetch(srv.base + "/api/host/scrapbook/" + id, { method: "DELETE", headers: { cookie: c } });
   assert.equal((await (await fetch(srv.base + "/api/public/host/mai-scrap/scrapbook")).json()).items.length, 1);
 });
+
+test("Henly storefront links can be imported too", async () => {
+  const { importable, parseEventPage } = await import("../server/scrapbook.js");
+  assert.ok(importable("https://www.henly.app/omecasa-2/come-say-hi-and-grab-a-bite-2"));
+  assert.equal(importable("http://www.henly.app/x"), null, "https only");
+  const p = parseEventPage(`<meta property="og:title" content="come say hi &amp; grab a bite"><meta property="og:image" content="https://cdn.example.com/a.jpg"><meta property="og:description" content="Pandan cake sets, pickup Saturday">`);
+  assert.equal(p.title, "come say hi & grab a bite"); assert.match(p.about, /Pandan/);
+});

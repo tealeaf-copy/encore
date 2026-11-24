@@ -5,10 +5,10 @@
 import crypto from "node:crypto";
 import { scopeStore, DEFAULT_WS } from "./workspaces.js";
 
-const SITES = [/(^|\.)partiful\.com$/i, /(^|\.)lu\.ma$/i, /(^|\.)luma\.com$/i, /(^|\.)eventbrite\.[a-z.]{2,8}$/i];
+const SITES = [/(^|\.)partiful\.com$/i, /(^|\.)lu\.ma$/i, /(^|\.)luma\.com$/i, /(^|\.)eventbrite\.[a-z.]{2,8}$/i, /(^|\.)henly\.app$/i];
 const MAX_PAGE = 1_500_000, MAX_IMG = 6_000_000, MAX_ITEMS = 200;
 const clean = (s, n) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
-const sourceOf = (host) => (/partiful/i.test(host) ? "Partiful" : /lu\.ma|luma/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : "");
+const sourceOf = (host) => (/partiful/i.test(host) ? "Partiful" : /lu\.ma|luma/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : /henly/i.test(host) ? "Henly" : "");
 const isoDate = (v) => { const s = String(v || "").trim(); if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10); const t = Date.parse(s); return isFinite(t) ? new Date(t).toISOString().slice(0, 10) : ""; };
 
 /** Is this a link we're willing to read? */
@@ -36,7 +36,7 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   const me = (req, res) => { const u = currentUser(req); if (!u || !u.ws || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const list = (ws) => S(ws).list("scrapbook").map((d) => ({ id: String(d.id).split("/").pop(), ...d.data })).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || (b.at || 0) - (a.at || 0));
   const save = (ws, item) => { const id = item.id || crypto.randomBytes(6).toString("hex"); const v = { title: clean(item.title, 140) || "A gathering", date: isoDate(item.date), place: clean(item.place, 120), guests: Math.max(0, Math.min(10000, Math.round(+item.guests || 0))) || 0,
-      note: clean(item.note, 400), about: clean(item.about, 400), source: ["Partiful", "Luma", "Eventbrite", "CSV", ""].includes(item.source) ? item.source : "", link: importable(item.link)?.href || "",
+      note: clean(item.note, 400), about: clean(item.about, 400), source: ["Partiful", "Luma", "Eventbrite", "Henly", "CSV", ""].includes(item.source) ? item.source : "", link: importable(item.link)?.href || "",
       photos: (Array.isArray(item.photos) ? item.photos : []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12), cover: /^\/_blob\/[A-Za-z0-9]{20}$/.test(item.cover || "") ? item.cover : "", at: item.at || Date.now() };
     S(ws).set("scrapbook/" + id, v); return { id, ...v }; };
   const keepImage = async (src, ws) => { const x = safeImageUrl(src); if (!x) return ""; const r = await fetchCapped(x.href, MAX_IMG, "image/*"); if (!r || !/^image\/(png|jpe?g|webp|gif)/i.test(r.type)) return ""; try { return (await saveImage(r.buf, r.type.split(";")[0], ws)) || ""; } catch { return ""; } };
@@ -49,7 +49,7 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   app.post("/api/host/scrapbook/import", small, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, out = [], skipped = [];
     if (list(u.ws).length >= MAX_ITEMS) return res.status(400).json({ code: "limit", message: "Your scrapbook is full (200 gatherings)." });
     const have = new Set(list(u.ws).map((x) => x.link).filter(Boolean));
-    for (const raw of (Array.isArray(b.links) ? b.links : []).slice(0, 15)) { const x = importable(raw); if (!x) { skipped.push({ link: clean(raw, 200), why: "Only Partiful, Luma and Eventbrite links can be read." }); continue; } if (have.has(x.href)) { skipped.push({ link: x.href, why: "Already in your scrapbook." }); continue; }
+    for (const raw of (Array.isArray(b.links) ? b.links : []).slice(0, 15)) { const x = importable(raw); if (!x) { skipped.push({ link: clean(raw, 200), why: "Only Partiful, Luma, Eventbrite and Henly links can be read." }); continue; } if (have.has(x.href)) { skipped.push({ link: x.href, why: "Already in your scrapbook." }); continue; }
       const page = await fetchCapped(x.href, MAX_PAGE, "text/html"); const info = page ? parseEventPage(page.buf.toString("utf8"), x.href) : { title: "", url: x.href };
       const slugTitle = decodeURIComponent(x.pathname.split("/").filter(Boolean).pop() || "").replace(/[-_]+/g, " ").replace(/\b[a-z0-9]{8,}\b/gi, "").trim();
       const cover = info.image ? await keepImage(info.image, u.ws) : "";

@@ -61,8 +61,9 @@
     const title = `${e.pubTitle || e.title || e.name || ""}`.toLowerCase(), act = String(e.activity || "").toLowerCase(), rest = `${e.why || ""} ${(e.tags || []).join(" ")} ${e.dinnerTheme || ""}`.toLowerCase(), all = `${act} ${title} ${rest}`;
     for (const [re, k] of WORDS.slice(0, 6)) if (re.test(all)) add(k);
     // the title, in the order things appear in it, then what the host or Potto set as the activity
-    WORDS.map(([re, k]) => { const m = title.match(re); return m ? [m.index, k] : null; }).filter(Boolean).sort((x, y) => x[0] - y[0]).forEach(([, k]) => add(k));
+    // what the host said it is comes before stray words in the title (a "Turkey Trot" with pie after is still a run)
     if (ART[act]) add(act); for (const [re, k] of WORDS) if (re.test(act)) add(k);
+    WORDS.map(([re, k]) => { const m = title.match(re); return m ? [m.index, k] : null; }).filter(Boolean).sort((x, y) => x[0] - y[0]).forEach(([, k]) => add(k));
     for (const [re, k] of WORDS) if (re.test(rest)) add(k);
     const where = `${e.meetPoint || ""} ${e.venueName || ""} ${e.hood || ""}`.toLowerCase(); for (const [re, k] of WORDS) if (re.test(where)) add(k);
     return out; }
@@ -88,11 +89,13 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 150" aria-hidden="true"><path ${S} d="M6 146h268"/>${body}</svg>`; }
   function drawing(kind, spot, size) { const [a, b] = String(kind).split("+"), body = b && ART[a] && ART[b] ? `<g transform="translate(-16 18) scale(.74)">${ART[a](spot)}</g><g transform="translate(78 26) scale(.7)">${ART[b](spot)}</g>` : (ART[kind] || ART.party)(spot); return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" ${size ? `width="${size}" height="${Math.round(size * 0.75)}"` : ""} aria-hidden="true">${body}</svg>`; }
   const valid = (k) => !!k && String(k).split("+").every((x) => ART[x]);
-  const labelOf = (k) => String(k).split("+").map((x) => LABEL[x] || x).join(" + ");
+  // Thanksgiving is the fourth Thursday of November; the days around it are "Thanksgiving week"
+  const thanksOf = (y) => { const d = new Date(Date.UTC(y, 10, 1)); return 1 + ((11 - d.getUTCDay()) % 7) + 21; };
+  const labelOf = (k, e = {}) => String(k).split("+").map((x) => { if (x === "turkey" && /^\d{4}-11-\d{2}/.test(e.date || "")) { const y = +e.date.slice(0, 4), dd = +e.date.slice(8, 10); return dd === thanksOf(y) ? "Thanksgiving" : "Thanksgiving week"; } return LABEL[x] || x; }).join(" + ");
   // a whole cover as HTML: label, title, drawing. opts: { label, title, kind, tone, mark (html for bottom-left) }
   function cover(e = {}, opts = {}) {
     const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
-    const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? labelOf(kind);
+    const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? labelOf(kind, e);
         // a drawing the host made with a prompt: always shown as an image (it can't run anything), never as HTML
     const custom = opts.svg || (!opts.kind && typeof pick.svg === "string" && /^<svg /.test(pick.svg) ? pick.svg : "");
     if (custom) return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""} ea-custom" style="--ea-bg:${bg}"><div class="ea-txt">${(opts.label ?? pick.label ?? "") ? `<small class="ea-label">${esc(opts.label ?? pick.label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art"><img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(custom)}"></div>${opts.mark || ""}</div>`;

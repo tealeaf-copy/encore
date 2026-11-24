@@ -104,7 +104,7 @@ export function mountGiftPlan(app, { store, small, discoverHosts }) {
   const limited = (req) => { const k = req.ip || "?", now = Date.now(); const h = (hits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); hits.set(k, h); return h.length > PER_HOUR; };
   // which hosts on Pottery Lab could make or deliver each gift
   const withMakers = (plan) => { let hosts = []; try { hosts = discoverHosts() || []; } catch {}
-    return { ...plan, gifts: plan.gifts.map((g) => ({ ...g, makers: keywordRank(`${g.makerKeywords.join(" ")} ${g.name}`, hosts, 3).map((m) => { const h = hosts.find((x) => x.handle === m.handle) || {}; return { handle: h.handle, name: h.name, city: h.city || "", showcase: !!h.showcase, why: m.why }; }) })) }; };
+    return { ...plan, gifts: plan.gifts.map((g) => ({ ...g, makers: keywordRank(g.makerKeywords.join(" ") || g.name, hosts, 8).filter((m) => { const hit = String(m.why || "").replace(/^Mentions /, "").split(", "); return g.makerKeywords.some((k) => { const kk = k.toLowerCase(), st = kk.replace(/(ing|es|s|y)$/, ""); return hit.some((x) => x === kk || x === st || (st.length > 3 && x.startsWith(st))); }); }).map((m) => { const h = hosts.find((x) => x.handle === m.handle) || {}; return { handle: h.handle, name: h.name, city: h.city || "", showcase: !!h.showcase, why: m.why }; }).sort((x, y) => x.showcase - y.showcase).slice(0, 3) })) }; };
   app.post("/api/public/giftplan", small, (req, res) => { const b = req.body || {}, company = clean(b.company, 100), moment = clean(b.moment, 200);
     if (company.length < 2 || moment.length < 4) return res.status(400).json({ code: "invalid", message: "Tell Potto the company and the moment (for example: Exa, launched Snapshot)." });
     if (limited(req)) return res.status(429).json({ code: "rate_limited", message: "Potto needs a breather. Try again in an hour." });
@@ -116,5 +116,7 @@ export function mountGiftPlan(app, { store, small, discoverHosts }) {
         S.set("giftplans/" + id, { status: "ready", input, plan: withMakers(plan), demo, at: Date.now() }); }
       catch (e) { S.set("giftplans/" + id, { status: "failed", input, error: clean(e?.message || "That didn't work. Try again.", 200), at: Date.now() }); } finally { running.delete(id); } })().catch(() => {});
     res.json({ id, status: "working" }); });
+  // a worked example anyone can open before filling the form (not stored, nothing generated)
+  app.get("/api/public/giftplan/example", (req, res) => { res.set("Cache-Control", "public, max-age=600").json({ id: "example", status: "ready", example: true, demo: false, plan: withMakers(samplePlan({ company: "Exa", moment: "We just launched Snapshot" })) }); });
   app.get("/api/public/giftplan/:id", (req, res) => { const id = String(req.params.id).replace(/[^a-f0-9]/g, "").slice(0, 16), d = S.get("giftplans/" + id)?.data; if (!d) return res.status(404).json({ code: "not_found", message: "No plan by that link." }); res.json({ id, ...d }); });
 }

@@ -41,7 +41,7 @@ const PAGE_FILE = path.join(ROOT, "index.html");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const TOOL_TIMEOUT_MS = 120_000;
 
-const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/authguard.js"></script><script src="/shim.js"></script><script src="/avatars.js"></script><script src="/account.js"></script></head><body>';
+const HEAD = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/authguard.js"></script><script src="/shim.js"></script><script src="/avatars.js"></script><script src="/account.js"></script></head><body>';
 const TAIL = "</body></html>";
 
 // Nominations come from AEs, who sign in; they are not guest-writable.
@@ -362,6 +362,9 @@ export function createApp({ store, dataDir }) {
   app.get("/check/:id", (req, res) => sendStatic(res, "check.html", "<p>Check page missing.</p>"));
   app.get("/h/:handle", (req, res) => { const h = String(req.params.handle || "").toLowerCase(); if (/^[a-z0-9][a-z0-9-]{1,29}$/.test(h)) return res.redirect(301, "/@" + h + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); sendStatic(res, "host.html", "<p>Host page missing.</p>"); });
   // Every host's storefront: encore.example/@claire-runs
+  // old or file-name handles that moved (a showcase listed as atelier-bo lives at @atbo)
+  const HANDLE_ALIASES = { "atelier-bo": "atbo" };
+  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, (req, res, next) => { const to = HANDLE_ALIASES[req.params[0]]; if (to && !C.wsOfHandle(req.params[0])) return res.redirect(301, "/@" + to); next(); });
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = (ws && C.profileOf(ws)) || C.showcaseOf(req.params[0]);
     try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Pottery Lab`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
         html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }

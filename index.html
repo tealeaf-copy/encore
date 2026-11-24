@@ -10420,7 +10420,7 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
     const form=R.closest(".stack")||R.parentElement;
     if(!form.querySelector(".g-who")){ busy=true; try{ const j=cache[e.id]||(cache[e.id]=await (await fetch("/api/public/event-host/"+encodeURIComponent(e.id))).json()); const n=+j.going||0, F=(j.faces||[]).slice(0,5), bring=(e.bring||[]).filter(x=>!/^yourself$/i.test(x)).slice(0,4);
         if(document.getElementById("gResp")&&!form.querySelector(".g-who")){ const d=document.createElement("div"); d.className="g-who";
-          d.innerHTML=`${F.length?`<span class="fc">${F.map(f=>`<span style="--c:${esc(f.color||"#F6D7A7")}">${window.EncoreAvatars?.svg?window.EncoreAvatars.svg(f.art,f.color||"#E26D8E",34):""}</span>`).join("")}</span>`:""}<span><b>${n?`${n} going`:"Be the first to say yes"}</b>${bring.length?`<small>Bring: ${esc(bring.join(", "))}</small>`:""}</span>`;
+          d.innerHTML=`${F.length?`<span class="fc">${F.map(f=>`<span style="--c:${esc(f.color||"#F6D7A7")}">${window.EncoreAvatars?.svg?window.EncoreAvatars.svg(f.art,f.color||"#E26D8E",34):""}</span>`).join("")}</span>`:""}<span><b>${n?`${n} going`:"Spots open"}</b>${bring.length?`<small>Bring: ${esc(bring.join(", "))}</small>`:""}</span>`;
           form.insertBefore(d,form.firstElementChild?.nextSibling||null) } }catch{} busy=false }
     if(!document.getElementById("gStick")&&innerWidth<760){ const chips=[...R.querySelectorAll("[data-v]")]; if(!chips.length) return; const b=document.createElement("div"); b.id="gStick";
       b.innerHTML=chips.map(c=>`<button type="button" data-sv="${esc(c.dataset.v)}" class="${c.dataset.v==="going"?"go":""}">${esc(c.textContent.trim())}</button>`).join(""); document.body.appendChild(b);

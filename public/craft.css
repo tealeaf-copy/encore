@@ -9,3 +9,6 @@ a.btn:active,button.btn:active,.btn:active,.cta:active,.chip:active,button.prima
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 .brand,.es-brand{white-space:nowrap}
 button,input,select,textarea{font-family:inherit}
+
+/* people who ask their device for less motion get still pages everywhere */
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

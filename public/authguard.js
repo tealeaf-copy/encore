@@ -57,3 +57,10 @@ html.nav-folded .nav-fold svg{transform:rotate(180deg)}
     return real(input, init);
   };
 })();
+// Fields that only have a placeholder get it as their accessible name, so screen readers say what to type.
+(function () {
+  const fix = (root) => { try { root.querySelectorAll?.("input[placeholder]:not([aria-label]):not([aria-labelledby]),textarea[placeholder]:not([aria-label]):not([aria-labelledby])").forEach((el) => { if (el.labels && el.labels.length) return; el.setAttribute("aria-label", el.getAttribute("placeholder")); }); } catch {} };
+  let queued = false; const run = () => { queued = false; fix(document); };
+  const start = () => { run(); new MutationObserver(() => { if (!queued) { queued = true; (window.requestIdleCallback ? requestIdleCallback(run, { timeout: 500 }) : setTimeout(run, 200)); } }).observe(document.body, { childList: true, subtree: true }); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();

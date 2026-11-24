@@ -131,3 +131,10 @@ test("A host's turnout record counts yeses, check-ins and walk-ins as totals, ne
   assert.equal(t.events, 1); assert.equal(t.saidYes, 3); assert.equal(t.walkIns, 1); assert.equal(t.came, 2); assert.equal(t.showRate, 33);
   assert.ok(!/Ana|Wally/.test(JSON.stringify(t)), "no names");
 });
+
+test("Every showcase host page resolves, and the old atelier-bo link redirects", async () => {
+  const fs = await import("node:fs"), list = JSON.parse(fs.readFileSync(new URL("../public/presets/showcase.json", import.meta.url)));
+  for (const f of list) { const h = JSON.parse(fs.readFileSync(new URL(`../public/presets/${f}.json`, import.meta.url))).handle || f;
+    const r = await fetch(srv.base + "/@" + h, { redirect: "manual" }); assert.equal(r.status, 200, "/@" + h); }
+  const r = await fetch(srv.base + "/@atelier-bo", { redirect: "manual" }); assert.equal(r.status, 301); assert.equal(r.headers.get("location"), "/@atbo");
+});

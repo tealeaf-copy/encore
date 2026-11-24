@@ -52,7 +52,7 @@ table.bt{width:100%;border-collapse:collapse;font-size:14px}table.bt th,table.bt
     <label>The moment<input name="moment" required maxlength="200" placeholder="We just launched Snapshot"></label>
     <div class="eg" aria-label="Examples"><button type="button" data-eg="Exa|exa.ai|We just launched Snapshot">Exa launched Snapshot</button><button type="button" data-eg="Acme|acme.com|We closed our Series A">A Series A</button><button type="button" data-eg="Northwind||Our 1,000th customer">The 1,000th customer</button><button type="button" data-eg="Lumen||Holiday thank-you for our top 50 customers">Holiday thank-yous</button></div>
     <div class="row3"><label>Who it's for (optional)<input name="audience" maxlength="300" placeholder="Design partners and our top 100 users"></label><label>How many<input name="people" maxlength="20" placeholder="150"></label><label>Per person<input name="budget" maxlength="40" placeholder="$75"></label></div>
-    <button class="go" id="go">Plan my gifts with Potto</button><p class="src" id="err" role="alert"></p>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><button class="go" id="go">Plan my gifts with Potto</button><a href="/gifts/plan/example" id="exLink" style="font-weight:600;color:var(--ember)">See an example plan →</a></div><p class="src" id="err" role="alert" style="margin:0;min-height:0"></p>
   </form>
   <div id="out"></div>
 </div>
@@ -87,7 +87,7 @@ table.bt{width:100%;border-collapse:collapse;font-size:14px}table.bt th,table.bt
       "## A follow-up you can adapt", `Hi {first name}, hope the ${p.gifts[0]?.name?.toLowerCase() || "gift"} arrived in one piece. ${p.theme.searchFor || ""} If it'd help, I can walk you through it in 20 minutes this week.`, "",
       `Full plan: ${location.origin}/gifts/plan/${d.id}`].filter((x) => x !== undefined).join("\n"); }
   const ab = (v) => String(v || "").replace(/^(about|approx\.?|~|est\.?)\s*/i, "");
-  function show(d) { const p = d.plan, b = p.playbook; history.replaceState(null, "", "/gifts/plan/" + d.id); document.title = `Gift plan: ${p.company} · Pottery Lab`;
+  function show(d) { const p = d.plan, b = p.playbook; if (!d.example) history.replaceState(null, "", "/gifts/plan/" + d.id); document.title = `Gift plan: ${p.company} · Pottery Lab`;
     const cp = (t) => `<button type="button" class="cp" data-copy="${esc(t)}">Copy</button>`;
     $("#out").innerHTML = `<div class="plan">${d.demo ? `<p class="demo">This is a sample plan (research isn't switched on here), so the details are illustrative.</p>` : ""}
       <div class="card moment"><small class="src">The moment</small><h2>${esc(p.company)}: ${esc(p.moment.title)}</h2><p>${esc(p.moment.what)}</p>${p.moment.whyItMatters ? `<p><b>Why it matters:</b> ${esc(p.moment.whyItMatters)}</p>` : ""}${(p.moment.sources || []).length ? `<p class="src">Sources: ${p.moment.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a>`).join(" · ")}</p>` : ""}</div>
@@ -95,7 +95,7 @@ table.bt{width:100%;border-collapse:collapse;font-size:14px}table.bt th,table.bt
       <div class="card"><h2 class="sec">Who it's <em>for</em></h2><p>${esc(p.audience.summary)}</p><div class="segs">${p.audience.segments.map((s) => `<div class="seg"><b>${esc(s.who)}<span class="sendtag ${s.send}">${{ all: "Send", fewer: "Send fewer", none: "Skip" }[s.send] || "Send"}</span></b>${s.count ? `<small>${esc(s.count)}</small>` : ""}<p style="margin:4px 0 0;font-size:14px">${esc(s.why)}</p>
         <dl>${s.job ? `<dt>Job</dt><dd>${esc(s.job)}</dd>` : ""}${s.kpi ? `<dt>Measure</dt><dd>${esc(s.kpi)}</dd>` : ""}${s.owner ? `<dt>Owner</dt><dd>${esc(s.owner)}</dd>` : ""}${s.followUpBy ? `<dt>Follow up</dt><dd>${esc(s.followUpBy)}</dd>` : ""}${s.tier ? `<dt>Who qualifies</dt><dd>${esc(s.tier)}</dd>` : ""}</dl>${s.sendNote ? `<div class="sn">${esc(s.sendNote)}</div>` : ""}</div>`).join("")}</div></div>
       <div><h2 class="sec">Gifts that tell the <em>story</em></h2><div class="gifts">${p.gifts.map((g, i) => `<div class="gift" style="--r:${[-1.2, 1, -0.6, 1.4, -1][i % 5]}deg"><h3>${esc(g.name)}</h3><div><span class="price">${esc(g.perPerson)}</span> <small>${esc([g.leadTime && `${g.leadTime} lead time`, g.bestFor && `for ${g.bestFor}`].filter(Boolean).join(" · "))}</small></div><div class="tie">${esc(g.tieIn)}</div>${g.whatsInside.length ? `<ul>${g.whatsInside.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${g.personalize ? `<small><b>Personalise:</b> ${esc(g.personalize)}</small>` : ""}${g.wow ? `<small><b>The wow:</b> ${esc(g.wow)}</small>` : ""}${g.delivery && (g.delivery.capacity || g.delivery.shipBy) ? `<div class="deliv">${[g.delivery.capacity && `📦 ${esc(g.delivery.capacity)}`, g.delivery.regions && `🌍 ${esc(g.delivery.regions)}`, g.delivery.shipBy && `🗓 Ship by: ${esc(g.delivery.shipBy)}`, g.delivery.backup && `🔁 Backup: ${esc(g.delivery.backup)}`].filter(Boolean).join("<br>")}</div>` : ""}
-        <div class="makers">${(g.makers || []).length ? `Who could make it:<br>${g.makers.map((m) => `<a href="/@${encodeURIComponent(m.handle)}" title="${esc(m.why)}">${esc(m.name)}${m.city ? ` · ${esc(m.city)}` : ""}</a>`).join("")}` : `<small>We'll match a maker for you: <a href="/hosts/book">ask us</a>.</small>`}</div></div>`).join("")}</div></div>
+        <div class="makers">${(g.makers || []).length ? `Who could make it:<br>${g.makers.map((m) => `<a href="/@${encodeURIComponent(m.handle)}" title="${esc(m.why)}">${esc(m.name)}${m.city ? ` · ${esc(m.city)}` : ""}${m.showcase ? ` <small style="font-weight:400">(not taking orders here yet)</small>` : ""}</a>`).join("")}${g.makers.every((m) => m.showcase) ? `<br><small>We'll find a maker who takes orders: <a href="/hosts/book">ask us</a>.</small>` : ""}` : `<small>We'll match a maker for you: <a href="/hosts/book">ask us</a>.</small>`}</div></div>`).join("")}</div></div>
       ${(p.experience || []).length ? `<div class="card"><h2 class="sec">Make it a <em>moment</em> in person</h2>${p.experience.map((x) => `<p><b>${esc(x.name)}</b>: ${esc(x.why)}</p>`).join("")}<a href="/hosts/book">Find a host for it →</a></div>` : ""}
       <div class="card"><h2 class="sec">The <em>playbook</em></h2><p><b>Goal:</b> ${esc(b.goal)}</p><p><b>The list:</b> ${esc(b.list.who)}${b.list.howMany ? ` (${esc(b.list.howMany)})` : ""}. ${esc(b.list.howToPick)}</p>
         <ul class="tl">${b.timeline.map((t) => `<li><b>${esc(t.when)}</b><div>${esc(t.step)}${t.owner ? ` <small>· ${esc(t.owner)}</small>` : ""}</div></li>`).join("")}</ul></div>
@@ -112,12 +112,14 @@ table.bt{width:100%;border-collapse:collapse;font-size:14px}table.bt th,table.bt
     $("#csv").onclick = () => save(crmCsv(d), `${slug}-gift-campaign.csv`, "text/csv");
     $("#brief").onclick = () => save(aeBrief(d), `${slug}-ae-brief.md`, "text/markdown");
     $("#share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); $("#share").textContent = "Link copied"; } catch {} };
-    $(".plan").scrollIntoView({ behavior: "smooth", block: "start" }); }
+    if (d.example) $(".plan").insertAdjacentHTML("afterbegin", `<p class="demo">An example of what Potto writes, for a launch like Exa's Snapshot. It wasn't made with or for Exa, and nothing has been ordered. <a href="#ask">Plan your own →</a></p>`);
+    if (!d.example) $(".plan").scrollIntoView({ behavior: "smooth", block: "start" }); }
   $("#ask").onsubmit = async (e) => { e.preventDefault(); const f = e.target, body = Object.fromEntries(new FormData(f)); $("#err").textContent = ""; $("#go").disabled = true;
     try { const r = await fetch("/api/public/giftplan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Try again."); thinking(body.company); $("#out").scrollIntoView({ behavior: "smooth", block: "start" }); await poll(j.id); }
     catch (err) { $("#err").textContent = err.message; } $("#go").disabled = false; };
   // a shared plan link opens the plan
-  const m = location.pathname.match(/^\/gifts\/plan\/([a-f0-9]{8,16})/); if (m) { thinking(""); poll(m[1]); }
+  const m = location.pathname.match(/^\/gifts\/plan\/([a-f0-9]{8,16}|example)$/); if (m) { thinking(""); poll(m[1]); }
 })();
 </script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
 </body></html>

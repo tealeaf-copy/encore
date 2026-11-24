@@ -6,34 +6,14 @@
   const KEY = "encore-nav-collapsed", root = document.documentElement;
   let on = false; try { on = localStorage.getItem(KEY) === "1"; } catch {}
   root.classList.toggle("nav-folded", on);
-  const st = document.createElement("style");
-  st.textContent = `.nav-fold{position:absolute;top:22px;right:-13px;width:26px;height:26px;border-radius:50%;border:1px solid #E4D9C8;background:#fff;color:#6B5F56;display:grid;place-items:center;cursor:pointer;z-index:60;padding:0;box-shadow:0 2px 6px rgba(31,26,23,.08);transition:transform .2s}
-.nav-fold:hover{color:#1F1A17;transform:scale(1.08)}.nav-fold:focus-visible{outline:3px solid #C94A30;outline-offset:2px}.nav-fold svg{width:14px;height:14px;transition:transform .25s}
-html.nav-folded .nav-fold svg{transform:rotate(180deg)}
-@media (max-width:860px){.nav-fold{display:none}}
-@media (min-width:861px){
-  html.nav-folded .es-rail{width:72px!important;padding:20px 12px!important;align-items:center!important}
-  html.nav-folded .es-rail a{justify-content:center;padding:10px!important;width:46px!important}
-  html.nav-folded .es-rail a > span,html.nav-folded .es-rail .es-out,html.nav-folded .es-logo > span{display:none!important}
-  html.nav-folded body.es-has-rail,html.nav-folded body.guestmode.es-has-rail{padding-left:72px!important}
-  html.nav-folded .es-rail a:hover::after{content:attr(aria-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#1F1A17;color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
-}
-@media (min-width:1000px){
-  html.nav-folded header.top{width:72px!important}
-  html.nav-folded header.top .wrap{padding:22px 10px!important;align-items:center!important}
-  html.nav-folded header.top .logo{padding:0!important}html.nav-folded header.top .logo span,html.nav-folded #signOut{display:none!important}
-  html.nav-folded nav.tabs a{font-size:0!important;justify-content:center;padding:10px!important;width:46px;position:relative}
-  html.nav-folded nav.tabs a svg{width:22px;height:22px}
-  html.nav-folded nav.tabs a:hover::after{content:attr(data-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#1F1A17;color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
-  html.nav-folded header.top .rail,html.nav-folded header.top .status{display:none!important}
-  html.nav-folded body{padding-left:72px!important}
-}`;
-  document.head.appendChild(st);
+  // the nav CSS (space, collapsed state) is set by /authguard.js in <head>, before the first paint
   const ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>';
   const set = (v) => { on = v; root.classList.toggle("nav-folded", v); try { localStorage.setItem(KEY, v ? "1" : "0"); } catch {} document.querySelectorAll(".nav-fold").forEach((b) => { b.setAttribute("aria-expanded", String(!v)); b.setAttribute("aria-label", v ? "Expand the menu" : "Collapse the menu"); b.title = v ? "Expand the menu" : "Collapse the menu"; }); };
   const add = () => { for (const bar of document.querySelectorAll(".es-rail, header.top")) { if (bar.querySelector(".nav-fold")) continue; if (bar.matches("header.top") && getComputedStyle(bar).position !== "fixed") continue;
       document.querySelectorAll("nav.tabs a").forEach((a) => { if (!a.dataset.label) a.dataset.label = a.textContent.trim(); });
       const b = document.createElement("button"); b.type = "button"; b.className = "nav-fold"; b.innerHTML = ICON; b.onclick = () => set(!on); if (getComputedStyle(bar).position === "static") bar.style.position = "relative"; bar.appendChild(b); set(on); } };
+  const warmed = new Set(); const warm = (e) => { const a = e.target.closest?.(".es-rail a[href], header.top nav.tabs a[href]"); if (!a) return; const u = new URL(a.href, location.href); if (u.origin !== location.origin || warmed.has(u.pathname) || u.pathname === location.pathname) return; warmed.add(u.pathname); const l = document.createElement("link"); l.rel = "prefetch"; l.href = u.pathname; document.head.appendChild(l); };
+  document.addEventListener("pointerover", warm, { passive: true }); document.addEventListener("touchstart", warm, { passive: true });
   const mo = new MutationObserver(() => { clearTimeout(window.__navFoldT); window.__navFoldT = setTimeout(add, 80); }); 
   const start = () => { add(); mo.observe(document.body, { childList: true, subtree: true }); }; if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
   window.addEventListener("resize", () => { clearTimeout(window.__navFoldR); window.__navFoldR = setTimeout(add, 150); });
@@ -109,9 +89,15 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}encore</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Your plans</a>` : `<a href="/login">Sign in</a>`}<a class="cta" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}">Host something</a></nav>`;
       const main = document.querySelector("main") || document.body.firstElementChild; (main?.parentElement || document.body).insertBefore(top, main); }
   }
-  const go = async () => { let me = {}, W = {}, alerts = 0; try { me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); } catch {}
-    if (me?.verified) { try { W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); } catch {} }
-    document.querySelector(".es-rail")?.remove(); document.querySelector(".es-tabs")?.remove(); document.querySelector(".es-top")?.remove(); draw(me, W, alerts); };
+  // Draw the nav at once: signed-out visitors need no request; signed-in people get last time's nav straight away,
+  // and it's redrawn only if the fresh answer is different (a new alert, a new handle).
+  const KEYS = "encore.navState", paint = (me, W) => { document.querySelector(".es-rail")?.remove(); document.querySelector(".es-tabs")?.remove(); document.querySelector(".es-top")?.remove(); draw(me, W, 0); };
+  const go = async () => { const hint = /(?:^|;\s*)encore_in=1/.test(document.cookie); let cached = null; try { cached = JSON.parse(localStorage.getItem(KEYS) || "null"); } catch {}
+    if (!hint) { try { localStorage.removeItem(KEYS); } catch {} paint({}, {}); return; }
+    if (cached) paint(cached.me, cached.W);
+    let me = {}, W = {}; const [a, b] = await Promise.all([fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json()).catch(() => ({})), fetch("/api/workspace", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}))]); me = a || {}; W = me.verified ? b || {} : {};
+    const keep = { me: { verified: me.verified, name: me.name, ws: me.ws, alerts: me.alerts, handle: me.handle }, W: { handle: W.handle, personal: W.personal, company: W.company, regularOnly: W.regularOnly } };
+    const fresh = JSON.stringify(keep); if (cached && JSON.stringify(cached) === fresh) return; try { localStorage.setItem(KEYS, fresh); } catch {} paint(me, W); };
   window.addEventListener("encore:signedin", () => setTimeout(go, 300));
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go();
 })();

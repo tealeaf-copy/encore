@@ -35,7 +35,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
 .gc{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
 .gc .ph{display:block;position:relative;line-height:0}.gc .ph svg{width:100%;height:auto;display:block}
 .pv{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 0;padding:12px 14px;background:#fff;border:1px dashed #CDBBA4;border-radius:14px;font-size:14.5px}.pv input{padding:8px 11px;border:1px solid #DCCFBE;border-radius:10px;font:inherit;min-width:0;flex:1 1 150px}.pv b{font-family:Fredoka,system-ui}
-.gc .ph .pol{position:absolute;right:12px;bottom:-12px;line-height:1.2;background:#fff;padding:6px 6px 16px;box-shadow:0 4px 14px rgba(0,0,0,.12);transform:rotate(4deg);font:600 11px "Instrument Sans";color:#5A4E45;text-align:center;border-radius:2px}.gc .ph .pol i{display:block;width:54px;height:44px;background:#EADBC8;margin-bottom:4px;font-size:24px;font-style:normal;line-height:44px}
+.gc .ph .pol{position:absolute;right:8px;bottom:8px;background:rgba(255,253,248,.92);border:1px solid #E4D9C8;border-radius:999px;padding:3px 9px;font:600 11.5px/1.3 "Instrument Sans",system-ui;color:#5A4E45}.gc .ph .pol i{display:none}
 .gc .bd{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}.gc h3{font-size:18px}.gc .who{color:var(--smoke);font-size:13.5px}
 .gc .pers{display:flex;flex-wrap:wrap;gap:5px}.gc .pers span{font-size:12.5px;border:1px dashed #CDBBA4;border-radius:999px;padding:2px 9px;background:#FFFCF7}
 .gc .tot{font:700 22px Fredoka,system-ui;margin-top:auto}.gc .tot small{display:block;font:400 13px "Instrument Sans";color:var(--smoke)}
@@ -83,8 +83,9 @@ async function run() { const f = $("#find"), q = new URLSearchParams({ city: f.c
       ${g.personalize.length ? `<div class="pers">${g.personalize.map((p) => `<span>${esc(p)}</span>`).join("")}</div>` : ""}
       <small style="color:var(--smoke)">${[g.occasions.map((o) => OCC[o]).join(" · "), g.lead, h.clients.length ? "Made for " + h.clients.join(" and ") : ""].filter(Boolean).map(esc).join(" · ")}</small>
       <div class="tot">${g.total ? `${money(g.total)} <small>for ${esc(f.qty.value)} · ${money(g.unit / 100)} each${g.allIn ? `. ${esc(g.allIn)}` : ""}</small>` : `${money(g.unit / 100)} <small>each</small>`}</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/@${esc(h.handle)}#gifts">Get a quote</a><a class="btn ghost" href="/@${esc(h.handle)}#gifts">See ${esc(poss(first))} work</a></div></div></div>`; }).join(""); }
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/@${esc(h.handle)}?${new URLSearchParams({ gift: g.id, qty: f.qty.value, budget: f.budget.value, city: f.city.value, occasion: f.occasion.value, brand: pv().brand, name: pv().name })}#gifts">Get a quote</a><a class="btn ghost" href="/@${esc(h.handle)}#gifts">See ${esc(poss(first))} work</a></div></div></div>`; }).join(""); }
 $("#pvBrand").oninput = $("#pvName").oninput = redraw;
+document.addEventListener("click", (e) => { const a = e.target.closest('.gc a[href*="gift="]'); if (!a) return; const u = new URL(a.href); const P = pv(); for (const [k, v] of Object.entries({ brand: P.brand, name: P.name, qty: $("#find").qty.value, budget: $("#find").budget.value, city: $("#find").city.value, occasion: $("#find").occasion.value })) v ? u.searchParams.set(k, v) : u.searchParams.delete(k); a.href = u.pathname + u.search + u.hash; });
 $("#find").onsubmit = (e) => { e.preventDefault(); run(); };
 run();
 </script>

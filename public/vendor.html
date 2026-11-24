@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vendor kit · Encore</title><meta name="description" content="What your procurement and finance teams need to set up Encore as a vendor.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
+<style>:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif}a{color:inherit}
+.wrap{max-width:820px;margin:0 auto;padding:0 18px 70px}header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}header.top nav{display:flex;gap:14px}header.top nav a{text-decoration:none;color:var(--smoke)}.brand{display:flex;gap:8px;align-items:center;font:700 22px Fredoka,system-ui;text-decoration:none}
+h1{font:700 clamp(30px,5vw,42px)/1.1 Fredoka,system-ui;margin:18px 0 8px}h2{font:600 20px Fredoka,system-ui;margin:0 0 6px}.lede{color:var(--smoke);margin:0 0 20px}
+.box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:12px 0}dl{display:grid;grid-template-columns:minmax(140px,200px) 1fr;gap:8px 16px;margin:0}dt{font-weight:600}dd{margin:0;color:#3B322C}@media (max-width:600px){dl{grid-template-columns:1fr}dd{margin-bottom:8px}}
+form{display:flex;flex-wrap:wrap;gap:8px}input{flex:1 1 200px;min-width:0;padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit}button{padding:10px 18px;border-radius:999px;border:0;background:var(--ember);color:#fff;font:600 15px inherit;cursor:pointer}.m{color:var(--smoke);font-size:14px}</style></head><body>
+<div class="wrap"><header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><nav><a href="/teams">Team events</a><a href="/gifts">Gifts</a></nav></header>
+<h1>Set up Encore as a vendor</h1><p class="lede">Everything procurement and finance usually ask for, in one place. You set up one vendor, Encore, and book any host or maker through it.</p>
+<div class="box"><h2>How it works</h2><dl>
+<dt>Who you contract with</dt><dd id="who">Encore. Hosts and makers are paid by Encore; you never onboard them one by one.</dd>
+<dt>Paying</dt><dd>Card when you confirm, or an invoice paid against your PO within 30 days.</dd>
+<dt>Cancelling</dt><dd>Each host's own terms, shown before you book. Where a host has none: free up to 7 days before, half the quote inside 7 days.</dd>
+<dt>If a host can't make it</dt><dd>A vetted replacement or a full refund, your choice.</dd>
+<dt>Quotes</dt><dd>All-in, fixed for 14 days, downloadable as a PDF to attach to a PO.</dd>
+<dt>Insurance</dt><dd>Each host's certificate is shown on their page when it's on file. Where it isn't, we get one before you pay, and can add your company as additional insured.</dd>
+<dt>Gift address lists</dt><dd>Used only to make and ship that order, shared only with the maker making it, and deleted 30 days after delivery.</dd>
+</dl></div>
+<div class="box"><h2>The vendor kit</h2><p class="m" style="margin:0 0 10px">W-9, a certificate of insurance, our standard terms, and a completed vendor questionnaire if you send us yours. We email it within one business day.</p>
+<form id="kit"><input name="email" type="email" placeholder="Work email" required><input name="company" placeholder="Company" required><button>Send me the kit</button></form></div>
+</div>
+<script src="/shell.js" defer></script>
+<script>
+fetch("/api/public/legal").then((r) => r.json()).then((L) => { if (L && L.name) document.getElementById("who").textContent = `${L.name}${L.address ? ", " + L.address : ""}${L.taxId ? " (tax ID " + L.taxId + ")" : ""}. Hosts and makers are paid by Encore; you never onboard them one by one.`; }).catch(() => {});
+document.getElementById("kit").onsubmit = async (e) => { e.preventDefault(); const t = e.target; await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: t.email.value, name: t.company.value, wants: "Vendor kit: " + t.company.value }) }).catch(() => {}); t.outerHTML = "<p><b>Thanks.</b> The kit is on its way within one business day.</p>"; };
+</script></body></html>

@@ -4,6 +4,8 @@
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fit = (s, n) => { s = String(s || "").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+  // long names: "Priya Raghunathan" becomes "Priya R." before anything gets cut off
+  const short = (s, n) => { s = String(s || "").trim(); if (s.length <= n) return s; const p = s.split(/\s+/); if (p.length > 1) { const a = `${p[0]} ${p[p.length - 1][0]}.`; return a.length <= n ? a : fit(p[0], n); } return fit(s, n); };
   const initials = (s) => String(s || "").trim().split(/\s+/).map((w) => w[0] || "").join("").slice(0, 3).toUpperCase() || "♥";
   const mix = (hex, pct, to = "#ffffff") => { const p = (h) => [1, 3, 5].map((i) => parseInt((h || "#888888").replace("#", "").padEnd(6, "0").slice(i - 1, i + 1), 16)); const a = p(hex), b = p(to); return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * pct).toString(16).padStart(2, "0")).join(""); };
   const lum = (hex) => { const h = String(hex || "#888888").replace("#", "").padEnd(6, "0"); return (0.299 * parseInt(h.slice(0, 2), 16) + 0.587 * parseInt(h.slice(2, 4), 16) + 0.114 * parseInt(h.slice(4, 6), 16)) / 255; };
@@ -20,8 +22,8 @@
       <path d="M90 128 92 180c1 10 9 16 19 16h100c10 0 18-6 19-16l2-52c-14 8-26-6-40 2-14 8-24-6-38 2-14 8-26-6-40 2-12 6-22-4-34 2z" fill="${clay}"/>
       <path d="M90 128c12-6 22 4 34-2 14-8 26 6 40-2 14-8 24 6 38-2 14-8 26 6 30-2" fill="none" stroke="${dark}" stroke-width="1.5" opacity=".35"/>
       <ellipse cx="161" cy="52" rx="75" ry="9" fill="${dark}"/><ellipse cx="161" cy="51" rx="68" ry="6" fill="#3B2A20" opacity=".85"/>
-      <text x="161" y="104" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${name.length > 9 ? 20 : 26}" letter-spacing="2" fill="${lum(accent) < 0.6 ? mix(accent, 0.62) : dark}" opacity=".95">${esc(fit(name, 14).toUpperCase())}</text>
-      <text x="161" y="103" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${name.length > 9 ? 20 : 26}" letter-spacing="2" fill="#000" opacity=".12" transform="translate(1 1.5)">${esc(fit(name, 14).toUpperCase())}</text>
+      <text x="161" y="104" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${Math.max(11, Math.min(26, Math.floor((140 / Math.max(1, short(name, 14).length) - 2) / 0.68)))}" letter-spacing="2" fill="${lum(accent) < 0.6 ? mix(accent, 0.62) : dark}" opacity=".95">${esc(short(name, 14).toUpperCase())}</text>
+      <text x="161" y="103" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${Math.max(11, Math.min(26, Math.floor((140 / Math.max(1, short(name, 14).length) - 2) / 0.68)))}" letter-spacing="2" fill="#000" opacity=".12" transform="translate(1 1.5)">${esc(short(name, 14).toUpperCase())}</text>
       ${brand ? `<text x="161" y="172" text-anchor="middle" font-family="${SANS}" font-size="10.5" letter-spacing="3" fill="#7A6A5A">${esc(fit(brand, 22).toUpperCase())}</text>` : ""}
       <path d="M120 40c-6-10 6-14 0-24M150 38c-6-10 6-14 0-24M180 40c-6-10 6-14 0-24" stroke="#B9A894" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/></svg>`; }
 
@@ -34,7 +36,7 @@
       <text x="152" y="140" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="${mark.length > 2 ? 40 : 52}" fill="#F7EAD3" opacity=".95" letter-spacing="2">${esc(mark)}</text>
       <circle cx="100" cy="160" r="2" fill="#F7EAD3" opacity=".7"/><circle cx="200" cy="96" r="1.6" fill="#F7EAD3" opacity=".7"/><circle cx="215" cy="150" r="2" fill="#F7EAD3" opacity=".6"/>
       <g transform="rotate(8 262 72)"><rect x="222" y="44" width="90" height="56" rx="4" fill="#fff" stroke="#E4D9C8"/><circle cx="232" cy="54" r="3" fill="none" stroke="#B9A894"/>
-        <text x="267" y="70" text-anchor="middle" font-family="${SCRIPT}" font-size="16" fill="#3B2A20">${esc(fit(name, 11))}</text><text x="267" y="88" text-anchor="middle" font-family="${SANS}" font-size="7" fill="#7A6A5A">${esc(fit(note || (brand ? "from " + brand : "baked for you"), 26))}</text></g>
+        <text x="267" y="70" text-anchor="middle" font-family="${SCRIPT}" font-size="16" fill="#3B2A20">${esc(short(name, 11))}</text><text x="267" y="88" text-anchor="middle" font-family="${SANS}" font-size="7" fill="#7A6A5A">${esc(fit(note || (brand ? "from " + brand : "baked for you"), 26))}</text></g>
       <path d="M262 40c-6-8-14-10-22-6" stroke="#B9A894" fill="none"/></svg>`; }
 
   function jar({ name = "Alex", brand = "", accent = "#3E9C6E", bg = "#F6EFE6", note = "" }) {
@@ -45,7 +47,7 @@
       <path d="M102 104h116v80c0 7-5 12-12 12h-92c-7 0-12-5-12-12z" fill="#F1E6D2"/>
       ${[[118, 120, 4], [140, 160, 3], [196, 130, 5], [176, 176, 3], [128, 182, 2.5], [204, 166, 3], [158, 118, 2.5]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".8"/>`).join("")}
       <rect x="108" y="120" width="104" height="54" rx="4" fill="#fff" stroke="#E4D9C8"/>
-      <text x="160" y="142" text-anchor="middle" font-family="${SCRIPT}" font-size="19" fill="#2B211C">${esc(fit(name, 11))}</text>
+      <text x="160" y="142" text-anchor="middle" font-family="${SCRIPT}" font-size="19" fill="#2B211C">${esc(short(name, 11))}</text>
       <text x="160" y="157" text-anchor="middle" font-family="${SANS}" font-size="6.6" letter-spacing=".6" fill="#7A6A5A">${esc(fit(note || "LIVE STARTER · FEED ME", 30).toUpperCase())}</text>
       ${brand ? `<text x="160" y="167" text-anchor="middle" font-family="${SANS}" font-size="7" letter-spacing="2" fill="#9A8A7A">${esc(fit(brand, 22).toUpperCase())}</text>` : ""}
       <path d="M216 70v100" stroke="#fff" stroke-width="5" opacity=".5" stroke-linecap="round"/></svg>`; }
@@ -53,7 +55,7 @@
   function card({ name = "Alex", brand = "", accent = "#C2553A", bg = "#F6EFE6", note = "" }) {
     return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hand-lettered card for ${esc(name)}"><rect width="320" height="220" fill="${bg}"/>
       <g transform="rotate(-5 120 112)"><rect x="40" y="34" width="150" height="160" rx="3" fill="#FFFDF8" stroke="#E4D9C8"/>
-        <text x="115" y="104" text-anchor="middle" font-family="${SCRIPT}" font-size="${name.length > 8 ? 30 : 38}" fill="${accent}">${esc(fit(name, 12))}</text>
+        <text x="115" y="104" text-anchor="middle" font-family="${SCRIPT}" font-size="${Math.max(18, Math.min(38, Math.floor(128 / (Math.max(1, short(name, 14).length) * 0.46))))}" fill="${accent}">${esc(short(name, 14))}</text>
         <path d="M70 118c30 8 60 8 90 0" stroke="${accent}" stroke-width="1.5" fill="none" opacity=".6"/>
         <text x="115" y="176" text-anchor="middle" font-family="${SANS}" font-size="8" letter-spacing="2" fill="#9A8A7A">${esc(fit(brand ? brand.toUpperCase() : "WITH THANKS", 22))}</text></g>
       <g transform="rotate(4 230 120)"><rect x="170" y="50" width="120" height="140" rx="3" fill="#FFFDF8" stroke="#E4D9C8"/>
@@ -64,7 +66,7 @@
       <g transform="rotate(-4 150 110)"><rect x="70" y="18" width="150" height="182" rx="3" fill="#fff" stroke="#E4D9C8"/><rect x="82" y="30" width="126" height="122" fill="${sky}"/>
         <rect x="82" y="112" width="126" height="40" fill="${mix(accent, 0.2, "#2B211C")}" opacity=".35"/>
         ${[[104, 104], [126, 98], [150, 102], [174, 97], [194, 106]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="10" fill="${["#F3D2B5", "#C99A73", "#8C5E3C", "#E8C29E", "#B07B55"][i]}"/><rect x="${x - 13}" y="${y + 9}" width="26" height="36" rx="12" fill="${[accent, "#2B211C", "#E0A030", "#3E9C6E", "#C2553A"][i]}"/>`).join("")}
-        <text x="145" y="176" text-anchor="middle" font-family="${SCRIPT}" font-size="18" fill="#2B211C">${esc(fit(name, 14))}</text>
+        <text x="145" y="176" text-anchor="middle" font-family="${SCRIPT}" font-size="18" fill="#2B211C">${esc(short(name, 14))}</text>
         <text x="145" y="191" text-anchor="middle" font-family="${SANS}" font-size="6.8" letter-spacing="1" fill="#9A8A7A">${esc(fit((note || brand || "offsite · 2026").toUpperCase(), 34))}</text></g>
       <g transform="rotate(7 250 120)" opacity=".9"><rect x="206" y="60" width="96" height="116" rx="3" fill="#fff" stroke="#E4D9C8"/><rect x="214" y="68" width="80" height="78" fill="${mix(accent, 0.7)}"/></g></svg>`; }
 
@@ -81,7 +83,7 @@
   function plush({ name = "Alex", brand = "", accent = "#C2553A", bg = "#F6EFE6", species = "", note = "" }) {
     const sp = species || (/beaver/i.test(name + note) ? "beaver" : /bot|robot/i.test(name + note) ? "robot" : "bear"), body = accent, shade = mix(accent, 0.25, "#000000"), belly = mix(accent, 0.55), stitch = mix(accent, 0.6);
     const eyes = (y) => `<circle cx="144" cy="${y}" r="6" fill="#1F1A17"/><circle cx="176" cy="${y}" r="6" fill="#1F1A17"/><circle cx="146" cy="${y - 2}" r="2" fill="#fff"/><circle cx="178" cy="${y - 2}" r="2" fill="#fff"/><ellipse cx="132" cy="${y + 12}" rx="7" ry="4" fill="#F29A9A" opacity=".55"/><ellipse cx="188" cy="${y + 12}" rx="7" ry="4" fill="#F29A9A" opacity=".55"/>`;
-    const tag = `<g transform="rotate(-8 228 150)"><rect x="200" y="136" width="62" height="30" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="231" y="150" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(fit(name, 10))}</text><text x="231" y="160" text-anchor="middle" font-family="${SANS}" font-size="6" letter-spacing="1" fill="#7A6A5A">${esc(fit((brand || "handmade").toUpperCase(), 18))}</text><path d="M200 146c-6 0-10 4-14 2" stroke="${shade}" fill="none"/></g>`;
+    const tag = `<g transform="rotate(-8 228 150)"><rect x="200" y="136" width="62" height="30" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="231" y="150" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(short(name, 10))}</text><text x="231" y="160" text-anchor="middle" font-family="${SANS}" font-size="6" letter-spacing="1" fill="#7A6A5A">${esc(fit((brand || "handmade").toUpperCase(), 18))}</text><path d="M200 146c-6 0-10 4-14 2" stroke="${shade}" fill="none"/></g>`;
     let fig;
     if (sp === "robot") fig = `<rect x="104" y="120" width="112" height="72" rx="30" fill="${body}"/><rect x="126" y="134" width="68" height="40" rx="18" fill="${belly}"/><path d="M160 122v70" stroke="${stitch}" stroke-dasharray="4 4"/>
       <ellipse cx="104" cy="150" rx="12" ry="20" fill="${shade}"/><ellipse cx="216" cy="150" rx="12" ry="20" fill="${shade}"/>
@@ -110,7 +112,7 @@
       <path d="M160 150 40 120 34 190 160 200z" fill="#FFFDF8" stroke="#E4D9C8"/><path d="M160 150 280 120 286 190 160 200z" fill="#FFF8EE" stroke="#E4D9C8"/>
       <path d="M80 150c0-70 160-70 160 0z" fill="${l1}"/>${layer}
       <path d="M100 150h120l-6 22H106z" fill="${dark}"/><text x="160" y="166" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="11" letter-spacing="2.5" fill="#fff">${esc(fit((brand || "THANK YOU").toUpperCase(), 18))}</text>
-      <text x="74" y="184" font-family="${SCRIPT}" font-size="14" fill="#3B2A20" transform="rotate(4 74 184)">for ${esc(fit(name, 12))}</text>
+      <text x="74" y="184" font-family="${SCRIPT}" font-size="14" fill="#3B2A20" transform="rotate(4 74 184)">for ${esc(short(name, 12))}</text>
       <text x="246" y="184" text-anchor="middle" font-family="${SCRIPT}" font-size="11" fill="#3B2A20" transform="rotate(-4 242 184)">${esc(fit(note || "thank you", 22))}</text></svg>`; }
 
   // a Vietnamese phin filter on a glass: condensed milk, coffee dripping through, the name engraved on the chamber
@@ -126,7 +128,7 @@
       <ellipse cx="150" cy="46" rx="34" ry="6" fill="${steelD}"/><ellipse cx="150" cy="40" rx="30" ry="5" fill="${steel}"/><rect x="144" y="30" width="12" height="9" rx="3" fill="${steelD}"/>
       <text x="150" y="70" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${(brand || name).length > 8 ? 9 : 11}" letter-spacing="2" fill="#6E767E">${esc(fit((brand || name).toUpperCase(), 12))}</text>
       <path d="M150 102v8" stroke="#5A3420" stroke-width="3" stroke-linecap="round"/><circle cx="150" cy="118" r="2.5" fill="#5A3420"/>
-      <g transform="rotate(6 254 150)"><rect x="220" y="120" width="70" height="52" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="255" y="144" text-anchor="middle" font-family="${SCRIPT}" font-size="15" fill="#2B211C">for ${esc(fit(name, 9))}</text><text x="255" y="160" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#7A6A5A">${esc(fit((note || "slow drip · 5 min").toUpperCase(), 22))}</text></g></svg>`; }
+      <g transform="rotate(6 254 150)"><rect x="220" y="120" width="70" height="52" rx="4" fill="#fff" stroke="#E4D9C8"/><text x="255" y="144" text-anchor="middle" font-family="${SCRIPT}" font-size="15" fill="#2B211C">for ${esc(short(name, 9))}</text><text x="255" y="160" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#7A6A5A">${esc(fit((note || "slow drip · 5 min").toUpperCase(), 22))}</text></g></svg>`; }
 
   // a kraft coffee bag with a custom label
   function bag({ name = "Alex", brand = "", accent = "#C2553A", bg = "#F6EFE6", note = "" }) {
@@ -136,7 +138,7 @@
       <circle cx="196" cy="72" r="6" fill="#B48C60" stroke="#9C7448"/>
       <rect x="114" y="88" width="92" height="88" rx="4" fill="#FFFDF8"/><rect x="114" y="88" width="92" height="16" rx="4" fill="${accent}"/>
       <text x="160" y="100" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="8" letter-spacing="2" fill="#fff">${esc(fit((brand || "HOUSE BLEND").toUpperCase(), 18))}</text>
-      <text x="160" y="130" text-anchor="middle" font-family="${SCRIPT}" font-size="20" fill="#2B211C">${esc(fit(name, 10))}'s</text>
+      <text x="160" y="130" text-anchor="middle" font-family="${SCRIPT}" font-size="20" fill="#2B211C">${esc(short(name, 10))}'s</text>
       <text x="160" y="146" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="9" letter-spacing="1.5" fill="#2B211C">BLEND</text>
       <text x="160" y="164" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#7A6A5A">${esc(fit((note || "Vietnamese robusta · 250 g").toUpperCase(), 30))}</text>
       ${[[72, 188], [86, 196], [238, 190], [252, 182], [246, 198]].map(([x, y], i) => `<g transform="rotate(${i * 40} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="7" ry="5" fill="#4A2A18"/><path d="M${x - 5} ${y}q5 -2 10 0" stroke="#2B160C" stroke-width="1.2" fill="none"/></g>`).join("")}</svg>`; }
@@ -151,7 +153,7 @@
       ${[[130, 70], [164, 62], [178, 84], [140, 92]].map(([x, y]) => `<rect x="${x}" y="${y}" width="18" height="16" rx="3" fill="#fff" opacity=".7" transform="rotate(14 ${x} ${y})"/>`).join("")}
       <path d="M116 112h88l-3 40h-82z" fill="${accent}"/><text x="160" y="130" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="10" letter-spacing="2" fill="#fff">${esc(fit((brand || "ICED PHIN").toUpperCase(), 14))}</text>
       <text x="160" y="144" text-anchor="middle" font-family="${SANS}" font-size="6.5" letter-spacing="1" fill="#fff" opacity=".85">${esc(fit((note || "cà phê sữa đá").toUpperCase(), 24))}</text>
-      <g transform="rotate(-10 222 92)"><circle cx="222" cy="92" r="24" fill="#FFFDF8" stroke="#E4D9C8"/><text x="222" y="96" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(fit(name, 8))}</text></g></svg>`; }
+      <g transform="rotate(-10 222 92)"><circle cx="222" cy="92" r="24" fill="#FFFDF8" stroke="#E4D9C8"/><text x="222" y="96" text-anchor="middle" font-family="${SCRIPT}" font-size="13" fill="#2B211C">${esc(short(name, 8))}</text></g></svg>`; }
   const KINDS = { mug, loaf, jar, card, photo, dish, plush, popup, phin, bag, cup };
   window.GiftArt = { kindOf, svg: (kind, o = {}) => (KINDS[kind] || card)(o), forGift: (g, o = {}) => { const t = `${g?.name || ""} ${g?.desc || ""}`.toLowerCase(); return (KINDS[kindOf(g)] || card)({ species: /beaver/.test(t) ? "beaver" : /robot|\bbot\b/.test(t) ? "robot" : "", scene: /launch|invite|rocket/.test(t) ? "launch" : /flower|garden|bloom|bouquet/.test(t) ? "garden" : "", ...o }); } };
 })();

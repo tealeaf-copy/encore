@@ -79,3 +79,8 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .b2b-terms{margin:12px 0 4px;font-size:14px}.b2b-terms summary{cursor:pointer;font-weight:600}.b2b-terms dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:6px 14px;margin:10px 0 0}.b2b-terms dt{font-weight:600;color:#3B322C}.b2b-terms dd{margin:0;color:#5A4E45}
 @media (max-width:600px){.b2b-terms dl{grid-template-columns:1fr}.b2b-terms dd{margin-bottom:6px}.book-form{margin-bottom:96px;scroll-margin-bottom:110px}}
 .bx-pdf{display:block;margin-top:6px;background:none;border:0;padding:0;color:#5A4E45;text-decoration:underline;font:inherit;font-size:13px;cursor:pointer}
+.bx-brand{font-size:13.5px;margin:4px 0;color:#3B322C}
+.bx-note{margin:4px 0 0;font-size:13px;color:#7A4E12}.bx-note a{color:inherit}.bx-bad [data-each]{color:#7A4E12}.bx-pdf[disabled]{opacity:.4;cursor:not-allowed}
+.bf-needs{border:0;padding:0;margin:4px 0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}.bf-needs legend{font-size:13px;font-weight:600;color:#5A4E45;margin-bottom:4px;padding:0}.bf-needs label{display:flex;gap:6px;align-items:center}.bf-needs input{width:auto}
+.gs-note{font-size:13px;color:#5A4E45;margin:0}
+.bx-bad .ai{display:none}

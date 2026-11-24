@@ -235,7 +235,7 @@ export function finishPasswordReset(token, password) {
 function clearFailsFor() { for (const L of LIMITS) L.fails.clear?.(); }
 export function loginPage() {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pottery Lab</title>
+<title>Sign in · Pottery Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches

@@ -8,3 +8,4 @@ a.btn:active,button.btn:active,.btn:active,.cta:active,.chip:active,button.prima
 :focus-visible{outline:3px solid #F2B98B;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 .brand,.es-brand{white-space:nowrap}
+button,input,select,textarea{font-family:inherit}

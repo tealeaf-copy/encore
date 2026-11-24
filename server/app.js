@@ -360,9 +360,10 @@ export function createApp({ store, dataDir }) {
   app.get("/check/:id", (req, res) => sendStatic(res, "check.html", "<p>Check page missing.</p>"));
   app.get("/h/:handle", (req, res) => { const h = String(req.params.handle || "").toLowerCase(); if (/^[a-z0-9][a-z0-9-]{1,29}$/.test(h)) return res.redirect(301, "/@" + h + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); sendStatic(res, "host.html", "<p>Host page missing.</p>"); });
   // Every host's storefront: encore.example/@claire-runs
-  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = ws && C.profileOf(ws);
+  app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = (ws && C.profileOf(ws)) || C.showcaseOf(req.params[0]);
     try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Pottery Lab`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
         html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
+      else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
@@ -1347,6 +1348,8 @@ export function createApp({ store, dataDir }) {
 
   // ---------- errors ----------
   app.use("/api", (req, res) => res.status(404).json({ code: "not_found", message: "No such endpoint." }));
+  // any other page that doesn't exist: a friendly page with a way back, not a bare "Cannot GET"
+  app.use((req, res, next) => { if (req.method !== "GET" && req.method !== "HEAD") return next(); res.status(404); sendStatic(res, "404.html", "<p>Page not found.</p>"); });
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     if (res.headersSent) return res.end();

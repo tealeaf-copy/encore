@@ -126,7 +126,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
   const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
   let showcaseCache = null;
   function showcaseAll() { if (showcaseCache) return showcaseCache; const out = new Map();
-    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })) }); } catch {} } } catch {}
+    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })) }); } catch {} } } catch {}
     return (showcaseCache = out); }
   function showcaseOf(handle) { const h = String(handle || "").toLowerCase(); return wsOfHandle(h) ? null : showcaseAll().get(h) || null; }
   function discover() {

@@ -1,0 +1,206 @@
+{
+  "handle": "le-phin",
+  "name": "Lê Phin",
+  "tagline": "Vietnamese coffee, dripped slow through a phin. East 10th Street.",
+  "bio": "A Vietnamese coffee shop in the East Village. Every cup drips through a phin: iced cà phê sữa đá, pandan lattes, black sesame lattes. We also make coffee gifts and run phin bars for companies.",
+  "city": "Manhattan",
+  "hood": "East Village",
+  "tags": [
+    "vietnamese coffee",
+    "phin",
+    "pandan",
+    "coffee gifts",
+    "events"
+  ],
+  "emoji": "☕",
+  "color": "#C2553A",
+  "theme": {
+    "accent": "#C2553A",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "barista"
+  },
+  "shop": {
+    "open": true,
+    "title": "Take the phin home",
+    "note": "Everything you need to make it the way we do.",
+    "where": "Pickup at the shop on East 10th",
+    "slots": [
+      "Any day, 8:00–17:00"
+    ],
+    "items": [
+      {
+        "name": "Vietnamese robusta, 250 g",
+        "desc": "Dark, chocolatey, made for the phin.",
+        "emoji": "🫘",
+        "cents": 1800,
+        "stock": 30,
+        "max": 4
+      },
+      {
+        "name": "Phin filter",
+        "desc": "Stainless steel, 4 oz. Comes with a how-to card.",
+        "emoji": "☕",
+        "cents": 1500,
+        "stock": 20,
+        "max": 3
+      },
+      {
+        "name": "Pandan latte kit",
+        "desc": "Pandan syrup, condensed milk and a recipe card.",
+        "emoji": "🌿",
+        "cents": 2400,
+        "stock": 12,
+        "max": 2
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "terms": "Free to cancel up to 7 days before.",
+  "experiences": [
+    {
+      "name": "A phin coffee bar at your event",
+      "desc": "Our baristas set up a row of phins at your launch, booth or office day and serve iced Vietnamese coffee, pandan and black sesame lattes, in cups with your sleeve.",
+      "emoji": "☕",
+      "min": 40,
+      "max": 300,
+      "price": "$12 a person",
+      "length": "3 hours",
+      "category": "drinks",
+      "travels": true,
+      "includes": [
+        "Two baristas and the phin bar",
+        "Coffee, condensed milk, pandan and sesame",
+        "Cups with your printed sleeve"
+      ],
+      "allIn": "Staff, ingredients, cups, travel in Manhattan and tax.",
+      "runOfShow": [
+        "-1:00 Set up the phin bar",
+        "0:00 First pour, iced and hot",
+        "0:30 Pandan and black sesame lattes join",
+        "2:30 Last call",
+        "3:00 Packed up and gone"
+      ]
+    },
+    {
+      "name": "Phin brewing class for your team",
+      "desc": "Brew your own cup three ways, learn why robusta tastes the way it does, and leave with a phin.",
+      "emoji": "🫘",
+      "min": 8,
+      "max": 25,
+      "price": "$55 a person",
+      "length": "75 minutes",
+      "category": "workshop",
+      "travels": true,
+      "includes": [
+        "A phin per person to keep",
+        "Coffee and condensed milk",
+        "Bánh to snack on"
+      ],
+      "allIn": "Phins, coffee, travel in Manhattan and tax.",
+      "runOfShow": [
+        "0:00 Iced coffee while everyone arrives",
+        "0:10 How a phin works",
+        "0:20 Brew a cup, hot",
+        "0:40 Brew it again, iced with condensed milk",
+        "1:00 Taste pandan and sesame",
+        "1:15 Done, phins go home with you"
+      ]
+    }
+  ],
+  "giftNote": "Coffee gifts that come with a story: a phin with your name engraved, a blend with your label, a cup with your sleeve. We send a proof before anything is engraved or printed.",
+  "gifts": [
+    {
+      "name": "Engraved phin gift set",
+      "desc": "A stainless phin engraved with your logo, 250 g of our robusta, a tin of condensed milk and a brew card with the recipient's name.",
+      "emoji": "☕",
+      "cents": 4500,
+      "minQty": 20,
+      "maxQty": 1000,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 4000
+        },
+        {
+          "qty": 200,
+          "cents": 3500
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Ships anywhere in the US, each to its own address",
+      "allIn": "Gift box, brew card and engraving included.",
+      "personalize": [
+        "Your logo on the phin",
+        "Their name on the brew card",
+        "Your note"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "newhire",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Co-branded coffee blend",
+      "desc": "A bag of our robusta with your label: their name's blend, roasted the week it ships.",
+      "emoji": "🫘",
+      "cents": 2200,
+      "minQty": 50,
+      "maxQty": 3000,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 1800
+        },
+        {
+          "qty": 500,
+          "cents": 1500
+        }
+      ],
+      "lead": "2 weeks, roasted to order",
+      "ships": "Ships anywhere in the US",
+      "personalize": [
+        "Your label and colors",
+        "Their name on the bag",
+        "Tasting notes you write"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "event",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Iced phin with your cup sleeve",
+      "desc": "For office days and launches: iced Vietnamese coffee in cups with your printed sleeve and a sticker with each person's name.",
+      "emoji": "🧋",
+      "cents": 800,
+      "minQty": 50,
+      "maxQty": 2000,
+      "tiers": [
+        {
+          "qty": 200,
+          "cents": 700
+        }
+      ],
+      "lead": "10 days for printed sleeves",
+      "ships": "Delivered in Manhattan and Brooklyn",
+      "personalize": [
+        "Your sleeve design",
+        "Their name on the sticker"
+      ],
+      "occasions": [
+        "event",
+        "thanks",
+        "newhire"
+      ]
+    }
+  ]
+}

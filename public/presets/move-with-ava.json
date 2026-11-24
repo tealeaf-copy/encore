@@ -1,0 +1,174 @@
+{
+  "handle": "move-with-ava",
+  "name": "Move with Ava",
+  "tagline": "Yoga and mat Pilates at your office, and sunrise pop-ups on the roof.",
+  "bio": "I'm Ava. Four mornings a week I teach high-intensity Pilates at a boutique studio in Manhattan; the rest of the time I bring classes to teams. Desk-to-mat yoga at lunch, a mat Pilates burn that needs no machines, and pop-up classes on a rooftop when the weather's good. All levels, every body, no one gets left in a pose they hate.",
+  "city": "Manhattan",
+  "hood": "Flatiron",
+  "tags": [
+    "yoga",
+    "pilates",
+    "wellness",
+    "rooftop",
+    "office classes"
+  ],
+  "emoji": "🧘",
+  "color": "#3E9C6E",
+  "theme": {
+    "accent": "#3E9C6E",
+    "font": "bold",
+    "bg": "sage",
+    "cover": "sunrise",
+    "buttons": "round",
+    "avatarArt": "runner"
+  },
+  "shop": {
+    "open": true,
+    "title": "Open rooftop classes",
+    "note": "Public pop-ups when the forecast is kind. Bring water; mats provided.",
+    "where": "A rooftop in Flatiron (address sent after you book)",
+    "slots": [
+      "Saturday 8:00",
+      "Sunday 9:00"
+    ],
+    "items": [
+      {
+        "name": "Sunrise flow, drop-in",
+        "desc": "60 minutes, all levels.",
+        "emoji": "🌅",
+        "cents": 2500,
+        "stock": 30,
+        "max": 2
+      },
+      {
+        "name": "Five-class pass",
+        "desc": "Use it at any pop-up this season.",
+        "emoji": "🎟️",
+        "cents": 10000,
+        "stock": 20,
+        "max": 1
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 72 hours before. Rain on a rooftop class: we move indoors or reschedule, your call.",
+  "backupPlan": "Two instructors I teach alongside cover for me; you get their names when you book.",
+  "experiences": [
+    {
+      "name": "Desk-to-mat yoga at your office",
+      "desc": "A 45-minute flow in a conference room: shoulders, hips, breath. Office clothes are fine; no one gets on the floor who doesn't want to.",
+      "emoji": "🧘",
+      "min": 6,
+      "max": 40,
+      "price": "$30 a person",
+      "length": "45 minutes",
+      "category": "movement",
+      "travels": true,
+      "includes": [
+        "Mats and blocks for everyone",
+        "A playlist and a speaker",
+        "A 5-minute desk routine card to keep"
+      ],
+      "allIn": "Mats, travel in Manhattan and Brooklyn, and tax.",
+      "access": "Chair version for anyone who prefers it; fully seated option on request.",
+      "dietary": "No food.",
+      "hybrid": "Remote people follow along on video; I cue for both rooms.",
+      "setup": "A cleared room about 6 × 8 ft per person, or a lobby after hours.",
+      "branding": "Mats or water bottles with your logo, if you'd like to keep them. Needs 2 weeks.",
+      "runOfShow": [
+        "0:00 Mats down, quick check-in on injuries",
+        "0:05 Breath and neck release",
+        "0:15 Standing flow",
+        "0:30 Hips and back on the mat (or a chair)",
+        "0:40 Rest",
+        "0:45 Done"
+      ]
+    },
+    {
+      "name": "Mat Pilates burn",
+      "desc": "Studio-style Pilates without the machines: slow, deep core work that shakes in the best way. Modifications for every level.",
+      "emoji": "🔥",
+      "min": 6,
+      "max": 30,
+      "price": "$35 a person",
+      "length": "50 minutes",
+      "category": "movement",
+      "travels": true,
+      "includes": [
+        "Mats and light resistance bands",
+        "A playlist and a speaker"
+      ],
+      "allIn": "Mats, bands, travel and tax.",
+      "access": "Modifications for pregnancy, wrists and lower back.",
+      "dietary": "No food.",
+      "hybrid": "Remote people need only a mat or a towel.",
+      "setup": "A cleared room or a quiet floor.",
+      "runOfShow": [
+        "0:00 Set up and warm-up",
+        "0:10 Core series",
+        "0:25 Legs and glutes",
+        "0:40 Arms and back",
+        "0:47 Stretch",
+        "0:50 Done"
+      ]
+    },
+    {
+      "name": "Rooftop sunrise pop-up",
+      "desc": "Yoga on your rooftop or a terrace we arrange, with coffee after. A morning people talk about at lunch.",
+      "emoji": "🌅",
+      "min": 15,
+      "max": 80,
+      "price": "$40 a person",
+      "length": "75 minutes",
+      "category": "movement",
+      "travels": true,
+      "includes": [
+        "Mats for everyone",
+        "Iced coffee and fruit after",
+        "A rain plan"
+      ],
+      "allIn": "Mats, coffee, a second instructor above 40 people, and tax. Rooftop rental quoted separately if you don't have one.",
+      "access": "Needs an elevator to the roof; chair options available.",
+      "dietary": "Coffee with oat milk, fruit; tell me about allergies.",
+      "hybrid": "",
+      "setup": "A flat roof or terrace and permission from the building. Sound is a small speaker, nothing loud.",
+      "branding": "A banner, mats or a coffee-cup sleeve with your logo. Needs 2 weeks.",
+      "runOfShow": [
+        "0:00 Arrive, mats down",
+        "0:10 Sunrise flow",
+        "0:55 Rest",
+        "1:00 Coffee and fruit",
+        "1:15 Done"
+      ]
+    },
+    {
+      "name": "Wellness week: four classes",
+      "desc": "One class a day for a week: yoga, Pilates, a breathwork session and a rooftop finale. Mix in-office and remote.",
+      "emoji": "📅",
+      "min": 10,
+      "max": 60,
+      "price": "$110 a person",
+      "length": "4 sessions",
+      "category": "movement",
+      "travels": true,
+      "includes": [
+        "Four classes",
+        "A short recap with attendance for your team"
+      ],
+      "allIn": "Everything above, travel and tax.",
+      "access": "Every class has a seated option.",
+      "dietary": "Coffee and fruit at the finale.",
+      "hybrid": "Every class streams for remote people.",
+      "setup": "A room for three days, a roof or terrace for the finale.",
+      "runOfShow": [
+        "Monday: desk-to-mat yoga",
+        "Tuesday: mat Pilates",
+        "Wednesday: 20-minute breathwork",
+        "Friday: rooftop sunrise finale"
+      ]
+    }
+  ]
+}

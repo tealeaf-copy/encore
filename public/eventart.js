@@ -40,6 +40,9 @@
     talk: (A) => `<path ${F(A)} d="M38 40h80a10 10 0 0 1 10 10v30a10 10 0 0 1-10 10H70l-18 16V90H38a10 10 0 0 1-10-10V50a10 10 0 0 1 10-10z"/><path ${W} d="M100 70h66a10 10 0 0 1 10 10v24a10 10 0 0 1-10 10h-8v14l-16-14h-42a10 10 0 0 1-10-10V80a10 10 0 0 1 10-10z"/><path ${S} d="M50 58h50M50 72h30M114 88h44M114 100h26"/>`,
     tech: (A) => `<rect ${W} x="44" y="42" width="112" height="70" rx="8"/><rect ${F(A)} x="56" y="54" width="88" height="46" rx="3"/><path stroke="#fff" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M84 66l-10 11 10 11M116 66l10 11-10 11M106 64l-12 26"/><path ${W} d="M30 112h140l-8 14H38z"/>`,
     party: (A) => `<path ${F(A)} d="M50 130l26-74 48 48z"/><path ${S} d="M62 96l22 22M70 74l36 36"/><path ${S} d="M120 58c6-14 20-14 26-26M132 80c14-4 24 4 36-2M108 40l6-16"/><circle ${W} cx="156" cy="52" r="6"/><rect ${F(A)} x="142" y="96" width="10" height="10" rx="2" transform="rotate(20 147 101)"/><path ${S} d="M92 26l4 8M168 24l-6 6"/>`,
+    home: (A) => `<path ${W} d="M44 74l56-42 56 42v56H44z"/><path ${F(A)} d="M34 80l66-50 66 50-8 10-58-44-58 44z"/><rect ${F(A)} x="86" y="94" width="28" height="36" rx="3"/><rect ${W} x="56" y="88" width="20" height="18"/><rect ${W} x="124" y="88" width="20" height="18"/><path ${S} d="M30 130h140M136 40v-14h12v24"/>`,
+    pin: (A) => `<path ${S} d="M40 120c20-8 40 8 60 0s40-8 60 0"/><path ${S} stroke-dasharray="2 10" d="M54 104c14-20 30-6 44-24"/><path ${F(A)} d="M124 104c-18-22-30-38-30-54a30 30 0 0 1 60 0c0 16-12 32-30 54z"/><circle ${W} cx="124" cy="50" r="11"/>`,
+    compass: (A) => `<circle ${W} cx="100" cy="80" r="52"/><circle ${S} cx="100" cy="80" r="40"/><path ${F(A)} d="M100 44l12 36h-24z"/><path ${W} d="M100 116l-12-36h24z"/><circle fill="${INK}" cx="100" cy="80" r="4"/><path ${S} d="M100 18v10M162 80h-10M38 80h10M100 142v-10"/><path ${S} d="M160 30l6-8M170 44l10-2M150 24l2-10"/>`,
   };
   ART.pottery = ART.craft; ART.cafe = ART.coffee; ART.gather = ART.party; ART.food = ART.dinner; ART.climb = ART.hike; ART.sport = ART.run; ART.museum = ART.paint; ART.tour = ART.walk; ART.new = ART.party;
   // what to draw for an event: the activity, else words in the title
@@ -53,16 +56,16 @@
   function drawing(kind, spot, size) { const f = ART[kind] || ART.party; return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" ${size ? `width="${size}" height="${Math.round(size * 0.75)}"` : ""} aria-hidden="true">${f(spot)}</svg>`; }
   // a whole cover as HTML: label, title, drawing. opts: { label, title, kind, tone, mark (html for bottom-left) }
   function cover(e = {}, opts = {}) {
-    const kind = opts.kind || kindOf(e), tone = opts.tone || toneOf(e, kind), bg = PASTELS[tone], spot = SPOT[tone];
+    const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (ART[pick.kind] ? pick.kind : kindOf(e)), tone = opts.tone || (PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
     const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? LABEL[kind] ?? "";
-    return `<div class="ea-cover" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
+    return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""}" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
   }
   const CSS = `.ea-cover{position:absolute;inset:0;background:var(--ea-bg);color:${INK};font-family:"Instrument Sans","Inter",system-ui,sans-serif;text-align:left;overflow:hidden;container-type:size}
-.ea-txt{position:absolute;left:6.5%;top:7%;right:30%;display:grid;gap:.25em}
+.ea-txt{position:absolute;left:6.5%;top:7%;right:8%;display:grid;gap:.25em}.ea-long .ea-title{font-size:clamp(14px,6.8cqw,32px)}
 .ea-label{font-size:clamp(10px,4.6cqw,15px);font-weight:600;letter-spacing:-.005em;opacity:.92}
 .ea-title{font-size:clamp(15px,8.6cqw,40px);line-height:1.06;font-weight:700;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
 .ea-art{position:absolute;right:2%;bottom:3%;width:52%;max-width:340px;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.ea-art svg{display:block;width:100%;height:auto}`;
   function ensureCss() { if (document.getElementById("eaCss")) return; const s = document.createElement("style"); s.id = "eaCss"; s.textContent = CSS; document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();
-  window.EventArt = { cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
+  window.EventArt = { PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };
 })();

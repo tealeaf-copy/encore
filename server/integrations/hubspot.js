@@ -114,7 +114,7 @@ async function upsertEventAttendees(input) {
       externalAccountId: EXTERNAL_ACCOUNT_ID,
       externalEventId: extId,
       eventName,
-      eventOrganizer: process.env.HUBSPOT_EVENT_ORGANIZER || "Encore",
+      eventOrganizer: process.env.HUBSPOT_EVENT_ORGANIZER || "Pottery Lab",
       eventType: "Field event",
       startDateTime: start,
       customProperties: [],
@@ -223,7 +223,7 @@ async function logFollowups(input) {
   }
   // Reportable fields on the contact, so RevOps can report spend per contact and account in HubSpot itself.
   const fieldErrors = [];
-  const props = [["encore_last_event", "Encore: last event", "string", "text"], ["encore_gift_cost", "Encore: gift landed cost", "number", "number"], ["encore_gift_status", "Encore: gift status", "string", "text"], ["encore_event_cost_per_head", "Encore: event cost per head", "number", "number"]];
+  const props = [["encore_last_event", "Pottery Lab: last event", "string", "text"], ["encore_gift_cost", "Pottery Lab: gift landed cost", "number", "number"], ["encore_gift_status", "Pottery Lab: gift status", "string", "text"], ["encore_event_cost_per_head", "Pottery Lab: event cost per head", "number", "number"]];
   for (const [name, label, type, fieldType] of props) {
     try { await hs("POST", "/crm/v3/properties/contacts", { name, label, type, fieldType, groupName: "contactinformation" }, { allow: [409] }); }
     catch (e) { fieldErrors.push(`property ${name}: ${errText(e)}`); }
@@ -260,7 +260,7 @@ async function verifyActivity(input) {
 async function rollupAccountSpend(input) {
   const { accounts } = validateRollup(input, "HubSpot");
   const errors = [], missing = [], inputs = [];
-  for (const [name, label] of [["encore_event_spend", "Encore: event spend (USD)"], ["encore_gift_spend", "Encore: gift spend, landed (USD)"], ["encore_events_attended", "Encore: events attended"]]) {
+  for (const [name, label] of [["encore_event_spend", "Pottery Lab: event spend (USD)"], ["encore_gift_spend", "Pottery Lab: gift spend, landed (USD)"], ["encore_events_attended", "Pottery Lab: events attended"]]) {
     try { await hs("POST", "/crm/v3/properties/companies", { name, label, type: "number", fieldType: "number", groupName: "companyinformation" }, { allow: [409] }); }
     catch (e) { errors.push(`property ${name}: ${errText(e)}`); }
   }

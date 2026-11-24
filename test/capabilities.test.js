@@ -28,7 +28,7 @@ beforeEach(() => { process.env.ENCORE_SIGNUP = "1"; process.env.SESSION_SECRET =
 afterEach(() => { globalThis.fetch = realFetch; });
 after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_SIGNUP_PER_HOUR", "ENCORE_FAKE_EMAIL"]) delete process.env[k]; await srv.close(); });
 
-test("email: each workspace connects its own sending key; it's checked, encrypted, and used to send from Encore", async () => {
+test("email: each workspace connects its own sending key; it's checked, encrypted, and used to send from Pottery Lab", async () => {
   const A = await signup("Mailco", "ria@mailco.com", "Ria Shah");
   assert.equal((await (await get("/api/email/status", A.cookie)).json()).enabled, false);
   assert.equal((await post("/api/email/send", { to: "x@y.com", subject: "Hi", text: "Hello" }, A.cookie)).status, 409, "not set up yet");
@@ -61,7 +61,7 @@ test("email: each workspace connects its own sending key; it's checked, encrypte
   assert.equal(f.status, 502); assert.match((await f.json()).message, /domain not verified/);
 });
 
-test("sign-off requests are emailed from Encore with the signed link when email is set up", async () => {
+test("sign-off requests are emailed from Pottery Lab with the signed link when email is set up", async () => {
   process.env.ENCORE_FAKE_EMAIL = "1";
   const { fakeOutbox } = await import("../server/email.js"); fakeOutbox.length = 0;
   const A = await signup("Signmail", "lead@signmail.com", "Lee Lead");
@@ -193,7 +193,7 @@ test("Hosting with friends: free, no trial clock, no company needed, and a guest
   const r2 = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Sam Lee", email: "sam@friends.example", password: "longpassword123", mode: "friends", ref: "runclub1" }) });
   assert.equal(r2.status, 200);
   const audit = srv.store.list(`ws/${j.workspace.id}/audit`).map((d) => d.data.what);
-  assert.ok(audit.some((w) => /Sam started hosting with Encore/.test(w)), "the host sees who started hosting from their event");
+  assert.ok(audit.some((w) => /Sam started hosting with Pottery Lab/.test(w)), "the host sees who started hosting from their event");
   // Work sign-ups still need a company
   const r3 = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Ria", email: "ria@work.example", password: "longpassword123", company: "Acme" }) });
   assert.equal((await r3.json()).workspace.plan, "trial");

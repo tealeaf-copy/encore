@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script src="/authguard.js"></script>
-<title>Hosts · Encore</title>
+<title>Hosts · Pottery Lab</title>
 <meta name="description" content="Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the hosts you like and hear about their next one first.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -28,7 +28,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 .h .why{display:block;margin-top:6px;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#8A7B6E;font-style:italic}
 </style></head><body>
 <div class="wrap">
-  <h1>Hosts on Encore</h1>
+  <h1>Hosts on Pottery Lab</h1>
   <p class="lede">Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the ones you like and you'll hear about their next one first.</p>
   <div class="bar"><input class="search" id="q" placeholder="Try “a pottery class for 20 in Brooklyn” or “coffee for our launch”" aria-label="Describe what you're looking for"><div class="chips" id="kinds" aria-label="What they host"></div><div class="chips" id="cities" aria-label="City"></div></div>
   <div id="rows"></div>
@@ -59,7 +59,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     $("#grid").innerHTML = L.length ? L.map((h) => `<div class="h"><a class="hl" href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none;color:inherit;display:grid"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
       <span class="bd"><b>${esc(h.name)}</b><span class="tl">${esc(h.tagline || h.bio || (h.tags || []).join(" · ") || "Hosts small get-togethers")}</span>${h._why ? `<span class="why">✨ ${esc(h._why)}</span>` : ""}
-        <span class="meta">${(BADGES[h.handle] || []).filter((b) => !/^m-/.test(b.id)).slice(0, 2).map((b) => `<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`).join("")}${cityOf(h) ? `<span>${esc([h.hood, cityOf(h)].filter(Boolean).join(", "))}</span>` : ""}${h.upcoming ? `<span class="nx">${h.upcoming} coming up</span>` : ""}${h.followers ? `<span>${h.followers} ${h.followers === 1 ? "follower" : "followers"}</span>` : ""}${h.showcase ? `<span>Not on Encore yet</span>` : (h.experiences || []).length ? `<span class="bk">Takes bookings</span>` : ""}</span></span>
+        <span class="meta">${(BADGES[h.handle] || []).filter((b) => !/^m-/.test(b.id)).slice(0, 2).map((b) => `<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`).join("")}${cityOf(h) ? `<span>${esc([h.hood, cityOf(h)].filter(Boolean).join(", "))}</span>` : ""}${h.upcoming ? `<span class="nx">${h.upcoming} coming up</span>` : ""}${h.followers ? `<span>${h.followers} ${h.followers === 1 ? "follower" : "followers"}</span>` : ""}${h.showcase ? `<span>Not on Pottery Lab yet</span>` : (h.experiences || []).length ? `<span class="bk">Takes bookings</span>` : ""}</span></span>
       </a><span class="ft"><a href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none">See page</a>${h.showcase ? ((h.links || []).find((l) => /instagram\.com/i.test(l.url || "")) ? `<a class="fo" href="${esc((h.links || []).find((l) => /instagram\.com/i.test(l.url || "")).url)}" target="_blank" rel="noopener" style="text-decoration:none">Instagram</a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow" style="text-decoration:none">Follow</a>`}</span></div>`).join("") : `<p class="empty">No hosts match that yet. Try another city or clear the search.</p>`;
   }
   function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
@@ -69,7 +69,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   $("#q").value = U.get("q") || ""; $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); clearTimeout(aiT); aiT = setTimeout(askAI, 650); draw(); };
   $("#q").onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(aiT); askAI(); } };
   let BADGES = {}, SHOW = null;
-  const ROWS = [["super", "⭐ Super hosts", "Regulars, real crowds and people who keep coming back."], ["streaks", "🔥 On a streak", "Hosting week after week (or month after month)."], ["legends", "👑 Local legends", "The most active host in their city over the last 90 days."], ["newHosts", "🌱 New on Encore", "Just started. Be one of their first guests."]];
+  const ROWS = [["super", "⭐ Super hosts", "Regulars, real crowds and people who keep coming back."], ["streaks", "🔥 On a streak", "Hosting week after week (or month after month)."], ["legends", "👑 Local legends", "The most active host in their city over the last 90 days."], ["newHosts", "🌱 New on Pottery Lab", "Just started. Be one of their first guests."]];
   function drawRows() { const box = $("#rows"); if (!box) return; if (!SHOW || q || kind !== "all" || city) { box.innerHTML = ""; return; }
     box.innerHTML = ROWS.map(([k, title, sub]) => { const L = (SHOW[k] || []).map((hd) => H.find((x) => x.handle === hd)).filter(Boolean); if (!L.length) return "";
       const pick = (h) => (BADGES[h.handle] || []).find((b) => (k === "super" && b.id === "super") || (k === "streaks" && b.id === "streak") || (k === "legends" && b.id === "legend") || (k === "newHosts" && b.id === "new"));

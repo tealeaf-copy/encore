@@ -63,7 +63,7 @@ export async function configureSso(ws, { issuer, clientId, clientSecret, domain,
   if (PUBLIC_DOMAINS.has(domain)) throw fail("invalid", `${domain} is a public email domain and can't use SSO.`);
   if (domainOf(by) !== domain) throw fail("invalid", `You can only set up SSO for your own email domain (${domainOf(by) || "none"}).`);
   const other = raw.get(domPath(domain))?.data;
-  if (other && other.ws !== ws) throw fail("conflict", `${domain} already uses single sign-on with another Encore workspace.`, 409);
+  if (other && other.ws !== ws) throw fail("conflict", `${domain} already uses single sign-on with another Pottery Lab workspace.`, 409);
   const d = await idpFetch(issuer + "/.well-known/openid-configuration", { headers: { Accept: "application/json" } });
   if (!d.ok || !d.json) throw fail("invalid", `${issuer}/.well-known/openid-configuration didn't return a discovery document (HTTP ${d.status}).`);
   const disc = d.json;
@@ -152,7 +152,7 @@ export async function finishSso(state, { code, returnedState }) {
 /** First SSO sign-in creates the member (role "Team member", which never counts as an approver role). */
 export function ensureSsoMember({ ws, email, name }, envTaken) {
   const u = getDbUser(email);
-  if (u) { if (u.ws !== ws) throw fail("conflict", "That email already belongs to another Encore workspace.", 409); return u; }
+  if (u) { if (u.ws !== ws) throw fail("conflict", "That email already belongs to another Pottery Lab workspace.", 409); return u; }
   if (envTaken(email)) throw fail("conflict", "That email is already on this server's own team list.", 409);
   return putDbUser({ kind: "user", ws, name, email, roles: ["Team member"], defaultRole: true, owner: false, pw: null, sso: true, createdAt: Date.now() });
 }

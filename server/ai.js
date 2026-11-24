@@ -1,4 +1,4 @@
-// Claude access for Encore. The API key stays on the server: the SDK's default
+// Claude access for Pottery Lab. The API key stays on the server: the SDK's default
 // constructor reads ANTHROPIC_API_KEY from the environment. Never log it.
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -265,7 +265,7 @@ export function fakeText(prompt) {
     });
   }
   if (/Reply with only JSON/i.test(p)) return JSON.stringify({ ok: true });
-  return "This is a demo reply from Encore's offline mode (ENCORE_FAKE_AI=1). No AI was called.";
+  return "This is a demo reply from Pottery Lab's offline mode (ENCORE_FAKE_AI=1). No AI was called.";
 }
 async function fakeLoop({ messages, tools, emit, callTool }) {
   const prompt = lastUserText(messages);

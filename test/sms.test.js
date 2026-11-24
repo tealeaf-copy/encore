@@ -61,11 +61,11 @@ test("The Twilio request itself: right account URL, basic auth, From/To/Body, an
   const real = globalThis.fetch; let seen = null;
   globalThis.fetch = async (url, init) => { seen = { url: String(url), init }; return new Response(JSON.stringify({ sid: "SM123" }), { status: 201 }); };
   try {
-    const ok = await sendSms({ service: "twilio", sid: "ACtest123", token: "secret-token", from: "+14155550000" }, { to: "(415) 555-0199", text: "Hello from Encore" });
+    const ok = await sendSms({ service: "twilio", sid: "ACtest123", token: "secret-token", from: "+14155550000" }, { to: "(415) 555-0199", text: "Hello from Pottery Lab" });
     assert.equal(ok.ok, true);
     assert.equal(seen.url, "https://api.twilio.com/2010-04-01/Accounts/ACtest123/Messages.json");
     assert.equal(seen.init.headers.Authorization, "Basic " + Buffer.from("ACtest123:secret-token").toString("base64"));
-    const body = new URLSearchParams(String(seen.init.body)); assert.equal(body.get("To"), "+14155550199"); assert.equal(body.get("From"), "+14155550000"); assert.equal(body.get("Body"), "Hello from Encore");
+    const body = new URLSearchParams(String(seen.init.body)); assert.equal(body.get("To"), "+14155550199"); assert.equal(body.get("From"), "+14155550000"); assert.equal(body.get("Body"), "Hello from Pottery Lab");
     globalThis.fetch = async () => new Response("{}", { status: 400 });
     const bad = await sendSms({ service: "twilio", sid: "ACtest123", token: "x", from: "+14155550000" }, { to: "+14155550199", text: "hi" }); assert.equal(bad.ok, false); assert.match(bad.error, /400/);
     globalThis.fetch = async () => { throw new Error("network down"); };

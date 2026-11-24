@@ -65,13 +65,13 @@
 .es-biz .es-tabs a.es-plus{display:none}.es-tabs a.es-plus{flex:none;margin:-22px 6px 0}.es-tabs a.es-plus span{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#C94A30;color:#fff;border:2px solid #1F1A17;box-shadow:0 2px 8px rgba(31,26,23,.08)}
 body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:none!important}}`;
   document.head.appendChild(css);
-  const logo = `<svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>`;
+  const logo = `<svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const link = (href, icon, tip, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = p !== "/" && p === P ? ' aria-current="page"' : ""; return `<a href="${href}" data-tip="${tip}" aria-label="${tip}"${cur}>${icon}${extra}</a>`; };
   function draw(me, W, alerts) {
-    const rail = document.createElement("nav"); rail.className = "es-rail"; rail.setAttribute("aria-label", "Encore");
+    const rail = document.createElement("nav"); rail.className = "es-rail"; rail.setAttribute("aria-label", "Pottery Lab");
     const signed = !!me?.verified, host = signed && !W?.regularOnly, ini = String(me?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "🙂";
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
-    rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Encore home">${logo}<span>encore</span></a>` +
+    rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "Events")
         : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1", ICON.plus, "Host something")
         : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/plans", ICON.cal, "Plans") + item("/login", ICON.login, "Sign in") + item("/signup?mode=friends", ICON.plus, "Host something")) +
@@ -79,14 +79,14 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     document.body.prepend(rail); document.body.classList.add("es-has-rail");
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
-    if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Encore");
+    if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
       tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/feed", ICON.globe, "Feed") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + tab("/plans", ICON.cal, "Plans") + tab("/?app=1#studio", ICON.plus, "Events") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
         `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Host something"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` +
         tab("/plans", ICON.cal, "Plans") + (signed ? tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:10px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in")));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
-      top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}encore</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Your plans</a>` : `<a href="/login">Sign in</a>`}<a class="cta" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}">Host something</a></nav>`;
+      top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Your plans</a>` : `<a href="/login">Sign in</a>`}<a class="cta" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}">Host something</a></nav>`;
       const main = document.querySelector("main") || document.body.firstElementChild; (main?.parentElement || document.body).insertBefore(top, main); }
   }
   // Draw the nav at once: signed-out visitors need no request; signed-in people get last time's nav straight away,

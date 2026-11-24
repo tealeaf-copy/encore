@@ -1,4 +1,4 @@
-// Draw-your-own covers: a host describes an illustration and Claude draws it as SVG in Encore's style (thick black
+// Draw-your-own covers: a host describes an illustration and Claude draws it as SVG in Pottery Lab's style (thick black
 // line art, white fills, one spot colour). Nothing the model writes is passed through: the SVG is rebuilt from an
 // allow-list of shapes and attributes with checked values, so the result can't carry scripts, links or styles.
 import { complete, isFake } from "./ai.js";

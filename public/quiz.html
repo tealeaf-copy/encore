@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>What kind of guest are you? · Encore</title>
-<meta name="description" content="A 30-second quiz: find your Encore guest type, the get-togethers you light up at, and who you click with. Share it with your friends.">
-<meta property="og:title" content="What kind of guest are you?"><meta property="og:description" content="Take the 30-second Encore quiz and find your guest type.">
+<title>What kind of guest are you? · Pottery Lab</title>
+<meta name="description" content="A 30-second quiz: find your Pottery Lab guest type, the get-togethers you light up at, and who you click with. Share it with your friends.">
+<meta property="og:title" content="What kind of guest are you?"><meta property="og:description" content="Take the 30-second Pottery Lab quiz and find your guest type.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--butter:#FFE08A;--pink:#FFCAD6;--sky:#C4DEFF;--lilac:#DCCBFF;--mint:#E3F1DD}
@@ -19,13 +19,13 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
 .friend{margin:0 0 16px;padding:12px 16px;border-radius:16px;background:var(--butter);border:2px solid var(--ink);font-weight:600;text-align:center}
 </style><link rel="stylesheet" href="/playful.css"></head><body>
 <div class="wrap">
-  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><a href="/discover" style="font-weight:600;text-decoration:none">What's on</a></header>
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a href="/discover" style="font-weight:600;text-decoration:none">What's on</a></header>
   <main id="m"></main>
 </div>
 <script src="/authguard.js"></script><script>
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  // the same types the rest of Encore uses
+  // the same types the rest of Pottery Lab uses
   const T = {
     host: { name: "The Host", emoji: "🏡", line: "Usually the one who makes it happen.", bg: "#FFE08A", thrive: "Small dinners you plan yourself", match: "connector", why: "Connectors fill your table." },
     spark: { name: "The Spark", emoji: "⚡", line: "Brings the energy. Things get louder when they arrive.", bg: "#FFCAD6", thrive: "Game nights, karaoke, anything with a bit of chaos", match: "chill", why: "The Chill One keeps you grounded." },
@@ -51,7 +51,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     const ranked = Object.entries(S).sort((a, b) => b[1] - a[1]); return { top: ranked[0][0], second: ranked[1][0] }; };
   const m = document.getElementById("m"), params = new URLSearchParams(location.search), shared = params.get("t"), from = (params.get("from") || "").slice(0, 30);
   function intro() { const t = T[shared];
-    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(t.name)} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">30 seconds · 6 taps · no sign-up</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your Encore type, the get-togethers you light up at, and who you click with. Then send it to your group chat and see who's who.</p><button class="btn primary" id="go" style="margin-top:8px">Start the quiz</button></div>`;
+    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(t.name)} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">30 seconds · 6 taps · no sign-up</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your Pottery Lab type, the get-togethers you light up at, and who you click with. Then send it to your group chat and see who's who.</p><button class="btn primary" id="go" style="margin-top:8px">Start the quiz</button></div>`;
     document.getElementById("go").onclick = () => { i = 0; ask(); }; }
   function ask() { const [k, q, opts] = Q[i];
     m.innerHTML = `<div class="card q"><small class="note">${i + 1} of ${Q.length}</small><div class="bar"><i style="width:${(i / Q.length) * 100}%"></i></div><h2>${esc(q)}</h2><div class="opts">${opts.map(([v, e, t]) => `<button data-v="${v}"><span class="e">${e}</span>${esc(t)}</button>`).join("")}</div></div>`;
@@ -67,10 +67,10 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
       <div class="acts"><a class="btn primary" href="/discover?lane=${lane[2]}">See events for ${esc(t.name.replace(/^The /, ""))}s</a><button class="btn quiet" id="story">📸 Share to your story</button><button class="btn quiet" id="send">💬 Send to friends</button></div>
       <p class="note" style="text-align:center;margin-top:16px" id="save"></p><p class="note" style="text-align:center"><a href="#" id="again">Take it again</a></p>`;
     document.getElementById("again").onclick = (e) => { e.preventDefault(); Object.keys(A).forEach((k) => delete A[k]); i = 0; ask(); };
-    document.getElementById("send").onclick = async () => { const text = `I'm ${t.name} ${t.emoji} on Encore. What kind of guest are you?`; try { if (navigator.share) { await navigator.share({ title: "What kind of guest are you?", text, url: shareUrl }); return; } } catch { return; } try { await navigator.clipboard.writeText(`${text} ${shareUrl}`); } catch {} toast("Copied. Paste it in your group chat."); };
+    document.getElementById("send").onclick = async () => { const text = `I'm ${t.name} ${t.emoji} on Pottery Lab. What kind of guest are you?`; try { if (navigator.share) { await navigator.share({ title: "What kind of guest are you?", text, url: shareUrl }); return; } } catch { return; } try { await navigator.clipboard.writeText(`${text} ${shareUrl}`); } catch {} toast("Copied. Paste it in your group chat."); };
     document.getElementById("story").onclick = () => storyShare(t, lane, shareUrl);
-    // signed in? keep it on your Encore profile
-    fetch("/api/me/profile/self", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: A.host, rsvp: A.rsvp, room: A.room, bring: A.bring }) }).then((r) => { document.getElementById("save").innerHTML = r.ok ? "Saved to your Encore profile. Hosts see it next to your name in Who's coming." : `Want hosts to see it? It saves when you RSVP to your next event, or <a href="/discover">find one now</a>.`; }).catch(() => {}); }
+    // signed in? keep it on your Pottery Lab profile
+    fetch("/api/me/profile/self", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: A.host, rsvp: A.rsvp, room: A.room, bring: A.bring }) }).then((r) => { document.getElementById("save").innerHTML = r.ok ? "Saved to your Pottery Lab profile. Hosts see it next to your name in Who's coming." : `Want hosts to see it? It saves when you RSVP to your next event, or <a href="/discover">find one now</a>.`; }).catch(() => {}); }
   function toast(t) { let el = document.getElementById("toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;top:16px;transform:translateX(-50%);background:#1F1A17;color:#fff;padding:10px 16px;border-radius:14px;z-index:40;max-width:90vw;font-size:14px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3500); }
   async function storyShare(t, lane, url) { const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"); try { await document.fonts?.load?.("700 80px Fredoka"); } catch {}
     x.fillStyle = "#FFF8EE"; x.fillRect(0, 0, W, H); const px = 90, py = 240, pw = W - 180, ph = 1150; x.fillStyle = "#1F1A17"; x.beginPath(); x.roundRect(px + 18, py + 18, pw, ph, 64); x.fill(); x.fillStyle = t.bg; x.beginPath(); x.roundRect(px, py, pw, ph, 64); x.fill(); x.lineWidth = 8; x.strokeStyle = "#1F1A17"; x.stroke();
@@ -80,7 +80,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     const wrap = (s, y) => { const w = s.split(" "); let l = "", n = 0; for (const word of w) { const tt = l ? l + " " + word : word; if (x.measureText(tt).width > pw - 140 && l) { x.fillText(l, W / 2, y + n * 60); n++; l = word; } else l = tt; } x.fillText(l, W / 2, y + n * 60); return n + 1; };
     let y = py + 810; y += wrap(t.line, y) * 60 + 30; x.font = "600 46px 'Instrument Sans', system-ui"; wrap(`${lane[0]} Lights up at ${lane[1]}`, y);
     x.fillStyle = "#1F1A17"; x.font = "700 76px Fredoka, system-ui"; x.fillText("What's yours?", W / 2, py + ph + 190); x.font = "500 46px 'Instrument Sans', system-ui"; x.fillStyle = "#5E534B"; x.fillText("Take the quiz: link in my story", W / 2, py + ph + 270);
-    x.fillStyle = "#C4532F"; x.beginPath(); x.arc(W / 2 - 150, H - 140, 30, 0, 7); x.fill(); x.fillStyle = "#F2D48F"; x.beginPath(); x.arc(W / 2 - 138, H - 152, 10, 0, 7); x.fill(); x.fillStyle = "#1F1A17"; x.textAlign = "left"; x.font = "700 64px Fredoka, system-ui"; x.fillText("encore", W / 2 - 100, H - 118);
+    x.save(); x.translate(W/2-215,H-186); x.scale(2.5,2.5); x.lineWidth=1.6; x.lineJoin="round"; x.fillStyle="#C4532F"; x.strokeStyle="#1F1A17"; const vp=new Path2D("M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z"); x.fill(vp); x.stroke(vp); x.strokeStyle="#F2D48F"; x.lineWidth=2.2; x.lineCap="round"; x.stroke(new Path2D("M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1")); x.restore(); x.fillStyle = "#1F1A17"; x.textAlign = "left"; x.font = "700 64px Fredoka, system-ui"; x.fillText("pottery lab",W/2-130,H-118);
     const blob = await new Promise((r) => c.toBlob(r, "image/png")), file = new File([blob], "my-encore-type.png", { type: "image/png" }); try { await navigator.clipboard.writeText(url); } catch {}
     try { if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: t.name }); toast("Pick Instagram, then add a link sticker: the quiz link is copied."); return; } } catch (e) { if (e?.name === "AbortError") return; }
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "my-encore-type.png"; document.body.appendChild(a); a.click(); a.remove(); toast("Image saved. In Instagram: Story → pick it → add a link sticker (the quiz link is copied)."); }

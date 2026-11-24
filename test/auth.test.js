@@ -64,7 +64,7 @@ test("approvals are checked against roles and recorded by the server", async () 
   assert.deepEqual(after.roles, {});
   const log2 = await fetch(srv.base + "/api/audit?eventId=ev9", { headers: { cookie } }).then((y) => y.json());
   assert.match(log2.entries[0].what, /approvals reset \(Event lead\)/);
-  assert.equal(log2.entries[0].who, "Encore server");
+  assert.equal(log2.entries[0].who, "Pottery Lab server");
   } finally { process.env.ENCORE_USERS = usersBefore; }
 });
 

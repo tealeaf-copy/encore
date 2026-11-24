@@ -1,5 +1,5 @@
 // Where you are: your city from your phone's location (with permission), from sign-up, or typed by you.
-// Travel is noticed: when your phone is in a new city, Encore switches to it and says so. Everything stays on this device.
+// Travel is noticed: when your phone is in a new city, Pottery Lab switches to it and says so. Everything stays on this device.
 (function () {
   const CITIES = [
     ["New York", 40.71, -74.01, "brooklyn|manhattan|queens|bronx|nyc|williamsburg|greenpoint|bushwick|harlem|astoria"], ["Los Angeles", 34.05, -118.24, "la|silver lake|venice|santa monica"], ["San Francisco", 37.77, -122.42, "sf|oakland|berkeley"],

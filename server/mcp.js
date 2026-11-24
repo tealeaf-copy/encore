@@ -1,4 +1,4 @@
-// Encore as an MCP server, so a field marketer can run their events from Claude.
+// Pottery Lab as an MCP server, so a field marketer can run their events from Claude.
 // Add it in Claude as a custom connector: URL https://<your-encore>/mcp, header Authorization: Bearer <token>.
 // Tokens: ENCORE_MCP_TOKENS="Name|email|token,..." (one per person, so the audit log names who) and/or
 // a shared ENCORE_MCP_TOKEN. Every write tool call is written to the audit log.
@@ -16,9 +16,9 @@ const str = (description) => ({ type: "string", description });
 const num = (description) => ({ type: "number", description });
 
 const TOOLS = [
-  { name: "list_events", description: "List Encore events with date, city, type, registrations vs seats and planned cost (USD). Use this first to find an event id.", inputSchema: { type: "object", properties: { status: str("Optional: idea, planning, live or done") } } },
+  { name: "list_events", description: "List Pottery Lab events with date, city, type, registrations vs seats and planned cost (USD). Use this first to find an event id.", inputSchema: { type: "object", properties: { status: str("Optional: idea, planning, live or done") } } },
   { name: "get_event", description: "One event's details: facts, guest counts by status, the next tasks due, approvals and what's still missing.", inputSchema: { type: "object", properties: { id: str("Event id") }, required: ["id"] } },
-  { name: "create_event", description: "Create a new event. Encore's studio fills in the plan, page, guests and follow-up from here.", inputSchema: { type: "object", properties: { name: str("Event name"), kind: { type: "string", enum: KINDS }, objective: { type: "string", enum: OBJECTIVES }, city: str("City or Online"), date: str("YYYY-MM-DD"), headcount: num("Seats"), budget: num("Budget in the event's currency"), currency: { type: "string", enum: Object.keys(FX) }, concept: str("The experience in 1-2 sentences"), goal: str("The goal in one sentence"), audience_roles: { type: "array", items: { type: "string" } } }, required: ["name"] } },
+  { name: "create_event", description: "Create a new event. Pottery Lab's studio fills in the plan, page, guests and follow-up from here.", inputSchema: { type: "object", properties: { name: str("Event name"), kind: { type: "string", enum: KINDS }, objective: { type: "string", enum: OBJECTIVES }, city: str("City or Online"), date: str("YYYY-MM-DD"), headcount: num("Seats"), budget: num("Budget in the event's currency"), currency: { type: "string", enum: Object.keys(FX) }, concept: str("The experience in 1-2 sentences"), goal: str("The goal in one sentence"), audience_roles: { type: "array", items: { type: "string" } } }, required: ["name"] } },
   { name: "update_event", description: "Change an event's details. Pass only the fields that change.", inputSchema: { type: "object", properties: { id: str("Event id"), name: str(""), city: str(""), date: str("YYYY-MM-DD"), headcount: num(""), budget: num("New total budget. If the plan has budget lines, they are scaled to match."), currency: str(""), concept: str(""), goal: str(""), status: { type: "string", enum: ["idea", "planning", "live", "done"] } }, required: ["id"] } },
   { name: "add_guests", description: "Add people to an event's guest list (skips names already on it).", inputSchema: { type: "object", properties: { id: str("Event id"), guests: { type: "array", items: { type: "object", properties: { name: str("Full name (or give firstName and lastName)"), firstName: str(""), lastName: str(""), title: str(""), company: str(""), email: str(""), owner: str("AE or CSM who owns the relationship"), tier: str("A, B or C; Enterprise/Strategic map to A, Mid-market to B, anything else to C"), arr: { type: ["number", "string"], description: "Account ARR, e.g. 120000, \"120k\" or \"$1.2M\"" }, renewalDate: str("YYYY-MM-DD"), health: str("Account health, e.g. Green, Yellow, Red") } } } }, required: ["id", "guests"] } },
   { name: "guest_list", description: "The guest list with status, owner and tier, plus who hasn't replied yet (grouped by owner, for chasing).", inputSchema: { type: "object", properties: { id: str("Event id") }, required: ["id"] } },
@@ -126,7 +126,7 @@ export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () =>
       const next = (e.produce?.tasks || []).map((t, i) => ({ ...t, i, due: ev ? new Date(ev.getTime() + t.days * 864e5).toISOString().slice(0, 10) : null })).filter((t) => !done.has(t.i)).sort((a, b) => a.days - b.days).slice(0, 5).map((t) => ({ task: t.task, owner: t.owner, due: t.due }));
       const missing = [!e.date && "date", !(e.venues?.venues?.length) && e.kind !== "webinar" && "venue", !e.produce && "production plan", !g.length && "guest list", !e.launchCopy && !e.copy && "event page copy"].filter(Boolean);
       const ap = store.get("approvals/" + id)?.data?.roles || {};
-      return { ...summarize(id, e, rsvps()), concept: e.concept || "", goal: e.goal || "", guests: counts, nextTasks: next, approvals: Object.entries(ap).map(([role, a]) => ({ role, by: a.by, at: new Date(a.at).toISOString() })), missing, studio: "Open the event in Encore to run its agents." };
+      return { ...summarize(id, e, rsvps()), concept: e.concept || "", goal: e.goal || "", guests: counts, nextTasks: next, approvals: Object.entries(ap).map(([role, a]) => ({ role, by: a.by, at: new Date(a.at).toISOString() })), missing, studio: "Open the event in Pottery Lab to run its agents." };
     },
     create_event: (a) => {
       if (!String(a.name || "").trim()) bad("name is required");
@@ -146,7 +146,7 @@ export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () =>
       const headcount = a.headcount != null ? checkAmount(a.headcount, "headcount") : null, budget = a.budget != null ? checkAmount(a.budget, "budget") : null;
       const currency = a.currency != null ? checkCurrency(a.currency) : null;
       const lines = e.produce?.budget || [], lineSum = lines.reduce((s0, b) => s0 + (+b.amount || 0), 0);
-      if (budget != null && lines.length && !lineSum && budget > 0) bad("This plan has budget lines that are all 0, so they can't be scaled. Change the lines in Encore's Produce step.");
+      if (budget != null && lines.length && !lineSum && budget > 0) bad("This plan has budget lines that are all 0, so they can't be scaled. Change the lines in Pottery Lab's Produce step.");
       for (const k of ["name", "city", "concept", "goal", "status"]) if (a[k] != null) e[k] = String(a[k]);
       if (date != null) e.date = date;
       if (headcount != null) e.headcount = headcount;
@@ -198,7 +198,7 @@ export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () =>
     pipeline_report: ({ id }) => {
       const e = getEv(id), O = e.opps || [];
       return { currency: "USD", createdAfterEvent: pipeUSD(e, "created"), existingDealsWithAttendees: pipeUSD(e, "existing"), lowerConfidenceCompanyOnly: O.filter((o) => !sureOpp(o)).map((o) => ({ account: o.account, amount: o.amount, currency: String(o.currency || "USD").toUpperCase(), amountUSD: usd(o.amount, o.currency) })), deals: O.length, confirmedDeals: O.filter(sureOpp).length,
-        caveat: "Pipeline connected to attendees, not proof the event caused it. Use the holdout test for lift.", note: O.length ? "" : "No deals imported yet. Import opportunities or pull them from the CRM in Encore's Measure step." };
+        caveat: "Pipeline connected to attendees, not proof the event caused it. Use the holdout test for lift.", note: O.length ? "" : "No deals imported yet. Import opportunities or pull them from the CRM in Pottery Lab's Measure step." };
     },
     launch_kit: ({ id }) => {
       const e = getEv(id), L = e.launchCopy || {}, C = e.copy || {}, v = e.venues?.venues?.[e.venuePick ?? 0];
@@ -225,13 +225,13 @@ export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () =>
     if (msg.id === undefined) return null; // notifications
     const reply = (result) => ({ jsonrpc: "2.0", id: msg.id ?? null, result }), fail = (code, message) => ({ jsonrpc: "2.0", id: msg.id ?? null, error: { code, message } });
     try {
-      if (msg.method === "initialize") return reply({ protocolVersion: msg.params?.protocolVersion || "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "encore", version: "1.0.0" }, instructions: "Encore plans and measures B2B events. Start with list_events or program_summary. Never share guests' emails, ARR or notes outside the team." });
+      if (msg.method === "initialize") return reply({ protocolVersion: msg.params?.protocolVersion || "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "encore", version: "1.0.0" }, instructions: "Pottery Lab plans and measures B2B events. Start with list_events or program_summary. Never share guests' emails, ARR or notes outside the team." });
       if (msg.method === "ping") return reply({});
       if (msg.method === "tools/list") return reply({ tools: TOOLS });
       if (msg.method === "tools/call") {
         const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args = msg.params?.arguments || {};
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
-        if (WRITES.has(name) && !writable(who.ws)) return reply({ ...text("This workspace's free trial has ended, so changes are paused. Upgrade in Encore to keep editing; reading still works."), isError: true });
+        if (WRITES.has(name) && !writable(who.ws)) return reply({ ...text("This workspace's free trial has ended, so changes are paused. Upgrade in Pottery Lab to keep editing; reading still works."), isError: true });
         try {
           const out = fn(args);
           if (!WRITES.has(name)) readLog(who, args.id, name);

@@ -18,7 +18,7 @@ test("Password reset: same answer for unknown emails, one-time link, old session
   assert.equal((await fetch(srv.base + "/api/workspace", { headers: { cookie: oldCookie } })).status, 200);
   const unknown = await (await post("/api/password/forgot", { email: "nobody@example.com" })).json(), known = await (await post("/api/password/forgot", { email: "rae.reset@example.com" })).json();
   assert.equal(unknown.message, known.message, "same answer either way");
-  const mail = fakeOutbox.filter((m) => [].concat(m.to).includes("rae.reset@example.com") && /Reset your Encore password/.test(m.subject)).pop(); assert.ok(mail, "a reset email was sent");
+  const mail = fakeOutbox.filter((m) => [].concat(m.to).includes("rae.reset@example.com") && /Reset your Pottery Lab password/.test(m.subject)).pop(); assert.ok(mail, "a reset email was sent");
   const token = mail.text.match(/token=([a-f0-9]{48})/)[1];
   assert.equal((await post("/api/password/reset", { token, password: "short" })).status, 400);
   const r = await post("/api/password/reset", { token, password: "second-password-2" }); assert.equal(r.status, 200); const newCookie = cookieOf(r);

@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Start your trial · Encore</title>
+<title>Start your trial · Pottery Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px "DM Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/playful.css">
 <script src="/placesearch.js"></script>
 </head><body>
-<form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
+<form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
   <h1 id="h">Start your free trial</h1>
   <p class="sub" id="sub">14 days, every feature, no card.</p>
   <div class="modes" role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
@@ -36,8 +36,8 @@
   <a href="/login">Already have an account? Sign in</a>
   <a href="#" id="noCode" hidden>No code yet? Join the waitlist</a>
 </form>
-<form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div>
-  <h1>Encore is invite-only</h1>
+<form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
+  <h1>Pottery Lab is invite-only</h1>
   <p class="sub">Every member gets ten codes to give to people they'd love to see host. Tell us what you'd host and a member nearby can send you one.</p>
   <p class="err" id="wlErr" role="alert"></p>
   <label>Your name<input name="name" autocomplete="name"></label>
@@ -67,8 +67,8 @@
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">encore</div><h1>You're on the list</h1><p class="done">Members near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see that you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. When one sends you a code, it'll land in your inbox.</p><p class="done">Know someone on Encore? Ask them for a code. It's faster.</p>`;
-      } catch { er.textContent = "Can't reach Encore. Check your connection."; } });
+        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the list</h1><p class="done">Members near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see that you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. When one sends you a code, it'll land in your inbox.</p><p class="done">Know someone on Pottery Lab? Ask them for a code. It's faster.</p>`;
+      } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
@@ -93,6 +93,6 @@
         if (r2.status === 400) { const r3 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ ...P, handle: P.handle + "-" + Math.random().toString(36).slice(2, 5) }) }); r2 = r3; }
         const j2 = await r2.json().catch(() => ({})); if (j2?.host?.handle) { location.href = "/@" + j2.host.handle + "?welcome=1"; return; } } catch {} } }
       location.href = j.redirect || "/?welcome=1";
-    } catch { err.textContent = "Can't reach Encore. Check your connection."; go.disabled = false; }
+    } catch { err.textContent = "Can't reach Pottery Lab. Check your connection."; go.disabled = false; }
   });
 </script></body></html>

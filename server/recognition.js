@@ -29,7 +29,7 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   if (isSuper) B.push({ id: "super", emoji: "⭐", label: "Super host", why: `${past.length} gatherings, ${guests} guests, and people keep coming back` });
   if (wk >= 3) B.push({ id: "streak", emoji: "🔥", label: `${wk}-week streak`, n: wk, unit: "week", why: `Hosted something ${wk} weeks in a row` });
   else if (mo >= 3) B.push({ id: "streak", emoji: "🔥", label: `${mo} months in a row`, n: mo, unit: "month", why: `Hosted something ${mo} months in a row` });
-  if (isNew) B.push({ id: "new", emoji: "🌱", label: "New host", why: "Just started hosting on Encore" });
+  if (isNew) B.push({ id: "new", emoji: "🌱", label: "New host", why: "Just started hosting on Pottery Lab" });
   const ev = MILESTONES.events.find((m) => past.length >= m), gu = MILESTONES.guests.find((m) => guests >= m);
   if (ev && ev > 1) B.push({ id: "m-events", emoji: "🎉", label: `${ev}+ gatherings`, n: ev, why: `Has hosted ${past.length} gatherings` });
   if (gu) B.push({ id: "m-guests", emoji: "🙌", label: `${gu}+ guests`, n: gu, why: `${guests} different people have come` });

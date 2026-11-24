@@ -29,5 +29,5 @@ export function extractDeclarations(html, names = ESTIMATE_NAMES) {
 export function buildEstimateScript(file) {
   const { code, missing } = extractDeclarations(fs.readFileSync(file, "utf8"));
   if (missing.length) throw new Error("estimate.js: missing " + missing.join(", "));
-  return `/* Encore's planner, served from the app so the homepage demo matches it. */\n(function(){\n${code}\nwindow.EncorePlan={planFromText,fxRate};\n})();\n`;
+  return `/* Pottery Lab's planner, served from the app so the homepage demo matches it. */\n(function(){\n${code}\nwindow.EncorePlan={planFromText,fxRate};\n})();\n`;
 }

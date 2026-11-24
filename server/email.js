@@ -1,4 +1,4 @@
-// Sending email from Encore: sign-off requests, guest invites and deadline reminders.
+// Sending email from Pottery Lab: sign-off requests, guest invites and deadline reminders.
 // Each workspace connects its own sending service (Resend, Postmark or SendGrid) in Setup; the key is stored
 // encrypted with its other connections. The default workspace can use ENCORE_EMAIL_SERVICE / ENCORE_EMAIL_KEY /
 // ENCORE_EMAIL_FROM instead. ENCORE_FAKE_EMAIL=1 records messages without sending them (demos and tests).

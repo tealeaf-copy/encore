@@ -59,7 +59,7 @@ export function mountChecks(app, { store, small, currentUser, publicOrigin = () 
     return I.slice(0, 8); }
   async function sendDigest(ws, origin) { const W = getWorkspace(ws), to = W?.ownerEmail, items = digestItems(ws, origin); if (!to || !items.length) return { sent: false, items };
     const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (!cfg) return { sent: false, items, error: "Email isn't set up on this server." };
-    const r = await sendEmail(cfg, { to, subject: `Pip's list: ${items.length} thing${items.length === 1 ? "" : "s"} for today`, text: `Good morning. Here's what I'd do today:\n\n${items.map((x, i) => `${i + 1}. ${x}`).join("\n")}\n\nOpen Encore: ${origin}/\n\nTo stop these, switch off "Email me this list" on Home.`, fromName: "Pip at Encore" });
+    const r = await sendEmail(cfg, { to, subject: `Pip's list: ${items.length} thing${items.length === 1 ? "" : "s"} for today`, text: `Good morning. Here's what I'd do today:\n\n${items.map((x, i) => `${i + 1}. ${x}`).join("\n")}\n\nOpen Pottery Lab: ${origin}/\n\nTo stop these, switch off "Email me this list" on Home.`, fromName: "Pip at Pottery Lab" });
     return { sent: !!r.ok, items, error: r.error || "" }; }
   app.get("/api/pip/digest", (req, res) => { const u = me(req, res); if (!u) return; res.json({ on: !!getWorkspace(u.ws)?.pipDigest, items: digestItems(u.ws, publicOrigin(req)) }); });
   app.post("/api/pip/digest", small, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};

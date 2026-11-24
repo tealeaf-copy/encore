@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Encore: security and data</title>
+<title>Pottery Lab: security and data</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#2B211C;--muted:#75685F;--bg:#FAF7F2;--card:#FFFFFF;--line:#E9E1D6;--cobalt:#A9462E;--coral:#C2553A;--lilac:#F4EFE8}
@@ -13,18 +13,18 @@ p,li{color:var(--muted)}b{color:var(--ink)}a{color:var(--cobalt)}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
 .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:12px}
 </style></head><body><main>
-<a href="/">← Encore</a>
+<a href="/">← Pottery Lab</a>
 <p class="eyebrow" style="margin-top:24px">Security and data</p>
-<h1>What Encore stores, where it goes, and what we don't do yet</h1>
+<h1>What Pottery Lab stores, where it goes, and what we don't do yet</h1>
 <p>Written for the security reviewer who gets the vendor questionnaire. If something you need isn't here, <a href="/#talk" onclick="location.href='/?contact=security#talk';return false">ask us</a>.</p>
 
 <h2>Where your data lives</h2>
 <ul>
-<li><b>Hosted by us, or in your own cloud.</b> Encore is one Node.js service with a single database file. You can run it in your own AWS, GCP or Azure account (a Dockerfile is included), in the region you choose, so event and guest data never leaves your environment.</li>
+<li><b>Hosted by us, or in your own cloud.</b> Pottery Lab is one Node.js service with a single database file. You can run it in your own AWS, GCP or Azure account (a Dockerfile is included), in the region you choose, so event and guest data never leaves your environment.</li>
 <li><b>Workspaces are isolated.</b> Each company's data is stored under its own workspace. Every read and write is checked against the signed-in person's workspace, including files, the audit log and the Claude connector.</li>
 </ul>
 
-<h2>What data Encore needs</h2>
+<h2>What data Pottery Lab needs</h2>
 <p>Names, titles, companies and work emails of the people you invite; your event plans and budgets; and, if you connect them, accounts and deals from your CRM. Running an event needs no patient, health or payment-card data.</p>
 <ul>
 <li><b>Call recordings are optional and governed by rules per market.</b> You decide whether Gong, Fathom or Granola can inform guest lists (summaries only, full transcripts, or off). Every use is written to the audit log, and nothing from a call is ever placed in text a guest reads.</li>
@@ -41,14 +41,14 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th
 <tr><td>Uploads</td><td>Limited to images, PDFs, video and plain data files, served with a restrictive content-security policy so an upload can't run code.</td></tr></table>
 
 <h2>AI processing</h2>
-<p>AI features send the relevant event details to Anthropic's Claude API to draft plans, copy and follow-ups. Nothing is sent to a guest or an AE until a person approves it. If your policy restricts AI vendors, you can run Encore without AI features and keep the planning, guest management and measurement.</p>
+<p>AI features send the relevant event details to Anthropic's Claude API to draft plans, copy and follow-ups. Nothing is sent to a guest or an AE until a person approves it. If your policy restricts AI vendors, you can run Pottery Lab without AI features and keep the planning, guest management and measurement.</p>
 
 <h2>What we don't have yet</h2>
 <div class="box">
 <ul>
-<li><b>SOC 2:</b> Encore has a SOC 2 Type II report. We share it, with the bridge letter for the current period, under NDA. <a href="/#contact" data-contact>Request it</a>. If you'd rather keep all data inside your own environment, you can also run Encore in your own cloud.</li>
+<li><b>SOC 2:</b> Pottery Lab has a SOC 2 Type II report. We share it, with the bridge letter for the current period, under NDA. <a href="/#contact" data-contact>Request it</a>. If you'd rather keep all data inside your own environment, you can also run Pottery Lab in your own cloud.</li>
 <li><b>SAML:</b> not yet available. Single sign-on works today through OpenID Connect (Okta, Google Workspace, Microsoft Entra, OneLogin), and can be required for everyone on your domain.</li>
-<li><b>HIPAA:</b> Encore is not designed to hold protected health information, and we don't sign BAAs. Don't put patient data in guest notes.</li>
+<li><b>HIPAA:</b> Pottery Lab is not designed to hold protected health information, and we don't sign BAAs. Don't put patient data in guest notes.</li>
 <li><b>Data processing agreement:</b> ask us for ours, or send yours with the security review request.</li>
 </ul>
 </div>

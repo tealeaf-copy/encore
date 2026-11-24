@@ -39,7 +39,7 @@ export function keywordRank(q, hosts, n = 8) {
 
 async function askClaude(q, hosts) {
   const cards = hosts.slice(0, 80).map(cardOf);
-  const prompt = `You help people find hosts on Encore, a site where people host small experiences (supper clubs, run clubs, workshops, pop-ups) and brands book them.
+  const prompt = `You help people find hosts on Pottery Lab, a site where people host small experiences (supper clubs, run clubs, workshops, pop-ups) and brands book them.
 Someone searched: "${clean(q, 200)}"
 
 Hosts (JSON):

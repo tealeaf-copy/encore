@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script src="/authguard.js"></script>
-<title>A year of hosting · Encore</title>
-<meta name="description" content="A host's year on Encore: the gatherings, the people who came, and the ones who came back.">
+<title>A year of hosting · Pottery Lab</title>
+<meta name="description" content="A host's year on Pottery Lab: the gatherings, the people who came, and the ones who came back.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--line:#E4D9C8;--acc:#C2553A}
@@ -24,7 +24,7 @@
 .years{display:flex;gap:6px;justify-content:center;margin-top:14px}.years a{font-size:13px;color:var(--smoke)}.years a[aria-current]{color:var(--ink);font-weight:700}
 .empty{text-align:center;color:var(--smoke);padding:40px 10px}
 </style></head><body>
-<div class="wrap"><div class="top"><a href="/">encore</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div></div>
+<div class="wrap"><div class="top"><a href="/">pottery lab</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div></div>
 <script src="/avatars.js"></script>
 <script>
 (async function () {
@@ -34,10 +34,10 @@
   try { const r = await fetch(`/api/public/host/${encodeURIComponent(handle)}/recap?year=${year}`); if (!r.ok) throw 0; d = await r.json(); } catch { m.innerHTML = `<p class="empty">No host by that name. <a href="/hosts">See every host</a></p>`; return; }
   const h = d.host, first = String(h.name || "").split(/[\s']/)[0], A = window.EncoreAvatars;
   document.documentElement.style.setProperty("--acc", /^#[0-9a-f]{6}$/i.test(h.theme.accent) ? h.theme.accent : "#C2553A");
-  document.title = `${h.name}'s ${d.year} on Encore`;
+  document.title = `${h.name}'s ${d.year} on Pottery Lab`;
   const av = h.theme.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 58) : esc(h.emoji || "🎉");
   const years = [d.year - 1, d.year].map((y) => `<a href="?year=${y}" ${y === d.year ? 'aria-current="page"' : ""}>${y}</a>`).join("");
-  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Encore yet this year. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
+  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Pottery Lab yet this year. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
   const max = Math.max(1, ...d.months), M = "JFMAMJJASOND".split("");
   const share = `${location.origin}/recap/${encodeURIComponent(h.handle)}?year=${d.year}`;
   m.innerHTML = `<div class="card" id="card">
@@ -50,9 +50,9 @@
     ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.emoji)} ${esc(t.label)} ×${t.n}</span>`).join("")}</div>` : ""}
     ${d.quote ? `<div class="quote">“${esc(d.quote.love)}”<small>${esc(d.quote.name)}${d.quote.event ? `, after ${esc(d.quote.event)}` : ""}</small></div>` : ""}
     ${(d.badges || []).length ? `<div class="badges">${d.badges.slice(0, 4).map((b) => `<span>${esc(b.emoji)} ${esc(b.label)}</span>`).join("")}</div>` : ""}
-    <div class="brand"><span>encore</span><span>${esc(location.host)}/@${esc(h.handle)}</span></div></div>
+    <div class="brand"><span>pottery lab</span><span>${esc(location.host)}/@${esc(h.handle)}</span></div></div>
     <div class="actions"><button type="button" id="shareBtn">Share</button><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`;
-  document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Encore: ${d.events} gatherings, ${d.guests} people.`;
+  document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Pottery Lab: ${d.events} gatherings, ${d.guests} people.`;
     try { if (navigator.share) { await navigator.share({ title: document.title, text, url: share }); return; } await navigator.clipboard.writeText(share); document.getElementById("shareBtn").textContent = "Link copied"; } catch {} };
 })();
 </script>

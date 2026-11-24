@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Discover hosts · Encore</title>
+<title>Discover hosts · Pottery Lab</title>
 <meta name="description" content="Small gatherings hosted by people near you: run clubs, hikes, pandan cake from a stoop. Follow the hosts you like.">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
@@ -26,12 +26,12 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 <script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body>
 <div class="wrap">
-  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
     <nav><a href="/discover" aria-current="page">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
 
   <div class="hero">
     <div><h1>Small gatherings, hosted by people near you.</h1>
-      <p>Run clubs, hikes, pandan cake from a neighbour's oven. Follow the hosts you like and hear about the next one first. Encore is invite-only, so every host here was brought in by someone.</p></div>
+      <p>Run clubs, hikes, pandan cake from a neighbour's oven. Follow the hosts you like and hear about the next one first. Pottery Lab is invite-only, so every host here was brought in by someone.</p></div>
     <div class="card quiz" id="quiz" aria-live="polite"></div>
   </div>
 
@@ -48,11 +48,11 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 
   <section><h2>Hosts worth following</h2><p class="lede">Ranked by people who came back, not by ads.</p><div class="grid g4" id="hosts"></div></section>
 
-  <section><h2>Who shows up</h2><p class="lede">Every gathering needs a mix. Hosts on Encore see their guests this way, not as a list of emails.</p><div class="cast" id="cast"></div></section>
+  <section><h2>Who shows up</h2><p class="lede">Every gathering needs a mix. Hosts on Pottery Lab see their guests this way, not as a list of emails.</p><div class="cast" id="cast"></div></section>
 
   <section><div class="card invite"><span id="pipI"></span><div><h2 style="font-size:20px">Want to host?</h2><p class="muted" style="margin:4px 0 0">Ask a member for one of their ten invite codes, or get on the waitlist. Hosting with friends is free.</p></div><a class="btn" href="/signup?mode=friends">I have a code</a></div></section>
 </div>
-<footer>Encore · <a href="/">Home</a> · <a href="/security">Security</a></footer>
+<footer>Pottery Lab · <a href="/">Home</a> · <a href="/security">Security</a></footer>
 <script src="/eventart.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
 <script src="/avatars.js"></script>
@@ -98,7 +98,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
     $("#fyL").textContent = ranked.length ? `${P.name.replace(/^The /,"")}s tend to love these.` : "Nothing nearby fits yet. Follow a host below and you'll hear first.";
     $("#fyList").innerHTML = ranked.map((x) => C.eventCard(x.e, x.why)).join("");
   }
-  // themed rows in Encore's voice, like a friend's shortlist (only when there's enough to fill them)
+  // themed rows in Pottery Lab's voice, like a friend's shortlist (only when there's enough to fill them)
   const GT = (() => { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const N = { host: "Hosts", spark: "Sparks", chill: "Chill Ones", filler: "Seat Fillers", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" }; return g && N[g.top] ? { lane: g.lane, name: N[g.top] } : null; } catch { return null; } })();
   const cf0 = () => (($("#cityF") || {}).value || "").trim();
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
@@ -132,7 +132,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
   fetch("/api/public/shops").then((r) => r.json()).then((j) => { const cf = (($("#cityF") || {}).value || (() => { try { return localStorage.getItem("encore.city") || ""; } catch { return ""; } })()).trim().toLowerCase(); if (j.shops) { const seen = new Set(); j.shops = j.shops.filter((s) => { const k = `${s.name}|${s.title}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); } if (cf && j.shops) j.shops = j.shops.filter((s) => s.city && (window.EncorePlace ? window.EncorePlace.near(`${s.city || ""} ${s.hood || ""}`, cf) : `${s.city} ${s.hood}`.toLowerCase().includes(cf))); if (!j.shops?.length) return; $("#shopsSec").hidden = false; $("#shops").innerHTML = j.shops.map((s) => `<a class="ev" href="/@${esc(s.handle)}#shop"><span class="ev-ic" style="--c:${esc(s.accent || "#E26D8E")}">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 44) : esc(s.emoji || "🛍")}</span><span class="ev-b"><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><small class="why">${s.soldOut ? "Sold out. Subscribe for the next batch" : s.items.map((x) => `${esc(x.name)} ${esc(x.price)}`).join(" · ")}</small></span><span class="ev-p">${s.soldOut ? "Sold out" : "Order"}</span></a>`).join(""); }).catch(() => {});
   try { const c0 = localStorage.getItem("encore.city"); if (c0) $("#cityF").value = c0; } catch {} (async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !$("#cityF").value) { window.EncorePlace?.setManual(W.city); $("#cityF").value = W.city; try { const pb = $("#placeBox"); if (pb && window.EncorePlace) { pb.innerHTML = ""; window.EncorePlace.chip(pb, onCity); } } catch {} if (data.events.length) { drawEvents(); drawHosts(); } } } catch {} })(); const onCity = (c) => { $("#cityF").value = c || ""; drawEvents(); drawHosts(); drawForYou(); }; if (window.EncorePlace) window.EncorePlace.chip($("#placeBox"), onCity);
   (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); let q = false; try { q = !!localStorage.getItem("encore.guestType"); } catch {} if (me?.verified || q) { const hp = document.querySelector(".hero > div > p"); if (hp) hp.style.display = "none"; const h1 = document.querySelector(".hero h1"); if (h1 && me?.verified) h1.textContent = "What's on"; if (window.innerWidth < 700) { const qz = document.getElementById("quiz"); if (qz && q) qz.style.display = "none"; } } } catch {} })();
-  // one quiz in Encore: /quiz. Here, just the way in (or your result, drawn below)
+  // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
   { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span style="font-size:40px">🎲</span><div style="flex:1;min-width:200px"><h3 style="margin:0">What kind of guest are you?</h3><small>Six quick questions. Pip uses your answer to pick events for you.</small></div><a class="btn" href="/quiz">Take the quiz</a></div>`; }
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou();
     if (QTEXT || PRM.get("lane")) { const sec = document.getElementById("events")?.closest("section"); if (sec) { const h = sec.querySelector("h2"); if (h && QTEXT) h.textContent = `Results for "${PRM.get("q")}"`; setTimeout(() => sec.scrollIntoView({ behavior: "smooth", block: "start" }), 200); } } }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });

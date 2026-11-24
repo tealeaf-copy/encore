@@ -235,7 +235,7 @@ export function finishPasswordReset(token, password) {
 function clearFailsFor() { for (const L of LIMITS) L.fails.clear?.(); }
 export function loginPage() {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Encore</title>
+<title>Pottery Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
@@ -255,12 +255,12 @@ export function loginPage() {
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
 </style></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
-  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</div><h1>Welcome back</h1><p class="sub">Sign in to plan your next event.</p>
+  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>pottery lab</div><h1>Welcome back</h1><p class="sub">Sign in to plan your next event.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
   ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
   <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
   ${users().length || signupEnabled() ? `<a class="alt" href="/forgot">Forgot your password?</a>` : ""}
-  ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Encore? Join with an invite code</a>` : ""}
+  ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Pottery Lab? Join with an invite code</a>` : ""}
 </form><script>try{const f=document.querySelector("form"),e=f&&f.querySelector("input[name=email]");if(e){const k="encore.loginEmail",v=sessionStorage.getItem(k);if(v&&!e.value)e.value=v;f.addEventListener("submit",()=>{try{sessionStorage.setItem(k,e.value)}catch(x){}});if(v){const p=f.querySelector("input[type=password]");if(p)setTimeout(()=>p.focus(),50)}}}catch(x){}</script></body></html>`;
 }

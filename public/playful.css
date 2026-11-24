@@ -1,4 +1,4 @@
-/* Encore, playful: chunky rounded type, ink outlines, sticker shadows, pastel blocks.
+/* Pottery Lab, playful: chunky rounded type, ink outlines, sticker shadows, pastel blocks.
    Loaded after each public page's own styles, so it only restyles; it never changes layout or behaviour. */
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap");
 :root{--p-ink:#1F1A17;--p-paper:#FFF8EE;--p-butter:#FFE08A;--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:#C94A30;--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
@@ -103,7 +103,7 @@ html body .eyebrow,html body .nu-eyebrow{color:var(--p-ink)!important}
 /* the sign-in and sign-up cards */
 body>form,form#f,form#wl{border:var(--p-line)!important;box-shadow:var(--p-shadow-lg)!important;border-radius:22px!important}
 
-/* ==== Calm pass: one Encore look across public pages and the host app ====
+/* ==== Calm pass: one Pottery Lab look across public pages and the host app ====
    thin warm borders, soft shadows, no offset "sticker" shadows or tilts, plain labels, no dotted paper */
 :root{--p-line:1px solid #E4D9C8;--p-shadow:0 1px 2px rgba(31,26,23,.05);--p-shadow-lg:0 6px 18px rgba(31,26,23,.07)}
 body{background-image:none!important}

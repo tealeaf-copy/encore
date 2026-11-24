@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import zlib from "node:zlib";
 import { drawArt } from "./art.js";
-// Express app for Encore. createApp() is used by server/index.js and the tests.
+// Express app for Pottery Lab. createApp() is used by server/index.js and the tests.
 import express from "express";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
@@ -196,7 +196,7 @@ export function createApp({ store, dataDir }) {
     const lat = Number(req.query.lat), lng = Number(req.query.lng), key = q.toLowerCase() + "|" + (Number.isFinite(lat) ? lat.toFixed(1) + "," + lng.toFixed(1) : "");
     const hit = placeCache.get(key); if (hit && Date.now() - hit.at < 864e5) return res.json({ places: hit.places });
     try { const u = new URL(base); u.searchParams.set("q", q); u.searchParams.set("limit", "6"); u.searchParams.set("lang", "en"); if (Number.isFinite(lat) && Number.isFinite(lng)) { u.searchParams.set("lat", String(lat)); u.searchParams.set("lon", String(lng)); }
-      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 3500); const r = await fetch(u, { signal: ctl.signal, headers: { "User-Agent": "Encore (event invites)" } }); clearTimeout(t); if (!r.ok) throw new Error("places " + r.status);
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 3500); const r = await fetch(u, { signal: ctl.signal, headers: { "User-Agent": "Pottery Lab (event invites)" } }); clearTimeout(t); if (!r.ok) throw new Error("places " + r.status);
       const j = await r.json(); const places = (j.features || []).map((f) => { const p = f.properties || {}, c = f.geometry?.coordinates || []; const street = [p.housenumber, p.street].filter(Boolean).join(" "), city = p.city || p.town || p.village || p.district || p.county || "", name = p.name && p.name !== p.street ? p.name : "";
         const label = [name, street, city, p.state && p.country === "United States" ? p.state : "", p.country].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", ");
         return { label, name: name || street || city, street, city, hood: p.district || p.locality || "", postcode: p.postcode || "", country: p.country || "", lat: c[1], lng: c[0], kind: p.osm_value || "" }; }).filter((x) => x.label);
@@ -212,8 +212,8 @@ export function createApp({ store, dataDir }) {
     if (resetLimited("ip:" + (req.ip || "?"), 10) || (email && resetLimited("em:" + email, 3))) return res.status(429).json({ code: "rate_limited", message: "Too many reset requests. Try again in an hour." });
     const r = EMAIL_RE.test(email) ? startPasswordReset(email) : null;
     if (r) { const cfg = emailConfig(r.user.ws, false) || emailConfig(DEFAULT_WS, true); const link = `${originOf(req)}/reset?token=${r.token}`;
-      if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Encore password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Encore account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).catch(() => {}); }
-    res.json({ ok: true, message: "If that email has an Encore account, a reset link is on its way. It expires in an hour." }); });
+      if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Pottery Lab password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Pottery Lab account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).catch(() => {}); }
+    res.json({ ok: true, message: "If that email has a Pottery Lab account, a reset link is on its way. It expires in an hour." }); });
   app.post("/api/password/reset", express.json({ limit: "4kb" }), (req, res) => { if (resetLimited("rs:" + (req.ip || "?"), 20)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
     const u = finishPasswordReset(req.body?.token, req.body?.password); if (typeof u === "string") return res.status(400).json({ code: "invalid", message: u });
     startSessionFor(req, res, u.email, u.ws); res.json({ ok: true }); });
@@ -238,21 +238,21 @@ export function createApp({ store, dataDir }) {
     if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
-    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account. Sign in instead." });
+    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
-    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Encore is invite-only for now. Ask a member for a code, or join the waitlist." }); }
+    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Pottery Lab is invite-only for now. Ask a member for a code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }
     if (!regular || !needCode) C.issueCodes({ ws: W.id, email, name });
     { const city = String(b.city || "").trim().slice(0, 60); if (city) { try { const W2 = getWorkspace(W.id); updateWorkspace(W.id, { city, host: { ...(W2?.host || {}), city: W2?.host?.city || city } }); } catch {} } }
     if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
-    // A brand's first minute: Encore starts researching the company while they look around.
+    // A brand's first minute: Pottery Lab starts researching the company while they look around.
     else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }
-    // Word of mouth: count who came to Encore from a guest page, on the event's own workspace.
-    if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Encore from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
+    // Word of mouth: count who came to Pottery Lab from a guest page, on the event's own workspace.
+    if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Pottery Lab from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
     scopeStore(store, W.id).add("audit", { eventId: "", what: `${company} workspace created`, kind: "team", who: name, email, verified: true, at: Date.now() });
     startSession(req, res, email, W.id);
@@ -268,7 +268,7 @@ export function createApp({ store, dataDir }) {
     if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This invite link has expired or was already used. Ask for a new one." });
     if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
-    if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has an Encore account." });
+    if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account." });
     useInvite(inv);
     putDbUser({ kind: "user", ws: inv.ws, name, email: inv.email, roles: [inv.role], ...(inv.defaultRole ? { defaultRole: true } : {}), owner: false, pw: hashPassword(b.password), createdAt: Date.now(), invitedBy: inv.by });
     scopeStore(store, inv.ws).add("audit", { eventId: "", what: `${name} joined as ${inv.role}`, kind: "team", who: name, email: inv.email, verified: true, at: Date.now() });
@@ -295,7 +295,7 @@ export function createApp({ store, dataDir }) {
   // ---------- single sign-on (OIDC) ----------
   const SSO_COOKIE = "encore_sso";
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const ssoPage = (inner) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in with SSO · Encore</title>
+  const ssoPage = (inner) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in with SSO · Pottery Lab</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}form,.box{background:#fff;padding:28px;border-radius:16px;box-shadow:0 6px 30px rgba(30,50,120,.12);width:min(320px,calc(100vw - 32px));box-sizing:border-box}h1{margin:0 0 16px;font-size:22px}input,button{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border-radius:10px}input{border:1px solid #cfd6ea;margin-bottom:12px}button{border:0;background:#3355ff;color:#fff;font-weight:600;cursor:pointer}p{margin:0 0 12px;font-size:13px}.err{color:#b3261e}a{display:block;margin-top:14px;text-align:center;color:#3355ff;font-size:13px;text-decoration:none}</style></head><body>${inner}</body></html>`;
   const ssoForm = (msg = "") => ssoPage(`<form method="get" action="/sso/start"><h1>Sign in with SSO</h1>${msg ? `<p class="err">${esc(msg)}</p>` : ""}<input type="email" name="email" placeholder="Work email" autocomplete="email" autofocus required><button type="submit">Continue</button><a href="/login">Sign in with a password instead</a></form>`);
   app.get("/sso/start", (req, res) => {
@@ -355,8 +355,8 @@ export function createApp({ store, dataDir }) {
   app.get("/h/:handle", (req, res) => { const h = String(req.params.handle || "").toLowerCase(); if (/^[a-z0-9][a-z0-9-]{1,29}$/.test(h)) return res.redirect(301, "/@" + h + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); sendStatic(res, "host.html", "<p>Host page missing.</p>"); });
   // Every host's storefront: encore.example/@claire-runs
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = ws && C.profileOf(ws);
-    try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Encore`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
-        html = html.replace("<title>Host · Encore</title>", `<title>${e(h.name)} · Encore</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
+    try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Pottery Lab`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
+        html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
@@ -493,7 +493,7 @@ export function createApp({ store, dataDir }) {
     const u = ownerOnly(req, res); if (!u) return;
     const email = String(req.body?.email || "").trim().toLowerCase(), given = String(req.body?.role ?? "").trim().slice(0, 80), role = given || "Team member";
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
-    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That person already has an Encore account." });
+    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That person already has a Pottery Lab account." });
     // An empty role becomes "Team member" for display, flagged so it never counts as an approver role.
     const { token, expiresAt } = createInvite({ ws: u.ws, email, role, defaultRole: !given, by: u.email });
     S(req).add("audit", { eventId: "", what: `invited ${email} as ${role}`, kind: "team", who: u.name, email: u.email, verified: true, at: Date.now() });
@@ -764,7 +764,7 @@ export function createApp({ store, dataDir }) {
     const so = st.get("signoffs/" + m[1]), evN = st.get(p);
     if (so && evN) { const nowM = eventMoney(evN.data); let changed = false;
       for (const r of so.data.requests || []) if (r.status === "approved" && Math.abs(nowM.cost - (r.decidedCost ?? r.cost)) > Math.max(500, (r.decidedCost ?? r.cost) * 0.05)) { r.status = "stale"; r.staleAt = Date.now(); r.staleCost = nowM.cost; changed = true; }
-      if (changed) { st.set("signoffs/" + m[1], so.data); st.add("audit", { eventId: m[1], what: `${evN.data.name || m[1]}: sign-off needs renewing; the plan is now ${nowM.currency} ${nowM.cost.toLocaleString("en-US")}`, who: "Encore server", email: null, verified: true, at: Date.now() }); } }
+      if (changed) { st.set("signoffs/" + m[1], so.data); st.add("audit", { eventId: m[1], what: `${evN.data.name || m[1]}: sign-off needs renewing; the plan is now ${nowM.currency} ${nowM.cost.toLocaleString("en-US")}`, who: "Pottery Lab server", email: null, verified: true, at: Date.now() }); } }
     const ap = st.get("approvals/" + m[1]); if (!ap || !Object.keys(ap.data.roles || {}).length) return;
     const ev = st.get(p); if (!ev) return;
     const now = eventMoney(ev.data), moved = (a, b) => Math.abs(a - b) > Math.max(500, b * 0.05);
@@ -772,7 +772,7 @@ export function createApp({ store, dataDir }) {
     if (!stale.length) return;
     for (const [r] of stale) delete ap.data.roles[r];
     st.set("approvals/" + m[1], ap.data);
-    st.add("audit", { eventId: m[1], what: `${ev.data.name || m[1]}: approvals reset (${stale.map(([r]) => r).join(", ")}): the plan is now ${now.currency} ${now.cost.toLocaleString("en-US")} with ${now.currency} ${now.committed.toLocaleString("en-US")} committed`, who: "Encore server", email: null, verified: true, at: Date.now() });
+    st.add("audit", { eventId: m[1], what: `${ev.data.name || m[1]}: approvals reset (${stale.map(([r]) => r).join(", ")}): the plan is now ${now.currency} ${now.cost.toLocaleString("en-US")} with ${now.currency} ${now.committed.toLocaleString("en-US")} committed`, who: "Pottery Lab server", email: null, verified: true, at: Date.now() });
   }
   // The server decides whether a plan is fully approved: every required role has a current approval.
   function approvalState(evData, roles, ws) {
@@ -880,7 +880,7 @@ export function createApp({ store, dataDir }) {
     res.json({ ok: true, action: rec });
   });
 
-  // ---------- Email from Encore ----------
+  // ---------- Email from Pottery Lab ----------
   const originOf = (req) => process.env.ENCORE_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
   /** Send as the signed-in person (reply-to them), log it in the outbox and the audit log. */
   async function mailFrom(req, { to, cc, subject, text, eventId = "", kind = "email" }) {

@@ -13,7 +13,7 @@ const rpc = (method, params, token = "mcp-test-token-0123456789abcdef0123456789"
 }).then(async (r) => ({ status: r.status, body: await r.json() }));
 const call = async (name, args) => { const r = await rpc("tools/call", { name, arguments: args }); const t = r.body.result.content[0].text; let data = t; try { data = JSON.parse(t); } catch {} return { ...r.body.result, data }; };
 
-test("Encore works as an MCP server from Claude", async () => {
+test("Pottery Lab works as an MCP server from Claude", async () => {
   assert.equal((await rpc("tools/list", {}, "")).status, 401);
   assert.equal((await rpc("tools/list", {}, "wrong-token")).status, 401);
   const init = await rpc("initialize", { protocolVersion: "2025-06-18" });

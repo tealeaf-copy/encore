@@ -9,7 +9,7 @@ if (/onrender\.com|encore\.app/.test(B)) { console.error("Refusing to run agains
 const J = { "content-type": "application/json" }, sfx = Date.now().toString(36), problems = [];
 const watch = (page, who) => { page.on("pageerror", (e) => problems.push(`${who} page error: ${e.message.slice(0, 160)}`));
   page.on("response", (r) => { const u = r.url(); if (r.status() < 400 || !u.startsWith(B) || /\/api\/(me|workspace|brand)\b/.test(u)) return;
-    // a connected tool (web search) failing upstream is reported as 502 by design; it depends on that service, not on Encore
+    // a connected tool (web search) failing upstream is reported as 502 by design; it depends on that service, not on Pottery Lab
     if (r.status() === 502 && /\/api\/mcp\/call/.test(u)) { console.log(`  note: ${who} tool call 502 (upstream service unavailable)`); return; }
     problems.push(`${who} ${r.status()} ${u.replace(B, "")}`); }); };
 const step = (name, ok) => { console.log(`${ok ? "✓" : "✗"} ${name}`); if (!ok) problems.push("failed: " + name); };

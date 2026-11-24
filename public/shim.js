@@ -1,4 +1,4 @@
-/* Encore browser shim: implements the claude.ai artifact capabilities the page
+/* Pottery Lab browser shim: implements the claude.ai artifact capabilities the page
  * uses (window.claude.use(name)) against this server. Loaded before the page's
  * own script, so window.claude exists synchronously. */
 window.ENCORE_SERVER = true; // tells the page it runs on this server (guest links use location.origin)
@@ -26,7 +26,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
     try {
       res = await fetch(url, { method, headers: h, body: payload, credentials: "same-origin" });
     } catch (e) {
-      throw capError("network_error", "Can't reach the Encore server.");
+      throw capError("network_error", "Can't reach the Pottery Lab server.");
     }
     let data = null;
     try { data = await res.json(); } catch {}
@@ -88,7 +88,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
         }),
       });
     } catch (e) {
-      throw capError("upstream_error", "Can't reach the Encore server.");
+      throw capError("upstream_error", "Can't reach the Pottery Lab server.");
     }
     if (!res.ok || !res.body) {
       let d = null; try { d = await res.json(); } catch {}

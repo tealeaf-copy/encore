@@ -43,7 +43,7 @@ export async function runReminders(store, { now = Date.now(), dryRun = false, or
     const first = String(m.name || "").split(" ")[0] || "there";
     const lines = items.map(({ ev, t }) => `• ${t.st === "blocked" ? "Blocked" : t.days < 0 ? `${-t.days} day${t.days === -1 ? "" : "s"} late` : t.days === 0 ? "Due today" : `Due ${fmt(t.due)}`}: ${t.task} (${ev.name}${ev.date ? ", " + fmt(ev.date) : ""})`);
     const subject = `${items.length} event task${items.length === 1 ? "" : "s"} need${items.length === 1 ? "s" : ""} you${items.some((x) => x.t.days < 0) ? " (some late)" : ""}`;
-    const text = `Good morning ${first},\n\n${lines.join("\n")}\n\nTick them off in Encore when they're done.${origin ? `\n${origin}/#studio` : ""}\n\nIf something is stuck, mark it blocked and the event lead will see it.\n\nEncore`;
+    const text = `Good morning ${first},\n\n${lines.join("\n")}\n\nTick them off in Pottery Lab when they're done.${origin ? `\n${origin}/#studio` : ""}\n\nIf something is stuck, mark it blocked and the event lead will see it.\n\nEncore`;
     const person = { email: m.email, name: m.name, count: items.length, subject };
     const key = `reminders/${day}-${k.replace(/[^a-z0-9]/g, "_")}`;
     if (!dryRun) {

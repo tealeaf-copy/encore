@@ -70,7 +70,8 @@
         "0:30 Hips and back",
         "0:40 Rest",
         "0:45 Done"
-      ]
+      ],
+      "instant": true
     },
     {
       "name": "Mat Pilates burn",
@@ -101,7 +102,8 @@
         "0:25 Legs",
         "0:40 Arms and back",
         "0:50 Done"
-      ]
+      ],
+      "instant": true
     },
     {
       "name": "Wellness week for your team",
@@ -129,7 +131,8 @@
         "Tuesday: mat Pilates",
         "Wednesday: breathwork",
         "Friday: rooftop or studio finale"
-      ]
+      ],
+      "instant": true
     }
   ]
 }

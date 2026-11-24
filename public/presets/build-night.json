@@ -70,7 +70,8 @@
         "community",
         "clients",
         "bonding"
-      ]
+      ],
+      "instant": true
     }
   ]
 }

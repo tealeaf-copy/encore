@@ -72,7 +72,8 @@
         "clients",
         "activation",
         "community"
-      ]
+      ],
+      "instant": true
     },
     {
       "name": "Breakfast roundtable room",
@@ -95,7 +96,8 @@
       ],
       "goals": [
         "clients"
-      ]
+      ],
+      "instant": true
     }
   ]
 }

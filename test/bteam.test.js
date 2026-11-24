@@ -43,3 +43,17 @@ test("Add-ons: catering that travels and event services in the same city, flat f
   assert.equal(photo.total, 850); assert.equal(photo.kind, "service"); assert.equal(cart.total, 600); assert.equal(cart.kind, "catering");
   const none = await (await fetch(`${srv.base}/api/public/addons?city=Denver&people=50`)).json(); assert.ok(!none.results.some((a) => a.host.handle === "june-addon"));
 });
+
+test("Instant booking: a fixed-price listing on an open date confirms now, or the moment it's approved", async () => {
+  const h = await post("/api/signup", { name: "Maya Instant", email: "maya.i@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
+  const day = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10), other = new Date(Date.now() + 21 * 864e5).toISOString().slice(0, 10);
+  const pr = await (await post("/api/host/profile", { handle: "maya-instant", name: "Golden Test", experiences: [{ name: "Lunch yoga", min: 6, max: 40, price: "$30 a person", category: "movement", instant: true, openDates: [day] }] }, hc)).json(); const x = pr.host.experiences[0];
+  const base = { name: "Sam", company: "Northwind", email: "sam.i@northwind.example", where: "Our office", message: "Lunchtime yoga for the team.", experienceId: x.id };
+  const a = await (await post("/api/public/book/maya-instant", { ...base, people: 20, date: day, when: "soon" })).json(); assert.equal(a.instant, true);
+  const ta = new URL(a.status).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${a.id}?t=${ta}`)).json(); assert.equal(bk.booking.status, "booked"); assert.equal(bk.booking.quote.total, "$600");
+  const b = await (await post("/api/public/book/maya-instant", { ...base, people: 20, date: other, when: "later", message: "Another session, different day." })).json(); assert.ok(!b.instant, "not an open date: a normal request");
+  const T = await (await post("/api/public/bteam", { name: "Tiny team", you: "Sam", email: "sam.i@northwind.example", approvers: "boss@northwind.example", cap: "100" })).json();
+  const c = await (await post("/api/public/book/maya-instant", { ...base, people: 10, date: day, when: "soon", message: "Smaller session, needs approval.", team: { id: T.id, k: T.key } })).json(); assert.ok(!c.instant); assert.equal(c.instantAfterApproval, true);
+  const owner = new URL(srv.base + T.ownerLink).searchParams.get("a"); assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: owner, bookingId: c.id, decision: "approve" })).status, 200);
+  const tc = new URL(c.status).searchParams.get("t"), ck = await (await fetch(`${srv.base}/api/public/booking/${c.id}?t=${tc}`)).json(); assert.equal(ck.booking.status, "booked");
+});

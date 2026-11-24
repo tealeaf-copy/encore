@@ -9,7 +9,7 @@
     const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}/results?t=${encodeURIComponent(t)}`).then((x) => x.json()).catch(() => null); if (!r || r.code) { window.__mGone = true; box.remove(); return; }
     const c = r.campaign || {}, gift = r.kind === "gift";
     const tiles = [];
-    if (!gift) { if (r.past) { tiles.push([r.going ? `${r.came}<small>of ${r.going}</small>` : "—", "came", r.showRate != null ? `${r.showRate}% of yeses showed up` : ""]); } else tiles.push([r.going || 0, "said yes", [r.invited ? `of ${r.invited} expected` : "", r.pending ? `${r.pending} waiting for a reply` : ""].filter(Boolean).join(" · ")]); }
+    if (!gift) { if (r.past) { tiles.push([r.going ? `${r.came}<small>of ${r.going}</small>` : "—", "came", r.showRate != null ? `${r.showRate}% of yeses showed up` : ""]); } else tiles.push([r.going || 0, "said yes", [r.invited ? `of ${r.invited} expected` : "", r.pending ? `${r.pending} waiting for a reply` : "", r.cant ? `${r.cant} can't make it` : ""].filter(Boolean).join(" · ")]); }
     if (r.againPct != null) tiles.push([`${r.againPct}%`, "would go again", r.hostAgainPct != null ? `${r.hostAgainPct}% across this host's events` : `${r.ratings} ${r.ratings === 1 ? "rating" : "ratings"}`]);
     if (r.costPer) tiles.push([money(r.costPer), gift ? "per gift" : r.past ? "per attendee" : "per expected guest", r.eventCost ? `${money(r.eventCost)} for the whole event` : r.cost ? `${money(r.cost)} total` : ""]);
     if (c.pipeline) tiles.push([money(c.pipeline), "pipeline", r.cost ? `${Math.round(c.pipeline / r.cost)}× the spend` : ""]);

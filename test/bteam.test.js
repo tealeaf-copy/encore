@@ -25,7 +25,8 @@ test("Team space: requests join the team, bookings over the cap wait for an appr
   let team = await (await fetch(`${srv.base}/api/public/bteam/${T.id}?k=${T.key}`)).json(); assert.equal(team.rows.length, 2); assert.equal(team.rows.find((r) => r.id === big.id).cost, 3700);
   assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, bookingId: big.id, decision: "approve", approver: "cfo@northwind.example" })).status, 403, "typing the approver's email isn't enough");
   assert.equal((await post(`/api/public/bteam/${T.id}/settings`, { k: T.key, cap: "999999" })).status, 403, "the team link alone can't change limits");
-  const owner = new URL(srv.base + T.ownerLink).searchParams.get("a"); assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: owner, bookingId: big.id, decision: "approve" })).status, 403, "the owner isn't an approver");
+  const owner = new URL(srv.base + T.ownerLink).searchParams.get("a");
+  assert.equal((await post(`/api/public/bteam/${T.id}/join`, { k: T.key, email: "cfo@northwind.example", name: "Fake" })).status, 403, "nobody joins under the approver's email");
   const mail = fakeOutbox.filter((m) => [].concat(m.to).includes("cfo@northwind.example")).pop(); assert.ok(mail, "the approver got their link");
   const appr = mail.text.match(/&a=([a-f0-9]{32})/)[1];
   assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: appr, bookingId: big.id, decision: "approve" })).status, 200);

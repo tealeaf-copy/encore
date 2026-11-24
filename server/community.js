@@ -85,6 +85,7 @@ export function makeCommunity(store) {
       legalName: clean(p.legalName ?? cur.legalName, 100), taxId: clean(p.taxId ?? cur.taxId, 40), bizAddress: clean(p.bizAddress ?? cur.bizAddress, 200),
       gigs: Array.isArray(p.gigs) ? p.gigs.slice(0, 8).map((g) => ({ client: clean(g?.client, 60), what: clean(g?.what, 100), when: clean(g?.when, 30) })).filter((g, i, A) => (g.client || g.what) && A.findIndex((x) => x.client.toLowerCase() === g.client.toLowerCase() && x.what.toLowerCase() === g.what.toLowerCase()) === i) : cur.gigs || [],
       insured: p.insured != null ? !!p.insured : !!cur.insured, respondsIn: clean(p.respondsIn ?? cur.respondsIn, 30), terms: clean(p.terms ?? cur.terms, 400), invoices: p.invoices != null ? !!p.invoices : !!cur.invoices,
+      alsoIn: Array.isArray(p.alsoIn) ? p.alsoIn.map((x) => clean(x, 60)).filter(Boolean).slice(0, 6) : cur.alsoIn || [],
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, backupPlan: clean(p.backupPlan ?? cur.backupPlan, 240), corpQuotes: Array.isArray(p.corpQuotes) ? p.corpQuotes.slice(0, 4).map((q) => ({ quote: clean(q?.quote, 240), name: clean(q?.name, 60), title: clean(q?.title, 80), company: clean(q?.company, 60) })).filter((q) => q.quote && q.name) : cur.corpQuotes || [], services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120), updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
@@ -147,7 +148,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
   // ---- add-ons for a booking: catering that travels and event services (photo, check-in), in the same metro ----
   function addOns({ city = "", people = 0, exclude = "" } = {}) { const c = String(city).trim().toLowerCase(), mc = metroOf(c), n = Math.max(0, +people || 0), out = [];
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle || h.handle === exclude || !(h.experiences || []).length) continue; const W = getWorkspace(ws); if (/@demo\.encore$/i.test(W?.ownerEmail || "") && process.env.ENCORE_HIDE_DEMO === "1") continue;
-      const here = !c || String(h.city || "").toLowerCase().includes(c) || (mc >= 0 && (mc === metroOf(h.city) || mc === metroOf(h.hood))); if (!here) continue;
+      const here = !c || String(h.city || "").toLowerCase().includes(c) || (mc >= 0 && (mc === metroOf(h.city) || mc === metroOf(h.hood) || (h.alsoIn || []).some((x) => metroOf(x) === mc))); if (!here) continue;
       for (const x of h.experiences) { const catering = ["food", "drinks"].includes(x.category) && x.travels && !x.service, svc = !!x.service; if (!catering && !svc) continue; if (n && (n > x.max || n < x.min)) continue;
         const pp = perPerson(x.price), total = pp ? (isFlat(x.price) ? pp : Math.round(pp * (n || x.min))) : 0;
         out.push({ kind: svc ? "service" : "catering", host: { handle: h.handle, name: h.name, person: String(getDbUser(W?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0] || "", insured: !!(h.insuranceDoc || h.insured) }, experience: { id: x.id, name: x.name, emoji: x.emoji, price: x.price, length: x.length, openDates: (x.openDates || []).filter((d) => d >= new Date().toISOString().slice(0, 10)) }, total }); } }

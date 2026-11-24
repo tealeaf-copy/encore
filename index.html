@@ -9739,7 +9739,7 @@ try{ if(Array.isArray(FRIEND_IDEAS)) FRIEND_IDEAS.splice(5) }catch{}
 // Company events booked through Encore: no "follow the host" pitch for the brand's guests, and a note while the venue is unconfirmed.
 // ==================================================================
 new MutationObserver(()=>{ try{ const e=window.__gEv; if(!e) return; if(e.hideHostFollow) document.querySelectorAll("#view-guest .gk-follow").forEach(x=>x.style.setProperty("display","none","important"));
-    if(e.tentative&&!document.getElementById("gTent")){ const h=document.querySelector("#view-guest h3"); if(h){ const p=document.createElement("p"); p.id="gTent"; p.className="note"; p.textContent="The organizer is confirming the venue. You'll get a note when it's set."; h.after(p) } } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+    if(e.tentative&&!document.getElementById("gTent")){ const h=document.querySelector("#view-guest h3"); if(h){ const p=document.createElement("p"); p.id="gTent"; p.className="note"; p.textContent="The organizer is still confirming the booking with the host. You'll get a note if anything changes."; h.after(p) } } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 </script>
 <style>@media (min-width:701px){.asktab{display:none!important}}
 /* layout fixes: kept in the last stylesheet so nothing later overrides them */

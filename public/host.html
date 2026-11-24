@@ -87,7 +87,7 @@ body.is-owner{padding-bottom:110px}
 @media (max-width:600px){body.is-owner .store-fab{font-size:0;width:52px;height:52px;padding:0;border-radius:50%;display:grid;place-items:center}body.is-owner .store-fab::before{content:"✏️";font-size:20px}body.is-owner .store-fab.shop-fab::before{content:"🛍"}}
 .own-gig{border-style:dashed}
 @media (max-width:600px){body.is-owner .store-fab{bottom:14px!important;top:auto!important}body.is-owner .store-fab.shop-fab{bottom:76px!important}body.is-owner main,body.is-owner .wrap{padding-bottom:84px}}
-body,.wrap,#m{display:flow-root}</style><link rel="stylesheet" href="/playful.css">
+body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important;gap:18px}.ev-series{display:grid;gap:6px;align-content:start}.more-dates{margin:0;font-size:13px;color:#6B5F56;padding:0 6px}</style><link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
 <script src="/authguard.js"></script><script src="/placesearch.js"></script>
 </head><body>
@@ -108,6 +108,9 @@ body,.wrap,#m{display:flow-root}</style><link rel="stylesheet" href="/playful.cs
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
   let d; try { const r = await fetch("/api/public/host/" + encodeURIComponent(handle)); if (!r.ok) throw 0; d = await r.json(); } catch { m.innerHTML = `<div class="empty" style="margin-top:40px">No host by that name. <a href="/discover">See who's hosting</a>.</div>`; return; }
+  // a run club that meets every Saturday is one card with its other dates, not a row of identical cards
+  const series = (L) => { const out = [], seen = new Map(); for (const e of L || []) { const k = String(e.title || "").trim().toLowerCase(); const f = k && seen.get(k); if (f) { f._more = (f._more || 0) + 1; f._list.push(e); } else { const c = { ...e, _list: [] }; if (k) seen.set(k, c); out.push(c); } }
+    for (const c of out) if (c._more) c._dates = c._list.slice(0, 3).map((x) => x.date ? new Date(x.date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "").filter(Boolean).join(", ") + (c._list.length > 3 ? "…" : ""); return out; };
   const h = d.host, first = h.showcase ? h.name : d.person && !String(h.name || "").startsWith(d.person + " ") ? d.person : d.person ? h.name : (h.name || handle).split(/[\s']/)[0]; // an account named after the business keeps the whole name window.__encorePerson = d.person || "";
   document.title = `${h.name || "@" + h.handle} · Pottery Lab`; document.body.style.setProperty("--c", h.color || "#E26D8E");
   const followed = (() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })();
@@ -119,8 +122,8 @@ body,.wrap,#m{display:flow-root}</style><link rel="stylesheet" href="/playful.cs
     <a class="btn" href="#follow" id="topFollow">${followed ? "Following ✓" : "Follow"}</a></div>
   <section class="next-up" id="nextUp" hidden></section>
   <div class="cols"><div>
-    <h2 class="sec s-coming">Coming up</h2><div class="grid s-coming">${d.upcoming.length ? d.upcoming.map((e) => C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. ${h.showcase ? "Keep an eye on their Instagram for the next one." : `Follow ${esc(first)} and you'll hear about the next one first.`}</div>`}</div>
-    ${d.past.length ? `<div class="s-past"><h2 class="sec" style="margin-top:22px">Past gatherings</h2><div class="grid past">${d.past.map((e) => C.eventCard(e)).join("")}</div></div>` : ""}
+    <h2 class="sec s-coming">Coming up</h2><div class="grid s-coming">${d.upcoming.length ? series(d.upcoming).map((e) => e._more ? `<div class="ev-series">${C.eventCard(e)}<p class="more-dates">+${e._more} more ${e._more === 1 ? "date" : "dates"}: ${esc(e._dates)}</p></div>` : C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. ${h.showcase ? "Keep an eye on their Instagram for the next one." : `Follow ${esc(first)} and you'll hear about the next one first.`}</div>`}</div>
+    ${d.past.length ? `<div class="s-past"><h2 class="sec" style="margin-top:22px">Past gatherings</h2><div class="grid past">${series(d.past).map((e) => e._more ? `<div class="ev-series">${C.eventCard(e)}<p class="more-dates">and ${e._more} more like it</p></div>` : C.eventCard(e)).join("")}</div></div>` : ""}
     <div id="extras"></div>
   </div><aside class="side"><div id="sideExtras"></div>
     <div class="card" id="follow"><h3>Join ${esc(first)}'s regulars</h3><p class="muted" style="margin:0;font-size:14px">Get a note when ${esc(first)} hosts something, and first dibs on seats. Takes a free account; ${esc(first)}'s page is your invite. One tap to leave.</p>

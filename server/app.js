@@ -168,7 +168,9 @@ export function createApp({ store, dataDir }) {
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
   const app = express();
   const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self'", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
-  app.use((req, res, next) => { if (req.method === "GET" && !/^\/(api|_blob)\//.test(req.path)) res.set("Content-Security-Policy-Report-Only", CSP_RO); next(); });
+  // enforced since every page ran clean under report-only; violations are still reported to /api/csp-report
+  // (ENCORE_CSP=report puts it back in report-only mode without a deploy of new code)
+  app.use((req, res, next) => { if (req.method === "GET" && !/^\/(api|_blob)\//.test(req.path)) res.set(process.env.ENCORE_CSP === "report" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy", CSP_RO); next(); });
   let cspSeen = 0; app.post("/api/csp-report", express.json({ type: () => true, limit: "16kb" }), (req, res) => { if (cspSeen++ < 200) { const r = req.body?.["csp-report"] || req.body || {}; console.warn("[csp]", String(r["violated-directive"] || r.effectiveDirective || "").slice(0, 60), String(r["blocked-uri"] || r.blockedURL || "").slice(0, 120), String(r["document-uri"] || r.documentURL || "").slice(0, 80)); } res.status(204).end(); });
   // A readable "signed in" hint (never the session itself) so pages skip calls that need a session when there isn't one.
   // Kept in step with the real session on every page and API request.

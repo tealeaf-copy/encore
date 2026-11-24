@@ -167,7 +167,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
       if (inflight) { again = true; return; }
       inflight = true;
       try { const snap = await load(); if (active) next(snap); }
-      catch (e) { if (active && typeof error === "function") error(e); else if (active) console.warn("[encore] snapshot failed", e); }
+      catch (e) { if (active && typeof error === "function") error(e); else if (active && !/unauthenticated|Sign in first/i.test(String(e?.code || e?.message || ""))) console.warn("[encore] snapshot failed", e); }
       finally { inflight = false; if (again) { again = false; run(); } }
     };
     const sub = { matches, refresh() { clearTimeout(timer); timer = setTimeout(run, 30); } };

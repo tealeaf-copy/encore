@@ -3,7 +3,7 @@
 // and as a live preview in the host kit, with a few templates to start from.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const TONES = { berry: ["#B8327E", "#7A1E55", "#FDF6D8", "#D8379A"], plum: ["#4A0F32", "#2E0820", "#F5E9FF", "#C9A8F5"], sage: ["#2F6B4F", "#1D4733", "#FFF6DA", "#E0A030"], tomato: ["#C94A30", "#8A2E1C", "#FFF3E2", "#E8452C"], lilac: ["#C9B8F5", "#8B6FD6", "#FFFBE6", "#7A4FD6"] };
+  const TONES = { berry: ["#B8327E", "#7A1E55", "#FDF6D8", "#D8379A"], plum: ["#4A0F32", "#2E0820", "#F5E9FF", "#6A2E8F"], sage: ["#2F6B4F", "#1D4733", "#FFF6DA", "#8A5A0C"], tomato: ["#C94A30", "#8A2E1C", "#FFF3E2", "#B8361E"], lilac: ["#C9B8F5", "#8B6FD6", "#FFFBE6", "#7A4FD6"] };
   const BADGE = ["#2F9D5A", "#E85AB8", "#E8762C", "#2F6FE0", "#E0A030"];
   const TEMPLATES = [
     { name: "Three courses", theme: "A cozy dinner at mine", lines: ["To start: Pandan madeleines, salted butter", "Main: Lemongrass chicken, jasmine rice, herbs", "Dessert: Coconut pandan cake"] },

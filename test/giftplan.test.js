@@ -24,3 +24,19 @@ test("Anyone can ask for a plan; it comes back with gifts, makers and a playbook
   assert.equal((await fetch(srv.base + "/api/public/giftplan/ffffffffffffffff")).status, 404);
   assert.equal((await fetch(srv.base + "/gifts/plan/" + r.id)).status, 200);
 });
+
+test("A gift plan gives each segment a job, an owner and a send decision, and shows how to prove it", async () => {
+  const { samplePlan, cleanPlan } = await import("../server/giftplan.js");
+  const p = samplePlan({ company: "Exa", moment: "We just launched Snapshot" });
+  const champ = p.audience.segments.find((s) => /champion/i.test(s.who));
+  assert.ok(champ.job && champ.kpi && /AE/.test(champ.owner) && champ.followUpBy && champ.send === "fewer" && champ.sendNote);
+  assert.equal(p.playbook.prove.lines.length, 3); assert.ok(/holdout|hold back/i.test(p.playbook.prove.holdout)); assert.ok(p.playbook.prove.caveat);
+  assert.ok(p.playbook.approvals.some((x) => /meeting is booked/i.test(x.gate))); assert.ok(p.playbook.sends.length === 2 && p.playbook.triggers.length >= 2);
+  assert.ok(p.gifts.every((g) => g.delivery.shipBy && g.delivery.backup)); assert.ok(p.theme.searchFor && p.theme.doesForThem);
+  // the budget table adds up to the total it states
+  const n = (v) => +String(v).replace(/[^\d.]/g, ""); const sum = p.playbook.budgetLines.reduce((a, x) => a + n(x.total), 0);
+  assert.ok(Math.abs(sum - n(p.playbook.budget.total.split(" for ")[0])) < 100, `${sum} vs ${p.playbook.budget.total}`);
+  assert.ok(/\n\n/.test(p.playbook.message.email), "the email keeps its line breaks");
+  // unknown send values fall back, and tags are stripped
+  const c = cleanPlan({ audience: { segments: [{ who: "<b>Press</b>", send: "everyone!" }] } }); assert.equal(c.audience.segments[0].send, "all"); assert.equal(c.audience.segments[0].who, "Press");
+});

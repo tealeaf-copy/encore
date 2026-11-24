@@ -27,8 +27,10 @@ export const STORE = {
 };
 const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u) || /^\/presets\/[a-z0-9-]{1,40}\.svg$/.test(u); // uploads, or a logo shipped with a prepared page
 const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
-// a portrait is a style, optionally with a skin tone and hair colour: "braids~4~0"
-const avatarOk = (v) => typeof v === "string" && /^[a-z]*(~[0-5]~[0-5])?$/.test(v) && STORE.avatars.includes(v.split("~")[0]);
+// a portrait is a style, optionally followed by its features: "braids~4~0~2"
+// parts after the style: skin, hair, eyes, nose, mouth, extra (each a small number; see public/avatars.js)
+const AVATAR_PARTS = [6, 6, 6, 4, 5, 7];
+const avatarOk = (v) => { if (typeof v !== "string" || !/^[a-z]*(~\d){0,6}$/.test(v)) return false; const [style, ...n] = v.split("~"); return STORE.avatars.includes(style) && n.every((x, i) => +x < AVATAR_PARTS[i]); };
 function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
   return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }

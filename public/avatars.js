@@ -14,9 +14,38 @@
   ];
   const head = (s) => `<path d="M52 72 C49 110 52 148 59 171 C91 177 128 176 151 169 C157 139 157 104 152 68 C120 61 85 62 52 72 Z" fill="${s}" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>`;
   const ears = (s) => `<path d="M53 110 C37 106 35 132 55 133" fill="${s}" stroke="${INK}" stroke-width="7" stroke-linecap="round"/><path d="M151 108 C168 104 170 130 150 131" fill="${s}" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>`;
-  const eyes = `<circle cx="83" cy="113" r="6.5" fill="${INK}"/><circle cx="124" cy="111" r="6.5" fill="${INK}"/>`;
-  const nose = `<path d="M105 117 C97 125 98 132 107 134" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>`;
-  const smile = `<path d="M76 145 C88 166 122 167 137 143 C118 149 95 150 76 145 Z" fill="${INK}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M90 157 C100 162 113 162 123 156" fill="none" stroke="#F28B9B" stroke-width="5" stroke-linecap="round"/>`;
+  const EYES = [
+    { label: "Round eyes", d: `<circle cx="83" cy="113" r="6.5" fill="${INK}"/><circle cx="124" cy="111" r="6.5" fill="${INK}"/>` },
+    { label: "Almond eyes", d: `<path d="M73 114 C78 107 89 107 94 113 C88 117 78 117 73 114 Z M114 112 C119 105 130 105 135 111 C129 115 119 115 114 112 Z" fill="${INK}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>` },
+    { label: "Smiling eyes", d: `<path d="M73 116 C78 106 89 106 94 116 M114 114 C119 104 130 104 135 114" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+    { label: "Big bright eyes", d: `<circle cx="83" cy="113" r="9" fill="${INK}"/><circle cx="124" cy="111" r="9" fill="${INK}"/><circle cx="86" cy="109" r="3" fill="#fff"/><circle cx="127" cy="107" r="3" fill="#fff"/>` },
+    { label: "Lashes", d: `<circle cx="83" cy="113" r="6.5" fill="${INK}"/><circle cx="124" cy="111" r="6.5" fill="${INK}"/><path d="M76 107 L72 102 M83 105 L83 99 M131 105 L135 100 M124 103 L124 97" stroke="${INK}" stroke-width="3.5" stroke-linecap="round"/>` },
+    { label: "Sleepy eyes", d: `<path d="M73 112 C78 119 89 119 94 112 M114 110 C119 117 130 117 135 110" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+  ];
+  const NOSES = [
+    { label: "Curved nose", d: `<path d="M105 117 C97 125 98 132 107 134" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+    { label: "Button nose", d: `<path d="M98 128 C101 134 110 134 113 128" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+    { label: "Wide nose", d: `<path d="M94 126 C90 134 98 137 104 133 C110 137 118 134 114 126 M104 118 L104 128" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` },
+    { label: "Long nose", d: `<path d="M104 110 C100 120 98 130 101 134 C105 137 110 135 112 132" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+  ];
+  const MOUTHS = [
+    { label: "Big smile", d: `<path d="M76 145 C88 166 122 167 137 143 C118 149 95 150 76 145 Z" fill="${INK}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M90 157 C100 162 113 162 123 156" fill="none" stroke="#F28B9B" stroke-width="5" stroke-linecap="round"/>` },
+    { label: "Soft smile", d: `<path d="M82 148 C94 160 116 160 128 146" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+    { label: "Toothy grin", d: `<path d="M76 145 C88 166 122 167 137 143 C118 149 95 150 76 145 Z" fill="#fff" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/><path d="M80 150 C98 154 118 153 134 148" fill="none" stroke="${INK}" stroke-width="3"/>` },
+    { label: "Smirk", d: `<path d="M86 152 C100 156 116 152 128 142" fill="none" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/>` },
+    { label: "Lipstick smile", d: `<path d="M80 146 C90 162 120 162 132 144 C118 150 94 151 80 146 Z" fill="#C2414B" stroke="${INK}" stroke-width="4.5" stroke-linejoin="round"/>` },
+  ];
+  const EXTRAS = [
+    { label: "Nothing extra", d: "" },
+    { label: "Freckles", d: `<g fill="#9A5B3C" opacity=".8"><circle cx="66" cy="126" r="2.4"/><circle cx="74" cy="130" r="2.4"/><circle cx="64" cy="134" r="2.4"/><circle cx="142" cy="123" r="2.4"/><circle cx="134" cy="127" r="2.4"/><circle cx="144" cy="131" r="2.4"/></g>` },
+    { label: "Round glasses", d: `<circle cx="83" cy="113" r="17" fill="none" stroke="${INK}" stroke-width="5"/><circle cx="124" cy="111" r="17" fill="none" stroke="${INK}" stroke-width="5"/><path d="M100 112 C103 109 105 109 107 111" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>` },
+    { label: "Square glasses", d: `<rect x="66" y="100" width="34" height="25" rx="5" fill="none" stroke="${INK}" stroke-width="5"/><rect x="108" y="98" width="34" height="25" rx="5" fill="none" stroke="${INK}" stroke-width="5"/><path d="M100 111 L108 110" stroke="${INK}" stroke-width="5"/>` },
+    { label: "Hoop earrings", d: `<circle cx="47" cy="140" r="9" fill="none" stroke="#D9A441" stroke-width="4.5"/><circle cx="162" cy="138" r="9" fill="none" stroke="#D9A441" stroke-width="4.5"/>` },
+    { label: "Mustache", d: `<path d="M80 141 C88 132 100 134 105 139 C110 133 122 131 130 140 C120 142 112 143 105 141 C97 144 88 144 80 141 Z" fill="__HAIR__" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>` },
+    { label: "Beauty mark", d: `<circle cx="134" cy="140" r="3" fill="${INK}"/>` },
+  ];
+  const FEATURES = { eyes: EYES, nose: NOSES, mouth: MOUTHS, extra: EXTRAS };
+  const ORDER = ["skin", "hair", "eyes", "nose", "mouth", "extra"];
   const cheeks = (a) => `<ellipse cx="70" cy="134" rx="9" ry="5" fill="${a}" opacity=".35"/><ellipse cx="140" cy="131" rx="9" ry="5" fill="${a}" opacity=".35"/>`;
   const line = (h) => (h === INK ? "" : ` stroke="${INK}" stroke-width="5" stroke-linejoin="round"`); // coloured hair gets an ink outline so it reads as a drawing
   const hairShort = (h) => `<path d="M50 84 C46 44 92 30 122 38 C146 44 160 58 156 86 C146 74 132 68 120 70 C112 80 96 84 82 80 C74 72 62 76 50 84 Z" fill="${h}"${line(h)}/>`;
@@ -54,12 +83,15 @@
     hiker: { label: "The hiker", draw: (h) => `<path d="M48 86 C46 34 158 30 158 84 Z" fill="${h}"/><path d="M46 80 C90 70 122 70 160 78 L160 94 C122 88 90 88 46 96 Z" fill="#fff" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><circle cx="104" cy="30" r="12" fill="#fff" stroke="${INK}" stroke-width="6"/>` },
   };
   /** "braids~4~1" -> { style: "braids", skin: 4, hair: 1 }; unknown parts fall back to the defaults. */
-  function parse(key) { const [style, s, h] = String(key || "").split("~"); const n = (v, max) => (/^\d$/.test(v || "") && +v < max ? +v : 0); return { style, skin: n(s, SKINS.length), hair: n(h, HAIRS.length) }; }
-  function make(style, skin, hair) { return skin || hair ? `${style}~${skin || 0}~${hair || 0}` : style; }
-  function valid(key) { return key === "" || (/^[a-z]+(~\d~\d)?$/.test(String(key)) && !!ART[parse(key).style]); }
+  /** "braids~4~1~2~0~1~3": style, then skin, hair, eyes, nose, mouth, extra. Missing or unknown parts are 0. */
+  const SIZES = { skin: SKINS.length, hair: HAIRS.length, eyes: EYES.length, nose: NOSES.length, mouth: MOUTHS.length, extra: EXTRAS.length };
+  function parse(key) { const [style, ...rest] = String(key || "").split("~"), out = { style }; ORDER.forEach((k, i) => { const v = rest[i]; out[k] = /^\d$/.test(v || "") && +v < SIZES[k] ? +v : 0; }); return out; }
+  /** make("braids", { skin: 4, eyes: 2 }) or the older make("braids", skin, hair) */
+  function make(style, a, b) { const p = typeof a === "object" && a ? a : { skin: a, hair: b }; const nums = ORDER.map((k) => +p[k] || 0); while (nums.length && !nums[nums.length - 1]) nums.pop(); return nums.length ? [style, ...nums].join("~") : style; }
+  function valid(key) { return key === "" || (/^[a-z]+(~\d){0,6}$/.test(String(key)) && !!ART[parse(key).style]); }
   function svg(key, accent = "#E26D8E", size = 120) {
-    const p = parse(key), A = ART[p.style]; if (!A) return ""; const s = SKINS[p.skin].c, h = HAIRS[p.hair].c;
-    return `<svg viewBox="20 0 180 190" width="${size}" height="${size}" style="width:100%;height:100%;max-width:${size}px;max-height:${size}px" role="img" aria-label="${A.label}"><circle cx="105" cy="98" r="96" fill="#fff"/>${A.under ? A.under(h, accent) : ""}${A.noEars ? "" : ears(s)}${head(s)}${A.draw(h, accent)}${eyes}${nose}${smile}${cheeks(accent)}${A.over ? A.over(h, accent) : ""}</svg>`;
+    const p = parse(key), A = ART[p.style]; if (!A) return ""; const s = SKINS[p.skin].c, h = HAIRS[p.hair].c, mouth = MOUTHS[p.mouth].d, extra = EXTRAS[p.extra].d.replace("__HAIR__", h);
+    return `<svg viewBox="20 0 180 190" width="${size}" height="${size}" style="width:100%;height:100%;max-width:${size}px;max-height:${size}px" role="img" aria-label="${A.label}"><circle cx="105" cy="98" r="96" fill="#fff"/>${A.under ? A.under(h, accent) : ""}${A.noEars ? "" : ears(s)}${head(s)}${A.draw(h, accent)}${EYES[p.eyes].d}${NOSES[p.nose].d}${mouth}${cheeks(accent)}${extra}${A.over ? A.over(h, accent) : ""}</svg>`;
   }
-  window.EncoreAvatars = { ART, SKINS, HAIRS, svg, parse, make, valid, keys: Object.keys(ART) };
+  window.EncoreAvatars = { ART, SKINS, HAIRS, FEATURES, svg, parse, make, valid, keys: Object.keys(ART) };
 })();

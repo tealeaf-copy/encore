@@ -50,8 +50,9 @@ test("Portraits keep a chosen skin tone and hair colour; anything else is refuse
   await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", city: "New York", theme: { avatarArt: "braids~4~1" } }, c);
   const art = async () => (await (await fetch(srv.base + "/api/public/host/yan-av")).json()).host.theme.avatarArt;
   assert.equal(await art(), "braids~4~1");
-  for (const bad of ["braids~9~0", "dragon", "hijab~1", "<svg>"]) { await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: bad } }, c); assert.equal(await art(), "braids~4~1", bad + " is not saved"); }
+  for (const bad of ["braids~9~0", "dragon", "hijab~1~1~1~9", "braids~1~1~1~1~1~1~1", "<svg>"]) { await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: bad } }, c); assert.equal(await art(), "braids~4~1", bad + " is not saved"); }
   await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: "hijab" } }, c); assert.equal(await art(), "hijab");
+  await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: "afro~5~0~3~2~2~4" } }, c); assert.equal(await art(), "afro~5~0~3~2~2~4", "eyes, nose, mouth and extras are kept");
 });
 
 test("Real hosts who haven't signed up yet show as read-only showcase pages until they claim them", async () => {

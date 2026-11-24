@@ -138,3 +138,27 @@ test("Every showcase host page resolves, and the old atelier-bo link redirects",
     const r = await fetch(srv.base + "/@" + h, { redirect: "manual" }); assert.equal(r.status, 200, "/@" + h); }
   const r = await fetch(srv.base + "/@atelier-bo", { redirect: "manual" }); assert.equal(r.status, 301); assert.equal(r.headers.get("location"), "/@atbo");
 });
+
+test("Answers to custom questions don't break the host's tools (room read shows them with the question)", async () => {
+  const r0 = await post("/api/signup", { name: "Room Host", email: "room.q@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  const day = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/rq1", { kind: "social", casual: true, name: "Supper", date: day, published: true, questions: [{ id: "q1", q: "how many sets?", type: "number" }, { id: "q2", q: "your ig handle", type: "instagram" }] }, c);
+  const G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  assert.ok((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "rq-a" }, body: JSON.stringify({ eventId: "rq1", name: "Vi", response: "going", answers: { q1: 2, q2: "@vi" } }) })).ok);
+  // an older RSVP that stored [{q, a}] still works
+  assert.ok((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "rq-b" }, body: JSON.stringify({ eventId: "rq1", name: "Bo", response: "going", answers: [{ q: "fav snack?", a: "<b>chips</b>" }] }) })).ok);
+  const r = await fetch(srv.base + "/api/host/room/rq1", { headers: { cookie: c } }); assert.equal(r.status, 200, await r.clone().text());
+  const list = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const docs = (list.docs || list.items || list).map((d) => d.data || d);
+  assert.deepEqual(docs.find((d) => d.name === "Bo").answers, [{ q: "fav snack?", a: "chips" }]); assert.deepEqual(docs.find((d) => d.name === "Vi").answers, { q1: 2, q2: "@vi" });
+  const { ansList } = await import("../server/social.js"); assert.deepEqual(ansList({ q1: 2, q2: "@vi" }, [{ id: "q1", q: "how many sets?" }]), [{ q: "how many sets?", a: "2" }, { q: "", a: "@vi" }]);
+});
+
+test("Share links (/e/<id>) carry the event's title and date for link previews, then open the RSVP page", async () => {
+  const r0 = await post("/api/signup", { name: "Share Host", email: "share.e@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0);
+  await put("/api/db/doc?path=events/sh1", { kind: "social", casual: true, name: "Dumpling night <3", date: "2026-12-12", startTime: "19:00", city: "Brooklyn", published: true }, c);
+  const r = await fetch(srv.base + "/e/sh1", { redirect: "manual" }); assert.equal(r.status, 200); const html = await r.text();
+  assert.match(html, /og:title" content="Dumpling night &lt;3"/); assert.match(html, /Sat, Dec 12 · 7:00 PM · Brooklyn/); assert.match(html, /url=\/g#rsvp-sh1/);
+  const miss = await fetch(srv.base + "/e/nope123", { redirect: "manual" }); assert.equal(miss.status, 302); assert.equal(miss.headers.get("location"), "/g#rsvp-nope123");
+});

@@ -7,8 +7,10 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
   const TYPES = { short: "Short answer", long: "Long answer", choice: "Pick one", multi: "Pick any", yesno: "Yes / no", emoji: "Emoji scale", number: "Number (− 1 +)", time: "Pick a time", instagram: "Instagram handle", phone: "Phone" };
   // starters, in a host's voice, to edit freely
+  // food events already ask "Anything you don't eat?" with one-tap answers, so the allergies starter isn't offered there
+  const hasDietChips = (ev) => { try { return typeof FOODY === "function" ? !!FOODY(ev) : /dinner|supper|brunch|bake|cook|potluck|tasting|food|cake|bread|coffee|matcha|tea/i.test(`${ev.activity || ""} ${ev.name || ""} ${ev.pubTitle || ""}`); } catch { return false; } };
   const STARTERS = [
-    { q: "any allergies?", type: "short", placeholder: "nope, or tell us" },
+    { q: "any allergies?", type: "short", placeholder: "nope, or tell us", diet: true },
     { q: "have you followed us? 😤", type: "yesno" },
     { q: "your ig handle (just in case things happen)", type: "instagram" },
     { q: "want in on the group chat? 💬", type: "yesno" },
@@ -40,7 +42,7 @@
   function builder(box, ev, onChange) { css(); ev.questions = (ev.questions || []).map(norm); ev.qStyle = ev.qStyle || {};
     const save = () => onChange?.(ev);
     const draw = () => { const Q = ev.questions, P = ev.qStyle;
-      box.innerHTML = `<div class="qb"><div class="qb-starters" aria-label="Add a question">${STARTERS.filter((s) => !Q.some((q) => q.q === s.q)).map((s, i) => `<button type="button" data-add="${i}">＋ ${esc(s.q)}</button>`).join("")}<button type="button" data-add="new">＋ Write your own</button></div>
+      box.innerHTML = `<div class="qb"><div class="qb-starters" aria-label="Add a question">${STARTERS.map((s, i) => [s, i]).filter(([s]) => !Q.some((q) => q.q === s.q) && !(s.diet && hasDietChips(ev))).map(([s, i]) => `<button type="button" data-add="${i}">＋ ${esc(s.q)}</button>`).join("")}<button type="button" data-add="new">＋ Write your own</button></div>
         ${Q.map((q, i) => `<div class="qb-q" data-i="${i}"><div class="r"><input type="text" class="qt" value="${esc(q.q)}" placeholder="Ask it your way (emoji welcome)" data-k="q"><select data-k="type">${Object.entries(TYPES).map(([k, l]) => `<option value="${k}" ${q.type === k ? "selected" : ""}>${l}</option>`).join("")}</select><span class="tools"><button type="button" data-mv="-1" title="Up">↑</button><button type="button" data-mv="1" title="Down">↓</button><button type="button" data-del title="Remove">✕</button></span></div>
           ${/choice|multi|emoji|time/.test(q.type) ? `<div class="r"><input type="text" style="flex:1" value="${esc(q.options.join(", "))}" placeholder="${q.type === "time" ? "5:45 pm, 6:00 pm, 6:15 pm" : q.type === "emoji" ? "🙂, 😋, 🤤" : "Option one, Option two"}" data-k="options"><small>separate with commas</small></div>` : ""}
           ${q.type === "number" ? `<div class="r"><small>From</small><input type="text" style="width:60px" value="${q.min}" data-k="min"><small>to</small><input type="text" style="width:60px" value="${q.max}" data-k="max"></div>` : ""}
@@ -70,7 +72,7 @@
       else if (q.type === "number") input = `<div class="tf-step"><button type="button" data-st="-1" aria-label="Fewer">−</button><b>${v ?? q.min}</b><button type="button" data-st="1" aria-label="More">+</button></div>`;
       else input = `<div class="tf-opts ${q.type === "emoji" ? "emoji" : ""}" role="group">${opts.map((o, k) => `<button type="button" data-o="${esc(o)}" aria-pressed="${Array.isArray(v) ? v.includes(o) : v === o}">${q.type === "emoji" ? "" : `<span class="tf-key">${String.fromCharCode(65 + k)}</span>`}${esc(o)}</button>`).join("")}</div>`;
       el.innerHTML = `<div class="tf-bar"><i style="width:${pct}%"></i></div><div class="tf-top"><span class="tf-n">${esc(P.title || "A few quick questions")} · ${i + 1} of ${Q.length}</span><span class="tf-pt">${window.Potto ? window.Potto.svg(i % 3 === 2 ? "cheer" : "wave", 64, "Potto") : ""}</span></div>
-        <div class="tf-q">${esc(q.q)}${q.required ? "" : "<small>(optional)</small>"}</div><div class="tf-a">${input}</div><div class="tf-err" role="alert"></div>
+        <div class="tf-q" id="tfq-${esc(q.id)}">${esc(q.q)}${q.required ? "" : "<small>(optional)</small>"}</div><div class="tf-a" role="group" aria-labelledby="tfq-${esc(q.id)}">${input.replace(/<(input|textarea)\b/g, `<$1 aria-labelledby="tfq-${esc(q.id)}"`)}</div><div class="tf-err" role="alert"></div>
         <div class="tf-nav">${i ? `<button type="button" class="bk" data-back>← Back</button>` : "<span></span>"}<span><small>${q.type === "short" || q.type === "instagram" || q.type === "phone" ? "press Enter ↵ " : ""}</small><button type="button" class="ok" data-next>${i === Q.length - 1 ? esc(P.button || "Done") : "OK ✓"}</button></span></div>`;
       if (q.type === "number" && v == null) answers[q.id] = q.min;
       const f = el.querySelector("input,textarea"); if (f && !preview) setTimeout(() => f.focus({ preventScroll: true }), 50); };

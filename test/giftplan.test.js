@@ -31,7 +31,7 @@ test("A gift plan gives each segment a job, an owner and a send decision, and sh
   const champ = p.audience.segments.find((s) => /champion/i.test(s.who));
   assert.ok(champ.job && champ.kpi && /AE/.test(champ.owner) && champ.followUpBy && champ.send === "fewer" && champ.sendNote);
   assert.equal(p.playbook.prove.lines.length, 3); assert.ok(/holdout|hold back/i.test(p.playbook.prove.holdout)); assert.ok(p.playbook.prove.caveat);
-  assert.ok(p.playbook.approvals.some((x) => /meeting is booked/i.test(x.gate))); assert.ok(p.playbook.sends.length === 2 && p.playbook.triggers.length >= 2);
+  assert.ok(p.playbook.approvals.some((x) => /conditional on taking a meeting/i.test(x.gate))); assert.ok(p.playbook.sends.length === 2 && p.playbook.triggers.length >= 2);
   assert.ok(p.gifts.every((g) => g.delivery.shipBy && g.delivery.backup)); assert.ok(p.theme.searchFor && p.theme.doesForThem);
   // the budget table adds up to the total it states
   const n = (v) => +String(v).replace(/[^\d.]/g, ""); const sum = p.playbook.budgetLines.reduce((a, x) => a + n(x.total), 0);

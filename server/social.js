@@ -18,6 +18,9 @@ const PHONE_OK = (p) => /^\+?[0-9 ()-]{7,20}$/.test(String(p || "").trim());
 
 // What an event is "about", for alerts, Discover and profiles.
 export const LANES = { run: ["run", "5k", "10k", "jog", "trot", "marathon"], hike: ["hike", "trail", "walk"], bike: ["bike", "cycle", "ride"], cook: ["cook", "dinner", "tasting", "dishes", "supper", "dinner party"], potluck: ["potluck"], games: ["game", "board game"], movie: ["movie", "film"], concert: ["concert", "gig", "show", "festival"], cafe: ["cafe", "café", "coffee", "matcha", "tea"], bake: ["bake", "cake", "giveaway", "cookie", "bread"], picnic: ["picnic", "bbq", "cookout"], book: ["book"], club: ["club", "meetup"] };
+/** Answers as a list of {q, a}, whether stored as {questionId: value} or (older RSVPs) as [{q, a}]. */
+export function ansList(ans, qs = []) { if (Array.isArray(ans)) return ans.filter((a) => a && a.a); if (!ans || typeof ans !== "object") return [];
+  return Object.entries(ans).map(([id, v]) => ({ q: (qs || []).find((x) => x.id === id)?.q || "", a: Array.isArray(v) ? v.join(", ") : v === true ? "Yes" : v === false ? "No" : String(v ?? "") })).filter((x) => x.a); }
 export function lanesOf(text) { const t = lc(text), L = Object.entries(LANES).filter(([, w]) => w.some((x) => t.includes(x))).map(([k]) => k); return L.length > 1 ? L.filter((k) => k !== "club") : L; }
 const miles = (a, b) => { const R = 3958.8, r = (x) => (x * Math.PI) / 180, dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng), h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 
@@ -399,7 +402,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const seen = new Set(), G = [];
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
       let P = {}; try { P = r.email ? X.eventProfile(lc(r.email)) || {} : {}; } catch {}
-      G.push({ name: first(r.name) || "A guest", response: r.response, arche: (r.guestType !== "early" && TRAITS[r.guestType]?.name) || ((P.attended || 0) >= 2 && P.top?.name) || "New to Pottery Lab", archeKey: (r.guestType !== "early" && TRAITS[r.guestType] && r.guestType) || ((P.attended || 0) >= 2 && P.top?.key) || "new", loves: (P.loves || []).map((l) => l.kind), attended: Math.max(0, (P.attended || 0) - (ev.date && ev.date < new Date().toISOString().slice(0, 10) && r.response === "going" ? 1 : 0)), fact: clean(r.funFact, 140), answers: (r.answers || []).filter((a) => a?.a).map((a) => `${clean(a.q, 80)}: ${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
+      G.push({ name: first(r.name) || "A guest", response: r.response, arche: (r.guestType !== "early" && TRAITS[r.guestType]?.name) || ((P.attended || 0) >= 2 && P.top?.name) || "New to Pottery Lab", archeKey: (r.guestType !== "early" && TRAITS[r.guestType] && r.guestType) || ((P.attended || 0) >= 2 && P.top?.key) || "new", loves: (P.loves || []).map((l) => l.kind), attended: Math.max(0, (P.attended || 0) - (ev.date && ev.date < new Date().toISOString().slice(0, 10) && r.response === "going" ? 1 : 0)), fact: clean(r.funFact, 140), answers: ansList(r.answers, ev.questions).map((a) => `${clean(a.q, 80)}${a.q ? ": " : ""}${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
     if (!G.length) return res.json({ guests: 0, empty: true });
     // what's true without AI
     const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});

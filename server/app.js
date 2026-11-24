@@ -405,7 +405,20 @@ export function createApp({ store, dataDir }) {
   // Guest links (#rsvp-ID, #survey-ID) are hashes the server never sees. The login
   // page forwards them to /g, which serves the same page without a login; the
   // data endpoints still only allow the guest operations listed in guestAllowed().
+  app.get("/favicon.ico", (req, res) => res.redirect(301, "/favicon.svg"));
   app.get("/g", sendPage);
+  // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
+  // then opens the RSVP page (/g#rsvp-<id>). The part after "#" never reaches a server, so /g links can't preview.
+  app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
+    const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
+    if (!ev || ev.example) return res.redirect(302, to);
+    const h = C.profileOf(ws), title = ev.pubTitle || ev.name || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
+      time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
+      desc = [when && `${when}${time ? " · " + time : ""}`, ev.venueName || ev.hood || ev.city || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
+      img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : "";
+    res.set("Cache-Control", "public, max-age=300").type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${e(title)} · Pottery Lab</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "RSVP on Pottery Lab")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}"><meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
+<meta name="description" content="${e(desc)}"><meta http-equiv="refresh" content="0;url=${e(to)}"><link rel="canonical" href="${e(base + "/e/" + id)}"></head><body><p><a href="${e(to)}">Open the invite: ${e(title)}</a></p><script src="/e-go.js"></script></body></html>`); });
   // A no-login demo: the page without the shim runs on its built-in sample data and saves nothing here.
   app.get("/demo", async (req, res, next) => {
     try {
@@ -1095,7 +1108,8 @@ export function createApp({ store, dataDir }) {
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws0 = workspaceOfEvent(String(b.eventId)), ev0 = ws0 && scopeStore(store, ws0).get("events/" + String(b.eventId))?.data;
         if (ev0 && earlyAccessBlocks(ev0, C.followersOf(ws0).some((f) => f.email === String(b.email || "").trim().toLowerCase()))) { res.status(403).json({ code: "early_access", message: `Followers get first dibs until ${new Date(ev0.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Follow the host with this email to book now, or come back then.` }); return false; } }
       // answers to the host's own questions: a few short values, plain text only
-      if (b.answers != null) { const A = {}; if (b.answers && typeof b.answers === "object") for (const [k, v] of Object.entries(b.answers).slice(0, 15)) { if (!/^[a-z0-9]{1,12}$/i.test(k)) continue; const one = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500); A[k] = Array.isArray(v) ? v.slice(0, 10).map(one).filter(Boolean) : typeof v === "number" ? Math.max(-1e6, Math.min(1e6, v)) : one(v); } b.answers = A; }
+      if (Array.isArray(b.answers) && b.answers.every((x) => x && typeof x === "object" && "a" in x)) { b.answers = b.answers.slice(0, 15).map((x) => ({ q: String(x.q ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 140), a: String(x.a ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500) })).filter((x) => x.a); }
+      else if (b.answers != null) { const A = {}; if (b.answers && typeof b.answers === "object") for (const [k, v] of Object.entries(b.answers).slice(0, 15)) { if (!/^[a-z0-9]{1,12}$/i.test(k)) continue; const one = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500); A[k] = Array.isArray(v) ? v.slice(0, 10).map(one).filter(Boolean) : typeof v === "number" ? Math.max(-1e6, Math.min(1e6, v)) : one(v); } b.answers = A; }
       req.body = { ...b, source: "guest", ...(utm ? { utm } : {}) };
     }
     if (collection === "wall" && b.status != null && !GUEST_WALL_STATUSES.has(String(b.status))) { res.status(400).json({ code: "invalid", message: "Not a wall status." }); return false; }

@@ -44,3 +44,18 @@ test("Public host data never includes invoicing details (legal name, tax ID, bus
   const mine = await (await fetch(srv.base + "/api/host/profile", { headers: { cookie: c } })).json(); assert.equal(mine.host.taxId, "12-3456789", "the owner still sees them");
   for (const u of ["/api/public/host/ivy-inv", "/api/public/discover"]) { const t = await (await fetch(srv.base + u)).text(); assert.ok(!/12-3456789|Ivy Studio LLC|1 Main St/.test(t), u + " leaks invoicing details"); }
 });
+
+test("Portraits keep a chosen skin tone and hair colour; anything else is refused", async () => {
+  const c = cookieOf(await post("/api/signup", { name: "Yan", email: "yan.av@example.com", password: "long-password-1", mode: "friends" }));
+  await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", city: "New York", theme: { avatarArt: "braids~4~1" } }, c);
+  const art = async () => (await (await fetch(srv.base + "/api/public/host/yan-av")).json()).host.theme.avatarArt;
+  assert.equal(await art(), "braids~4~1");
+  for (const bad of ["braids~9~0", "dragon", "hijab~1", "<svg>"]) { await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: bad } }, c); assert.equal(await art(), "braids~4~1", bad + " is not saved"); }
+  await post("/api/host/profile", { handle: "yan-av", name: "Yan Drawing", theme: { avatarArt: "hijab" } }, c); assert.equal(await art(), "hijab");
+});
+
+test("Real hosts who haven't signed up yet show as read-only showcase pages until they claim them", async () => {
+  const page = await (await fetch(srv.base + "/api/public/host/atbo")).json();
+  assert.equal(page.host.showcase, true); assert.equal(page.host.name, "Atelier Bò"); assert.match(page.host.claim, /preset=atelier-bo/);
+  const disc = await (await fetch(srv.base + "/api/public/discover")).json(); assert.ok(disc.hosts.some((h) => h.handle === "atbo" && h.showcase));
+});

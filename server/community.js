@@ -23,12 +23,14 @@ export const STORE = {
   backgrounds: ["cream", "white", "blush", "sage", "night"],
   covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain"],
   buttons: ["round", "soft", "square"],
-  avatars: ["", "chef", "runner", "barista", "baker", "glasses", "hiker", "florist", "curls", "bob"],
+  avatars: ["", "florist", "straight", "bob", "pixie", "bun", "ponytail", "curls", "waves", "afro", "braids", "locs", "hijab", "headwrap", "beanie", "beard", "shaved", "chef", "runner", "barista", "baker", "glasses", "hiker"],
 };
 const BLOB_OK = (u) => !u || /^\/_blob\/[A-Za-z0-9]{20}$/.test(u) || /^\/presets\/[a-z0-9-]{1,40}\.svg$/.test(u); // uploads, or a logo shipped with a prepared page
 const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
+// a portrait is a style, optionally with a skin tone and hair colour: "braids~4~0"
+const avatarOk = (v) => typeof v === "string" && /^[a-z]*(~[0-5]~[0-5])?$/.test(v) && STORE.avatars.includes(v.split("~")[0]);
 function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
-  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: STORE.avatars.includes(t.avatarArt) ? t.avatarArt : STORE.avatars.includes(cur.avatarArt) ? cur.avatarArt : "" }; }
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
 // Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
 function cleanGifts(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 16),

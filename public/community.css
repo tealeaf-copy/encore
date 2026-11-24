@@ -73,3 +73,9 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .gift-form textarea{width:100%}
 .gx-art{margin:-14px -14px 4px;line-height:0;border-bottom:1px solid #EFE5D6;border-radius:16px 16px 0 0;overflow:hidden}.gx-art svg{width:100%;height:auto;display:block}
 .gx-pv{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 2px;padding:10px 12px;background:#FFFCF7;border:1px dashed #CDBBA4;border-radius:12px;font-size:14px}.gx-pv input{flex:1 1 140px;min-width:0;padding:7px 10px;border:1px solid #DCCFBE;border-radius:9px;font:inherit}
+
+.bfl{display:grid;gap:4px;font-size:13px;font-weight:600;color:#5A4E45}.bfl input,.bfl textarea{font-weight:400}.bf-flex{display:flex;align-items:center;gap:8px;font-weight:500}.bf-flex input{width:auto}
+.bx-out{color:#A3402B;font-size:14px!important}
+.b2b-terms{margin:12px 0 4px;font-size:14px}.b2b-terms summary{cursor:pointer;font-weight:600}.b2b-terms dl{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:6px 14px;margin:10px 0 0}.b2b-terms dt{font-weight:600;color:#3B322C}.b2b-terms dd{margin:0;color:#5A4E45}
+@media (max-width:600px){.b2b-terms dl{grid-template-columns:1fr}.b2b-terms dd{margin-bottom:6px}.book-form{margin-bottom:96px;scroll-margin-bottom:110px}}
+.bx-pdf{display:block;margin-top:6px;background:none;border:0;padding:0;color:#5A4E45;text-decoration:underline;font:inherit;font-size:13px;cursor:pointer}

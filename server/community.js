@@ -209,6 +209,12 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   // change your own name; events that showed your old name as the host switch to the new one
+  // the details you give when you RSVP, saved once so every RSVP fills them in (signed-in people; others keep them on their device)
+  const cleanRsvpProfile = (b0 = {}) => { const b = Object.fromEntries(Object.entries(b0).map(([k, v]) => [k, typeof v === "string" ? v.replace(/[<>]/g, "") : v])); return ({ name: clean(b.name, 80), email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(b.email || "").trim()) ? clean(b.email, 200).toLowerCase() : "", phone: clean(b.phone, 30).replace(/[^\d+ ()-]/g, ""),
+    contactVia: ["email", "sms", "whatsapp"].includes(b.contactVia) ? b.contactVia : "", dietary: clean(b.dietary, 200), severe: !!b.severe, access: clean(b.access, 300), updatedAt: Date.now() }); };
+  app.get("/api/me/rsvp-profile", (req, res) => { const u = me(req, res); if (!u) return; res.json({ profile: getDbUser(u.email)?.rsvpProfile || null }); });
+  app.post("/api/me/rsvp-profile", small, (req, res) => { const u = me(req, res); if (!u) return; const rec = getDbUser(u.email); if (!rec) return res.status(404).json({ code: "not_found", message: "No account." });
+    const profile = req.body?.clear ? null : cleanRsvpProfile(req.body || {}); putDbUser({ ...rec, rsvpProfile: profile }); res.json({ ok: true, profile }); });
   app.get("/api/me/name", (req, res) => { const u = me(req, res); if (!u) return; res.json({ name: getDbUser(u.email)?.name || "" }); });
   app.post("/api/me/name", small, (req, res) => { const u = me(req, res); if (!u) return; const name = clean(req.body?.name, 60); if (name.length < 2) return res.status(400).json({ code: "invalid", message: "Add your name (at least 2 letters)." });
     const rec = getDbUser(u.email); if (!rec) return res.status(404).json({ code: "not_found", message: "No account." }); const old = rec.name || ""; putDbUser({ ...rec, name });

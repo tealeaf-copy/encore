@@ -76,3 +76,14 @@ test("Guests can change what they're bringing, but not take an item someone else
   assert.deepEqual(host.bring.map((x) => `${x.slot}:${x.who}`).sort(), ["Drinks:Cy", "Pie:Ana"]);
   const st = await (await fetch(srv.base + "/api/public/rsvp-status/potl?rid=r2&code=c2")).json(); assert.equal(st.slot, "Drinks");
 });
+
+test("Signed-in people keep one set of RSVP details on their account", async () => {
+  const c = cookieOf(await post("/api/signup", { name: "Vi Tran", email: "vi.prof@example.com", password: "long-password-1", mode: "friends" }));
+  assert.equal((await fetch(srv.base + "/api/me/rsvp-profile")).status, 401, "needs an account");
+  const save = await post("/api/me/rsvp-profile", { name: "Vi Tran", email: "vi.prof@example.com", dietary: "Vegetarian, Nut allergy", severe: true, access: "<b>step-free</b>", extra: "ignored" }, c);
+  assert.equal(save.status, 200);
+  const got = (await (await fetch(srv.base + "/api/me/rsvp-profile", { headers: { cookie: c } })).json()).profile;
+  assert.equal(got.dietary, "Vegetarian, Nut allergy"); assert.equal(got.severe, true); assert.ok(!("extra" in got)); assert.ok(!/[<>]/.test(got.access));
+  await post("/api/me/rsvp-profile", { clear: true }, c);
+  assert.equal((await (await fetch(srv.base + "/api/me/rsvp-profile", { headers: { cookie: c } })).json()).profile, null);
+});

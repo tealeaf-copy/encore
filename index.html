@@ -9912,6 +9912,34 @@ new MutationObserver(()=>{ try{ const e=window.__gEv; if(!e) return; if(e.hideHo
           const tf=document.getElementById("tkText"); if(tf) tf.onsubmit=async(ev2)=>{ ev2.preventDefault(); const r=await fetch(`/api/public/ticket/${encodeURIComponent(e.id)}/text`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rid:M.rid,code:M.code,phone:tf.phone?.value||""})}); const jj=await r.json().catch(()=>({})); document.getElementById("tkM").textContent=r.ok?"✓ Sent. Check your messages.":(jj.message||"Couldn't send that."); if(r.ok) tf.remove() } }).catch(()=>{ window.__ticketAsk=0 }) } }catch{}
       if(e.forCompany) document.querySelectorAll("#view-guest b").forEach(bb=>{ if(/^Hosted by /.test(bb.textContent)&&!bb.dataset.co){ bb.dataset.co=1; bb.insertAdjacentHTML("afterbegin", `${esc(e.forCompany)} invites you · `) } }); const gf=document.getElementById("g-follow"); if(gf){ gf.checked=false; gf.closest("label")?.style.setProperty("display","none","important") } }
     if(e.tentative&&!document.getElementById("gTent")){ const h=document.querySelector("#view-guest h3"); if(h){ const p=document.createElement("p"); p.id="gTent"; p.className="note"; p.textContent="The organizer is still confirming the booking with the host. You'll get a note if anything changes."; h.after(p) } } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- Your RSVP details, saved once ----------
+// Say you're vegetarian once and every RSVP after that already knows. Kept on this device for everyone, and on your
+// account when you're signed in (so it follows you to a new phone). The form only fills empty boxes; you can edit
+// anything before sending, and "Forget" clears it.
+const GPROF_KEY="encore.rsvpProfile";
+window.gProfile={
+  local(){ try{ return JSON.parse(localStorage.getItem(GPROF_KEY)||"null") }catch{ return null } },
+  async get(){ const L=this.local(); if(!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return L; try{ const r=await fetch("/api/me/rsvp-profile",{credentials:"same-origin"}); if(!r.ok) return L; const j=await r.json(); const S=j.profile; if(!S) return L; return (L?.updatedAt||0)>(S.updatedAt||0)?{...S,...L}:{...L,...S} }catch{ return L } },
+  async save(p){ const v={...p,updatedAt:Date.now()}; try{ localStorage.setItem(GPROF_KEY,JSON.stringify(v)) }catch{} if(/(?:^|;\s*)encore_in=1/.test(document.cookie)) fetch("/api/me/rsvp-profile",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(v)}).catch(()=>{}); },
+  async forget(){ try{ localStorage.removeItem(GPROF_KEY) }catch{} if(/(?:^|;\s*)encore_in=1/.test(document.cookie)) await fetch("/api/me/rsvp-profile",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({clear:true})}).catch(()=>{}); }
+};
+function gProfileRead(){ const v=id=>(document.getElementById(id)?.value||"").trim(), c=gContact0();
+  return { name:v("g-name"), email:c.email||"", phone:c.phone||"", contactVia:c.contactVia||"", dietary:v("g-diet"), severe:!!document.getElementById("g-severe")?.checked, access:v("g-access") } }
+async function gProfileFill(){ try{ const f=document.getElementById("gForm"), e=window.__gEv; if(!f||!e||f.dataset.prof) return; if(myRsvp(e.id)?.response) return; const P=await window.gProfile.get(); if(!P) return; f.dataset.prof=1;
+    const put=(id,val)=>{ const el=document.getElementById(id); if(el&&val&&!el.value.trim()){ el.value=val; el.dispatchEvent(new Event("input",{bubbles:true})); return true } return false };
+    let n=0; if(put("g-name",P.name)) n++;
+    const via=P.contactVia&&f.querySelector(`[data-via="${P.contactVia}"]`); if(via&&!document.getElementById("g-email")?.value) via.click();
+    if(put("g-email",P.contactVia&&P.contactVia!=="email"?P.phone:P.email||P.phone)) n++;
+    const dt=document.getElementById("g-diet"); if(dt&&!dt.closest("label")?.hidden&&put("g-diet",P.dietary)){ n++; f.querySelectorAll(".diet-q [data-dq]").forEach(b=>b.setAttribute("aria-pressed",String(dt.value.toLowerCase().split(/,\s*/).includes(b.dataset.dq.toLowerCase())))); const sv=document.getElementById("g-severe"); if(sv&&P.severe){ sv.checked=true; sv.closest("label").hidden=false } }
+    if(put("g-access",P.access)){ n++; const d=document.getElementById("g-access")?.closest("details"); if(d) d.open=true }
+    if(!n) return; const note=document.createElement("p"); note.className="note g-prof-note"; note.innerHTML=`✓ Filled in from your saved details. Change anything before you send. <button type="button" class="linkbtn" id="gProfForget">Forget my details</button>`;
+    (document.getElementById("g-name")?.closest(".row")||document.getElementById("g-name")?.closest("label"))?.before(note);
+    note.querySelector("#gProfForget").onclick=async()=>{ await window.gProfile.forget(); note.textContent="Forgotten. We won't fill this in next time."; } }catch(err){ console.warn(err) } }
+{ const _rgP=renderGuest; renderGuest=async function(){ const r=await _rgP.apply(this,arguments); [300,1600].forEach(t=>setTimeout(gProfileFill,t)); return r } }
+// remember what they sent (unless they untick "Remember my details")
+document.addEventListener("click",e=>{ if(!e.target.closest?.("#g-send")) return; try{ if(document.getElementById("gRemember")&&!document.getElementById("gRemember").checked) return; const p=gProfileRead(); if(p.name||p.dietary||p.email||p.phone) window.gProfile.save(p) }catch{} },true);
+// the "remember" box sits just above the send button, ticked by default
+new MutationObserver(()=>{ try{ const s=document.getElementById("g-send"); if(!s||document.getElementById("gRemember")||!document.getElementById("gForm")?.contains(s)) return; const l=document.createElement("label"); l.className="chip g-remember"; l.style.alignSelf="flex-start"; l.innerHTML=`<input type="checkbox" id="gRemember" checked> Remember my details for next time`; (s.closest(".btns")||s).before(l) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // After you've said yes to a potluck: what you're bringing stays in view, and you can swap to another open item.
 { const _rgB=renderGuest; renderGuest=async function(){ const r=await _rgB.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)||!(e.slots||[]).length) return r;
     const M=myRsvp(e.id); if(!M?.rid||M.response!=="going") { $("#gBring")?.remove(); return r }

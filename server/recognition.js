@@ -55,7 +55,9 @@ export function makeRecognition({ C, X }) {
       out.push({ ws, handle: h.handle, city: String(h.city || "").trim(), recent, guests: S.guests, returning: S.returning, ...r }); }
     // Local Legend (Strava): the most active host in each city over the last 90 days, with at least 3 gatherings
     const byCity = new Map(); for (const x of out) { if (!x.city || x.recent < 3) continue; const k = x.city.toLowerCase(), cur = byCity.get(k); if (!cur || x.recent > cur.recent) byCity.set(k, x); }
-    for (const x of byCity.values()) x.badges.splice(x.isSuper ? 1 : 0, 0, { id: "legend", emoji: "👑", label: `Local legend · ${x.city}`, why: `Hosted the most in ${x.city} over the last 90 days` });
+    for (const x of byCity.values()) { x.badges.splice(x.isSuper ? 1 : 0, 0, { id: "legend", emoji: "👑", label: `Local legend · ${x.city}`, why: `Hosted the most in ${x.city} over the last 90 days` });
+      // one story per host: a Local legend isn't also introduced as "new"
+      x.badges = x.badges.filter((b) => b.id !== "new"); x.isNew = false; x.legend = true; }
     cache = { at: Date.now(), data: out }; return out;
   }
   const of = (handle) => all().find((x) => x.handle === String(handle || "").toLowerCase()) || null;
@@ -89,7 +91,8 @@ export function mountRecognition(app, { C, X }) {
   const R = makeRecognition({ C, X });
   app.get("/api/public/host/:handle/recap", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     const year = /^20\d\d$/.test(String(req.query.year || "")) ? +req.query.year : new Date().getFullYear(); let S; try { S = X.hostStrengths(ws, { year }); } catch { S = {}; }
-    const me = R.of(h.handle); res.json({ host: { handle: h.handle, name: h.name, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...recapOf(S, year) }); });
+    let all = []; try { all = X.hostStrengths(ws).dates || []; } catch {} const years = [...new Set(all.map((d) => +d.slice(0, 4)))].sort();
+    const me = R.of(h.handle); res.json({ years, host: { handle: h.handle, name: h.name, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...recapOf(S, year) }); });
   app.get("/api/public/hosts/showcase", (req, res) => res.json(R.showcase()));
   app.get("/api/public/host/:handle/badges", (req, res) => { const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, next: x.next, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });
   return R;

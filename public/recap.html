@@ -36,8 +36,8 @@
   document.documentElement.style.setProperty("--acc", /^#[0-9a-f]{6}$/i.test(h.theme.accent) ? h.theme.accent : "#C2553A");
   document.title = `${h.name}'s ${d.year} on Pottery Lab`;
   const av = h.theme.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 58) : esc(h.emoji || "🎉");
-  const years = [d.year - 1, d.year].map((y) => `<a href="?year=${y}" ${y === d.year ? 'aria-current="page"' : ""}>${y}</a>`).join("");
-  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Pottery Lab yet this year. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
+  const YRS = [...new Set([...(d.years || []), d.year])].sort(), years = YRS.length < 2 ? "" : YRS.map((y) => `<a href="?year=${y}" ${y === d.year ? 'aria-current="page"' : ""}>${y}</a>`).join("");
+  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Pottery Lab in ${d.year}. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
   const max = Math.max(1, ...d.months), M = "JFMAMJJASOND".split("");
   const share = `${location.origin}/recap/${encodeURIComponent(h.handle)}?year=${d.year}`;
   m.innerHTML = `<div class="card" id="card">
@@ -50,7 +50,7 @@
     ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.emoji)} ${esc(t.label)} ×${t.n}</span>`).join("")}</div>` : ""}
     ${d.quote ? `<div class="quote">“${esc(d.quote.love)}”<small>${esc(d.quote.name)}${d.quote.event ? `, after ${esc(d.quote.event)}` : ""}</small></div>` : ""}
     ${(d.badges || []).length ? `<div class="badges">${d.badges.slice(0, 4).map((b) => `<span>${esc(b.emoji)} ${esc(b.label)}</span>`).join("")}</div>` : ""}
-    <div class="brand"><span>pottery lab</span><span>${esc(location.host)}/@${esc(h.handle)}</span></div></div>
+    <div class="brand"><span>pottery lab</span><span>@${esc(h.handle)}</span></div></div>
     <div class="actions"><button type="button" id="shareBtn">Share</button><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`;
   document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Pottery Lab: ${d.events} gatherings, ${d.guests} people.`;
     try { if (navigator.share) { await navigator.share({ title: document.title, text, url: share }); return; } await navigator.clipboard.writeText(share); document.getElementById("shareBtn").textContent = "Link copied"; } catch {} };

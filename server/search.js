@@ -46,7 +46,7 @@ Hosts (JSON):
 ${JSON.stringify(cards)}
 
 Pick the hosts that fit what they asked for, best first, at most 6. Leave out hosts that don't fit; an empty list is fine.
-Judge only from the information given. Don't invent prices, dates or details. Where a host is "notOnEncoreYet", they can still be a match.
+Prefer hosts who are on the site and list offers they can be booked for; put hosts marked notOnEncoreYet after them. Judge only from the information given. Don't invent prices, dates or details. Where a host is "notOnEncoreYet", they can still be a match.
 For each, write one short reason (at most 14 words) that points to something on their profile.
 Reply with JSON only: {"matches":[{"handle":"...","why":"..."}]}`;
   const r = await complete({ prompt, effort: "low" });
@@ -64,6 +64,8 @@ export function registerSearch(app, { hosts }) {
     let matches = [], by = "keywords";
     if (!isFake() && !limited(req)) { try { matches = await askClaude(q, list); by = "ai"; } catch { matches = []; by = "keywords"; } }
     if (by !== "ai") matches = keywordRank(q, list);
+    // hosts who can actually be booked here come first; pages for hosts not on the site yet go after them
+    { const H = new Map(list.map((h) => [h.handle, h])), rank = (m) => { const h = H.get(m.handle) || {}; return h.showcase ? 2 : (h.experiences || []).length ? 0 : 1; }; matches = matches.map((m, i) => ({ m, i })).sort((a, b) => rank(a.m) - rank(b.m) || a.i - b.i).map((x) => x.m); }
     if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value);
     cache.set(key, { at: Date.now(), matches, by });
     res.json({ q, matches, by });

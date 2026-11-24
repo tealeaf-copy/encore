@@ -137,7 +137,10 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
-      hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); events.push(...up.filter((c) => !c.unlisted)); }
+      // public lists show finished pages: a real name (not just the handle), a line about them, and a face or photo.
+      // Unfinished pages still work by link; they just aren't featured until they're ready.
+      const named = h.name && h.name.trim().length >= 3 && h.name.trim().toLowerCase() !== h.handle, ready = named && (h.tagline || h.bio) && (h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"));
+      if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (named || sample) events.push(...up.filter((c) => !c.unlisted)); }
     for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)

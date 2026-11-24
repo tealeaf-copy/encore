@@ -448,7 +448,7 @@ export function createApp({ store, dataDir }) {
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountRecognition(app, { C, X });
-  app.get("/recap/:handle", (req, res) => sendStatic(res, "recap.html", "<p>Recap missing.</p>"));
+  app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });

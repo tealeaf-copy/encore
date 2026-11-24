@@ -14,7 +14,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("A published event shows on the host's own page even when it's kept off Discover; drafts and link-only events don't", async () => {
   const c = cookieOf(await post("/api/signup", { name: "Claire Nguyen", email: "claire.hp@example.com", password: "long-password-1", mode: "friends" }));
-  await post("/api/host/profile", { handle: "claire-hp", name: "Claire's Run Crew", city: "New York" }, c);
+  await post("/api/host/profile", { handle: "claire-hp", name: "Claire's Run Crew", city: "New York", tagline: "Saturday runs", theme: { avatarArt: "runner" } }, c);
   const day = new Date(Date.now() + 2 * 864e5).toISOString().slice(0, 10), base = { kind: "social", casual: true, date: day, startTime: "18:00", city: "New York", activity: "run club" };
   await put("/api/db/doc?path=events/trot", { ...base, name: "Turkey Trot", published: true, discoverable: true, unlisted: true }, c);
   await put("/api/db/doc?path=events/open", { ...base, name: "Open run", published: true, discoverable: true }, c);

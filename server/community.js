@@ -140,7 +140,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
       // public lists show finished pages: a real name (not just the handle), a line about them, and a face or photo.
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const named = h.name && h.name.trim().length >= 3 && h.name.trim().toLowerCase() !== h.handle, ready = named && (h.tagline || h.bio) && (h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"));
-      if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (named || sample) events.push(...up.filter((c) => !c.unlisted)); }
+      if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
     for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
@@ -314,7 +314,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Pottery Lab`, text: `${b.name || "Someone"} is now one of your regulars. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Pottery Lab" }).catch(() => {})); }
     await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
-  registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name && !h.sample) });
+  registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
     for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }
     res.json({ cards }); });

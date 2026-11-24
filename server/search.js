@@ -65,7 +65,7 @@ export function registerSearch(app, { hosts }) {
     if (!isFake() && !limited(req)) { try { matches = await askClaude(q, list); by = "ai"; } catch { matches = []; by = "keywords"; } }
     if (by !== "ai") matches = keywordRank(q, list);
     // hosts who can actually be booked here come first; pages for hosts not on the site yet go after them
-    { const H = new Map(list.map((h) => [h.handle, h])), rank = (m) => { const h = H.get(m.handle) || {}; return h.showcase ? 2 : (h.experiences || []).length ? 0 : 1; }; matches = matches.map((m, i) => ({ m, i })).sort((a, b) => rank(a.m) - rank(b.m) || a.i - b.i).map((x) => x.m); }
+    { const H = new Map(list.map((h) => [h.handle, h])), rank = (m) => { const h = H.get(m.handle) || {}, offers = (h.experiences || []).length > 0; return h.showcase ? 4 : offers ? (h.sample ? 1 : 0) : h.sample ? 3 : 2; }; matches = matches.map((m, i) => ({ m, i })).sort((a, b) => rank(a.m) - rank(b.m) || a.i - b.i).map((x) => x.m); }
     if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value);
     cache.set(key, { at: Date.now(), matches, by });
     res.json({ q, matches, by });

@@ -108,7 +108,7 @@ body.is-owner{padding-bottom:110px}
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
   let d; try { const r = await fetch("/api/public/host/" + encodeURIComponent(handle)); if (!r.ok) throw 0; d = await r.json(); } catch { m.innerHTML = `<div class="empty" style="margin-top:40px">No host by that name. <a href="/discover">See who's hosting</a>.</div>`; return; }
-  const h = d.host, first = d.person || (h.name || handle).split(/[\s']/)[0]; window.__encorePerson = d.person || "";
+  const h = d.host, first = d.person && !String(h.name || "").startsWith(d.person + " ") ? d.person : d.person ? h.name : (h.name || handle).split(/[\s']/)[0]; // an account named after the business keeps the whole name window.__encorePerson = d.person || "";
   document.title = `${h.name || "@" + h.handle} · Encore`; document.body.style.setProperty("--c", h.color || "#E26D8E");
   const followed = (() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })();
   const knownEmail = (() => { try { return localStorage.getItem("encore.email") || ""; } catch { return ""; } })();

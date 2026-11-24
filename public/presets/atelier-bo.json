@@ -1,0 +1,70 @@
+{
+ "handle": "atbo",
+ "name": "Atelier Bò",
+ "tagline": "Pandan bánh bò, baked in a New York apartment. Poke it and it'll bounce back.",
+ "bio": "We bake bánh bò nướng, the Vietnamese pandan honeycomb cake: green, chewy and full of holes. We sell it at small pop-ups in our apartment, with Vietnamese coffee, tea and wine on the side, plus whatever we're testing that week. Our first pop-up sold every slice. The second one is coming, and pre-orders open soon...ish.",
+ "city": "New York",
+ "hood": "NoMad",
+ "tags": [
+  "bánh bò",
+  "pandan",
+  "vietnamese",
+  "pop-ups",
+  "pre-orders",
+  "vietnamese coffee"
+ ],
+ "emoji": "🟩",
+ "color": "#3E9C6E",
+ "theme": {
+  "accent": "#3E9C6E",
+  "font": "handmade",
+  "bg": "sage",
+  "cover": "plain",
+  "buttons": "round",
+  "avatarArt": "",
+  "avatarUrl": "/presets/atelier-bo-logo.svg"
+ },
+ "forHire": true,
+ "respondsIn": "within a few days",
+ "terms": "Pre-orders are held until noon on the Friday before a pop-up. Unpaid orders go to the waitlist, no hard feelings.",
+ "links": [
+  {
+   "label": "Instagram",
+   "url": "https://www.instagram.com/atbo.nyc/"
+  }
+ ],
+ "experiences": [
+  {
+   "name": "Bánh bò pop-up",
+   "desc": "An afternoon in our apartment: pre-ordered bánh bò to take home, Vietnamese coffee, tea and wine, and a taste of what we're testing. Even if the slices are spoken for, come over anyway.",
+   "emoji": "🍰",
+   "min": 1,
+   "max": 46,
+   "price": "$5 suggested",
+   "length": "3 hours",
+   "category": "food",
+   "includes": [
+    "Pre-order your bánh bò, then pick it up at the pop-up",
+    "Vietnamese coffee, tea and wine",
+    "Tastes of new recipes in progress"
+   ],
+   "setup": "In our apartment near 27th and 6th. The exact address goes to guests who RSVP."
+  },
+  {
+   "name": "Bánh bò for your event",
+   "desc": "Pandan bánh bò and a Vietnamese coffee bar for your office, launch or party. Tell us the date and how many people, and we'll send a quote.",
+   "emoji": "☕",
+   "min": 20,
+   "max": 150,
+   "price": "Quote on request",
+   "length": "2 to 3 hours",
+   "category": "food",
+   "includes": [
+    "Bánh bò, sliced and plated",
+    "Vietnamese phin coffee, served by us",
+    "Tea for anyone skipping caffeine"
+   ],
+   "setup": "A table and access to power for the coffee kettle."
+  }
+ ]
+}

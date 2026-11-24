@@ -22,7 +22,7 @@ const STOP = new Set(["the", "and", "for", "with", "who", "someone", "something"
 
 export function cardOf(h) {
   return { handle: h.handle, name: clean(h.name, 80), city: clean([h.hood, h.city].filter(Boolean).join(", "), 80), tagline: clean(h.tagline, 160), about: clean(h.bio, 400), tags: (h.tags || []).slice(0, 8).map((t) => clean(t, 30)),
-    offers: (h.experiences || []).slice(0, 4).map((x) => clean([x.name, x.min && x.max ? `${x.min}-${x.max} people` : "", x.price].filter(Boolean).join(", "), 120)), upcoming: h.upcoming || 0, notOnEncoreYet: !!h.showcase };
+    offers: (h.experiences || []).slice(0, 4).map((x) => clean([x.name, x.min && x.max ? `${x.min}-${x.max} people` : "", x.price].filter(Boolean).join(", "), 120)), sells: [...((h.shop?.open && h.shop.items) || []), ...(h.gifts || [])].slice(0, 6).map((x) => clean(x.name, 60)).filter(Boolean), upcoming: h.upcoming || 0, notOnEncoreYet: !!h.showcase };
 }
 
 /** Keyword ranking used offline and as a fallback: each query word (and its everyday synonyms) that a host mentions counts. */
@@ -31,7 +31,7 @@ const has = (text, w) => new RegExp(`(^|[^\\p{L}\\p{N}])${w.replace(/[.*+?^${}()
 export function keywordRank(q, hosts, n = 8) {
   const want = words(q).filter((w) => !STOP.has(w)); if (!want.length) return [];
   const out = [];
-  for (const h of hosts) { const c = cardOf(h), text = `${c.name} ${c.city} ${c.tagline} ${c.about} ${c.tags.join(" ")} ${c.offers.join(" ")}`.toLowerCase(); let score = 0; const hits = [];
+  for (const h of hosts) { const c = cardOf(h), text = `${c.name} ${c.city} ${c.tagline} ${c.about} ${c.tags.join(" ")} ${c.offers.join(" ")} ${c.sells.join(" ")}`.toLowerCase(); let score = 0; const hits = [];
     for (const w of want) { const stem = w.replace(/(ing|es|s)$/, ""); const alts = [w, stem, ...(REL.get(w) || REL.get(stem) || [])]; const hit = alts.find((a) => a.length > 2 && has(text, a)); if (hit) { score += hit === w || hit === stem ? 2 : 1; hits.push(hit); } }
     if (score) out.push({ handle: h.handle, score, why: `Mentions ${[...new Set(hits)].slice(0, 3).join(", ")}` }); }
   return out.sort((a, b) => b.score - a.score).slice(0, n).map(({ handle, why }) => ({ handle, why }));

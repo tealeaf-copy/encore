@@ -1,5 +1,5 @@
 <title>Pottery Lab</title>
-<script src="/eventart.js"></script>
+<script src="/eventart.js"></script><script src="/mascot.js" defer></script>
 <script>
 // Instant invite preview: the full app is large, so a guest link first fetches just this event (a few hundred bytes)
 // and draws its cover, title, when and where. The real invite replaces it as soon as it has drawn.
@@ -8752,7 +8752,7 @@ const ENTRANCES=["🎉","🥳","💃","🕺","🙌","🔥","🌮","🥟","🏃",
 function rsvpParty(e,M){ try{ if(document.getElementById("partyBg")) return; const bg=document.createElement("div"); bg.id="partyBg"; bg.className="party-bg"; const n=(window.__lastCount||0);
     const conf=Array.from({length:60},(_,i)=>`<i style="left:${Math.random()*100}%;animation-delay:${(Math.random()*1.2).toFixed(2)}s;animation-duration:${(2.4+Math.random()*1.8).toFixed(2)}s;background:${["#E2573A","#FFE08A","#BDEBCB","#C4DEFF","#FFCAD6","#DCCBFF"][i%6]};transform:rotate(${Math.round(Math.random()*360)}deg)"></i>`).join("");
     const pending=M?.response==="requested";
-    bg.innerHTML=`<div class="confetti" aria-hidden="true">${conf}</div><div class="party" role="dialog" aria-modal="true" aria-label="You're in"><div class="party-pip">${typeof pipSVG==="function"?pipSVG("happy",88):"🐷"}</div><h2>${pending?"Request sent!":"You're in!"}</h2><p class="party-sub">${pending?`${esc(hostFirst(e))} will say yes soon, usually within a day. We'll let you know.`:n?`You're guest <b>#${n}</b> for ${esc(e.pubTitle||e.name)}. ${esc(hostFirst(e))} just got a little happier.`:`You're on the list for ${esc(e.pubTitle||e.name)}.`}</p>
+    bg.innerHTML=`<div class="confetti" aria-hidden="true">${conf}</div><div class="party" role="dialog" aria-modal="true" aria-label="You're in"><div class="party-pip">${window.Potto?window.Potto.svg("cheer",120,"Potto cheering"):typeof pipSVG==="function"?pipSVG("happy",88):"🎉"}</div><h2>${pending?"Request sent!":"You're in!"}</h2><p class="party-sub">${pending?`${esc(hostFirst(e))} will say yes soon, usually within a day. We'll let you know.`:n?`You're guest <b>#${n}</b> for ${esc(e.pubTitle||e.name)}. ${esc(hostFirst(e))} just got a little happier.`:`You're on the list for ${esc(e.pubTitle||e.name)}.`}</p>
       <p class="party-q">Pick your entrance</p><div class="party-emo">${ENTRANCES.map(x=>`<button type="button" data-emo="${x}">${x}</button>`).join("")}</div><p class="note party-hint">It shows next to your name in Who's coming.</p><p class="note" style="margin:6px 0 0"><a href="/quiz" target="_blank" rel="noopener" style="font-weight:600">What kind of guest are you? Take the 30-second quiz →</a></p>
       <div class="party-btns"><button class="btn primary" type="button" id="partyShare">Bring a friend</button><button class="btn ghost" type="button" id="partyDone">${pending?"Done":"See who's coming"}</button></div></div>`;
     document.body.appendChild(bg); try{ pipSound?.("squeal") }catch{} try{ navigator.vibrate?.([30,40,60]) }catch{}

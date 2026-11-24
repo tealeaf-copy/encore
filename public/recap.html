@@ -2,7 +2,7 @@
 <script src="/authguard.js"></script>
 <title>A year of hosting · Pottery Lab</title>
 <meta name="description" content="A host's year on Pottery Lab: the gatherings, the people who came, and the ones who came back.">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,600&family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--line:#E4D9C8;--acc:#C2553A}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
@@ -11,7 +11,7 @@
 .card{position:relative;border-radius:28px;overflow:hidden;color:#fff;background:linear-gradient(160deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#1F1A17));padding:26px 22px 22px;box-shadow:0 30px 60px -36px rgba(31,26,23,.7)}
 .card .who{display:flex;gap:12px;align-items:center}.card .av{width:58px;height:58px;border-radius:50%;background:#fff;overflow:hidden;display:grid;place-items:center;font-size:28px;flex:none}.card .av img,.card .av svg{width:100%;height:100%;object-fit:cover}
 .card .who b{display:block;font:700 20px/1.15 Fredoka,system-ui}.card .who small{opacity:.85}
-.yr{font:700 clamp(64px,22vw,96px)/.9 Fredoka,system-ui;margin:22px 0 2px;letter-spacing:-.02em}.yr-sub{font-size:18px;opacity:.92;margin:0 0 18px}
+.card .potto-c{position:absolute;right:10px;top:96px;width:118px;transform:rotate(8deg)}.yr-sub em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600}.yr{font:700 clamp(64px,22vw,96px)/.9 Fredoka,system-ui;margin:22px 0 2px;letter-spacing:-.02em}.yr-sub{font-size:18px;opacity:.92;margin:0 0 18px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.st{background:rgba(255,255,255,.14);border-radius:18px;padding:12px 14px}.st b{display:block;font:700 34px/1 Fredoka,system-ui}.st span{font-size:13.5px;opacity:.9}
 .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:64px;margin:18px 0 4px}.bars i{display:block;background:rgba(255,255,255,.85);border-radius:4px 4px 2px 2px;min-height:3px}.bars i.z{background:rgba(255,255,255,.25)}
 .months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;font-size:10px;opacity:.75;text-align:center}
@@ -25,7 +25,7 @@
 .empty{text-align:center;color:var(--smoke);padding:40px 10px}
 </style></head><body>
 <div class="wrap"><div class="top"><a href="/">pottery lab</a><small>Year in review</small></div><div id="m"><p class="empty">Loading…</p></div></div>
-<script src="/avatars.js"></script>
+<script src="/avatars.js"></script><script src="/mascot.js"></script>
 <script>
 (async function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -42,7 +42,7 @@
   const share = `${location.origin}/recap/${encodeURIComponent(h.handle)}?year=${d.year}`;
   m.innerHTML = `<div class="card" id="card">
     <div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div>
-    <div class="yr">${d.year}</div><p class="yr-sub">${esc(first)}'s year of hosting</p>
+    <div class="yr">${d.year}</div><p class="yr-sub">${esc(first)}'s year of <em>hosting</em></p>${window.Potto ? `<span class="potto-c">${window.Potto.svg("cheer", 118)}</span>` : ""}
     <div class="stats"><div class="st"><b>${d.events}</b><span>${d.events === 1 ? "gathering" : "gatherings"}</span></div><div class="st"><b>${d.guests}</b><span>people came</span></div>
       <div class="st"><b>${d.returning}</b><span>came back again</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.longestStreak === 1 ? "week" : "weeks"} in a row, at best</span></div></div>
     <div class="bars" aria-label="Gatherings by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>

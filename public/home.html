@@ -72,6 +72,8 @@ h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:w
 .mk{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:7px 14px;font-weight:600;font-size:15px;box-shadow:2px 2px 0 #1F1A17}.mk:nth-child(3n){transform:rotate(-1.5deg)}.mk:nth-child(3n+1){transform:rotate(1deg)}
 @keyframes mk{to{transform:translateX(-50%)}}.makes:hover .mk-track{animation-play-state:paused}
 @media (max-width:1240px){.d-spark{display:none}}.nm-full{margin-left:-4px}@media (max-width:380px){.nm-full{display:none}}@media (max-width:430px){.top .brand{font-size:19px;gap:6px}.top nav{gap:10px!important}.top nav .btn{margin-left:0;padding:9px 13px;font-size:14px;white-space:nowrap}}@media (max-width:860px){.d-arrow{display:none}}
+h2 em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600;color:var(--ember);letter-spacing:-.01em}.teams h2 em{color:#FFD58A}
+.potto-end{display:block;width:150px;height:150px;margin:0 auto -6px;transform:rotate(-4deg)}
 </style>
 </head><body class="home">
 <div class="wrap">
@@ -92,7 +94,7 @@ h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:w
   </div>
 </div>
 <section class="makes" aria-label="Things people host on Pottery Lab"><div class="mk-track"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span><span aria-hidden="true" class="mk-dup"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span></span></div></section>
-<section><div class="wrap"><span class="eyebrow">How it works</span><h2>From friends, to regulars, to bookings.</h2>
+<section><div class="wrap"><span class="eyebrow">How it works</span><h2>From friends, to <em>regulars</em>, to bookings.</h2>
   <div class="steps">
     <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Plan it in one sentence. Pottery Lab makes the invite, collects RSVPs and sends the reminders, and Pip handles the follow-ups, so you can just host.</p></div>
     <div class="step"><div class="n">2</div><h3>Build your page</h3><p>Every gathering adds to your page: the photos, the kudos, who came back. Followers hear about the next one first, and supporters can chip in.</p></div>
@@ -109,17 +111,17 @@ h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:w
     <div role="cell">Sponsorships</div><div role="cell">Brand bookings</div>
   </div>
 </div></section>
-<section><div class="wrap"><div class="teams"><div><span class="eyebrow">For brands</span><h2>Book the hosts people already love.</h2>
+<section><div class="wrap"><div class="teams"><div><span class="eyebrow">For brands</span><h2>Book the hosts people already <em>love</em>.</h2>
   <p>A run club for your launch, a flower workshop for the team offsite, a supper club for your best customers. Hosts with real regulars, one invoice by card or PO, and a replacement or a refund if anything falls through.</p>
   <div class="ctas"><a class="btn primary" href="/hosts/book">Find a host</a><a class="btn quiet" href="/hosts" style="color:#F6EDE6;border-color:#3A2F29">Browse every host</a></div></div>
   <ul><li><b>Team offsite</b><small>A bouquet workshop for 24</small></li><li><b>Customer dinner</b><small>A supper club, twelve seats</small></li><li><b>Launch week</b><small>A coffee pop-up for 80</small></li></ul></div>
 </div></section>
 <section id="liveSec" hidden><div class="wrap"><span class="eyebrow">On Pottery Lab now</span><h2>Hosts people keep coming back to.</h2><div class="live" id="live"></div><p class="more"><a href="/hosts">See every host →</a></p></div></section>
-<section class="end"><div class="wrap"><h2>Start your page this week.</h2><p class="lede">It takes about two minutes: say what you host, plan the first one, share the link.</p><div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts">See who's hosting</a></div></div></section>
+<section class="end"><div class="wrap"><span class="potto-end" id="pottoEnd" aria-hidden="true"></span><h2>Start your page <em>this week</em>.</h2><p class="lede">It takes about two minutes: say what you host, plan the first one, share the link.</p><div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts">See who's hosting</a></div></div></section>
 <div class="wrap"><footer><span>Pottery Lab · your page for what you host</span><span class="ftl"><a href="/discover">Discover</a><a href="/hosts">Hosts</a><a href="/hosts/book">For brands</a><a href="/security">Security</a></span></footer></div>
-<script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/community.js"></script><script src="/avatars.js"></script>
+<script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/mascot.js"></script>
 <script>
-(function () { const A = window.EncoreAvatars; if (A) { document.getElementById("avA").innerHTML = A.svg("baker", "#E0A030", 54); document.getElementById("avB").innerHTML = A.svg("barista", "#3E9C6E", 54); document.getElementById("avC").innerHTML = A.svg("florist", "#E26D8E", 54); }
+(function () { try { document.getElementById("pottoEnd").innerHTML = window.Potto ? Potto.svg("wave", 150, "Potto waving") : ""; } catch {} const A = window.EncoreAvatars; if (A) { document.getElementById("avA").innerHTML = A.svg("baker", "#E0A030", 54); document.getElementById("avB").innerHTML = A.svg("barista", "#3E9C6E", 54); document.getElementById("avC").innerHTML = A.svg("florist", "#E26D8E", 54); }
   const esc = window.EncoreCommunity?.esc || ((s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"));
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { const ok = (h) => !h.showcase && h.handle && h.name && h.name.toLowerCase() !== h.handle.toLowerCase() && !/[<>]/.test(h.name) && !h.sample && (h.tagline || h.bio) && h.city;
     const H = (d.hosts || []).filter((h, i, all) => ok(h) && all.findIndex((x) => x.name === h.name) === i).sort((a, b) => (b.upcoming || 0) + (b.followers || 0) - ((a.upcoming || 0) + (a.followers || 0))); H.length = Math.min(6, H.length - (H.length % 3)); if (H.length < 3) return; document.getElementById("liveSec").hidden = false;

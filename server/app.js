@@ -16,6 +16,7 @@ import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { makeSocial, mountSocial } from "./social.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
+import { mountRecognition } from "./recognition.js";
 import { mountShop } from "./shop.js";
 import { mountMarket } from "./market.js";
 import { mountBrand, startResearch } from "./brand.js";
@@ -439,6 +440,7 @@ export function createApp({ store, dataDir }) {
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountRecognition(app, { C, X });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });

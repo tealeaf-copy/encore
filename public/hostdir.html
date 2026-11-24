@@ -18,13 +18,20 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 .h .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.h .meta span{font-size:12px;background:#F6EFE6;border-radius:999px;padding:3px 9px}.h .meta .bk{background:#E8F3EC;color:#1E6B45}.h .meta .nx{background:#FFF1D2}
 .h .ft{display:flex;gap:8px;padding:0 16px 16px}.h .ft a{flex:1;text-align:center;padding:9px 10px;border-radius:999px;font:600 14px inherit;border:1px solid var(--line)}.h .ft .fo{background:var(--ember);border-color:var(--ember);color:#fff}
 @media (hover:hover){.h:hover{transform:translateY(-3px);border-radius:24px 32px 20px 36px/20px 26px 30px 22px;box-shadow:0 0 0 4px #F6A6D3}}
-.empty{color:var(--smoke);padding:30px 0}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
+.empty{color:var(--smoke);padding:30px 0}
+.row-sec{margin:6px 0 26px}.row-sec h2{font:700 21px/1.2 Fredoka,system-ui;margin:0 0 2px}.row-sec .sub{color:var(--smoke);font-size:14px;margin:0 0 10px}
+.row-scroll{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}.row-scroll::-webkit-scrollbar{height:6px}
+.mini{flex:0 0 210px;scroll-snap-align:start;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;text-decoration:none;color:inherit}
+.mini .av{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;border:1px solid var(--line);font-size:24px;background:#fff}.mini .av img,.mini .av svg{width:100%;height:100%;object-fit:cover}
+.mini b{display:block;font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mini small{display:block;color:var(--smoke);font-size:12.5px}.mini .bdg{display:inline-block;margin-top:4px;font-size:12px;font-weight:600;background:#FFF1D2;border-radius:999px;padding:2px 8px}
+.h .meta .bdg{background:#FFF1D2;font-weight:600}.h .meta .bdg.super{background:#1F1A17;color:#FFE08A}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
 .h .why{display:block;margin-top:6px;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#8A7B6E;font-style:italic}
 </style></head><body>
 <div class="wrap">
   <h1>Hosts on Encore</h1>
   <p class="lede">Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the ones you like and you'll hear about their next one first.</p>
   <div class="bar"><input class="search" id="q" placeholder="Try “a pottery class for 20 in Brooklyn” or “coffee for our launch”" aria-label="Describe what you're looking for"><div class="chips" id="kinds" aria-label="What they host"></div><div class="chips" id="cities" aria-label="City"></div></div>
+  <div id="rows"></div>
   <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:60vh"></div>
   <p class="teams">Booking for a team, a client dinner or a wedding? <a href="/hosts/book">See hosts who take bookings</a>.</p>
@@ -43,7 +50,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const done = (h) => (h.tagline || h.bio ? 2 : 0) + ((h.theme && (h.theme.avatarArt || h.theme.avatarUrl)) || (h.gallery || []).length ? 2 : 0) + ((h.tags || []).length ? 1 : 0) + ((h.experiences || []).length ? 1 : 0) + (cityOf(h) ? 1 : 0);
   const avatar = (h) => { const g = (h.gallery || [])[0], t = h.theme || {}; if (t.avatarUrl) return `<img src="${esc(t.avatarUrl)}" alt="">`; if (t.avatarArt && window.EncoreAvatars) return window.EncoreAvatars.svg(t.avatarArt, t.accent || h.color || "#E26D8E", 64); if (g) return `<img src="${esc(g)}" alt="">`; return esc(h.emoji || "🎉"); };
   const tint = (h) => { const a = (h.theme && h.theme.accent) || h.color || "#E0A030"; return `color-mix(in srgb, ${a} 28%, #FFF8EE)`; };
-  function draw() { sync();
+  function draw() { sync(); drawRows();
     const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
     const smart = ai && ai.q === q && ai.matches.length ? ai.matches.map((m) => { const h = H.find((x) => x.handle === m.handle); return h && pass(h) ? { ...h, _why: m.why } : null; }).filter(Boolean) : null;
     // typed words: a host matches if it mentions any of them, most mentions first (the smart results replace this a moment later)
@@ -52,7 +59,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     $("#grid").innerHTML = L.length ? L.map((h) => `<div class="h"><a class="hl" href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none;color:inherit;display:grid"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
       <span class="bd"><b>${esc(h.name)}</b><span class="tl">${esc(h.tagline || h.bio || (h.tags || []).join(" · ") || "Hosts small get-togethers")}</span>${h._why ? `<span class="why">✨ ${esc(h._why)}</span>` : ""}
-        <span class="meta">${cityOf(h) ? `<span>${esc([h.hood, cityOf(h)].filter(Boolean).join(", "))}</span>` : ""}${h.upcoming ? `<span class="nx">${h.upcoming} coming up</span>` : ""}${h.followers ? `<span>${h.followers} ${h.followers === 1 ? "follower" : "followers"}</span>` : ""}${h.showcase ? `<span>Not on Encore yet</span>` : (h.experiences || []).length ? `<span class="bk">Takes bookings</span>` : ""}</span></span>
+        <span class="meta">${(BADGES[h.handle] || []).filter((b) => !/^m-/.test(b.id)).slice(0, 2).map((b) => `<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`).join("")}${cityOf(h) ? `<span>${esc([h.hood, cityOf(h)].filter(Boolean).join(", "))}</span>` : ""}${h.upcoming ? `<span class="nx">${h.upcoming} coming up</span>` : ""}${h.followers ? `<span>${h.followers} ${h.followers === 1 ? "follower" : "followers"}</span>` : ""}${h.showcase ? `<span>Not on Encore yet</span>` : (h.experiences || []).length ? `<span class="bk">Takes bookings</span>` : ""}</span></span>
       </a><span class="ft"><a href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none">See page</a>${h.showcase ? ((h.links || []).find((l) => /instagram\.com/i.test(l.url || "")) ? `<a class="fo" href="${esc((h.links || []).find((l) => /instagram\.com/i.test(l.url || "")).url)}" target="_blank" rel="noopener" style="text-decoration:none">Instagram</a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow" style="text-decoration:none">Follow</a>`}</span></div>`).join("") : `<p class="empty">No hosts match that yet. Try another city or clear the search.</p>`;
   }
   function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
@@ -61,6 +68,13 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     try { const r = await fetch("/api/public/hosts/search?q=" + encodeURIComponent(asked)); const j = await r.json(); if (n !== aiSeq) return; ai = { q: asked, matches: j.matches || [] }; } catch {} if (n === aiSeq) { aiBusy = false; draw(); } };
   $("#q").value = U.get("q") || ""; $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); clearTimeout(aiT); aiT = setTimeout(askAI, 650); draw(); };
   $("#q").onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(aiT); askAI(); } };
+  let BADGES = {}, SHOW = null;
+  const ROWS = [["super", "⭐ Super hosts", "Regulars, real crowds and people who keep coming back."], ["streaks", "🔥 On a streak", "Hosting week after week (or month after month)."], ["legends", "👑 Local legends", "The most active host in their city over the last 90 days."], ["newHosts", "🌱 New on Encore", "Just started. Be one of their first guests."]];
+  function drawRows() { const box = $("#rows"); if (!box) return; if (!SHOW || q || kind !== "all" || city) { box.innerHTML = ""; return; }
+    box.innerHTML = ROWS.map(([k, title, sub]) => { const L = (SHOW[k] || []).map((hd) => H.find((x) => x.handle === hd)).filter(Boolean); if (!L.length) return "";
+      const pick = (h) => (BADGES[h.handle] || []).find((b) => (k === "super" && b.id === "super") || (k === "streaks" && b.id === "streak") || (k === "legends" && b.id === "legend") || (k === "newHosts" && b.id === "new"));
+      return `<section class="row-sec"><h2>${title}</h2><p class="sub">${sub}</p><div class="row-scroll">${L.map((h) => { const b = pick(h); return `<a class="mini" href="/@${encodeURIComponent(h.handle)}"><span class="av">${avatar(h)}</span><span><b>${esc(h.name)}</b><small>${esc(cityOf(h))}</small>${b ? `<span class="bdg" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>` : ""}</span></a>`; }).join("")}</div></section>`; }).join(""); }
+  fetch("/api/public/hosts/showcase").then((r) => r.json()).then((j) => { SHOW = j; BADGES = j.badges || {}; if (H.length) draw(); }).catch(() => {});
   fetch("/api/public/discover").then((r) => r.json()).then((d) => {
     const best = new Map(); for (const h of (d.hosts || []).filter((h) => h.handle && h.name && !/[<>]/.test(h.name))) { const k = h.name.trim().toLowerCase() + "|" + cityOf(h).toLowerCase(), cur = best.get(k); if (!cur || done(h) + (h.upcoming || 0) > done(cur) + (cur.upcoming || 0)) best.set(k, h); }
     H = [...best.values()].map((h) => ({ ...h, _g: groupsOf(h) }))

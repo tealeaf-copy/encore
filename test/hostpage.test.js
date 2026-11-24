@@ -87,3 +87,14 @@ test("Signed-in people keep one set of RSVP details on their account", async () 
   await post("/api/me/rsvp-profile", { clear: true }, c);
   assert.equal((await (await fetch(srv.base + "/api/me/rsvp-profile", { headers: { cookie: c } })).json()).profile, null);
 });
+
+test("Hosts can recommend other hosts; it shows on both pages", async () => {
+  const a = cookieOf(await post("/api/signup", { name: "Mo Okafor", email: "mo.rec@example.com", password: "long-password-1", mode: "friends" }));
+  const b = cookieOf(await post("/api/signup", { name: "Kim Lee", email: "kim.rec@example.com", password: "long-password-1", mode: "friends" }));
+  await post("/api/host/profile", { handle: "kim-rec", name: "Kim's Kiln", city: "Brooklyn" }, b);
+  await post("/api/host/profile", { handle: "mo-rec", name: "Mo's Run Club", city: "Brooklyn", recommends: [{ handle: "@kim-rec", note: "Best <b>pottery</b> night" }, { handle: "mo-rec" }, { handle: "Not A Handle!" }, { handle: "kim-rec" }] }, a);
+  const mo = await (await fetch(srv.base + "/api/public/host/mo-rec")).json(), kim = await (await fetch(srv.base + "/api/public/host/kim-rec")).json();
+  assert.deepEqual(mo.host.recs.map((x) => x.handle), ["kim-rec"], "no self, no junk, no duplicates");
+  assert.ok(!/[<>]/.test(mo.host.recs[0].note));
+  assert.deepEqual(kim.host.recBy.map((x) => x.handle), ["mo-rec"]);
+});

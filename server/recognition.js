@@ -64,8 +64,24 @@ export function makeRecognition({ C, X }) {
   return { all, of, showcase, reset: () => { cache = null; } };
 }
 
+/** Longest run of consecutive weeks with a gathering, within the given dates. */
+export function longestWeeks(dates) { const W = [...new Set(dates.map(weekOf))].sort((a, b) => a - b); let best = 0, run = 0, prev = null; for (const w of W) { run = prev != null && w === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = w; } return best; }
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** A host's year (Strava year-in-review style): only what happened, nothing estimated. */
+export function recapOf(S, year) {
+  const dates = (S.dates || []).filter((d) => d.startsWith(String(year))), byMonth = {}; for (const d of dates) byMonth[+d.slice(5, 7) - 1] = (byMonth[+d.slice(5, 7) - 1] || 0) + 1;
+  const top = Object.entries(byMonth).sort((a, b) => b[1] - a[1])[0];
+  return { year: +year, events: dates.length, guests: S.guests || 0, returning: S.returning || 0, kudos: S.kudosCount || 0, firstDate: dates[0] || "", longestStreak: longestWeeks(dates),
+    busiestMonth: top ? { month: MONTHS[+top[0]], n: top[1] } : null, months: Array.from({ length: 12 }, (_, i) => byMonth[i] || 0), kinds: (S.kinds || []).slice(0, 3), tags: (S.tags || []).slice(0, 3).map((t) => ({ emoji: t.emoji, label: t.label, n: t.n })),
+    quote: (S.kudos || []).find((k) => k.love && k.love.length > 12) || null, photos: (S.moments || []).filter((m) => m.type !== "video").slice(0, 4).map((m) => m.url) };
+}
+
 export function mountRecognition(app, { C, X }) {
   const R = makeRecognition({ C, X });
+  app.get("/api/public/host/:handle/recap", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+    const year = /^20\d\d$/.test(String(req.query.year || "")) ? +req.query.year : new Date().getFullYear(); let S; try { S = X.hostStrengths(ws, { year }); } catch { S = {}; }
+    const me = R.of(h.handle); res.json({ host: { handle: h.handle, name: h.name, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...recapOf(S, year) }); });
   app.get("/api/public/hosts/showcase", (req, res) => res.json(R.showcase()));
   app.get("/api/public/host/:handle/badges", (req, res) => { const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });
   return R;

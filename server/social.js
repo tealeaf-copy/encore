@@ -164,8 +164,9 @@ export function makeSocial(store, { C, saveBlob }) {
     return { attended: n, hosted: hosted.length, kudosGiven: given.length, traits, top: traits[0] || null, loves: Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => ({ kind: k, n: v })), self, built: !!Object.keys(self).length };
   }
   // ---- a host's strengths: what they host, what people say, the vibe ----
-  function hostStrengths(ws) {
-    const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws && x.e.date && x.e.date <= today() && x.e.stage !== "interest"), K = I.kudos.filter((k) => k.ws === ws).sort((a, b) => b.at - a.at);
+  function hostStrengths(ws, { year } = {}) {
+    const inYear = (d) => !year || String(d || "").startsWith(String(year));
+    const I = index(), ev = [...I.events.values()].filter((x) => x.ws === ws && x.e.date && x.e.date <= today() && x.e.stage !== "interest" && inYear(x.e.date)), K = I.kudos.filter((k) => k.ws === ws && (!year || new Date(k.at || 0).getFullYear() === +year)).sort((a, b) => b.at - a.at);
     const kinds = {}; for (const x of ev) for (const l of lanesOf(`${x.e.activity || ""} ${x.e.name || ""}`)) kinds[l] = (kinds[l] || 0) + 1;
     const tags = {}; for (const k of K) for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1;
     const pastIds = new Set(ev.map((x) => x.id)), guests = new Set(); for (const [em, L] of I.att) if (L.some((a) => a.ws === ws && pastIds.has(a.eventId))) guests.add(em);

@@ -33,3 +33,10 @@ test("New hosts and milestones", () => {
   assert.ok(!badgesFor({ dates: [], guests: 0, createdAt: Date.now() - 2 * 864e5 }, NOW).isNew, "signing up alone is not hosting");
   assert.ok(badgesFor({ dates: Array.from({ length: 11 }, (_, i) => weeksAgo(i + 1)), guests: 30 }, NOW).badges.some((x) => x.label === "10+ gatherings"));
 });
+
+import { recapOf, longestWeeks } from "../server/recognition.js";
+test("Year in review counts only that year's gatherings and finds the best run of weeks", () => {
+  assert.equal(longestWeeks(["2026-03-07", "2026-03-14", "2026-03-21", "2026-05-02"]), 3);
+  const r = recapOf({ dates: ["2025-12-20", "2026-03-07", "2026-03-14", "2026-03-21", "2026-05-02"], guests: 30, returning: 9, kudosCount: 4, kudos: [{ love: "Felt like family by the end", name: "Ana" }] }, 2026);
+  assert.equal(r.events, 4); assert.equal(r.busiestMonth.month, "March"); assert.equal(r.months[2], 3); assert.equal(r.longestStreak, 3); assert.equal(r.quote.name, "Ana");
+});

@@ -15,7 +15,7 @@
 .ok{display:block;font-weight:500;color:#2F7A4F;font-size:12.5px;margin-top:5px}.ok.bad{color:#A93A3A}.ok:empty{display:none}#wl .done{font-size:15px;line-height:1.5}
 .modes{display:flex;gap:6px;background:rgba(0,0,0,.04);border-radius:12px;padding:4px;margin:4px 0 10px}.modes button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px;font:inherit;font-weight:600;cursor:pointer;color:inherit;opacity:.7}.modes button[aria-selected=true]{background:#fff;opacity:1;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 [hidden]{display:none!important}
-</style><script src="/authguard.js"></script><script src="/place.js"></script>
+.nocode{display:block;margin-top:4px;color:#6B5F56;font-size:13px;font-weight:400}.nocode a{color:#C4532F;font-weight:600}</style><script src="/authguard.js"></script><script src="/place.js"></script>
 <link rel="stylesheet" href="/playful.css">
 <script src="/placesearch.js"></script>
 </head><body>
@@ -24,7 +24,7 @@
   <p class="sub" id="sub">14 days, every feature, no card.</p>
   <div class="modes" role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
   <p class="err" id="err" role="alert"></p>
-  <label id="codeWrap" hidden><span>Invite code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small></label>
+  <label id="codeWrap" hidden><span>Invite code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode">No code? Ask a host you know for one, or <a href="#wl" onclick="document.getElementById('wl')?.scrollIntoView({behavior:'smooth',block:'center'});return false">join the waitlist</a>. Invited to an event? You don't need an account at all.</small></label>
   <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
   <label><span id="emL">Work email</span><input name="email" type="email" placeholder="Email" autocomplete="email" required></label>
   <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>

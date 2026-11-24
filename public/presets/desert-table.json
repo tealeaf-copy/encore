@@ -51,6 +51,9 @@
       "openDates": [
         "2027-01-07",
         "2027-01-08"
+      ],
+      "goals": [
+        "clients"
       ]
     },
     {
@@ -66,7 +69,11 @@
       "allIn": "Venue, DJ, open bar for 3 hours, staff and tax.",
       "standing": 250,
       "av": "DJ booth, sound, lighting",
-      "owner": "Nico"
+      "owner": "Nico",
+      "goals": [
+        "activation",
+        "clients"
+      ]
     }
   ]
 }

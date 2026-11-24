@@ -2,7 +2,7 @@
 // a run club host, a flower bouquet workshop). Brands browse or describe what they want; hosts reply with a quote;
 // the brand accepts from a private status page.
 import crypto from "node:crypto";
-import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
+import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS, claimEvent } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 
 export const CATEGORIES = [["food", "Food carts and pop-ups"], ["dining", "Chef's tables and tasting menus"], ["movement", "Runs, hikes and movement"], ["workshop", "Hands-on workshops"], ["drinks", "Coffee, tea and drinks"], ["culture", "Music, games and culture"]];
@@ -81,6 +81,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/booking/:id", (req, res) => { const id = clean(req.params.id, 20); if (req.query.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found"); const h = C.profileOf(B.ws);
     const { email, ...b } = B.b; res.json({ booking: b, host: { respondsIn: h?.respondsIn || "", handle: h?.handle, name: h?.name, accent: h?.theme?.accent, avatarArt: h?.theme?.avatarArt || "", emoji: h?.emoji, city: h?.city || "", insured: !!h?.insured, insuranceDoc: h?.insuranceDoc || "", terms: h?.terms || "", invoices: !!h?.invoices, legalName: h?.legalName || "", taxId: h?.taxId || "", bizAddress: h?.bizAddress || "", email: getWorkspace(B.ws)?.ownerEmail || "" } }); });
   // ---- measurement: a guest page per booking, results after the day, the brand's own outcomes ----
+  const flatP = (v) => /\bflat\b|per (event|day|booking)|total/i.test(String(v || ""));
   const money$ = (v) => { const m = String(v || "").replace(/,/g, "").match(/(\d+(?:\.\d+)?)/); return m ? +m[1] : 0; };
   function resultsOf(B, h) { const b = B.b, S = scopeStore(store, B.ws), today = new Date().toISOString().slice(0, 10), ev = b.eventId ? S.get("events/" + b.eventId)?.data : null, date = ev?.date || b.date || "", past = !!date && date < today;
     const R = b.eventId ? S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === b.eventId) : [], going = R.filter((r) => r.response === "going"), came = past ? going.filter((r) => !r.noShow) : [];
@@ -88,7 +89,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
     for (const k of K) for (const t of k.tags || []) if (t !== "again") tags[t] = (tags[t] || 0) + 1;
     const TAGL = { food: "Amazing food", welcome: "Felt welcome", vibe: "Great vibe", organized: "So well organized", met: "Met new people", fun: "So much fun", spot: "Great spot" };
     const photos = b.eventId ? S.list("moments").filter((d) => d.data?.eventId === b.eventId).length : 0;
-    const pp = money$(b.experience?.price), cost = money$(b.quote?.total) || (pp && b.people ? Math.round(pp * b.people) : 0), headcount = past ? came.length : going.length || b.people || 0;
+    const pp = money$(b.experience?.price), cost = money$(b.quote?.total) || (pp ? (flatP(b.experience?.price) ? pp : b.people ? Math.round(pp * b.people) : 0) : 0), headcount = past ? came.length : going.length || b.people || 0;
     const hostR = (() => { let a = 0, n = 0; for (const k of S.list("kudos").map((d) => d.data || {})) { n++; if ((k.tags || []).includes("again") || k.compare === "better") a++; } return n >= 3 ? Math.round((100 * a) / n) : null; })();
     return { kind: b.kind || "booking", status: b.status, date, past, eventId: b.eventId || "", rsvpLink: b.eventId ? `/g#rsvp-${b.eventId}` : "", invited: b.people || 0, going: going.length, came: came.length, showRate: past && going.length ? Math.round((100 * came.length) / going.length) : null,
       ratings: K.length, againPct: K.length ? Math.round((100 * again) / K.length) : null, hostAgainPct: hostR, topTags: Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, n]) => ({ label: TAGL[t] || t, n })), photos,
@@ -96,7 +97,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   app.post("/api/public/booking/:id/event", small, (req, res) => { const id = clean(req.params.id, 20); if (req.body?.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found");
     if (B.b.eventId) return res.json({ ok: true, link: `/g#rsvp-${B.b.eventId}` }); if (B.b.kind === "gift") return bad(res, "Gift orders don't need a guest page.");
     const S = scopeStore(store, B.ws), eid = crypto.randomBytes(8).toString("hex"), title = `${B.b.experience?.name || "Team event"}${B.b.company ? ` · ${B.b.company}` : ""}`.slice(0, 90);
-    S.set("events/" + eid, { id: eid, name: title, pubTitle: title, date: B.b.date || "", published: true, unlisted: true, discoverable: false, headcount: B.b.people || 0, venueName: B.b.where || "", bookingId: id, forCompany: B.b.company || "", createdAt: Date.now() });
+    claimEvent(eid, B.ws); S.set("events/" + eid, { id: eid, name: title, pubTitle: title, date: B.b.date || "", published: true, unlisted: true, discoverable: false, headcount: B.b.people || 0, venueName: B.b.where || "", bookingId: id, forCompany: B.b.company || "", createdAt: Date.now() });
     S.update(B.path, { eventId: eid }); res.json({ ok: true, link: `/g#rsvp-${eid}` }); });
   app.get("/api/public/booking/:id/results", (req, res) => { const id = clean(req.params.id, 20); if (req.query.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found"); res.json(resultsOf(B, C.profileOf(B.ws))); });
   app.post("/api/public/booking/:id/campaign", small, (req, res) => { const id = clean(req.params.id, 20); if (req.body?.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found"); const x = req.body.campaign || {};

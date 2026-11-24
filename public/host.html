@@ -121,7 +121,7 @@ body.is-owner{padding-bottom:110px}
   ${tastes.length ? `<div class="tags" style="margin:10px 20px 0">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}
   <section class="next-up" id="nextUp" hidden></section>
   <div class="cols"><div>
-    <h2 class="sec">Coming up</h2><div class="grid">${d.upcoming.length ? d.upcoming.map((e) => C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. Follow ${esc(first)} and you'll hear about the next one first.</div>`}</div>
+    <h2 class="sec s-coming">Coming up</h2><div class="grid s-coming">${d.upcoming.length ? d.upcoming.map((e) => C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. Follow ${esc(first)} and you'll hear about the next one first.</div>`}</div>
     ${d.past.length ? `<div class="s-past"><h2 class="sec" style="margin-top:22px">Past gatherings</h2><div class="grid past">${d.past.map((e) => C.eventCard(e)).join("")}</div></div>` : ""}
     <div id="extras"></div>
   </div><aside class="side"><div id="sideExtras"></div>

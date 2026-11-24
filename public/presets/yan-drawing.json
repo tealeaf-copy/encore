@@ -1,0 +1,78 @@
+{
+ "handle": "yan-drawing",
+ "name": "Yan Drawing",
+ "tagline": "Software engineer turned artist. Portraits, urban sketches and fashion illustration in New York.",
+ "bio": "I spent years as a software engineer at Airbnb, then went all in on drawing. I sketch New York as it happens: street corners, cafés and the people in them. I also draw portraits and fashion illustration. Book me to draw your guests at a wedding, or sit for a relaxed portrait of your own.",
+ "city": "New York",
+ "tags": [
+  "portraits",
+  "urban sketching",
+  "fashion illustration",
+  "weddings",
+  "live drawing"
+ ],
+ "emoji": "✏️",
+ "color": "#2F7A8A",
+ "theme": {
+  "accent": "#2F7A8A",
+  "font": "classic",
+  "bg": "cream",
+  "cover": "dusk",
+  "buttons": "round",
+  "avatarArt": "glasses"
+ },
+ "forHire": true,
+ "respondsIn": "within a few days",
+ "invoices": true,
+ "terms": "Dates are held with a deposit. Free to reschedule up to 14 days before.",
+ "experiences": [
+  {
+   "name": "Live portraits at your wedding",
+   "desc": "I draw your guests during cocktail hour or the reception, one quick portrait at a time, and each guest takes theirs home. A keepsake people actually keep.",
+   "emoji": "💍",
+   "min": 20,
+   "max": 200,
+   "price": "Quote on request",
+   "length": "2 to 4 hours",
+   "category": "art",
+   "travels": true,
+   "includes": [
+    "Ink-and-wash portraits of your guests, about 5 minutes each",
+    "Archival paper and a sleeve for each one",
+    "A portrait of the two of you, finished after the day"
+   ],
+   "setup": "A small table and two chairs somewhere with good light."
+  },
+  {
+   "name": "Casual portrait sitting",
+   "desc": "A relaxed sitting in a café, a park or your place. Come alone, as a couple or with a friend. You leave with an original drawing.",
+   "emoji": "🖼️",
+   "min": 1,
+   "max": 4,
+   "price": "Quote on request",
+   "length": "45 to 90 minutes",
+   "category": "art",
+   "travels": true,
+   "includes": [
+    "An original portrait in pencil, charcoal or ink",
+    "A quick sketch to choose the pose before we start"
+   ]
+  },
+  {
+   "name": "Live fashion illustration at your launch",
+   "desc": "I illustrate your guests and the looks in the room at a launch, pop-up or party, and they walk away with a drawing.",
+   "emoji": "👗",
+   "min": 20,
+   "max": 150,
+   "price": "Quote on request",
+   "length": "2 to 3 hours",
+   "category": "art",
+   "travels": true,
+   "includes": [
+    "Quick fashion illustrations of your guests",
+    "Paper with your logo or event name, if you'd like"
+   ],
+   "branding": "Your logo or event name on the paper. Needs 2 weeks."
+  }
+ ]
+}

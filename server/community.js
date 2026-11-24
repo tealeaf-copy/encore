@@ -1,6 +1,9 @@
 // Community: invite-only membership, host pages people can follow, a Discover feed, and announcements.
 // Hosts build a following (a "fan club") event by event; guests become hosts through invite codes.
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { cleanShop } from "./shop.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
@@ -116,11 +119,18 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
       const T = {}; for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId === id && r.response === "going" && TYPE_NAMES[r.guestType]) T[r.guestType] = (T[r.guestType] || 0) + 1; }
       const crowd = Object.entries(T).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, c]) => (c === 1 ? `a ${TYPE_NAMES[k]}` : `${c} ${TYPE_NAMES[k]}s`));
       return n ? { going: n, faces, ...(crowd.length ? { crowd: crowd.join(" and ") + " going" } : {}) } : {}; } catch { return {}; } }
+  const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
+  let showcaseCache = null;
+  function showcaseAll() { if (showcaseCache) return showcaseCache; const out = new Map();
+    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })) }); } catch {} } } catch {}
+    return (showcaseCache = out); }
+  function showcaseOf(handle) { const h = String(handle || "").toLowerCase(); return wsOfHandle(h) ? null : showcaseAll().get(h) || null; }
   function discover() {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
       hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); events.push(...up.filter((c) => !c.unlisted)); }
+    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
     { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }
@@ -187,7 +197,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }
   function waitlist() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
   function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
-  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, addWaitlist, waitlist, sys };
+  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, showcaseOf, addWaitlist, waitlist, sys };
 }
 
 export function mountCommunity(app, { store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
@@ -249,7 +259,9 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
   app.get("/api/public/teams/coverage", (req, res) => { const L = String(req.query.cities || "").split(",").map((c) => clean(c, 60)).filter(Boolean).slice(0, 12); res.json({ cities: L.map((c) => ({ city: c, hosts: C.shortlist({ city: c }).length })) }); });
   app.get("/api/public/legal", (req, res) => res.json({ name: process.env.ENCORE_LEGAL_NAME || "", address: process.env.ENCORE_LEGAL_ADDRESS || "", taxId: process.env.ENCORE_TAX_ID || "" }));
   app.get("/api/public/teams/shortlist", (req, res) => { if (limited(req, 60)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const q = req.query || {}; res.json({ results: C.shortlist({ city: clean(q.city, 60), people: +q.people || 0, goal: clean(q.goal, 20), crowd: clean(q.crowd, 20) }), cityHosts: q.city ? C.shortlist({ city: clean(q.city, 60) }).length : null, cities: C.coveredCities(), legal: { name: process.env.ENCORE_LEGAL_NAME || "", address: process.env.ENCORE_LEGAL_ADDRESS || "", taxId: process.env.ENCORE_TAX_ID || "" }, guarantee: "If your host cancels or can't make it, Encore finds a vetted replacement or refunds you in full." }); });
-  app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+  app.get("/api/public/host/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const h = ws && C.profileOf(ws);
+    if (!h) { const P = C.showcaseOf(req.params.handle); if (P) return res.json({ person: "", host: { ...publicHost(P), showcase: true, claim: P.claim }, followers: 0, supporters: 0, gifted: {}, upcoming: [], past: [] }); }
+    if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     const hx = { ...publicHost(h), experiences: (h.experiences || []).map((x) => ({ ...x, openDates: C.openDatesOf(ws, x) })) };
     res.json({ person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), rising: (C.discover().hosts.find((x) => x.handle === h.handle) || {}).rising || null, host: hx, followers: C.followersOf(ws).length, supporters: scopeStore(store, ws).list("pledges").filter((d) => d.data?.tier && d.data.tier !== "none").length, gifted: scopeStore(store, ws).list("gifts").reduce((m, d) => { const k = d.data?.itemId; if (k) m[k] = (m[k] || 0) + 1; return m; }, {}), upcoming: C.eventsOf(ws, { onPage: true }), past: C.eventsOf(ws, { upcoming: false, onPage: true }).slice(-12).reverse() }); });
   // pledge support: records the tier and follows the host; no card is taken

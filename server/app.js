@@ -226,8 +226,8 @@ export function createApp({ store, dataDir }) {
   app.post("/api/signup", small, (req, res) => {
     if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
-    const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || !String(b.company || "").trim();
-    const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s gatherings`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
+    const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || (b.mode !== "work" && !String(b.company || "").trim());
+    const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "gatherings" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
     if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
@@ -327,7 +327,7 @@ export function createApp({ store, dataDir }) {
   const sendStatic = async (res, file, fallback) => {
     let html; try { html = await fsp.readFile(path.join(PUBLIC_DIR, file), "utf8"); } catch { html = fallback; }
     html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + GUEST_REDIRECT) : GUEST_REDIRECT + html;
-    res.set("Cache-Control", "no-store").type("html").send(html);
+    sendText(res.req, res, html);
   };
   app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
   app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
@@ -407,6 +407,25 @@ export function createApp({ store, dataDir }) {
       res.sendFile(path.join(assetsDir, id), (err) => err && next(err));
     } catch { res.status(404).end(); }
   });
+  // Send text with an ETag (repeat visits get a 304) and brotli when the browser takes it. Compressed bodies are cached
+  // by content hash, so a page or script is compressed once per version.
+  const brCache = new Map();
+  function sendText(req, res, body, { type = "html", cache = "private, no-cache" } = {}) {
+    const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body)), etag = '"' + crypto.createHash("sha1").update(buf).digest("base64url").slice(0, 20) + '"';
+    res.set({ "Cache-Control": cache, ETag: etag, Vary: "Accept-Encoding" }).type(type);
+    if (req.headers["if-none-match"] === etag) return res.status(304).end();
+    if (buf.length > 1024 && /\bbr\b/.test(req.headers["accept-encoding"] || "")) { let br = brCache.get(etag);
+      if (!br) { br = zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: buf.length < 400000 ? 11 : 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }); if (brCache.size > 400) brCache.clear(); brCache.set(etag, br); }
+      return res.set("Content-Encoding", "br").send(br); }
+    res.send(buf);
+  }
+  // scripts, styles, SVG and JSON from public/: compressed, cached for five minutes, then revalidated
+  const fileCache = new Map();
+  app.use(async (req, res, next) => { if (req.method !== "GET" || !/^\/[A-Za-z0-9_\-./]+\.(js|css|svg|json)$/.test(req.path) || req.path.includes("..")) return next();
+    const f = path.join(PUBLIC_DIR, req.path); if (!f.startsWith(PUBLIC_DIR + path.sep)) return next();
+    try { const st = await fsp.stat(f); if (!st.isFile()) return next(); let c = fileCache.get(f); if (!c || c.mtime !== st.mtimeMs) { c = { mtime: st.mtimeMs, buf: await fsp.readFile(f) }; fileCache.set(f, c); }
+      const type = { js: "application/javascript", css: "text/css", svg: "image/svg+xml", json: "application/json" }[req.path.split(".").pop()];
+      return sendText(req, res, c.buf, { type, cache: "public, max-age=300" }); } catch { return next(); } });
   app.use(express.static(PUBLIC_DIR, { index: false }));
 
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
@@ -917,7 +936,7 @@ export function createApp({ store, dataDir }) {
     let result = null;
     if (decision === "approved") {
       const ws = sessionWorkspace(req);
-      if (!serversFor(req).some((x) => x.server === rec.server)) return res.status(409).json({ code: "server_not_connected", message: "The CRM isn't connected any more." });
+      if (!serversFor(req).some((x) => x.server === rec.server)) return res.status(404).json({ code: "server_not_connected", message: "The CRM isn't connected any more." });
       try { result = await withCrm(connectionTokens(ws), ws === DEFAULT_WS, () => callTool(rec.server, rec.tool, rec.input, serversFor(req))); rec.result = "written"; }
       catch (e) { rec.status = "failed"; rec.result = String(e?.message || e?.code || "failed").slice(0, 300); }
     }
@@ -1077,7 +1096,9 @@ export function createApp({ store, dataDir }) {
   };
   app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).set(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
   app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).update(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
-  app.delete("/api/db/doc", (req, res) => res.json(S(req).delete(String(req.query.path || ""))));
+  app.delete("/api/db/doc", (req, res) => { const p = String(req.query.path || ""), u = currentUser(req);
+    if (/^events\//.test(p) && authEnabled() && u && !((u.owner || (u.roles || []).some((r) => /event lead|admin|owner/i.test(r))))) return res.status(403).json({ code: "not_granted", message: "Only the workspace owner or an event lead can delete an event." });
+    const r = S(req).delete(p); afterEventWrite(S(req), p); res.json(r); });
   // ---------- conference nominations by link (sales and execs, no login) ----------
   const confnomToken = (ws) => hmac32("confnom|" + ws);
   app.get("/api/confnomlink", (req, res) => {
@@ -1280,7 +1301,7 @@ export function createApp({ store, dataDir }) {
   });
   app.post("/api/mcp/call", json, async (req, res) => {
     const { server, tool, input } = req.body || {};
-    if (!serversFor(req).some((x) => x.server === String(server || ""))) throw { code: "server_not_connected", message: `"${server}" is not connected on this server.` };
+    if (!serversFor(req).some((x) => x.server === String(server || ""))) return res.status(404).json({ code: "server_not_connected", message: `"${server}" is not connected on this server.` });
     const ws = sessionWorkspace(req);
     if (CRM_WRITES.has(String(tool || "")) && !canWriteCrm(req)) {
       const u = currentUser(req), summary = crmSummary(String(tool), input), rows = (input?.members || input?.items || input?.accounts || []).slice(0, 200).map((x) => [x.email, x.name, x.company, x.subject, x.status].filter(Boolean).join(" · ").slice(0, 160));

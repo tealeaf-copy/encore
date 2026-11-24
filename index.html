@@ -1,5 +1,23 @@
 <title>Encore Event Studio</title>
 <script src="/eventart.js"></script>
+<script>
+// Instant invite preview: the full app is large, so a guest link first fetches just this event (a few hundred bytes)
+// and draws its cover, title, when and where. The real invite replaces it as soon as it has drawn.
+(function(){ if(location.pathname!=="/g") return; const m=/^#rsvp-([A-Za-z0-9_-]{4,80})/.exec(location.hash||""); if(!m) return;
+  const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const ok=u=>/^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(u||"")||/^https:\/\/[^\s"'<>()]+$/.test(u||"");
+  const st=document.createElement("style"); st.textContent=`#gPrev{position:fixed;inset:0;z-index:40;background:#FFF8EE;overflow:auto;transition:opacity .25s;font:16px/1.45 "DM Sans","Instrument Sans",system-ui,sans-serif;color:#1F1A17}#gPrev .w{max-width:560px;margin:0 auto;padding:76px 16px 40px}#gPrev .cv{position:relative;aspect-ratio:4/3;border-radius:22px;overflow:hidden;border:1px solid #EADFCF}#gPrev .cv img{width:100%;height:100%;object-fit:cover}#gPrev h1{font:700 clamp(26px,6vw,34px)/1.1 "Fredoka","Instrument Sans",system-ui;margin:18px 0 8px}#gPrev p{margin:4px 0;color:#4A3F38}#gPrev .sk{height:44px;border-radius:999px;background:linear-gradient(90deg,#F1E8DB,#F8F1E7,#F1E8DB);background-size:200% 100%;animation:gpv 1.2s linear infinite;margin-top:18px;max-width:260px}@keyframes gpv{to{background-position:-200% 0}}html:not(.g-loading) #gPrev{opacity:0;pointer-events:none}`;
+  document.head.appendChild(st);
+  fetch("/api/db/doc?path="+encodeURIComponent("events/"+m[1]),{headers:{"x-encore-guest":"1"},credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(j=>{ const e=j&&j.data; if(!e||!document.documentElement.classList.contains("g-loading")) return;
+    const title=e.pubTitle||e.name||"You're invited", d=e.date?new Date(e.date+"T12:00:00"):null, when=[d&&!isNaN(d)?d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}):"",e.startTime||""].filter(Boolean).join(" · "), where=e.venueName||e.meetPoint||e.city||"";
+    const cover=ok(e.coverPhoto)?`<img src="${esc(e.coverPhoto)}" alt="">`:(window.EventArt?window.EventArt.cover({...e,id:m[1]}):"");
+    const box=document.createElement("div"); box.id="gPrev"; box.setAttribute("aria-busy","true");
+    box.innerHTML=`<div class="w"><div class="cv">${cover}</div><h1>${esc(title)}</h1>${when?`<p><b>${esc(when)}</b></p>`:""}${where?`<p>${esc(where)}</p>`:""}${e.hostName?`<p>Hosted by ${esc(e.hostName)}</p>`:""}<div class="sk" aria-label="Loading the RSVP"></div></div>`;
+    (document.body||document.documentElement).appendChild(box);
+    const gone=()=>{ if(!document.documentElement.classList.contains("g-loading")){ setTimeout(()=>box.remove(),400); return true } return false };
+    const mo=new MutationObserver(()=>{ if(gone()) mo.disconnect() }); mo.observe(document.documentElement,{attributes:true,attributeFilter:["class"]}); }).catch(()=>{});
+})();
+</script>
 <script src="/menucard.js"></script>
 <style>
 /* theme picker: each tile is a tiny invite in that theme */
@@ -1547,11 +1565,11 @@ const out = k => draft[k] || (draft.example ? EXAMPLE_OUT[k] : null);
   db.doc("brands/main").onSnapshot(sn=>{ if(sn.exists){ brandProfile=sn.data(); syncLogo(); if(location.hash==="#brand") renderBrand(); if(step===1&&!isGuestRoute()) renderStep(); if(isGuestRoute()&&!(typeof isTyping==="function"&&isTyping())) renderGuest() } });
   db.doc("canvas/main").onSnapshot(sn=>{ if(sn.exists){ canvasData=sn.data(); if(location.hash==="#canvas"||!location.hash) renderCanvas() } });
   db.collection("interest").onSnapshot(sn=>{ allInterest=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#canvas") renderCanvas() });
-  db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
+  if(!isGuestRoute()) db.doc("inspire/peers").onSnapshot(sn=>{ if(sn.exists){ peerData=sn.data(); inspFeed=[...(peerData.items||[]),...feed().filter(x=>!x.peer)]; if(location.hash==="#inspire") renderInspire() } });
   db.collection("aeactions").onSnapshot(sn=>{ allAe=sn.docs.map(d=>d.data()); if(draft.id&&allAe.some(a=>a.eventId===draft.id)){ applyAeActions(draft); if(step===7&&!isGuestRoute()) renderStep() } },()=>{});
   db.collection("nominations").onSnapshot(sn=>{ allNoms=sn.docs.map(d=>({id:d.id,...d.data()})); if(location.hash==="#programs"||!location.hash) renderPrograms(); if(step===6&&!isGuestRoute()) renderStep() });
   db.collection("conferences").onSnapshot(sn=>{ allConfs=sn.docs.map(d=>({id:d.id,...d.data()})); confsLive=true; if(location.hash==="#conferences") renderConfs() },()=>{});
-  db.collection("wall").onSnapshot(sn=>{ allWall=sn.docs.map(d=>d.data()) },()=>{});
+  if(!isGuestRoute()) db.collection("wall").onSnapshot(sn=>{ allWall=sn.docs.map(d=>d.data()) },()=>{}); // guests read their event's wall through the event page
   db.collection("rsvps").onSnapshot(snap=>{ const before=new Map(allRsvps.map(r=>[r.id,r.response])); if(before.size&&!isGuestRoute()){ const fresh=snap.docs.map(x=>({id:x.id,...x.data()})).filter(r=>!before.has(r.id)&&r.response==="going"); if(fresh.length){ burst(); toast(fresh.length===1?`${fresh[0].name} is coming. 🎉`:`${fresh.length} new yeses.`) } } snap.docs.forEach(x=>{ const r=x.data(), b=before.get(x.id); if(before.size&&b&&b!==r.response&&r.response==="no"&&!isGuestRoute()) toast(`${r.name} can no longer come, so a seat is open.`) }); allRsvps=snap.docs.map(d=>({id:d.id,...d.data()})); if(step===6||step===7) renderStep() });
 })();
 let pendingRefresh=false;
@@ -3105,6 +3123,8 @@ Sections: "Timeline" as timeline (when, what, owner), "Pre-event questions" as c
 Sections: "Vendors" as a table (Vendor, Type, Est. cost, Book by, Confirm), "Contract checklist" as chips.`},
 };
 function kindOf(d=draft){ return KINDS[d.kind]?d.kind:"dinner" }
+// defined here, with kindOf, so a guest link that renders early can use it
+function isCasual(d){ return !!(d&&(d.casual||kindOf(d)==="social")) }
 function modHTML(key,d){ const M=MODS[key], R=d.mods?.[key];
   return `<div class="agent"><header><div class="who"><span class="av">${M.av}</span><div><h3>${esc(M.label)}</h3><p class="note">${esc(M.desc)}</p></div></div>
     <div class="btns">${R?`<span class="tag live">Generated${R._used?.length?" · used "+R._used.map(esc).join(", "):""}</span>`:""}<button class="btn ${R?"":"primary"}" data-mod="${key}"><span class="spark">✦</span>${R?"Redo":"Run"}</button></div></header>
@@ -5190,13 +5210,20 @@ async function renderGuest(){
     ${EXEC?`<input id="g-topic" type="hidden">`:`<label class="f">What would you like to talk about?<span class="h">Your host uses this to plan the conversation and seat you well.</span><input id="g-topic"></label>`}
     ${cqs.map((q,i)=>`<label class="f">${esc(q.q)}${q.required?" *":""}${q.type==="short"?`<input data-cq="${i}">`:`<select data-cq="${i}"><option value=""></option>${(q.type==="yesno"?["Yes","No"]:(q.options||[])).map(o=>`<option>${esc(o)}</option>`).join("")}</select>`}</label>`).join("")}
     <label class="f">Dietary needs or allergies<input id="g-diet" placeholder="None" value="${esc(me?.dietary||"")}"></label><label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-severe"> It's a severe allergy</label>
-    <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="e.g. vegetarian, running late, bringing a dog" value="${esc(me?.access||"")}"></label>
+    <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="e.g. step-free entrance, a chair with a back" value="${esc(me?.access||"")}"></label>
     ${EXEC?`<label class="f">Your assistant's email (optional)<span class="h">We'll copy them on logistics only.</span><input id="g-ea" type="email"></label>`:""}
     ${EXEC?`<input id="g-li" type="hidden" value="${esc(me?.linkedin||"")}"><input id="g-photo" type="file" hidden><input type="checkbox" id="g-wall" hidden>`:`<div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
     <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> Show my name, company and photo to other guests</label>`}
     <p class="note">${esc(e.brand||brandProfile?.company||"The host")} uses your details only to run this event and follow up about it.${(e.privacyUrl||brandProfile?.privacyUrl)?` <a href="${esc(e.privacyUrl||brandProfile.privacyUrl)}" target="_blank" rel="noopener">Privacy notice</a>.`:""} You can ask to be removed at any time.</p>
     <div class="btns"><button type="button" class="btn primary" id="g-send">${e.approvalRequired?"Request a seat":"Send my RSVP"}</button></div></div>`;
   if(EXEC&&me){ ["#g-title","#g-co","#g-email"].forEach(q=>{ const x=$(q,f); if(x&&x.value) x.closest("label").hidden=true }) }
+  // a friends get-together asks what a friend would: name, how to reach you, food needs if there's food, a plus-one.
+  // the work fields stay in the form (hidden) so everything that reads them keeps working
+  if(isCasual(e)){ ["#g-title","#g-co","#g-introby","#g-topic","#g-photo"].forEach(q=>{ const l=$(q,f)?.closest("label"); if(l) l.hidden=true });
+    const li=$("#g-li",f)?.closest(".row"); if(li) li.hidden=true; const wl=$("#g-wall",f)?.closest("label"); if(wl) wl.hidden=true;
+    const em=$("#g-email",f)?.closest("label"); if(em&&em.firstChild?.nodeType===3) em.firstChild.nodeValue="Email (for updates from the host)";
+    const ac=$("#g-access",f)?.closest("label"); if(ac){ const d=document.createElement("details"); d.className="g-more"; d.innerHTML=`<summary style="cursor:pointer;font-weight:600;font-size:14px">Anything the host should know? (optional)</summary>`; ac.before(d); d.appendChild(ac) }
+    f.querySelectorAll(".note").forEach(n=>{ if(/uses your details only to run this event/.test(n.textContent)) n.hidden=true }) }
   $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("We couldn't read that image. Try another one.") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   $("#g-send").onclick=async()=>{
@@ -6472,7 +6499,7 @@ if(typeof cgTweakMsg==="function"){ const _tm=cgTweakMsg; cgTweakMsg=function(x,
   return {text:`What your boss will ask: ${obj} ${(x.pitfalls||[]).length?`The risk I'd watch: ${String(x.pitfalls[0]).toLowerCase()}.`:""} Judge it on meetings booked within two weeks.`,mod:{}} } }
 
 // ================= Hosting with friends: casual, low budget, everything the host needs =================
-const isCasual=d=>!!(d&&(d.casual||kindOf(d)==="social"));
+// isCasual lives next to kindOf in the first script block
 const ACT={ "run club":{emoji:"🏃",bring:["Running shoes","Water","A layer for after"],ros:[["0:00","Meet at the start; quick hellos and names"],["0:10","Warm-up, then pace groups go (a slow group too)"],["0:50","Back together; stretch"],["1:00","Coffee nearby, optional"]],tasks:[[-7,"Pick the route and the meeting point"],[-6,"Post the invite in your group chat"],[-2,"Check the forecast and the route"],[-1,"Send the reminder"],[1,"Post photos and the next date"]],tips:"Keep a no-drop pace group so beginners come back."},
  "hike":{emoji:"🥾",bring:["Water (1 litre)","Snacks","Layers and a rain jacket","Good shoes"],ros:[["0:00","Meet at the trailhead; carpools arrive"],["0:15","Head out; someone sweeps at the back"],["1:30","Snack stop with a view"],["3:00","Back at the cars"]],tasks:[[-10,"Pick the trail (check length, parking, permits)"],[-7,"Post the invite"],[-3,"Sort carpools"],[-1,"Check the forecast and trail conditions; send the reminder"],[1,"Share photos"]],tips:"Pick a trail the slowest person will enjoy, and name a sweeper."},
  "picnic":{emoji:"🧺",bring:["A blanket","Something to share","Sunscreen"],ros:[["0:00","Set up blankets"],["0:20","Food out"],["1:30","Games or a walk"],["2:30","Pack up, leave no trace"]],tasks:[[-7,"Pick the park spot (shade, toilets)"],[-6,"Post the invite and the bring list"],[-2,"Check the forecast; pick a rain plan"],[-1,"Send the reminder"]],tips:"Drop a pin for the exact spot; parks are big."},
@@ -6641,7 +6668,7 @@ const PERSONAS={ regular:{name:"The Regular",emoji:"🫶",color:"#E26D8E",line:"
   connector:{name:"The Connector",emoji:"🔗",color:"#5B7FD6",line:"Never comes alone.",ask:"Give them two extra spots. They fill them."},
   contributor:{name:"The Contributor",emoji:"🧺",color:"#3E9C6E",line:"Brings snacks, a speaker, the folding table.",ask:"Hand them a slot on the bring list."},
   explorer:{name:"The Explorer",emoji:"🧭",color:"#8C62C9",line:"New here, curious, tries anything once.",ask:"A warm one-line welcome makes them come back."} };
-const FOODY=d=>/giveaway|bake|cake|cook|potluck|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i.test(`${d.activity||""} ${d.name||""} ${d.concept||""}`);
+const FOODY=d=>/giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i.test(`${d.activity||""} ${d.name||""} ${d.concept||""}`);
 const hoodOf=d=>d.hood||d.city||"";
 const mapsQ=(q,d)=>`https://www.google.com/maps/search/${encodeURIComponent(`${q} near ${hoodOf(d)||"me"}`)}`;
 
@@ -7124,7 +7151,7 @@ const ord=n=>n+(["th","st","nd","rd"][(n%100-20)%10]||["th","st","nd","rd"][n%10
   fetch("/api/host/inquiries").then(r=>r.json()).then(j=>{ const n=(j.inquiries||[]).length; if(n&&$("#fc-inq")) $("#fc-inq").textContent=`${n} brand ${n===1?"inquiry":"inquiries"} in your notifications` }).catch(()=>{}) } }
 
 // ---------- 5. Ticketed dinners: menu card, price, followers first ----------
-function ticketsHTML(d){ if(!isTicketed(d)&&!/cook|dinner|supper|potluck/.test(d.activity||"")) return "";
+function ticketsHTML(d){ if(!isTicketed(d)&&!FOODY(d)) return "";
   const early=d.earlyUntil&&Date.parse(d.earlyUntil)>Date.now();
   return `<div class="tix"><small class="eyebrow">🍽 Tickets and the menu</small><div class="row"><label class="f">Price per seat<input id="tx-price" value="${esc(d.price&&d.price!=="chip"?d.price:"")}" placeholder="Free, or e.g. $65"></label><label class="f">Seats<input id="tx-seats" type="number" min="2" max="60" value="${esc(d.headcount||12)}"></label><label class="f">Payment link<input id="tx-pay" value="${esc(d.ticketUrl||"")}" placeholder="Stripe, Venmo or PayPal link"></label></div>
    <div class="row"><label class="f">Theme<input id="tx-theme" value="${esc(d.dinnerTheme||"")}" placeholder="e.g. Autumn in Kyoto"></label><label class="f">Courses (one per line)<textarea id="tx-courses" rows="4" placeholder="Hamachi, yuzu, shiso&#10;Miso black cod&#10;Matcha panna cotta">${esc((d.courses||[]).join("\n"))}</textarea></label></div>
@@ -7365,7 +7392,7 @@ function friendlyTitle(text){ let t=String(text||"").trim().replace(/^(?:please\
 // ==================================================================
 // Round 7: the format decides the form; photos on covers; Pip says what it did; pay for paid seats.
 // ==================================================================
-const isFoodEvent=e=>/cook|dinner|supper|omakase|potluck|tasting|caf[eé]|matcha|brunch|bake|cake|giveaway|pop-?up|picnic|bbq|food/i.test(`${e.activity||""} ${e.name||""} ${e.pubTitle||""}`);
+const isFoodEvent=e=>/cook|dinner|supper|omakase|potluck|friendsgiving|thanksgiving|feast|tasting|caf[eé]|matcha|brunch|bake|cake|giveaway|pop-?up|picnic|bbq|food/i.test(`${e.activity||""} ${e.name||""} ${e.pubTitle||""}`);
 // host kit: tickets without the supper-club menu for non-food events
 { const _tx=ticketsHTML; ticketsHTML=function(d){ let h=_tx(d); if(!h||isFoodEvent(d)) return h; return h.replace("🍽 Tickets and the menu","🎟 Tickets").replace(/<div class="row"><label class="f">Theme<input id="tx-theme"[\s\S]*?<\/textarea><\/label><\/div>/,'<input type="hidden" id="tx-theme" value=""><textarea id="tx-courses" hidden></textarea>') } }
 { const _hk6=hostKitHTML; hostKitHTML=function(d){ let h=_hk6(d); if(/workshop|class/.test(d.activity||"")) h=h.replace(/placeholder="e\.g\. North gate of the park, by the fountain"/,'placeholder="e.g. Hoa Flower Studio, 123 Grand St"'); return h } }
@@ -8544,7 +8571,7 @@ const FRIENDS_TOOLS=new Set(["copy","venues"]);
 { const _ab=agentBox; agentBox=function(key){ const h=_ab.apply(this,arguments); try{ if((window.__wsPersonal||(typeof draft!=="undefined"&&draft&&isCasual(draft)))&&!FRIENDS_TOOLS.has(key)) return String(h).replace('<div class="agent">','<div class="agent" hidden data-friends-hidden="1">') }catch{} return h } }
 
 // Design: pick a template for each event, right in Edit details; it dresses the invite, the storefront card and Discover
-function designFieldHTML(d){ const t=defTheme(d); return `<div class="f dz-f" id="dzField"><span>Design</span><div class="dz-grid">${THEMES.filter(([k])=>k!=="brand"||!window.__wsPersonal).map(([k,l,dsc])=>`<button type="button" class="dz-card th-${k} ${k===t?"on":""}" data-dz="${k}" aria-pressed="${k===t}"><span class="dz-sw"><span class="dz-mini"><span class="dz-k">You're invited</span><span class="dz-t">${esc((d.pubTitle||d.name||"Taco night").slice(0,22))}</span><span class="dz-d">Sat · 7pm</span></span><em>RSVP</em></span><b>${esc(l)}</b><small>${esc(dsc)}</small></button>`).join("")}</div><small class="note">Changes the invite page, your page's "Next up" card and the Discover card.</small></div>` }
+function designFieldHTML(d){ const t=defTheme(d); return `<div class="f dz-f" id="dzField"><span>Design</span><div class="dz-grid">${THEMES.filter(([k])=>k!=="brand"||!window.__wsPersonal).map(([k,l,dsc])=>`<button type="button" class="dz-card th-${k} ${k===t?"on":""}" data-dz="${k}" aria-pressed="${k===t}"><span class="dz-sw"><span class="dz-mini"><span class="dz-k">You're invited</span><span class="dz-t">${esc((d.pubTitle||d.name||"Taco night").slice(0,22))}</span><span class="dz-d">${esc(d.date?[new Date(d.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short"}),d.startTime?clock12(d.startTime):""].filter(Boolean).join(" · "):"Sat · 7pm")}</span></span><em>RSVP</em></span><b>${esc(l)}</b><small>${esc(dsc)}</small></button>`).join("")}</div><small class="note">Changes the invite page, your page's "Next up" card and the Discover card.</small></div>` }
 document.addEventListener("click",async e=>{ const b=e.target.closest?.("[data-dz]"); if(!b||!draft) return; draft.theme=b.dataset.dz; document.querySelectorAll("[data-dz]").forEach(x=>{ const on=x===b; x.classList.toggle("on",on); x.setAttribute("aria-pressed",on) }); try{ await saveEvent(true); toast(`Design set to ${b.querySelector("b").textContent}. Guests see it on the invite.`) }catch{} });
 new MutationObserver(()=>{ try{ const box=document.querySelector(".fedit"); if(!box||box.querySelector("#dzField")||!draft||draft.example) return; const anchor=box.querySelector("#covField")||box.querySelector("#fe-name")?.closest("label,.row"); if(!anchor) return; const w=document.createElement("div"); w.innerHTML=designFieldHTML(draft); anchor.after(w.firstElementChild) }catch(err){ console.warn(err) } }).observe(document.documentElement,{childList:true,subtree:true});
 
@@ -8583,7 +8610,7 @@ function openWizard(at=1,seed=""){ document.getElementById("wizBg")?.remove(); l
     if(k===2) return `<h2>When and where?</h2><label class="f">Event name<input id="wzName" value="${esc(d.pubTitle||d.name||"")}"></label><div class="wiz-row"><label class="f">Date<input id="wzDate" type="date" value="${esc(d.date||"")}"></label><label class="f">Start time<input id="wzTime" type="time" value="${esc(d.startTime||"")}"></label></div>${d.stage==="interest"&&(d.dateOptions||[]).length?`<div class="wz-poll"><b>🗳 Friends pick the date</b><span>${(d.dateOptions||[]).map(x=>esc(fmtDate(x))).join(" · ")}</span><button type="button" class="linkbtn" id="wzPollOff">I know the date</button></div>`:`<button type="button" class="linkbtn wz-pollbtn" id="wzPoll">Not sure when? Let friends pick a date →</button>`}<label class="f">Where<input id="wzWhere" placeholder="Your place, a park, a café…" value="${esc(d.meetPoint||d.venueName||"")}"></label><label class="f" id="wzAddrL" ${/my place|our place|home|apartment|flat|house|mine/i.test(d.meetPoint||"")?"":"hidden"}>Exact address <small class="note">Only guests you say yes to see it</small><input id="wzAddr" value="${esc(d.venueAddr||"")}" placeholder="12 Elm St, apt 4B" autocomplete="street-address"></label><label class="f">City<input id="wzCity" value="${esc(d.city||"")}"></label>`;
     if(k===3) return `<h2>Who's it for?</h2><label class="f">How many spots?<input id="wzSpots" type="number" min="1" value="${esc(d.headcount||8)}"></label><div class="wiz-choice"><label><input type="radio" name="wzWho" value="open" ${d.approvalRequired?"":"checked"}><b>Anyone with the link</b><span>They tap I'm in and they're on the list.</span></label><label><input type="radio" name="wzWho" value="approve" ${d.approvalRequired?"checked":""}><b>I'll approve each person</b><span>People ask; you say yes or not this time.</span></label></div><label class="f">Describe your crowd <span class="note">(optional)</span><input id="wzFor" placeholder="Friends from the building, the running crew…" value="${esc(d.audienceWho||"")}"></label><label class="f">Anything to bring? <span class="note">(optional)</span><input id="wzBring" placeholder="A drink to share" value="${esc(Array.isArray(d.bring)?d.bring.join(", "):(d.bring||""))}"></label>`;
     if(k===4) return `<h2>How should the invite look?</h2>${designFieldHTML(d).replace('<span>Design</span>','')}<div style="margin-top:12px">${coverFieldHTML(d)}</div>`;
-    return `<h2>Ready to send?</h2><div class="wiz-sum"><b>${esc(d.pubTitle||d.name)}</b><span>${esc(d.date?fmtDate(d.date):"No date yet")}${d.startTime?` · ${esc(clock12(d.startTime))}`:""}</span><span>${esc(placeOf(d)||d.city||"No place yet")}</span><span>${esc(d.headcount||"?")} spots · ${d.approvalRequired?"you approve each person":"anyone with the link"}</span>${d.why?`<span>💛 ${esc(/^so\b/i.test(d.why)?"We're getting together "+d.why:d.why)}</span>`:""}${d.askQ?`<span>❓ ${esc(d.askQ)}</span>`:""}${(d.houseRules||[]).length?`<span>${esc(d.houseRules.join(" · "))}</span>`:""}</div><label class="chip"><input type="checkbox" id="wzDisc" ${d.unlisted?"":"checked"}> Also show it on Discover so new people can find it</label>` };
+    return `<h2>Ready to send?</h2><div class="wiz-sum"><b>${esc(d.pubTitle||d.name)}</b><span>${esc(d.date?fmtDate(d.date):"No date yet")}${d.startTime?` · ${esc(clock12(d.startTime))}`:""}</span><span>${esc(placeOf(d)||d.city||"No place yet")}</span><span>${esc(d.headcount||"?")} spots · ${d.approvalRequired?"you approve each person":"anyone with the link"}</span>${d.why?`<span>💛 ${esc(/^so\b/i.test(d.why)?"We're getting together "+d.why:d.why)}</span>`:""}${d.askQ?`<span>❓ ${esc(d.askQ)}</span>`:""}${(d.houseRules||[]).length?`<span>${esc(d.houseRules.join(" · "))}</span>`:""}</div><fieldset class="wz-vis" style="border:0;padding:0;margin:4px 0 0;display:grid;gap:6px"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Who can see it?</legend>${[["link","Only people with the link","Nothing public. Share it in your group chat."],["page","On my page","Your followers see it; it's not on Discover."],["discover","On my page and Discover","New people nearby can find it too."]].map(([v,t,h])=>`<label class="chip" style="align-items:flex-start;gap:8px"><input type="radio" name="wzVis" value="${v}" ${(d.discoverable===false&&d.published?"link":d.unlisted?"page":d.discoverable?"discover":"page")===v?"checked":""}><span><b style="display:block">${t}</b><small class="note">${h}</small></span></label>`).join("")}</fieldset>` };
   const draw=()=>{ bg.innerHTML=`<div class="wiz" role="dialog" aria-modal="true" aria-label="New event"><button class="wiz-x" type="button" aria-label="Close">×</button>${dots()}<div class="wiz-body">${body()}</div><p class="err" id="wzErr"></p><div class="wiz-btns">${k>1?`<button class="btn ghost" type="button" id="wzBack">Back</button>`:"<span></span>"}<button class="btn primary" type="button" id="wzNext">${k===1?"Next":k===5?"Publish and share":"Next"}</button></div></div>`;
     bg.querySelector(".wiz-x").onclick=close; bg.querySelector("#wzBack")&&(bg.querySelector("#wzBack").onclick=()=>{ k--; draw() }); bg.querySelector("#wzNext").onclick=next; if(k===4){ try{ wireCoverField(bg,draft) }catch{} } setTimeout(()=>bg.querySelector("textarea,input:not([type=radio]):not([type=hidden])")?.focus(),40) };
   const err=t=>{ const x=bg.querySelector("#wzErr"); if(x) x.textContent=t };
@@ -8592,7 +8619,7 @@ function openWizard(at=1,seed=""){ document.getElementById("wizBg")?.remove(); l
       else if(k===2){ const d=draft; d.pubTitle=val("#wzName")||d.pubTitle||d.name; d.name=d.pubTitle; d.date=val("#wzDate"); d.startTime=val("#wzTime"); d.meetPoint=val("#wzWhere"); if(document.getElementById("wzAddr")) d.venueAddr=val("#wzAddr"); if(bg.querySelector("#wzWhy")){ d.why=val("#wzWhy"); d.askQ=val("#wzAsk"); d.houseRules=[...bg.querySelectorAll("#wzRules .on")].map(b=>b.dataset.rule).slice(0,3) } d.city=val("#wzCity")||d.city; if(d.stage!=="interest"&&(!d.date||!d.startTime)){ err("Pick a date and a start time, or let friends pick."); return } if(!d.meetPoint&&!d.city){ err("Say where it is, even roughly."); return } try{ applyPlace?.(d) }catch{} await saveEvent(true) }
       else if(k===3){ const d=draft; d.headcount=Math.max(1,+val("#wzSpots")||8); d.approvalRequired=bg.querySelector('input[name=wzWho]:checked')?.value==="approve"; d.audienceWho=val("#wzFor"); const br=val("#wzBring"); if(br) d.bring=br.split(/,\s*/).filter(Boolean); await saveEvent(true) }
       else if(k===4){ await saveEvent(true) }
-      else { const d=draft; d.unlisted=!bg.querySelector("#wzDisc")?.checked; d.discoverable=!d.unlisted; d.discoverable=true; d.published=true; await saveEvent(true); bg.remove(); step=6; location.hash="#studio"; try{ renderStep() }catch{} shareSheet(d); try{ pipSound?.("oink"); burst?.() }catch{} return }
+      else { const d=draft; const vis=bg.querySelector('input[name="wzVis"]:checked')?.value||"page"; d.published=true; d.discoverable=vis!=="link"; d.unlisted=vis!=="discover"; await saveEvent(true); bg.remove(); step=6; location.hash="#studio"; try{ renderStep() }catch{} shareSheet(d); try{ pipSound?.("oink"); burst?.() }catch{} return }
       k++; draw() }catch(e){ err(e.message||"Something went wrong. Try again.") } }
   draw() }
 window.openWizard=openWizard;
@@ -9497,8 +9524,11 @@ function casualRoute(){ try{ if(!window.__wsPersonal) return; const h=location.h
 window.addEventListener("hashchange",casualRoute); setTimeout(casualRoute,300); setTimeout(casualRoute,1500);
 // guest page: render hidden, show once laid out (no jump from one layout to another)
 if(location.pathname==="/g"){ const s=document.createElement("style"); s.textContent=`#view-guest{transition:opacity .25s ease}`; document.head.appendChild(s); document.documentElement.classList.add("g-loading");
-  const show=()=>document.documentElement.classList.remove("g-loading"); setTimeout(show,3500);
-  { const _rgS=renderGuest; renderGuest=async function(){ const r=await _rgS.apply(this,arguments); setTimeout(show,450); return r } } }
+  // reveal as soon as the invite has drawn (the first render can run before any hook is attached), never later than 1.2 s
+  const show=()=>{ document.documentElement.classList.remove("g-loading"); mo.disconnect() }; setTimeout(show,1200);
+  const ready=()=>{ const v=document.getElementById("view-guest"); return v&&!v.hidden&&v.querySelector(".invite,h1,.gtitle,.ticket,form") };
+  const mo=new MutationObserver(()=>{ if(ready()) requestAnimationFrame(()=>setTimeout(show,60)) }); mo.observe(document.documentElement,{childList:true,subtree:true});
+  if(ready()) show() }
 
 // ==================================================================
 // Casual hosts: Home's idea shelf is just get-together ideas. No audience tabs, company search, costs or Ideas board;
@@ -10059,7 +10089,7 @@ body.guestmode{padding-left:0!important}body.guestmode #trialBar,body.guestmode 
 .hostkit h3{margin:2px 0 0}.hostkit .hk-toggles{align-items:center}.hostkit textarea{min-height:70px}
 .gk{margin:4px 0 6px;display:grid;gap:10px}.gk-row{display:flex;gap:12px;align-items:flex-start}.gk-row>span{font-size:20px;line-height:24px}.gk-row b{display:block;font-size:13px;text-transform:uppercase;letter-spacing:.06em;opacity:.75}.gk-row p{margin:2px 0 0}
 .gk-grow{margin:18px auto 0;max-width:560px;text-align:center;padding:16px;border-radius:18px;border:1px dashed var(--line);display:grid;gap:10px;justify-items:center}.gk-grow p{margin:0;font-size:14.5px}
-.fx-confetti{position:relative;overflow:hidden}.fx-confetti::before{content:"";position:absolute;inset:-20% 0 0;pointer-events:none;background-image:radial-gradient(circle,#F7A9B6 2px,transparent 2.5px),radial-gradient(circle,#E3B67A 2px,transparent 2.5px),radial-gradient(circle,#8FC1E3 2px,transparent 2.5px),radial-gradient(circle,#9ED3A8 2px,transparent 2.5px);background-size:90px 110px,120px 90px,70px 130px,110px 100px;background-position:0 0,40px 20px,15px 60px,70px 35px;animation:confetti 14s linear infinite;opacity:.8}
+.fx-confetti{position:relative;overflow:hidden}.invite.fx-confetti::before{bottom:auto;height:min(46%,340px)}.invite.fx-confetti.ea-card-on::before{display:none}.fx-confetti::before{content:"";position:absolute;inset:-20% 0 0;pointer-events:none;background-image:radial-gradient(circle,#F7A9B6 2px,transparent 2.5px),radial-gradient(circle,#E3B67A 2px,transparent 2.5px),radial-gradient(circle,#8FC1E3 2px,transparent 2.5px),radial-gradient(circle,#9ED3A8 2px,transparent 2.5px);background-size:90px 110px,120px 90px,70px 130px,110px 100px;background-position:0 0,40px 20px,15px 60px,70px 35px;animation:confetti 14s linear infinite;opacity:.8}
 @keyframes confetti{to{background-position:0 440px,40px 380px,15px 580px,70px 435px}}
 @media (prefers-reduced-motion:reduce){.fx-confetti::before{animation:none}}
 body.casual #kindHost,body.casual .intel,body.casual #soCard{display:none!important}
@@ -10225,9 +10255,9 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 <script src="/shell.js" defer></script>
 <script>
 // Every event without its own photo gets an illustrated cover: label, title and a line drawing for what it is.
-{ const css=document.createElement("style"); css.textContent=`.gxcover.ea-on{background:none}.gxcover.ea-on>*:not(.ea-host){display:none!important}.gxcover .ea-host{position:absolute;inset:0}.gxcover.ea-on:hover .ea-art{transform:rotate(-4deg) scale(1.06)}`; document.head.appendChild(css);
+{ const css=document.createElement("style"); css.textContent=`.gxcover.ea-on{background:none;position:relative!important;inset:auto!important;width:auto!important;height:auto!important;aspect-ratio:4/3;display:block}.invite.ea-card-on{display:flex!important;flex-direction:column}.invite.ea-card-on>.gxcover.ea-on{flex:none}.gxcover.ea-on>*:not(.ea-host){display:none!important}.gxcover .ea-host{position:absolute;inset:0}.gxcover.ea-on:hover .ea-art{transform:rotate(-4deg) scale(1.06)}`; document.head.appendChild(css);
   const paint=()=>{ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!window.EventArt) return; const cv=host.querySelector(".gxcover"); if(!cv) return;
       if(cv.classList.contains("has-photo")||cv.querySelector("#gCoverImg")||safeCover(e.coverPhoto)){ cv.classList.remove("ea-on"); cv.querySelector(".ea-host")?.remove(); return }
-      if(cv.querySelector(".ea-host")?.dataset.for===e.id) return; cv.querySelector(".ea-host")?.remove(); const d=document.createElement("div"); d.className="ea-host"; d.dataset.for=e.id; d.innerHTML=EventArt.cover(e,{label:[EventArt.LABEL[EventArt.kindOf(e)],e.date?fmtDate(e.date):""].filter(Boolean).join(" · ")}); cv.appendChild(d); cv.classList.add("ea-on") }catch{} };
-  const _rgEA=renderGuest; renderGuest=async function(){ const r=await _rgEA.apply(this,arguments); paint(); setTimeout(paint,400); return r } }
+      if(cv.querySelector(".ea-host")?.dataset.for===e.id) return; cv.querySelector(".ea-host")?.remove(); const d=document.createElement("div"); d.className="ea-host"; d.dataset.for=e.id; d.innerHTML=EventArt.cover(e,{label:[EventArt.LABEL[EventArt.kindOf(e)],e.date?fmtDate(e.date):""].filter(Boolean).join(" · ")}); cv.appendChild(d); cv.classList.add("ea-on"); cv.closest(".invite")?.classList.add("ea-card-on") }catch{} };
+  let t=0; new MutationObserver(()=>{ clearTimeout(t); t=setTimeout(()=>{ if(document.querySelector("#view-guest .gxcover")) paint() },30) }).observe(document.documentElement,{childList:true,subtree:true}); paint() }
 </script>

@@ -4,6 +4,7 @@
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS, claimEvent } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
+import { smsConfig, sendSms } from "./sms.js";
 
 export const CATEGORIES = [["food", "Food carts and pop-ups"], ["dining", "Chef's tables and tasting menus"], ["movement", "Runs, hikes and movement"], ["workshop", "Hands-on workshops"], ["drinks", "Coffee, tea and drinks"], ["culture", "Music, games and culture"]];
 const CAT_WORDS = { food: ["cart", "pop-up", "popup", "street food", "banh mi", "bánh mì", "food truck", "stall", "snack", "lunch", "catering", "food"], dining: ["dinner", "tasting", "omakase", "chef", "supper", "fine dining", "menu"], movement: ["run", "hike", "yoga", "walk", "bike", "climb", "active", "wellness"], workshop: ["workshop", "flower", "bouquet", "pottery", "class", "craft", "make", "candle", "ceramic"], drinks: ["coffee", "tea", "matcha", "cocktail", "wine", "cupping"], culture: ["music", "dj", "game", "trivia", "karaoke", "film"] };
@@ -102,7 +103,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
     const hostR = (() => { let a = 0, n = 0; for (const k of S.list("kudos").map((d) => d.data || {})) { n++; if ((k.tags || []).includes("again") || k.compare === "better") a++; } return n >= 3 ? Math.round((100 * a) / n) : null; })();
     const partsCost = [...(b.addOns || []), ...(b.addOn ? [b.addOn] : [])].reduce((s0, a) => { const P = findBooking(a.id); if (!P) return s0; const pp2 = money$(P.b.experience?.price); return s0 + (money$(P.b.quote?.total) || (pp2 ? (flatP(P.b.experience?.price) ? pp2 : Math.round(pp2 * (P.b.people || 0))) : 0)); }, 0);
     const eventCost = partsCost ? cost + partsCost : 0;
-    return { eventCost, partOfId: b.partOf?.id || "", partOfName: b.partOf?.name || "", kind: b.kind || "booking", status: b.status, date, past, eventId: b.eventId || "", rsvpLink: b.eventId ? `/g#rsvp-${b.eventId}` : "", invited: b.people || 0, pending, cant, walkIns, checkedIn: usedDoor ? came.length : 0, doorLink: b.eventId ? `/door/${b.id}?t=${doorToken(b.id)}` : "", going: going.length, came: came.length, showRate: (past || usedDoor) && going.length ? Math.round((100 * came.length) / going.length) : null,
+    return { eventCost, partOfId: b.partOf?.id || "", partOfName: b.partOf?.name || "", kind: b.kind || "booking", status: b.status, date, past, eventId: b.eventId || "", rsvpLink: b.eventId ? `/g#rsvp-${b.eventId}` : "", sms: !!smsConfig(), phones: going.filter((r) => r.phone).length, invited: b.people || 0, pending, cant, walkIns, checkedIn: usedDoor ? came.length : 0, doorLink: b.eventId ? `/door/${b.id}?t=${doorToken(b.id)}` : "", going: going.length, came: came.length, showRate: (past || usedDoor) && going.length ? Math.round((100 * came.length) / going.length) : null,
       ratings: K.length, againPct: K.length ? Math.round((100 * again) / K.length) : null, hostAgainPct: hostR, topTags: Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, n]) => ({ label: TAGL[t] || t, n })), photos,
       cost, costPer: (eventCost || cost) && headcount ? Math.round((eventCost || cost) / headcount) : null, campaign: b.campaign || null, title: b.experience?.name || "", host: h?.name || "", company: b.company || "" }; }
   app.post("/api/public/booking/:id/event", small, (req, res) => { const id = clean(req.params.id, 20); if (req.body?.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found");
@@ -118,8 +119,8 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   const doorOk = (id, t) => !!t && (t === token(id) || t === doorToken(id));
   function doorList(B) { const S = scopeStore(store, B.ws), ev = B.b.eventId ? S.get("events/" + B.b.eventId)?.data : null; if (!ev) return null;
     const guests = S.list("rsvps").map((d) => ({ rid: d.id, ...d.data })).filter((r) => r.eventId === B.b.eventId && ["going", "requested"].includes(r.response))
-      .map((r) => ({ rid: r.rid, name: r.name || "", company: r.company || "", title: r.title || "", diet: r.diet || r.dietary || "", response: r.response, walkIn: !!r.walkIn, checkedInAt: r.checkedInAt || 0, code: ticketCode(B.b.eventId, r.rid) })).sort((a, b) => a.name.localeCompare(b.name));
-    return { title: ev.pubTitle || ev.name, date: ev.date || "", time: ev.startTime || "", where: ev.venueName || "", expected: B.b.people || 0, guests, checkedIn: guests.filter((g) => g.checkedInAt).length }; }
+      .map((r) => ({ phone: !!r.phone, rid: r.rid, name: r.name || "", company: r.company || "", title: r.title || "", diet: r.diet || r.dietary || "", response: r.response, walkIn: !!r.walkIn, checkedInAt: r.checkedInAt || 0, code: ticketCode(B.b.eventId, r.rid) })).sort((a, b) => a.name.localeCompare(b.name));
+    return { sms: !!smsConfig(), phones: guests.filter((g) => !g.checkedInAt && g.response === "going" && g.phone).length, title: ev.pubTitle || ev.name, date: ev.date || "", time: ev.startTime || "", where: ev.venueName || "", expected: B.b.people || 0, guests, checkedIn: guests.filter((g) => g.checkedInAt).length }; }
   app.get("/api/public/booking/:id/door", (req, res) => { const id = clean(req.params.id, 20); if (!doorOk(id, String(req.query.t || ""))) return bad(res, "This door link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B) return bad(res, "No such booking.", 404, "not_found");
     const L = doorList(B); if (!L) return bad(res, "Create the guest page first; check-in uses its guest list.", 404, "not_found"); res.json(L); });
   app.post("/api/public/booking/:id/door", small, (req, res) => { const id = clean(req.params.id, 20), b = req.body || {}; if (!doorOk(id, b.t)) return bad(res, "This door link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B?.b.eventId) return bad(res, "No guest page for this booking yet.", 404, "not_found");
@@ -134,7 +135,38 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
     res.json({ ok: true, rid, ...doorList(B) }); });
   // a guest's own check-in code, shown on their ticket
   app.get("/api/public/ticket/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), clean(req.query.rid, 40), String(req.query.code || "")); if (!P) return bad(res, "Not your ticket.", 403, "not_granted"); if (P.r.response !== "going") return res.json({ code: "" });
-    res.json({ code: ticketCode(P.r.eventId, P.rid), name: P.r.name || "", checkedInAt: P.r.checkedInAt || 0 }); });
+    res.json({ code: ticketCode(P.r.eventId, P.rid), name: P.r.name || "", checkedInAt: P.r.checkedInAt || 0, sms: !!smsConfig(), hasPhone: !!P.r.phone }); });
+  // ---- texts around the event (Twilio): a guest's ticket, the organizer's reminder, the door's nudge ----
+  const textHits = new Map(); const textLimited = (k, n, ms) => { const now = Date.now(), h = (textHits.get(k) || []).filter((x) => now - x < ms); if (h.length >= n) return true; h.push(now); textHits.set(k, h); return false; };
+  const quiet = () => { const hr = new Date().getHours(); return hr >= 21 || hr < 8; };
+  const firstOf = (n) => String(n || "").trim().split(/\s+/)[0] || "there";
+  const whenTxt = (ev) => [ev.date ? new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", ev.startTime ? new Date("2000-01-01T" + ev.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""].filter(Boolean).join(", ");
+  // a guest asks for their ticket by text (they type their own number, so they've opted in)
+  app.post("/api/public/ticket/:eventId/text", small, async (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), clean(req.body?.rid, 40), String(req.body?.code || "")); if (!P) return bad(res, "Not your ticket.", 403, "not_granted");
+    if (P.r.response !== "going") return bad(res, "Say you're going first."); const cfg = smsConfig(); if (!cfg) return bad(res, "Texting isn't set up yet.", 503, "unavailable");
+    const phone = clean(req.body?.phone, 30) || P.r.phone || ""; if (!phone) return bad(res, "Add your mobile number.");
+    if (textLimited("tk:" + P.rid, 3, 864e5)) return bad(res, "We've already texted this ticket a few times today.", 429, "rate_limited");
+    const ev = P.ev || {}, code = ticketCode(P.r.eventId, P.rid), link = `${publicOrigin(req)}/g#rsvp-${P.r.eventId}`;
+    const r = await sendSms(cfg, { to: phone, text: `${ev.pubTitle || ev.name || "Your event"}${whenTxt(ev) ? `, ${whenTxt(ev)}` : ""}${ev.venueAddr || ev.venueName ? ` at ${ev.venueAddr || ev.venueName}` : ""}. Your check-in code: ${code}. Details: ${link} Reply STOP to opt out.` });
+    if (!r.ok) return bad(res, r.stopped ? "That number opted out of texts (replied STOP). Text START to opt back in." : "Couldn't send the text: " + (r.error || "unknown"), r.stopped ? 409 : 502, r.stopped ? "opted_out" : "upstream_error");
+    if (!P.r.phone) P.S.update("rsvps/" + P.rid, { phone, smsOk: true }); else P.S.update("rsvps/" + P.rid, { smsOk: true }); res.json({ ok: true }); });
+  async function textGuests(B, origin, pick, make) { const cfg = smsConfig(); if (!cfg) return { error: "Texting isn't set up yet." }; const S = scopeStore(store, B.ws), ev = S.get("events/" + B.b.eventId)?.data || {};
+    const G = S.list("rsvps").map((d) => ({ rid: d.id, ...d.data })).filter((r) => r.eventId === B.b.eventId && pick(r)); let sent = 0, stopped = 0, failed = 0; const noPhone = G.filter((r) => !r.phone).length;
+    for (const r of G.filter((x) => x.phone)) { const out = await sendSms(cfg, { to: r.phone, text: make(r, ev, ticketCode(B.b.eventId, r.rid), `${origin}/g#rsvp-${B.b.eventId}`) }); if (out.ok) sent++; else if (out.stopped) stopped++; else failed++; }
+    return { sent, noPhone, stopped, failed, total: G.length }; }
+  // the organizer's reminder: each guest gets their own check-in code
+  app.post("/api/public/booking/:id/remind", small, async (req, res) => { const id = clean(req.params.id, 20), b = req.body || {}; if (b.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B?.b.eventId) return bad(res, "Create the guest page first.", 404, "not_found");
+    if (quiet() && !b.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late for texts (9pm–8am). Send anyway, or wait until the morning." });
+    if (textLimited("rm:" + id, 2, 6 * 3600e3)) return bad(res, "You've sent a reminder recently. Try again in a few hours.", 429, "rate_limited");
+    const extra = clean(b.text, 300);
+    const r = await textGuests(B, publicOrigin(req), (g) => g.response === "going" && !g.checkedInAt, (g, ev, code, link) => `Hi ${firstOf(g.name)}, see you at ${ev.pubTitle || ev.name}${whenTxt(ev) ? `, ${whenTxt(ev)}` : ""}${ev.venueAddr || ev.venueName ? `, ${ev.venueAddr || ev.venueName}` : ""}.${extra ? " " + extra : ""} Your check-in code: ${code}. ${link} Reply STOP to opt out.`);
+    if (r.error) return bad(res, r.error, 503, "unavailable"); scopeStore(store, B.ws).update(B.path, { texts: [...(B.b.texts || []), { kind: "reminder", at: Date.now(), sent: r.sent }].slice(-20) }); res.json({ ok: true, ...r }); });
+  // the door's nudge to guests who haven't arrived yet
+  app.post("/api/public/booking/:id/door/nudge", small, async (req, res) => { const id = clean(req.params.id, 20), b = req.body || {}; if (!doorOk(id, b.t)) return bad(res, "This door link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B?.b.eventId) return bad(res, "No guest page for this booking yet.", 404, "not_found");
+    if (textLimited("nd:" + id, 1, 10 * 60e3)) return bad(res, "You nudged everyone a few minutes ago. Give it ten minutes.", 429, "rate_limited");
+    const extra = clean(b.text, 200);
+    const r = await textGuests(B, publicOrigin(req), (g) => g.response === "going" && !g.checkedInAt, (g, ev, code, link) => `Hi ${firstOf(g.name)}, ${ev.pubTitle || ev.name} is starting${ev.venueAddr || ev.venueName ? ` at ${ev.venueAddr || ev.venueName}` : ""}.${extra ? " " + extra : " Running late? No problem, see you soon."} Your code: ${code}. Reply STOP to opt out.`);
+    if (r.error) return bad(res, r.error, 503, "unavailable"); res.json({ ok: true, ...r }); });
   app.get("/api/public/booking/:id/guests.csv", (req, res) => { const id = clean(req.params.id, 20); if (req.query.t !== token(id)) return bad(res, "This link isn't valid.", 403, "not_granted"); const B = findBooking(id); if (!B?.b.eventId) return bad(res, "Create the guest page first.", 404, "not_found");
     const S = scopeStore(store, B.ws), q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`, rows = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === B.b.eventId);
     const csv = ["name,email,company,title,reply,checked_in,walk_in,dietary", ...rows.map((r) => [r.name, r.email, r.company, r.title, r.response, r.checkedInAt ? new Date(r.checkedInAt).toISOString() : r.noShow ? "no" : "", r.walkIn ? "yes" : "", r.diet || r.dietary].map(q).join(","))].join("\n");

@@ -6,7 +6,7 @@ import express from "express";
 import { complete, isFake, parseJsonLoose } from "./ai.js";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
-import { smsConfig, sendSms } from "./sms.js";
+import { smsConfig, sendSms, useSmsStop } from "./sms.js";
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
@@ -59,6 +59,7 @@ export const KUDOS_TAGS = [["food", "🍜", "Amazing food"], ["welcome", "🤗",
 export const VIBE_TAGS = [["spark", "⚡", "Brought energy"], ["chill", "🧘", "Easy company"], ["helper", "🙌", "Helped out"], ["welcome", "🤗", "Welcomed people"], ["contributor", "🧺", "Brought something great"]];
 
 export function makeSocial(store, { C, saveBlob }) {
+  useSmsStop((num) => !!store.get("system/smsstop-" + hash(num)));
   const sys = (k) => store.get("system/" + k)?.data;
   const put = (k, v) => store.set("system/" + k, v);
   const userOf = (email) => getDbUser(lc(email));
@@ -434,7 +435,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.post("/api/public/sms/inbound", express.urlencoded({ extended: false, limit: "20kb" }), (req, res) => { if (!twilioValid(req)) return res.status(403).send("forbidden");
     const from = normPhone(req.body?.From), body = String(req.body?.Body || "").trim(), word = body.toLowerCase().replace(/[^a-z' ]/g, " ").trim().split(/\s+/)[0] || "", today = new Date().toISOString().slice(0, 10);
     if (!from) return twiml(res, "");
-    if (/^(stop|unsubscribe|cancel|end|quit)$/.test(word)) { store.set("system/smsstop-" + hash(from), { phone: from, at: Date.now() }); return twiml(res, ""); }
+    if (/^(stop|unsubscribe|cancel|end|quit|stopall)$/.test(word)) { store.set("system/smsstop-" + hash(from), { phone: from, at: Date.now() }); return twiml(res, ""); }
+    if (/^(start|unstop|yes)$/.test(word) && store.get("system/smsstop-" + hash(from))) { store.delete("system/smsstop-" + hash(from)); return twiml(res, "You're opted back in to texts from Encore. Reply STOP to opt out."); }
     // the most recent upcoming invite or RSVP for this number
     let best = null; for (const ws of allWorkspaceIds()) { const S = scopeStore(store, ws); for (const d of [...S.list("textinvites"), ...S.list("rsvps")]) { const x = d.data || {}; if (normPhone(x.phone) !== from) continue; const ev = S.get("events/" + x.eventId)?.data; if (!ev || (ev.date && ev.date < today)) continue; const at = x.changedAt || x.at || 0; if (!best || at > best.at) best = { ws, S, ev, eventId: x.eventId, at }; } }
     if (!best) return twiml(res, "Hi! This is Encore. We couldn't find an invite for this number. Open the link your host sent to RSVP.");

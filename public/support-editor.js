@@ -28,5 +28,12 @@
       try { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ support: { on: d.querySelector(".on").checked, monthly: +v(".m"), yearly: +v(".y"), founding: +v(".fo"), note: v(".note") }, wishlist, city: host.city || "" }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save.");
         Object.assign(host, j.host || {}); msg.textContent = "✓ Saved. Reload to see it on your page."; } catch (err) { msg.textContent = err.message; } b.disabled = false; };
   }
-  window.EncoreSupport = { mount };
+  // your own name, shown as the host on your events
+  async function mountName(box) { if (!box || box.querySelector(".se-name")) return; let cur = ""; try { cur = (await (await fetch("/api/me/name")).json()).name || ""; } catch { return; }
+    const d = document.createElement("div"); d.className = "se-sup se-name"; d.style.marginBottom = "0";
+    d.innerHTML = `<label class="f" style="margin-top:0">Your name <small style="font-weight:400">shown as the host on your events</small><input class="nm" maxlength="60" value="${esc(cur)}" autocomplete="name"></label><div class="acts"><button type="button" class="sv">Save name</button><span class="msg" style="font-size:13px;color:#6B5F56"></span></div>`;
+    box.prepend(d); d.querySelector(".sv").onclick = async () => { const b = d.querySelector(".sv"), msg = d.querySelector(".msg"); b.disabled = true; msg.textContent = "Saving…";
+      try { const r = await fetch("/api/me/name", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: d.querySelector(".nm").value }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save.");
+        msg.textContent = `✓ Saved${j.events ? `, and updated ${j.events} event${j.events === 1 ? "" : "s"}` : ""}.`; } catch (err) { msg.textContent = err.message; } b.disabled = false; }; }
+  window.EncoreSupport = { mount, mountName };
 })();

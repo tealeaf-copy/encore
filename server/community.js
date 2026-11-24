@@ -2,7 +2,7 @@
 // Hosts build a following (a "fan club") event by event; guests become hosts through invite codes.
 import crypto from "node:crypto";
 import { cleanShop } from "./shop.js";
-import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
+import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 
@@ -191,6 +191,12 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
 export function mountCommunity(app, { store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
+  // change your own name; events that showed your old name as the host switch to the new one
+  app.get("/api/me/name", (req, res) => { const u = me(req, res); if (!u) return; res.json({ name: getDbUser(u.email)?.name || "" }); });
+  app.post("/api/me/name", small, (req, res) => { const u = me(req, res); if (!u) return; const name = clean(req.body?.name, 60); if (name.length < 2) return res.status(400).json({ code: "invalid", message: "Add your name (at least 2 letters)." });
+    const rec = getDbUser(u.email); if (!rec) return res.status(404).json({ code: "not_found", message: "No account." }); const old = rec.name || ""; putDbUser({ ...rec, name });
+    let events = 0; if (old && old !== name) { const S = scopeStore(store, u.ws); for (const d of S.list("events")) if (d.data?.hostName === old) { S.update("events/" + d.id, { hostName: name }); events++; } }
+    res.json({ ok: true, name, events }); });
   app.get("/api/signup/config", (req, res) => res.json({ inviteOnly: inviteOnly() }));
   app.get("/api/codes/:code", (req, res) => { if (limited(req, 60)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const r = C.checkCode(req.params.code); const host = r.c ? C.profileOf(r.c.ownerWs) : null; res.json({ valid: r.ok, ...(r.ok ? {} : { message: r.message }), ...(r.c ? { from: first(r.c.ownerName), host: host?.handle ? { handle: host.handle, name: host.name } : null } : {}) }); });
   // a regular who gets a code can start hosting

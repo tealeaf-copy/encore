@@ -78,7 +78,7 @@
         <h4>Show on my page</h4><div class="sp-tog">${[["past", "Past gatherings"], ["kudos", "Kudos wall"], ["photos", "Photos"], ["tips", "Supporters and wishlist"], ["hire", "Work with me"], ["profile", "My event profile"]].map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" ${st.sections[k] ? "checked" : ""}> ${l}</label>`).join("")}</div>
         <p class="sp-note">Colours and fonts come from a set that always reads well. Text on your buttons switches between white and dark to stay readable.</p>
         <div class="sp-actions"><button type="button" class="sp-save" id="sp-save">Save my page</button><span id="sp-msg"></span></div><div id="spSupport"></div>`;
-      try { window.EncoreSupport?.mount(pane.querySelector("#spSupport"), mine); } catch {}
+      try { window.EncoreSupport?.mount(pane.querySelector("#spSupport"), mine); window.EncoreSupport?.mountName(pane.querySelector("#spSupport")); } catch {}
       pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
       pane.querySelector("#sp-copy").onclick = () => { navigator.clipboard?.writeText(`${location.origin}/@${h.handle}`); pane.querySelector("#sp-copy").textContent = "Copied"; };
       pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; if (b.dataset.k === "avatarArt") st.theme.avatarUrl = ""; live(); draw(); }));

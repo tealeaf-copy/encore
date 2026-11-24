@@ -25,3 +25,15 @@ test("A published event shows on the host's own page even when it's kept off Dis
   const disc = JSON.stringify(await (await fetch(srv.base + "/api/public/discover")).json());
   assert.ok(disc.includes("Open run"), "listed events are on Discover"); assert.ok(!disc.includes("Turkey Trot"), "kept off Discover");
 });
+
+test("A host can change their name; events that showed the old name follow", async () => {
+  const c = cookieOf(await post("/api/signup", { name: "Claire Kim", email: "claire.nm@example.com", password: "long-password-1", mode: "friends" }));
+  await put("/api/db/doc?path=events/r1", { kind: "social", casual: true, name: "Run", hostName: "Claire Kim" }, c);
+  await put("/api/db/doc?path=events/r2", { kind: "social", casual: true, name: "Co-hosted run", hostName: "Claire and Eric" }, c);
+  assert.equal((await post("/api/me/name", { name: "C" }, c)).status, 400);
+  assert.equal((await post("/api/me/name", { name: "Claire Nguyen" })).status, 401, "signed out can't");
+  const j = await (await post("/api/me/name", { name: "Claire Nguyen" }, c)).json(); assert.equal(j.events, 1);
+  assert.equal((await (await fetch(srv.base + "/api/me/name", { headers: { cookie: c } })).json()).name, "Claire Nguyen");
+  const ev = async (id) => (await (await fetch(srv.base + "/api/db/doc?path=events/" + id, { headers: { cookie: c } })).json()).data.hostName;
+  assert.equal(await ev("r1"), "Claire Nguyen"); assert.equal(await ev("r2"), "Claire and Eric");
+});

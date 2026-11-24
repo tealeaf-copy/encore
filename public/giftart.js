@@ -113,7 +113,7 @@
       <ellipse cx="160" cy="196" rx="130" ry="10" fill="#000" opacity=".08"/>
       <path d="M160 150 40 120 34 190 160 200z" fill="#FFFDF8" stroke="#E4D9C8"/><path d="M160 150 280 120 286 190 160 200z" fill="#FFF8EE" stroke="#E4D9C8"/>
       <path d="M80 150c0-70 160-70 160 0z" fill="${l1}"/>${layer}
-      <path d="M100 150h120l-6 22H106z" fill="${dark}"/><text x="160" y="166" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="11" letter-spacing="2.5" fill="#fff">${esc(fit(up(brand || "THANK YOU"), 18))}</text>
+      <path d="M100 150h120l-6 22H106z" fill="${dark}"/><text x="160" y="166" text-anchor="middle" font-family="${SANS}" font-weight="700" font-size="${Math.max(7, Math.min(11, Math.floor(104 / (Math.min(18, (brand || "THANK YOU").length) * 0.78))))}" letter-spacing="1.5" fill="#fff">${esc(fit(up(brand || "THANK YOU"), 18))}</text>
       <text x="74" y="184" font-family="${SCRIPT}" font-size="14" fill="#3B2A20" transform="rotate(4 74 184)">for ${esc(short(name, 12))}</text>
       <text x="246" y="184" text-anchor="middle" font-family="${SCRIPT}" font-size="11" fill="#3B2A20" transform="rotate(-4 242 184)">${esc(fit(note || "thank you", 22))}</text></svg>`; }
 

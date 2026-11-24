@@ -86,3 +86,5 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .bx-bad .ai{display:none}
 .bf-bud,.gf-lead{display:block;font-size:13px;color:#7A4E12}
 .bfl select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff}
+.b2b-mode #sideExtras>*:not(.book):not(.gifts-sec),.b2b-mode .store-shop,.b2b-mode #shop,.b2b-mode .es-tabs a.es-plus,.b2b-mode #topFollow{display:none!important}
+.bf-gift select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff}

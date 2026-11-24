@@ -40,3 +40,12 @@ test("Year in review counts only that year's gatherings and finds the best run o
   const r = recapOf({ dates: ["2025-12-20", "2026-03-07", "2026-03-14", "2026-03-21", "2026-05-02"], guests: 30, returning: 9, kudosCount: 4, kudos: [{ love: "Felt like family by the end", name: "Ana" }] }, 2026);
   assert.equal(r.events, 4); assert.equal(r.busiestMonth.month, "March"); assert.equal(r.months[2], 3); assert.equal(r.longestStreak, 3); assert.equal(r.quote.name, "Ana");
 });
+
+test("Hosts see what's next: keep the streak, how close Super host is, the next milestone", () => {
+  const wk = (n) => new Date(Date.parse(NOW) - n * 7 * 864e5).toISOString().slice(0, 10);
+  const r = badgesFor({ dates: [wk(1), wk(2), wk(3), wk(4)], guests: 12, returning: 6 }, NOW);
+  assert.ok(r.next.some((x) => x.id === "streak" && /5 weeks in a row/.test(x.text)), "nothing yet this week: nudge to keep the streak");
+  assert.ok(r.next.some((x) => x.id === "super" && /1 more gathering/.test(x.text) && /3 more guests/.test(x.text)));
+  assert.ok(r.next.some((x) => x.id === "m-events" && /1 more to reach 5/.test(x.text)));
+  assert.ok(!badgesFor({ dates: [wk(0), wk(1), wk(2)], guests: 3 }, NOW).next.some((x) => x.id === "streak"), "already hosted this week");
+});

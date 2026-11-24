@@ -33,7 +33,14 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   const ev = MILESTONES.events.find((m) => past.length >= m), gu = MILESTONES.guests.find((m) => guests >= m);
   if (ev && ev > 1) B.push({ id: "m-events", emoji: "🎉", label: `${ev}+ gatherings`, n: ev, why: `Has hosted ${past.length} gatherings` });
   if (gu) B.push({ id: "m-guests", emoji: "🙌", label: `${gu}+ guests`, n: gu, why: `${guests} different people have come` });
-  return { badges: B, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
+  // what's next, for the host's own eyes (Strava goals): keep the streak alive, the next badge, the next milestone
+  const next = [], cur = weekOf(now), hostedThisWeek = past.some((d) => weekOf(d) === cur), upcomingThisWeek = dates.some((d) => d > now && weekOf(d) === cur);
+  if (wk >= 2 && !hostedThisWeek) next.push({ id: "streak", emoji: "🔥", text: upcomingThisWeek ? `Your next one keeps your streak going: ${wk + 1} weeks in a row.` : `Host something by Sunday to make it ${wk + 1} weeks in a row.` });
+  if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "gathering" : "gatherings"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
+    if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("a gathering in the next few weeks");
+    if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
+  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} gatherings.` });
+  return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
 }
 
 export function makeRecognition({ C, X }) {
@@ -83,6 +90,6 @@ export function mountRecognition(app, { C, X }) {
     const year = /^20\d\d$/.test(String(req.query.year || "")) ? +req.query.year : new Date().getFullYear(); let S; try { S = X.hostStrengths(ws, { year }); } catch { S = {}; }
     const me = R.of(h.handle); res.json({ host: { handle: h.handle, name: h.name, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...recapOf(S, year) }); });
   app.get("/api/public/hosts/showcase", (req, res) => res.json(R.showcase()));
-  app.get("/api/public/host/:handle/badges", (req, res) => { const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });
+  app.get("/api/public/host/:handle/badges", (req, res) => { const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, next: x.next, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });
   return R;
 }

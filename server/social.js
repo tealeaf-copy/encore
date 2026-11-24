@@ -178,6 +178,18 @@ export function makeSocial(store, { C, saveBlob }) {
       kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: k.love || "", tags: k.tags || [], at: k.at, event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
       moments: I.moments.filter((m) => m.ws === ws && isPublic(I.events.get(m.eventId)?.e)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
   }
+  // ---- turnout a host can show a sponsor or venue: totals only, never names ----
+  function turnoutOf(ws) {
+    const S = scopeStore(store, ws), R = S.list("rsvps").map((d) => d.data || {}), past = S.list("events").map((d) => ({ id: d.id.split("/").pop(), e: d.data || {} })).filter((x) => x.e.casual && !x.e.example && x.e.date && x.e.date <= today() && x.e.stage !== "interest");
+    let said = 0, came = 0, walkIns = 0, doorEvents = 0, saidAtDoor = 0, showedAtDoor = 0; const seen = new Map();
+    for (const { id, e } of past) { const rs = R.filter((r) => r.eventId === id), walk = (x) => x.walkIn || x.source === "Walk-in", going = rs.filter((r) => r.response === "going"), G = (e.guests || []).filter((g) => /Going|Attended/.test(g.status || ""));
+      const yes = [...going, ...G].filter((x) => !walk(x)), w = [...going, ...G].filter(walk).length, isIn = (x) => !!x.checkedInAt || /Attended/.test(x.status || "");
+      said += yes.length; const showed = yes.filter(isIn).length;
+      if (showed || w) { doorEvents++; came += showed + w; saidAtDoor += yes.length; showedAtDoor += showed; walkIns += w; }
+      for (const who of [...going.map((r) => r.email || r.phone || r.name), ...G.map((g) => g.email || g.phone || g.name)]) { const k = String(who || "").trim().toLowerCase(); if (k) seen.set(k, (seen.get(k) || 0) + 1); } }
+    const people = seen.size, returning = [...seen.values()].filter((n) => n > 1).length;
+    return { events: past.length, saidYes: said, people, returning, returnRate: people ? Math.round((100 * returning) / people) : null, doorEvents, came, walkIns, showRate: saidAtDoor ? Math.round((100 * showedAtDoor) / saidAtDoor) : null, avgPerEvent: past.length ? Math.round(said / past.length) : 0 };
+  }
   // ---- guests prove who they are with the RSVP id and code they got back ----
   function rsvpProof(eventId, rid, code) {
     const ws = workspaceOfEvent(String(eventId || "")); if (!ws || !rid) return null;
@@ -247,7 +259,7 @@ export function makeSocial(store, { C, saveBlob }) {
     const topHost = Object.entries(hosts).sort((a, b) => b[1] - a[1])[0];
     return { year, went: A.length, hosts: Object.keys(hosts).length, topHost: topHost ? { name: topHost[0], n: topHost[1] } : null, topKind: Object.entries(kinds).sort((a, b) => b[1] - a[1])[0]?.[0] || "", hosted: hosted.length, guests: guests.size, kudos: K.length, tips: K.filter((k) => k.tipped).length, kudosGiven: I.kudos.filter((k) => lc(k.email) === me && inYear(k.at)).length };
   }
-  return { recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
+  return { recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
 }
 
 export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw }) {

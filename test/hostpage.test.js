@@ -115,3 +115,19 @@ test("Guests' answers to the host's own questions are saved with the RSVP, clean
   const ans = (a.data || a).answers;
   assert.equal(ans.q1, 3); assert.ok(!/</.test(ans.q2) && /chạy chứ/.test(ans.q2)); assert.ok(!("bad key!" in ans)); assert.deepEqual(ans.q3, ["a", "b"]);
 });
+
+test("A host's turnout record counts yeses, check-ins and walk-ins as totals, never names", async () => {
+  const r0 = await post("/api/signup", { name: "Turn Out", email: "turn.out@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  assert.ok((await post("/api/host/profile", { handle: "turnout-host", name: "Turn Out", tagline: "Suppers", emoji: "🍲" }, c)).ok);
+  const day = new Date().toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/to1", { kind: "social", casual: true, name: "Supper", date: day, published: true, guests: [{ name: "Wally", status: "Attended", source: "Walk-in" }] }, c);
+  const G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  for (const n of ["Ana", "Cy", "Bo"]) assert.ok((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "tk" + n }, body: JSON.stringify({ eventId: "to1", name: n, email: n + "@ex.com", response: "going" }) })).ok);
+  const list = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const docs = list.docs || list.items || list;
+  const ana = docs.find((d) => (d.data || d).name === "Ana"); const aid = String(ana.id).split("/").pop();
+  assert.ok((await put("/api/db/doc?path=rsvps/" + aid, { ...(ana.data || ana), checkedInAt: Date.now() }, c)).ok);
+  const t = (await (await fetch(srv.base + "/api/public/host/turnout-host/turnout")).json()).turnout;
+  assert.equal(t.events, 1); assert.equal(t.saidYes, 3); assert.equal(t.walkIns, 1); assert.equal(t.came, 2); assert.equal(t.showRate, 33);
+  assert.ok(!/Ana|Wally/.test(JSON.stringify(t)), "no names");
+});

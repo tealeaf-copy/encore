@@ -89,6 +89,9 @@ export function recapOf(S, year) {
 
 export function mountRecognition(app, { C, X }) {
   const R = makeRecognition({ C, X });
+  // totals a host can show a sponsor or venue (never names); only once there's something to show
+  app.get("/api/public/host/:handle/turnout", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws || !C.profileOf(ws)) return res.status(404).json({ code: "not_found", message: "No host by that name." });
+    let T = null; try { T = X.turnoutOf(ws); } catch {} res.set("Cache-Control", "public, max-age=120").json({ turnout: T && T.events ? T : null }); });
   app.get("/api/public/host/:handle/recap", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     const year = /^20\d\d$/.test(String(req.query.year || "")) ? +req.query.year : new Date().getFullYear(); let S; try { S = X.hostStrengths(ws, { year }); } catch { S = {}; }
     let all = []; try { all = X.hostStrengths(ws).dates || []; } catch {} const years = [...new Set(all.map((d) => +d.slice(0, 4)))].sort();

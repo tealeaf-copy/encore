@@ -1,0 +1,135 @@
+{
+  "handle": "golden-hour-movement",
+  "name": "Golden Hour Movement",
+  "tagline": "Yoga, mat Pilates and breathwork at your SF office, with a rooftop class when the fog lifts.",
+  "bio": "I'm Maya. I teach at a boutique studio in SoMa four mornings a week and spend the rest bringing classes to teams: lunchtime yoga in a conference room, a Pilates burn with no machines, and a breathwork reset before a big launch.",
+  "city": "San Francisco",
+  "hood": "SoMa",
+  "tags": [
+    "yoga",
+    "pilates",
+    "breathwork",
+    "wellness",
+    "office classes"
+  ],
+  "emoji": "🧘",
+  "color": "#3E9C6E",
+  "theme": {
+    "accent": "#3E9C6E",
+    "font": "bold",
+    "bg": "sage",
+    "cover": "sunrise",
+    "buttons": "round",
+    "avatarArt": "runner"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 72 hours before.",
+  "backupPlan": "Two instructors from my studio cover for me; you get their names when you book.",
+  "experiences": [
+    {
+      "name": "Lunchtime yoga at your office",
+      "desc": "A 45-minute flow in a conference room. Office clothes are fine; a chair version for anyone who wants it.",
+      "emoji": "🧘",
+      "min": 6,
+      "max": 40,
+      "price": "$28 a person",
+      "length": "45 minutes",
+      "category": "movement",
+      "travels": true,
+      "goals": [
+        "wellbeing",
+        "bonding",
+        "offsite"
+      ],
+      "includes": [
+        "Mats and blocks",
+        "A playlist and speaker",
+        "A desk-stretch card to keep"
+      ],
+      "allIn": "Mats, travel in SF and tax.",
+      "access": "Chair version and fully seated option.",
+      "dietary": "No food.",
+      "hybrid": "Remote people follow along on video.",
+      "setup": "A cleared room about 6 × 8 ft per person.",
+      "owner": "Maya, instructor",
+      "openDates": [
+        "2026-12-02",
+        "2026-12-04",
+        "2026-12-09",
+        "2026-12-11",
+        "2027-01-06",
+        "2027-01-08"
+      ],
+      "runOfShow": [
+        "0:00 Mats down, injury check-in",
+        "0:05 Breath and neck",
+        "0:15 Standing flow",
+        "0:30 Hips and back",
+        "0:40 Rest",
+        "0:45 Done"
+      ]
+    },
+    {
+      "name": "Mat Pilates burn",
+      "desc": "Studio-style Pilates without the machines, modifications for every level.",
+      "emoji": "🔥",
+      "min": 6,
+      "max": 30,
+      "price": "$32 a person",
+      "length": "50 minutes",
+      "category": "movement",
+      "travels": true,
+      "goals": [
+        "wellbeing",
+        "bonding"
+      ],
+      "allIn": "Mats, bands, travel and tax.",
+      "access": "Modifications for pregnancy, wrists and lower back.",
+      "hybrid": "Remote people need only a mat.",
+      "owner": "Maya",
+      "openDates": [
+        "2026-12-03",
+        "2026-12-10",
+        "2027-01-07"
+      ],
+      "runOfShow": [
+        "0:00 Warm-up",
+        "0:10 Core series",
+        "0:25 Legs",
+        "0:40 Arms and back",
+        "0:50 Done"
+      ]
+    },
+    {
+      "name": "Wellness week for your team",
+      "desc": "Four sessions in one week: yoga, Pilates, breathwork and a rooftop finale if the weather holds.",
+      "emoji": "📅",
+      "min": 10,
+      "max": 60,
+      "price": "$100 a person",
+      "length": "4 sessions",
+      "category": "movement",
+      "travels": true,
+      "goals": [
+        "wellbeing",
+        "bonding"
+      ],
+      "allIn": "Four classes, travel and tax.",
+      "hybrid": "Every class streams for remote people.",
+      "owner": "Maya",
+      "openDates": [
+        "2027-01-11",
+        "2027-02-08"
+      ],
+      "runOfShow": [
+        "Monday: lunchtime yoga",
+        "Tuesday: mat Pilates",
+        "Wednesday: breathwork",
+        "Friday: rooftop or studio finale"
+      ]
+    }
+  ]
+}

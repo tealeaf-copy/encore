@@ -2,6 +2,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
+import { fakeOutbox } from "../server/email.js";
 
 let srv;
 const J = { "content-type": "application/json" };
@@ -9,7 +10,7 @@ const post = (path, body, cookie) => fetch(srv.base + path, { method: "POST", he
 const cookieOf = (r) => r.headers.get("set-cookie").split(";")[0];
 
 before(async () => { srv = await startServer(); });
-beforeEach(() => { process.env.ENCORE_SIGNUP = "1"; process.env.SESSION_SECRET = "team-secret"; process.env.ENCORE_SIGNUP_PER_HOUR = "100"; resetLoginLimits(); });
+beforeEach(() => { process.env.ENCORE_SIGNUP = "1"; process.env.SESSION_SECRET = "team-secret"; process.env.ENCORE_SIGNUP_PER_HOUR = "100"; process.env.ENCORE_FAKE_EMAIL = "1"; resetLoginLimits(); });
 after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_SIGNUP_PER_HOUR"]) delete process.env[k]; await srv.close(); });
 
 test("Team space: requests join the team, bookings over the cap wait for an approver, only approvers decide", async () => {
@@ -22,8 +23,13 @@ test("Team space: requests join the team, bookings over the cap wait for an appr
   const big = await (await post("/api/public/book/sofia-team", { ...base, experienceId: dinner.id, people: 20 })).json(); assert.equal(big.approval.state, "pending", "$3,700 is over the $2,000 cap");
   const small = await (await post("/api/public/book/sofia-team", { ...base, experienceId: breakfast.id, people: 10, message: "Breakfast with two customers." })).json(); assert.equal(small.approval.state, "not_needed");
   let team = await (await fetch(`${srv.base}/api/public/bteam/${T.id}?k=${T.key}`)).json(); assert.equal(team.rows.length, 2); assert.equal(team.rows.find((r) => r.id === big.id).cost, 3700);
-  assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, bookingId: big.id, decision: "approve", approver: "sam@northwind.example" })).status, 403, "a requester can't approve");
-  assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, bookingId: big.id, decision: "approve", approver: "cfo@northwind.example" })).status, 200);
+  assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, bookingId: big.id, decision: "approve", approver: "cfo@northwind.example" })).status, 403, "typing the approver's email isn't enough");
+  assert.equal((await post(`/api/public/bteam/${T.id}/settings`, { k: T.key, cap: "999999" })).status, 403, "the team link alone can't change limits");
+  const owner = new URL(srv.base + T.ownerLink).searchParams.get("a"); assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: owner, bookingId: big.id, decision: "approve" })).status, 403, "the owner isn't an approver");
+  const mail = fakeOutbox.filter((m) => [].concat(m.to).includes("cfo@northwind.example")).pop(); assert.ok(mail, "the approver got their link");
+  const appr = mail.text.match(/&a=([a-f0-9]{32})/)[1];
+  assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: appr, bookingId: big.id, decision: "approve" })).status, 200);
+  assert.equal((await post(`/api/public/bteam/${T.id}/settings`, { k: T.key, a: owner, cap: "3000" })).status, 200, "the owner can change limits");
   team = await (await fetch(`${srv.base}/api/public/bteam/${T.id}?k=${T.key}`)).json(); assert.equal(team.rows.find((r) => r.id === big.id).approval.state, "approved");
   const t = new URL(big.status).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${big.id}?t=${t}`)).json(); assert.equal(bk.booking.approval.state, "approved"); assert.equal(bk.booking.team.name, "Northwind field");
 });

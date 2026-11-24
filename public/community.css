@@ -89,3 +89,4 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .b2b-mode #sideExtras>*:not(.book):not(.gifts-sec),.b2b-mode .store-shop,.b2b-mode #shop,.b2b-mode .es-tabs a.es-plus,.b2b-mode #topFollow{display:none!important}
 .bf-gift select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff}
 .bx-date{border:1px solid #CFE6D7;background:#F1FAF4;color:#1E4D36;border-radius:999px;padding:3px 9px;font:inherit;font-size:12.5px;cursor:pointer;margin:2px 2px 0 0}.bx-ros ul{margin:6px 0 0;padding-left:18px}
+.bf-giftnote{display:block;font-size:13px;color:#5A4E45}.bf-giftnote.warn{color:#7A4E12}.trust-line .gap{background:#FFF6E8;border-color:#F0D9B5;color:#7A4E12}

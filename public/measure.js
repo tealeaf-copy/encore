@@ -6,7 +6,7 @@
   const GOALS = { pipeline: "Pipeline", retention: "Customer retention", awareness: "Awareness", morale: "Team morale", hiring: "Hiring", community: "Community" };
   const money = (n) => "$" + Math.round(n).toLocaleString();
   async function draw(box) {
-    const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}/results?t=${encodeURIComponent(t)}`).then((x) => x.json()).catch(() => null); if (!r || r.code) { box.remove(); return; }
+    const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}/results?t=${encodeURIComponent(t)}`).then((x) => x.json()).catch(() => null); if (!r || r.code) { window.__mGone = true; box.remove(); return; }
     const c = r.campaign || {}, gift = r.kind === "gift";
     const tiles = [];
     if (!gift) { if (r.past) { tiles.push([r.going ? `${r.came}<small>of ${r.going}</small>` : "—", "came", r.showRate != null ? `${r.showRate}% of yeses showed up` : ""]); } else tiles.push([r.going || 0, "said yes", r.invited ? `of ${r.invited} expected` : ""]); }
@@ -32,6 +32,6 @@
   const st = document.createElement("style"); st.textContent = `.mm{color:var(--smoke);font-size:14px;margin:6px 0}.mtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}.mtiles div{background:var(--linen);border-radius:14px;padding:12px}.mtiles b{display:block;font:600 26px Fredoka,system-ui}.mtiles b small{font-size:14px;color:var(--smoke);margin-left:4px}.mtiles span{display:block;font-weight:600;font-size:14px}.mtiles small{display:block;color:var(--smoke);font-size:12.5px}
     .mcamp{margin-top:10px}.mcamp summary{cursor:pointer;font-weight:600}.mcamp form{display:grid;gap:8px;margin-top:8px}.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mcamp label{display:grid;gap:3px;font-size:13px;font-weight:600;color:var(--smoke)}.mcamp input,.mcamp select{padding:9px 11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}.btn{display:inline-block;padding:9px 16px;border-radius:999px;border:0;background:var(--ember);color:#fff;font:600 14.5px inherit;cursor:pointer;text-decoration:none}`;
   document.head.appendChild(st);
-  const ready = () => { const thr = document.getElementById("thr"); if (!thr || document.getElementById("mBox")) return false; const box = document.createElement("div"); box.className = "card"; box.id = "mBox"; thr.closest(".card").before(box); draw(box); return true; };
+  const ready = () => { const thr = document.getElementById("thr"); if (window.__mGone || !thr || document.getElementById("mBox")) return false; const box = document.createElement("div"); box.className = "card"; box.id = "mBox"; thr.closest(".card").before(box); draw(box); return true; };
   ready(); new MutationObserver(() => ready()).observe(document.body, { childList: true, subtree: true });
 })();

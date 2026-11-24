@@ -10,7 +10,7 @@
 .cl input,.cl textarea{border:1px solid #E7DFD3;border-radius:12px;padding:10px 12px;font:15px inherit;background:#fff}.cl .kinds{display:flex;flex-wrap:wrap;gap:6px}.cl .kinds button{border:1px solid #E7DFD3;background:#fff;border-radius:999px;padding:7px 12px;font:14px inherit;cursor:pointer}.cl .kinds button[aria-pressed="true"]{background:var(--accent,#C4532F);color:#fff;border-color:transparent}
 .cl button[type=submit]{border:0;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font:600 16px inherit;cursor:pointer}.cl .x{float:right;background:none;border:0;font-size:22px;cursor:pointer;color:#6F6259}.cl .err{color:#B3261E;font-size:14px;min-height:1em;margin:0}`; document.head.appendChild(s); }
   async function J(u) { try { const r = await fetch(u); return r.ok ? r.json() : null; } catch { return null; } }
-  function sheet(h, mine) { style(); const first = String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
+  function sheet(h, mine) { style(); const first = window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
     const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.innerHTML = `<div class="cl" role="dialog" aria-modal="true" aria-label="Request a collab"><button class="x" type="button" aria-label="Close">×</button><h2>Collab with ${esc(h.name)}</h2>
       <p>${esc(first)} sees your page (${esc(mine.name)}) and your idea, and can reply, say yes or pass. If it's a yes, you both get each other's email to plan it.</p>

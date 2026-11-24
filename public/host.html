@@ -4,11 +4,11 @@
 <link rel="stylesheet" href="/community.css">
 <style>
 .cover{height:210px;border-radius:28px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 55%,#fff),color-mix(in srgb,var(--c) 22%,var(--bg)));margin-top:4px}
-.head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:start;margin-top:-56px;padding:0 24px}.head>div:nth-child(2){padding-top:66px}.head>#topFollow{margin-top:70px}
+.head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:start;margin-top:-56px;padding:0}.head>div:nth-child(2){padding-top:66px}.head>#topFollow{margin-top:70px}
 .av{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font-size:52px;background:var(--card);border:4px solid var(--bg);box-shadow:0 10px 30px -16px rgba(43,33,28,.5)}
 .head h1{font-size:clamp(26px,5vw,36px)}.handle{color:var(--soft);font-size:14px}
 .stats{display:flex;gap:16px;color:var(--soft);font-size:14px;margin-top:6px}.stats b{color:var(--ink)}
-.bio{font-size:16px;max-width:620px;margin:18px 20px 0}
+.bio{font-size:16px;max-width:620px;margin:14px 0 0}.head .tags{margin:10px 0 0}
 .cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;margin-top:24px}
 .side .card+.card{margin-top:12px}.side h3{font-size:18px;margin-bottom:6px}
 .fform{display:grid;gap:8px;margin-top:10px}.fform .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
@@ -79,7 +79,7 @@ body.no-past .s-past,body.no-kudos .s-kudos,body.no-photos .s-photos,body.no-hir
 .sp-tog{display:flex;flex-direction:column;gap:4px}.sp-note{font-size:12px;color:#75685F}.sp-actions{position:fixed;bottom:0;right:0;width:min(380px,100%);box-sizing:border-box;background:#fff;border-top:1px solid #EEE4D8;padding:12px 18px;display:flex;gap:10px;align-items:center}.sp-save{border:0;background:#C2553A;color:#fff;border-radius:999px;padding:10px 18px;font:600 14px "DM Sans",system-ui;cursor:pointer}#sp-msg{font-size:13px;color:#75685F}
 .trust-line span:first-child{font-weight:500}
 .tr{display:flex;gap:10px;align-items:center;padding:6px 0}.tr .e{font-size:26px;width:34px;text-align:center}.tr small{display:block;color:var(--soft)}.past .ev{opacity:.85}
-@media (max-width:760px){.cover{height:150px}.head{grid-template-columns:minmax(0,1fr);text-align:left;padding:0 4px;gap:10px}.head>div:nth-child(2){padding-top:0}.head>#topFollow{margin-top:0;justify-self:start}.av{width:88px;height:88px;font-size:44px}.cols{grid-template-columns:minmax(0,1fr)}.bio{margin:14px 4px 0}.fform .row{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.cover{height:150px}.head{grid-template-columns:minmax(0,1fr);text-align:left;padding:0;gap:10px}.head>div:nth-child(2){padding-top:0}.head>#topFollow{margin-top:0;justify-self:start}.av{width:88px;height:88px;font-size:44px}.cols{grid-template-columns:minmax(0,1fr)}.bio{margin:14px 0 0}.fform .row{grid-template-columns:minmax(0,1fr)}}
 .ql{display:grid;gap:3px;font-size:12px;font-weight:600;color:var(--smoke,#75685F)}.ql input{font-weight:400}.ql small{font-weight:400}
 .photo-nudge{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;max-width:960px;margin:14px auto;padding:14px 18px;border-radius:16px;background:#FFFBF2;border:1.5px solid #E0A030;font-size:15px}.photo-nudge span{flex:1;min-width:220px;color:#75685F}
 body.is-owner{padding-bottom:110px}
@@ -115,10 +115,8 @@ body.is-owner{padding-bottom:110px}
   const tastes = (h.tags || []).slice(0, 5);
   m.innerHTML = `<div class="cover"></div>
   <div class="head"><span class="av">${esc(h.emoji || "🎉")}</span><div><h1>${esc(h.name || "@" + h.handle)}</h1>${d.rising ? `<span class="rising" style="display:inline-block;margin:2px 0 4px;padding:2px 9px;border-radius:999px;background:#E3F1DD;border:1.5px solid #1F1A17;font-size:12.5px;font-weight:700">🌱 Rising in ${esc(d.rising.city)}${d.rising.rank === 1 ? " · #1" : ""}</span>` : ""}<div class="handle">@${esc(h.handle)}${h.hood || h.city ? " · " + esc([h.hood, h.city].filter(Boolean).join(", ")) : ""}</div>
-    <div class="stats">${d.followers ? `<span><b id="fc">${d.followers}</b> follower${d.followers === 1 ? "" : "s"}</span>` : `<span id="fc" hidden>0</span>`}${d.past.length ? `<span><b>${d.past.length}</b> hosted</span>` : ""}${d.upcoming.length ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div>${(h.gigs || []).length ? `<div class="gigs">${h.gigs.slice(0, 4).map((g) => `<span>Worked with ${esc(g.client)}${g.what ? `: ${esc(g.what)}` : ""}</span>`).join("")}</div>` : ""}</div>
+    <div class="stats">${d.followers ? `<span><b id="fc">${d.followers}</b> follower${d.followers === 1 ? "" : "s"}</span>` : `<span id="fc" hidden>0</span>`}${d.past.length ? `<span><b>${d.past.length}</b> hosted</span>` : ""}${d.upcoming.length ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div>${(h.gigs || []).length ? `<div class="gigs">${h.gigs.slice(0, 4).map((g) => `<span>Worked with ${esc(g.client)}${g.what ? `: ${esc(g.what)}` : ""}</span>`).join("")}</div>` : ""}${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}${tastes.length ? `<div class="tags">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}</div>
     <a class="btn" href="#follow" id="topFollow">${followed ? "Following ✓" : "Follow"}</a></div>
-  ${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}
-  ${tastes.length ? `<div class="tags" style="margin:10px 20px 0">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}
   <section class="next-up" id="nextUp" hidden></section>
   <div class="cols"><div>
     <h2 class="sec s-coming">Coming up</h2><div class="grid s-coming">${d.upcoming.length ? d.upcoming.map((e) => C.eventCard(e)).join("") : `<div class="empty">Nothing on the calendar yet. Follow ${esc(first)} and you'll hear about the next one first.</div>`}</div>

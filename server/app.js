@@ -1188,8 +1188,11 @@ export function createApp({ store, dataDir }) {
     const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), G = ev.guests || [];
     const keyOf = (x) => String(x.email || x.name || "").trim().toLowerCase(), held = new Set(G.filter((g) => g.status === "Going" || g.status === "Attended").map(keyOf).filter(Boolean));
     for (const d of all) { const k = keyOf(d.data); if (!k) continue; if (d.data.response === "going") held.add(k); else if (["no", "waitlist"].includes(d.data.response) && !G.some((g) => keyOf(g) === k && g.status === "Attended")) held.delete(k); }
-    if (held.size >= +ev.headcount) return null;
-    const next = all.filter((d) => d.data.response === "waitlist").sort((a, b) => (a.data.changedAt || a.data.createdAt || 0) - (b.data.changedAt || b.data.createdAt || 0))[0];
+    // count seats, not replies: a party of three holds three seats
+    const seatsOf = (x) => Math.max(1, Math.min(6, +x.party || (x.plusOne ? 2 : 1))), partyOf = new Map(all.map((d) => [keyOf(d.data), seatsOf(d.data)])); for (const g of G) if (!partyOf.has(keyOf(g))) partyOf.set(keyOf(g), seatsOf(g));
+    const taken = [...held].reduce((a, k) => a + (partyOf.get(k) || 1), 0), free = +ev.headcount - taken; if (free <= 0) return null;
+    // the first waitlisted group that fits the seats that opened
+    const next = all.filter((d) => d.data.response === "waitlist" && seatsOf(d.data) <= free).sort((a, b) => (a.data.changedAt || a.data.createdAt || 0) - (b.data.changedAt || b.data.createdAt || 0))[0];
     if (!next) return null;
     S(req).set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() });
     const to = String(next.data.email || "").trim(), title = ev.pubTitle || ev.copy?.title || "the event";

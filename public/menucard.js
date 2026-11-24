@@ -8,7 +8,8 @@
   const TEMPLATES = [
     { name: "Three courses", theme: "A cozy dinner at mine", lines: ["To start: Pandan madeleines, salted butter", "Main: Lemongrass chicken, jasmine rice, herbs", "Dessert: Coconut pandan cake"] },
     { name: "Tasting menu", theme: "Autumn in Kyoto", lines: ["Snack: Hamachi, yuzu, shiso", "Small plate: Grilled maitake, miso butter", "Main: Miso black cod", "Pre-dessert: Yuzu sorbet", "Dessert: Matcha panna cotta"] },
-    { name: "Potluck", theme: "Everyone brings one thing", lines: ["The host makes: A big pot of pho", "Sides: Sign up on the invite", "Dessert: Sign up on the invite", "Drinks: Bring what you love"] },
+    { name: "Friendsgiving", theme: "Friendsgiving", lines: ["The host makes: The turkey and gravy", "Sides: Claim one on the invite", "Dessert: Claim one on the invite", "Drinks: Cider, wine, or bring your favourite"], slots: ["Mashed potatoes", "Stuffing", "Green beans", "Cranberry sauce", "Pumpkin pie", "Apple crumble", "Drinks"] },
+    { name: "Potluck", theme: "Everyone brings one thing", lines: ["The host makes: A big pot of soup", "Sides: Claim one on the invite", "Dessert: Claim one on the invite", "Drinks: Bring what you love"], slots: ["A salad", "A side", "Bread", "A dessert", "Drinks"] },
     { name: "Brunch", theme: "Slow Sunday", lines: ["Coffee: Vietnamese phin, oat milk on the side", "Plates: Bánh mì scramble, sourdough toast", "Sweet: Pandan waffles"] },
     { name: "Bake and tea", theme: "Tea and cake", lines: ["Tea: Jasmine and genmaicha", "Bakes: Pandan chiffon, kaya toast", "Take home: A slice for later"] },
   ];
@@ -38,6 +39,7 @@
   function ensureCss() { if (document.getElementById("mcCss")) return; const s = document.createElement("style"); s.id = "mcCss"; s.textContent = CSS; document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();
   // template chips for a courses textarea; onUse(template) is called after the textarea is filled
-  function templates(onUse) { const box = document.createElement("div"); box.className = "mc-tpl"; box.innerHTML = `<small style="width:100%;color:#7A6E64">Start from a template:</small>` + TEMPLATES.map((t, i) => `<button type="button" data-mct="${i}">${esc(t.name)}</button>`).join(""); box.addEventListener("click", (e) => { const b = e.target.closest("[data-mct]"); if (b) onUse(TEMPLATES[+b.dataset.mct]); }); return box; }
+  function templates(onUse, hint = "") { const box = document.createElement("div"); box.className = "mc-tpl"; const h = String(hint).toLowerCase(), order = TEMPLATES.map((t, i) => i).sort((a, b) => (h.includes(TEMPLATES[b].name.toLowerCase().split(" ")[0]) || (TEMPLATES[b].name === "Friendsgiving" && /thanksgiving|friendsgiving|turkey/.test(h)) ? 1 : 0) - (h.includes(TEMPLATES[a].name.toLowerCase().split(" ")[0]) || (TEMPLATES[a].name === "Friendsgiving" && /thanksgiving|friendsgiving|turkey/.test(h)) ? 1 : 0));
+    box.innerHTML = `<small style="width:100%;color:#7A6E64">Start from a template:</small>` + order.map((i) => `<button type="button" data-mct="${i}">${esc(TEMPLATES[i].name)}</button>`).join(""); box.addEventListener("click", (e) => { const b = e.target.closest("[data-mct]"); if (b) onUse(TEMPLATES[+b.dataset.mct]); }); return box; }
   window.MenuCard = { html, templates, TEMPLATES, ensureCss };
 })();

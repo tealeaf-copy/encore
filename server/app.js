@@ -166,6 +166,9 @@ export function createApp({ store, dataDir }) {
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
   const app = express();
+  const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self'", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
+  app.use((req, res, next) => { if (req.method === "GET" && !/^\/(api|_blob)\//.test(req.path)) res.set("Content-Security-Policy-Report-Only", CSP_RO); next(); });
+  let cspSeen = 0; app.post("/api/csp-report", express.json({ type: () => true, limit: "16kb" }), (req, res) => { if (cspSeen++ < 200) { const r = req.body?.["csp-report"] || req.body || {}; console.warn("[csp]", String(r["violated-directive"] || r.effectiveDirective || "").slice(0, 60), String(r["blocked-uri"] || r.blockedURL || "").slice(0, 120), String(r["document-uri"] || r.documentURL || "").slice(0, 80)); } res.status(204).end(); });
   // A readable "signed in" hint (never the session itself) so pages skip calls that need a session when there isn't one.
   // Kept in step with the real session on every page and API request.
   app.use((req, res, next) => { if (/\.[a-z0-9]{1,5}$/i.test(req.path)) return next(); const hint = /(?:^|;\s*)encore_in=1/.test(req.headers.cookie || ""), authed = authEnabled() ? isAuthed(req) : true;
@@ -345,12 +348,12 @@ export function createApp({ store, dataDir }) {
   app.get("/vendor", (req, res) => sendStatic(res, "vendor.html", "<p>Vendor page missing.</p>"));
   app.get("/requests", (req, res) => sendStatic(res, "requests.html", "<p>Requests page missing.</p>"));
   app.get("/check/:id", (req, res) => sendStatic(res, "check.html", "<p>Check page missing.</p>"));
-  app.get("/h/:handle", (req, res) => sendStatic(res, "host.html", "<p>Host page missing.</p>"));
+  app.get("/h/:handle", (req, res) => { const h = String(req.params.handle || "").toLowerCase(); if (/^[a-z0-9][a-z0-9-]{1,29}$/.test(h)) return res.redirect(301, "/@" + h + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); sendStatic(res, "host.html", "<p>Host page missing.</p>"); });
   // Every host's storefront: encore.example/@claire-runs
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = ws && C.profileOf(ws);
     try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Encore`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
         html = html.replace("<title>Host · Encore</title>", `<title>${e(h.name)} · Encore</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
-      res.set("Cache-Control", "no-store").type("html").send(html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
+      sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
   app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
   // The homepage demo runs the app's own planner, read from the current index.html.

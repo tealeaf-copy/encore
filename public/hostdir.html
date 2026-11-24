@@ -52,7 +52,8 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
   $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); draw(); };
   fetch("/api/public/discover").then((r) => r.json()).then((d) => {
-    H = (d.hosts || []).filter((h) => h.handle && h.name).map((h) => ({ ...h, _g: groupsOf(h) }))
+    const best = new Map(); for (const h of (d.hosts || []).filter((h) => h.handle && h.name && !/[<>]/.test(h.name))) { const k = h.name.trim().toLowerCase() + "|" + cityOf(h).toLowerCase(), cur = best.get(k); if (!cur || done(h) + (h.upcoming || 0) > done(cur) + (cur.upcoming || 0)) best.set(k, h); }
+    H = [...best.values()].map((h) => ({ ...h, _g: groupsOf(h) }))
       .sort((a, b) => done(b) - done(a) || (b.upcoming || 0) - (a.upcoming || 0) || (b.followers || 0) - (a.followers || 0) || String(a.name).localeCompare(b.name));
     chips($("#kinds"), KINDS.filter(([k]) => k === "all" || H.some((h) => h._g.has(k))), kind, (v) => (kind = v));
     const C = {}; for (const h of H) { const c = cityOf(h); if (c) C[c] = (C[c] || 0) + 1; }

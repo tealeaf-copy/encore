@@ -39,7 +39,8 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "gathering" : "gatherings"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
     if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("a gathering in the next few weeks");
     if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
-  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} gatherings.` });
+  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first gathering: it starts your streak and fills your page." });
+  else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} gatherings.` });
   return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
 }
 

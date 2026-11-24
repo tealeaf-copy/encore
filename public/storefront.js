@@ -99,6 +99,10 @@
         try { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: st.theme, sections: st.sections, links: st.links.filter((l) => l?.label && l?.url), tagline: st.tagline, recommends: st.recommends.filter((r) => r?.handle) }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message); Object.assign(h, j.host); window.EncoreCommunity?.oink?.(); msg("Saved. This is your page now. ✨"); } catch (e) { msg(e.message); } }; }
     const msg = (t) => { const m = pane.querySelector("#sp-msg"); if (m) m.textContent = t; };
     fab.onclick = () => { pane.hidden = !pane.hidden; if (!pane.hidden) draw(); };
+    // still the default emoji? a face helps guests recognise their host: offer a portrait right on the avatar
+    if (!h.theme?.avatarArt && !h.theme?.avatarUrl) { const av = document.querySelector(".head .av"); if (av && !document.getElementById("avNudge")) { const b = document.createElement("button"); b.type = "button"; b.id = "avNudge"; b.className = "av-nudge"; b.textContent = "＋ Add your portrait";
+      b.onclick = () => { pane.hidden = false; draw(); setTimeout(() => { const t = [...pane.querySelectorAll("h4")].find((x) => /portrait/i.test(x.textContent)); t?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); b.remove(); };
+      av.style.position = "relative"; av.style.overflow = "visible"; av.appendChild(b); const st = document.createElement("style"); st.textContent = `.av-nudge{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);white-space:nowrap;border:1.5px solid #1F1A17;background:#FFE08A;color:#1F1A17;border-radius:999px;padding:5px 10px;font:700 12.5px inherit;box-shadow:2px 2px 0 #1F1A17;cursor:pointer;z-index:2}`; document.head.appendChild(st); } }
     if (/[?&]customize=1/.test(location.search)) fab.click();
   }
   window.EncoreStore = { apply, editor, feature };

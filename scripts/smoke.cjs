@@ -21,12 +21,18 @@ const step = (name, ok) => { console.log(`${ok ? "✓" : "✗"} ${name}`); if (!
   const b = await chromium.launch(); const host = await b.newContext({ viewport: { width: 1280, height: 900 } }); const [n, v] = ck.split("="); await host.addCookies([{ name: n, value: v, url: B }]);
   const p = await host.newPage(); watch(p, "host");
   await p.goto(B + "/#studio"); await p.waitForSelector("#ceIn", { timeout: 15000 }); await p.fill("#ceIn", "Taco night Saturday at 7, meet at Dolores Park"); await p.click("#ceGo"); await p.waitForTimeout(3500);
-  const id = await p.evaluate(async () => { draft.published = true; draft.discoverable = true; draft.unlisted = true; await saveEvent(true); return draft.id; });
+  const id = await p.evaluate(async () => { draft.questions = [{ id: "q1", q: "what are you bringing?", type: "short" }, { id: "q2", q: "how many sets?", type: "number", min: 1, max: 6 }]; draft.published = true; draft.discoverable = true; draft.unlisted = true; await saveEvent(true); return draft.id; });
   step("event planned and published", !!id);
   const g = await b.newContext({ ...devices["iPhone 13"] }); const gp = await g.newPage(); watch(gp, "guest");
   await gp.goto(`${B}/g#rsvp-${id}`); await gp.waitForSelector("#g-name", { timeout: 20000 }); step("guest sees the invite", true);
-  await gp.fill("#g-name", "Smoke Guest"); await gp.click("#g-send"); await gp.waitForTimeout(2500);
+  await gp.fill("#g-name", "Smoke Guest");
+  // the host's own questions, answered through the card a guest sees
+  await gp.waitForSelector("#tfBox .tf-a input", { timeout: 10000 }); await gp.fill("#tfBox .tf-a input", "salsa verde"); await gp.click("#tfBox [data-next]");
+  await gp.click('#tfBox [data-st="1"]'); await gp.click("#tfBox [data-next]"); await gp.waitForTimeout(300);
+  await gp.click("#g-send"); await gp.waitForTimeout(2500);
   step("guest RSVPs", await gp.evaluate(() => !!document.querySelector("#view-guest .ticket")));
+  const rs = await (await fetch(B + "/api/db/collection?path=rsvps", { headers: { cookie: ck } })).json(), mine = (rs.docs || rs.items || rs).map((d) => d.data || d).find((r) => r.name === "Smoke Guest");
+  step("the guest's answers reach the host", mine?.answers?.q1 === "salsa verde" && +mine?.answers?.q2 === 2);
   await gp.reload(); await gp.waitForTimeout(5000); step("returning guest keeps their ticket", await gp.evaluate(() => !!document.querySelector("#view-guest .ticket")));
   const hp = await (await fetch(`${B}/api/public/host/${handle}`)).json(); step("host page lists the event", (hp.upcoming || []).some((e) => e.id === id));
   await b.close(); finish();

@@ -66,18 +66,24 @@ section.end{text-align:center}section.end h2{margin:0 auto}section.end .lede{mar
 @media (max-width:860px){.journey{justify-self:stretch;max-width:420px;margin:0 auto}.vs div{padding:12px 14px;font-size:15px}}
 h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:wrap}.lv .av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .lv small.tl{color:var(--ink);opacity:.75;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hero h1{position:relative}.doodle{position:absolute;pointer-events:none}.d-spark{width:46px;left:-58px;top:-10px;transform:rotate(-10deg)}.brand{white-space:nowrap}
+.journey{position:relative}.d-arrow{width:120px;left:-110px;top:-36px;transform:rotate(-8deg)}
+.makes{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#FFF3E2;padding:14px 0;margin:0}.mk-track{display:flex;gap:12px;width:max-content;animation:mk 48s linear infinite}.mk-dup{display:flex;gap:12px}
+.mk{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:7px 14px;font-weight:600;font-size:15px;box-shadow:2px 2px 0 #1F1A17}.mk:nth-child(3n){transform:rotate(-1.5deg)}.mk:nth-child(3n+1){transform:rotate(1deg)}
+@keyframes mk{to{transform:translateX(-50%)}}.makes:hover .mk-track{animation-play-state:paused}
+@media (max-width:1240px){.d-spark{display:none}}.nm-full{margin-left:-4px}@media (max-width:380px){.nm-full{display:none}}@media (max-width:430px){.top .brand{font-size:19px;gap:6px}.top nav{gap:10px!important}.top nav .btn{margin-left:0;padding:9px 13px;font-size:14px;white-space:nowrap}}@media (max-width:860px){.d-arrow{display:none}}
 </style>
 </head><body class="home">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
-    <nav><a href="/discover">What's on</a><a href="/hosts" class="hide-m">Hosts</a><a href="/hosts/book" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends">Start your page</a></nav></header>
+    <nav><a href="/discover">What's on</a><a href="/hosts" class="hide-m">Hosts</a><a href="/hosts/book" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends">Start<span class="nm-full">your page</span></a></nav></header>
   <div class="hero">
-    <div><span class="eyebrow">Invite-only · for people who love hosting</span>
-      <h1>Host what you love.<br><span class="hl">Get booked</span> for&nbsp;it.</h1>
+    <div><span class="eyebrow">Invite-only · a little studio for people who love hosting</span>
+      <h1>Host what you love.<br><span class="hl">Get booked</span> for&nbsp;it.<svg class="doodle d-spark" viewBox="0 0 60 60" aria-hidden="true"><path d="M30 6v14M30 40v14M6 30h14M40 30h14M14 14l8 8M38 38l8 8M46 14l-8 8M22 38l-8 8" stroke="#E0A030" stroke-width="4" stroke-linecap="round" fill="none"/></svg></h1>
       <p class="sub">Pottery Lab is your own page for the things you host: sourdough Sundays, pottery nights, matcha mornings, flower workshops. Start with friends, build a following and a portfolio, and get booked by brands that want experiences people remember.</p>
       <div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts/book">I'm a brand: find hosts</a></div>
       <p class="small">Invite-only for hosts. Invited to an event? Just open the link, no account needed.</p></div>
-    <figure class="journey" aria-label="Three example host pages">
+    <figure class="journey" aria-label="Three example host pages"><svg class="doodle d-arrow" viewBox="0 0 120 90" aria-hidden="true"><path d="M8 70c22 8 44 2 54-14 8-13-6-24-14-12-7 11 10 22 28 14 14-6 24-20 28-36" stroke="#1F1A17" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="2 7"/><path d="M96 20l8-8 4 12" stroke="#1F1A17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       <a class="jc s1" href="/hosts" style="text-decoration:none"><span class="av" id="avA"></span><div><b>Sourdough Sundays</b><small>A software engineer who bakes. Eight friends, one oven.</small></div><div class="stage"><span>Hosts friends</span><em>Invite page · RSVPs</em></div></a>
       <a class="jc s2" href="/hosts" style="text-decoration:none"><span class="av" id="avB"></span><div><b>Matcha mornings</b><small>Whisking lessons in a Brooklyn kitchen, every other Saturday.</small></div><div class="stage"><span>Builds a following</span><em>Regulars · portfolio</em></div></a>
       <a class="jc s3" href="/hosts" style="text-decoration:none"><span class="av" id="avC"></span><div><b>Bouquet workshops</b><small>Seasonal flowers. Now runs them for team offsites too.</small></div><div class="stage"><span>Gets booked</span><em>Brands · one invoice</em></div></a>
@@ -85,6 +91,7 @@ h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:w
     </figure>
   </div>
 </div>
+<section class="makes" aria-label="Things people host on Pottery Lab"><div class="mk-track"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span><span aria-hidden="true" class="mk-dup"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span></span></div></section>
 <section><div class="wrap"><span class="eyebrow">How it works</span><h2>From friends, to regulars, to bookings.</h2>
   <div class="steps">
     <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Plan it in one sentence. Pottery Lab makes the invite, collects RSVPs and sends the reminders, and Pip handles the follow-ups, so you can just host.</p></div>

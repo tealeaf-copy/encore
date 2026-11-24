@@ -1,4 +1,6 @@
 // the tab icon: a little terracotta vase
+// the studio feel (paper grain, clay-squish buttons): one small stylesheet on every page
+(function () { try { if (!document.getElementById("craftCss")) { const l = document.createElement("link"); l.id = "craftCss"; l.rel = "stylesheet"; l.href = "/craft.css"; (document.head || document.documentElement).appendChild(l); } } catch {} })();
 (function () { try { if (!document.querySelector('link[rel~="icon"]')) { const l = document.createElement("link"); l.rel = "icon"; l.type = "image/svg+xml"; l.href = "/favicon.svg"; (document.head || document.documentElement).appendChild(l); } } catch {} })();
 // Side navigation, before the first paint: reserve its space and apply the collapsed setting now, so nothing
 // jumps sideways when the nav itself is drawn a moment later (by shell.js on public pages, by the app on /).

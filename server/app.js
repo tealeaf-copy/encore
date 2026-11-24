@@ -24,7 +24,7 @@ import { runPm } from "./pm.js";
 import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE } from "./email.js";
 import { runReminders } from "./reminders.js";
 import { mountMcp } from "./mcp.js";
-import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword } from "./auth.js";
+import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
@@ -193,6 +193,18 @@ export function createApp({ store, dataDir }) {
     res.json({ ok: true, ai: aiMode(), integrations: configured().map((s) => s.server), auth: authEnabled() });
   });
   app.get("/login", (req, res) => res.type("html").send(loginPage()));
+  // ---- forgot password: always the same answer, so nobody learns which emails have accounts ----
+  const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
+  app.post("/api/password/forgot", express.json({ limit: "4kb" }), async (req, res) => { const email = String(req.body?.email || "").trim().toLowerCase();
+    if (resetLimited("ip:" + (req.ip || "?"), 10) || (email && resetLimited("em:" + email, 3))) return res.status(429).json({ code: "rate_limited", message: "Too many reset requests. Try again in an hour." });
+    const r = EMAIL_RE.test(email) ? startPasswordReset(email) : null;
+    if (r) { const cfg = emailConfig(r.user.ws, false) || emailConfig(DEFAULT_WS, true); const link = `${originOf(req)}/reset?token=${r.token}`;
+      if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Encore password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Encore account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).catch(() => {}); }
+    res.json({ ok: true, message: "If that email has an Encore account, a reset link is on its way. It expires in an hour." }); });
+  app.post("/api/password/reset", express.json({ limit: "4kb" }), (req, res) => { if (resetLimited("rs:" + (req.ip || "?"), 20)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
+    const u = finishPasswordReset(req.body?.token, req.body?.password); if (typeof u === "string") return res.status(400).json({ code: "invalid", message: u });
+    startSessionFor(req, res, u.email, u.ws); res.json({ ok: true }); });
+  app.get(["/forgot", "/reset"], (req, res) => sendStatic(res, "reset.html", "<p>Reset page missing.</p>"));
   app.post("/api/login", express.urlencoded({ extended: false, limit: "10kb" }), express.json({ limit: "10kb" }), loginHandler);
   app.post("/api/logout", logoutHandler);
 
@@ -320,6 +332,7 @@ export function createApp({ store, dataDir }) {
   app.get("/teams", (req, res) => sendStatic(res, "teams.html", "<p>Teams page missing.</p>"));
   app.get("/gifts", (req, res) => sendStatic(res, "gifts.html", "<p>Gifts page missing.</p>"));
   app.get("/teams/s/:id", (req, res) => sendStatic(res, "shortlist.html", "<p>Shortlist page missing.</p>"));
+  app.get(["/team", "/team/:id"], (req, res) => sendStatic(res, "team.html", "<p>Team page missing.</p>"));
   app.get("/results", (req, res) => sendStatic(res, "results.html", "<p>Results page missing.</p>"));
   app.get("/vendor", (req, res) => sendStatic(res, "vendor.html", "<p>Vendor page missing.</p>"));
   app.get("/requests", (req, res) => sendStatic(res, "requests.html", "<p>Requests page missing.</p>"));

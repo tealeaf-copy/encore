@@ -1,7 +1,7 @@
 // Optional shared-password gate. Off unless APP_PASSWORD is set.
-import { createHmac, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
+import { createHmac, createHash, timingSafeEqual, scryptSync, randomBytes } from "node:crypto";
 import { useSsoStore, ssoForEmail } from "./sso.js";
-import { DEFAULT_WS, useWorkspaceStore, signupEnabled, getDbUser, getWorkspace, membersOf } from "./workspaces.js";
+import { DEFAULT_WS, useWorkspaceStore, signupEnabled, getDbUser, putDbUser, getWorkspace, membersOf } from "./workspaces.js";
 
 const COOKIE = "encore_auth";
 const MAX_AGE_S = 60 * 60 * 24 * 30;
@@ -128,7 +128,8 @@ function checkPersonal(u, password) {
 // APP_PASSWORD, so changing the team password signs everyone out.
 function sign(email, ws, sid) {
   const secret = process.env.SESSION_SECRET || process.env.APP_PASSWORD;
-  return createHmac("sha256", secret).update("encore-user:" + email + ":" + ws + ":" + sid + ":" + process.env.APP_PASSWORD).digest("hex");
+  const gen = (() => { try { return email && email !== "*" && store ? getDbUser(email)?.gen || 0 : 0; } catch { return 0; } })();
+  return createHmac("sha256", secret).update("encore-user:" + email + ":" + ws + ":" + sid + ":" + process.env.APP_PASSWORD + (gen ? ":g" + gen : "")).digest("hex");
 }
 function makeCookie(email, ws = DEFAULT_WS) { const sid = randomBytes(16).toString("hex"); return `${email}.${ws}.${sid}.${sign(email, ws, sid)}`; }
 /** { email, ws, sid } from a valid, unrevoked cookie, else null. email is "*" for the shared password. */
@@ -212,6 +213,23 @@ export function logoutHandler(req, res) {
   res.setHeader("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
   res.json({ ok: true });
 }
+// ---- password reset: a one-time link, good for an hour, stored only as a hash ----
+const resetPath = (token) => "system/pwreset-" + createHash("sha256").update(String(token)).digest("hex");
+/** A reset token for someone with their own password, or null (unknown email, SSO-only, or team password). */
+export function startPasswordReset(email) {
+  const u = store && getDbUser(String(email || "").trim().toLowerCase()); if (!u || !hasPersonalPassword(u)) return null;
+  const token = randomBytes(24).toString("hex"); store.set(resetPath(token), { email: u.email, exp: Date.now() + 3600e3 }); return { token, user: u };
+}
+/** Sets the new password and signs out every existing session. Returns the person, or an error string. */
+export function finishPasswordReset(token, password) {
+  if (!/^[a-f0-9]{48}$/.test(String(token || ""))) return "This reset link isn't valid.";
+  if (String(password || "").length < 8) return "Use at least 8 characters.";
+  const hit = store?.get(resetPath(token))?.data; if (!hit || hit.used || hit.exp < Date.now()) return "This reset link has expired. Ask for a new one.";
+  const u = getDbUser(hit.email); if (!u) return "This reset link isn't valid.";
+  putDbUser({ ...u, pw: hashPassword(password), gen: (u.gen || 0) + 1, pwChangedAt: Date.now() }); store.set(resetPath(token), { ...hit, used: Date.now() }); clearFailsFor(u.email);
+  return getDbUser(u.email);
+}
+function clearFailsFor() { for (const L of LIMITS) L.fails.clear?.(); }
 export function loginPage() {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Encore</title>
@@ -239,6 +257,7 @@ export function loginPage() {
   ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
   <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
+  ${users().length || signupEnabled() ? `<a class="alt" href="/forgot">Forgot your password?</a>` : ""}
   ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New to Encore? Join with an invite code</a>` : ""}
 </form><script>try{const f=document.querySelector("form"),e=f&&f.querySelector("input[name=email]");if(e){const k="encore.loginEmail",v=sessionStorage.getItem(k);if(v&&!e.value)e.value=v;f.addEventListener("submit",()=>{try{sessionStorage.setItem(k,e.value)}catch(x){}});if(v){const p=f.querySelector("input[type=password]");if(p)setTimeout(()=>p.focus(),50)}}}catch(x){}</script></body></html>`;
 }

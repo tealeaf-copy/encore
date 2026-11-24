@@ -91,3 +91,5 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .bx-date{border:1px solid #CFE6D7;background:#F1FAF4;color:#1E4D36;border-radius:999px;padding:3px 9px;font:inherit;font-size:12.5px;cursor:pointer;margin:2px 2px 0 0}.bx-ros ul{margin:6px 0 0;padding-left:18px}
 .bf-giftnote{display:block;font-size:13px;color:#5A4E45}.bf-giftnote.warn{color:#7A4E12}.trust-line .gap{background:#FFF6E8;border-color:#F0D9B5;color:#7A4E12}
 .b2b-mode #follow,.b2b-mode #collabCard,.b2b-mode .s-coming,.b2b-mode #waitCard{display:none!important}
+.bf-adds{border:0;padding:0;margin:6px 0;font-size:14px}.bf-adds legend{font-size:13px;font-weight:600;color:#5A4E45;margin-bottom:4px;padding:0}.bf-addlist{display:grid;gap:6px}.bf-addlist label{display:flex;gap:8px;align-items:center}.bf-addlist input{width:auto}.bf-addlist b{margin-left:auto}
+.bf-total{margin:4px 0;font-size:14px;background:#F1FAF4;border:1px solid #CFE6D7;border-radius:12px;padding:8px 10px;color:#1E4D36}.bf-total:empty{display:none}.bf-apv{background:#FFF6E8;border:1px solid #F0D9B5;border-radius:12px;padding:10px 12px;color:#7A4E12;font-size:14px}

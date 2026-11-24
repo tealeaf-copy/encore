@@ -10,7 +10,7 @@ h1{font:700 clamp(28px,5vw,40px)/1.1 Fredoka,system-ui;margin:14px 0 6px}.lede{c
 .btn{display:inline-block;margin-top:8px;padding:9px 16px;border-radius:999px;background:var(--ember);color:#fff;text-decoration:none;font-weight:600;font-size:14.5px}.me{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;margin:6px 0 4px}.me input{padding:8px 11px;border:1px solid #DCCFBE;border-radius:10px;font:inherit}.m{color:var(--smoke);font-size:13.5px}</style></head><body>
 <div class="wrap"><header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a></header>
 <div id="main"><p class="m">Loading the shortlist…</p></div></div>
-<script src="/shell.js" defer></script>
+<script src="/authguard.js"></script><script src="/shell.js" defer></script>
 <script>
 (async function () { const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const id = location.pathname.split("/").pop(), key = "encore.vote." + id; let mine = ""; try { mine = localStorage.getItem(key) || ""; } catch {}

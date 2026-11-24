@@ -164,7 +164,7 @@ details{background:var(--card);border:1px solid var(--line);border-radius:14px;p
   <textarea name="message" rows="4" required style="padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit"></textarea>
   <input type="hidden" name="kind" value="talk"><p class="note" id="cMsg" aria-live="polite"></p>
   <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn sm" id="cClose" style="background:transparent;border:1px solid var(--line);color:var(--ink)">Cancel</button><button class="btn primary sm" type="submit">Send</button></div></form></dialog>
-<script>
+<script src="/authguard.js"></script><script>
 (function(){ const dlg=document.getElementById("contactDlg"), f=document.getElementById("contactForm"), msg=document.getElementById("cMsg");
   const copy={talk:["Talk to the founders","Tell us about your events program. We reply within one business day.","How many events a year, which markets, what you'd like to see"],security:["Request a security review","Tell us what your security team needs. We reply within one business day.","e.g. our vendor questionnaire, a DPA, where data is stored, self-hosting"]};
   document.querySelectorAll("[data-contact]").forEach(b=>b.addEventListener("click",e=>{ e.preventDefault(); const k=b.dataset.contact, c=copy[k]||copy.talk; f.kind.value=k; document.getElementById("cTitle").textContent=c[0]; document.getElementById("cSub").textContent=c[1]; f.message.placeholder=c[2]; msg.textContent=""; if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","") }));

@@ -14,7 +14,7 @@ h1{font:700 clamp(30px,5vw,42px)/1.1 Fredoka,system-ui;margin:14px 0 6px}h2{font
 .need{background:#FFF6E8;border:1px solid #F0D9B5;border-radius:16px;padding:12px 16px;margin:12px 0;color:#7A4E12}.err{color:#A3402B;font-size:14px}</style></head><body>
 <div class="wrap"><header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><nav><a href="/teams">Team events</a><a href="/gifts">Gifts</a><a href="/results">Results</a></nav></header>
 <div id="main"><p class="m">Loading…</p></div></div>
-<script src="/shell.js" defer></script>
+<script src="/authguard.js"></script><script src="/shell.js" defer></script>
 <script>
 (async function () { const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), money = (n) => "$" + Math.round(n || 0).toLocaleString();
   const post = async (u, b) => { const r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work."); return j; };

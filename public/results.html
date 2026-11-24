@@ -13,7 +13,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.1 Fredoka,system-ui;margin:14px 0 6px}h2{font
 <div class="wrap"><header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><nav><a href="/teams">Team events</a><a href="/gifts">Gifts</a><a href="/team">Team space</a></nav></header>
 <h1>Your results</h1><p class="lede">Every team event, client dinner and gift you've booked on Encore: who came, what they thought, what it cost per person, and the outcomes you recorded.</p>
 <div id="main"><p class="m">Loading…</p></div></div>
-<script src="/shell.js" defer></script>
+<script src="/authguard.js"></script><script src="/shell.js" defer></script>
 <script>
 (async function () { const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), money = (n) => "$" + Math.round(n || 0).toLocaleString();
   const GOALS = { pipeline: "Pipeline", retention: "Retention", awareness: "Awareness", morale: "Team morale", hiring: "Hiring", community: "Community" };

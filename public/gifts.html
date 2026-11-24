@@ -61,7 +61,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
   <div class="vs"><div><b>The usual gifting catalog</b><ul><li>The same branded tumbler everyone got last year</li><li>Picked from a warehouse</li><li>Your logo, their name nowhere</li></ul></div><div><b>A maker on Encore</b><ul><li>Made for this person: their name, your note</li><li>From someone in their city, with a story to tell</li><li>A photo of the maker at work in every box</li></ul></div></div>
   <div class="how"><div><b>1. Pick a maker</b>Filter by city, quantity, budget and occasion. Prices update with your count.</div><div><b>2. Hold a sample</b>Most makers send one first, so you see the glaze and the lettering for yourself.</div><div><b>3. Send the list</b>Paste names and addresses or share a spreadsheet. The maker sends a proof before anything is made.</div></div>
 </div>
-<script src="/shell.js" defer></script>
+<script src="/authguard.js"></script><script src="/shell.js" defer></script>
 <script src="/giftart.js"></script>
 <script>
 const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

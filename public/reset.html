@@ -14,7 +14,7 @@
   a.alt{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
 </style></head><body>
 <div id="app"></div>
-<script>
+<script src="/authguard.js"></script><script>
 (function () { const app = document.getElementById("app"), token = new URLSearchParams(location.search).get("token") || "";
   const brand = `<a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>`;
   const post = async (u, b) => { const r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work. Try again."); return j; };

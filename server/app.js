@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import zlib from "node:zlib";
 // Express app for Encore. createApp() is used by server/index.js and the tests.
 import express from "express";
 import fs from "node:fs";
@@ -35,7 +37,7 @@ const PAGE_FILE = path.join(ROOT, "index.html");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const TOOL_TIMEOUT_MS = 120_000;
 
-const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/shim.js"></script><script src="/avatars.js"></script><script src="/account.js"></script></head><body>';
+const HEAD = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script src="/authguard.js"></script><script src="/shim.js"></script><script src="/avatars.js"></script><script src="/account.js"></script></head><body>';
 const TAIL = "</body></html>";
 
 // Nominations come from AEs, who sign in; they are not guest-writable.
@@ -164,6 +166,10 @@ export function createApp({ store, dataDir }) {
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
   const app = express();
+  // A readable "signed in" hint (never the session itself) so pages skip calls that need a session when there isn't one.
+  // Kept in step with the real session on every page and API request.
+  app.use((req, res, next) => { if (/\.[a-z0-9]{1,5}$/i.test(req.path)) return next(); const hint = /(?:^|;\s*)encore_in=1/.test(req.headers.cookie || ""), authed = authEnabled() ? isAuthed(req) : true;
+    if (authed && !hint) res.append("Set-Cookie", `encore_in=1; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${req.secure ? "; Secure" : ""}`); else if (!authed && hint && authEnabled()) res.append("Set-Cookie", "encore_in=; Path=/; SameSite=Lax; Max-Age=0"); next(); });
   const assetsDir = path.join(dataDir, "assets");
   fs.mkdirSync(assetsDir, { recursive: true });
   const runs = new Map(); // runId -> { pending: Map<toolUseId, resolve> }
@@ -355,12 +361,28 @@ export function createApp({ store, dataDir }) {
   });
   app.get("/security", (req, res) => sendStatic(res, "security.html", "<p>Security page missing.</p>"));
 
+  // The app page is the same for everyone (data comes from the API), so build it once per edit of the file, keep it in
+  // memory with an ETag, and pre-compress it with brotli at full quality in the background. Browsers revalidate on every
+  // visit (no-cache) and get a 304 with no body when nothing changed.
+  let pageCache = null, pageBuilding = null;
+  async function builtPage() {
+    const st = await fsp.stat(PAGE_FILE); if (pageCache && pageCache.mtime === st.mtimeMs) return pageCache;
+    if (pageBuilding) return pageBuilding;
+    pageBuilding = (async () => { const html = Buffer.from(HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
+      const P = { mtime: st.mtimeMs, html, etag, br: null }; pageCache = P;
+      zlib.brotliCompress(html, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: html.length } }, (err, out) => { if (!err && pageCache === P) P.br = out; });
+      return P; })().finally(() => { pageBuilding = null; });
+    return pageBuilding;
+  }
   const sendPage = async (req, res, next) => {
     try {
-      const file = await fsp.readFile(PAGE_FILE, "utf8"); // read per request: the page is edited live
-      res.set("Cache-Control", "no-store").type("html").send(HEAD + file + TAIL);
+      const P = await builtPage(); res.set({ "Cache-Control": "private, no-cache", ETag: P.etag, Vary: "Accept-Encoding" }).type("html");
+      if (req.headers["if-none-match"] === P.etag) return res.status(304).end();
+      if (P.br && /\bbr\b/.test(req.headers["accept-encoding"] || "")) return res.set("Content-Encoding", "br").send(P.br);
+      res.send(P.html);
     } catch (err) { next(err); }
   };
+  builtPage().catch(() => {});
   // Guest links (#rsvp-ID, #survey-ID) are hashes the server never sees. The login
   // page forwards them to /g, which serves the same page without a login; the
   // data endpoints still only allow the guest operations listed in guestAllowed().

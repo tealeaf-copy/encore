@@ -11,7 +11,7 @@
 .flash{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ok);color:#fff;padding:12px 18px;border-radius:999px;font-weight:600;box-shadow:0 8px 24px -8px rgba(0,0,0,.4);z-index:5}.flash.warn{background:#7A4E12}
 details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:14px 0}summary{cursor:pointer;font-weight:600}form.walk{display:grid;gap:8px;margin-top:10px}.err{color:#A3402B}</style></head><body>
 <div class="wrap" id="app"><p class="m">Loading the guest list…</p></div>
-<script>
+<script src="/authguard.js"></script><script>
 (function () { const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const id = location.pathname.split("/").pop(), t = new URLSearchParams(location.search).get("t") || ""; let D = null, q = "";
   const api = async (path, body) => { const r = await fetch(`/api/public/booking/${encodeURIComponent(id)}/${path}${body ? "" : "?t=" + encodeURIComponent(t)}`, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t, ...body }) } : {}); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work."); return j; };

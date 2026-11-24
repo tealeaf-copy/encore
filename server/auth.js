@@ -157,6 +157,7 @@ export function sessionWorkspace(req) {
 export function startSession(req, res, email, ws) {
   const secure = req.secure ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(makeCookie(email, ws))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
+  res.append("Set-Cookie", `encore_in=1; Path=/; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
 }
 function same(a, b) {
   const x = Buffer.from(String(a)), y = Buffer.from(String(b));
@@ -204,6 +205,7 @@ export function loginHandler(req, res) {
   clearFails(req);
   const secure = req.secure ? "; Secure" : "";
   res.setHeader("Set-Cookie", `${COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
+  res.append("Set-Cookie", `encore_in=1; Path=/; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`);
   const nx = String(req.body?.next || ""); const back = /^\/(?!\/)[^\s]*$/.test(nx) ? nx : "/";
   return isForm ? res.redirect(303, back) : res.json({ ok: true });
 }
@@ -211,6 +213,7 @@ export function logoutHandler(req, res) {
   const s = authEnabled() ? session(req) : null;
   if (s) revoke(s.sid); // the cookie stops working on the server, even if a copy of it survives
   res.setHeader("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+  res.append("Set-Cookie", "encore_in=; Path=/; SameSite=Lax; Max-Age=0");
   res.json({ ok: true });
 }
 // ---- password reset: a one-time link, good for an hour, stored only as a hash ----

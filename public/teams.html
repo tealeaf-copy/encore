@@ -58,7 +58,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
   <div class="insight" id="insight" hidden></div>
   <div class="how"><div><b>1. Match</b>Three vetted hosts for your city, headcount and goal, with what their guests actually say.</div><div><b>2. Request</b>Pick a date. The host confirms with an all-in quote, usually within a day.</div><div><b>3. Relax</b>Pay by card or PO on one invoice. If anything falls through, we replace the host or refund you.</div></div>
 </div>
-<script>
+<script src="/authguard.js"></script><script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const f = $("#find"); try { const c = localStorage.getItem("encore.city"); if (c) f.city.value = c; } catch {}

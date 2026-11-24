@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanShop } from "./shop.js";
+import { registerSearch } from "./search.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
@@ -297,6 +298,7 @@ export function mountCommunity(app, { store, small, json, currentUser, sessionWo
     if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Encore`, text: `${b.name || "Someone"} is now one of your regulars. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Encore" }).catch(() => {})); }
     await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
+  registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name && !h.sample) });
   app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
     for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }
     res.json({ cards }); });

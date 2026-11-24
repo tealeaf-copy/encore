@@ -93,7 +93,10 @@
   function cover(e = {}, opts = {}) {
     const pick = e.coverArt && typeof e.coverArt === "object" ? e.coverArt : {}, kind = opts.kind || (valid(pick.kind) ? pick.kind : kindOf(e)), tone = opts.tone || (PASTELS[pick.tone] ? pick.tone : toneOf(e, kind)), bg = PASTELS[tone], spot = SPOT[tone];
     const title = opts.title ?? (e.pubTitle || e.title || e.name || ""), label = opts.label ?? labelOf(kind);
-        // full covers fill out with the event's other themes and its place; picker tiles show exactly the option
+        // a drawing the host made with a prompt: always shown as an image (it can't run anything), never as HTML
+    const custom = opts.svg || (!opts.kind && typeof pick.svg === "string" && /^<svg /.test(pick.svg) ? pick.svg : "");
+    if (custom) return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""} ea-custom" style="--ea-bg:${bg}"><div class="ea-txt">${(opts.label ?? pick.label ?? "") ? `<small class="ea-label">${esc(opts.label ?? pick.label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art"><img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(custom)}"></div>${opts.mark || ""}</div>`;
+    // full covers fill out with the event's other themes and its place; picker tiles show exactly the option
     const parts = String(kind).split("+"), extra = opts.exact ? [] : kindsOf(e).filter((k) => !parts.includes(k)), K0 = [...parts, ...extra], K = (K0.length < 3 && !opts.exact ? [...K0, ...(RELATED[K0[0]] || []).filter((k) => !K0.includes(k) && ART[k])] : K0).slice(0, opts.exact ? 4 : Math.max(3, Math.min(4, K0.length))), full = K.length >= 3;
     return `<div class="ea-cover${String(title).length > 34 ? " ea-long" : ""}${full ? " ea-full" : ""}" style="--ea-bg:${bg}"><div class="ea-txt">${label ? `<small class="ea-label">${esc(label)}</small>` : ""}<b class="ea-title">${esc(title)}</b></div><div class="ea-art">${full ? scene(K, spot) : drawing(kind, spot)}</div>${opts.mark || ""}</div>`;
   }
@@ -101,7 +104,7 @@
 .ea-txt{position:absolute;left:6.5%;top:7%;right:8%;display:grid;gap:.25em}.ea-long .ea-title{font-size:clamp(13px,6.2cqw,30px)}
 .ea-label{font-size:clamp(10px,4.6cqw,15px);font-weight:600;letter-spacing:-.005em;opacity:.92}
 .ea-title{font-size:clamp(15px,8.6cqw,40px);line-height:1.06;font-weight:700;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
-.ea-art{position:absolute;right:2%;bottom:3%;width:52%;max-width:340px;height:46%;display:flex;justify-content:flex-end;align-items:flex-end;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.ea-art svg{display:block;width:auto;height:100%;max-width:100%}.ea-full .ea-art{width:88%;height:64%;max-width:none;right:4%;bottom:4%}`;
+.ea-art{position:absolute;right:2%;bottom:3%;width:52%;max-width:340px;height:46%;display:flex;justify-content:flex-end;align-items:flex-end;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.ea-art svg,.ea-art img{display:block;width:auto;height:100%;max-width:100%}.ea-custom .ea-art{width:58%;height:60%}.ea-full .ea-art{width:88%;height:64%;max-width:none;right:4%;bottom:4%}`;
   function ensureCss() { if (document.getElementById("eaCss")) return; const s = document.createElement("style"); s.id = "eaCss"; s.textContent = CSS; document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();
   window.EventArt = { kindsOf, suggest, labelOf, valid, PICKS: ["coffee", "dinner", "cook", "bake", "wine", "run", "hike", "yoga", "games", "book", "music", "tech", "talk", "craft", "picnic", "party"], cover, drawing, kindOf, toneOf, LABEL, PASTELS, SPOT, KINDS: Object.keys(ART), ensureCss };

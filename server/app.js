@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import zlib from "node:zlib";
+import { drawArt } from "./art.js";
 // Express app for Encore. createApp() is used by server/index.js and the tests.
 import express from "express";
 import fs from "node:fs";
@@ -1236,6 +1237,16 @@ export function createApp({ store, dataDir }) {
   });
 
   // ---------- ai (sample) ----------
+  // draw-your-own covers: one short prompt in, a cleaned SVG out (see server/art.js); 20 drawings a day per workspace
+  const artHits = new Map();
+  app.post("/api/art/draw", json, async (req, res) => {
+    const ws = sessionWorkspace(req), day = new Date().toISOString().slice(0, 10), k = ws + "|" + day, used = artHits.get(k) || 0;
+    const prompt = String(req.body?.prompt || "").trim(); if (prompt.length < 3) return res.status(400).json({ code: "invalid", message: "Describe what to draw, e.g. a turkey in running shoes." });
+    if (used >= 20) return res.status(429).json({ code: "rate_limited", message: "That's 20 drawings today. Pick one of them, or try again tomorrow." });
+    artHits.set(k, used + 1); if (artHits.size > 5000) artHits.clear();
+    try { const svg = await drawArt(prompt, String(req.body?.accent || "")); if (!svg) return res.status(502).json({ code: "upstream_error", message: "That drawing didn't come out. Try describing it a little differently." }); res.json({ svg, left: 19 - used }); }
+    catch (e) { const c = toCapError(e); res.status(c.code === "missing_key" ? 503 : 502).json({ code: c.code || "upstream_error", message: c.message || "Couldn't draw that right now." }); }
+  });
   app.post("/api/ai", json, async (req, res) => {
     const { input, modelTier, tools: rawTools } = req.body || {};
     const tools = (Array.isArray(rawTools) ? rawTools : [])

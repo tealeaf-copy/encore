@@ -171,3 +171,11 @@ test("A share link without a photo previews with the line-art card for that kind
   const m = html.match(/og:image" content="([^"]+)"/); assert.ok(m, "has an og:image"); assert.match(m[1], /\/og\/dumpling\.png$/); assert.match(html, /summary_large_image/);
   assert.equal((await fetch(m[1].replace(/^https?:\/\/[^/]+/, srv.base))).status, 200);
 });
+
+test("A share link's preview never includes the venue name or street address", async () => {
+  const r0 = await post("/api/signup", { name: "Priv Host", email: "priv.addr@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0);
+  await put("/api/db/doc?path=events/pv1", { kind: "social", casual: true, name: "Supper at mine", date: "2026-12-12", published: true, venueName: "My apartment, 214 Bedford Ave", venueAddr: "214 Bedford Ave Apt 3", hood: "Williamsburg", city: "Brooklyn" }, c);
+  const html = await (await fetch(srv.base + "/e/pv1")).text();
+  assert.ok(!/Bedford|apartment|Apt 3/i.test(html), "no address in the share page"); assert.match(html, /Williamsburg/);
+});

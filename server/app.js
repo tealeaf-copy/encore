@@ -168,6 +168,12 @@ export function createApp({ store, dataDir }) {
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
   const app = express();
+  // Moving to a new address (e.g. potterylab.ai): set ENCORE_CANONICAL_HOST and every page visit on any other host
+  // (the old onrender address, www.) is sent there permanently, same path and query. API calls are left alone so
+  // pages already open keep working; localhost and tests are never redirected.
+  app.use((req, res, next) => { const canon = String(process.env.ENCORE_CANONICAL_HOST || "").trim().toLowerCase(), host = String(req.hostname || "").toLowerCase();
+    if (!canon || !host || host === canon || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api/")) return next();
+    res.redirect(301, `https://${canon}${req.originalUrl}`); });
   const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self'", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
   // enforced since every page ran clean under report-only; violations are still reported to /api/csp-report
   // (ENCORE_CSP=report puts it back in report-only mode without a deploy of new code)

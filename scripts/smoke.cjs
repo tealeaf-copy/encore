@@ -5,7 +5,7 @@
 // reloads as that guest, and checks the host page lists the event. Fails on any page error or failed request.
 const { chromium, devices } = require("playwright");
 const B = String(process.argv[2] || "http://localhost:4998").replace(/\/$/, "");
-if (/onrender\.com|encore\.app/.test(B)) { console.error("Refusing to run against production."); process.exit(2); }
+if (/onrender\.com|encore\.app|potterylab\.ai/.test(B)) { console.error("Refusing to run against production."); process.exit(2); }
 const J = { "content-type": "application/json" }, sfx = Date.now().toString(36), problems = [];
 const watch = (page, who) => { page.on("pageerror", (e) => problems.push(`${who} page error: ${e.message.slice(0, 160)}`));
   page.on("response", (r) => { const u = r.url(); if (r.status() < 400 || !u.startsWith(B) || /\/api\/(me|workspace|brand)\b/.test(u)) return;

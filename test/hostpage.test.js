@@ -60,3 +60,19 @@ test("Real hosts who haven't signed up yet show as read-only showcase pages unti
   assert.equal(page.host.showcase, true); assert.equal(page.host.name, "Atelier Bò"); assert.match(page.host.claim, /preset=atelier-bo/);
   const disc = await (await fetch(srv.base + "/api/public/discover")).json(); assert.ok(disc.hosts.some((h) => h.handle === "atbo" && h.showcase));
 });
+
+test("Guests can change what they're bringing, but not take an item someone else has", async () => {
+  const c = cookieOf(await post("/api/signup", { name: "Pat Potluck", email: "pat.bring@example.com", password: "long-password-1", mode: "friends" }));
+  const day = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/potl", { kind: "social", casual: true, name: "Potluck", activity: "potluck", date: day, published: true, slots: ["Pie", "Drinks"] }, c);
+  await put("/api/db/doc?path=rsvps/r1", { eventId: "potl", name: "Ana Lopez", response: "going", code: "c1", slot: "Pie" }, c);
+  await put("/api/db/doc?path=rsvps/r2", { eventId: "potl", name: "Cy Park", response: "going", code: "c2" }, c);
+  const extra = (b) => post("/api/public/rsvp-extra/potl", b);
+  assert.equal((await extra({ rid: "r2", code: "c2", slot: "Pie" })).status, 409, "Pie is Ana's");
+  assert.equal((await extra({ rid: "r2", code: "c2", slot: "Cake" })).status, 400, "not on the list");
+  assert.equal((await extra({ rid: "r2", code: "wrong", slot: "Drinks" })).status, 404, "needs the reply's code");
+  assert.equal((await extra({ rid: "r2", code: "c2", slot: "Drinks" })).status, 200);
+  const host = await (await fetch(srv.base + "/api/public/event-host/potl")).json();
+  assert.deepEqual(host.bring.map((x) => `${x.slot}:${x.who}`).sort(), ["Drinks:Cy", "Pie:Ana"]);
+  const st = await (await fetch(srv.base + "/api/public/rsvp-status/potl?rid=r2&code=c2")).json(); assert.equal(st.slot, "Drinks");
+});

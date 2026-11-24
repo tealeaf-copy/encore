@@ -1,7 +1,8 @@
-// Shared bits for the public community pages (Discover and host pages): Pip, attendee personas, event cards.
+// Shared bits for the public community pages (Discover and host pages): Potto, attendee personas, event cards.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   function pipSVG(mood = "happy", size = 36) {
+    if (window.Potto) return window.Potto.svg({ happy: "wave", think: "think", side: "think", cheer: "cheer", sleep: "sleep" }[mood] || "wave", Math.round(size * 1.15), "Potto");
     const eye = (cx) => mood === "happy" ? `<path d="M${cx - 4.2} 30.5q4.2-5 8.4 0" stroke="#3A2A22" stroke-width="2.6" fill="none" stroke-linecap="round"/>` : `<ellipse cx="${cx}" cy="30" rx="3.6" ry="4.2" fill="#3A2A22"/><circle cx="${cx + 1.3}" cy="28.4" r="1.4" fill="#fff"/>`;
     return `<svg class="pip" viewBox="2 4 60 60" width="${size}" height="${size}" aria-hidden="true"><g class="pip-body">
   <path d="M13 22c-3-8 0-14 4-15 3 3 7 7 8 11z" fill="#F7A9B6"/><path d="M51 22c3-8 0-14-4-15-3 3-7 7-8 11z" fill="#F7A9B6"/>

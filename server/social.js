@@ -228,7 +228,7 @@ export function makeSocial(store, { C, saveBlob }) {
             if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap no so ${hostName} can plan: ${link}` }).catch(() => {}); got = true; }
             if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}! Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't make it? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
             if (got) sent++; }
-          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Pip reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title} for tomorrow.`, link: "/#studio", eventId: x.id }); } }
+          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Potto reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title} for tomorrow.`, link: "/#studio", eventId: x.id }); } }
       // giveaways: text each pickup window an hour before
       if (sms && /giveaway/.test(e.activity || "") && e.date === today(now)) for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId !== x.id || r.response !== "going" || !PHONE_OK(r.phone) || !r.slot) continue;
         const start = Date.parse(`${e.date}T${String(r.slot).match(/\d{1,2}:\d{2}/)?.[0]?.padStart(5, "0") || "00:00"}:00`), k = "sms-" + d.id; if (!(start - now <= 3600e3 && start - now > 0) || done(k)) continue; mark(k);
@@ -301,9 +301,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.post("/api/me/inbox/read", small, (req, res) => { const u = me(req, res); if (!u) return; X.markRead(u.email); res.json({ ok: true }); });
   // alerts in plain words
   app.get("/api/me/alerts", (req, res) => { const u = me(req, res); if (!u) return; res.json({ alerts: X.alertsOf(u.email) }); });
-  app.post("/api/me/alerts", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, text = clean(b.text, 300); if (text.length < 4) return bad(res, "Tell Pip what you'd like to hear about.");
+  app.post("/api/me/alerts", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, text = clean(b.text, 300); if (text.length < 4) return bad(res, "Tell Potto what you'd like to hear about.");
     const rule = parseAlert(text), geo = Number.isFinite(+b.lat) && Number.isFinite(+b.lng) && b.lat !== null && b.lng !== null && b.lat !== "" ? { lat: Math.round(+b.lat * 100) / 100, lng: Math.round(+b.lng * 100) / 100 } : {};
-    if (rule.radiusMi && geo.lat == null && !rule.city && !clean(b.city, 60)) return bad(res, "Pip needs your location for a distance. Allow location, or say a city (\"in Austin\").", 400, "need_location");
+    if (rule.radiusMi && geo.lat == null && !rule.city && !clean(b.city, 60)) return bad(res, "Potto needs your location for a distance. Allow location, or say a city (\"in Austin\").", 400, "need_location");
     const L = X.alertsOf(u.email); if (L.length >= 20) return bad(res, "You have 20 alerts. Delete one first.");
     const a = { id: crypto.randomBytes(6).toString("hex"), text, ...rule, ...geo, homeCity: clean(b.city, 60), at: Date.now() }; X.saveAlerts(u.email, [a, ...L]);
     // tell them right away about anything already coming up
@@ -382,7 +382,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const first = w[0] || "They", n = Math.max(P.attended || 0, ev.date && ev.date < new Date().toISOString().slice(0, 10) && r.response === "going" ? 1 : 0);
     const take = [top.name !== "New to Pottery Lab" ? `${first} is ${/^the /i.test(top.name) ? top.name.replace(/^The /, /^The [AEIOU]/i.test(top.name) ? "an " : "a ") : top.name}${n ? `, with ${n} get-together${n === 1 ? "" : "s"} on Pottery Lab` : ""}.` : (ev?.date && ev.date < new Date().toISOString().slice(0, 10) ? `This was ${first}'s first Pottery Lab get-together.` : `It's ${first}'s first Pottery Lab get-together too. Say hi.`), loves.length && n >= 2 ? `Usually found at ${loves.join(" and ")}.` : "", P.hosted ? `Has hosted ${P.hosted} too.` : "", r.funFact ? `Their fun fact: “${clean(r.funFact, 120).replace(/[.!]$/, "")}.”` : ""].filter(Boolean).join(" ");
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
-  // ---- Pip's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
+  // ---- Potto's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
   app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const seen = new Set(), G = [];
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
@@ -525,11 +525,11 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id); res.json({ messages: chatList(S, id, "host"), phones: R.filter((r) => r.response === "going" && r.phone).map((r) => ({ name: r.name, phone: r.phone, slot: r.slot || "" })), sms: !!smsConfig() }); });
   app.post("/api/host/chat/:eventId", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const text = clean(req.body?.text, 600); if (!text) return bad(res, "Say something first."); S.add("chat", { eventId: id, by: first(u.name) || "Host", role: "host", text, private: false, pinned: !!req.body?.pinned, at: Date.now() });
-    let texted = 0; const hr = new Date().getHours(); if (req.body?.sms && smsConfig() && (hr >= 21 || hr < 8) && !req.body?.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late, so Pip held the text. Send it in the morning, or tap again to send anyway." });
+    let texted = 0; const hr = new Date().getHours(); if (req.body?.sms && smsConfig() && (hr >= 21 || hr < 8) && !req.body?.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late, so Potto held the text. Send it in the morning, or tap again to send anyway." });
     if (req.body?.sms && smsConfig()) { const slot = clean(req.body?.slot, 40); for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId === id && r.response === "going" && PHONE_OK(r.phone) && (!slot || r.slot === slot)) { const ok = await sendSms(smsConfig(), { to: r.phone, text: `${first(u.name)} (${ev.pubTitle || ev.name}): ${text}` }); if (ok.ok) texted++; } } }
     res.json({ ok: true, texted }); });
   // interest check → it's on: tell everyone who said they were in or maybe
-  // interest check → it's on: tell everyone who said they were in or maybe (the host's button, or Pip on its own)
+  // interest check → it's on: tell everyone who said they were in or maybe (the host's button, or Potto on its own)
   async function itsOn({ ws, id, hostName, origin }) { const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev) return null; const u = { name: hostName, ws };
     const R = S.list("rsvps").map((d) => ({ ...d.data, _id: d.id })).filter((r) => r.eventId === id && ["in", "maybe"].includes(r.interest)), link = `${origin}/g#rsvp-${id}`, title = ev.pubTitle || ev.name, when = ev.date ? new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "soon";
     const cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(); let told = 0, texted = 0, confirmed = 0;

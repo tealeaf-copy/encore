@@ -91,7 +91,7 @@ test("Storefronts: curated theme with guardrails, https-only links, the /@handle
   assert.equal(r.status, 200); assert.equal((await r.json()).data.name, "Sourdough Sunday");
 });
 
-test("Pip calls it: once enough people are in, it locks the most popular date and tells them", async () => {
+test("Potto calls it: once enough people are in, it locks the most popular date and tells them", async () => {
   const cl = await join("Cleo Ray", "cleo@example.com");
   assert.equal((await put("events/auto1", { name: "Picnic", activity: "picnic", kind: "social", casual: true, stage: "interest", dateOptions: [day(8), day(9)], interestGoal: 2, autoGo: true }, cl.cookie)).status, 200);
   await guest(cl.ws, { eventId: "auto1", name: "A One", email: "a1@example.com", response: "maybe", interest: "in", dates: [day(9)], code: "A1" });
@@ -134,7 +134,7 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   const html = await (await get("/@eric-bakes")).text(); assert.match(html, /og:title" content="[^"]*"/); assert.match(html, /Order Whole cake/);
 });
 
-test("Brands book experience hosts: browse by category, describe it to Pip, request, get a quote, accept", async () => {
+test("Brands book experience hosts: browse by category, describe it to Potto, request, get a quote, accept", async () => {
   const cart = await join("Linh Vo", "linh.vo@example.com"), flower = await join("Hoa Tran", "hoa@example.com");
   assert.equal((await post("/api/host/profile", { handle: "banhmi-cart", name: "Bánh Mì Cart", city: "New York", insured: true, respondsIn: "a day", experiences: [{ name: "Bánh mì pop-up cart at your office", desc: "A Vietnamese street-food cart, made to order", category: "food", includes: "Cart and crew\nBánh mì and iced coffee", min: 30, max: 200, price: "from $28 a person", length: "2 hours", travels: true }] }, cart.cookie)).status, 200);
   assert.equal((await post("/api/host/profile", { handle: "hoa-flowers", name: "Hoa Flower Studio", city: "New York", experiences: [{ name: "Bouquet workshop", desc: "Everyone makes a bouquet to take home", category: "workshop", min: 8, max: 40, price: "from $65 a person", length: "90 minutes" }] }, flower.cookie)).status, 200);

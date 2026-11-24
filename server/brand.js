@@ -1,6 +1,6 @@
 // Brand research: when a company signs up, Pottery Lab looks it up on the web and makes a smart first guess at who
 // it sells to, who it competes with, which brands share its audience, how it positions itself and how it talks.
-// The guess drives everything brand-facing: inspiration, host matches and Pip's suggestions. The team can correct it.
+// The guess drives everything brand-facing: inspiration, host matches and Potto's suggestions. The team can correct it.
 import { getWorkspace, updateWorkspace, DEFAULT_WS } from "./workspaces.js";
 import { complete, isFake, aiMode, parseJsonLoose } from "./ai.js";
 import { CATEGORIES } from "./market.js";

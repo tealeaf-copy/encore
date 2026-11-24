@@ -49,21 +49,21 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
   app.get("/api/host/audience/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const ev = evOf(u, req.params.eventId); if (!ev) return bad(res, "No such event.", 404, "not_found");
     const A = audienceFor(u, ev).filter((a) => String(a.email || "").toLowerCase() !== String(u.email || "").toLowerCase() && String(a.name || "").trim().toLowerCase() !== String(u.name || "").trim().toLowerCase() && String(a.name || "").trim().toLowerCase().split(/\s+/)[0] !== String(u.name || "").trim().toLowerCase().split(/\s+/)[0]); res.json({ count: A.length, sample: A.slice(0, 8).map((a) => ({ name: first(a.name) || "Someone", why: a.why, top: a.top })) }); });
   app.post("/api/host/broadcast", small, async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.body?.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
-    if (!ev.audienceWho && !ev.discoverable) return bad(res, "Say who it's for first, so Pip only tells people it suits.");
+    if (!ev.audienceWho && !ev.discoverable) return bad(res, "Say who it's for first, so Potto only tells people it suits.");
     const A = audienceFor(u, ev), host = C.profileOf(u.ws), title = ev.pubTitle || ev.name, link = `${publicOrigin(req)}/g#rsvp-${id}`, cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true); let emailed = 0;
     for (const a of A) { const fresh = X.notify(a.email, { kind: "invite", key: `bc-${id}`, text: `${host?.name || first(u.name)} is ${ev.stage === "interest" ? "seeing who's in for" : "hosting"} ${title}${ev.audienceWho ? `, for ${ev.audienceWho}` : ""}. ${ev.approvalRequired ? "Request a spot" : "Tap to say yes"}.`, link: `/g#rsvp-${id}`, eventId: id });
       if (fresh && cfg && a.follower && X.canEmail(a.email)) { const r = await sendEmail(cfg, { to: a.email, subject: `${host?.name || first(u.name)}: ${title}`, text: `${title}${ev.audienceWho ? `\nFor: ${ev.audienceWho}` : ""}${ev.date ? `\nWhen: ${ev.date}` : ""}\n\n${ev.approvalRequired ? "Request a spot" : "Say yes"}: ${link}\n\nYou follow ${host?.name || "this host"} on Pottery Lab.`, fromName: host?.name || u.name }).catch(() => ({})); if (r.ok) emailed++; } }
     S.set("broadcasts/" + id, { eventId: id, at: Date.now(), reached: A.length, emailed });
-    S.add("audit", { eventId: id, what: `Pip shared it with ${A.length} people it suits`, kind: "growth", at: Date.now() });
+    S.add("audit", { eventId: id, what: `Potto shared it with ${A.length} people it suits`, kind: "growth", at: Date.now() });
     res.json({ ok: true, reached: A.length, emailed }); });
 
-  // ---- Pip calls it: when enough people are in and the host allowed it, lock the best date and tell everyone ----
+  // ---- Potto calls it: when enough people are in and the host allowed it, lock the best date and tell everyone ----
   X.autoGo = async (ws, id, origin = process.env.ENCORE_PUBLIC_URL || "") => { const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.stage !== "interest" || !ev.autoGo) return false;
     const R = S.list("rsvps").map((d) => d.data).filter((r) => r.eventId === id && r.interest === "in"), goal = +ev.interestGoal || Math.max(4, Math.round((+ev.headcount || 8) * 0.6)); if (R.length < goal) return false;
     const opts = ev.dateOptions || [], best = opts.map((o) => [o, R.filter((r) => (r.dates || []).includes(o)).length]).sort((a, b) => b[1] - a[1])[0];
     S.set("events/" + id, { ...ev, stage: "", ...(best?.[1] ? { date: best[0] } : {}), autoWentAt: Date.now(), updatedAt: Date.now() });
     const W = getWorkspace(ws), name = X.person(W?.ownerEmail).name; await X.itsOn?.({ ws, id, hostName: name, origin });
-    X.notify(W?.ownerEmail, { kind: "itson", key: "auto-" + id, text: `🎉 ${goal} people are in, so Pip called it: ${ev.pubTitle || ev.name}${best?.[1] ? ` is on ${best[0]}` : ""}. Everyone's been told.`, link: "/#studio", eventId: id }); X.bust(); return true; };
+    X.notify(W?.ownerEmail, { kind: "itson", key: "auto-" + id, text: `🎉 ${goal} people are in, so Potto called it: ${ev.pubTitle || ev.name}${best?.[1] ? ` is on ${best[0]}` : ""}. Everyone's been told.`, link: "/#studio", eventId: id }); X.bust(); return true; };
   // ---- the hype report: who's in, when they're free, who to nudge ----
   app.get("/api/host/hype/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.params.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id), followers = new Set(C.followersOf(u.ws).map((f) => lc(f.email))), friends = new Set(X.friendsOf(u.email).map((f) => f.email)), I = X.index();

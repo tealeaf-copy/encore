@@ -46,8 +46,8 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/experiences", (req, res) => { const cat = lc(req.query.category), city = lc(req.query.city), people = +req.query.people || 0;
     let L = catalog().filter((x) => (!cat || x.category === cat) && (!city || lc(`${x.host.city} ${x.host.hood}`).includes(city) || x.travels) && (!people || (people >= x.min * 0.7 && people <= x.max * 1.2)));
     L.sort((a, b) => b.trust.kudos * 2 + b.trust.guests + b.trust.booked * 5 - (a.trust.kudos * 2 + a.trust.guests + a.trust.booked * 5)); res.json({ experiences: L.slice(0, 60) }); });
-  // "Tell Pip what you're planning": a ranked shortlist with reasons
-  app.post("/api/public/match", small, (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const text = clean(req.body?.brief, 600); if (text.length < 6) return bad(res, "Tell Pip a little about the event.");
+  // "Tell Potto what you're planning": a ranked shortlist with reasons
+  app.post("/api/public/match", small, (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const text = clean(req.body?.brief, 600); if (text.length < 6) return bad(res, "Tell Potto a little about the event.");
     const B = parseBrief(text), city = cityAlias(lc(B.city || req.body?.city || "")), cat0 = catalog(), knownCity = !!city && cat0.some((x) => lc(`${x.host.city} ${x.host.hood}`).includes(city));
     const L0 = cat0.map((x) => { let s = 0; const why = []; const blob = lc(`${x.name} ${x.desc} ${x.host.tagline} ${(x.includes || []).join(" ")}`);
       if (B.cats.includes(x.category)) { s += 4; why.push(CATEGORIES.find(([k]) => k === x.category)[1].toLowerCase()); }

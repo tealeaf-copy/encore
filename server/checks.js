@@ -41,12 +41,12 @@ export function mountChecks(app, { store, small, currentUser, publicOrigin = () 
     if (!c) return res.json({ check: null }); const R = S.list("checkReplies").map((d) => d.data).filter((r) => r.eventId === id);
     res.json({ check: c, link: `/check/${encodeURIComponent(id)}?t=${c.token}`, tally: tally(R), replies: R.sort((a, b) => b.at - a.at).slice(0, 200).map((r) => ({ answer: r.answer, name: r.name, role: r.role, company: r.company, why: r.why, must: r.must, stop: r.stop, dates: r.dates, at: r.at, via: r.via })) }); });
 
-  // every check in the workspace, tallied: feeds Pip's list and "what your audience is telling you"
+  // every check in the workspace, tallied: feeds Potto's list and "what your audience is telling you"
   app.get("/api/checks", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), R = S.list("checkReplies").map((d) => d.data);
     res.json({ checks: S.list("checks").map((d) => d.data).filter(Boolean).map((c) => ({ eventId: c.eventId, title: c.title, createdAt: c.createdAt, link: `/check/${encodeURIComponent(c.eventId)}?t=${c.token}`, tally: tally(R.filter((r) => r.eventId === c.eventId)) })) }); });
 
 
-  // ---- Pip's morning list by email: the same legwork as the Home list, for people who live in their inbox ----
+  // ---- Potto's morning list by email: the same legwork as the Home list, for people who live in their inbox ----
   function digestItems(ws, origin) { const S = scopeStore(store, ws), today = new Date().toISOString().slice(0, 10), soon = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10), back = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
     const R = S.list("checkReplies").map((d) => d.data), F = S.list("feedback").map((d) => d.data), I = [];
     for (const c of S.list("checks").map((d) => d.data).filter(Boolean)) { const T = tally(R.filter((r) => r.eventId === c.eventId));
@@ -59,7 +59,7 @@ export function mountChecks(app, { store, small, currentUser, publicOrigin = () 
     return I.slice(0, 8); }
   async function sendDigest(ws, origin) { const W = getWorkspace(ws), to = W?.ownerEmail, items = digestItems(ws, origin); if (!to || !items.length) return { sent: false, items };
     const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (!cfg) return { sent: false, items, error: "Email isn't set up on this server." };
-    const r = await sendEmail(cfg, { to, subject: `Pip's list: ${items.length} thing${items.length === 1 ? "" : "s"} for today`, text: `Good morning. Here's what I'd do today:\n\n${items.map((x, i) => `${i + 1}. ${x}`).join("\n")}\n\nOpen Pottery Lab: ${origin}/\n\nTo stop these, switch off "Email me this list" on Home.`, fromName: "Pip at Pottery Lab" });
+    const r = await sendEmail(cfg, { to, subject: `Potto's list: ${items.length} thing${items.length === 1 ? "" : "s"} for today`, text: `Good morning. Here's what I'd do today:\n\n${items.map((x, i) => `${i + 1}. ${x}`).join("\n")}\n\nOpen Pottery Lab: ${origin}/\n\nTo stop these, switch off "Email me this list" on Home.`, fromName: "Potto at Pottery Lab" });
     return { sent: !!r.ok, items, error: r.error || "" }; }
   app.get("/api/pip/digest", (req, res) => { const u = me(req, res); if (!u) return; res.json({ on: !!getWorkspace(u.ws)?.pipDigest, items: digestItems(u.ws, publicOrigin(req)) }); });
   app.post("/api/pip/digest", small, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};

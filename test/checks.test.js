@@ -36,7 +36,7 @@ test("a would-you-come check: owner opens it, people answer through the link, th
   // replies only come in through the public link
   assert.ok((await req("POST", "/api/db/collection?path=checkReplies", { eventId: "ev1", answer: "yes" }, cookie)).status >= 400, "replies can't be forged through the db API");
   assert.equal((await req("GET", "/api/check/ev1")).status, 401);
-  // Pip's morning list knows what to chase
+  // Potto's morning list knows what to chase
   const dg = await (await req("GET", "/api/pip/digest", null, cookie)).json();
   assert.equal(dg.on, false); assert.ok(dg.items.some((x) => /Get 5 more answers on "Post-Close Supper"/.test(x)), JSON.stringify(dg.items));
   assert.equal((await (await req("POST", "/api/pip/digest", { on: true }, cookie)).json()).on, true);

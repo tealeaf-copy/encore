@@ -60,7 +60,7 @@
   function kindsOf(e = {}) { const out = [], add = (k) => { if (k && ART[k] && !out.includes(k)) out.push(k); };
     const title = `${e.pubTitle || e.title || e.name || ""}`.toLowerCase(), act = String(e.activity || "").toLowerCase(), rest = `${e.why || ""} ${(e.tags || []).join(" ")} ${e.dinnerTheme || ""}`.toLowerCase(), all = `${act} ${title} ${rest}`;
     for (const [re, k] of WORDS.slice(0, 6)) if (re.test(all)) add(k);
-    // the title, in the order things appear in it, then what the host or Pip set as the activity
+    // the title, in the order things appear in it, then what the host or Potto set as the activity
     WORDS.map(([re, k]) => { const m = title.match(re); return m ? [m.index, k] : null; }).filter(Boolean).sort((x, y) => x[0] - y[0]).forEach(([, k]) => add(k));
     if (ART[act]) add(act); for (const [re, k] of WORDS) if (re.test(act)) add(k);
     for (const [re, k] of WORDS) if (re.test(rest)) add(k);

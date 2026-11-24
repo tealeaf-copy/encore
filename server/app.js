@@ -371,7 +371,8 @@ export function createApp({ store, dataDir }) {
       else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
-  app.get("/pricing", (req, res) => sendStatic(res, "pricing.html", "<p>Pricing page missing.</p>"));
+  // pricing is being reworked for hosts and brands; until then the old page (event-team plans) is off
+  app.get("/pricing", (req, res) => res.redirect(302, "/"));
   // The homepage demo runs the app's own planner, read from the current index.html.
   let estimateJs = null, estimateAt = 0;
   app.get("/estimate.js", async (req, res) => {
@@ -384,11 +385,35 @@ export function createApp({ store, dataDir }) {
   // memory with an ETag, and pre-compress it with brotli at full quality in the background. Browsers revalidate on every
   // visit (no-cache) and get a 304 with no body when nothing changed.
   let pageCache = null, pageBuilding = null;
+  // The app's big inline scripts and styles are served as their own files, named by a hash of their content and cached
+  // for a year. A guest opening their second invite (or the same one again) downloads only the small page around them,
+  // and the browser fetches the scripts in parallel while it draws the invite preview.
+  const APP_ASSETS = new Map(), SPLIT_MIN = 8000;
+  function splitPage(html) {
+    const add = (body, ext) => { const h = crypto.createHash("sha1").update(body).digest("base64url").slice(0, 16), key = `${h}.${ext}`;
+      if (!APP_ASSETS.has(key)) { const buf = Buffer.from(body), A = { type: ext === "js" ? "application/javascript; charset=utf-8" : "text/css; charset=utf-8", body: buf, gz: zlib.gzipSync(buf, { level: 9 }), br: null };
+        APP_ASSETS.set(key, A); zlib.brotliCompress(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }, (err, out) => { if (!err) A.br = out; }); }
+      return key; };
+    const scripts = []; // the app scripts, in page order
+    // scripts first, exactly as the HTML parser reads them (a script ends at the first </script>), so <style> text inside
+    // JavaScript strings is never touched; small scripts stay inline and keep their place
+    const kept = [];
+    let out = html.replace(/<script>([\s\S]*?)<\/script>/g, (m, code) => { if (code.length < SPLIT_MIN) { kept.push(m); return `\u0000S${kept.length - 1}\u0000`; } const k = add(code, "js"); scripts.push(k); return `<script src="/_app/${k}" fetchpriority="high"></script>`; })
+      .replace(/<style>([\s\S]*?)<\/style>/g, (m, css) => (css.length < SPLIT_MIN ? m : `<link rel="stylesheet" href="/_app/${add(css, "css")}">`))
+      .replace(/\u0000S(\d+)\u0000/g, (m, i) => kept[+i]);
+    // on invite links (/g), web fonts wait until the app has loaded: the RSVP form is usable sooner on a slow phone,
+    // and the text swaps to the brand fonts a moment later (they're cached for the next visit)
+    out = out.replace(/(<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*")>/, '$1 id="gfonts"><script>if(location.pathname==="/g"){const l=document.getElementById("gfonts");l.media="print";addEventListener("load",()=>{l.media="all"})}</script>');
+    return out;
+  }
+  app.get(/^\/_app\/([A-Za-z0-9_-]{16}\.(?:js|css))$/, (req, res) => { const A = APP_ASSETS.get(req.params[0]); if (!A) return res.status(404).type("text").send("Not found");
+    res.set({ "Cache-Control": "public, max-age=31536000, immutable", "Content-Type": A.type, Vary: "Accept-Encoding" }); const ae = req.headers["accept-encoding"] || "";
+    if (A.br && /\bbr\b/.test(ae)) return res.set("Content-Encoding", "br").send(A.br); if (/\bgzip\b/.test(ae)) return res.set("Content-Encoding", "gzip").send(A.gz); res.send(A.body); });
   async function builtPage() {
     const st = await fsp.stat(PAGE_FILE); if (pageCache && pageCache.mtime === st.mtimeMs) return pageCache;
     if (pageBuilding) return pageBuilding;
-    pageBuilding = (async () => { const html = Buffer.from(HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
-      const P = { mtime: st.mtimeMs, html, etag, br: null }; pageCache = P;
+    pageBuilding = (async () => { const html = Buffer.from(process.env.ENCORE_INLINE_APP === "1" ? HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL : splitPage(HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL)), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
+      const P = { mtime: st.mtimeMs, html, etag, br: null, gz: zlib.gzipSync(html, { level: 9 }) }; pageCache = P;
       zlib.brotliCompress(html, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: html.length } }, (err, out) => { if (!err && pageCache === P) P.br = out; });
       return P; })().finally(() => { pageBuilding = null; });
     return pageBuilding;
@@ -398,6 +423,7 @@ export function createApp({ store, dataDir }) {
       const P = await builtPage(); res.set({ "Cache-Control": "private, no-cache", ETag: P.etag, Vary: "Accept-Encoding" }).type("html");
       if (req.headers["if-none-match"] === P.etag) return res.status(304).end();
       if (P.br && /\bbr\b/.test(req.headers["accept-encoding"] || "")) return res.set("Content-Encoding", "br").send(P.br);
+      if (/\bgzip\b/.test(req.headers["accept-encoding"] || "")) return res.set("Content-Encoding", "gzip").send(P.gz);
       res.send(P.html);
     } catch (err) { next(err); }
   };

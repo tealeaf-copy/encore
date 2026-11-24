@@ -8,7 +8,7 @@
     const rail = P === "/g" || /^\/(discover|feed|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/(team|hosts|h)\//.test(P) || /^\/@/.test(P);
     if (rail) root.classList.add("es-pre");
     const st = document.createElement("style"); st.id = "navFoldCss";
-    st.textContent = `@media (min-width:861px){html.es-pre body{padding-left:224px}html.es-pre.nav-folded body{padding-left:72px}html.es-pre body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:224px;background:#FFFDFA;border-right:1px solid #E9E1D6;z-index:1}html.es-pre.nav-folded body::before{width:72px}html.es-pre body header.top{display:none}}
+    st.textContent = `@media (max-width:860px){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:16px!important}}@media (min-width:861px){html.es-pre body{padding-left:224px}html.es-pre.nav-folded body{padding-left:72px}html.es-pre body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:224px;background:#FFFDFA;border-right:1px solid #E9E1D6;z-index:1}html.es-pre.nav-folded body::before{width:72px}html.es-pre body header.top{display:none}}
 .nav-fold{position:absolute;top:22px;right:-13px;width:26px;height:26px;border-radius:50%;border:1px solid #E4D9C8;background:#fff;color:#6B5F56;display:grid;place-items:center;cursor:pointer;z-index:60;padding:0;box-shadow:0 2px 6px rgba(31,26,23,.08);transition:transform .2s}
 .nav-fold:hover{color:#1F1A17;transform:scale(1.08)}.nav-fold:focus-visible{outline:3px solid #C94A30;outline-offset:2px}.nav-fold svg{width:14px;height:14px;transition:transform .25s}
 html.nav-folded .nav-fold svg{transform:rotate(180deg)}

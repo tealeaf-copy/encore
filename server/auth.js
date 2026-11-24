@@ -249,7 +249,7 @@ export function loginPage() {
   h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
   label{display:block;font-size:13px;font-weight:600;color:#2B211C;margin-bottom:12px}
   input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 12px;border-radius:12px}
-  input{border:1px solid #E9E1D6;margin:6px 0 0;background:#fff;font-weight:400}input:focus{outline:2px solid #E8C3B5;outline-offset:1px}
+  input{border:1px solid #E9E1D6;margin:6px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:2px solid #E8C3B5;outline-offset:1px}
   button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:hover{background:#A9462E}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}

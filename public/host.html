@@ -100,7 +100,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
 <script src="/eventart.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
 <script src="/collab.js"></script>
-<script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script>
+<script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
 <script src="/storeshop.js"></script>
@@ -175,6 +175,8 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
       const recs = h.recs || [], by = h.recBy || [], st = document.createElement("style"); st.textContent = `.recs{margin:34px 0 0}.recs h2{margin:0 0 4px}.recs .rec-sub{color:#6B5F56;margin:0 0 12px;font-size:14.5px}.recs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.rec{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;padding:12px;border:1px solid #E9E1D6;border-radius:18px;background:#fff;text-decoration:none;color:inherit}.rec .a{width:52px;height:52px;border-radius:50%;overflow:hidden;display:grid;place-items:center;border:1px solid #E9E1D6;font-size:26px;background:#fff}.rec .a img,.rec .a svg{width:100%;height:100%;object-fit:cover}.rec b{display:block}.rec small{display:block;color:#6B5F56;font-size:13px}.rec q{display:block;margin-top:4px;font-size:13.5px;color:#3D332C;quotes:"“" "”"}.rec-by{font-size:13.5px;color:#6B5F56;margin:4px 0}.rec-by a{color:inherit;font-weight:600}`; document.head.appendChild(st);
       if (recs.length) { const sec = document.createElement("section"); sec.className = "recs"; sec.innerHTML = `<h2>Hosts ${esc(first)} recommends</h2><p class="rec-sub">Other hosts ${esc(first)} loves. If you like this page, you'll probably like theirs.</p><div class="recs-grid">${recs.map((x) => `<a class="rec" href="/@${encodeURIComponent(x.handle)}"><span class="a">${av(x)}</span><span><b>${esc(x.name)}</b><small>${esc(x.city || x.tagline || "")}</small>${x.note ? `<q>${esc(x.note)}</q>` : ""}</span></a>`).join("")}</div>`; (document.querySelector(".cols") || m).after(sec); }
       if (by.length) { const line = document.createElement("p"); line.className = "rec-by"; const names = by.slice(0, 3).map((x) => `<a href="/@${encodeURIComponent(x.handle)}">${esc(x.name)}</a>`); line.innerHTML = `💛 Recommended by ${names.join(", ")}${by.length > 3 ? ` and ${by.length - 3} more` : ""}`; const anchor = document.querySelector(".head .tagline, .head h1"); (document.querySelector(".head h1")?.parentElement || m).appendChild(line); } }
+    // the scrapbook: every gathering they've hosted, here and before (it takes over from the plain "Past gatherings" grid)
+    window.Scrapbook?.mount(h, { first, past: d.past, anchor: document.querySelector(".s-past") || document.querySelector(".cols") }).then(() => { if (document.getElementById("scrapbook")) document.querySelector(".s-past")?.remove(); }).catch(() => {});
     // badges they've earned (Super host, streaks, Local legend, New, milestones), each with what it's for
     if (!h.showcase) fetch("/api/public/host/" + encodeURIComponent(h.handle) + "/badges").then((r) => r.json()).then((j) => {
       // only the host sees what's next for them (streak at risk, how close Super host is, the next milestone)

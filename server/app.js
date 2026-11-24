@@ -17,6 +17,7 @@ import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { makeSocial, mountSocial } from "./social.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
+import { mountScrapbook } from "./scrapbook.js";
 import { mountShop } from "./shop.js";
 import { mountMarket } from "./market.js";
 import { mountBrand, startResearch } from "./brand.js";
@@ -448,6 +449,7 @@ export function createApp({ store, dataDir }) {
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountRecognition(app, { C, X });
+  mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });

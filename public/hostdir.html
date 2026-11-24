@@ -34,14 +34,15 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const KINDS = [["all", "Everything"], ["food", "Food and dinners"], ["coffee", "Coffee and tea"], ["move", "Runs and hikes"], ["art", "Art and making"], ["music", "Music and games"], ["learn", "Workshops and talks"]];
   const GROUP = { dinner: "food", cook: "food", bake: "food", potluck: "food", brunch: "food", picnic: "food", wine: "food", turkey: "food", coffee: "coffee", tea: "coffee", run: "move", hike: "move", walk: "move", bike: "move", yoga: "move", swim: "move", craft: "art", paint: "art", garden: "art", music: "music", games: "music", movie: "music", party: "music", book: "learn", workshop: "learn", talk: "learn", tech: "learn" };
-  let H = [], kind = "all", city = "", q = "";
+  const U = new URLSearchParams(location.search); let H = [], kind = U.get("type") || "all", city = U.get("city") || "", q = (U.get("q") || "").toLowerCase();
+  const sync = () => { const P = new URLSearchParams(); if (kind !== "all") P.set("type", kind); if (city) P.set("city", city); if (q) P.set("q", q); history.replaceState(null, "", "/hosts" + (P.toString() ? "?" + P : "")); };
   const groupsOf = (h) => { const words = { title: [h.name, h.tagline, (h.tags || []).join(" "), (h.experiences || []).map((x) => x.name).join(" ")].join(" "), why: h.bio || "" }; const K = window.EventArt ? window.EventArt.kindsOf(words) : []; return new Set(K.map((k) => GROUP[k]).filter(Boolean)); };
   const cityOf = (h) => String(h.city || "").trim();
   // complete profiles first: people browsing want to see who a host is before they follow
   const done = (h) => (h.tagline || h.bio ? 2 : 0) + ((h.theme && (h.theme.avatarArt || h.theme.avatarUrl)) || (h.gallery || []).length ? 2 : 0) + ((h.tags || []).length ? 1 : 0) + ((h.experiences || []).length ? 1 : 0) + (cityOf(h) ? 1 : 0);
   const avatar = (h) => { const g = (h.gallery || [])[0], t = h.theme || {}; if (t.avatarUrl) return `<img src="${esc(t.avatarUrl)}" alt="">`; if (t.avatarArt && window.EncoreAvatars) return window.EncoreAvatars.svg(t.avatarArt, t.accent || h.color || "#E26D8E", 64); if (g) return `<img src="${esc(g)}" alt="">`; return esc(h.emoji || "🎉"); };
   const tint = (h) => { const a = (h.theme && h.theme.accent) || h.color || "#E0A030"; return `color-mix(in srgb, ${a} 28%, #FFF8EE)`; };
-  function draw() {
+  function draw() { sync();
     const L = H.filter((h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city) && (!q || `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""}`.toLowerCase().includes(q)));
     $("#count").textContent = L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}` : "";
     $("#grid").innerHTML = L.length ? L.map((h) => `<div class="h"><a class="hl" href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none;color:inherit;display:grid"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
@@ -50,7 +51,7 @@ h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
       </a><span class="ft"><a href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none">See page</a><a class="fo" href="/@${encodeURIComponent(h.handle)}#follow" style="text-decoration:none">Follow</a></span></div>`).join("") : `<p class="empty">No hosts match that yet. Try another city or clear the search.</p>`;
   }
   function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
-  $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); draw(); };
+  $("#q").value = U.get("q") || ""; $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); draw(); };
   fetch("/api/public/discover").then((r) => r.json()).then((d) => {
     const best = new Map(); for (const h of (d.hosts || []).filter((h) => h.handle && h.name && !/[<>]/.test(h.name))) { const k = h.name.trim().toLowerCase() + "|" + cityOf(h).toLowerCase(), cur = best.get(k); if (!cur || done(h) + (h.upcoming || 0) > done(cur) + (cur.upcoming || 0)) best.set(k, h); }
     H = [...best.values()].map((h) => ({ ...h, _g: groupsOf(h) }))

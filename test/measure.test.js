@@ -29,3 +29,26 @@ test("A booking gets a guest page, and its results count who came and what they 
   assert.equal((await post(`/api/public/booking/${id}/campaign`, { t, campaign: { name: "Wellness week", goal: "morale", target: 10, meetings: "2", pipeline: "$12,000" } })).status, 200);
   r = await (await fetch(`${srv.base}/api/public/booking/${id}/results?t=${t}`)).json(); assert.equal(r.campaign.name, "Wellness week"); assert.equal(r.campaign.pipeline, 12000); assert.equal(r.campaign.goal, "morale");
 });
+
+test("Check-in at the door: a door link for staff, ticket codes, walk-ins, and results that count who actually came", async () => {
+  const h = await post("/api/signup", { name: "Theo Door", email: "theo.d@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
+  const pr = await (await post("/api/host/profile", { handle: "theo-door", name: "Door Test Loft", experiences: [{ name: "Demo night", min: 5, max: 100, price: "$95 a person", category: "drinks" }] }, hc)).json();
+  const day = new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10);
+  const bk = await (await post("/api/public/book/theo-door", { name: "Sam", company: "Northwind", email: "sam.d@northwind.example", experienceId: pr.host.experiences[0].id, people: 10, date: day, time: "18:00", when: "soon", where: "The loft", message: "Launch night for our API." })).json();
+  const id = bk.id, t = new URL(bk.status).searchParams.get("t");
+  const ev = await (await post(`/api/public/booking/${id}/event`, { t, title: "Northwind launch night" })).json(); const eid = ev.link.split("rsvp-")[1];
+  const rids = []; for (const [i, nm] of ["Rita", "Omar", "Lena"].entries()) rids.push((await (await post("/api/db/collection?path=rsvps", { eventId: eid, name: nm, email: `${nm.toLowerCase()}.d@example.com`, response: "going", code: "k" + i }, hc)).json()).id);
+  const r0 = await (await fetch(`${srv.base}/api/public/booking/${id}/results?t=${t}`)).json(); assert.ok(r0.doorLink.startsWith(`/door/${id}?t=`)); const dt = new URL(srv.base + r0.doorLink).searchParams.get("t");
+  assert.notEqual(dt, t, "the door link isn't the booking link");
+  assert.equal((await fetch(`${srv.base}/api/public/booking/${id}/door?t=wrong`)).status, 403);
+  let door = await (await fetch(`${srv.base}/api/public/booking/${id}/door?t=${dt}`)).json(); assert.equal(door.guests.length, 3); assert.equal(door.checkedIn, 0); assert.equal(door.title, "Northwind launch night");
+  const tk = await (await fetch(`${srv.base}/api/public/ticket/${eid}?rid=${rids[0]}&code=k0`)).json(); assert.match(tk.code, /^[A-Z2-9]{6}$/);
+  assert.equal((await fetch(`${srv.base}/api/public/ticket/${eid}?rid=${rids[0]}&code=wrong`)).status, 403, "only the guest sees their code");
+  door = await (await post(`/api/public/booking/${id}/door`, { t: dt, code: tk.code.toLowerCase() })).json(); assert.equal(door.name, "Rita"); assert.equal(door.checkedIn, 1);
+  assert.equal((await post(`/api/public/booking/${id}/door`, { t: dt, code: "ZZZZZZ" })).status, 404);
+  door = await (await post(`/api/public/booking/${id}/door`, { t: dt, rid: rids[1] })).json(); assert.equal(door.checkedIn, 2);
+  door = await (await post(`/api/public/booking/${id}/door/walkin`, { t: dt, name: "Walk In", company: "Acme" })).json(); assert.equal(door.checkedIn, 3); assert.equal(door.guests.length, 4);
+  door = await (await post(`/api/public/booking/${id}/door`, { t: dt, rid: rids[1], undo: true })).json(); assert.equal(door.checkedIn, 2, "undo works");
+  const r = await (await fetch(`${srv.base}/api/public/booking/${id}/results?t=${t}`)).json(); assert.equal(r.came, 2); assert.equal(r.checkedIn, 2); assert.equal(r.walkIns, 1); assert.equal(r.going, 4);
+  const csv = await (await fetch(`${srv.base}/api/public/booking/${id}/guests.csv?t=${t}`)).text(); assert.match(csv, /checked_in,walk_in/); assert.match(csv, /"Walk In"/);
+});

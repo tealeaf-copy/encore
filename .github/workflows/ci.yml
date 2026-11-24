@@ -1,0 +1,36 @@
+# Runs on every push and pull request: the unit and API tests, then a real browser walking through the core flow
+# (host signs up, plans and publishes an event, a guest RSVPs on a phone). Everything runs offline: AI, email and
+# SMS are faked, so no secrets are needed.
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Browser smoke test
+        env:
+          ENCORE_FAKE_AI: "1"
+          ENCORE_FAKE_SMS: "1"
+          ENCORE_FAKE_EMAIL: "1"
+          ENCORE_SIGNUP: "1"
+          ENCORE_SIGNUP_PER_HOUR: "200"
+          SESSION_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+          DATA_DIR: ${{ runner.temp }}/encore-data
+          PORT: "4998"
+        run: |
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          mkdir -p "$DATA_DIR"
+          node server/index.js > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4998/ > /dev/null && break; sleep 1; done
+          node scripts/smoke.cjs http://localhost:4998 || (tail -50 server.log; exit 1)

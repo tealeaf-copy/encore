@@ -17,7 +17,8 @@
 .msg{margin:8px 0;padding:10px 12px;border-radius:14px;background:var(--linen);display:block;font:15px/1.5 "Instrument Sans",system-ui,sans-serif}.msg.brand{background:#fff;border:1px solid var(--line)}.msg b{display:block;font-size:13px;margin-bottom:2px}.saved{margin:10px 0 0;color:var(--sage);font-size:14px}.cert{color:var(--ink);font-weight:500}.msg.host{background:#F3EFE8}.msg small{display:block;color:var(--smoke);font-size:12px}
 #billF input{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font:inherit}
 .hist{font-size:13px;color:var(--smoke);margin-top:12px}
-a{color:var(--ember, #C94A30)}</style></head><body><div class="wrap"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><a href="/requests" style="float:right;margin-top:6px;font-weight:600;font-size:14px">All your requests →</a><div id="m">Loading…</div></div>
+a{color:var(--ember, #C94A30)}@media (max-width:640px){input,select,textarea{max-width:100%;box-sizing:border-box}.row2,.bill-grid,.billing .row{grid-template-columns:1fr!important;display:grid}}
+.card input,.card select,.card textarea{max-width:100%;box-sizing:border-box;min-width:0}</style></head><body><div class="wrap"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>encore</a><a href="/requests" style="float:right;margin-top:6px;font-weight:600;font-size:14px">All your requests →</a><div id="m">Loading…</div></div>
 <script src="/community.js"></script><script src="/avatars.js"></script>
 <script>
 const money = (s) => { const n = parseFloat(String(s || "").replace(/[^0-9.]/g, "")); return isFinite(n) ? n : null; };

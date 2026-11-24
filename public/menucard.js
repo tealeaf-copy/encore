@@ -41,5 +41,8 @@
   // template chips for a courses textarea; onUse(template) is called after the textarea is filled
   function templates(onUse, hint = "") { const box = document.createElement("div"); box.className = "mc-tpl"; const h = String(hint).toLowerCase(), order = TEMPLATES.map((t, i) => i).sort((a, b) => (h.includes(TEMPLATES[b].name.toLowerCase().split(" ")[0]) || (TEMPLATES[b].name === "Friendsgiving" && /thanksgiving|friendsgiving|turkey/.test(h)) ? 1 : 0) - (h.includes(TEMPLATES[a].name.toLowerCase().split(" ")[0]) || (TEMPLATES[a].name === "Friendsgiving" && /thanksgiving|friendsgiving|turkey/.test(h)) ? 1 : 0));
     box.innerHTML = `<small style="width:100%;color:#7A6E64">Start from a template:</small>` + order.map((i) => `<button type="button" data-mct="${i}">${esc(TEMPLATES[i].name)}</button>`).join(""); box.addEventListener("click", (e) => { const b = e.target.closest("[data-mct]"); if (b) onUse(TEMPLATES[+b.dataset.mct]); }); return box; }
-  window.MenuCard = { html, templates, TEMPLATES, ensureCss };
+  // the template that fits an event best, from its name and activity (-1 when nothing clearly fits)
+  const FIT = [[/thanksgiving|friendsgiving|turkey/, "Friendsgiving"], [/potluck|bring a dish/, "Potluck"], [/brunch/, "Brunch"], [/bake|cake|pastr|cookie|\btea\b|matcha|mochi|bánh/, "Bake and tea"], [/tasting|omakase|chef'?s table|kaiseki|degustation/, "Tasting menu"], [/dinner|supper|feast|cook/, "Three courses"]];
+  function best(hint = "") { const h = String(hint).toLowerCase(); for (const [re, name] of FIT) if (re.test(h)) return TEMPLATES.findIndex((t) => t.name === name); return -1; }
+  window.MenuCard = { html, templates, TEMPLATES, ensureCss, best };
 })();

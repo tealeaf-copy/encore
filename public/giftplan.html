@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/authguard.js"></script>
+<title>Gift a moment · Pottery Lab</title>
+<meta name="description" content="Tell Potto about your launch, fundraise or milestone. Potto researches it, suggests gifts that tell its story, and writes a gifting campaign you can run next week.">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fraunces:ital,wght@1,600&family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C4532F;--line:#E4D9C8;--butter:#FFE08A}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif}a{color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:22px 18px 80px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.top a.brand{text-decoration:none;font:700 20px Fredoka,system-ui;display:flex;gap:8px;align-items:center}
+h1{font:700 clamp(32px,5.4vw,52px)/1.05 Fredoka,system-ui;margin:8px 0 10px}h1 em,h2 em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600;color:var(--ember)}
+.lede{color:var(--smoke);font-size:18px;max-width:640px;margin:0 0 20px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:20px;align-items:center}.hero .pt{justify-self:center}
+.ask{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:0 0 0 5px #fff,0 14px 30px -20px rgba(31,26,23,.5);padding:18px;display:grid;gap:12px;margin-top:6px}
+.ask label{display:grid;gap:5px;font-weight:600;font-size:14px}.ask input,.ask textarea{padding:12px 14px;border:1px solid #DCCFBE;border-radius:14px;font:inherit;font-weight:400;background:#FFFCF7}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+.eg{display:flex;flex-wrap:wrap;gap:6px}.eg button{border:1.5px dashed #CDBFAE;background:none;border-radius:999px;padding:6px 12px;font:600 13px inherit;cursor:pointer;color:var(--smoke)}
+.go{background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:13px 22px;font:700 16px inherit;box-shadow:3px 3px 0 var(--ink);cursor:pointer;justify-self:start}.go:disabled{opacity:.6}
+.think{display:grid;justify-items:center;gap:6px;padding:30px 10px;text-align:center}.think ol{list-style:none;padding:0;margin:0;color:var(--smoke)}.think li{opacity:.35;transition:opacity .4s}.think li.on{opacity:1;color:var(--ink);font-weight:600}
+.plan{margin-top:28px;display:grid;gap:22px}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:22px;padding:20px}
+.moment h2{margin:0 0 4px;font:700 26px Fredoka,system-ui}.src{font-size:13px;color:var(--smoke)}.src a{color:var(--ember)}
+.theme{background:var(--ink);color:#fff;border-radius:24px;padding:24px;position:relative;overflow:hidden}.theme small{color:var(--butter);font-weight:700;letter-spacing:.08em;text-transform:uppercase}.theme h2{font:700 clamp(26px,4vw,36px)/1.1 Fredoka,system-ui;margin:6px 0}.theme .line{font:700 26px/1.2 Caveat,cursive;color:var(--butter);margin-top:8px}
+.segs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}.seg{border:1px dashed var(--line);border-radius:16px;padding:12px}.seg b{display:block}.seg small{color:var(--smoke)}
+.gifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.gift{background:#fff;border:2.5px solid var(--ink);border-radius:20px;box-shadow:0 0 0 4px #fff,0 4px 0 4px rgba(31,26,23,.14);padding:16px;display:grid;gap:8px;transform:rotate(var(--r));transition:transform .25s cubic-bezier(.3,1.6,.5,1)}.gift:hover{transform:rotate(0) scale(1.01)}
+.gift h3{margin:0;font:700 20px/1.15 Fredoka,system-ui}.gift .price{display:inline-block;background:var(--butter);border-radius:999px;padding:2px 10px;font-weight:700;font-size:13px}.gift .tie{font:600 19px/1.2 Caveat,cursive;color:#3E5C3A}.gift ul{margin:0;padding-left:18px;font-size:14px}.gift small{color:var(--smoke)}
+.makers{border-top:1px dashed var(--line);padding-top:8px;font-size:13.5px}.makers a{display:inline-block;margin:3px 6px 0 0;padding:3px 10px;border-radius:999px;background:#F3ECE2;text-decoration:none;font-weight:600}
+.tl{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:0}.tl li{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px dashed var(--line)}.tl li b{color:var(--ember)}.tl small{color:var(--smoke)}
+.copy{position:relative;background:#FFFCF7;border:1px solid var(--line);border-radius:14px;padding:38px 14px 12px;white-space:pre-wrap;font-size:15px}.copy .cp{position:absolute;right:8px;top:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font:600 12px inherit;cursor:pointer}
+.note{font:600 22px/1.25 Caveat,cursive;background:#FFF6D8;border-radius:6px;padding:16px 18px;transform:rotate(-1deg);box-shadow:0 8px 18px -12px rgba(0,0,0,.4)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.chips{display:flex;flex-wrap:wrap;gap:6px}.chips span{background:#F3ECE2;border-radius:999px;padding:4px 10px;font-size:13.5px}
+.bar{display:flex;gap:10px;flex-wrap:wrap}.bar button,.bar a{border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:9px 16px;font:600 14px inherit;cursor:pointer;text-decoration:none}.bar .main{background:var(--ink);color:#fff}
+.demo{background:#FFF1D2;border-radius:12px;padding:8px 12px;font-size:13.5px}
+h2.sec{font:700 24px Fredoka,system-ui;margin:0 0 4px}
+@media (max-width:720px){.hero{grid-template-columns:1fr}.hero .pt{display:none}.row,.row3,.two{grid-template-columns:1fr}.tl li{grid-template-columns:1fr;gap:2px}}
+@media print{.top,.ask,.bar,.hero .pt,.cp{display:none!important}.gift{transform:none;box-shadow:none}body{background:#fff}}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a href="/hosts/book">Book a host</a></div>
+  <div class="hero"><div><h1>Gift the <em>moment</em>.</h1><p class="lede">Launching something? Closing a round? Tell Potto. It reads up on your news, works out who should get a gift, suggests gifts that tell the story, and writes a campaign you can run next week. With makers who can make them.</p></div><div class="pt" id="heroPotto"></div></div>
+  <form class="ask" id="ask">
+    <div class="row"><label>Company<input name="company" required maxlength="100" placeholder="Exa"></label><label>Website (optional)<input name="website" maxlength="200" placeholder="exa.ai"></label></div>
+    <label>The moment<input name="moment" required maxlength="200" placeholder="We just launched Snapshot"></label>
+    <div class="eg" aria-label="Examples"><button type="button" data-eg="Exa|exa.ai|We just launched Snapshot">Exa launched Snapshot</button><button type="button" data-eg="Acme|acme.com|We closed our Series A">A Series A</button><button type="button" data-eg="Northwind||Our 1,000th customer">The 1,000th customer</button><button type="button" data-eg="Lumen||Holiday thank-you for our top 50 customers">Holiday thank-yous</button></div>
+    <div class="row3"><label>Who it's for (optional)<input name="audience" maxlength="300" placeholder="Design partners and our top 100 users"></label><label>How many<input name="people" maxlength="20" placeholder="150"></label><label>Per person<input name="budget" maxlength="40" placeholder="$75"></label></div>
+    <button class="go" id="go">Plan my gifts with Potto</button><p class="src" id="err" role="alert"></p>
+  </form>
+  <div id="out"></div>
+</div>
+<script src="/mascot.js"></script>
+<script>
+(function () {
+  const $ = (s, el = document) => el.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  $("#heroPotto").innerHTML = window.Potto ? Potto.svg("carry", 160, "Potto carrying a gift") : "";
+  document.querySelectorAll("[data-eg]").forEach((b) => (b.onclick = () => { const [c, w, m] = b.dataset.eg.split("|"); const f = $("#ask"); f.company.value = c; f.website.value = w; f.moment.value = m; f.moment.focus(); }));
+  const STEPS = ["Reading up on the news", "Working out who it's for", "Finding the story in it", "Picking gifts that tell it", "Finding makers on Pottery Lab", "Writing your playbook"];
+  let timer = 0;
+  function thinking(company) { let i = 0; $("#out").innerHTML = `<div class="think card">${window.Potto ? Potto.svg("think", 120, "Potto thinking") : ""}<b>Potto is on it${company ? `: ${esc(company)}` : ""}</b><ol>${STEPS.map((s, k) => `<li data-s="${k}">${esc(s)}…</li>`).join("")}</ol><small class="src">Usually about a minute.</small></div>`;
+    clearInterval(timer); const tick = () => { document.querySelectorAll("[data-s]").forEach((li) => li.classList.toggle("on", +li.dataset.s === Math.min(i, STEPS.length - 1))); i++; }; tick(); timer = setInterval(tick, 9000); }
+  async function poll(id) { for (let n = 0; n < 120; n++) { let d; try { d = await (await fetch("/api/public/giftplan/" + id)).json(); } catch { d = null; } if (d?.status === "ready") { clearInterval(timer); return show(d); } if (d?.status === "failed" || d?.code) { clearInterval(timer); $("#out").innerHTML = `<div class="card">${window.Potto ? Potto.svg("sleep", 90) : ""}<p>${esc(d.error || d.message || "That didn't work.")}</p></div>`; return; } await new Promise((r) => setTimeout(r, n < 5 ? 1500 : 3000)); } }
+  const md = (d) => { const p = d.plan, b = p.playbook; return [`# Gift the moment: ${p.company} · ${p.moment.title}`, "", p.moment.what, "", `## The idea: ${p.theme.name}`, p.theme.idea, `> ${p.theme.line}`, "", "## Who it's for", p.audience.summary, ...p.audience.segments.map((s) => `- **${s.who}**${s.count ? ` (${s.count})` : ""}: ${s.why}`), "", "## Gifts",
+      ...p.gifts.flatMap((g) => [`### ${g.name} (${g.perPerson})`, g.tieIn, ...g.whatsInside.map((x) => `- ${x}`), `Personalise: ${g.personalize}`, `Lead time: ${g.leadTime}. Best for: ${g.bestFor}.`, (g.makers || []).length ? `Makers: ${g.makers.map((m) => `${m.name} (${location.origin}/@${m.handle})`).join(", ")}` : "", ""]),
+      "## Playbook", `Goal: ${b.goal}`, `List: ${b.list.who} (${b.list.howMany}). ${b.list.howToPick}`, "", "### Timeline", ...b.timeline.map((t) => `- **${t.when}**: ${t.step}${t.owner ? ` (${t.owner})` : ""}`), "", "### The note", b.message.note, "", `### Email: ${b.message.subject}`, b.message.email, "", "### Social post", b.message.social, "", "### Unboxing", b.unboxing, "", "### Follow-up", ...b.followUp.map((x) => `- ${x}`), "", "### Measure", ...b.measure.map((x) => `- ${x}`), "", `### Budget: ${b.budget.perPerson} per person, ${b.budget.total} total`, b.budget.note, "", "### Watch out for", ...b.risks.map((x) => `- ${x}`), "", ...(p.moment.sources || []).map((s) => `Source: ${s.title} ${s.url}`), "", `Plan: ${location.origin}/gifts/plan/${d.id}`].join("\n"); };
+  function show(d) { const p = d.plan, b = p.playbook; history.replaceState(null, "", "/gifts/plan/" + d.id); document.title = `Gift plan: ${p.company} · Pottery Lab`;
+    const cp = (t) => `<button type="button" class="cp" data-copy="${esc(t)}">Copy</button>`;
+    $("#out").innerHTML = `<div class="plan">${d.demo ? `<p class="demo">This is a sample plan (research isn't switched on here), so the details are illustrative.</p>` : ""}
+      <div class="card moment"><small class="src">The moment</small><h2>${esc(p.company)}: ${esc(p.moment.title)}</h2><p>${esc(p.moment.what)}</p>${p.moment.whyItMatters ? `<p><b>Why it matters:</b> ${esc(p.moment.whyItMatters)}</p>` : ""}${(p.moment.sources || []).length ? `<p class="src">Sources: ${p.moment.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a>`).join(" · ")}</p>` : ""}</div>
+      <div class="theme"><small>The idea</small><h2>${esc(p.theme.name)}</h2><p>${esc(p.theme.idea)}</p>${p.theme.line ? `<div class="line">“${esc(p.theme.line)}”</div>` : ""}</div>
+      <div class="card"><h2 class="sec">Who it's <em>for</em></h2><p>${esc(p.audience.summary)}</p><div class="segs">${p.audience.segments.map((s) => `<div class="seg"><b>${esc(s.who)}</b>${s.count ? `<small>${esc(s.count)}</small>` : ""}<p style="margin:4px 0 0;font-size:14px">${esc(s.why)}</p></div>`).join("")}</div></div>
+      <div><h2 class="sec">Gifts that tell the <em>story</em></h2><div class="gifts">${p.gifts.map((g, i) => `<div class="gift" style="--r:${[-1.2, 1, -0.6, 1.4, -1][i % 5]}deg"><h3>${esc(g.name)}</h3><div><span class="price">${esc(g.perPerson)}</span> <small>${esc([g.leadTime && `${g.leadTime} lead time`, g.bestFor && `for ${g.bestFor}`].filter(Boolean).join(" · "))}</small></div><div class="tie">${esc(g.tieIn)}</div>${g.whatsInside.length ? `<ul>${g.whatsInside.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}${g.personalize ? `<small><b>Personalise:</b> ${esc(g.personalize)}</small>` : ""}${g.wow ? `<small><b>The wow:</b> ${esc(g.wow)}</small>` : ""}
+        <div class="makers">${(g.makers || []).length ? `Who could make it:<br>${g.makers.map((m) => `<a href="/@${encodeURIComponent(m.handle)}" title="${esc(m.why)}">${esc(m.name)}${m.city ? ` · ${esc(m.city)}` : ""}</a>`).join("")}` : `<small>We'll match a maker for you: <a href="/hosts/book">ask us</a>.</small>`}</div></div>`).join("")}</div></div>
+      ${(p.experience || []).length ? `<div class="card"><h2 class="sec">Make it a <em>moment</em> in person</h2>${p.experience.map((x) => `<p><b>${esc(x.name)}</b>: ${esc(x.why)}</p>`).join("")}<a href="/hosts/book">Find a host for it →</a></div>` : ""}
+      <div class="card"><h2 class="sec">The <em>playbook</em></h2><p><b>Goal:</b> ${esc(b.goal)}</p><p><b>The list:</b> ${esc(b.list.who)}${b.list.howMany ? ` (${esc(b.list.howMany)})` : ""}. ${esc(b.list.howToPick)}</p>
+        <ul class="tl">${b.timeline.map((t) => `<li><b>${esc(t.when)}</b><div>${esc(t.step)}${t.owner ? ` <small>· ${esc(t.owner)}</small>` : ""}</div></li>`).join("")}</ul></div>
+      <div class="two"><div><h2 class="sec">The note</h2><div class="note">${esc(b.message.note)}</div></div><div><h2 class="sec">The unboxing</h2><p>${esc(b.unboxing)}</p></div></div>
+      <div class="two"><div><h2 class="sec">Email</h2><div class="copy">${cp(`Subject: ${b.message.subject}\n\n${b.message.email}`)}<b>Subject: ${esc(b.message.subject)}</b>\n\n${esc(b.message.email)}</div></div><div><h2 class="sec">Social post</h2><div class="copy">${cp(b.message.social)}${esc(b.message.social)}</div></div></div>
+      <div class="two"><div class="card"><h2 class="sec">Follow up</h2><ul>${b.followUp.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><h2 class="sec">Measure</h2><ul>${b.measure.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div><div class="card"><h2 class="sec">Budget</h2><p><b>${esc(b.budget.perPerson)}</b> per person · <b>${esc(b.budget.total)}</b> in all</p><p class="src">${esc(b.budget.note)}</p><h2 class="sec">Watch out for</h2><ul>${b.risks.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
+      <div class="bar"><button type="button" class="main" id="dl">⬇ Download the playbook</button><button type="button" id="share">🔗 Copy link</button><button type="button" onclick="print()">🖨 Print</button><a href="/hosts/book">Book makers and hosts →</a></div></div>`;
+    document.querySelectorAll("[data-copy]").forEach((x) => (x.onclick = async () => { try { await navigator.clipboard.writeText(x.dataset.copy); x.textContent = "Copied"; } catch {} }));
+    $("#dl").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([md(d)], { type: "text/markdown" })); a.download = `${p.company.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-gift-playbook.md`; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 300); };
+    $("#share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); $("#share").textContent = "Link copied"; } catch {} };
+    $(".plan").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  $("#ask").onsubmit = async (e) => { e.preventDefault(); const f = e.target, body = Object.fromEntries(new FormData(f)); $("#err").textContent = ""; $("#go").disabled = true;
+    try { const r = await fetch("/api/public/giftplan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Try again."); thinking(body.company); $("#out").scrollIntoView({ behavior: "smooth", block: "start" }); await poll(j.id); }
+    catch (err) { $("#err").textContent = err.message; } $("#go").disabled = false; };
+  // a shared plan link opens the plan
+  const m = location.pathname.match(/^\/gifts\/plan\/([a-f0-9]{8,16})/); if (m) { thinking(""); poll(m[1]); }
+})();
+</script>
+</body></html>

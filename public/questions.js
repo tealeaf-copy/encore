@@ -21,7 +21,7 @@
     { q: "one fun fact about you", type: "long" },
   ];
   const CSS = `.qb{display:grid;gap:10px}.qb-starters{display:flex;flex-wrap:wrap;gap:6px}.qb-starters button{border:1.5px dashed #CDBFAE;background:#fff;border-radius:999px;padding:6px 11px;font:600 13px inherit;cursor:pointer}
-.qb-q{border:1.5px solid #E4D9C8;border-radius:16px;background:#fff;padding:12px;display:grid;gap:8px}.qb-q .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.qb-q input[type=text],.qb-q select{padding:9px 11px;border:1px solid #DCCFBE;border-radius:12px;font:inherit}.qb-q .qt{flex:1;min-width:180px;font-weight:600}
+.qb-q{border:1.5px solid #E4D9C8;border-radius:16px;background:#fff;padding:12px;display:grid;gap:8px}.qb-q .r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.qb-q input[type=text],.qb-q select{padding:9px 11px;border:1px solid #DCCFBE;border-radius:12px;font:inherit}.qb-q .qt{flex:1;min-width:180px;font-weight:600}.qb-q .r .qt{width:auto}.qb-q .r select{width:auto;flex:0 0 auto;max-width:180px}.qb-q .r .tools{display:flex;gap:4px}.qb-q{gap:6px!important;padding:10px 12px!important}
 .qb-q .tools{display:flex;gap:4px;margin-left:auto}.qb-q .tools button{border:1px solid #E4D9C8;background:#fff;border-radius:999px;width:30px;height:30px;cursor:pointer}.qb-q small{color:#6B5F56}
 .qb-pers{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}.qb-pers label{display:grid;gap:4px;font-size:13px;font-weight:600}.qb-pers input{padding:9px 11px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;font-weight:400}
 .tf{position:relative;border:2.5px solid #1F1A17;border-radius:24px;background:#FFF8EE;box-shadow:0 0 0 5px #fff,0 16px 34px -22px rgba(31,26,23,.55);padding:22px 20px 18px;overflow:hidden}

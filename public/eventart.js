@@ -105,7 +105,7 @@
   }
   const CSS = `.ea-cover{position:absolute;inset:0;background:var(--ea-bg);color:${INK};font-family:"Instrument Sans","Inter",system-ui,sans-serif;text-align:left;overflow:hidden;container-type:size}
 .ea-txt{position:absolute;left:6.5%;top:7%;right:8%;display:grid;gap:.25em}.ea-long .ea-title{font-size:clamp(13px,6.2cqw,30px)}
-.ea-label{font-size:clamp(10px,4.6cqw,15px);font-weight:600;letter-spacing:-.005em;opacity:.92}
+.ea-label{font-size:clamp(10px,4.6cqw,15px);font-weight:600;letter-spacing:-.005em;opacity:1}
 .ea-title{font-size:clamp(15px,8.6cqw,40px);line-height:1.06;font-weight:700;letter-spacing:-.025em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
 .ea-art{position:absolute;right:2%;bottom:3%;width:52%;max-width:340px;height:46%;display:flex;justify-content:flex-end;align-items:flex-end;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}.ea-art svg,.ea-art img{display:block;width:auto;height:100%;max-width:100%}.ea-custom .ea-art{width:58%;height:60%}.ea-full .ea-art{width:88%;height:64%;max-width:none;right:4%;bottom:4%}`;
   function ensureCss() { if (document.getElementById("eaCss")) return; const s = document.createElement("style"); s.id = "eaCss"; s.textContent = CSS; document.head.appendChild(s); }

@@ -303,7 +303,7 @@ export function createApp({ store, dataDir }) {
   // ---------- single sign-on (OIDC) ----------
   const SSO_COOKIE = "encore_sso";
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const ssoPage = (inner) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in with SSO · Pottery Lab</title>
+  const ssoPage = (inner) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in with SSO · Pottery Lab</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;background:#f4f7ff;color:#1b2340}form,.box{background:#fff;padding:28px;border-radius:16px;box-shadow:0 6px 30px rgba(30,50,120,.12);width:min(320px,calc(100vw - 32px));box-sizing:border-box}h1{margin:0 0 16px;font-size:22px}input,button{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border-radius:10px}input{border:1px solid #cfd6ea;margin-bottom:12px}button{border:0;background:#3355ff;color:#fff;font-weight:600;cursor:pointer}p{margin:0 0 12px;font-size:13px}.err{color:#b3261e}a{display:block;margin-top:14px;text-align:center;color:#3355ff;font-size:13px;text-decoration:none}</style></head><body>${inner}</body></html>`;
   const ssoForm = (msg = "") => ssoPage(`<form method="get" action="/sso/start"><h1>Sign in with SSO</h1>${msg ? `<p class="err">${esc(msg)}</p>` : ""}<input type="email" name="email" placeholder="Work email" autocomplete="email" autofocus required><button type="submit">Continue</button><a href="/login">Sign in with a password instead</a></form>`);
   app.get("/sso/start", (req, res) => {
@@ -370,7 +370,8 @@ export function createApp({ store, dataDir }) {
         html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
       else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
-  app.get("/method", (req, res) => sendStatic(res, "method.html", "<p>Method page missing.</p>"));
+  // the old measurement-method page described the event-team product; off while the site is about hosts
+  app.get("/method", (req, res) => res.redirect(302, "/"));
   // pricing is being reworked for hosts and brands; until then the old page (event-team plans) is off
   app.get("/pricing", (req, res) => res.redirect(302, "/"));
   // The homepage demo runs the app's own planner, read from the current index.html.

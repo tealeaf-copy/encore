@@ -40,3 +40,13 @@ test("A gift plan gives each segment a job, an owner and a send decision, and sh
   // unknown send values fall back, and tags are stripped
   const c = cleanPlan({ audience: { segments: [{ who: "<b>Press</b>", send: "everyone!" }] } }); assert.equal(c.audience.segments[0].send, "all"); assert.equal(c.audience.segments[0].who, "Press");
 });
+
+test("A target-account list stays with the marketer who made the plan; a shared link shows only the count", async () => {
+  const r = await (await fetch(srv.base + "/api/public/giftplan", { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": "10.9.9.9" }, body: JSON.stringify({ company: "Acme", moment: "We launched Lens", tier: "Feature launch", accounts: ["Globex", "Initech", "Globex", "<b>Umbrella</b>"] }) })).json();
+  assert.ok(r.key, "the creator gets a private key");
+  let d; for (let i = 0; i < 40; i++) { d = await (await fetch(srv.base + "/api/public/giftplan/" + r.id)).json(); if (d.status === "ready") break; await new Promise((ok) => setTimeout(ok, 100)); }
+  assert.equal(d.input.accounts, undefined); assert.equal(d.input.accountCount, 3); assert.equal(d.input.tier, "Feature launch");
+  const mine = await (await fetch(srv.base + "/api/public/giftplan/" + r.id + "?k=" + r.key)).json();
+  assert.deepEqual(mine.input.accounts, ["Globex", "Initech", "Umbrella"]);
+  assert.ok(mine.plan.playbook.prove.cfo, "a summary for finance");
+});

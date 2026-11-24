@@ -1,0 +1,256 @@
+{
+  "handle": "byte-and-burl",
+  "name": "Byte & Burl",
+  "tagline": "Desk gifts for people who write code: keycaps, cable clips, walnut chargers.",
+  "bio": "I'm Omar, a backend engineer who spends weekends in the garage with a resin kit, a 3D printer and a block of walnut. I make the small things that live on a developer's desk, each one with a name on it. Companies send me their logo and a list; I send back a proof before anything is cast, printed or engraved.",
+  "city": "San Francisco",
+  "hood": "Dogpatch",
+  "tags": [
+    "keycaps",
+    "desk setup",
+    "3D printing",
+    "woodwork",
+    "developer gifts"
+  ],
+  "emoji": "⌨️",
+  "color": "#2B211C",
+  "theme": {
+    "accent": "#2B211C",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "dots",
+    "buttons": "round",
+    "avatarArt": "glasses"
+  },
+  "shop": {
+    "open": true,
+    "title": "Desk drop",
+    "note": "A few of each, made this month.",
+    "where": "Pickup in Dogpatch, or I ship",
+    "slots": [
+      "Saturday 11:00–14:00"
+    ],
+    "items": [
+      {
+        "name": "Escape-key keycap",
+        "desc": "Hand-poured resin, a tiny wave inside. Fits MX-style switches.",
+        "emoji": "⌨️",
+        "cents": 2400,
+        "stock": 12,
+        "max": 2
+      },
+      {
+        "name": "Walnut cable dock",
+        "desc": "Holds five cables at the edge of your desk.",
+        "emoji": "🪵",
+        "cents": 3200,
+        "stock": 6,
+        "max": 2
+      },
+      {
+        "name": "Leather cord wrap, set of 3",
+        "desc": "Vegetable-tanned, with a brass snap.",
+        "emoji": "🔌",
+        "cents": 2600,
+        "stock": 15,
+        "max": 3
+      }
+    ]
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "experiences": [
+    {
+      "name": "Build a macro pad, for your team",
+      "desc": "Everyone solders a three-key macro pad and flashes it with their own shortcuts. Leaves with it on their desk.",
+      "emoji": "⌨️",
+      "min": 6,
+      "max": 20,
+      "price": "$95 a person",
+      "length": "2.5 hours",
+      "category": "workshop",
+      "travels": true,
+      "includes": [
+        "A macro pad kit per person",
+        "Soldering irons, safety glasses, fans",
+        "A keycap with their name"
+      ],
+      "allIn": "Kits, tools, travel in SF and tax.",
+      "branding": "Your logo on the macro pad's top plate. Needs 3 weeks.",
+      "runOfShow": [
+        "0:00 Pick your switches and keycaps",
+        "0:15 Soldering, slowly",
+        "1:15 Flash the firmware, set three shortcuts",
+        "2:00 Show and tell",
+        "2:30 Done"
+      ]
+    }
+  ],
+  "giftNote": "Small, useful things with a name on them. You get a photo proof of the engraving, print or resin color before I make the batch.",
+  "gifts": [
+    {
+      "name": "Workflow-node cable clips",
+      "desc": "A set of three magnetic clips shaped like workflow nodes. Cables snap through them, so the desk edge reads like a workflow. Their name on the first node.",
+      "emoji": "🧩",
+      "cents": 2800,
+      "minQty": 25,
+      "maxQty": 2000,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 2400
+        },
+        {
+          "qty": 200,
+          "cents": 2000
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Ships worldwide, each to its own address",
+      "personalize": [
+        "Their name on the first node",
+        "Your logo on the last",
+        "Your colors"
+      ],
+      "occasions": [
+        "event",
+        "newhire",
+        "clients",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Custom artisan keycap",
+      "desc": "Hand-poured resin keycap with their handle or one word on top. Fits MX-style switches; a keycap puller in the box.",
+      "emoji": "⌨️",
+      "cents": 2200,
+      "minQty": 25,
+      "maxQty": 1000,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 1800
+        }
+      ],
+      "lead": "4 weeks",
+      "ships": "Ships worldwide",
+      "personalize": [
+        "Their handle or a word",
+        "Your logo set in the resin",
+        "Colors"
+      ],
+      "occasions": [
+        "event",
+        "newhire",
+        "thanks",
+        "holiday"
+      ]
+    },
+    {
+      "name": "Leather cord wrap",
+      "desc": "A vegetable-tanned leather wrap with a brass snap and their name embossed. Keeps a charger cable tidy in a backpack.",
+      "emoji": "🔌",
+      "cents": 1400,
+      "minQty": 20,
+      "maxQty": 3000,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 1100
+        }
+      ],
+      "lead": "2 weeks",
+      "ships": "Ships worldwide",
+      "personalize": [
+        "Their name embossed",
+        "Your logo on the snap side"
+      ],
+      "occasions": [
+        "event",
+        "newhire",
+        "clients"
+      ]
+    },
+    {
+      "name": "Walnut wireless charger",
+      "desc": "A solid walnut pad with a wireless charging coil inside, engraved with their name and a line you choose.",
+      "emoji": "🔋",
+      "cents": 5800,
+      "minQty": 10,
+      "maxQty": 500,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 5200
+        },
+        {
+          "qty": 200,
+          "cents": 4600
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Ships to the US, EU and UK",
+      "personalize": [
+        "Their name engraved",
+        "Your line, e.g. a workflow or a motto",
+        "Your logo"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "thanks"
+      ]
+    },
+    {
+      "name": "Workflow desk mat",
+      "desc": "A large desk mat printed like a workflow canvas: a dot grid, a few connected nodes, their name on the first one.",
+      "emoji": "🖱️",
+      "cents": 4200,
+      "minQty": 20,
+      "maxQty": 1000,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 3600
+        }
+      ],
+      "lead": "3 weeks",
+      "ships": "Ships worldwide",
+      "personalize": [
+        "Their name on a node",
+        "Your workflow printed",
+        "Your colors"
+      ],
+      "occasions": [
+        "newhire",
+        "event",
+        "holiday"
+      ]
+    },
+    {
+      "name": "Braided USB-C cable with a name tag",
+      "desc": "A braided cable in your color with a small tag sleeve that says whose it is. Ends the office cable mix-ups.",
+      "emoji": "🔌",
+      "cents": 2400,
+      "minQty": 50,
+      "maxQty": 3000,
+      "tiers": [
+        {
+          "qty": 100,
+          "cents": 2000
+        }
+      ],
+      "lead": "2 weeks",
+      "ships": "Ships worldwide",
+      "personalize": [
+        "Their name on the tag",
+        "Your color"
+      ],
+      "occasions": [
+        "event",
+        "newhire"
+      ]
+    }
+  ]
+}

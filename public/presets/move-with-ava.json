@@ -85,6 +85,13 @@
         "0:30 Hips and back on the mat (or a chair)",
         "0:40 Rest",
         "0:45 Done"
+      ],
+      "openDates": [
+        "2026-12-02",
+        "2026-12-09",
+        "2026-12-16",
+        "2027-01-06",
+        "2027-01-13"
       ]
     },
     {
@@ -113,6 +120,12 @@
         "0:40 Arms and back",
         "0:47 Stretch",
         "0:50 Done"
+      ],
+      "openDates": [
+        "2026-12-03",
+        "2026-12-10",
+        "2027-01-07",
+        "2027-01-14"
       ]
     },
     {
@@ -142,6 +155,11 @@
         "0:55 Rest",
         "1:00 Coffee and fruit",
         "1:15 Done"
+      ],
+      "openDates": [
+        "2027-04-17",
+        "2027-04-24",
+        "2027-05-01"
       ]
     },
     {
@@ -168,6 +186,11 @@
         "Tuesday: mat Pilates",
         "Wednesday: 20-minute breathwork",
         "Friday: rooftop sunrise finale"
+      ],
+      "openDates": [
+        "2027-01-11",
+        "2027-02-08",
+        "2027-03-08"
       ]
     }
   ]

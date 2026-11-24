@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/authguard.js"></script>
+<title>Hosts · Encore</title>
+<meta name="description" content="Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the hosts you like and hear about their next one first.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:26px 18px 70px}
+h1{font:700 clamp(30px,5vw,44px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{color:var(--smoke);max-width:620px;margin:0 0 18px}
+.bar{display:grid;gap:10px;margin:0 0 18px}.search{width:100%;max-width:520px;padding:12px 14px;border:1px solid #DCCFBE;border-radius:14px;font:inherit;background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font:600 13.5px inherit;cursor:pointer;color:var(--ink)}.chips button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.count{color:var(--smoke);font-size:14px;margin:4px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.h{display:grid;grid-template-rows:1fr auto;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;text-decoration:none;transition:transform .25s cubic-bezier(.3,1.4,.5,1),border-radius .45s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
+.h .top{position:relative;height:96px;background:var(--bg,#F6EBDD)}.h .av{position:absolute;left:16px;bottom:-30px;width:64px;height:64px;border-radius:50%;border:3px solid #fff;background:#fff;display:grid;place-items:center;overflow:hidden;font-size:30px}.h .av svg,.h .av img{width:100%;height:100%;object-fit:cover}
+.h .bd{padding:38px 16px 10px}.h b{display:block;font-size:17px;line-height:1.2}.h .tl{display:block;color:var(--smoke);font-size:14px;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.h .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.h .meta span{font-size:12px;background:#F6EFE6;border-radius:999px;padding:3px 9px}.h .meta .bk{background:#E8F3EC;color:#1E6B45}.h .meta .nx{background:#FFF1D2}
+.h .ft{display:flex;gap:8px;padding:0 16px 16px}.h .ft a{flex:1;text-align:center;padding:9px 10px;border-radius:999px;font:600 14px inherit;border:1px solid var(--line)}.h .ft .fo{background:var(--ember);border-color:var(--ember);color:#fff}
+@media (hover:hover){.h:hover{transform:translateY(-3px);border-radius:24px 32px 20px 36px/20px 26px 30px 22px;box-shadow:0 0 0 4px #F6A6D3}}
+.empty{color:var(--smoke);padding:30px 0}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
+</style></head><body>
+<div class="wrap">
+  <h1>Hosts on Encore</h1>
+  <p class="lede">Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the ones you like and you'll hear about their next one first.</p>
+  <div class="bar"><input class="search" id="q" placeholder="Search by name, city or what they host" aria-label="Search hosts"><div class="chips" id="kinds" aria-label="What they host"></div><div class="chips" id="cities" aria-label="City"></div></div>
+  <p class="count" id="count">Loading hosts…</p>
+  <div class="grid" id="grid"></div>
+  <p class="teams">Booking for a team, a client dinner or a wedding? <a href="/hosts/book">See hosts who take bookings</a>.</p>
+</div>
+<script src="/eventart.js"></script><script src="/avatars.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const KINDS = [["all", "Everything"], ["food", "Food and dinners"], ["coffee", "Coffee and tea"], ["move", "Runs and hikes"], ["art", "Art and making"], ["music", "Music and games"], ["learn", "Workshops and talks"]];
+  const GROUP = { dinner: "food", cook: "food", bake: "food", potluck: "food", brunch: "food", picnic: "food", wine: "food", turkey: "food", coffee: "coffee", tea: "coffee", run: "move", hike: "move", walk: "move", bike: "move", yoga: "move", swim: "move", craft: "art", paint: "art", garden: "art", music: "music", games: "music", movie: "music", party: "music", book: "learn", workshop: "learn", talk: "learn", tech: "learn" };
+  let H = [], kind = "all", city = "", q = "";
+  const groupsOf = (h) => { const words = { title: [h.name, h.tagline, (h.tags || []).join(" "), (h.experiences || []).map((x) => x.name).join(" ")].join(" "), why: h.bio || "" }; const K = window.EventArt ? window.EventArt.kindsOf(words) : []; return new Set(K.map((k) => GROUP[k]).filter(Boolean)); };
+  const cityOf = (h) => String(h.city || "").trim();
+  // complete profiles first: people browsing want to see who a host is before they follow
+  const done = (h) => (h.tagline || h.bio ? 2 : 0) + ((h.theme && (h.theme.avatarArt || h.theme.avatarUrl)) || (h.gallery || []).length ? 2 : 0) + ((h.tags || []).length ? 1 : 0) + ((h.experiences || []).length ? 1 : 0) + (cityOf(h) ? 1 : 0);
+  const avatar = (h) => { const g = (h.gallery || [])[0], t = h.theme || {}; if (t.avatarUrl) return `<img src="${esc(t.avatarUrl)}" alt="">`; if (t.avatarArt && window.EncoreAvatars) return window.EncoreAvatars.svg(t.avatarArt, t.accent || h.color || "#E26D8E", 64); if (g) return `<img src="${esc(g)}" alt="">`; return esc(h.emoji || "🎉"); };
+  const tint = (h) => { const a = (h.theme && h.theme.accent) || h.color || "#E0A030"; return `color-mix(in srgb, ${a} 28%, #FFF8EE)`; };
+  function draw() {
+    const L = H.filter((h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city) && (!q || `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""}`.toLowerCase().includes(q)));
+    $("#count").textContent = L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}` : "";
+    $("#grid").innerHTML = L.length ? L.map((h) => `<div class="h"><a class="hl" href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none;color:inherit;display:grid"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
+      <span class="bd"><b>${esc(h.name)}</b><span class="tl">${esc(h.tagline || h.bio || (h.tags || []).join(" · ") || "Hosts small get-togethers")}</span>
+        <span class="meta">${cityOf(h) ? `<span>${esc([h.hood, cityOf(h)].filter(Boolean).join(", "))}</span>` : ""}${h.upcoming ? `<span class="nx">${h.upcoming} coming up</span>` : ""}${h.followers ? `<span>${h.followers} ${h.followers === 1 ? "follower" : "followers"}</span>` : ""}${(h.experiences || []).length ? `<span class="bk">Takes bookings</span>` : ""}</span></span>
+      </a><span class="ft"><a href="/@${encodeURIComponent(h.handle)}" style="text-decoration:none">See page</a><a class="fo" href="/@${encodeURIComponent(h.handle)}#follow" style="text-decoration:none">Follow</a></span></div>`).join("") : `<p class="empty">No hosts match that yet. Try another city or clear the search.</p>`;
+  }
+  function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
+  $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); draw(); };
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => {
+    H = (d.hosts || []).filter((h) => h.handle && h.name).map((h) => ({ ...h, _g: groupsOf(h) }))
+      .sort((a, b) => done(b) - done(a) || (b.upcoming || 0) - (a.upcoming || 0) || (b.followers || 0) - (a.followers || 0) || String(a.name).localeCompare(b.name));
+    chips($("#kinds"), KINDS.filter(([k]) => k === "all" || H.some((h) => h._g.has(k))), kind, (v) => (kind = v));
+    const C = {}; for (const h of H) { const c = cityOf(h); if (c) C[c] = (C[c] || 0) + 1; }
+    chips($("#cities"), [["", "Every city"], ...Object.entries(C).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c]) => [c, c])], city, (v) => (city = v));
+    draw();
+  }).catch(() => { $("#count").textContent = "Couldn't load hosts. Refresh to try again."; });
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

@@ -37,3 +37,10 @@ test("A host can change their name; events that showed the old name follow", asy
   const ev = async (id) => (await (await fetch(srv.base + "/api/db/doc?path=events/" + id, { headers: { cookie: c } })).json()).data.hostName;
   assert.equal(await ev("r1"), "Claire Nguyen"); assert.equal(await ev("r2"), "Claire and Eric");
 });
+
+test("Public host data never includes invoicing details (legal name, tax ID, business address)", async () => {
+  const c = cookieOf(await post("/api/signup", { name: "Ivy Inv", email: "ivy.inv@example.com", password: "long-password-1", mode: "friends" }));
+  await post("/api/host/profile", { handle: "ivy-inv", name: "Ivy's Studio", city: "New York", legalName: "Ivy Studio LLC", taxId: "12-3456789", bizAddress: "1 Main St, Brooklyn" }, c);
+  const mine = await (await fetch(srv.base + "/api/host/profile", { headers: { cookie: c } })).json(); assert.equal(mine.host.taxId, "12-3456789", "the owner still sees them");
+  for (const u of ["/api/public/host/ivy-inv", "/api/public/discover"]) { const t = await (await fetch(srv.base + u)).text(); assert.ok(!/12-3456789|Ivy Studio LLC|1 Main St/.test(t), u + " leaks invoicing details"); }
+});

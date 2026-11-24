@@ -440,7 +440,8 @@ export function createApp({ store, dataDir }) {
   mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
-  app.get("/hosts", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));
+  app.get("/hosts", (req, res) => sendStatic(res, "hostdir.html", "<p>Hosts page missing.</p>"));
+  app.get("/hosts/book", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));
   app.get("/feed", (req, res) => (isAuthed(req) ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : res.redirect(302, "/login")));
 
   // ---------- gate ----------

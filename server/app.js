@@ -331,6 +331,7 @@ export function createApp({ store, dataDir }) {
   app.get("/quiz", (req, res) => sendStatic(res, "quiz.html", "<p>Quiz page missing.</p>"));
   app.get("/teams", (req, res) => sendStatic(res, "teams.html", "<p>Teams page missing.</p>"));
   app.get("/gifts", (req, res) => sendStatic(res, "gifts.html", "<p>Gifts page missing.</p>"));
+  app.get("/covers", (req, res) => sendStatic(res, "covers.html", "<p>Covers page missing.</p>"));
   app.get("/teams/s/:id", (req, res) => sendStatic(res, "shortlist.html", "<p>Shortlist page missing.</p>"));
   app.get("/door/:id", (req, res) => sendStatic(res, "door.html", "<p>Door page missing.</p>"));
   app.get(["/team", "/team/:id"], (req, res) => sendStatic(res, "team.html", "<p>Team page missing.</p>"));

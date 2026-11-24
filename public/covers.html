@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Collab covers · Encore</title>
+<meta name="description" content="Make a poster for a brand and coffee shop pop-up: both names up top, a big playful title, and a warm café scene. Download it or put it on your guest page.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=Modak&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:0 18px 70px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}.brand{font:700 22px Fredoka,system-ui;text-decoration:none}
+h1,h2{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(30px,5.5vw,46px);line-height:1.08;margin:14px 0 8px}h2{font-size:24px;margin:34px 0 12px}
+.lede{color:var(--smoke);max-width:640px;margin:0 0 18px}
+.maker{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,380px);gap:22px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}
+@media (max-width:820px){.maker{grid-template-columns:1fr}}
+.maker canvas{width:100%;height:auto;border-radius:14px;display:block;background:#2A1A12;aspect-ratio:4/5}
+form{display:grid;gap:10px}label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--smoke)}
+input,select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;color:var(--ink);background:#fff;min-width:0;width:100%}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.looks{display:flex;flex-wrap:wrap;gap:6px}.looks button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font:600 13.5px inherit;cursor:pointer}.looks button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sw{display:flex;gap:6px;flex-wrap:wrap}.sw button{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}.sw button[aria-pressed=true]{box-shadow:0 0 0 2px var(--ink)}
+.btn{padding:12px 18px;border-radius:999px;border:0;background:var(--ember);color:#fff;font:600 15px inherit;cursor:pointer;text-align:center;text-decoration:none}.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.msg{font-size:14px;color:var(--smoke);min-height:1.4em;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.grid figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer}.grid canvas{width:100%;height:auto;display:block;aspect-ratio:4/5;background:#2A1A12}
+.grid figcaption{padding:10px 12px;font-size:14px}.grid figcaption b{display:block}.grid figcaption small{color:var(--smoke)}
+.note{font-size:13px;color:var(--smoke);margin-top:22px}
+</style></head><body>
+<div class="wrap">
+  <header class="top"><a class="brand" href="/">Encore</a><a href="/teams" style="color:var(--smoke);text-decoration:none">Book a host</a></header>
+  <h1>Collab covers for brand × café pop-ups</h1>
+  <p class="lede">Both names up top, one big playful title, and a warm café scene behind it. Make one in a minute, download it for social, or put it on your guest page.</p>
+
+  <section class="maker">
+    <canvas id="cv" width="1080" height="1350" aria-label="Cover preview"></canvas>
+    <form id="f">
+      <div class="row"><label>Brand<input name="brand" maxlength="22" value="Northwind"></label><label>Coffee shop<input name="shop" maxlength="22" value="Second Pour"></label></div>
+      <label>Big title (2 to 4 short words read best)<input name="title" maxlength="28" value="Sip n' Ship"></label>
+      <label>Bottom line<input name="line" maxlength="48" value="Launch week coffee pop-up"></label>
+      <label>Date and place (optional)<input name="when" maxlength="40" placeholder="Thu Mar 12 · 8–11am · Valencia St"></label>
+      <label>Scene</label><div class="looks" id="looks"></div>
+      <label>Accent</label><div class="sw" id="sw"></div>
+      <div class="acts"><button class="btn" type="button" id="dl">Download PNG</button><button class="btn ghost" type="button" id="use" hidden>Use on my guest page</button><button class="btn ghost" type="button" id="shuffle">Shuffle</button></div>
+      <p class="msg" id="msg"></p>
+    </form>
+  </section>
+
+  <h2>Ideas to start from</h2>
+  <div class="grid" id="ex"></div>
+  <p class="note">Example brands and cafés on this page are made up. Use your own names and get the café's OK before posting their name.</p>
+</div>
+<script src="/collabcover.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s), Q = new URLSearchParams(location.search), F = $("#f");
+  const ACCENTS = ["#C94A30", "#E0A030", "#2F6B4F", "#3A5BA0", "#B04A7A", "#1F1A17"];
+  const EX = [
+    { brand: "Northwind", shop: "Second Pour", title: "Sip n' Ship", line: "Launch week coffee pop-up", look: "lanterns", accent: "#E0A030" },
+    { brand: "Lumen AI", shop: "Phin & Night", title: "Debug & Drip", line: "Free phin coffee for builders", look: "counter", accent: "#C94A30" },
+    { brand: "Fieldwork", shop: "Golden Hour Café", title: "Latte Late", line: "Rooftop customer social", look: "rooftop", accent: "#B04A7A" },
+    { brand: "Parcel", shop: "Night Owl Roasters", title: "Cold Brew Commits", line: "Office hours with the eng team", look: "window", accent: "#3A5BA0" },
+    { brand: "Brightline", shop: "Corner Phin", title: "Pour Over Pitch", line: "Founder breakfast, 20 seats", look: "counter", accent: "#2F6B4F" },
+    { brand: "Quill", shop: "Morning Ritual", title: "Matcha Monday", line: "Writers' coffee club", look: "lanterns", accent: "#2F6B4F" },
+    { brand: "Tidepool", shop: "Salt & Crema", title: "Brew n' Build", line: "Hackathon kickoff coffee", look: "window", accent: "#E0A030" },
+    { brand: "Kestrel", shop: "The Daily Grind", title: "Espresso Yourself", line: "Design team pop-up", look: "rooftop", accent: "#C94A30" },
+  ];
+  let look = "lanterns", accent = ACCENTS[0], tick = 0;
+  ["brand", "shop", "title", "line", "when"].forEach((k) => { if (Q.get(k)) F[k].value = Q.get(k).slice(0, F[k].maxLength); });
+  // an event title like "Northwind × Second Pour: Sip n' Ship" becomes "Sip n' Ship"; long titles fall back to a short one
+  if (Q.get("brand")) { const tt = String(Q.get("title") || "").split(/[:|·–—]/).pop().trim(); F.title.value = tt && tt.length <= 24 && !/×/.test(tt) ? tt : "Sip n' Meet"; }
+  $("#looks").innerHTML = Object.entries(CollabCover.LOOKS).map(([k, v]) => `<button type="button" data-l="${k}" aria-pressed="${k === look}">${v.name}</button>`).join("");
+  $("#sw").innerHTML = ACCENTS.map((c) => `<button type="button" data-c="${c}" style="background:${c}" aria-label="Accent ${c}" aria-pressed="${c === accent}"></button>`).join("");
+  const opts = () => ({ brand: F.brand.value, shop: F.shop.value, title: F.title.value, line: F.line.value, when: F.when.value, look, accent });
+  const draw = () => { const my = ++tick; setTimeout(() => { if (my === tick) CollabCover.draw($("#cv"), opts()); }, 120); };
+  F.oninput = draw;
+  $("#looks").onclick = (e) => { const b = e.target.closest("[data-l]"); if (!b) return; look = b.dataset.l; document.querySelectorAll("[data-l]").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); };
+  $("#sw").onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; accent = b.dataset.c; document.querySelectorAll("[data-c]").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); };
+  $("#shuffle").onclick = () => { const ks = Object.keys(CollabCover.LOOKS); look = ks[(ks.indexOf(look) + 1) % ks.length]; accent = ACCENTS[Math.floor(Math.random() * ACCENTS.length)]; document.querySelectorAll("[data-l]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.l === look)); document.querySelectorAll("[data-c]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.c === accent)); draw(); };
+  const blob = () => new Promise((r) => $("#cv").toBlob(r, "image/png"));
+  const fileName = () => `${(F.brand.value + "-x-" + F.shop.value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "collab"}-cover.png`;
+  $("#dl").onclick = async () => { const b = await blob(), u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = fileName(); a.click(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
+  // put it on a booking's guest page (organizer link) or a host's own event
+  const bk = Q.get("booking"), bt = Q.get("t"), ev = Q.get("event");
+  if ((bk && bt) || ev) { const u = $("#use"); u.hidden = false; u.textContent = bk ? "Use on my guest page" : "Use as this event's cover";
+    u.onclick = async () => { u.disabled = true; $("#msg").textContent = "Saving…"; try { const b = await blob();
+        if (bk) { const r = await fetch(`/api/public/booking/${encodeURIComponent(bk)}/cover?t=${encodeURIComponent(bt)}`, { method: "POST", headers: { "Content-Type": "image/png" }, body: b }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save it.");
+          $("#msg").innerHTML = `✓ It's on your guest page. <a href="/booking/${encodeURIComponent(bk)}?t=${encodeURIComponent(bt)}">Back to the booking</a>`; }
+        else { const up = await fetch("/api/assets", { method: "POST", headers: { "Content-Type": "image/png" }, body: b }); const m = await up.json(); if (!up.ok) throw new Error(m.message || "Sign in to save it to an event.");
+          const p = "events/" + ev, cur = await (await fetch("/api/db/doc?path=" + encodeURIComponent(p))).json(); const r = await fetch("/api/db/doc?path=" + encodeURIComponent(p), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ coverPhoto: m.url, _base: cur?.data?.updatedAt ?? null }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save it.");
+          $("#msg").innerHTML = `✓ Saved as the cover. <a href="/g#rsvp-${encodeURIComponent(ev)}">See the event</a>`; }
+      } catch (x) { $("#msg").textContent = x.message; } u.disabled = false; }; }
+  draw();
+  // the examples
+  $("#ex").innerHTML = EX.map((e, i) => `<figure data-i="${i}"><canvas width="1080" height="1350"></canvas><figcaption><b>${e.brand} × ${e.shop}</b><small>${CollabCover.LOOKS[e.look].name} · tap to edit</small></figcaption></figure>`).join("");
+  document.querySelectorAll("#ex figure").forEach((fg) => { const e = EX[+fg.dataset.i]; CollabCover.draw(fg.querySelector("canvas"), e);
+    fg.onclick = () => { ["brand", "shop", "title", "line"].forEach((k) => (F[k].value = e[k])); look = e.look; accent = e.accent; document.querySelectorAll("[data-l]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.l === look)); document.querySelectorAll("[data-c]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.c === accent)); draw(); scrollTo({ top: 0, behavior: "smooth" }); }; });
+})();
+</script></body></html>

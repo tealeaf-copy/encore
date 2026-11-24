@@ -28,7 +28,7 @@ h1{font-size:clamp(28px,6vw,40px);line-height:1.08;margin:8px 0 10px}
 <div class="wrap"><header class="top"><span class="brand">encore</span></header>
 <main><div class="card" id="m"><p class="small">Loading…</p></div>
 <p class="small" style="text-align:center;margin-top:14px">Nothing is booked yet. Your answer helps decide whether this happens.</p></main></div>
-<script src="/community.js"></script>
+<script src="/eventart.js"></script><script src="/community.js"></script>
 <script>
 (async function () { const C = window.EncoreCommunity, esc = C.esc, m = document.getElementById("m"), id = location.pathname.split("/").pop(), t = new URLSearchParams(location.search).get("t") || "", via = new URLSearchParams(location.search).get("via") || "";
   let c; try { const r = await fetch(`/api/public/check/${encodeURIComponent(id)}?t=${encodeURIComponent(t)}`); const j = await r.json(); if (!r.ok) throw new Error(j.message); c = j.check; } catch (e) { m.innerHTML = `<p>${esc(e.message || "This link isn't valid.")}</p>`; return; }

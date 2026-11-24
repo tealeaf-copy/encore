@@ -1,0 +1,56 @@
+{
+  "handle": "mission-mile",
+  "name": "Mission Mile Run Club",
+  "tagline": "Conference-morning social runs for 40 to 80, with coffee after and shirts in your colors.",
+  "bio": "I'm Dani. We run an easy 5K with two pace groups and a walking group, then coffee. Conference weeks are our busiest: a morning run is the side event people actually remember.",
+  "city": "San Francisco",
+  "hood": "Mission",
+  "tags": [
+    "run club",
+    "conference side events",
+    "morning"
+  ],
+  "emoji": "🏃",
+  "color": "#E26D8E",
+  "theme": {
+    "accent": "#E26D8E",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "sunrise",
+    "buttons": "round",
+    "avatarArt": "runner"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 7 days before.",
+  "backupPlan": "Four pacers; rain moves us to a covered route.",
+  "experiences": [
+    {
+      "name": "Conference-morning social run",
+      "desc": "An easy 5K from Moscone, two paces and a walking group, coffee and pastries after. Back by 8:30 for the keynote.",
+      "emoji": "🏃",
+      "min": 20,
+      "max": 80,
+      "price": "$45 a person",
+      "length": "1 hour",
+      "category": "movement",
+      "travels": true,
+      "includes": [
+        "Pacers and a route plan",
+        "Coffee and pastries",
+        "Bag drop"
+      ],
+      "allIn": "Pacers, permit, coffee, pastries and tax. Shirts $25 each.",
+      "owner": "Dani",
+      "access": "Walking group for anyone who'd rather not run.",
+      "setup": "Meet at a hotel lobby or Yerba Buena Gardens.",
+      "branding": "Shirts or hats in your colors. Needs 2 weeks.",
+      "openDates": [
+        "2026-12-04",
+        "2027-01-09"
+      ]
+    }
+  ]
+}

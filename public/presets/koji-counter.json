@@ -1,0 +1,74 @@
+{
+  "handle": "koji-counter",
+  "name": "Kōji Counter",
+  "tagline": "A 12-seat counter in SoHo for omakase roundtables, with a zero-proof pairing that non-drinkers actually like.",
+  "bio": "I'm Hana. My counter seats 12, which is the right size for a conversation everyone can hear. I serve a short omakase and pour a fermented zero-proof pairing alongside sake for those who want it.",
+  "city": "Manhattan",
+  "hood": "SoHo",
+  "tags": [
+    "omakase",
+    "exec dinners",
+    "zero-proof",
+    "roundtables"
+  ],
+  "emoji": "🍣",
+  "color": "#2F7A8A",
+  "theme": {
+    "accent": "#2F7A8A",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "waves",
+    "buttons": "round",
+    "avatarArt": "chef"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 10 days before. Inside 10 days, 50%.",
+  "backupPlan": "My partner chef Ken runs the counter if I can't; same menu.",
+  "experiences": [
+    {
+      "name": "Omakase roundtable for 12",
+      "desc": "Ten courses at one counter, one conversation. I keep the explanations short.",
+      "emoji": "🍣",
+      "min": 8,
+      "max": 12,
+      "price": "$240 a person",
+      "length": "2.5 hours",
+      "category": "dining",
+      "travels": false,
+      "includes": [
+        "The whole counter",
+        "Ten courses",
+        "Zero-proof pairing, sake on request"
+      ],
+      "allIn": "Counter buyout, food, zero-proof pairing, service and tax. Sake pairing $45 a person extra.",
+      "seated": 12,
+      "av": "No screen; it's a counter",
+      "owner": "Hana, chef",
+      "dietary": "Pescatarian by nature; a vegetarian omakase with a week's notice.",
+      "access": "Counter-height seats; a table setting for anyone who prefers it.",
+      "menu": [
+        "Kombu-cured fluke",
+        "Chawanmushi, crab",
+        "Seven pieces of nigiri",
+        "Miso soup",
+        "Yuzu sorbet"
+      ],
+      "runOfShow": [
+        "7:00 Arrive, first pour",
+        "7:15 Omakase, ten courses",
+        "9:15 Tea",
+        "9:30 Done"
+      ],
+      "openDates": [
+        "2026-12-02",
+        "2026-12-09",
+        "2026-12-16",
+        "2027-01-12",
+        "2027-01-19"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "handle": "fieldnote",
+  "name": "Fieldnote Photo & Check-in",
+  "tagline": "A photographer and a check-in team for your event, with photos you can post the next morning.",
+  "bio": "I'm June. I shoot dinners, meetups and booths in SF and NYC, and my team runs check-in so the first thing guests see is someone who knows their name.",
+  "city": "San Francisco",
+  "hood": "Hayes Valley",
+  "tags": [
+    "photography",
+    "check-in",
+    "event services"
+  ],
+  "emoji": "📸",
+  "color": "#8C62C9",
+  "theme": {
+    "accent": "#8C62C9",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "bob"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 7 days before.",
+  "backupPlan": "Three photographers on the team; same style, same turnaround.",
+  "experiences": [
+    {
+      "name": "Event photographer",
+      "desc": "Three hours of candid photos and a few posed group shots, edited and delivered in 48 hours.",
+      "emoji": "📸",
+      "min": 1,
+      "max": 500,
+      "price": "$850 flat",
+      "length": "3 hours",
+      "category": "culture",
+      "travels": true,
+      "allIn": "Shooting, editing, 48-hour delivery and travel in SF and NYC.",
+      "owner": "June or a named teammate",
+      "openDates": [
+        "2026-12-03",
+        "2026-12-08",
+        "2026-12-10"
+      ]
+    },
+    {
+      "name": "Check-in staff with badges",
+      "desc": "Two people at the door with your guest list, printed name badges and a QR scan.",
+      "emoji": "🪪",
+      "min": 20,
+      "max": 400,
+      "price": "$600 flat",
+      "length": "3 hours",
+      "category": "culture",
+      "travels": true,
+      "allIn": "Two staff, badge printing and tax.",
+      "owner": "June's team lead"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "handle": "loft-on-folsom",
+  "name": "The Loft on Folsom",
+  "tagline": "A SoMa loft for 30 to 150, built for a product demo and a reception: screen, mics, livestream, strong Wi-Fi.",
+  "bio": "I'm Theo. I run a converted print shop in SoMa for developer meetups, launch nights and demo-and-drinks evenings. I staff the AV myself and work with two caterers, so your quote has everything in it.",
+  "city": "San Francisco",
+  "hood": "SoMa",
+  "tags": [
+    "venue",
+    "meetups",
+    "AV",
+    "launch nights",
+    "demo"
+  ],
+  "emoji": "🏭",
+  "color": "#2B211C",
+  "theme": {
+    "accent": "#2B211C",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "dots",
+    "buttons": "round",
+    "avatarArt": "glasses"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 21 days before. Inside 21 days, 50%.",
+  "backupPlan": "Two AV techs on my team; one is always on site.",
+  "experiences": [
+    {
+      "name": "Demo night and reception",
+      "desc": "A 20-minute demo with your slides on the big screen, then food and drinks for everyone. Livestream optional.",
+      "emoji": "🎤",
+      "min": 30,
+      "max": 150,
+      "price": "$95 a person",
+      "length": "3 hours",
+      "category": "drinks",
+      "travels": false,
+      "includes": [
+        "The loft, 6–9pm",
+        "Screen, two mics, livestream to YouTube or Zoom",
+        "Heavy appetizers and two drink tickets",
+        "Check-in table"
+      ],
+      "allIn": "Venue, AV tech, food, two drinks a person, staff, cleanup and tax.",
+      "seated": 90,
+      "standing": 150,
+      "av": "16-ft screen, 2 wireless mics, livestream rig, 1 Gbps Wi-Fi",
+      "owner": "Theo, venue lead",
+      "dietary": "Caterer covers vegetarian, vegan and gluten-free.",
+      "access": "Freight elevator and ramp; step-free throughout.",
+      "setup": "Load-in from 4pm; branding hung by our team.",
+      "runOfShow": [
+        "6:00 Doors, check-in, drinks",
+        "6:30 Your demo (20 min) and Q&A",
+        "7:00 Food and conversation",
+        "9:00 Done"
+      ],
+      "branding": "Banner, screen loops and branded cups. Needs 1 week.",
+      "openDates": [
+        "2026-12-03",
+        "2026-12-09",
+        "2026-12-15",
+        "2027-01-14",
+        "2027-01-21",
+        "2027-01-28"
+      ]
+    },
+    {
+      "name": "Breakfast roundtable room",
+      "desc": "The mezzanine for 8 to 16 people: quiet, one table, a screen if you need it.",
+      "emoji": "☕",
+      "min": 8,
+      "max": 16,
+      "price": "$60 a person",
+      "length": "2 hours",
+      "category": "dining",
+      "travels": false,
+      "allIn": "Room, breakfast, coffee and tax.",
+      "seated": 16,
+      "av": "55-inch screen, Wi-Fi",
+      "owner": "Theo",
+      "openDates": [
+        "2026-12-04",
+        "2026-12-10",
+        "2027-01-15"
+      ]
+    }
+  ]
+}

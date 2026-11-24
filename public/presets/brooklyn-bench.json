@@ -1,0 +1,77 @@
+{
+  "handle": "brooklyn-bench",
+  "name": "Brooklyn Bench Studio",
+  "tagline": "A Williamsburg studio for meetups of 80 and hackathon weekends of 120, with power at every seat.",
+  "bio": "I'm Rosa. We're a woodshop by day and an event space on evenings and weekends: long benches, good light, real Wi-Fi, a projector, and a roof deck in summer.",
+  "city": "Brooklyn",
+  "hood": "Williamsburg",
+  "tags": [
+    "venue",
+    "meetups",
+    "hackathons",
+    "NYC"
+  ],
+  "emoji": "🪵",
+  "color": "#3E9C6E",
+  "theme": {
+    "accent": "#3E9C6E",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "hiker"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 21 days before. Inside 21 days, 50%.",
+  "backupPlan": "Our studio manager Eli is on site for every event.",
+  "experiences": [
+    {
+      "name": "Meetup evening",
+      "desc": "The studio from 6 to 10pm for talks and drinks; we handle setup, AV and cleanup.",
+      "emoji": "🎤",
+      "min": 30,
+      "max": 80,
+      "price": "$2,200 flat",
+      "length": "4 hours",
+      "category": "drinks",
+      "travels": false,
+      "includes": [
+        "Studio, AV, staff and cleanup"
+      ],
+      "allIn": "Venue, AV, staff, cleanup and tax. Food from our partners or your own caterer.",
+      "seated": 60,
+      "standing": 80,
+      "av": "Projector, 2 mics, 500 Mbps Wi-Fi",
+      "owner": "Eli, studio manager",
+      "access": "Step-free from the street.",
+      "openDates": [
+        "2026-12-02",
+        "2026-12-08",
+        "2027-01-12",
+        "2027-01-26"
+      ]
+    },
+    {
+      "name": "Hackathon weekend",
+      "desc": "Saturday 9am to Sunday 6pm, benches with power for 120, a quiet room, overnight staff.",
+      "emoji": "💻",
+      "min": 50,
+      "max": 120,
+      "price": "$6,500 flat",
+      "length": "2 days",
+      "category": "workshop",
+      "travels": false,
+      "allIn": "Venue, power, Wi-Fi, overnight staff, cleanup and tax.",
+      "seated": 120,
+      "av": "Projector, mic, 1 Gbps Wi-Fi, power at every seat",
+      "owner": "Eli",
+      "openDates": [
+        "2026-12-12",
+        "2027-01-23"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "handle": "phin-and-night",
+  "name": "Phin & Night Catering",
+  "tagline": "Coffee and bánh mì from 8am to midnight for hackathons of 100 to 300, and personalized coffee kits for your customers.",
+  "bio": "I'm Linh. I feed hackathons: a phin coffee bar in the morning, bánh mì at lunch, noodles at midnight, and coffee again at 2am if you need it. I also make coffee gift kits with each person's name, delivered by hand in SF.",
+  "city": "San Francisco",
+  "hood": "Outer Sunset",
+  "tags": [
+    "hackathons",
+    "catering",
+    "coffee",
+    "gifts"
+  ],
+  "emoji": "🥖",
+  "color": "#E0A030",
+  "theme": {
+    "accent": "#E0A030",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "barista"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 10 days before. Headcount can change until 72 hours before.",
+  "backupPlan": "Two crews; if one van breaks down, the other comes.",
+  "experiences": [
+    {
+      "name": "Hackathon catering, 8am to midnight",
+      "desc": "Phin coffee bar all day, bánh mì lunch, rice bowls for dinner, a noodle drop at midnight, snacks in between.",
+      "emoji": "🥖",
+      "min": 80,
+      "max": 300,
+      "price": "$32 a person",
+      "length": "16 hours",
+      "category": "food",
+      "travels": true,
+      "includes": [
+        "Coffee bar, staffed 8am–noon and 8pm–midnight",
+        "Lunch, dinner and a midnight noodle drop",
+        "Snacks and drinks restocked all day",
+        "Compostables and cleanup"
+      ],
+      "allIn": "Food, coffee, staff, compostables, delivery in the Bay Area and tax.",
+      "owner": "Linh, on site all day",
+      "dietary": "Every meal has vegan and gluten-free options, labelled.",
+      "setup": "Two 6-ft tables and two outlets; we bring everything else.",
+      "branding": "Cup sleeves and labels with your logo. Needs 10 days.",
+      "runOfShow": [
+        "8:00 Coffee bar opens",
+        "12:30 Bánh mì lunch",
+        "18:30 Rice bowls",
+        "00:00 Noodle drop",
+        "00:30 Cleanup"
+      ],
+      "openDates": [
+        "2026-12-05",
+        "2026-12-06",
+        "2027-01-16",
+        "2027-01-17"
+      ]
+    }
+  ],
+  "giftNote": "Each kit has the recipient's name on the label and a handwritten card. Hand-delivered in SF; recipients confirm their address first.",
+  "gifts": [
+    {
+      "name": "Personalized coffee kit, hand-delivered",
+      "desc": "A phin filter, 250 g of coffee labelled with their name, condensed milk and a brew card, delivered by hand in SF. Recipients confirm an address or decline.",
+      "emoji": "☕",
+      "cents": 5500,
+      "minQty": 15,
+      "maxQty": 300,
+      "tiers": [
+        {
+          "qty": 50,
+          "cents": 4800
+        }
+      ],
+      "lead": "10 days",
+      "ships": "Hand-delivered in SF; shipped elsewhere in the US",
+      "allIn": "Kit, personalization, delivery in SF and tax.",
+      "personalize": [
+        "Their name on the bag",
+        "Your note on the card",
+        "Your logo on the box"
+      ],
+      "occasions": [
+        "clients",
+        "holiday",
+        "thanks"
+      ]
+    }
+  ]
+}

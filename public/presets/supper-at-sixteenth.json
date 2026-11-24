@@ -1,0 +1,111 @@
+{
+  "handle": "supper-at-sixteenth",
+  "name": "Supper at Sixteenth",
+  "tagline": "A private dining room in the Mission for 12 to 30, with a 20-minute pasta tasting before everyone sits down.",
+  "bio": "I'm Sofia. I cook in a back room off 16th Street that seats 30 at one long table. Companies book it for customer dinners: I run a short hands-on pasta tasting while people arrive, then get out of the way so they can talk. Room, food, service, tax and cleanup are one price.",
+  "city": "San Francisco",
+  "hood": "Mission",
+  "tags": [
+    "private dining",
+    "customer dinners",
+    "pasta",
+    "exec roundtables"
+  ],
+  "emoji": "🍝",
+  "color": "#C2553A",
+  "theme": {
+    "accent": "#C2553A",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "wash",
+    "buttons": "round",
+    "avatarArt": "chef"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 14 days before. Inside 14 days, 50% of the quote. Guest count can change until 72 hours before.",
+  "backupPlan": "My sous-chef Teo runs the kitchen with the same menu if I'm out; you meet him on the planning call.",
+  "experiences": [
+    {
+      "name": "Customer dinner in a private room",
+      "desc": "A 20-minute pasta tasting at the pass while guests arrive, then a three-course family-style dinner at one long table. The room is yours for 3 hours.",
+      "emoji": "🍝",
+      "min": 12,
+      "max": 30,
+      "price": "$185 a person",
+      "length": "3 hours",
+      "category": "dining",
+      "travels": false,
+      "includes": [
+        "Private room, service and cleanup",
+        "Three courses, family style",
+        "Wine pairing or zero-proof pairing"
+      ],
+      "allIn": "Room, food, wine or zero-proof drinks, service, tax and tip. No minimum spend above 12 guests.",
+      "seated": 30,
+      "standing": 45,
+      "av": "Screen and a mic for a 5-minute welcome; strong Wi-Fi",
+      "owner": "Sofia, chef and host",
+      "dietary": "Vegetarian, vegan and gluten-free mains on every menu; tell me about allergies a week ahead.",
+      "access": "Ground floor, step-free; accessible restroom.",
+      "menu": [
+        "Tasting: hand-cut tagliatelle, brown butter and sage",
+        "Burrata, blood orange, chili oil",
+        "Rigatoni all'amatriciana or wild mushroom ragù",
+        "Olive oil cake, whipped mascarpone"
+      ],
+      "runOfShow": [
+        "6:30 Guests arrive, pasta tasting at the pass (20 min)",
+        "6:50 Seated; your 5-minute welcome",
+        "7:00 Dinner, family style",
+        "8:45 Dessert and coffee",
+        "9:30 Done"
+      ],
+      "branding": "Printed menus and place cards with your name. Needs 1 week.",
+      "openDates": [
+        "2026-12-03",
+        "2026-12-08",
+        "2026-12-10",
+        "2027-01-13",
+        "2027-01-20",
+        "2027-01-27"
+      ]
+    },
+    {
+      "name": "Exec roundtable breakfast",
+      "desc": "A quiet room for 8 to 16 leaders, a proper breakfast, and service that stays out of the conversation.",
+      "emoji": "🥐",
+      "min": 8,
+      "max": 16,
+      "price": "$85 a person",
+      "length": "2 hours",
+      "category": "dining",
+      "travels": false,
+      "allIn": "Room, breakfast, coffee, service and tax.",
+      "seated": 16,
+      "av": "Quiet room, no screen needed; a small screen on request",
+      "owner": "Sofia",
+      "dietary": "Vegetarian and gluten-free by default.",
+      "menu": [
+        "Frittata with greens",
+        "Ricotta toast, honey, lemon",
+        "Fruit and yogurt",
+        "Espresso bar"
+      ],
+      "runOfShow": [
+        "8:00 Coffee as people arrive",
+        "8:15 Seated breakfast, your discussion",
+        "9:45 Wrap",
+        "10:00 Done"
+      ],
+      "openDates": [
+        "2026-12-04",
+        "2026-12-11",
+        "2027-01-14",
+        "2027-01-21"
+      ]
+    }
+  ]
+}

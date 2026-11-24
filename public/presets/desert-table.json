@@ -1,0 +1,72 @@
+{
+  "handle": "desert-table",
+  "name": "Desert Table Events",
+  "tagline": "Private dinners and after-party rooms off the Strip, for conference weeks in Las Vegas.",
+  "bio": "I'm Nico. I run a private dining room and a lounge ten minutes off the Strip, booked mostly during big conference weeks. Your guests get a quiet room and a real conversation instead of a casino ballroom.",
+  "city": "Las Vegas",
+  "hood": "Arts District",
+  "tags": [
+    "conference dinners",
+    "after-parties",
+    "Las Vegas"
+  ],
+  "emoji": "🌵",
+  "color": "#E0A030",
+  "theme": {
+    "accent": "#E0A030",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "sunrise",
+    "buttons": "round",
+    "avatarArt": "chef"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 30 days before conference weeks; 50% inside 30 days.",
+  "backupPlan": "Two chefs and an events manager on every booking.",
+  "experiences": [
+    {
+      "name": "Conference-week private dinner",
+      "desc": "Twenty seats, four courses, a car service option from the conference hotels.",
+      "emoji": "🌵",
+      "min": 12,
+      "max": 24,
+      "price": "$195 a person",
+      "length": "3 hours",
+      "category": "dining",
+      "travels": false,
+      "allIn": "Room, food, wine or zero-proof pairing, service and tax. Cars from the Strip $25 a person.",
+      "seated": 24,
+      "av": "Small screen and mic",
+      "owner": "Nico",
+      "dietary": "Vegetarian, vegan and gluten-free mains.",
+      "menu": [
+        "Charred corn soup",
+        "Little gem salad, green goddess",
+        "Short rib or roasted squash",
+        "Mesquite chocolate cake"
+      ],
+      "openDates": [
+        "2027-01-07",
+        "2027-01-08"
+      ]
+    },
+    {
+      "name": "After-party lounge",
+      "desc": "The lounge for up to 250 with a DJ, bar and photo wall.",
+      "emoji": "🎶",
+      "min": 80,
+      "max": 250,
+      "price": "$72 a person",
+      "length": "4 hours",
+      "category": "drinks",
+      "travels": false,
+      "allIn": "Venue, DJ, open bar for 3 hours, staff and tax.",
+      "standing": 250,
+      "av": "DJ booth, sound, lighting",
+      "owner": "Nico"
+    }
+  ]
+}

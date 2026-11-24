@@ -21,7 +21,7 @@ form.find button{align-self:end;padding:11px 18px;border-radius:999px;border:0;b
 @media (max-width:700px){.card{grid-template-columns:1fr}}
 .card h3{font-size:20px}.card .who{color:var(--smoke);font-size:14px;margin:2px 0 8px}.card p{margin:6px 0}
 .why{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.why span{background:#F1FAF4;border:1px solid #CFE6D7;color:#1E4D36;border-radius:999px;padding:4px 10px;font-size:13px}
-.price{text-align:right;min-width:190px}.price b{display:block;font:700 26px Fredoka,system-ui}.price small{display:block;color:var(--smoke)}
+.price{text-align:right;min-width:190px;max-width:300px}.price b{display:block;font:700 26px Fredoka,system-ui}.price small{display:block;color:var(--smoke)}
 @media (max-width:700px){.price{text-align:left}}
 .btn{display:inline-block;margin-top:10px;padding:10px 16px;border-radius:999px;background:var(--ember);color:#fff;text-decoration:none;font-weight:600}
 .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
@@ -79,6 +79,9 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
       return `<div class="card"><div><small style="color:#75685F;font-weight:600">${i === 0 ? "Best match" : "Also great"}</small><h3>${esc(x.emoji || h.emoji || "✨")} ${esc(x.name)}</h3><div class="who">with <a href="/@${esc(h.handle)}">${esc(h.name)}</a>${h.city ? ` · ${esc(h.hood ? h.hood + ", " : "")}${esc(h.city)}` : ""} · ${x.min}–${x.max} people${x.length ? ` · ${esc(x.length)}` : ""}${x.travels ? " · comes to you" : ""}</div>${x.desc ? `<p>${esc(x.desc)}</p>` : ""}
         <div class="why">${why.map((w) => `<span>${esc(w)}</span>`).join("")}${gaps.map((w) => `<span class="gap">${esc(w)}</span>`).join("")}</div>
         <p class="where">📍 ${x.travels ? "Comes to you: your office, a park or a venue" : `At ${first(h) ? esc(first(h)) + "'s" : "their"} space${h.hood ? " in " + esc(h.hood) : ""}`}${(x.includes || []).length ? ` · <b>Included:</b> ${x.includes.map(esc).join(", ")}` : ""}</p>
+        ${x.seated || x.standing || x.av ? `<p class="where">🪑 ${[x.seated && `Seats ${x.seated}`, x.standing && `${x.standing} standing`, x.av].filter(Boolean).map(esc).join(" · ")}</p>` : ""}
+        ${(x.openDates || []).length ? `<p class="where">📅 <b>Open:</b> ${x.openDates.slice(0, 4).map((d) => `<a href="/@${esc(h.handle)}?${new URLSearchParams({ exp: x.id, people: n, date: d, city: f.city.value })}#book">${new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</a>`).join(" · ")}</p>` : ""}
+        ${x.owner ? `<p class="where">🙋 <b>On the day:</b> ${esc(x.owner)}</p>` : ""}
         ${x.branding ? `<p class="where">🏷️ <b>Your brand:</b> ${esc(x.branding)}</p>` : ""}
         ${[x.access && `♿ ${esc(x.access)}`, x.dietary && `🥗 ${esc(x.dietary)}`, x.hybrid && `💻 ${esc(x.hybrid)}`, x.setup && f.goal.value === "activation" && `🔌 <b>Setup:</b> ${esc(x.setup)}`].filter(Boolean).map((t) => `<p class="where">${t}</p>`).join("")}
         ${h.backupPlan ? `<p class="where">🔁 <b>If ${esc(ownerOf(h))} can't make it:</b> ${esc(h.backupPlan)}</p>` : ""}

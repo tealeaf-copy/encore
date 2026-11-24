@@ -1,0 +1,71 @@
+{
+  "handle": "build-night",
+  "name": "Build Night",
+  "tagline": "Hands-on AI build sessions for 20 to 30 developers. The topic travels across products; your team brings the context.",
+  "bio": "I'm Ravi, a staff engineer who has run monthly build nights for three years. Each one is a short, real exercise (build an agent workflow, review a real project, ship a small eval) followed by people showing what they made. I bring the exercise and the room; you bring the guests and, if you like, one of your engineers.",
+  "city": "San Francisco",
+  "hood": "SoMa",
+  "tags": [
+    "developer workshops",
+    "build sessions",
+    "AI",
+    "community"
+  ],
+  "emoji": "🛠️",
+  "color": "#5B7FD6",
+  "theme": {
+    "accent": "#5B7FD6",
+    "font": "bold",
+    "bg": "cream",
+    "cover": "dots",
+    "buttons": "round",
+    "avatarArt": "glasses"
+  },
+  "forHire": true,
+  "respondsIn": "within a day",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 14 days before.",
+  "backupPlan": "Two facilitators from past build nights can run the same exercise; you meet one on the prep call.",
+  "gigs": [],
+  "experiences": [
+    {
+      "name": "Build an agent workflow, together",
+      "desc": "Everyone builds a small working agent in 75 minutes with starter code, then five people demo. Works with any model or framework, including yours.",
+      "emoji": "🛠️",
+      "min": 15,
+      "max": 30,
+      "price": "$120 a person",
+      "length": "2.5 hours",
+      "category": "workshop",
+      "travels": false,
+      "includes": [
+        "Room at a SoMa partner venue with power at every seat",
+        "Starter repo and a written exercise",
+        "Dinner and drinks",
+        "A recap with what people built"
+      ],
+      "allIn": "Facilitation, room, Wi-Fi, food, drinks and tax.",
+      "seated": 30,
+      "av": "Screen, mic, power strips at every seat, 1 Gbps Wi-Fi",
+      "owner": "Ravi, facilitator",
+      "dietary": "Dinner has vegetarian and vegan options.",
+      "hybrid": "Not hybrid; this works because people sit together.",
+      "runOfShow": [
+        "6:00 Food, set up laptops",
+        "6:20 The exercise (10 min intro)",
+        "6:30 Build in pairs",
+        "7:45 Five demos, 3 minutes each",
+        "8:15 Drinks and conversation",
+        "8:30 Done"
+      ],
+      "branding": "Your engineer can give a 10-minute talk; your API in the starter code if you want.",
+      "openDates": [
+        "2026-12-09",
+        "2026-12-16",
+        "2027-01-13",
+        "2027-01-27"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "handle": "hudson-hollow",
+  "name": "Hudson Hollow Retreats",
+  "tagline": "Farm offsite days in the Hudson Valley for 20 to 60, two hours from Manhattan.",
+  "bio": "I'm Claire Wu. Our farm has a barn for working sessions, a kitchen that cooks what we grow, and pottery and flower sessions for the afternoon. We arrange the coach from the city.",
+  "city": "Hudson Valley",
+  "hood": "Kinderhook",
+  "tags": [
+    "offsites",
+    "farm",
+    "team retreats"
+  ],
+  "emoji": "🌾",
+  "color": "#3E9C6E",
+  "theme": {
+    "accent": "#3E9C6E",
+    "font": "bold",
+    "bg": "sage",
+    "cover": "waves",
+    "buttons": "round",
+    "avatarArt": "hiker"
+  },
+  "forHire": true,
+  "respondsIn": "within 2 days",
+  "invoices": true,
+  "insured": true,
+  "terms": "Free to cancel up to 30 days before; 50% inside 30 days.",
+  "backupPlan": "Rain plan: the barn holds everyone.",
+  "experiences": [
+    {
+      "name": "Farm offsite day",
+      "desc": "Morning working session in the barn, farm lunch, an afternoon pottery or flower session, dinner by the fire.",
+      "emoji": "🌾",
+      "min": 20,
+      "max": 60,
+      "price": "$240 a person",
+      "length": "10 hours",
+      "category": "culture",
+      "travels": false,
+      "includes": [
+        "Coach from Manhattan and back",
+        "Barn with screen and Wi-Fi",
+        "Lunch and dinner",
+        "One afternoon session"
+      ],
+      "allIn": "Coach, venue, food, one session, staff and tax. Overnight stays quoted separately.",
+      "seated": 60,
+      "av": "Screen, mic and Wi-Fi in the barn",
+      "owner": "Claire Wu",
+      "dietary": "Vegetarian by default; everything labelled.",
+      "access": "Barn and dining room are step-free.",
+      "openDates": [
+        "2027-01-15",
+        "2027-01-22",
+        "2027-02-05"
+      ]
+    }
+  ]
+}

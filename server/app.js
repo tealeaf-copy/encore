@@ -6,6 +6,7 @@ import express from "express";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { randomUUID, randomBytes, createHmac, timingSafeEqual } from "node:crypto";
 import { parsePath, httpError, randomId } from "./db.js";
@@ -176,7 +177,7 @@ export function createApp({ store, dataDir }) {
   app.use((req, res, next) => { const canon = String(process.env.ENCORE_CANONICAL_HOST || "").trim().toLowerCase(), host = String(req.hostname || "").toLowerCase();
     if (!canon || !host || host === canon || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api/")) return next();
     res.redirect(301, `https://${canon}${req.originalUrl}`); });
-  const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self'", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
+  const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
   // enforced since every page ran clean under report-only; violations are still reported to /api/csp-report
   // (ENCORE_CSP=report puts it back in report-only mode without a deploy of new code)
   app.use((req, res, next) => { if (req.method === "GET" && !/^\/(api|_blob)\//.test(req.path)) res.set(process.env.ENCORE_CSP === "report" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy", CSP_RO); next(); });
@@ -434,6 +435,10 @@ export function createApp({ store, dataDir }) {
   // data endpoints still only allow the guest operations listed in guestAllowed().
   app.get("/favicon.ico", (req, res) => res.redirect(301, "/favicon.svg"));
   app.get("/g", sendPage);
+  // Without a photo, a share link shows the line-art card for the event's illustration (public/og/<kind>.png, made by
+  // scripts/make-og.cjs). The illustration is picked the same way the invite picks its cover, using eventart.js itself.
+  let EA = null; try { const sandbox = { window: {}, document: { head: { appendChild() {} }, createElement: () => ({ style: {} }), getElementById: () => null, querySelector: () => null } }; sandbox.window.document = sandbox.document; vm.runInNewContext(fs.readFileSync(path.join(PUBLIC_DIR, "eventart.js"), "utf8"), sandbox); EA = sandbox.window.EventArt || null; } catch {}
+  const ogCardFor = (ev, base) => { try { const pick = ev.coverArt && typeof ev.coverArt === "object" && EA?.valid(ev.coverArt.kind) ? String(ev.coverArt.kind).split("+")[0] : EA ? EA.kindOf(ev) : "party"; return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
   // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
   // then opens the RSVP page (/g#rsvp-<id>). The part after "#" never reaches a server, so /g links can't preview.
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
@@ -442,9 +447,9 @@ export function createApp({ store, dataDir }) {
     const h = C.profileOf(ws), title = ev.pubTitle || ev.name || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
       desc = [when && `${when}${time ? " · " + time : ""}`, ev.venueName || ev.hood || ev.city || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
-      img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : "";
+      img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
     res.set("Cache-Control", "public, max-age=300").type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${e(title)} · Pottery Lab</title><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "RSVP on Pottery Lab")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}"><meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
+<meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "RSVP on Pottery Lab")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
 <meta name="description" content="${e(desc)}"><meta http-equiv="refresh" content="0;url=${e(to)}"><link rel="canonical" href="${e(base + "/e/" + id)}"></head><body><p><a href="${e(to)}">Open the invite: ${e(title)}</a></p><script src="/e-go.js"></script></body></html>`); });
   // A no-login demo: the page without the shim runs on its built-in sample data and saves nothing here.
   app.get("/demo", async (req, res, next) => {
@@ -1107,6 +1112,7 @@ export function createApp({ store, dataDir }) {
       }
     }
     if (doc && req.guest && p === "brands/main") data = publicBrand(data);
+    if (doc && req.guest && /^events\/[^/]+$/.test(p) && isExampleWs(req.ws)) data = { ...data, sample: true };
     if (doc && req.guest && p === "canvas/main") data = publicCanvas(data);
     res.json(doc ? { exists: true, id: doc.id, data, updated: doc.updated, ...where } : { exists: false, id: p.split("/").pop(), ...where });
   });
@@ -1152,8 +1158,12 @@ export function createApp({ store, dataDir }) {
     req.body = { ...b, eventId, ae: slug, source: "ae-link", at: Date.now() }; // the link decides whose nominations these are
     return true;
   };
+  // example hosts (demo accounts) show what a page can look like; their events can't take real RSVPs, orders or messages
+  const isExampleWs = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
+  const exampleWrite = (req, res) => { if (!req.guest) return false; S(req); if (!isExampleWs(req.ws)) return false; res.status(403).json({ code: "example", message: "This is an example event, so it can't take RSVPs. Start your own page to try it." }); return true; };
   const ownedWrite = (req, res) => {
     if (!req.guest) return true;
+    if (exampleWrite(req, res)) return false;
     if (String(req.query.path || "").startsWith("nominations/")) return nominationOk(req, res);
     if (!guestShape(req, res, String(req.query.path || "").split("/")[0])) return false;
     const p = String(req.query.path || ""), cur = S(req).get(p), k = guestKey(req);
@@ -1252,6 +1262,7 @@ export function createApp({ store, dataDir }) {
   }
   app.post("/api/db/collection", json, async (req, res) => {
     const p = String(req.query.path || "");
+    if (exampleWrite(req, res)) return;
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;

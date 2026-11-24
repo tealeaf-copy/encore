@@ -162,3 +162,12 @@ test("Share links (/e/<id>) carry the event's title and date for link previews, 
   assert.match(html, /og:title" content="Dumpling night &lt;3"/); assert.match(html, /Sat, Dec 12 · 7:00 PM · Brooklyn/); assert.match(html, /url=\/g#rsvp-sh1/);
   const miss = await fetch(srv.base + "/e/nope123", { redirect: "manual" }); assert.equal(miss.status, 302); assert.equal(miss.headers.get("location"), "/g#rsvp-nope123");
 });
+
+test("A share link without a photo previews with the line-art card for that kind of event", async () => {
+  const r0 = await post("/api/signup", { name: "Og Host", email: "og.card@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0);
+  await put("/api/db/doc?path=events/og1", { kind: "social", casual: true, name: "Dumpling folding night", date: "2026-12-12", published: true }, c);
+  const html = await (await fetch(srv.base + "/e/og1")).text();
+  const m = html.match(/og:image" content="([^"]+)"/); assert.ok(m, "has an og:image"); assert.match(m[1], /\/og\/dumpling\.png$/); assert.match(html, /summary_large_image/);
+  assert.equal((await fetch(m[1].replace(/^https?:\/\/[^/]+/, srv.base))).status, 200);
+});

@@ -179,3 +179,17 @@ test("A share link's preview never includes the venue name or street address", a
   const html = await (await fetch(srv.base + "/e/pv1")).text();
   assert.ok(!/Bedford|apartment|Apt 3/i.test(html), "no address in the share page"); assert.match(html, /Williamsburg/);
 });
+
+test("Turnout counts a guest once even when their RSVP is also copied onto the guest list", async () => {
+  const r0 = await post("/api/signup", { name: "Dup Host", email: "dup.turn@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  assert.ok((await post("/api/host/profile", { handle: "dup-turnout", name: "Dup Host", tagline: "Suppers", emoji: "🍲" }, c)).ok);
+  const day = new Date().toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/du1", { kind: "social", casual: true, name: "Supper", date: day, published: true, guests: [{ name: "Ana", email: "ana@ex.com", status: "Going" }, { name: "Cy", email: "cy@ex.com", status: "Going" }] }, c);
+  const G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  for (const n of ["Ana", "Cy"]) assert.ok((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "du" + n }, body: JSON.stringify({ eventId: "du1", name: n, email: n.toLowerCase() + "@ex.com", response: "going" }) })).ok);
+  const list = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const ana = (list.docs || list.items || list).find((d) => (d.data || d).name === "Ana");
+  assert.ok((await put("/api/db/doc?path=rsvps/" + String(ana.id).split("/").pop(), { ...(ana.data || ana), checkedInAt: Date.now() }, c)).ok);
+  const t = (await (await fetch(srv.base + "/api/public/host/dup-turnout/turnout")).json()).turnout;
+  assert.equal(t.saidYes, 2); assert.equal(t.came, 1); assert.equal(t.showRate, 50); assert.equal(t.returning, 0);
+});

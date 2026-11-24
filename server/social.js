@@ -186,11 +186,15 @@ export function makeSocial(store, { C, saveBlob }) {
     const S = scopeStore(store, ws), R = S.list("rsvps").map((d) => d.data || {}), past = S.list("events").map((d) => ({ id: d.id.split("/").pop(), e: d.data || {} })).filter((x) => x.e.casual && !x.e.example && x.e.date && x.e.date <= today() && x.e.stage !== "interest");
     let said = 0, came = 0, walkIns = 0, doorEvents = 0, saidAtDoor = 0, showedAtDoor = 0; const seen = new Map();
     for (const { id, e } of past) { const rs = R.filter((r) => r.eventId === id), walk = (x) => x.walkIn || x.source === "Walk-in", going = rs.filter((r) => r.response === "going"), G = (e.guests || []).filter((g) => /Going|Attended/.test(g.status || ""));
-      const yes = [...going, ...G].filter((x) => !walk(x)), w = [...going, ...G].filter(walk).length, isIn = (x) => !!x.checkedInAt || /Attended/.test(x.status || "");
-      said += yes.length; const showed = yes.filter(isIn).length;
+      // the same person can be both an RSVP and a row on the guest list (RSVPs are copied there): count them once
+      const isIn = (x) => !!x.checkedInAt || /Attended/.test(x.status || ""), people = new Map();
+      for (const x of [...going, ...G]) { const key = String(x.email || x.phone || x.name || "").trim().toLowerCase() || Math.random().toString(36); const cur = people.get(key) || { in: false, walk: false }; people.set(key, { in: cur.in || isIn(x), walk: cur.walk || walk(x) }); }
+      const P = [...people.values()], yes = P.filter((x) => !x.walk), w = P.filter((x) => x.walk).length;
+      said += yes.length; const showed = yes.filter((x) => x.in).length;
       if (showed || w) { doorEvents++; came += showed + w; saidAtDoor += yes.length; showedAtDoor += showed; walkIns += w; }
-      for (const who of [...going.map((r) => r.email || r.phone || r.name), ...G.map((g) => g.email || g.phone || g.name)]) { const k = String(who || "").trim().toLowerCase(); if (k) seen.set(k, (seen.get(k) || 0) + 1); } }
-    const people = seen.size, returning = [...seen.values()].filter((n) => n > 1).length;
+      for (const k of new Set([...going.map((r) => r.email || r.phone || r.name), ...G.map((g) => g.email || g.phone || g.name)].map((who) => String(who || "").trim().toLowerCase()).filter(Boolean))) seen.set(k, (seen.get(k) || 0) + 1); }
+    let people = seen.size, returning = [...seen.values()].filter((n) => n > 1).length;
+    try { const H = hostStrengths(ws); if (H && H.guests) { people = H.guests; returning = H.returning || 0; } } catch {}
     return { events: past.length, saidYes: said, people, returning, returnRate: people ? Math.round((100 * returning) / people) : null, doorEvents, came, walkIns, showRate: saidAtDoor ? Math.round((100 * showedAtDoor) / saidAtDoor) : null, avgPerEvent: past.length ? Math.round(said / past.length) : 0 };
   }
   // ---- guests prove who they are with the RSVP id and code they got back ----
@@ -358,7 +362,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   const faqView = (q) => ({ id: q.key, q: q.q, a: q.a || "", votes: q.votes || 0, by: q.by || "", host: !!q.fromHost, at: q.at });
   app.get("/api/public/faq/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found"); const L = faqOf(scopeStore(store, ws), id);
     res.json({ published: L.filter((q) => q.status === "published").sort((a, b) => (b.votes || 0) - (a.votes || 0) || a.at - b.at).map(faqView), waiting: L.filter((q) => q.status === "pending").length }); });
-  app.post("/api/public/faq/:eventId", small, (req, res) => { if (limited(req, 8)) return bad(res, "That's a lot of questions. Try again in a bit.", 429, "rate_limited"); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
+  app.post("/api/public/faq/:eventId", small, (req, res) => { if (limited(req, 8)) return bad(res, "That's a lot of questions. Try again in a bit.", 429, "rate_limited"); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (ws && /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "")) return bad(res, "This is an example event, so nobody will answer. Host your own to try it.", 403, "example"); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const q = clean(req.body?.q, 300); if (q.length < 5) return bad(res, "Ask a whole question."); const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data;
     const dup = faqOf(S, id).find((x) => lc(x.q) === lc(q)); if (dup) return res.json({ ok: true, duplicate: true });
     S.add("faq", { eventId: id, q, by: clean(req.body?.name, 40).split(/\s+/)[0] || "", votes: 1, status: "pending", at: Date.now() });

@@ -33,6 +33,9 @@ const step = (name, ok) => { console.log(`${ok ? "✓" : "✗"} ${name}`); if (!
   step("guest RSVPs", await gp.evaluate(() => !!document.querySelector("#view-guest .ticket")));
   const rs = await (await fetch(B + "/api/db/collection?path=rsvps", { headers: { cookie: ck } })).json(), mine = (rs.docs || rs.items || rs).map((d) => d.data || d).find((r) => r.name === "Smoke Guest");
   step("the guest's answers reach the host", mine?.answers?.q1 === "salsa verde" && +mine?.answers?.q2 === 2);
+  // and they're in the host's guest-list export (the RSVP is also copied onto the guest list; one row, with answers)
+  await p.waitForTimeout(2500); const csv = await p.evaluate(() => { const d = allEvents.find((e) => e.id === draft.id) || draft; return csvOf(guestRows(d), (d.questions || []).filter((x) => x.q)); });
+  step("the guest-list export has their answers, once", (csv.match(/Smoke Guest/g) || []).length === 1 && /salsa verde/.test(csv));
   await gp.reload(); await gp.waitForTimeout(5000); step("returning guest keeps their ticket", await gp.evaluate(() => !!document.querySelector("#view-guest .ticket")));
   const hp = await (await fetch(`${B}/api/public/host/${handle}`)).json(); step("host page lists the event", (hp.upcoming || []).some((e) => e.id === id));
   await b.close(); finish();

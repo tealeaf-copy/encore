@@ -493,7 +493,7 @@ export function createApp({ store, dataDir }) {
   app.use(express.static(PUBLIC_DIR, { index: false }));
 
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
-  mountCommunity(app, { store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
+  mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });

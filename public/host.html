@@ -87,14 +87,14 @@ body.is-owner{padding-bottom:110px}
 @media (max-width:600px){body.is-owner .store-fab{font-size:0;width:52px;height:52px;padding:0;border-radius:50%;display:grid;place-items:center}body.is-owner .store-fab::before{content:"✏️";font-size:20px}body.is-owner .store-fab.shop-fab::before{content:"🛍"}}
 .own-gig{border-style:dashed}
 @media (max-width:600px){body.is-owner .store-fab{bottom:14px!important;top:auto!important}body.is-owner .store-fab.shop-fab{bottom:76px!important}body.is-owner main,body.is-owner .wrap{padding-bottom:84px}}
-</style><link rel="stylesheet" href="/playful.css">
+body,.wrap,#m{display:flow-root}</style><link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
 <script src="/authguard.js"></script><script src="/placesearch.js"></script>
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>encore</a>
     <nav><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Host something</a></nav></header>
-  <main id="m"><div class="empty">Loading…</div></main>
+  <main id="m" style="min-height:calc(100vh - 60px)"><div class="cover" aria-hidden="true"></div><p class="empty" style="margin-top:24px">Loading…</p></main>
 </div>
 <footer>Hosted on Encore · <a href="/discover">Find more hosts</a></footer>
 <script src="/eventart.js"></script><script src="/community.js"></script>
@@ -163,7 +163,7 @@ body.is-owner{padding-bottom:110px}
   }).catch(() => {});
   if (h.showcase) { // a page set up for a host who isn't on Encore yet: read-only, questions go to them directly
       document.body.classList.add("showcase"); const ig = (h.links || []).find((l) => /instagram\.com/i.test(l.url || ""))?.url || (h.links || [])[0]?.url || "";
-      const st = document.createElement("style"); st.textContent = `body.showcase #follow,body.showcase #topFollow,body.showcase #fc,body.showcase .book-form,body.showcase #inqOpen,body.showcase #inqF,body.showcase .sub,body.showcase .bx-pdf,body.showcase main form,body.showcase .b2b-guarantee,body.showcase .trust-line,body.showcase .bx-quote,body.showcase #collabCard,body.showcase aside.side{display:none!important}.sc-note{max-width:760px;margin:14px auto 0;padding:12px 16px;border:1px dashed #CDBFAE;border-radius:16px;background:#FFFBF4;font-size:14px;color:#4A3F37;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}.sc-note a{font-weight:600;color:inherit}`; document.head.appendChild(st);
+      const st = document.createElement("style"); st.textContent = `body.showcase #follow,body.showcase #topFollow,body.showcase #fc,body.showcase .book-form,body.showcase #inqOpen,body.showcase #inqF,body.showcase .sub,body.showcase .bx-pdf,body.showcase main form,body.showcase .b2b-guarantee,body.showcase .trust-line,body.showcase .bx-quote,body.showcase #collabCard,body.showcase aside.side{display:none!important}.sc-note{max-width:760px;margin:14px auto;padding:12px 16px;border:1px dashed #CDBFAE;border-radius:16px;background:#FFFBF4;font-size:14px;color:#4A3F37;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}.sc-note a{font-weight:600;color:inherit}`; document.head.appendChild(st);
       const m0 = document.querySelector("main") || document.body; const note = document.createElement("div"); note.className = "sc-note"; note.innerHTML = `<span>${esc(h.name)} isn't on Encore yet: we put this page together so you can see what they host.${ig ? ` To book or ask a question, <a href="${esc(ig)}" target="_blank" rel="noopener">message them on Instagram</a>.` : " Bookings open once they claim it."}</span><a href="${esc(h.claim || "/signup?mode=friends")}">Is this you? Claim this page →</a>`; m0.prepend(note);
       const swap = () => document.querySelectorAll("button[data-book],button[data-gq],button[data-gs]").forEach((b) => { if (!ig) { b.remove(); return; } const a2 = document.createElement("a"); a2.className = b.className; a2.textContent = "Ask on Instagram"; a2.href = ig; a2.target = "_blank"; a2.rel = "noopener"; b.replaceWith(a2); });
       swap(); new MutationObserver(swap).observe(document.body, { childList: true, subtree: true }); }

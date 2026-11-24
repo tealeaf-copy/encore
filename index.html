@@ -7327,7 +7327,10 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
     // a booking bar that stays on screen on phones until they've replied
     const form=$("#g-send",host)?.closest(".stack")||$("#gResp",host)?.closest(".stack")||$("#ic-pick",host)?.closest(".stack"); $("#gBar")?.remove();
     if(form&&!form.hidden&&!M&&!past&&window.innerWidth<760){ const R=(e.headcount&&e.guests)?Math.max(0,(+e.headcount||0)-(e.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length):null, paid=e.price&&e.price!=="chip";
-      const left=paid?`<b>${esc(e.price)}</b>${e.headcount?`<small>${esc(e.headcount)} seats</small>`:""}`:e.stage==="interest"?`<b>Free</b><small>If enough people are in, it's on</small>`:`<b>Free</b><small>${e.approvalRequired?`${esc(hostFirst(e))} approves each spot`:"Tap to say yes"}</small>`;
+      const left=paid?`<b>${esc(e.price)}</b>${e.headcount?`<small>${esc(e.headcount)} seats</small>`:""}`:e.stage==="interest"?`<b>Free</b><small>If enough people are in, it's on</small>`:(()=>{ // friends' plans: say when it is, not that it's free
+        const t=String(e.startTime||"").match(/^(\d{1,2}):(\d{2})/), when=[e.date?new Date(e.date+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):"", t?`${(+t[1])%12||12}:${t[2]}${+t[1]<12?"am":"pm"}`:""].filter(Boolean).join(" · ");
+        const sub=e.approvalRequired?`${esc(hostFirst(e))} approves each spot`:R!=null?(R?`${R} spot${R===1?"":"s"} left`:"Waitlist open"):esc(e.place||e.city||"");
+        return `<b>${esc(when||"Coming up")}</b>${sub?`<small>${sub}</small>`:""}` })();
       const label=e.stage==="interest"?"I'd come":e.approvalRequired?(paid?"Request a seat":"Ask to join"):paid?"Book a seat":"I'm in";
       const bar=document.createElement("div"); bar.id="gBar"; bar.className="g-bar"; bar.innerHTML=`<div>${left}</div><button class="btn primary" type="button">${label}</button>`; document.body.appendChild(bar);
       $("button",bar).onclick=()=>{ form.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>$("#g-name",host)?.focus(),450) };

@@ -84,3 +84,5 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .bf-needs{border:0;padding:0;margin:4px 0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}.bf-needs legend{font-size:13px;font-weight:600;color:#5A4E45;margin-bottom:4px;padding:0}.bf-needs label{display:flex;gap:6px;align-items:center}.bf-needs input{width:auto}
 .gs-note{font-size:13px;color:#5A4E45;margin:0}
 .bx-bad .ai{display:none}
+.bf-bud,.gf-lead{display:block;font-size:13px;color:#7A4E12}
+.bfl select{padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff}

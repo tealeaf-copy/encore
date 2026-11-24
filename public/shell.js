@@ -4,6 +4,7 @@
   if (window.__encoreShell) return; window.__encoreShell = 1;
   const P = location.pathname, isG = P === "/g";
   if (!(isG || /^\/(discover|feed|plans|requests|hosts|quiz|teams|gifts|vendor)$/.test(P) || /^\/@/.test(P) || /^\/h\//.test(P))) return;
+  if (/^\/(teams|gifts|vendor)$/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
     home: I('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'),
@@ -42,7 +43,7 @@
 @media (max-width:860px){.es-tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;justify-content:space-around;align-items:flex-end;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(255,251,245,.96);backdrop-filter:blur(8px);border-top:1.5px solid #E9DFD2}
 .es-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:#6B5F56;text-decoration:none;font:600 11px "Instrument Sans",system-ui;padding:4px 0}
 .es-tabs a[aria-current]{color:#1F1A17}.es-tabs a[aria-current] svg{stroke-width:2.4}
-.es-tabs a.es-plus{flex:none;margin:-22px 6px 0}.es-tabs a.es-plus span{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#C94A30;color:#fff;border:2px solid #1F1A17;box-shadow:0 2px 8px rgba(31,26,23,.08)}
+.es-biz .es-tabs a.es-plus{display:none}.es-tabs a.es-plus{flex:none;margin:-22px 6px 0}.es-tabs a.es-plus span{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#C94A30;color:#fff;border:2px solid #1F1A17;box-shadow:0 2px 8px rgba(31,26,23,.08)}
 body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:none!important}}`;
   document.head.appendChild(css);
   const logo = `<svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C4532F"/><circle cx="19" cy="9" r="3.2" fill="#F2D48F"/></svg>`;

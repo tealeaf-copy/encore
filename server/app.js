@@ -262,12 +262,12 @@ export function createApp({ store, dataDir }) {
     const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "events" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
     if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
-    if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
+    if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use 10 or more characters." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
-    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Pottery Lab is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
+    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }
@@ -290,9 +290,9 @@ export function createApp({ store, dataDir }) {
   app.post("/api/join", small, (req, res) => {
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many tries from here. Try again later." });
     const b = req.body || {}, inv = getInvite(b.token), name = String(b.name || "").trim().slice(0, 120);
-    if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This invite link has expired or was already used. Ask for a new one." });
+    if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This join link has expired or was already used. Ask your team for a new one." });
     if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
-    if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
+    if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use 10 or more characters." });
     if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account." });
     useInvite(inv);
     putDbUser({ kind: "user", ws: inv.ws, name, email: inv.email, roles: [inv.role], ...(inv.defaultRole ? { defaultRole: true } : {}), owner: false, pw: hashPassword(b.password), createdAt: Date.now(), invitedBy: inv.by });
@@ -1278,7 +1278,7 @@ export function createApp({ store, dataDir }) {
     if (!next) return null;
     S(req).set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() });
     const to = String(next.data.email || "").trim(), title = ev.pubTitle || ev.copy?.title || "the event";
-    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A spot opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${ev.date ? " on " + ev.date : ""}.\n\nIf you can no longer make it, reply to this email or use your invitation link to let us know, so we can offer the spot to someone else.\n`, eventId, kind: "waitlist" }); } catch {} }
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A spot opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${ev.date ? " on " + new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""}.\n\nPlans changed? Open your invite and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "waitlist" }); } catch {} }
     return next.id;
   }
   app.post("/api/db/collection", json, async (req, res) => {

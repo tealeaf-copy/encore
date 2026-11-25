@@ -20,7 +20,7 @@ export function recipientsFor(owner, team, ev) {
   return [];
 }
 
-const fmt = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const fmt = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
 /** Work out (and, unless dryRun, send) today's reminders for one workspace store. */
 export async function runReminders(store, { now = Date.now(), dryRun = false, origin = process.env.ENCORE_PUBLIC_URL || "" } = {}) {

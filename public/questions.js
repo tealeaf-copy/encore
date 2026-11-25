@@ -65,7 +65,7 @@
     const P = ev.qStyle || {}; let i = 0; const el = document.createElement("div"); el.className = "tf"; box.appendChild(el);
     const val = (q) => answers[q.id], has = (q) => { const v = val(q); return Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== ""; };
     const draw = (done = false) => { const pct = Math.round(((done ? Q.length : i) / Q.length) * 100);
-      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Done. Now send it."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
+      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Got it. Now tap Send."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
       const q = Q[i], v = val(q), opts = q.options.length ? q.options : q.type === "yesno" ? ["Yes", "No"] : q.type === "emoji" ? ["😐", "🙂", "😍"] : [];
       let input = "";
       if (q.type === "short" || q.type === "instagram" || q.type === "phone") input = `<input type="${q.type === "phone" ? "tel" : "text"}" value="${esc(v ?? "")}" placeholder="${esc(q.placeholder || (q.type === "instagram" ? "@yourhandle" : q.type === "phone" ? "(917) 555 0142" : "Type your answer"))}" maxlength="200">`;
@@ -73,8 +73,8 @@
       else if (q.type === "number") input = `<div class="tf-step"><button type="button" data-st="-1" aria-label="Fewer">−</button><b>${v ?? q.min}</b><button type="button" data-st="1" aria-label="More">+</button></div>`;
       else input = `<div class="tf-opts ${q.type === "emoji" ? "emoji" : ""}" role="group">${opts.map((o, k) => `<button type="button" data-o="${esc(o)}" aria-pressed="${Array.isArray(v) ? v.includes(o) : v === o}">${q.type === "emoji" ? "" : `<span class="tf-key">${String.fromCharCode(65 + k)}</span>`}${esc(o)}</button>`).join("")}</div>`;
       el.innerHTML = `<div class="tf-bar"><i style="width:${pct}%"></i></div><div class="tf-top"><span class="tf-n">${esc(P.title || "A few quick questions")} · ${i + 1} of ${Q.length}</span><span class="tf-pt">${window.Potto ? window.Potto.svg(i % 3 === 2 ? "cheer" : "wave", 64, "Potto") : ""}</span></div>
-        <div class="tf-q" id="tfq-${esc(q.id)}">${esc(q.q)}${q.required ? "" : "<small>(optional)</small>"}</div><div class="tf-a" role="group" aria-labelledby="tfq-${esc(q.id)}">${input.replace(/<(input|textarea)\b/g, `<$1 aria-labelledby="tfq-${esc(q.id)}"`)}</div><div class="tf-err" role="alert"></div>
-        <div class="tf-nav">${i ? `<button type="button" class="bk" data-back>← Back</button>` : "<span></span>"}<span><button type="button" class="ok" data-next>${i === Q.length - 1 ? esc(P.button || "Done") : "OK ✓"}</button></span></div>`;
+        <div class="tf-q" id="tfq-${esc(q.id)}">${esc(q.q)}${q.required ? "" : " <small>(optional)</small>"}</div><div class="tf-a" role="group" aria-labelledby="tfq-${esc(q.id)}">${input.replace(/<(input|textarea)\b/g, `<$1 aria-labelledby="tfq-${esc(q.id)}"`)}</div><div class="tf-err" role="alert"></div>
+        <div class="tf-nav">${i ? `<button type="button" class="bk" data-back>← Back</button>` : "<span></span>"}<span><button type="button" class="ok" data-next>${i === Q.length - 1 ? esc(P.button || "Done") : "Next"}</button></span></div>`;
       if (q.type === "number" && v == null) answers[q.id] = q.min;
       const f = el.querySelector("input,textarea"); if (f && !preview) setTimeout(() => f.focus({ preventScroll: true }), 50); };
     let autoAt = 0;

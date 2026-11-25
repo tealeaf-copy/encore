@@ -78,7 +78,7 @@ function summarize(K, { items = 10 } = {}) {
   const tags = {}; for (const k of shown) for (const t of k.tags || []) if (TAG_LABEL[t]) tags[t] = (tags[t] || 0) + 1;
   const yes = K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length, of = K.filter((k) => (k.tags || []).length || k.love || k.compare).length;
   return { count: shown.length, would_go_again_pct: shown.length >= 3 && of ? Math.round((100 * yes) / of) : null,
-    top_tags: Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([tag, count]) => ({ tag, label: TAG_LABEL[tag], count })),
+    top_tags: Object.entries(tags).sort((a, b) => b[1] - a[1] || (/^(again|Would go again)$/.test(a[0]) ? 1 : 0) - (/^(again|Would go again)$/.test(b[0]) ? 1 : 0) || String(a[0]).localeCompare(String(b[0]))).slice(0, 5).map(([tag, count]) => ({ tag, label: TAG_LABEL[tag], count })),
     items: shown.slice(0, items == null ? shown.length : items).map(reviewItem) };
 }
 
@@ -180,7 +180,7 @@ export function makeDirectory({ store, C, SB }) {
     const L = D.reviews.filter((r) => (ex || !r.example) && (!host || r.host.handle === host) && (!ev || r.event?.id === ev) && (!words.length || ((t) => words.every((w) => t.includes(w)))([r.text, r.name, ...r.tags, r.event?.title || "", r.host.name].join(" ").toLowerCase())));
     const off = decodeCursor(q.cursor), lim = limitOf(q.limit, 20), tags = {}; for (const r of L) for (const t of r.tags) tags[t] = (tags[t] || 0) + 1;
     return { data: L.slice(off, off + lim).map(({ _at, ...r }) => r), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length,
-      top_tags: Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, count]) => ({ tag: KUDOS_TAGS.find((k) => k[2] === label)?.[0] || "", label, count })) }; }
+      top_tags: Object.entries(tags).sort((a, b) => b[1] - a[1] || (/^(again|Would go again)$/.test(a[0]) ? 1 : 0) - (/^(again|Would go again)$/.test(b[0]) ? 1 : 0) || String(a[0]).localeCompare(String(b[0]))).slice(0, 5).map(([label, count]) => ({ tag: KUDOS_TAGS.find((k) => k[2] === label)?.[0] || "", label, count })) }; }
   function csv(base, q = {}) {
     const cols = ["id", "title", "status", "start", "time", "city", "area", "format", "tags", "price", "spots_left", "host_handle", "host_name", "host_url", "url", "source", "original_link", "companies", "cover", "example", "review_count", "would_go_again_pct"];
     const rows = filterEvents(base, q).slice(0, 5000).map((e) => [e.id, e.title, e.status, e.start, e.time, e.city, e.area, e.format, e.tags, e.price, e.spots_left, e.host.handle, e.host.name, e.host.url, e.url, e.source, e.original_link, e.companies, e.cover, e.example, e.reviews.count, e.reviews.would_go_again_pct]);

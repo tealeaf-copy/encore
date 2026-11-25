@@ -3,57 +3,84 @@
 <meta name="description" content="Small gatherings hosted by people near you: run clubs, hikes, pandan cake from a stoop. Follow the hosts you like.">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
-<style>
-.hero{display:grid;grid-template-columns:minmax(0,1fr);max-width:720px;gap:28px;align-items:center;padding:28px 0 28px}
-.hero h1{font-size:clamp(34px,6vw,56px);line-height:1.02}.hero p{font-size:17px;color:var(--soft);max-width:460px}
-.quiz{position:relative}.quiz .q{font:600 18px "Fraunces",Georgia,serif;margin:4px 0 12px}
-.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.opts button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:12px;text-align:left;font:500 14px "DM Sans",system-ui,sans-serif;cursor:pointer}
-.opts button:hover,.opts button:focus-visible{border-color:var(--brand);background:var(--pink)}.opts button span{display:block;font-size:22px}
-.qhead{display:flex;align-items:center;gap:10px;color:var(--soft);font-size:13px}.dots{display:flex;gap:4px;margin-left:auto}.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--brand)}
-.you{display:flex;gap:14px;align-items:center}.you .badge{width:64px;height:64px;border-radius:20px;display:grid;place-items:center;font-size:34px;flex:none}
-.you h2{font-size:24px}.again{background:none;border:0;color:var(--soft);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;padding:0;margin-top:8px}
-section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede{color:var(--soft);margin:0 0 14px}
-.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.filters button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:500 13px "DM Sans",system-ui,sans-serif;cursor:pointer}.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:10px}.cast div{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--card)}.cast b{display:block}.cast span{font-size:26px}.cast small{color:var(--soft);font-size:13px}
-.hc-em{display:flex;gap:6px;margin-top:6px}.hc-em input{flex:1;min-width:0}
-.hc-wrap{position:relative;display:flex;flex-direction:column}.hc-wrap .hc{flex:1}.hc-f{position:absolute;top:14px;right:14px;padding:6px 12px;font-size:13px}
-.invite{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
-@media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.invite{grid-template-columns:minmax(0,1fr)}}
-.rail-sec{margin:0 0 26px}.rail-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 10px}.rail-h h2{margin:0}.rail-h .lede{margin:0}
-.rail-row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,260px);gap:16px;overflow-x:auto;padding:4px 8px 12px 2px;scroll-snap-type:x mandatory;scrollbar-width:thin}.rail-row > *{scroll-snap-align:start}
-/* design review: cards say what, when and who; tags and big badges were noise */
-#events .tags,#fyList .tags,#rails .tags,#hosts .hc .tags{display:none!important}
-.hc .hc-ex,.hc .rising{display:inline-block!important;font-size:11px!important;padding:2px 8px!important;border-radius:999px;line-height:16px!important;width:auto!important}
-.ev .badge,.ev-badge,.card .badge:not(.you .badge){font-size:11px!important;padding:2px 8px!important;line-height:16px!important}
-</style><link rel="stylesheet" href="/playful.css">
+<link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
+<style>
+/* design review: one short intro, one location chip, short cards, every section capped */
+:root{--p-ember:#B04A30;--red:#B04A30}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.intro{padding:14px 0 10px}.intro h1{font-size:clamp(28px,5vw,44px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:15.5px}
+.fbar{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:4px 4px 8px 2px;margin:0 -16px 0 0}.fbar::-webkit-scrollbar{display:none}
+.fbar button{flex:none;min-height:44px;padding:8px 14px!important;font:600 14px "DM Sans",system-ui,sans-serif;border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
+.fbar button[aria-pressed=true]{background:var(--ink)!important;color:#fff!important}
+.fbar .loc{background:#FFF1D2!important}.fbar .sep{flex:none;width:1px;height:26px;background:var(--line)}
+.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:16px}
+.locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
+.locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "DM Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:13.5px;color:var(--soft)}.locp .note:empty{display:none}
+section{padding:14px 0 18px}section h2{font-size:22px;margin:0 0 2px}section .lede{color:var(--soft);margin:0 0 10px;font-size:14.5px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14.5px;min-height:44px;display:inline-flex;align-items:center}
+.note-box{margin:0 0 12px;padding:12px 14px;border:1px dashed #D9CBB8;border-radius:14px;color:#5A4E45;font-size:14.5px}.note-box a,.note-box button{color:var(--red);font-weight:600}
+.note-box button{background:none;border:0;font:inherit;cursor:pointer;padding:0;text-decoration:underline;min-height:44px}
+.more-btn{margin-top:12px;min-height:44px}
+.far-h{grid-column:1/-1;margin:14px 0 0;font-size:16px}
+/* order from local hosts: one sideways row */
+.shop-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}
+.shop{flex:0 0 210px;scroll-snap-align:start;display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;text-decoration:none;color:inherit}
+.shop .ic{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
+.shop b{font-size:14.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop small{color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shop .go{grid-column:1/-1;margin-top:6px;font-size:13.5px;font-weight:600;color:var(--red)}
+/* hosts worth following: short rows */
+.hlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))}
+.hc-wrap{position:relative}
+.hlist .hc{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:12px;row-gap:0;align-content:center;padding:12px 104px 12px 12px;min-height:76px}
+.hlist .hc-av{grid-row:1/span 6;margin:0;align-self:start}.hlist .hc>*:not(.hc-av){grid-column:2}
+.hlist .hc b{line-height:1.25}.hlist .hc .hc-n,.hlist .hc small{font-size:13px}.hlist .hc .tags{display:none}
+.hlist .hc-ex,.hlist .rising{justify-self:start;font-size:13px!important;padding:1px 8px!important;margin-top:3px}
+.hlist .hc-f{position:absolute;top:50%;right:12px;transform:translateY(-50%);min-height:44px;padding:8px 14px!important;font-size:14px}
+.hlist .hc-next{display:block;margin:4px 12px 0;font-weight:600;color:var(--red);font-size:14px}
+.endcards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));padding-top:8px}
+.endcards .card{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.endcards h2,.endcards h3{font-size:18px;margin:0}.endcards p,.endcards small{margin:2px 0 0;color:var(--soft);font-size:14px}
+.endcards .btn{min-height:44px}.endcards a:not(.btn){color:var(--red)}
+#events .tags,#fyList .tags{display:none!important}
+.ev .badge,.ev-badge{font-size:12px!important;padding:2px 8px!important;line-height:16px!important}
+.again{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:0;min-height:44px}
+</style>
 <script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
     <nav><a href="/discover" aria-current="page">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
 
-  <div class="hero">
-    <div><h1>Small gatherings, hosted by people near you.</h1>
-      <p>Run clubs, hikes, pandan cake from a neighbour's oven. Follow the hosts you like and hear about the next one first. Pottery Lab is invite-only, so every host here was brought in by someone.</p></div>
-  </div>
+  <div class="intro"><h1 id="introH">Small gatherings near you</h1><p id="introP">Run clubs, supper clubs, bakes on a stoop. Tap one to say yes.</p></div>
 
-  <div style="margin:4px 0 14px" id="placeBox"></div>
+  <div class="fbar" role="group" aria-label="Where and what">
+    <button type="button" class="loc" id="locBtn" aria-expanded="false" aria-controls="locPanel"><span aria-hidden="true">📍</span> <span id="locName">Anywhere</span> <span aria-hidden="true">▾</span><span class="sr">, change city</span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <span id="filters" style="display:contents"></span>
+  </div>
+  <form class="locp" id="locPanel" hidden>
+    <label for="locIn">Your city</label>
+    <input id="locIn" name="c" list="locCities" placeholder="Type a city" autocomplete="off" data-1p-ignore data-lpignore="true"><datalist id="locCities"></datalist>
+    <button type="submit" class="go">Show what's on</button><button type="button" id="locGps">Use my location</button><button type="button" id="locAny">Anywhere</button>
+    <p class="note" id="locNote" aria-live="polite"></p>
+  </form>
+
   <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="grid g2" id="fyList"></div></section>
 
+  <section id="evSec" aria-labelledby="evH"><h2 id="evH">Coming up</h2>
+    <div id="evNote"></div>
+    <div class="grid g2" id="events"><div class="empty">Loading…</div></div>
+    <button type="button" class="btn ghost more-btn" id="evMore" hidden></button></section>
 
-  <section id="railsSec" hidden><div id="rails"></div></section>
+  <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="shop-row" id="shops"></div></section>
 
-  <section><h2>Everything coming up</h2><p class="lede">Open to anyone. Tap one to say yes.</p>
-    <div class="filters" id="filters" role="group" aria-label="Filter by kind"></div><input id="cityF" type="hidden">
-    <div class="grid g2" id="events"><div class="empty">Loading…</div></div></section>
-  <section id="shopsSec" hidden><h2>Order from local hosts</h2><p class="lede">Made by people who host. Pick up this weekend.</p><div class="grid g2" id="shops"></div></section>
+  <section id="hostsSec"><div class="sec-h"><h2>Hosts worth following</h2><a href="/hosts">See all hosts →</a></div><p class="lede" id="hostsL" hidden></p><div class="hlist" id="hosts"></div></section>
 
-  <section><h2>Hosts worth following</h2><p class="lede">Ranked by people who came back, not by ads.</p><div class="grid g4" id="hosts"></div></section>
-
-
-  <section><div class="card quiz" id="quiz" aria-live="polite"></div></section>
-  <section><div class="card invite"><span id="pipI"></span><div><h2 style="font-size:20px">Want to host?</h2><p class="muted" style="margin:4px 0 0">Ask a member for one of their ten invite codes, or get on the waitlist. Hosting with friends is free.</p></div><a class="btn" href="/signup?mode=friends">I have a code</a></div></section>
+  <div class="endcards">
+    <div class="card" id="quiz" aria-live="polite"></div>
+    <div class="card"><span id="pipI"></span><div style="flex:1;min-width:180px"><h2>Want to host?</h2><p>Ask a member for an invite code, or join the waitlist. Hosting friends is free.</p></div><a class="btn" href="/signup?mode=friends">I have a code</a></div>
+  </div>
 </div>
 <footer>Pottery Lab · <a href="/">Home</a> · <a href="/security">Security</a></footer>
 <script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
@@ -61,84 +88,123 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 <script src="/avatars.js"></script>
 <script>
 (function () {
-  const C = window.EncoreCommunity, $ = (s) => document.querySelector(s), esc = C.esc;
-  $("#pipI").innerHTML = C.pipSVG("happy", 52);
-  if ($("#cast")) $("#cast").innerHTML = Object.values(C.PERSONAS).map((p) => `<div><span>${p.emoji}</span><b>${p.name}</b><small>${p.line}</small></div>`).join("");
-  // ---- the three-tap quiz: what you like, how you show up, how many people ----
-  const Q = [
-    { q: "A good Saturday morning is…", k: "lane", o: [["move", "🏃", "Moving: a run, a hike"], ["make", "🍰", "Making or tasting something"], ["gather", "☕", "Coffee and long talks"], ["discover", "🧭", "Somewhere I've never been"]] },
-    { q: "At a new event, you're the one who…", k: "persona", o: [["early", "🐣", "Gets there first"], ["connector", "🔗", "Brings a friend"], ["contributor", "🧺", "Brings snacks"], ["explorer", "🎲", "Came alone, curious"]] },
-    { q: "The right size is…", k: "size", o: [["s", "🫖", "4 to 8, cozy"], ["m", "🪑", "10 to 25"], ["l", "🎪", "The more the merrier"], ["any", "🤷", "Depends on the vibe"]] },
-  ];
+  const C = window.EncoreCommunity, P = window.EncorePlace, $ = (s) => document.querySelector(s), esc = C.esc;
+  const PAGE = 6; // cards shown before "Show more"
+  $("#pipI").innerHTML = C.pipSVG("happy", 44);
   let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
-  let data = { events: [], hosts: [] }, filter = "all";
+  let data = { events: [], hosts: [] }, shops = null, filter = "all", city = "", evShown = PAGE, farOpen = false, fyIds = new Set();
+  try { city = localStorage.getItem("encore.city") || ""; } catch {}
   const PRM = new URLSearchParams(location.search), QTEXT = (PRM.get("q") || "").trim().toLowerCase(); if (["move", "make", "gather", "discover"].includes(PRM.get("lane"))) filter = PRM.get("lane");
   const QWORDS = QTEXT.replace(/\b(near|me|in|a|an|the|for|my|of|some|nights?|events?|club)\b/g, " ").split(/\s+/).filter((w) => w.length > 2);
   const qMatch = (e) => !QWORDS.length || QWORDS.some((w) => `${e.title || ""} ${e.activity || ""} ${e.host?.name || ""} ${e.city || ""} ${e.hood || ""}`.toLowerCase().includes(w.replace(/s$/, "")));
-  function drawQuiz(i = 0) {
-    const el = $("#quiz");
-    if (ans.lane && ans.persona && ans.size) { const P = C.PERSONAS[ans.persona] || C.PERSONAS.explorer;
-      el.innerHTML = `<div class="you"><span class="badge" style="background:color-mix(in srgb,${P.color} 18%,transparent)">${P.emoji}</span><div><small class="muted">You're</small><h2>${P.name}</h2><div class="muted">${P.line}</div></div></div><div style="display:flex;gap:10px;align-items:center;margin-top:14px">${C.pipSVG("happy", 40)}<div style="font-size:14px">Potto picked events below for you. Follow a host to hear about the next one first.</div></div><button class="again" id="again">Retake</button>`;
-      $("#again").onclick = () => { ans = {}; save(); drawQuiz(0); drawForYou(); }; return; }
-    const s = Q[i];
-    el.innerHTML = `<div class="qhead">${C.pipSVG(i ? "side" : "happy", 34)}<span>Three taps and Potto finds your kind of thing</span><span class="dots">${Q.map((_, j) => `<i class="${j <= i ? "on" : ""}"></i>`).join("")}</span></div><div class="q">${s.q}</div><div class="opts">${s.o.map(([v, e, t]) => `<button data-v="${v}"><span>${e}</span>${t}</button>`).join("")}</div>`;
-    el.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { ans[s.k] = b.dataset.v; C.oink(); save(); el.querySelector(".pip")?.classList.add("hop"); setTimeout(() => { drawQuiz(i + 1); drawForYou(); }, 180); });
+  const near = (x) => { if (!city) return true; const cf = city.toLowerCase(); return P ? P.near(`${x.city || ""}`, cf) || (!!x.hood && P.near(`${x.hood}`, cf)) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf); };
+  const GT = (() => { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const N = { host: "Hosts", spark: "Sparks", chill: "Chill Ones", filler: "Seat Fillers", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" }; return g && N[g.top] ? { lane: g.lane, name: N[g.top] } : null; } catch { return null; } })();
+  const card = (e, why) => C.eventCard(e, why, { compact: true });
+
+  // ---- one location chip: tap to set your city ----
+  if (P) $("#locCities").innerHTML = P.CITIES.map((c) => `<option value="${esc(c[0])}">`).join("");
+  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; };
+  const openLoc = (open) => { $("#locPanel").hidden = !open; $("#locBtn").setAttribute("aria-expanded", String(open)); if (open) { $("#locIn").value = city; $("#locNote").textContent = ""; $("#locIn").focus(); } };
+  const setCity = (c, source) => { city = String(c || "").trim(); try { if (P) { if (source === "gps") { /* place.js already saved it */ } else P.setManual(city); } else localStorage.setItem("encore.city", city); } catch {} evShown = PAGE; farOpen = false; drawLoc(); drawAll(); };
+  $("#locBtn").onclick = () => openLoc($("#locPanel").hidden);
+  $("#locPanel").onsubmit = (e) => { e.preventDefault(); const v = $("#locIn").value.trim(); const c = (P && P.find(v)?.[0]) || v; setCity(c); openLoc(false); $("#locBtn").focus(); };
+  $("#locAny").onclick = () => { setCity(""); openLoc(false); $("#locBtn").focus(); };
+  $("#locGps").onclick = async () => { if (!P) return; const b = $("#locGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "Use my location"; if (!p || !p.city || !(p.source === "gps" || (p.gpsCity && p.gpsCity === p.city))) { $("#locNote").textContent = "Couldn't get your location. Type your city instead."; return; } setCity(p.city, "gps"); openLoc(false); $("#locBtn").focus(); };
+  $("#locPanel").onkeydown = (e) => { if (e.key === "Escape") { openLoc(false); $("#locBtn").focus(); } };
+  drawLoc();
+
+  // ---- what kind of thing: one row of chips ----
+  function drawFilters() {
+    const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
+    $("#filters").innerHTML = lanes.map(([k, t]) => `<button type="button" aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
+    $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; evShown = PAGE; farOpen = false; drawFilters(); drawEvents(); });
   }
-  const save = () => { try { localStorage.setItem("encore.taste", JSON.stringify(ans)); } catch {} };
+
   function fits(e) {
     let s = 0, why = ""; const lane = C.laneOf(e), n = Number(e.headcount) || 0;
     if (ans.lane && lane === ans.lane) { s += 3; why = { move: "You like to move", make: "You like making and tasting", gather: "You like long talks", discover: "Somewhere new" }[ans.lane]; }
     if (ans.lane === "discover") s += 1;
     if (ans.size && n) { const ok = ans.size === "s" ? n <= 10 : ans.size === "m" ? n > 6 && n <= 30 : ans.size === "l" ? n >= 15 : true; if (ok) { s += 1; why = why || "The size you like"; } }
     if (ans.persona === "early") { const days = (new Date(e.date + "T12:00:00") - Date.now()) / 864e5; if (days > 4) { s += .5; why = why ? why + " · early spots open" : "Early spots open"; } }
-    if (ans.persona === "contributor" && C.laneOf(e) !== "discover") s += .3;
     return { s, why };
   }
   function drawForYou() {
-    const box = $("#forYou"); if (!(ans.lane && ans.persona) || !data.events.length) { box.hidden = true; return; }
-    const ranked = data.events.map((e) => ({ e, ...fits(e) })).filter((x) => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 4);
-    box.hidden = false; const P = C.PERSONAS[ans.persona];
-    $("#fyL").textContent = ranked.length ? `${P.name.replace(/^The /,"")}s tend to love these.` : "Nothing nearby fits yet. Follow a host below and you'll hear first.";
-    $("#fyList").innerHTML = ranked.map((x) => C.eventCard(x.e, x.why)).join("");
+    const box = $("#forYou"); fyIds = new Set(); if (!(ans.lane && ans.persona) || !data.events.length) { box.hidden = true; return; }
+    const ranked = data.events.filter(near).map((e) => ({ e, ...fits(e) })).filter((x) => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 2);
+    if (!ranked.length) { box.hidden = true; return; }
+    box.hidden = false; const Pn = C.PERSONAS[ans.persona] || C.PERSONAS.explorer; ranked.forEach((x) => fyIds.add(x.e.id));
+    $("#fyL").textContent = `${Pn.name.replace(/^The /, "")}s tend to love these.`;
+    $("#fyList").innerHTML = ranked.map((x) => card(x.e, x.why)).join("");
   }
-  // themed rows in Pottery Lab's voice, like a friend's shortlist (only when there's enough to fill them)
-  const GT = (() => { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const N = { host: "Hosts", spark: "Sparks", chill: "Chill Ones", filler: "Seat Fillers", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" }; return g && N[g.top] ? { lane: g.lane, name: N[g.top] } : null; } catch { return null; } })();
-  const cf0 = () => (($("#cityF") || {}).value || "").trim();
+
+  // ---- events: the chosen city first, an honest note when there's nothing there ----
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
-  let __whyN = 0; const resetWhy = () => { __whyN = 0; };
-  const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && __whyN++ < 2 ? `✨ ${GT.name} love these` : ""].filter(Boolean).join(" · ");
-  function drawRails(L) { const sec = $("#railsSec"), box = $("#rails"); if (!sec || !box) return; if (filter !== "all") { sec.hidden = true; return; }
-    const now = new Date(), fri = new Date(now); fri.setDate(now.getDate() + ((5 - now.getDay() + 7) % 7)); const iso = (d) => d.toISOString().slice(0, 10), wk = [0, 1, 2].map((n) => iso(new Date(fri.getTime() + n * 864e5)));
-    const R = [["This weekend", "Friday to Sunday, near you", L.filter((e) => wk.includes(e.date)).sort((a, b) => String(a.date + (a.startTime || "")).localeCompare(String(b.date + (b.startTime || ""))))], ["Seats at the table", "Dinners, coffee and long talks", L.filter((e) => C.laneOf(e) === "gather")], ["Make something, taste something", "Kitchens, bakes and workshops", L.filter((e) => C.laneOf(e) === "make")], ["Lace up", "Runs, hikes and rides", L.filter((e) => C.laneOf(e) === "move")], ["Somewhere new", "Tours, markets and first times", L.filter((e) => C.laneOf(e) === "discover")]].map((r) => [r[0], r[1], r[2].filter((e) => !e.sample)]); if (GT && GT.lane) { const LN = { gather: "Seats at the table", make: "Make something, taste something", move: "Lace up", discover: "Somewhere new" }[GT.lane]; const i = R.findIndex((r) => r[0] === LN); if (i > 0) R.unshift(...R.splice(i, 1)); } { const used = new Set(); for (const r of R) { r[2] = r[2].filter((e) => !used.has(e.id)); r[2].forEach((e) => used.add(e.id)); } } for (let i = R.length - 1; i >= 0; i--) if (R[i][2].length < 2) R.splice(i, 1); if (!cf0()) R.forEach((r) => { if (r[0] === "This weekend") r[1] = "Friday to Sunday"; });
-    window.__railIds = new Set(R.flatMap((r) => r[2].slice(0, 10).map((e) => e.id))); sec.hidden = !R.length; box.innerHTML = R.map(([t, sub, E]) => `<div class="rail-sec"><div class="rail-h"><h2>${C.esc(t)}</h2><span class="lede">${C.esc(sub)}</span></div><div class="rail-row">${E.slice(0, 10).map((e) => C.eventCard(e, whyOf(e))).join("")}</div></div>`).join(""); }
+  let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? `✨ ${GT.name} love these` : ""].filter(Boolean).join(" · ");
+  const byDate = (a, b) => String(a.date || "9").localeCompare(String(b.date || "9"));
+  const LANE_H = { move: "Runs, hikes and rides", make: "Make & taste", gather: "Seats at the table", discover: "Somewhere new" };
   function drawEvents() {
-    const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Explore"]];
-    $("#filters").innerHTML = lanes.map(([k, t]) => `<button aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
-    $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; drawEvents(); });
-    const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(); const near = (x) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${x.city || ""}`, cf) || window.EncorePlace.near(`${x.hood || ""}`, cf) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf)); const realN = data.events.filter((e) => !e.sample).length, base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4))), L = base.filter(near), far = cf ? base.filter((e) => !near(e) && (e.city || e.hood)) : []; drawCityPick(cf);
-    { const exact = (e) => cf && String(e.city || "").trim().toLowerCase() === cf ? 0 : 1; L.sort((a, b) => exact(a) - exact(b) || String(a.date || "9").localeCompare(String(b.date || "9"))); } window.__railIds = null; resetWhy(); drawRails(L); const shown = filter === "all" && !QWORDS.length && window.__railIds?.size ? L.filter((e) => !window.__railIds.has(e.id)) : L; { const allH = $("#events")?.closest("section")?.querySelector("h2"); if (allH) { if (!allH.dataset.o) allH.dataset.o = allH.textContent; if (!QTEXT) allH.textContent = filter !== "all" && GT && GT.lane === filter ? `Picked for ${GT.name}` : filter !== "all" ? ({ move: "Runs, hikes and rides", make: "Make & taste", gather: "Seats at the table", discover: "Somewhere new" }[filter] || allH.dataset.o) : shown !== L ? "More coming up" : allH.dataset.o; } }
-    const thin = filter !== "all" && L.length < 3 ? `<div class="empty" style="grid-column:1/-1;text-align:left">Only ${L.length || "a few"} so far${cf ? ` near ${C.esc($("#cityF").value)}` : ""}. <a href="/feed#alerts" style="font-weight:700;color:#C94A30">🔔 Get a ping when a new one opens</a></div>` : ""; $("#events").innerHTML = (shown.length ? shown.map((e) => C.eventCard(e, whyOf(e))).join("") : L.length ? `<div class="empty">That's everything coming up for now.</div>` : `<div class="empty">${cf && data.events.length ? `Nothing in ${C.esc($("#cityF").value)} yet. <button class="btn ghost" type="button" onclick="window.EncorePlace.setManual('');location.reload()">See what's on everywhere</button> <a class="btn" href="/signup?mode=friends">Host the first one</a>` : data.events.length ? "Nothing in this lane yet." : "No open events right now. Hosts are cooking something up."}</div>`) + thin;
-    // never a dead end: what's further away sits under the local picks instead of disappearing
-    if (far.length) $("#events").insertAdjacentHTML("beforeend", `<div class="far-h" style="grid-column:1/-1;margin:18px 0 4px"><b style="font-size:18px">${L.length >= 3 ? "Further away" : `Nothing else in ${C.esc($("#cityF").value)} yet. Further afield:`}</b>${L.length >= 3 ? ` <span class="lede">${far.length} more, outside ${C.esc($("#cityF").value)}</span>` : ""}</div>` + far.slice(0, L.length >= 3 ? 12 : 8).map((e) => C.eventCard(e, L.length >= 3 ? "" : `📍 ${e.city || "Location to be confirmed"}`)).join(""));
+    whyN = 0; const realN = data.events.filter((e) => !e.sample).length;
+    const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
+    const local = base.filter(near), far = city ? base.filter((e) => !near(e)) : [];
+    const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter]) : "Coming up";
+    $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
+    let list = local, note = "", rest = [];
+    if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
+    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. <a href="/feed#alerts">Get a ping when one opens near you</a>.`; }
+    else if (city) rest = far;
+    else if (!base.length) note = "Nothing in this lane yet. Try Everything.";
+    $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
+    const shown = list.slice(0, evShown);
+    let html = shown.map((e) => card(e, list === far && city ? `📍 ${e.city || "Location to be confirmed"}` : whyOf(e))).join("");
+    if (!html && !note) html = `<div class="empty">That's everything for now.</div>`;
+    // what's further away stays one tap away instead of doubling the page
+    if (rest.length && shown.length === list.length) html += farOpen ? `<h3 class="far-h">Further away</h3>` + rest.slice(0, 8).map((e) => card(e, `📍 ${e.city || "Location to be confirmed"}`)).join("") : "";
+    $("#events").innerHTML = html;
+    const mb = $("#evMore");
+    if (shown.length < list.length) { mb.hidden = false; mb.textContent = `Show ${Math.min(PAGE, list.length - shown.length)} more`; mb.onclick = () => { evShown += PAGE; drawEvents(); }; }
+    else if (rest.length && !farOpen) { mb.hidden = false; mb.textContent = `See ${rest.length} further away`; mb.onclick = () => { farOpen = true; drawEvents(); }; }
+    else mb.hidden = true;
   }
-  // no city yet: one tap to pick where you are, from the cities that have something on
-  function drawCityPick(cf) { try { if (!cf && localStorage.getItem("encore.city")) cf = localStorage.getItem("encore.city"); } catch {} let box = document.getElementById("cityPick"); if (!box) { box = document.createElement("div"); box.id = "cityPick"; box.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px"; $("#placeBox").after(box); }
-    if (cf || !data.events.length) { box.hidden = true; box.style.display = "none"; return; } box.style.display = "flex"; const cnt = {}; for (const e of data.events) { const c = String(e.city || "").trim(); if (c && !e.sample) cnt[c] = (cnt[c] || 0) + 1; } if (cnt["Brooklyn"] && cnt["New York"]) { cnt["New York"] += cnt["Brooklyn"]; delete cnt["Brooklyn"]; } const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0]);
-    if (!top.length) { box.hidden = true; return; } box.hidden = false; box.innerHTML = `<span class="lede" style="margin-right:4px">Where are you?</span>` + top.map((c) => `<button class="btn ghost sm" type="button" data-cpick="${C.esc(c)}" style="padding:4px 12px">${C.esc(c)}</button>`).join("");
-    box.querySelectorAll("[data-cpick]").forEach((b) => (b.onclick = () => { try { window.EncorePlace?.setManual(b.dataset.cpick); } catch {} $("#cityF").value = b.dataset.cpick; drawEvents(); drawHosts(); try { drawForYou(); } catch {} const ch = $("#placeBox"); if (ch && window.EncorePlace) { ch.innerHTML = ""; window.EncorePlace.chip(ch, (c) => { $("#cityF").value = c || ""; drawEvents(); drawHosts(); drawForYou(); }); } })); }
-  function drawHosts() { const cf = (($("#cityF") || {}).value || "").trim().toLowerCase(), H = data.hosts.filter((h) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${h.city || ""}`, cf) || window.EncorePlace.near(`${h.hood || ""}`, cf) : `${h.city || ""} ${h.hood || ""}`.toLowerCase().includes(cf))); let F = []; try { F = JSON.parse(localStorage.getItem("encore.following") || "[]"); } catch {}
-    { const evs = data.events || [], inCity = (e) => !cf || (window.EncorePlace ? window.EncorePlace.near(`${e.city || ""}`, cf) || window.EncorePlace.near(`${e.hood || ""}`, cf) : `${e.city || ""}`.toLowerCase().includes(cf)); const nextOf = (h) => evs.filter((e) => e.host?.handle === h.handle && inCity(e) && e.stage !== "interest" && e.date).sort((x, y) => String(x.date || "9").localeCompare(String(y.date || "9")))[0];
-      const real = (h) => h.hosted > 0 || h.followers >= 2 || (h.bio || "").length > 10; const all = data.hosts.filter((h) => !h.showcase && (h.upcoming > 0 || h.followers >= 1) && (cf ? nextOf(h) || (H.includes(h) && real(h)) : real(h) || nextOf(h))); { const byName = new Map(); for (const h of all) { const k = String(h.name || h.handle).trim().toLowerCase(); const cur = byName.get(k); if (!cur || (nextOf(h) && !nextOf(cur)) || (h.followers || 0) > (cur.followers || 0)) byName.set(k, h); } all.length = 0; all.push(...byName.values()); all.sort((a, b) => (!!a.sample - !!b.sample) || (!!nextOf(b) - !!nextOf(a)) || (b.followers || 0) - (a.followers || 0)); if (all.length > 6) { window.__moreHosts = all.length - 6; all.length = 6; } else window.__moreHosts = 0; } H.length = 0; H.push(...all.map((h) => { const n = nextOf(h); if (!n) return h; const d = n.date ? new Date(n.date + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : ""; return { ...h, next: `${n.title}${d ? ", " + d : ""}` }; })); } $("#hosts").innerHTML = H.length ? H.map((h) => `<div class="hc-wrap">${C.hostCard(h)}<button class="btn ghost hc-f" type="button" data-fh="${C.esc(h.handle)}">${F.includes(h.handle) ? "Following ✓" : "Follow"}</button></div>`).join("") : `<div class="empty">${cf ? "No hosts there yet." : "The first hosts are setting up their pages."}</div>`;
-    if (window.__moreHosts) $("#hosts").insertAdjacentHTML("beforeend", `<a href="/hosts" class="btn ghost" style="grid-column:1/-1;justify-self:start">See ${window.__moreHosts} more hosts →</a>`);
-    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return;       let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
-      try { const j = await C.follow({ handle: b.dataset.fh, hostName: b.closest(".hc-wrap")?.querySelector(".hc b")?.textContent || "", email, tastes: [], via: "discover" }); C.oink(); b.textContent = "Following ✓"; { const hd = b.dataset.fh, nx = (data.events || []).filter((e) => e.host?.handle === hd).sort((x, y) => String(x.date || "9").localeCompare(String(y.date || "9")))[0], w = b.closest(".hc-wrap"); if (w && !w.querySelector(".hc-next")) w.insertAdjacentHTML("beforeend", nx ? `<a class="hc-next" href="/g#rsvp-${encodeURIComponent(nx.id)}" style="display:block;margin-top:6px;font-weight:600;color:#C94A30">Next up: ${C.esc(nx.title)} →</a>` : `<small class="hc-next" style="display:block;margin-top:6px;color:#75685F">Potto will tell you when they post something.</small>`); } const n = b.closest(".hc-wrap")?.querySelector(".hc-n"); if (n && j.followers != null) n.textContent = n.textContent.replace(/^\d+ followers?/, `${j.followers} follower${j.followers === 1 ? "" : "s"}`); const L2 = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L2.includes(b.dataset.fh)) L2.push(b.dataset.fh); localStorage.setItem("encore.following", JSON.stringify(L2)); } catch (e) { if (e.message) alert(e.message); } })); }
-  fetch("/api/public/shops").then((r) => r.json()).then((j) => { const cf = (($("#cityF") || {}).value || (() => { try { return localStorage.getItem("encore.city") || ""; } catch { return ""; } })()).trim().toLowerCase(); if (j.shops) { const seen = new Set(); j.shops = j.shops.filter((s) => { const k = `${s.name}|${s.title}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); } if (cf && j.shops) j.shops = j.shops.filter((s) => s.city && (window.EncorePlace ? window.EncorePlace.near(`${s.city || ""} ${s.hood || ""}`, cf) : `${s.city} ${s.hood}`.toLowerCase().includes(cf))); if (!j.shops?.length) return; $("#shopsSec").hidden = false; $("#shops").innerHTML = j.shops.map((s) => `<a class="ev" href="/@${esc(s.handle)}#shop"><span class="ev-ic" style="--c:${esc(s.accent || "#E26D8E")}">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 44) : esc(s.emoji || "🛍")}</span><span class="ev-b"><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><small class="why">${s.soldOut ? "Sold out. Subscribe for the next batch" : s.items.map((x) => `${esc(x.name)} ${esc(x.price)}`).join(" · ")}</small></span><span class="ev-p">${s.soldOut ? "Sold out" : "Order"}</span></a>`).join(""); }).catch(() => {});
-  try { const c0 = localStorage.getItem("encore.city"); if (c0) $("#cityF").value = c0; } catch {} (async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !$("#cityF").value) { window.EncorePlace?.setManual(W.city); $("#cityF").value = W.city; try { const pb = $("#placeBox"); if (pb && window.EncorePlace) { pb.innerHTML = ""; window.EncorePlace.chip(pb, onCity); } } catch {} if (data.events.length) { drawEvents(); drawHosts(); } } } catch {} })(); const onCity = (c) => { $("#cityF").value = c || ""; drawEvents(); drawHosts(); drawForYou(); }; if (window.EncorePlace) window.EncorePlace.chip($("#placeBox"), onCity);
-  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); let q = false; try { q = !!localStorage.getItem("encore.guestType"); } catch {} if (me?.verified || q) { const hp = document.querySelector(".hero > div > p"); if (hp) hp.style.display = "none"; const h1 = document.querySelector(".hero h1"); if (h1 && me?.verified) h1.textContent = "What's on"; if (window.innerWidth < 700) { const qz = document.getElementById("quiz"); if (qz && q) qz.style.display = "none"; } } } catch {} })();
+
+  // ---- hosts worth following: four, near you when we know where you are ----
+  function drawHosts() {
+    let F = []; try { F = JSON.parse(localStorage.getItem("encore.following") || "[]"); } catch {}
+    const evs = data.events || [], nextOf = (h) => evs.filter((e) => e.host?.handle === h.handle && near(e) && e.stage !== "interest" && e.date).sort(byDate)[0];
+    const act = (h) => (h.hosted || 0) + (h.upcoming || 0) * 2 + (h.followers || 0) + (nextOf(h) ? 3 : 0);
+    const real = (h) => h.hosted > 0 || h.followers >= 1 || h.upcoming > 0 || (h.bio || "").length > 10;
+    const byName = new Map(); for (const h of data.hosts.filter((h) => !h.showcase && h.name && real(h))) { const k = String(h.name).trim().toLowerCase(), cur = byName.get(k); if (!cur || act(h) > act(cur)) byName.set(k, h); }
+    const all = [...byName.values()].sort((a, b) => (!!a.sample - !!b.sample) || act(b) - act(a));
+    const local = city ? all.filter(near) : all, L = (local.length ? local : all).slice(0, 4);
+    $("#hostsL").hidden = !(city && !local.length && L.length); $("#hostsL").textContent = city ? `None in ${city} yet. These are a little further.` : "";
+    $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), d = n && n.date ? new Date(n.date + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : ""; const hh = n ? { ...h, next: `${n.title}${d ? ", " + d : ""}` } : h;
+      return `<div class="hc-wrap">${C.hostCard(hh)}<button class="btn ghost hc-f" type="button" data-fh="${esc(h.handle)}">${F.includes(h.handle) ? "Following ✓" : `Follow<span class="sr"> ${esc(h.name)}</span>`}</button></div>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
+    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
+      try { const w = b.closest(".hc-wrap"), j = await C.follow({ handle: b.dataset.fh, hostName: w?.querySelector(".hc b")?.textContent || "", email, tastes: [], via: "discover" }); C.oink(); b.textContent = "Following ✓";
+        const nx = evs.filter((e) => e.host?.handle === b.dataset.fh).sort(byDate)[0]; if (w && !w.querySelector(".hc-next")) w.insertAdjacentHTML("beforeend", nx ? `<a class="hc-next" href="/g#rsvp-${encodeURIComponent(nx.id)}">Next up: ${esc(nx.title)} →</a>` : `<small class="hc-next" style="color:#6B5F56;font-weight:500">Potto will tell you when they post something.</small>`);
+        const n = w?.querySelector(".hc-n"); if (n && j && j.followers != null) n.textContent = n.textContent.replace(/^\d+ followers?/, `${j.followers} follower${j.followers === 1 ? "" : "s"}`);
+      } catch (e) { if (e.message) alert(e.message); } }));
+  }
+
+  // ---- order from local hosts: one row, only for your city ----
+  function drawShops() {
+    const sec = $("#shopsSec"); if (!shops || !city) { sec.hidden = true; return; }
+    const L = shops.filter((s) => s.city && (P ? P.near(`${s.city}`, city) || (!!s.hood && P.near(s.hood, city)) : `${s.city} ${s.hood || ""}`.toLowerCase().includes(city.toLowerCase()))).slice(0, 8);
+    if (!L.length) { sec.hidden = true; return; } sec.hidden = false; $("#shopsH").textContent = `Order from hosts near ${city}`;
+    $("#shops").innerHTML = L.map((s) => `<a class="shop" href="/@${encodeURIComponent(s.handle)}#shop" style="--c:${esc(s.accent || "#E26D8E")}"><span class="ic">${s.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(s.avatarArt, s.accent, 40) : esc(s.emoji || "🛍")}</span><b>${esc(s.title || s.name)}</b><small>${esc(s.name)}${s.hood || s.city ? " · " + esc(s.hood || s.city) : ""}</small><span class="go">${s.soldOut ? "Sold out · get the next batch" : `Order${s.items && s.items[0] ? ` · from ${esc(s.items[0].price)}` : ""}`}</span></a>`).join("");
+  }
+  fetch("/api/public/shops").then((r) => r.json()).then((j) => { const seen = new Set(); shops = (j.shops || []).filter((s) => { const k = `${s.name}|${s.title}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); drawShops(); }).catch(() => {});
+
+  function drawAll() { drawForYou(); drawEvents(); drawHosts(); drawShops(); }
+  drawFilters();
+
+  // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)
+  (async () => { if (city) return; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
+    try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
+  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { $("#introH").textContent = "What's on"; $("#introP").hidden = true; } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
-  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span style="font-size:40px">🎲</span><div style="flex:1;min-width:200px"><h3 style="margin:0">What kind of guest are you?</h3><small>Six quick questions. Potto uses your answer to pick events for you.</small></div><a class="btn" href="/quiz">Take the quiz</a></div>`; }
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawEvents(); drawHosts(); drawForYou();
-    if (QTEXT || PRM.get("lane")) { const sec = document.getElementById("events")?.closest("section"); if (sec) { const h = sec.querySelector("h2"); if (h && QTEXT) h.textContent = `Results for "${PRM.get("q")}"`; setTimeout(() => sec.scrollIntoView({ behavior: "smooth", block: "start" }), 200); } } }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
+  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:36px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six quick questions. Potto uses your answer to pick events for you.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawAll();
+    if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
 </script><script src="/nav.js"></script>
 <script src="/shell.js"></script>
@@ -146,7 +212,7 @@ section{padding:22px 0}section h2{font-size:24px;margin-bottom:4px}section .lede
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Host"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Seat Filler"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
   const L = { move: "Runs, hikes and rides", make: "Making and tasting things", gather: "Long dinners and good talk", discover: "Somewhere new" }[g.lane] || "";
-  const fill = () => { q.innerHTML = `<div style="display:flex;gap:14px;align-items:center"><span style="font-size:44px">${T[0]}</span><div><small style="color:#6B5F56">You're</small><h3 style="margin:0">${T[1]}</h3><small>${L ? `Potto leads with: ${L.toLowerCase()}` : ""} · <a href="/quiz">retake</a></small></div></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn" style="margin-top:12px" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<span style="font-size:36px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `Potto leads with: ${L.toLowerCase()} · ` : ""}<a href="/quiz">Retake</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

@@ -36,7 +36,9 @@
   const titleEmoji = (e) => { const t = `${e.title || ""} ${e.activity || ""}`.toLowerCase(); return (KW.find(([k]) => t.includes(k)) || [])[1] || ""; };
   const THEME_BG = { picnic: "#FFCAD6", disco: "#DCCBFF", sunny: "#FFE08A", ocean: "#C4DEFF", linen: "#FFE3B8", candlelight: "#FFD9B0", gallery: "#E3F1DD", midnight: "#DCCBFF", sticker: "#FFE08A" };
   const LANE_BG = { move: "#C4DEFF", make: "#FFCAD6", gather: "#FFE08A", discover: "#DCCBFF" };
-  function eventCard(e, why) {
+  // opts.compact: a shorter card for long lists (Discover): a low art band, the date and who's going on one line.
+  function eventCard(e, why, opts) {
+    const compact = !!(opts && opts.compact);
     const a = actOf(e), em = titleEmoji(e) || ACT_EMOJI[a] || (e.emoji !== "🎉" && e.emoji) || "🎉", free = e.free || !e.price, H = e.host || {};
     const sketch = (art, color, size) => (art && window.EncoreAvatars ? window.EncoreAvatars.svg(art, color || "#E26D8E", size) : "");
     const hostAv = H.cover ? `<img src="${esc(H.cover)}" alt="">` : sketch(H.avatarArt, H.color, 40) || esc(H.emoji || "🎉");
@@ -46,6 +48,9 @@
     const going = Math.max(0, +e.going || +e.goingCount || 0), faces = (e.faces || []).slice(0, 3);
     const stack = `<span class="ev-faces"><span class="ev-face host" style="--c:${esc(H.color || "#E26D8E")}">${hostAv}</span>${faces.map((f) => `<span class="ev-face" style="--c:${esc(f.color || "#FFE08A")}">${f.art ? sketch(f.art, f.color, 40) : esc(f.emoji || "🙂")}</span>`).join("")}${going > faces.length ? `<span class="ev-face more">+${going - faces.length}</span>` : ""}</span>`;
     const quiet = [e.sample ? "Sample event" : "", e.city, free ? "Free" : e.price === "chip" ? "Chip in" : e.price].filter(Boolean).map(esc).join(" · "); const crowdLine = e.crowd ? `<small class="ev-crowd" style="display:block;font-weight:600;color:#5A4E45;margin-top:2px">${esc(e.crowd.charAt(0).toUpperCase() + e.crowd.slice(1))}</small>` : "";
+    if (compact) return `<a class="ev ev-poster ev-compact" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#FFE08A"}">
+      <span class="ev-art${e.coverPhoto ? " has-photo" : drawn ? " has-photo ea-card" : ""}">${art}${e.coverPhoto || drawn ? "" : `<b class="ev-title">${esc(e.title)}</b>`}${H.name ? `<span class="ev-by"><span class="ev-by-av">${hostAv}</span>${esc(H.name)}</span>` : ""}</span>
+      <span class="ev-b"><span class="ev-hl"><b class="ev-when">${esc(when)}</b>${stack}</span>${e.coverPhoto ? `<span class="ev-t2">${esc(e.title)}</span>` : ""}<small class="ev-q">${quiet}${e.crowd ? ` · ${esc(e.crowd)}` : ""}</small>${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;
     return `<a class="ev ev-poster" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#FFE08A"}">
       <span class="ev-art${e.coverPhoto ? " has-photo" : drawn ? " has-photo ea-card" : ""}">${art}${e.coverPhoto || drawn ? "" : `<b class="ev-title">${esc(e.title)}</b>`}${H.name ? `<span class="ev-by"><span class="ev-by-av">${hostAv}</span>${esc(H.name)}</span>` : ""}</span>
       <span class="ev-b"><b class="ev-when">${esc(when)}</b>${e.coverPhoto ? `<span class="ev-t2">${esc(e.title)}</span>` : ""}${stack}${crowdLine}<small class="ev-q">${quiet}</small>${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;

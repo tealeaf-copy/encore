@@ -113,3 +113,17 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 
 /* phones: shorter poster art, so a screen shows more than one event (design review) */
 @media (max-width:760px){.ev-poster .ev-art{aspect-ratio:2/1!important}.ev-poster .ea-cover .ea-txt h3,.ev-poster .ea-cover .ea-title{font-size:clamp(20px,6vw,26px)!important}}
+
+/* compact event card (opt-in: eventCard(e, why, { compact: true })): low art band, date and faces on one line */
+.ev-poster.ev-compact .ev-art{aspect-ratio:auto!important;height:132px;padding:0}
+.ev-poster.ev-compact .ev-art:not(.has-photo){padding:10px 14px 40px}
+.ev-poster.ev-compact .ev-title{font-size:19px}
+.ev-poster.ev-compact .ea-cover .ea-title{font-size:clamp(17px,5.4vw,22px)!important;-webkit-line-clamp:2}
+.ev-poster.ev-compact .ev-b{padding:10px 14px 12px;gap:4px}
+.ev-poster.ev-compact .ev-hl{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.ev-poster.ev-compact .ev-when{font-size:16px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ev-poster.ev-compact .ev-faces{flex:none}
+.ev-poster.ev-compact .ev-face{width:28px;height:28px;font-size:14px;margin-left:-7px}
+.ev-poster.ev-compact .ev-face.more{font-size:13px}
+.ev-poster.ev-compact .ev-q{font-size:13.5px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ev-poster.ev-compact .ev-b .why{font-size:13px}

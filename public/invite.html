@@ -60,17 +60,17 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const full = left === 0;
     $("#m").innerHTML = $("#m .top").outerHTML + `<div class="cov">${cover}</div><h1>${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? " · address once you're in" : ""}</div>` : ""}${A.seats ? `<div class="muted">👥 ${full ? "Full. Reply to join the waitlist." : left === A.seats ? `${A.seats} spots` : `${left} of ${A.seats} spots left`}</div>` : ""}</div>
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address once you're in</span>` : ""}</div>` : ""}${A.seats ? `<div class="muted">👥 ${full ? "Full. Join the waitlist." : left === A.seats ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${left} of ${A.seats} spot${A.seats === 1 ? "" : "s"} left`}</div>` : ""}</div>
       ${h.name ? `<div class="host"><span class="av">${av}</span><span>Hosted by <b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>` : esc(h.name)}</b></span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${A.count ? `<p style="margin:14px 0 4px;font-weight:600">${A.count} going</p><div class="going">${names}</div>` : ""}
       <form id="f" novalidate><div class="resp" role="radiogroup" aria-label="Your answer"><label><input type="radio" name="r" value="going" checked> ${esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>
         <label class="f">Your name<input type="text" id="nm" autocomplete="name" maxlength="80" required></label>
-        <label class="f">Email or phone <small>Optional. For reminders from ${esc(first)}.</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"></label>
+        <label class="f">Email or phone <small>Optional. For ${esc(first)}'s reminders.</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"></label>
         ${foody ? `<label class="f">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
-        <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(e.qStyle?.button || "Send reply")}</button></form>
-      <a class="full" id="fullLink">See who's coming →</a>`;
-    $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
+        <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(e.qStyle?.button || "Send")}</button></form>
+      ${A.count ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
+    if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<span><b>${esc(when(e).split(" · ")[0] || title)}</b><br><small class="muted">${esc(e.hood || e.city || "")}</small></span><a href="#f">${esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick); stick.hidden = true;
     { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
@@ -78,13 +78,13 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name === "r" && $("#qs")) $("#qs").hidden = ev.target.value === "no"; }); if (Q.length && !window.Questions) addEventListener("load", startQ);
     $("#f").onsubmit = async (ev) => { ev.preventDefault(); const er = $("#er"); er.textContent = "";
       const name = $("#nm").value.trim().replace(/[<>]/g, "").slice(0, 80); if (!name) { er.textContent = `Add your name so ${first} knows who's coming.`; $("#nm").focus(); return; }
-      const resp = (new FormData($("#f")).get("r") || "going"); if (resp === "going" && Qf?.missing?.()) { er.textContent = "Answer the question above first."; return; }
+      const resp = (new FormData($("#f")).get("r") || "going"); if (resp === "going" && Qf?.missing?.()) { er.textContent = "One more answer first."; return; }
       const c = $("#ct").value.trim(), email = /@/.test(c) ? c : "", phone = !email && c ? c.replace(/[^\d+]/g, "") : "";
       const code = (String(e.id || id).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
       const data = { eventId: e.id || id, response: resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: $("#dt")?.value.trim().slice(0, 120) || "", ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
       $("#send").disabled = true;
       try { const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.message || "That didn't send. Try again?");
+        if (!r.ok) throw new Error(j.message || "Didn't send. Try again.");
         const rid = String(j.id || j.doc?.id || "").split("/").pop();
         const saved = j.data?.response || j.doc?.data?.response || j.response; if (saved) data.response = saved; else if (resp === "going" && left === 0) data.response = "waitlist";
         ls.set("encore-rsvp-" + (e.id || id), JSON.stringify({ rid, code, name, gi: -1, response: data.response, wall: false, eventId: e.id || id, data: {} }));
@@ -96,12 +96,12 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); const yes = data.response === "going", wait = data.response === "waitlist";
     const pad = (n) => String(n).padStart(2, "0"), d = e.date ? e.date.replace(/-/g, "") : "", t = /^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime.replace(":", "") + "00" : "";
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
-    const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${yes ? "You're in 🎉" : wait ? "You're on the waitlist" : data.response === "maybe" ? "Maybe it is" : "Maybe next time"}</h2>${wait ? `<p class="muted" style="margin:0">We'll tell you if a spot opens.</p>` : ""}
-      ${yes || wait ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
+    const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${yes ? "You're in 🎉" : wait ? "You're on the waitlist" : data.response === "maybe" ? "Noted as a maybe" : "Maybe next time"}</h2>${wait ? `<p class="muted" style="margin:0">We'll tell you if a spot opens.</p>` : ""}
+      ${yes ? `<p class="muted" style="margin:0">Your door code</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
       <div class="btns">${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}<a class="btn main" href="/g#rsvp-${encodeURIComponent(e.id || id)}">See who's coming</a></div></div>`;
     document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
-    if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(e.id || id)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr) { $("#addr").textContent = "📍 " + addr; where = addr.replace(" · ", ", "); } } } catch {}
+    if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(e.id || id)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${d}${t ? "T" + pad(Math.min(23, +t.slice(0, 2) + 2)) + t.slice(2) : ""}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/g#rsvp-" + (e.id || id))}`; }
   }
 })();

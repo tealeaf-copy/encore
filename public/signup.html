@@ -22,23 +22,23 @@
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
   <h1 id="h">Start your free trial</h1>
   <p class="sub" id="sub">14 days, every feature, no card.</p>
-  <div class="modes" role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
+  <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
   <p class="err" id="err" role="alert"></p>
-  <label id="codeWrap" hidden><span>Host code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode">No code? Ask a host you know, or <a href="#wl" onclick="document.getElementById('wl')?.scrollIntoView({behavior:'smooth',block:'center'});return false">join the waitlist</a>.</small></label>
-  <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
-  <label><span id="emL">Work email</span><input name="email" type="email" placeholder="Email" autocomplete="email" required></label>
+  <label id="codeWrap" hidden><span>Host code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode" id="nocodeHint" hidden>No code? Ask a host you know, or <a href="#wl" onclick="document.getElementById('f').hidden=true;document.getElementById('wl').hidden=false;return false">join the waitlist</a>.</small></label>
+  <label>Your name<input name="name" placeholder="e.g. Dana Park" autocomplete="name" required></label>
+  <label><span id="emL">Work email</span><input name="email" type="email" placeholder="you@example.com" autocomplete="email" required></label>
   <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>
-  <label id="cityWrap"><span>Your city <small style="font-weight:400;color:#75685F">(for events near you)</small></span><span style="display:flex;flex-direction:column;gap:6px"><input name="city" id="cityIn" list="suCities" placeholder="e.g. New York" autocomplete="address-level2" style="width:100%;box-sizing:border-box"><button type="button" id="cityGps" style="align-self:flex-start;white-space:nowrap;border:1px solid #E7DFD3;background:#fff;border-radius:12px;padding:6px 12px;font-size:14px;color:#1F1A17;font:inherit;cursor:pointer">📍 Use my location</button></span><datalist id="suCities"></datalist></label>
+  <label id="cityWrap"><span>Your city</span><span style="display:flex;flex-direction:column;gap:6px"><input name="city" id="cityIn" list="suCities" placeholder="e.g. New York" autocomplete="address-level2" style="width:100%;box-sizing:border-box"><button type="button" id="cityGps" style="align-self:flex-start;white-space:nowrap;border:1px solid #E7DFD3;background:#fff;border-radius:12px;padding:6px 12px;font-size:14px;color:#1F1A17;font:inherit;cursor:pointer">📍 Use my location</button></span><datalist id="suCities"></datalist></label>
   <label id="webWrap"><span>Company website <small style="font-weight:400;color:#75685F">(optional)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
   <input type="hidden" name="mode" value="work">
-  <label>Password (10+ characters)<input name="password" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
+  <label>Password <small style="font-weight:400;color:#75685F">(10+ characters)</small><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Start free trial</button>
   <a href="/login">Already have an account? Sign in</a>
   <a href="#" id="noCode" hidden style="display:none!important">No code yet? Join the waitlist</a>
 </form>
 <form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
   <h1>Invite-only, for now</h1>
-  <p class="sub">Tell us what you'd host. A member nearby can send you a code.</p>
+  <p class="sub">Tell us what you'd host. A host nearby can send you a code.</p>
   <p class="err" id="wlErr" role="alert"></p>
   <label>Your name<input name="name" autocomplete="name"></label>
   <label>Email<input name="email" type="email" autocomplete="email" required></label>
@@ -50,24 +50,25 @@
 <script>
   (function () { const q = new URLSearchParams(location.search), f = document.getElementById("f");
     const set = (m) => { f.mode.value = m; document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
-      const fr = m === "friends"; document.getElementById("h").textContent = fr ? (q.get("regularOf") ? "Sign up to follow" : "Start your page") : "Start your free trial";
-      document.getElementById("sub").textContent = fr ? "Free for hosting friends. No card needed." : "14 days, every feature, no card.";
-      document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Club or group name (optional)" : "Company";
-      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? "Create my page" : "Start free trial"; };
+      const fr = m === "friends", fol = fr && !!q.get("regularOf"); document.getElementById("h").textContent = fr ? (fol ? "Follow along" : "Start your page") : "Start your free trial";
+      document.getElementById("sub").textContent = fr ? (fol ? "Free. No card needed." : "Free for hosting friends. No card needed.") : "14 days, every feature, no card.";
+      { const cw0 = document.getElementById("coWrap"); cw0.hidden = fol; if (fol) f.company.value = ""; }
+      document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
+      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Create account" : "Create my page") : "Start free trial"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
-    if (q.get("mode") !== "work") set("friends");
+    if (q.get("mode") !== "work") set("friends"); else document.getElementById("modes").hidden = false;
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), nc = document.getElementById("noCode"), wl = document.getElementById("wl");
-    let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That code doesn't work."; } catch {} }, 250); };
+    let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ You're good to go.") : j.message || "That code doesn't work."; } catch {} }, 250); };
     ci.addEventListener("input", check);
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
-    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = !!q.get("code"); window.__inviteOnly = true; } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
+    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = !!q.get("code"); document.getElementById("nocodeHint").hidden = false; window.__inviteOnly = true; } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
     nc.onclick = (e) => { e.preventDefault(); f.hidden = true; wl.hidden = false; };
     if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">Members near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see that you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. Your code will land in your inbox.</p>`;
+        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">Hosts near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. If one sends a code, it comes by email.</p>`;
       } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();

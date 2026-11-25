@@ -31,13 +31,13 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 </style><script src="/mascot.js"></script></head><body>
 <div class="wrap">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
-  <h1>Hosts on Pottery Lab</h1>
+  <h1>Find a host</h1>
   <p class="lede">Run clubs, supper clubs, bakers and artists. Follow one to hear first.</p>
-  <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">City</option></select><span id="kinds" style="display:contents"></span></div></div>
+  <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select><span id="kinds" style="display:contents"></span></div></div>
   <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
   <button type="button" class="more" id="more" hidden></button>
-  <p class="teams">Booking for a brand? <a href="/hosts/book">See hosts who take bookings</a>.</p>
+  <p class="teams">Booking for a brand? <a href="/hosts/book">Book a host</a>.</p>
 </div>
 <script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
 <script>
@@ -82,7 +82,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     if (!(smart && smart.length)) L = [...L.filter((h) => !h.sample), ...L.filter((h) => h.sample)];
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
-    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match yet. Try another city or search.</p>`;
+    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or word.</p>`;
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = shown === FIRST ? `See all ${L.length} hosts` : `Show ${Math.min(STEP, left)} more`;
   }
@@ -104,7 +104,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     const C = {}; for (const h of H) { const c = cityOf(h); if (c) C[c] = (C[c] || 0) + 1; }
     const sel = $("#city"), cities = Object.entries(C).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c]) => c);
     if (city && !cities.includes(city)) cities.unshift(city);
-    sel.innerHTML = `<option value="">Every city</option>` + cities.map((c) => `<option value="${esc(c)}"${c === city ? " selected" : ""}>${esc(c)}</option>`).join("");
+    sel.innerHTML = `<option value="">Anywhere</option>` + cities.map((c) => `<option value="${esc(c)}"${c === city ? " selected" : ""}>${esc(c)}</option>`).join("");
     sel.onchange = () => { city = sel.value; shown = FIRST; draw(); };
     draw(); if (q) askAI();
   }).catch(() => { $("#count").textContent = "Couldn't load hosts. Refresh to try again."; });

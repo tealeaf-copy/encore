@@ -36,7 +36,7 @@ test("New hosts and milestones", () => {
   assert.ok(!badgesFor({ dates: [weeksAgo(1)], guests: 3, createdAt: Date.now() - 10 * 864e5, clients: 2 }, NOW).isNew, "past clients aren't new");
   assert.ok(!badgesFor({ dates: [], guests: 0, createdAt: Date.now() - 400 * 864e5 }, NOW).isNew);
   assert.ok(!badgesFor({ dates: [], guests: 0, createdAt: Date.now() - 2 * 864e5 }, NOW).isNew, "signing up alone is not hosting");
-  assert.ok(badgesFor({ dates: Array.from({ length: 11 }, (_, i) => weeksAgo(i + 1)), guests: 30 }, NOW).badges.some((x) => x.label === "10+ gatherings"));
+  assert.ok(badgesFor({ dates: Array.from({ length: 11 }, (_, i) => weeksAgo(i + 1)), guests: 30 }, NOW).badges.some((x) => x.label === "10+ events"));
 });
 
 import { recapOf, longestWeeks } from "../server/recognition.js";
@@ -50,7 +50,7 @@ test("Hosts see what's next: keep the streak, how close Super host is, the next 
   const wk = (n) => new Date(Date.parse(NOW) - n * 7 * 864e5).toISOString().slice(0, 10);
   const r = badgesFor({ dates: [wk(1), wk(2), wk(3), wk(4)], guests: 12, returning: 6 }, NOW);
   assert.ok(r.next.some((x) => x.id === "streak" && /5 weeks in a row/.test(x.text)), "nothing yet this week: nudge to keep the streak");
-  assert.ok(r.next.some((x) => x.id === "super" && /1 more gathering/.test(x.text) && /3 more guests/.test(x.text)));
+  assert.ok(r.next.some((x) => x.id === "super" && /1 more event/.test(x.text) && /3 more guests/.test(x.text)));
   assert.ok(r.next.some((x) => x.id === "m-events" && /1 more to reach 5/.test(x.text)));
   assert.ok(!badgesFor({ dates: [wk(0), wk(1), wk(2)], guests: 3 }, NOW).next.some((x) => x.id === "streak"), "already hosted this week");
 });

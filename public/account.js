@@ -1,4 +1,4 @@
-// Joining a host's regulars takes a free account. This sheet creates one (the host's page is the invite) or signs
+// Following a host takes a free account. This sheet creates one (the host's page is the invite) or signs
 // you in, then the follow goes through. Used on host pages, Discover, the guest page and the shop.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -21,13 +21,13 @@
       const bg = document.createElement("div"); bg.className = "acct-bg"; document.body.appendChild(bg);
       const close = (v) => { bg.remove(); resolve(v); }; bg.onclick = (e) => { if (e.target === bg) close(false); };
       const draw = () => { bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Create your account"><button class="x" type="button" aria-label="Close">×</button>
-        <h2>${mode === "new" ? `Join ${esc(first)}'s regulars` : "Welcome back"}</h2>
-        <p>${mode === "new" ? `A free account means ${esc(first)} knows who you are, you hear about the next one first, and you can leave with one tap. No invite code needed: ${esc(first)}'s page is your invite.` : `Sign in and you'll join ${esc(first)}'s regulars.`}</p>
+        <h2>${mode === "new" ? `Follow ${esc(first)}` : "Welcome back"}</h2>
+        <p>${mode === "new" ? `A free account. Hear about ${esc(first)}'s next one first. No code needed.` : `Sign in to follow ${esc(first)}.`}</p>
         <form>${mode === "new" ? `<label>Your name<input name="name" autocomplete="name" required value="${esc(name)}"></label>` : ""}
           <label>Email<input name="email" type="email" autocomplete="email" required value="${esc(email)}"></label>
           <label>Mobile <span style="font-weight:400;color:#6F6259">(optional, for a text when ${esc(first)} posts)</span><input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" value="${esc((() => { try { return localStorage.getItem("encore.phone") || ""; } catch { return ""; } })())}"></label>
           <label>Password${mode === "new" ? " (10+ characters)" : ""}<input name="password" type="password" autocomplete="${mode === "new" ? "new-password" : "current-password"}" ${mode === "new" ? 'minlength="10"' : ""} required></label>
-          <p class="err" role="alert"></p><button type="submit">${mode === "new" ? "Create my account and join" : "Sign in and join"}</button></form>
+          <p class="err" role="alert"></p><button type="submit">${mode === "new" ? "Create account" : "Sign in"}</button></form>
         <button class="alt" type="button">${mode === "new" ? "Already have an account? Sign in" : "New here? Create an account"}</button></div>`;
         bg.querySelector(".x").onclick = () => close(false); bg.querySelector(".alt").onclick = () => { mode = mode === "new" ? "old" : "new"; draw(); };
         const f = bg.querySelector("form"), err = bg.querySelector(".err"); setTimeout(() => f.querySelector("input:not([value]), input[value='']")?.focus(), 30);
@@ -40,24 +40,24 @@
       draw(); }); }
   /** Follow a host, asking for an account first if needed. Resolves the follow response, or null if they backed out. */
   // a one-time ask for a mobile number, for people who were already signed in
-  function askPhone(hostName) { return new Promise((resolve) => { try { if (localStorage.getItem("encore.phoneAsked")) return resolve(""); localStorage.setItem("encore.phoneAsked", "1"); } catch { return resolve(""); } style(); const first = (/\b('s|’s|club|crew|kitchen|cafe|café|studio|co\.?)\b/i.test(String(hostName || "")) ? String(hostName) : String(hostName || "").split(" ")[0]) || "them";
+  function askPhone(hostName, emailed, shown) { return new Promise((resolve) => { try { if (localStorage.getItem("encore.phoneAsked")) return resolve(""); localStorage.setItem("encore.phoneAsked", "1"); } catch { return resolve(""); } style(); let first = (/\b('s|’s|club|crew|kitchen|cafe|café|studio|co\.?)\b/i.test(String(hostName || "")) ? String(hostName) : String(hostName || "").split(" ")[0]) || "them"; if (shown) first = shown;
     const bg = document.createElement("div"); bg.className = "acct-bg"; document.body.appendChild(bg); const done = (v) => { bg.remove(); resolve(v); };
-    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Get texts"><button class="x" type="button" aria-label="Close">×</button><h2>You're following ${esc(first)} 🎉</h2><p>We've emailed you a confirmation. Want a text too, and a heads-up when ${esc(first)} posts something new?</p><form><label>Mobile<input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" required></label><p class="err" role="alert"></p><button type="submit">Text me</button></form><button class="alt" type="button">No thanks, email is fine</button></div>`;
+    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Get texts"><button class="x" type="button" aria-label="Close">×</button><h2>You're following ${esc(first)}</h2><p>${emailed ? "We've emailed you. " : ""}Want a text when ${esc(first)} posts the next one?</p><form><label>Mobile<input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" required></label><p class="err" role="alert"></p><button type="submit">Text me</button></form><button class="alt" type="button">Email's fine</button></div>`;
     bg.querySelector(".x").onclick = () => done(""); bg.querySelector(".alt").onclick = () => done(""); bg.onclick = (e) => { if (e.target === bg) done(""); };
-    const f = bg.querySelector("form"); setTimeout(() => f.phone.focus(), 30); f.onsubmit = (e) => { e.preventDefault(); const v = f.phone.value.trim(); if (!/^\+?[0-9 ()-]{7,20}$/.test(v)) { bg.querySelector(".err").textContent = "That doesn't look like a phone number."; return; } try { localStorage.setItem("encore.phone", v); } catch {} done(v); }; }); }
+    const f = bg.querySelector("form"); setTimeout(() => f.phone.focus(), 30); f.onsubmit = (e) => { e.preventDefault(); const v = f.phone.value.trim(); if (!/^\+?[0-9 ()-]{7,20}$/.test(v)) { bg.querySelector(".err").textContent = "That number doesn't look right."; return; } try { localStorage.setItem("encore.phone", v); } catch {} done(v); }; }); }
   // signed out: just an email (remembered for next time)
-  function askEmail(hostName) { return new Promise((resolve) => { style(); const first = (/\b('s|’s|club|crew|kitchen|cafe|café|studio|co\.?)\b/i.test(String(hostName || "")) ? String(hostName) : String(hostName || "").split(" ")[0]) || "them"; let saved = ""; try { saved = localStorage.getItem("encore.email") || ""; } catch {}
+  function askEmail(hostName, shown) { return new Promise((resolve) => { style(); let first = (/\b('s|’s|club|crew|kitchen|cafe|café|studio|co\.?)\b/i.test(String(hostName || "")) ? String(hostName) : String(hostName || "").split(" ")[0]) || "them"; if (shown) first = shown; let saved = ""; try { saved = localStorage.getItem("encore.email") || ""; } catch {}
     const bg = document.createElement("div"); bg.className = "acct-bg"; document.body.appendChild(bg); const done = (v) => { bg.remove(); resolve(v); };
-    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Follow"><button class="x" type="button" aria-label="Close">×</button><h2>Follow ${esc(first)}</h2><p>Hear first when ${esc(first)} hosts something. Just your email; one tap to stop.</p><form><label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required value="${esc(saved)}"></label><p class="err" role="alert"></p><button type="submit">Follow ${esc(first)}</button></form></div>`;
+    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Follow"><button class="x" type="button" aria-label="Close">×</button><h2>Follow ${esc(first)}</h2><p>Just your email. Hear first when ${esc(first)} hosts.</p><form><label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required value="${esc(saved)}"></label><p class="err" role="alert"></p><button type="submit">Follow</button></form></div>`;
     bg.querySelector(".x").onclick = () => done(""); bg.onclick = (e) => { if (e.target === bg) done(""); };
-    const f = bg.querySelector("form"); setTimeout(() => f.email.focus(), 30); f.onsubmit = (e) => { e.preventDefault(); const v = f.email.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { bg.querySelector(".err").textContent = "That doesn't look like an email."; return; } try { localStorage.setItem("encore.email", v); } catch {} done(v); }; }); }
-  async function follow(body, { hostName = "" } = {}) {
+    const f = bg.querySelector("form"); setTimeout(() => f.email.focus(), 30); f.onsubmit = (e) => { e.preventDefault(); const v = f.email.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { bg.querySelector(".err").textContent = "That email doesn't look right."; return; } try { localStorage.setItem("encore.email", v); } catch {} done(v); }; }); }
+  async function follow(body, { hostName = "", first: shown = "" } = {}) {
     try { if (!body.phone) { const ph = localStorage.getItem("encore.phone"); if (ph) body = { ...body, phone: ph }; } } catch {}
     const go = () => fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    let r = await go(); const wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
+    let r = await go(); const wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName, shown); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again.");
     try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(body.handle)) L.push(body.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
-    if (!body.phone && !wasSignedIn) { setTimeout(async () => { const ph = await askPhone(hostName); if (ph) { try { await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, phone: ph }) }); } catch {} } }, 0); }
+    if (!body.phone && !wasSignedIn) { setTimeout(async () => { const ph = await askPhone(hostName, !!j.emailed, shown); if (ph) { try { await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, phone: ph }) }); } catch {} } }, 0); }
     return j; }
   window.EncoreAccount = { ensure, follow, me };
 })();

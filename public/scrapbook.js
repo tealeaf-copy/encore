@@ -1,5 +1,5 @@
-// The scrapbook on a host's page: every gathering, taped in like a yearbook. Polaroids grouped by year, handwritten
-// captions, tape and stamps. Hosts add past gatherings from Partiful, Luma and Eventbrite links, a CSV or by hand,
+// The scrapbook on a host's page: every event, taped in like a yearbook. Polaroids grouped by year, handwritten
+// captions, tape and stamps. Hosts add past events from Partiful, Luma and Eventbrite links, a CSV or by hand,
 // and add photos to any of them. Guests see the scrapbook; only the host sees the tools.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -34,20 +34,20 @@
   async function mount(h, { first = "", past = [], anchor } = {}) { css(); if (h.showcase) return; let items = [], mine = false;
     try { items = (await (await fetch("/api/public/host/" + encodeURIComponent(h.handle) + "/scrapbook")).json()).items || []; } catch {}
     if (signed()) { try { const me = await (await fetch("/api/host/profile")).json(); mine = me?.host?.handle === h.handle; } catch {} }
-    // gatherings hosted here join the imported ones
+    // events hosted here join the imported ones
     const here = (past || []).map((e) => ({ id: "", title: e.title, date: e.date, place: e.city || "", guests: +e.going || 0, source: "here", photos: [], cover: e.coverPhoto || "", ev: e }));
     const all = [...items.map((x) => ({ ...x, mine: true })), ...here].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     if (!all.length && !mine) return;
     let sec = document.getElementById("scrapbook"); if (!sec) { sec = document.createElement("section"); sec.id = "scrapbook"; sec.className = "sb"; (anchor || document.querySelector(".cols") || document.querySelector("main"))?.after(sec); }
     const years = new Map(); for (const x of all) { const y = (x.date || "").slice(0, 4) || "Undated"; if (!years.has(y)) years.set(y, []); years.get(y).push(x); }
-    // when several gatherings are the same kind (a run club's runs), each polaroid gets a different drawing from that family
+    // when several events are the same kind (a run club's runs), each polaroid gets a different drawing from that family
     const usedArt = new Set(), pickArt = (A, ev0) => { const opts = [...new Set([A.kindOf(ev0), ...(A.suggest ? A.suggest(ev0, 8) : [])])].filter(Boolean); const k = opts.find((o) => !usedArt.has(o)) || opts[usedArt.size % Math.max(1, opts.length)] || "party"; usedArt.add(k); return k; };
     const card = (x, i) => { const photo = x.cover || x.photos?.[0], A = window.EventArt, ev0 = x.ev || { title: x.title, name: x.title, activity: x.title }, k = A ? (photo ? A.kindOf(ev0) : pickArt(A, ev0)) : "", tone = A ? A.toneOf(ev0, k) : "", art = !photo && A ? A.drawing(k, A.SPOT?.[tone] || "#D2603A") : "", tint = (A && A.PASTELS?.[tone]) || "#F3ECE2";
       return `<button type="button" class="pol" style="--r:${TILT[i % TILT.length]}deg;--tr:${i % 2 ? 5 : -4}deg" data-sb="${esc(x.id || "")}" data-i="${all.indexOf(x)}"><span class="tape"></span><span class="ph" style="${photo ? "" : `background:${typeof tint === "string" ? tint : "#F3ECE2"}`}">${photo ? `<img src="${esc(photo)}" alt="" loading="lazy">` : art ? `<span class="ea">${art}</span>` : "🎉"}${(x.photos || []).length > 1 ? `<span class="n">${x.photos.length} photos</span>` : ""}</span>
         ${/^(Partiful|Luma|Eventbrite|Henly|here)$/.test(x.source || "") ? `<span class="stamp ${esc(x.source)}">${x.source === "here" ? "Pottery Lab" : esc(x.source)}</span>` : ""}
         <div class="cap">${esc(x.title)}</div><div class="meta">${esc([fmt(x.date), x.place, x.guests ? `${x.guests} came` : ""].filter(Boolean).join(" · "))}</div>${x.note ? `<div class="note">“${esc(x.note)}”</div>` : ""}
         ${mine && x.id ? `<span class="own"><span data-act="photo" title="Add photos">📷</span><span data-act="edit" title="Edit">✎</span><span data-act="del" title="Remove">🗑</span></span>` : ""}</button>`; };
-    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? `${all.length} ${all.length === 1 ? "gathering" : "gatherings"} ${esc(first || h.name)} has hosted, taped in.` : "Every gathering you've hosted, in one place. Bring in the ones from before Pottery Lab."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past gatherings</button>` : ""}</div>
+    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? `${all.length} ${all.length === 1 ? "event" : "events"}, taped in.` : "Every event you've hosted, in one place."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
       ${all.length ? [...years].map(([y, L]) => `<div class="sb-year">${esc(y)}</div><div class="sb-g">${L.map(card).join("")}</div>`).join("") : `<div class="sb-empty">${window.Potto ? window.Potto.svg("carry", 96) : ""}<p>Paste links to your past Partiful, Luma or Eventbrite events and they'll appear here with their cover photos. Then add your own photos from the night.</p></div>`}
       <input type="file" id="sbFile" accept="image/*" multiple hidden>`;
     let target = null;
@@ -67,7 +67,7 @@
     function openEdit(x) { const bg = modal(`<h3>Edit “${esc(x.title)}”</h3><label>Title<input id="eT" value="${esc(x.title)}" maxlength="140"></label><div class="row2"><label>Date<input id="eD" type="date" value="${esc(x.date || "")}"></label><label>How many came<input id="eG" type="number" min="0" value="${x.guests || ""}"></label></div><label>Where<input id="eP" value="${esc(x.place || "")}" maxlength="120"></label><label>A note, in your words<input id="eN" value="${esc(x.note || "")}" maxlength="400" placeholder="Burned the rice. Nobody minded."></label><div class="btns"><button type="button" class="btn" data-close>Cancel</button><button type="button" class="btn go" id="eS">Save</button></div>`);
       bg.querySelector("#eS").onclick = async () => { await fetch("/api/host/scrapbook/" + x.id, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: bg.querySelector("#eT").value, date: bg.querySelector("#eD").value, guests: bg.querySelector("#eG").value, place: bg.querySelector("#eP").value, note: bg.querySelector("#eN").value }) }); bg.remove(); mount(h, { first, past, anchor }); }; }
     function openImport() { let tab = "links", handPhotos = [];
-      const bg = modal(`<h3>Add past gatherings</h3><p class="hint">Bring in what you hosted before Pottery Lab. It goes in your scrapbook, so brands and friends see everything you've done.</p>
+      const bg = modal(`<h3>Add past events</h3><p class="hint">Bring in what you hosted before Pottery Lab. It goes in your scrapbook, so brands and friends see everything you've done.</p>
         <div class="tabs" role="tablist"><button type="button" data-tab="links" aria-pressed="true">🔗 Links</button><button type="button" data-tab="csv" aria-pressed="false">📄 CSV</button><button type="button" data-tab="hand" aria-pressed="false">✍️ By hand</button></div>
         <div data-pane="links"><label>Paste Partiful, Luma, Eventbrite or Henly links, one per line<textarea id="iL" rows="5" placeholder="https://partiful.com/e/…&#10;https://lu.ma/…&#10;https://www.eventbrite.com/e/…"></textarea></label><p class="hint">We read the title, date, place and cover photo from each page and keep a copy of the photo. Up to 15 at a time.</p></div>
         <div data-pane="csv" hidden><label>A CSV with your events (Eventbrite: Manage events → Export)<input id="iC" type="file" accept=".csv,text/csv"></label><p class="hint" id="iCn">We look for title, date, venue and attendee columns.</p></div>

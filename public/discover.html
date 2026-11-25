@@ -50,9 +50,9 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
-    <nav><a href="/discover" aria-current="page">Discover</a><a href="/plans">Plans</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
+    <nav><a href="/discover" aria-current="page">Discover</a><a href="/hosts">Hosts</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
 
-  <div class="intro"><h1 id="introH">Small events near you</h1><p id="introP">Run clubs, supper clubs, bakes on a stoop. Tap one to say yes.</p></div>
+  <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs, bakes on a stoop.</p></div>
 
   <div class="fbar" role="group" aria-label="Where and what">
     <button type="button" class="loc" id="locBtn" aria-expanded="false" aria-controls="locPanel"><span aria-hidden="true">📍</span> <span id="locName">Anywhere</span> <span aria-hidden="true">▾</span><span class="sr">, change city</span></button>
@@ -62,7 +62,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   <form class="locp" id="locPanel" hidden>
     <label for="locIn">Your city</label>
     <input id="locIn" name="c" list="locCities" placeholder="Type a city" autocomplete="off" data-1p-ignore data-lpignore="true"><datalist id="locCities"></datalist>
-    <button type="submit" class="go">Show what's on</button><button type="button" id="locGps">Use my location</button><button type="button" id="locAny">Anywhere</button>
+    <button type="submit" class="go">Show events</button><button type="button" id="locGps">Use my location</button><button type="button" id="locAny">Anywhere</button>
     <p class="note" id="locNote" aria-live="polite"></p>
   </form>
 
@@ -71,7 +71,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   <section id="evSec" aria-labelledby="evH"><h2 id="evH">Coming up</h2>
     <div id="evNote"></div>
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div>
-    <button type="button" class="btn ghost more-btn" id="evMore" hidden></button></section>
+    <button type="button" class="btn ghost more-btn" id="evMore" hidden></button><style>.more-btn[hidden]{display:none!important}</style></section>
 
   <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><p class="lede">Made by hosts near you.</p><div class="shop-row" id="shops"></div></section>
 
@@ -90,6 +90,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 (function () {
   const C = window.EncoreCommunity, P = window.EncorePlace, $ = (s) => document.querySelector(s), esc = C.esc;
   const PAGE = 6; // cards shown before "Show more"
+  let SIGNED = /(?:^|;\s*)encore_in=1/.test(document.cookie);
   $("#pipI").innerHTML = C.pipSVG("happy", 44);
   let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
   let data = { events: [], hosts: [] }, shops = null, filter = "all", city = "", evShown = PAGE, farOpen = false, fyIds = new Set();
@@ -103,7 +104,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 
   // ---- one location chip: tap to set your city ----
   if (P) $("#locCities").innerHTML = P.CITIES.map((c) => `<option value="${esc(c[0])}">`).join("");
-  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; };
+  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city ? "Small events near you" : "Small events, big welcome"; };
   const openLoc = (open) => { $("#locPanel").hidden = !open; $("#locBtn").setAttribute("aria-expanded", String(open)); if (open) { $("#locIn").value = city; $("#locNote").textContent = ""; $("#locIn").focus(); } };
   const setCity = (c, source) => { city = String(c || "").trim(); try { if (P) { if (source === "gps") { /* place.js already saved it */ } else P.setManual(city); } else localStorage.setItem("encore.city", city); } catch {} evShown = PAGE; farOpen = false; drawLoc(); drawAll(); };
   $("#locBtn").onclick = () => openLoc($("#locPanel").hidden);
@@ -133,13 +134,13 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     const ranked = data.events.filter(near).map((e) => ({ e, ...fits(e) })).filter((x) => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 2);
     if (!ranked.length) { box.hidden = true; return; }
     box.hidden = false; const Pn = C.PERSONAS[ans.persona] || C.PERSONAS.explorer; ranked.forEach((x) => fyIds.add(x.e.id));
-    $("#fyL").textContent = `${Pn.name.replace(/^The /, "")}s tend to love these.`;
+    $("#fyL").textContent = "Picked from your quiz.";
     $("#fyList").innerHTML = ranked.map((x) => card(x.e, x.why)).join("");
   }
 
   // ---- events: the chosen city first, an honest note when there's nothing there ----
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
-  let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? `✨ ${GT.name} love these` : ""].filter(Boolean).join(" · ");
+  let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? "✨ Picked for you" : ""].filter(Boolean).join(" · ");
   const byDate = (a, b) => String(a.date || "9").localeCompare(String(b.date || "9"));
   const LANE_H = { move: "Runs, hikes and rides", make: "Make & taste", gather: "Long dinners, good talk", discover: "Somewhere new" };
   function drawEvents() {
@@ -150,7 +151,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
     let list = local, note = "", rest = [];
     if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
-    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. <a href="/feed#alerts">Tell me when one opens nearby</a>.`; }
+    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. ${SIGNED ? `<a href="/feed#alerts">Tell me when one opens nearby</a>.` : `<a href="/signup?mode=friends">Tell me when one opens nearby</a>.`}`; }
     else if (city) rest = far;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : "Nothing here yet. Try Everything.";
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
@@ -180,7 +181,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
       return `<div class="hc-wrap">${C.hostCard(hh)}<button class="btn ghost hc-f" type="button" data-fh="${esc(h.handle)}">${F.includes(h.handle) ? "Following" : `Follow<span class="sr"> ${esc(h.name)}</span>`}</button></div>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
     document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
       try { const w = b.closest(".hc-wrap"), j = await C.follow({ handle: b.dataset.fh, hostName: w?.querySelector(".hc b")?.textContent || "", email, tastes: [], via: "discover" }); C.oink(); b.textContent = "Following";
-        const nx = evs.filter((e) => e.host?.handle === b.dataset.fh).sort(byDate)[0]; if (w && !w.querySelector(".hc-next")) w.insertAdjacentHTML("beforeend", nx ? `<a class="hc-next" href="/g#rsvp-${encodeURIComponent(nx.id)}">Next up: ${esc(nx.title)} →</a>` : `<small class="hc-next" style="color:#6B5F56;font-weight:500">You'll hear when they post.</small>`);
+        const nx = evs.filter((e) => e.host?.handle === b.dataset.fh).sort(byDate)[0]; if (w && !w.querySelector(".hc-next, .hc-nx")) w.insertAdjacentHTML("beforeend", nx ? `<a class="hc-next" href="/g#rsvp-${encodeURIComponent(nx.id)}">Next up: ${esc(nx.title)} →</a>` : `<small class="hc-next" style="color:#6B5F56;font-weight:500">You'll hear when they post.</small>`);
         if (w && j && j.followers) { const fl = `${j.followers} follower${j.followers === 1 ? "" : "s"}`; let n = w.querySelector(".hc-n"); if (!n) { n = document.createElement("span"); n.className = "hc-n"; w.querySelector(".hc")?.appendChild(n); } n.textContent = /^\d+ followers?/.test(n.textContent) ? n.textContent.replace(/^\d+ followers?/, fl) : n.textContent ? `${fl} · ${n.textContent}` : fl; }
       } catch (e) { if (e.message) alert(e.message); } }));
   }
@@ -200,9 +201,9 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)
   (async () => { if (city) return; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
-  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { $("#introH").textContent = "Discover"; $("#introP").hidden = true; } } catch {} })();
+  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#introH").textContent = "Discover"; $("#introP").hidden = true; } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
-  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six quick questions. Potto picks events to match.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
+  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six questions, events to match.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawAll();
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
@@ -212,7 +213,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Planner"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Last-Minute Yes"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
   const L = { move: "Runs, hikes and rides", make: "Making and tasting things", gather: "Long dinners and good talk", discover: "Somewhere new" }[g.lane] || "";
-  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `Potto leads with: ${L.toLowerCase()} · ` : ""}<a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `${String(L).replace(/[&<>]/g, "")} first · ` : ""}<a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show these</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

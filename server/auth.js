@@ -190,17 +190,17 @@ export function loginHandler(req, res) {
   const named = users().length || (signupEnabled() && String(req.body?.email || "").trim());
   if (named) {
     const u = findUser(req.body?.email);
-    if (!u) return deny(2, "That email isn't on the team list.");
+    if (!u) return deny(2, "That email and password don't match.");
     // Enforced SSO: password sign-in is off for the domain, except for the owner who set SSO up (break-glass).
     const sso = u.ws !== DEFAULT_WS ? ssoForEmail(u.email) : null;
     if (sso && sso.enforce && sso.ws === u.ws && sso.configuredBy !== u.email) return isForm ? res.redirect(303, "/login?error=4") : res.status(401).json({ code: "sso_required", message: "Your company signs in with single sign-on. Use \"Sign in with SSO\".", sso: "/sso/start?email=" + encodeURIComponent(u.email) });
     // A personal password, when set, is required; the shared team password then doesn't work for that person.
     // Accounts made by sign-up or invite always have one.
     const personal = checkPersonal(u, password);
-    if (personal === false || (personal === null && (u.ws !== DEFAULT_WS || !process.env.APP_PASSWORD || !same(password, process.env.APP_PASSWORD)))) return deny(1, "Wrong password.");
+    if (personal === false || (personal === null && (u.ws !== DEFAULT_WS || !process.env.APP_PASSWORD || !same(password, process.env.APP_PASSWORD)))) return deny(1, "That email and password don't match.");
     value = makeCookie(u.email, u.ws);
   } else if (!process.env.APP_PASSWORD || !same(password, process.env.APP_PASSWORD)) {
-    return deny(1, "Wrong password.");
+    return deny(1, "That email and password don't match.");
   } else value = makeCookie("*", DEFAULT_WS);
   clearFails(req);
   const secure = req.secure ? "; Secure" : "";
@@ -226,7 +226,7 @@ export function startPasswordReset(email) {
 /** Sets the new password and signs out every existing session. Returns the person, or an error string. */
 export function finishPasswordReset(token, password) {
   if (!/^[a-f0-9]{48}$/.test(String(token || ""))) return "This reset link isn't valid.";
-  if (String(password || "").length < 8) return "Use at least 8 characters.";
+  if (String(password || "").length < 10) return "Use at least 10 characters.";
   const hit = store?.get(resetPath(token))?.data; if (!hit || hit.used || hit.exp < Date.now()) return "This reset link has expired. Ask for a new one.";
   const u = getDbUser(hit.email); if (!u) return "This reset link isn't valid.";
   putDbUser({ ...u, pw: hashPassword(password), gen: (u.gen || 0) + 1, pwChangedAt: Date.now() }); store.set(resetPath(token), { ...hit, used: Date.now() }); clearFailsFor(u.email);
@@ -255,10 +255,10 @@ export function loginPage() {
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
 </style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
-  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>pottery lab</div><h1>Welcome back</h1><p class="sub">Good to see you.</p>
-  <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>
+  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>pottery lab</div><h1>Welcome back</h1>
+  <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error")) document.write("<p>That email and password don't match.</p>"); else if (location.search.includes("why=collab")) document.write("<p>Sign in to suggest a collab. Hosts only.</p>")</script>
   ${users().length || signupEnabled() ? `<input type="email" name="email" placeholder="Email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}>` : ""}
-  <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Your password" : "Team password"}" autocomplete="current-password" autofocus required>
+  <input type="password" name="password" placeholder="${users().some((u) => u.pw) || signupEnabled() ? "Password" : "Team password"}" autocomplete="current-password" autofocus required>
   <button type="submit">Sign in</button>
   ${users().length || signupEnabled() ? `<a class="alt" href="/forgot">Forgot your password?</a>` : ""}
   ${signupEnabled() ? `<a class="alt" href="/sso/start">Sign in with SSO</a><a class="alt" href="/signup">New here? Start your page</a>` : ""}

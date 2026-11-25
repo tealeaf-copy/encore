@@ -1,5 +1,5 @@
-// One header for every public page. Signed in: Home, Discover, Feed, Your plans, My page.
-// Signed out: Discover, Your plans, Sign in, Host something. On phones the links scroll instead of getting cut off.
+// One header for every public page. Signed in: Home, Discover, Feed, Plans, My page.
+// Signed out: Discover, Hosts, Sign in, Start your page. On phones the links scroll instead of getting cut off.
 (function () {
   if (window.__encoreNav) return; window.__encoreNav = 1;
   const st = document.createElement("style");
@@ -11,10 +11,10 @@
     for (const [href, label, cta] of links) { const a = document.createElement("a"); a.href = href; a.textContent = label; if (cta) a.className = "cta"; const p = href.split(/[?#]/)[0]; if (p === here && p !== "/") a.setAttribute("aria-current", "page"); nav.appendChild(a); } };
   const run = async () => { try {
     const me = await (await fetch("/api/me", { credentials: "same-origin" })).json().catch(() => ({}));
-    if (!me?.verified) return draw([["/discover", "Discover"], ["/plans", "Your plans"], ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
+    if (!me?.verified) return draw([["/discover", "Discover"], ["/hosts", "Hosts"], ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json().catch(() => ({}));
-    if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Your plans"], ["/?app=1", "Host something", 1]]);
-    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Your plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/?app=1#studio", "New event", 1]]);
+    if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ["/?app=1", "Host something", 1]]);
+    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/?app=1#studio", "New event", 1]]);
   } catch {} };
   run(); window.addEventListener("encore:signedin", run);
 })();

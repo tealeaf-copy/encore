@@ -21,11 +21,11 @@ const MILESTONES = { events: [100, 50, 25, 10, 5, 1], guests: [500, 250, 100, 50
 // The rules behind every badge, in one place, so a badge always means the same thing wherever it shows.
 export const BADGE_RULES = {
   newMaxGuests: 10, // "New host" stops once 10 different people have come, or a brand has booked, or the host lists past clients
-  legendRecent: 3, legendGuests: 20, legendMinHosts: 3, // "Local legend": most gatherings in the city over 90 days (at least 3), 20+ guests overall, and at least 3 active hosts in that city to beat
+  legendRecent: 3, legendGuests: 20, legendMinHosts: 3, // "Local legend": most events in the city over 90 days (at least 3), 20+ guests overall, and at least 3 active hosts in that city to beat
   text: {
     new: "New host: started hosting in the last few weeks, fewer than 10 guests so far, no brand bookings yet.",
     legend: "Local legend: hosted the most in their city over the last 90 days (3 or more), with 20+ guests overall, among at least 3 active hosts there.",
-    super: "Super host: 5+ gatherings, 15+ guests, people coming back (or 5+ kudos), and active in the last 90 days.",
+    super: "Super host: 5+ events, 15+ guests, guests coming back (or 5+ kudos), and active in the last 90 days.",
     streak: "Streak: hosted something 3 weeks (or 3 months) in a row.",
   },
 };
@@ -38,21 +38,21 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   // "New host": hosted at least once, recently started, and nothing yet that says otherwise (a brand booking, past clients, 10+ guests)
   const isNew = past.length >= 1 && past.length <= 5 && guests < BADGE_RULES.newMaxGuests && !bookings && !clients && ((createdAt && Date.now() - createdAt < 60 * DAY) || daysSince(first) < 45);
   const isSuper = past.length >= SUPER.events && guests >= SUPER.guests && (returning / Math.max(1, guests) >= SUPER.returningShare || kudos >= SUPER.kudos) && daysSince(last) <= SUPER.activeDays;
-  if (isSuper) B.push({ id: "super", emoji: "⭐", label: "Super host", why: `${past.length} gatherings, ${guests} guests, and people keep coming back` });
+  if (isSuper) B.push({ id: "super", emoji: "⭐", label: "Super host", why: `${past.length} events, ${guests} guests, and guests keep coming back` });
   if (wk >= 3) B.push({ id: "streak", emoji: "🔥", label: `${wk}-week streak`, n: wk, unit: "week", why: `Hosted something ${wk} weeks in a row` });
   else if (mo >= 3) B.push({ id: "streak", emoji: "🔥", label: `${mo} months in a row`, n: mo, unit: "month", why: `Hosted something ${mo} months in a row` });
   if (isNew) B.push({ id: "new", emoji: "🌱", label: "New host", why: "Just started hosting on Pottery Lab" });
   const ev = MILESTONES.events.find((m) => past.length >= m), gu = MILESTONES.guests.find((m) => guests >= m);
-  if (ev && ev > 1) B.push({ id: "m-events", emoji: "🎉", label: `${ev}+ gatherings`, n: ev, why: `Has hosted ${past.length} gatherings` });
+  if (ev && ev > 1) B.push({ id: "m-events", emoji: "🎉", label: `${ev}+ events`, n: ev, why: `Has hosted ${past.length} events` });
   if (gu) B.push({ id: "m-guests", emoji: "🙌", label: `${gu}+ guests`, n: gu, why: `${guests} different people have come` });
   // what's next, for the host's own eyes (Strava goals): keep the streak alive, the next badge, the next milestone
   const next = [], cur = weekOf(now), hostedThisWeek = past.some((d) => weekOf(d) === cur), upcomingThisWeek = dates.some((d) => d > now && weekOf(d) === cur);
   if (wk >= 2 && !hostedThisWeek) next.push({ id: "streak", emoji: "🔥", text: upcomingThisWeek ? `Your next one keeps your streak going: ${wk + 1} weeks in a row.` : `Host something by Sunday to make it ${wk + 1} weeks in a row.` });
-  if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "gathering" : "gatherings"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
-    if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("a gathering in the next few weeks");
+  if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "event" : "events"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
+    if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("an event in the next few weeks");
     if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
-  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first gathering: it starts your streak and fills your page." });
-  else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} gatherings.` });
+  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first event: it starts your streak and fills your page." });
+  else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} events.` });
   return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
 }
 
@@ -88,7 +88,7 @@ export function makeRecognition({ C, X }) {
   return { all, of, showcase, reset: () => { cache = null; } };
 }
 
-/** Longest run of consecutive weeks with a gathering, within the given dates. */
+/** Longest run of consecutive weeks with an event, within the given dates. */
 export function longestWeeks(dates) { const W = [...new Set(dates.map(weekOf))].sort((a, b) => a - b); let best = 0, run = 0, prev = null; for (const w of W) { run = prev != null && w === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = w; } return best; }
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -159,20 +159,19 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   const coiUrl = proof.coi?.url || h.insuranceDoc || "", expires = proof.coi?.expires || "", expired = !!expires && expires < now;
   const insurance = example ? { onFile: false, url: "", expires: "", expired: false, text: "Example page: no insurance on file" }
     : coiUrl && !expired ? { onFile: true, url: coiUrl, expires, expired: false, text: `Insurance certificate on file${expires ? ` (expires ${new Date(expires + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })})` : ""}` }
-    : { onFile: false, url: "", expires, expired, text: expired ? "Insurance: the certificate on file has expired; the host provides a new one on request" : "Insurance: host provides a certificate on request" };
+    : { onFile: false, url: "", expires, expired, text: expired ? "Insurance certificate expired. A new one on request." : "Insurance certificate on request" };
   // what IS real, short lines in order of weight; nothing invented
   const lines = [];
-  if (done.length) lines.push({ k: "bookings", text: `${plural(done.length, "brand booking", "brand bookings")} on Pottery Lab` });
-  if (guests) lines.push({ k: "guests", text: `${plural(guests, "guest", "guests")} hosted on Pottery Lab` });
+  if (done.length) lines.push({ k: "bookings", text: plural(done.length, "brand booking", "brand bookings") });
+  if (guests) lines.push({ k: "guests", text: `${plural(guests, "guest", "guests")} hosted` });
   if (returned) lines.push({ k: "returned", text: returned.text });
   if (again) lines.push({ k: "again", text: again.text });
-  if (events) lines.push({ k: "events", text: `${plural(events, "gathering", "gatherings")} hosted here` });
-  if (pastSb.length) lines.push({ k: "scrapbook", text: `${plural(pastSb.length, "past gathering", "past gatherings")} in their scrapbook` });
+  if (events) lines.push({ k: "events", text: `${plural(events, "event", "events")} hosted` });
+  if (pastSb.length) lines.push({ k: "scrapbook", text: `${plural(pastSb.length, "past event", "past events")} in their scrapbook` });
   if (kudos) lines.push({ k: "kudos", text: `${kudos} kudos from guests` });
-  const first = person || String(h.name || "").replace(/['’]s\b.*$/, "").split(/\s+/)[0] || "the host";
   const isNewHere = !example && !guests && !done.length && !events;
-  return { example, guests, returning, kudos, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: example ? "Example" : "" })), badges: example ? [] : badges,
+  return { example, guests, returning, kudos, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: "" })), badges: example ? [] : badges,
     workedWith: W, testimonials, pastCorporate, socials, insurance, isNewHere,
-    newLine: isNewHere ? `New on Pottery Lab: no bookings or reviews here yet. Requests are free and nothing is paid until you accept a quote, so ask ${first} anything first.` : "",
+    newLine: isNewHere ? "New on Pottery Lab. Requests are free. Nothing is paid until you accept a quote." : "",
     rules: { minN: MIN_N } };
 }

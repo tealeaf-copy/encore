@@ -282,4 +282,9 @@ test("Changing a reply can't skip the waitlist or the host's say: a waitlisted g
   const p2 = "/api/db/doc?path=rsvps/" + String(q.id).split("/").pop();
   await fetch(srv.base + p2, { method: "PATCH", headers: { ...G, "x-encore-key": "gt-c" }, body: JSON.stringify({ response: "going" }) });
   assert.equal((await (await fetch(srv.base + p2, { headers: { cookie: c } })).json()).data.response, "requested");
+  // a guest posting "going" straight to the collection is still only asking
+  const sneak = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "gt-d" }, body: JSON.stringify({ eventId: "gt2", name: "Di", response: "GOING" }) })).json();
+  assert.equal((await (await fetch(srv.base + "/api/db/doc?path=rsvps/" + String(sneak.id).split("/").pop(), { headers: { cookie: c } })).json()).data.response, "requested");
+  // and nobody can reply to an event that doesn't exist
+  assert.equal((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "gt-e" }, body: JSON.stringify({ eventId: "nope-zz", name: "Ed", response: "going" }) })).status, 404);
 });

@@ -1299,7 +1299,12 @@ export function createApp({ store, dataDir }) {
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
-    if (p === "rsvps") { const pol = rsvpPolicy(req, body); body = pol.body;
+    if (p === "rsvps") { if (req.guest && body && typeof body.response === "string") body = { ...body, response: body.response.toLowerCase() };
+      const pol = rsvpPolicy(req, body); body = pol.body;
+      // guests reply only to real events, and on ask-to-join events a guest's "going" is a request until the host lets them in
+      if (req.guest) { const eidG = String(body?.eventId || ""), evG = /^[A-Za-z0-9_-]+$/.test(eidG) ? S(req).get("events/" + eidG)?.data : null;
+        if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
+        if (evG.approvalRequired && body.response === "going" && pol.prior?.data?.response !== "going") body = { ...body, response: "requested" }; }
       // no new or changed replies once the event day is over: turnout and a host's record depend on it
       { const eid0 = String(body?.eventId || ""), ev0 = /^[A-Za-z0-9_-]+$/.test(eid0) ? S(req).get("events/" + eid0)?.data : null; if (req.guest && ev0?.date && ev0.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." }); }
       // the same email from another device can't overwrite someone's reply: only the device that sent it (its guest key),

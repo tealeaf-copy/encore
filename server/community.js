@@ -118,6 +118,8 @@ export function makeCommunity(store) {
       forHire: p.forHire != null ? !!p.forHire : !!cur.forHire, backupPlan: clean(p.backupPlan ?? cur.backupPlan, 240), corpQuotes: Array.isArray(p.corpQuotes) ? p.corpQuotes.slice(0, 4).map((q) => ({ quote: clean(q?.quote, 240), name: clean(q?.name, 60), title: clean(q?.title, 80), company: clean(q?.company, 60) })).filter((q) => q.quote && q.name) : cur.corpQuotes || [], services: clean(p.services ?? cur.services, 400), rateNote: clean(p.rateNote ?? cur.rateNote, 120),
       // hosts they recommend (like Substack recommendations): up to 6 other hosts, each with an optional line on why
       recommends: Array.isArray(p.recommends) ? p.recommends.map((r) => ({ handle: clean(r?.handle, 30).toLowerCase().replace(/^@/, ""), note: clean(r?.note, 120).replace(/[<>]/g, "") })).filter((r, i, A) => HANDLE_OK(r.handle) && r.handle !== h && A.findIndex((x) => x.handle === r.handle) === i).slice(0, 6) : cur.recommends || [],
+      // the events directory (/events and its API): past events are listed unless the host turns it off
+      directory: p.directory != null ? p.directory !== false : cur.directory !== false,
       updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }
@@ -180,7 +182,8 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
       return { handle: h?.handle || "", gaps, event: { id: eventId, onPage, onDiscover, wanted, needs: wanted && !past ? gaps : [], line } }; }
     const live = scopeStore(store, ws).list("events").map((d) => d.data).filter((e) => e && !e.example && e.discoverable && !e.unlisted && (e.date || "9999") >= today);
     return { handle: h?.handle || "", gaps: live.length ? gaps : [], pageGaps: gaps, waiting: gaps.length ? live.map((e) => ({ title: e.pubTitle || e.name || "", city: e.city || h?.city || "" })).slice(0, 5) : [] }; }
-  function discover() {
+  // all: every listed event and host, without the caps a Discover page uses (the directory and its API)
+  function discover({ all = false } = {}) {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
@@ -199,7 +202,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
     for (const [, L] of byCity) L.filter((h) => h.followers >= 5 && h.hosted >= 2) // "Rising" only once there's a real following, not one follower and one event.slice(0, 3).forEach((h, i) => { h.rising = { rank: i + 1, city: h.city }; });
     // real hosts first; the sample hosts (seeded demo accounts) fill in behind them and are labelled
     events.sort((a, b) => (!!a.sample - !!b.sample) || String(a.date || "9").localeCompare(String(b.date || "9")));
-    return { hosts: hosts.slice(0, 80), events: events.slice(0, 60) };
+    return all ? { hosts, events } : { hosts: hosts.slice(0, 80), events: events.slice(0, 60) };
   }
   // ---- what guests say about a host, from their own get-togethers (kudos and guest types) ----
   const TAGL = { food: "Amazing food", welcome: "Felt welcome", vibe: "Great vibe", organized: "So well organized", met: "Met new people", fun: "So much fun", spot: "Great spot", again: "Would go again" };

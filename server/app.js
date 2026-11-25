@@ -27,6 +27,7 @@ import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
+import { mountDirectory } from "./directory.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -560,13 +561,15 @@ export function createApp({ store, dataDir }) {
   mountRecognition(app, { C, X });
   mountGiftPlan(app, { store, small, discoverHosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get(["/gifts/plan", "/gifts/plan/:id"], (req, res) => sendStatic(res, "giftplan.html", "<p>Gift planner missing.</p>"));
-  mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
+  const SB = mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });
+  // the events directory: /events, its read-only API (/api/v1) for people and agents, and a public MCP server (/mcp/public)
+  mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect: GUEST_REDIRECT, publicOrigin: (req) => originOf(req) });
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).
   const replyHits = new Map(); const replyLimited = (req, n) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };

@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /events
+Allow: /llms.txt
+Allow: /api/v1/
 Disallow: /api/
 Disallow: /booking/
 Disallow: /door/

@@ -281,9 +281,10 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
 
   // the public scrapbook: imported events plus the ones hosted here
   // sections come back in order, only the ones with an event in them; featured is the host's order (at most 6)
+  const publicItems = (L, ids) => L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos) }));
   app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [], sections: [], featured: [] });
     const L = list(ws), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
-    res.json({ items: L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos) })),
+    res.json({ items: publicItems(L, ids),
       sections: secs.filter((s) => used.has(s.id)), featured: featuredIds(L).slice(0, MAX_FEATURED) }); });
   app.get("/api/host/scrapbook", (req, res) => { const u = me(req, res); if (!u) return; const L = list(u.ws); res.json({ items: L, sections: sectionsOf(u.ws), featured: featuredIds(L), limits: { ...LIMITS, featured: MAX_FEATURED, sections: MAX_SECTIONS }, roles: ROLES, formats: FORMATS }); });
   // Potto's "Sort my events": suggested sections for the events not in one yet. Nothing changes until the host confirms (PUT below).
@@ -343,4 +344,6 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   app.post("/api/host/scrapbook/:id", small, patch);
   app.patch("/api/host/scrapbook/:id", small, patch);
   app.delete("/api/host/scrapbook/:id", (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id).replace(/[^a-f0-9]/g, ""); S(u.ws).delete("scrapbook/" + id); res.json({ ok: true }); });
+  // what the public scrapbook shows for a workspace, for the events directory (same fields, same order)
+  return { publicItems: (ws) => { const L = list(ws), ids = new Set(sectionsOf(ws).map((s) => s.id)); return publicItems(L, ids); } };
 }

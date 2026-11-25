@@ -256,3 +256,11 @@ test("A guest who says I'm in to a full event lands on the waitlist and is told 
   const a = await (await send("fw-a", "Ana")).json(); assert.equal(a.response, "going");
   const b = await send("fw-b", "Bo"); assert.equal(b.status, 200); assert.equal((await b.json()).response, "waitlist");
 });
+
+test("Brand leads on the waitlist are never shown to members; people asking to host are", async () => {
+  for (const b of [{ email: "lead1@brand.com", wants: "Vendor kit: Acme" }, { email: "lead2@brand.com", for: "brand", wants: "20 dinners" }, { email: "host.wait@example.com", name: "Wren Host", wants: "Bread club" }]) assert.equal((await post("/api/waitlist", b)).status, 200);
+  const r0 = await post("/api/signup", { name: "Wl Member", email: "wl.member@example.com", password: "long-password-1", mode: "friends" });
+  const L = (await (await fetch(srv.base + "/api/waitlist", { headers: { cookie: cookieOf(r0) } })).json()).waiting, s = JSON.stringify(L);
+  assert.match(s, /Bread club/); assert.ok(!/Vendor kit|Acme|20 dinners/.test(s), s);
+});
+

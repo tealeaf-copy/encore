@@ -242,10 +242,13 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
         C.issueCodes({ ws: u.ws, email: u.email, name: u.name, n: CODES_PER_MEMBER }); done.add(d.id); earned += CODES_PER_MEMBER; }
       if (earned) { store.set(key, { kind: "hostcodes", events: [...done] }); L = C.codesOf(u.email); } } catch {}
     const o = publicOrigin(req); res.json({ earned, perEvent: CODES_PER_MEMBER, codes: L.map((c) => ({ code: c.code, used: !!c.usedAt, usedBy: c.usedByName ? first(c.usedByName) : null, link: `${o}/join?code=${c.code}` })) }); });
+  const BRAND_WANTS = /^\s*(gifts?|vendor kit|recruit|series|panel match|team|teams|brand|booking|quote|order)\b\s*[:·-]/i;
   app.post("/api/waitlist", small, (req, res) => { if (limited(req, 5)) return res.status(429).json({ code: "rate_limited", message: "Too many requests from here." }); const b = req.body || {}, email = clean(b.email, 200).toLowerCase();
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add a valid email so a member can send you a code." }); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants: clean(b.wants, 140) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add a valid email so a member can send you a code." }); const wants = clean(b.wants, 140), brand = b.for === "brand" || BRAND_WANTS.test(wants); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants, ...(brand ? { audience: "brand" } : {}) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
   // Members see who's waiting (first name, city, what they'd host) and can send one of their codes.
-  app.get("/api/waitlist", (req, res) => { const u = me(req, res); if (!u) return; res.json({ waiting: C.waitlist().slice(0, 30).map((w) => ({ id: w.id, name: first(w.name) || "Someone", city: w.city, wants: w.wants, at: w.at })) }); });
+  // Brand leads (gift requests, vendor kits, host recruiting) share this list's storage but are Pottery Lab's to
+  // follow up, never shown to other members: only people asking to host appear here.
+  app.get("/api/waitlist", (req, res) => { const u = me(req, res); if (!u) return; res.json({ waiting: C.waitlist().filter((w) => w.audience !== "brand" && !BRAND_WANTS.test(String(w.wants || ""))).slice(0, 30).map((w) => ({ id: w.id, name: first(w.name) || "Someone", city: w.city, wants: w.wants, at: w.at })) }); });
   // vouch for a guest: send someone who said yes to your event one of your codes, so they can host without waiting
   app.post("/api/codes/vouch", small, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return res.status(429).json({ code: "rate_limited", message: "Slow down." });
     const b = req.body || {}, eventId = clean(b.eventId, 80), S = scopeStore(store, u.ws); if (!S.get("events/" + eventId)) return res.status(404).json({ code: "not_found", message: "No such event." });

@@ -28,5 +28,5 @@ test("Invite these first: early yeses from past events rank first, people alread
   assert.equal(names[0], "Priya Shah", JSON.stringify(j.people));
   assert.ok(!names.includes("Lena Park"), "already invited to this one");
   assert.ok(!names.includes("Sam Diaz"), "always says no");
-  assert.match(j.people[0].why, /said yes first 2 times/);
+  assert.match(j.people[0].why, /replied first 2 times/);
 });

@@ -1293,7 +1293,7 @@ export function createApp({ store, dataDir }) {
       // the same email from another device can't overwrite someone's reply: only the device that sent it (its guest key),
       // a verified personal invite, or the host can change it
       if (pol.prior && req.guest) { const sameDevice = !!pol.prior.data._k && pol.prior.data._k === guestKey(req), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});
-        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "Someone already replied with this email. Open the invite on the phone you used, or ask the host to change it." }); }
+        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "You've already replied with this email. Open the invite on that phone, or ask the host." }); }
       // never blank out what a guest already told the host
       if (pol.prior) for (const k of ["name", "email", "phone", "dietary", "access"]) if (!String(body[k] ?? "").trim() && pol.prior.data[k]) delete body[k];
       if (pol.prior && body.answers && typeof body.answers === "object" && !Array.isArray(body.answers) && !Object.keys(body.answers).length && pol.prior.data.answers) delete body.answers;

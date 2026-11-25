@@ -20,7 +20,7 @@
 })();
 (function () {
   if (window.__encoreShell) return; window.__encoreShell = 1;
-  const P = location.pathname, isG = P === "/g";
+  const P = location.pathname, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand";
   if (!(isG || /^\/(discover|feed|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
   if (/^\/(teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/gifts\/plan/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -74,7 +74,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
         : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1", ICON.plus, "Start your page")
-        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/login", ICON.login, "Sign in") + item("/signup?mode=friends", ICON.plus, "Start your page")) +
+        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/login", ICON.login, "Sign in") + (BRAND ? item("/hosts/book", ICON.people, "Find a host") : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     document.body.prepend(rail); document.body.classList.add("es-has-rail");
@@ -83,7 +83,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
       tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
         (signed ? `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Start your page"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` : tab("/hosts", ICON.people, "Hosts")) +
-        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + tab("/signup?mode=friends", ICON.plus, "Host")));
+        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.people, "Find a host") : tab("/signup?mode=friends", ICON.plus, "Host"))));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1#studio">New event</a>` : ""}</nav>`;

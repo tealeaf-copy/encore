@@ -67,7 +67,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
     const opts = ev.dateOptions || [], best = opts.map((o) => [o, R.filter((r) => (r.dates || []).includes(o)).length]).sort((a, b) => b[1] - a[1])[0];
     S.set("events/" + id, { ...ev, stage: "", ...(best?.[1] ? { date: best[0] } : {}), autoWentAt: Date.now(), updatedAt: Date.now() });
     const W = getWorkspace(ws), name = X.person(W?.ownerEmail).name; await X.itsOn?.({ ws, id, hostName: name, origin });
-    X.notify(W?.ownerEmail, { kind: "itson", key: "auto-" + id, text: `🎉 ${goal} people are in, so Potto called it: ${ev.pubTitle || ev.name}${best?.[1] ? ` is on ${best[0]}` : ""}. Everyone's been told.`, link: "/#studio", eventId: id }); X.bust(); return true; };
+    X.notify(W?.ownerEmail, { kind: "itson", key: "auto-" + id, text: `🎉 ${goal} guests are in, so ${ev.pubTitle || ev.name} is on${best?.[1] ? ` for ${best[0]}` : ""}. Everyone's been told.`, link: "/#studio", eventId: id }); X.bust(); return true; };
   // ---- the hype report: who's in, when they're free, who to nudge ----
   app.get("/api/host/hype/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const id = clean(req.params.eventId, 80), S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id), followers = new Set(C.followersOf(u.ws).map((f) => lc(f.email))), friends = new Set(X.friendsOf(u.email).map((f) => f.email)), I = X.index();

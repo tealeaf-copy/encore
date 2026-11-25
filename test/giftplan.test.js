@@ -34,9 +34,9 @@ test("The planner honours head count, groups and the per-person cap, and never i
   // card prices match the budget table
   for (const L of p.playbook.budgetLines) assert.ok(p.gifts.some((g) => g.name === L.gift && g.cost.allIn === n(L.each)), L.segment);
   const sum = p.playbook.budgetLines.reduce((a, x) => a + n(x.total), 0); assert.ok(Math.abs(sum - n(p.playbook.budget.total.split(" for ")[0])) < 2);
-  assert.match(p.playbook.budget.fee, /Pottery Lab's service fee is shown on your quote before you confirm\./); assert.doesNotMatch(textOf(p), /\d+\s?%\s*(service )?fee/i);
+  assert.equal(p.playbook.budget.fee, "", "no fee line until a fee exists (FEE_LINE is off)"); assert.doesNotMatch(textOf(p), /\d+\s?%\s*(service )?fee/i);
   // real dates, no stale seasons or template leftovers
-  assert.match(p.playbook.timeline[0].when, /Feb/); assert.doesNotMatch(textOf(p), /\bQ[1-4]\b|by June|📸|API key|on one task/);
+  assert.match(p.playbook.timeline[0].when, /Jan|Feb/, "dated from the launch, early enough to book the longest-lead maker"); assert.doesNotMatch(textOf(p), /\bQ[1-4]\b|by June|📸|API key|on one task/);
   assert.ok(/\n\n/.test(p.playbook.message.email), "the email keeps its line breaks");
 });
 
@@ -50,7 +50,7 @@ test("Non-software audiences never see SaaS words, and get their own playbook la
   assert.equal(cafes.kind, "retail"); assert.equal(cafes.audience.segments.length, 1); assert.equal(cafes.audience.segments[0].count, "60");
   assert.doesNotMatch(textOf(cafes), SAAS); assert.match(cafes.playbook.finance.expect, /reorder/); assert.ok(!cafes.gifts.some((g) => /coffee/i.test(g.name)), "no coffee for a coffee roaster");
   const hires = planFromInput(readBody({ company: "Orbit", moment: "Remote new-hire welcome", audience: "40 new hires", people: "40", budget: "$60", date: "2027-01-11" }));
-  assert.equal(hires.kind, "employees"); assert.equal(hires.playbook.brief.name, "Team brief"); assert.doesNotMatch(textOf(hires), SAAS); assert.match(hires.playbook.prove.holdout, /No holdout/);
+  assert.equal(hires.kind, "employees"); assert.equal(hires.playbook.brief.name, "Team brief"); assert.doesNotMatch(textOf(hires), SAAS); assert.match(hires.playbook.prove.holdout, /^None\./);
   assert.ok(hires.gifts.every((g) => g.cost.allIn <= 60));
   const talks = planFromInput(readBody({ company: "Patchwork", moment: "Thank-you to the speakers at Patchwork Conf", kind: "community", audience: "18 speakers, 6 co-organizers", budget: "$50", date: "2020-01-01" }));
   assert.deepEqual(talks.audience.segments.map((s) => s.role), ["speaker", "organizer"]); assert.doesNotMatch(textOf(talks), SAAS);
@@ -72,7 +72,7 @@ test("Compliance flags public-sector, healthcare and regulated-finance rows; the
   assert.equal(rows.find((r) => r.Company === "Globex").Group, "Gift"); assert.match(p.playbook.compliance.line, /public sector/i);
   const csv = toCsv(rows); for (const col of ["Meeting Booked", "Opp Created", "Opp Amount", "Campaign Member Status", "HubSpot List", "Contact", "Approved Cost"]) assert.ok(csv.split("\r\n")[0].includes(col), col);
   // a small list gets no holdout, said plainly; the follow-up names the gift that group actually got
-  assert.match(p.playbook.prove.holdout, /No holdout.*30 or more/); assert.equal(p.playbook.prove.useHoldout, false);
+  assert.match(p.playbook.prove.holdout, /^None\..*30 or more/); assert.equal(p.playbook.prove.useHoldout, false);
   const champ = p.playbook.brief.sections.find((s) => s.who === "Champions"); assert.ok(champ.script.includes(p.audience.segments[0].gift.includes("mug") ? "mug" : "the"), champ.script);
 });
 

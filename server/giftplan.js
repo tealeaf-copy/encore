@@ -12,6 +12,7 @@ import crypto from "node:crypto";
 import { complete, isFake, aiMode, parseJsonLoose } from "./ai.js";
 import { scopeStore, DEFAULT_WS } from "./workspaces.js";
 import { keywordRank } from "./search.js";
+import { categoryOf } from "./market.js";
 
 const clean0 = (v) => String(v ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim();
 const clean = (v, n = 300) => { const t = clean0(v); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, "") + "…"; };
@@ -37,7 +38,7 @@ export const KINDS = {
   press: { label: "Press & analysts", hint: "Embargo-day coverage and briefings", brief: "Brief for the PR team", fallbackRole: "press", anchor: "embargo day" },
   creators: { label: "Creators & community leads", hint: "Posts, saves and codes", brief: "Brief for the creator team", fallbackRole: "creator", anchor: "launch day" },
   retail: { label: "Retail buyers / wholesale", hint: "Buyer meetings and reorders", brief: "Brief for the wholesale team", fallbackRole: "buyer", anchor: "delivery day" },
-  customers: { label: "Customers thank-you", hint: "Renewals, referrals, replies", brief: "Brief for account managers", fallbackRole: "customer", anchor: "delivery day" },
+  customers: { label: "Customer thank-you", hint: "Renewals, referrals, replies", brief: "Brief for account managers", fallbackRole: "customer", anchor: "delivery day" },
   employees: { label: "Employees", hint: "New-hire welcome, anniversary, team thank-you", brief: "Internal comms brief", fallbackRole: "employee", anchor: "delivery day" },
   community: { label: "Community thank-you", hint: "Speakers, co-organizers, contributors", brief: "Brief for the community team", fallbackRole: "speaker", anchor: "the event" },
 };
@@ -223,7 +224,7 @@ export function skeleton(input) {
       if (left > 0) notes.push(open.length === 1 && groups.length === 1 ? `Planned for the ${headcount} people you said.` : `You gave counts for some groups; the rest of your ${headcount} (${left}) went to ${open.map((g) => g.label.toLowerCase()).join(" and ")}${open.length > 1 ? ", split evenly" : ""}.`);
       else notes.push(`Your group counts already add up to ${sum() - open.reduce((a, g) => a + g.count, 0)} of the ${headcount}, so ${open.map((g) => g.label.toLowerCase()).join(" and ")} got the minimum of 1 each. Add counts to fix this.`);
     } else if (sum() !== headcount) notes.push(sum() > headcount ? `Your groups add up to ${sum()}, more than the ${headcount} you said. Potto planned for the ${sum()} you named, group by group; lower a group's count if ${headcount} is the real limit.` : `Your groups add up to ${sum()}, but you said ${headcount} people. Potto planned for the ${sum()} you named and left ${headcount - sum()} unassigned; add them to a group if they're real.`);
-    else if (groups.length > 1) notes.push(`Your groups add up to the ${headcount} people you said.`);
+    else if (groups.length > 1) notes.push(`Groups match your total of ${headcount}.`);
   } else if (missing.length) {
     groups.filter((g) => !g.count).forEach((g) => (g.count = 25));
     notes.push(`You didn't say how many${missing.length > 1 ? " for some groups" : ""}, so Potto planned 25 for ${missing.map((g) => g.label.toLowerCase()).join(" and ")}. Change “How many” and the budget follows.`);
@@ -263,21 +264,21 @@ function voice(I, s, giftName) {
   const S = I.subj || "", Sc = cap1(S), co = I.company, ev = eventOf(I.moment) || "the event", dt = I.date ? fmt(I.date) : "";
   const g = giftName, launch = I.type === "launch" && S;
   const N = {
-    champion: launch ? `We built ${S} for teams like yours, and wanted you to have something made by hand to go with it. — {sender}, ${co}` : `Thank you for your time this year. We had this made for you. — {sender}, ${co}`,
-    designPartner: launch ? `You helped us shape ${S}. This piece was made for you. Thank you. — the ${co} team` : `You helped us get here. This piece was made for you. Thank you. — the ${co} team`,
-    investor: launch ? `${Sc} is out${dt ? ` on ${dt}` : ""}. Thank you for backing us early; a share or an intro this week would mean a lot. — ${co}` : `Thank you for backing us early. — the ${co} team`,
-    press: launch ? `${Sc} is coming${dt ? ` on ${dt}` : ""}. The briefing details are inside, under embargo. If your outlet doesn't accept gifts, tell us and we'll donate it. — ${co}` : `Thank you for covering ${co}. If your outlet doesn't accept gifts, tell us and we'll donate it. — ${co}`,
-    analyst: `${Sc || "Our news"} is coming${dt ? ` on ${dt}` : ""}. We'd value 30 minutes to brief you before then. If your firm doesn't accept gifts, tell us and we'll donate it. — ${co}`,
-    creator: launch ? `We made ${S} and thought of you. This box was made near you by a local maker. Your code is on the back if you want it; no posting required. — ${co}` : `Thank you for everything you make. This was made near you by a local maker. — ${co}`,
-    buyer: launch ? `${Sc} lands${dt ? ` on ${dt}` : " soon"}. We'd love 20 minutes to show you the line before it ships. — {sender}, ${co}` : `Thank you for stocking ${co} this year. We had these made for your counter. — {sender}, ${co}`,
-    customer: `Thank you for being a ${co} customer. We had this made for you. — {sender}, ${co}`,
-    partner: `Thank you for bringing ${co} to your clients. We had this made for you. — {sender}, ${co}`,
-    newHire: `Welcome to ${co}. We're glad you're here. This is from all of us; see you on day one. — {manager} and the team`,
-    anniversary: `{years} years at ${co}. Thank you for all of it. — {manager}`,
-    employee: `Thank you for {the specific thing}. We noticed. — {manager}`,
-    speaker: `Thank you for speaking at ${ev}. People are still talking about your session. — the ${co} organizers`,
-    organizer: `Thank you for helping run ${ev}. None of it happens without you. — the ${co} team`,
-    contributor: `Thank you for your contributions to ${co}. This was made for you. — the maintainers`,
+    champion: launch ? `We built ${S} for teams like yours, and wanted you to have something made by hand to go with it.\n{sender}, ${co}` : `Thank you for your time this year. We had this made for you.\n{sender}, ${co}`,
+    designPartner: launch ? `You helped us shape ${S}. This piece was made for you. Thank you.\nthe ${co} team` : `You helped us get here. This piece was made for you. Thank you.\nthe ${co} team`,
+    investor: launch ? `${Sc} is out${dt ? ` on ${dt}` : ""}. Thank you for backing us early; a share or an intro this week would mean a lot.\n${co}` : `Thank you for backing us early.\nthe ${co} team`,
+    press: launch ? `${Sc} is coming${dt ? ` on ${dt}` : ""}. The briefing details are inside, under embargo. If your outlet doesn't accept gifts, tell us and we'll donate it.\n${co}` : `Thank you for covering ${co}. If your outlet doesn't accept gifts, tell us and we'll donate it.\n${co}`,
+    analyst: `${Sc || "Our news"} is coming${dt ? ` on ${dt}` : ""}. We'd value 30 minutes to brief you before then. If your firm doesn't accept gifts, tell us and we'll donate it.\n${co}`,
+    creator: launch ? `We made ${S} and thought of you. This box was made near you by a local maker. Your code is on the back if you want it; no posting required.\n${co}` : `Thank you for everything you make. This was made near you by a local maker.\n${co}`,
+    buyer: launch ? `${Sc} lands${dt ? ` on ${dt}` : " soon"}. We'd love 20 minutes to show you the line before it ships.\n{sender}, ${co}` : `Thank you for stocking ${co} this year. We had these made for your counter.\n{sender}, ${co}`,
+    customer: `Thank you for being a ${co} customer. We had this made for you.\n{sender}, ${co}`,
+    partner: `Thank you for bringing ${co} to your clients. We had this made for you.\n{sender}, ${co}`,
+    newHire: `Welcome to ${co}. We're glad you're here. This is from all of us; see you on day one.\n{manager} and the team`,
+    anniversary: `{years} years at ${co}. Thank you for all of it.\n{manager}`,
+    employee: `Thank you for {the specific thing}. We noticed.\n{manager}`,
+    speaker: `Thank you for speaking at ${ev}. People are still talking about your session.\nthe ${co} organizers`,
+    organizer: `Thank you for helping run ${ev}. None of it happens without you.\nthe ${co} team`,
+    contributor: `Thank you for your contributions to ${co}. This was made for you.\nthe maintainers`,
   };
   const F = {
     champion: `Hi {first name}, I hope the ${g} arrived in one piece. ${launch ? `If it'd help, I can show you ${S} in 20 minutes this week.` : "If it'd help, happy to catch up for 20 minutes this week."} No pressure either way.`,
@@ -322,9 +323,9 @@ export function finish(sk, overlay = {}) {
     if (!card.alternatives) card.alternatives = s.R.gifts.filter((id) => id !== s.pick.id && CATALOG[id]).map((id) => { const o = CATALOG[id]; let gc = o.gift; if (s.R.valueCap) gc = Math.min(gc, s.R.valueCap - o.maker); if (I.cap) gc = Math.min(gc, I.cap - o.maker - o.ship); return gc >= o.min && !(s.R.noPerishable && o.perishable) ? { name: o.name, allIn: gc + o.maker + o.ship } : null; }).filter(Boolean).slice(0, 2);
   }
   for (const g of cards) {
-    if (!g.tieIn) g.tieIn = I.type === "launch" && S ? `Made by hand for ${g.segments.join(" and ").toLowerCase()}, to arrive with ${S}.` : `Made by hand for ${g.segments.join(" and ").toLowerCase()}.`;
+    if (!g.tieIn) g.tieIn = I.type === "launch" && S ? `Picked for ${g.segments.join(" and ").toLowerCase()}, to arrive with ${S}.` : `Picked for ${g.segments.join(" and ").toLowerCase()}.`;
     g.bestFor = g.segments.join(", "); g.perPerson = `${money(g.cost.allIn)} all-in`;
-    const shipDays = g.perishable ? 2 : 5, orderDays = shipDays + g.leadDays;
+    const shipDays = g.perishable ? 2 : 5, orderDays = shipDays + g.leadDays; g._orderDays = orderDays; g._by = D ? fmt(D - orderDays * DAY) : "";
     g.delivery.shipBy = after ? `${fmt(arrive - shipDays * DAY)}, to arrive ${fmt(arrive)}` : D ? `${fmt(D - shipDays * DAY)} (${shipDays} days before ${anchor})` : `${shipDays} days before ${anchor}`;
     g.delivery.orderBy = after ? `${fmt(arrive - orderDays * DAY)} (${g.leadTime} to make)` : D ? `${fmt(D - orderDays * DAY)} (${g.leadTime} to make)` : `${orderDays} days before ${anchor} (${g.leadTime} to make)`;
     if (D && !after && D - orderDays * DAY < now) { const left = Math.round((D - now) / DAY), seg = segments.find((x) => x.gift === g.name), fast = seg && seg.R.gifts.map((id) => CATALOG[id]).find((o) => o && o.leadDays + (o.perishable ? 2 : 5) <= left && o.name !== g.name); g.late = true;
@@ -332,6 +333,10 @@ export function finish(sk, overlay = {}) {
     if (!g.fits) risks.push(`At ${money(I.cap)} per person all-in, nothing handmade fits for ${g.segments.join(" and ").toLowerCase()} once shipping is counted. The cheapest option is ${money(g.cost.allIn)} all-in (${g.name.toLowerCase()}). Raise the cap to ${money(g.cost.allIn)} or send a note only.`);
     delete g.leadDays;
   }
+  const lateGifts = cards.filter((g) => g.late), maxOrder = Math.max(0, ...cards.map((g) => g._orderDays || 0)); cards.forEach((g) => { delete g._orderDays; });
+  // ordered tomorrow, every gift arrives by this date
+  const nextOk = now + (maxOrder + 1) * DAY;
+  const timing = D && !after && (D < now || lateGifts.length) ? { late: true, passed: D < now, nextDate: iso(nextOk), next: fmt(nextOk), text: D < now ? `${fmt(D)} has passed.` : `Too tight for ${fmt(D)}: ${lateGifts.map((g) => `${g.name.replace(/^(a|an|the)\s+/i, "the ").replace(/^([A-Z])(?=[a-z])/, (c) => c.toLowerCase())} needed ordering by ${g._by}`).join("; ")}.` } : null; cards.forEach((g) => { delete g._by; });
   if (D && [9, 10, 11].includes(new Date(D).getUTCMonth())) risks.push("Makers book up in November and December. Confirm dates with each maker before you announce anything.");
   if (cards.some((g) => g.perishable)) risks.push("Collect dietary needs before sending food; perishables ship domestic only.");
   if (segments.some((s) => ROLES[s.role]?.valueCap)) risks.push("Press and analysts: keep the value under $25, send nothing perishable before the embargo lifts, and check each outlet's gift policy first (many accept nothing; offer to donate).");
@@ -342,7 +347,7 @@ export function finish(sk, overlay = {}) {
   const flagged = I.roster.filter((r) => (r.flag = complianceOf(r)));
   const byKind = {}; flagged.forEach((r) => (byKind[r.flag.kind] = (byKind[r.flag.kind] || 0) + 1));
   const textFlag = COMPLIANCE.find((c) => c.rx.test(`${I.moment} ${segments.map((s) => s.who).join(" ")}`));
-  const compliance = { line: I.kind === "employees" && !flagged.length ? "Compliance: gifts to your own employees aren't covered by public-sector gift rules, but they can count as taxable income; check the limit with payroll." : flagged.length ? `Compliance: ${Object.entries(byKind).map(([k, n]) => `${plural(n, "row", "rows")} ${k.toLowerCase()}`).join(", ")} on your list. They get a note only, no gift, at $0. Public-sector, healthcare and regulated-finance recipients are flagged automatically.` : textFlag ? `Compliance: your brief mentions ${textFlag.kind.toLowerCase()} recipients. They get a note only, no gift.` : I.roster.length ? `Compliance: none of the ${plural(I.roster.length, "row", "rows")} you pasted look public-sector, healthcare or regulated finance. Still check each company's gift policy.` : "Compliance: paste your list and Potto flags public-sector, healthcare and regulated-finance recipients (note only, no gift).", flagged: flagged.length, rules: COMPLIANCE.map((c) => c.reason) };
+  const compliance = { line: I.kind === "employees" && !flagged.length ? "Compliance: gifts to your own employees aren't covered by public-sector gift rules, but they can count as taxable income; check the limit with payroll." : flagged.length ? `Compliance: ${Object.entries(byKind).map(([k, n]) => `${plural(n, "row", "rows")} ${k.toLowerCase()}`).join(", ")} on your list. They get a note, no gift.` : textFlag ? `Compliance: your brief mentions ${textFlag.kind.toLowerCase()} recipients. They get a note only, no gift.` : I.roster.length ? `Compliance: none of the ${plural(I.roster.length, "row", "rows")} you pasted look public-sector, healthcare or regulated finance. Still check each company's gift policy.` : "Compliance: paste your list and Potto flags public-sector, healthcare and regulated-finance recipients (note only, no gift).", flagged: flagged.length, rules: COMPLIANCE.map((c) => c.reason) };
   approvals.push({ gate: "Compliance: public-sector, healthcare and regulated-finance recipients get a note only, no gift", who: "Legal" });
   if (segments.some((s) => ROLES[s.role]?.valueCap)) approvals.push({ gate: "Press and analyst gifts stay under $25 in value; check each outlet's policy", who: "PR lead" });
   if (I.cap) approvals.push({ gate: `Cap: ${money(I.cap)} per person, all-in (gift, maker and shipping)`, who: "Marketing" });
@@ -373,12 +378,12 @@ export function finish(sk, overlay = {}) {
 
   // who gets what, and what it costs
   const lines = segments.map((s) => { const inList = acctSeg === s && I.roster.length; const out = inList ? I.roster.filter((r) => r.flag).length : 0, hold = inList ? I.roster.filter((r) => !r.flag && held.has(r.account || r.contact)).length : useHoldout && acctSeg === s ? Math.round(s.count * 0.2) : 0;
-    const people = Math.max(0, s.count - (inList ? Math.round((out + hold) * (s.count / Math.max(1, I.roster.length))) : hold));
+    const people = Math.max(0, s.count - out - hold);
     s.sent = people; s.held = hold; s.noted = out;
     return { segment: s.who, people: String(people), gift: s.gift, giftCost: money(s.giftCost), makerFee: money(s.pick.maker), shipping: money(s.pick.ship), each: money(s.cost), total: money(people * s.cost), n: people * s.cost }; });
   for (const g of cards) g.qty = segments.filter((s) => g.segments.includes(s.who)).reduce((a, s) => a + s.sent, 0);
   const total = lines.reduce((a, x) => a + x.n, 0), people = segments.reduce((a, s) => a + s.sent, 0);
-  if (I.cap && segments.every((s) => s.cost <= I.cap)) notes.push(`Every gift is ${money(I.cap)} or less per person, all-in.`);
+  { const named = segments.reduce((a, s) => a + s.count, 0); if (people < named) notes.push(`${plural(people, "gift goes", "gifts go")} out to the ${named} people named: ${segments.filter((s) => s.noted || s.held).map((s) => [s.noted ? `${s.noted} ${s.who.toLowerCase()} get a note only (compliance)` : "", s.held ? `${s.held} ${s.who.toLowerCase()} are held back to measure against` : ""].filter(Boolean).join(", ")).join("; ")}.`); }
 
   // targets per outcome, from the deal size or goal where there is one
   const targets = segments.map((s) => { const o = s.R.outcome, exp = Math.max(o.rate >= 1 ? s.sent : 1, Math.round(s.sent * o.rate)), spend = s.sent * s.cost;
@@ -407,7 +412,7 @@ export function finish(sk, overlay = {}) {
       ...segments.filter((s) => !(hasPress && (s.role === "press" || s.role === "analyst"))).map((s) => { const k = /2 business/.test(s.R.followUp) ? 2 : /week/.test(s.R.followUp) ? 5 : 3, t = addBiz(D || today(), k); return { o: (t - (D || today())) / DAY + 0.5, when: D ? fmt(t) : s.R.followUp, step: `${s.who}: ${s.R.owner} follows up, mentioning the ${s.short}`, owner: s.R.owner }; }),
       ...(hasPress ? [T(1, "Thank-you note to every journalist and analyst who covered it", "PR lead")] : []),
       T(30, `Report ${targets.map((t) => plu(t.outcome)).filter((x, i, a) => a.indexOf(x) === i).join(", ")}${useHoldout ? ", gifted vs. holdout" : ""}`, "Marketing ops")];
-  timeline = timeline.sort((a, b) => a.o - b.o).map(({ o, ...x }) => x);
+  timeline = timeline.sort((a, b) => a.o - b.o).map(({ o, ...x }) => (D && D + o * DAY < now ? { ...x, past: true } : x));
   if (D && D < now && !after) risks.unshift(`The date you gave (${fmt(D)}) has passed. Every date here is counted from it; change the date to re-plan.`);
 
   // triggers: what starts a follow-up (never a condition on the gift)
@@ -419,26 +424,26 @@ export function finish(sk, overlay = {}) {
   const brief = { name: K.brief, sections: segments.map((s) => { const v = voice(I, s, s.short); return { who: s.who, owner: s.R.owner, gift: s.gift, job: s.R.job, followUp: s.R.followUp, measure: s.R.kpi, script: v.follow }; }) };
   const theme = { ...themeFor(I, sk.theme), ...(overlay.theme?.name ? overlay.theme : {}) };
   const first = segments[0], emailSubj = I.type === "launch" && S ? `${Sc} is ${I.date && I.date > now ? "coming" : "out"} (and something for you)` : I.kind === "employees" && I.type === "welcome" ? `Welcome to ${co}: something's on its way` : `Thank you from ${co}`;
-  const email = overlay.message?.email || (I.kind === "employees" && I.type === "welcome" ? `Hi {first name},\n\nWelcome to ${co}. Before your first day${D ? ` on ${fmt(D)}` : ""}, something from the team is on its way to your home address. Keep an eye out for it.\n\n— {manager}` : I.type === "launch" && S ? `Hi {first name},\n\n${I.date && I.date > now ? `On ${fmt(I.date)} we launch` : "We just launched"} ${S}. We thought of you, so we had something made for you. It should arrive ${I.date ? `around ${fmt(I.date)}` : "this week"}.\n\n— {sender}` : `Hi {first name},\n\nWe had something made for you to say thank you. It should arrive ${I.date ? `around ${fmt(I.date)}` : "soon"}.\n\n— {sender}`);
-  const social = I.kind === "employees" ? "" : I.kind === "press" ? `(After the embargo lifts) ${Sc || "Our news"} is out. Thank you to everyone who covered it.` : overlay.message?.social || (I.type === "launch" && S ? `${Sc} is out. To the people who helped us get here: check your mailbox.` : after ? `Thank you to every ${segments.map((s) => s.who.toLowerCase().replace(/s$/, "")).join(" and ")}${eventOf(I.moment) ? ` at ${eventOf(I.moment)}` : ""}. Something made by hand is on its way to you.` : `Thank you to everyone who made this year. Something made by hand is on its way.`);
+  const email = overlay.message?.email || (I.kind === "employees" && I.type === "welcome" ? `Hi {first name},\n\nWelcome to ${co}. Before your first day${D ? ` on ${fmt(D)}` : ""}, something from the team is on its way to your home address. Keep an eye out for it.\n\n{manager}` : I.type === "launch" && S ? `Hi {first name},\n\n${I.date && I.date > now ? `On ${fmt(I.date)} we launch` : "We just launched"} ${S}. We had something made for you to go with it. It should arrive ${I.date ? `around ${fmt(I.date)}` : "this week"}.\n\n{sender}` : `Hi {first name},\n\nWe had something made for you to say thank you. It should arrive ${I.date ? `around ${fmt(I.date)}` : "soon"}.\n\n{sender}`);
+  const social = I.kind === "employees" ? "" : I.kind === "press" ? `(After the embargo lifts) ${Sc || "Our news"} is out. Thank you to everyone who covered it.` : overlay.message?.social || (I.type === "launch" && S ? `${Sc} is out. To the people who helped us get here: check your mailbox.` : after ? `Thank you to every ${segments.map((s) => s.who.toLowerCase().replace(/s$/, "")).join(" and ")}${eventOf(I.moment) ? ` at ${eventOf(I.moment)}` : ""}. Something made by hand is on its way to you.` : `Thank you to everyone who made our year. Something handmade is on its way.`);
   const goal = I.kind === "employees" ? `Every one of the ${people} ${first.who.toLowerCase()} feels ${I.type === "welcome" ? "welcome before day one" : "thanked for something specific"}.` : `${targets.map((t) => `${plural(t.expected, t.outcome, plu(t.outcome))} from ${t.segment.toLowerCase()}`).join(", ")}${saas ? ", and show finance what it returned" : ""}.`;
 
   return cleanPlan({
-    company: co, website: overlay.website || "", kind: I.kind, kindLabel: K.label, date: D0 ? iso(D0) : "",
+    company: co, website: overlay.website || "", kind: I.kind, kindLabel: K.label, date: D0 ? iso(D0) : "", timing,
     moment: { title: overlay.moment?.title || I.moment, what: overlay.moment?.what || `${co}: “${I.moment}”.`, when: overlay.moment?.when || (D ? fmt(D) : ""), whyItMatters: overlay.moment?.whyItMatters || "", sources: overlay.moment?.sources || [] },
-    audience: { summary: `${plural(segments.length, "group", "groups")}, ${plural(people, "gift", "gifts")}. Each group has its own job, owner and measure.`, reconcile: notes, segments: segments.map((s) => ({ who: s.who, role: s.role, why: s.R.tier, count: String(s.count), job: s.R.job, kpi: s.R.kpi, owner: s.R.owner, followUpBy: s.R.followUp, tier: s.R.tier, gift: s.gift, cost: s.cost, sent: s.sent,
-      send: s.sent === 0 ? "none" : s.held || s.noted ? "fewer" : "all", sendNote: [s.held ? `${s.held} held back at random to compare against.` : "", s.noted ? `${plural(s.noted, "pasted row gets", "pasted rows get")} a note only (compliance).` : ""].filter(Boolean).join(" ") })) },
+    audience: { summary: `${plural(segments.length, "group", "groups")}, ${plural(segments.reduce((a, s) => a + s.count, 0), "person", "people")}, ${plural(people, "gift", "gifts")}.`, reconcile: notes, segments: segments.map((s) => ({ who: s.who, role: s.role, why: s.R.tier, count: String(s.count), job: s.R.job, kpi: s.R.kpi, owner: s.R.owner, followUpBy: s.R.followUp, tier: s.R.tier, gift: s.gift, cost: s.cost, sent: s.sent,
+      send: s.sent === 0 ? "none" : s.held || s.noted ? "fewer" : "all", sendNote: [s.noted ? `${s.noted} of ${s.count} get a note only (compliance).` : "", s.held ? `${s.held} held back to measure against.` : ""].filter(Boolean).join(" ") })) },
     theme: { ...theme, name: scrub(theme.name, saas), idea: scrub(theme.idea, saas), line: scrub(theme.line, saas), doesForThem: scrub(theme.doesForThem, saas), searchFor: scrub(theme.searchFor, saas) },
     gifts: cards.slice(0, 6),
     experience: overlay.experience || [],
     playbook: { goal: scrub(goal, saas), list: { who: segments.map((s) => s.who).join(", "), howMany: `${people} people`, howToPick: I.roster.length ? `From the ${plural(I.roster.length, "row", "rows")} you pasted; each owner confirms their recipients.` : `${segments.map((s) => `${s.who}: ${s.R.tier.toLowerCase()}`).join(". ")}.` },
       timeline, message: { notes: segments.map((s) => ({ segment: s.who, note: voice(I, s, s.short).note })), note: voice(I, first, first.short).note, subject: scrub(overlay.message?.subject || emailSubj, saas), email: scrub(email, saas), social: scrub(social, saas) },
-      unboxing: "The note is on top and says who it's from. The card offers to decline or donate. No card promises a second gift.",
+      unboxing: "The signed note goes on top. No card promises a second gift.",
       followUp: [...segments.map((s) => `${s.who}: ${s.R.owner} follows up (${s.R.followUp.toLowerCase()}), mentioning the ${s.short}.`), ...(saas ? ["Never make a gift conditional on taking a meeting; the gift says thanks, the follow-up earns the meeting."] : [])],
       measure: segments.map((s) => `${s.who}: ${s.R.kpi.toLowerCase()}`),
       budget: { perPerson: `about ${money(total / Math.max(1, people))} average`, total: `about ${money(total)} for ${people}`, note: "Estimates, not quotes: gift, maker and shipping per person. Each maker confirms the price on your quote.", fee: "Pottery Lab service fee: shown on your quote before you confirm" },
       risks: [...risks, ...(overlay.risks || []).map((x) => scrub(x, saas)).filter((x) => !/Q[1-4]\b/.test(x))].slice(0, 8), sends, triggers, compliance, finance, targets: targets.map(({ rate, ...t }) => t),
-      prove: { cfo: [finance.spend, finance.expect, finance.measure].join(" "), holdout, useHoldout, held: held.size, lines: saas ? [{ name: "New pipeline", how: "Opportunities created in 60 days" + (useHoldout ? ", gifted vs. holdout" : "") }, { name: "Deal acceleration", how: "Days to the next stage on open opportunities that received a gift" }, { name: "Expansion", how: "Seats or usage added at existing customers who received a gift" }] : targets.map((t) => ({ name: t.segment, how: `${cap1(plu(t.outcome))}, target ${t.expected} at ≤ ${t.costPer} each` })), target: pipe ? `Agree with finance before sending: about ${money(pipe)} in pipeline from about ${main.expected} meetings, on ${money(total)} spend (≤ ${main.costPer} per meeting).` : orders ? `Agree before sending: about ${plural(main.expected, main.outcome, plu(main.outcome))} (≤ ${main.costPer} each), about ${money(orders)} in orders on ${money(total)} spend.` : main && I.kind !== "employees" ? `Agree before sending: about ${plural(main.expected, main.outcome, plu(main.outcome))} at ≤ ${main.costPer} each.` : `Agree before sending: ${money(total / Math.max(1, people))} a person, everyone in the group included.`, caveat: useHoldout ? "One round is directional, not proof. Run the same holdout next time before calling it." : "Directional only: without a holdout, compare against your last round." },
+      prove: { cfo: [finance.spend, finance.expect, finance.measure].join(" "), holdout, useHoldout, held: held.size, lines: saas ? [{ name: "New pipeline", how: "Opportunities created in 60 days" + (useHoldout ? ", gifted vs. holdout" : "") }, { name: "Deal acceleration", how: "Days to the next stage on open opportunities that received a gift" }, { name: "Expansion", how: "Seats or usage added at existing customers who received a gift" }] : targets.map((t) => ({ name: t.segment, how: `${cap1(plu(t.outcome))}, target ${t.expected} at ≤ ${t.costPer} each` })), target: pipe ? `Agree with finance first: about ${money(pipe)} in pipeline from about ${main.expected} meetings, on ${money(total)} spend (≤ ${main.costPer} per meeting).` : orders ? `Agree with finance first: about ${plural(main.expected, main.outcome, plu(main.outcome))} (≤ ${main.costPer} each), about ${money(orders)} in orders on ${money(total)} spend.` : main && I.kind !== "employees" ? `Agree with finance first: about ${plural(main.expected, main.outcome, plu(main.outcome))} at ≤ ${main.costPer} each.` : `Agree with finance first: ${money(total / Math.max(1, people))} a person, everyone in the group included.`, caveat: useHoldout ? "One round is a signal, not proof. Repeat the holdout next time." : "No holdout, so treat this as a rough read." },
       approvals, budgetLines: lines.map(({ n, ...x }) => x), brief },
     source: overlay.source || "draft",
   });
@@ -455,6 +460,7 @@ export function cleanPlan(p = {}) {
   const m = p.moment || {}, a = p.audience || {}, t = p.theme || {}, b = p.playbook || {}, msg = b.message || {}, bud = b.budget || {}, l = b.list || {}, cpl = b.compliance || {}, fin = b.finance || {}, br = b.brief || {};
   const cost = (c) => ({ gift: int(c?.gift), maker: int(c?.maker), shipping: int(c?.shipping), allIn: int(c?.allIn) });
   return {
+    timing: p.timing?.late && /^\d{4}-\d{2}-\d{2}$/.test(p.timing.nextDate || "") ? { late: true, passed: !!p.timing.passed, nextDate: p.timing.nextDate, next: clean(p.timing.next, 40), text: clean(p.timing.text, 300) } : null,
     company: clean(p.company, 100), website: url(p.website), kind: KINDS[p.kind] ? p.kind : "", kindLabel: clean(p.kindLabel, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(p.date || "") ? p.date : "", source: ["draft", "researched", "example"].includes(p.source) ? p.source : "draft",
     moment: { title: clean(m.title, 200), what: clean(m.what, 600), when: clean(m.when, 60), whyItMatters: clean(m.whyItMatters, 500), sources: list(m.sources, 4, (s) => (url(s?.url) ? { title: clean(s.title, 120), url: url(s.url) } : null)) },
     audience: { summary: clean(a.summary, 500), reconcile: list(a.reconcile, 6, (x) => clean(x, 300)), segments: list(a.segments, 6, (s) => (clean(s?.who, 120) ? { who: clean(s.who, 120), role: ROLES[s.role] ? s.role : "", why: clean(s.why, 240), count: clean(s.count, 40),
@@ -466,8 +472,8 @@ export function cleanPlan(p = {}) {
     playbook: {
       goal: clean(b.goal, 400),
       list: { who: clean(l.who, 300), howMany: clean(l.howMany, 60), howToPick: clean(l.howToPick, 500) },
-      timeline: list(b.timeline, 12, (x) => (clean(x?.step, 300) ? { when: clean(x.when, 60), step: clean(x.step, 300), owner: clean(x.owner, 60) } : null)),
-      message: { notes: list(msg.notes, 6, (x) => (clean(x?.note, 500) ? { segment: clean(x.segment, 120), note: clean(x.note, 500) } : null)), note: clean(msg.note, 700), email: cleanLines(msg.email, 1200), subject: clean(msg.subject, 120), social: clean(msg.social, 500) },
+      timeline: list(b.timeline, 12, (x) => (clean(x?.step, 300) ? { when: clean(x.when, 60), step: clean(x.step, 300), owner: clean(x.owner, 60), ...(x.past ? { past: true } : {}) } : null)),
+      message: { notes: list(msg.notes, 6, (x) => (clean(x?.note, 500) ? { segment: clean(x.segment, 120), note: cleanLines(x.note, 500) } : null)), note: cleanLines(msg.note, 700), email: cleanLines(msg.email, 1200), subject: clean(msg.subject, 120), social: clean(msg.social, 500) },
       unboxing: clean(b.unboxing, 500), followUp: list(b.followUp, 7, (x) => clean(x, 300)), measure: list(b.measure, 7, (x) => clean(x, 200)),
       budget: { perPerson: clean(bud.perPerson, 60), total: clean(bud.total, 60), note: clean(bud.note, 300), fee: clean(bud.fee, 120) }, risks: list(b.risks, 8, (x) => clean(x, 300)),
       sends: list(b.sends, 6, (x) => (clean(x?.what, 200) ? { wave: clean(x.wave, 120), what: clean(x.what, 200), when: clean(x.when, 80), why: clean(x.why, 240) } : null)),
@@ -554,17 +560,22 @@ export function mountGiftPlan(app, { store, small, discoverHosts }) {
   const drafts = new Map(), DRAFTS_PER_HOUR = +process.env.ENCORE_GIFT_DRAFTS_PER_HOUR || 40;
   const limited = (req) => { const k = req.ip || "?", now = Date.now(); const h = (hits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); hits.set(k, h); return h.length > PER_HOUR; };
   // which hosts on Pottery Lab could make each gift; makers in the recipients' city first, then ones taking orders
+  const makes = (h) => { const sells = [...(h.gifts || []), ...(h.shop?.items || [])], X = h.experiences || []; if (!sells.length && X.length && X.every((x) => categoryOf(x) === "movement")) return "";
+    // someone who sells nothing yet counts as a maker only when their name or tagline says they make it
+    return [h.name, h.tagline, ...(sells.length ? h.tags || [] : []), ...sells.map((x) => `${x.name || ""} ${x.desc || ""}`)].join(" ").toLowerCase().replace(/[\p{L}-]+ (after|afterwards)\b/gu, " "); };
+  // the first two keywords name the craft (ceramics, pottery; coffee, roast); a shop that sells cups is not a ceramicist
+  const madeBy = (h, keys) => { const t = makes(h); return !!t && keys.slice(0, 2).some((k) => { const st = k.toLowerCase().replace(/(ing|es|s|y)$/, ""); return new RegExp(`(^|[^\\p{L}])(${k.toLowerCase()}|${st}\\p{L}{0,3})($|[^\\p{L}])`, "u").test(t); }); };
   const withMakers = (plan, city = "") => { let hosts = []; try { hosts = discoverHosts() || []; } catch {}
     const near = (h) => (city && new RegExp(city.replace(/[^\w ]/g, "").split(" ")[0], "i").test(`${h.city || ""} ${h.hood || ""}`) ? 0 : 1);
-    return { ...plan, gifts: plan.gifts.map((g) => ({ ...g, makers: keywordRank(g.makerKeywords.join(" ") || g.name, hosts, 12).filter((m) => { const hit = String(m.why || "").replace(/^Mentions /, "").split(", "); return g.makerKeywords.some((k) => { const kk = k.toLowerCase(), st = kk.replace(/(ing|es|s|y)$/, ""); return hit.some((x) => x === kk || x === st || (st.length > 3 && x.startsWith(st))); }); }).map((m) => { const h = hosts.find((x) => x.handle === m.handle) || {}; return { handle: h.handle, name: h.name, city: h.city || "", showcase: !!h.showcase, why: m.why, near: !near(h) }; })
+    return { ...plan, gifts: plan.gifts.map((g) => ({ ...g, makers: keywordRank(g.makerKeywords.join(" ") || g.name, hosts, 12).filter((m) => { const hit = String(m.why || "").replace(/^Mentions /, "").split(", "); return g.makerKeywords.some((k) => { const kk = k.toLowerCase(), st = kk.replace(/(ing|es|s|y)$/, ""); return hit.some((x) => x === kk || x === st || (st.length > 3 && x.startsWith(st))); }) && madeBy(hosts.find((x) => x.handle === m.handle) || {}, g.makerKeywords); }).map((m) => { const h = hosts.find((x) => x.handle === m.handle) || {}; return { handle: h.handle, name: h.name, city: h.city || "", showcase: !!h.showcase, why: m.why, near: !near(h) }; })
       .filter((m, i, a) => m.handle && a.findIndex((x) => x.name === m.name && x.city === m.city) === i).sort((x, y) => (x.showcase - y.showcase) || (y.near - x.near)).slice(0, 3) })) }; };
   const draftReason = () => (isFake() ? "fake" : aiMode() === "missing_key" ? "missing_key" : "");
   app.post("/api/public/giftplan", small, (req, res) => { const b = req.body || {}, input = readBody(b);
-    if (input.company.length < 2 || input.moment.length < 4) return res.status(400).json({ code: "invalid", message: "Tell Potto the company and the moment (for example: Exa, launched Snapshot)." });
+    if (input.company.length < 2 || input.moment.length < 4) return res.status(400).json({ code: "invalid", message: "Add your brand and the moment." });
     const id = crypto.randomBytes(8).toString("hex"), done = (plan, reason) => S.set("giftplans/" + id, { status: "ready", input, plan: withMakers(plan, input.city), demo: !!reason, draft: reason || "", at: Date.now() });
     // research off, missing or rate-limited: the plan from their answers, straight away (never "try again later")
     // drafts are cheap but still stored: a generous per-visitor cap keeps storage from being flooded
-    { const k = req.ip || "?", now = Date.now(), h = (drafts.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); drafts.set(k, h); if (drafts.size > 5000) drafts.clear(); if (h.length > DRAFTS_PER_HOUR) return res.status(429).json({ code: "slow_down", message: "That's a lot of plans in one hour. Open one you already made, or try again a little later." }); }
+    { const k = req.ip || "?", now = Date.now(), h = (drafts.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); drafts.set(k, h); if (drafts.size > 5000) drafts.clear(); if (h.length > DRAFTS_PER_HOUR) return res.status(429).json({ code: "slow_down", message: "That's a lot of plans for one hour. Try again soon." }); }
     const why = draftReason() || (limited(req) ? "rate_limited" : "");
     if (why) { done(planFromInput(input, id), why); return res.json({ id, status: "ready", key: ownerKey(id), draft: why }); }
     S.set("giftplans/" + id, { status: "working", input, at: Date.now() }); running.add(id);
@@ -575,7 +586,7 @@ export function mountGiftPlan(app, { store, small, discoverHosts }) {
   // a worked example anyone can open before filling the form (made-up company and accounts, labelled as such)
   app.get("/api/public/giftplan/example", (req, res) => { const input = readBody(EXAMPLE()), plan = { ...planFromInput(input, "example"), source: "example" };
     res.set("Cache-Control", "public, max-age=600").json({ id: "example", status: "ready", example: true, demo: false, input, plan: withMakers(plan), crm: toCsv(crmRows(plan, input, "example")) }); });
-  app.get("/api/public/giftplan/:id", (req, res) => { const id = String(req.params.id).replace(/[^a-f0-9]/g, "").slice(0, 16), d = S.get("giftplans/" + id)?.data; if (!d) return res.status(404).json({ code: "not_found", message: "No plan by that link." });
+  app.get("/api/public/giftplan/:id", (req, res) => { const id = String(req.params.id).replace(/[^a-f0-9]/g, "").slice(0, 16), d = S.get("giftplans/" + id)?.data; if (!d) return res.status(404).json({ code: "not_found", message: "Potto can't find that plan." });
     const own = String(req.query.k || "") === ownerKey(id), { accounts, contacts, protect, ...pub } = d.input || {};
     const out = { id, ...d, input: own ? d.input : { ...pub, accountCount: (accounts || []).length, rowCount: (contacts || []).length }, canResearch: own && aiMode() === "live" };
     if (d.status === "ready") out.crm = toCsv(crmRows(d.plan, own ? d.input : { ...pub }, id));

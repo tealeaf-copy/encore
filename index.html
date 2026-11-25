@@ -1087,7 +1087,7 @@ td.num,.num{font-variant-numeric:tabular-nums}
   .stepbtn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:var(--night-fg);border-radius:12px;padding:8px 12px;font:500 13px var(--f-body)}
   .hero2{padding:20px;border-radius:16px}.hero2 h1{font-size:24px!important;line-height:30px!important}
   .h2stats b{font-size:22px;line-height:28px}.h2stats>div{padding:0 10px}
-  .h2cta .btn.primary{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:35;box-shadow:0 12px 24px -12px rgba(36,28,24,.5)!important;background:var(--accent)!important;color:#fff!important}
+  .h2cta .btn.primary{width:100%;justify-content:center;background:var(--accent)!important;color:#fff!important;box-shadow:none!important}
   #view-studio{padding-bottom:72px}
   .welcome{margin-top:20px}.welcome h1{font-size:30px!important;line-height:36px!important}
   .rail .savebox{display:none!important}
@@ -1189,8 +1189,8 @@ main.wrap{padding-bottom:104px}
 .walkform{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.walkform input{flex:1 1 160px}
 @media (max-width:700px){
   .askrow{flex-wrap:wrap}.askrow .btn{width:100%}
-  .h2cta{padding-bottom:4px}.h2cta .btn.primary{justify-content:center;text-align:center;box-shadow:0 -24px 24px -4px var(--bg)!important}
-  body{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+  .h2cta{padding-bottom:4px}.h2cta .btn.primary{justify-content:center;text-align:center}
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 }
 
 .bkit{padding:24px}.bkgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:start}
@@ -9982,6 +9982,32 @@ function tidyPlan(){ try{ if(+step!==1||!draft?.id||!isCasual(draft)) return; co
 { const st=document.createElement("style"); st.textContent=`.hk-fold{border:1.5px dashed var(--line,#E4D9C8);border-radius:16px;padding:10px 14px;margin-top:10px}.hk-fold>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;list-style:none}.hk-fold>summary::-webkit-details-marker{display:none}.hk-fold>summary::after{content:"＋";font-weight:700}.hk-fold[open]>summary::after{content:"−"}.hk-fold>summary small{color:var(--muted,#6B5F56);font-weight:400;margin-left:auto;margin-right:10px}.hk-fold[open]>summary{margin-bottom:10px}
 @media (max-width:760px){#pipAgents .pa-tabs{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}#pipAgents .pa-tabs>*{flex:none}}#qbPanel.qb-folded>:not(.qb-open){display:none!important}#qbPanel .qb-open{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}#qbPanel .qb-open span:first-child{display:grid;gap:2px}#qbPanel .qb-open small{color:var(--muted,#6B5F56)}#qbPanel .qb-open>span:last-child{font-weight:700;font-size:20px}#qbPanel .qb-open:focus-visible{outline:3px solid #C4532F;outline-offset:4px;border-radius:10px}`; document.head.appendChild(st) }
 new MutationObserver(()=>tidyPlan()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- One red button per screen: the hero's next step. Everything else in the step is secondary.
+// (Design review: Share, Publish, Copy invite and Potto's nudge were all solid red on the same screen.)
+function oneLoudButton(){ try{ const host=document.getElementById("stepHost"); if(!host||!draft?.id||!isCasual(draft)) return; const hero=document.getElementById("heroGo"); if(!hero||hero.style.display==="none") return;
+  document.querySelectorAll("#view-studio #pubBtn.primary,#view-studio #hk-copyInv.primary,#view-studio #fyCopy.primary,#view-studio #txiSend.primary,#view-studio .cos .btn.primary").forEach(b=>{ b.classList.remove("primary"); b.classList.add("ghost") });
+  const pb=host.querySelector("#pubBtn"); if(pb&&!pb.classList.contains("as-link")) pb.classList.add("as-link");
+  // Potto doesn't nudge about a field that's already right there on this screen
+  const cos=document.querySelector("#view-studio .cos"); if(cos){ const t=cos.textContent||""; const whereField=document.getElementById("hk-meet"); if(/where it is|add (the )?where|meeting point|address/i.test(t)&&whereField&&whereField.offsetParent) cos.style.display="none"; }
+}catch(err){ console.warn(err) } }
+{ const st=document.createElement("style"); st.textContent=`#pubBtn.as-link{background:none!important;border:0!important;box-shadow:none!important;padding:4px 0!important;text-decoration:underline;text-underline-offset:3px;color:var(--ink,#1F1A17)!important;font-weight:600}`; document.head.appendChild(st) }
+new MutationObserver(()=>oneLoudButton()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- The invite says each thing once: date first, price and seats in one card, and a way to reply above the fold on desktop
+// (Design review: price and seat count appeared three times; the desktop layout stacked into one long column.)
+function tidyInvite(){ try{ const e=window.__gEv, inn=document.querySelector("#view-guest.ev2 .invite.gx > .in"); if(!e?.id||!inn) return;
+  const facts=inn.querySelector(":scope > .gxfacts"), fw=inn.querySelector(":scope > #forWho");
+  if(facts&&fw&&fw.compareDocumentPosition(facts)&Node.DOCUMENT_POSITION_FOLLOWING&&!facts.dataset.moved){ facts.dataset.moved=1; fw.before(facts) }
+  const seatsInCard=!!fw&&/seat/i.test(fw.textContent);
+  if(facts) facts.querySelectorAll(":scope > span").forEach(sp=>{ if(/^Size$/i.test(sp.querySelector("small")?.textContent.trim()||"")&&seatsInCard) sp.style.setProperty("display","none","important") });
+  document.querySelectorAll("#view-guest .ev2-faces small").forEach(x=>{ if(/spots?|seats?/.test(x.textContent)&&(seatsInCard||facts)) x.style.display="none" });
+  // desktop: the reply button sits with the facts
+  const acts=inn.querySelector(":scope > .ev2-acts"), form=document.getElementById("gForm"), past=e.date&&e.date<new Date().toISOString().slice(0,10);
+  if(acts&&form&&!past&&!e.example&&!e.sample&&!inn.querySelector("#gTopCta")&&!(typeof myRsvp==="function"&&myRsvp(e.id))){ const send=document.getElementById("g-send"); const b=document.createElement("button"); b.type="button"; b.id="gTopCta"; b.className="btn primary"; b.textContent=send?.textContent.trim()||"Reply"; b.onclick=()=>{ form.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>document.getElementById("g-name")?.focus({preventScroll:true}),450) }; acts.before(b) }
+}catch(err){ console.warn(err) } }
+{ const st=document.createElement("style"); st.textContent=`#gTopCta{align-self:flex-start;min-width:220px;justify-content:center}@media (max-width:760px){#gTopCta{display:none!important}}
+@media (min-width:861px){#view-guest.ev2 .invite.gx.ea-card-on{display:grid!important}}
+#view-guest .mc,#view-guest .mc a,#view-guest footer .mc{color:#4A3F38!important}`; document.head.appendChild(st) }
+new MutationObserver(()=>tidyInvite()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- A calmer Guests step: one way to invite open, the rest when it's useful
 function tidyGuests(){ try{ if(+step!==6||!draft?.id||!isCasual(draft)) return; const host=$("#stepHost"); if(!host) return;
   const going=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===draft.id&&r.response==="going").length+((draft.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length);

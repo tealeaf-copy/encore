@@ -12,7 +12,7 @@ h1,h2,h3{font-family:"Fraunces",Georgia,serif;font-weight:380;font-variation-set
 .eyebrow{font:500 13px "Instrument Sans",system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:14px 22px;font:500 16px "Instrument Sans",system-ui;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform .18s ease-out,background .18s ease-out}
 .btn.primary{background:var(--ember);color:#fff}.btn.primary:hover{background:#A9442A}.btn.quiet{border-color:var(--line);background:transparent}.btn.quiet:hover{background:var(--linen)}.btn:active{transform:scale(.98)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:32px;padding:22px 0}.brand{display:flex;gap:8px;align-items:center;font:500 20px "Fraunces",Georgia,serif;text-decoration:none}.top nav{display:flex;gap:26px;align-items:center;font-size:16px;font-weight:500}.top nav a{text-decoration:none;color:#5E534B}.top nav a:not(.btn):hover{color:var(--ink)}.top nav .btn{margin-left:6px}@media (max-width:1020px){.top nav a.hide-m{display:none}}.top nav a{white-space:nowrap}@media (max-width:420px){.top nav{gap:12px}.top nav a[href="/discover"]{display:none}}.top nav a.in{color:var(--ink);font-weight:500}
+.top{display:flex;justify-content:space-between;align-items:center;gap:32px;padding:22px 0}.brand{display:flex;gap:8px;align-items:center;font:500 20px "Fraunces",Georgia,serif;text-decoration:none}.top nav{display:flex;gap:26px;align-items:center;font-size:16px;font-weight:500}.top nav a{text-decoration:none;color:#5E534B}.top nav a:not(.btn):hover{color:var(--ink)}.top nav .btn{margin-left:6px}@media (max-width:1020px){.top nav a.hide-m{display:none}}.top nav a{white-space:nowrap}@media (max-width:420px){.top nav{gap:12px}.top nav .nm-full{display:none}}.top nav a.in{color:var(--ink);font-weight:500}
 .hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr);gap:48px;align-items:center;padding:56px 0 72px}
 .hero h1{font-size:clamp(40px,5.2vw,68px);line-height:1.04;letter-spacing:-.01em}.hero h1 .hl{font-style:normal;color:#B04A30;white-space:nowrap}.hero p.sub{font-size:20px;color:var(--smoke);max-width:520px;margin:22px 0 30px}
 .ctas{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:13px;color:var(--smoke);margin-top:14px}
@@ -71,7 +71,7 @@ h1,h2,.lede,.sub{text-wrap:balance}footer .ftl{display:flex;gap:18px;flex-wrap:w
 .makes{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#FFF3E2;padding:14px 0;margin:0}.mk-track{display:flex;gap:12px;width:max-content;animation:mk 48s linear infinite}.mk-dup{display:flex;gap:12px}
 .mk{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:7px 14px;font-weight:600;font-size:16px;box-shadow:2px 2px 0 #1F1A17}.mk:nth-child(3n){transform:rotate(-1.5deg)}.mk:nth-child(3n+1){transform:rotate(1deg)}
 @keyframes mk{to{transform:translateX(-50%)}}.makes:hover .mk-track{animation-play-state:paused}
-@media (max-width:1240px){.d-spark{display:none}}.nm-full{margin-left:-4px}@media (max-width:380px){.nm-full{display:none}}@media (max-width:430px){.top .brand{font-size:20px;gap:6px}.top nav{gap:10px!important}.top nav .btn{margin-left:0;padding:9px 13px;font-size:14px;white-space:nowrap}}@media (max-width:860px){.d-arrow{display:none}}
+@media (max-width:1240px){.d-spark{display:none}}@media (max-width:430px){.top .brand{font-size:20px;gap:6px}.top nav{gap:10px!important}.top nav .btn{margin-left:0;padding:9px 13px;font-size:14px;white-space:nowrap}}@media (max-width:860px){.d-arrow{display:none}}
 h2 em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600;color:#B04A30;letter-spacing:-.01em}.teams h2 em{color:#FFD58A}
 .potto-end{display:block;width:150px;height:150px;margin:0 auto -6px;transform:rotate(-4deg)}
 .lv small.lv-tag{display:inline-block;margin-top:6px;font-size:13px;font-weight:600;background:#F3ECE2;color:#6B5F56;border-radius:999px;padding:2px 8px}.lv small.lv-tag.ok{background:#E8F3EC;color:#1E6B45}
@@ -87,32 +87,34 @@ html body .eyebrow{font-size:13px!important}
 </head><body class="home">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
-    <nav><a href="/discover">Discover</a><a href="/hosts" class="hide-m">Hosts</a><a href="/hosts/book" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends">Start<span class="nm-full">your page</span></a></nav></header>
+    <nav><a href="/discover">Discover</a><a href="/hosts" class="hide-m">Hosts</a><a href="/hosts/book" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends"><span>Start <span class="nm-full">your page</span></span></a></nav></header>
   <div class="hero">
     <div><h1>Host what you love.<br><span class="hl">Get booked</span> for&nbsp;it.<svg class="doodle d-spark" viewBox="0 0 60 60" aria-hidden="true"><path d="M30 6v14M30 40v14M6 30h14M40 30h14M14 14l8 8M38 38l8 8M46 14l-8 8M22 38l-8 8" stroke="#E0A030" stroke-width="4" stroke-linecap="round" fill="none"/></svg></h1>
-      <p class="sub">A page for what you host. Start with friends, and brands find you.</p>
-      <div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts/book">Book a host</a></div>
+      <p class="sub">Host friends first. Brands find you after.</p>
+      <div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts/book">I'm a brand</a></div>
+      <p class="small" id="inviteOnlyLine" hidden>Hosting is invite-only for now. Got a host code? <a href="/signup?mode=friends">Start your page</a>.</p>
       <p class="small">Got an invite? Open the link. No account or code needed.</p></div>
   </div>
 </div>
 <section class="makes" aria-label="Things people host on Pottery Lab"><div class="mk-track"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span><span aria-hidden="true" class="mk-dup"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span></span></div></section>
 <section><div class="wrap"><span class="eyebrow">How it works</span><h2>Friends, then <em>followers</em>, then bookings.</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Plan it in one sentence. We make the invite, collect replies and send reminders.</p></div>
+    <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Describe it in a sentence. We make the invite and chase the replies.</p></div>
     <div class="step"><div class="n">2</div><h3>Build your page</h3><p>Every event adds photos and kind words. Followers hear about the next one first.</p></div>
-    <div class="step"><div class="n">3</div><h3>Get booked</h3><p>Brands send a request. You set the quote and pick what fits.</p></div>
+    <div class="step"><div class="n">3</div><h3>Get paid to host</h3><p>Brands send a request. You set the quote and pick what fits.</p></div>
   </div>
 </div></section>
-<section><div class="wrap"><div class="teams"><div><span class="eyebrow">For brands</span><h2>Book hosts people <em>show up</em> for.</h2>
+<section><div class="wrap"><div class="teams"><div><span class="eyebrow">For brands</span><h2>Hosts people <em>show up</em> for.</h2>
   <p>A run club for your launch, a flower workshop for the offsite. One invoice, and a replacement or a refund if anything falls through.</p>
-  <div class="ctas"><a class="btn primary" href="/hosts/book">Book a host</a></div></div></div>
+  <div class="ctas"><a class="btn primary" href="/hosts/book">Find a host</a></div></div></div>
 </div></section>
 <section id="liveSec" hidden><div class="wrap"><h2>Meet a few <em>hosts</em></h2><div class="live" id="live"></div><p class="more"><a href="/hosts">See all hosts →</a></p></div></section>
-<section class="end"><div class="wrap"><span class="potto-end" id="pottoEnd" aria-hidden="true"></span><h2>Your page, <em>this week</em>.</h2><p class="lede">Say what you host, plan the first one, share the link.</p><div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a></div></div></section>
-<div class="wrap"><footer><span>Pottery Lab · your page for what you host</span><span class="ftl"><a href="/discover">Discover</a><a href="/hosts">Hosts</a><a href="/hosts/book">For brands</a><a href="/security">Security</a></span></footer></div>
+<section class="end"><div class="wrap"><span class="potto-end" id="pottoEnd" aria-hidden="true"></span><h2>Your page, <em>this week</em>.</h2><div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a></div></div></section>
+<div class="wrap"><footer><span>Pottery Lab</span><span class="ftl"><a href="/discover">Discover</a><a href="/hosts">Hosts</a><a href="/hosts/book">For brands</a><a href="/security">Security</a></span></footer></div>
 <script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/mascot.js"></script>
 <script>
-(function () { try { document.getElementById("pottoEnd").innerHTML = window.Potto ? Potto.svg("wave", 96, "Potto waving") : ""; } catch {} const A = window.EncoreAvatars;
+(function () { fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c?.inviteOnly) document.getElementById("inviteOnlyLine").hidden = false; }).catch(() => {});
+  try { document.getElementById("pottoEnd").innerHTML = window.Potto ? Potto.svg("wave", 96, "Potto waving") : ""; } catch {} const A = window.EncoreAvatars;
   const esc = window.EncoreCommunity?.esc || ((s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"));
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { const ok = (h) => h.handle && h.name && h.name.toLowerCase() !== h.handle.toLowerCase() && !/[<>]/.test(h.name) && (h.tagline || h.bio) && h.city;
     const H = (d.hosts || []).filter((h, i, all) => ok(h) && all.findIndex((x) => x.name === h.name) === i).sort((a, b) => ((!!a.showcase * 2 + !!a.sample) - (!!b.showcase * 2 + !!b.sample)) || (b.upcoming || 0) + (b.followers || 0) - ((a.upcoming || 0) + (a.followers || 0))); if (H.length < 3) return; H.length = 3; document.getElementById("liveSec").hidden = false;

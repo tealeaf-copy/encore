@@ -34,41 +34,39 @@
   <label>Password <small style="font-weight:400;color:#75685F">(10+ characters)</small><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Start free trial</button>
   <a href="/login">Already have an account? Sign in</a>
-  <a href="#" id="noCode" hidden style="display:none!important">No code yet? Join the waitlist</a>
 </form>
 <form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
-  <h1>Invite-only, for now</h1>
-  <p class="sub">Tell us what you'd host. A host nearby can send you a code.</p>
+  <h1>Join the waitlist</h1>
+  <p class="sub">Hosting is invite-only for now. Tell us what you'd host and a host can send you a code.</p>
   <p class="err" id="wlErr" role="alert"></p>
   <label>Your name<input name="name" autocomplete="name"></label>
   <label>Email<input name="email" type="email" autocomplete="email" required></label>
   <label>City<input name="city" placeholder="e.g. Oakland" autocomplete="address-level2"></label>
   <label>What would you host?<input name="wants" placeholder="e.g. a Sunday hike, cake sales from my stoop"></label>
-  <button type="submit">Ask for a code</button>
+  <button type="submit">Join waitlist</button>
   <a href="#" id="haveCode">I have a code</a>
 </form>
 <script>
   (function () { const q = new URLSearchParams(location.search), f = document.getElementById("f");
     const set = (m) => { f.mode.value = m; document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
       const fr = m === "friends", fol = fr && !!q.get("regularOf"); document.getElementById("h").textContent = fr ? (fol ? "Follow along" : "Start your page") : "Start your free trial";
-      document.getElementById("sub").textContent = fr ? (fol ? "Free. No card needed." : "Free for hosting friends. No card needed.") : "14 days, every feature, no card.";
+      document.getElementById("sub").textContent = fr ? (fol ? "Free. No card needed." : "Free to host friends. No card.") : "14 days, every feature, no card.";
       { const cw0 = document.getElementById("coWrap"); cw0.hidden = fol; if (fol) f.company.value = ""; }
       document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
-      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Create account" : "Create my page") : "Start free trial"; };
+      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Follow" : "Create my page") : "Start free trial"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
     if (q.get("mode") !== "work") set("friends"); else document.getElementById("modes").hidden = false;
-    const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), nc = document.getElementById("noCode"), wl = document.getElementById("wl");
+    const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), wl = document.getElementById("wl");
     let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ You're good to go.") : j.message || "That code doesn't work."; } catch {} }, 250); };
     ci.addEventListener("input", check);
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
-    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; nc.hidden = !!q.get("code"); document.getElementById("nocodeHint").hidden = false; window.__inviteOnly = true; } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
-    nc.onclick = (e) => { e.preventDefault(); f.hidden = true; wl.hidden = false; };
+    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; document.getElementById("nocodeHint").hidden = false; window.__inviteOnly = true; } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
     if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">Hosts near ${b.city ? b.city.replace(/[<>&]/g, "") : "you"} can see you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. If one sends a code, it comes by email.</p>`;
+        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">Hosts can see you'd like to host${b.wants ? " " + b.wants.replace(/[<>&]/g, "") : ""}. If one sends a code, it comes by email.</p>`;
       } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();
@@ -81,7 +79,7 @@
     for (const k of ["template", "plan", "ref"]) if (q.get(k)) body[k] = q.get(k); // passed through to the welcome screen
     // first problem in the order the fields appear: code (when shown), name, email, company, password
     const stop = (msg, el) => { err.textContent = msg; el?.focus(); };
-    if (window.__inviteOnly && !String(body.code || "").trim() && !q.get("regularOf")) return stop("Add your host code, or join the waitlist below.", f.code);
+    if (window.__inviteOnly && !String(body.code || "").trim() && !q.get("regularOf")) return stop("Add your host code. No code? Join the waitlist.", f.code);
     if (document.getElementById("codeOk").classList.contains("bad")) return stop("That code doesn't work. Check it with whoever sent it.", f.code);
     if (!String(body.name || "").trim()) return stop("Add your name.", f.elements.name);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim())) return stop("That email doesn't look right.", f.email);

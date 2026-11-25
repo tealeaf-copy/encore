@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Discover hosts · Pottery Lab</title>
+<title>Discover events · Pottery Lab</title>
 <meta name="description" content="Small events hosted by people near you: run clubs, hikes, pandan cake from a stoop. Follow the hosts you like.">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
@@ -55,7 +55,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs, bakes on a stoop.</p></div>
 
   <div class="fbar" role="group" aria-label="Where and what">
-    <button type="button" class="loc" id="locBtn" aria-expanded="false" aria-controls="locPanel"><span aria-hidden="true">📍</span> <span id="locName">Anywhere</span> <span aria-hidden="true">▾</span><span class="sr">, change city</span></button>
+    <button type="button" class="loc" id="locBtn" aria-label="Change city" aria-expanded="false" aria-controls="locPanel"><span aria-hidden="true">📍</span> <span id="locName">Anywhere</span> <span aria-hidden="true">▾</span></button>
     <span class="sep" aria-hidden="true"></span>
     <span id="filters" style="display:contents"></span>
   </div>
@@ -153,7 +153,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
     else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. ${SIGNED ? `<a href="/feed#alerts">Tell me when one opens nearby</a>.` : `<a href="/signup?mode=friends">Tell me when one opens nearby</a>.`}`; }
     else if (city) rest = far;
-    else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : "Nothing here yet. Try Everything.";
+    else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
     const shown = list.slice(0, evShown);
     let html = shown.map((e) => card(e, list === far && city ? `📍 ${e.city || "Location to be confirmed"}` : whyOf(e))).join("");

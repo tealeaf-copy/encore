@@ -137,13 +137,23 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
     try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })) }); } catch {} } } catch {}
     return (showcaseCache = out); }
   function showcaseOf(handle) { const h = String(handle || "").toLowerCase(); return wsOfHandle(h) ? null : showcaseAll().get(h) || null; }
+  // what a page still needs before Discover lists it (empty when it's ready)
+  function pageGaps(h) { if (!h?.handle) return ["a page"]; const out = [];
+    if (!(h.name && h.name.trim().length >= 3 && h.name.trim().toLowerCase() !== h.handle)) out.push("a name");
+    if (!(h.tagline || h.bio)) out.push("a line about you");
+    if (!(h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"))) out.push("a face or photo");
+    return out; }
+  // for the signed-in host on Discover: their own live events Discover can't list yet, and why
+  function discoverStatus(ws) { const h = profileOf(ws), sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""), gaps = sample ? [] : pageGaps(h);
+    const today = new Date().toISOString().slice(0, 10), live = scopeStore(store, ws).list("events").map((d) => d.data).filter((e) => e && !e.example && e.discoverable && !e.unlisted && (e.date || "9999") >= today);
+    return { handle: h?.handle || "", gaps: live.length ? gaps : [], waiting: gaps.length ? live.map((e) => ({ title: e.pubTitle || e.name || "", city: e.city || h?.city || "" })).slice(0, 5) : [] }; }
   function discover() {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     for (const ws of allWorkspaceIds()) { const h = profileOf(ws); if (!h?.handle) continue; const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); if (sample && hideDemo) continue; const up = eventsOf(ws).map((c) => (sample ? { ...c, sample: true } : c)), n = followersOf(ws).length, past = eventsOf(ws, { upcoming: false }).length; if (!up.length && !past && !(h.shop?.open) && !(h.experiences || []).length) continue;
       // public lists show finished pages: a real name (not just the handle), a line about them, and a face or photo.
       // Unfinished pages still work by link; they just aren't featured until they're ready.
-      const named = h.name && h.name.trim().length >= 3 && h.name.trim().toLowerCase() !== h.handle, ready = named && (h.tagline || h.bio) && (h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"));
+      const ready = !pageGaps(h).length;
       if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
     for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
@@ -212,7 +222,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }
   function waitlist() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
   function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
-  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, showcaseOf, addWaitlist, waitlist, sys };
+  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, addWaitlist, waitlist, sys };
 }
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
@@ -319,6 +329,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Pottery Lab`, text: `${b.name || "Someone"} is now following you. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Pottery Lab" }).catch(() => {})); }
     await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
+  app.get("/api/host/discover-status", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ gaps: [], waiting: [] }); res.json(C.discoverStatus(u.ws)); });
   registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
     for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }

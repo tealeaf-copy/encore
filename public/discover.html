@@ -73,7 +73,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     <div class="grid g2" id="events"><div class="empty">Loading…</div></div>
     <button type="button" class="btn ghost more-btn" id="evMore" hidden></button><style>.more-btn[hidden]{display:none!important}</style></section>
 
-  <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><p class="lede">Made by hosts near you.</p><div class="shop-row" id="shops"></div></section>
+  <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><div class="shop-row" id="shops"></div></section>
 
   <section id="hostsSec"><div class="sec-h"><h2>Hosts worth following</h2><a href="/hosts">See all hosts →</a></div><p class="lede" id="hostsL" hidden></p><div class="hlist" id="hosts"></div></section>
 
@@ -94,6 +94,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   if (SIGNED) document.getElementById("hostCard")?.remove(); // hosts and brands already have a page
   { const pi = $("#pipI"); if (pi) pi.innerHTML = C.pipSVG("happy", 44); }
   let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
+  let MINE = { gaps: [], waiting: [], handle: "" }, LOADED = false;
   let data = { events: [], hosts: [] }, shops = null, filter = "all", city = "", evShown = PAGE, farOpen = false, fyIds = new Set();
   try { city = localStorage.getItem("encore.city") || ""; } catch {}
   const PRM = new URLSearchParams(location.search), QTEXT = (PRM.get("q") || "").trim().toLowerCase(); if (["move", "make", "gather", "discover"].includes(PRM.get("lane"))) filter = PRM.get("lane");
@@ -152,10 +153,14 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter]) : "Coming up";
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what; $("#evH").hidden = !!(QTEXT && !base.length && data.events.length);
     let list = local, note = "", rest = [];
-    if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
+    // a signed-in host whose live event Discover can't list yet hears why, in one line
+    const W = (MINE.gaps.length && MINE.waiting[0]) || null, and = (L) => L.length > 1 ? L.slice(0, -1).join(", ") + " and " + L[L.length - 1] : L[0] || "";
+    const pend = !W ? "" : MINE.gaps.includes("a page") ? `${W.title ? `“${esc(W.title)}”` : "Your event"} shows here once you have a page. <a href="/?app=1">Start your page</a>.` : `${W.title ? `“${esc(W.title)}”` : "Your event"} shows here once your page has ${esc(and(MINE.gaps))}. <a href="/@${encodeURIComponent(MINE.handle)}?customize=1">Finish your page</a>.`;
+    if (!data.events.length) note = pend || "No open events right now. Hosts are cooking something up.";
     else if (QTEXT && !base.length) note = `No events match “${esc(PRM.get("q"))}” yet.`;
-    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>. Here's what's on elsewhere.`; }
-    else if (city) rest = far;
+    else if (city && !local.length) { list = far; note = pend ? `${pend} Here's what's on elsewhere.` : SIGNED ? `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} on Discover yet. <a href="/?app=1#studio">Host one</a>. Here's what's on elsewhere.` : `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. <a href="/signup?mode=friends">Host the first one</a>. Here's what's on elsewhere.`; }
+    else if (city) { rest = far; note = pend; }
+    else if (pend && base.length) note = pend;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
     const shown = list.slice(0, evShown);
@@ -205,10 +210,11 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)
   (async () => { if (city) return; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
-  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#introP").hidden = true; $("#hostCard")?.remove(); } } catch {} })();
+  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#introP").hidden = true; $("#hostCard")?.remove();
+    try { const st = await (await fetch("/api/host/discover-status", { credentials: "same-origin" })).json(); if (st && Array.isArray(st.gaps) && Array.isArray(st.waiting)) { MINE = { gaps: st.gaps, waiting: st.waiting, handle: String(st.handle || "") }; } } catch {} if (LOADED) drawEvents(); } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
   { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawAll();
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll();
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
 </script><script src="/nav.js"></script>

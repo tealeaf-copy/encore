@@ -14,13 +14,14 @@
     const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.innerHTML = `<div class="cl" role="dialog" aria-modal="true" aria-label="Suggest a collab"><button class="x" type="button" aria-label="Close">×</button><h2>Suggest a collab</h2>
       <p>If ${esc(first)} says yes, you'll swap emails.</p>
-      <form><div class="kinds" role="group" aria-label="What kind of collab">${KINDS.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === kind}">${esc(l)}</button>`).join("")}</div>
+      <form novalidate><div class="kinds" role="group" aria-label="What kind of collab">${KINDS.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === kind}">${esc(l)}</button>`).join("")}</div>
         <label>The idea<textarea name="idea" rows="4" required placeholder="e.g. One night, both our crowds."></textarea></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Roughly when<input name="when" placeholder="e.g. March"></label><label>Where<input name="city" value="${esc(h.city || "")}"></label></div>
-        <p class="err" role="alert"></p><button type="submit">Send idea</button></form></div>`;
+        <p class="err" role="alert" aria-live="assertive"></p><button type="submit">Send idea</button></form></div>`;
     bg.querySelector(".x").onclick = close; bg.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { kind = b.dataset.k; bg.querySelectorAll("[data-k]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
     const f = bg.querySelector("form"); setTimeout(() => f.idea.focus(), 30);
-    f.onsubmit = async (ev) => { ev.preventDefault(); const err = bg.querySelector(".err"), btn = f.querySelector("button[type=submit]"); btn.disabled = true; err.textContent = "";
+    f.onsubmit = async (ev) => { ev.preventDefault(); const err = bg.querySelector(".err"), btn = f.querySelector("button[type=submit]"); err.textContent = "";
+      if (!f.idea.value.trim()) { err.textContent = "Add your idea first."; f.idea.setAttribute("aria-invalid", "true"); f.idea.focus(); return; } f.idea.removeAttribute("aria-invalid"); btn.disabled = true;
       try { const r = await fetch(`/api/collab/${encodeURIComponent(h.handle)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, idea: f.idea.value, when: f.when.value, city: f.city.value }) }); const j = await r.json(); if (!r.ok) { const e2 = new Error(j.message); e2.code = j.code; throw e2; }
         bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Idea sent</h2><p>We'll tell you when they reply.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); sentCard(first); window.EncoreCommunity?.oink?.();
       } catch (e) {

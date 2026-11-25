@@ -1,4 +1,4 @@
-// One header for every public page. Hosts: Home, Discover, Feed, My page, Plans, New event (the app's order). Brands: Home, Discover, Hosts, Requests, Gifts.
+// One header for every public page. Hosts: Home, Discover, New event, Plans, My page, Feed (the app's order, so tabs never move). Brands: Home, Discover, Hosts, Requests, Gifts.
 // Signed out: Discover, Hosts, For brands, Sign in, Start your page. On phones the links scroll instead of getting cut off.
 (function () {
   if (window.__encoreNav) return; window.__encoreNav = 1;
@@ -15,7 +15,7 @@
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json().catch(() => ({}));
     if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ["/?app=1", "Start your page", 1]]);
     if (W?.personal === false && W?.plan !== "self-hosted" && !W?.handle) return draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/hosts/book", "Book a host"], ["/requests", "Requests"], ["/gifts", "Gifts"]]);
-    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/plans", "Plans"], ["/?app=1&new=1#studio", "New event", 1]]);
+    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/?app=1&new=1#studio", "New event", 1], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/feed", "Feed"]]);
   } catch {} };
   run(); window.addEventListener("encore:signedin", run);
 })();

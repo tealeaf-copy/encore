@@ -22,7 +22,7 @@
   .err a,.sub a{display:inline;margin:0;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
   #cityGps{width:auto!important;min-height:44px;border-radius:999px!important;padding:0 16px!important;font-weight:600!important;border:1.5px solid #1F1A17!important}
 
-.nocode{display:block;margin-top:4px;color:#6B5F56;font-size:13px;font-weight:400}.nocode a{color:#C4532F;font-weight:600}</style><script src="/authguard.js"></script><script src="/place.js"></script>
+.nocode{display:block;margin-top:4px;color:#6B5F56;font-size:13px;font-weight:400}.nocode a{color:#C4532F;font-weight:600}.nocode a,.consent a{display:inline!important;margin:0!important}</style><script src="/authguard.js"></script><script src="/place.js"></script>
 <link rel="stylesheet" href="/playful.css">
 <script src="/placesearch.js"></script>
 <script src="/mascot.js"></script></head><body>
@@ -68,7 +68,7 @@
     let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That host code doesn't work."; } catch {} }, 250); };
     ci.addEventListener("input", check);
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
-    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { cw.hidden = false; document.getElementById("nocodeHint").hidden = false; window.__inviteOnly = true; } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
+    fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { window.__inviteOnly = true; if (new URLSearchParams(location.search).get("ref")) { const n = document.createElement("p"); n.className = "nocode"; n.textContent = "You came from an event, so you don't need a host code."; cw.before(n); } else { cw.hidden = false; document.getElementById("nocodeHint").hidden = false; } } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
     if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
@@ -87,7 +87,7 @@
     for (const k of ["template", "plan", "ref"]) if (q.get(k)) body[k] = q.get(k); // passed through to the welcome screen
     // first problem in the order the fields appear: code (when shown), name, email, company, password
     const stop = (msg, el) => { err.textContent = msg; el?.focus(); };
-    if (window.__inviteOnly && !String(body.code || "").trim() && !q.get("regularOf")) return stop("Add your host code, or join the waitlist.", f.code);
+    if (window.__inviteOnly && !String(body.code || "").trim() && !q.get("regularOf") && !q.get("ref")) return stop("Add your host code, or join the waitlist.", f.code);
     if (document.getElementById("codeOk").classList.contains("bad")) return stop("That host code doesn't work. Check it with the host who sent it.", f.code);
     if (!String(body.name || "").trim()) return stop("Add your name.", f.elements.name);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim())) return stop("That email doesn't look right.", f.email);

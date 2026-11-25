@@ -80,7 +80,7 @@ export function scoreOf({ kudos = [], guests = 0, events = 0 } = {}) {
   const raw = P.kudos * weighted + (again != null ? P.wouldGoAgain * again : 0) + P.guest * guests + P.event * Math.min(events, P.eventCap);
   const parts = [];
   if (V.length) parts.push(`${V.length} kudos`);
-  if (again != null) parts.push(`${Math.round(again * 100)}% would go again`);
+  if (again != null && again > 0) parts.push(`${Math.round(again * 100)}% would go again`);
   if (guests) parts.push(`${guests} ${guests === 1 ? "guest" : "guests"}`);
   if (!parts.length && events) parts.push(`${events} ${events === 1 ? "event" : "events"}`);
   return { raw, score: Math.round(raw), kudos: V.length, againPct: again == null ? null : Math.round(again * 100), guests, events, why: parts.join(" · ") };

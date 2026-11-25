@@ -81,7 +81,7 @@ export const TRAITS = {
   regular: { name: "The Regular", emoji: "🫶", line: "Keeps coming back." },
   cheerleader: { name: "The Cheerleader", emoji: "📣", line: "Always the first to send kudos afterwards." },
 };
-export const KUDOS_TAGS = [["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"], ["again", "🔁", "Would go again"]];
+export const KUDOS_TAGS = [["again", "🔁", "Would go again"], ["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"]];
 // ---- verified kudos: how we know the reviewer was a guest ----
 // "guest_list": the reply was I'm in and the host marked them as there (checked in at the door, tapped Came, or Attended
 // on the guest list). "rsvp": an I'm-in reply, nothing more. null: the reply wasn't I'm in (a Maybe who left kudos), so
@@ -413,7 +413,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/profile/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const W = ws && getWorkspace(ws); if (!W) return bad(res, "No one by that name.", 404, "not_found");
     const P = X.eventProfile(W.ownerEmail); res.json({ strengths: X.hostStrengths(ws), profile: { attended: P.attended, hosted: P.hosted, traits: P.traits, loves: P.loves } }); });
   // kudos from guests (proved by their RSVP), vibes from hosts
-  app.post("/api/public/kudos", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = (X.kudosProof || X.rsvpProof)(clean(b.eventId, 80), b.rid, b.code); // kudos nudges: the group link's kudos-only code works here too
+  app.post("/api/public/kudos", small, (req, res) => { if (limited(req, 60)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = (X.kudosProof || X.rsvpProof)(clean(b.eventId, 80), b.rid, b.code); // kudos nudges: the group link's kudos-only code works here too
     if (!P) return bad(res, "Kudos come from guests who replied. Open the link from your invite on the phone you used.", 403, "not_granted");
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500); if (!tags.length && !love && !improve && !["better", "same", "less"].includes(b.compare)) return bad(res, "Tap one of the chips or write a line first.");

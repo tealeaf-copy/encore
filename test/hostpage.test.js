@@ -194,6 +194,21 @@ test("Turnout counts a guest once even when their RSVP is also copied onto the g
   assert.equal(t.saidYes, 2); assert.equal(t.came, 1); assert.equal(t.showRate, 50); assert.equal(t.returning, 0);
 });
 
+test("Without a door list, the host's 'who came' taps decide the show rate", async () => {
+  const r0 = await post("/api/signup", { name: "Tap Host", email: "tap.turn@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  assert.ok((await post("/api/host/profile", { handle: "tap-turnout", name: "Tap Host", tagline: "Suppers", emoji: "🍲" }, c)).ok);
+  const day = new Date().toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/tp1", { kind: "social", casual: true, name: "Supper", date: day, published: true, guests: [{ name: "Bo", email: "bo@ex.com", status: "Going" }, { name: "Wally", status: "Attended", source: "Walk-in" }] }, c);
+  const G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  for (const n of ["Bo", "Di", "Em"]) assert.ok((await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "tp" + n }, body: JSON.stringify({ eventId: "tp1", name: n, email: n.toLowerCase() + "@ex.com", response: "going" }) })).ok);
+  const L = (await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json()); const bo = (L.docs || L.items || L).find((d) => (d.data || d).name === "Bo");
+  assert.ok((await put("/api/db/doc?path=rsvps/" + String(bo.id).split("/").pop(), { ...(bo.data || bo), noShow: true }, c)).ok);
+  const t = (await (await fetch(srv.base + "/api/public/host/tap-turnout/turnout")).json()).turnout;
+  // Bo said yes but didn't come (his guest-list copy doesn't override that); Di and Em came; Wally walked in and isn't a "yes"
+  assert.equal(t.saidYes, 3); assert.equal(t.checkedIn, 2); assert.equal(t.walkIns, 1); assert.equal(t.came, 3); assert.equal(t.showRate, 67);
+});
+
 test("A home address in the place name reaches guests only after they're in; walk-ins and no-shows never appear in 'who came'", async () => {
   const r0 = await post("/api/signup", { name: "Priv Two", email: "priv.two@example.com", password: "long-password-1", mode: "friends" });
   const c = cookieOf(r0), ws = (await r0.json()).workspace.id;

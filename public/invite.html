@@ -74,13 +74,13 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<span><b>${esc(when(e).split(" · ")[0] || title)}</b><br><small class="muted">${esc(e.hood || e.city || "")}</small></span><a href="#f">${esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick);
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);
-    const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); if (Q.length && !window.Questions) addEventListener("load", startQ);
+    const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name === "r" && $("#qs")) $("#qs").hidden = ev.target.value === "no"; }); if (Q.length && !window.Questions) addEventListener("load", startQ);
     $("#f").onsubmit = async (ev) => { ev.preventDefault(); const er = $("#er"); er.textContent = "";
       const name = $("#nm").value.trim().replace(/[<>]/g, "").slice(0, 80); if (!name) { er.textContent = "Add your name so the host knows to expect you."; $("#nm").focus(); return; }
       const resp = (new FormData($("#f")).get("r") || "going"); if (resp === "going" && Qf?.missing?.()) { er.textContent = "One more answer first 🙏"; return; }
       const c = $("#ct").value.trim(), email = /@/.test(c) ? c : "", phone = !email && c ? c.replace(/[^\d+]/g, "") : "";
       const code = (String(e.id || id).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
-      const data = { eventId: e.id || id, response: resp === "going" && left === 0 ? "waitlist" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: $("#dt")?.value.trim().slice(0, 120) || "", ...(Q.length ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
+      const data = { eventId: e.id || id, response: resp === "going" && left === 0 ? "waitlist" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: $("#dt")?.value.trim().slice(0, 120) || "", ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
       $("#send").disabled = true;
       try { const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "That didn't go through. Try again.");

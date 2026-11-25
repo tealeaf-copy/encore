@@ -71,9 +71,12 @@ Reply with JSON only, in this shape:
 }
 
 // offline (tests and demos without a key): a worked example that follows the same shape
-export function samplePlan({ company, moment, accounts = [] }) {
+export function samplePlan({ company, moment, accounts = [], people: peopleIn = "", budget: budgetIn = "" }) {
   const snap = /snap|photo|camera|lens|picture/i.test(moment), co = company || "Your company";
-  const N = accounts.length || 50, send = Math.round(N * 0.8), hold = N - send, hero = Math.round(send * 0.6), dpCost = snap ? 110 : 60, heroCost = snap ? 65 : 60, teaser = snap ? 28 : 30, money = (n) => "$" + Math.round(n).toLocaleString("en-US");
+  // what they told us wins: a head count sizes the champions list (25 partners + 20 investors are the rest), a per-person budget caps each gift
+  const askedPeople = +String(peopleIn).replace(/[^\d.]/g, "") || 0, cap = +String(budgetIn).replace(/[^\d.]/g, "") || 0;
+  const N = accounts.length || (askedPeople > 50 ? Math.max(10, Math.round((askedPeople - 45) / 0.8)) : 50), send = Math.round(N * 0.8), hold = N - send, hero = Math.round(send * 0.6),
+    fit = (want, extras) => (cap ? Math.max(12, Math.min(want, cap - extras)) : want), dpCost = fit(snap ? 110 : 60, 40), heroCost = fit(snap ? 65 : 60, 10), teaser = fit(snap ? 28 : 30, 35), money = (n) => "$" + Math.round(n).toLocaleString("en-US");
   const dpTotal = 25 * (dpCost + 25 + 15), chTotal = send * (teaser + 15 + 20) + hero * (heroCost + 10), invTotal = 20 * (teaser + 6 + 10), total = dpTotal + chTotal + invTotal, people = 25 + send + 20, k = (n) => "$" + (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
   const product = (moment.replace(/^.*?(launched|launching|launch of)\s+/i, "").split(/,|\s[—–-]\s|\s\(/)[0].replace(/[.!]+$/, "").trim()) || "the launch";
   return cleanPlan({ company: co, moment: { title: moment, what: `${co} is marking “${moment}”. (This is a sample plan; with research on, Potto reads the launch itself.)`, when: "This month", whyItMatters: "A launch is the one moment your best users and target accounts are paying attention at the same time.", sources: [] },

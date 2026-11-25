@@ -187,11 +187,13 @@ export function makeSocial(store, { C, saveBlob }) {
     let said = 0, came = 0, walkIns = 0, doorEvents = 0, saidAtDoor = 0, showedAtDoor = 0; const seen = new Map();
     for (const { id, e } of past) { const rs = R.filter((r) => r.eventId === id), walk = (x) => x.walkIn || x.source === "Walk-in", going = rs.filter((r) => r.response === "going"), G = (e.guests || []).filter((g) => /Going|Attended/.test(g.status || ""));
       // the same person can be both an RSVP and a row on the guest list (RSVPs are copied there): count them once
-      const isIn = (x) => !!x.checkedInAt || /Attended/.test(x.status || ""), people = new Map();
-      for (const x of [...going, ...G]) { const key = String(x.email || x.phone || x.name || "").trim().toLowerCase() || Math.random().toString(36); const cur = people.get(key) || { in: false, walk: false }; people.set(key, { in: cur.in || isIn(x), walk: cur.walk || walk(x) }); }
+      // the same definition the host sees: a host's tap wins, then the door list, and only events where either was used count toward show rate
+      const door = going.some((r) => r.checkedInAt) || G.some((g) => /Attended/.test(g.status || "") && !walk(g)), tapped = going.some((r) => r.noShow === true || r.noShow === false);
+      const isIn = (x) => (x.noShow === true ? false : x.noShow === false ? true : door ? !!x.checkedInAt || /Attended/.test(x.status || "") : true), people = new Map();
+      for (const x of [...going, ...G]) { const key = String(x.email || x.phone || x.name || "").trim().toLowerCase() || Math.random().toString(36); const cur = people.get(key) || { in: false, rsvp: false, walk: false }; const v = isIn(x); people.set(key, { in: x.response ? (cur.rsvp ? cur.in || v : v) : cur.rsvp ? cur.in : cur.in || v, rsvp: cur.rsvp || !!x.response, walk: cur.walk || walk(x) }); }
       const P = [...people.values()], yes = P.filter((x) => !x.walk), w = P.filter((x) => x.walk).length;
       said += yes.length; const showed = yes.filter((x) => x.in).length;
-      if (showed || w) { doorEvents++; came += showed + w; saidAtDoor += yes.length; showedAtDoor += showed; walkIns += w; }
+      if ((door || tapped) && (showed || w)) { doorEvents++; came += showed + w; saidAtDoor += yes.length; showedAtDoor += showed; walkIns += w; }
       for (const k of new Set([...going.map((r) => r.email || r.phone || r.name), ...G.map((g) => g.email || g.phone || g.name)].map((who) => String(who || "").trim().toLowerCase()).filter(Boolean))) seen.set(k, (seen.get(k) || 0) + 1); }
     let people = seen.size, returning = [...seen.values()].filter((n) => n > 1).length;
     try { const H = hostStrengths(ws); if (H && H.guests) { people = H.guests; returning = H.returning || 0; } } catch {}

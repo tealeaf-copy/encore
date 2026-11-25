@@ -59,7 +59,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
     <label>Occasion<select name="occasion"><option value="">Any</option><option value="clients">Client thank-you</option><option value="newhire">New-hire welcome</option><option value="holiday">Holiday</option><option value="event">Event takeaway</option><option value="thanks">Team thank-you</option></select></label>
     <button>Find makers</button>
   </form>
-  <a class="gp-cta" href="/gifts/plan">🎁 Launching something? <b>Let Potto plan the gift and the whole campaign →</b></a><div class="pv" hidden><b>See it with your names:</b><input id="pvBrand" placeholder="Your company" maxlength="80"><input id="pvName" placeholder="A recipient's name" maxlength="80"></div>
+  <a class="gp-cta" id="gpCta" href="/gifts/plan">Launching something, welcoming new hires or thanking customers? <b>Let Potto plan a gift per group, with dates and a budget inside your cap →</b></a><div class="pv" hidden><b>See it with your names:</b><input id="pvBrand" placeholder="Your company" maxlength="80"><input id="pvName" placeholder="A recipient's name" maxlength="80"></div>
   <div class="gres" id="res"></div>
   <div class="vs"><div><b>The usual gifting catalog</b><ul><li>The same branded tumbler everyone got last year</li><li>Picked from a warehouse</li><li>Your logo, their name nowhere</li></ul></div><div><b>A maker on Pottery Lab</b><ul><li>Made for this person: their name, your note</li><li>From someone in their city, with a story to tell</li><li>A photo of the maker at work in every box</li></ul></div></div>
   <div class="how"><div><b>1. Pick a maker</b>Filter by city, quantity, budget and occasion. Prices update with your count.</div><div><b>2. Hold a sample</b>Most makers send one first, so you see the glaze and the lettering for yourself.</div><div><b>3. Send the list</b>Paste names and addresses or share a spreadsheet. The maker sends a proof before anything is made.</div></div>
@@ -96,8 +96,12 @@ async function run(auto = false) { const f = $("#find"), q = new URLSearchParams
 $("#pvBrand").oninput = $("#pvName").oninput = redraw;
 document.addEventListener("click", (e) => { const a = e.target.closest('.gc a[href*="gift="]'); if (!a) return; const u = new URL(a.href); const P = pv(); for (const [k, v] of Object.entries({ brand: P.brand, name: P.name, qty: $("#find").qty.value, budget: $("#find").budget.value, city: $("#find").city.value, occasion: $("#find").occasion.value })) v ? u.searchParams.set(k, v) : u.searchParams.delete(k); a.href = u.pathname + u.search + u.hash; });
 { const Q = new URLSearchParams(location.search), F = $("#find"); for (const k of ["city", "qty", "budget", "occasion"]) if (Q.get(k)) F[k].value = Q.get(k); }
-$("#find").onsubmit = (e) => { e.preventDefault(); run(); };
-run(!location.search);
+// the planner link carries what they've typed here: head count, per-person cap and the kind of moment
+const KIND = { clients: "customers", newhire: "employees", holiday: "customers", event: "community", thanks: "employees" };
+const syncCta = () => { const f = $("#find"), q = new URLSearchParams(); if (+f.qty.value) q.set("people", f.qty.value); if (+f.budget.value) q.set("budget", "$" + f.budget.value); if (KIND[f.occasion.value]) q.set("kind", KIND[f.occasion.value]); if (f.city.value.trim()) q.set("city", f.city.value.trim()); $("#gpCta").href = "/gifts/plan" + (q.toString() ? "?" + q : ""); };
+$("#find").addEventListener("input", syncCta); $("#find").addEventListener("change", syncCta);
+$("#find").onsubmit = (e) => { e.preventDefault(); syncCta(); run(); };
+syncCta(); run(!location.search);
 </script>
 <script src="/nav.js"></script><script src="/shell.js"></script>
 </body></html>

@@ -45,7 +45,7 @@
     const meP = await J("/api/host/profile"), mine = meP?.host?.handle ? meP.host : null; if (mine?.handle === h.handle) return;
     const first = String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""), side = document.querySelector("aside.side") || document.querySelector("main"); if (!side || document.getElementById("collabCard")) return;
     const card = document.createElement("div"); card.className = "card cl-card"; card.id = "collabCard";
-    card.innerHTML = `<h3>Host something too?</h3><p class="muted">Pitch ${esc(first)} a collab: co-host a night, pop up together or swap guest lists.</p><button class="btn" type="button" id="clGo">Request a collab</button>`;
+    card.innerHTML = `<h3>Host something too?</h3><p class="muted">Send ${esc(String(h.name || first).replace(/\.$/, ""))} a collab idea: co-host a night, pop up together or swap guest lists.</p><button class="btn" type="button" id="clGo">Request a collab</button>`;
     const fol = document.getElementById("follow"); fol ? fol.after(card) : side.appendChild(card);
     card.querySelector("#clGo").onclick = async () => { const me = await J("/api/me");
       if (!me?.verified) { location.href = `/login?next=${encodeURIComponent(location.pathname + "?collab=1")}`; return; }

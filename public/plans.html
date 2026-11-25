@@ -24,7 +24,7 @@ h2.sub{font-size:20px;margin-top:22px}
     <h2 class="sub">You're going</h2><div class="plans" id="ev"></div>
     <p style="margin:18px 0 0" id="reqLink" hidden><a href="/requests" style="font-weight:600">Your requests to hosts</a></p>
     <h2 class="sub" id="ordH" hidden>Orders</h2><div class="plans" id="ord"></div>
-    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">Filled in for you next time.</span></summary>
+    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">We'll fill these in next time.</span></summary>
       <form id="rpForm"><label>Your name<input name="name" autocomplete="name"></label><label>Email or phone<input name="contact" autocomplete="email"></label>
         <label>Anything you don't eat?<input name="dietary" placeholder="e.g. Vegetarian, nut allergy"></label><div class="rp-q" id="rpQ"></div>
         <label class="rp-chk"><input type="checkbox" name="severe"> It's a severe allergy</label>
@@ -40,7 +40,7 @@ h2.sub{font-size:20px;margin-top:22px}
   try { const j = await (await fetch("/api/me/plans")).json(); for (const p of j.plans || []) { if (p.response === "no" || R.some((x) => x.id === p.id)) continue; R.push({ id: p.id, rid: p.rid, code: p.code, response: p.response, interest: p.interest }); try { localStorage.setItem("encore-rsvp-" + p.id, JSON.stringify({ rid: p.rid, code: p.code, response: p.response, interest: p.interest })); } catch {} } } catch {}
   let cards = {}; if (R.length) { try { cards = (await (await fetch("/api/public/cards?ids=" + encodeURIComponent(R.map((x) => x.id).slice(0, 20).join(",")))).json()).cards || {}; } catch {} }
   await Promise.all(R.map(async (x) => { if (!x.rid || !x.code) return; try { const j = await (await fetch(`/api/public/rsvp-status/${encodeURIComponent(x.id)}?rid=${encodeURIComponent(x.rid)}&code=${encodeURIComponent(x.code)}`)).json(); if (j.response) x.response = j.response; x.paid = !!j.paid; } catch {} }));
-  const today = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date()), when = (c) => [c.date ? new Date(c.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "", c.startTime ? new Date("2000-01-01T" + c.startTime.padStart(5, "0")).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "", c.hood || c.city || ""].filter(Boolean).join(" · ");
+  const today = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date()), when = (c) => [c.date ? new Date(c.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "", c.startTime ? ((m) => m ? `${(+m[1]) % 12 || 12}${m[2] === "00" ? "" : ":" + m[2]}${+m[1] < 12 ? "am" : "pm"}` : "")(String(c.startTime).match(/^(\d{1,2}):(\d{2})/)) : "", c.hood || c.city || ""].filter(Boolean).join(" · ");
   const lab = (x) => x.response === "maybe" && x.interest === "in" ? "You're in ✓ · waiting on the date" : x.response === "going" ? (x.paid ? "You're in ✓ · paid" : (cards[x.id]?.price && cards[x.id].price !== "chip" ? `Almost in · pay ${cards[x.id].price} to finish` : "You're in ✓")) : x.response === "requested" ? "Asked ✓ · waiting on the host" : x.response === "waitlist" ? "On the waitlist" : x.response === "maybe" ? "Maybe" : "Saved";
 
   // what you're hosting (signed in): your own upcoming events, straight to the plan

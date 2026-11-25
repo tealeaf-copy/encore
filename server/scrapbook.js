@@ -17,6 +17,12 @@ import https from "node:https";
 import { scopeStore, DEFAULT_WS } from "./workspaces.js";
 
 const SITES = [/(^|\.)partiful\.com$/i, /(^|\.)lu\.ma$/i, /(^|\.)luma\.com$/i, /(^|\.)eventbrite\.[a-z.]{2,8}$/i, /(^|\.)henly\.app$/i];
+// where talks live: a video or a podcast episode becomes a webinar or podcast draft, with that link as its recording
+const MEDIA = [[/(^|\.)(youtube\.com|youtu\.be|youtube-nocookie\.com)$/i, "webinar", "YouTube"], [/(^|\.)vimeo\.com$/i, "webinar", "Vimeo"], [/^open\.spotify\.com$/i, "podcast", "Spotify", /^\/(episode|show)\//i],
+  [/^podcasts\.apple\.com$/i, "podcast", "Apple Podcasts"], [/(^|\.)zoom\.us$/i, "webinar", "Zoom"]];
+/** Is this https link a video or podcast page we know (YouTube, Vimeo, Spotify, Apple Podcasts, Zoom)? { format, site } or null. */
+export function mediaOf(u) { try { const x = new URL(String(u || "").trim()); if (x.protocol !== "https:" || x.username || x.password) return null; const h = x.hostname.toLowerCase().replace(/^www\./, "");
+  const m = MEDIA.find(([re, , , path]) => re.test(h) && (!path || path.test(x.pathname))); return m ? { format: m[1], site: m[2] } : null; } catch { return null; } }
 const MAX_PAGE = 2_000_000, MAX_IMG = 6_000_000, MAX_ITEMS = 200, MAX_LINKS = 15, MAX_REDIRECTS = 5, TIMEOUT = 8000, MAX_DRAFTS = 60;
 const clean = (s, n) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 const decode = (s) => String(s ?? "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&#x27;/gi, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
@@ -35,7 +41,7 @@ export function cleanLogos(L) { const out = [], seen = new Set();
 const COVER_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(u || "");
 
 /** Is this a link from one of the event platforms we know? (Any other https site can still be read; see safeUrl.) */
-export function importable(u) { try { const x = new URL(String(u).trim()); return x.protocol === "https:" && SITES.some((re) => re.test(x.hostname)) ? x : null; } catch { return null; } }
+export function importable(u) { try { const x = new URL(String(u).trim()); return x.protocol === "https:" && (SITES.some((re) => re.test(x.hostname)) || mediaOf(x.href)) ? x : null; } catch { return null; } }
 
 // ---------- link safety ----------
 /** Is this IP address one we must never connect to (private, loopback, link-local, metadata, multicast, reserved)? */
@@ -64,7 +70,7 @@ export function safeUrl(u) {
 /** Every link in a block of text: pasted lists, a dictated message, links mixed in with words. */
 export function extractLinks(text, max = MAX_LINKS) {
   const out = [], seen = new Set(), T = String(text || "").slice(0, 20000);
-  const re = /\b(?:https?:\/\/[^\s<>"'`]+|www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"'`]*|(?:partiful\.com|lu\.ma|luma\.com|eventbrite\.[a-z.]{2,8}|henly\.app)\/[^\s<>"'`]+)/gi;
+  const re = /\b(?:https?:\/\/[^\s<>"'`]+|www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s<>"'`]*|(?:partiful\.com|lu\.ma|luma\.com|eventbrite\.[a-z.]{2,8}|henly\.app|youtu\.be|youtube\.com|vimeo\.com|open\.spotify\.com|podcasts\.apple\.com)\/[^\s<>"'`]+)/gi;
   for (const m of T.matchAll(re)) { let raw = m[0].replace(/[.,;:!?)\]}'"»”’]+$/, ""); if ((raw.match(/\(/g) || []).length > (raw.match(/\)/g) || []).length && m[0].endsWith(")")) raw += ")";
     const x = safeUrl(raw); if (!x) continue; const k = x.href.replace(/\/$/, ""); if (seen.has(k)) continue; seen.add(k); out.push(x.href); if (out.length >= max) break; }
   return out;
@@ -133,7 +139,7 @@ const placeFromLd = (loc) => {
 // sentences that say the event was at someone's home go too ("a pop-up at our apartment")
 const dropHomeLines = (t) => t.split(/(?<=[.!?])\s+|\n+/).filter((x) => !/\b(apt|apartment|our place|my place|my home|our home)\b/i.test(x)).join(" ");
 const shortAbout = (s, n = 320) => { const t = clean(dropHomeLines(scrubAddress(decode(s))), 2000); if (t.length <= n) return t; const cut = t.slice(0, n), end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? ")); return (end > n * 0.5 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, "") + "…").trim(); };
-const SITE_SUFFIX = /\s*[|·–—-]\s*(Partiful|Luma|Eventbrite|Henly|Meetup|Posh|Facebook)\s*$/i;
+const SITE_SUFFIX = /\s*[|·–—-]\s*(Partiful|Luma|Eventbrite|Henly|Meetup|Posh|Facebook|YouTube|Vimeo|Spotify|Apple Podcasts|Zoom)\s*$/i;
 const titleOf = (s) => clean(decode(s).replace(SITE_SUFFIX, ""), 140);
 
 // ---------- reading a page ----------
@@ -168,6 +174,22 @@ export function parseEvents(html, url = "") {
     if (title) out.push({ title, date: isoDate(meta("event:start_time") || meta("og:event:start_time") || meta("startDate") || meta("event:start_date")), place: safePlace(meta("event:location") || meta("og:locality")), about: shortAbout(meta("og:description") || meta("description") || meta("twitter:description")), image: abs(ogImage), url }); }
   return out.slice(0, MAX_DRAFTS);
 }
+/**
+ * A video or podcast episode page: its title (og:title), its date when the page says (uploadDate, datePublished, release
+ * date), a short description and its image. Nothing is guessed; a missing date stays empty.
+ */
+export function parseMedia(html, url = "") {
+  html = String(html || "");
+  const meta = (p) => { const m = html.match(new RegExp(`<meta[^>]+(?:property|name|itemprop)=["']${p}["'][^>]*content=["']([^"']*)["']`, "i")) || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name|itemprop)=["']${p}["']`, "i")); return m ? decode(m[1]) : ""; };
+  let ld = null; const walk = (o, d = 0) => { if (ld || !o || d > 6 || typeof o !== "object") return; if (Array.isArray(o)) { for (const v of o) walk(v, d + 1); return; }
+    if (/VideoObject|PodcastEpisode|AudioObject|Episode|Recording/i.test([].concat(o["@type"] || []).join(" "))) { ld = o; return; } for (const k of ["@graph", "mainEntity", "itemListElement"]) if (o[k]) walk(o[k], d + 1); };
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) { try { walk(JSON.parse(m[1].trim())); } catch {} }
+  const base = (() => { try { return new URL(url); } catch { return null; } })(), abs = (u) => { if (!u) return ""; try { return new URL(String(u), base || undefined).href; } catch { return ""; } };
+  const img = ld && (Array.isArray(ld.thumbnailUrl) ? ld.thumbnailUrl[0] : typeof ld.thumbnailUrl === "string" ? ld.thumbnailUrl : "");
+  return { title: titleOf(meta("og:title") || meta("twitter:title") || ld?.name || (html.match(/<title[^>]*>([^<]*)<\/title>/i) || [])[1]),
+    date: isoDate(meta("uploadDate") || meta("datePublished") || ld?.uploadDate || ld?.datePublished || meta("article:published_time") || meta("og:video:release_date") || meta("video:release_date") || meta("music:release_date") || meta("og:published_time")),
+    about: shortAbout(meta("og:description") || meta("description") || ld?.description || ""), image: abs(meta("og:image") || meta("twitter:image") || img) };
+}
 /** The one event a page is about (kept for callers that read a single event). */
 export function parseEventPage(html, url = "") { return parseEvents(html, url)[0] || { title: "", date: "", place: "", about: "", image: "", url }; }
 
@@ -176,9 +198,17 @@ export function parseEventPage(html, url = "") { return parseEvents(html, url)[0
 // for. A "program" section is one card with a dated timeline (a company's year of coffees, dinners and workshops).
 // Role, room ("who was there") and proof are host-written lines; nothing here fills them in, least of all with numbers.
 export const MAX_FEATURED = 6, MAX_SECTIONS = 8;
-export const ROLES = ["Organized", "Produced", "Hosted", "Co-hosted", "Lead host"];
-export const FORMATS = ["dinner", "summit", "conference", "meetup", "workshop", "online", "booth", "coffee", "breakfast", "lunch", "happy hour", "panel", "offsite", "party", "tour", "class", "launch", "roadshow"];
-export const LIMITS = { role: 40, room: 120, proof: 140, format: 24, company: 60, name: 60, blurb: 140 };
+export const ROLES = ["Organized", "Produced", "Hosted", "Co-hosted", "Lead host", "Speaker", "Keynote speaker", "Panelist", "Moderator", "Guest", "Host"];
+export const FORMATS = ["dinner", "summit", "conference", "meetup", "workshop", "online", "booth", "coffee", "breakfast", "lunch", "happy hour", "panel", "offsite", "party", "tour", "class", "launch", "roadshow", "talk", "keynote", "webinar", "podcast", "fireside"];
+export const LIMITS = { role: 40, room: 120, proof: 140, format: 24, company: 60, name: 60, blurb: 140, topic: 140, organizer: 60 };
+// speaking engagements: a talk, keynote, webinar, podcast, fireside chat or panel; or anything (a workshop they taught)
+// where the host was the speaker, panelist, moderator or a podcast guest
+export const TALK_FORMATS = ["talk", "keynote", "webinar", "podcast", "fireside", "panel"];
+export const TALK_ROLES = ["Speaker", "Keynote speaker", "Panelist", "Moderator", "Guest"];
+export const isTalk = (x) => TALK_FORMATS.includes(String(x?.format || "").toLowerCase()) || TALK_ROLES.includes(String(x?.role || ""));
+/** A link to a recording or slides: https only, a public host, no credentials. Anything else is dropped. */
+export const httpsLink = (u) => { const s = String(u ?? "").trim(); if (!/^https:\/\//i.test(s) || s.length > 500) return ""; const x = safeUrl(s); return x ? x.href : ""; };
+export const audienceOf = (v) => Math.max(0, Math.min(100000, Math.round(+v || 0))) || 0;
 const SEC_ID = /^[a-z0-9-]{1,24}$/;
 const cleanFormat = (v) => clean(v, LIMITS.format).toLowerCase();
 const cleanLine = (v, n) => clean(scrubAddress(v), n);
@@ -196,6 +226,7 @@ export function presetToScrapbook(P) { const sections = cleanScrapSections(P?.sc
 
 // what a past event was, guessed from its words (for suggestions only; never stored unless the host keeps it)
 export function guessFormat(x) { if (x?.format) return x.format; const t = `${x?.title || ""} ${x?.about || ""}`.toLowerCase(), place = String(x?.place || "");
+  if (/\bpodcast\b/.test(t)) return "podcast"; if (/\bkeynote\b/.test(t)) return "keynote"; if (/\bfireside\b/.test(t)) return "fireside";
   if (/^online$/i.test(place) || /\b(webinar|virtual|online|livestream|zoom)\b/.test(t)) return "online";
   for (const [f, re] of [["summit", /\bsummit\b/], ["conference", /\bconference|\bconf\b|user group|\bforum\b/], ["booth", /\bbooth\b/], ["roadshow", /roadshow/], ["workshop", /workshop|masterclass|hands-on/], ["dinner", /dinner|supper|omakase/], ["breakfast", /breakfast|brunch/], ["lunch", /\blunch/], ["coffee", /coffee|matcha|cafe\b/], ["happy hour", /happy hour|drinks|mixer/], ["meetup", /meetup|meet-up|community|club\b/], ["panel", /\bpanel\b|fireside/], ["offsite", /offsite|retreat/], ["party", /party|celebration/], ["launch", /\blaunch\b/]]) if (re.test(t)) return f;
   return ""; }
@@ -220,6 +251,7 @@ export function suggestSections(items, existing = []) {
       L.forEach((x) => taken.add(x.id)); programs.push({ name: `${g.name}, ${g.year}`, blurb: "", kind: "program", items: L.sort((a, b) => String(a.date).localeCompare(String(b.date))).map((x) => x.id) }); } }
   const EXEC = /\b(exec|execs|executive|executives|cxo|c-suite|leaders|leadership|cmo|cfo|cio|cto|ciso|cro|vps?|founders|chief)\b/i;
   const RULES = [
+    ["speaking", "Speaking", (x) => isTalk({ format: fmt(x), role: x.role })],
     ["online", "Online", (x) => fmt(x) === "online" || /^online$/i.test(x.place || "")],
     ["customer", "Customer events", (x) => ["summit", "conference", "booth", "roadshow"].includes(fmt(x)) || /\b(customer|customers|user group|roadshow|advisory board|cab)\b/i.test(text(x))],
     ["dinners", "Executive dinners", (x) => ["dinner", "breakfast", "lunch"].includes(fmt(x)) || /\b(dinner|supper)\b/i.test(x.title || "")],
@@ -230,7 +262,7 @@ export function suggestSections(items, existing = []) {
   const list = (k) => (found[k] ? [{ name: found[k].name, blurb: "", kind: "list", items: found[k].L.map((x) => x.id) }] : []);
   // a section the host already has by that name takes the events; new ones fill the free slots (8 in all)
   let room = Math.max(0, MAX_SECTIONS - (existing || []).length); const out = [];
-  for (const s of [...list("customer"), ...list("dinners"), ...programs, ...list("community"), ...list("online")]) { const same = (existing || []).find((e) => e.name.toLowerCase() === s.name.toLowerCase());
+  for (const s of [...list("customer"), ...list("dinners"), ...programs, ...list("speaking"), ...list("community"), ...list("online")]) { const same = (existing || []).find((e) => e.name.toLowerCase() === s.name.toLowerCase());
     if (same) out.push({ ...s, id: same.id, kind: same.kind, existing: true }); else if (room > 0) { room--; out.push({ id: "s" + crypto.randomBytes(3).toString("hex") + out.length, ...s }); } }
   return { sections: out, formats };
 }
@@ -258,7 +290,9 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
       note: clean(item.note, 400), about: clean(scrubAddress(item.about), 600), source, site: source === "Web" ? siteOf(link) : "", link,
       photos: (Array.isArray(item.photos) ? item.photos : []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12), cover: COVER_OK(item.cover) ? item.cover : "", at: item.at || Date.now(),
       featured: !!item.featured, featuredOrder: item.featured ? Math.max(0, Math.round(+item.featuredOrder || 0)) : 0, section: SEC_ID.test(String(item.section || "")) ? String(item.section) : "",
-      role: clean(item.role, LIMITS.role), room: cleanLine(item.room, LIMITS.room), proof: cleanLine(item.proof, LIMITS.proof), format: cleanFormat(item.format), company: clean(item.company, LIMITS.company), logos: cleanLogos(item.logos) };
+      role: clean(item.role, LIMITS.role), room: cleanLine(item.room, LIMITS.room), proof: cleanLine(item.proof, LIMITS.proof), format: cleanFormat(item.format), company: clean(item.company, LIMITS.company), logos: cleanLogos(item.logos),
+      // a talk's lines: what it was about, who ran it (the conference, company or show), how many were there, and links
+      topic: cleanLine(item.topic, LIMITS.topic), organizer: clean(scrubAddress(item.organizer), LIMITS.organizer), audience: audienceOf(item.audience), recording: httpsLink(item.recording), slides: httpsLink(item.slides) };
     S(ws).set("scrapbook/" + id, v); return { id, ...v }; };
   // owner request (Nov 2026): Tuongvan's page gets who-was-in-the-room logos on matching events, plus the Atelier Bò pop-up and Apt Cafe Club. Once.
   try { const ws = C.wsOfHandle?.("tuongvan"), P = ws && C.showcasePreset?.("tuongvan");
@@ -269,9 +303,14 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
         else if (x.add) save(ws, { ...x, id: "", photos: [], at: Date.now(), featured: false, featuredOrder: 0 }); } } } catch (err) { console.warn("tuongvan logos", err?.message); }
   const keepImage = async (src, ws) => { if (!src || !saveImage) return ""; const r = await fetcher(src, { limit: MAX_IMG, kind: "image" }); if (!r) return ""; try { return (await saveImage(r.buf, r.type.split(";")[0].trim(), ws)) || ""; } catch { return ""; } };
   // read links into drafts; nothing is saved except a copy of each cover image (so the draft can show it)
-  const readLinks = async (ws, links, { covers = true } = {}) => { const drafts = [], skipped = [], have = new Set(list(ws).map((x) => x.link).filter(Boolean));
+  const readLinks = async (ws, links, { covers = true } = {}) => { const drafts = [], skipped = [], have = new Set(list(ws).flatMap((x) => [x.link, x.recording]).filter(Boolean));
     for (const raw of links.slice(0, MAX_LINKS)) { const x = safeUrl(raw); if (!x) { skipped.push({ link: clean(raw, 200), why: "That link can't be read. Use a public https page." }); continue; }
       if (have.has(x.href)) { skipped.push({ link: x.href, why: "Already in your scrapbook." }); continue; }
+      // a video or podcast episode: one talk draft, that link as its recording, even when the page can't be read
+      const media = mediaOf(x.href); if (media) { if (drafts.length >= MAX_DRAFTS) break; have.add(x.href);
+        const page = await fetcher(x.href, { limit: MAX_PAGE, kind: "html" }), m = page ? parseMedia(page.buf.toString("utf8"), page.finalUrl || x.href) : null;
+        const cover = covers && m?.image ? await keepImage(m.image, ws) : "";
+        drafts.push({ key: crypto.randomBytes(4).toString("hex"), title: m?.title || "", date: m?.date || "", place: "", about: m?.about || "", cover, link: "", recording: x.href, format: media.format, source: "", site: media.site, past: true, unread: !m?.title }); continue; }
       const page = await fetcher(x.href, { limit: MAX_PAGE, kind: "html" }); if (!page) { skipped.push({ link: x.href, why: "Couldn't read that page. Add it by hand instead." }); continue; }
       const found = parseEvents(page.buf.toString("utf8"), page.finalUrl || x.href); if (!found.length) { skipped.push({ link: x.href, why: "No event on that page." }); continue; }
       for (const e of found) { if (drafts.length >= MAX_DRAFTS) break; const link = safeUrl(e.url)?.href || x.href; if (have.has(link) && found.length > 1) continue; have.add(link);
@@ -281,7 +320,8 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
 
   // the public scrapbook: imported events plus the ones hosted here
   // sections come back in order, only the ones with an event in them; featured is the host's order (at most 6)
-  const publicItems = (L, ids) => L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos) }));
+  const publicItems = (L, ids) => L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos, topic, organizer, audience, recording, slides }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos),
+    topic: topic || "", organizer: organizer || "", audience: audienceOf(audience), recording: httpsLink(recording), slides: httpsLink(slides) }));
   app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [], sections: [], featured: [] });
     const L = list(ws), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
     res.json({ items: publicItems(L, ids),
@@ -318,7 +358,8 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
     if (overLimit(u.ws, links.length)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of links for one hour. Try again in a bit." });
     res.json(await readLinks(u.ws, links)); });
   // add the drafts the host kept (after editing); also takes CSV rows and one event by hand
-  const addDrafts = (ws, L) => (Array.isArray(L) ? L : []).slice(0, MAX_DRAFTS).filter((d) => clean(d?.title, 140)).map((d) => save(ws, { title: d.title, date: d.date, time: d.time, place: d.place, about: d.about, note: d.note, link: d.link, source: "", cover: d.cover, photos: /^\/_blob\//.test(d.cover || "") ? [d.cover] : [] }));
+  const addDrafts = (ws, L) => (Array.isArray(L) ? L : []).slice(0, MAX_DRAFTS).filter((d) => clean(d?.title, 140)).map((d) => save(ws, { title: d.title, date: d.date, time: d.time, place: d.place, about: d.about, note: d.note, link: d.link, source: "", cover: d.cover, photos: /^\/_blob\//.test(d.cover || "") ? [d.cover] : [],
+    format: d.format, role: d.role, topic: d.topic, organizer: d.organizer, audience: d.audience, recording: d.recording, slides: d.slides }));
   app.post("/api/host/scrapbook/add", small, (req, res) => { const u = me(req, res); if (!u) return; if (list(u.ws).length >= MAX_ITEMS) return res.status(400).json({ code: "limit", message: "Your scrapbook is full (200 events)." });
     res.json({ added: addDrafts(u.ws, (req.body || {}).drafts), skipped: [] }); });
   // one step: links are read and added straight away (older pages use this), CSV rows, or one by hand
@@ -331,7 +372,7 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
     if (b.item && clean(b.item.title, 140)) out.push(save(u.ws, { ...b.item, link: "", source: "", featured: false, section: "" }));
     res.json({ added: out, skipped }); });
   // change one event: its details, ☆ featured, its section, and the role / room / proof / format lines (POST kept for older pages)
-  const TOO_LONG = { role: "Keep your role short (40 characters).", room: "Keep who was there to one line (120 characters).", proof: "Keep the proof to one line (140 characters).", format: "Keep the format short (24 characters).", company: "Keep the company name to 60 characters." };
+  const TOO_LONG = { role: "Keep your role short (40 characters).", room: "Keep who was there to one line (120 characters).", proof: "Keep the proof to one line (140 characters).", format: "Keep the format short (24 characters).", company: "Keep the company name to 60 characters.", topic: "Keep the topic to one line (140 characters).", organizer: "Keep the organizer to 60 characters." };
   const patch = (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id).replace(/[^a-f0-9]/g, ""); const cur = S(u.ws).get("scrapbook/" + id)?.data; if (!cur) return res.status(404).json({ code: "not_found", message: "Not in your scrapbook." });
     const b = req.body && typeof req.body === "object" ? req.body : {};
     for (const k of Object.keys(TOO_LONG)) if (b[k] != null && clean(b[k], 1000).length > LIMITS[k]) return res.status(400).json({ code: "too_long", field: k, message: TOO_LONG[k] });

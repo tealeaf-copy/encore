@@ -39,6 +39,8 @@ h1{font-size:var(--fs-28-40,30px);line-height:1.08;margin:0 0 8px}.lede{color:va
 .rv-btn{position:relative;z-index:1;align-self:flex-start;margin-top:6px;min-height:44px;padding:6px 14px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}
 .rv-btn:hover{background:#FFF6DE}
 .empty{color:var(--smoke);padding:30px 0}
+.tog{min-height:44px;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}.tog[aria-pressed=true]{background:var(--ink);color:#fff}.tog:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+.ev .tp{font-size:14px;color:var(--ink);font-weight:600;overflow-wrap:anywhere}.ev .lk{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.ev .lk a{display:inline-flex;align-items:center;min-height:36px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;background:#fff}.ev .lk a:hover{background:#FFF6DE}
 .more{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:20px 0 0;padding:10px 22px;border-radius:999px;border:2px solid var(--ink);background:#fff;color:var(--ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}.more[hidden]{display:none}
 .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--smoke);font-size:14px}.foot a{color:var(--ember-d);font-weight:600}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
@@ -64,6 +66,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
       <div class="seg" role="group" aria-label="When"><button type="button" data-s="upcoming" aria-pressed="true">Coming up</button><button type="button" data-s="past" aria-pressed="false">Past</button><button type="button" data-s="all" aria-pressed="false">All</button></div>
       <label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select>
       <label class="sr" for="format">Kind of event</label><select id="format"><option value="">Any kind</option></select>
+      <button type="button" class="tog" id="spk" aria-pressed="false">🎤 Speaking</button>
     </div>
   </div>
   <p class="count" id="count" aria-live="polite">Loading events…</p>
@@ -76,8 +79,8 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
 <script>
 (() => {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const P = new URLSearchParams(location.search), st = { q: P.get("q") || "", city: P.get("city") || "", format: P.get("format") || "", status: ["upcoming", "past", "all"].includes(P.get("status")) ? P.get("status") : "upcoming" };
-  const EM = { dinner: "🍽️", run: "🏃", hike: "🥾", brunch: "🥞", workshop: "🏺", class: "🎨", "pop-up": "🧁", coffee: "☕", picnic: "🧺", "game night": "🎲", "book club": "📚", drinks: "🍷", movement: "🧘", party: "🎉", summit: "🎤", conference: "🎤", panel: "🎙️", meetup: "👋", online: "💻", tour: "🗺️", launch: "🚀", offsite: "🏕️", lunch: "🥪", breakfast: "🥐", booth: "🪧", roadshow: "🚐" };
+  const P = new URLSearchParams(location.search), st = { q: P.get("q") || "", city: P.get("city") || "", format: P.get("format") || "", status: ["upcoming", "past", "all"].includes(P.get("status")) ? P.get("status") : "upcoming", type: P.get("type") === "speaking" ? "speaking" : "" };
+  const EM = { dinner: "🍽️", run: "🏃", hike: "🥾", brunch: "🥞", workshop: "🏺", class: "🎨", "pop-up": "🧁", coffee: "☕", picnic: "🧺", "game night": "🎲", "book club": "📚", drinks: "🍷", movement: "🧘", party: "🎉", summit: "🎤", conference: "🎤", panel: "🎙️", meetup: "👋", online: "💻", tour: "🗺️", launch: "🚀", offsite: "🏕️", talk: "🎤", keynote: "🎤", webinar: "💻", podcast: "🎙️", lunch: "🥪", breakfast: "🥐", booth: "🪧", roadshow: "🚐" };
   const BG = ["#FFE08A", "#FFCAD6", "#C4DEFF", "#DCCBFF", "#E3F1DD", "#FFD9B0"];
   const tint = (s) => BG[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % BG.length];
   const yr = new Date().getFullYear();
@@ -94,11 +97,14 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     const R = e.reviews || {}, H = hostRev[e.host.handle], q = (R.items || []).find((k) => k.text);
     const rv = R.count ? `<div class="rv"><b>${esc(revLine(R))}</b>${q ? `<span class="quote">“${esc(q.text.length > 110 ? q.text.slice(0, 107).replace(/\s+\S*$/, "") + "…" : q.text)}” ${esc(q.name)}</span>` : ""}</div><button type="button" class="rv-btn" data-id="${esc(e.id)}">Read reviews</button>`
       : H && H.count ? `<div class="rv">Host: ${esc(revLine(H))}</div>` : "";
+    // a talk: what it was about, who ran it, and the recording and slides
+    const S = e.speaking, listen = S && (e.format === "podcast" || /spotify\.com|podcasts\.apple\.com/i.test(S.recording || ""));
+    const talk = S ? `${S.topic ? `<span class="tp">${esc(S.topic)}</span>` : ""}${S.organizer || S.role ? `<span class="q">${esc([S.role, S.organizer ? "at " + S.organizer : ""].filter(Boolean).join(" "))}</span>` : ""}${S.recording || S.slides ? `<div class="lk">${S.recording ? `<a href="${esc(S.recording)}" target="_blank" rel="noopener noreferrer">${listen ? "Listen" : "Watch"} ↗</a>` : ""}${S.slides ? `<a href="${esc(S.slides)}" target="_blank" rel="noopener noreferrer">Slides ↗</a>` : ""}</div>` : ""}` : "";
     return `<article class="ev"><div class="art" style="--bg:${tint(e.format + e.host.handle)}">${art}<span class="badge${e.status === "past" ? " past" : ""}">${e.status === "past" ? "Past" : "Coming up"}</span></div>
       <div class="bd"><span class="when">${esc(when(e))}</span><a class="t" href="${esc(e.url)}">${esc(e.title)}</a><span class="by">by ${esc(e.host.name)}${place ? " · " + esc(place) : ""}</span>
-      ${meta.length ? `<div class="meta">${meta.map((m) => `<span>${esc(m)}</span>`).join("")}</div>` : ""}${e.companies && e.companies.length ? `<span class="q">With ${esc(e.companies.slice(0, 3).join(", "))}${e.companies.length > 3 ? ` and ${e.companies.length - 3} more` : ""}</span>` : ""}${rv}</div></article>`;
+      ${meta.length ? `<div class="meta">${meta.map((m) => `<span>${esc(m)}</span>`).join("")}</div>` : ""}${talk}${e.companies && e.companies.length ? `<span class="q">With ${esc(e.companies.slice(0, 3).join(", "))}${e.companies.length > 3 ? ` and ${e.companies.length - 3} more` : ""}</span>` : ""}${rv}</div></article>`;
   }
-  const qs = (extra = {}) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ q: st.q, city: st.city, format: st.format, status: st.status, ...extra })) if (v) u.set(k, v); return u.toString(); };
+  const qs = (extra = {}) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ q: st.q, city: st.city, format: st.format, type: st.type, status: st.status, ...extra })) if (v) u.set(k, v); return u.toString(); };
   async function load(more) {
     if (!more) { cursor = null; shown = []; $("#count").textContent = "Loading events…"; }
     const j = await (await fetch("/api/v1/events?" + qs({ limit: 24, cursor: more ? cursor : "" }))).json().catch(() => null);
@@ -135,6 +141,8 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   $("#city").onchange = () => { st.city = $("#city").value; load(); };
   $("#format").onchange = () => { st.format = $("#format").value; load(); };
   $("#more").onclick = () => load(true);
+  $("#spk").setAttribute("aria-pressed", String(st.type === "speaking"));
+  $("#spk").onclick = () => { st.type = st.type === "speaking" ? "" : "speaking"; $("#spk").setAttribute("aria-pressed", String(!!st.type)); if (st.type && st.status === "upcoming") { st.status = "all"; document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.s === "all"))); } load(); };
   $("#grid").addEventListener("click", (ev) => { const b = ev.target.closest(".rv-btn"); if (b) reviews(b.dataset.id); });
   $("#dlX").onclick = () => $("#dlg").close();
   $("#dlg").addEventListener("click", (ev) => { if (ev.target === $("#dlg")) $("#dlg").close(); });

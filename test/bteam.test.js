@@ -15,7 +15,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("Team space: requests join the team, bookings over the cap wait for an approver, only approvers decide", async () => {
   const h = await post("/api/signup", { name: "Sofia Host", email: "sofia.t@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
-  const pr = await (await post("/api/host/profile", { handle: "sofia-team", name: "Supper Test", experiences: [{ name: "Dinner", min: 10, max: 30, price: "$185 a person", category: "dining" }, { name: "Breakfast", min: 6, max: 16, price: "$60 a person", category: "dining" }] }, hc)).json();
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "sofia-team", name: "Supper Test", experiences: [{ name: "Dinner", min: 10, max: 30, price: "$185 a person", category: "dining" }, { name: "Breakfast", min: 6, max: 16, price: "$60 a person", category: "dining" }] }, hc)).json();
   const [dinner, breakfast] = pr.host.experiences;
   const T = await (await post("/api/public/bteam", { name: "Northwind field", you: "Sam", email: "sam@northwind.example", approvers: "cfo@northwind.example", cap: "2000" })).json(); assert.ok(T.id && T.key);
   assert.equal((await fetch(`${srv.base}/api/public/bteam/${T.id}?k=wrong`)).status, 403);
@@ -37,7 +37,7 @@ test("Team space: requests join the team, bookings over the cap wait for an appr
 
 test("Add-ons: catering that travels and event services in the same city, flat fees stay flat", async () => {
   const h = await post("/api/signup", { name: "June Photo", email: "june.t@example.com", password: "long-password-1", mode: "friends", city: "Oakland" }); const hc = cookieOf(h);
-  await post("/api/host/profile", { handle: "june-addon", name: "Fieldnote Test", city: "Oakland", experiences: [{ name: "Event photographer", min: 1, max: 500, price: "$850 flat", category: "culture", travels: true, service: true }, { name: "Coffee cart", min: 20, max: 200, price: "$12 a person", category: "drinks", travels: true }] }, hc);
+  await post("/api/host/profile", { forHire: true, handle: "june-addon", name: "Fieldnote Test", city: "Oakland", experiences: [{ name: "Event photographer", min: 1, max: 500, price: "$850 flat", category: "culture", travels: true, service: true }, { name: "Coffee cart", min: 20, max: 200, price: "$12 a person", category: "drinks", travels: true }] }, hc);
   const r = await (await fetch(`${srv.base}/api/public/addons?city=Oakland&people=50`)).json();
   const photo = r.results.find((a) => a.experience.name === "Event photographer"), cart = r.results.find((a) => a.experience.name === "Coffee cart");
   assert.equal(photo.total, 850); assert.equal(photo.kind, "service"); assert.equal(cart.total, 600); assert.equal(cart.kind, "catering");
@@ -47,7 +47,7 @@ test("Add-ons: catering that travels and event services in the same city, flat f
 test("Instant booking: a fixed-price listing on an open date confirms now, or the moment it's approved", async () => {
   const h = await post("/api/signup", { name: "Maya Instant", email: "maya.i@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
   const day = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10), other = new Date(Date.now() + 21 * 864e5).toISOString().slice(0, 10), third = new Date(Date.now() + 22 * 864e5).toISOString().slice(0, 10);
-  const pr = await (await post("/api/host/profile", { handle: "maya-instant", name: "Golden Test", experiences: [{ name: "Lunch yoga", min: 6, max: 40, price: "$30 a person", category: "movement", instant: true, openDates: [day, third] }] }, hc)).json(); const x = pr.host.experiences[0];
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "maya-instant", name: "Golden Test", experiences: [{ name: "Lunch yoga", min: 6, max: 40, price: "$30 a person", category: "movement", instant: true, openDates: [day, third] }] }, hc)).json(); const x = pr.host.experiences[0];
   const base = { name: "Sam", company: "Northwind", email: "sam.i@northwind.example", where: "Our office", message: "Lunchtime yoga for the team.", experienceId: x.id };
   const a = await (await post("/api/public/book/maya-instant", { ...base, people: 20, date: day, when: "soon" })).json(); assert.equal(a.instant, true);
   const ta = new URL(a.link).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${a.id}?t=${ta}`)).json(); assert.equal(bk.booking.status, "booked"); assert.equal(bk.booking.quote.total, "$600");
@@ -61,10 +61,12 @@ test("Instant booking: a fixed-price listing on an open date confirms now, or th
 test("Instant booking never double-books: a taken date leaves the open list and a second request becomes a normal one", async () => {
   const h = await post("/api/signup", { name: "Ravi Double", email: "ravi.d@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
   const day = new Date(Date.now() + 25 * 864e5).toISOString().slice(0, 10);
-  const pr = await (await post("/api/host/profile", { handle: "ravi-double", name: "Build Test", experiences: [{ name: "Build night", min: 10, max: 30, price: "$120 a person", category: "workshop", instant: true, openDates: [day] }] }, hc)).json(); const x = pr.host.experiences[0];
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "ravi-double", name: "Build Test", experiences: [{ name: "Build night", min: 10, max: 30, price: "$120 a person", category: "workshop", instant: true, openDates: [day] }] }, hc)).json(); const x = pr.host.experiences[0];
   const base = { name: "A", company: "Firstco", email: "a@firstco.example", where: "SoMa", message: "Build night for our customers.", experienceId: x.id, people: 20, date: day, when: "soon" };
   const a = await (await post("/api/public/book/ravi-double", base)).json(); assert.equal(a.instant, true);
   const pub = await (await fetch(`${srv.base}/api/public/host/ravi-double`)).json(); assert.deepEqual(pub.host.experiences[0].openDates, [], "the booked date is no longer open");
-  const b = await (await post("/api/public/book/ravi-double", { ...base, company: "Othercorp", email: "b@othercorp.example" })).json(); assert.ok(!b.instant, "no second instant booking"); assert.equal(b.taken, true);
+  // a brand who picked the date while it was open hears "someone just took it"; one who picked a date the form already said wasn't open doesn't
+  const b = await (await post("/api/public/book/ravi-double", { ...base, company: "Othercorp", email: "b@othercorp.example", sawOpen: true })).json(); assert.ok(!b.instant, "no second instant booking"); assert.equal(b.taken, true);
+  const b2 = await (await post("/api/public/book/ravi-double", { ...base, company: "Thirdco", email: "c@thirdco.example" })).json(); assert.ok(!b2.instant); assert.equal(b2.taken, undefined, "no false 'a moment ago'");
   const tb = new URL(b.link).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${b.id}?t=${tb}`)).json(); assert.equal(bk.booking.status, "requested");
 });

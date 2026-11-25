@@ -21,7 +21,9 @@ test("Trust shows only real or labelled proof: no placeholder people or brands, 
   assert.deepEqual(T.workedWith.map((w) => [w.client, w.label]), [["Helix AI", "Booked on Pottery Lab"], ["Brightline Labs", "Added by the host"]]);
   assert.deepEqual(T.testimonials.map((q) => [q.name, q.label]), [["Dana Lee", "Added by the host"]]);
   assert.equal(T.returned.text, "89% of 18 guests came back for another"); assert.equal(T.again.text, "75% of 12 guests who left kudos would go again");
-  assert.equal(T.insurance.text, "Insurance certificate on request");
+  assert.equal(T.insurance.text, "No insurance certificate on file"); assert.equal(T.insurance.onFile, false);
+  // "on request" only for a host who said they're insured
+  assert.equal(trustFrom({ h: { ...h, insured: true } }).insurance.text, "Says they're insured. Certificate on request");
   const I = trustFrom({ h: { name: "X", insuranceDoc: "/_blob/abcdefghijklmnopqrst" }, proof: { coi: { expires: "2099-03-01" } } });
   assert.match(I.insurance.text, /^Insurance certificate on file \(expires Mar 1, 2099\)$/); assert.ok(I.insurance.url);
   const E = trustFrom({ h, example: true, badges: [{ id: "legend" }] });
@@ -55,11 +57,11 @@ async function signup(email, name) { const r = await fetch(srv.base + "/api/sign
 test("A host's proof and trust come from one endpoint; /teams and /hosts/book never make an example the best match", async () => {
   const c = await signup("trust-host@example.com", "Hana Ito"); assert.ok(c, "signed up");
   const post = (u, b) => fetch(srv.base + u, { method: "POST", headers: { "Content-Type": "application/json", cookie: c }, body: JSON.stringify(b) });
-  const pr = await post("/api/host/profile", { handle: "hana-counter", name: "Hana's Counter", city: "Manhattan", tagline: "Omakase for small groups", emoji: "🍣", experiences: [{ name: "Omakase roundtable for 12", desc: "Ten courses at one counter, one conversation.", category: "dining", min: 8, max: 12, seated: 12, price: "$240 a person" }] });
+  const pr = await post("/api/host/profile", { forHire: true, handle: "hana-counter", name: "Hana's Counter", city: "Manhattan", tagline: "Omakase for small groups", emoji: "🍣", experiences: [{ name: "Omakase roundtable for 12", desc: "Ten courses at one counter, one conversation.", category: "dining", min: 8, max: 12, seated: 12, price: "$240 a person" }] });
   assert.ok(pr.ok, await pr.text());
   assert.ok((await post("/api/host/proof", { pastEvents: [{ companyType: "Bank", format: "Client dinner", headcount: 12 }], socials: [{ platform: "instagram", handle: "hana", followers: 5200 }] })).ok);
   const T = await (await fetch(srv.base + "/api/public/host/hana-counter/trust")).json();
-  assert.equal(T.pastCorporate[0].label, "Added by the host"); assert.equal(T.socials[0].label, "Self-reported"); assert.equal(T.insurance.text, "Insurance certificate on request"); assert.ok(T.isNewHere);
+  assert.equal(T.pastCorporate[0].label, "Added by the host"); assert.equal(T.socials[0].label, "Self-reported"); assert.equal(T.insurance.text, "No insurance certificate on file"); assert.ok(T.isNewHere);
   const M = await (await fetch(srv.base + "/api/public/teams/match?city=Manhattan&people=14&goal=exec")).json();
   assert.equal(M.results[0]?.host.handle, "hana-counter"); assert.ok(M.results.every((r) => !r.example)); assert.equal(M.audience, "your guests"); assert.ok(M.recruit, "fewer than three: say so");
   const B = await (await fetch(srv.base + "/api/public/hosts/book?city=Manhattan")).json(); assert.ok(B.hosts.some((h) => h.handle === "hana-counter" && h.options.length === 1)); assert.ok(B.hosts.every((h) => !h.example));

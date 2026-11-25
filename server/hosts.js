@@ -174,13 +174,16 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
   // ---- every bookable host once, with their options inside; examples in their own list ----
   function bookable() { const L = [];
     for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !(h.experiences || []).length) continue; if (exampleWs(ws) && process.env.ENCORE_HIDE_DEMO === "1") continue;
-      // finished listings only: a real name, a line about them, a face, and options that say what they are (no half-made test pages)
+      // only hosts who said they're open to paid work (the same rule /api/public/book enforces), the moment they say so
+      if (!h.forHire && !exampleWs(ws)) continue;
+      // finished listings only: a real name and options that say what they are (no half-made test pages)
       const exps = h.experiences.filter((e) => String(e.desc || "").trim().length >= 10 || (e.includes || []).length), named = String(h.name || "").trim().length >= 3 && lc(h.name) !== h.handle;
-      if (!exps.length || !named || !(h.tagline || h.bio) || !(h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"))) continue;
+      if (!exps.length || !named) continue;
       const T = trustOf(ws); L.push({ ws, h: { ...h, experiences: exps }, T, person: personWs(ws), example: T.example, weight: T.bookings * 5 + T.kudos * 2 + T.guests + T.events * 2 + T.scrapbook + (T.insurance.onFile ? 2 : 0) + (h.experiences || []).length * 0.1 }); }
     L.sort((a, b) => b.weight - a.weight); const keep = [], aliases = {};
     for (const x of L) { const twin = keep.find((k) => k.example === x.example && sameHost({ name: k.h.name, city: k.h.city, hood: k.h.hood, person: k.person }, { name: x.h.name, city: x.h.city, hood: x.h.hood, person: x.person })); if (twin) aliases[x.h.handle] = twin.h.handle; else keep.push(x); }
     return { list: keep, aliases }; }
+  X.bookable = bookable;
   const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: x.price || "", perHead: perPerson(x.price), flat: isFlat(x.price), instant: !!x.instant, length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
   const cardOfHost = ({ ws, h, T, person }, options) => ({ handle: h.handle, name: h.name, person, city: h.city || "", hood: h.hood || "", accent: h.theme?.accent || h.color || "", avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", emoji: h.emoji || "", tagline: h.tagline || "", respondsIn: h.respondsIn || "", terms: h.terms || "", invoices: !!h.invoices, gallery: (h.gallery || []).slice(0, 6), example: T.example, trust: lite(T), options });
   app.get("/api/public/hosts/book", (req, res) => { const cat = lc(req.query.category), city = clean(req.query.city, 60), people = Math.max(0, Math.min(5000, +req.query.people || 0)); const { list, aliases } = bookable(), real = [], examples = [];
@@ -196,7 +199,9 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     const { list } = bookable(), out = [], ex = []; let cityHosts = 0;
     for (const x of list) { const where = placeFit(city, x.h); if (where === "away") continue; if (!x.example) cityHosts++;
       let best = null; for (const e of x.h.experiences) { const f = goalFit(goal, e, n); if (!f) continue; if (!best || f.score > best.f.score) best = { e, f }; } if (!best || best.f.score < 1) continue; // a poor fit for the goal isn't a match
-      const T = x.T, why = [...best.f.why]; let score = best.f.score + (where === "here" ? 4 : 0);
+      // the neighbourhood counts too: "Flushing" puts a Flushing host above one elsewhere in Queens
+      const hood = lc(city), hoodHit = !!hood && (lc(x.h.hood) === hood || lc(x.h.hood).includes(hood) || lc(x.h.city) === hood);
+      const T = x.T, why = [...best.f.why]; let score = best.f.score + (where === "here" ? 4 : 0) + (hoodHit ? 2 : 0);
       if (T.bookings) { score += Math.min(3, T.bookings); } if (T.guests) score += Math.min(2, T.guests / 15); if (T.again?.pct != null) score += T.again.pct / 40; if (T.workedWith.length) score += 1; if (T.insurance.onFile) score += 0.5;
       let types = []; try { types = C.resonance(x.ws).types || []; } catch {}
       if (crowd) { const t = types.find((y) => y.type === crowd); if (t && t.share >= 15) { score += t.share / 20; why.push(`Popular with ${t.label}`); } }

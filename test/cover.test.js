@@ -15,7 +15,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("A collab cover made on /covers goes on the booking's guest page, only with the organizer's link", async () => {
   const h = await post("/api/signup", { name: "Linh Cover", email: "linh.c@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
-  const pr = await (await post("/api/host/profile", { handle: "second-pour", name: "Second Pour", experiences: [{ name: "Coffee pop-up", min: 10, max: 80, price: "$900 flat", category: "dining" }] }, hc)).json();
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "second-pour", name: "Second Pour", experiences: [{ name: "Coffee pop-up", min: 10, max: 80, price: "$900 flat", category: "dining" }] }, hc)).json();
   const day = new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/second-pour", { name: "Ava", company: "Northwind", email: "ava.c@northwind.example", experienceId: pr.host.experiences[0].id, people: 40, date: day, time: "08:00", when: "soon", where: "Valencia St", message: "Launch week coffee pop-up for customers." })).json();
   const id = bk.id, t = new URL(bk.link).searchParams.get("t");

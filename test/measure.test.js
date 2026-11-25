@@ -14,7 +14,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("A booking gets a guest page, and its results count who came and what they thought, without names", async () => {
   const h = await post("/api/signup", { name: "Ava Host", email: "ava.m@example.com", password: "long-password-1", mode: "friends" }); assert.equal(h.status, 200); const hc = cookieOf(h);
-  const pr = await post("/api/host/profile", { handle: "ava-measure", name: "Move with Ava", experiences: [{ name: "Desk-to-mat yoga", min: 4, max: 40, price: "$30 a person", category: "movement" }] }, hc); assert.equal(pr.status, 200);
+  const pr = await post("/api/host/profile", { forHire: true, handle: "ava-measure", name: "Move with Ava", experiences: [{ name: "Desk-to-mat yoga", min: 4, max: 40, price: "$30 a person", category: "movement" }] }, hc); assert.equal(pr.status, 200);
   const expId = (await pr.json()).host.experiences[0].id, day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/ava-measure", { name: "Sam", company: "Northwind", email: "sam@northwind.example", experienceId: expId, people: 10, date: day(5), when: "soon", where: "Our office", message: "Team yoga for our wellness week." })).json();
   const id = bk.id, t = new URL(bk.link).searchParams.get("t"); assert.ok(id && t);
@@ -32,7 +32,7 @@ test("A booking gets a guest page, and its results count who came and what they 
 
 test("Check-in at the door: a door link for staff, ticket codes, walk-ins, and results that count who actually came", async () => {
   const h = await post("/api/signup", { name: "Theo Door", email: "theo.d@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
-  const pr = await (await post("/api/host/profile", { handle: "theo-door", name: "Door Test Loft", experiences: [{ name: "Demo night", min: 5, max: 100, price: "$95 a person", category: "drinks" }] }, hc)).json();
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "theo-door", name: "Door Test Loft", experiences: [{ name: "Demo night", min: 5, max: 100, price: "$95 a person", category: "drinks" }] }, hc)).json();
   const day = new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/theo-door", { name: "Sam", company: "Northwind", email: "sam.d@northwind.example", experienceId: pr.host.experiences[0].id, people: 10, date: day, time: "18:00", when: "soon", where: "The loft", message: "Launch night for our API." })).json();
   const id = bk.id, t = new URL(bk.link).searchParams.get("t");

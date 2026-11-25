@@ -16,7 +16,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("Texts around an event: a guest's ticket, the organizer's reminder with each guest's own code, the door's nudge, and STOP is respected everywhere", async () => {
   const h = await post("/api/signup", { name: "Sofia Text", email: "sofia.s@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
-  const pr = await (await post("/api/host/profile", { handle: "sofia-text", name: "Supper Text", experiences: [{ name: "Dinner", min: 4, max: 30, price: "$185 a person", category: "dining" }] }, hc)).json();
+  const pr = await (await post("/api/host/profile", { forHire: true, handle: "sofia-text", name: "Supper Text", experiences: [{ name: "Dinner", min: 4, max: 30, price: "$185 a person", category: "dining" }] }, hc)).json();
   const day = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/sofia-text", { name: "Sam", company: "Northwind", email: "sam.s@northwind.example", experienceId: pr.host.experiences[0].id, people: 12, date: day, time: "18:30", when: "soon", where: "Sofia's room", message: "Customer dinner for design partners." })).json();
   const id = bk.id, t = new URL(bk.link).searchParams.get("t");

@@ -16,7 +16,7 @@ beforeEach(() => { process.env.ENCORE_SIGNUP = "1"; process.env.SESSION_SECRET =
 after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_SIGNUP_PER_HOUR"]) delete process.env[k]; await srv.close(); });
 
 async function host(handle, exp) { const h = await post("/api/signup", { name: "Tram Host", email: `${handle}@example.com`, password: "long-password-1", mode: "friends" }); assert.equal(h.status, 200); const hc = cookieOf(h);
-  const pr = await post("/api/host/profile", { handle, name: "Tram's Table", experiences: [exp] }, hc); assert.equal(pr.status, 200); return { hc, x: (await pr.json()).host.experiences[0] }; }
+  const pr = await post("/api/host/profile", { forHire: true, handle, name: "Tram's Table", experiences: [exp] }, hc); assert.equal(pr.status, 200); return { hc, x: (await pr.json()).host.experiences[0] }; }
 
 test("Price lines: total is people × price; content the host hasn't priced is 'quoted', never a silent $0", () => {
   const x = { name: "Lunch", price: "$85 a person", contentPrices: { photos: 400 }, usagePrices: { owned6m: 250 }, remoteKit: { price: 30 } };

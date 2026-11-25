@@ -161,7 +161,10 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   const coiUrl = proof.coi?.url || h.insuranceDoc || "", expires = proof.coi?.expires || "", expired = !!expires && expires < now;
   const insurance = example ? { onFile: false, url: "", expires: "", expired: false, text: "Example page: no insurance on file" }
     : coiUrl && !expired ? { onFile: true, url: coiUrl, expires, expired: false, text: `Insurance certificate on file${expires ? ` (expires ${new Date(expires + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })})` : ""}` }
-    : { onFile: false, url: "", expires, expired, text: expired ? "Insurance certificate expired. A new one on request." : "Insurance certificate on request" };
+    : expired ? { onFile: false, url: "", expires, expired, insured: !!h.insured, text: "Insurance certificate expired. A new one on request." }
+    // "on request" only when the host said they're insured; otherwise say plainly there's nothing on file
+    : h.insured ? { onFile: false, url: "", expires, expired, insured: true, text: "Says they're insured. Certificate on request" }
+    : { onFile: false, url: "", expires, expired, insured: false, text: "No insurance certificate on file" };
   // what IS real, short lines in order of weight; nothing invented
   const lines = [];
   if (done.length) lines.push({ k: "bookings", text: plural(done.length, "brand booking", "brand bookings") });

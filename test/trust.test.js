@@ -65,4 +65,9 @@ test("A host's proof and trust come from one endpoint; /teams and /hosts/book ne
   const B = await (await fetch(srv.base + "/api/public/hosts/book?city=Manhattan")).json(); assert.ok(B.hosts.some((h) => h.handle === "hana-counter" && h.options.length === 1)); assert.ok(B.hosts.every((h) => !h.example));
   const S = await (await fetch(srv.base + "/api/public/teams/series-coverage?cities=Manhattan,Austin")).json();
   assert.equal(S.cities[0].hosts, 1); assert.equal(S.cities[1].hosts, 0); assert.ok(S.cities[1].kit.price);
+  // a team vote holds exactly the shortlist the organizer saw: the same options, never an example
+  const V = await (await post("/api/public/teams/vote", { ids: M.results.map((r) => r.experience.id), query: { city: "Manhattan", people: 14, goal: "exec" } })).json(); assert.ok(V.ok, JSON.stringify(V));
+  const D = await (await fetch(srv.base + "/api/public/teams/saved/" + V.id)).json();
+  assert.deepEqual(D.results.map((r) => r.experience.id), M.results.map((r) => r.experience.id)); assert.ok(D.results.every((r) => !r.example));
+  assert.equal((await fetch(srv.base + "/api/public/teams/saved/" + V.id + "/vote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pick: M.results[0].experience.id, name: "Ana", who: "w1" }) })).status, 200);
 });

@@ -149,4 +149,8 @@ test("No date: the timeline uses its own offsets (never '999 days'), and a late 
   }
   const soon = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), q = planFromInput(readBody({ company: "Exa", moment: "Launching Snapshot", kind: "b2b", audience: "40 customers", budget: "$60", date: soon }));
   assert.ok(q.timing?.late); assert.match(q.timing.text, /is too soon for handmade\.$/); assert.doesNotMatch(q.timing.text, /needed ordering/);
+  // a late new-hire welcome: the hint says the earliest date is after day one without repeating it, and there's no "plan for that date"
+  const w = planFromInput(readBody({ company: "Orbit Labs", moment: "Remote new-hire welcome", kind: "employees", audience: "40 new hires", budget: "$60", date: soon }));
+  assert.ok(w.timing?.afterStart); assert.equal(w.timing.hint, "That's after their start date. Send a card before day one and the gift after.");
+  assert.doesNotMatch(JSON.stringify(q.playbook.finance), /\beach\b/); assert.doesNotMatch(q.playbook.finance.measure, /Rates assumed/);
 });

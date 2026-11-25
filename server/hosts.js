@@ -181,7 +181,7 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     L.sort((a, b) => b.weight - a.weight); const keep = [], aliases = {};
     for (const x of L) { const twin = keep.find((k) => k.example === x.example && sameHost({ name: k.h.name, city: k.h.city, hood: k.h.hood, person: k.person }, { name: x.h.name, city: x.h.city, hood: x.h.hood, person: x.person })); if (twin) aliases[x.h.handle] = twin.h.handle; else keep.push(x); }
     return { list: keep, aliases }; }
-  const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: x.price || "", perHead: perPerson(x.price), flat: isFlat(x.price), length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
+  const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: x.price || "", perHead: perPerson(x.price), flat: isFlat(x.price), instant: !!x.instant, length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
   const cardOfHost = ({ ws, h, T, person }, options) => ({ handle: h.handle, name: h.name, person, city: h.city || "", hood: h.hood || "", accent: h.theme?.accent || h.color || "", avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", emoji: h.emoji || "", tagline: h.tagline || "", respondsIn: h.respondsIn || "", terms: h.terms || "", invoices: !!h.invoices, gallery: (h.gallery || []).slice(0, 6), example: T.example, trust: lite(T), options });
   app.get("/api/public/hosts/book", (req, res) => { const cat = lc(req.query.category), city = clean(req.query.city, 60), people = Math.max(0, Math.min(5000, +req.query.people || 0)); const { list, aliases } = bookable(), real = [], examples = [];
     for (const x of list) { if (city && placeFit(city, x.h) === "away") continue;
@@ -190,8 +190,9 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     res.json({ hosts: real, examples, aliases, total: real.length }); });
 
   // ---- /teams: the goal decides what wins; stays in the city; real hosts only as matches ----
-  app.get("/api/public/teams/match", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited");
-    const city = clean(req.query.city, 60), n = Math.max(0, Math.min(5000, +req.query.people || 0)), goal = TEAM_GOALS[req.query.goal] ? String(req.query.goal) : "bonding", crowd = clean(req.query.crowd, 20), G = TEAM_GOALS[goal];
+  app.get("/api/public/teams/match", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited"); res.json(teamMatch(req.query || {})); });
+  function teamMatch(q) {
+    const city = clean(q.city, 60), n = Math.max(0, Math.min(5000, +q.people || 0)), goal = TEAM_GOALS[q.goal] ? String(q.goal) : "bonding", crowd = clean(q.crowd, 20), G = TEAM_GOALS[goal];
     const { list } = bookable(), out = [], ex = []; let cityHosts = 0;
     for (const x of list) { const where = placeFit(city, x.h); if (where === "away") continue; if (!x.example) cityHosts++;
       let best = null; for (const e of x.h.experiences) { const f = goalFit(goal, e, n); if (!f) continue; if (!best || f.score > best.f.score) best = { e, f }; } if (!best || best.f.score < 1) continue; // a poor fit for the goal isn't a match
@@ -206,8 +207,17 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
       (x.example ? ex : out).push(r); }
     out.sort((a, b) => b.score - a.score); ex.sort((a, b) => b.score - a.score);
     const results = out.slice(0, 3);
-    res.json({ goal, goalLabel: G.label, audience: AUDIENCE_WORD[G.audience], audienceKind: G.audience, results, available: out.length, examples: results.length < 3 ? ex.slice(0, 3 - results.length) : [], cityHosts, recruit: results.length < 3,
-      cities: coverage(list), guarantee: "If your host cancels or can't make it, Pottery Lab finds a vetted replacement or refunds you in full." }); });
+    return { goal, goalLabel: G.label, audience: AUDIENCE_WORD[G.audience], audienceKind: G.audience, results, available: out.length, examples: results.length < 3 ? ex.slice(0, 3 - results.length) : [], cityHosts, recruit: results.length < 3,
+      cities: coverage(list), guarantee: "If your host cancels or can't make it, Pottery Lab finds a vetted replacement or refunds you in full." }; }
+  // a team vote on exactly the shortlist the organizer saw (real hosts only, never examples). Read and voted on through
+  // /api/public/teams/saved/:id (server/community.js), which keeps the same stored shape.
+  app.post("/api/public/teams/vote", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, q0 = b.query || {};
+    const q = { city: clean(q0.city, 60), people: Math.max(0, Math.min(5000, +q0.people || 0)), goal: clean(q0.goal, 20), crowd: clean(q0.crowd, 20) }, M = teamMatch(q), want = Array.isArray(b.ids) ? b.ids.map((x) => clean(x, 40)) : [];
+    const results = (want.length ? M.results.filter((r) => want.includes(r.experience.id)) : M.results).filter((r) => !r.example);
+    if (!results.length) return bad(res, "Nothing to share yet.");
+    const id = crypto.randomBytes(5).toString("hex"), by = clean(b.by, 60);
+    if (b.team?.id) { const tp = "system/bteam-" + clean(b.team.id, 24), TT = store.get(tp)?.data; if (TT && TT.key === b.team.k) { TT.votes = [{ id, title: `${M.goalLabel || "Team event"}${q.people ? ` · ${q.people} guests` : ""}${q.city ? " · " + q.city : ""}`, by, at: Date.now() }, ...(TT.votes || [])].slice(0, 20); store.set(tp, TT); } }
+    store.set("system/short-" + id, { kind: "shortlist", id, query: { ...q, goal: M.goal }, by, results, votes: {}, at: Date.now() }); res.json({ ok: true, id, url: `/teams/s/${id}` }); });
   function coverage(list) { const m = new Map(); for (const x of list) { if (x.example || !x.h.city) continue; const mi = metroOf(x.h.city) >= 0 ? metroOf(x.h.city) : metroOf(x.h.hood), k = mi >= 0 ? METRO_NAMES[mi] : x.h.city.trim(); m.set(k, (m.get(k) || 0) + 1); } return [...m].sort((a, b) => b[1] - a[1]).map(([city, hosts]) => ({ city, hosts })); }
   // series form: host coverage per city before anyone submits, with a hybrid / remote kit fallback where there's no host
   app.get("/api/public/teams/series-coverage", (req, res) => { const L = String(req.query.cities || "").split(/[,;\n]/).map((c) => clean(c, 60)).filter(Boolean).slice(0, 12), { list } = bookable(), real = list.filter((x) => !x.example);

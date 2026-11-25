@@ -33,7 +33,9 @@ export function keywordRank(q, hosts, n = 8) {
   const out = [];
   for (const h of hosts) { const c = cardOf(h), text = `${c.name} ${c.city} ${c.tagline} ${c.about} ${c.tags.join(" ")} ${c.offers.join(" ")} ${c.sells.join(" ")}`.toLowerCase(); let score = 0; const hits = [];
     for (const w of want) { const stem = w.replace(/(ing|es|s)$/, ""); const alts = [w, stem, ...(REL.get(w) || REL.get(stem) || [])]; const hit = alts.find((a) => a.length > 2 && has(text, a)); if (hit) { score += hit === w || hit === stem ? 2 : 1; hits.push(hit); } }
-    if (score) out.push({ handle: h.handle, score, why: `Mentions ${[...new Set(hits)].slice(0, 3).join(", ")}` }); }
+    // the reason names only words in the host's own text (not tags or synonyms), so it never reads "Mentions art" on a dinner
+    const own = `${c.name} ${c.tagline} ${c.about} ${c.offers.join(" ")} ${c.sells.join(" ")}`.toLowerCase(), said = [...new Set(hits)].filter((w) => has(own, w));
+    if (score) out.push({ handle: h.handle, score, why: said.length ? `Mentions ${said.slice(0, 3).join(", ")}` : "" }); }
   return out.sort((a, b) => b.score - a.score).slice(0, n).map(({ handle, why }) => ({ handle, why }));
 }
 

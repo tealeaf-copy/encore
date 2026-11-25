@@ -1,0 +1,80 @@
+/* Pottery Lab design system: the last stylesheet on every page (authguard.js moves it to the end of <head>; invite.html and
+   the sign-in page link it directly). Tokens first, then the few rules that make every page agree:
+   - type: Fredoka for display headings, Instrument Sans for UI and body. Fraunces only for the italic accent word
+     (an <em> inside a heading). Caveat only for scrapbook / polaroid captions. A host's chosen invite title font
+     (.invite[class*=th-] h3, .gxhi) and storefront fonts are the host's, not chrome, and are left alone.
+   - sizes: 13 / 14 / 16 / 20 / 28 / 40, plus hero display. Nothing under 13px.
+   - buttons: sm 36 / md 44 / lg 52 (sm becomes 44 on phones), one corner (pill), primary = ember fill, flat.
+   - one selected-chip style: ink fill, white text.
+   - small red text uses --sys-ember-text (#B04A30, 5:1 on cream). */
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+:root{
+  --sys-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --sys-display:"Fredoka","Instrument Sans",system-ui,sans-serif;
+  --sys-accent:"Fraunces",Georgia,serif;
+  --sys-hand:"Caveat",cursive;
+  --fs-13:13px;--fs-14:14px;--fs-16:16px;--fs-20:20px;--fs-28:28px;--fs-40:40px;
+  --sys-ink:#1F1A17;--sys-paper:#FFF8EE;--sys-line:#D9CCBB;
+  --sys-ember:#C94A30;--sys-ember-press:#B04A30;--sys-ember-text:#B04A30;
+  --btn-sm:36px;--btn-md:44px;--btn-lg:52px;--btn-radius:999px;
+  --chip-on-bg:#1F1A17;--chip-on-ink:#FFFFFF;
+  /* older page tokens follow the system */
+  --p-ember:#C94A30;
+  /* headings that used to be fluid clamp()s step instead: phone value, then desktop value from 861px */
+  --fs-16-20:16px;--fs-20-28:20px;--fs-28-40:28px;
+}
+@media (min-width:861px){:root{--fs-16-20:20px;--fs-20-28:28px;--fs-28-40:40px}}
+
+/* ---- type ---- */
+body{font-family:var(--sys-sans)}
+h1,h2,h3{font-family:var(--sys-display)}
+/* controls the page never sized get the scale, not the browser's 13.33px */
+:where(button,input[type=submit],input[type=button]){font-size:var(--fs-14);font-family:inherit}
+:where(input,select,textarea){font-size:var(--fs-16);font-family:inherit}
+:where(small){font-size:var(--fs-13)}
+
+/* ---- buttons: one corner, three sizes ---- */
+html body :is(.btn,a.btn,button.btn,.cta,a.cta,.hd-cta,a.go,button.go,.pill,.sp-btn,.book-toggle,form.find button,.more-btn,button.more,.loc){border-radius:var(--btn-radius)!important;min-height:var(--btn-md);box-sizing:border-box}
+html body :is(button,input):is(.btn,.cta,.go,.pill,.sp-btn,.book-toggle,.more-btn,.more,.loc),html body form.find button{padding-top:0!important;padding-bottom:0!important}
+html body .rsvpbig button.chip{min-height:var(--btn-md);padding-top:0!important;padding-bottom:0!important}
+html body :is(a.cta,a.hd-cta,a.go){display:inline-flex;align-items:center;justify-content:center;padding-top:0!important;padding-bottom:0!important}
+html body :is(.btn,.cta,.hd-cta,.book-toggle){align-items:center}
+html body :is(.btn.sm,a.btn.sm,button.btn.sm){min-height:var(--btn-sm);padding-top:0!important;padding-bottom:0!important}
+html body :is(.btn.lg,.ctas>.btn,.hero .ctas .btn,a.go,button.go#send){min-height:var(--btn-lg);padding-top:0!important;padding-bottom:0!important}
+/* small chips: sm */
+html body :is(.g-via button,.ex-chips button,.share-btn,.mc-tpl button,.pa-tabs button){min-height:var(--btn-sm);padding-top:0!important;padding-bottom:0!important;border-radius:var(--btn-radius)!important}
+/* phones: nothing under 44px to tap */
+@media (max-width:860px){
+  html body :is(.btn.sm,a.btn.sm,button.btn.sm,.g-via button,.ex-chips button,.share-btn,.mc-tpl button,.pa-tabs button){min-height:var(--btn-md)}
+}
+
+/* primary: ember fill, white text, flat, the same everywhere */
+html body :is(.btn.primary,a.btn.primary,button.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button,.g-bar .btn){background:var(--sys-ember)!important;background-image:none!important;color:#fff!important;border:1px solid var(--sys-ember)!important;box-shadow:none!important;font-weight:600!important}
+@media (hover:hover){html body :is(.btn.primary,a.btn.primary,button.btn.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button):hover{background:var(--sys-ember-press)!important;border-color:var(--sys-ember-press)!important}}
+html body :is(.btn.primary,a.go,button.go,form.find button):disabled{opacity:.55}
+/* button text: 16px on md/lg, 14px on sm */
+html body :is(.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button,.g-bar .btn){font-size:var(--fs-16)!important}
+html body :is(.btn.sm,a.btn.sm,button.btn.sm){font-size:var(--fs-14)!important}
+/* secondary: outline */
+html body :is(.btn.ghost,.btn.quiet,a.btn.ghost,button.btn.ghost){background:#fff!important;color:var(--sys-ink)!important;border:1px solid var(--sys-line)!important;box-shadow:none!important}
+/* no offset "sticker" shadows on buttons anywhere */
+html body :is(.btn,.cta,.go,.pill,.sp-btn){box-shadow:none!important}
+
+/* ---- one selected chip ---- */
+html body :is(.chip,.cat,.filters button,.fbar button,.chips button,.occ button,.opts button,.g-via button,.sp-tabs button,.pa-tabs button,.trychip,#view-guest .rsvpbig .chip,#wzAskChips button)[aria-pressed="true"],
+html body :is(.pp-chips button,#wzAskChips button,.chip,.faq-vote).on{background:var(--chip-on-bg)!important;color:var(--chip-on-ink)!important;border-color:var(--chip-on-bg)!important}
+/* dark invite themes keep their own accent so the chip still shows */
+html :is(body,#view-guest) :is(.invite.th-candlelight,.invite.th-midnight) .chip[aria-pressed="true"]{background:var(--thac)!important;color:var(--thbg)!important;border-color:var(--thac)!important}
+
+/* ---- small red text ---- */
+.ev-b .why,.place-chip button:not(.pc-save){color:var(--sys-ember-text)!important}
+
+/* ---- tap targets on phones: 44px. Text links and the logo get a taller hit box (padding cancelled by a negative
+   margin, so nothing moves); fields and icon buttons grow to 44 ---- */
+@media (max-width:860px){
+  html body :is(a.brand,a.es-brand,.top nav a:not([class]),.ftl a,footer a:not([class]),.who a,.ex-note a,.linkbtn,.g-fun>summary,.g-more>summary,.series>summary,.wc-add>summary,.hk-fold>summary){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}
+  html body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select){min-height:var(--btn-md)}
+  html body .h2link{padding-top:14px;padding-bottom:14px;margin-top:-10px;margin-bottom:-10px}
+  html body :is(.more-btn,.btn.ghost:empty){min-width:var(--btn-md)}
+  html body form>button:not([class]){min-height:var(--btn-md)}
+}

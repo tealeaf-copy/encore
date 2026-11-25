@@ -1301,7 +1301,8 @@ export function createApp({ store, dataDir }) {
       const r0 = S(req).add(p, body); return res.json({ ...r0, response: body.response }); }
     const r = S(req).add(p, body);
     if (p === "events" && !req.guest) claimEvent(r.id, req.ws);
-    res.json(r);
+    // a guest's reply says where it landed (a full event puts "going" on the waitlist)
+    res.json(p === "rsvps" && body?.response ? { ...r, response: body.response } : r);
   });
   app.get("/api/db/events", (req, res) => {
     const send = sseStart(res);

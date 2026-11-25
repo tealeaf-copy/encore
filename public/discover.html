@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Discover hosts · Pottery Lab</title>
 <meta name="description" content="Small gatherings hosted by people near you: run clubs, hikes, pandan cake from a stoop. Follow the hosts you like.">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
@@ -9,27 +9,27 @@
 /* design review: one short intro, one location chip, short cards, every section capped */
 :root{--p-ember:#B04A30;--red:#B04A30}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.intro{padding:14px 0 10px}.intro h1{font-size:clamp(28px,5vw,44px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:15.5px}
+.intro{padding:14px 0 10px}.intro h1{font-size:var(--fs-28-40,28px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:16px}
 .fbar{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:4px 4px 8px 2px;margin:0 -16px 0 0}.fbar::-webkit-scrollbar{display:none}
-.fbar button{flex:none;min-height:44px;padding:8px 14px!important;font:600 14px "DM Sans",system-ui,sans-serif;border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
+.fbar button{flex:none;min-height:44px;padding:8px 14px!important;font:600 14px "Instrument Sans",system-ui,sans-serif;border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
 .fbar button[aria-pressed=true]{background:var(--ink)!important;color:#fff!important}
 .fbar .loc{background:#FFF1D2!important}.fbar .sep{flex:none;width:1px;height:26px;background:var(--line)}
 .locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:16px}
 .locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
-.locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "DM Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
-.locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:13.5px;color:var(--soft)}.locp .note:empty{display:none}
-section{padding:14px 0 18px}section h2{font-size:22px;margin:0 0 2px}section .lede{color:var(--soft);margin:0 0 10px;font-size:14.5px}
-.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14.5px;min-height:44px;display:inline-flex;align-items:center}
-.note-box{margin:0 0 12px;padding:12px 14px;border:1px dashed #D9CBB8;border-radius:14px;color:#5A4E45;font-size:14.5px}.note-box a,.note-box button{color:var(--red);font-weight:600}
+.locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:14px;color:var(--soft)}.locp .note:empty{display:none}
+section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .lede{color:var(--soft);margin:0 0 10px;font-size:14px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
+.note-box{margin:0 0 12px;padding:12px 14px;border:1px dashed #D9CBB8;border-radius:14px;color:#5A4E45;font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
 .note-box button{background:none;border:0;font:inherit;cursor:pointer;padding:0;text-decoration:underline;min-height:44px}
 .more-btn{margin-top:12px;min-height:44px}
 .far-h{grid-column:1/-1;margin:14px 0 0;font-size:16px}
 /* order from local hosts: one sideways row */
 .shop-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}
 .shop{flex:0 0 210px;scroll-snap-align:start;display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;text-decoration:none;color:inherit}
-.shop .ic{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;font-size:22px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
-.shop b{font-size:14.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop small{color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.shop .go{grid-column:1/-1;margin-top:6px;font-size:13.5px;font-weight:600;color:var(--red)}
+.shop .ic{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
+.shop b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop small{color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shop .go{grid-column:1/-1;margin-top:6px;font-size:14px;font-weight:600;color:var(--red)}
 /* hosts worth following: short rows */
 .hlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))}
 .hc-wrap{position:relative}
@@ -40,10 +40,10 @@ section{padding:14px 0 18px}section h2{font-size:22px;margin:0 0 2px}section .le
 .hlist .hc-f{position:absolute;top:50%;right:12px;transform:translateY(-50%);min-height:44px;padding:8px 14px!important;font-size:14px}
 .hlist .hc-next{display:block;margin:4px 12px 0;font-weight:600;color:var(--red);font-size:14px}
 .endcards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));padding-top:8px}
-.endcards .card{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.endcards h2,.endcards h3{font-size:18px;margin:0}.endcards p,.endcards small{margin:2px 0 0;color:var(--soft);font-size:14px}
+.endcards .card{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.endcards h2,.endcards h3{font-size:20px;margin:0}.endcards p,.endcards small{margin:2px 0 0;color:var(--soft);font-size:14px}
 .endcards .btn{min-height:44px}.endcards a:not(.btn){color:var(--red)}
 #events .tags,#fyList .tags{display:none!important}
-.ev .badge,.ev-badge{font-size:12px!important;padding:2px 8px!important;line-height:16px!important}
+.ev .badge,.ev-badge{font-size:13px!important;padding:2px 8px!important;line-height:16px!important}
 .again{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:0;min-height:44px}
 </style>
 <script src="/authguard.js"></script><script src="/place.js"></script>
@@ -202,7 +202,7 @@ section{padding:14px 0 18px}section h2{font-size:22px;margin:0 0 2px}section .le
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
   (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { $("#introH").textContent = "What's on"; $("#introP").hidden = true; } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
-  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:36px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six quick questions. Potto uses your answer to pick events for you.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
+  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six quick questions. Potto uses your answer to pick events for you.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawAll();
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();
@@ -212,7 +212,7 @@ section{padding:14px 0 18px}section h2{font-size:22px;margin:0 0 2px}section .le
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Host"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Seat Filler"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
   const L = { move: "Runs, hikes and rides", make: "Making and tasting things", gather: "Long dinners and good talk", discover: "Somewhere new" }[g.lane] || "";
-  const fill = () => { q.innerHTML = `<span style="font-size:36px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `Potto leads with: ${L.toLowerCase()} · ` : ""}<a href="/quiz">Retake</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `Potto leads with: ${L.toLowerCase()} · ` : ""}<a href="/quiz">Retake</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show me ${L.toLowerCase()}</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

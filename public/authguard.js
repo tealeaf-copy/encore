@@ -1,6 +1,11 @@
 // the tab icon: a little terracotta vase
 // the studio feel (paper grain, clay-squish buttons): one small stylesheet on every page
 (function () { try { if (!document.getElementById("craftCss")) { const l = document.createElement("link"); l.id = "craftCss"; l.rel = "stylesheet"; l.href = "/craft.css"; (document.head || document.documentElement).appendChild(l); } } catch {} })();
+// the design system (public/system.css): requested now, then moved to the end of <head> once the page's own styles are in,
+// so its tokens and rules come last and win without hunting every rule
+(function () { try { let l = document.getElementById("systemCss"); if (!l) { l = document.createElement("link"); l.id = "systemCss"; l.rel = "stylesheet"; l.href = "/system.css"; (document.head || document.documentElement).appendChild(l); }
+  const last = () => { try { const h = document.head; if (h && h.lastElementChild !== l) h.appendChild(l); } catch {} };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", last); else last(); window.addEventListener("load", last); } catch {} })();
 (function () { try { if (!document.querySelector('link[rel~="icon"]')) { const l = document.createElement("link"); l.rel = "icon"; l.type = "image/svg+xml"; l.href = "/favicon.svg"; (document.head || document.documentElement).appendChild(l); } } catch {} })();
 // Side navigation, before the first paint: reserve its space and apply the collapsed setting now, so nothing
 // jumps sideways when the nav itself is drawn a moment later (by shell.js on public pages, by the app on /).

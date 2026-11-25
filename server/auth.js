@@ -236,14 +236,14 @@ function clearFailsFor() { for (const L of LIMITS) L.fails.clear?.(); }
 export function loginPage() {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign in · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
   // the server. Send those visitors to the guest copy of the page instead.
   if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
 </script>
 <style>
-  body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px "DM Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "Instrument Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
   form{background:#fff;padding:30px;border-radius:18px;border:1px solid #E9E1D6;box-shadow:0 1px 2px rgba(43,33,28,.05),0 18px 40px -24px rgba(43,33,28,.3);width:min(360px,calc(100vw - 32px));box-sizing:border-box}
   .brand{display:flex;align-items:center;gap:8px;font:600 20px "Fraunces",Georgia,serif;margin-bottom:18px}
   h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
@@ -253,7 +253,7 @@ export function loginPage() {
   button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:hover{background:#A9462E}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
-</style></head><body>
+</style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
   <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#C2553A"/><circle cx="19" cy="9" r="3.2" fill="#E9C98C"/></svg>pottery lab</div><h1>Welcome back</h1><p class="sub">Sign in to plan your next event.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company signs in with single sign-on. Use Sign in with SSO below.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error=2")) document.write("<p>That email isn't on the team list.</p>"); else if (location.search.includes("error")) document.write("<p>That password didn't work.</p>")</script>

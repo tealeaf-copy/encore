@@ -64,7 +64,7 @@
 @keyframes pt-flash{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes pt-dash{0%{transform:translateX(6px);opacity:.3}50%{opacity:1}100%{transform:translateX(-6px);opacity:.3}}
 @keyframes pt-z{0%{transform:translate(0,6px);opacity:0}40%{opacity:1}100%{transform:translate(8px,-10px);opacity:0}}
-.pt-spark{position:fixed;pointer-events:none;z-index:2147483001;font-size:22px;animation:pt-spark .8s ease-out forwards}
+.pt-spark{position:fixed;pointer-events:none;z-index:2147483001;font-size:20px;animation:pt-spark .8s ease-out forwards}
 @keyframes pt-spark{0%{transform:translate(-50%,-50%) scale(.4);opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1);opacity:0}}
 @media (prefers-reduced-motion:reduce){.potto *{animation:none!important;transition:none!important}}`;
   function ensureCss() { if (typeof document === "undefined" || document.getElementById("pottoCss")) return; const s = document.createElement("style"); s.id = "pottoCss"; s.textContent = CSS; (document.head || document.documentElement).appendChild(s); }

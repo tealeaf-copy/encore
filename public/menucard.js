@@ -25,17 +25,17 @@
     return `<figure class="mc" style="--mc-bg:${bg};--mc-ring:${ring}"><figcaption class="mc-h">The menu</figcaption><ol class="mc-l">${parts.join("")}</ol>${note ? `<p class="mc-note">${esc(note)}</p>` : ""}</figure>`;
   }
   const CSS = `.mc{margin:14px 0 0;padding:22px 18px 20px;border-radius:22px;background-color:var(--mc-bg);background-image:linear-gradient(rgba(255,255,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:100% 25%,16.66% 100%;font-family:"Instrument Sans","Inter",system-ui,sans-serif;color:#151515}
-.mc-h{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;opacity:.85;text-align:center;margin:0 0 12px}
+.mc-h{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;opacity:.85;text-align:center;margin:0 0 12px}
 .mc-l{list-style:none;margin:0 auto;padding:0;max-width:460px;display:grid;justify-items:stretch}
 .mc-c{background:#fff;border-radius:18px;padding:14px 18px;text-align:center;display:grid;gap:2px;transition:transform .35s cubic-bezier(.3,1.5,.5,1),box-shadow .3s;transition-delay:calc(var(--i) * 40ms)}
-.mc-c small{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8A7D73}.mc-c b{font-size:clamp(15px,2.2vw,19px);font-weight:700;letter-spacing:-.015em;line-height:1.2}
-.mc-fin{transform:rotate(-2.2deg);margin-top:2px}.mc-fin b{font-size:clamp(17px,2.6vw,22px)}
+.mc-c small{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8A7D73}.mc-c b{font-size:var(--fs-16-20,16px);font-weight:700;letter-spacing:-.015em;line-height:1.2}
+.mc-fin{transform:rotate(-2.2deg);margin-top:2px}.mc-fin b{font-size:var(--fs-16-20,16px)}
 .mc-b{display:grid;place-items:center;height:22px;position:relative;z-index:1}.mc-b span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 20px/1 system-ui;border:4px solid var(--mc-ring);transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
 .mc .mc-h{color:#fff!important}.mc .mc-b span{color:#fff!important}.mc .mc-fin b{color:inherit!important}.mc .mc-c b{color:#151515}.mc .mc-c small{color:#8A7D73!important}
 .mc-note{margin:14px 0 0;text-align:center;color:#fff;font-weight:600;font-size:14px}
 @media (hover:hover){.mc:hover .mc-c{transform:translateY(-2px);box-shadow:0 6px 16px -10px rgba(0,0,0,.45)}.mc:hover .mc-fin{transform:rotate(0deg) scale(1.02)}.mc:hover .mc-b span{transform:rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){.mc *{transition:none!important}}
-.mc-tpl{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.mc-tpl button{border:1px solid #E4D9C8;background:#fff;border-radius:999px;padding:5px 11px;font:600 12.5px inherit;cursor:pointer}.mc-tpl button:hover{border-color:#1F1A17}`;
+.mc-tpl{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.mc-tpl button{border:1px solid #E4D9C8;background:#fff;border-radius:999px;padding:5px 11px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}.mc-tpl button:hover{border-color:#1F1A17}`;
   function ensureCss() { if (document.getElementById("mcCss")) return; const s = document.createElement("style"); s.id = "mcCss"; s.textContent = CSS; document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();
   // template chips for a courses textarea; onUse(template) is called after the textarea is filled

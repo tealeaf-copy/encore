@@ -4,9 +4,9 @@
   if (window.EncorePlaces) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let css = false; function style() { if (css) return; css = true; const s = document.createElement("style"); s.textContent = `
-.ps-list{position:absolute;z-index:10000;min-width:240px;max-width:min(520px,92vw);background:#fff;color:#1F1A17;border:2px solid #1F1A17;border-radius:14px;box-shadow:0 2px 8px rgba(31,26,23,.08);padding:4px;margin:0;list-style:none;font:14.5px/1.35 "DM Sans",system-ui,sans-serif;max-height:300px;overflow:auto}
+.ps-list{position:absolute;z-index:10000;min-width:240px;max-width:min(520px,92vw);background:#fff;color:#1F1A17;border:2px solid #1F1A17;border-radius:14px;box-shadow:0 2px 8px rgba(31,26,23,.08);padding:4px;margin:0;list-style:none;font:14px/1.35 "Instrument Sans",system-ui,sans-serif;max-height:300px;overflow:auto}
 .ps-list li{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border-radius:10px;cursor:pointer}.ps-list li[aria-selected=true],.ps-list li:hover{background:#FFF3C4}
-.ps-list li b{display:block;font-weight:600}.ps-list li small{display:block;color:#6B5F56;font-size:12.5px}.ps-list .ps-pin{flex:none}.ps-list .ps-foot{font-size:11.5px;color:#8A7D73;padding:4px 10px;cursor:default}.ps-list .ps-foot:hover{background:none}`; document.head.appendChild(s); }
+.ps-list li b{display:block;font-weight:600}.ps-list li small{display:block;color:#6B5F56;font-size:13px}.ps-list .ps-pin{flex:none}.ps-list .ps-foot{font-size:13px;color:#8A7D73;padding:4px 10px;cursor:default}.ps-list .ps-foot:hover{background:none}`; document.head.appendChild(s); }
   function bias() { try { const c = window.EncorePlace?.find(window.EncorePlace?.get()?.city || ""); return c ? { lat: c[1], lng: c[2] } : null; } catch { return null; } }
   function attach(input, { onPick, citiesOnly = false } = {}) {
     if (!input || input.dataset.ps) return; input.dataset.ps = 1; style(); input.setAttribute("autocomplete", "off"); input.setAttribute("data-1p-ignore", ""); input.setAttribute("data-lpignore", "true"); input.setAttribute("aria-autocomplete", "list");

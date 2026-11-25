@@ -8,16 +8,16 @@
   const SIZES = [4, 10, 22];
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const CSS = `.dd-bg{position:fixed;inset:0;background:rgba(31,26,23,.55);z-index:2147482000;display:grid;place-items:center;padding:12px}
-.dd{background:#FFF8EE;border-radius:24px;border:2.5px solid #1F1A17;box-shadow:0 0 0 5px #fff,0 18px 50px -20px rgba(0,0,0,.6);width:min(940px,100%);max-height:calc(100vh - 24px);overflow:auto;padding:14px;display:grid;gap:10px;font:15px/1.4 "Instrument Sans",system-ui,sans-serif;color:#1F1A17}
+.dd{background:#FFF8EE;border-radius:24px;border:2.5px solid #1F1A17;box-shadow:0 0 0 5px #fff,0 18px 50px -20px rgba(0,0,0,.6);width:min(940px,100%);max-height:calc(100vh - 24px);overflow:auto;padding:14px;display:grid;gap:10px;font:16px/1.4 "Instrument Sans",system-ui,sans-serif;color:#1F1A17}
 .dd-h{display:flex;justify-content:space-between;align-items:center;gap:10px}.dd-h b{font:700 20px Fredoka,system-ui}.dd-h small{color:#6B5F56}
 .dd-stage{position:relative;border-radius:16px;overflow:hidden;border:2px solid #1F1A17;background:#fff;touch-action:none}.dd-stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
 .dd-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dd-g{display:flex;gap:5px;align-items:center;padding:5px 7px;border:1.5px solid #E4D9C8;border-radius:999px;background:#fff}
-.dd-g button{border:0;background:none;cursor:pointer;border-radius:999px;display:grid;place-items:center;min-width:30px;height:30px;font:600 13px inherit;color:#1F1A17}
+.dd-g button{border:0;background:none;cursor:pointer;border-radius:999px;display:grid;place-items:center;min-width:30px;height:30px;font-weight:600;font-size:13px;font-family:inherit;color:#1F1A17}
 .dd-g button[aria-pressed=true]{outline:2.5px solid #1F1A17;outline-offset:1px}
 .dd-sw{width:24px!important;min-width:24px!important;height:24px!important;border:1.5px solid rgba(0,0,0,.25)!important}
 .dd-dot{border-radius:50%;background:#1F1A17;display:block}
 .dd-st button{font-size:20px}
-.dd-f{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}.dd-f .btn{border-radius:999px;padding:10px 18px;font:600 15px inherit;cursor:pointer;border:1.5px solid #1F1A17;background:#fff}.dd-f .go{background:#D2603A;color:#fff;border-color:#D2603A}
+.dd-f{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}.dd-f .btn{border-radius:999px;padding:10px 18px;font-weight:600;font-size:16px;font-family:inherit;cursor:pointer;border:1.5px solid #1F1A17;background:#fff}.dd-f .go{background:#D2603A;color:#fff;border-color:#D2603A}
 .dd-hint{font-size:13px;color:#6B5F56}`;
   function ensureCss() { if (document.getElementById("ddCss")) return; const s = document.createElement("style"); s.id = "ddCss"; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -26,7 +26,7 @@
     const W = shape === "icon" ? 900 : 1600, H = shape === "icon" ? 900 : 1000;
     const bg = document.createElement("div"); bg.id = "ddBg"; bg.className = "dd-bg";
     bg.innerHTML = `<div class="dd" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="dd-h"><div><b>${esc(title)}</b><br><small>${shape === "icon" ? "Your own little icon. It shows on your page and next to your name." : "Draw anything. Stamps and Potto help if you're stuck."}</small></div><button type="button" class="btn" data-x aria-label="Close" style="border:0;background:none;font-size:22px;cursor:pointer">✕</button></div>
+      <div class="dd-h"><div><b>${esc(title)}</b><br><small>${shape === "icon" ? "Your own little icon. It shows on your page and next to your name." : "Draw anything. Stamps and Potto help if you're stuck."}</small></div><button type="button" class="btn" data-x aria-label="Close" style="border:0;background:none;font-size:20px;cursor:pointer">✕</button></div>
       <div class="dd-stage" style="max-width:${shape === "icon" ? "520px" : "100%"};margin:0 auto;width:100%"><canvas width="${W}" height="${H}" aria-label="Drawing area"></canvas></div>
       <div class="dd-tools">
         <div class="dd-g" role="group" aria-label="Tool"><button type="button" data-tool="pen" aria-pressed="true" title="Brush">✏️</button><button type="button" data-tool="marker" aria-pressed="false" title="Marker">🖍️</button><button type="button" data-tool="erase" aria-pressed="false" title="Eraser">🧽</button><button type="button" data-tool="stamp" aria-pressed="false" title="Stickers">⭐</button></div>

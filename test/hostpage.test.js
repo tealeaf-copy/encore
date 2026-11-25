@@ -247,3 +247,12 @@ test("Example hosts (demo accounts) can't be sent anything; real hosts can", asy
     const r = await post(u, b); assert.equal(r.status, 403, u); assert.equal((await r.json()).code, "example"); }
   const badges = await (await fetch(srv.base + "/api/public/host/ex-guard/badges")).json(); assert.deepEqual(badges.badges, []);
 });
+
+test("A guest who says I'm in to a full event lands on the waitlist and is told so", async () => {
+  const r0 = await post("/api/signup", { name: "Full Host", email: "full.wait@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id, G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  await put("/api/db/doc?path=events/fw1", { kind: "social", casual: true, name: "Tiny supper", date: "2026-12-20", published: true, headcount: 1 }, c);
+  const send = (k, n) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": k }, body: JSON.stringify({ eventId: "fw1", name: n, response: "going" }) });
+  const a = await (await send("fw-a", "Ana")).json(); assert.equal(a.response, "going");
+  const b = await send("fw-b", "Bo"); assert.equal(b.status, 200); assert.equal((await b.json()).response, "waitlist");
+});

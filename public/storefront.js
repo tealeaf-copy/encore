@@ -4,10 +4,10 @@
   // your own page: no "Request a spot" on your own event, just a way back to the plan
   function ownerCta(e) { try { const a = document.querySelector("#nextUp .nu-go"); if (!a || a.dataset.own) return; a.dataset.own = 1; a.textContent = "Manage this event"; a.href = "/?app=1#studio"; a.addEventListener("click", () => { try { localStorage.setItem("encore-open", JSON.stringify(e.id)); } catch {} }); } catch {} }
   const FONTS = {
-    classic: { label: "Classic", head: "Fraunces", body: "DM Sans", q: "Fraunces:opsz,wght@9..144,600&family=DM+Sans:wght@400;500;600" },
+    classic: { label: "Classic", head: "Fraunces", body: "Instrument Sans", q: "Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700" },
     editorial: { label: "Editorial", head: "Playfair Display", body: "Lato", q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
     modern: { label: "Modern", head: "Space Grotesk", body: "Inter", q: "Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600" },
-    playful: { label: "Playful", head: "Bricolage Grotesque", body: "DM Sans", q: "Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;600" },
+    playful: { label: "Playful", head: "Fredoka", body: "Instrument Sans", q: "Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700" },
     handmade: { label: "Handmade", head: "Caveat", body: "Nunito", q: "Caveat:wght@600;700&family=Nunito:wght@400;600;700" },
     bold: { label: "Bold", head: "Archivo Black", body: "Archivo", q: "Archivo+Black&family=Archivo:wght@400;500;600" },
   };
@@ -80,7 +80,7 @@
         <h4>Background</h4><div class="sws">${Object.entries(BGS).map(([k, b]) => sw("bg", k, `<i style="background:${b.bg};border:1px solid ${b.line}"></i><small>${b.label}</small>`, b.label)).join("")}</div>
         <h4>Cover</h4><div class="sws covers">${Object.entries(COVERS).map(([k, l]) => sw("cover", k, `<i style="background:${cover({ ...t, cover: k, coverUrl: "" })}"></i><small>${l}</small>`, l)).join("")}</div>
         <h4>Portrait</h4>${(() => { const AV = window.EncoreAvatars; if (!AV) return ""; const cur = AV.parse(t.avatarArt), styled = !!AV.ART[cur.style];
-          const styles = ["", ...AV.keys].map((k) => { const v = k ? AV.make(k, cur) : ""; return `<button type="button" class="sw" data-k="avatarArt" data-v="${v}" aria-pressed="${(t.avatarArt || "") === v}" title="${k ? AV.ART[k].label : "Emoji"}">${k ? AV.svg(v, t.accent, 46) : `<span style="font-size:26px">${h.emoji || "🎉"}</span>`}</button>`; }).join("");
+          const styles = ["", ...AV.keys].map((k) => { const v = k ? AV.make(k, cur) : ""; return `<button type="button" class="sw" data-k="avatarArt" data-v="${v}" aria-pressed="${(t.avatarArt || "") === v}" title="${k ? AV.ART[k].label : "Emoji"}">${k ? AV.svg(v, t.accent, 46) : `<span style="font-size:28px">${h.emoji || "🎉"}</span>`}</button>`; }).join("");
           const pick = (part, i, inner, label) => `<button type="button" class="sw${part === "skin" || part === "hair" ? " av-dot" : ""}" data-k="avatarArt" data-v="${AV.make(cur.style, { ...cur, [part]: i })}" aria-pressed="${cur[part] === i}" title="${label}" aria-label="${label}">${inner}</button>`;
           const dots = (part, list) => list.map((x, i) => pick(part, i, `<i style="background:${x.c};border:1px solid #D9CDBF"></i>`, x.label)).join("");
           const faces = (part) => AV.FEATURES[part].map((x, i) => pick(part, i, AV.svg(AV.make(cur.style, { ...cur, [part]: i }), t.accent, 46), x.label)).join("");
@@ -128,7 +128,7 @@
     // still the default emoji? a face helps guests recognise their host: offer a portrait right on the avatar
     if (!h.theme?.avatarArt && !h.theme?.avatarUrl) { const av = document.querySelector(".head .av"); if (av && !document.getElementById("avNudge")) { const b = document.createElement("button"); b.type = "button"; b.id = "avNudge"; b.className = "av-nudge"; b.textContent = "＋ Add your portrait";
       b.onclick = () => { pane.hidden = false; draw(); setTimeout(() => { const t = [...pane.querySelectorAll("h4")].find((x) => /portrait/i.test(x.textContent)); t?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 60); b.remove(); };
-      av.style.position = "relative"; av.style.overflow = "visible"; av.appendChild(b); const st = document.createElement("style"); st.textContent = `.av-nudge{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);white-space:nowrap;border:1.5px solid #1F1A17;background:#FFE08A;color:#1F1A17;border-radius:999px;padding:5px 10px;font:700 12.5px inherit;box-shadow:2px 2px 0 #1F1A17;cursor:pointer;z-index:2}`; document.head.appendChild(st); } }
+      av.style.position = "relative"; av.style.overflow = "visible"; av.appendChild(b); const st = document.createElement("style"); st.textContent = `.av-nudge{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);white-space:nowrap;border:1.5px solid #1F1A17;background:#FFE08A;color:#1F1A17;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px;font-family:inherit;box-shadow:2px 2px 0 #1F1A17;cursor:pointer;z-index:2}`; document.head.appendChild(st); } }
     if (/[?&]customize=1/.test(location.search)) fab.click();
   }
   window.EncoreStore = { apply, editor, feature };

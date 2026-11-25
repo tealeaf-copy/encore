@@ -79,14 +79,14 @@
 .eh-nudge{position:fixed;right:var(--eh-right,16px);bottom:calc(var(--eh-bottom,16px) + 56px);z-index:9550;width:min(300px,calc(100vw - 32px));background:#FFFCF7;border:2px solid #1F1A17;border-radius:18px;box-shadow:4px 4px 0 #1F1A17;padding:12px 12px 12px 14px;font:15px/1.4 "Instrument Sans",system-ui;color:#1F1A17}
 .eh-nudge p{margin:0 28px 10px 0;font-weight:600;display:flex;gap:8px;align-items:center}.eh-nudge .eh-x{position:absolute;top:2px;right:2px;width:36px;height:36px;font-size:22px}.eh-nudge .eh-acts{margin:0}
 .eh-nudge.eh-dock{top:calc(60px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto}
-@media (max-width:600px){.eh-panel{left:8px;right:8px;width:auto;bottom:max(8px,var(--eh-bottom,8px));max-height:calc(100dvh - var(--eh-bottom,8px) - 16px);border-radius:20px}.eh-btn{font-size:14px;padding:6px 14px 6px 8px}}
+@media (max-width:600px){.eh-panel{left:8px;right:8px;width:auto;bottom:max(8px,var(--eh-bottom,8px));max-height:calc(100dvh - var(--eh-bottom,8px) - 16px);border-radius:20px}.eh-btn{font-size:14px;padding:6px;width:48px;height:48px;justify-content:center;border-radius:50%}.eh-btn > span:not(.eh-dot){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 @media (prefers-reduced-motion:reduce){.eh-btn{transition:none}}`;
 
   // ---------- the button, the nudge and the panel ----------
   // everything lives in a shadow root, so no page style (full-width buttons, label rules) can reach it
   const host = document.createElement("div"); host.id = "encoreHelp"; const root = host.attachShadow({ mode: "open" }); root.appendChild(css);
   const tpl = document.createElement("div"); tpl.className = "eh-root"; root.appendChild(tpl);
-  tpl.innerHTML = `<button type="button" class="eh-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="ehPanel">${VASE}<span>Need a hand?</span><span class="eh-dot" hidden></span></button>
+  tpl.innerHTML = `<button type="button" class="eh-btn" aria-label="Need a hand?" title="Need a hand?" aria-haspopup="dialog" aria-expanded="false" aria-controls="ehPanel">${VASE}<span>Need a hand?</span><span class="eh-dot" hidden></span></button>
 <div class="eh-nudge" role="status" hidden><button type="button" class="eh-x" aria-label="Not now">×</button><p>${VASE}<span>${LINE}</span></p><div class="eh-acts"><button type="button" data-nudge="ask">Ask Potto</button><button type="button" data-nudge="person">Get a person</button></div></div>
 <section class="eh-panel" id="ehPanel" role="dialog" aria-modal="false" aria-labelledby="ehTitle" hidden>
   <div class="eh-head"><span class="eh-face">${VASE}</span><div><h2 id="ehTitle">Need a hand?</h2><small>Potto answers from the help guide. A person can too.</small></div><button type="button" class="eh-x" aria-label="Close help">×</button></div>

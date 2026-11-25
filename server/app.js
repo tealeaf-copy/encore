@@ -1193,8 +1193,18 @@ export function createApp({ store, dataDir }) {
     req.body = { ...(req.body || {}), _k: k };
     return true;
   };
-  app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).set(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
-  app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; const r = S(req).update(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
+  // A guest changing their own reply goes through the same rules as a first reply: a full event puts a new "I'm in"
+  // on the waitlist, and an event where the host lets people in keeps it as "asked" until the host does.
+  function guardGuestReply(req, path, body) {
+    if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body || body.response !== "going") return body;
+    const cur = S(req).get(path)?.data || {}; if (cur.response === "going") return body;
+    const ev = S(req).get("events/" + String(cur.eventId || body.eventId || ""))?.data; if (!ev) return body;
+    if (ev.approvalRequired && (!cur.response || ["requested", "declined"].includes(cur.response))) return { ...body, response: "requested" };
+    const pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId });
+    return pol.body.response === "going" ? body : { ...body, response: pol.body.response };
+  }
+  app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; req.body = guardGuestReply(req, String(req.query.path || ""), req.body); const r = S(req).set(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
+  app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; req.body = guardGuestReply(req, String(req.query.path || ""), req.body); const r = S(req).update(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
   app.delete("/api/db/doc", (req, res) => { const p = String(req.query.path || ""), u = currentUser(req);
     if (/^events\//.test(p) && authEnabled() && u && !((u.owner || (u.roles || []).some((r) => /event lead|admin|owner/i.test(r))))) return res.status(403).json({ code: "not_granted", message: "Only the workspace owner or an event lead can delete an event." });
     const r = S(req).delete(p); afterEventWrite(S(req), p); res.json(r); });

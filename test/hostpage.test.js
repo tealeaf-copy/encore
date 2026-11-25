@@ -264,3 +264,22 @@ test("Brand leads on the waitlist are never shown to members; people asking to h
   assert.match(s, /Bread club/); assert.ok(!/Vendor kit|Acme|20 dinners/.test(s), s);
 });
 
+
+test("Changing a reply can't skip the waitlist or the host's say: a waitlisted guest who taps I'm in stays on the waitlist", async () => {
+  const r0 = await post("/api/signup", { name: "Gate Host", email: "gate.host@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id, G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  await put("/api/db/doc?path=events/gt1", { kind: "social", casual: true, name: "One seat", date: "2026-12-20", published: true, headcount: 1 }, c);
+  const send = (k, n) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": k }, body: JSON.stringify({ eventId: "gt1", name: n, response: "going" }) });
+  assert.equal((await (await send("gt-a", "Ana")).json()).response, "going");
+  const b = await (await send("gt-b", "Bo")).json(); assert.equal(b.response, "waitlist");
+  const id = String(b.id).split("/").pop(), path = "/api/db/doc?path=rsvps/" + id;
+  const cur = (await (await fetch(srv.base + path, { headers: { ...G, "x-encore-key": "gt-b" } })).json()).data;
+  await fetch(srv.base + path, { method: "PUT", headers: { ...G, "x-encore-key": "gt-b" }, body: JSON.stringify({ ...cur, response: "going" }) });
+  const after = (await (await fetch(srv.base + path, { headers: { cookie: c } })).json()).data; assert.equal(after.response, "waitlist", "still waitlisted");
+  // an event where the host lets people in: an ask stays an ask
+  await put("/api/db/doc?path=events/gt2", { kind: "social", casual: true, name: "Ask first", date: "2026-12-21", published: true, approvalRequired: true }, c);
+  const q = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "gt-c" }, body: JSON.stringify({ eventId: "gt2", name: "Cy", response: "requested" }) })).json();
+  const p2 = "/api/db/doc?path=rsvps/" + String(q.id).split("/").pop();
+  await fetch(srv.base + p2, { method: "PATCH", headers: { ...G, "x-encore-key": "gt-c" }, body: JSON.stringify({ response: "going" }) });
+  assert.equal((await (await fetch(srv.base + p2, { headers: { cookie: c } })).json()).data.response, "requested");
+});

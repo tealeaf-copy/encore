@@ -263,6 +263,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
   // owner request: Tuongvan's page (/@tuongvan) keeps the prepared name and tagline; the prepared bio is removed (owner didn't want it) and never put back
   try { const ws = C.wsOfHandle("tuongvan"), W = ws && getWorkspace(ws), P = C.showcasePreset && C.showcasePreset("tuongvan");
     if (W?.host && P && String(W.host.bio || "").startsWith("I plan and run events for AI")) C.setProfile(ws, { ...W.host, bio: "" });
+    { const SS = scopeStore(store, ws), cur = SS.get("scrapbookmeta/sections")?.data; if (cur?.list?.some((x) => x.name === "Executive dinners that move deals")) SS.set("scrapbookmeta/sections", { ...cur, list: cur.list.map((x) => x.name === "Executive dinners that move deals" ? { ...x, name: "Featured exec programs" } : x), at: Date.now() }); }
     else if (W?.host && P && W.host.name === "tuongvan") C.setProfile(ws, { ...W.host, name: P.name, tagline: P.tagline, emoji: P.emoji || W.host.emoji }); } catch (err) { console.warn("tuongvan page", err?.message); }
   // one-time rename of an example account (owner request): Eric's Table becomes Bo's Omecasa at /@bo-omecasa; the old link keeps working
   try { const ws = C.wsOfHandle("eric-cooks") || C.wsOfHandle("bo-omecasa"), W = ws && getWorkspace(ws);

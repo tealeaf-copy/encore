@@ -107,10 +107,13 @@ export function makeDirectory({ store, C, SB }) {
       for (const x of items) { const date = /^\d{4}-\d{2}-\d{2}$/.test(x.date || "") ? x.date : ""; if (date && date >= now) continue;
         const k = `${String(x.title || "").toLowerCase()}|${date}`; if (seen.has(k)) continue; seen.add(k);
         const { city, area } = splitPlace(x.place), link = /^https:\/\//i.test(x.link || "") ? x.link : "";
-        events.push({ id: `sb-${H.rec.handle}-${String(x.id).replace(/[^A-Za-z0-9_-]/g, "")}`, title: s(x.title, 140), status: "past", start: date, time: s(x.time, 40), city, area,
+        events.push({ id: `sb-${H.rec.handle}-${String(x.id).replace(/[^A-Za-z0-9_-]/g, "")}`, title: s(x.title, 140), status: "past", start: date, time: s(x.time, 40).replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s*·\s*/i, ""), city, area,
           format: formatOf({ format: x.format, title: x.title, about: x.about, place: x.place }), tags: [], price: null, spots_left: null, ask_to_join: false, host: hostRef(H.h), url: `${H.rec.url}#scrapbook`, source: "scrapbook",
           original_link: link, companies: cleanLogos(x.logos).map((l) => l.name), cover: abs(x.cover), example: !!H.sample, reviews: EMPTY_REVIEWS(), _start: "" }); } }
 
+    // one event listed by two hosts (co-hosted, same original link): show it once, with both hosts; each host's own list still has it
+    { const first = new Map(); for (const e of events) { const k = e.original_link && e.original_link.toLowerCase(); if (!k) continue; const f = first.get(k); if (!f) { first.set(k, e); continue; }
+        if (f.host.handle !== e.host.handle) { e._dup = true; f.cohosts = [...(f.cohosts || []), e.host]; } } }
     // per-host numbers and reviews
     const byHost = new Map(); for (const e of events) { if (!byHost.has(e.host.handle)) byHost.set(e.host.handle, []); byHost.get(e.host.handle).push(e); }
     const listed = new Set(D.hosts.map((h) => h.handle)), titles = new Map(events.map((e) => [e.id, e]));
@@ -128,7 +131,7 @@ export function makeDirectory({ store, C, SB }) {
   const data = (base) => { if (!cache || cache.base !== base || Date.now() - cache.at > TTL()) cache = { ...build(base), base }; return cache; };
 
   // ---- queries ----
-  const strip = (e, { items = 10 } = {}) => { const { _start, ...o } = e; return { ...o, reviews: { ...e.reviews, items: items == null ? e.reviews.items : e.reviews.items.slice(0, items) } }; };
+  const strip = (e, { items = 10 } = {}) => { const { _start, _dup, ...o } = e; return { ...o, reviews: { ...e.reviews, items: items == null ? e.reviews.items : e.reviews.items.slice(0, items) } }; };
   const truthy = (v) => /^(1|true|yes)$/i.test(String(v ?? ""));
   const encodeCursor = (n) => Buffer.from("o:" + n).toString("base64url");
   const decodeCursor = (c) => { try { const m = Buffer.from(String(c || ""), "base64url").toString().match(/^o:(\d{1,7})$/); return m ? +m[1] : 0; } catch { return 0; } };
@@ -137,7 +140,7 @@ export function makeDirectory({ store, C, SB }) {
     const D = data(base), status = ["upcoming", "past", "all"].includes(q.status) ? q.status : "upcoming", words = s(q.q, 120).toLowerCase().split(/\s+/).filter(Boolean);
     const city = s(q.city, 60).toLowerCase(), format = s(q.format, 24).toLowerCase(), host = s(q.host, 30).toLowerCase().replace(/^@/, ""), ex = truthy(q.include_examples);
     const from = /^\d{4}-\d{2}-\d{2}$/.test(q.from || "") ? q.from : "", to = /^\d{4}-\d{2}-\d{2}$/.test(q.to || "") ? q.to : "";
-    const L = D.events.filter((e) => (status === "all" || e.status === status) && (ex || !e.example) && (!city || `${e.city} ${e.area}`.toLowerCase().includes(city)) && (!format || e.format === format) && (!host || e.host.handle === host)
+    const L = D.events.filter((e) => (!e._dup || host) && (status === "all" || e.status === status) && (ex || !e.example) && (!city || `${e.city} ${e.area}`.toLowerCase().includes(city)) && (!format || e.format === format) && (!host || e.host.handle === host)
       && (!from || (e.start && e.start >= from)) && (!to || (e.start && e.start <= to))
       && (!words.length || ((t) => words.every((w) => t.includes(w)))([e.title, e.city, e.area, e.format, e.host.name, e.host.handle, ...e.tags, ...e.companies].join(" ").toLowerCase())));
     const up = L.filter((e) => e.status === "upcoming").sort((a, b) => String(a.start || "9").localeCompare(String(b.start || "9")) || a._start.localeCompare(b._start));

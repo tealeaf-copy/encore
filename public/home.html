@@ -20,7 +20,7 @@ h1,h2,.lede,.sub{text-wrap:balance}
 section{padding:64px 0;border-top:1px solid var(--line)}
 section h2{font-size:clamp(28px,3.6vw,40px);line-height:1.08;max-width:720px}
 section .lede{color:var(--smoke);font-size:20px;max-width:620px;margin:12px 0 0}
-h2 em{font-style:italic;font-weight:600;color:#B04A30}
+h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 .ctas{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:14px;color:var(--smoke);margin:14px 0 0}.small a{color:#A8441F;font-weight:600}
 .more{margin:20px 0 0;display:flex;gap:22px;flex-wrap:wrap}.more a{font-weight:600;color:#A8441F;text-decoration:none}.more a:hover{text-decoration:underline}
 
@@ -65,7 +65,16 @@ h2 em{font-style:italic;font-weight:600;color:#B04A30}
 .gr:nth-child(1){background:#FFF1C9}.gr:nth-child(2){background:#FFE3D2}.gr:nth-child(3){background:#E3F2E7}.gr:nth-child(4){background:#E4ECFB}
 
 /* private nights */
-.priv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:56px;align-items:center}
+.teams{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:36px;align-items:center}
+.req{background:#FFF8EE;color:#1F1A17;border:2.5px solid #1F1A17;border-radius:22px;padding:20px;transform:rotate(-1deg);box-shadow:6px 6px 0 #F4CF6B}
+.req-tag{display:inline-block;font:700 12px/1 system-ui;padding:5px 9px;border-radius:999px;background:#FFF1D2;border:1.5px dashed #B07D1A}
+.req-host{display:flex;gap:10px;align-items:center;margin:12px 0 8px}.req-av{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#FBE3CF;border:2px solid #1F1A17;font-size:20px}
+.req-host b{display:block;font:600 16px Fredoka,system-ui}.req-host small{color:#6B5F56;font-size:13px}
+.req h3{margin:6px 0 4px;font:600 20px/1.2 Fredoka,system-ui;color:#1F1A17}.req-meta{color:#6B5F56;font-size:14px}.req p{color:#3A302A!important;font-size:15px!important;margin:10px 0 0!important}
+.req-steps{list-style:none;display:flex;gap:6px;padding:0;margin:14px 0 0;flex-wrap:wrap}.req-steps li{font:600 13px system-ui;padding:6px 10px;border-radius:999px;border:1.5px solid #D8CBBB;color:#6B5F56}.req-steps li.done{background:#1F1A17;color:#fff;border-color:#1F1A17}
+@media (max-width:760px){.teams{grid-template-columns:minmax(0,1fr)}.req{transform:none}}
+.xps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}.xp{display:grid;gap:4px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.xp i{font-style:normal;font-size:26px}.xp b{font:600 18px Fredoka,system-ui}.xp small{color:var(--smoke);font-size:15px;line-height:1.4}@media (max-width:760px){.xps{grid-template-columns:minmax(0,1fr);gap:10px}}
+.pg-book{display:block;transform:rotate(1deg)}.pg-book .snaps{grid-template-columns:repeat(3,minmax(0,1fr))}.sub-h{margin:40px 0 0;font-size:20px}.eyebrow+h2{margin-top:6px}.priv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:56px;align-items:center}
 .feats{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:12px}.feats li{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline}.feats b{font-weight:600}.feats span{color:var(--smoke)}
 .inv{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:20px;max-width:400px;width:100%;justify-self:end;transform:rotate(-1deg)}
 .inv .lk{display:inline-block;font-size:13px;font-weight:600;background:var(--linen);border-radius:999px;padding:4px 10px}
@@ -123,23 +132,52 @@ html body .eyebrow{font-size:13px!important}
   </div>
 </div>
 
-<section><div class="wrap"><h2>Hosts worth <em>following</em>.</h2>
-  <p class="lede">Run clubs, supper clubs, pottery nights. Follow the ones you love and hear about the next one first.</p>
+<section><div class="wrap"><span class="eyebrow">What you can host</span><h2>If you love it, you can <em>host</em> it.</h2>
+  <div class="xps">
+    <div class="xp"><i>🥟</i><b>A Flushing food tour</b><small>A foodie YouTuber walks 12 people through dumplings, noodles and bubble tea.</small></div>
+    <div class="xp"><i>🥾</i><b>A sunrise hike</b><small>Bear Mountain, coffee at the top.</small></div>
+    <div class="xp"><i>💃</i><b>A salsa class</b><small>Beginners welcome. Partners rotate.</small></div>
+    <div class="xp"><i>🎭</i><b>An improv night</b><small>Yes, and. No experience needed.</small></div>
+    <div class="xp"><i>🍽️</i><b>A supper club</b><small>Seven courses for twelve at your place.</small></div>
+    <div class="xp"><i>🏺</i><b>A pottery night</b><small>Wheel, glaze, and a mug to take home.</small></div>
+  </div>
+</div></section>
+
+<section><div class="wrap priv">
+  <div><span class="eyebrow">Your portfolio</span><h2>Every event, taped into your <em>scrapbook</em>.</h2>
+    <p class="lede">Your page becomes a portfolio of the experiences you host. One link shows what you do best.</p>
+    <ul class="feats">
+      <li><b>Scrapbook</b><span>Photos and the story of every event you host.</span></li>
+      <li><b>Kudos</b><span>What guests loved, right on your page.</span></li>
+      <li><b>Host traits</b><span>What you're known for, at a glance.</span></li>
+      <li><b>Past events</b><span>Bring in events from Partiful, Luma and more.</span></li>
+      <li><b>One link</b><span>Put it in your bio. It grows with every event.</span></li>
+    </ul>
+  </div>
+  <div class="pg pg-book" aria-hidden="true">
+    <div class="pg-body">
+      <div class="pg-lbl">Your scrapbook</div>
+      <div class="snaps"><div class="snap"><i>🥟</i><span>Dumpling night</span><em>Nov 22</em></div><div class="snap"><i>🏺</i><span>Wheel night</span><em>Nov 14</em></div><div class="snap"><i>🍰</i><span>Cake club</span><em>Nov 2</em></div><div class="snap"><i>🌸</i><span>Flower bar</span><em>Oct 26</em></div><div class="snap"><i>🏃</i><span>Sunrise 5K</span><em>Oct 19</em></div><div class="snap"><i>🍵</i><span>Matcha morning</span><em>Oct 5</em></div></div>
+      <div class="kudo"><span>🤗 Felt welcome</span><span>🔁 Would go again</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap"><span class="eyebrow">Get discovered</span><h2>Found by strangers. <em>Booked</em> by brands.</h2>
+  <p class="lede">Your page is how new people find you, long after the first invite.</p>
+  <div class="grow">
+    <div class="gr"><div class="ic">🧭</div><h3>Show up on Discover</h3><p>People browse hosts and events in their city.</p></div>
+    <div class="gr"><div class="ic">👋</div><h3>Strangers follow you</h3><p>They hear about your next event first.</p></div>
+    <div class="gr"><div class="ic">💛</div><h3>Followers become regulars</h3><p>The same faces keep coming back. That's your fan club.</p></div>
+    <div class="gr"><div class="ic">🤝</div><h3>Brands book you</h3><p>Say, a snack brand books a foodie YouTuber for a Flushing food tour.</p></div>
+  </div>
+  <h3 class="sub-h">Hosts worth following</h3>
   <div class="live" id="live">
     <a class="lv" href="/@claire-runs"><span class="av" data-art="runner" data-accent="#E26D8E">🏃‍♀️</span><div><b>Claire's Run Crew</b><small>Williamsburg, New York</small><small class="tl">Saturday runs. Nobody gets left behind.</small><small class="lv-tag">Example</small></div></a>
     <a class="lv" href="/@eric-cooks"><span class="av" data-art="chef" data-accent="#E0A030">🍣</span><div><b>Eric's Table</b><small>Greenpoint, New York</small><small class="tl">Twelve seats, seven courses, and cake on Saturdays.</small><small class="lv-tag">Example</small></div></a>
     <a class="lv" href="/@hoa-flowers"><span class="av" data-art="florist" data-accent="#E26D8E">💐</span><div><b>Hoa Flower Studio</b><small>Bushwick, New York</small><small class="tl">Everyone leaves with flowers and a little less stress.</small><small class="lv-tag">Example</small></div></a>
   </div>
   <p class="more"><a href="/discover">Browse Discover →</a><a href="/quiz">Find your type →</a></p>
-</div></section>
-
-<section><div class="wrap"><h2>Every event makes your <em>page</em> better.</h2>
-  <div class="grow">
-    <div class="gr"><div class="ic">✍️</div><h3>Host it</h3><p>Tell Potto the plan in a sentence. It drafts the invite and sends the reminders.</p></div>
-    <div class="gr"><div class="ic">📸</div><h3>Tape it in</h3><p>Each event lands in your scrapbook, with photos and kudos from guests.</p></div>
-    <div class="gr"><div class="ic">👋</div><h3>Get followed</h3><p>Guests tap Follow and hear about your next event first.</p></div>
-    <div class="gr"><div class="ic">💛</div><h3>Grow your regulars</h3><p>The same faces keep coming back. That's your fan club.</p></div>
-  </div>
 </div></section>
 
 <section><div class="wrap priv">
@@ -163,11 +201,20 @@ html body .eyebrow{font-size:13px!important}
   </div>
 </div></section>
 
-<section><div class="wrap"><div class="teams"><span class="eyebrow">For brands</span>
+<section><div class="wrap"><div class="teams"><div class="teams-txt"><span class="eyebrow">For brands</span>
   <h2>Brands book hosts with a <em>following</em>.</h2>
   <p>Once people follow you, brands can ask for a date. You quote, or pass.</p>
   <p>Planning a launch or an offsite? Pick a host people already love. If your host can't make it, we find a replacement or refund you.</p>
   <div class="ctas"><a class="btn primary" href="/hosts/book">Request a date</a><a class="btn quiet" href="/hosts">See hosts</a></div>
+  </div>
+  <div class="req" aria-label="An example brand request">
+    <span class="req-tag">Example request</span>
+    <div class="req-host"><span class="req-av" aria-hidden="true">🥟</span><div><b>Mina's Food Walks</b><small>Food videos on YouTube · Queens</small></div></div>
+    <h3>Flushing food tour for our team</h3>
+    <div class="req-meta">Saturday afternoon · 15 guests · 6 stops</div>
+    <p>Dumplings, hand-pulled noodles and bubble tea, with Mina filming the day for her channel.</p>
+    <ol class="req-steps"><li class="done">Requested</li><li class="done">Quoted</li><li>Booked</li></ol>
+  </div>
 </div></div></section>
 
 <section class="end"><div class="wrap"><span class="potto-end" id="pottoEnd" aria-hidden="true"></span><h2>Your first invite, <em>tonight</em>.</h2><div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a></div></div></section>

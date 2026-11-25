@@ -92,6 +92,8 @@ export function makeSocial(store, { C, saveBlob }) {
   function person(email) { const u = userOf(email); const p = u ? C.profileOf(u.ws) : null; return { email: lc(email), name: u?.name || p?.name || "", handle: p?.handle || null, emoji: p?.emoji || "🙂", color: p?.color || "#E26D8E", ws: u?.ws || null }; }
   function ensureProfile(u) {
     const cur = C.profileOf(u.ws); if (cur?.handle) return cur;
+    // brands don't get a host page just by opening the feed (it flipped their menus to the host's)
+    if (getWorkspace(u.ws)?.personal === false) return null;
     const base = (first(u.name) || "host").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "").slice(0, 20) || "host";
     for (let i = 0; i < 30; i++) { const h = i ? `${base}-${Math.floor(Math.random() * 900 + 100)}` : base; if (h.length < 2) continue; const r = C.setProfile(u.ws, { handle: h, name: u.name }); if (r.host) return r.host; }
     return null;

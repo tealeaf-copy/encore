@@ -242,7 +242,7 @@ export function createApp({ store, dataDir }) {
   app.get("/api/health", (req, res) => {
     res.json({ ok: true, ai: aiMode(), integrations: configured().map((s) => s.server), auth: authEnabled() });
   });
-  app.get("/login", (req, res) => res.type("html").send(loginPage()));
+  app.get("/login", (req, res) => (isAuthed(req) && !req.query.switch ? res.redirect(302, String(req.query.next || "").startsWith("/") && !String(req.query.next).startsWith("//") ? String(req.query.next) : "/?app=1") : res.type("html").send(loginPage()))); // already signed in: go where you were headed
   // ---- forgot password: always the same answer, so nobody learns which emails have accounts ----
   const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
   app.post("/api/password/forgot", express.json({ limit: "4kb" }), async (req, res) => { const email = String(req.body?.email || "").trim().toLowerCase();

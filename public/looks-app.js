@@ -23,7 +23,14 @@ html body.lk-on.lk-on #view-guest #gTopCta,html body.lk-on.lk-on #gBar .btn.prim
 html body.lk-on #gBar,html body.lk-on #gStick{background:color-mix(in srgb,var(--lk-bot) 92%,transparent)!important;border-top-color:var(--lk-line)!important}html body.lk-on #gBar :is(b,small){color:var(--lk-ink)!important}
 html body.lk-on #view-guest .gxcover.lk-pcov{aspect-ratio:auto!important;height:auto!important;min-height:0!important;max-height:none!important;border:0!important;background:none!important;box-shadow:0 22px 44px -22px rgba(0,0,0,.55)!important;border-radius:18px!important}
 html body.lk-on #view-guest .gxcover.lk-pcov>*:not(#gCoverImg){display:none!important}html body.lk-on #view-guest .gxcover.lk-pcov #gCoverImg{position:static!important;display:block;width:100%!important;height:auto!important;object-fit:contain!important;inset:auto!important}
-html body.lk-on .es-top .es-brand{color:var(--lk-ink)!important}html body.lk-on.lk-fx-lights .es-top{padding-top:46px}`;
+html body.lk-on .es-top .es-brand{color:var(--lk-ink)!important}
+/* dark and coloured looks: one card style, readable text on every card (owner feedback) */
+html body.lk-on #view-guest.ev2 #gForm .ev2-rs,html body.lk-on #view-guest #gForm .ev2-rs{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important}
+html body.lk-on #geBar{background:#fff!important;color:#1F1A17!important;border:1px solid rgba(0,0,0,.08)!important;border-radius:18px!important}html body.lk-on #geBar *{color:#1F1A17!important}
+html body.lk-on #view-guest :is(.gk-follow,.ev2-more,.recap){background:#fff!important;color:#1F1A17!important;border:1px solid rgba(0,0,0,.08)!important;border-radius:22px!important;box-shadow:0 22px 44px -30px rgba(0,0,0,.5)!important}
+html body.lk-on #view-guest :is(.gk-follow,.ev2-more,.recap) :is(b,small,p,h3,h4,.rail-h,span:not(.gk-av)){color:#1F1A17!important}html body.lk-on #view-guest :is(.gk-follow,.ev2-more) small{color:#665A51!important}html body.lk-on #view-guest :is(.gk-follow,.ev2-more) a{color:#C94A30!important}
+html body.lk-on :is(#gBar,#gStick){background:var(--lk-bot)!important;box-shadow:0 -10px 24px -14px rgba(0,0,0,.6)!important}
+html body.lk-on #view-guest .gxcover.typed{background:color-mix(in srgb,var(--lk-btn,#C94A30) 22%,#fff)!important}html body.lk-on.lk-fx-lights .es-top{padding-top:46px}`;
   let gSig = "";
   function guest() { const host = document.getElementById("view-guest"), e = window.__gEv;
     if (!host || !e?.id || !host.classList.contains("ev2") || host.hidden || host.offsetParent === null) { if (gSig) { LK.apply(document.body, {}); gSig = ""; } return; }

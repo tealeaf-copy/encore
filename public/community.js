@@ -42,7 +42,7 @@
     const a = actOf(e), em = titleEmoji(e) || ACT_EMOJI[a] || (e.emoji !== "🎉" && e.emoji) || "🎉", free = e.free || !e.price, H = e.host || {};
     const sketch = (art, color, size) => (art && window.EncoreAvatars ? window.EncoreAvatars.svg(art, color || "#E26D8E", size) : "");
     const hostAv = H.cover ? `<img src="${esc(H.cover)}" alt="">` : sketch(H.avatarArt, H.color, 40) || esc(H.emoji || "🎉");
-    const tm = e.startTime && /^\d{1,2}:\d{2}$/.test(e.startTime) ? new Date("2000-01-01T" + e.startTime.padStart(5, "0")).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : e.startTime;
+    const tm = e.startTime && /^\d{1,2}:\d{2}$/.test(e.startTime) ? new Date("2000-01-01T" + e.startTime.padStart(5, "0")).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : e.startTime;
     const when = e.date ? `${fmtDate(e.date)}${tm ? " · " + tm : ""}` : "Date coming soon";
     const drawn = !e.coverPhoto && window.EventArt, art = e.coverPhoto ? `<img class="ev-photo" src="${esc(e.coverPhoto)}" alt="">` : drawn ? window.EventArt.cover(e) : `<span class="ev-em" aria-hidden="true">${esc(em)}</span>`;
     const going = Math.max(0, +e.going || +e.goingCount || 0), faces = (e.faces || []).slice(0, 3);

@@ -18,12 +18,12 @@ export function mountCollabs(app, { store, small, currentUser, C, X }) {
 
   // ask another host
   app.post("/api/collab/:handle", small, (req, res) => { const u = me(req, res); if (!u) return; const from = getWorkspace(u.ws)?.regularOnly ? null : card(u.ws);
-    if (!from) return res.status(403).json({ code: "host_page_required", message: "Make your page first so they can see who you are." });
+    if (!from) return res.status(403).json({ code: "host_page_required", message: "Start your page first so they can see who you are." });
     const toWs = C.wsOfHandle(req.params.handle), to = toWs && card(toWs); if (!to) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     if (toWs === u.ws) return res.status(400).json({ code: "invalid", message: "That's your own page." });
     if (limited(u.ws, 10)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of collab ideas for one day. Try again tomorrow." });
     const b = req.body || {}, idea = clean(b.idea, 1200), kind = COLLAB_KINDS.some(([k]) => k === b.kind) ? b.kind : "other";
-    if (idea.length < 10) return res.status(400).json({ code: "invalid", message: "Say a little about the idea." });
+    if (idea.length < 10) return res.status(400).json({ code: "invalid", message: "Say a bit more about the idea." });
     if (all().some((c) => c.fromWs === u.ws && c.toWs === toWs && c.status === "new")) return res.status(409).json({ code: "conflict", message: `You've already sent ${to.name} an idea.` });
     const c = { kind: "collab", collabKind: kind, id: crypto.randomBytes(6).toString("hex"), fromWs: u.ws, toWs, from, to, idea, when: clean(b.when, 80), city: clean(b.city, 80), status: "new", at: Date.now(), thread: [] };
     put(c);

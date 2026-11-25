@@ -290,7 +290,7 @@ export function createApp({ store, dataDir }) {
   app.post("/api/join", small, (req, res) => {
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many tries from here. Try again later." });
     const b = req.body || {}, inv = getInvite(b.token), name = String(b.name || "").trim().slice(0, 120);
-    if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This join link has expired or was already used. Ask your team for a new one." });
+    if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This link has expired or was used. Ask your team for a new one." });
     if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Password needs 10+ characters." });
     if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account." });

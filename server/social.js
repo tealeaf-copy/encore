@@ -237,7 +237,7 @@ export function makeSocial(store, { C, saveBlob }) {
         for (const [em, L] of I.att) { if (!L.some((a) => a.eventId === x.id)) continue; out.kudosAsks++;
           notify(em, { kind: "kudos", key: "kudos-" + x.id, text: `How was ${title}? Send ${hostName} some kudos.`, link: `/g#rsvp-${x.id}`, eventId: x.id });
           if (cfg && canEmail(em)) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Two taps of kudos makes a host's week: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
-        notify(x.owner, { kind: "after", key: "after-" + x.id, text: `${title}, done. Add a photo while it's fresh.`, link: `/?app=1&open=${encodeURIComponent(x.id)}&step=7#studio`, eventId: x.id });
+        notify(x.owner, { kind: "after", key: "after-" + x.id, text: `${title} is done. Say thanks while it's fresh.`, link: `/?app=1&open=${encodeURIComponent(x.id)}&step=7#studio`, eventId: x.id });
       }
       // prep alerts for the host (the shopping and baking checklist)
       for (const t of e.prep || []) { if (t.done || !t.due) continue; const dd = Math.round((Date.parse(t.due + "T09:00:00") - now) / DAY); if (dd > 0 || dd < -2) continue; const k = "prep-" + x.id + "-" + hash(t.text + t.due); if (done(k)) continue; mark(k); out.prepAlerts++;

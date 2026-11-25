@@ -183,7 +183,7 @@ export function loginHandler(req, res) {
   const wait = limitedFor(req);
   if (wait) {
     res.setHeader("Retry-After", String(wait));
-    return isForm ? res.redirect(303, "/login?error=3") : res.status(429).json({ code: "rate_limited", message: "Too many sign-in attempts. Try again later." });
+    return isForm ? res.redirect(303, "/login?error=3") : res.status(429).json({ code: "rate_limited", message: "Too many tries. Take a breather and try again later." });
   }
   const deny = (err, message) => { noteFail(req); return isForm ? res.redirect(303, "/login?error=" + err) : res.status(401).json({ code: "not_granted", message }); };
   let value;
@@ -256,11 +256,11 @@ export function loginPage() {
 </style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
   <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#6F6259">Good to see you again.</p>
-  <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company uses single sign-on. Sign in with SSO instead.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many sign-in attempts. Try again later.</p>"); else if (location.search.includes("error")) document.write("<p>That email and password don't match.</p>"); else if (location.search.includes("why=collab")) document.write("<p>Sign in to suggest a collab. Hosts only.</p>")</script>
+  <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company uses single sign-on. Sign in with SSO instead.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many tries. Take a breather and try again later.</p>"); else if (location.search.includes("error")) document.write("<p>That email and password don't match.</p>"); else if (location.search.includes("why=collab")) document.write("<p>Sign in to suggest a collab. Hosts only.</p>")</script>
   ${users().length || signupEnabled() ? `<label>Email<input type="email" name="email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}></label>` : ""}
   <label>${users().some((u) => u.pw) || signupEnabled() ? "Password" : "Team password"}<input type="password" name="password" autocomplete="current-password" autofocus required></label>
   <button type="submit">Sign in</button>
   ${users().length || signupEnabled() ? `<a class="alt" href="/forgot">Forgot your password?</a>` : ""}
-  ${signupEnabled() ? `<a class="alt" href="/signup">New here? Start your page</a><a class="alt" href="/sso/start" style="font-size:13px;opacity:.8">Using SSO? Sign in here</a>` : ""}
+  ${signupEnabled() ? `<a class="alt" href="/signup">New here? Start your page</a><a class="alt" href="/sso/start" style="font-size:13px;opacity:.8">Sign in with SSO</a>` : ""}
 </form><script>try{const f=document.querySelector("form"),e=f&&f.querySelector("input[name=email]");if(e){const k="encore.loginEmail",v=sessionStorage.getItem(k);if(v&&!e.value)e.value=v;f.addEventListener("submit",()=>{try{sessionStorage.setItem(k,e.value)}catch(x){}});if(v){const p=f.querySelector("input[type=password]");if(p)setTimeout(()=>p.focus(),50)}}}catch(x){}</script></body></html>`;
 }

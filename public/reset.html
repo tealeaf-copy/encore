@@ -25,7 +25,7 @@
     document.getElementById("f").onsubmit = async (ev) => { ev.preventDefault(); const F = ev.target, e = document.getElementById("e"); e.textContent = ""; if (F.pw.value !== F.pw2.value) { e.textContent = "Passwords don't match."; return; }
       F.querySelector("button").disabled = true; try { await post("/api/password/reset", { token, password: F.pw.value }); location.replace("/?app=1"); } catch (x) { e.textContent = x.message; F.querySelector("button").disabled = false; } };
   } else {
-    app.innerHTML = `<form id="f">${brand}<h1>Forgot your password?</h1><p class="sub">We'll email you a link to pick a new one.</p>
+    app.innerHTML = `<form id="f">${brand}<h1>Forgot your password?</h1><p class="sub">Happens to the best of us. We'll email you a link.</p>
       <label>Email<input name="email" type="email" autocomplete="email" required autofocus></label><button>Send link</button><p class="err" id="e"></p><a class="alt" href="/login">Back to sign in</a></form>`;
     try { const v = sessionStorage.getItem("encore.loginEmail"); if (v) document.querySelector("[name=email]").value = v; } catch {}
     document.getElementById("f").onsubmit = async (ev) => { ev.preventDefault(); const F = ev.target, e = document.getElementById("e"); e.textContent = ""; F.querySelector("button").disabled = true;

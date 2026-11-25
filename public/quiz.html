@@ -52,7 +52,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     const ranked = Object.entries(S).sort((a, b) => b[1] - a[1]); return { top: ranked[0][0], second: ranked[1][0] }; };
   const m = document.getElementById("m"), params = new URLSearchParams(location.search), shared = params.get("t"), from = (params.get("from") || "").slice(0, 30);
   function intro() { const t = T[shared];
-    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(t.name)} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">Six taps, no sign-up</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your type and who you click with.</p><button class="btn primary" id="go" style="margin-top:8px">Take the quiz</button></div>`;
+    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(t.name)} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">Six taps. No account needed.</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your type, and your people.</p><button class="btn primary" id="go" style="margin-top:8px">Take the quiz</button></div>`;
     document.getElementById("go").onclick = () => { i = 0; ask(); }; }
   function ask() { const [k, q, opts] = Q[i];
     m.innerHTML = `<div class="card q"><small class="note">${i + 1} of ${Q.length}</small><div class="bar"><i style="width:${(i / Q.length) * 100}%"></i></div><h2>${esc(q)}</h2><div class="opts">${opts.map(([v, e, t]) => `<button data-v="${v}"><span class="e">${e}</span>${esc(t)}</button>`).join("")}</div></div>`;
@@ -62,8 +62,8 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     const shareUrl = `${location.origin}/quiz?t=${top}`;
     m.innerHTML = `<div class="card res" style="background:${t.bg}"><small class="note" style="color:#3A302A">You're</small><div class="big">${t.emoji}</div><h2>${esc(t.name)}</h2><p class="line">${esc(t.line)}</p></div>
       <div class="facts"><div class="fact"><span class="e">${lane[0]}</span><div><b>${esc(lane[1])} is your thing</b><small>${esc(lane[3])}.</small></div></div>
-      <div class="fact"><span class="e">${s.emoji}</span><div><b>With a streak of ${esc(String(s.name).replace(/^The /, ""))}</b><small>${esc(String(s.line).split(/(?<=\.)\s/)[0])}</small></div></div>
-      <div class="fact"><span class="e">${mt.emoji}</span><div><b>You click with ${esc(mt.name)}</b><small>${esc(t.why)}</small></div></div>
+      <div class="fact"><span class="e">${s.emoji}</span><div><b>Part ${esc(String(s.name).replace(/^The /, ""))}, too</b><small>${esc(String(s.line).split(/(?<=\.)\s/)[0])}</small></div></div>
+      <div class="fact"><span class="e">${mt.emoji}</span><div><b>You click with ${esc(String(mt.name).replace(/^The /, "the "))}</b><small>${esc(t.why)}</small></div></div>
       <div class="fact"><span class="e">${A.size === "small" ? "🫖" : A.size === "big" ? "🎉" : "🍕"}</span><div><b>Your crowd: ${A.size === "small" ? "4 to 6 guests" : A.size === "big" ? "the more the merrier" : "8 to 12 guests"}</b></div></div></div>
       <div class="acts"><a class="btn primary" href="/discover?lane=${lane[2]}">Find my events</a><button class="btn quiet" id="story">📸 Post to story</button><button class="btn quiet" id="send">💬 Send to friends</button></div>
       <p class="note" style="text-align:center;margin-top:16px" id="save"></p><p class="note" style="text-align:center"><a href="#" id="again">Take it again</a></p>`;

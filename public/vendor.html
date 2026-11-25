@@ -28,10 +28,10 @@ fetch("/api/public/legal").then((r) => r.json()).then((L) => { if (L && L.name) 
 // the fee line comes from one place (server/market.js); it is off until a fee exists
 fetch("/api/public/policy").then((r) => r.json()).then((P) => { if (P?.fee) document.getElementById("quotes").textContent += ` ${P.fee}.`; }).catch(() => {});
 document.getElementById("kit").onsubmit = async (e) => { e.preventDefault(); const t = e.target, err = document.getElementById("kitErr"), btn = t.querySelector("button"); err.textContent = "";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t.email.value.trim())) { err.textContent = "Add a valid work email."; t.email.focus(); return; } if (!t.company.value.trim()) { err.textContent = "Add your company."; t.company.focus(); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t.email.value.trim())) { err.textContent = "Add a work email."; t.email.focus(); return; } if (!t.company.value.trim()) { err.textContent = "Add your company."; t.company.focus(); return; }
   btn.disabled = true; let j = {}, ok = false; try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ for: "brand", email: t.email.value.trim(), name: t.company.value.trim(), wants: "Vendor kit: " + t.company.value.trim() }) }); j = await r.json().catch(() => ({})); ok = r.ok; } catch {}
   // only say it's on its way when the server took it; otherwise keep the form and say why
   if (!ok) { err.textContent = j.message || "That didn't send. Try again."; btn.disabled = false; return; }
   if (j.ref) { try { const L = JSON.parse(localStorage.getItem("encore.bookings") || "[]"); L.unshift({ id: j.ref, link: "/vendor", title: "Vendor kit · " + t.company.value.trim(), at: Date.now(), status: "sent" }); localStorage.setItem("encore.bookings", JSON.stringify(L.slice(0, 30))); } catch {} }
-  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); t.outerHTML = `<p><b>Got it.</b> We'll email the kit to ${esc(t.email.value.trim())}.${j.ref ? ` Reference <b>${esc(j.ref)}</b>.` : ""}</p>`; };
+  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); t.outerHTML = `<p><b>Got it.</b> We'll email the kit to ${esc(t.email.value.trim())}.</p>`; };
 </script></body></html>

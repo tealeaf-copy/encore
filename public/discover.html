@@ -179,7 +179,8 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     const byName = new Map(); for (const h of data.hosts.filter((h) => !h.showcase && h.name && real(h))) { const k = String(h.name).trim().toLowerCase(), cur = byName.get(k); if (!cur || act(h) > act(cur)) byName.set(k, h); }
     const all = [...byName.values()].sort((a, b) => (!!a.sample - !!b.sample) || act(b) - act(a));
     const local = city ? all.filter(near) : all, L = (local.length ? local : all).slice(0, 4);
-    $("#hostsL").hidden = !(city && !local.length && L.length); $("#hostsL").textContent = city ? `No hosts in ${city} yet. Here are some elsewhere.` : "";
+    // the events note above already says this city is empty: say it once
+    $("#hostsL").hidden = !(city && !local.length && L.length) || !!(evs.length && !evs.some(near)); $("#hostsL").textContent = city ? `No hosts in ${city} yet. Here are some elsewhere.` : "";
     $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), d = n && n.date ? new Date(n.date + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : ""; const hh = n ? { ...h, next: `${n.title}${d ? ", " + d : ""}` } : h;
       return `<div class="hc-wrap">${C.hostCard(hh)}<button class="btn ghost hc-f" type="button" data-fh="${esc(h.handle)}">${F.includes(h.handle) ? "Following" : `Follow<span class="sr"> ${esc(h.name)}</span>`}</button></div>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
     document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
@@ -215,7 +216,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 <script>
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Planner"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Last-Minute Yes"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
-  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small><a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show my picks</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small><a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Only my picks</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

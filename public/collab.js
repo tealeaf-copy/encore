@@ -10,7 +10,7 @@
 .cl input,.cl textarea{border:1px solid #E7DFD3;border-radius:12px;padding:10px 12px;font-weight:400;font-size:16px;font-family:inherit;background:#fff}.cl .kinds{display:flex;flex-wrap:wrap;gap:6px}.cl .kinds button{border:1px solid #E7DFD3;background:#fff;border-radius:999px;padding:7px 12px;font-weight:400;font-size:14px;font-family:inherit;cursor:pointer}.cl .kinds button[aria-pressed="true"]{background:var(--accent,#C4532F);color:#fff;border-color:transparent}
 .cl button[type=submit]{border:0;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font-weight:600;font-size:16px;font-family:inherit;cursor:pointer}.cl .x{float:right;background:none;border:0;font-size:20px;cursor:pointer;color:#6F6259}.cl .err{color:#B3261E;font-size:14px;min-height:1em;margin:0}`; document.head.appendChild(s); }
   async function J(u) { try { const r = await fetch(u); return r.ok ? r.json() : null; } catch { return null; } }
-  function sheet(h, mine) { style(); const first = window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
+  function sheet(h, mine) { style(); const first = window.__encoreShort || window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
     const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.innerHTML = `<div class="cl" role="dialog" aria-modal="true" aria-label="Suggest a collab"><button class="x" type="button" aria-label="Close">×</button><h2>Suggest a collab</h2>
       <p>If ${esc(first)} says yes, you'll swap emails.</p>
@@ -27,7 +27,7 @@
         if (e.code === "host_page_required") { // one step: make a host page right here, then send
           let me = {}; try { me = await (await fetch("/api/me")).json(); } catch {}
           const nm = String(me.name || ""), slug = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
-          err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see your page. Make it and we'll send your idea.</span>
+          err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see your page. Start one and we'll send your idea.</span>
             <span style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><input class="hp-name" placeholder="Page name, e.g. Kevin's Kitchen" value="${esc(nm ? nm.split(" ")[0] + "'s events" : "")}"><input class="hp-handle" placeholder="your-handle" value="${esc(slug(nm))}"></span>
             <button type="button" class="hp-go" style="margin-top:8px;width:100%">Make page and send</button>`;
           err.querySelector(".hp-go").onclick = async () => { const b2 = err.querySelector(".hp-go"); b2.disabled = true; b2.textContent = "Making your page…";
@@ -41,7 +41,8 @@
   async function mount(h, pageFirst) { if (!h?.handle) return; style();
     // "Collabs with …" for everyone
     const C = await J(`/api/public/collabs/${encodeURIComponent(h.handle)}`); const A = window.EncoreAvatars;
-    if (C?.collabs?.length) { const w = document.createElement("div"); w.className = "cl-with"; w.innerHTML = `<span>Collabs with</span>${C.collabs.map((c) => `<a href="/@${esc(c.handle)}">${c.avatarArt && A ? A.svg(c.avatarArt, c.accent, 22) : ""}${esc(c.name)}</a>`).join("")}`; (document.querySelector(".tagline, .pf-tag, .bio, h1")?.parentElement || document.querySelector("main"))?.appendChild(w); }
+    if (C?.collabs?.length) { const w = document.createElement("div"); w.className = "cl-with"; w.innerHTML = `<span>Collabs with</span>${C.collabs.map((c) => `<a href="/@${esc(c.handle)}">${c.avatarArt && A ? A.svg(c.avatarArt, c.accent, 22) : ""}${esc(c.name)}</a>`).join("")}`; // after the bio and tags, so the header reads name, handle, bio
+      const at = document.querySelector(".head .tags") || document.querySelector(".head .bio") || document.querySelector(".head .stats"); if (at) at.after(w); else (document.querySelector(".head > div:nth-child(2)") || document.querySelector("main"))?.appendChild(w); }
     // the request card, for everyone but the owner
     const meP = await J("/api/host/profile"), mine = meP?.host?.handle ? meP.host : null; if (!mine) return;
     if (mine.handle === h.handle) { // friends hosts have no shop pane, so collab alerts (?collabs=1) open the Collabs list here
@@ -53,7 +54,7 @@
     const mineC = await J("/api/collabs"); if ((mineC?.sent || []).some((c) => c.other?.handle === h.handle && c.status === "new")) { sentCard(first); return; }
     card.querySelector("#clGo").onclick = async () => { const me = await J("/api/me");
       if (!me?.verified) { location.href = `/login?why=collab&next=${encodeURIComponent(location.pathname + "?collab=1")}`; return; }
-      const p = (await J("/api/host/profile"))?.host; if (!p?.handle) { card.innerHTML = `<h3>Make your page first</h3><p class="muted">Collabs are between hosts.</p><a class="btn" href="/">Make your page</a>`; return; }
+      const p = (await J("/api/host/profile"))?.host; if (!p?.handle) { card.innerHTML = `<h3>Start your page first</h3><p class="muted">Collabs are host to host.</p><a class="btn" href="/">Start your page</a>`; return; }
       sheet(h, p); };
     if (/[?&]collab=1/.test(location.search) && mine) sheet(h, mine); }
   window.EncoreCollab = { mount };

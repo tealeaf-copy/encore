@@ -13,9 +13,9 @@
     const S = host.support || {}, W = (host.wishlist || []).length ? host.wishlist : [{ emoji: "🎲" }];
     const d = document.createElement("details"); d.className = "se-sup"; if (location.hash === "#support") d.open = true;
     d.innerHTML = `<summary>Support and wishlist</summary><p class="hint">Let guests chip in. No one is charged yet.</p>
-      <label class="tg"><input type="checkbox" class="on" ${S.on ? "checked" : ""}> Show a pledge card on my page</label>
+      <label class="tg"><input type="checkbox" class="on" ${S.on ? "checked" : ""}> Show a support card on your page</label>
       <div class="r3"><label class="f">Monthly $<input class="m" type="number" min="0" max="999" value="${esc(S.monthly ?? 5)}"></label><label class="f">Yearly $<input class="y" type="number" min="0" max="999" value="${esc(S.yearly ?? 50)}"></label><label class="f">Founding $<input class="fo" type="number" min="0" max="999" value="${esc(S.founding || "")}" placeholder="optional"></label></div>
-      <label class="f">A line for supporters<input class="note" maxlength="200" value="${esc(S.note || "")}" placeholder="Pledges cover ingredients so tickets stay free."></label>
+      <label class="f">A line for supporters<input class="note" maxlength="200" value="${esc(S.note || "")}" placeholder="Support covers ingredients so tickets stay free."></label>
       <label class="f" style="margin-top:12px">Wishlist</label><div class="rows">${W.map(row).join("")}</div><button type="button" class="lk add">+ Add an item</button>
       <p class="msg" role="alert" style="font-size:13px;color:#B3261E;margin:6px 0 0"></p>`;
     box.appendChild(d); let dirty = false; d.addEventListener("input", () => (dirty = true)); d.addEventListener("change", () => (dirty = true));
@@ -31,7 +31,7 @@
   // your own name, shown as the host on your events (top of the pane)
   async function mountName(box) { if (!box || box.querySelector(".se-name")) return; let cur = ""; try { cur = (await (await fetch("/api/me/name")).json()).name || ""; } catch { return; }
     const d = document.createElement("div"); d.className = "se-sup se-name"; d.style.marginBottom = "0";
-    d.innerHTML = `<label class="f" style="margin-top:0">Your name <small style="font-weight:400">Guests see it on your invites.</small><input class="nm" maxlength="60" value="${esc(cur)}" autocomplete="name"></label>`;
+    d.innerHTML = `<label class="f" style="margin-top:0">Your name <small style="font-weight:400">Shown as the host on your invites.</small><input class="nm" maxlength="60" value="${esc(cur)}" autocomplete="name"></label>`;
     box.prepend(d); d._save = async () => { const nm = d.querySelector(".nm").value.trim(); if (!nm || nm === cur) return "";
       { const r = await fetch("/api/me/name", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: d.querySelector(".nm").value }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save.");
         cur = nm; return j.events ? `Your name is on ${j.events} event${j.events === 1 ? "" : "s"} now.` : ""; } }; }

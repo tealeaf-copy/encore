@@ -52,7 +52,7 @@ h1,h2,h3{font-family:Fredoka,system-ui;margin:0}h1{font-size:clamp(34px,7vw,52px
     const ranked = Object.entries(S).sort((a, b) => b[1] - a[1]); return { top: ranked[0][0], second: ranked[1][0] }; };
   const m = document.getElementById("m"), params = new URLSearchParams(location.search), shared = params.get("t"), from = (params.get("from") || "").slice(0, 30);
   function intro() { const t = T[shared];
-    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(t.name)} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">Six taps. No account needed.</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your type, and your people.</p><button class="btn primary" id="go" style="margin-top:8px">Take the quiz</button></div>`;
+    m.innerHTML = `${t ? `<div class="friend">${from ? esc(from) + " is" : "Your friend is"} ${esc(String(t.name).replace(/^The /, "the "))} ${t.emoji}. What are you?</div>` : ""}<div class="card"><p class="note" style="margin:0 0 6px">Six taps. No account needed.</p><h1>What kind of guest are you?</h1><p style="font-size:18px;color:#3A302A">Find your type, and your people.</p><button class="btn primary" id="go" style="margin-top:8px">Take the quiz</button></div>`;
     document.getElementById("go").onclick = () => { i = 0; ask(); }; }
   function ask() { const [k, q, opts] = Q[i];
     m.innerHTML = `<div class="card q"><small class="note">${i + 1} of ${Q.length}</small><div class="bar"><i style="width:${(i / Q.length) * 100}%"></i></div><h2>${esc(q)}</h2><div class="opts">${opts.map(([v, e, t]) => `<button data-v="${v}"><span class="e">${e}</span>${esc(t)}</button>`).join("")}</div></div>`;

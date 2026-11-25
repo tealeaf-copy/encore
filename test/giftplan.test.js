@@ -79,7 +79,7 @@ test("Compliance flags public-sector, healthcare and regulated-finance rows; the
 test("A big enough list gets a stratified holdout that never touches strategic accounts", () => {
   const lines = ["account,tier", ...Array.from({ length: 50 }, (_, i) => `Co${i},${i % 2 ? "1" : "2"}`)];
   const input = readBody({ company: "Acme", moment: "Launching Lens", kind: "b2b", accounts: lines, protect: "Co1\nCo2\nCo3" }), p = planFromInput(input, "s1"), rows = crmRows(p, input, "s1");
-  assert.equal(p.playbook.prove.useHoldout, true); const held = rows.filter((r) => r.Group === "Holdout");
+  assert.equal(p.playbook.prove.useHoldout, true); const held = rows.filter((r) => r.Group === "Comparison group");
   assert.ok(held.length >= 8 && held.length <= 11, String(held.length)); assert.ok(!held.some((r) => ["Co1", "Co2", "Co3"].includes(r.Company)));
   assert.ok(held.some((r) => r.Tier === "1") && held.some((r) => r.Tier === "2"), "stratified by tier"); assert.ok(held.every((r) => r["Approved Cost"] === "0"));
   assert.equal(p.playbook.prove.held, held.length, "the plan and the sheet hold back the same accounts");

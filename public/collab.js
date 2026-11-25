@@ -13,16 +13,16 @@
   function sheet(h, mine) { style(); const first = window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
     const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.innerHTML = `<div class="cl" role="dialog" aria-modal="true" aria-label="Suggest a collab"><button class="x" type="button" aria-label="Close">×</button><h2>Collab with ${esc(first)}</h2>
-      <p>${esc(first)} sees your page and idea. Say yes, swap emails.</p>
+      <p>If ${esc(first)} says yes, you'll swap emails.</p>
       <form><div class="kinds" role="group" aria-label="What kind of collab">${KINDS.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === kind}">${esc(l)}</button>`).join("")}</div>
-        <label>The idea<textarea name="idea" rows="4" required placeholder="e.g. ${esc(mine.name)} × ${esc(h.name)}: one evening, both our crowds, each guest leaves with something from both of us."></textarea></label>
+        <label>The idea<textarea name="idea" rows="4" required placeholder="e.g. One night, both our crowds."></textarea></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Roughly when<input name="when" placeholder="e.g. a Saturday in March"></label><label>Where<input name="city" value="${esc(h.city || "")}"></label></div>
         <p class="err" role="alert"></p><button type="submit">Send idea</button></form></div>`;
     bg.querySelector(".x").onclick = close; bg.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { kind = b.dataset.k; bg.querySelectorAll("[data-k]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
     const f = bg.querySelector("form"); setTimeout(() => f.idea.focus(), 30);
     f.onsubmit = async (ev) => { ev.preventDefault(); const err = bg.querySelector(".err"), btn = f.querySelector("button[type=submit]"); btn.disabled = true; err.textContent = "";
       try { const r = await fetch(`/api/collab/${encodeURIComponent(h.handle)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, idea: f.idea.value, when: f.when.value, city: f.city.value }) }); const j = await r.json(); if (!r.ok) { const e2 = new Error(j.message); e2.code = j.code; throw e2; }
-        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>You'll hear when ${esc(first)} replies. <a href="/requests">See your collabs</a></p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
+        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>I'll tell you when ${esc(first)} replies.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
       } catch (e) {
         if (e.code === "host_page_required") { // one step: make a host page right here, then send
           let me = {}; try { me = await (await fetch("/api/me")).json(); } catch {}
@@ -42,7 +42,9 @@
     const C = await J(`/api/public/collabs/${encodeURIComponent(h.handle)}`); const A = window.EncoreAvatars;
     if (C?.collabs?.length) { const w = document.createElement("div"); w.className = "cl-with"; w.innerHTML = `<span>Collabs with</span>${C.collabs.map((c) => `<a href="/@${esc(c.handle)}">${c.avatarArt && A ? A.svg(c.avatarArt, c.accent, 22) : ""}${esc(c.name)}</a>`).join("")}`; (document.querySelector(".tagline, .pf-tag, .bio, h1")?.parentElement || document.querySelector("main"))?.appendChild(w); }
     // the request card, for everyone but the owner
-    const meP = await J("/api/host/profile"), mine = meP?.host?.handle ? meP.host : null; if (mine?.handle === h.handle || !mine) return;
+    const meP = await J("/api/host/profile"), mine = meP?.host?.handle ? meP.host : null; if (!mine) return;
+    if (mine.handle === h.handle) { // friends hosts have no shop pane, so collab alerts (?collabs=1) open the Collabs list here
+      if (/[?&]collabs=1/.test(location.search)) { const W = await J("/api/workspace"); if (W?.personal) ownerSheet(); } return; }
     const first = pageFirst || window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""), side = document.querySelector("aside.side") || document.querySelector("main"); if (!side || document.getElementById("collabCard")) return;
     const card = document.createElement("div"); card.className = "card cl-card"; card.id = "collabCard";
     card.innerHTML = `<h3>Collab with ${esc(first)}</h3><p class="muted">Co-host a night, pop up together or swap guest lists.</p><button class="btn" type="button" id="clGo">Suggest a collab</button>`;
@@ -66,4 +68,8 @@
     B.querySelectorAll("[data-cla]").forEach((b) => (b.onclick = async () => { b.disabled = true; await fetch(`/api/collabs/${b.dataset.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: b.dataset.cla }) }); ownerPane(B); }));
     B.querySelectorAll("[data-cls]").forEach((b) => (b.onclick = async () => { const i = B.querySelector(`[data-clm="${b.dataset.cls}"]`), text = i.value.trim(); if (!text) return; b.disabled = true; await fetch(`/api/collabs/${b.dataset.cls}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "message", text }) }); ownerPane(B); })); }
   window.EncoreCollab.ownerPane = ownerPane;
+  function ownerSheet() { style(); const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
+    bg.innerHTML = `<div class="cl cl-own" role="dialog" aria-modal="true" aria-label="Collabs"><button class="x" type="button" aria-label="Close">×</button><h2>Collabs</h2><div></div></div>`; bg.querySelector(".x").onclick = close;
+    const s = document.createElement("style"); s.textContent = `.cl-own .breq{border:1px solid #E7DFD3;border-radius:14px;padding:12px;margin:0 0 10px;background:#fff}.cl-own .breq p{margin:6px 0;color:#1F1A17}.cl-own .btns2{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.cl-own .btns2 input{flex:1;min-width:140px;border:1px solid #E7DFD3;border-radius:999px;padding:8px 12px;font:inherit;font-size:15px}.cl-own .btns2 button{border:1px solid #E7DFD3;background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}.cl-own .btns2 .sp-save{background:var(--accent,#C4532F);color:#fff;border-color:transparent}.cl-own h4{margin:14px 0 8px}`; bg.appendChild(s);
+    ownerPane(bg.querySelector(".cl-own > div")); }
 })();

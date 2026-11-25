@@ -88,7 +88,7 @@ test("A big enough list gets a stratified holdout that never touches strategic a
 test("The deal size sets the pipeline target instead of a fixed multiple of spend", () => {
   const p = planFromInput(readBody({ company: "Ledgerline", moment: "Launching Close", kind: "b2b", audience: "60 VP Finance", budget: "$100", dealSize: "$40,000" }));
   assert.match(p.playbook.prove.target, /\$\d[\d,]* in pipeline from about \d+ meetings/); assert.doesNotMatch(p.playbook.prove.target, /3x/);
-  assert.match(p.playbook.finance.expect, /\$40,000 typical deal/);
+  assert.match(p.playbook.finance.expect, /\$40,000 average deal/);
 });
 
 test("The researched path keeps the marketer's numbers and drops off-brief words", () => {

@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Team experiences · Pottery Lab</title>
-<meta name="description" content="Book a local host for your team: workshops, dinners and runs, with all-in quotes, a replacement-or-refund guarantee and one invoice.">
+<meta name="description" content="Find a local host for your team: workshops, dinners and runs, with all-in quotes, a replacement-or-refund guarantee and one invoice.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/playful.css">
 <style>
@@ -44,14 +44,14 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
 </style></head><body data-audience="brand">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><nav><a href="/team">Team space</a><a href="/results">Results</a><a href="/discover">Discover</a></nav></header>
-  <h1>Book a local host</h1>
-  <p class="lede" id="lede">Team events, client dinners and pop-ups. We'll pick up to three.</p>
-  <div class="trust"><span>🛡️ Replacement or full refund if your host can't make it</span><span>🧾 One invoice: card or PO</span><span>📄 <a href="/vendor">Vendor kit: W-9 and terms</a></span></div>
+  <h1>Find a local host</h1>
+  <p class="lede" id="lede">Team events, client dinners and pop-ups. Potto picks three.</p>
+  <div class="trust"><span>🛡️ Host can't make it? Replacement or refund</span><span>🧾 One invoice: card or PO</span><span>📄 <a href="/vendor">Vendor kit: W-9 and terms</a></span></div>
   <form class="find" id="find">
     <label>City<input name="city" placeholder="e.g. Brooklyn" required></label>
     <label>Guests<input name="people" type="number" min="2" max="500" value="20" required></label>
     <label>What's it for?<select name="goal"><option value="bonding">Team bonding</option><option value="clients">Client or customer appreciation</option><option value="exec">Dinner for prospects or execs</option><option value="sampling">Public pop-up or sampling</option><option value="activation">Brand moment or launch</option><option value="community">Meetup or hackathon</option><option value="offsite">Offsite afternoon</option><option value="wellbeing">Wellbeing week</option></select></label>
-    <label>Your crowd is mostly<select name="crowd"><option value="">A mix</option><option value="spark">Sparks</option><option value="chill">Chill Ones</option><option value="connector">Connectors</option><option value="helper">Helpers</option><option value="early">Early Birds</option></select></label>
+    <label>Your crowd<select name="crowd"><option value="">A mix</option><option value="spark">Lively</option><option value="chill">Low-key</option><option value="connector">Networkers</option><option value="helper">Hands-on helpers</option><option value="early">Early risers</option></select></label>
     <button type="submit">Find hosts</button>
   </form>
   <div class="cities" id="cities"></div>
@@ -59,7 +59,7 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
     <form id="seriesF"><label class="sl">Cities<input name="cities" placeholder="e.g. Brooklyn, San Francisco, Austin" required></label><div class="cov" id="cov"></div><label class="sl">Dates<input name="dates" placeholder="e.g. one a month from March" required></label><label class="sl">People per city<input name="per" type="number" min="5" max="1000" placeholder="e.g. 40" required></label><label class="sl">Who comes<input name="who" placeholder="e.g. customers who are data engineers"></label><label class="sl">Work email<input name="email" type="email" required></label><button>Plan the series</button></form></details>
   <div class="res" id="res"></div>
   <div class="insight" id="insight" hidden></div>
-  <div class="how"><div><b>1. Request a date</b>Say when, where and how many.</div><div><b>2. Get a quote</b>The host sends a price and what's included.</div><div><b>3. Accept and book</b>Pay the 50% deposit to confirm.</div></div>
+  <div class="how"><div><b>1. Request a date</b>Say when, where and how many.</div><div><b>2. Get a quote</b>The host sends a price and what's included.</div><div><b>3. Accept and book</b>50% deposit to confirm.</div></div>
 </div>
 <script src="/authguard.js"></script><script>
 (function () {
@@ -71,10 +71,9 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
   const first = (h) => { if (h.person) return h.person; const n = String(h.name || ""), m = n.match(/^([^\s]+)['’]s\b/); return m ? m[1] : /\b(co\.?|company|cart|club|crew|studio|kitchen|table|bakery|cafe|café)\b/i.test(n) ? "" : n.split(" ")[0]; };
   const ownerOf = (h) => first(h) || "the host";
   const GOALL = { exec: "Dinner for prospects or execs", sampling: "Public pop-up or sampling", community: "Meetup or hackathon", bonding: "Team bonding", clients: "Client appreciation", offsite: "Offsite afternoon", wellbeing: "Wellbeing week", activation: "Brand moment or launch" };
-  // the guest-quiz names, the same ones the chart below shows (server/community.js TYPEL)
-  const TYPEL = { spark: "Sparks", chill: "Chill Ones", connector: "Connectors", helper: "Helpers", early: "Early Birds" };
+  // the crowd, in plain words (the request form on the host page reads them back in its note)
+  const TYPEL = { spark: "Lively", chill: "Low-key", connector: "Networkers", helper: "Hands-on helpers", early: "Early risers" };
   const AUD = { team: "your team", guests: "your guests", public: "the people who stop by", attendees: "your attendees" };
-  const LEDE = { team: "Workshops, dinners and runs led by people your team will remember.", guests: "Dinners, tastings and receptions your guests will talk about, hosted by people with real followings.", public: "Pop-ups and sampling carts that bring people to you, with content you can post.", attendees: "Rooms, build sessions and evenings for your attendees, with the AV and setup handled." };
   const fmtD = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
   const chip = (t, cls = "") => `<span${cls ? ` class="${cls}"` : ""}>${esc(t)}</span>`;
   function proofBlock(r) { const T = r.trust || {}, ex = r.example; const bits = [];
@@ -90,24 +89,23 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
         ${why ? `<div class="why">${why}</div>` : ""}${proofBlock(r)}
         <p class="where">📍 ${x.travels ? "Comes to you: your office, a park or a venue" : `At ${first(h) ? esc(first(h)) + "'s" : "their"} space${h.hood ? " in " + esc(h.hood) : ""}`}${(x.includes || []).length ? ` · <b>Included:</b> ${x.includes.map(esc).join(", ")}` : ""}</p>
         ${x.seated || x.standing || x.av ? `<p class="where">🪑 ${[x.seated && `Seats ${x.seated}`, x.standing && `${x.standing} standing`, x.av].filter(Boolean).map(esc).join(" · ")}</p>` : ""}
-        ${!ex && (x.openDates || []).length ? `<p class="where">${x.instant ? "⚡" : "📅"} <b>${x.instant ? "Book instantly:" : "Open:"}</b> ${x.openDates.slice(0, 4).map((d) => `<a href="/@${esc(h.handle)}?${new URLSearchParams({ ...q0, date: d })}#book">${fmtD(d)}</a>`).join(" · ")}</p>` : ""}
+        ${!ex && (x.openDates || []).length ? `<p class="where">${x.instant ? "⚡" : "📅"} <b>${x.instant ? "Instant book:" : "Open:"}</b> ${x.openDates.slice(0, 4).map((d) => `<a href="/@${esc(h.handle)}?${new URLSearchParams({ ...q0, date: d })}#book">${fmtD(d)}</a>`).join(" · ")}</p>` : ""}
         ${x.owner ? `<p class="where">🙋 <b>On the day:</b> ${esc(x.owner)}</p>` : ""}
         ${x.branding && opts.kind !== "team" ? `<p class="where">🏷️ <b>Your brand:</b> ${esc(x.branding)}</p>` : ""}
         ${[x.access && `♿ ${esc(x.access)}`, x.dietary && `🥗 ${esc(x.dietary)}`, x.hybrid && opts.kind === "team" && `💻 ${esc(x.hybrid)}`, x.setup && ["public", "attendees"].includes(opts.kind) && `🔌 <b>Setup:</b> ${esc(x.setup)}`].filter(Boolean).map((t) => `<p class="where">${t}</p>`).join("")}
         ${h.backupPlan && !ex ? `<p class="where">🔁 <b>If ${esc(ownerOf(h))} can't make it:</b> ${esc(h.backupPlan)}</p>` : ""}
-        ${(x.runOfShow || []).length ? `<details class="ros"><summary>What happens, minute by minute</summary><ol>${x.runOfShow.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></details>` : ""}</div>
+        ${(x.runOfShow || []).length ? `<details class="ros"><summary>Minute by minute</summary><ol>${x.runOfShow.map((s) => `<li>${esc(s)}</li>`).join("")}</ol></details>` : ""}</div>
         <div class="price">${r.estimate ? `<small>Estimated total</small><b>$${r.estimate.total.toLocaleString()}</b><small>${r.estimate.flat ? `flat for up to ${x.max} guests · about $${r.estimate.perPerson} a person for ${n}` : `for ${n} guests · $${r.estimate.perPerson} a person`}</small>${opts.kind === "public" ? `<small>Cost per attendee depends on foot traffic: ask the host what a typical day brings.</small>` : ""}` : `<b>${esc(x.price || "Quote")}</b>`}${x.allIn ? `<small>${esc(x.allIn)}</small>` : ""}${ex ? `<a class="btn ghost" href="/@${esc(h.handle)}">See the example page</a>` : `<a class="btn" href="/@${esc(h.handle)}?${new URLSearchParams({ ...q0, crowd: TYPEL[f.crowd.value] || "" })}#book">Request a date</a><br><a class="btn ghost" href="/@${esc(h.handle)}?${new URLSearchParams(q0)}">${first(h) ? `See ${esc(first(h))}'s page` : `See ${esc(h.name)}`}</a>`}</div></div>`; }
   async function run() { const p = new URLSearchParams(new FormData(f)); history.replaceState(null, "", "?" + p); $("#res").innerHTML = `<div class="empty">Potto's looking…</div>`;
     const j = await (await fetch("/api/public/teams/match?" + p)).json().catch(() => ({ results: [] }));
     if ((j.cities || []).length) { $("#cities").innerHTML = `Hosts in ${j.cities.slice(0, 8).map((c) => `<button type="button" data-city="${esc(c.city)}">${esc(c.city)} (${c.hosts})</button>`).join("")}`; $("#cities").querySelectorAll("[data-city]").forEach((b) => (b.onclick = () => { f.city.value = b.dataset.city; run(); })); }
     const R = j.results || [], EX = j.examples || [], n = +f.people.value || 0, cityN = esc(f.city.value), aud = j.audience || "your team", kind = j.audienceKind || "team", gl = j.goalLabel || GOALL[f.goal.value] || "";
-    $("#lede").textContent = LEDE[kind] || LEDE.team;
     const recruit = `<form id="ask" class="ask"><input name="email" type="email" required placeholder="Work email" aria-label="Work email"><input name="date" type="date" aria-label="Event date"><button>Find me a host</button></form>`;
-    const honest = !R.length ? `<div class="empty">${j.cityHosts === 0 ? `<b>We don't have hosts in ${cityN} yet.</b>` : `<b>None of our hosts in ${cityN} fits ${n} guests for ${esc(gl.toLowerCase())} yet.</b> Try a different headcount or goal, or let us recruit one.`}<br>Tell us the date and we'll go looking.${recruit}</div>`
+    const honest = !R.length ? `<div class="empty">${j.cityHosts === 0 ? `<b>No hosts in ${cityN} yet.</b>` : `<b>None of our hosts in ${cityN} fits ${n} guests for ${esc(gl.toLowerCase())} yet.</b> Try a different headcount or goal, or let us recruit one.`}<br>Give us a date. Potto goes looking.${recruit}</div>`
       : R.length < 3 ? `<div class="empty honest"><b>${R.length === 1 ? "Only one host" : `Only ${R.length} hosts`} in ${cityN} ${R.length === 1 ? "fits" : "fit"} ${n} guests for ${esc(gl.toLowerCase())} right now.</b> ${R.length === 1 ? "Want more options?" : "Want a third option?"} We'll recruit a local host for you.${recruit}</div>` : "";
     $("#insight").hidden = true;
     $("#res").innerHTML = R.map((r, i) => cardHtml(r, i, n, { aud, kind, goalLabel: gl })).join("") + honest + (EX.length ? `<h2 class="ex-h">Examples</h2>` + EX.map((r, i) => cardHtml(r, i, n, { aud, kind, goalLabel: gl })).join("") : "") + (R.length ? `<p style="font-size:14px;color:#5A4E45"><button type="button" class="share" id="shareL" style="margin-left:0">Copy link</button><button type="button" class="share" id="voteL">Start a team vote</button></p>` : "");
-    if ($("#ask")) $("#ask").onsubmit = async (e) => { e.preventDefault(); const t = e.target, ref = await sendW({ email: t.email.value, city: f.city.value, wants: `Recruit: ${gl}, ${f.people.value} people${t.date.value ? ", " + t.date.value : ""} (${R.length} matched)` }, `Host recruiting · ${f.city.value}`); t.outerHTML = `<p><b>Got it.</b> We'll email you.${ref}</p>`; };
+    if ($("#ask")) $("#ask").onsubmit = async (e) => { e.preventDefault(); const t = e.target, ref = await sendW({ email: t.email.value, city: f.city.value, wants: `Recruit: ${gl}, ${f.people.value} people${t.date.value ? ", " + t.date.value : ""} (${R.length} matched)` }, `Host recruiting · ${f.city.value}`); t.outerHTML = `<p><b>Got it.</b> We'll email you if we find a match.${ref}</p>`; };
     if (!R.length) return;
     $("#voteL").onclick = async (e) => { const j = await fetch("/api/public/teams/saved", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ by: (() => { try { return localStorage.getItem("encore.teamName") || ""; } catch { return ""; } })(), team: (() => { try { const t = JSON.parse(localStorage.getItem("encore.team") || "null"); return t?.id ? { id: t.id, k: t.k } : null; } catch { return null; } })(), query: Object.fromEntries(new FormData(f)) }) }).then((r) => r.json()).catch(() => null); if (!j?.ok) return; const url = location.origin + j.url; try { await navigator.clipboard.writeText(url); e.target.textContent = "Vote link copied."; } catch { prompt("Copy this link", url); } };
     $("#shareL").onclick = async (e) => { try { await navigator.clipboard.writeText(location.href); e.target.textContent = "Link copied."; } catch { prompt("Copy this link", location.href); } };
@@ -116,12 +114,9 @@ details.ros{font-size:14px;margin-top:6px}details.ros summary{cursor:pointer;fon
       document.querySelectorAll("#res .card:not(.ex)").forEach((card, i) => { const r = R[i]; if (!r) return; const x = r.experience, ft = `${x.allIn || ""} ${(x.includes || []).join(" ")}`, food = !/food not included|food from (our )?partners|own caterer|catering (is )?extra/i.test(ft) && (["food", "dining"].includes(x.category) || /food|dinner|lunch|breakfast|appetizer|catering|bowl/i.test(ft));
         const picks = [food ? null : L2.find((a) => a.kind === "catering" && a.host.handle !== r.host.handle), L2.find((a) => a.kind === "service" && /photo/i.test(a.experience.name))].filter(Boolean); if (!picks.length) return;
         const tot = (r.estimate?.total || 0) + picks.reduce((s, a) => s + (a.total || 0), 0), add = picks.map((a) => `${a.host.handle}~${a.experience.id}`).join(",");
-        const p = document.createElement("p"); p.className = "where bundle"; p.innerHTML = `🧩 <b>Make it a full event:</b> ${picks.map((a) => `${esc(a.experience.name)} from ${esc(a.host.name)} (+$${(a.total || 0).toLocaleString()})`).join(" and ")}. About <b>$${tot.toLocaleString()}</b> estimated together, one invoice. <a href="/@${esc(r.host.handle)}?${new URLSearchParams({ exp: x.id, people: n, city: f.city.value, goal: gl, add })}#book">Request both</a>`;
+        const p = document.createElement("p"); p.className = "where bundle"; p.innerHTML = `🧩 <b>Add:</b> ${picks.map((a) => `${esc(a.experience.name)} from ${esc(a.host.name)} (+$${(a.total || 0).toLocaleString()})`).join(" and ")}. Estimated total together <b>$${tot.toLocaleString()}</b>, one invoice. <a href="/@${esc(r.host.handle)}?${new URLSearchParams({ exp: x.id, people: n, city: f.city.value, goal: gl, add })}#book">Request both</a>`;
         card.firstElementChild.appendChild(p); }); }).catch(() => {});
-    // what guests respond to: the same numbers as the cards (each with its n), plus guest types from the quiz
-    let ay = 0, ao = 0; const types = {}; for (const r of R) { const A = r.trust?.again; if (A) { ay += A.n; ao += A.of; } for (const t of r.types || []) types[t.label] = (types[t.label] || 0) + t.share; }
-    const T = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 4), tot = T.reduce((a, b) => a + b[1], 0) || 1;
-    if (ao || T.length) { $("#insight").hidden = false; $("#insight").innerHTML = `<h2>Who loves these hosts</h2>${f.crowd.value ? `<p class="lede" style="margin:0">Weighted toward ${esc(TYPEL[f.crowd.value] || "your crowd")}.</p>` : ""}${ao ? `<p>${ao >= 10 ? `<b>${Math.round((100 * ay) / ao)}%</b> of ${ao}` : `<b>${ay} of ${ao}</b>`} guests who left kudos said they'd go again.</p>` : ""}${T.length ? `<div class="bars">${T.map(([l, v]) => `<div class="bar"><span>${esc(l)}</span><i><b style="width:${Math.round((100 * v) / tot)}%"></b></i><span>${Math.round((100 * v) / tot)}%</span></div>`).join("")}</div>` : ""}<p style="font-size:13px;color:#75685F;margin:8px 0 0">From the two-minute guest quiz.</p>`; } }
+  }
   let covT; const covDraw = async (v) => { if (!v.trim()) { $("#cov").innerHTML = ""; return; } const j = await fetch("/api/public/teams/series-coverage?cities=" + encodeURIComponent(v)).then((r) => r.json()).catch(() => ({ cities: [] })); if (!$("#cov")) return;
     $("#cov").innerHTML = (j.cities || []).length ? `<b class="cov-h">Who's there</b>` + j.cities.map((c) => c.hosts ? `<span>${esc(c.city)}: ${c.hosts} ${c.hosts === 1 ? "host" : "hosts"} ready in the area</span>` : `<span class="no">${esc(c.city)}: no host yet. Fallback: ${c.kit?.host ? `a kit by mail (${esc(c.kit.name)} by ${esc(c.kit.host)}, ${esc(c.kit.price)})` : `a kit by mail, ${esc(c.kit?.price || "quoted")}`}, or we find a local host</span>`).join("") : ""; };
   document.addEventListener("input", (e) => { if (e.target.name !== "cities" || !e.target.closest("#seriesF")) return; clearTimeout(covT); covT = setTimeout(() => covDraw(e.target.value), 350); });

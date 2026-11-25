@@ -97,7 +97,7 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
   // a read-only link for teammates: shows status, date and money, can't accept, message, pay or export guests
   const viewToken = (id) => crypto.createHmac("sha256", String(process.env.SESSION_SECRET || "encore-bookings")).update("booking-view:" + id).digest("hex").slice(0, 24);
   const access = (id, t) => (t && t === token(id) ? "full" : t && t === viewToken(id) ? "view" : "");
-  const instantQuote = (P, b) => ({ total: "$" + P.total.toLocaleString("en-US"), deposit: "$" + P.deposit.toLocaleString("en-US"), balanceDue: "after7", lines: P.lines, note: "Instant booking at the listed price.", invoiceNo: "INV-" + String(b.id || "").slice(0, 6).toUpperCase() });
+  const instantQuote = (P, b) => ({ total: "$" + P.total.toLocaleString("en-US"), deposit: "$" + P.deposit.toLocaleString("en-US"), balanceDue: "after7", lines: P.lines, note: "", invoiceNo: "INV-" + String(b.id || "").slice(0, 6).toUpperCase() });
   const forBrand = (b, full) => { const { email, ...o } = b; if (!full) { delete o.thread; delete o.billing; if (o.agency) o.agency = { client: o.agency.client }; } return o; };
   const findBooking = (id) => { for (const ws of allWorkspaceIds()) { const d = scopeStore(store, ws).list("inquiries").find((x) => x.data.id === id); if (d) return { ws, path: "inquiries/" + d.id, b: d.data }; } return null; };
   app.post("/api/public/book/:handle", small, async (req, res) => { if (limited(req, 30)) return bad(res, "Too many requests from here. Try later.", 429, "rate_limited");

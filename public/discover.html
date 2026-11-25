@@ -142,7 +142,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
   let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? "✨ Picked for you" : ""].filter(Boolean).join(" · ");
   const byDate = (a, b) => String(a.date || "9").localeCompare(String(b.date || "9"));
-  const LANE_H = { move: "Runs, hikes and rides", make: "Make & taste", gather: "Long dinners, good talk", discover: "Somewhere new" };
+  const LANE_H = { move: "Runs, hikes and rides", make: "Make & taste", gather: "Dinners, coffee and good talk", discover: "Somewhere new" };
   function drawEvents() {
     whyN = 0; const realN = data.events.filter((e) => !e.sample).length;
     const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
@@ -151,15 +151,15 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
     let list = local, note = "", rest = [];
     if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
-    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. ${SIGNED ? `<a href="/feed#alerts">Tell me when one opens nearby</a>.` : `<a href="/signup?mode=friends">Tell me when one opens nearby</a>.`}`; }
+    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>.`; }
     else if (city) rest = far;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
     const shown = list.slice(0, evShown);
-    let html = shown.map((e) => card(e, list === far && city ? `📍 ${e.city || "Location to be confirmed"}` : whyOf(e))).join("");
+    let html = shown.map((e) => card(e, whyOf(e))).join("");
     if (!html && !note) html = `<div class="empty">That's everything for now.</div>`;
     // what's further away stays one tap away instead of doubling the page
-    if (rest.length && shown.length === list.length) html += farOpen ? `<h3 class="far-h">Further away</h3>` + rest.slice(0, 8).map((e) => card(e, `📍 ${e.city || "Location to be confirmed"}`)).join("") : "";
+    if (rest.length && shown.length === list.length) html += farOpen ? `<h3 class="far-h">Further away</h3>` + rest.slice(0, 8).map((e) => card(e, "")).join("") : "";
     $("#events").innerHTML = html;
     const mb = $("#evMore");
     if (shown.length < list.length) { mb.hidden = false; mb.textContent = `Show ${Math.min(PAGE, list.length - shown.length)} more`; mb.onclick = () => { evShown += PAGE; drawEvents(); }; }
@@ -212,8 +212,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 <script>
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Planner"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Last-Minute Yes"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
-  const L = { move: "Runs, hikes and rides", make: "Making and tasting things", gather: "Long dinners and good talk", discover: "Somewhere new" }[g.lane] || "";
-  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small>${L ? `${String(L).replace(/[&<>]/g, "")} first · ` : ""}<a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show these</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small><a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Show my picks</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

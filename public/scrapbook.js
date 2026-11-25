@@ -48,7 +48,7 @@
         <div class="cap">${esc(x.title)}</div><div class="meta">${esc([fmt(x.date), x.place, x.guests ? `${x.guests} came` : ""].filter(Boolean).join(" · "))}</div>${x.note ? `<div class="note">“${esc(x.note)}”</div>` : ""}
         ${mine && x.id ? `<span class="own"><span data-act="photo" title="Add photos">📷</span><span data-act="edit" title="Edit">✎</span><span data-act="del" title="Remove">🗑</span></span>` : ""}</button>`; };
     sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? `${all.length} ${all.length === 1 ? "event" : "events"}, taped in.` : "Every event you've hosted, in one place."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
-      ${all.length ? [...years].map(([y, L]) => `<div class="sb-year">${esc(y)}</div><div class="sb-g">${L.map(card).join("")}</div>`).join("") : `<div class="sb-empty">${window.Potto ? window.Potto.svg("carry", 96) : ""}<p>Paste links to your past Partiful, Luma or Eventbrite events and they'll appear here with their cover photos. Then add your own photos from the night.</p></div>`}
+      ${all.length ? [...years].map(([y, L]) => `<div class="sb-year">${esc(y)}</div><div class="sb-g">${L.map(card).join("")}</div>`).join("") : `<div class="sb-empty">${window.Potto ? window.Potto.svg("carry", 96) : ""}<p>Paste links from Partiful, Luma or Eventbrite. Covers come along.</p></div>`}
       <input type="file" id="sbFile" accept="image/*" multiple hidden>`;
     let target = null;
     sec.onclick = async (e) => { if (e.target.closest("#sbAdd")) return openImport(); const b = e.target.closest(".pol"); if (!b) return; const x = all[+b.dataset.i], act = e.target.closest("[data-act]")?.dataset.act;

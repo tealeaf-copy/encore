@@ -12,7 +12,7 @@ form{display:flex;flex-wrap:wrap;gap:8px}input{flex:1 1 200px;min-width:0;paddin
 <dt>Who you contract with</dt><dd id="who">Pottery Lab. Hosts and makers are paid by Pottery Lab; you never onboard them one by one.</dd>
 <dt>Paying</dt><dd>Card when you confirm, or an invoice paid against your PO within 30 days.</dd>
 <dt>Deposit</dt><dd>50% deposit to confirm. The rest is due 7 days after the event, once everything listed is delivered.</dd>
-<dt>Cancelling</dt><dd>The host's own terms, shown before you book. If a host has none: free to cancel up to 7 days before. Inside 7 days, half the quote.</dd>
+<dt>Cancelling</dt><dd>The host's terms, shown before you confirm. If none: Free to cancel up to 7 days before. Inside 7 days, half the quote.</dd>
 <dt>If a host can't make it</dt><dd>A vetted replacement or a full refund, your choice.</dd>
 <dt>Quotes</dt><dd id="quotes">Downloadable as a PDF to attach to a PO.</dd>
 <dt>Status links</dt><dd>Every booking has a private status page. Share a view-only link with finance.</dd>
@@ -33,5 +33,5 @@ document.getElementById("kit").onsubmit = async (e) => { e.preventDefault(); con
   // only say it's on its way when the server took it; otherwise keep the form and say why
   if (!ok) { err.textContent = j.message || "That didn't send. Try again."; btn.disabled = false; return; }
   if (j.ref) { try { const L = JSON.parse(localStorage.getItem("encore.bookings") || "[]"); L.unshift({ id: j.ref, link: "/vendor", title: "Vendor kit · " + t.company.value.trim(), at: Date.now(), status: "sent" }); localStorage.setItem("encore.bookings", JSON.stringify(L.slice(0, 30))); } catch {} }
-  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); t.outerHTML = `<p><b>On its way.</b> We'll email the kit to ${esc(t.email.value.trim())}.${j.ref ? ` Reference <b>${esc(j.ref)}</b>.` : ""}</p>`; };
+  const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); t.outerHTML = `<p><b>Got it.</b> We'll email the kit to ${esc(t.email.value.trim())}.${j.ref ? ` Reference <b>${esc(j.ref)}</b>.` : ""}</p>`; };
 </script></body></html>

@@ -63,7 +63,7 @@ export function makeCommunity(store) {
   function checkCode(code) {
     const founders = String(process.env.ENCORE_FOUNDER_CODES || "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean);
     if (code && founders.includes(String(code).toUpperCase())) return { ok: true, founder: true };
-    const c = getCode(code); if (!c) return { ok: false, message: "That code doesn't work. Check it with whoever sent it." };
+    const c = getCode(code); if (!c) return { ok: false, message: "That host code doesn't work. Check it with the host who sent it." };
     if (c.usedAt) return { ok: false, message: "That host code has already been used. Ask for another one." };
     return { ok: true, c };
   }
@@ -244,7 +244,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     const o = publicOrigin(req); res.json({ earned, perEvent: CODES_PER_MEMBER, codes: L.map((c) => ({ code: c.code, used: !!c.usedAt, usedBy: c.usedByName ? first(c.usedByName) : null, link: `${o}/join?code=${c.code}` })) }); });
   const BRAND_WANTS = /^\s*(gifts?|vendor kit|recruit|series|panel match|team|teams|brand|booking|quote|order)\b\s*[:·-]/i;
   app.post("/api/waitlist", small, (req, res) => { if (limited(req, 5)) return res.status(429).json({ code: "rate_limited", message: "Too many requests from here." }); const b = req.body || {}, email = clean(b.email, 200).toLowerCase();
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: b.for === "brand" ? "Add a valid email so we can reply." : "Add a valid email so a host can send you a code." }); const wants = clean(b.wants, 140), brand = b.for === "brand" || BRAND_WANTS.test(wants); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants, ...(brand ? { audience: "brand" } : {}) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: b.for === "brand" ? "Add a valid email so we can reply." : "Add a valid email so a host can send you a host code." }); const wants = clean(b.wants, 140), brand = b.for === "brand" || BRAND_WANTS.test(wants); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants, ...(brand ? { audience: "brand" } : {}) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
   // Members see who's waiting (first name, city, what they'd host) and can send one of their codes.
   // Brand leads (gift requests, vendor kits, host recruiting) share this list's storage but are Pottery Lab's to
   // follow up, never shown to other members: only people asking to host appear here.
@@ -308,7 +308,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device
     // signed in: one tap. Signed out: an email is enough (the confirmation email says how to stop).
     const signedIn = acct && acct.ws !== DEFAULT_WS, given = clean(b.email, 200).toLowerCase();
-    if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: "Add your email to follow." });
+    if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: given ? "That email doesn't look right." : "Add your email to follow." });
     const email = signedIn ? clean(acct.email, 200).toLowerCase() : given; b.name = b.name || (signedIn ? acct.name : "");
     const phone = /^\+?[0-9 ()-]{7,20}$/.test(String(b.phone || "").trim()) ? String(b.phone).trim() : "", prev = scopeStore(store, ws).list("followers").map((d) => d.data).find((f) => f.email === email);
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [], phone }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });

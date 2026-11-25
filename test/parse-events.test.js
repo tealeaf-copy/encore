@@ -22,12 +22,12 @@ function load(today = "2026-11-25T10:00:00") {
     cut("{ const _peSr=parseEventText", "{ const _qsSr=quickStart"),
     cut("// ---------- Potto reads: words", "{ const _qsZ=quickStart"),
   ].join("\n");
-  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery;", ctx);
+  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent;", ctx);
   return ctx;
 }
 
 const c = load();
-const KEYS = ["title", "weekday", "date", "startTime", "endTime", "repeat", "sessions", "price", "passPrice", "passCount", "headcount", "preorder", "label"];
+const KEYS = ["title", "weekday", "date", "startTime", "endTime", "repeat", "sessions", "price", "free", "priceUnit", "groupPrice", "groupSize", "passPrice", "passCount", "headcount", "preorder", "label", "activity", "dayClash"];
 // input -> what must come out. `headcount: undefined` means it must not be set; `not` lists values a key must not have.
 const CASES = [
   ["Hike Sat 7am", { weekday: "saturday", date: "2026-11-28", startTime: "07:00", title: "Hike", repeat: undefined }],
@@ -47,8 +47,9 @@ const CASES = [
   ["Swim Mons 7am", { weekday: "monday", repeat: "weekly", title: "Swim" }],
   ["Fun in the sun 3pm", { weekday: undefined, date: undefined }],
   // a weekly class with a pass
-  ["Beginner salsa class Tuesdays 7pm, $20 a class or $70 for 4, 16 spots", { repeat: "weekly", weekday: "tuesday", date: "2026-12-01", startTime: "19:00", price: "$20", passPrice: 70, passCount: 4, headcount: 16, title: "Beginner salsa class", sessions: undefined }],
-  ["Ceramics Wednesdays 6pm, $70 for 4 people", { repeat: "weekly", passPrice: undefined, headcount: 4 }],
+  ["Beginner salsa class Tuesdays 7pm, $20 a class or $70 for 4, 16 spots", { label: "class", activity: "class", repeat: "weekly", weekday: "tuesday", date: "2026-12-01", startTime: "19:00", price: "$20", passPrice: 70, passCount: 4, headcount: 16, title: "Beginner salsa class", sessions: undefined }],
+  // "$70 for 4 people" is a group price (review round 5), not a pass and not the headcount
+  ["Ceramics Wednesdays 6pm, $70 for 4 people", { repeat: "weekly", passPrice: undefined, headcount: undefined, groupPrice: 70, groupSize: 4, price: "$70" }],
   ["Tasting $20 a class or $70 for 4 people", { passPrice: undefined, price: "$20" }],
   ["Dinner for two Sat, $70 for 4", { passPrice: undefined }],
   // courses
@@ -62,7 +63,7 @@ const CASES = [
   ["Wine night last Friday of the month 7pm", { repeat: "monthly", weekday: "friday", date: "2026-11-27", title: "Wine night" }],
   ["Clothes swap second Saturday of each month 11am", { repeat: "monthly", weekday: "saturday", date: "2026-12-12", title: "Clothes swap" }],
   // a pre-order pop-up keeps its whole list in the title, and has an end time
-  ["Pre-order pop-up: sourdough loaves and cardamom buns, pickup Sat 10am to 1pm, $12 each", { title: "Pre-order pop-up: sourdough loaves and cardamom buns", weekday: "saturday", date: "2026-11-28", startTime: "10:00", endTime: "13:00", preorder: true, price: "$12" }],
+  ["Pre-order pop-up: sourdough loaves and cardamom buns, pickup Sat 10am to 1pm, $12 each", { title: "Pre-order pop-up: sourdough loaves and cardamom buns", weekday: "saturday", date: "2026-11-28", startTime: "10:00", endTime: "13:00", preorder: true, price: "$12", priceUnit: "each" }],
   ["Big summer potluck picnic with lawn games and a watermelon eating contest Sat 2pm", { title: "Big summer potluck picnic with lawn games", startTime: "14:00" }],
   // what already worked keeps working
   ["Sat Dec 12 2pm, $45, 10 spots", { weekday: "saturday", date: "2026-12-12", startTime: "14:00", price: "$45", headcount: 10, repeat: undefined }],
@@ -71,9 +72,57 @@ const CASES = [
   ["Weekly salsa class for beginners, every Tuesday 7pm, $20 a class or $70 for a 4-week pass, 16 spots", { repeat: "weekly", weekday: "tuesday", date: "2026-12-01", startTime: "19:00", price: "$20", passPrice: 70, passCount: 4, headcount: 16, sessions: undefined, title: "Weekly salsa class for beginners" }],
   ["Ceramics jam every other Thursday 7pm", { repeat: "biweekly", weekday: "thursday", date: "2026-11-26", title: "Ceramics jam" }],
   ["Run every Tuesday 6am", { repeat: "weekly", weekday: "tuesday", startTime: "06:00" }],
-  ["Wheel throwing class 10 seats Sat 2-4:30pm", { headcount: 10, startTime: "14:00", endTime: "16:30" }],
+  ["Wheel throwing class 10 seats Sat 2-4:30pm", { headcount: 10, startTime: "14:00", endTime: "16:30", label: "workshop" }],
   ["Sunday run in Prospect Park 8am", { title: "Sunday run", weekday: "sunday" }],
-  ["Taco night at my place Saturday at 7, bring a topping", { title: "Taco night", weekday: "saturday", date: "2026-11-28" }],
+  ["Taco night at my place Saturday at 7, bring a topping", { title: "Taco night", weekday: "saturday", date: "2026-11-28", startTime: "19:00" }],
+  // review round 5. The weekday and the date disagree: keep the typed date, flag it, and Potto asks
+  ["Sunday Dec 7th brunch 11am", { date: "2026-12-07", startTime: "11:00", title: "Brunch", dayClash: { typed: "sunday", date: "2026-12-07", alt: "2026-12-06" } }],
+  ["Thursday Jan 8 dinner 7pm", { date: "2027-01-08", startTime: "19:00", title: "Dinner", dayClash: { typed: "thursday", date: "2027-01-08", alt: "2027-01-07" } }],
+  ["Sunday Dec 6 brunch 11am", { date: "2026-12-06", dayClash: undefined }],
+  // M/D dates, out of the title
+  ["Dinner 12/18 7pm", { date: "2026-12-18", startTime: "19:00", title: "Dinner" }],
+  ["Cookie swap 12/20 at 2", { date: "2026-12-20", startTime: "14:00", title: "Cookie swap" }],
+  // a bare hour: evening for dinner-ish plans and for 5 to 11
+  ["dinner dec 10 7:30", { date: "2026-12-10", startTime: "19:30", title: "Dinner" }],
+  ["drinks fri 7", { weekday: "friday", date: "2026-11-27", startTime: "19:00", title: "Drinks" }],
+  ["Book club sat at 8", { weekday: "saturday", date: "2026-11-28", startTime: "20:00", title: "Book club" }],
+  ["Happy hour Thu 6", { weekday: "thursday", startTime: "18:00", title: "Happy hour" }],
+  ["Brunch Sun at 11", { startTime: "11:00", title: "Brunch" }],
+  // ranges without am/pm, out of the title
+  ["Brunch Sat 11-3", { weekday: "saturday", startTime: "11:00", endTime: "15:00", title: "Brunch" }],
+  ["Brunch Sat 10:30-12:30", { startTime: "10:30", endTime: "12:30", title: "Brunch" }],
+  ["Garden party 2-6 Sun", { startTime: "14:00", endTime: "18:00", title: "Garden party" }],
+  ["Dinner party for 6-8 Sat 7pm", { startTime: "19:00", endTime: undefined }],
+  ["Holiday market Dec 10-12", { startTime: undefined, date: "2026-12-10" }],
+  // money: free, pay what you like, drop-in, each, a group price
+  ["Supper club Sat 7pm, $0", { free: true, price: undefined, title: "Supper club" }],
+  ["Free yoga in the park Sat 9am", { free: true, price: undefined, title: "Yoga", label: "class" }],
+  ["Gluten-free baking class Sat 10am, $30", { free: undefined, price: "$30" }],
+  ["Pottery night pay what you want Sat 6pm", { price: "chip", title: "Pottery night", label: "workshop" }],
+  ["Movie night, pay what you like, Fri 8pm", { price: "chip", title: "Movie night" }],
+  ["Salsa $10 drop in Tue 8pm", { price: "$10", priceUnit: "class", label: "class", title: "Salsa" }],
+  ["Yoga Sundays 9am, drop-in $15", { price: "$15", priceUnit: "class", repeat: "weekly" }],
+  ["Pre-order cookies, pickup Sat 10am, $4", { price: "$4", priceUnit: "each", preorder: true }],
+  ["Bake sale Sat 9am, cookies $3", { price: "$3", priceUnit: "each" }],
+  ["Dumpling supper Sat 7pm, $30", { price: "$30", priceUnit: undefined }],
+  ["Cooking class $40 for 2 people Sat 6pm", { price: "$40", groupPrice: 40, groupSize: 2, headcount: undefined }],
+  ["Date night pasta class, $90 per couple, Fri 7pm", { groupPrice: 90, groupSize: 2 }],
+  // titles: filler words, relative days, the schedule-only first clause
+  ["hosting a dumpling night tmrw 7pm", { title: "Dumpling night", date: "2026-11-26", startTime: "19:00" }],
+  ["Taco night tonight 8pm", { title: "Taco night", date: "2026-11-25" }],
+  ["thinking maybe brunch sunday 11am", { title: "Brunch", weekday: "sunday" }],
+  ["umm maybe a picnic sat 1pm", { title: "Picnic", date: "2026-11-28", startTime: "13:00" }],
+  ["Hosting tomorrow: game night 7pm", { title: "Game night", date: "2026-11-26" }],
+  ["6 Wednesdays from Jan 6, Bachata fundamentals, 7pm, $180", { title: "Bachata fundamentals", sessions: 6, date: "2027-01-06", label: "class", price: "$180" }],
+  ["Tango lessons 12/18 7-9, $15 drop-in", { title: "Tango lessons", date: "2026-12-18", startTime: "19:00", endTime: "21:00", price: "$15", priceUnit: "class", label: "class" }],
+  // classes you teach are a class; make-a-thing sessions stay a workshop
+  ["Yoga mon 6pm", { label: "class", activity: "class" }],
+  ["Improv for beginners Thursdays 7pm", { label: "class" }],
+  ["Spanish conversation class Thursdays 6:30", { label: "class", startTime: "18:30" }],
+  ["Guitar lessons Sat 11am", { label: "class" }],
+  ["Bread workshop Sat 10am", { label: "workshop" }],
+  ["Matcha workshop Sun 2pm", { label: "workshop" }],
+  ["Salsa night Fri 9pm", { activity: undefined }],
 ];
 
 for (const [input, want] of CASES) {
@@ -100,4 +149,61 @@ test("the first Sunday is this month's when it's still ahead", () => {
 test("a long title stops at a word, never mid-word", () => {
   const t = c.prTitle("Neighbourhood repair cafe and community tool library open afternoon Sat 2pm");
   assert.ok(t.length <= 60, t); assert.ok("Neighbourhood repair cafe and community tool library open afternoon".startsWith(t), t);
+});
+
+test("Potto's weekday question names both dates", () => {
+  assert.equal(c.prClashSay(c.parseEventText("Sunday Dec 7th brunch 11am").dayClash).text, "Dec 7 is a Monday. Keep Mon, Dec 7, or Sun, Dec 6?");
+  const w = c.prClashSay(c.parseEventText("Thursday Jan 8 dinner 7pm").dayClash);
+  assert.equal(w.text, "Jan 8 is a Friday. Keep Fri, Jan 8, or Thu, Jan 7?");
+  assert.equal(w.keep, "Keep Fri, Jan 8"); assert.equal(w.alt, "Thu, Jan 7");
+});
+
+test("price words: each, a group, a class", () => {
+  assert.equal(c.prPrice({ price: "$12", priceUnit: "each" }), "$12 each");
+  assert.equal(c.prPrice({ price: "$40", groupPrice: 40, groupSize: 2 }), "$40 for 2");
+  assert.equal(c.prPrice({ price: "$10", priceUnit: "class" }), "$10 a class");
+  assert.equal(c.prPrice({ price: "$30" }), "");
+  assert.equal(c.prPrice({ price: "chip", priceUnit: "each" }), "");
+});
+
+// questions never make an event: they go to Potto's answers. "find/show me" still goes to Discover.
+const QUESTIONS = [
+  ["who's coming to my supper club?", true, { kind: "who", q: "supper club" }],
+  ["Who's coming to my supper club", true, { kind: "who", q: "supper club" }],
+  ["who is coming saturday", true, { kind: "who" }],
+  ["how many people are coming to dumpling night?", true, { kind: "who", q: "dumpling night" }],
+  ["How do people pay?", true, { kind: "pay" }],
+  ["can guests pay with venmo", true, { kind: "pay" }],
+  ["ideas for my book club", true, { kind: "ideas", q: "book club" }],
+  ["Any tips for a potluck?", true, { kind: "ideas", q: "potluck" }],
+  ["tips for hosting a game night", true, { kind: "ideas", q: "game night" }],
+  ["suggest something for a rainy saturday", true, { kind: "ideas" }],
+  ["help", true, { kind: "other" }],
+  ["what should I bring to a picnic?", true, { kind: "other" }],
+  ["where should I host brunch", true, { kind: "other" }],
+  ["is 8 people too many for my flat", true, { kind: "other" }],
+  ["Dinner Sat 7pm for 8?", true, { kind: "other" }],
+  ["Dumpling night at my place Friday 7pm for 8", false],
+  ["Sunday Dec 7th brunch 11am", false],
+  ["Hosting a taco night tomorrow", false],
+  ["find me a salsa class", false],
+  ["show me pottery nights near me", false],
+  ["what's on this weekend?", false],
+  ["any dinners near me?", false],
+  ["Canal walk Sat 10am", false],
+];
+for (const [t, q, kind] of QUESTIONS) {
+  test(`question? ${t}`, () => {
+    assert.equal(c.prIsQuestion(t), q);
+    if (kind) for (const [k, v] of Object.entries(kind)) assert.equal(c.prAsk(t)[k], v, `${k} for "${t}": ${JSON.stringify(c.prAsk(t))}`);
+  });
+}
+
+test("who's coming finds the event by a loose name, else the next one", () => {
+  const E = [{ id: "a", name: "Sunday supper club", date: "2026-12-06" }, { id: "b", name: "Dumpling night", date: "2026-11-28" }, { id: "c", name: "Old supper club", date: "2026-10-01" }, { id: "x", name: "Sample supper", example: true, date: "2026-12-01" }];
+  assert.equal(c.prMatchEvent("supper club", E, "2026-11-25").id, "a");
+  assert.equal(c.prMatchEvent("dumpling", E, "2026-11-25").id, "b");
+  assert.equal(c.prMatchEvent("", E, "2026-11-25").id, "b");
+  assert.equal(c.prMatchEvent("next one", E, "2026-11-25").id, "b");
+  assert.equal(c.prMatchEvent("karaoke", E, "2026-11-25"), null);
 });

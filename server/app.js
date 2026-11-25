@@ -120,6 +120,8 @@ export function requiredApprovers(ev, ws = DEFAULT_WS) {
 const PUBLIC_FIELDS = ["questions", "qStyle", "bookingId", "tentative", "hideHostFollow", "forCompany", "why", "askQ", "houseRules", "name", "brand", "date", "city", "headcount", "kind", "format", "copy", "cover", "brandColors", "brandMode", "coverPhoto", "coverArt", "unlisted", "playlistUrl", "hideGuests", "launchQs", "approvalRequired", "venuePick", "plusOnes", "objective", "chatham", "noPhotos", "noWall", "discreet", "dress", "pubTitle", "startTime", "endTime", "tz", "venueName", "venueAddr", "hostName", "theme", "effect", "titleFont", "rsvpWords", "noMaybe", "showWho", "autoWait", "openRsvp", "casual", "meetPoint", "routeUrl", "bring", "slots", "chatUrl", "chipIn", "payUrl", "repeat", "carpool", "activity", "discoverable", "price", "ticketUrl", "pickup", "allergens", "emoji", "hood", "free", "stage", "interestGoal", "dateOptions", "getThere", "geo", "askPhone", "ticketNote", "audienceWho", "earlyUntil", "courses", "dinnerTheme", "autoGo"];
 // Series: a multi-week course (sessions) and a class pass (passPrice for passCount) reach the guest link too.
 PUBLIC_FIELDS.push("sessions", "passPrice", "passCount");
+// How the price reads: "$12 each" (priceUnit), "$40 for 2" (groupPrice for groupSize).
+PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);

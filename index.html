@@ -7379,7 +7379,7 @@ ACT["pop-up"]={emoji:"🛍",bring:["Cash or a card"],ros:[["0:00","Table and sig
 { const _pe4=parseEventText; parseEventText=function(t){ const o=_pe4(t), lo=String(t||"").toLowerCase(); if(/pop-?up|market stall|\bstall\b|selling|sell (?:my|some|\d+)|bake sale|food cart|\bcart\b|\d+\s*(?:sandwiches|banh mi|bánh mì|cakes|cookies|pastries|loaves|boxes)/.test(lo)&&!/booth|conference|expo/.test(lo)){ o.kind="social"; o.casual=true; o.label=/giveaway|free/.test(lo)?"giveaway":"pop-up"; const n=lo.match(/(\d+)\s*(?:sandwiches|banh mi|bánh mì|cakes|cookies|pastries|loaves|boxes)/); if(n) o.headcount=+n[1]; const pr=lo.match(/\$\s?(\d{1,3})(?!\s*k)/); if(pr) o.itemPrice=+pr[1] } return o } }
 { const _qs3=quickStart; quickStart=function(text){ const r=_qs3.apply(this,arguments); try{ const o=parseEventText(text); if(o.label==="pop-up"){ draft.activity="pop-up"; draft.slots=draft.slots?.length?draft.slots:["11:00–12:00","12:00–1:00","1:00–2:00"]; draft.discoverable=true; if(o.itemPrice){ draft.price="$"+o.itemPrice; draft.free=false } } }catch(e){ console.warn(e) } return r } }
 // for people hosting with friends, whatever they type is the plan: no "what should the night do for you?"
-{ const _ch2=cgHandle; cgHandle=function(text){ const t=String(text||"").trim(); if(window.__wsPersonal&&t.length>=8&&!/^(what|how|why|can|could|should|is|are|do|does)\b.*\?$/i.test(t)){ const S=cgState(); try{ localStorage.removeItem(CG_DRAFT) }catch{} S.msgs.push({who:"me",text:t}); cgSave(S); quickStart(t); cgDrafted(draft.name); return } return _ch2.apply(this,arguments) } }
+{ const _ch2=cgHandle; cgHandle=function(text){ const t=String(text||"").trim(); if(window.__wsPersonal&&t.length>=8&&!(typeof prIsQuestion==="function"?prIsQuestion(t):/\?\s*$|^(who|what|where|when|which|why|how|can|could|should|is|are|do|does)\b/i.test(t))){ const S=cgState(); try{ localStorage.removeItem(CG_DRAFT) }catch{} S.msgs.push({who:"me",text:t}); cgSave(S); quickStart(t); cgDrafted(draft.name); return } return _ch2.apply(this,arguments) } }
 // (no "Sell something I make" chip: off-topic for a first event)
 // Home: booking requests and orders waiting, and a link to your page
 async function hostInboxHTML(){ let B=[],O=[],P=null; try{ const [b,o,p]=await Promise.all([fetch("/api/host/bookings").then(r=>r.ok?r.json():{}),fetch("/api/host/orders").then(r=>r.ok?r.json():{}),fetch("/api/host/profile").then(r=>r.ok?r.json():{})]); B=b.bookings||[]; O=(o.orders||[]).filter(x=>x.current); P=p.host }catch{} if(!P?.handle) return "";
@@ -7446,7 +7446,7 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
       if(miss.length){ const row=b.closest(".pub-row"); const f=document.createElement("div"); f.className="pub-miss"; if(!d.date) f.hidden=true; f.innerHTML=`<small>To share it, add ${miss.join(", ")}.</small><div class="row">${!d.startTime?`<label class="f">Start time<input type="time" id="pm-time" value="${esc(d.startTime||"")}"></label>`:""}${!(d.meetPoint||d.venueName)?`<label class="f">Where<input id="pm-where" placeholder="e.g. Hoa Flower Studio, 123 Grand St"></label>`:""}${d.price&&d.price!=="chip"&&!d.ticketUrl?`<label class="f">Payment link<input id="pm-pay" placeholder="https://… (Stripe, Venmo, PayPal)"></label>`:""}</div>`; row.after(f);
         const save=()=>{ const t=$("#pm-time")?.value, w=$("#pm-where")?.value?.trim(), p=$("#pm-pay")?.value?.trim(); if(t) d.startTime=t; if(w){ d.meetPoint=w; d.venueName=w } if(p&&/^https:\/\//.test(p)) d.ticketUrl=p; saveEvent(true).catch(()=>{}) }; $$("#pm-time,#pm-where,#pm-pay").forEach(x=>x.addEventListener("change",save)) } } }catch(e){ console.warn(e) } return r } }
 // Potto says what it just made
-{ const _cd=cgDrafted; cgDrafted=function(name){ const r=_cd.apply(this,arguments); try{ if(window.__wsPersonal&&isCasual(draft)){ const d=draft, S=cgState(); S.msgs=S.msgs.filter(m=>!(m.who==="enc"&&/^Drafted ".*"\. It's in Events\./.test(m.text||""))); S.msgs.push({who:"enc",mood:"happy",text:`Done: ${guestTitle(d)}${d.date?`, ${fmtDate(d.date)}`:""}${d.headcount?`, ${d.headcount} spots`:""}${d.price&&d.price!=="chip"?` at ${d.price}`:""}${d.startTime?` at ${clock12(d.startTime)}`:""}${(d.meetPoint||d.venueName)?`, ${d.meetPoint||d.venueName}`:""}. ${d.startTime&&(d.meetPoint||d.venueName)?"Private until you share it.":"Add a place and time, then share it."}`}); cgSave(S); setTimeout(()=>{ if(!document.getElementById("wizBg")) pipToast(`Drafted ${guestTitle(d)}. ${d.startTime&&(d.meetPoint||d.venueName)?"Check it, then share it.":"Add a place and time, then share it."}`,"happy") },500) } }catch{} return r } }
+{ const _cd=cgDrafted; cgDrafted=function(name){ const r=_cd.apply(this,arguments); try{ if(window.__wsPersonal&&isCasual(draft)){ const d=draft, S=cgState(); S.msgs=S.msgs.filter(m=>!(m.who==="enc"&&/^Drafted ".*"\. It's in Events\./.test(m.text||""))); S.msgs.push({who:"enc",mood:"happy",text:`Done: ${guestTitle(d)}${d.date?`, ${fmtDate(d.date)}`:""}${d.headcount?`, ${d.headcount} spots`:""}${d.price&&d.price!=="chip"?` at ${d.price}`:""}${d.startTime?` at ${clock12(d.startTime)}`:""}${(d.meetPoint||d.venueName)?`, ${d.meetPoint||d.venueName}`:""}. ${d.startTime&&(d.meetPoint||d.venueName)?"Private until you share it.":d.startTime?"Add a place, then share it.":(d.meetPoint||d.venueName)?"Add a time, then share it.":"Add a place and time, then share it."}`}); cgSave(S); setTimeout(()=>{ if(!document.getElementById("wizBg")) pipToast(`Drafted ${guestTitle(d)}. ${d.startTime&&(d.meetPoint||d.venueName)?"Check it, then share it.":d.startTime?"Add a place, then share it.":(d.meetPoint||d.venueName)?"Add a time, then share it.":"Add a place and time, then share it."}`,"happy") },500) } }catch{} return r } }
 // header status: a private draft says so
 { const _dh2=drawHero; drawHero=function(){ const r=_dh2.apply(this,arguments); try{ const d=draft; if(isCasual(d)&&d.stage!=="interest"&&!(d.date&&d.date<localISO())){ const sd=$("#heroHost .sdot"); if(sd){ const live=d.published||d.discoverable; sd.innerHTML=`<i></i>${!live?"Draft":!d.discoverable?"Live · Link only":d.unlisted?"Live · On my page":"Live · On my page and Discover"}`; sd.className="sdot"+(live?" on":"") } } }catch{} return r } }
 // guest page: no dietary questions at a flower class; the host's own photo as the cover; a clear way to pay
@@ -8480,7 +8480,7 @@ function themesOf(c){ const st=(c.tally?.stop||[]); const T={}; st.forEach(s=>{ 
 // custom ideas typed in your own words become events, even with the word "idea" in them
 { const _cel4=cgEventLike; cgEventLike=function(t){ const s=String(t||""); if(_cel4.apply(this,arguments)) return true; const o=parseEventText(s); const money=!!(o.budget||readMoney(s)), people=!!o.headcount||/\bfor \d+|\d+ (?:people|guests|of us|customers|creators|developers)/i.test(s); if(/my own idea|i want to (?:run|host|do)|we want to (?:run|host|do)|plan (?:a|an|my|our)\b/i.test(s)&&(money||people)) return true; if(ACTIVITY.some(([re])=>re.test(s))&&(money||people)) return true; return false } }
 // "Sunday January 11": when the weekday and the date disagree, trust the weekday nearest that date and say so
-{ const _qs19=quickStart; quickStart=function(text){ const r=_qs19.apply(this,arguments); try{ const t=String(text||""), D=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"], m=t.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday),?\s+(?:the\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/i); if(m&&draft?.date){ const want=D.indexOf(m[1].toLowerCase()), d=new Date(draft.date+"T12:00:00"); if(d.getDay()!==want){ let best=null; for(let k=-3;k<=3;k++){ const x=new Date(+d+k*864e5); if(x.getDay()===want&&x>new Date()&&(best==null||Math.abs(k)<Math.abs(best))) best=k } if(best!=null){ const x=new Date(+d+best*864e5); draft.date=x.toISOString().slice(0,10); setTimeout(()=>toast(`${m[2]} ${m[3]} is a ${D[d.getDay()][0].toUpperCase()+D[d.getDay()].slice(1)} next year, so I set it to ${fmtDate(draft.date)}, the nearest ${m[1]}. Change it in Edit details if you meant the date.`),300) } } } }catch(e){ console.warn(e) } return r } }
+{ const _qs19=quickStart; quickStart=function(text){ const r=_qs19.apply(this,arguments); try{ const t=String(text||""), D=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"], m=t.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday),?\s+(?:the\s+)?(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/i); if(m&&draft?.date&&!window.__wsPersonal&&!isCasual(draft)){ const want=D.indexOf(m[1].toLowerCase()), d=new Date(draft.date+"T12:00:00"); if(d.getDay()!==want){ let best=null; for(let k=-3;k<=3;k++){ const x=new Date(+d+k*864e5); if(x.getDay()===want&&x>new Date()&&(best==null||Math.abs(k)<Math.abs(best))) best=k } if(best!=null){ const x=new Date(+d+best*864e5); draft.date=x.toISOString().slice(0,10); setTimeout(()=>toast(`${m[2]} ${m[3]} is a ${D[d.getDay()][0].toUpperCase()+D[d.getDay()].slice(1)} next year, so I set it to ${fmtDate(draft.date)}, the nearest ${m[1]}. Change it in Edit details if you meant the date.`),300) } } } }catch(e){ console.warn(e) } return r } }
 // follow-up counts: one number everywhere
 { const _pli6=pipListItems; pipListItems=function(C){ const I=_pli6.apply(this,arguments); try{ const by=oweList(), per={}; Object.values(by).flat().forEach(({e})=>per[e.id]=(per[e.id]||0)+1); I.forEach(x=>{ if(x.ev&&/follow/i.test(x.t||"")&&per[x.ev.id]!=null) x.t=x.t.replace(/\b\d+(?= (?:guests?|follow-?ups?|people))/,String(per[x.ev.id])) }) }catch{} return I } }
 // "Keep" counts every guest who'd recommend it (NPS 7+ or 4+ stars)
@@ -10984,7 +10984,7 @@ function seriesIcs(body,d){ const rr=seriesRRule(d); if(!rr||/\r?\nRRULE:/.test(
 if(typeof inviteText==="function"){ const _itSr=inviteText; inviteText=function(d){ let s=_itSr.apply(this,arguments); try{ if(!d?.date||!(d.repeat||+d.sessions>1)) return s; const at=d.startTime?` at ${clock12(d.startTime)}`:"", old=fmtDate(d.date)+at, x=srDate(d.date);
     const nw=+d.sessions>1?`${seriesSpan(d)}${at}`:`${seriesEvery(d)}${at} from ${srMD(x)}`; if(nw&&s.includes(old)) s=s.replace(old,nw) }catch{} return s } }
 // the guest view: the repeat under the date, series money words, and a calendar that repeats
-function srGuestTidy(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!/^#rsvp-/.test(location.hash)||!(e.repeat||+e.sessions>1||+e.passPrice)) return;
+function srGuestTidy(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!/^#rsvp-/.test(location.hash)||!(e.repeat||+e.sessions>1||+e.passPrice||e.priceUnit||+e.groupPrice)) return;
   const when=[...host.querySelectorAll(".gxfacts span")].find(s=>(s.dataset.k||s.querySelector("small")?.textContent.trim())==="When")?.querySelector("b");
   const line=+e.sessions>1?seriesSpan(e):seriesEvery(e,false); if(when&&line&&!when.querySelector(".sr-every")&&!when.querySelector("form")){ const sp=document.createElement("i"); sp.className="sr-every"; sp.style.cssText="display:block;font-style:normal;font-size:16px;font-weight:500;opacity:.85;margin-top:2px"; sp.textContent=line[0].toUpperCase()+line.slice(1); when.appendChild(sp) }
   const pr=seriesPrice(e); if(pr){ const pb=[...host.querySelectorAll("#forWho > div")].find(x=>x.querySelector("small")?.textContent.trim()==="Price")?.querySelector("b"); if(pb&&pb.textContent!==pr) pb.textContent=pr }
@@ -11082,7 +11082,7 @@ function prNthDate(y,mo,wd,n){ y+=Math.floor(mo/12); mo=((mo%12)+12)%12; const f
 function prDays(t){ const out=[], re=new RegExp(`\\b(?:(on|this|next|every(?: other)?)\\s+)?(${PR_DAYS_RE})(s)?\\b\\.?`,"gi"); let m;
   while((m=re.exec(t))){ const w=m[2].toLowerCase(), full=PR_DAY.includes(w); let wd=full?PR_DAY.indexOf(w):PR_SHORT[w];
     if(!full){ const before=t.slice(Math.max(0,m.index-4),m.index), after=t.slice(m.index+m[0].length);
-      const ok=!!m[1]||/^[A-Z]/.test(m[2])||new RegExp(`^\\s*(?:\\d|,|$|(?:${PR_MON_RE})\\b|(?:morning|night|evening|afternoon)s?\\b)`,"i").test(after);
+      const ok=!!m[1]||/^[A-Z]/.test(m[2])||new RegExp(`^\\s*(?:\\d|,|$|at\\s+\\d|(?:${PR_MON_RE})\\b|(?:morning|night|evening|afternoon)s?\\b)`,"i").test(after);
       if(!ok||/\bthe\s$/i.test(before)) continue }
     out.push({wd,pre:(m[1]||"").toLowerCase(),plural:!!m[3]&&w!=="weds",index:m.index,text:m[0]}) }
   return out }
@@ -11093,33 +11093,72 @@ function prNth(t){ const m=t.match(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(every\
   if(wd==null||new RegExp(`^\\s+(?:in|of)\\s+(?:${PR_MON_RE})\\b`,"i").test(t.slice(m.index+m[0].length))) return null;
   if(n<0&&!m[4]&&!m[1]&&!/\b(monthly|each month|every month|of the month)\b/i.test(t)) return null;
   return {n,wd,text:m[0]} }
-// a month-day date: "Dec 12", "Jan 6th", "6 Jan"; the next one from today
-function prDate(t,today){ let m=t.match(new RegExp(`\\b(${PR_MON_RE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?::\\d|am\\b|pm\\b))`,"i")), mo, dd;
+// a month-day date: "Dec 12", "Jan 6th", "6 Jan", "12/18"; the next one from today
+const PR_MD_RE=/(?<![\d$.\/])\b(1[0-2]|0?[1-9])\/(3[01]|[12]\d|0?[1-9])(?:\/(\d{4}|\d{2}))?\b(?![\/\d]|\s*(?:off|price|cups?|tsp|tbsp|lbs?|oz)\b)/;
+function prDate(t,today){ let m=t.match(new RegExp(`\\b(${PR_MON_RE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?::\\d|am\\b|pm\\b))`,"i")), mo, dd, yy=0;
   if(m){ mo=PR_MON.indexOf(m[1].slice(0,3).toLowerCase()); dd=+m[2] } else { m=t.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${PR_MON_RE})\\b`,"i")); if(m){ mo=PR_MON.indexOf(m[2].slice(0,3).toLowerCase()); dd=+m[1] } }
-  if(!m||mo<0||dd<1||dd>31) return null; let x=new Date(today.getFullYear(),mo,dd,12); if(x<today) x=new Date(today.getFullYear()+1,mo,dd,12); return {date:x,text:m[0]} }
-// start and end: "7am", "7:30pm", "10am to 1pm", "2-4:30pm", "19:00"
+  if(!m){ m=t.match(PR_MD_RE); if(m){ mo=+m[1]-1; dd=+m[2]; if(m[3]) yy=+m[3]<100?2000+ +m[3]:+m[3] } }
+  if(!m||mo<0||dd<1||dd>31) return null; let x=new Date(yy||today.getFullYear(),mo,dd,12); if(x.getMonth()!==mo) return null;
+  if(!yy&&x<today) x=new Date(today.getFullYear()+1,mo,dd,12); return {date:x,text:m[0]} }
+// the date with the weekday the host typed that sits nearest it ("Sunday Dec 7" when Dec 7 is a Monday: Sun, Dec 6)
+function prNear(x,wd,today){ for(const k of [-1,1,-2,2,-3,3]){ const y=new Date(x); y.setDate(y.getDate()+k); if(y.getDay()!==wd) continue; if(y<today) y.setDate(y.getDate()+7); return y } return x }
+// what Potto says about it: "Dec 7 is a Monday. Keep Mon, Dec 7, or Sun, Dec 6?"
+function prClashSay(c){ const f=(iso,o)=>new Date(iso+"T12:00:00").toLocaleDateString("en-US",o), md=x=>f(x,{month:"short",day:"numeric"}), wd=x=>f(x,{weekday:"short"});
+  return {text:`${md(c.date)} is a ${f(c.date,{weekday:"long"})}. Keep ${wd(c.date)}, ${md(c.date)}, or ${wd(c.alt)}, ${md(c.alt)}?`,keep:`Keep ${wd(c.date)}, ${md(c.date)}`,alt:`${wd(c.alt)}, ${md(c.alt)}`} }
+// a number right after it that isn't a clock: "6-8 people", "10 spots", "6-week"
+const PR_NOT_TIME="(?:people|persons?|guests|spots|seats|places|ppl|friends|kids|adults|weeks?|days?|nights|months?|years?|yrs?|hours?|hrs?|mins?|minutes|sessions?|classes|courses|lessons|dishes|items|of us|yo\\b|k\\b|x\\b)";
+// a bare hour is evening for dinner-ish plans, and for 5 to 11 unless it's a morning plan
+const PR_PM_CTX=/\b(?:dinner|supper|drinks|wine|cocktails?|book club|party|happy hour|night|tonight|evening|bar|karaoke|movie|trivia)\b/i, PR_AM_CTX=/\b(?:brunch|breakfast|morning|sunrise)\b/i;
+function prBare(h,m,t){ h=+h; if(h>12||h===0||h===12) return prClock(h,m); return prClock(h,m,PR_PM_CTX.test(t)||!(PR_AM_CTX.test(t)&&h>=5)?"pm":"am") }
+// "11-3" is 11am to 3pm, "10:30-12:30" stays in the morning, "6-9" and "dinner 7-10" are evening
+function prRange(a,am,b,bm,t){ a=+a; b=+b; if(a>23||b>24) return null; let H1;
+  if(a>12||a===0||a===12) H1=a; else H1=PR_PM_CTX.test(t)||(!PR_AM_CTX.test(t)&&a<=8)?a+12:a;
+  let H2=b>12||b===0?b:[b,b+12].filter(h=>h<=24).find(h=>h*60+(+bm||0)>H1*60+(+am||0)); if(H2==null) H2=b; if(H2===24) H2=0;
+  const s1=prClock(H1,am), s2=prClock(H2,bm); return s1&&s2&&s1!==s2?{startTime:s1,endTime:s2}:null }
+const prRangeRe=()=>new RegExp(`(?<![$\\d.:/])(?<!(?:${PR_MON_RE})\\.?\\s)(?<!\\b(?:for|ages?)\\s)\\b(\\d{1,2})(?::(\\d{2}))?\\s*(?:-|–|\\u2014|to|until|till)\\s*(\\d{1,2})(?::(\\d{2}))?\\b(?![\\/:\\d.%]|\\s*(?:am|pm)\\b|\\s*${PR_NOT_TIME})`,"i");
+const prBareRe=()=>new RegExp(`(?:\\bat\\s+|\\b(?:${PR_DAYS_RE})s?\\.?,?\\s+(?:at\\s+)?|\\b(?:tonight|tomorrow|tmrw|tmw|today)\\s+(?:at\\s+)?|\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+(?:at\\s+)?|\\b\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?,?\\s+(?:at\\s+)?)(\\d{1,2})(?::(\\d{2}))?\\b(?![\\/:\\d.%-]|\\s*(?:am|pm|st|nd|rd|th)\\b|\\s*${PR_NOT_TIME})`,"i");
+// start and end: "7am", "7:30pm", "10am to 1pm", "2-4:30pm", "19:00", "11-3", "fri 7", "dec 10 7:30"
 function prTimes(t){ const s=t.replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
   const rg=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
   if(rg){ const ap2=rg[6].toLowerCase(); let ap1=(rg[3]||"").toLowerCase(); if(!ap1) ap1=ap2==="pm"&&(+rg[1]%12)>(+rg[4]%12)?"am":ap2; const a=prClock(rg[1],rg[2],ap1), b=prClock(rg[4],rg[5],ap2); if(a&&b) return {startTime:a,endTime:b} }
+  const r2=s.match(prRangeRe()); if(r2){ const r=prRange(r2[1],r2[2],r2[3],r2[4],s); if(r) return r }
   const one=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i); if(one){ const a=prClock(one[1],one[2],one[3].toLowerCase()); if(a) return {startTime:a} }
-  const h24=s.match(/(?<![$\d.:])\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(h24) return {startTime:prClock(h24[1],h24[2])};
+  const h24=s.match(/(?<![$\d.:\/])\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(h24) return {startTime:prBare(h24[1],h24[2],s)};
+  const b=s.match(prBareRe()); if(b){ const a=prBare(b[1],b[2],s); if(a) return {startTime:a} }
   return {} }
-// the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
-// characters, cut at a list or word boundary so "sourdough loaves and cardamom buns" isn't cut mid-list.
-function prTitle(text){ let t=String(text||"").trim().replace(/^(?:please\s+)?(?:let'?s\s+|i(?:'m| am)\s+(?:hosting|running|planning|doing|throwing)\s+|(?:plan|host|throw|organi[sz]e|set up)\s+|(?:run|make)\s+(?=(?:a|an|my|our)\s))/i,"").replace(/^(?:a|an|my|our)\s+/i,"").replace(/^public\s+/i,"");
-  t=t.split(/[;!?]|\.\s|,|\s+[-–\u2014]\s+|\s+(?:for|with|at|in|on)\s+(?:\d|about|around|my|our|mine|home|the\s|a\s|an\s)|\s+\$|\s+\d+\s*(?:people|guests|friends|ppl|spots|seats|places|sandwiches|cakes)\b/i)[0];
-  t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0];
+// filler before the plan: "umm", "maybe", "thinking maybe", "hosting a", "free"
+const PR_FILL=/^(?:(?:umm*|um+|uh+|hmm+|ok(?:ay)?|so|well|hey)\b[,.!]*\s*|(?:i'?m\s+|i am\s+|we'?re\s+)?thinking(?:\s+(?:of|about|maybe))*\s+|(?:maybe|perhaps|probably)\b[,]?\s+|(?:i'?m\s+|we'?re\s+)?hosting\s+|free\s+(?=\S))/i;
+const PR_SPLIT=new RegExp(`[;!?]|\\.\\s|,|\\s+[-–\\u2014]\\s+|\\s+(?:for|with|at|in|on)\\s+(?:\\d|about|around|my|our|mine|home|the\\s|a\\s|an\\s)|\\s+\\$|\\s+\\d+\\s*(?:people|guests|friends|ppl|spots|seats|places|sandwiches|cakes)\\b|\\s+pay[- ]what\\b|\\s+(?:pwyw|by donation)\\b`,"i");
+// one clause of the title without the day, time, date and repeat
+function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0];
   const lead=t.match(new RegExp(`^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\\s+(\\S+)$`,"i"));
   if(!lead){ const nth=prNth(t); if(nth) t=t.replace(nth.text," ");
+    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(new RegExp(prRangeRe().source,"gi")," ")
+      .replace(new RegExp(`\\b((?:${PR_DAYS_RE})s?\\.?)\\s+(?:at\\s+)?\\d{1,2}(?::\\d{2})?\\b(?![\\/:\\d%-]|\\s*(?:am|pm|st|nd|rd|th)\\b|\\s*${PR_NOT_TIME})`,"gi"),"$1")
+      .replace(new RegExp(`\\bat\\s+\\d{1,2}(?::\\d{2})?\\b(?![\\/:\\d%-]|\\s*(?:am|pm)\\b|\\s*${PR_NOT_TIME})`,"gi")," ")
+      .replace(new RegExp(PR_MD_RE.source,"g")," ");
     t=t.replace(new RegExp(`\\b(?:starting|from|beginning)\\s+(?:on\\s+)?(?:(?:${PR_DAYS_RE}),?\\s+)?(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`,"gi")," ")
       .replace(new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b(?:,?\\s+20\\d\\d)?`,"gi")," ")
       .replace(new RegExp(`\\b\\d{1,2}\\s+(?:${PR_DAY.join("|")})s\\b`,"gi")," ").replace(/\b\d{1,2}\s+(?:weekly\s+)?sessions\b/gi," ");
     for(const d of prDays(t).reverse()) t=t.slice(0,d.index)+" "+t.slice(d.index+d.text.length);
-    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/\b(?:noon|tonight|today|tomorrow|this weekend)\b/gi," ")
-      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next)\s+/i,"") }
-  t=t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim();
+    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:\/])\b\d{1,2}:\d{2}\b/g," ").replace(/\b(?:noon|tonight|today|tomorrow|tmrw|tmw|this weekend|this evening)\b/gi," ")
+      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
+  return t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim() }
+// the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
+// characters, cut at a list or word boundary so "sourdough loaves and cardamom buns" isn't cut mid-list. When the
+// first clause is only the schedule ("6 Wednesdays from Jan 6, Bachata fundamentals"), the next clause is the name.
+function prTitle(text){ let t=String(text||"").trim(); for(let k=0;k<6;k++){ const n=t.replace(PR_FILL,""); if(n===t) break; t=n }
+  t=t.replace(/^(?:please\s+)?(?:let'?s\s+|i(?:'m| am)\s+(?:hosting|running|planning|doing|throwing)\s+|(?:plan|host|throw|organi[sz]e|set up)\s+|(?:run|make)\s+(?=(?:a|an|my|our)\s))/i,"").replace(/^(?:a|an|my|our)\s+/i,"").replace(/^public\s+/i,"");
+  for(let k=0;k<6;k++){ const n=t.replace(PR_FILL,"").replace(/^(?:a|an|my|our)\s+/i,""); if(n===t) break; t=n }
+  const parts=t.split(PR_SPLIT); t="";
+  for(const p of parts.slice(0,4)){ const c=prTitleClause(p||""); if(/[a-z]{3,}/i.test(c)&&!/^(?:pickup|bring|from|every|starting|at|on|and|free|drop[- ]?in)\b/i.test(c)){ t=c; break } }
   if(t.length>60){ const c=t.slice(0,61), cut=Math.max(c.lastIndexOf(", "),c.lastIndexOf(" and "),c.lastIndexOf(" & "),c.lastIndexOf(": ")); t=(cut>=20?c.slice(0,cut):c.replace(/\s+\S*$/,"")).replace(/[\s,:&-]+$/,"") }
   return t?t.replace(/^./,c=>c.toUpperCase()):"" }
+// a class you teach (dance, yoga, improv, a language, music lessons) is a "class"; a make-a-thing session stays a "workshop"
+const PR_CLASS=/\b(?:dance|dancing|salsa|bachata|tango|kizomba|zumba|ballet|hip[- ]?hop|swing dance|improv|yoga|pilates|barre)\b/i, PR_LESSON=/\b(?:class|classes|lessons?|course|fundamentals|basics|for beginners|beginners?|drop[- ]?in|series|workshop)\b/i,
+  PR_SUBJ=/\b(?:language|spanish|french|italian|german|japanese|mandarin|korean|portuguese|music|guitar|piano|singing|voice|vocal|drum(?:ming)?|ukulele|violin|cello)\b/i,
+  PR_CRAFT=/\b(?:clay|pottery|ceramics?|wheel|matcha|bread|sourdough|candles?|flowers?|bouquets?|floral|ikebana|watercolou?r|painting|knife skills|cooking|knit(?:ting)?|sew(?:ing)?)\b/i;
+const prIsClass=t=>!PR_CRAFT.test(t)&&((PR_CLASS.test(t)&&(PR_LESSON.test(t)||!/\b(?:night|party|social|festival|show|jam|fest)\b/i.test(t)))||(PR_SUBJ.test(t)&&PR_LESSON.test(t)));
 // everything Potto reads from one sentence. Only what the host said is set.
 function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prToday(), o={};
   const nth=prNth(t), dt=prDate(t,today), days=prDays(nth?t.replace(nth.text," "):t), day=nth?{wd:nth.wd,pre:"",plural:false}:days[0];
@@ -11130,11 +11169,16 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
   const all=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:all|the)\s+(\d{1,2})\b(?!\s*(?:people|persons?|guests|spots|seats|ppl|friends|of us))/i);
   const n=+(sp.sessions||(wk&&wk[1])||(nd&&nd[1])||(all&&all[2])||0);
   if(n>=2&&n<=52){ o.sessions=n; o.course=true; o.label="workshop"; o.activity="workshop" }
-  // the weekday and the date
+  if(prIsClass(t)){ o.label="class"; o.activity="class" }
+  // the weekday and the date. A date that isn't on the weekday they typed stays as typed, and Potto asks (dayClash).
   if(day) o.weekday=PR_DAY[day.wd];
-  if(dt){ let x=dt.date; if(o.course&&day&&x.getDay()!==day.wd){ x=new Date(x); while(x.getDay()!==day.wd) x.setDate(x.getDate()+1) } o.date=prISO(x) }
+  if(dt){ let x=dt.date; if(o.course&&day&&x.getDay()!==day.wd){ x=new Date(x); while(x.getDay()!==day.wd) x.setDate(x.getDate()+1) }
+    else if(day&&!nth&&!day.plural&&day.pre!=="every"&&x.getDay()!==day.wd){ o.dayClash={typed:PR_DAY[day.wd],date:prISO(x),alt:prISO(prNear(x,day.wd,today))}; o.weekday=PR_DAY[x.getDay()] }
+    o.date=prISO(x) }
   else if(nth){ let x=prNthDate(today.getFullYear(),today.getMonth(),nth.wd,nth.n); if(!x||x<today) x=prNthDate(today.getFullYear(),today.getMonth()+1,nth.wd,nth.n)||new Date(today.getFullYear(),today.getMonth()+1,1,12); o.date=prISO(x); o.nth=nth.n }
-  else if(day&&!/\b(tonight|today|tomorrow|this evening)\b/.test(lo)){ let k=(day.wd-today.getDay()+7)%7; if(day.pre==="this"){ /* the coming one, today included */ } else if(day.pre==="next"){ if(!k) k=7; k+=7 } else if(!k) k=7; const x=new Date(today); x.setDate(x.getDate()+k); o.date=prISO(x) }
+  else if(/\b(tonight|today|this evening)\b/.test(lo)) o.date=prISO(today);
+  else if(/\b(tomorrow|tmrw|tmw|tmr)\b/.test(lo)){ const x=new Date(today); x.setDate(x.getDate()+1); o.date=prISO(x) }
+  else if(day){ let k=(day.wd-today.getDay()+7)%7; if(day.pre==="this"){ /* the coming one, today included */ } else if(day.pre==="next"){ if(!k) k=7; k+=7 } else if(!k) k=7; const x=new Date(today); x.setDate(x.getDate()+k); o.date=prISO(x) }
   Object.assign(o,prTimes(t));
   // the repeat
   if(o.course) o.repeat=/\bevery other\b|\bbiweekly\b|\bfortnightly\b/.test(lo)?"biweekly":"weekly";
@@ -11143,39 +11187,89 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
   else if(/\bevery (?:week|day)\b|\bweekly\b/.test(lo)||days.some(d=>d.pre==="every")) o.repeat="weekly";
   else if(/\bmonthly\b|\bevery month\b/.test(lo)) o.repeat="monthly";
   else if(day&&day.plural&&!dt&&day.pre!=="this"&&day.pre!=="next") o.repeat="weekly";
-  // money: "$20 a class", "$320 for all 8", "$30 a person", "$12 each", "$180"; the pass "$70 for 4"
-  const per=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a|per|\/)\s*(?:class|session|lesson|drop-?in|visit)\b|\$\s?(\d{1,5}(?:\.\d{2})?)\s*drop-?in\b/i);
-  const each=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:each|a person|per person|pp\b|a head|a seat|a spot|a ticket|per ticket)/i);
-  if(sp.passPrice){ o.passPrice=sp.passPrice; o.passCount=sp.passCount }
-  else if(per){ const bare=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:a\s+)?(\d{1,2})\b(?!\s*(?:-|\s)?(?:people|persons?|guests|spots|seats|ppl|friends|of us))/gi)].find(m=>!/for\s+(?:all|the)\s/i.test(m[0])); if(bare&&+bare[2]>=2){ o.passPrice=+bare[1]; o.passCount=+bare[2] } }
-  const amt=per?(per[1]||per[2]):all?all[1]:each?each[1]:([...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?!\s*k\b|\d)/gi)].map(m=>m[1]).find(v=>+v!==+o.passPrice)||"");
-  if(amt&&!(+amt>=1000)) { o.price="$"+amt; o.seatPrice=+amt }
-  // spots: "16 spots", "10 seats", "10 people". A course's session count or a pass count is never the headcount.
-  const hc=t.match(/\b(\d{1,4})\s*(?:spots|seats|people|guests|places|persons|ppl|friends|max)\b|\b(?:max|up to)\s+(\d{1,4})\b(?!\s*(?:am|pm|weeks?|sessions?|classes))/i);
-  if(hc) o.headcount=+(hc[1]||hc[2]);
   if(/\bpre-?orders?\b/i.test(t)) o.preorder=true;
+  // money: "$20 a class", "$10 drop-in", "$320 for all 8", "$30 a person", "$12 each", "$180"; the pass "$70 for 4";
+  // "$40 for 2 people" (a group price); "$0" and "free"; "pay what you want" (chip)
+  const pwyw=/\bpay[- ]what[- ](?:you|u)[- ](?:want|like|can)\b|\bpwyw\b|\bby donation\b|\bdonation[- ]based\b/i.test(t);
+  const paid=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?!\s*k\b|\d)/gi)].map(m=>m[1]).filter(v=>+v>0);
+  const freeWord=/(?:^|[^-\w])free\b(?!\s*(?:-|time|parking|wi-?fi|refills?|range)\b)/i.test(t.replace(/\b(?:gluten|dairy|nut|sugar|alcohol|booze|meat|carb|caffeine|smoke|scent|fragrance|stress|hands|cruelty|kid|pet|child|tax|fee|duty|rent|feel)[- ]free\b/gi," "));
+  const grp=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|per)\s+(?:a\s+|the\s+)?(?:(\d)\s*(?:people|persons|ppl|guests|of you|of us|adults)\b|(two|three|four|five|six)(?:\s+(?:people|persons|ppl|guests|of you|of us|adults))?\b|(couples?|pair)\b)/i);
+  const gN=grp?(grp[2]?+grp[2]:grp[3]?{two:2,three:3,four:4,five:5,six:6}[grp[3].toLowerCase()]:2):0;
+  if(pwyw) o.price="chip";
+  else if(!paid.length&&(freeWord||/\$\s?0(?:\.00)?(?![.\d])/.test(t))) o.free=true;
+  else { const per=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a|per|\/)\s*(?:class|session|lesson|drop[- ]?in|visit)\b|\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a\s+)?drop[- ]?in\b|\bdrop[- ]?ins?\s*(?:is|are|:|at|for)?\s*\$\s?(\d{1,5}(?:\.\d{2})?)/i);
+    const each=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:each|a person|per person|pp\b|a head|a seat|a spot|a ticket|per ticket)/i);
+    if(sp.passPrice){ o.passPrice=sp.passPrice; o.passCount=sp.passCount }
+    else if(per){ const bare=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:a\s+)?(\d{1,2})\b(?!\s*(?:-|\s)?(?:people|persons?|guests|spots|seats|ppl|friends|of us))/gi)].find(m=>!/for\s+(?:all|the)\s/i.test(m[0])); if(bare&&+bare[2]>=2){ o.passPrice=+bare[1]; o.passCount=+bare[2] } }
+    if(grp&&gN>=2&&gN<=6){ o.groupPrice=+grp[1]; o.groupSize=gN }
+    const amt=per?(per[1]||per[2]||per[3]):all?all[1]:each?each[1]:o.groupPrice?grp[1]:(paid.find(v=>+v!==+o.passPrice)||"");
+    if(amt&&+amt>0&&!(+amt>=1000)){ o.price="$"+amt; if(!(o.groupPrice&&!per)) o.seatPrice=+amt }
+    if(o.price&&per&&!o.passPrice) o.priceUnit="class";
+    else if(o.price&&!o.groupPrice&&!o.sessions&&!o.passPrice&&(o.preorder||/pop-?up|bake sale|\bbak(?:e|ed|ing)\b|loaves|cookies|cakes|buns|pastries|croissants|boxes|sandwiches|jars|bouquets/i.test(t))&&!/a person|per person|\bpp\b|a head|a seat|a ticket/i.test(t)) o.priceUnit="each" }
+  // spots: "16 spots", "10 seats", "10 people". A course's session count, a pass count or a group price's "2 people" is never the headcount.
+  const tH=grp&&o.groupPrice?t.replace(grp[0]," "):t;
+  const hc=tH.match(/\b(\d{1,4})\s*(?:spots|seats|people|guests|places|persons|ppl|friends|max)\b|\b(?:max|up to)\s+(\d{1,4})\b(?!\s*(?:am|pm|weeks?|sessions?|classes))/i);
+  if(hc) o.headcount=+(hc[1]||hc[2]);
   const title=prTitle(t); if(title) o.title=title;
   return o }
+// money words for one price: "$12 each", "$40 for 2", "$10 a class"; "" when the plain "a person" fits
+function prPrice(d){ const amt=v=>{ const m=String(v??"").match(/(\d+(?:\.\d{1,2})?)/); return m?"$"+m[1]:"" };
+  if(+d?.groupPrice>0&&+d?.groupSize>1) return `${amt(d.groupPrice)} for ${+d.groupSize}`;
+  const p=d?.price&&d.price!=="chip"?amt(d.price):""; if(!p) return "";
+  return d.priceUnit==="each"?`${p} each`:d.priceUnit==="class"?`${p} a class`:"" }
+// ---------- Potto answers: questions never make an event ----------
+// a question (ends with "?", or starts like one) gets an answer; "find/show me..." still goes to Discover
+function prIsQuestion(text){ const t=String(text||"").trim(); if(!t) return false;
+  if(/^(?:find|show|search|look(?:ing)? for|what'?s on\b|is there\b|anything\b|recommend|any\s+(?!tips?\b|ideas?\b|suggestions?\b))/i.test(t)) return false;
+  return /\?\s*$/.test(t)||/^(?:who|what|where|when|which|why|how|can|could|should|is|are|do|does|ideas?|help|suggest(?:ions?)?|any tips|tips)(?![\w'’])/i.test(t)||/^(?:who|what|where|when|how)['’]s\b/i.test(t) }
+const prSubject=s=>String(s||"").replace(/[?.!]+\s*$/,"").replace(/^(?:for|to|on|about|at)\s+/i,"").replace(/^(?:my|our|the|a|an|this|that|hosting|throwing|running)\s+/i,"").replace(/^(?:my|our|the|a|an|good|fun|great)\s+/i,"").trim();
+// what kind of question: paying, who's coming to <x>, ideas for <x>, or anything else
+function prAsk(text){ const t=String(text||"").trim();
+  const who=t.match(/\bwho(?:['’]s|\s+is|\s+are|['’]re)?\s+(?:all\s+)?(?:coming|going|in|attending|signed up|joining|rsvp['’]?d|booked|paid)\b(?:\s+(?:to|for|at)\s+(.+))?/i)||t.match(/\bhow many (?:people |guests )?(?:are |have )?(?:coming|going|in|signed up|said yes)\b(?:\s+(?:to|for|at)\s+(.+))?/i);
+  if(who) return {kind:"who",q:prSubject(who[1]||"")};
+  const idea=t.match(/^(?:(?:any|some|got any|give me(?: some)?)\s+)?(?:ideas?|tips?|suggestions?|suggest(?:\s+some(?:thing|\s+ideas?)?)?)\b\s*(?:for|on|about)?\s*(.*)$/i)||t.match(/\b(?:ideas?|tips?|suggestions?)\s+(?:for|on|about)\s+(.+)$/i)||t.match(/\bwhat (?:should|could|can) (?:i|we) (?:do|make|serve|play|cook) (?:for|at) (.+)$/i);
+  if(idea) return {kind:"ideas",q:prSubject(idea[1]||"")};
+  if(/\b(?:pay|paying|paid|payments?|venmo|stripe|paypal|cash ?app|charge|collect (?:money|payments?)|take money)\b/i.test(t)) return {kind:"pay"};
+  return {kind:"other"} }
+// an event by a loose name: "my supper club" finds "Sunday supper club"; "next one" is the next one coming up
+function prMatchEvent(q,events,today){ const L=(events||[]).filter(e=>e&&!e.example), name=e=>String(e.pubTitle||e.name||"").toLowerCase(), up=e=>!e.date||e.date>=today;
+  const byDate=(a,b)=>String(a.date||"9").localeCompare(String(b.date||"9")); q=String(q||"").toLowerCase().trim();
+  if(!q||/^(?:next|next one|next event|it|this|that|this one|that one|upcoming|my event|the event)$/.test(q)) return L.filter(up).sort(byDate)[0]||null;
+  const stop=new Set(["my","our","the","a","an","next","one","event","this","that","night","party","at","to","for","of","and"]), words=q.split(/[^a-z0-9']+/).filter(w=>w.length>1&&!stop.has(w));
+  if(!words.length) return null; let best=null, bs=0;
+  for(const e of L){ const n=name(e); let s=words.filter(w=>n.includes(w)||n.includes(w.replace(/s$/,""))).length/words.length; if(n.includes(q)) s+=1; if(up(e)) s+=.1; if(s>bs){ bs=s; best=e } }
+  return bs>=.5?best:null }
 // ---------- Potto reads: wiring ----------
 { const _peZ=parseEventText; parseEventText=function(t){ const o=_peZ.apply(this,arguments); try{ const p=prRead(t);
     // what the host said wins over the earlier guesses
-    for(const k of ["weekday","date","startTime","endTime","repeat","sessions","course","price","seatPrice","passPrice","passCount","preorder","title","nth"]) if(p[k]!=null) o[k]=p[k];
-    if(p.course&&(o.casual||!o.label||/^(get-together|gathering at my place)$/i.test(o.label||""))){ o.label="workshop"; o.activity="workshop" }
+    for(const k of ["weekday","date","startTime","endTime","repeat","sessions","course","price","seatPrice","passPrice","passCount","preorder","title","nth","dayClash","priceUnit","groupPrice","groupSize"]) if(p[k]!=null) o[k]=p[k];
+    if(p.label==="class"&&(o.casual||window.__wsPersonal)){ o.label="class"; o.activity="class" }
+    else if(p.course&&(o.casual||!o.label||/^(get-together|gathering at my place)$/i.test(o.label||""))){ o.label="workshop"; o.activity="workshop" }
+    // free and pay-what-you-like: no price, no seat price
+    if(p.free){ o.free=true; delete o.price; delete o.seatPrice; delete o.itemPrice }
+    if(p.price==="chip"){ delete o.seatPrice; delete o.itemPrice }
     if(p.headcount) o.headcount=p.headcount;
-    else if(o.headcount&&[p.sessions,p.passCount].includes(+o.headcount)) delete o.headcount;
+    else if(o.headcount&&[p.sessions,p.passCount,p.groupSize].includes(+o.headcount)) delete o.headcount;
     if(p.date&&o.month) delete o.month;
   }catch(e){ console.warn(e) } return o } }
 { const _qsZ=quickStart; quickStart=function(text){ const r=_qsZ.apply(this,arguments); try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d.example||!(isCasual(d)||window.__wsPersonal)) return r;
-    const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=/\b(tonight|today|tomorrow|this evening)\b/i.test(t), typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
+    const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=/\b(tonight|today|tomorrow|tmrw|tmw|tmr|this evening)\b/i.test(t), typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
     // the title: keep "Taco night"-style endings an earlier pass added to a short name
     if(p.title&&p.title.length>=2){ const cur=String(d.pubTitle||d.name||""); if(!(cur.toLowerCase().startsWith(p.title.toLowerCase()+" ")&&/^(night|morning|afternoon|evening)$/i.test(cur.slice(p.title.length+1)))){ d.pubTitle=p.title; d.name=p.title } }
-    if(p.date&&!feeler&&!rel&&(!typedDate||!d.date||p.sessions)) d.date=p.date;
+    if(p.date&&!feeler&&(rel?!d.date:(!typedDate||!d.date||p.sessions||p.dayClash))) d.date=p.date;
+    // "Sunday Dec 7th" when Dec 7 is a Monday: keep the date they typed, and Potto asks which they meant
+    if(p.dayClash&&!feeler) d.dayClash=p.dayClash; else delete d.dayClash;
     if(p.startTime){ d.startTime=p.startTime; if(p.endTime) d.endTime=p.endTime; else if(d.endTime&&d.endTime<=p.startTime) delete d.endTime }
     if(p.repeat) d.repeat=p.repeat;
     if(p.sessions){ d.sessions=p.sessions; if(!d.activity||/^(get-together|gathering at my place|pop-up)$/i.test(d.activity)) d.activity="workshop" }
-    if(p.price){ d.price=p.price; d.free=false }
+    if(p.price){ d.price=p.price; d.free=false; if(p.price==="chip"){ delete d.seatPrice; delete d.itemPrice } }
+    if(p.free){ d.free=true; d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit }
+    if(p.priceUnit) d.priceUnit=p.priceUnit; else if(p.price) delete d.priceUnit;
+    if(p.groupPrice){ d.groupPrice=p.groupPrice; d.groupSize=p.groupSize } else if(p.price||p.free){ delete d.groupPrice; delete d.groupSize }
     if(p.passPrice){ d.passPrice=p.passPrice; d.passCount=p.passCount }
-    if(p.headcount) d.headcount=p.headcount; else if(+d.headcount&&[p.sessions,p.passCount].includes(+d.headcount)) d.headcount=0;
+    if(p.headcount) d.headcount=p.headcount; else if(+d.headcount&&[p.sessions,p.passCount,p.groupSize].includes(+d.headcount)) d.headcount=0;
+    // a class you teach gets the class plan (warm-up, the lesson, practice, wrap), not the make-a-thing workshop
+    if(p.label==="class"&&d.activity!=="class"){ d.activity="class"; try{ if(typeof starterProduce==="function"){ const P=starterProduce(d); d.produce={...(d.produce||{}),runOfShow:P.runOfShow,tasks:P.tasks} } }catch{} }
     if(p.preorder) d.preorder=true;
     try{ if(typeof renderStep==="function"&&location.hash==="#studio") renderStep() }catch{}
   }catch(e){ console.warn(e) } return r } }
@@ -11209,6 +11303,49 @@ if(typeof renderGuest==="function"){ const _rgZ=renderGuest; renderGuest=async f
     const a=pb.querySelector("a[href^='https://']"); if(!a) return r; const M=typeof myRsvp==="function"?myRsvp(e.id):null, amt=`$${+e.passPrice}`;
     const b=document.createElement("a"); b.id="payPass"; b.className="btn ghost"; b.target="_blank"; b.rel="noopener"; b.style.marginLeft="8px"; b.href=payLinkFor(e.ticketUrl,amt,[M?.name,guestTitle(e),`${e.passCount} classes`].filter(Boolean).join(" · ")); b.textContent=`Pay ${amt} for ${+e.passCount}`; a.after(b);
     b.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} const ip=document.getElementById("gIPaid"); if(ip) ip.hidden=false }) }catch(err){ console.warn(err) } return r } }
+// ---------- Potto answers: wiring ----------
+// a class you teach: warm up, the lesson, practice, wrap. Not the make-a-thing workshop.
+ACT["class"]={emoji:"🎓",bring:["Comfy clothes","Water"],ros:[["0:00","Warm-up and names"],["0:15","The lesson: one new thing, step by step"],["0:45","Practice while you go round and help"],["1:15","Wrap: run it once together, then what's next time"]],tasks:[[-14,"Open booking"],[-7,"Plan the lesson: one thing they'll leave able to do"],[-2,"Check the room and the music or kit"],[-1,"Send the reminder with what to wear"],[1,"Thank everyone; share the next date"]],tips:"Teach one thing well. People come back when they leave able to do something new."};
+// money words: "$12 each" at a pop-up, "$40 for 2", "$10 a class" (priceTxt, the host header and Home cards read seriesPrice)
+{ const _spP=seriesPrice; seriesPrice=function(d){ return _spP.apply(this,arguments)||prPrice(d) } }
+// three short ideas for "ideas for <x>", from the friends library and the plan Potto already uses for that kind of event
+function prIdeas(q){ const lo=String(q||"").toLowerCase(), lib=(typeof LIB!=="undefined"?LIB:[]).filter(x=>x.audience==="friends"), out=[];
+  const words=lo.split(/[^a-z]+/).filter(w=>w.length>2&&!/^(?:the|and|for|with|night|party|club)$/.test(w));
+  const hit=words.length?lib.find(x=>words.some(w=>`${x.name} ${x.format}`.toLowerCase().includes(w.replace(/s$/,"")))):null;
+  if(!lo){ lib.slice(0,3).forEach(x=>out.push(`${x.name}: ${x.line}`)); return {ideas:out,title:lib[0]?.name||""} }
+  if(hit) (hit.steps||[]).slice(0,2).forEach(s=>out.push(s+"."));
+  const A=actOf({activity:lo,name:lo})||{}; if(A.tips) out.push(A.tips);
+  if(A!==ACT.default&&A.ros?.length>2) out.push("A flow that works: "+A.ros.slice(0,3).map(x=>x[1].split(/[;:]/)[0].replace(/^./,c=>c.toLowerCase())).join(", then ")+".");
+  if(A!==ACT.default&&A.bring?.length) out.push("Ask guests to bring: "+A.bring.join(", ").toLowerCase()+".");
+  if(out.length<3&&A===ACT.default) lib.filter(x=>x!==hit).slice(0,3-out.length).forEach(x=>out.push(`Or try ${x.name.toLowerCase()}: ${x.line}`));
+  return {ideas:[...new Set(out)].slice(0,3),title:String(q).replace(/^./,c=>c.toUpperCase())} }
+// the answer path for friends hosts: paying, who's coming, ideas, and a plain fallback. Nothing here makes an event.
+function prAnswer(t){ const S=cgState(), a=prAsk(t), today=localISO(), mine=(typeof allEvents!=="undefined"?allEvents:[]).filter(e=>e&&!e.example), up=mine.filter(e=>e.date&&e.date>=today).sort((x,y)=>String(x.date).localeCompare(String(y.date)));
+  const say=(text,chips)=>{ S.msgs.push({who:"enc",mood:"side",text,...(chips&&chips.length?{chips}:{})}); cgSave(S); try{ drawConcierge?.() }catch{} };
+  S.msgs.push({who:"me",text:t}); try{ localStorage.removeItem(CG_DRAFT) }catch{}
+  if(a.kind==="pay") return say("Add a Venmo, Stripe or PayPal link when you share. Guests get a Pay button once they're in.");
+  if(a.kind==="who"){ const e=prMatchEvent(a.q,mine,today);
+    if(e){ say(`Here's who's coming to ${guestTitle(e)}.`); setTimeout(()=>{ try{ openEvent(e,6) }catch(err){ console.warn(err) } },150); return }
+    return say(up.length?`I couldn't find ${a.q?`"${a.q}"`:"that one"}. Coming up:\n${up.slice(0,5).map(e=>`• ${guestTitle(e)}, ${fmtDate(e.date)}`).join("\n")}`:`Nothing's coming up yet. Tell me the plan, like "Dumpling night at my place Friday 7pm for 8".`,up.slice(0,3).map(e=>[guestTitle(e),"prwho:"+e.id])) }
+  if(a.kind==="ideas"){ const I=prIdeas(a.q); if(!I.ideas.length) return say(`Tell me the plan, like "Dumpling night at my place Friday 7pm for 8", and I'll set it up.`);
+    return say(`${a.q?`Ideas for ${a.q}`:"A few ideas"}:\n${I.ideas.map(x=>"• "+x).join("\n")}`,I.title?[["Use this","go:"+I.title]]:[]) }
+  if(/^when\b|\bnext (?:one|event)\b/i.test(t)&&up.length){ const e=up[0]; return say(`Your next one: ${guestTitle(e)}, ${fmtDate(e.date)}${e.startTime?` at ${clock12(e.startTime)}`:""}.`,[["See guests","prwho:"+e.id]]) }
+  const p=prRead(t), plan=String(t).replace(/\?\s*$/,"").replace(/^(?:help me|can you|could you|should i|should we|do you think i should)\s+(?:plan|set up|make|host|do|throw)?\s*/i,"").trim();
+  say(`I can answer "who's coming", "how do people pay" and "ideas for a dinner". To plan one, tell me what, when and where, like "Dumpling night at my place Friday 7pm for 8".`,(p.date||p.startTime)&&plan.length>=4?[["Draft it","go:"+plan]]:[]) }
+{ const _cgQ=cgHandle; cgHandle=function(text){ const t=String(text||"").trim(); try{ if(window.__wsPersonal&&prIsQuestion(t)){ prAnswer(t); return } }catch(e){ console.warn(e) } return _cgQ.apply(this,arguments) } }
+{ const _ccQ=cgChip; cgChip=function(v){ try{
+    if(v.startsWith("prwho:")){ const e=(allEvents||[]).find(x=>x.id===v.slice(6)); if(e){ const S=cgState(); S.msgs.push({who:"me",text:`Who's coming to ${guestTitle(e)}?`}); cgSave(S); openEvent(e,6) } return }
+    if(v.startsWith("prdate:")){ const [iso,id]=v.slice(7).split("|"), d=typeof draft!=="undefined"?draft:null, e=d&&(!id||d.id===id)?d:(allEvents||[]).find(x=>x.id===id); if(!e||!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+      e.date=iso; delete e.dayClash; const S=cgState(); S.msgs.push({who:"me",text:new Date(iso+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}); S.msgs.push({who:"enc",mood:"happy",text:`Done. ${guestTitle(e)} is on ${fmtDate(iso)}.`}); cgSave(S); try{ drawConcierge?.() }catch{}
+      (e===d?saveEvent(true):saveOther(e)).catch?.(()=>{}); try{ if(e===d&&location.hash==="#studio") renderStep() }catch{} document.querySelectorAll("#prClash").forEach(x=>x.remove()); return } }catch(err){ console.warn(err) } return _ccQ.apply(this,arguments) } }
+// "Sunday Dec 7th" when Dec 7 is a Monday: Potto asks, with a button for each date
+{ const _cdQ=cgDrafted; cgDrafted=function(name){ const r=_cdQ.apply(this,arguments); try{ const d=draft, c=d?.dayClash; if(c?.date&&c.alt){ const w=prClashSay(c), S=cgState(); S.msgs.push({who:"enc",mood:"think",text:w.text,chips:[[w.keep,`prdate:${c.date}|${d.id||""}`],[w.alt,`prdate:${c.alt}|${d.id||""}`]]}); cgSave(S); try{ drawConcierge?.() }catch{} } }catch(e){ console.warn(e) } return r } }
+// the same question where the host is looking: the details step and the event header
+new MutationObserver(()=>{ try{ const d=typeof draft!=="undefined"?draft:null, c=d?.dayClash; if(!c?.date||d.date!==c.date){ return } if(document.getElementById("prClash")) return; const di=document.getElementById("wzDate"), hero=document.getElementById("heroHost"), anchor=di?(di.closest(".wiz-row")||di.closest("label")):hero; if(!anchor) return;
+  const w=prClashSay(c), b=document.createElement("div"); b.id="prClash"; b.className="pr-clash"; b.setAttribute("role","status"); b.innerHTML=`<p>${esc(w.text)}</p><div class="btns"><button type="button" class="btn sm" data-prdate="${esc(c.date)}">${esc(w.keep)}</button><button type="button" class="btn sm" data-prdate="${esc(c.alt)}">${esc(w.alt)}</button></div>`;
+  b.querySelectorAll("[data-prdate]").forEach(x=>x.onclick=()=>{ cgChip(`prdate:${x.dataset.prdate}|${d.id||""}`); const inp=document.getElementById("wzDate"); if(inp) inp.value=x.dataset.prdate });
+  di?anchor.before(b):anchor.after(b) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+{ const s=document.createElement("style"); s.textContent=`.pr-clash{border:2px solid var(--ink,#1F1A17);border-radius:14px;background:#FDE6A6;color:#1F1A17;padding:12px 14px;margin:0 0 12px}.pr-clash p{margin:0 0 8px;font-weight:600}.pr-clash .btns{display:flex;gap:8px;flex-wrap:wrap}`; document.head.appendChild(s) }
 // ---------- end Potto reads ----------
 // ---------- kudos, asked of every guest ----------
 // The morning after, every guest who was in gets one text or email asking for kudos (server/kudosask.js).

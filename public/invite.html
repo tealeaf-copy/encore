@@ -61,7 +61,11 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
   // "Sat, Dec 12 · 7pm to 10pm", the one format on both invites
   const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
   const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
-  const priceText = (e) => { const p = String(e.price).trim(); return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
+  const priceText = (e) => { const p = String(e.price).trim(), amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : p; };
+    // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
+    if (+e.groupPrice > 0 && +e.groupSize > 1) return `${amt(e.groupPrice)} for ${+e.groupSize}`;
+    if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
+    return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
   // review round 3 (paid spots): the Pay button carries the amount and a note, the way the full invite and the shop do
   // (payLink in server/shop.js): Venmo gets amount and "Name · Title", PayPal.me and Cash App get the amount, others pass through.
   const payLinkOf = (url, price, note) => { const u = httpsUrl(url); if (!u) return ""; const n = parseFloat(String(price || "").replace(/[^\d.]/g, "")); if (!(n > 0)) return u; const cents = Math.round(n * 100), amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;

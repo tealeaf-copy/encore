@@ -54,6 +54,8 @@
   async function follow(body, { hostName = "", first: shown = "" } = {}) {
     try { if (!body.phone) { const ph = localStorage.getItem("encore.phone"); if (ph) body = { ...body, phone: ph }; } } catch {}
     const go = () => fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    // signed out with no email yet: ask first, so the follow isn't sent (and refused) before the sheet shows
+    if (!/(?:^|;\s*)encore_in=1/.test(document.cookie) && !(body.email && /@/.test(body.email))) { const em = await askEmail(hostName, shown); if (!em) return null; body = { ...body, email: em }; }
     let r = await go(); let wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName, shown); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again."); if (j.signedIn === false) wasSignedIn = false;
     try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(body.handle)) L.push(body.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}

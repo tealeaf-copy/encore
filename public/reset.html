@@ -12,6 +12,12 @@
   button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:disabled{opacity:.6}
   .err{color:#A93A3A;margin:8px 0 0;font-size:13px}.err:empty{display:none}.ok{color:#1E4D36;background:#F1FAF4;border:1px solid #CFE6D7;border-radius:12px;padding:10px 12px;font-size:14px}
   a.alt{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
+
+  /* system pass: fields at 44px, the main action is a full-width ember pill, secondary buttons are outlined pills */
+  input{min-height:44px}
+  form button:not([type=button]):not([role=tab]){border-radius:999px!important;min-height:48px;background:#C94A30}
+  form button:not([type=button]):not([role=tab]):hover{background:#B04A30}
+  .err a,.sub a{display:inline;margin:0;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
 </style></head><body>
 <div id="app"></div>
 <script src="/authguard.js"></script><script>

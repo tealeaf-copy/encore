@@ -30,18 +30,41 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 .shop .ic{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
 .shop b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop small{color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shop .go{grid-column:1/-1;margin-top:6px;font-size:14px;font-weight:600;color:var(--red)}
-/* hosts worth following: short rows */
-.hlist{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))}
-.hc-wrap{position:relative}
-.hlist .hc{display:grid;grid-template-columns:48px minmax(0,1fr);column-gap:12px;row-gap:0;align-content:center;padding:12px 104px 12px 12px;min-height:76px}
-.hlist .hc-av{grid-row:1/span 6;margin:0;align-self:start}.hlist .hc>*:not(.hc-av){grid-column:2}
-.hlist .hc b{line-height:1.25}.hlist .hc .hc-n,.hlist .hc small{font-size:13px}.hlist .hc .tags{display:none}
-.hlist .hc-ex,.hlist .rising{justify-self:start;font-size:13px!important;padding:1px 8px!important;margin-top:3px}
-.hlist .hc-f{position:absolute;top:50%;right:12px;transform:translateY(-50%);min-height:44px;padding:8px 14px!important;font-size:14px}
-.hlist .hc-next{display:block;margin:4px 12px 0;font-weight:600;color:var(--red);font-size:14px}
-.endcards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));padding-top:8px}
-.endcards .card{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.endcards h2,.endcards h3{font-size:20px;margin:0}.endcards p,.endcards small{margin:2px 0 0;color:var(--soft);font-size:14px}
-.endcards .btn{min-height:44px}.endcards a:not(.btn){color:var(--red)}
+/* hosts worth following: one card shape. Fixed slots (avatar, name + tag, place and counts, a one-line "next" strip,
+   Follow in the same top-right spot), so every card in a row is the same height and nothing floats. */
+.hlist{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
+.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:14px;background:#fff;border:1.5px solid var(--line,#E4D9C8);border-radius:18px;color:var(--ink,#1F1A17);transition:border-color .15s,transform .15s}
+.hcd:hover{border-color:#1F1A17;transform:translateY(-2px)}
+.hcd:focus-within{border-color:#1F1A17}
+.hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid #1F1A17}
+.hcd-av svg,.hcd-av img{width:100%;height:100%;object-fit:cover}
+.hcd-id{grid-area:id;min-width:0}
+.hcd-top{display:flex;align-items:center;gap:6px;min-width:0}
+.hcd-name{font:600 17px/1.25 Fredoka,"Fredoka Fallback","Instrument Sans",system-ui,sans-serif;color:inherit;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hcd-name::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.hcd-name:focus-visible{outline:none}.hcd:has(.hcd-name:focus-visible){outline:3px solid #1F1A17;outline-offset:2px}
+.hcd-ex{flex:none;font:600 13px/1 "Instrument Sans",system-ui,sans-serif;color:#5A4E45;background:#F2D48F;border-radius:999px;padding:4px 8px}
+.hcd-sub{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:#665A51;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "Instrument Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid #1F1A17!important;background:#fff!important;color:#1F1A17!important;cursor:pointer;box-shadow:none!important}
+.hcd-f:hover{background:#FFF6DE!important}.hcd-f[aria-pressed=true]{background:#1F1A17!important;color:#fff!important}
+.hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
+.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:12px;background:#F7F1E8;font-size:14px;line-height:1.3;color:#1F1A17;text-decoration:none;min-width:0}
+.hcd-nx b{flex:none;font-weight:600;color:#B04A30}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+a.hcd-nx:hover{background:#EFE6D8}
+.hcd-exs{display:none;font-weight:600;color:#5A4E45}
+@media (max-width:520px){.hcd-ex{display:none}.hcd-exs{display:inline}.hcd-f{min-width:0;padding:0 14px!important}}
+.hcd-nx.none{color:#665A51;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.hcd{transition:none}.hcd:hover{transform:none}}
+/* the end of the page: one way in for new hosts, the quiz as a quiet line under it */
+.endcards{display:grid;gap:10px;padding-top:12px}
+#hostCard{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:18px 20px;background:#F2D48F!important;border:2px solid #1F1A17!important;border-radius:20px!important;box-shadow:none!important}
+#hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:#3E352F;font-size:14px}#hostCard .btn{min-height:44px;flex:none}
+#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border:1.5px dashed #D9CBB8;border-radius:16px;background:transparent}
+#quiz:empty{display:none}
+#quiz>span[aria-hidden]{font-size:26px!important;line-height:1}
+#quiz h2{font-size:16px;margin:0}#quiz small{color:#665A51;font-size:13px}#quiz small a{color:#B04A30}
+#quiz .btn{min-height:44px;flex:none;margin-left:auto;background:#fff!important;color:#1F1A17!important;border:1.5px solid #1F1A17!important;box-shadow:none!important}
+@media (max-width:520px){#hostCard .btn,#quiz .btn{width:100%;margin-left:0;display:inline-flex;align-items:center;justify-content:center}}
 #events .tags,#fyList .tags{display:none!important}
 /* until the events arrive, the sections under them wait too, so nothing on screen jumps down when the cards land */
 body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wait > footer{display:none!important}body.dc-wait #events{min-height:60vh}
@@ -80,8 +103,8 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   <section id="hostsSec"><div class="sec-h"><h2>Hosts worth following</h2><a href="/hosts">See all hosts →</a></div><p class="lede" id="hostsL" hidden></p><div class="hlist" id="hosts"></div></section>
 
   <div class="endcards">
-    <div class="card" id="quiz" aria-live="polite"></div>
-    <div class="card" id="hostCard"><span id="pipI"></span><div style="flex:1;min-width:180px"><h2>Want to host?</h2><p>Hosting friends is free.</p></div><a class="btn" href="/signup?mode=friends">Start your page</a></div>
+    <div id="hostCard"><span id="pipI"></span><div style="flex:1;min-width:180px"><h2>Want to host?</h2><p>Hosting friends is free.</p></div><a class="btn" href="/signup?mode=friends">Start your page</a></div>
+    <div id="quiz" aria-live="polite"></div>
   </div>
 </div>
 <footer>Pottery Lab · <a href="/discover">Discover</a> · <a href="/hosts">Hosts</a> · <a href="/hosts/book">For brands</a> · <a href="/security">Security</a></footer>
@@ -160,7 +183,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
     const pend = !W ? "" : MINE.gaps.includes("a page") ? `${W.title ? `“${esc(W.title)}”` : "Your event"} shows here once you have a page. <a href="/?app=1">Start your page</a>.` : `${W.title ? `“${esc(W.title)}”` : "Your event"} shows here once your page has ${esc(and(MINE.gaps))}. <a href="/@${encodeURIComponent(MINE.handle)}?customize=1">Finish your page</a>.`;
     if (!data.events.length) note = pend || "No open events right now. Hosts are cooking something up.";
     else if (QTEXT && !base.length) note = `No events match “${esc(PRM.get("q"))}” yet.`;
-    else if (city && !local.length) { list = far; note = pend ? `${pend} Here's what's on elsewhere.` : SIGNED ? `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} on Discover yet. <a href="/?app=1#studio">Host one</a>. Here's what's on elsewhere.` : `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. <a href="/signup?mode=friends">Host the first one</a>. Here's what's on elsewhere.`; }
+    else if (city && !local.length) { list = far; note = pend ? `${pend} Here's what's on elsewhere.` : SIGNED ? `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} on Discover yet. <a href="/?app=1&new=1#studio">Host one</a>. Here's what's on elsewhere.` : `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. <a href="/signup?mode=friends">Host the first one</a>. Here's what's on elsewhere.`; }
     else if (city) { rest = far; note = pend; }
     else if (pend && base.length) note = pend;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
@@ -188,12 +211,17 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
     const local = city ? all.filter(near) : all, L = (local.length ? local : all).slice(0, 4);
     // the events note above already says this city is empty: say it once
     $("#hostsL").hidden = !(city && !local.length && L.length) || !!(evs.length && !evs.some(near)); $("#hostsL").textContent = city ? `No hosts in ${city} yet. Here are some elsewhere.` : "";
-    $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), d = n && n.date ? new Date(n.date + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : ""; const hh = n ? { ...h, next: `${n.title}${d ? ", " + d : ""}` } : h;
-      return `<div class="hc-wrap">${C.hostCard(hh)}<button class="btn ghost hc-f" type="button" data-fh="${esc(h.handle)}">${F.includes(h.handle) ? "Following" : `Follow<span class="sr"> ${esc(h.name)}</span>`}</button></div>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
-    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (/Following/.test(b.textContent)) return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
-      try { const w = b.closest(".hc-wrap"), j = await C.follow({ handle: b.dataset.fh, hostName: w?.querySelector(".hc b")?.textContent || "", email, tastes: [], via: "discover" }); C.oink(); b.textContent = "Following";
-        const nx = evs.filter((e) => e.host?.handle === b.dataset.fh).sort(byDate)[0]; if (w && !w.querySelector(".hc-next, .hc-nx")) w.insertAdjacentHTML("beforeend", nx ? `<a class="hc-next" href="/g#rsvp-${encodeURIComponent(nx.id)}">Next up: ${esc(nx.title)} →</a>` : `<small class="hc-next" style="color:#6B5F56;font-weight:500">You'll hear when they post.</small>`);
-        if (w && j && j.followers) { const fl = `${j.followers} follower${j.followers === 1 ? "" : "s"}`; let n = w.querySelector(".hc-n"); if (!n) { n = document.createElement("span"); n.className = "hc-n"; w.querySelector(".hc")?.appendChild(n); } n.textContent = /^\d+ followers?/.test(n.textContent) ? n.textContent.replace(/^\d+ followers?/, fl) : n.textContent ? `${fl} · ${n.textContent}` : fl; }
+    const sd = (d) => d ? new Date(d + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "";
+    const subOf = (h, fo) => [[h.hood, h.city].filter(Boolean)[0] || h.city || "", fo ? `${fo} follower${fo === 1 ? "" : "s"}` : "", h.hosted ? `${h.hosted} event${h.hosted === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+    const avOf = (h) => { const ac = h.theme?.accent || h.color || "#E26D8E"; return (h.gallery || [])[0] ? `<img src="${esc(h.gallery[0])}" alt="">` : h.theme?.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.theme.avatarArt, ac, 48) : esc(h.emoji || "🎉"); };
+    $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), on = F.includes(h.handle);
+      const nx = n ? `<a class="hcd-nx" href="/g#rsvp-${encodeURIComponent(n.id)}"><b>Next</b><span>${esc([sd(n.date), n.title].filter(Boolean).join(" · "))}</span></a>` : `<span class="hcd-nx none"><span>No date posted yet</span></span>`;
+      return `<article class="hcd" style="--c:${esc(h.theme?.accent || h.color || "#E26D8E")}" data-fo="${Number(h.followers) || 0}"><span class="hcd-av" aria-hidden="true">${avOf(h)}</span><div class="hcd-id"><div class="hcd-top"><a class="hcd-name" href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>${h.sample ? `<span class="hcd-ex">Example</span>` : ""}</div><small class="hcd-sub">${h.sample ? `<span class="hcd-exs">Example · </span>` : ""}<span class="hcd-st">${esc(subOf(h, Number(h.followers) || 0))}</span></small></div><button class="hcd-f" type="button" data-fh="${esc(h.handle)}" aria-pressed="${on}">${on ? "Following" : "Follow"}<span class="sr"> ${esc(h.name)}</span></button>${nx}</article>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
+    const byH = new Map(L.map((h) => [h.handle, h]));
+    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (b.getAttribute("aria-pressed") === "true") return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
+      const card = b.closest(".hcd"), h = byH.get(b.dataset.fh) || {};
+      try { const j = await C.follow({ handle: b.dataset.fh, hostName: h.name || "", email, tastes: [], via: "discover" }); C.oink(); b.setAttribute("aria-pressed", "true"); b.firstChild.textContent = "Following";
+        const fo = j && j.followers ? j.followers : (Number(card?.dataset.fo) || 0) + 1, sub = card?.querySelector(".hcd-st"); if (sub) sub.textContent = subOf(h, fo);
       } catch (e) { if (e.message) alert(e.message); } }));
   }
 

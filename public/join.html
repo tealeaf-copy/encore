@@ -12,6 +12,13 @@
   button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:hover{background:#A9462E}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
   a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
+  /* system pass: fields at 44px, the main action is a full-width ember pill, secondary buttons are outlined pills */
+  input{min-height:44px}
+  form button:not([type=button]):not([role=tab]){border-radius:999px!important;min-height:48px;background:#C94A30}
+  form button:not([type=button]):not([role=tab]):hover{background:#B04A30}
+  .err a,.sub a{display:inline;margin:0;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
+  a.go-in{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;background:#C94A30;color:#fff;font-weight:600;font-size:15px;margin-top:6px}
+
 </style><link rel="stylesheet" href="/playful.css">
 </head><body>
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
@@ -24,7 +31,7 @@
 <script src="/authguard.js"></script><script>
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
   const token = location.hash.slice(1);
-  if (!/^[a-f0-9]{48}$/.test(token)) { err.innerHTML = 'This link looks cut off. Open the one in your email, or <a href="/login">sign in</a>.'; f.querySelectorAll("label, button").forEach((x) => x.remove()); }
+  if (!/^[a-f0-9]{48}$/.test(token)) { err.className = "sub"; err.removeAttribute("role"); err.textContent = "This link looks cut off. Open the one in your email, or sign in."; f.querySelectorAll("label, button").forEach((x) => x.remove()); f.insertAdjacentHTML("beforeend", '<a class="go-in" href="/login">Sign in</a>'); }
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = { ...Object.fromEntries(new FormData(f)), token };

@@ -18,14 +18,16 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 .h .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.h .meta span{font-size:13px;line-height:1.4;background:#F6EFE6;border-radius:999px;padding:2px 8px}.h .meta .ex{background:#FFF1D2;font-weight:700}.h .meta .nx{background:#FFF1D2}
 .h .hl{color:inherit;text-decoration:none}.h .hl::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:0}.h .hl:focus-visible{outline:none}.h:has(.hl:focus-visible){outline:3px solid var(--ink);outline-offset:2px}
 .h .facts{display:block;color:var(--smoke);font-size:13px;margin-top:6px}
+/* one card shape: name in Fredoka on one line, the line under it always takes two lines, facts on one line, so names, facts and Follow sit at the same height across a row */
+.h b{font:600 18px/1.25 Fredoka,"Fredoka Fallback",system-ui,sans-serif!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.h .tl{min-height:calc(2 * 1.5em)}.h .facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h .ft{display:flex;gap:8px;align-items:center;padding:0 16px 16px;min-height:16px}.h .ft a{position:relative;z-index:1}
 .h .ft .fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px;border-radius:999px;font-weight:600;font-size:14px;font-family:inherit;border:1.5px solid var(--ember);color:#A63A22;background:#fff;text-decoration:none}.h .ft .fo:hover{background:#FFF1EC}.h .ft .fo:focus-visible,.h .ft .ig:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .h .ft .ig{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:600;color:#A63A22;text-decoration:underline;text-underline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (hover:hover){.h:hover{transform:translateY(-3px);border-radius:24px 32px 20px 36px/20px 26px 30px 22px;box-shadow:0 0 0 4px #F6A6D3}}
+@media (hover:hover){.h:hover{transform:translateY(-3px);border-color:#1F1A17}}@media (prefers-reduced-motion:reduce){.h:hover{transform:none}}
 .empty{color:var(--smoke);padding:30px 0}.more{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:18px 0 0;padding:10px 22px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}.more[hidden]{display:none}.near-h{grid-column:1/-1;margin:8px 0 -4px;font:700 20px/1.2 Fredoka,system-ui}
 .h .meta .bdg{background:#FFF1D2;font-weight:600}.h .meta .bdg.super{background:#1F1A17;color:#FFE08A}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
-.h .why{display:block;margin-top:6px;font-weight:500;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#8A7B6E;font-style:italic}
+.h .why{display:block;margin-top:6px;font-weight:500;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#665A51}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}@media (max-width:860px){body.es-has-tabs,body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
 .hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}@media (min-width:861px){.hd-top{display:none}}
 </style><script src="/mascot.js"></script></head><body>

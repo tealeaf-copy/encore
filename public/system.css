@@ -1,7 +1,7 @@
 /* Pottery Lab design system: the last stylesheet on every page (authguard.js moves it to the end of <head>; invite.html and
    the sign-in page link it directly). Tokens first, then the few rules that make every page agree:
-   - type: Fredoka for display headings, Instrument Sans for UI and body. Fraunces only for the italic accent word
-     (an <em> inside a heading). Caveat only for scrapbook / polaroid captions. A host's chosen invite title font
+   - type: Fredoka for display headings, Instrument Sans for UI and body. an accent word in a heading (<em>) is
+     ember, never italic. Caveat only for scrapbook / polaroid captions. A host's chosen invite title font
      (.invite[class*=th-] h3, .gxhi) and storefront fonts are the host's, not chrome, and are left alone.
    - sizes: 13 / 14 / 16 / 20 / 28 / 40, plus hero display. Nothing under 13px.
    - buttons: sm 36 / md 44 / lg 52 (sm becomes 44 on phones), one corner (pill), primary = ember fill, flat.
@@ -87,3 +87,9 @@ html :is(body,#view-guest) :is(.invite.th-candlelight,.invite.th-midnight) .chip
   html body :is(.more-btn,.btn.ghost:empty){min-width:var(--btn-md)}
   html body form>button:not([class]){min-height:var(--btn-md)}
 }
+
+/* ---- a11y floor for every page: a visible focus ring where a page set none, and calm motion when asked ---- */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
+/* brand kit: no italics for emphasis; an accent word in a heading changes colour, not style */
+:is(h1,h2,h3) em{font-style:normal}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}

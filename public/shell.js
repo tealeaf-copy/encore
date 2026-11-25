@@ -64,7 +64,7 @@
 @media (max-width:860px){.es-rail{display:none}}
 .es-tabs{display:none}
 @media (max-width:860px){.es-tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;justify-content:space-around;align-items:flex-end;padding:6px 6px calc(8px + env(safe-area-inset-bottom));background:rgba(255,251,245,.96);backdrop-filter:blur(8px);border-top:1.5px solid #E9DFD2}
-.es-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:#6B5F56;text-decoration:none;font:600 13px "Instrument Sans",system-ui;padding:4px 0}
+.es-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:#6B5F56;text-decoration:none;font:600 12px "Instrument Sans",system-ui;padding:4px 0}.es-tabs a b{white-space:nowrap}.es-tabs a{min-width:0}
 .es-tabs a[aria-current]{color:#1F1A17}.es-tabs a[aria-current] svg{stroke-width:2.4}
 .es-biz .es-tabs a.es-plus{display:none}.es-tabs a.es-plus{flex:none;margin:-22px 6px 0}.es-tabs a.es-plus span{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#C94A30;color:#fff;border:2px solid #1F1A17;box-shadow:0 2px 8px rgba(31,26,23,.08)}
 body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has-tabs header .hd-cta{display:none!important}}`;
@@ -77,7 +77,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (brand ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.people, "Book a host") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
-        : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1&new=1#studio", ICON.plus, "New event")
+        : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "")
         : signed ? item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans")
         : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");

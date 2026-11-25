@@ -260,8 +260,8 @@ export function createApp({ store, dataDir }) {
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
     const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || (b.mode !== "work" && !String(b.company || "").trim());
     const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "gatherings" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
-    if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
+    if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
@@ -291,7 +291,7 @@ export function createApp({ store, dataDir }) {
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many tries from here. Try again later." });
     const b = req.body || {}, inv = getInvite(b.token), name = String(b.name || "").trim().slice(0, 120);
     if (!inv || inv.usedAt || inv.expiresAt < Date.now() || !getWorkspace(inv.ws)) return res.status(410).json({ code: "invite_invalid", message: "This invite link has expired or was already used. Ask for a new one." });
-    if (!name) return res.status(400).json({ code: "invalid", message: "Your name is required." });
+    if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
     if (emailTaken(inv.email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account." });
     useInvite(inv);
@@ -573,7 +573,7 @@ export function createApp({ store, dataDir }) {
   app.post("/api/invite", json, (req, res) => {
     const u = ownerOnly(req, res); if (!u) return;
     const email = String(req.body?.email || "").trim().toLowerCase(), given = String(req.body?.role ?? "").trim().slice(0, 80), role = given || "Team member";
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email." });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
     if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That person already has a Pottery Lab account." });
     // An empty role becomes "Team member" for display, flagged so it never counts as an approver role.
     const { token, expiresAt } = createInvite({ ws: u.ws, email, role, defaultRole: !given, by: u.email });
@@ -1156,7 +1156,7 @@ export function createApp({ store, dataDir }) {
     if (!req.guest) return true;
     const b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
     if (collection === "rsvps") {
-      for (const k of ["response", "status"]) if (b[k] != null && !GUEST_RSVP_RESPONSES.has(String(b[k]).toLowerCase())) { res.status(400).json({ code: "invalid", message: "An RSVP can only be going, maybe or declined." }); return false; }
+      for (const k of ["response", "status"]) if (b[k] != null && !GUEST_RSVP_RESPONSES.has(String(b[k]).toLowerCase())) { res.status(400).json({ code: "invalid", message: "Pick I'm in, Maybe or Can't go." }); return false; }
       const utm = cleanUtm(b.utm); delete b.utm;
       // Ticketed dinners can open to followers first: everyone else waits until the window closes.
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws0 = workspaceOfEvent(String(b.eventId)), ev0 = ws0 && scopeStore(store, ws0).get("events/" + String(b.eventId))?.data;
@@ -1181,7 +1181,7 @@ export function createApp({ store, dataDir }) {
   };
   // example hosts (demo accounts) show what a page can look like; their events can't take real RSVPs, orders or messages
   const isExampleWs = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
-  const exampleWrite = (req, res) => { if (!req.guest || process.env.ENCORE_ALLOW_DEMO_WRITES === "1") return false; S(req); if (!isExampleWs(req.ws)) return false; res.status(403).json({ code: "example", message: "This is an example event, so it can't take RSVPs. Start your own page to try it." }); return true; };
+  const exampleWrite = (req, res) => { if (!req.guest || process.env.ENCORE_ALLOW_DEMO_WRITES === "1") return false; S(req); if (!isExampleWs(req.ws)) return false; res.status(403).json({ code: "example", message: "This is an example event, so it can't take replies. Start your own page to try it." }); return true; };
   const ownedWrite = (req, res) => {
     if (!req.guest) return true;
     if (exampleWrite(req, res)) return false;
@@ -1278,7 +1278,7 @@ export function createApp({ store, dataDir }) {
     if (!next) return null;
     S(req).set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() });
     const to = String(next.data.email || "").trim(), title = ev.pubTitle || ev.copy?.title || "the event";
-    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A seat opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a seat opened up and it's yours. You're now confirmed for ${title}${ev.date ? " on " + ev.date : ""}.\n\nIf you can no longer make it, reply to this email or use your invitation link to let us know, so we can offer the seat to someone else.\n`, eventId, kind: "waitlist" }); } catch {} }
+    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A spot opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${ev.date ? " on " + ev.date : ""}.\n\nIf you can no longer make it, reply to this email or use your invitation link to let us know, so we can offer the spot to someone else.\n`, eventId, kind: "waitlist" }); } catch {} }
     return next.id;
   }
   app.post("/api/db/collection", json, async (req, res) => {

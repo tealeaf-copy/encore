@@ -16,7 +16,8 @@ test("Trust shows only real or labelled proof: no placeholder people or brands, 
   assert.ok(isPlaceholderName("Sample Person")); assert.ok(isPlaceholderName("Jane Doe")); assert.ok(!isPlaceholderName("Maya R."));
   assert.ok(isPlaceholderBrand("Northwind Studio")); assert.ok(isPlaceholderBrand("Acme Health")); assert.ok(!isPlaceholderBrand("Brightline Labs"));
   const h = { name: "Tram's Matcha Table", gigs: [{ client: "Northwind Studio" }, { client: "Brightline Labs", what: "offsite" }], corpQuotes: [{ quote: "Easiest offsite block I've planned.", name: "Sample Person", company: "Northwind Studio" }, { quote: "Everyone asked for the recipe.", name: "Dana Lee", company: "Brightline Labs" }] };
-  const T = trustFrom({ S: { guests: 18, returning: 16, againYes: 9, againOf: 12, kudosCount: 12, dates: ["2026-01-01"] }, h, bookings: [{ company: "Helix AI", status: "booked" }, { company: "Pending Co", status: "new" }] });
+  const T = trustFrom({ S: { guests: 18, returning: 16, againYes: 9, againOf: 12, kudosCount: 12, dates: ["2026-01-01"] }, h, bookings: [{ company: "Helix AI", status: "done", date: "2026-01-01", listOk: true }, { company: "Pending Co", status: "new" }, { company: "Upcoming Co", status: "booked", date: "2099-01-01", listOk: true }, { company: "Quiet Co", status: "done", date: "2026-01-01" }] });
+  // only finished bookings whose brand said it's OK to be named; an upcoming booking or a silent brand stays private
   assert.deepEqual(T.workedWith.map((w) => [w.client, w.label]), [["Helix AI", "Booked on Pottery Lab"], ["Brightline Labs", "Added by the host"]]);
   assert.deepEqual(T.testimonials.map((q) => [q.name, q.label]), [["Dana Lee", "Added by the host"]]);
   assert.equal(T.returned.text, "89% of 18 guests came back for another"); assert.equal(T.again.text, "75% of 12 guests who left kudos would go again");

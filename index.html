@@ -7015,7 +7015,7 @@ async function drawAfterParty(){ const d=draft; if(!d.id||$("#afterParty")) retu
   if(K.kudos.length&&!sessionStorage.getItem("ap-"+d.id)){ sessionStorage.setItem("ap-"+d.id,"1"); try{ burst?.(); pipSound?.("squeal") }catch{} }
   const vb=new Map(K.vibes.map(v=>[v.email,new Set(v.tags||[])]));
   $$("[data-vb]",el).forEach(b=>b.onclick=async()=>{ const [em,k]=b.dataset.vb.split("|"), S=vb.get(em)||new Set(); S.has(k)?S.delete(k):S.add(k); vb.set(em,S); b.setAttribute("aria-pressed",String(S.has(k))); try{ await jpost("/api/host/vibes",{eventId:d.id,email:em,tags:[...S]}) }catch(err){ toast(err.message) } });
-  $("#ap-thanks",el)&&($("#ap-thanks",el).onclick=()=>{ copyTxt(`Thanks for coming to ${guestTitle(d)} ${actOf(d).emoji} ${K.kudos.find(k=>k.love)?`"${K.kudos.find(k=>k.love).love}" made my week. `:""}Send me your photos? ${d.repeat&&d.date?`Next one: ${fmtDate(nextDate(d))}.`:"Same again soon?"}${hp?` Follow along: ${location.origin}/h/${hp}`:""}`,{ok:"Copied."}) });
+  $("#ap-thanks",el)&&($("#ap-thanks",el).onclick=()=>{ copyTxt(`Thanks for coming to ${guestTitle(d)} ${actOf(d).emoji} Send me your photos? ${d.repeat&&d.date?`Next one: ${fmtDate(nextDate(d))}.`:"Same again soon?"}${hp?` Follow along: ${location.origin}/h/${hp}`:""}`,{ok:"Copied."}) });
   $("#ap-photo",el).onchange=async ev=>{ let n=0; for(const f of [...ev.target.files].slice(0,10)){ try{ await uploadMoment(f,{eventId:d.id,caption:""}); n++ }catch(err){ toast(err.message) } } if(n) pipToast(`${n} added. Friends will see them.`,"happy") };
   $("#ap-next",el)&&($("#ap-next",el).onclick=()=>{ step=1; renderStep(); setTimeout(()=>{ if(!d.repeat){ d.repeat="weekly" } $("#hk-next")?.click() },150) }) }
 

@@ -142,12 +142,14 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   const tag = (real) => (example ? "Example" : real);
   const guests = +S.guests || 0, returning = +S.returning || 0, kudos = +S.kudosCount || 0, events = (S.dates || []).filter((d) => d <= now).length;
   const done = bookings.filter((b) => ["booked", "done"].includes(b.status));
+  // a brand is named on a host's public page only after the event, and only if the brand said it's OK
+  const listable = done.filter((b) => b.status === "done" && b.listOk === true && (!b.date || String(b.date).slice(0, 10) <= now));
   const returned = shareLine(returning, guests, guests === 1 ? "guest" : "guests", "came back for another");
   const again = shareLine(S.againYes, S.againOf, "guests who left kudos", "would go again");
   const pastSb = scrapbook.filter((x) => x && x.title && (!x.date || x.date <= now));
   // worked with: brands from bookings on Pottery Lab first, then what the host typed in (labelled), never placeholders
   const W = [], seen = new Set(), add = (client, what, when, source, label) => { const k = String(client).trim().toLowerCase(); if (!k || seen.has(k) || isPlaceholderBrand(client)) return; seen.add(k); W.push({ client: String(client).trim(), what: what || "", when: when || "", source, label: tag(label) }); };
-  for (const b of done) add(b.company, b.experience || "", b.date || "", "booking", "Booked on Pottery Lab");
+  for (const b of listable) add(b.company, b.experience || "", b.date || "", "booking", "Booked on Pottery Lab");
   for (const g of h.gigs || []) add(g.client, g.what, g.when, "host", "Added by the host");
   // testimonials: guests' own kudos (from the platform) and quotes the host typed in (labelled); no placeholder authors
   const testimonials = [];

@@ -62,6 +62,15 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
   const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
   const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
   const priceText = (e) => { const p = String(e.price).trim(); return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
+  // review round 3 (paid spots): the Pay button carries the amount and a note, the way the full invite and the shop do
+  // (payLink in server/shop.js): Venmo gets amount and "Name · Title", PayPal.me and Cash App get the amount, others pass through.
+  const payLinkOf = (url, price, note) => { const u = httpsUrl(url); if (!u) return ""; const n = parseFloat(String(price || "").replace(/[^\d.]/g, "")); if (!(n > 0)) return u; const cents = Math.round(n * 100), amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;
+    if ((m = u.match(/^https:\/\/(?:www\.|account\.)?venmo\.com\/(?:u\/)?([A-Za-z0-9_-]+)\/?$/i))) return `https://venmo.com/${m[1]}?txn=pay&amount=${amt}&note=${encodeURIComponent(note)}`;
+    if ((m = u.match(/^https:\/\/(?:www\.)?paypal\.me\/([A-Za-z0-9_-]+)\/?$/i))) return `https://paypal.me/${m[1]}/${amt}`;
+    if ((m = u.match(/^https:\/\/cash\.app\/\$([A-Za-z0-9_-]+)\/?$/i))) return `https://cash.app/$${m[1]}/${amt}`;
+    return u; };
+  // review round 3 (paid spots): a paid event with no way to pay yet needs a way to reach the guest
+  const payless = (e) => paidOf(e) && !e.ticketNote && !httpsUrl(e.ticketUrl); // not "at the door" either
   const bringOf = (e) => (Array.isArray(e.bring) ? e.bring : e.bring ? [e.bring] : []).map((x) => String(x || "").trim()).filter((x) => x && !/^yourself$/i.test(x)).slice(0, 12);
   // ---------- series: a class that repeats, a multi-week course, a class pass (index.html's seriesEvery/seriesSpan/seriesPrice/seriesRRule) ----------
   const SR_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], SR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -90,7 +99,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
       // asked for, and paid spots on an Ask to join event (they pay after the host lets them in). When unsure, hand off.
       if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || e.date < today || (e.slots || []).length || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
-      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place } : null); })
+      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); })
     .catch(go);
 
   function render(e, ws, H, A, back) {
@@ -112,7 +121,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
       ${A.count ? `<p class="going-n" style="margin:14px 0 4px;font-weight:600">${A.count} in</p><div class="going">${names}</div>` : ""}
       <form id="f" novalidate>${ask ? `<h2 class="ask" style="margin:18px 0 0">Want in?</h2><p class="muted" style="margin:0">Spots are limited. ${esc(first)} lets each guest in.</p><input type="hidden" name="r" value="going">` : `<h2 class="ask" style="margin:18px 0 8px">Are you in?</h2><div class="resp" role="radiogroup" aria-label="Are you in?"><label><input type="radio" name="r" value="going" checked> ${full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe || paid ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>`}
         <label class="f">Your name<input type="text" id="nm" autocomplete="name" maxlength="80" required></label>
-        <label class="f">Email or phone <small id="ctH">${ask ? `So you hear when ${esc(first)} lets you in.` : `Optional. For reminders from ${esc(first)}.`}</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"${ask ? " required" : ""}></label>
+        <label class="f">Email or phone <small id="ctH">${ask ? `So you hear when ${esc(first)} lets you in.` : payless(e) ? `So ${esc(first)} can send you a way to pay.` : `Optional. For reminders from ${esc(first)}.`}</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"${ask || payless(e) ? " required" : ""}></label>
         ${foody ? `<label class="f" id="dtL">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
         ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc(priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
@@ -124,17 +133,21 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
-    if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place }); }
+    if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place, paidOk: !!back.paid, claimed: !!back.paidClaim }); }
     const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${ask ? "Ask to join" : full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick); stick.hidden = true;
     { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);
-    const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name !== "r") return; const no = ev.target.value === "no"; for (const s of ["#qs", "#dtL", "#rdL", "#payNote"]) if ($(s)) $(s).hidden = no; $("#send").textContent = btn(ev.target.value); }); if (Q.length && !window.Questions) addEventListener("load", startQ);
+    const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name !== "r") return; const no = ev.target.value === "no"; for (const s of ["#qs", "#dtL", "#rdL", "#payNote"]) if ($(s)) $(s).hidden = no; $("#send").textContent = btn(ev.target.value);
+      // review round 3 (paid spots): "Can't go" needs no way to pay, so the contact is optional again
+      if (!ask && payless(e)) { const hh = $("#ctH"); hh.textContent = no ? `Optional. For reminders from ${first}.` : `So ${first} can send you a way to pay.`; hh.style.color = ""; hh.removeAttribute("role"); $("#ct").required = !no; $("#ct").removeAttribute("aria-invalid"); } }); if (Q.length && !window.Questions) addEventListener("load", startQ);
     $("#f").onsubmit = async (ev) => { ev.preventDefault(); const er = $("#er"); er.textContent = "";
       const name = $("#nm").value.trim().replace(/[<>]/g, "").slice(0, 80); if (!name) { er.textContent = `Add your name so ${first} knows it's you.`; $("#nm").focus(); return; }
       const resp = (new FormData($("#f")).get("r") || "going"); if (resp === "going" && Qf?.missing?.()) return; // the question card shows "Answer this one first."
       const c = $("#ct").value.trim(), email = c && (/@/.test(c) || !/\d{6,}/.test(c.replace(/[^\d]/g, ""))) ? c : "", phone = !email && c ? c.replace(/[^\d+]/g, "") : "";
       if (ask && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so you hear when ${first} lets you in.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
+      // review round 3 (paid spots): no pay link yet, so the host needs a way to send one
+      if (!ask && payless(e) && resp !== "no" && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so ${first} can send you a way to pay.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
       const code = (String(e.id || id).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
       const ride = resp === "no" ? "" : $("#rd")?.value || "";
       const data = { eventId: e.id || id, response: ask && resp !== "no" ? "requested" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
@@ -159,12 +172,12 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
     const doorCode = yes && !paid && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl);
     const place = +S.place || 0, head = yes ? "You're in" : asked ? "Asked" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
-    const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
+    const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid && S.paidOk ? "Paid. Your spot is yours." : yes && paid && S.claimed ? `You said you paid. ${who} will confirm.` : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
     const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${head}</h2>${line ? `<p class="muted" style="margin:0">${line}</p>` : ""}
       ${doorCode ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
-      <div class="btns">${yes && paid && pay ? `<a class="btn pay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
+      <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a><button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
       ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
       <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -175,6 +188,15 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
         const tk = $("#tk"); tk.innerHTML = `<h2>You're out</h2><p class="muted" style="margin:0">Thanks for telling ${who}.</p><div class="btns"><a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">Change reply</a></div>`;
         if (yes && $(".going-n")) { const n = $(".going-n"), k = Math.max(0, (parseInt(n.textContent, 10) || 1) - 1); if (k) n.textContent = `${k} in`; else document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); } }
       catch { out.disabled = false; out.textContent = "Didn't go through. Tap to try again"; } };
+    // review round 3 (paid spots): after Pay, the guest can say "I paid". It records a claim on their own reply;
+    // the host still confirms. This device remembers the tap, so coming back shows "I paid" straight away.
+    const payBtn = $("#payBtn"), iPaid = $("#iPaid");
+    if (payBtn && iPaid) { payBtn.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; });
+      iPaid.onclick = async () => { iPaid.disabled = true;
+        try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
+          try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
+          const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); iPaid.remove(); }
+        catch { iPaid.disabled = false; iPaid.textContent = "Didn't go through. Tap to try again"; } }; }
     if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`;
       // series: the calendar entry repeats

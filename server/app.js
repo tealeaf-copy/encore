@@ -87,6 +87,9 @@ function cleanGuestRsvp(b) {
   if (Array.isArray(b.dates)) o.dates = b.dates.slice(0, 20).map((d) => String(d ?? "").slice(0, 40)).filter(Boolean);
   if (b.answers !== undefined) o.answers = b.answers; // cleaned in guestShape
   if (b.utm !== undefined) o.utm = b.utm;
+  // review round 3 (paid spots): "I paid" is the one new thing a guest may say about money, and only as true.
+  // It is a claim, never `paid` itself (the host confirms that). ownedWrite keeps it to the guest's own existing reply.
+  if (b.paidClaim === true) o.paidClaim = true;
   return o;
 }
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
@@ -586,7 +589,7 @@ export function createApp({ store, dataDir }) {
   app.get("/api/public/reply/:eventId", (req, res) => { const eventId = String(req.params.eventId || "").slice(0, 80), P = X.rsvpProof(eventId, req.query.rid, req.query.code);
     if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
     const all = P.S.list("rsvps").filter((x) => x.data?.eventId === eventId), ev = P.ev || {}, seats = +ev.headcount || 0, waiting = waitlistOf(all).length;
-    res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), decidedAt: P.r.decidedAt || null, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
+    res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), paid: !!P.r.paid, paidClaim: !!P.r.paidClaim, decidedAt: P.r.decidedAt || null, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
   mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
@@ -1266,6 +1269,8 @@ export function createApp({ store, dataDir }) {
       // answers to the host's own questions: a few short values, plain text only
       if (Array.isArray(b.answers) && b.answers.every((x) => x && typeof x === "object" && "a" in x)) { b.answers = b.answers.slice(0, 15).map((x) => ({ q: String(x.q ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 140), a: String(x.a ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500) })).filter((x) => x.a); }
       else if (b.answers != null) { const A = {}; if (b.answers && typeof b.answers === "object") for (const [k, v] of Object.entries(b.answers).slice(0, 15)) { if (!/^[a-z0-9]{1,12}$/i.test(k)) continue; const one = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500); A[k] = Array.isArray(v) ? v.slice(0, 10).map(one).filter(Boolean) : typeof v === "number" ? Math.max(-1e6, Math.min(1e6, v)) : one(v); } b.answers = A; }
+      // review round 3 (paid spots): a first reply can't arrive already claiming to have paid
+      if (req.method === "POST") delete b.paidClaim;
       req.body = { ...b, source: "guest", ...(utm ? { utm } : {}) };
     }
     if (collection === "wall" && b.status != null && !GUEST_WALL_STATUSES.has(String(b.status))) { res.status(400).json({ code: "invalid", message: "Not a wall status." }); return false; }
@@ -1295,6 +1300,8 @@ export function createApp({ store, dataDir }) {
     if (cur && !keyOk(cur.data, k)) { res.status(403).json({ code: "not_granted", message: "You can only change your own response." }); return false; }
     const b = { ...(req.body || {}) }; delete b._k; delete b._keys;
     if (col === "rsvps") {
+      // review round 3 (paid spots): "I paid" only on the guest's own reply that is already there; the server stamps when
+      if (!cur) delete b.paidClaim; else if (b.paidClaim === true && !cur.data.paidClaim) b.paidClaimAt = Date.now(); else if (cur.data.paidClaimAt) b.paidClaimAt = cur.data.paidClaimAt;
       if (cur) { b.eventId = cur.data.eventId; if (req.method === "PUT") for (const [kk, v] of Object.entries(cur.data)) if (!GUEST_RSVP_KEYS.has(kk) && !(kk in b)) b[kk] = v; }
       else { const eid = String(b.eventId || ""); if (!/^[A-Za-z0-9_-]{1,80}$/.test(eid) || !S(req).get("events/" + eid)) { res.status(404).json({ code: "not_found", message: "That event isn't here any more." }); return false; }
         if (rsvpLimited(req, eid)) { res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); return false; } }

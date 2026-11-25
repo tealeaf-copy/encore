@@ -10,6 +10,7 @@ import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOf
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { seatsOf } from "./social.js";
+import { cleanScrapSections, scrubAddress } from "./scrapbook.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 10;
@@ -52,6 +53,19 @@ const PRIVATE_HOST = ["legalName", "taxId", "bizAddress"];
 export function publicHost(h) { if (!h) return h; const o = { ...h }; for (const k of PRIVATE_HOST) delete o[k]; return o; }
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
 
+  // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
+export function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+    return (Array.isArray(L) ? L : []).slice(0, 60).map((x, i) => { let link = ""; try { const u = new URL(String(x?.link || "")); if (u.protocol === "https:") link = u.href; } catch {}
+      const host = link ? new URL(link).hostname : "", source = /partiful/i.test(host) ? "Partiful" : /lu\.ma|luma\.com/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : link ? "Web" : "";
+      return { id: "p" + i, title: s(x?.title, 140), date: /^\d{4}-\d{2}-\d{2}$/.test(x?.date || "") ? x.date : "", time: s(x?.time, 40), place: s(x?.place, 120), note: s(x?.note, 400), about: s(x?.about ?? x?.description, 600),
+        cover: /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(x?.cover || "") ? x.cover : "", link, source, site: source === "Web" ? host.replace(/^www\./, "") : "",
+        // featured (with its order), its section and the host-written lines: role, who was there, proof, format, who it was for
+        featured: !!x?.featured, featuredOrder: x?.featured ? Math.max(1, Math.round(+x.featuredOrder || i + 1)) : 0, section: /^[a-z0-9-]{1,24}$/.test(String(x?.section || "")) ? String(x.section) : "",
+        role: s(x?.role, 40), room: s(scrubAddress(x?.room), 120), proof: s(scrubAddress(x?.proof), 140), format: s(x?.format, 24).toLowerCase(), company: s(x?.company, 60) }; }).filter((x) => x.title); }
+  // a prepared page may group its past events: `sections: [{ id, name, blurb, kind: "list" | "program" }]` (the page's
+  // show/hide switches stay an object, so a list here is always the scrapbook's sections). Claiming copies them over.
+export function showcaseSections(P) { const L = Array.isArray(P.sections) ? P.sections : Array.isArray(P.scrapSections) ? P.scrapSections : null;
+    return L ? { sections: undefined, scrapSections: cleanScrapSections(L) } : {}; }
 export function makeCommunity(store) {
   const sys = scopeStore(store, DEFAULT_WS); // codes, waitlist and handles live in the shared system area
   const codePath = (c) => "system/code-" + String(c).toUpperCase().replace(/[^A-Z0-9-]/g, "");
@@ -145,14 +159,8 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
   let showcaseCache = null;
   function showcaseAll() { if (showcaseCache) return showcaseCache; const out = new Map();
-    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })), past: undefined, scrapbook: showcasePast(P.past) }); } catch {} } } catch {}
+    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })), past: undefined, scrapbook: showcasePast(P.past), ...showcaseSections(P) }); } catch {} } } catch {}
     return (showcaseCache = out); }
-  // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
-  function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
-    return (Array.isArray(L) ? L : []).slice(0, 60).map((x, i) => { let link = ""; try { const u = new URL(String(x?.link || "")); if (u.protocol === "https:") link = u.href; } catch {}
-      const host = link ? new URL(link).hostname : "", source = /partiful/i.test(host) ? "Partiful" : /lu\.ma|luma\.com/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : link ? "Web" : "";
-      return { id: "p" + i, title: s(x?.title, 140), date: /^\d{4}-\d{2}-\d{2}$/.test(x?.date || "") ? x.date : "", time: s(x?.time, 40), place: s(x?.place, 120), note: s(x?.note, 400), about: s(x?.about ?? x?.description, 600),
-        cover: /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(x?.cover || "") ? x.cover : "", link, source, site: source === "Web" ? host.replace(/^www\./, "") : "" }; }).filter((x) => x.title); }
   /** The prepared page behind a handle, claimed or not (a claimed page's scrapbook starts from it). */
   function showcasePreset(handle) { return showcaseAll().get(String(handle || "").toLowerCase()) || null; }
   function showcaseOf(handle) { const h = String(handle || "").toLowerCase(); return wsOfHandle(h) ? null : showcaseAll().get(h) || null; }
@@ -180,7 +188,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const ready = !pageGaps(h).length;
       if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
-    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, showcase: true, followers: 0, upcoming: 0, hosted: 0 });
+    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, scrapSections: undefined, showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
     { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }

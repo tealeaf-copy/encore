@@ -353,7 +353,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const P = X.eventProfile(W.ownerEmail); res.json({ strengths: X.hostStrengths(ws), profile: { attended: P.attended, hosted: P.hosted, traits: P.traits, loves: P.loves } }); });
   // kudos from guests (proved by their RSVP), vibes from hosts
   app.post("/api/public/kudos", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(clean(b.eventId, 80), b.rid, b.code);
-    if (!P) return bad(res, "Kudos come from people who RSVP'd. Open the link from your invite on the phone you used.", 403, "not_granted");
+    if (!P) return bad(res, "Kudos come from guests who replied. Open the link from your invite on the phone you used.", 403, "not_granted");
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500); if (!tags.length && !love && !improve && !["better", "same", "less"].includes(b.compare)) return bad(res, "Tap one of the chips or write a line first.");
     if (!tags.length && !love) return bad(res, "Pick at least one thing you liked.");
@@ -449,7 +449,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     for (const d of S.list("kudos")) { const kd = d.data || {}; if (kd.email) bump({ email: kd.email, name: kd.name }, "kudos"); }
     try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email || f.phone || ""); if (!k2) continue; if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
     const L = [...P.entries()].filter(([k2]) => !already.has(k2)).map(([k2, x]) => { const score = x.early * 3 + x.came * 3 + x.yes * 2 + x.kudos + (x.follows ? 1 : 0) - x.no;
-      const why = [x.early ? (x.early === 1 ? "said yes early once" : `said yes early ${x.early} times`) : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent you kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
+      const why = [x.early ? (x.early === 1 ? "said yes early once" : `said yes early ${x.early} times`) : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
       return { name: x.name || (x.email ? x.email.split("@")[0] : "A friend"), email: x.email, phone: x.phone, score, why: why.length ? why.join(" · ") : "follows you", early: x.early >= 1 }; }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
     res.json({ people: L, history: R.length }); });
   // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----
@@ -475,7 +475,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (/^(start|unstop|yes)$/.test(word) && store.get("system/smsstop-" + hash(from))) { store.delete("system/smsstop-" + hash(from)); return twiml(res, "You're opted back in to texts from Pottery Lab. Reply STOP to opt out."); }
     // the most recent upcoming invite or RSVP for this number
     let best = null; for (const ws of allWorkspaceIds()) { const S = scopeStore(store, ws); for (const d of [...S.list("textinvites"), ...S.list("rsvps")]) { const x = d.data || {}; if (normPhone(x.phone) !== from) continue; const ev = S.get("events/" + x.eventId)?.data; if (!ev || (ev.date && ev.date < today)) continue; const at = x.changedAt || x.at || 0; if (!best || at > best.at) best = { ws, S, ev, eventId: x.eventId, at }; } }
-    if (!best) return twiml(res, "Hi! This is Pottery Lab. We couldn't find an invite for this number. Open the link your host sent to RSVP.");
+    if (!best) return twiml(res, "Hi! This is Pottery Lab. We couldn't find an invite for this number. Open the link your host sent to reply.");
     const { S, ev, eventId } = best, title = ev.pubTitle || ev.name || "the event", link = `${publicOrigin(req)}/g#rsvp-${eventId}`;
     const mine = S.list("rsvps").find((d) => d.data?.eventId === eventId && normPhone(d.data?.phone) === from);
     // the invite text says "I'm in, Maybe or Can't go": accept those phrases, not just one-word replies

@@ -86,7 +86,7 @@
       const o = e.target.closest("[data-o]"); if (o) { if (q.type === "multi") { const L = new Set(answers[q.id] || []); L.has(o.dataset.o) ? L.delete(o.dataset.o) : L.add(o.dataset.o); answers[q.id] = [...L]; o.setAttribute("aria-pressed", String(L.has(o.dataset.o))); } else { answers[q.id] = o.dataset.o; el.querySelectorAll("[data-o]").forEach((b) => b.setAttribute("aria-pressed", String(b === o))); setTimeout(() => { next(); autoAt = Date.now(); }, 260); } } });
     el.addEventListener("keydown", (e) => { const q = Q[i]; if (e.key === "Enter" && !e.shiftKey && e.target.tagName !== "TEXTAREA") { e.preventDefault(); next(); } else if (/^[a-j]$/i.test(e.key) && !/INPUT|TEXTAREA/.test(e.target.tagName)) { const b = el.querySelectorAll("[data-o]")[e.key.toLowerCase().charCodeAt(0) - 97]; b?.click(); } });
     draw();
-    return { missing: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i]) answers[Q[i].id] = f.value.trim(); const k = Q.findIndex((q) => q.required && !has(q)); if (k < 0) return null; i = k; draw(); el.querySelector(".tf-err").textContent = "Answer this one first."; el.scrollIntoView({ behavior: "smooth", block: "center" }); return Q[k]; } };
+    return { missing: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i]) answers[Q[i].id] = f.value.trim(); const k = Q.findIndex((q) => q.required && !has(q)); if (k < 0) return null; i = k; draw(); el.querySelector(".tf-err").textContent = "One more question."; el.scrollIntoView({ behavior: "smooth", block: "center" }); return Q[k]; } };
   }
   window.Questions = { builder, flow, TYPES, STARTERS, norm };
 })();

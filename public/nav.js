@@ -11,7 +11,7 @@
     for (const [href, label, cta] of links) { const a = document.createElement("a"); a.href = href; a.textContent = label; if (cta) a.className = "cta"; const p = href.split(/[?#]/)[0]; if (p === here && p !== "/") a.setAttribute("aria-current", "page"); nav.appendChild(a); } };
   const run = async () => { try {
     const me = await (await fetch("/api/me", { credentials: "same-origin" })).json().catch(() => ({}));
-    if (!me?.verified) return draw(document.body?.dataset?.audience === "brand" ? [["/discover", "Discover"], ["/hosts", "Hosts"], ["/login", "Sign in"], ["/hosts/book", "Book a host", 1]] : [["/discover", "Discover"], ["/hosts", "Hosts"], ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
+    if (!me?.verified) return draw(document.body?.dataset?.audience === "brand" ? [["/discover", "Discover"], ["/hosts", "Hosts"], ["/gifts", "Gifts"], ["/login", "Sign in"], ["/hosts/book", "For brands", 1]] : [["/discover", "Discover"], ["/hosts", "Hosts"], ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json().catch(() => ({}));
     if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ["/?app=1", "Host something", 1]]);
     draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/?app=1#studio", "New event", 1]]);

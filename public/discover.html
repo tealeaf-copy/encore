@@ -82,7 +82,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     <div class="card"><span id="pipI"></span><div style="flex:1;min-width:180px"><h2>Want to host?</h2><p>Hosting friends is free.</p></div><a class="btn" href="/signup?mode=friends">Start your page</a></div>
   </div>
 </div>
-<footer>Pottery Lab · <a href="/">Home</a> · <a href="/security">Security</a></footer>
+<footer>Pottery Lab · <a href="/discover">Discover</a> · <a href="/hosts">Hosts</a> · <a href="/hosts/book">For brands</a> · <a href="/security">Security</a></footer>
 <script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
 <script src="/avatars.js"></script>
@@ -151,7 +151,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
     let list = local, note = "", rest = [];
     if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
-    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's what's on everywhere else. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>.`; }
+    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's everywhere else. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>.`; }
     else if (city) rest = far;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
@@ -203,7 +203,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
   (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#introH").textContent = "Discover"; $("#introP").hidden = true; } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
-  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six questions, events to match.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
+  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps, no sign-up.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; drawAll();
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
 })();

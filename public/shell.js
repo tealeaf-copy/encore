@@ -33,6 +33,7 @@
     bell: I('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
     me: I('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     people: I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.5 3.6-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><circle cx="17" cy="9.5" r="2.8"/><path d="M16 14.6c2.6 0 4.5 1.5 5.5 4.4"/>'),
+    gift: I('<rect x="3.5" y="9" width="17" height="11.5" rx="1.5"/><path d="M12 9v11.5M3.5 13.5h17M12 9C10.5 6 7 5 7 7.5S10.5 9 12 9zm0 0c1.5-3 5-4 5-1.5S13.5 9 12 9z"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
   };
   const css = document.createElement("style");
@@ -63,7 +64,7 @@
 .es-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;color:#6B5F56;text-decoration:none;font:600 13px "Instrument Sans",system-ui;padding:4px 0}
 .es-tabs a[aria-current]{color:#1F1A17}.es-tabs a[aria-current] svg{stroke-width:2.4}
 .es-biz .es-tabs a.es-plus{display:none}.es-tabs a.es-plus{flex:none;margin:-22px 6px 0}.es-tabs a.es-plus span{display:grid;place-items:center;width:54px;height:54px;border-radius:18px;background:#C94A30;color:#fff;border:2px solid #1F1A17;box-shadow:0 2px 8px rgba(31,26,23,.08)}
-body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:none!important}}`;
+body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has-tabs header .hd-cta{display:none!important}}`;
   document.head.appendChild(css);
   const logo = `<svg viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const link = (href, icon, tip, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = p !== "/" && p === P ? ' aria-current="page"' : ""; return `<a href="${href}" data-tip="${tip}" aria-label="${tip}"${cur}>${icon}${extra}</a>`; };
@@ -74,7 +75,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
         : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1", ICON.plus, "Start your page")
-        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/login", ICON.login, "Sign in") + (BRAND ? item("/hosts/book", ICON.people, "Book a host") : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
+        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/login", ICON.login, "Sign in") + (BRAND ? item("/gifts", ICON.gift, "Gifts") + item("/hosts/book", ICON.people, "For brands") : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     document.body.prepend(rail); document.body.classList.add("es-has-rail");
@@ -83,7 +84,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a{display:non
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
       tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
         (signed ? `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Start your page"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` : tab("/hosts", ICON.people, "Hosts")) +
-        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.people, "Book a host") : tab("/signup?mode=friends", ICON.plus, "Start"))));
+        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.people, "For brands") : tab("/signup?mode=friends", ICON.plus, "Start"))));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1#studio">New event</a>` : ""}</nav>`;

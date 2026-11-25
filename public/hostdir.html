@@ -61,7 +61,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const pills = (h) => { const b = (BADGES[h.handle] || []).filter((x) => !/^m-/.test(x.id) && x.id !== "new")[0], P = [];
     if (h.sample) P.push(`<span class="ex">Example</span>`);
     if (b) P.push(`<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`);
-    if (h.upcoming) P.push(`<span class="nx">${h.upcoming} coming up</span>`);
+    if (h.upcoming) P.push(`<span class="nx">${h.upcoming} ${h.upcoming === 1 ? "event" : "events"} soon</span>`);
     if (h.showcase) P.push(`<span>Not on Pottery Lab yet</span>`);
     return P.slice(0, 2).join(""); };
   const facts = (h) => [[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : ""].filter(Boolean).map(esc).join(" · ");

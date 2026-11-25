@@ -22,7 +22,7 @@
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
   <h1 id="h">Start your free trial</h1>
   <p class="sub" id="sub">14 days, every feature, no card.</p>
-  <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For work</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
+  <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For a brand</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
   <p class="err" id="err" role="alert"></p>
   <label id="codeWrap" hidden><span>Host code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode" id="nocodeHint" hidden>No host code? Ask a host you know, or <a href="#wl" onclick="document.getElementById('f').hidden=true;document.getElementById('wl').hidden=false;return false">join the waitlist</a>.</small></label>
   <label>Your name<input name="name" placeholder="e.g. Dana Park" autocomplete="name" required></label>
@@ -31,7 +31,7 @@
   <label id="cityWrap"><span>Your city</span><span style="display:flex;flex-direction:column;gap:6px"><input name="city" id="cityIn" list="suCities" placeholder="e.g. New York" autocomplete="address-level2" style="width:100%;box-sizing:border-box"><button type="button" id="cityGps" style="align-self:flex-start;white-space:nowrap;border:1px solid #E7DFD3;background:#fff;border-radius:12px;padding:6px 12px;font-size:14px;color:#1F1A17;font:inherit;cursor:pointer">📍 Use my location</button></span><datalist id="suCities"></datalist></label>
   <label id="webWrap"><span>Company website <small style="font-weight:400;color:#75685F">(optional)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
   <input type="hidden" name="mode" value="work">
-  <label>Password <small style="font-weight:400;color:#75685F">(at least 10 characters)</small><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+  <label>Password <small style="font-weight:400;color:#75685F">(10+ characters)</small><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Start free trial</button>
   <a href="/login">Already have an account? Sign in</a>
 </form>
@@ -43,7 +43,7 @@
   <label>Email<input name="email" type="email" autocomplete="email" required></label>
   <label>City<input name="city" placeholder="e.g. Oakland" autocomplete="address-level2"></label>
   <label>What would you host?<input name="wants" placeholder="e.g. a Sunday hike, cake sales from my stoop"></label>
-  <button type="submit">Join waitlist</button>
+  <button type="submit">Join the waitlist</button>
   <a href="#" id="haveCode">I have a host code</a>
 </form>
 <script>
@@ -52,8 +52,8 @@
       const fr = m === "friends", fol = fr && !!q.get("regularOf"); document.getElementById("h").textContent = fr ? (fol ? "Follow along" : "Start your page") : "Start your free trial";
       document.getElementById("sub").textContent = fr ? (fol ? "Free. No card needed." : "Free to host friends.") : "14 days, every feature, no card.";
       { const cw0 = document.getElementById("coWrap"); cw0.hidden = fol; if (fol) f.company.value = ""; }
-      document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Club or group name (optional)" : "Company";
-      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Follow" : "Create page") : "Start free trial"; };
+      document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
+      f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Follow" : "Create my page") : "Start free trial"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
     if (q.get("mode") !== "work") set("friends"); else document.getElementById("modes").hidden = false;
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), wl = document.getElementById("wl");
@@ -83,13 +83,13 @@
     if (document.getElementById("codeOk").classList.contains("bad")) return stop("That host code doesn't work. Check it with the host who sent it.", f.code);
     if (!String(body.name || "").trim()) return stop("Add your name.", f.elements.name);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim())) return stop("That email doesn't look right.", f.email);
-    if (body.mode === "work" && !String(body.company || "").trim()) return stop("Add your company, or choose \"With friends\".", f.company);
-    if (String(body.password || "").length < 10) return stop("Your password needs 10 or more characters.", f.password);
+    if (body.mode === "work" && !String(body.company || "").trim()) return stop("Add your brand, or pick \"With friends\".", f.company);
+    if (String(body.password || "").length < 10) return stop("Use 10+ characters.", f.password);
     go.disabled = true;
     try {
       const r = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) { err.textContent = j.message || "Couldn't create your account. Try again."; go.disabled = false; return; }
+      if (!r.ok) { err.textContent = j.message || "Couldn't create your page. Try again."; go.disabled = false; return; }
       try { if (body.city && window.EncorePlace) window.EncorePlace.setManual(window.EncorePlace.find(body.city)?.[0] || body.city); } catch {}
       // a prepared storefront (e.g. /signup?mode=friends&preset=tram): set it up on the new account, then open it
       { const pre = (new URLSearchParams(location.search).get("preset") || "").replace(/[^a-z0-9-]/g, ""); if (pre) { try { const P = await (await fetch("/presets/" + pre + ".json")).json(); let r2 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(P) });

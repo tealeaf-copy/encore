@@ -22,15 +22,15 @@
     const f = bg.querySelector("form"); setTimeout(() => f.idea.focus(), 30);
     f.onsubmit = async (ev) => { ev.preventDefault(); const err = bg.querySelector(".err"), btn = f.querySelector("button[type=submit]"); btn.disabled = true; err.textContent = "";
       try { const r = await fetch(`/api/collab/${encodeURIComponent(h.handle)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, idea: f.idea.value, when: f.when.value, city: f.city.value }) }); const j = await r.json(); if (!r.ok) { const e2 = new Error(j.message); e2.code = j.code; throw e2; }
-        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>I'll tell you when ${esc(first)} replies.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
+        bg.querySelector(".cl").innerHTML = `<button class="x" type="button" aria-label="Close">×</button><h2>Sent to ${esc(first)}</h2><p>We'll let you know when ${esc(first)} replies.</p><button type="submit" style="width:100%">Done</button>`; bg.querySelectorAll(".x,button[type=submit]").forEach((b) => (b.onclick = close)); window.EncoreCommunity?.oink?.();
       } catch (e) {
         if (e.code === "host_page_required") { // one step: make a host page right here, then send
           let me = {}; try { me = await (await fetch("/api/me")).json(); } catch {}
           const nm = String(me.name || ""), slug = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
-          err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see your page. Make one and we'll send this right after.</span>
+          err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see your page. Make one and we'll send your idea.</span>
             <span style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><input class="hp-name" placeholder="Page name, e.g. Kevin's Kitchen" value="${esc(nm ? nm.split(" ")[0] + "'s events" : "")}"><input class="hp-handle" placeholder="your-handle" value="${esc(slug(nm))}"></span>
             <button type="button" class="hp-go" style="margin-top:8px;width:100%">Make page and send</button>`;
-          err.querySelector(".hp-go").onclick = async () => { const b2 = err.querySelector(".hp-go"); b2.disabled = true; b2.textContent = "Creating…";
+          err.querySelector(".hp-go").onclick = async () => { const b2 = err.querySelector(".hp-go"); b2.disabled = true; b2.textContent = "Making your page…";
             try { const pr = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: err.querySelector(".hp-name").value.trim() || nm, handle: slug(err.querySelector(".hp-handle").value) || slug(nm), city: f.city.value }) }); const pj = await pr.json().catch(() => ({}));
               if (!pr.ok) throw new Error(pr.status === 403 ? "You need a host code to make a page. Ask a host for one." : pj.message || "Couldn't create your page.");
               btn.disabled = false; f.requestSubmit ? f.requestSubmit() : btn.click(); } catch (x) { b2.disabled = false; b2.textContent = "Make page and send"; const m = document.createElement("span"); m.style.cssText = "display:block;color:#B3261E;margin-top:6px"; m.textContent = x.message; err.appendChild(m); } };
@@ -47,7 +47,7 @@
       if (/[?&]collabs=1/.test(location.search)) { const W = await J("/api/workspace"); if (W?.personal) ownerSheet(); } return; }
     const first = pageFirst || window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""), side = document.querySelector("aside.side") || document.querySelector("main"); if (!side || document.getElementById("collabCard")) return;
     const card = document.createElement("div"); card.className = "card cl-card"; card.id = "collabCard";
-    card.innerHTML = `<h3>Collab with ${esc(first)}</h3><p class="muted">Co-host a night, pop up together or swap guest lists.</p><button class="btn" type="button" id="clGo">Suggest a collab</button>`;
+    card.innerHTML = `<h3>Collab with ${esc(first)}</h3><button class="btn" type="button" id="clGo">Suggest a collab</button>`;
     const fol = document.getElementById("follow"); fol ? fol.after(card) : side.appendChild(card); document.getElementById("hostOwn")?.remove(); // one "host your own" prompt is enough
     card.querySelector("#clGo").onclick = async () => { const me = await J("/api/me");
       if (!me?.verified) { location.href = `/login?why=collab&next=${encodeURIComponent(location.pathname + "?collab=1")}`; return; }

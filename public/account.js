@@ -22,7 +22,7 @@
       const close = (v) => { bg.remove(); resolve(v); }; bg.onclick = (e) => { if (e.target === bg) close(false); };
       const draw = () => { bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Create your account"><button class="x" type="button" aria-label="Close">×</button>
         <h2>${mode === "new" ? `Follow ${esc(first)}` : "Welcome back"}</h2>
-        <p>${mode === "new" ? `Free, and no code needed.` : `Sign in to follow ${esc(first)}.`}</p>
+        <p>${mode === "new" ? `Free. Guests never need a code.` : `Sign in to follow ${esc(first)}.`}</p>
         <form>${mode === "new" ? `<label>Your name<input name="name" autocomplete="name" required value="${esc(name)}"></label>` : ""}
           <label>Email<input name="email" type="email" autocomplete="email" required value="${esc(email)}"></label>
           <label>Mobile <span style="font-weight:400;color:#6F6259">(optional, for a text)</span><input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" value="${esc((() => { try { return localStorage.getItem("encore.phone") || ""; } catch { return ""; } })())}"></label>
@@ -34,7 +34,7 @@
         f.onsubmit = async (ev) => { ev.preventDefault(); const b = Object.fromEntries(new FormData(f)); err.textContent = ""; const btn = f.querySelector("button[type=submit]"); btn.disabled = true;
           try { const r = mode === "new" ? await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...b, mode: "friends", regularOf: handle }) })
               : await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: b.email, password: b.password }) });
-            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || (mode === "new" ? "Couldn't create the account." : "That email and password don't match.")); try { window.dispatchEvent(new Event("encore:signedin")); } catch {}
+            const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || (mode === "new" ? "That didn't work. Try again." : "That email and password don't match.")); try { window.dispatchEvent(new Event("encore:signedin")); } catch {}
             try { if (b.name) localStorage.setItem("encore.name", b.name); localStorage.setItem("encore.email", b.email); if (b.phone) localStorage.setItem("encore.phone", b.phone); localStorage.setItem("encore.phoneAsked", "1"); } catch {} close(true);
           } catch (e) { err.textContent = e.message; btn.disabled = false; } }; };
       draw(); }); }
@@ -48,14 +48,14 @@
   // signed out: just an email (remembered for next time)
   function askEmail(hostName, shown) { return new Promise((resolve) => { style(); let first = (/\b('s|’s|club|crew|kitchen|cafe|café|studio|co\.?)\b/i.test(String(hostName || "")) ? String(hostName) : String(hostName || "").split(" ")[0]) || "them"; if (shown) first = shown; let saved = ""; try { saved = localStorage.getItem("encore.email") || ""; } catch {}
     const bg = document.createElement("div"); bg.className = "acct-bg"; document.body.appendChild(bg); const done = (v) => { bg.remove(); resolve(v); };
-    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Follow"><button class="x" type="button" aria-label="Close">×</button><h2>Follow ${esc(first)}</h2><p>Just your email. No account needed.</p><form><label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required value="${esc(saved)}"></label><p class="err" role="alert"></p><button type="submit">Follow</button></form></div>`;
+    bg.innerHTML = `<div class="acct" role="dialog" aria-modal="true" aria-label="Follow"><button class="x" type="button" aria-label="Close">×</button><h2>Follow ${esc(first)}</h2><p>Just your email.</p><form><label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com" required value="${esc(saved)}"></label><p class="err" role="alert"></p><button type="submit">Follow</button></form></div>`;
     bg.querySelector(".x").onclick = () => done(""); bg.onclick = (e) => { if (e.target === bg) done(""); };
     const f = bg.querySelector("form"); setTimeout(() => f.email.focus(), 30); f.onsubmit = (e) => { e.preventDefault(); const v = f.email.value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { bg.querySelector(".err").textContent = "That email doesn't look right."; return; } try { localStorage.setItem("encore.email", v); } catch {} done(v); }; }); }
   async function follow(body, { hostName = "", first: shown = "" } = {}) {
     try { if (!body.phone) { const ph = localStorage.getItem("encore.phone"); if (ph) body = { ...body, phone: ph }; } } catch {}
     const go = () => fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    let r = await go(); const wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName, shown); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
-    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again.");
+    let r = await go(); let wasSignedIn = r.status !== 401; if (r.status === 401) { const em = body.email && /@/.test(body.email) ? "" : await askEmail(hostName, shown); if (!em && !(body.email && /@/.test(body.email))) return null; if (em) body = { ...body, email: em }; r = await go(); }
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't follow. Try again."); if (j.signedIn === false) wasSignedIn = false;
     try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(body.handle)) L.push(body.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
     if (!body.phone && !wasSignedIn) { setTimeout(async () => { const ph = await askPhone(hostName, !!j.emailed, shown); if (ph) { try { await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, phone: ph }) }); } catch {} } }, 0); }
     return j; }

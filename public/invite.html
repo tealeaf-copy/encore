@@ -52,7 +52,7 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     .catch(go);
 
   function render(e, ws, H, A) {
-    const h = H.host || {}, first = String(h.name || "your host").split(" ")[0], title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.pubTitle || ""} ${e.why || ""}`);
+    const h = H.host || {}, first = H.person || String(h.name || "your host").split(" ")[0].replace(/['’]s$/i, ""), title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.pubTitle || ""} ${e.why || ""}`);
     document.title = `${title} · Pottery Lab`;
     const cover = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(e.coverPhoto || "") || /^https:\/\/[^\s"'<>()]+$/.test(e.coverPhoto || "") ? `<img src="${esc(e.coverPhoto)}" alt="">` : window.EventArt ? (window.EventArt.ensureCss?.(), window.EventArt.cover(e, { title: "", label: "" })) : "";
     const where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(" · ");
@@ -61,10 +61,10 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     const full = left === 0;
     $("#m").innerHTML = $("#m .top").outerHTML + `<div class="cov">${cover}</div><h1>${esc(title)}</h1>
       <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}</div>` : ""}${A.seats ? `<div class="muted">👥 ${full ? "Full · join the waitlist" : left === A.seats ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${left} of ${A.seats} spot${A.seats === 1 ? "" : "s"} left`}</div>` : ""}</div>
-      ${h.name ? `<div class="host"><span class="av">${av}</span><span>Hosted by <b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>` : esc(h.name)}</b></span></div>` : ""}
+      ${h.name ? `<div class="host"><span class="av">${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${A.count ? `<p class="going-n" style="margin:14px 0 4px;font-weight:600">${A.count} in</p><div class="going">${names}</div>` : ""}
-      <form id="f" novalidate><div class="resp" role="radiogroup" aria-label="Your answer"><label><input type="radio" name="r" value="going" checked> ${esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>
+      <form id="f" novalidate><h2 class="ask" style="margin:18px 0 8px">Are you in?</h2><div class="resp" role="radiogroup" aria-label="Are you in?"><label><input type="radio" name="r" value="going" checked> ${esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>
         <label class="f">Your name<input type="text" id="nm" autocomplete="name" maxlength="80" required></label>
         <label class="f">Email or phone <small>Optional. So ${esc(first)} can remind you.</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"></label>
         ${foody ? `<label class="f">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
@@ -96,10 +96,10 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); if (data.response === "no") document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); const yes = data.response === "going", wait = data.response === "waitlist";
     const pad = (n) => String(n).padStart(2, "0"), d = e.date ? e.date.replace(/-/g, "") : "", t = /^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime.replace(":", "") + "00" : "";
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
-    const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${yes ? "You're in 🎉" : wait ? "You're on the waitlist" : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you"}</h2>${wait ? `<p class="muted" style="margin:0">We'll tell you if a spot opens.</p>` : data.response === "maybe" ? `<p class="muted" style="margin:0">Tap I'm in when you know.</p>` : ""}
-      ${yes ? `<p class="muted" style="margin:0">Your door code</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
+    const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${yes ? "You're in 🎉" : wait ? "You're on the waitlist" : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you"}</h2>${wait ? `<p class="muted" style="margin:0">We'll tell you if a spot opens.</p>` : ""}
+      ${yes && !(e.price && e.price !== "chip") && (+e.headcount || 0) >= 20 ? `<p class="muted" style="margin:0">Your door code</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
-      <div class="btns">${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}<a class="btn main" href="/g#rsvp-${encodeURIComponent(e.id || id)}">${yes || wait || data.response === "maybe" ? "See who's in" : "Change reply"}</a></div></div>`;
+      <div class="btns">${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}<a class="btn main" href="/g#rsvp-${encodeURIComponent(e.id || id)}">${yes || wait ? "See who's in" : "Change reply"}</a></div></div>`;
     document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
     if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(e.id || id)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${d}${t ? "T" + pad(Math.min(23, +t.slice(0, 2) + 2)) + t.slice(2) : ""}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/g#rsvp-" + (e.id || id))}`; }

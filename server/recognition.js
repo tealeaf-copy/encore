@@ -174,6 +174,6 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   const isNewHere = !example && !guests && !done.length && !events;
   return { example, guests, returning, kudos, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: "" })), badges: example ? [] : badges,
     workedWith: W, testimonials, pastCorporate, socials, insurance, isNewHere,
-    newLine: isNewHere ? "New on Pottery Lab. Requests are free." : "",
+    newLine: isNewHere ? "Requests are free." : "",
     rules: { minN: MIN_N } };
 }

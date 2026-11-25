@@ -12,11 +12,11 @@
     if (!document.getElementById("seSupCss")) { const s = document.createElement("style"); s.id = "seSupCss"; s.textContent = css; document.head.appendChild(s); }
     const S = host.support || {}, W = (host.wishlist || []).length ? host.wishlist : [{ emoji: "🎲" }];
     const d = document.createElement("details"); d.className = "se-sup"; if (location.hash === "#support") d.open = true;
-    d.innerHTML = `<summary>Supporters and wishlist</summary><p class="hint">Let guests chip in. Nobody is charged until you turn on payments.</p>
+    d.innerHTML = `<summary>Supporters and wishlist</summary><p class="hint">Let guests chip in. No one is charged until you turn on payments.</p>
       <label class="tg"><input type="checkbox" class="on" ${S.on ? "checked" : ""}> Show a pledge card on my page</label>
       <div class="r3"><label class="f">Monthly $<input class="m" type="number" min="0" max="999" value="${esc(S.monthly ?? 5)}"></label><label class="f">Yearly $<input class="y" type="number" min="0" max="999" value="${esc(S.yearly ?? 50)}"></label><label class="f">Founding $<input class="fo" type="number" min="0" max="999" value="${esc(S.founding || "")}" placeholder="optional"></label></div>
       <label class="f">A line for supporters<input class="note" maxlength="200" value="${esc(S.note || "")}" placeholder="Pledges cover ingredients so tickets stay free."></label>
-      <label class="f" style="margin-top:12px">Wishlist: things that make the next one better</label><div class="rows">${W.map(row).join("")}</div><button type="button" class="lk add">+ Add an item</button>
+      <label class="f" style="margin-top:12px">Wishlist</label><div class="rows">${W.map(row).join("")}</div><button type="button" class="lk add">+ Add an item</button>
       <p class="msg" role="alert" style="font-size:13px;color:#B3261E;margin:6px 0 0"></p>`;
     box.appendChild(d); let dirty = false; d.addEventListener("input", () => (dirty = true)); d.addEventListener("change", () => (dirty = true));
     d.querySelector(".add").onclick = () => { const R = d.querySelector(".rows"); if (R.children.length < 8) R.insertAdjacentHTML("beforeend", row()); };
@@ -24,9 +24,9 @@
     // saved by the pane's one Save button
     d._save = async () => { if (!dirty) return ""; const msg = d.querySelector(".msg"), v = (c) => d.querySelector(c).value.trim(); msg.textContent = "";
       const wishlist = [...d.querySelectorAll(".wl")].map((r) => ({ emoji: r.querySelector(".e").value.trim(), name: r.querySelector(".n").value.trim(), price: r.querySelector(".p").value.trim(), url: r.querySelector(".u").value.trim() })).filter((x) => x.name);
-      if (wishlist.some((x) => x.url && !/^https:\/\//i.test(x.url))) { msg.textContent = "Links must start with https://"; throw new Error("Wishlist links must start with https://"); }
+      if (wishlist.some((x) => x.url && !/^https:\/\//i.test(x.url))) { msg.textContent = "Links need to start with https://"; throw new Error("Wishlist links need to start with https://"); }
       { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ support: { on: d.querySelector(".on").checked, monthly: +v(".m"), yearly: +v(".y"), founding: +v(".fo"), note: v(".note") }, wishlist, city: host.city || "" }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save.");
-        Object.assign(host, j.host || {}); dirty = false; return "Reload to see it."; } };
+        Object.assign(host, j.host || {}); dirty = false; try { window.EncoreDrawSupport?.({ support: host.support || {}, wishlist: host.wishlist || [] }); } catch {} return ""; } };
   }
   // your own name, shown as the host on your events (top of the pane)
   async function mountName(box) { if (!box || box.querySelector(".se-name")) return; let cur = ""; try { cur = (await (await fetch("/api/me/name")).json()).name || ""; } catch { return; }

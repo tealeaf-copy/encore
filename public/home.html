@@ -74,6 +74,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 .req-steps{list-style:none;display:flex;gap:6px;padding:0;margin:14px 0 0;flex-wrap:wrap}.req-steps li{font:600 13px system-ui;padding:6px 10px;border-radius:999px;border:1.5px solid #D8CBBB;color:#6B5F56}.req-steps li.done{background:#1F1A17;color:#fff;border-color:#1F1A17}
 @media (max-width:760px){.teams{grid-template-columns:minmax(0,1fr)}.req{transform:none}}
 .xps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}.xp{display:grid;gap:4px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.xp i{font-style:normal;font-size:26px}.xp b{font:600 18px Fredoka,system-ui}.xp small{color:var(--smoke);font-size:15px;line-height:1.4}@media (max-width:760px){.xps{grid-template-columns:minmax(0,1fr);gap:10px}}
+.dates{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.dates span{font:600 14px system-ui;padding:8px 12px;border-radius:999px;border:1.5px solid #1F1A17}.dates span.on{background:#1F1A17;color:#fff}.goal .bar{height:10px;border-radius:999px;background:#EFE6D8;overflow:hidden;border:1.5px solid #1F1A17}.goal .bar i{display:block;height:100%;background:#C94A30}.goal small{display:block;margin-top:8px;color:#665A51;font-size:14px}
 .pg-book{display:block;transform:rotate(1deg)}.pg-book .snaps{grid-template-columns:repeat(3,minmax(0,1fr))}.sub-h{margin:40px 0 0;font-size:20px}.eyebrow+h2{margin-top:6px}.priv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:56px;align-items:center}
 .feats{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:12px}.feats li{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline}.feats b{font-weight:600}.feats span{color:var(--smoke)}
 .inv{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:20px;max-width:400px;width:100%;justify-self:end;transform:rotate(-1deg)}
@@ -122,7 +123,7 @@ html body .eyebrow{font-size:13px!important}
         <div class="pg-body">
           <div class="pg-head"><span class="pg-av" id="pgAv">🏃‍♀️</span><span class="pg-follow">Follow</span></div>
           <b class="nm">Claire's Run Crew</b><small>Saturday runs. Nobody gets left behind.</small>
-          <div class="pg-lbl">Every event, taped in</div>
+          <div class="pg-lbl">Past events</div>
           <div class="snaps"><div class="snap"><i>🏃</i><span>Saturday run</span><em>Nov 15</em></div><div class="snap"><i>☕</i><span>Coffee after</span><em>Nov 8</em></div><div class="snap"><i>🎉</i><span>First 5k</span><em>Nov 1</em></div></div>
           <div class="kudo"><span>🤗 Felt welcome</span><span>🔁 Would go again</span></div>
         </div>
@@ -144,7 +145,27 @@ html body .eyebrow{font-size:13px!important}
 </div></section>
 
 <section><div class="wrap priv">
-  <div><span class="eyebrow">Your portfolio</span><h2>Every event, taped into your <em>scrapbook</em>.</h2>
+  <div><span class="eyebrow">Before the invite</span><h2>Know they'll <em>come</em> before you plan.</h2>
+    <p class="lede">Most of the work happens before there's an event page. Do all of it here.</p>
+    <ul class="feats">
+      <li><b>Shape the idea</b><span>Tell Potto what you're thinking. It drafts the plan.</span></li>
+      <li><b>Send a feeler</b><span>A "Would you come?" link. One tap to answer.</span></li>
+      <li><b>Find the date</b><span>People tap every date that works for them.</span></li>
+      <li><b>Set a goal</b><span>Pick how many you need. When enough are in, it's on.</span></li>
+      <li><b>Launch</b><span>Pick the date and send the invite to everyone who is in.</span></li>
+    </ul>
+  </div>
+  <div class="inv" aria-hidden="true">
+    <span class="lk">💡 Feeler</span>
+    <h3>Flushing food tour?</h3>
+    <div class="meta">Would you come? Tap which dates work.</div>
+    <div class="dates"><span class="on">Sat 14</span><span class="on">Sun 15</span><span>Sat 21</span></div>
+    <div class="goal"><div class="bar"><i style="width:83%"></i></div><small>5 of 6 in. One more and it's on.</small></div>
+  </div>
+</div></section>
+
+<section><div class="wrap priv">
+  <div><span class="eyebrow">Your portfolio</span><h2>A <em>scrapbook</em> of every event you host.</h2>
     <p class="lede">Your page becomes a portfolio of the experiences you host. One link shows what you do best.</p>
     <ul class="feats">
       <li><b>Scrapbook</b><span>Photos and the story of every event you host.</span></li>

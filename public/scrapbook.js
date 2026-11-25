@@ -1,4 +1,4 @@
-// The scrapbook on a host's page: every event, taped in like a yearbook. Polaroids grouped by year, handwritten
+// The scrapbook on a host's page: every event in one place, like a yearbook. Polaroids grouped by year, handwritten
 // captions, tape and stamps. Hosts add past events from Partiful, Luma and Eventbrite links, a CSV or by hand,
 // and add photos to any of them. Guests see the scrapbook; only the host sees the tools.
 (function () {
@@ -47,7 +47,7 @@
         ${/^(Partiful|Luma|Eventbrite|Henly)$/.test(x.source || "") ? `<span class="stamp ${esc(x.source)}">${esc(x.source)}</span>` : ""}
         <div class="cap">${esc(x.title)}</div><div class="meta">${esc([fmt(x.date), x.place, x.guests ? `${x.guests} came` : ""].filter(Boolean).join(" · "))}</div>${x.note ? `<div class="note">“${esc(x.note)}”</div>` : ""}
         ${mine && x.id ? `<span class="own"><span data-act="photo" title="Add photos">📷</span><span data-act="edit" title="Edit">✎</span><span data-act="del" title="Remove">🗑</span></span>` : ""}</button>`; };
-    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? "Every event, taped in." : "Your events, taped in."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
+    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? "Every event you've hosted." : "Your past events live here."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
       ${all.length ? [...years].map(([y, L]) => `<div class="sb-year">${esc(y)}</div><div class="sb-g">${L.map(card).join("")}</div>`).join("") : `<div class="sb-empty">${window.Potto ? window.Potto.svg("carry", 96) : ""}<p>Bring in events from Partiful, Luma and more.</p></div>`}
       <input type="file" id="sbFile" accept="image/*" multiple hidden>`;
     let target = null;

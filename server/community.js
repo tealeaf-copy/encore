@@ -260,9 +260,9 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
-  // owner request: Tuongvan's page (/@tuongvan) starts from the prepared preset's name, tagline and bio, once, only while the bio is still empty
+  // owner request: Tuongvan's page (/@tuongvan) starts from the prepared preset's name, tagline and bio, only while the bio is empty or still the earlier prepared text
   try { const ws = C.wsOfHandle("tuongvan"), W = ws && getWorkspace(ws), P = C.showcasePreset && C.showcasePreset("tuongvan");
-    if (W?.host && P && !String(W.host.bio || "").trim()) C.setProfile(ws, { ...W.host, name: P.name, tagline: P.tagline, bio: P.bio, emoji: P.emoji || W.host.emoji }); } catch (err) { console.warn("tuongvan page", err?.message); }
+    if (W?.host && P && (!String(W.host.bio || "").trim() || (String(W.host.bio).startsWith("I plan and run events for AI") && W.host.bio !== P.bio))) C.setProfile(ws, { ...W.host, name: P.name, tagline: P.tagline, bio: P.bio, emoji: P.emoji || W.host.emoji }); } catch (err) { console.warn("tuongvan page", err?.message); }
   // one-time rename of an example account (owner request): Eric's Table becomes Bo's Omecasa at /@bo-omecasa; the old link keeps working
   try { const ws = C.wsOfHandle("eric-cooks") || C.wsOfHandle("bo-omecasa"), W = ws && getWorkspace(ws);
     if (W && /@demo\.encore$/i.test(W.ownerEmail || "") && W.host && W.host.name === "Eric's Table") {

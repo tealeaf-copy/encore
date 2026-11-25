@@ -1,0 +1,201 @@
+{
+ "handle": "tuongvan",
+ "name": "Tuongvan Le",
+ "tagline": "I build event programs for AI startups that put technical buyers in the room, from CTO dinners to a first customer summit.",
+ "bio": "I plan and run events for AI and fintech startups, including Assort Health, n8n, Pogo, Gradient, Applied Labs and Rutter, and co-hosted with Passionfroot, Replit, Gamma and ElevenLabs at SF Tech Week. I produced Assort Health’s first customer summit as the sole marketer, ran a year-long field program for Rutter across four formats, and host executive dinners from New York to Las Vegas to Sydney. Open to Head of Events roles at AI companies.",
+ "city": "New York",
+ "emoji": "🍽️",
+ "sections": [
+  {
+   "id": "cust",
+   "name": "Customer events",
+   "blurb": "Bringing customers together to learn from each other and grow with the product.",
+   "kind": "list",
+   "order": 0
+  },
+  {
+   "id": "dinner",
+   "name": "Executive dinners that move deals",
+   "blurb": "Small rooms of target buyers, built around a point of view and followed up within 48 hours.",
+   "kind": "list",
+   "order": 1
+  },
+  {
+   "id": "rutter",
+   "name": "Rutter field program, 2024",
+   "blurb": "Coffee, dinners and a partner workshop for Rutter’s fintech buyers, April to October.",
+   "kind": "program",
+   "order": 2
+  },
+  {
+   "id": "comm",
+   "name": "Partner and community",
+   "blurb": "Borrowing great audiences with partners and building relationships that last.",
+   "kind": "list",
+   "order": 3
+  }
+ ],
+ "past": [
+  {
+   "title": "Assort Ascend 2025",
+   "date": "2025-09-19",
+   "place": "Napa Valley, CA",
+   "format": "summit",
+   "company": "Assort Health",
+   "role": "Produced",
+   "section": "cust",
+   "room": "100+ healthcare operators, clinicians and technologists",
+   "proof": "Assort Health’s first customer summit, built end to end as the sole marketer in about 3 months",
+   "about": "Peer-led sessions, customer spotlights and product deep dives on AI for patient access. Apolo Ohno gave the keynote.",
+   "link": "https://www.prnewswire.com/news-releases/assort-health-announces-inaugural-assort-ascend-customer-summit-to-support-healthcare-leaders-in-navigating-ai-agent-transformation-for-patient-engagement-and-provider-operations-302545782.html",
+   "featured": true,
+   "featuredOrder": 2
+  },
+  {
+   "title": "Executive Dinner at HLTH: AI to Transform Patient Outcomes",
+   "date": "2024-10-21",
+   "place": "Las Vegas, NV",
+   "format": "dinner",
+   "company": "Assort Health",
+   "role": "Organized and hosted",
+   "section": "dinner",
+   "room": "Healthcare executives in town for HLTH",
+   "proof": "A side event at the year’s biggest healthcare conference",
+   "link": "https://lu.ma/l88jza2d",
+   "featured": true,
+   "featuredOrder": 5
+  },
+  {
+   "title": "Dinner with n8n: CTOs and CIOs in NYC",
+   "date": "2025-08-26",
+   "place": "FiDi, New York",
+   "format": "dinner",
+   "company": "n8n",
+   "role": "Organized",
+   "section": "dinner",
+   "room": "CTOs and CIOs from New York companies",
+   "featured": true,
+   "featuredOrder": 1
+  },
+  {
+   "title": "Pogo Dinner: Implementing AI to Gather Customer Insights",
+   "date": "2025-11-06",
+   "place": "Midtown East, New York",
+   "format": "dinner",
+   "company": "Pogo",
+   "role": "Organized and hosted",
+   "section": "dinner",
+   "room": "Consumer insights leaders",
+   "proof": "The first of a two-city dinner series",
+   "link": "https://luma.com/33des2wp"
+  },
+  {
+   "title": "Pogo Dinner: How AI is Rewriting the Consumer Insights Playbook",
+   "date": "2025-12-04",
+   "place": "Chicago, IL",
+   "format": "dinner",
+   "company": "Pogo",
+   "role": "Organized and hosted",
+   "section": "dinner",
+   "room": "Consumer insights leaders",
+   "link": "https://luma.com/863h9q8u"
+  },
+  {
+   "title": "Applied Labs Executive Dinner",
+   "date": "2025-09-03",
+   "place": "Los Angeles, CA",
+   "format": "dinner",
+   "company": "Applied Labs",
+   "role": "Organized",
+   "section": "dinner"
+  },
+  {
+   "title": "AI in Action: Real-World Insights for Capital Markets",
+   "date": "2025-01-30",
+   "place": "FiDi, New York",
+   "format": "dinner",
+   "company": "Gradient",
+   "role": "Organized",
+   "section": "dinner",
+   "room": "Capital markets leaders"
+  },
+  {
+   "title": "Coffee x Fintech: Building the Financial OS for SMBs",
+   "date": "2024-04-11",
+   "place": "New York",
+   "format": "coffee",
+   "company": "Rutter",
+   "role": "Lead host",
+   "section": "rutter",
+   "room": "Fintech builders during NY Fintech Week",
+   "about": "A morning meetup during NY Fintech Week, with coffee from Lê Phin.",
+   "link": "https://luma.com/crr1a20n"
+  },
+  {
+   "title": "Building the Financial Operating System for SMBs: Executive Dinner",
+   "date": "2024-05-15",
+   "place": "New York",
+   "format": "dinner",
+   "company": "Rutter",
+   "role": "Lead host",
+   "section": "rutter",
+   "link": "https://luma.com/ml4ztkp1"
+  },
+  {
+   "title": "Rutter x Mercoa: How to Build Bill Pay Automation 101",
+   "date": "2024-06-27",
+   "place": "Online",
+   "format": "workshop",
+   "company": "Rutter",
+   "role": "Host",
+   "section": "rutter",
+   "about": "A digital workshop with partner Mercoa."
+  },
+  {
+   "title": "Executive Dinner at Nobu: Delivering Financial Products Where Businesses Work",
+   "date": "2024-10-30",
+   "place": "Las Vegas, NV",
+   "format": "dinner",
+   "company": "Rutter",
+   "role": "Lead host",
+   "section": "rutter",
+   "room": "Fintech leaders at Money20/20",
+   "link": "https://www.eventbrite.com/e/executive-dinner-at-nobu-delivering-financial-products-where-businesses-tickets-2003367256393",
+   "featured": true,
+   "featuredOrder": 3
+  },
+  {
+   "title": "Passionfroot at SF Tech Week: Marketing Salon and Creator Clubhouse",
+   "date": "2026-10-07",
+   "place": "Mission, San Francisco",
+   "format": "meetup",
+   "company": "Passionfroot",
+   "role": "Co-host",
+   "section": "comm",
+   "room": "Creator leads from Replit, Gamma and ElevenLabs, with Passionfroot’s CEO",
+   "proof": "Two formats in one day: a morning salon for marketers, an evening clubhouse for creators",
+   "link": "https://partiful.com/e/ZAxqIIxvUpPC4947hvmu",
+   "featured": true,
+   "featuredOrder": 4
+  },
+  {
+   "title": "Lenny’s Newsletter Meetup in Sydney",
+   "date": "2025-06-19",
+   "place": "Sydney, Australia",
+   "format": "meetup",
+   "company": "Lenny’s Newsletter community",
+   "role": "Co-host",
+   "section": "comm",
+   "link": "https://lu.ma/fb1n658r"
+  },
+  {
+   "title": "Lenny’s Newsletter Meetup in New York",
+   "date": "2024-07-17",
+   "place": "New York",
+   "format": "meetup",
+   "company": "Lenny’s Newsletter community",
+   "role": "Co-host",
+   "section": "comm"
+  }
+ ]
+}

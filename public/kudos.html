@@ -41,9 +41,16 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
 .gform{display:grid;gap:10px}.gform input{width:100%;padding:14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:17px;background:#FFFCF7;color:var(--ink)}
 .gform input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 /* ---- end kudos nudges ---- */
+/* ---- visual feed: add photos from the night (they become moments on the event's page, the host's scrapbook and the feed) ---- */
+.addph{display:grid;gap:8px;width:100%;justify-items:center;border-top:1.5px dashed var(--line);padding-top:14px}.addph p{margin:0;font-size:14px}
+.phgrid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:6px 0}.phg{position:relative;width:92px;background:#fff;border:2px solid var(--ink);border-radius:5px;padding:5px 5px 18px;box-shadow:2px 3px 0 var(--ink);transform:rotate(var(--r))}
+.phg img,.phg video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}.phg b{position:absolute;left:0;right:0;bottom:1px;text-align:center;font:600 11px "Instrument Sans",system-ui}.phg.err{border-color:#A8341A}.phg.err b{color:#A8341A}
+.phg::before{content:"";position:absolute;top:-7px;left:50%;width:40px;height:13px;margin-left:-20px;background:var(--butter);opacity:.9;transform:rotate(-4deg)}
+/* ---- end visual feed ---- */
 </style></head><body>
 <main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
 <div id="body"><p class="muted">Opening…</p></div></main>
+<script src="/momentupload.js" defer></script><!-- visual feed: Add photos -->
 <script>
 (function () {
   const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -86,9 +93,15 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
     const host = j.hostFirst || "Your host";
     body.innerHTML = `<div class="card thanks">${pot}<h1 style="margin:0">Thanks. ${esc(host)} will see this.</h1>
       ${j.host ? `<div class="follow" id="fol"><button class="btn" type="button" id="follow">Follow ${esc(j.hostFirst || j.host.name)}</button><p class="muted" style="margin:0;font-size:14px">Hear first about the next one.</p></div>` : ""}
+      <div class="addph" id="addPh"><button class="btn" type="button" id="phBtn">📷 Add photos</button><p class="muted">Up to 6 photos or short videos from the night. ${esc(host)} and the guests see them on the event's page.</p><div class="phgrid" id="phGrid" aria-live="polite"></div></div>
       <p class="muted yourturn" id="yourTurn" style="margin:6px 0 0;font-size:14px"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(id)}">Your turn? Hosting friends is free.</a></p></div>
       <section class="more" id="more" hidden aria-labelledby="moreH"><h2 id="moreH">More like this</h2><div id="moreL"></div></section>`;
     const fb = $("#follow"); if (fb) fb.onclick = () => follow(j);
+    // ---- visual feed: photos from guests, proved by the same reply link as the kudos ----
+    const pb = $("#phBtn"); if (pb) pb.onclick = () => { if (!window.MomentUpload) return; const grid = $("#phGrid"), R = [-3, 2, -1.5, 2.5, -2, 1.5]; let n0 = grid.children.length;
+      window.MomentUpload.pick({ q: { eventId: id, rid, code }, onStart: (fs, extra) => { pb.disabled = true; fs.forEach((f, i) => { const u = URL.createObjectURL(f), v = /^video\//.test(f.type); grid.insertAdjacentHTML("beforeend", `<span class="phg" style="--r:${R[(n0 + i) % 6]}deg" data-i="${n0 + i}">${v ? `<video src="${u}" muted playsinline></video>` : `<img src="${u}" alt="">`}<b>Adding…</b></span>`); }); if (extra) grid.insertAdjacentHTML("afterend", `<p class="muted" style="margin:0">The first 6 went up. Add more in a moment.</p>`); },
+        onEach: (f, r, err, i) => { const el = grid.querySelector(`[data-i="${n0 + i}"]`); if (!el) return; el.classList.toggle("err", !!err); el.querySelector("b").textContent = err ? "Didn't add" : "Added"; if (err) el.title = err.message; },
+        onDone: (n, total) => { pb.disabled = false; n0 = grid.children.length; pb.textContent = "📷 Add more"; if (n < total) { const e = document.createElement("p"); e.className = "err"; e.textContent = n ? `${n} of ${total} added. The others were too big, too long or not a photo.` : "Those didn't add. Photos, or videos up to 15 seconds."; $("#addPh").appendChild(e); } } }); };
     fetch(`/api/public/kudos-more/${encodeURIComponent(id)}?${proof}`).then((r) => (r.ok ? r.json() : { events: [] })).then((m) => {
       const L = (m.events || []).slice(0, 3); if (!L.length) return noMore();
       $("#moreL").innerHTML = L.map((e) => `<a class="ev" href="${esc(e.url)}"><span class="im" ${e.cover ? `style="background-image:url('${esc(e.cover)}')"` : ""}>${e.cover ? "" : esc((e.title || "?").slice(0, 1))}</span><span><b>${esc(e.title)}</b><small>${esc([day(e.start), e.area || e.city, e.price].filter(Boolean).join(" · "))}</small><br><small>by ${esc(e.host?.name || "")}</small></span></a>`).join("");

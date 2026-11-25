@@ -86,7 +86,7 @@
     else { if (signed()) { try { const me = await (await fetch("/api/host/profile")).json(); mine = me?.host?.handle === h.handle; } catch {} }
       try { const j = await (await fetch(mine ? "/api/host/scrapbook" : "/api/public/host/" + encodeURIComponent(h.handle) + "/scrapbook")).json(); items = j.items || []; sections = j.sections || []; } catch {} }
     // events hosted here join the imported ones
-    const here = (past || []).map((e) => ({ id: "", title: e.title, date: e.date, place: e.city || "", guests: +e.going || 0, source: "here", photos: [], cover: e.coverPhoto || "", ev: e }));
+    const here = (past || []).map((e) => ({ id: "", title: e.title, date: e.date, place: e.city || "", guests: +e.going || 0, source: "here", photos: (e.photos || []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) /* visual feed: moments from the day */, cover: e.coverPhoto || "", ev: e }));
     const all = [...items, ...here].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     if (!mine && (!all.length || h.sections?.past === false)) return; // visitors never see an empty section, or one the host turned off
     let sec = document.getElementById("scrapbook"); if (!sec) { sec = document.createElement("section"); sec.id = "scrapbook"; sec.className = "sb"; (anchor || document.querySelector(".cols") || document.querySelector("main"))?.after(sec); }

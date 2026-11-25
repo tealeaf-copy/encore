@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Friends · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <style>
 .wrap{max-width:1080px}
@@ -47,6 +47,9 @@
 .fside{top:16px}.composer textarea{resize:none}
 .sc .sr .btn{min-height:36px;padding:0 14px!important;font-size:13px;background:#fff!important;color:#1F1A17!important;border:1.5px solid #1F1A17!important;box-shadow:none!important}
 .rail:empty,.rail[hidden]{display:none}
+/* visual feed: posts and the empty state on the scrapbook wall */
+#rail{display:block;overflow:visible;padding:0;margin:0 -4px}.fv-post .ptext{margin:10px 2px 0}.fv-post .plink{margin-top:10px}.fv-post .fv-pol.wide{margin:6px 4px 2px}.fv-btn.cheer.on{background:#FFF1C9}.fv-empty{display:flex;gap:14px;align-items:center;margin-bottom:22px}.fv-empty h3{margin:0 0 4px}.fv-empty p{margin:0 0 10px}
+@media (max-width:980px){.fside .pub-side{display:none}}
 @media (max-width:980px){body:not(.tab-feed) .fside{display:none}}body.pub-feed aside.fside{display:flex}
 /* a post about an event: who did what on top, then the event itself as one block with a title you can read */
 .post-h small b{font-weight:600;color:#3E352F}
@@ -86,6 +89,7 @@
 <input type="file" id="storyFile" accept="image/*,video/*" hidden>
 <script src="/eventart.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/avatars.js"></script>
+<script src="/feedvisual.js"></script><script src="/momentupload.js"></script><!-- visual feed -->
 <script>
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -112,19 +116,17 @@
   const LB = { leaderboard: (it) => lbCard(it, true), standing: lbMoment, "you-rank": lbMe };
   const wireLb = (root) => $$("[data-lbf]", root).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/public/follow", { handle: b.dataset.lbf, via: "leaderboard" }); b.textContent = "Following"; } catch (e) { b.disabled = false; toast(e.message); } }));
   // ---- signed out: the public feed of open events and hosts, with a nudge to sign in for posts from people you follow ----
-  async function drawPublic() { document.body.classList.add("pub-feed"); for (const sel of ["#rail", ".tabs", "#bell"]) { const el = $(sel); if (el) el.hidden = true; }
-    let d = { events: [], hosts: [] }; try { d = await api("/api/public/discover"); } catch {}
-    const today = new Date().toISOString().slice(0, 10), Av = window.EncoreAvatars;
-    const hav = (h) => h?.avatarArt && Av ? Av.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h?.emoji || "🎉");
-    const when = (e) => { if (!e.date) return ""; const t = e.startTime ? (([h, m]) => { h = +h; return (h % 12 || 12) + (+m ? ":" + m : "") + (h < 12 ? "am" : "pm"); })(e.startTime.split(":")) : ""; return new Date(e.date + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (t ? " · " + t : ""); };
-    const E = (d.events || []).filter((e) => e.id && (e.title || e.name) && e.host?.name && !e.unlisted && (!e.date || e.date >= today)).sort((x, y) => String(x.date || "9").localeCompare(String(y.date || "9"))).slice(0, 20);
-    const H = (d.hosts || []).filter((h, i, all) => h.handle && h.name && (h.tagline || h.bio) && all.findIndex((x) => x.name === h.name) === i).slice(0, 6);
-    // the busiest city's leaderboard (or the visitor's), when it has 3 hosts on it
-    let lbc = null; try { lbc = (await api("/api/public/leaderboard/card?city=" + encodeURIComponent((window.EncorePlace?.get() || {}).city || ""))).card; } catch {}
-    $("#m").innerHTML = `<div class="pub-hi"><b>Happening soon</b><p>Open events from hosts on Pottery Lab. <a href="/login?next=/feed">Sign in</a> to see posts from hosts and friends you follow.</p></div>` + (lbc ? lbCard(lbc, false) : "") +
-      (E.length ? E.map((e) => `<a class="pub-ev" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="pav">${hav(e.host)}</span><div><small>${esc(e.host.name)} is hosting</small><b>${esc(e.emoji ? e.emoji + " " : "")}${esc(e.title || e.name)}</b><small>${esc([when(e), e.hood || e.city].filter(Boolean).join(" · "))}</small></div><span class="go">${e.going ? esc(e.going) + " in" : "See invite"}</span></a>`).join("") : `<div class="empty">Nothing open right now. <a href="/discover">Browse Discover</a>.</div>`);
-    const side = $("#side"); if (side) side.innerHTML = H.length ? `<div class="pub-side"><b>Hosts to follow</b>${H.map((h) => `<a href="/@${esc(h.handle)}"><span class="pav">${hav({ ...h, avatarArt: h.theme?.avatarArt, color: h.theme?.accent })}</span><span><b>${esc(h.name)}</b><small>${esc(h.city || "")}</small></span></a>`).join("")}<a class="all" href="/discover">See all on Discover →</a></div>` : "";
-    if (!$("#pubCss")) { const st = document.createElement("style"); st.id = "pubCss"; st.textContent = `.pub-feed .tabs,.pub-feed #rail,.pub-feed #bell,.pub-feed .composer{display:none!important}.pub-hi{background:#fff;border:1px solid #E4D9C8;border-radius:18px;padding:16px 18px;margin-bottom:12px}.pub-hi b{font:600 20px Fredoka,system-ui}.pub-hi p{margin:4px 0 0;color:#665A51}.pub-hi a{color:#A8441F;font-weight:700}.pub-ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid #E4D9C8;border-radius:18px;padding:12px 14px;margin-bottom:10px;color:inherit;text-decoration:none}.pub-ev b{display:block;font:600 17px/1.25 Fredoka,system-ui;margin:2px 0}.pub-ev small{display:block;color:#665A51;font-size:13px}.pub-ev .go{font:600 13px system-ui;color:#665A51;white-space:nowrap}.pav{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#FBE3CF;font-size:22px;flex:none}.pav svg{width:100%;height:100%}.pub-side{display:grid;gap:10px;background:#fff;border:1px solid #E4D9C8;border-radius:18px;padding:14px}.pub-side>b{font:600 17px Fredoka,system-ui}.pub-side a{display:flex;gap:10px;align-items:center;color:inherit;text-decoration:none}.pub-side small{display:block;color:#665A51;font-size:13px}.pub-side .all{color:#A8441F;font-weight:700}@media (max-width:760px){.pub-ev{grid-template-columns:auto minmax(0,1fr)}.pub-ev .go{grid-column:2}}`; document.head.appendChild(st); } }
+  // ---- visual feed: signed out, the same scrapbook wall from public content only (open events, showcase pages, public photos) ----
+  async function drawPublic() { document.body.classList.add("pub-feed"); for (const sel of [".tabs", "#bell"]) { const el = $(sel); if (el) el.hidden = true; }
+    const V = window.FeedVisual, city = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
+    const [d, lb] = await Promise.all([api("/api/public/feed").catch(() => ({ upcoming: [], past: [], moments: [], kudos: [], showcase: [], stories: [] })), api("/api/public/leaderboard/card?city=" + encodeURIComponent(city)).then((j) => j.card).catch(() => null)]);
+    V.rail($("#rail"), d.stories, { signedIn: false });
+    $("#m").innerHTML = V.composePublic(d, { lb: lb ? lbCard(lb, false) : "" }); V.wire($("#m")); wireLb($("#m"));
+    // hosts to follow, beside the wall on wide screens only (phones get the wall)
+    const side = $("#side"); if (side && matchMedia("(min-width: 981px)").matches) api("/api/public/discover").then((dd) => { const Av = window.EncoreAvatars, hav = (h) => h?.avatarArt && Av ? Av.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h?.emoji || "🎉");
+      const H = (dd.hosts || []).filter((h, i, all) => h.handle && h.name && (h.tagline || h.bio) && all.findIndex((x) => x.name === h.name) === i).slice(0, 6);
+      side.innerHTML = H.length ? `<div class="pub-side"><b>Hosts to follow</b>${H.map((h) => `<a href="/@${esc(h.handle)}"><span class="pav">${hav({ ...h, avatarArt: h.theme?.avatarArt, color: h.theme?.accent })}</span><span><b>${esc(h.name)}</b><small>${esc(h.city || "")}</small></span></a>`).join("")}<a class="all" href="/discover">See all on Discover →</a></div>` : ""; }).catch(() => {});
+    if (!$("#pubCss")) { const st = document.createElement("style"); st.id = "pubCss"; st.textContent = `.pub-feed .tabs,.pub-feed #bell,.pub-feed .composer{display:none!important}.pav{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#FBE3CF;font-size:22px;flex:none;border:2px solid #1F1A17}.pav svg{width:100%;height:100%}.pub-side{display:grid;gap:10px;background:#fff;border:2.5px solid #1F1A17;border-radius:20px;padding:16px;box-shadow:4px 5px 0 #1F1A17}.pub-side>b{font:600 18px Fredoka,system-ui}.pub-side a{display:flex;gap:10px;align-items:center;color:inherit;text-decoration:none}.pub-side small{display:block;color:#665A51;font-size:13px}.pub-side .all{color:#A8441F;font-weight:700}`; document.head.appendChild(st); } }
   // ---- write a post: words, a photo, a link ----
   let draftPhoto = "";
   function addComposer(m) { if (m.querySelector(".composer")) return; const c = document.createElement("form"); c.className = "composer";
@@ -149,51 +151,32 @@
     $$("[data-addf]", el).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends", { key: b.dataset.addf }); b.textContent = "Added ✓"; } catch (e) { toast(e.message); b.disabled = false; } })); }
   function drawBell() { const n = F.unread || 0, b = $("#bellN"); b.hidden = !n; b.textContent = n; }
   // ---- stories ----
-  function drawRail() { const me = F.me, mine = F.stories.find((s) => s.mine);
-    // nobody has a story yet and you have no event to add one to: no lone "+" circle
-    $("#rail").hidden = !F.stories.length && !(F.mine || []).length;
-    $("#rail").innerHTML = `<button class="ring ${mine ? "" : "add"}" id="addStory"><span><b>${mine ? (mine.items.at(-1).type === "image" ? `<img src="${esc(mine.items.at(-1).url)}" alt="">` : "🎬") : "＋"}</b></span><small>Your story</small></button>` +
-      F.stories.filter((s) => !s.mine).map((s, i) => `<button class="ring" data-st="${i}"><span><b>${s.items.at(-1).type === "image" ? `<img src="${esc(s.items.at(-1).url)}" alt="">` : esc(s.who.emoji)}</b></span><small>${fn(s.who)}</small></button>`).join("");
-    $("#addStory").onclick = () => { if (mine && !confirm("Add another photo? (Cancel to watch your story)")) { openStory(F.stories.indexOf(mine)); return; } if (!F.mine.length) { toast("Photos go with an event you went to or hosted. Once you've been to one, add yours here."); return; } pickEvent(); };
-    $$("[data-st]").forEach((b) => (b.onclick = () => openStory(F.stories.indexOf(F.stories.filter((s) => !s.mine)[+b.dataset.st])))); }
-  function pickEvent() { const L = F.mine; const pick = L.length === 1 ? L[0] : null; const go = (e) => { const f = $("#storyFile"); f.onchange = async () => { const file = f.files[0]; f.value = ""; if (!file) return; const cap = prompt("Caption? (optional)") || ""; try { const r = await fetch(`/api/moments?eventId=${encodeURIComponent(e.id)}&caption=${encodeURIComponent(cap)}`, { method: "POST", headers: { "Content-Type": file.type || "image/jpeg" }, body: file }); const j = await r.json(); if (!r.ok) throw new Error(j.message); C.oink(); toast("Added to your story. Friends see it for a week."); load(); } catch (err) { toast(err.message); } }; f.click(); };
-    if (pick) return go(pick); const i = prompt("Which one?\n" + L.map((e, i) => `${i + 1}. ${e.title} (${C.fmtDate(e.date)})`).join("\n"), "1"); const e = L[(+i || 1) - 1]; if (e) go(e); }
-  function openStory(si) { let s = F.stories[si], k = 0, t0 = 0, raf = 0; if (!s) return; const el = document.createElement("div"); el.className = "story"; document.body.appendChild(el); document.body.style.overflow = "hidden";
-    const close = () => { cancelAnimationFrame(raf); el.remove(); document.body.style.overflow = ""; }, next = () => { if (k < s.items.length - 1) { k++; show(); } else if (si < F.stories.length - 1) { si++; s = F.stories[si]; k = 0; show(); } else close(); }, prev = () => { if (k > 0) { k--; show(); } else if (si > 0) { si--; s = F.stories[si]; k = 0; show(); } };
-    function show() { const it = s.items[k], e = it.event || {};
-      el.innerHTML = `<div class="bars">${s.items.map((_, i) => `<i><b style="width:${i < k ? 100 : 0}%"></b></i>`).join("")}</div><div class="sh">${av(s.who)}<div><b>${s.mine ? "Your story" : nm(s.who)}</b><small>${esc(e.title || "")} · ${ago(it.at)}</small></div><button class="close" aria-label="Close">✕</button></div>
-        <div class="media">${it.type === "video" ? `<video src="${esc(it.url)}" autoplay playsinline muted></video>` : `<img src="${esc(it.url)}" alt="${esc(it.caption || e.title || "")}">`}<button class="tapl" aria-label="Previous"></button><button class="tapr" aria-label="Next"></button></div>
-        <div class="sf">${it.caption ? `<p>${esc(it.caption)}</p>` : ""}${!s.mine && e.host ? `<div class="acts"><a class="btn" href="/h/${esc(e.host.handle)}">${esc(e.host.emoji || "🎉")} Follow ${esc(e.host.name || "the host")}</a><button class="btn ghost" id="stAlert">🔔 Tell me about ones like this</button></div>` : ""}</div>`;
-      $(".close", el).onclick = close; $(".tapl", el).onclick = prev; $(".tapr", el).onclick = next; $("#stAlert", el) && ($("#stAlert", el).onclick = () => { close(); tab = "alerts"; selTab(); draw(); setTimeout(() => { $("#alIn").value = alertFor(e); $("#alIn").focus(); }, 50); });
-      cancelAnimationFrame(raf); t0 = performance.now(); const dur = it.type === "video" ? 12000 : 5000, bar = $$(".bars b", el)[k];
-      const tick = (t) => { const p = Math.min(1, (t - t0) / dur); bar.style.width = p * 100 + "%"; if (p >= 1) next(); else raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); }
-    el.onkeydown = (e) => { if (e.key === "Escape") close(); }; show(); }
+  // ---- visual feed: the stories rail (hosts with photos, videos and flyers from the last 14 days) and the viewer (public/feedvisual.js) ----
+  function drawRail() { const mine = (F.stories || []).find((s) => s.mine), last = mine?.items.at(-1);
+    window.FeedVisual.rail($("#rail"), F.storiesV || [], { signedIn: true, mine: last ? { thumb: last.type === "image" ? last.url : "" } : null, onAdd: () => { if (!(F.mine || []).length) { toast("Photos go with an event you went to or hosted. Once you've been to one, add yours here."); return; } pickEvent(); } }); }
+  function pickEvent() { const L = F.mine; const go = (e) => window.MomentUpload.pick({ q: { eventId: e.id }, onStart: (fs, extra) => toast(`Adding ${fs.length}${extra ? ` (the first ${fs.length})` : ""}…`), onEach: (f, r, err) => err && toast(err.message), onDone: (n) => { if (n) { C.oink(); toast(n === 1 ? "Added. Friends see it in their feed." : `${n} added. Friends see them in their feed.`); load(); } } });
+    if (L.length === 1) return go(L[0]); const i = prompt("Which one?\n" + L.map((e, i) => `${i + 1}. ${e.title} (${C.fmtDate(e.date)})`).join("\n"), "1"); const e = L[(+i || 1) - 1]; if (e) go(e); }
   // ---- tabs ----
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
   $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
   function draw() { document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
+  // ---- visual feed: your people's posts, photos and events media-first, with the public wall around them ----
+  function postCard(it) { const host = (() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })(), r = [-1.5, 1.2, -2][String(it.id).length % 3];
+    return `<article class="fv-card fv-post" style="--r:${r}deg"><p class="fv-by">${window.FeedVisual.avatar(it.who, 28)}<span><b>${nm(it.who)}</b> posted · ${ago(it.at)}</span></p>${it.media ? `<div class="fv-pol wide" style="--r:${-r}deg"><span class="fv-tape top" style="--tp:#F2D48F;--tr:-4deg" aria-hidden="true"></span><span class="fv-mb" style="aspect-ratio:4/5"><img src="${esc(it.media.url)}" alt="${esc(it.text ? it.text.slice(0, 80) : "Photo from " + nm(it.who))}" width="400" height="500" loading="lazy" decoding="async"></span>${it.text ? `<span class="fv-cap">${esc(it.text.split("\n")[0].slice(0, 60))}</span>` : ""}</div>` : ""}
+      ${it.text && (!it.media || it.text.length > 60) ? `<p class="ptext">${esc(it.text).replace(/\n/g, "<br>")}</p>` : ""}${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc(host)}</b><small>${esc(it.link)}</small></a>` : ""}
+      ${(it.cheers || []).length ? `<p class="cheers">🎉 ${esc(it.cheers.length > 2 ? `${it.cheers[0]} + ${it.cheers.length - 1} friends cheered` : `${it.cheers.join(" and ")} cheered`)}</p>` : ""}<div class="fv-acts"><button class="fv-btn cheer ${it.cheered ? "on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}">${it.cheered ? "🎉 Cheered" : "🎉 Cheer"}</button>${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}</div></article>`; }
   function drawFeed(m) { setTimeout(placeChip, 0);
     const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
     const keep = F.items.filter((it) => it.kind !== "hosting" || !here || (F.following || []).includes(it.who?.handle) || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
     const away = F.items.length - keep.length;
-    const items = keep.map((it) => { if (LB[it.kind]) return LB[it.kind](it); const e = it.event || {}, h = e.host;
-      const byOther = h && it.kind !== "hosting" && it.kind !== "post" && it.kind !== "recap" && h.handle !== it.who?.handle;
-      const head = `<div class="post-h">${av(it.who)}<div><b>${nm(it.who)}</b><small>${{ post: "posted", went: "went", hosting: "is hosting", kudos: "sent kudos", recap: "hosted" }[it.kind] || "was there"}${byOther ? ` · hosted by <b>${esc(h.name || "@" + h.handle)}</b>` : ""} · ${ago(it.at)}</small></div></div>`;
-      const t12 = (t) => /^\d{1,2}:\d\d$/.test(t || "") ? (([hh, mm]) => { hh = +hh; return (hh % 12 || 12) + (+mm ? ":" + mm : "") + (hh < 12 ? "am" : "pm"); })(t.split(":")) : esc(t || "");
-      const pmeta = it.kind === "hosting" ? [esc(C.fmtDate(e.date)), e.startTime ? t12(e.startTime) : "", esc(e.city || ""), e.free ? "Free" : esc(e.price || "")].filter(Boolean).join(" · ") : it.kind === "recap" ? `${it.count} came${it.kudos ? ` · ${it.kudos} kudos` : ""}` : e.date ? esc(C.fmtDate(e.date)) : "";
-      const pev = it.kind === "post" || !e.title ? "" : it.kind === "hosting" && e.id ? `<a class="pev" href="/g#rsvp-${esc(e.id)}"><b>${esc(e.title)}</b>${pmeta ? `<small>${pmeta}</small>` : ""}</a>` : `<div class="pev"><b>${esc(e.title)}</b>${pmeta ? `<small>${pmeta}</small>` : ""}</div>`;
-      const media = it.media ? (it.media.type === "video" ? `<video src="${esc(it.media.url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(it.media.url)}" alt="${esc(it.caption || e.title)}" loading="lazy">`) : "";
-      const body = it.kind === "post" ? `${it.text ? `<p class="ptext">${esc(it.text).replace(/\n/g, "<br>")}</p>` : ""}${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc((() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })())}</b><small>${esc(it.link)}</small></a>` : ""}${(it.cheers || []).length ? `<p class="cheers">🎉 ${esc(it.cheers.length > 2 ? `${it.cheers[0]} + ${it.cheers.length - 1} friends cheered` : `${it.cheers.join(" and ")} cheered`)}</p>` : ""}<button class="btn ghost cheer ${it.cheered ? "on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}">${it.cheered ? "🎉 Cheered" : "🎉 Cheer"}</button>${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}` : it.kind === "recap" ? `${it.love ? `<p class="quote">"${esc(it.love)}"</p>` : ""}` : it.kind === "kudos" ? `<p class="quote">"${esc(it.love)}"</p>` : it.caption ? `<p>${esc(it.caption)}</p>` : "";
-      const acts = `<div class="acts">${it.kind === "hosting" ? `<a class="btn" href="/g#rsvp-${esc(e.id)}">I'm in</a>` : ""}${h ? ((F.following || []).includes(h.handle) ? `<a class="btn ghost" href="/@${esc(h.handle)}">See ${esc(String(h.name || "host").split(/[\s']/)[0])}'s page</a>` : `<a class="btn ghost" href="/@${esc(h.handle)}">Follow ${esc(String(h.name || "host").split(/[\s']/)[0])}</a>`) : ""}${it.kind === "post" ? "" : `<button class="al-link" data-al="${esc(e.id)}">🔔 Tell me about ones like this</button>`}</div>`;
-      return `<article class="post">${head}${media}<div class="post-b">${pev}${body}${acts}</div></article>`; }).join("");
-    const up = F.upcoming.filter((e) => e.friendsGoing.length).slice(0, 4);
-    m.innerHTML = `<div id="feedPlace" style="margin:0 0 12px"></div>${away ? `<p class="muted" style="margin:-4px 0 12px;font-size:13px">${away} event${away === 1 ? "" : "s"} elsewhere hidden. Change your city to see them.</p>` : ""}` + (up.length ? `<div class="card" style="margin-bottom:14px"><h3>Your friends are going</h3>${up.map((e) => C.eventCard(e, `${e.friendsGoing.slice(0, 3).join(", ")} going`)).join("")}</div>` : "") +
-      (items || `<div class="card empty-feed">${C.pipSVG("happy", 60)}<h3>Your feed fills up as you go</h3><p class="muted">Posts from friends and hosts you follow land here.</p><button class="btn" id="goFriends">Add friends</button></div><div class="soon" id="soon" hidden></div>`);
-    if (!items) drawSoon();
-    wireLb(m);
-    $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); });
-    const all = [...F.items.map((i) => i.event), ...F.upcoming]; $$("[data-al]").forEach((b) => (b.onclick = () => { const e = all.find((x) => x?.id === b.dataset.al) || {}; tab = "alerts"; selTab(); draw(); setTimeout(() => { $("#alIn").value = alertFor(e); $("#alIn").focus(); }, 50); })); }
+    // friends going, on each event card
+    const FG = new Map((F.upcoming || []).map((e) => [e.id, e.friendsGoing || []])); for (const e of [...Object.values(F.events || {}), ...((F.visual || {}).upcoming || [])]) if (FG.get(e.id)?.length) e.friendsGoing = FG.get(e.id);
+    const empty = `<div class="fv-card fv-empty">${C.pipSVG("happy", 60)}<div><h3>Your feed fills up as you go</h3><p class="muted">Posts from friends and hosts you follow land here. Meanwhile, here's what people are hosting.</p><button class="fv-btn" id="goFriends">Add friends</button></div></div>`;
+    m.innerHTML = `<div id="feedPlace" style="margin:0 0 12px"></div>${away ? `<p class="muted" style="margin:-4px 0 12px;font-size:13px">${away} event${away === 1 ? "" : "s"} elsewhere hidden. Change your city to see them.</p>` : ""}` +
+      window.FeedVisual.composeSignedIn({ ...F, items: keep }, { lbRender: { leaderboard: (it) => lbCard(it, true), standing: lbMoment, "you-rank": lbMe }, postRender: postCard, empty });
+    window.FeedVisual.wire(m); wireLb(m);
+    $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); }); }
   // an empty feed still has somewhere to go: open events coming up, real ones first
   async function drawSoon() { let d = { events: [] }; try { d = await api("/api/public/discover"); } catch { return; } const el = $("#soon"); if (!el) return;
     const today = new Date().toISOString().slice(0, 10), Av = window.EncoreAvatars, hav = (h) => h?.avatarArt && Av ? Av.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h?.emoji || "🎉");

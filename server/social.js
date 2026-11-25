@@ -8,6 +8,7 @@ import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS
 import { emailConfig, sendEmail } from "./email.js";
 import { track } from "./metrics.js";
 import { smsConfig, sendSms, useSmsStop } from "./sms.js";
+import { momentKind, momentMaxBytes, videoSeconds, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
@@ -145,7 +146,7 @@ export function makeSocial(store, { C, saveBlob }) {
       const byEv = new Map(); for (const r of R) { if (!byEv.has(r.eventId)) byEv.set(r.eventId, []); byEv.get(r.eventId).push(r); }
       for (const [eid, rs] of byEv) { const ev = events.get(eid)?.e; if (!ev) continue; rs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); const firstAt = rs.find((r) => r.response === "going")?.createdAt || 0, evAt = Date.parse((ev.date || "") + "T" + (ev.startTime || "12:00")) || 0;
         rs.forEach((r, i) => { if (!r.email || r.response !== "going") return; addAtt(r.email, { eventId: eid, ws, name: r.name, at: Date.parse(ev.date || "") || r.createdAt || 0, early: i < 3 || r.createdAt - firstAt < DAY, last: !!evAt && evAt - (r.createdAt || 0) > 0 && evAt - (r.createdAt || 0) < 2 * DAY, filler: !!r.promotedAt, plusOne: !!r.plusOne, slot: r.slot || "", rsvpAt: r.createdAt }); }); }
-      for (const d of S.list("moments")) moments.push({ id: d.id, ws, ...d.data });
+      for (const d of S.list("moments")) if (!d.data?.hidden) moments.push({ id: d.id, ws, ...d.data }); // visual feed: a moment the host hid is gone everywhere but the host's own list
       for (const d of S.list("kudos")) kudos.push({ id: d.id, ws, ...withVerified(S, d.id, d.data) }); // verified: worked out on read (see kudosVerified)
       for (const d of S.list("vibes")) vibes.push({ id: d.id, ws, ...d.data });
     }
@@ -166,7 +167,8 @@ export function makeSocial(store, { C, saveBlob }) {
       for (const a of I.att.get(f) || []) { if (a.at < recent || a.at > now || !canSee(a.eventId)) continue; items.push({ kind: "went", at: a.at, who: p, event: evCard(I.events.get(a.eventId)) }); }
       for (const [id, x] of I.events) if (lc(x.owner) === f && isPublic(x.e) && (x.e.date || "") >= today()) items.push({ kind: "hosting", at: x.e.updatedAt || x.e.createdAt || now, who: p, event: evCard(x) });
     }
-    const momentsSeen = I.moments.filter((m) => (F.includes(lc(m.authorEmail)) || lc(m.authorEmail) === me || myEvents.has(m.eventId)) && canSee(m.eventId) && m.at > now - 30 * DAY).sort((a, b) => b.at - a.at);
+    const canSeeMoment = (id) => myEvents.has(id) || momentsPublic(I.events.get(id)?.e); // visual feed: Ask to join and link-only events' photos stay with the people who were there
+    const momentsSeen = I.moments.filter((m) => (F.includes(lc(m.authorEmail)) || lc(m.authorEmail) === me || myEvents.has(m.eventId)) && canSee(m.eventId) && canSeeMoment(m.eventId) && m.at > now - 30 * DAY).sort((a, b) => b.at - a.at);
     for (const m of momentsSeen) if (lc(m.authorEmail) !== me) items.push({ kind: "moment", at: m.at, who: (() => { const p = people.get(lc(m.authorEmail)) || person(m.authorEmail); return p?.name ? p : { ...(p || {}), name: m.authorName || "A guest" }; })(), media: { url: m.url, type: m.type }, caption: m.caption || "", event: evCard(I.events.get(m.eventId)) });
     for (const k of I.kudos) if (F.includes(lc(k.email)) && k.love && canSee(k.eventId) && k.at > recent) items.push({ kind: "kudos", at: k.at, who: people.get(lc(k.email)), love: k.love, tags: k.tags || [], event: evCard(I.events.get(k.eventId)) });
     const followedWs = []; for (const x of new Set([...I.events.values()].map((v) => v.ws))) if (C.followersOf(x).some((f) => f.email === me)) followedWs.push(x);
@@ -225,7 +227,7 @@ export function makeSocial(store, { C, saveBlob }) {
       // "would go again": of the guests who left feedback (tags, words or a comparison), how many said so; one definition for every page
       againYes: K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length, againOf: K.filter((k) => (k.tags || []).length || k.love || k.compare).length,
       kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: String(k.love || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), tags: k.tags || [], at: k.at, verified: k.verified || null, verifiedLabel: VERIFIED_LABEL[k.verified] || "", event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
-      moments: I.moments.filter((m) => m.ws === ws && isPublic(I.events.get(m.eventId)?.e)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
+      moments: I.moments.filter((m) => m.ws === ws && momentsOnPage(I.events.get(m.eventId)?.e)) /* visual feed: open events, or the host turned it on */.sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
   }
   // ---- turnout a host can show a sponsor or venue: totals only, never names ----
   function turnoutOf(ws) {
@@ -342,7 +344,10 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, author: Buffer.from(a).toString("base64url"), who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", cheers: cheerNames(p.cheers), cheered: (p.cheers || []).includes(em), ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
     // leaderboards (server/leaderboard.js): one "This week in <city>" card, moments from hosts you follow, your own standing
     let lb = []; try { lb = app.locals.leaderboardFeed?.(u, F) || []; } catch {}
-    F.items = [...posts, ...lb, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0)); res.json(F); });
+    F.items = [...posts, ...lb, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
+    // ---- visual feed (server/feedvisual.js): a card for each event in the feed, stories, and the public sections ----
+    try { const V = app.locals.feedVisual; if (V) { const I = X.index(), E = {}; for (const it of F.items) { const id = it.event?.id; if (id && !E[id] && I.events.get(id)) E[id] = V.card(I, I.events.get(id), { email: em }); } F.events = E; F.visual = V.sections({ email: em }); F.storiesV = V.stories({ email: em, following: F.following || [] }); } } catch (err) { console.warn("feed visual", err?.message); }
+    res.json(F); });
   app.post("/api/me/posts", small, (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {};
     const text = clean(b.text, 1000), link = cleanLink(b.link), photo = /^\/(_blob|assets)\/[A-Za-z0-9._-]+$/.test(String(b.photo || "")) ? String(b.photo) : "";
     if (b.link && !link) return bad(res, "Links must start with https://"); if (!text && !link && !photo) return bad(res, "Write something, or add a photo or link.");
@@ -636,17 +641,39 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   // the photo wall after an event: only for people who went (proved by their RSVP code) and the host
   app.get("/api/public/moments/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const P = X.rsvpProof(id, req.query.rid, req.query.code), u = currentUser(req), isHost = u && u.ws === ws; if (!isHost && !(P && P.r.response === "going")) return res.json({ moments: [], locked: true });
-    const L = scopeStore(store, ws).list("moments").map((d) => d.data).filter((m) => m && m.eventId === id).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 60).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "", by: first(m.authorName) || "" }));
+    const L = scopeStore(store, ws).list("moments").map((d) => ({ id: d.id, ...d.data })).filter((m) => m && m.eventId === id && (isHost || !m.hidden)).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 60).map((m) => ({ id: m.id, url: m.url, type: m.type, ...(m.poster ? { poster: m.poster } : {}), ...(m.w && m.h ? { w: m.w, h: m.h } : {}), caption: m.caption || "", by: first(m.authorName) || "", ...(isHost ? { hidden: !!m.hidden } : {}) })); // visual feed: ids and posters; hidden ones for the host only
     res.json({ moments: L }); });
-  // photos and short videos from the day: the host, or a guest who said yes
+  // ---- visual feed: photos and short videos from the day (rules in server/feedvisual.js) ----
+  // Who can add one: the host (signed in), a guest with their reply proof (the rid and code from their invite, or the
+  // group kudos link's code, the same proof kudos takes) whose reply was I'm in, or a signed-in member who went.
+  // What: JPEG, PNG, WebP or GIF photos, and MP4, WebM or MOV videos up to 15 seconds; ASSET_MAX_MB for photos,
+  // MOMENT_VIDEO_MAX_MB (default the same) for videos. Blobs are served with the same sandboxed headers as every upload.
+  // A video's poster frame is made in the browser and added after with POST /api/moments/:id/poster.
+  const momentAuthor = (req, id) => { const u = currentUser(req), P = (X.kudosProof || X.rsvpProof)(id, req.query.rid, req.query.code);
+    if (P && P.r.response === "going" && P.r.noShow !== true) return { ws: P.ws, email: lc(P.r.email), name: P.r.name, guest: true, ev: P.ev, key: "rid:" + P.rid };
+    if (u && u.ws !== DEFAULT_WS && workspaceOfEvent(id) === u.ws) return { ws: u.ws, email: lc(u.email), name: u.name, host: true, ev: scopeStore(store, u.ws).get("events/" + id)?.data, key: "u:" + lc(u.email) };
+    if (u && u.ws !== DEFAULT_WS) { const I = X.index(); if ((I.att.get(lc(u.email)) || []).some((a) => a.eventId === id)) { const ws = workspaceOfEvent(id); return { ws, email: lc(u.email), name: u.name, guest: true, ev: scopeStore(store, ws).get("events/" + id)?.data, key: "u:" + lc(u.email) }; } }
+    return null; };
   app.post("/api/moments", raw, async (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const id = clean(req.query.eventId, 80), ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
-    if (!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(ct)) return bad(res, "Photos (JPEG, PNG, WebP) or short videos (MP4, WebM, MOV).", 415, "unsupported_type");
-    let ws = null, email = "", name = ""; const u = currentUser(req), P = X.rsvpProof(id, req.query.rid, req.query.code);
-    if (P && P.r.response === "going") { ws = P.ws; email = lc(P.r.email); name = P.r.name; } else if (u && u.ws !== DEFAULT_WS && workspaceOfEvent(id) === u.ws) { ws = u.ws; email = lc(u.email); name = u.name; }
-    else if (u) { const I = X.index(); if ((I.att.get(lc(u.email)) || []).some((a) => a.eventId === id)) { ws = workspaceOfEvent(id); email = lc(u.email); name = u.name; } }
-    if (!ws) return bad(res, "Only the host and people who went can add photos.", 403, "not_granted");
+    const kind = momentKind(ct); if (!kind) return bad(res, "Photos (JPEG, PNG, WebP, GIF) or short videos (MP4, WebM, MOV).", 415, "unsupported_type");
+    const A = momentAuthor(req, id); if (!A) return bad(res, "Only the host and people who went can add photos.", 403, "not_granted");
+    if (A.guest && A.ev?.noPhotos) return bad(res, "This one was no photos, so there's no photo wall.", 403, "no_photos");
+    if (A.guest && (A.ev?.date || "9") > new Date().toISOString().slice(0, 10)) return bad(res, "Photos open once it's happened.", 400, "not_yet");
     const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");
-    const meta = await X.saveBlob(body, ct, ws); { const I = X.index(), evT = I.events.get(id)?.e; for (const [em, L] of I.att) if (em !== email && L.some((a) => a.eventId === id)) X.notify(em, { kind: "photos", key: `ph-${id}-${new Date().toISOString().slice(0, 13)}`, text: `📸 New photos from ${evT?.pubTitle || evT?.name || "your event"}${name ? `, from ${first(name)}` : ""}`, link: `/g#rsvp-${id}`, eventId: id }); }
-    scopeStore(store, ws).add("moments", { eventId: id, authorEmail: email, authorName: name, url: meta.url, type: ct.startsWith("video") ? "video" : "image", caption: clean(req.query.caption, 200), at: Date.now() }); X.bust();
-    res.json({ ok: true, url: meta.url }); });
+    const max = momentMaxBytes(kind); if (body.length > max) return bad(res, `${kind === "video" ? "Videos" : "Photos"} can be up to ${Math.round((max / 1048576) * 10) / 10} MB.`, 413, "too_large");
+    const secs = kind === "video" ? videoSeconds(body) : 0, said = +req.query.duration || 0; if (secs > MOMENT_MAX_SECONDS + 0.6 || said > MOMENT_MAX_SECONDS + 0.6) return bad(res, `Videos can be up to ${MOMENT_MAX_SECONDS} seconds. Trim it and try again.`, 400, "too_long");
+    const S = scopeStore(store, A.ws); if (S.list("moments").filter((d) => d.data?.eventId === id && lc(d.data.authorEmail || "") === A.email && (A.email || d.data.authorKey === A.key)).length >= MOMENTS_PER_PERSON) return bad(res, "That's a lot of photos. Pick your favourites.", 429, "too_many");
+    const meta = await X.saveBlob(body, ct, A.ws); { const I = X.index(), evT = I.events.get(id)?.e; for (const [em, L] of I.att) if (em !== A.email && L.some((a) => a.eventId === id)) X.notify(em, { kind: "photos", key: `ph-${id}-${new Date().toISOString().slice(0, 13)}`, text: `📸 New photos from ${evT?.pubTitle || evT?.name || "your event"}${A.name ? `, from ${first(A.name)}` : ""}`, link: `/g#rsvp-${id}`, eventId: id }); }
+    const w = Math.floor(+req.query.w || 0), h = Math.floor(+req.query.h || 0), size = w > 0 && h > 0 && w <= 20000 && h <= 20000 ? { w, h } : {};
+    const doc = S.add("moments", { eventId: id, authorEmail: A.email, authorName: A.name, authorKey: A.key, url: meta.url, type: kind, caption: clean(req.query.caption, 200), ...size, ...(secs ? { seconds: Math.round(secs * 10) / 10 } : {}), at: Date.now() }); X.bust();
+    res.json({ ok: true, id: doc.id, url: meta.url, type: kind }); });
+  // a video's poster frame (a still the browser grabbed from it), from whoever added the video
+  app.post("/api/moments/:momentId/poster", raw, async (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const id = clean(req.query.eventId, 80), ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (!["image/jpeg", "image/png", "image/webp"].includes(ct)) return bad(res, "The poster is a JPEG, PNG or WebP.", 415, "unsupported_type");
+    const A = momentAuthor(req, id); if (!A) return bad(res, "Only the host and people who went can add photos.", 403, "not_granted");
+    const S = scopeStore(store, A.ws), mid = String(req.params.momentId || "").replace(/[^A-Za-z0-9_-]/g, ""), m = S.get("moments/" + mid)?.data;
+    if (!m || m.eventId !== id || m.type !== "video" || !(A.host || m.authorKey === A.key || (A.email && lc(m.authorEmail) === A.email))) return bad(res, "No such video.", 404, "not_found");
+    const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length || body.length > 2 * 1048576) return bad(res, "The poster can be up to 2 MB.", 413, "too_large");
+    const meta = await X.saveBlob(body, ct, A.ws); S.update("moments/" + mid, { poster: meta.url }); X.bust(); res.json({ ok: true, poster: meta.url }); });
+  // ---- end visual feed ----
 }

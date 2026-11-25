@@ -29,6 +29,7 @@ import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
+import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountKudosAsk } from "./kudosask.js";
 import { mountHelp } from "./help.js";
 import { withCleanLook } from "./looks.js"; // per-event looks (Make it yours)
@@ -621,6 +622,7 @@ export function createApp({ store, dataDir }) {
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
+  mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountRecognition(app, { C, X });
   mountGiftPlan(app, { store, small, discoverHosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });

@@ -11536,4 +11536,30 @@ async function fvMoments(){ const d=draft, el=document.getElementById("afterPart
   draw() }
 // ---- end visual feed ----
 // ---------- end help panel ----------
+// ---------- hooks for new people (server/hooks.js; public/save.js, inspo.js, interests.js, friendsgoing.js) ----------
+// 1. "Host this" from /ideas (?idea=<id>, or the idea a visitor picked before signing up): a new event drafted from
+//    the idea's sentence, with the idea's look.
+// 2. After signup: a visitor's saves and interests come with the account; "What are you into?" shows once.
+// 3. On the full invite (/g): "Friends going" and a Save heart.
+(function(){ try{
+  const load=(src,cb)=>{ if(document.querySelector(`script[src="${src}"]`)){ cb&&setTimeout(cb,0); return } const t=document.createElement("script"); t.src=src; if(cb) t.onload=cb; document.head.appendChild(t) };
+  const q=new URLSearchParams(location.search), signed=/(?:^|;\s*)encore_in=1/.test(document.cookie); if(!signed) return;
+  load("/save.js"); if(location.pathname==="/g"){ load("/friendsgoing.js"); return }
+  if(location.pathname!=="/") return;
+  let pend=q.get("idea")||"", fromSignup=false; if(!pend&&q.get("welcome")){ try{ const L=JSON.parse(localStorage.getItem("pl.hostIdea")||"null"); if(L?.id&&Date.now()-(L.at||0)<3*864e5){ pend=L.id; fromSignup=true } }catch{} }
+  const ready=(fn)=>{ let n=0; const t=setInterval(()=>{ n++; if(((typeof dbReady!=="undefined"&&dbReady)&&window.__wsDone)||n>60){ clearInterval(t); fn() } },150) };
+  if(/^[A-Za-z0-9_-]{3,200}$/.test(pend)) ready(async()=>{ try{ localStorage.removeItem("pl.hostIdea") }catch{}
+    const j=await (await fetch("/api/public/inspo/item?id="+encodeURIComponent(pend))).json().catch(()=>null), x=j?.data; if(!x) return;
+    if(q.get("idea")){ q.delete("idea"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash) }
+    const esc1=(t)=>String(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    setTimeout(()=>{ try{ const el=document.createElement("div"); el.dataset.casualidea=x.title; el.dataset.line=(x.hostThis?.say||x.line||"").replace(new RegExp("^"+esc1(x.title)+"[:,]?\\s*","i"),"")||"with friends"; el.hidden=true; document.body.appendChild(el); el.click(); el.remove();
+      setTimeout(()=>{ try{ if(typeof draft==="undefined"||!draft) return; const L=x.hostThis?.look||x.look; if(L&&Array.isArray(L.palette)){ draft.look={palette:L.palette.slice(0,3),effect:L.effect||"none",titleFont:L.titleFont||"",buttonEmoji:L.buttonEmoji||"",buttonLabel:L.buttonLabel||"",...(L.vibe?{vibe:L.vibe}:{})} }
+        if(x.art?.kind&&window.EventArt?.valid?.(x.art.kind)) draft.coverArt={kind:x.art.kind,...(x.art.tone?{tone:x.art.tone}:{})}; if(typeof saveEvent==="function") saveEvent(true); if(typeof toast==="function") toast(`Started from "${x.title}". Change anything you like.`) }catch(err){ console.warn(err) } },700) }catch(err){ console.warn(err) } }, fromSignup?1800:200) });
+  // after signup: interests from before signup come along; otherwise ask once
+  if(q.get("welcome")&&!pend) setTimeout(async()=>{ try{ const r=await fetch("/api/me/interests",{credentials:"same-origin"}); if(!r.ok) return; const j=await r.json(); if(j.interests?.length||j.city) return;
+    let loc=null; try{ loc=JSON.parse(localStorage.getItem("pl.interests")||"null") }catch{}
+    if(loc&&(loc.interests?.length||loc.city)){ await fetch("/api/me/interests",{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(loc)}); return }
+    load("/mascot.js"); load("/interests.js",()=>window.PLInterests?.open({after:"signup"})) }catch{} },2600);
+}catch(err){ console.warn(err) } })();
+// ---------- end hooks for new people ----------
 </script>

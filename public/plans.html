@@ -19,6 +19,7 @@ h2.sub{font-size:20px;margin-top:22px}
     <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
   <main>
     <h1 style="font-size:clamp(32px,6vw,48px);margin-top:18px">Your plans</h1>
+    <div id="scene" hidden style="margin:14px 0 6px"></div>
     <div id="hostSec" hidden><h2 class="sub">You're hosting</h2><div class="plans" id="host"></div></div>
     <div id="doneSec" hidden><h2 class="sub">Done and dusted</h2><div class="plans" id="hostDone"></div></div>
     <h2 class="sub">You're going</h2><div class="plans" id="ev"></div>
@@ -71,6 +72,7 @@ h2.sub{font-size:20px;margin-top:22px}
     const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); return `<a class="plan" href="/@${esc(h)}"><span class="ic">${esc(x.emoji && x.emoji !== "🎉" ? x.emoji : (x.name || "?").trim()[0].toUpperCase())}</span><span><b>${esc(x.name)}</b><small style="display:block">${nx ? `Next: ${esc(nx.title)}` : "Nothing scheduled yet"}</small></span></a>`; }).join("")}</div>`;
   const main = document.querySelector("main") || document.body; main.appendChild(sec); } catch {} })();
 </script>
+<script src="/save.js"></script><script src="/passport.js"></script><script>/* "Your scene" (public/passport.js): shows after a first reply or first kudos */ window.PLPassport && PLPassport.mount(document.getElementById("scene"));</script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 <style>.rp-card{margin:34px 0 10px;padding:20px;border:1px solid #E9E1D6;border-radius:20px;background:#fff;max-width:620px}.rp-card h2{margin:0 0 4px;font-size:20px;display:inline}.rp-card summary{cursor:pointer;list-style:none}.rp-card summary::-webkit-details-marker{display:none}.rp-card summary::after{content:"Open ▾";float:right;font-size:13px;color:#C4532F;font-weight:600}.rp-card[open] summary::after{content:"Close ▴"}.rp-card summary .rp-sub{display:block;margin-top:4px}.rp-sub{color:#6B5F56;margin:0 0 14px;font-size:14.5px}

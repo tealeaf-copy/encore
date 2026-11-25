@@ -413,6 +413,9 @@ function openapi(base) {
         responses: ok({ type: "object", properties: { data: ref("Leaderboard"), boards: { type: "array", items: { type: "object", properties: { city: { type: "string" }, category: { type: "string" }, category_label: { type: "string" }, period: { type: "string" }, hosts: { type: "integer" } } } }, rules_url: { type: "string" } } }) } },
       "/api/v1/leaderboard/rules": { get: { operationId: "leaderboardRules", summary: "How boards are scored, in numbers and plain words", responses: ok({ type: "object", properties: { formula: { type: "string" }, points: { type: "object" }, kudosWeight: { type: "object" }, minHosts: { type: "integer" }, text: { type: "array", items: { type: "string" } } } }) } },
       // ---- end leaderboard ----
+      // ---- inspo (hooks work): the /ideas wall, from the same public data plus the ideas library ----
+      "/api/public/inspo": { get: { operationId: "listInspo", summary: "Idea cards for /ideas: photos and flyers from public events and host scrapbooks, plus ideas to host. Nothing a public page doesn't already show.", parameters: [q("interests", "Comma-separated interest ids to rank by (supper, run, pottery, matcha, dance, improv, book, popup, market, hike, talks, workshop, wine, coffee, crafts, baking, games, movement, picnic)"), q("tag", "One interest id: only cards with it"), q("city", "City or neighborhood to rank by"), q("limit", "Page size, at most 60", { type: "integer", minimum: 1, maximum: 60, default: 24 }), q("cursor", "next_cursor from the previous page")],
+        responses: ok({ type: "object", required: ["data", "next_cursor", "total"], properties: { data: { type: "array", items: ref("InspoItem") }, next_cursor: nstr, total: { type: "integer" } } }) } },
       "/api/v1/openapi.json": { get: { operationId: "openapi", summary: "This document", responses: { 200: { description: "OpenAPI 3.1", content: json({ type: "object" }) } } } },
     },
     components: { schemas: {
@@ -425,6 +428,11 @@ function openapi(base) {
           movement: { type: "object", properties: { direction: { type: "string", enum: ["up", "down", "same", "new"] }, by: { type: "integer" } }, description: "Against the 30 days before (month) or the board as of 30 days ago (all)" },
           stats: { type: "object", properties: { kudos: { type: "integer" }, would_go_again_pct: { type: ["integer", "null"] }, guests: { type: "integer" }, events: { type: "integer" } } } } } } } },
       // ---- end leaderboard ----
+      InspoItem: { type: "object", properties: { id: { type: "string" }, type: { type: "string", enum: ["photo", "flyer", "art", "idea"] }, title: { type: "string" }, line: { type: "string", description: "One line, e.g. Supper club · $45 a person · Sat, Dec 12" }, img: { type: "string", description: "Photo for photo cards" },
+        look: { type: ["object", "null"], description: "Palette, effect, title font and reply button for flyer and idea cards" }, art: { type: ["object", "null"], description: "Illustrated cover kind and tone" }, host: { anyOf: [ref("HostRef"), { type: "null" }], description: "The host, for cards from a real event; null for ideas" },
+        city: { type: "string" }, area: { type: "string" }, tags: { type: "array", items: { type: "string" } }, status: { type: "string", enum: ["upcoming", "past", "idea"] }, date: { type: "string" }, example: { type: "boolean", description: "From a sample or prepared page" },
+        real: { type: ["object", "null"], properties: { url: { type: "string" } }, description: "The real event this came from" }, save: { type: "object", properties: { kind: { type: "string", enum: ["event", "idea"] }, ref: { type: "string" } } }, saves: { type: "integer", description: "How many accounts saved it" },
+        hostThis: { type: "object", properties: { say: { type: "string" }, vibe: { type: "string" } } } } },
       TagCount: { type: "object", properties: { tag: { type: "string" }, label: { type: "string" }, count: { type: "integer" } } },
       // verified labels (kudos ask work)
       Review: { type: "object", properties: { name: { type: "string", description: "The guest's first name, or A guest" }, text: { type: "string", description: "What they loved" }, tags: { type: "array", items: { type: "string" } }, at: { type: "string", format: "date" },
@@ -467,6 +475,7 @@ People browse it at ${base}/events. Agents and scripts can read the same data be
 - ${base}/api/v1/formats : counts by format and city.
 - ${base}/api/v1/reviews : guests' reviews (host, event, q, limit, cursor).
 - ${base}/api/v1/leaderboard : host leaderboards (city, category: all, supper, movement, workshop, popup, talks, community; period: month or all). ${base}/api/v1/leaderboard/rules : how they're scored.
+- ${base}/api/public/inspo : idea cards for ${base}/ideas: photos and flyers from public events and host scrapbooks, plus ideas to host (interests, tag, city, limit, cursor).
 - ${base}/api/v1/openapi.json : OpenAPI 3.1 for all of the above.
 
 JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with next_cursor until it's null.

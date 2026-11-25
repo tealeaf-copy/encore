@@ -1,0 +1,24 @@
+{
+  "note": "The interest chips for 'What are you into?', /ideas filters, suggestions and the weekend digest. server/hooks.js reads this file; public/interests.js fetches it. words: whole-word matches against an event's title, tags, format and host tags. formats: the directory's format names.",
+  "interests": [
+    { "id": "supper", "label": "Supper clubs", "emoji": "🍝", "art": "dinner", "tone": "peach", "formats": ["dinner"], "words": ["supper", "dinner", "omakase", "potluck", "pasta", "tasting", "dumpling", "dumplings", "feast", "taco", "tacos", "soup"] },
+    { "id": "run", "label": "Run clubs", "emoji": "🏃", "art": "run", "tone": "sky", "formats": ["run"], "words": ["run", "runs", "running", "5k", "10k", "jog"] },
+    { "id": "pottery", "label": "Pottery", "emoji": "🏺", "art": "pottery", "tone": "peach", "formats": [], "words": ["pottery", "ceramic", "ceramics", "clay", "kiln", "wheel"] },
+    { "id": "matcha", "label": "Matcha", "emoji": "🍵", "art": "tea", "tone": "mint", "formats": [], "words": ["matcha", "tea", "pandan"] },
+    { "id": "dance", "label": "Dance", "emoji": "💃", "art": "music", "tone": "blush", "formats": [], "words": ["dance", "dancing", "salsa", "bachata", "tango", "disco", "ballet"] },
+    { "id": "improv", "label": "Improv", "emoji": "🎭", "art": "talk", "tone": "lilac", "formats": [], "words": ["improv", "comedy", "standup", "open mic"] },
+    { "id": "book", "label": "Book clubs", "emoji": "📚", "art": "book", "tone": "sand", "formats": ["book club"], "words": ["book", "books", "reading", "novel"] },
+    { "id": "popup", "label": "Pop-ups", "emoji": "🛍️", "art": "market", "tone": "butter", "formats": ["pop-up"], "words": ["pop-up", "popup", "pop up", "bake sale", "pre-order", "pre-orders"] },
+    { "id": "market", "label": "Markets", "emoji": "🧺", "art": "market", "tone": "butter", "formats": [], "words": ["market", "markets", "flea", "makers", "fair", "swap"] },
+    { "id": "hike", "label": "Hikes", "emoji": "🥾", "art": "hike", "tone": "mint", "formats": ["hike"], "words": ["hike", "hikes", "hiking", "trail", "walk"] },
+    { "id": "talks", "label": "Talks", "emoji": "🎤", "art": "talk", "tone": "lilac", "formats": ["panel", "summit", "conference", "online"], "words": ["talk", "talks", "panel", "keynote", "fireside", "podcast", "salon"] },
+    { "id": "workshop", "label": "Workshops", "emoji": "🛠️", "art": "workshop", "tone": "butter", "formats": ["workshop", "class"], "words": ["workshop", "workshops", "class", "classes", "masterclass", "lesson"] },
+    { "id": "wine", "label": "Wine", "emoji": "🍷", "art": "wine", "tone": "blush", "formats": ["drinks"], "words": ["wine", "natural wine", "cocktail", "cocktails", "spritz", "drinks"] },
+    { "id": "coffee", "label": "Coffee", "emoji": "☕", "art": "coffee", "tone": "butter", "formats": ["coffee"], "words": ["coffee", "cafe", "café", "phin", "espresso", "latte"] },
+    { "id": "crafts", "label": "Crafts", "emoji": "✂️", "art": "craft", "tone": "peach", "formats": [], "words": ["craft", "crafts", "sewing", "knit", "knitting", "embroidery", "drawing", "sketch", "sketching", "painting", "paint", "flowers", "bouquet", "bouquets", "zine", "collage"] },
+    { "id": "baking", "label": "Baking", "emoji": "🧁", "art": "bake", "tone": "blush", "formats": [], "words": ["bake", "baking", "bread", "sourdough", "cake", "pastry", "pastries", "bánh", "cookie", "cookies"] },
+    { "id": "games", "label": "Game nights", "emoji": "🎲", "art": "games", "tone": "lilac", "formats": ["game night"], "words": ["game", "games", "board game", "trivia", "mahjong"] },
+    { "id": "movement", "label": "Yoga & movement", "emoji": "🧘", "art": "yoga", "tone": "lilac", "formats": ["movement"], "words": ["yoga", "pilates", "breathwork", "movement", "stretch", "barre"] },
+    { "id": "picnic", "label": "Picnics", "emoji": "🧺", "art": "picnic", "tone": "blush", "formats": ["picnic"], "words": ["picnic", "picnics", "park", "bbq", "cookout"] }
+  ]
+}

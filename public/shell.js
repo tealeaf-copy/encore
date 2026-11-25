@@ -24,7 +24,7 @@
 (function () {
   if (window.__encoreShell) return; window.__encoreShell = 1;
   const P = location.pathname, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand", TABS_ONLY = P === "/" && document.body?.dataset?.shell === "tabs"; // the signed-out home keeps its own desktop header and takes only the phone tab bar
-  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
+  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
   if (/^\/(teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/gifts\/plan/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
@@ -39,6 +39,8 @@
     gift: I('<rect x="3.5" y="9" width="17" height="11.5" rx="1.5"/><path d="M12 9v11.5M3.5 13.5h17M12 9C10.5 6 7 5 7 7.5S10.5 9 12 9zm0 0c1.5-3 5-4 5-1.5S13.5 9 12 9z"/>'),
     brief: I('<rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 13h17"/>'),
     inbox: I('<path d="M3.5 13.5 6 5h12l2.5 8.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19z"/><path d="M3.5 13.5H9a3 3 0 0 0 6 0h5.5"/>'),
+    spark: I('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
+    heart: I('<path d="M12 20s-7-4.4-8.6-8.9C2.2 7.8 4.3 4.5 7.5 4.5c2 0 3.4 1.1 4.5 2.7 1.1-1.6 2.5-2.7 4.5-2.7 3.2 0 5.3 3.3 4.1 6.6C19 15.6 12 20 12 20z"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
   };
   const css = document.createElement("style");
@@ -79,16 +81,16 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (brand ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.people, "Book a host") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
-        : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "")
-        : signed ? item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans")
-        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
+        : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/ideas", ICON.spark, "Ideas") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "")
+        : signed ? item("/discover", ICON.search, "Discover") + item("/ideas", ICON.spark, "Ideas") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved")
+        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/ideas", ICON.spark, "Ideas") + item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     if (!TABS_ONLY) { document.body.prepend(rail); document.body.classList.add("es-has-rail"); }
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       const tab = (href, icon, label, aria) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${aria ? ` aria-label="${aria}"` : ""}${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
-      tabs.innerHTML = brand ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/hosts/book", ICON.people, "Book a host") + tab("/requests", ICON.inbox, "Requests") + tab("/gifts", ICON.gift, "Gifts") : host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1&new=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + tab("/feed", ICON.globe, "Feed") : ((signed ? "" : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") + (signed || !BRAND ? tab("/feed", ICON.globe, "Feed") : "") +
+      tabs.innerHTML = brand ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/hosts/book", ICON.people, "Book a host") + tab("/requests", ICON.inbox, "Requests") + tab("/gifts", ICON.gift, "Gifts") : host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1&new=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + tab("/feed", ICON.globe, "Feed") : ((signed || !BRAND ? "" : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") + (BRAND ? "" : tab("/ideas", ICON.spark, "Ideas")) + (signed || !BRAND ? tab("/feed", ICON.globe, "Feed") : "") +
         (signed ? "" : BRAND ? tab("/hosts", ICON.people, "Hosts") : "") +
         (signed ? tab("/plans", ICON.cal, "Plans") + tab("/?app=1", ICON.plus, "Host", "Start your page") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Sign up"))));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
@@ -108,3 +110,10 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
   window.addEventListener("encore:signedin", () => setTimeout(go, 300));
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go();
 })();
+
+// ---- hooks for new people (server/hooks.js): "What are you into?" on a first visit to /feed, /events or /discover,
+// signed out and dismissible; Save buttons work on these pages too ----
+(function () { try { if (window.__plHooksLoad) return; window.__plHooksLoad = 1; const P = location.pathname; if (!/^\/(feed|events|discover)$/.test(P)) return;
+  const add = (src, cb) => { if (document.querySelector(`script[src="${src}"]`)) return cb && cb(); const s = document.createElement("script"); s.src = src; s.defer = true; if (cb) s.onload = cb; document.head.appendChild(s); };
+  add("/save.js"); if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; let seen = false; try { seen = !!(localStorage.getItem("pl.interestsSeen") || localStorage.getItem("pl.interests")); } catch {} if (seen) return;
+  add("/interests.js", () => window.PLInterests?.maybeAuto()); } catch {} })();

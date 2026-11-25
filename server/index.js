@@ -75,6 +75,9 @@ const pmTask = schedulePm(store, { stores: () => allWorkspaceIds().filter((id) =
 // Hosting with friends: kudos asks the day after, prep alerts, pickup texts. Hourly.
 const friendJobs = setInterval(() => app.locals.social?.runJobs().catch((e) => console.warn("[friends]", e.message)), 3600e3); friendJobs.unref?.();
 setTimeout(() => app.locals.social?.runJobs().catch(() => {}), 60e3).unref?.();
+// saved-event reminders and the weekend digest (server/hooks.js). Hourly.
+const hookJobs = setInterval(() => app.locals.hooks?.runJobs().catch((e) => console.warn("[hooks]", e.message)), 3600e3); hookJobs.unref?.();
+setTimeout(() => app.locals.hooks?.runJobs().catch(() => {}), 90e3).unref?.();
 function shutdown() {
   pmTask?.stop?.();
   server.close(() => { store.close(); process.exit(0); });

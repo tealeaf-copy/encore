@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/authguard.js"></script>
+<title>Leaderboard · Pottery Lab</title>
+<meta name="description" content="The hosts guests loved most, by city and kind of event, this month and all time. Ranked by kudos, who'd go again and guests who came.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#A63A22;--butter:#F2D48F;--sage:#4F5C42;--line:#E4D9C8;--gold:#FFE08A;--silver:#E4E4EC;--bronze:#F3C9A6}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}.wrap{max-width:1000px;margin:0 auto;padding:26px 16px 70px}
+h1,h2,h3{font-family:Fredoka,"Fredoka Fallback",system-ui,sans-serif;font-weight:600}
+h1{font-size:var(--fs-28-40,30px);line-height:1.08;margin:0 0 8px}.lede{color:var(--smoke);max-width:620px;margin:0 0 18px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 10px}
+.seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
+.seg button{min-height:44px;border:0;background:none;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+select{appearance:none;-webkit-appearance:none;min-height:44px;max-width:100%;border:2px solid var(--ink);border-radius:999px;padding:8px 32px 8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer;
+  background:#FFF1D2 url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%231F1A17%27 stroke-width=%272%27 fill=%27none%27/%3E%3C/svg%3E") no-repeat right 12px center}
+.cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px;margin:0 0 14px;-webkit-mask-image:linear-gradient(90deg,#000 90%,transparent)}.cats::-webkit-scrollbar{display:none}
+.cats button{flex:none;min-height:44px;border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer;white-space:nowrap}
+.cats button[aria-pressed=true]{background:var(--ink);color:#fff}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+.bh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 14px;margin:6px 0 14px}.bh h2{margin:0;font-size:24px;line-height:1.2}.bh p{margin:0;color:var(--smoke);font-size:14px}
+.bh a{color:var(--ember-d);font-weight:600;font-size:14px;display:inline-flex;align-items:center;min-height:44px}
+.podium{list-style:none;margin:0 0 18px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch}.podium li.r2{margin-top:16px}.podium li.r3{margin-top:30px}
+.podium li{order:var(--o);display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:14px 8px 12px;position:relative}
+.podium li.r1{padding-top:22px;background:#FFFBEF;box-shadow:0 5px 0 var(--ink)}.podium li.r2,.podium li.r3{box-shadow:0 3px 0 var(--ink)}
+.podium .medal{position:absolute;top:-14px;left:50%;transform:translateX(-50%);min-width:32px;height:32px;padding:0 8px;border-radius:999px;border:2px solid var(--ink);display:grid;place-items:center;font:700 15px Fredoka,system-ui;background:var(--m)}
+.av{flex:none;width:56px;height:56px;border-radius:50%;border:2px solid var(--ink);background:var(--bg,#FFE08A);display:grid;place-items:center;overflow:hidden;font-size:26px}.av img,.av svg{width:100%;height:100%;object-fit:cover}
+.podium .r1 .av{width:68px;height:68px}
+.podium .nm{font:600 16px/1.2 Fredoka,system-ui;text-decoration:none;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.4em;display:flex;align-items:center}
+.podium .sc{font:700 22px/1 Fredoka,system-ui}.podium .sc small,.row .sc small{display:block;font:500 12px "Instrument Sans",system-ui;color:var(--smoke);margin-top:2px}
+.podium .why{font-size:13px;color:var(--smoke);overflow-wrap:anywhere}
+.bd{display:flex;flex-wrap:wrap;justify-content:center;gap:4px}.bd span{font-size:12px;font-weight:600;background:var(--butter);border-radius:999px;padding:1px 8px;white-space:nowrap}.bd .super{background:var(--ink);color:var(--gold)}.bd .legend{background:#DCCBFF}.bd .streak{background:#FFD3B0}
+.mv{font-size:12px;font-weight:700;border-radius:999px;padding:1px 7px;white-space:nowrap}.mv.up{background:#E3F1DD;color:#2F5A25}.mv.down{background:#F7E1DC;color:#8E3A25}.mv.new{background:#E6EEFF;color:#2E4C8A}
+.fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:6px 16px;border-radius:999px;border:1.5px solid var(--ember);color:var(--ember-d);background:#fff;font-weight:600;font-size:14px;text-decoration:none;margin-top:4px}.fo:hover{background:#FFF1EC}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:34px 48px minmax(0,1fr) auto;gap:10px;align-items:center;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:10px 12px}
+.row .rk{font:700 18px Fredoka,system-ui;text-align:center}.row .av{width:48px;height:48px;font-size:22px}
+.row .nm{font:600 16px/1.25 Fredoka,system-ui;text-decoration:none;overflow-wrap:anywhere}.row .why{display:block;font-size:13px;color:var(--smoke)}.row .bd{justify-content:flex-start;margin-top:3px}
+.row .sc{font:700 18px/1 Fredoka,system-ui;text-align:right}
+.empty{background:#fff;border:2px dashed var(--line);border-radius:20px;padding:22px 18px;color:var(--smoke)}.empty b{display:block;color:var(--ink);font:600 18px Fredoka,system-ui;margin-bottom:4px}
+.how{margin-top:34px;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:18px}.how h2{margin:0 0 8px;font-size:22px}.how ul{margin:0 0 10px;padding-left:20px}.how li{margin:0 0 4px}.how code{display:block;white-space:normal;background:var(--linen);border-radius:12px;padding:10px 12px;font:13px/1.5 ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--smoke);font-size:14px}.foot a{color:var(--ember-d);font-weight:600}
+.hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
+.hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+@media (min-width:861px){.hd-top{display:none}}@media (max-width:860px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
+@media (max-width:480px){.podium{gap:7px}.podium li{padding:14px 5px 10px;border-radius:16px}.av{width:44px;height:44px;font-size:20px}.podium .r1 .av{width:54px;height:54px}.podium .nm{font-size:14px}.podium .sc{font-size:19px}.podium .why{font-size:12px}.bd span{font-size:11px;padding:1px 6px}.podium .fo{padding:6px 10px;font-size:13px}
+  .row{grid-template-columns:26px 40px minmax(0,1fr) auto;gap:8px;padding:10px}.row .av{width:40px;height:40px;font-size:18px}}
+</style><script src="/mascot.js"></script></head><body>
+<div class="wrap">
+  <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
+  <main>
+  <h1>Leaderboard</h1>
+  <p class="lede">The hosts guests loved most, by city and kind of event.</p>
+  <div class="bar">
+    <label class="sr" for="city">City</label><select id="city"><option value="">Loading cities…</option></select>
+    <div class="seg" role="group" aria-label="Period"><button type="button" data-p="month" aria-pressed="true">This month</button><button type="button" data-p="all" aria-pressed="false">All time</button></div>
+  </div>
+  <div class="cats" id="cats" role="group" aria-label="Kind of event"></div>
+  <div id="board" aria-live="polite"><p class="lede">Loading the leaderboard…</p></div>
+  <section class="how" id="how" aria-labelledby="howT"><h2 id="howT">How it's ranked</h2><ul id="howL"></ul><code id="howF"></code></section>
+  </main>
+  <p class="foot">Agents and builders: <a href="/api/v1/leaderboard">the leaderboard API</a>, <a href="/api/v1/leaderboard/rules">the rules as JSON</a> or <a href="/llms.txt">llms.txt</a>.</p>
+</div>
+<script src="/avatars.js"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const CATS = [["all", "All"], ["supper", "🍽️ Supper clubs"], ["movement", "🏃 Runs and hikes"], ["workshop", "🏺 Workshops"], ["popup", "🧁 Pop-ups"], ["talks", "🎤 Talks"], ["community", "☕ Community"]];
+  const P = new URLSearchParams(location.search);
+  const st = { city: P.get("city") || "", category: CATS.some(([k]) => k === P.get("category")) ? P.get("category") : "all", period: P.get("period") === "all" ? "all" : "month" };
+  let boards = [], mine = ""; try { mine = localStorage.getItem("encore.city") || ""; } catch {}
+  const BG = ["#FFE08A", "#FFCAD6", "#C4DEFF", "#DCCBFF", "#E3F1DD", "#FFD9B0"], tint = (s) => BG[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % BG.length];
+  const av = (h) => `<span class="av" style="--bg:${tint(h.handle)}" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 68) : esc(h.emoji || "🎉")}</span>`;
+  const badges = (e) => { const L = (e.badges || []).filter((b) => !/^m-/.test(b.id) && b.id !== "streak" && b.id !== "new").slice(0, 2).map((b) => `<span class="${esc(b.id)}" title="${esc(b.label)}">${esc(b.emoji)} ${esc(b.id === "legend" ? "Local legend" : b.label)}</span>`);
+    if (e.streak && e.streak.weeks >= 3) L.push(`<span class="streak">🔥 ${e.streak.weeks}-week streak</span>`); else if (e.streak && e.streak.months >= 3) L.push(`<span class="streak">🔥 ${e.streak.months} months in a row</span>`);
+    return L.length ? `<span class="bd">${L.join("")}</span>` : ""; };
+  const since = () => (st.period === "month" ? "since the 30 days before" : "since a month ago");
+  const mv = (m) => !m ? "" : m.direction === "up" ? `<span class="mv up" aria-label="Up ${m.by} ${since()}">▲ ${m.by}</span>` : m.direction === "down" ? `<span class="mv down" aria-label="Down ${m.by} ${since()}">▼ ${m.by}</span>` : m.direction === "new" ? `<span class="mv new">New</span>` : "";
+  const pts = (n) => `${n}<small>${n === 1 ? "point" : "points"}</small>`;
+  const sync = () => { const u = new URLSearchParams(); if (st.city) u.set("city", st.city); if (st.category !== "all") u.set("category", st.category); if (st.period !== "month") u.set("period", st.period); history.replaceState(null, "", "/leaderboard" + (u.toString() ? "?" + u : "")); };
+  function drawCats() { const here = boards.filter((b) => b.city.toLowerCase() === st.city.toLowerCase() && b.period === st.period).map((b) => b.category);
+    $("#cats").innerHTML = CATS.filter(([k]) => k === "all" || k === st.category || here.includes(k)).map(([k, l]) => `<button type="button" data-c="${k}" aria-pressed="${k === st.category}">${esc(l)}</button>`).join(""); }
+  function drawCities() { const C = [...new Set(boards.map((b) => b.city))]; if (st.city && !C.some((c) => c.toLowerCase() === st.city.toLowerCase())) C.unshift(st.city);
+    $("#city").innerHTML = C.length ? C.map((c) => `<option value="${esc(c)}"${c.toLowerCase() === st.city.toLowerCase() ? " selected" : ""}>${esc(c)}</option>`).join("") : `<option value="">No cities yet</option>`; }
+  async function load() { sync(); document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === st.period)));
+    let j; try { j = await (await fetch(`/api/v1/leaderboard?${new URLSearchParams({ city: st.city, category: st.category, period: st.period })}`)).json(); } catch { $("#board").innerHTML = `<p class="empty">Couldn't load the leaderboard. Refresh to try again.</p>`; return; }
+    boards = j.boards || []; const B = j.data || {}; if (!st.city && B.city) { st.city = B.city; sync(); }
+    drawCities(); drawCats();
+    if (!B.qualified) { $("#board").innerHTML = `<div class="empty"><b>Not enough hosts here yet</b>A board shows once ${B.min_hosts || 3} hosts in ${esc(st.city || "a city")} have hosted ${st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].replace(/^\S+\s/, "").toLowerCase())}${st.period === "month" ? " in the last 30 days" : ""}. <a href="/events">Find an event</a> or <a href="/signup?mode=friends">host one</a>.</div>`; return; }
+    const E = B.entries, top = E.slice(0, 3), rest = E.slice(3), per = B.period === "month" ? "The last 30 days" : "All time";
+    const follow = (e) => `<a class="fo" href="${esc(e.host.url)}#follow">Follow<span class="sr"> ${esc(e.host.name)}</span></a>`;
+    $("#board").innerHTML = `<div class="bh"><div><h2>${esc(B.title)}</h2><p>${per} · ${B.hosts_on_board} ${B.hosts_on_board === 1 ? "host" : "hosts"}</p></div><a href="#how">How it's ranked</a></div>
+      <ol class="podium" aria-label="Top 3">${top.map((e) => `<li class="r${e.rank}" style="--o:${[2, 1, 3][e.rank - 1]};--m:${["var(--gold)", "var(--silver)", "var(--bronze)"][e.rank - 1]}"><span class="medal" aria-label="Number ${e.rank}">${e.rank}</span>${av(e.host)}<a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a><span class="sc">${pts(e.score)}</span><span class="why">${esc(e.why)}</span>${badges(e)}${e.movement && e.movement.direction !== "new" ? mv(e.movement) : ""}<span style="flex:1"></span>${follow(e)}</li>`).join("")}</ol>
+      ${rest.length ? `<ol class="list" start="4" aria-label="Everyone else">${rest.map((e) => `<li class="row"><span class="rk">${e.rank}</span>${av(e.host)}<span><a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a> ${mv(e.movement)}<span class="why">${esc(e.why)}</span>${badges(e)}</span><span class="sc">${pts(e.score)}</span></li>`).join("")}</ol>` : ""}`;
+  }
+  $("#city").onchange = (e) => { st.city = e.target.value; st.category = "all"; load(); };
+  document.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => { st.period = b.dataset.p; load(); }));
+  $("#cats").onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; st.category = b.dataset.c; load(); };
+  fetch("/api/v1/leaderboard/rules").then((r) => r.json()).then((R) => { $("#howL").innerHTML = (R.text || []).map((t) => `<li>${esc(t)}</li>`).join(""); $("#howF").textContent = R.formula || ""; }).catch(() => {});
+  // no city in the link: the visitor's city when it has a board, else the busiest one
+  (async () => { if (!st.city && mine) { try { const j = await (await fetch("/api/v1/leaderboard?city=" + encodeURIComponent(mine))).json(); if (j.data?.qualified) st.city = j.data.city; } catch {} } load(); })();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /events
+Allow: /leaderboard
 Allow: /llms.txt
 Allow: /api/v1/
 Disallow: /api/

@@ -29,6 +29,14 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 .h .meta .bdg{background:#FFF1D2;font-weight:600}.h .meta .bdg.super{background:#1F1A17;color:#FFE08A}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
 .h .why{display:block;margin-top:6px;font-weight:500;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#665A51}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}@media (max-width:860px){body.es-has-tabs,body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
+/* Top hosts this month: one strip from the leaderboard, only when a board has 3+ hosts */
+.tops{margin:0 0 20px}.tops .th{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}.tops h2{font:700 20px/1.2 Fredoka,system-ui;margin:0}.tops .th a{color:#A63A22;font-weight:700;font-size:14px;display:inline-flex;align-items:center;min-height:44px}
+.tops .sub{color:var(--smoke);font-size:14px;margin:0 0 8px}.tops ol{list-style:none;margin:0;padding:2px 2px 8px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.tops li{flex:0 0 min(78%,250px);scroll-snap-align:start;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;background:#fff;border:1.5px solid var(--ink);border-radius:18px;padding:12px}
+.tops .rk{position:absolute;top:-8px;left:-6px;min-width:26px;height:26px;border-radius:999px;border:2px solid var(--ink);display:grid;place-items:center;font:700 13px Fredoka,system-ui;background:var(--m,#fff)}
+.tops .ta{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#F6EBDD;font-size:24px}.tops .ta svg,.tops .ta img{width:100%;height:100%;object-fit:cover}
+.tops li a{font:600 16px/1.25 Fredoka,system-ui;text-decoration:none;color:inherit;overflow-wrap:anywhere}.tops li a::after{content:"";position:absolute;inset:0;border-radius:inherit}.tops li:has(a:focus-visible){outline:3px solid var(--ink);outline-offset:2px}.tops li a:focus-visible{outline:none}
+.tops li small{display:block;color:var(--smoke);font-size:13px}
 .hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}@media (min-width:861px){.hd-top{display:none}}
 </style><script src="/mascot.js"></script></head><body>
 <div class="wrap">
@@ -36,6 +44,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   <h1>Find a host</h1>
   <p class="lede">Bakers, potters, run crews and cooks.</p>
   <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select><span id="kinds" style="display:contents"></span></div></div>
+  <section class="tops" id="tops" hidden aria-labelledby="topsT"></section>
   <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
   <button type="button" class="more" id="more" hidden></button>
@@ -74,7 +83,17 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
       <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `<span class="nx-l" style="display:block;font-weight:600;color:#2B211C;margin:4px 0 2px">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
       <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
-  function draw() { sync();
+  // Top hosts this month (from the leaderboard): the picked city, else the visitor's, else the busiest; only when the board qualifies
+  const TOP = new Map(); let topSeq = 0;
+  async function drawTop() { const box = $("#tops"); if (!box) return; if (q || kind !== "all") { box.hidden = true; return; } const want = city || mine || "", n = ++topSeq;
+    const one = async (c) => { if (!TOP.has(c)) { let r = null; try { r = await (await fetch("/api/v1/leaderboard?period=month&city=" + encodeURIComponent(c))).json(); } catch {} TOP.set(c, r); } return TOP.get(c); };
+    let j = await one(want); if (!city && want && !(j && j.data && j.data.qualified)) j = await one("");
+    if (n !== topSeq) return; const B = j && j.data; if (!B || !B.qualified || (city && B.city.toLowerCase() !== city.toLowerCase())) { box.hidden = true; return; }
+    const M = ["#FFE08A", "#E4E4EC", "#F3C9A6"], ta = (h) => h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 48) : esc(h.emoji || "🎉");
+    box.innerHTML = `<div class="th"><h2 id="topsT">🏆 Top hosts this month</h2><a href="${esc(new URL(B.url, location.href).pathname + new URL(B.url, location.href).search)}">See the leaderboard</a></div><p class="sub">${esc(B.city)} · the last 30 days, ranked by what guests said</p>
+      <ol>${B.entries.slice(0, 5).map((e) => `<li><span class="rk" style="--m:${M[e.rank - 1] || "#fff"}" aria-label="Number ${e.rank}">${e.rank}</span><span class="ta" aria-hidden="true">${ta(e.host)}</span><span><a href="/@${encodeURIComponent(e.host.handle)}">${esc(e.host.name)}</a><small>${esc(e.why)}</small></span></li>`).join("")}</ol>`;
+    box.hidden = false; }
+  function draw() { sync(); drawTop();
     const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
     const smart = ai && ai.q === q && ai.matches.length ? ai.matches.map((m) => { const h = H.find((x) => x.handle === m.handle); return h && pass(h) ? { ...h, _why: m.why } : null; }).filter(Boolean) : null;
     // typed words: a host matches if it mentions any of them, most mentions first (the smart results replace this a moment later)

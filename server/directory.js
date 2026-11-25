@@ -301,6 +301,12 @@ export const PUBLIC_TOOLS = [
   { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, how we know they were a guest (verified: guest_list = came, on the guest list; rsvp = replied I'm in; null = neither), plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
 ].map((t) => ({ ...t, outputSchema: OUT[t.name] }));
 
+// ---- leaderboard (host awards work): the MCP tool for server/leaderboard.js, and formatOf shared with it ----
+export { formatOf };
+PUBLIC_TOOLS.push({ name: "get_leaderboard", description: "Host leaderboards: who guests loved most in a city, per kind of event (supper, movement, workshop, popup, talks, community, or all), this month (last 30 days) or all time. Ranked by verified kudos, the share who'd go again (3+ kudos), different guests who came and a small capped bonus per event. Only real hosts; a board shows once 3 hosts are on it (qualified: false otherwise). Returns { data: { city, category, period, qualified, entries: [{ rank, host, score, why, badges, streak, movement }] }, boards, rules_url }.",
+  inputSchema: { type: "object", properties: { city: str("A city, e.g. Brooklyn. Leave out for the city with the most going on"), category: str("all (default), supper, movement, workshop, popup, talks or community", { enum: ["all", "supper", "movement", "workshop", "popup", "talks", "community"] }), period: str("month (last 30 days, default) or all", { enum: ["month", "all"] }) } }, annotations: { readOnlyHint: true } });
+// ---- end leaderboard ----
+
 export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect = "", publicOrigin }) {
   const Dir = makeDirectory({ store, C, SB });
   app.locals.directory = Dir;
@@ -322,6 +328,11 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
   app.get("/api/v1/hosts/:handle", api, (req, res) => { const h = Dir.getHost(base(req), req.params.handle); return h ? res.json({ data: h }) : res.status(404).json({ code: "not_found", message: "No host by that name." }); });
   app.get("/api/v1/formats", api, (req, res) => res.json(Dir.formats(base(req), req.query)));
   app.get("/api/v1/reviews", api, (req, res) => res.json(Dir.listReviews(base(req), req.query)));
+  // ---- leaderboard (host awards work): read from app.locals.leaderboard (server/leaderboard.js) ----
+  const lb = () => app.locals.leaderboard;
+  app.get("/api/v1/leaderboard", api, (req, res) => (lb() ? res.json(lb().board(req.query, base(req))) : res.status(404).json({ code: "not_found", message: "No leaderboard here." })));
+  app.get("/api/v1/leaderboard/rules", api, (req, res) => (lb() ? res.json(lb().rules()) : res.status(404).json({ code: "not_found", message: "No leaderboard here." })));
+  // ---- end leaderboard ----
   app.get("/api/v1/openapi.json", api, (req, res) => res.json(openapi(base(req))));
   app.get("/llms.txt", (req, res) => { open(res); res.set("Cache-Control", "public, max-age=300").type("text/plain; charset=utf-8").send(llms(base(req))); });
 
@@ -336,6 +347,9 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
     list_formats: (a, b) => Dir.formats(b, a),
     get_reviews: (a, b) => { if (!a.event_id && !a.host) throw new Error("Pass event_id or host."); return Dir.listReviews(b, { ...a, event: a.event_id }); },
   };
+  // ---- leaderboard (host awards work) ----
+  run.get_leaderboard = (a, b) => { if (!app.locals.leaderboard) throw new Error("No leaderboard here."); return app.locals.leaderboard.board(a, b); };
+  // ---- end leaderboard ----
   function handle(msg, b) {
     if (!msg || typeof msg !== "object" || Array.isArray(msg)) return { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid request" } };
     if (msg.id === undefined) return null; // notifications
@@ -395,10 +409,23 @@ function openapi(base) {
       "/api/v1/formats": { get: { operationId: "listFormats", summary: "Counts by format and city, for filters", parameters: [q("status", "Which events", { type: "string", enum: ["upcoming", "past", "all"], default: "all" })],
         responses: ok({ type: "object", properties: { total: { type: "integer" }, types: { type: "object", properties: { speaking: { type: "integer", description: "How many are speaking engagements" } } }, formats: { type: "array", items: { type: "object", properties: { format: { type: "string" }, count: { type: "integer" } } } }, cities: { type: "array", items: { type: "object", properties: { city: { type: "string" }, count: { type: "integer" } } } }, by_format_and_city: { type: "array", items: { type: "object", properties: { format: { type: "string" }, city: { type: "string" }, count: { type: "integer" } } } } } }) } },
       "/api/v1/reviews": { get: { operationId: "listReviews", summary: "Guests' reviews (kudos), newest first", parameters: [q("host", "A host's handle"), q("event", "An event id"), q("q", "Words to match"), ...page], responses: ok(list("ReviewEntry", { top_tags: { type: "array", items: ref("TagCount") } })) } },
+      // ---- leaderboard (host awards work) ----
+      "/api/v1/leaderboard": { get: { operationId: "getLeaderboard", summary: "A host leaderboard for one city, category and period", parameters: [q("city", "A city, e.g. Brooklyn; leave out for the city with the most going on"), q("category", "Kind of event", { type: "string", enum: ["all", "supper", "movement", "workshop", "popup", "talks", "community"], default: "all" }), q("period", "month is the last 30 days", { type: "string", enum: ["month", "all"], default: "month" })],
+        responses: ok({ type: "object", properties: { data: ref("Leaderboard"), boards: { type: "array", items: { type: "object", properties: { city: { type: "string" }, category: { type: "string" }, category_label: { type: "string" }, period: { type: "string" }, hosts: { type: "integer" } } } }, rules_url: { type: "string" } } }) } },
+      "/api/v1/leaderboard/rules": { get: { operationId: "leaderboardRules", summary: "How boards are scored, in numbers and plain words", responses: ok({ type: "object", properties: { formula: { type: "string" }, points: { type: "object" }, kudosWeight: { type: "object" }, minHosts: { type: "integer" }, text: { type: "array", items: { type: "string" } } } }) } },
+      // ---- end leaderboard ----
       "/api/v1/openapi.json": { get: { operationId: "openapi", summary: "This document", responses: { 200: { description: "OpenAPI 3.1", content: json({ type: "object" }) } } } },
     },
     components: { schemas: {
       Error: { type: "object", properties: { code: { type: "string" }, message: { type: "string" } } },
+      // ---- leaderboard (host awards work) ----
+      Leaderboard: { type: "object", properties: { city: { type: "string" }, category: { type: "string" }, category_label: { type: "string" }, period: { type: "string", enum: ["month", "all"] }, from: { type: ["string", "null"], format: "date" }, to: { type: "string", format: "date" }, title: { type: "string" },
+        qualified: { type: "boolean", description: "False until 3 hosts are on the board; entries is empty then" }, min_hosts: { type: "integer" }, hosts_on_board: { type: ["integer", "null"] }, url: { type: "string" }, note: { type: "string" },
+        entries: { type: "array", items: { type: "object", properties: { rank: { type: "integer" }, host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, url: { type: "string" }, city: { type: "string" } } }, score: { type: "integer" }, why: { type: "string", description: "e.g. 12 kudos · 90% would go again · 34 guests" },
+          badges: { type: "array", items: { type: "object", properties: { id: { type: "string" }, emoji: { type: "string" }, label: { type: "string" } } } }, streak: { type: "object", properties: { weeks: { type: "integer" }, months: { type: "integer" } } },
+          movement: { type: "object", properties: { direction: { type: "string", enum: ["up", "down", "same", "new"] }, by: { type: "integer" } }, description: "Against the 30 days before (month) or the board as of 30 days ago (all)" },
+          stats: { type: "object", properties: { kudos: { type: "integer" }, would_go_again_pct: { type: ["integer", "null"] }, guests: { type: "integer" }, events: { type: "integer" } } } } } } } },
+      // ---- end leaderboard ----
       TagCount: { type: "object", properties: { tag: { type: "string" }, label: { type: "string" }, count: { type: "integer" } } },
       // verified labels (kudos ask work)
       Review: { type: "object", properties: { name: { type: "string", description: "The guest's first name, or A guest" }, text: { type: "string", description: "What they loved" }, tags: { type: "array", items: { type: "string" } }, at: { type: "string", format: "date" },
@@ -440,6 +467,7 @@ People browse it at ${base}/events. Agents and scripts can read the same data be
 - ${base}/api/v1/hosts : hosts with a public page (q, city). ${base}/api/v1/hosts/{handle} : one host, their events and reviews.
 - ${base}/api/v1/formats : counts by format and city.
 - ${base}/api/v1/reviews : guests' reviews (host, event, q, limit, cursor).
+- ${base}/api/v1/leaderboard : host leaderboards (city, category: all, supper, movement, workshop, popup, talks, community; period: month or all). ${base}/api/v1/leaderboard/rules : how they're scored.
 - ${base}/api/v1/openapi.json : OpenAPI 3.1 for all of the above.
 
 JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with next_cursor until it's null.
@@ -447,7 +475,7 @@ JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with n
 ## MCP
 
 A public MCP server, no auth: ${base}/mcp/public (streamable HTTP, JSON responses).
-Tools: search_events, get_event, list_hosts, get_host, list_formats, get_reviews.
+Tools: search_events, get_event, list_hosts, get_host, list_formats, get_reviews, get_leaderboard.
 
 ## Each event
 
@@ -464,6 +492,10 @@ A course (sessions set) is one record: start is the first session, ends the last
 ## Speaking
 
 Talks, keynotes, webinars, podcasts, panels and fireside chats from a host's scrapbook, and workshops they taught. Their format is talk, keynote, webinar, podcast or panel, and they carry speaking { role, topic, organizer (the conference, company or show), audience (a number the host typed, or null), recording, slides (https links or empty) }. Every other event has speaking: null. Filter with format=talk or type=speaking. Talks have no reviews yet: reviews.count is 0.
+
+## Leaderboards
+
+People see them at ${base}/leaderboard. Each board is one city, one kind of event and one period (month is the last 30 days). Hosts are ranked by what guests did: score = 3 x (kudos from guests on the guest list + 0.6 x kudos from guests who replied I'm in) + 20 x the share who'd go again (once there are 3 or more of those kudos) + 1 x each different guest who came + 2 x each event, counting at most 4. Example hosts and hosts who opted out are never ranked. A board shows once 3 hosts are on it; until then qualified is false and entries is empty. Each entry: rank, host, score, why, badges, streak, movement.
 
 ## Data rules
 

@@ -28,6 +28,7 @@ import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
 import { mountDirectory } from "./directory.js";
+import { mountLeaderboard } from "./leaderboard.js";
 import { mountKudosAsk } from "./kudosask.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
@@ -573,6 +574,8 @@ export function createApp({ store, dataDir }) {
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });
   // the events directory: /events, its read-only API (/api/v1) for people and agents, and a public MCP server (/mcp/public)
   mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect: GUEST_REDIRECT, publicOrigin: (req) => originOf(req) });
+  // host leaderboards: /leaderboard, its feed card and moments, and the host page chip (the API is in the directory's /api/v1)
+  mountLeaderboard(app, { store, C, X, sendStatic });
   // kudos asked of every guest the morning after, the one-tap kudos page (/k/<event>) and the second-host loop count
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
   // ---------- a guest's own reply, from any phone or browser ----------

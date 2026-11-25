@@ -122,6 +122,8 @@ export function makeCommunity(store) {
       recommends: Array.isArray(p.recommends) ? p.recommends.map((r) => ({ handle: clean(r?.handle, 30).toLowerCase().replace(/^@/, ""), note: clean(r?.note, 120).replace(/[<>]/g, "") })).filter((r, i, A) => HANDLE_OK(r.handle) && r.handle !== h && A.findIndex((x) => x.handle === r.handle) === i).slice(0, 6) : cur.recommends || [],
       // the events directory (/events and its API): past events are listed unless the host turns it off
       directory: p.directory != null ? p.directory !== false : cur.directory !== false,
+      // host leaderboards (/leaderboard): ranked unless the host turns it off
+      leaderboard: p.leaderboard != null ? p.leaderboard !== false : cur.leaderboard !== false,
       updatedAt: Date.now() };
     updateWorkspace(ws, { host }); return { host };
   }

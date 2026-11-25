@@ -224,9 +224,11 @@ export function createApp({ store, dataDir }) {
   const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
   app.post("/api/password/forgot", express.json({ limit: "4kb" }), async (req, res) => { const email = String(req.body?.email || "").trim().toLowerCase();
     if (resetLimited("ip:" + (req.ip || "?"), 10) || (email && resetLimited("em:" + email, 3))) return res.status(429).json({ code: "rate_limited", message: "Too many reset requests. Try again in an hour." });
+    // no way to send email at all: say so, instead of promising a link that never comes (same answer for every address)
+    if (!emailConfig(DEFAULT_WS, true)) { console.error("password reset: no email service configured (set ENCORE_EMAIL_KEY and ENCORE_EMAIL_FROM)"); return res.status(503).json({ code: "email_off", message: "We can't send reset emails right now. Please try again later." }); }
     const r = EMAIL_RE.test(email) ? startPasswordReset(email) : null;
     if (r) { const cfg = emailConfig(r.user.ws, false) || emailConfig(DEFAULT_WS, true); const link = `${originOf(req)}/reset?token=${r.token}`;
-      if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Pottery Lab password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Pottery Lab account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).catch(() => {}); }
+      if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Pottery Lab password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Pottery Lab account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).then((x) => { if (x && x.ok === false) console.error("password reset email failed", x.error || x.status || ""); }).catch((err) => console.error("password reset email failed", err?.message || err)); }
     res.json({ ok: true, message: "If that email has an account, a link is on its way. It works for an hour." }); });
   app.post("/api/password/reset", express.json({ limit: "4kb" }), (req, res) => { if (resetLimited("rs:" + (req.ip || "?"), 20)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
     const u = finishPasswordReset(req.body?.token, req.body?.password); if (typeof u === "string") return res.status(400).json({ code: "invalid", message: u });
@@ -532,7 +534,7 @@ export function createApp({ store, dataDir }) {
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
   app.get("/hosts", (req, res) => sendStatic(res, "hostdir.html", "<p>Hosts page missing.</p>"));
   app.get("/hosts/book", (req, res) => sendStatic(res, "hosts.html", "<p>Hosts page missing.</p>"));
-  app.get("/feed", (req, res) => (isAuthed(req) ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : res.redirect(302, "/login")));
+  app.get("/feed", (req, res) => sendStatic(res, "feed.html", "<p>Feed page missing.</p>")); // signed out: a public feed of open events
 
   // ---------- gate ----------
   app.use("/api", (req, res, next) => {

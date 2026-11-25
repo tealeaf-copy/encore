@@ -78,8 +78,9 @@ export function makeCommunity(store) {
   }
   function codesOf(email) { return store.list("system").map((d) => d.data).filter((c) => c?.kind === "code" && c.ownerEmail === email).sort((a, b) => a.createdAt - b.createdAt); }
   function checkCode(code) {
-    const founders = String(process.env.ENCORE_FOUNDER_CODES || "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean);
-    if (code && founders.includes(String(code).toUpperCase())) return { ok: true, founder: true };
+    // host codes ignore spaces, dashes and case: "oink oink", "OINK-OINK" and "oinkoink" are the same code
+    const flat = (x) => String(x || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), founders = String(process.env.ENCORE_FOUNDER_CODES || "").split(",").map(flat).filter(Boolean);
+    if (code && founders.includes(flat(code))) return { ok: true, founder: true };
     const c = getCode(code); if (!c) return { ok: false, message: "That host code doesn't work. Check it with the host who sent it." };
     if (c.usedAt) return { ok: false, message: "That host code has already been used. Ask for another one." };
     return { ok: true, c };

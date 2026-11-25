@@ -243,6 +243,17 @@ export function createApp({ store, dataDir }) {
     return ++h.n > Number(process.env.ENCORE_SIGNUP_PER_HOUR || 5);
   };
   const small = express.json({ limit: "10kb" });
+  // Example hosts (demo accounts) show what a page looks like; nothing real can be sent to them or their events:
+  // no bookings, orders, messages, questions, pledges, gifts, follows, kudos or RSVP extras. One guard for every such route.
+  { const BY_HANDLE = /^\/api\/public\/(book|inquiry|order)\/([^/]+)/, BY_EVENT = /^\/api\/public\/(chat|faq|rsvp-extra|ticket)\/([^/]+)/, BODY = /^\/api\/public\/(pledge|gift|follow|kudos|keep-posted|keep-in-touch|tipped)$/;
+    // only while seeding a demo server (scripts/seed-demo.cjs) are example hosts writable
+    const isEx = (ws) => process.env.ENCORE_ALLOW_DEMO_WRITES !== "1" && !!ws && /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
+    app.post(/^\/api\/public\//, small, (req, res, next) => { try { const p = req.path; let ws = null, m;
+        if ((m = BY_HANDLE.exec(p))) ws = C.wsOfHandle(decodeURIComponent(m[2]).toLowerCase());
+        else if ((m = BY_EVENT.exec(p))) ws = workspaceOfEvent(decodeURIComponent(m[2]));
+        else if (BODY.test(p)) ws = req.body?.handle ? C.wsOfHandle(String(req.body.handle).toLowerCase()) : req.body?.eventId ? workspaceOfEvent(String(req.body.eventId)) : null;
+        if (isEx(ws)) return res.status(403).json({ code: "example", message: "This is an example page, so it can't take requests. Make your own page to try it." }); } catch {}
+      next(); }); }
   const pwOk = (p) => typeof p === "string" && p.length >= 10 && p.length <= 200;
   app.post("/api/signup", small, (req, res) => {
     if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
@@ -1165,7 +1176,7 @@ export function createApp({ store, dataDir }) {
   };
   // example hosts (demo accounts) show what a page can look like; their events can't take real RSVPs, orders or messages
   const isExampleWs = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
-  const exampleWrite = (req, res) => { if (!req.guest) return false; S(req); if (!isExampleWs(req.ws)) return false; res.status(403).json({ code: "example", message: "This is an example event, so it can't take RSVPs. Start your own page to try it." }); return true; };
+  const exampleWrite = (req, res) => { if (!req.guest || process.env.ENCORE_ALLOW_DEMO_WRITES === "1") return false; S(req); if (!isExampleWs(req.ws)) return false; res.status(403).json({ code: "example", message: "This is an example event, so it can't take RSVPs. Start your own page to try it." }); return true; };
   const ownedWrite = (req, res) => {
     if (!req.guest) return true;
     if (exampleWrite(req, res)) return false;

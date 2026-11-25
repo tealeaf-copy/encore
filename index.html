@@ -9258,6 +9258,8 @@ async function ev2Afterglow(){ try{ const e=window.__gEv, host=document.getEleme
 // ==================================================================
 async function drawVouch(){ try{ const d=draft, host=document.getElementById("stepHost"); if(!d?.id||!host||+step!==7||!window.__wsPersonal||host.querySelector("#vouchCard")) return;
     const r=await fetch(`/api/db/collection?path=rsvps`); if(!r.ok) return; const j=await r.json(); const L=(Array.isArray(j)?j:j.docs||j.items||[]).map(x=>x.data||x).filter(x=>x.eventId===d.id&&x.response==="going"&&x.email&&!x.noShow);
+    // when the door was used, "came" means checked in
+    if(L.some(x=>x.checkedInAt)) L.splice(0,L.length,...L.filter(x=>x.checkedInAt));
     if(!L.length||host.querySelector("#vouchCard")) return; const seen=new Set(), G=L.filter(x=>{ const k=x.email.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true });
     const c=document.createElement("section"); c.id="vouchCard"; c.className="panel"; c.innerHTML=`<small class="eyebrow">Grow your circle</small><h3 style="margin:2px 0 4px">Who should host next?</h3><p class="note" style="margin:0 0 10px">Send a guest who came one of your invite codes. They skip the waitlist and can host their own get-together. You'll follow each other.</p>${G.map(x=>`<div class="btns" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line,#E4D9C8)"><span><b>${esc(x.name||"Guest")}</b></span><button class="btn sm ghost" type="button" data-vouch="${esc(x.email)}">🎟 Send a code</button></div>`).join("")}`;
     host.appendChild(c);
@@ -9939,7 +9941,7 @@ new MutationObserver(()=>{ try{ if(location.pathname!=="/g") return; const v=doc
 new MutationObserver(()=>{ try{ if(location.pathname!=="/g") return; const e=window.__gEv, v=document.getElementById("view-guest"); if(!e?.sample||!v||v.hidden) return;
   if(!document.getElementById("gExample")){ const n=document.createElement("div"); n.id="gExample"; n.setAttribute("role","note"); n.style.cssText="background:#FFF1D2;border:2px dashed #D9A93F;border-radius:16px;padding:10px 14px;margin:10px 0;font-size:14.5px;display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center";
     n.innerHTML=`<span><b>Example event.</b> This shows what an invite can look like. It isn't real, so it can't take RSVPs.</span><a href="/signup?mode=friends" style="font-weight:700;color:#A8441F">Host your own →</a>`; (v.querySelector("h3")?.closest("section,div")||v.firstElementChild)?.before(n) }
-  document.querySelectorAll('#g-send,#gStick button,#gStick a,a[href*="venmo.com"],a[href*="cash.app"],a[href*="paypal."]').forEach(b=>{ if(b.dataset.exOff) return; b.dataset.exOff=1; if(b.tagName==="A") b.removeAttribute("href"); b.setAttribute("aria-disabled","true"); b.disabled=true; b.style.opacity=".5"; b.style.pointerEvents="none" }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+  ["#gForm","#evFaq","#whoGoing"].forEach(sel=>{ const x=v.querySelector(sel); if(x&&x.style.display!=="none") x.style.display="none" }); document.querySelectorAll('#g-send,#gStick button,#gStick a,a[href*="venmo.com"],a[href*="cash.app"],a[href*="paypal."]').forEach(b=>{ if(b.dataset.exOff) return; b.dataset.exOff=1; if(b.tagName==="A") b.removeAttribute("href"); b.setAttribute("aria-disabled","true"); b.disabled=true; b.style.opacity=".5"; b.style.pointerEvents="none" }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- One headcount: when the host used door check-in, the After step starts from it. Anyone who said yes but
 // wasn't checked in counts as not having come, unless the host already marked them either way.
 { const _rsAfter=renderStep; renderStep=function(){ try{ if(+step===7&&draft?.id&&typeof allRsvps!=="undefined"){ const L=allRsvps.filter(r=>r.eventId===draft.id&&r.response==="going");
@@ -9947,6 +9949,18 @@ new MutationObserver(()=>{ try{ if(location.pathname!=="/g") return; const e=win
 // ---------- The host's own thank-you line (from "Give it personality") shows once the RSVP is really sent
 new MutationObserver(()=>{ try{ if(location.pathname!=="/g") return; const e=window.__gEv, t=document.querySelector("#view-guest .ticket"); const line=String(e?.qStyle?.thanks||"").trim(); if(!t||!line||document.getElementById("gThanks")) return;
   const p=document.createElement("p"); p.id="gThanks"; p.style.cssText="font:600 20px/1.3 Caveat,cursive;margin:8px 0 0;color:#3E5C3A"; p.textContent=line; t.appendChild(p) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- After a friends' gathering: one "came" number everywhere (yeses who weren't marked absent, plus walk-ins,
+// each person once), and none of the event-team panels (scorecards, target accounts, cost per meeting)
+function cameCount(d){ const key=x=>String(x.email||(x.phone?"tel:"+String(x.phone).replace(/[^\d+]/g,""):"")||x.name||"").trim().toLowerCase(), seen=new Set(), gone=new Set();
+  const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id&&r.response==="going");
+  R.filter(r=>r.noShow).forEach(r=>{ gone.add(key(r)); gone.add(String(r.name||"").trim().toLowerCase()) });
+  for(const r of R) if(!r.noShow){ const k=key(r); if(k) seen.add(k) }
+  for(const g of d.guests||[]){ if(!/Going|Attended/.test(g.status||"")) continue; const k=key(g), nm=String(g.name||"").trim().toLowerCase(); if(!k||gone.has(k)||gone.has(nm)) continue; if(g.status==="Going"&&R.some(r=>r.checkedInAt)) continue; seen.add(k) }
+  return seen.size }
+function tidyAfter(){ try{ if(+step!==7||!draft?.id||!isCasual(draft)) return; const host=$("#stepHost"); if(!host) return; const n=cameCount(draft);
+  host.querySelectorAll("h2,h3").forEach(h=>{ const t=h.textContent; if(/^\d+ (people|person) came/.test(t)) { const nt=t.replace(/^\d+ (people|person) came/,`${n} ${n===1?"person":"people"} came`); if(nt!==t) h.textContent=nt } });
+  host.querySelectorAll("section,.panel,.card").forEach(sec=>{ const h=sec.querySelector("h3"); if(h&&/^(What this event did|Scorecard|Results that fit your goal|Results)$/.test(h.textContent.trim())&&!sec.contains(host.querySelector(".ap-hero"))) sec.style.display="none" }) }catch{} }
+new MutationObserver(()=>tidyAfter()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- Your guest list, in and out (from host research: "don't make me re-enter guests"; "let me take my list with me") ----------
 function guestRows(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id), seen=new Set(), out=[], key=x=>String(x.email||x.phone||x.name||"").trim().toLowerCase();
   // RSVPs are also copied onto the guest list; one row per person, with the RSVP's answers and door check-in

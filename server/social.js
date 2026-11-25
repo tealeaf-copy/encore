@@ -195,7 +195,7 @@ export function makeSocial(store, { C, saveBlob }) {
       for (const k of new Set([...going.map((r) => r.email || r.phone || r.name), ...G.map((g) => g.email || g.phone || g.name)].map((who) => String(who || "").trim().toLowerCase()).filter(Boolean))) seen.set(k, (seen.get(k) || 0) + 1); }
     let people = seen.size, returning = [...seen.values()].filter((n) => n > 1).length;
     try { const H = hostStrengths(ws); if (H && H.guests) { people = H.guests; returning = H.returning || 0; } } catch {}
-    return { events: past.length, saidYes: said, people, returning, returnRate: people ? Math.round((100 * returning) / people) : null, doorEvents, came, walkIns, showRate: saidAtDoor ? Math.round((100 * showedAtDoor) / saidAtDoor) : null, avgPerEvent: past.length ? Math.round(said / past.length) : 0 };
+    return { events: past.length, saidYes: said, people, returning, returnRate: people ? Math.round((100 * returning) / people) : null, doorEvents, checkedIn: showedAtDoor, came, walkIns, showRate: saidAtDoor ? Math.round((100 * showedAtDoor) / saidAtDoor) : null, avgPerEvent: past.length ? Math.round(said / past.length) : 0 };
   }
   // ---- guests prove who they are with the RSVP id and code they got back ----
   function rsvpProof(eventId, rid, code) {
@@ -362,7 +362,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   const faqView = (q) => ({ id: q.key, q: q.q, a: q.a || "", votes: q.votes || 0, by: q.by || "", host: !!q.fromHost, at: q.at });
   app.get("/api/public/faq/:eventId", (req, res) => { const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found"); const L = faqOf(scopeStore(store, ws), id);
     res.json({ published: L.filter((q) => q.status === "published").sort((a, b) => (b.votes || 0) - (a.votes || 0) || a.at - b.at).map(faqView), waiting: L.filter((q) => q.status === "pending").length }); });
-  app.post("/api/public/faq/:eventId", small, (req, res) => { if (limited(req, 8)) return bad(res, "That's a lot of questions. Try again in a bit.", 429, "rate_limited"); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (ws && /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "")) return bad(res, "This is an example event, so nobody will answer. Host your own to try it.", 403, "example"); if (!ws) return bad(res, "No such event.", 404, "not_found");
+  app.post("/api/public/faq/:eventId", small, (req, res) => { if (limited(req, 8)) return bad(res, "That's a lot of questions. Try again in a bit.", 429, "rate_limited"); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (ws && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1" && /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "")) return bad(res, "This is an example event, so nobody will answer. Host your own to try it.", 403, "example"); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const q = clean(req.body?.q, 300); if (q.length < 5) return bad(res, "Ask a whole question."); const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data;
     const dup = faqOf(S, id).find((x) => lc(x.q) === lc(q)); if (dup) return res.json({ ok: true, duplicate: true });
     S.add("faq", { eventId: id, q, by: clean(req.body?.name, 40).split(/\s+/)[0] || "", votes: 1, status: "pending", at: Date.now() });

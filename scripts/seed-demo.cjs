@@ -1,18 +1,19 @@
 // Demo world for a preview or demo deployment: fictional hosts (Claire's run club, Eric's supper club and pandan cake shop,
 // Hoa Flower Studio, a bánh mì cart, Jackie's apartment café), guests, and a brand account. Everything here is made up.
 // Usage: node scripts/seed-demo.cjs https://your-encore-address [INVITE_OR_FOUNDER_CODE]
-// The server needs ENCORE_SIGNUP=1. If it's invite-only and already has members, pass a code (an ENCORE_FOUNDER_CODES value works).
+// The server needs ENCORE_SIGNUP=1, and ENCORE_ALLOW_DEMO_WRITES=1 while seeding (example hosts refuse RSVPs,
+// kudos and follows otherwise); remove it afterwards. If it's invite-only and already has members, pass a code (an ENCORE_FOUNDER_CODES value works).
 // Every demo login uses the password encore-demo-2026. Run it once per server; a second run stops at "already has an account".
 const B = String(process.argv[2] || "").replace(/\/$/, ""), FIRST_CODE = process.argv[3] || "";
 if (!/^https?:\/\//.test(B)) { console.error("Usage: node scripts/seed-demo.cjs https://your-encore-address [code]"); process.exit(1); } const J = { "content-type": "application/json" };
 const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 const jar = {};
-async function call(who, method, path, body, headers = {}) { const r = await fetch(B + path, { method, headers: { ...J, ...(jar[who] ? { cookie: jar[who] } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined }); const sc = r.headers.get("set-cookie"); if (sc) jar[who] = sc.split(";")[0]; const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = t; } if (!r.ok) throw new Error(`${method} ${path} ${r.status} ${t.slice(0, 200)}`); return j; }
+async function call(who, method, path, body, headers = {}) { const r = await fetch(B + path, { method, headers: { ...J, ...(jar[who] ? { cookie: jar[who] } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined }); const sc = (r.headers.getSetCookie?.() || [r.headers.get("set-cookie")].filter(Boolean)).map((c) => c.split(";")[0]).filter((c) => !/=$/.test(c)); if (sc.length) jar[who] = sc.join("; "); const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = t; } if (!r.ok) throw new Error(`${method} ${path} ${r.status} ${t.slice(0, 200)}`); return j; }
 const pw = "encore-demo-2026";
 async function member(who, name, email, code) { const j = await call(who, "POST", "/api/signup", { name, email, password: pw, mode: "friends", ...(code ? { code } : {}) }); return j.workspace.id; }
 const ws = {};
 async function ev(who, id, data) { await call(who, "PUT", "/api/db/doc?path=events/" + id, { kind: "social", casual: true, example: false, createdAt: Date.now(), ...data }); }
-async function rsvp(host, body) { const r = await fetch(B + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": ws[host] }, body: JSON.stringify({ createdAt: Date.now() - Math.random() * 5 * 864e5, response: "going", ...body }) }); const j = await r.json(); if (!r.ok) throw new Error("rsvp " + JSON.stringify(j)); return j.id; }
+async function rsvp(host, body) { const r = await fetch(B + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, cookie: jar[host] || "" }, body: JSON.stringify({ createdAt: Date.now() - Math.random() * 5 * 864e5, response: "going", ...body }) }); const j = await r.json(); if (!r.ok) throw new Error("rsvp " + JSON.stringify(j)); return j.id; }
 (async () => {
   ws.claire = await member("claire", "Claire Nguyen", "claire@demo.encore", FIRST_CODE);
   const codes = (await call("claire", "GET", "/api/codes")).codes.map((c) => c.code);

@@ -214,3 +214,11 @@ test("A home address in the place name reaches guests only after they're in; wal
   const who = await (await fetch(srv.base + "/api/public/attendees/pa2")).json(); const names = who.attendees.map((a) => a.name).join(",");
   assert.match(names, /Ana/); assert.ok(!/Dung|Eve/.test(names), names); assert.equal(who.count, 2, "Ana and the walk-in came");
 });
+
+test("Example hosts (demo accounts) can't be sent anything; real hosts can", async () => {
+  const r0 = await post("/api/signup", { name: "Ex Demo", email: "ex.guard@demo.encore", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0); assert.ok((await post("/api/host/profile", { handle: "ex-guard", name: "Ex Demo" }, c)).ok);
+  for (const [u, b] of [["/api/public/inquiry/ex-guard", { email: "a@b.com", message: "hello there friend" }], ["/api/public/pledge", { handle: "ex-guard", email: "a@b.com" }], ["/api/public/follow", { handle: "ex-guard", email: "a@b.com", name: "A" }], ["/api/public/gift", { handle: "ex-guard", email: "a@b.com" }]]) {
+    const r = await post(u, b); assert.equal(r.status, 403, u); assert.equal((await r.json()).code, "example"); }
+  const badges = await (await fetch(srv.base + "/api/public/host/ex-guard/badges")).json(); assert.deepEqual(badges.badges, []);
+});

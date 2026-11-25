@@ -92,7 +92,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   const PAGE = 6; // cards shown before "Show more"
   let SIGNED = /(?:^|;\s*)encore_in=1/.test(document.cookie);
   if (SIGNED) document.getElementById("hostCard")?.remove(); // hosts and brands already have a page
-  $("#pipI").innerHTML = C.pipSVG("happy", 44);
+  { const pi = $("#pipI"); if (pi) pi.innerHTML = C.pipSVG("happy", 44); }
   let ans = {}; try { ans = JSON.parse(localStorage.getItem("encore.taste") || "{}"); } catch {}
   let data = { events: [], hosts: [] }, shops = null, filter = "all", city = "", evShown = PAGE, farOpen = false, fyIds = new Set();
   try { city = localStorage.getItem("encore.city") || ""; } catch {}

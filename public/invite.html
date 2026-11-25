@@ -2,10 +2,11 @@
 <!--META-->
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
 <style>
 /* The invite, on its own: what a guest needs to say yes, in a page small enough to open instantly on a phone.
-   Anything more involved (approvals, paid seats, polls, the group chat) opens the full invite at /g#rsvp-<id>. */
+   Ask to join events reply here too. Anything more involved (paid spots with a pay step, slots, polls, plus-ones, work
+   events) opens the full invite at /g#rsvp-<id>. */
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#5E534B;--ember:#C94A30;--ember-d:#A8441F;--line:#E4D9C8;--card:#fff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
 a{color:var(--ember-d)}main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 110px}
@@ -45,8 +46,15 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
   // already answered on this device: show their reply here (a plain invite), or the full invite for everything else
   let mine = null; try { mine = JSON.parse(ls.get("encore-rsvp-" + id) || "null"); } catch {}
   const gkey = () => { let k = ls.get("encore.gkey"); if (!k) { k = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""); ls.set("encore.gkey", k); } return k; };
+  // the emailed link to their own reply (#reply=<rid>.<signature>): this browser can now see and change it
+  const rl = /^#reply=([A-Za-z0-9_-]{1,80})\.([A-Za-z0-9_-]{8,128})$/.exec(location.hash || "");
+  const claimed = !rl ? Promise.resolve() : fetch("/api/public/reply/claim", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-key": gkey() }, body: JSON.stringify({ eventId: id, rid: rl[1], t: rl[2] }) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (j?.ok && j.code) { mine = { rid: j.rid, code: j.code, name: j.name || "", gi: -1, response: j.response, wall: false, eventId: id, data: {} }; ls.set("encore-rsvp-" + id, JSON.stringify(mine)); }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch {} }).catch(() => {});
   const today = new Date().toISOString().slice(0, 10);
-  const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|lunch|breakfast|tasting|dumpling|taco|pizza|bbq|cookout|tea|matcha|wine|food|eat|bread|pastr|cookie|pie/i;
+  // food on the table, the full invite's rule (FOODY in index.html): the activity, name or idea, or a menu
+  const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i;
+  const foodyOf = (e) => FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.concept || ""}`) || !!(e.menu && (e.menu.courses || e.menu.items || []).length);
   const HHMM = /^\d{2}:\d{2}$/, httpsUrl = (u) => /^https:\/\/[^\s"'<>]+$/.test(String(u || "").trim()) ? String(u).trim() : "";
   // "7pm", "7:30am"
   const clock = (t) => HHMM.test(t || "") ? new Date("2000-01-01T" + t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
@@ -55,37 +63,39 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
   const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
   const priceText = (e) => { const p = String(e.price).trim(); return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
   const bringOf = (e) => (Array.isArray(e.bring) ? e.bring : e.bring ? [e.bring] : []).map((x) => String(x || "").trim()).filter((x) => x && !/^yourself$/i.test(x)).slice(0, 12);
-  Promise.all([fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)), fetch("/api/public/event-host/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/public/attendees/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  claimed.then(() => Promise.all([fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)), fetch("/api/public/event-host/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/public/attendees/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
       // where their reply stands (and their place on the waitlist); older servers only have rsvp-status
-      return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
+      return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null]))
     .then(([doc, H, A, st]) => { const e = doc?.data, ws = doc?.workspace;
-      // only the plain case lives here; everything else opens the full invite (paid spots stay here when the host takes payment their own way)
-      if (!e || !ws || e.sample || !e.casual || e.approvalRequired || e.stage === "interest" || !e.date || e.date < today || (e.slots || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0) return go();
-      if (mine && !(st && ["going", "waitlist", "maybe", "no"].includes(st.response))) return go();
+      // only the common case lives here: a friends' event, open or Ask to join. Everything else opens the full invite:
+      // work events (more fields), "would you come?" polls, slots, chip-ins, a pay step, plus-ones, a phone the host
+      // asked for, and paid spots on an Ask to join event (they pay after the host lets them in). When unsure, hand off.
+      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || e.date < today || (e.slots || []).length || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
+      if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
       render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place } : null); })
     .catch(go);
 
   function render(e, ws, H, A, back) {
-    const h = H.host || {}, first = H.person || String(h.name || "your host").split(" ")[0].replace(/['’]s$/i, ""), title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.pubTitle || ""} ${e.why || ""}`), paid = paidOf(e);
+    const h = H.host || {}, first = String(e.hostName || "").trim().split(/\s+/)[0] || H.person || String(h.name || "your host").split(" ")[0].replace(/['’]s$/i, ""), ask = !!e.approvalRequired, title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = foodyOf(e), paid = paidOf(e);
     document.title = `${title} · Pottery Lab`;
     const cover = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(e.coverPhoto || "") || /^https:\/\/[^\s"'<>()]+$/.test(e.coverPhoto || "") ? `<img src="${esc(e.coverPhoto)}" alt="">` : window.EventArt ? (window.EventArt.ensureCss?.(), window.EventArt.cover(e, { title: "", label: "" })) : "";
     const where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
     const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji ? esc(h.emoji) : `<span class="ini">${esc(String(h.name || "?").trim().charAt(0).toUpperCase())}</span>`);
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
-    const full = left === 0, spotsLine = (n) => `👥 ${n === 0 ? "Full · waitlist open" : n === A.seats ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`}`;
+    const full = left === 0 && !ask, spotsLine = (n) => `👥 ${n === 0 ? "Full · waitlist open" : n === A.seats ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`}`;
     // the main button says what it sends: "I'm in" or "Send"
-    const btn = (v) => full && v === "going" ? "Join waitlist" : e.qStyle?.button || (v === "going" ? e.rsvpWords?.yes || "I'm in" : "Send");
+    const btn = (v) => ask ? "Ask to join" : full && v === "going" ? "Join waitlist" : e.qStyle?.button || (v === "going" ? e.rsvpWords?.yes || "I'm in" : "Send");
     const routeLink = route ? ` · <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a>` : "";
     $("#m").innerHTML = $("#m .top").outerHTML + `<div class="cov">${cover}</div><h1>${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : ""}${A.seats ? `<div class="muted" id="spots">${spotsLine(left)}</div>` : ""}</div>
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${spotsLine(left)}</div>` : ""}</div>
       ${h.name ? `<div class="host"><span class="av">${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${bring.length ? `<div class="kit"><span aria-hidden="true">🎒</span><div><b>Bring</b><p>${bring.map(esc).join(" · ")}</p></div></div>` : ""}
       ${A.count ? `<p class="going-n" style="margin:14px 0 4px;font-weight:600">${A.count} in</p><div class="going">${names}</div>` : ""}
-      <form id="f" novalidate><h2 class="ask" style="margin:18px 0 8px">Are you in?</h2><div class="resp" role="radiogroup" aria-label="Are you in?"><label><input type="radio" name="r" value="going" checked> ${full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe || paid ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>
+      <form id="f" novalidate>${ask ? `<h2 class="ask" style="margin:18px 0 0">Want in?</h2><p class="muted" style="margin:0">Spots are limited. ${esc(first)} lets each guest in.</p><input type="hidden" name="r" value="going">` : `<h2 class="ask" style="margin:18px 0 8px">Are you in?</h2><div class="resp" role="radiogroup" aria-label="Are you in?"><label><input type="radio" name="r" value="going" checked> ${full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe || paid ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>`}
         <label class="f">Your name<input type="text" id="nm" autocomplete="name" maxlength="80" required></label>
-        <label class="f">Email or phone <small>Optional. For reminders from ${esc(first)}.</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"></label>
+        <label class="f">Email or phone <small id="ctH">${ask ? `So you hear when ${esc(first)} lets you in.` : `Optional. For reminders from ${esc(first)}.`}</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"${ask ? " required" : ""}></label>
         ${foody ? `<label class="f" id="dtL">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
         ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc(priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
@@ -95,7 +105,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
     if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place }); }
-    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick); stick.hidden = true;
+    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${ask ? "Ask to join" : full ? "Join waitlist" : esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick); stick.hidden = true;
     { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);
@@ -103,22 +113,23 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     $("#f").onsubmit = async (ev) => { ev.preventDefault(); const er = $("#er"); er.textContent = "";
       const name = $("#nm").value.trim().replace(/[<>]/g, "").slice(0, 80); if (!name) { er.textContent = `Add your name so ${first} knows it's you.`; $("#nm").focus(); return; }
       const resp = (new FormData($("#f")).get("r") || "going"); if (resp === "going" && Qf?.missing?.()) return; // the question card shows "Answer this one first."
-      const c = $("#ct").value.trim(), email = /@/.test(c) ? c : "", phone = !email && c ? c.replace(/[^\d+]/g, "") : "";
+      const c = $("#ct").value.trim(), email = c && (/@/.test(c) || !/\d{6,}/.test(c.replace(/[^\d]/g, ""))) ? c : "", phone = !email && c ? c.replace(/[^\d+]/g, "") : "";
+      if (ask && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so you hear when ${first} lets you in.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
       const code = (String(e.id || id).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
       const ride = resp === "no" ? "" : $("#rd")?.value || "";
-      const data = { eventId: e.id || id, response: resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
+      const data = { eventId: e.id || id, response: ask && resp !== "no" ? "requested" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
       $("#send").disabled = true;
       try { const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't send. Try again.");
         const rid = String(j.id || j.doc?.id || "").split("/").pop();
-        const saved = j.data?.response || j.doc?.data?.response || j.response; if (saved) data.response = saved; else if (resp === "going" && left === 0) data.response = "waitlist";
+        const saved = j.response || j.data?.response || j.doc?.data?.response; if (saved) data.response = saved; else if (resp === "going" && left === 0 && !ask) data.response = "waitlist";
         ls.set("encore-rsvp-" + (e.id || id), JSON.stringify({ rid, code, name, gi: -1, response: data.response, wall: false, eventId: e.id || id, data: {} }));
         done(e, h, data, rid, code, { ...ctx, place: +j.waitlistPos || +j.place || 0 }); }
       catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "Didn't send. Check your connection and try again." : err.message; $("#send").disabled = false; } };
   }
 
   async function done(e, h, data, rid, code, S = {}) {
-    document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); if (data.response === "no") document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); const yes = data.response === "going", wait = data.response === "waitlist", paid = paidOf(e), eid = e.id || id, who = esc(S.first || "your host");
+    document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); if (data.response === "no") document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); const yes = data.response === "going", wait = data.response === "waitlist", asked = data.response === "requested", paid = paidOf(e), eid = e.id || id, who = esc(S.first || "your host");
     // count yourself in: the spots and "N in" lines move with your own yes (a returning guest is already counted)
     if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots")) $("#spots").textContent = S.spotsLine(S.left - 1); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
     const d = e.date ? e.date.replace(/-/g, "") : "", hm = (x) => x.replace(":", "") + "00", t = HHMM.test(e.startTime || "") ? hm(e.startTime) : "";
@@ -127,14 +138,15 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     const dEnd = t && endT < t ? (() => { const x = new Date(e.date + "T12:00:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); })() : d;
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
     const doorCode = yes && !paid && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl);
-    const place = +S.place || 0, head = yes ? "You're in" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
-    const line = wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
+    const place = +S.place || 0, head = yes ? "You're in" : asked ? "Asked" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
+    const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
     const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${head}</h2>${line ? `<p class="muted" style="margin:0">${line}</p>` : ""}
       ${doorCode ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
-      <div class="btns">${yes && paid && pay ? `<a class="btn pay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a></div>
-      ${(yes || wait || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>`;
+      <div class="btns">${yes && paid && pay ? `<a class="btn pay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
+      ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
+      <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
     // a guest who steps out frees their spot and hears it went through
     const out = $("#out"); if (out) out.onclick = async () => { out.disabled = true;

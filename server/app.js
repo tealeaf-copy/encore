@@ -482,7 +482,7 @@ export function createApp({ store, dataDir }) {
   let EA = null; try { const sandbox = { window: {}, document: { head: { appendChild() {} }, createElement: () => ({ style: {} }), getElementById: () => null, querySelector: () => null } }; sandbox.window.document = sandbox.document; vm.runInNewContext(fs.readFileSync(path.join(PUBLIC_DIR, "eventart.js"), "utf8"), sandbox); EA = sandbox.window.EventArt || null; } catch {}
   const ogCardFor = (ev, base) => { try { const pick = ev.coverArt && typeof ev.coverArt === "object" && EA?.valid(ev.coverArt.kind) ? String(ev.coverArt.kind).split("+")[0] : EA ? EA.kindOf(ev) : "party"; return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
   // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
-  // then opens the RSVP page (/g#rsvp-<id>). The part after "#" never reaches a server, so /g links can't preview.
+  // and is the reply page itself (public/invite.html). The part after "#" never reaches a server, so /g links can't preview.
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
     if (!ev || ev.example) return res.redirect(302, to);
@@ -491,13 +491,18 @@ export function createApp({ store, dataDir }) {
       desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
       img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
     // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
-    // it doesn't handle (approvals, paid seats, polls, past events) to the full invite at /g#rsvp-<id>
+    // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
 <meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
 <meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">`;
-    let page = ""; try { page = fs.readFileSync(path.join(PUBLIC_DIR, "invite.html"), "utf8"); } catch {}
+    const page = invitePage();
     if (!page) return res.redirect(302, to);
-    res.set("Cache-Control", "public, max-age=120").type("html").send(page.replace("<!--META-->", meta)); });
+    // compressed (brotli when the phone takes it, else gzip): the invite is most of what a guest downloads before replying
+    sendText(req, res, page.replace("<!--META-->", () => meta), { cache: "public, max-age=120" }); });
+  // public/invite.html, read again only when the file changes
+  let inviteCache = null;
+  function invitePage() { const f = path.join(PUBLIC_DIR, "invite.html");
+    try { const m = fs.statSync(f).mtimeMs; if (!inviteCache || inviteCache.m !== m) inviteCache = { m, html: fs.readFileSync(f, "utf8") }; return inviteCache.html; } catch { return ""; } }
   // A no-login demo: the page without the shim runs on its built-in sample data and saves nothing here.
   app.get("/demo", async (req, res, next) => {
     try {
@@ -528,6 +533,9 @@ export function createApp({ store, dataDir }) {
     if (buf.length > 1024 && /\bbr\b/.test(req.headers["accept-encoding"] || "")) { let br = brCache.get(etag);
       if (!br) { br = zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: buf.length < 400000 ? 11 : 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }); if (brCache.size > 400) brCache.clear(); brCache.set(etag, br); }
       return res.set("Content-Encoding", "br").send(br); }
+    if (buf.length > 1024 && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) { const k = "gz" + etag; let gz = brCache.get(k);
+      if (!gz) { gz = zlib.gzipSync(buf, { level: 9 }); if (brCache.size > 400) brCache.clear(); brCache.set(k, gz); }
+      return res.set("Content-Encoding", "gzip").send(gz); }
     res.send(buf);
   }
   // scripts, styles, SVG and JSON from public/: compressed, cached for five minutes, then revalidated

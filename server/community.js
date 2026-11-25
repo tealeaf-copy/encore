@@ -240,7 +240,8 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
       { const u = getDbUser(W.ownerEmail); if (u && /\bEric\b/.test(u.name || "")) putDbUser({ ...u, name: "Bo" }); }
       // owner request: Bo cooks in Long Island City, New York
       if (/\b(Eric|Greenpoint)\b/.test(JSON.stringify(W.host))) updateWorkspace(ws, { host: { ...swap(W.host), city: "New York", hood: "Long Island City" } });
-      const S = scopeStore(store, ws); for (const d of S.list("events") || []) if (/\b(Eric|Greenpoint)\b/.test(JSON.stringify(d.data || {}))) S.set("events/" + d.id, swap(d.data)); } } catch (err) { console.warn("rename example text", err?.message); }
+      // guests' kudos, posts, photos and scrapbook notes about the example say Bo too
+      const S = scopeStore(store, ws); for (const col of ["events", "kudos", "moments", "posts", "scrapbook", "vibes"]) for (const d of S.list(col) || []) if (/\b(Eric|Greenpoint)\b/.test(JSON.stringify(d.data || {}))) S.set(col + "/" + d.id, swap(d.data)); } } catch (err) { console.warn("rename example text", err?.message); }
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   // change your own name; events that showed your old name as the host switch to the new one
   // the details you give when you RSVP, saved once so every RSVP fills them in (signed-in people; others keep them on their device)

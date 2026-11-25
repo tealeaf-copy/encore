@@ -17,7 +17,7 @@ test("A booking gets a guest page, and its results count who came and what they 
   const pr = await post("/api/host/profile", { handle: "ava-measure", name: "Move with Ava", experiences: [{ name: "Desk-to-mat yoga", min: 4, max: 40, price: "$30 a person", category: "movement" }] }, hc); assert.equal(pr.status, 200);
   const expId = (await pr.json()).host.experiences[0].id, day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/ava-measure", { name: "Sam", company: "Northwind", email: "sam@northwind.example", experienceId: expId, people: 10, date: day(5), when: "soon", where: "Our office", message: "Team yoga for our wellness week." })).json();
-  const id = bk.id, t = new URL(bk.status).searchParams.get("t"); assert.ok(id && t);
+  const id = bk.id, t = new URL(bk.link).searchParams.get("t"); assert.ok(id && t);
   assert.equal((await post(`/api/public/booking/${id}/event`, { t: "wrong" })).status, 403);
   const ev = await (await post(`/api/public/booking/${id}/event`, { t })).json(); assert.ok(ev.link.startsWith("/g#rsvp-")); const eid = ev.link.split("rsvp-")[1];
   let r = await (await fetch(`${srv.base}/api/public/booking/${id}/results?t=${t}`)).json(); assert.equal(r.going, 0); assert.equal(r.past, false); assert.equal(r.cost, 300);
@@ -35,7 +35,7 @@ test("Check-in at the door: a door link for staff, ticket codes, walk-ins, and r
   const pr = await (await post("/api/host/profile", { handle: "theo-door", name: "Door Test Loft", experiences: [{ name: "Demo night", min: 5, max: 100, price: "$95 a person", category: "drinks" }] }, hc)).json();
   const day = new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/theo-door", { name: "Sam", company: "Northwind", email: "sam.d@northwind.example", experienceId: pr.host.experiences[0].id, people: 10, date: day, time: "18:00", when: "soon", where: "The loft", message: "Launch night for our API." })).json();
-  const id = bk.id, t = new URL(bk.status).searchParams.get("t");
+  const id = bk.id, t = new URL(bk.link).searchParams.get("t");
   const ev = await (await post(`/api/public/booking/${id}/event`, { t, title: "Northwind launch night" })).json(); const eid = ev.link.split("rsvp-")[1];
   const rids = []; for (const [i, nm] of ["Rita", "Omar", "Lena"].entries()) rids.push((await (await post("/api/db/collection?path=rsvps", { eventId: eid, name: nm, email: `${nm.toLowerCase()}.d@example.com`, response: "going", code: "k" + i }, hc)).json()).id);
   const r0 = await (await fetch(`${srv.base}/api/public/booking/${id}/results?t=${t}`)).json(); assert.ok(r0.doorLink.startsWith(`/door/${id}?t=`)); const dt = new URL(srv.base + r0.doorLink).searchParams.get("t");

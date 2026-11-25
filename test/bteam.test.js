@@ -32,7 +32,7 @@ test("Team space: requests join the team, bookings over the cap wait for an appr
   assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: appr, bookingId: big.id, decision: "approve" })).status, 200);
   assert.equal((await post(`/api/public/bteam/${T.id}/settings`, { k: T.key, a: owner, cap: "3000" })).status, 200, "the owner can change limits");
   team = await (await fetch(`${srv.base}/api/public/bteam/${T.id}?k=${T.key}`)).json(); assert.equal(team.rows.find((r) => r.id === big.id).approval.state, "approved");
-  const t = new URL(big.status).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${big.id}?t=${t}`)).json(); assert.equal(bk.booking.approval.state, "approved"); assert.equal(bk.booking.team.name, "Northwind field");
+  const t = new URL(big.link).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${big.id}?t=${t}`)).json(); assert.equal(bk.booking.approval.state, "approved"); assert.equal(bk.booking.team.name, "Northwind field");
 });
 
 test("Add-ons: catering that travels and event services in the same city, flat fees stay flat", async () => {
@@ -50,12 +50,12 @@ test("Instant booking: a fixed-price listing on an open date confirms now, or th
   const pr = await (await post("/api/host/profile", { handle: "maya-instant", name: "Golden Test", experiences: [{ name: "Lunch yoga", min: 6, max: 40, price: "$30 a person", category: "movement", instant: true, openDates: [day, third] }] }, hc)).json(); const x = pr.host.experiences[0];
   const base = { name: "Sam", company: "Northwind", email: "sam.i@northwind.example", where: "Our office", message: "Lunchtime yoga for the team.", experienceId: x.id };
   const a = await (await post("/api/public/book/maya-instant", { ...base, people: 20, date: day, when: "soon" })).json(); assert.equal(a.instant, true);
-  const ta = new URL(a.status).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${a.id}?t=${ta}`)).json(); assert.equal(bk.booking.status, "booked"); assert.equal(bk.booking.quote.total, "$600");
+  const ta = new URL(a.link).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${a.id}?t=${ta}`)).json(); assert.equal(bk.booking.status, "booked"); assert.equal(bk.booking.quote.total, "$600");
   const b = await (await post("/api/public/book/maya-instant", { ...base, people: 20, date: other, when: "later", message: "Another session, different day." })).json(); assert.ok(!b.instant, "not an open date: a normal request");
   const T = await (await post("/api/public/bteam", { name: "Tiny team", you: "Sam", email: "sam.i@northwind.example", approvers: "boss@northwind.example", cap: "100" })).json();
   const c = await (await post("/api/public/book/maya-instant", { ...base, people: 10, date: third, when: "soon", message: "Smaller session, needs approval.", team: { id: T.id, k: T.key } })).json(); assert.ok(!c.instant); assert.equal(c.instantAfterApproval, true);
   const owner = new URL(srv.base + T.ownerLink).searchParams.get("a"); assert.equal((await post(`/api/public/bteam/${T.id}/decide`, { k: T.key, a: owner, bookingId: c.id, decision: "approve" })).status, 200);
-  const tc = new URL(c.status).searchParams.get("t"), ck = await (await fetch(`${srv.base}/api/public/booking/${c.id}?t=${tc}`)).json(); assert.equal(ck.booking.status, "booked");
+  const tc = new URL(c.link).searchParams.get("t"), ck = await (await fetch(`${srv.base}/api/public/booking/${c.id}?t=${tc}`)).json(); assert.equal(ck.booking.status, "booked");
 });
 
 test("Instant booking never double-books: a taken date leaves the open list and a second request becomes a normal one", async () => {
@@ -66,5 +66,5 @@ test("Instant booking never double-books: a taken date leaves the open list and 
   const a = await (await post("/api/public/book/ravi-double", base)).json(); assert.equal(a.instant, true);
   const pub = await (await fetch(`${srv.base}/api/public/host/ravi-double`)).json(); assert.deepEqual(pub.host.experiences[0].openDates, [], "the booked date is no longer open");
   const b = await (await post("/api/public/book/ravi-double", { ...base, company: "Othercorp", email: "b@othercorp.example" })).json(); assert.ok(!b.instant, "no second instant booking"); assert.equal(b.taken, true);
-  const tb = new URL(b.status).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${b.id}?t=${tb}`)).json(); assert.equal(bk.booking.status, "requested");
+  const tb = new URL(b.link).searchParams.get("t"), bk = await (await fetch(`${srv.base}/api/public/booking/${b.id}?t=${tb}`)).json(); assert.equal(bk.booking.status, "requested");
 });

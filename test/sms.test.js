@@ -19,7 +19,7 @@ test("Texts around an event: a guest's ticket, the organizer's reminder with eac
   const pr = await (await post("/api/host/profile", { handle: "sofia-text", name: "Supper Text", experiences: [{ name: "Dinner", min: 4, max: 30, price: "$185 a person", category: "dining" }] }, hc)).json();
   const day = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/sofia-text", { name: "Sam", company: "Northwind", email: "sam.s@northwind.example", experienceId: pr.host.experiences[0].id, people: 12, date: day, time: "18:30", when: "soon", where: "Sofia's room", message: "Customer dinner for design partners." })).json();
-  const id = bk.id, t = new URL(bk.status).searchParams.get("t");
+  const id = bk.id, t = new URL(bk.link).searchParams.get("t");
   const eid = (await (await post(`/api/public/booking/${id}/event`, { t, title: "Northwind partner dinner", address: "3200 16th St" })).json()).link.split("rsvp-")[1];
   const guests = [["Rita", "+14155550101"], ["Omar", "+14155550102"], ["Lena", ""]], rids = [];
   for (const [i, [nm, ph]] of guests.entries()) rids.push((await (await post("/api/db/collection?path=rsvps", { eventId: eid, name: nm, email: `${nm.toLowerCase()}.s@example.com`, phone: ph, response: "going", code: "c" + i }, hc)).json()).id);

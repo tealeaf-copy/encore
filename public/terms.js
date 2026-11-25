@@ -9,7 +9,7 @@
   // the one balance line (server/market.js BALANCE_TERMS); a quote that sets another due date says so in its own words
   const BALANCE = "50% deposit to confirm. The rest is due 7 days after the event, once everything listed is delivered.";
   const DUE = { day: "on the day of the event", before7: "7 days before the event", now: "now" };
-  const EXCLUDED = ["Setup or teardown beyond the event itself", "A second session or extra hours", "Exclusivity, unless agreed in writing (category, area and dates)"];
+  const EXCLUDED = ["Setup or teardown, unless the quote includes it", "A second session or extra hours", "Exclusivity, unless agreed in writing (category, area and dates)"];
   // only when photos or posts were asked for: the content clauses (no content, no usage terms)
   const EXCLUDED_CONTENT = ["Raw footage or unedited photos", "Paid ads or boosted posts, unless chosen above", "Extra posts, shoots or revisions beyond what's listed"];
   const css = `.bt-f{border:1.5px dashed #D9CBB8;border-radius:16px;padding:12px 14px;margin:2px 0;display:grid;gap:8px}.bt-f legend{font-weight:700;font-size:14px;padding:0 4px}.bt-f .bt-o{display:flex;flex-wrap:wrap;gap:6px}.bt-f label{display:inline-flex;gap:6px;align-items:center;font-size:13.5px;background:#FBF6EE;border:1px solid #E9DFD0;border-radius:999px;padding:5px 10px;cursor:pointer}.bt-f select{padding:9px 10px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;background:#fff}.bt-f small{color:#6B5F56}

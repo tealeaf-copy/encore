@@ -147,7 +147,7 @@ test("Brands book experience hosts: browse by category, describe it to Potto, re
   const m4 = await (await post("/api/public/match", { brief: "a bouquet workshop for 200 people in New York" })).json(); assert.ok(!m4.matches.some((x) => x.name === "Bouquet workshop"), "never offered to a group far bigger than it takes");
   const expId = food.find((x) => x.host.handle === "banhmi-cart").id;
   const r = await (await post("/api/public/book/banhmi-cart", { name: "Dana", company: "Loop", email: "dana@loop.example", experienceId: expId, people: 60, when: "March 12", where: "Our office in SoHo", message: "Lunar New Year lunch for the team, something fun and not catered." })).json();
-  assert.ok(r.ok); const [, id, t] = r.status.match(/booking\/([a-f0-9]+)\?t=([a-f0-9]+)/);
+  assert.ok(r.ok); const [, id, t] = r.link.match(/booking\/([a-f0-9]+)\?t=([a-f0-9]+)/);
   assert.equal((await get(`/api/public/booking/${id}?t=bad`)).status, 403);
   let bk = (await (await get(`/api/public/booking/${id}?t=${t}`)).json()).booking; assert.equal(bk.status, "requested"); assert.equal(bk.email, undefined);
   assert.equal((await post(`/api/public/booking/${id}/accept`, { t })).status, 400, "nothing to accept yet");

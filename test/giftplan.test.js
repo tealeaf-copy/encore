@@ -148,7 +148,7 @@ test("No date: the timeline uses its own offsets (never '999 days'), and a late 
     for (const t of p.playbook.timeline) assert.doesNotMatch(t.when, /\b\d{3,} days\b/, `${kind}: ${t.when}`);
   }
   const soon = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), q = planFromInput(readBody({ company: "Exa", moment: "Launching Snapshot", kind: "b2b", audience: "40 customers", budget: "$60", date: soon }));
-  assert.ok(q.timing?.late); assert.match(q.timing.text, /is too soon for handmade\.$/); assert.doesNotMatch(q.timing.text, /needed ordering/);
+  assert.ok(q.timing?.late); assert.match(q.timing.text, /^Handmade needs till [A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}\.$/); assert.doesNotMatch(q.timing.text, /needed ordering/);
   // a late new-hire welcome: the hint says the earliest date is after day one without repeating it
   const w = planFromInput(readBody({ company: "Orbit Labs", moment: "Remote new-hire welcome", kind: "employees", audience: "40 new hires", budget: "$60", date: soon }));
   assert.ok(w.timing?.afterStart); assert.equal(w.timing.hint, "That's after day one. Send a card now and the gift after.");

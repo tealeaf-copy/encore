@@ -18,7 +18,7 @@ test("A collab cover made on /covers goes on the booking's guest page, only with
   const pr = await (await post("/api/host/profile", { handle: "second-pour", name: "Second Pour", experiences: [{ name: "Coffee pop-up", min: 10, max: 80, price: "$900 flat", category: "dining" }] }, hc)).json();
   const day = new Date(Date.now() + 9 * 864e5).toISOString().slice(0, 10);
   const bk = await (await post("/api/public/book/second-pour", { name: "Ava", company: "Northwind", email: "ava.c@northwind.example", experienceId: pr.host.experiences[0].id, people: 40, date: day, time: "08:00", when: "soon", where: "Valencia St", message: "Launch week coffee pop-up for customers." })).json();
-  const id = bk.id, t = new URL(bk.status).searchParams.get("t");
+  const id = bk.id, t = new URL(bk.link).searchParams.get("t");
   const up = (tok, body = PNG, ct = "image/png") => fetch(`${srv.base}/api/public/booking/${id}/cover?t=${tok}`, { method: "POST", headers: { "content-type": ct }, body });
   assert.equal((await up(t)).status, 404, "needs a guest page first");
   const eid = (await (await post(`/api/public/booking/${id}/event`, { t, title: "Sip n' Ship" })).json()).link.split("rsvp-")[1];

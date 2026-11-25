@@ -124,7 +124,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
         <label class="f">Email or phone <small id="ctH">${ask ? `So you hear when ${esc(first)} lets you in.` : payless(e) ? `So ${esc(first)} can send you a way to pay.` : `Optional. For reminders from ${esc(first)}.`}</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"${ask || payless(e) ? " required" : ""}></label>
         ${foody ? `<label class="f" id="dtL">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
-        ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc(priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
+        ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc((typeof srPrice === "function" && srPrice(e)) || priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
     // ---------- series: the when line says it repeats, the price line says what the course or pass costs ----------

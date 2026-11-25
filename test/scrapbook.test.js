@@ -7,7 +7,7 @@ test("Reads an event page's own description of itself (schema.org and Open Graph
   const html = `<html><head><title>x</title><meta property="og:title" content="Fallback title"><meta property="og:image" content="https://images.example-cdn.com/c.jpg">
   <script type="application/ld+json">{"@type":"SocialEvent","name":"Dumpling Night &amp; Friends","startDate":"2025-03-14T19:00:00-04:00","location":{"name":"Mai's apartment","address":{"addressLocality":"Brooklyn","addressRegion":"NY"}},"description":"We fold 300 dumplings"}</script></head></html>`;
   const e = parseEventPage(html);
-  assert.equal(e.title, "Dumpling Night &amp; Friends".replace("&amp;", "&amp;")); assert.equal(e.date, "2025-03-14"); assert.equal(e.place, "Mai's apartment"); assert.equal(e.image, "https://images.example-cdn.com/c.jpg");
+  assert.equal(e.title, "Dumpling Night & Friends"); assert.equal(e.date, "2025-03-14"); assert.equal(e.place, "Brooklyn, NY", "a home never shows, only the area"); assert.equal(e.image, "https://images.example-cdn.com/c.jpg");
   const og = parseEventPage(`<meta property="og:title" content="Matcha Morning"><meta property="og:description" content="Whisking in Bushwick">`); assert.equal(og.title, "Matcha Morning"); assert.equal(og.date, "");
 });
 
@@ -24,7 +24,7 @@ test("Hosts add past gatherings by hand or from a CSV; the scrapbook is public, 
   const su = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Mai Tran", email: "mai.scrap@example.com", password: "long-password-1", mode: "friends" }) });
   const c = su.headers.get("set-cookie").split(";")[0], H = { ...J, cookie: c };
   await fetch(srv.base + "/api/host/profile", { method: "POST", headers: H, body: JSON.stringify({ handle: "mai-scrap", name: "Mai's Kitchen" }) });
-  const r = await (await fetch(srv.base + "/api/host/scrapbook/import", { method: "POST", headers: H, body: JSON.stringify({ links: ["https://example.com/my-party"], rows: [{ title: "Lunar New Year potluck", date: "Feb 8, 2025", place: "Queens", guests: 22 }], item: { title: "First supper club <b>", date: "2024-10-05", note: "Burned the rice. Nobody minded." } }) })).json();
+  const r = await (await fetch(srv.base + "/api/host/scrapbook/import", { method: "POST", headers: H, body: JSON.stringify({ links: ["http://localhost/my-party"], rows: [{ title: "Lunar New Year potluck", date: "Feb 8, 2025", place: "Queens", guests: 22 }], item: { title: "First supper club <b>", date: "2024-10-05", note: "Burned the rice. Nobody minded." } }) })).json();
   assert.equal(r.added.length, 2); assert.equal(r.skipped.length, 1, "a link from another site is skipped");
   const pub = await (await fetch(srv.base + "/api/public/host/mai-scrap/scrapbook")).json();
   assert.deepEqual(pub.items.map((x) => x.title), ["Lunar New Year potluck", "First supper club"]); assert.equal(pub.items[0].date, "2025-02-08"); assert.equal(pub.items[0].guests, 22);

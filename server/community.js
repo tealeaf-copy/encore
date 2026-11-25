@@ -145,8 +145,16 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
   let showcaseCache = null;
   function showcaseAll() { if (showcaseCache) return showcaseCache; const out = new Map();
-    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })) }); } catch {} } } catch {}
+    try { for (const file of JSON.parse(fs.readFileSync(path.join(PRESETS, "showcase.json"), "utf8"))) { if (!/^[a-z0-9-]{1,40}$/.test(file)) continue; try { const P = JSON.parse(fs.readFileSync(path.join(PRESETS, file + ".json"), "utf8")); const handle = String(P.handle || file).toLowerCase(); out.set(handle, { ...P, handle, showcase: true, claim: "/signup?mode=friends&preset=" + file, experiences: (P.experiences || []).map((x, i) => ({ id: "x" + i, ...x })), gifts: (P.gifts || []).map((g, i) => ({ id: "g" + i, ...g })), past: undefined, scrapbook: showcasePast(P.past) }); } catch {} } } catch {}
     return (showcaseCache = out); }
+  // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
+  function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+    return (Array.isArray(L) ? L : []).slice(0, 60).map((x, i) => { let link = ""; try { const u = new URL(String(x?.link || "")); if (u.protocol === "https:") link = u.href; } catch {}
+      const host = link ? new URL(link).hostname : "", source = /partiful/i.test(host) ? "Partiful" : /lu\.ma|luma\.com/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : link ? "Web" : "";
+      return { id: "p" + i, title: s(x?.title, 140), date: /^\d{4}-\d{2}-\d{2}$/.test(x?.date || "") ? x.date : "", time: s(x?.time, 40), place: s(x?.place, 120), note: s(x?.note, 400), about: s(x?.about ?? x?.description, 600),
+        cover: /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(x?.cover || "") ? x.cover : "", link, source, site: source === "Web" ? host.replace(/^www\./, "") : "" }; }).filter((x) => x.title); }
+  /** The prepared page behind a handle, claimed or not (a claimed page's scrapbook starts from it). */
+  function showcasePreset(handle) { return showcaseAll().get(String(handle || "").toLowerCase()) || null; }
   function showcaseOf(handle) { const h = String(handle || "").toLowerCase(); return wsOfHandle(h) ? null : showcaseAll().get(h) || null; }
   // what a page still needs before Discover lists it (empty when it's ready)
   function pageGaps(h) { if (!h?.handle) return ["a page"]; const out = [];
@@ -172,7 +180,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const ready = !pageGaps(h).length;
       if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
-    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), showcase: true, followers: 0, upcoming: 0, hosted: 0 });
+    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, showcase: true, followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
     { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }
@@ -239,7 +247,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }
   function waitlist() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
   function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
-  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, addWaitlist, waitlist, sys };
+  return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, showcasePreset, addWaitlist, waitlist, sys };
 }
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {

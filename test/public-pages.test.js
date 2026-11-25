@@ -31,8 +31,8 @@ test("a friend's invite never shows the brands link", () => {
 
 test("the public scrapbook speaks to visitors, not as if they were the host", () => {
   const js = read("public/scrapbook.js");
-  assert.match(js, /mine \? \(all\.length \? "Every event you've hosted\."/);
-  assert.match(js, /`Past events/);
+  assert.match(js, /mine \? \(all\.length \? "Your scrapbook\. Every event you've hosted/);
+  assert.match(js, /<h2>Past events<\/h2>/); assert.match(js, /: first \? `From \$\{esc\(poss\(first\)\)\} scrapbook\.`/, "visitors read whose scrapbook it is");
   assert.doesNotMatch(js, /font-style:italic/);
 });
 

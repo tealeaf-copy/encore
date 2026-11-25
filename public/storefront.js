@@ -97,7 +97,10 @@
       if (!friends) proofEditor(pane.querySelector("#spProof"));
       try { window.EncoreSupport?.mount(pane.querySelector("#spSupport"), mine); window.EncoreSupport?.mountName(pane.querySelector("#spName")); } catch {}
       pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
-      pane.querySelector("#sp-copy").onclick = () => { navigator.clipboard?.writeText(`${location.origin}/@${h.handle}`); pane.querySelector("#sp-copy").textContent = "Link copied."; };
+      pane.querySelector("#sp-copy").onclick = async () => { const b = pane.querySelector("#sp-copy"), link = `${location.origin}/@${h.handle}`;
+        // a browser can refuse the clipboard: then show the link, selected, so it can be copied by hand
+        try { if (!navigator.clipboard?.writeText) throw 0; await navigator.clipboard.writeText(link); b.textContent = "Link copied."; }
+        catch { let f = pane.querySelector("#sp-link"); if (!f) { f = document.createElement("input"); f.id = "sp-link"; f.readOnly = true; f.value = link; f.setAttribute("aria-label", "Your page link"); f.style.cssText = "width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;border:1px solid #DCCFBE;border-radius:10px;font:inherit"; b.after(f); } f.focus(); f.select(); b.textContent = "Copy the link below"; } };
       pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; if (b.dataset.k === "avatarArt") st.theme.avatarUrl = ""; live(); draw(); }));
       pane.querySelectorAll("[data-sec]").forEach((c) => (c.onchange = () => { st.sections[c.dataset.sec] = c.checked; live(); }));
       pane.querySelector("#sp-tag").oninput = (e) => { st.tagline = e.target.value; live(); };

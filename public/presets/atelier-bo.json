@@ -66,5 +66,27 @@
    ],
    "setup": "A table and access to power for the coffee kettle."
   }
+ ],
+ "past": [
+  {
+   "title": "Bánh bò (Pandan Honeycomb Cake) Pop Up",
+   "date": "2026-07-26",
+   "time": "Sun · 12 to 3pm",
+   "place": "Chelsea, New York",
+   "note": "Our first pop-up.",
+   "about": "Bánh bò is a Vietnamese honeycomb-textured pandan cake with a bouncy, mochi-like texture. With Vietnamese coffee and tea on the side. Drop in, drop out, from 12 to 3pm, with slices held for anyone who pre-ordered.",
+   "cover": "/presets/atelier-bo-banh-bo-popup.jpg",
+   "link": "https://partiful.com/e/YA3OFsfRcKteRRHZYM5b"
+  },
+  {
+   "title": "Design your life: what's stopping you",
+   "date": "2026-07-15",
+   "time": "Wed · 5:30 to 8pm",
+   "place": "Chelsea, New York",
+   "note": "Apt Cafe Club, episode 1.",
+   "about": "A cozy evening for curious humans who are still a work in progress. Questions that keep us up til 2am, fresh tea, Asian snacks and bánh bò. The very first episode of our Apt Cafe Series.",
+   "cover": "/presets/atelier-bo-apt-cafe-club.jpg",
+   "link": "https://partiful.com/e/j6ooihgpqGYhHFCI7zAw"
+  }
  ]
 }

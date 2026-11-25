@@ -302,8 +302,7 @@ export const PUBLIC_TOOLS = [
 ].map((t) => ({ ...t, outputSchema: OUT[t.name] }));
 
 // ---- leaderboard (host awards work): the MCP tool for server/leaderboard.js, and formatOf shared with it ----
-export { formatOf };
-PUBLIC_TOOLS.push({ name: "get_leaderboard", description: "Host leaderboards: who guests loved most in a city, per kind of event (supper, movement, workshop, popup, talks, community, or all), this month (last 30 days) or all time. Ranked by verified kudos, the share who'd go again (3+ kudos), different guests who came and a small capped bonus per event. Only real hosts; a board shows once 3 hosts are on it (qualified: false otherwise). Returns { data: { city, category, period, qualified, entries: [{ rank, host, score, why, badges, streak, movement }] }, boards, rules_url }.",
+PUBLIC_TOOLS.push({ outputSchema: { type: "object", properties: { qualified: { type: "boolean" }, entries: { type: "array" } } }, name: "get_leaderboard", description: "Host leaderboards: who guests loved most in a city, per kind of event (supper, movement, workshop, popup, talks, community, or all), this month (last 30 days) or all time. Ranked by verified kudos, the share who'd go again (3+ kudos), different guests who came and a small capped bonus per event. Only real hosts; a board shows once 3 hosts are on it (qualified: false otherwise). Returns { data: { city, category, period, qualified, entries: [{ rank, host, score, why, badges, streak, movement }] }, boards, rules_url }.",
   inputSchema: { type: "object", properties: { city: str("A city, e.g. Brooklyn. Leave out for the city with the most going on"), category: str("all (default), supper, movement, workshop, popup, talks or community", { enum: ["all", "supper", "movement", "workshop", "popup", "talks", "community"] }), period: str("month (last 30 days, default) or all", { enum: ["month", "all"] }) } }, annotations: { readOnlyHint: true } });
 // ---- end leaderboard ----
 

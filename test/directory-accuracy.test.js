@@ -156,7 +156,7 @@ test("class is its own format: filter, facets, MCP", async () => {
   const F = await get("/api/v1/formats?status=upcoming"); assert.ok(F.formats.find((f) => f.format === "class").count >= 4);
   const se = PUBLIC_TOOLS.find((t) => t.name === "search_events").inputSchema.properties.format;
   assert.match(se.description, /class = a class or course/); assert.ok(se.examples.includes("class") && se.examples.includes("workshop"));
-  const html = fs.readFileSync(new URL("../public/events.html", import.meta.url), "utf8"); assert.match(html, /<option value="">Any kind<\/option>/); assert.match(html, /class: "💃"/);
+  const html = fs.readFileSync(new URL("../public/events.html", import.meta.url), "utf8"); assert.match(html, /<option value="">Any kind<\/option>/); assert.match(html, /class: "🎓"/);
 });
 
 test("search: any of the words, best first, filler words dropped", async () => {

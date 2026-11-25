@@ -7,7 +7,7 @@ import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS, claimEvent } fro
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 
-export const CATEGORIES = [["food", "Food carts and pop-ups"], ["dining", "Chef's tables and tasting menus"], ["movement", "Runs, hikes and movement"], ["workshop", "Hands-on workshops"], ["drinks", "Coffee, tea and drinks"], ["culture", "Music, art and culture"]];
+export const CATEGORIES = [["food", "Food & catering"], ["dining", "Dinners & tables"], ["movement", "Movement"], ["workshop", "Workshops"], ["drinks", "Drinks & coffee"], ["culture", "Culture & art"]];
 const CAT_WORDS = { food: ["cart", "pop-up", "popup", "street food", "banh mi", "bánh mì", "food truck", "stall", "snack", "lunch", "catering", "food"], dining: ["dinner", "tasting", "omakase", "chef", "supper", "fine dining", "menu"], movement: ["run", "hike", "yoga", "walk", "bike", "climb", "active", "wellness"], workshop: ["workshop", "flower", "bouquet", "pottery", "class", "craft", "make", "candle", "ceramic"], drinks: ["coffee", "tea", "matcha", "cocktail", "wine", "cupping"], culture: ["music", "dj", "game", "trivia", "karaoke", "film", "art", "portrait", "drawing", "illustration", "painting", "sketch", "calligraphy"] };
 // a host's own category word that isn't one of ours maps to the nearest one (a portrait artist is culture, never "drinks" because the desc says "cocktail hour")
 const CAT_ALIAS = { art: "culture", arts: "culture", music: "culture", games: "culture", coffee: "drinks", tea: "drinks", run: "movement", fitness: "movement", wellness: "movement", class: "workshop", craft: "workshop", dinner: "dining", supper: "dining" };
@@ -76,14 +76,14 @@ export function mountMarket(app, { store, small, currentUser, publicOrigin, C, X
     L.sort((a, b) => b.trust.kudos * 2 + b.trust.guests + b.trust.booked * 5 - (a.trust.kudos * 2 + a.trust.guests + a.trust.booked * 5)); res.json({ experiences: L.slice(0, 60) }); });
   // "Tell Potto what you're planning": a ranked shortlist with reasons
   app.post("/api/public/match", small, (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const text = clean(req.body?.brief, 600); if (text.length < 6) return bad(res, "Tell Potto a little about the event.");
-    const B = parseBrief(text), city = cityAlias(lc(B.city || req.body?.city || "")), cat0 = catalog(), knownCity = !!city && cat0.some((x) => lc(`${x.host.city} ${x.host.hood}`).includes(city));
+    const B = parseBrief(text), city = cityAlias(lc(B.city || req.body?.city || "")), cat0 = catalog(), local = (x) => cityAlias(lc(x.host.city)) === city || lc(`${x.host.city} ${x.host.hood}`).includes(city), knownCity = !!city && cat0.some(local);
     const L0 = cat0.map((x) => { let s = 0; const why = []; const blob = lc(`${x.name} ${x.desc} ${x.host.tagline} ${(x.includes || []).join(" ")}`);
       if (B.cats.includes(x.category)) { s += 4; why.push(CATEGORIES.find(([k]) => k === x.category)[1].toLowerCase()); }
       const hitWords = B.words.filter((w) => hasWord(blob, w)); if (hitWords.length) { s += Math.min(4, hitWords.length * 1.5); why.push(`"${hitWords.slice(0, 2).join(", ")}"`); }
-      if (B.people) { if (B.people >= x.min && B.people <= x.max) { s += 2; why.push(`fits ${B.people}`); } else if (B.people > x.max * 1.2 || B.people < x.min * 0.6) s -= 6; }
-      if (city && knownCity) { if (lc(`${x.host.city} ${x.host.hood}`).includes(city)) { s += 2; why.push(`in ${x.host.city}`); } else if (!x.travels) s -= 4; }
+      if (B.people) { if (B.people >= x.min && B.people <= x.max) { s += 2; why.push(`fits ${B.people}`); } else if (B.people > x.max * 1.2 || B.people < x.min * 0.6) return null; }
+      if (city && knownCity) { if (local(x)) { s += 2; why.push(`in ${x.host.city}`); } else return null; }
       if (B.budget && B.people && x.perHead) { const est = x.perHead * B.people; if (est <= B.budget * 1.1) { s += 1; why.push(`about $${Math.round(est).toLocaleString("en-US")} for ${B.people}`); } else s -= 1; }
-      s += Math.min(2, x.trust.kudos * 0.3 + x.trust.booked * 0.5); return { ...x, score: s, why, on: B.cats.includes(x.category) || hitWords.length > 0 }; }).filter((x) => x.score > 1).sort((a, b) => b.score - a.score);
+      s += Math.min(2, x.trust.kudos * 0.3 + x.trust.booked * 0.5); return { ...x, score: s, why, on: B.cats.includes(x.category) || hitWords.length > 0 }; }).filter((x) => x && x.score > 1 && x.why.length).sort((a, b) => b.score - a.score);
     const L = (L0.some((x) => x.on) ? L0.filter((x) => x.on) : L0).slice(0, 6);
     const away = !!city && !knownCity, M = away ? L.filter((x) => x.travels) : L;
     res.json({ brief: { people: B.people, budget: B.budget, city: knownCity ? B.city : "", cityAsked: B.city || "", noLocal: away, when: B.when, where: B.where, categories: B.cats }, matches: M }); });

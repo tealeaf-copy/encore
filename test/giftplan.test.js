@@ -34,7 +34,7 @@ test("The planner honours head count, groups and the per-person cap, and never i
   // card prices match the budget table
   for (const L of p.playbook.budgetLines) assert.ok(p.gifts.some((g) => g.name === L.gift && g.cost.allIn === n(L.each)), L.segment);
   const sum = p.playbook.budgetLines.reduce((a, x) => a + n(x.total), 0); assert.ok(Math.abs(sum - n(p.playbook.budget.total.split(" for ")[0])) < 2);
-  assert.match(p.playbook.budget.fee, /Pottery Lab service fee: shown on your quote before you confirm/); assert.doesNotMatch(textOf(p), /\d+\s?%\s*(service )?fee/i);
+  assert.match(p.playbook.budget.fee, /Pottery Lab's service fee is shown on your quote before you confirm\./); assert.doesNotMatch(textOf(p), /\d+\s?%\s*(service )?fee/i);
   // real dates, no stale seasons or template leftovers
   assert.match(p.playbook.timeline[0].when, /Feb/); assert.doesNotMatch(textOf(p), /\bQ[1-4]\b|by June|📸|API key|on one task/);
   assert.ok(/\n\n/.test(p.playbook.message.email), "the email keeps its line breaks");
@@ -50,7 +50,7 @@ test("Non-software audiences never see SaaS words, and get their own playbook la
   assert.equal(cafes.kind, "retail"); assert.equal(cafes.audience.segments.length, 1); assert.equal(cafes.audience.segments[0].count, "60");
   assert.doesNotMatch(textOf(cafes), SAAS); assert.match(cafes.playbook.finance.expect, /reorder/); assert.ok(!cafes.gifts.some((g) => /coffee/i.test(g.name)), "no coffee for a coffee roaster");
   const hires = planFromInput(readBody({ company: "Orbit", moment: "Remote new-hire welcome", audience: "40 new hires", people: "40", budget: "$60", date: "2027-01-11" }));
-  assert.equal(hires.kind, "employees"); assert.equal(hires.playbook.brief.name, "Internal comms brief"); assert.doesNotMatch(textOf(hires), SAAS); assert.match(hires.playbook.prove.holdout, /No holdout/);
+  assert.equal(hires.kind, "employees"); assert.equal(hires.playbook.brief.name, "Team brief"); assert.doesNotMatch(textOf(hires), SAAS); assert.match(hires.playbook.prove.holdout, /No holdout/);
   assert.ok(hires.gifts.every((g) => g.cost.allIn <= 60));
   const talks = planFromInput(readBody({ company: "Patchwork", moment: "Thank-you to the speakers at Patchwork Conf", kind: "community", audience: "18 speakers, 6 co-organizers", budget: "$50", date: "2020-01-01" }));
   assert.deepEqual(talks.audience.segments.map((s) => s.role), ["speaker", "organizer"]); assert.doesNotMatch(textOf(talks), SAAS);
@@ -131,4 +131,13 @@ test("A target-account list stays with the marketer who made the plan; a shared 
   const mine = await (await fetch(srv.base + "/api/public/giftplan/" + r.id + "?k=" + r.key)).json();
   assert.deepEqual(mine.input.accounts, ["Globex", "Initech", "Umbrella"]); assert.match(mine.crm, /Globex/); assert.equal(mine.crm.trim().split("\r\n").length, 4);
   assert.ok(mine.plan.playbook.prove.cfo, "a summary for finance");
+});
+
+test("A welcome for two groups of new staff: welcome notes, no public-sector gate, ships before it arrives", () => {
+  const p = planFromInput(readBody({ company: "Orbit Labs", moment: "Welcoming our January hires", kind: "employees", audience: "30 engineers, 10 sales", budget: "$45", date: "2027-01-11" }));
+  assert.equal(p.kind, "employees"); assert.match(p.playbook.goal, /^Every one of the 40 people feels welcome/);
+  assert.ok(p.playbook.message.notes.every((x) => /^Welcome to Orbit Labs/.test(x.note)), "welcome notes, not thank-you notes");
+  assert.ok(!p.playbook.approvals.some((a) => /public-sector/.test(a.gate)), "employees aren't public-sector recipients");
+  const T = p.playbook.timeline, ship = T.findIndex((t) => t.step === "Makers ship"), arrive = T.findIndex((t) => t.step === "Gifts arrive at home");
+  assert.ok(ship >= 0 && arrive > ship, "gifts arrive after they ship");
 });

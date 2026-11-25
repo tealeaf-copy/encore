@@ -17,13 +17,13 @@
   /** The fieldset brands fill in when they book. */
   function fieldset() { style(); return `<fieldset class="bt-f"><legend>Content from the host (optional)</legend><div class="bt-o">${DELIV.map(([k, l]) => `<label><input type="checkbox" name="bt-d" value="${k}"> ${esc(l)}</label>`).join("")}</div>
     <label style="background:none;border:0;padding:0;display:grid;gap:4px;border-radius:0">How you'll use photos and posts<select name="bt-u">${USAGE.map(([k, l]) => `<option value="${k}">${esc(l)}${/^(paid|perpetual)$/.test(k) ? " (priced separately)" : ""}</option>`).join("")}</select></label>
-    <small>The host quotes for exactly this. Anything else is a change you both agree to first.</small></fieldset>`; }
+    <small>The quote covers exactly this. Changes need both of you to agree.</small></fieldset>`; }
   /** Read it back from a form, and take its fields out of the plain form data. */
   function read(form, data) { const fd = new FormData(form), d = fd.getAll("bt-d").filter((k) => DELIV.some((x) => x[0] === k)), u = String(fd.get("bt-u") || "organic30"); if (data) { delete data["bt-d"]; delete data["bt-u"]; } return { deliverables: d, usage: USAGE.some((x) => x[0] === u) ? u : "organic30" }; }
   /** The agreement both sides see on the booking page. */
   function card(scope, hostName, quote) { style(); const s = scope || { deliverables: [], usage: "organic30" }, host = esc(String(hostName || "The host").replace(/\.$/, "")), D = DELIV.filter(([k]) => (s.deliverables || []).includes(k));
     const usage = USAGE.find(([k]) => k === s.usage)?.[1] || USAGE[0][1];
-    return `<div class="bt-card" id="agreement"><h3>The agreement</h3><small style="color:#6B5F56">Standard terms, so there's nothing to negotiate.</small>
+    return `<div class="bt-card" id="agreement"><h3>The agreement</h3><small style="color:#6B5F56">Standard terms for every booking.</small>
       <div class="bt-g"><div><b class="k">Included</b><ul><li>The experience as listed, on the agreed date</li>${D.map(([, l]) => `<li>${esc(l.replace(/^\S+\s/, ""))}</li>`).join("")}<li>One round of changes on anything delivered</li></ul></div>
       <div><b class="k">Not included</b><ul>${EXCLUDED.filter((x) => !(s.usage === "paid" && /^Paid ads/.test(x))).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
       <div><b class="k">Usage</b><ul><li>${esc(usage)}</li><li>Starts once the balance is paid</li><li>Credit ${host} when you post</li></ul></div></div>

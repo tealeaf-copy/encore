@@ -143,6 +143,8 @@ test("Brands book experience hosts: browse by category, describe it to Potto, re
   const m = await (await post("/api/public/match", { brief: "Vietnamese street food for 60 people at our office in New York, about $2,000" })).json();
   assert.equal(m.brief.people, 60); assert.equal(m.brief.budget, 2000); assert.equal(m.matches[0].host.handle, "banhmi-cart", JSON.stringify(m.matches.map((x) => x.name)));
   const m2 = await (await post("/api/public/match", { brief: "a flower workshop for our team of 20" })).json(); assert.equal(m2.matches[0].name, "Bouquet workshop");
+  const m3 = await (await post("/api/public/match", { brief: "zzqx florp blarg" })).json(); assert.equal(m3.matches.length, 0, "a brief nothing matches gets the no-match state");
+  const m4 = await (await post("/api/public/match", { brief: "a bouquet workshop for 200 people in New York" })).json(); assert.ok(!m4.matches.some((x) => x.name === "Bouquet workshop"), "never offered to a group far bigger than it takes");
   const expId = food.find((x) => x.host.handle === "banhmi-cart").id;
   const r = await (await post("/api/public/book/banhmi-cart", { name: "Dana", company: "Loop", email: "dana@loop.example", experienceId: expId, people: 60, when: "March 12", where: "Our office in SoHo", message: "Lunar New Year lunch for the team, something fun and not catered." })).json();
   assert.ok(r.ok); const [, id, t] = r.status.match(/booking\/([a-f0-9]+)\?t=([a-f0-9]+)/);

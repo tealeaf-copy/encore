@@ -110,6 +110,9 @@
       for (let y = H - 4; y > H * 0.5; y -= 6) { const els = document.elementsFromPoint(x, y).filter((e) => e !== host && !host.contains(e)); let hit = false;
         for (const e of els) { const f = fixedish(e); if (!f) continue; const r = f.getBoundingClientRect(); if (r.width >= W * 0.9 && r.height >= H * 0.9 && e === f) continue; hit = true; break; }
         if (hit) { top = Math.min(top, y); gap = 0; } else if (++gap > 3 && top < H) break; } }
+    // also the known bottom-right pieces by name (tab bars, Edit page / Shop buttons, sticky reply bars), even with gaps between them
+    try { for (const e of document.querySelectorAll('.es-tabs,nav.tabs,.store-fab,.shop-fab,.own-fab,#gBar,#gStick,[class*="-fab"]')) { if (host.contains(e)) continue; const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+      if (!r.width || !r.height || cs.visibility === "hidden" || cs.display === "none") continue; if (r.right > W - 150 && r.bottom > H * 0.5 && r.top < H) top = Math.min(top, r.top); } } catch {}
     return H - top;
   }
   function place() {

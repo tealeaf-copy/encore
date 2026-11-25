@@ -273,6 +273,9 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
+  // review round 6: prices saved as a bare number ("55") read "$55" on invites and pages. Once, then on every save (server/looks.js).
+  try { if (!store.get("system/mig-dollar-price")) { let n = 0; for (const ws of allWorkspaceIds()) { const SS = scopeStore(store, ws); for (const d of SS.list("events") || []) { const e = d.data || {}, p = dollarPrice(e.price);
+      if (e.price !== "chip" && p !== e.price) { SS.set("events/" + String(d.id).split("/").pop(), { ...e, price: p }); n++; } } } store.set("system/mig-dollar-price", { at: Date.now(), n }); } } catch (err) { console.warn("dollar price", err?.message); }
   // owner request: Tuongvan's page (/@tuongvan) keeps the prepared name and tagline; the prepared bio is removed (owner didn't want it) and never put back
   try { const ws = C.wsOfHandle("tuongvan"), W = ws && getWorkspace(ws), P = C.showcasePreset && C.showcasePreset("tuongvan");
     if (ws) { const SS = scopeStore(store, ws), cur = SS.get("scrapbookmeta/sections")?.data; if (cur?.list?.some((x) => x.name === "Executive dinners that move deals")) SS.set("scrapbookmeta/sections", { ...cur, list: cur.list.map((x) => x.name === "Executive dinners that move deals" ? { ...x, name: "Featured exec programs" } : x), at: Date.now() }); }

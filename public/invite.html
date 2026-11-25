@@ -29,7 +29,7 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
 .stick a{flex:1;justify-content:center;background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;text-decoration:none}
 .full{display:block;text-align:center;margin:18px 0 0;font-weight:600}
 .consent{margin:0;font-size:13px;line-height:1.45;color:var(--smoke);text-align:center}.consent a{color:inherit}
-.legal{max-width:520px;margin:0 auto;padding:8px 16px 28px;text-align:center;font-size:13px;color:var(--smoke)}.legal a{color:inherit;margin:0 6px}
+.legal{max-width:520px;margin:0 auto;padding:8px 16px 28px;text-align:center;font-size:13px;color:var(--smoke)}.legal a{color:inherit;margin:0 6px}body.lk-on .legal,body.lk-on .consent{color:var(--lk-soft,var(--smoke))}body.lk-on .consent a{color:inherit}
 .yourturn{text-align:center;margin:14px 0 0;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .ini{font:700 20px Fredoka,system-ui;color:var(--ink)}
@@ -71,7 +71,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
     if (+e.groupPrice > 0 && +e.groupSize > 1) return `${amt(e.groupPrice)} for ${+e.groupSize}`;
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
-    return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
+    return /a person|per person|each/i.test(p) ? p : `${/^\d/.test(p) ? amt(p) : p} a person`; };
   // review round 3 (paid spots): the Pay button carries the amount and a note, the way the full invite and the shop do
   // (payLink in server/shop.js): Venmo gets amount and "Name · Title", PayPal.me and Cash App get the amount, others pass through.
   const payLinkOf = (url, price, note) => { const u = httpsUrl(url); if (!u) return ""; const n = parseFloat(String(price || "").replace(/[^\d.]/g, "")); if (!(n > 0)) return u; const cents = Math.round(n * 100), amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;

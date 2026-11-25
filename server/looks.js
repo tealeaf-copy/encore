@@ -31,8 +31,11 @@ export function cleanLook(v) {
   return o;
 }
 /** An event write: its look cleaned, and no dotted "look.x" keys around the check. */
+// a price typed as a bare number ("55") reads "$55" everywhere
+export const dollarPrice = (v) => (typeof v === "string" && /^\s*\d{1,5}(\.\d{1,2})?\s*$/.test(v) ? "$" + v.trim() : typeof v === "number" && v > 0 ? "$" + v : v);
 export function withCleanLook(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  if ("price" in body && body.price !== "chip") { const d = dollarPrice(body.price); if (d !== body.price) body = { ...body, price: d }; }
   const hasDotted = Object.keys(body).some((k) => k.startsWith("look."));
   if (!("look" in body) && !hasDotted) return body;
   const out = { ...body };

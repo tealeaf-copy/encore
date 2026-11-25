@@ -63,6 +63,23 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
   const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
   const priceText = (e) => { const p = String(e.price).trim(); return /a person|per person|each/i.test(p) ? p : `${p} a person`; };
   const bringOf = (e) => (Array.isArray(e.bring) ? e.bring : e.bring ? [e.bring] : []).map((x) => String(x || "").trim()).filter((x) => x && !/^yourself$/i.test(x)).slice(0, 12);
+  // ---------- series: a class that repeats, a multi-week course, a class pass (index.html's seriesEvery/seriesSpan/seriesPrice/seriesRRule) ----------
+  const SR_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], SR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const srDate = (s) => { const x = new Date(String(s || "") + "T12:00:00"); return isNaN(x) ? null : x; }, srMD = (x) => `${SR_MON[x.getMonth()]} ${x.getDate()}`;
+  const srNth = (x) => { const n = Math.ceil(x.getDate() / 7), last = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 7, 12).getMonth() !== x.getMonth() && n >= 4; return last ? -1 : n; };
+  const srRep = (e) => e.repeat || (+e.sessions > 1 ? "weekly" : "");
+  // "Every Tue", "Every other Tue", "First Tue of each month"
+  const srEvery = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const day = SR_DAY[x.getDay()].slice(0, 3); if (r === "monthly") { const k = srNth(x), w = k < 0 ? "Last" : ["First", "Second", "Third", "Fourth"][k - 1]; return `${w} ${day} of each month`; } return r === "biweekly" ? `Every other ${day}` : r === "weekly" ? `Every ${day}` : ""; };
+  // "6 Wednesdays, Jan 6 to Feb 10"
+  const srSpan = (e) => { const x = srDate(e.date), n = +e.sessions || 0; if (!x || n < 2) return ""; const y = new Date(x); y.setDate(y.getDate() + (n - 1) * (e.repeat === "biweekly" ? 14 : 7)); return `${n} ${SR_DAY[x.getDay()]}s, ${srMD(x)} to ${srMD(y)}`; };
+  // "Every Tue · 7pm", "6 Wednesdays, Jan 6 to Feb 10 · 7pm"; "" for a one-off
+  const srWhen = (e) => { const head = srSpan(e) || srEvery(e); if (!head) return ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [head, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
+  // "$180 for all 6", "$20 a class, or $70 for 4"; "" when there's nothing series-shaped to say
+  const srPrice = (e) => { const amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : ""; }, p = e.price && e.price !== "chip" ? amt(e.price) : "", n = +e.sessions || 0, pp = +e.passPrice || 0, pc = +e.passCount || 0;
+    if (n > 1 && p) return `${p} for all ${n}`; if (pp && pc > 1) return p ? `${p} a class, or ${amt(pp)} for ${pc}` : `${amt(pp)} for ${pc} classes`; return ""; };
+  // the calendar repeat, COUNT for a course
+  const srRRule = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const BY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][x.getDay()]; const f = r === "monthly" ? `FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}` : r === "biweekly" ? "FREQ=WEEKLY;INTERVAL=2" : r === "weekly" ? "FREQ=WEEKLY" : ""; return f ? "RRULE:" + f + (+e.sessions > 1 ? `;COUNT=${+e.sessions}` : "") : ""; };
+  // ---------- end series helpers ----------
   claimed.then(() => Promise.all([fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)), fetch("/api/public/event-host/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/public/attendees/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
       // where their reply stands (and their place on the waitlist); older servers only have rsvp-status
@@ -101,6 +118,9 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
         ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc(priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
+    // ---------- series: the when line says it repeats, the price line says what the course or pass costs ----------
+    { const sw = srWhen(e), wb = $("#m .facts > div:first-child > b"); if (sw && wb) { wb.textContent = sw; if (!srSpan(e) && e.date) { const nx = document.createElement("div"); nx.className = "muted"; nx.id = "nextOne"; nx.textContent = `Next one ${when({ date: e.date })}`; wb.parentElement.after(nx); } }
+      const sp = srPrice(e), pl = $("#price"); if (sp && pl) pl.textContent = "💵 " + sp; }
     if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
@@ -156,7 +176,9 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
         if (yes && $(".going-n")) { const n = $(".going-n"), k = Math.max(0, (parseInt(n.textContent, 10) || 1) - 1); if (k) n.textContent = `${k} in`; else document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); } }
       catch { out.disabled = false; out.textContent = "Didn't go through. Tap to try again"; } };
     if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
-      const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`; }
+      const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`;
+      // series: the calendar entry repeats
+      if (cal && d && srRRule(e)) cal.href += "&recur=" + encodeURIComponent(srRRule(e)); }
   }
 })();
 </script>

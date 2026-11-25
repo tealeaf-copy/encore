@@ -10926,4 +10926,71 @@ window.p1RoomTruth=function(j,d){ try{ if(!j||!d) return j; const book=new Map((
   const ok=line=>{ const m=line.match(/^(.+?) (?:has|have) been to (\d+) or more/); if(m) return m[1].split(/,\s*| and /).every(n=>been(n.trim())>=+m[2]); if(/^\d+ of them love /.test(line)) return [...book.values()].some(p=>p.going>0); const s=line.match(/^Seat (\S+) next to (\S+?)\.?$/); if(s) return been(s[1])>0&&been(s[2])>0; return true };
   return {...j,common:(j.common||[]).filter(ok),differ:(j.differ||[]).filter(ok),pairs:(j.pairs||[]).filter(ok)} }catch{ return j } };
 
+// ==================================================================
+// Series: classes that repeat, multi-week courses and class passes.
+// Guests see "every Tuesday", "6 Wednesdays, Jan 6 to Feb 10", "$180 for all 6" and "$20 a class, or $70 for 4";
+// the calendar file repeats (RRULE); Home shows one card per series. Event fields: repeat, sessions, passPrice, passCount.
+// ==================================================================
+// ---------- series: words (pure, tested in test/series.test.js) ----------
+const SR_DAY=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"], SR_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], SR_NTH=["first","second","third","fourth"];
+// what the host typed: "6-week improv course", "8 sessions", "$70 for a 4-week pass", "$70 for 4 classes", "4-class pass for $70"
+function seriesParse(text){ const t=String(text||""), o={};
+  const wk=t.match(/\b(\d{1,2})[- ]?weeks?[- ](?:long[- ])?(?:[a-z]+[- ])?(course|series|class|workshop|program|programme|intensive|bootcamp)\b(?![- ]?(?:pass|card|pack))/i);
+  const ss=t.match(/(?<!\$\s?\d{1,5}(?:\.\d{2})?\s*(?:for|gets you|buys)\s+(?:a\s+)?)\b(\d{1,2})\s+(?:weekly\s+)?sessions\b/i);
+  const n=+(wk?.[1]||ss?.[1]||0); if(n>=2&&n<=52){ o.sessions=n; o.repeat=/\bevery other\b|\bbiweekly\b|\bfortnightly\b/i.test(t)?"biweekly":"weekly"; o.course=true }
+  const ps=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|gets you|buys)\s+(?:a\s+|an\s+)?(\d{1,2})[- ]?(?:weeks?|class(?:es)?|sessions?|lessons?|visits?)\b(?:[- ]?(?:pass|card|pack|bundle))?/i)
+    ||(m=>m&&[m[0],m[2],m[1]])(t.match(/\b(\d{1,2})[- ]?(?:week|class|session|lesson|visit)[- ]?(?:pass|card|pack|bundle)\s*(?:for|at|is|:)?\s*\$\s?(\d{1,5}(?:\.\d{2})?)/i));
+  if(ps&&+ps[2]>=2&&!(o.sessions&&+ps[2]===o.sessions&&!/pass|card|pack|bundle/i.test(ps[0]))){ o.passPrice=+ps[1]; o.passCount=+ps[2] }
+  return o }
+const srDate=s=>{ const x=new Date(String(s||"")+"T12:00:00"); return isNaN(x)?null:x };
+const srMD=x=>`${SR_MON[x.getMonth()]} ${x.getDate()}`;
+// the weekday pattern a monthly repeat keeps (nextDate's rule): first..fourth, or last
+function srNth(x){ const nth=Math.ceil(x.getDate()/7), last=new Date(x.getFullYear(),x.getMonth(),x.getDate()+7,12).getMonth()!==x.getMonth()&&nth>=4; return last?-1:nth }
+// "every Tuesday", "every other Tuesday", "the first Tuesday of each month"; short: "Every Tue", "Every other Tue", "First Tue of each month"
+function seriesEvery(d,short){ const x=srDate(d?.date), r=d?.repeat||(+d?.sessions>1?"weekly":""); if(!x||!r) return ""; const day=short?SR_DAY[x.getDay()].slice(0,3):SR_DAY[x.getDay()];
+  if(r==="monthly"){ const k=srNth(x), w=k<0?"last":SR_NTH[k-1]; return short?`${w[0].toUpperCase()+w.slice(1)} ${day} of each month`:`the ${w} ${day} of each month` }
+  const s=r==="biweekly"?`every other ${day}`:r==="weekly"?`every ${day}`:""; return short&&s?s[0].toUpperCase()+s.slice(1):s }
+// the dates of a course: "6 Wednesdays, Jan 6 to Feb 10"
+function seriesLast(d){ const x=srDate(d?.date), n=+d?.sessions||0; if(!x||n<2) return ""; const y=new Date(x); y.setDate(y.getDate()+(n-1)*(d.repeat==="biweekly"?14:7)); return y }
+function seriesSpan(d){ const x=srDate(d?.date), y=seriesLast(d); if(!x||!y) return ""; return `${d.sessions} ${SR_DAY[x.getDay()]}s, ${srMD(x)} to ${srMD(y)}` }
+// money words for a series: "$180 for all 6", "$20 a class, or $70 for 4"; "" when there's nothing series-shaped to say
+function seriesPrice(d){ const amt=v=>{ const m=String(v??"").match(/(\d+(?:\.\d{1,2})?)/); return m?"$"+m[1]:"" }, p=d?.price&&d.price!=="chip"?amt(d.price):"", n=+d?.sessions||0, pp=+d?.passPrice||0, pc=+d?.passCount||0;
+  if(n>1&&p) return `${p} for all ${n}`;
+  if(pp&&pc>1) return p?`${p} a class, or ${amt(pp)} for ${pc}`:`${amt(pp)} for ${pc} classes`;
+  return "" }
+// the calendar repeat: RRULE:FREQ=WEEKLY, with COUNT for a course
+function seriesRRule(d){ const x=srDate(d?.date), r=d?.repeat||(+d?.sessions>1?"weekly":""); if(!x||!r) return ""; const BY=["SU","MO","TU","WE","TH","FR","SA"][x.getDay()];
+  const f=r==="monthly"?`FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}`:r==="biweekly"?"FREQ=WEEKLY;INTERVAL=2":r==="weekly"?"FREQ=WEEKLY":""; if(!f) return ""; return "RRULE:"+f+(+d.sessions>1?`;COUNT=${+d.sessions}`:"") }
+// an .ics body gets the repeat line after its start and end
+function seriesIcs(body,d){ const rr=seriesRRule(d); if(!rr||/\r?\nRRULE:/.test(body)) return body; return String(body).replace(/(\r?\n)(SUMMARY:)/,`$1${rr}$1$2`) }
+// ---------- series: wiring ----------
+// the one-line start: a course is a weekly class with N sessions; a pass is passPrice for passCount
+{ const _peSr=parseEventText; parseEventText=function(t){ const o=_peSr.apply(this,arguments); try{ const s=seriesParse(t); if(s.course&&o.casual&&/^(get-together|gathering at my place)$/i.test(o.label||"")) o.label="workshop"; }catch(e){ console.warn(e) } return o } }
+{ const _qsSr=quickStart; quickStart=function(text){ const r=_qsSr.apply(this,arguments); try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d.example) return r; const s=seriesParse(text);
+    if(s.sessions){ d.sessions=s.sessions; d.repeat=s.repeat; if(isCasual(d)&&(!d.activity||/^(get-together|gathering at my place)$/i.test(d.activity))) d.activity="workshop" }
+    if(s.passPrice){ d.passPrice=s.passPrice; d.passCount=s.passCount;
+      // the single-class price is the other amount they typed, not the pass
+      if(!d.price||+String(d.price).replace(/[^\d.]/g,"")===s.passPrice){ const other=[...String(text).matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)/g)].map(m=>+m[1]).find(v=>v!==s.passPrice); if(other){ d.price="$"+other; d.free=false } else { delete d.passPrice; delete d.passCount } } }
+    if(s.sessions||s.passPrice){ try{ if(location.hash==="#studio") renderStep() }catch{} } }catch(e){ console.warn(e) } return r } }
+// money words everywhere they're built from priceTxt (the invite text, share lines)
+{ const _ptSr=priceTxt; priceTxt=function(d){ return seriesPrice(d)||_ptSr.apply(this,arguments) } }
+// the invite text: "every Tuesday at 7pm from Dec 1", or "6 Wednesdays, Jan 6 to Feb 10 at 7pm"
+if(typeof inviteText==="function"){ const _itSr=inviteText; inviteText=function(d){ let s=_itSr.apply(this,arguments); try{ if(!d?.date||!(d.repeat||+d.sessions>1)) return s; const at=d.startTime?` at ${clock12(d.startTime)}`:"", old=fmtDate(d.date)+at, x=srDate(d.date);
+    const nw=+d.sessions>1?`${seriesSpan(d)}${at}`:`${seriesEvery(d)}${at} from ${srMD(x)}`; if(nw&&s.includes(old)) s=s.replace(old,nw) }catch{} return s } }
+// the guest view: the repeat under the date, series money words, and a calendar that repeats
+function srGuestTidy(){ try{ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!/^#rsvp-/.test(location.hash)||!(e.repeat||+e.sessions>1||+e.passPrice)) return;
+  const when=[...host.querySelectorAll(".gxfacts span")].find(s=>(s.dataset.k||s.querySelector("small")?.textContent.trim())==="When")?.querySelector("b");
+  const line=+e.sessions>1?seriesSpan(e):seriesEvery(e,false); if(when&&line&&!when.querySelector(".sr-every")&&!when.querySelector("form")){ const sp=document.createElement("i"); sp.className="sr-every"; sp.style.cssText="display:block;font-style:normal;font-size:16px;font-weight:500;opacity:.85;margin-top:2px"; sp.textContent=line[0].toUpperCase()+line.slice(1); when.appendChild(sp) }
+  const pr=seriesPrice(e); if(pr){ const pb=[...host.querySelectorAll("#forWho > div")].find(x=>x.querySelector("small")?.textContent.trim()==="Price")?.querySelector("b"); if(pb&&pb.textContent!==pr) pb.textContent=pr }
+  const rr=seriesRRule(e); if(rr){ host.querySelectorAll('a[href^="data:text/calendar"]').forEach(a=>{ try{ const [h,b]=a.getAttribute("href").split(/,(.*)/s); const body=decodeURIComponent(b); if(/\nRRULE:/.test(body)) return; a.setAttribute("href",h+","+encodeURIComponent(seriesIcs(body,e))) }catch{} });
+    host.querySelectorAll('a[href*="calendar.google.com/calendar/render"]').forEach(a=>{ if(!/[?&]recur=/.test(a.href)) a.href+="&recur="+encodeURIComponent(rr) }) } }catch(err){ console.warn(err) } }
+new MutationObserver(()=>{ if(window.__srBusy) return; window.__srBusy=1; requestAnimationFrame(()=>{ srGuestTidy(); window.__srBusy=0 }) }).observe(document.documentElement,{childList:true,subtree:true});
+// Home, "You're hosting": dates of one series (same name and repeat) sit in one card, "+N more dates"
+{ const _rpSr=renderPrograms; renderPrograms=function(){ const r=_rpSr.apply(this,arguments); try{ const el=document.getElementById("view-programs"); const box=el?.querySelector(".fcards:not(.past)"); if(!box) return r; const seen=new Map();
+    el.querySelectorAll(".fcards article.fcard[data-open-ev]").forEach(c=>{ const e=allEvents.find(x=>x.id===c.dataset.openEv), sp=e&&seriesPrice(e); if(sp&&e.price) c.querySelectorAll("small").forEach(s=>{ if(s.children.length===0&&s.textContent.includes(`${e.price} a person`)) s.textContent=s.textContent.replace(`${e.price} a person`,sp) }) });
+    box.querySelectorAll("article.fcard[data-open-ev]").forEach(c=>{ const e=allEvents.find(x=>x.id===c.dataset.openEv); if(!e?.repeat||e.stage==="interest") return; const k=String(guestTitle(e)||"").replace(/ \((copy|[A-Z][a-z]{2} \d{1,2})\)$/,"").trim().toLowerCase()+"|"+e.repeat; const first=seen.get(k);
+      if(!first){ seen.set(k,{card:c,n:0}); return } first.n++; c.hidden=true; c.style.display="none" });
+    seen.forEach(({card,n})=>{ if(!n) return; const d=card.querySelector(":scope > div"); if(!d||d.querySelector(".fc-more")) return; const m=document.createElement("small"); m.className="fc-more"; m.textContent=`+${n} more date${n===1?"":"s"}`; d.appendChild(m) }) }catch(e){ console.warn(e) } return r } }
+// ---------- end series ----------
+
 </script>

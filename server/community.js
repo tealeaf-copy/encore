@@ -10,7 +10,7 @@ import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOf
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { seatsOf } from "./social.js";
-import { cleanScrapSections, scrubAddress } from "./scrapbook.js";
+import { cleanScrapSections, scrubAddress, cleanLogos } from "./scrapbook.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 10;
@@ -61,7 +61,7 @@ export function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[
         cover: /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(x?.cover || "") ? x.cover : "", link, source, site: source === "Web" ? host.replace(/^www\./, "") : "",
         // featured (with its order), its section and the host-written lines: role, who was there, proof, format, who it was for
         featured: !!x?.featured, featuredOrder: x?.featured ? Math.max(1, Math.round(+x.featuredOrder || i + 1)) : 0, section: /^[a-z0-9-]{1,24}$/.test(String(x?.section || "")) ? String(x.section) : "",
-        role: s(x?.role, 40), room: s(scrubAddress(x?.room), 120), proof: s(scrubAddress(x?.proof), 140), format: s(x?.format, 24).toLowerCase(), company: s(x?.company, 60) }; }).filter((x) => x.title); }
+        role: s(x?.role, 40), room: s(scrubAddress(x?.room), 120), proof: s(scrubAddress(x?.proof), 140), format: s(x?.format, 24).toLowerCase(), company: s(x?.company, 60), logos: cleanLogos(x?.logos), add: !!x?.add }; }).filter((x) => x.title); }
   // a prepared page may group its past events: `sections: [{ id, name, blurb, kind: "list" | "program" }]` (the page's
   // show/hide switches stay an object, so a list here is always the scrapbook's sections). Claiming copies them over.
 export function showcaseSections(P) { const L = Array.isArray(P.sections) ? P.sections : Array.isArray(P.scrapSections) ? P.scrapSections : null;

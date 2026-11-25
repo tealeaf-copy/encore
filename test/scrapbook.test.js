@@ -43,3 +43,11 @@ test("Henly storefront links can be imported too", async () => {
   const p = parseEventPage(`<meta property="og:title" content="come say hi &amp; grab a bite"><meta property="og:image" content="https://cdn.example.com/a.jpg"><meta property="og:description" content="Pandan cake sets, pickup Saturday">`);
   assert.equal(p.title, "come say hi & grab a bite"); assert.match(p.about, /Pandan/);
 });
+
+test("Companies in the room: names and a checked web domain only, at most 40", async () => {
+  const { cleanLogos } = await import("../server/scrapbook.js");
+  const L = cleanLogos([{ name: "Datadog", domain: "https://www.datadoghq.com/about" }, { name: "datadog" }, "Okta", { name: "<b>Evil</b>", domain: "javascript:alert(1)" }, { name: "" }]);
+  assert.deepEqual(L, [{ name: "Datadog", domain: "datadoghq.com" }, { name: "Okta", domain: "" }, { name: "Evil", domain: "" }]);
+  assert.equal(cleanLogos(Array.from({ length: 80 }, (_, i) => "Co " + i)).length, 40);
+  assert.deepEqual(cleanLogos("nope"), []);
+});

@@ -49,7 +49,45 @@
    "about": "Peer-led sessions, customer spotlights and product deep dives on AI for patient access. Apolo Ohno gave the keynote.",
    "link": "https://www.prnewswire.com/news-releases/assort-health-announces-inaugural-assort-ascend-customer-summit-to-support-healthcare-leaders-in-navigating-ai-agent-transformation-for-patient-engagement-and-provider-operations-302545782.html",
    "featured": true,
-   "featuredOrder": 2
+   "featuredOrder": 2,
+   "logos": [
+    {
+     "name": "Assort Health",
+     "domain": "assorthealth.com"
+    },
+    {
+     "name": "First Round",
+     "domain": "firstround.com"
+    },
+    {
+     "name": "Lightspeed",
+     "domain": "lsvp.com"
+    },
+    {
+     "name": "Shore Capital",
+     "domain": "shorecp.com"
+    },
+    {
+     "name": "Tau Ventures",
+     "domain": "tauventures.com"
+    },
+    {
+     "name": "LiveKit",
+     "domain": "livekit.io"
+    },
+    {
+     "name": "Cartesia",
+     "domain": "cartesia.ai"
+    },
+    {
+     "name": "Brellium",
+     "domain": "brellium.com"
+    },
+    {
+     "name": "Assured Health",
+     "domain": ""
+    }
+   ]
   },
   {
    "title": "Executive Dinner at HLTH: AI to Transform Patient Outcomes",
@@ -75,7 +113,49 @@
    "section": "dinner",
    "room": "CTOs and CIOs from New York companies",
    "featured": true,
-   "featuredOrder": 1
+   "featuredOrder": 1,
+   "logos": [
+    {
+     "name": "n8n",
+     "domain": "n8n.io"
+    },
+    {
+     "name": "MongoDB",
+     "domain": "mongodb.com"
+    },
+    {
+     "name": "Databricks",
+     "domain": "databricks.com"
+    },
+    {
+     "name": "Datadog",
+     "domain": "datadoghq.com"
+    },
+    {
+     "name": "Okta",
+     "domain": "okta.com"
+    },
+    {
+     "name": "Braze",
+     "domain": "braze.com"
+    },
+    {
+     "name": "Nextdoor",
+     "domain": "nextdoor.com"
+    },
+    {
+     "name": "UKG",
+     "domain": "ukg.com"
+    },
+    {
+     "name": "Gunderson Dettmer",
+     "domain": "gunder.com"
+    },
+    {
+     "name": "Bluescape",
+     "domain": "bluescape.com"
+    }
+   ]
   },
   {
    "title": "Pogo Dinner: Implementing AI to Gather Customer Insights",
@@ -129,7 +209,17 @@
    "section": "rutter",
    "room": "Fintech builders during NY Fintech Week",
    "about": "A morning meetup during NY Fintech Week, with coffee from Lê Phin.",
-   "link": "https://luma.com/crr1a20n"
+   "link": "https://luma.com/crr1a20n",
+   "logos": [
+    {
+     "name": "Rutter",
+     "domain": "rutter.com"
+    },
+    {
+     "name": "Lê Phin",
+     "domain": ""
+    }
+   ]
   },
   {
    "title": "Building the Financial Operating System for SMBs: Executive Dinner",
@@ -149,7 +239,17 @@
    "company": "Rutter",
    "role": "Host",
    "section": "rutter",
-   "about": "A digital workshop with partner Mercoa."
+   "about": "A digital workshop with partner Mercoa.",
+   "logos": [
+    {
+     "name": "Rutter",
+     "domain": "rutter.com"
+    },
+    {
+     "name": "Mercoa",
+     "domain": "mercoa.com"
+    }
+   ]
   },
   {
    "title": "Executive Dinner at Nobu: Delivering Financial Products Where Businesses Work",
@@ -176,7 +276,25 @@
    "proof": "Two formats in one day: a morning salon for marketers, an evening clubhouse for creators",
    "link": "https://partiful.com/e/ZAxqIIxvUpPC4947hvmu",
    "featured": true,
-   "featuredOrder": 4
+   "featuredOrder": 4,
+   "logos": [
+    {
+     "name": "Passionfroot",
+     "domain": "passionfroot.me"
+    },
+    {
+     "name": "Replit",
+     "domain": "replit.com"
+    },
+    {
+     "name": "Gamma",
+     "domain": "gamma.app"
+    },
+    {
+     "name": "ElevenLabs",
+     "domain": "elevenlabs.io"
+    }
+   ]
   },
   {
    "title": "Lenny’s Newsletter Meetup in Sydney",
@@ -196,6 +314,32 @@
    "company": "Lenny’s Newsletter community",
    "role": "Co-host",
    "section": "comm"
+  },
+  {
+   "title": "Bánh bò (Pandan Honeycomb Cake) Pop Up",
+   "date": "2026-07-26",
+   "place": "Chelsea, New York",
+   "format": "pop-up",
+   "company": "Atelier Bò",
+   "role": "Host",
+   "section": "comm",
+   "about": "Vietnamese pandan honeycomb cake, with Vietnamese coffee and tea on the side. Our first pop-up.",
+   "cover": "/presets/atelier-bo-banh-bo-popup.jpg",
+   "link": "https://partiful.com/e/YA3OFsfRcKteRRHZYM5b",
+   "add": true
+  },
+  {
+   "title": "Apt Cafe Club, episode 1: Design your life",
+   "date": "2026-07-15",
+   "place": "Chelsea, New York",
+   "format": "series",
+   "company": "Apt Cafe Club",
+   "role": "Host",
+   "section": "comm",
+   "about": "A living-room series for curious people: one big question, fresh tea, Asian snacks and bánh bò.",
+   "cover": "/presets/atelier-bo-apt-cafe-club.jpg",
+   "link": "https://partiful.com/e/j6ooihgpqGYhHFCI7zAw",
+   "add": true
   }
  ]
 }

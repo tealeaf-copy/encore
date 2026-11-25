@@ -26,6 +26,12 @@ const siteOf = (link) => { try { return new URL(link).hostname.replace(/^www\./,
 const isoDate = (v) => { const s = String(v || "").trim(); if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10); const t = Date.parse(s); return isFinite(t) ? new Date(t).toISOString().slice(0, 10) : ""; };
 // "2026-07-15T21:30:00Z" in America/New_York is the 15th; with no zone, the date as written
 const localDate = (v, tz) => { const s = String(v || "").trim(); if (!tz || !/Z$|[+-]\d\d:?\d\d$/.test(s)) return isoDate(s); try { const t = new Date(s); if (!isFinite(t)) return isoDate(s); return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(t); } catch { return isoDate(s); } };
+// companies that were in the room (a logo strip on the card): a name, and a web domain for its icon. Host-written, never guessed.
+export function cleanLogos(L) { const out = [], seen = new Set();
+  for (const x of (Array.isArray(L) ? L : []).slice(0, 60)) { const name = clean(typeof x === "string" ? x : x?.name, 40); if (!name || seen.has(name.toLowerCase())) continue; seen.add(name.toLowerCase());
+    const d = String((typeof x === "object" && x?.domain) || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+    out.push({ name, domain: /^(?=.{3,80}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) ? d : "" }); if (out.length >= 40) break; }
+  return out; }
 const COVER_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png|svg)$/.test(u || "");
 
 /** Is this a link from one of the event platforms we know? (Any other https site can still be read; see safeUrl.) */
@@ -252,8 +258,15 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
       note: clean(item.note, 400), about: clean(scrubAddress(item.about), 600), source, site: source === "Web" ? siteOf(link) : "", link,
       photos: (Array.isArray(item.photos) ? item.photos : []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12), cover: COVER_OK(item.cover) ? item.cover : "", at: item.at || Date.now(),
       featured: !!item.featured, featuredOrder: item.featured ? Math.max(0, Math.round(+item.featuredOrder || 0)) : 0, section: SEC_ID.test(String(item.section || "")) ? String(item.section) : "",
-      role: clean(item.role, LIMITS.role), room: cleanLine(item.room, LIMITS.room), proof: cleanLine(item.proof, LIMITS.proof), format: cleanFormat(item.format), company: clean(item.company, LIMITS.company) };
+      role: clean(item.role, LIMITS.role), room: cleanLine(item.room, LIMITS.room), proof: cleanLine(item.proof, LIMITS.proof), format: cleanFormat(item.format), company: clean(item.company, LIMITS.company), logos: cleanLogos(item.logos) };
     S(ws).set("scrapbook/" + id, v); return { id, ...v }; };
+  // owner request (Nov 2026): Tuongvan's page gets who-was-in-the-room logos on matching events, plus the Atelier Bò pop-up and Apt Cafe Club. Once.
+  try { const ws = C.wsOfHandle?.("tuongvan"), P = ws && C.showcasePreset?.("tuongvan");
+    if (ws && P && S(ws).get("scrapbookmeta/seed") && !S(ws).get("scrapbookmeta/sync-logos-1")) { S(ws).set("scrapbookmeta/sync-logos-1", { at: Date.now() });
+      const have = S(ws).list("scrapbook").map((d) => ({ id: String(d.id).split("/").pop(), ...d.data })), key = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      for (const x of P.scrapbook || []) { const cur = have.find((h) => key(h.title) === key(x.title));
+        if (cur) { if (x.logos?.length && !cur.logos?.length) save(ws, { ...cur, logos: x.logos }); }
+        else if (x.add) save(ws, { ...x, id: "", photos: [], at: Date.now(), featured: false, featuredOrder: 0 }); } } } catch (err) { console.warn("tuongvan logos", err?.message); }
   const keepImage = async (src, ws) => { if (!src || !saveImage) return ""; const r = await fetcher(src, { limit: MAX_IMG, kind: "image" }); if (!r) return ""; try { return (await saveImage(r.buf, r.type.split(";")[0].trim(), ws)) || ""; } catch { return ""; } };
   // read links into drafts; nothing is saved except a copy of each cover image (so the draft can show it)
   const readLinks = async (ws, links, { covers = true } = {}) => { const drafts = [], skipped = [], have = new Set(list(ws).map((x) => x.link).filter(Boolean));
@@ -270,7 +283,7 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   // sections come back in order, only the ones with an event in them; featured is the host's order (at most 6)
   app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [], sections: [], featured: [] });
     const L = list(ws), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
-    res.json({ items: L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "" })),
+    res.json({ items: L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos) })),
       sections: secs.filter((s) => used.has(s.id)), featured: featuredIds(L).slice(0, MAX_FEATURED) }); });
   app.get("/api/host/scrapbook", (req, res) => { const u = me(req, res); if (!u) return; const L = list(u.ws); res.json({ items: L, sections: sectionsOf(u.ws), featured: featuredIds(L), limits: { ...LIMITS, featured: MAX_FEATURED, sections: MAX_SECTIONS }, roles: ROLES, formats: FORMATS }); });
   // Potto's "Sort my events": suggested sections for the events not in one yet. Nothing changes until the host confirms (PUT below).

@@ -381,7 +381,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device
     // signed in: one tap. Signed out: an email is enough (the confirmation email says how to stop).
     // from the one-tap kudos page (/k/<event>): the guest's reply proves who they are, so its email is enough (never sent back to the page)
-    const proof = !clean(b.email, 200) && b.rid && b.code && b.eventId ? X?.rsvpProof?.(clean(b.eventId, 80), b.rid, b.code) : null;
+    const proof = !clean(b.email, 200) && b.rid && b.code && b.eventId ? (X?.kudosProof || X?.rsvpProof)?.(clean(b.eventId, 80), b.rid, b.code) : null; // kudos nudges: the group link's kudos-only code follows too
     if (proof && !b.name) b.name = proof.r.name || "";
     const signedIn = acct && acct.ws !== DEFAULT_WS, given = (clean(b.email, 200) || (proof?.r?.email ? clean(proof.r.email, 200) : "")).toLowerCase();
     if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: given ? "That email doesn't look right." : "Add your email to follow." });

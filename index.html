@@ -11355,4 +11355,105 @@ if(typeof drawAfterParty==="function"){ const _apKA=drawAfterParty; drawAfterPar
     const p=document.createElement("p"); p.id="kudosAskLine"; p.className="note"; p.style.cssText="margin:8px 0 0;font-weight:600"; p.textContent=`Kudos asked of ${a.asked} guest${a.asked===1?"":"s"} · ${a.sent} sent`;
     const top=el.querySelector(".ap-hero"); if(top) top.after(p); else el.prepend(p) }catch(err){ console.warn(err) } return r } }
 // ---------- end kudos asks ----------
+// ---------- kudos nudges ----------
+// After the event: "7 of 12 left kudos" with who did and Say thanks, an "Ask for kudos" button on every past event, and
+// Potto's list says "M of N guests left kudos. Nudge the rest?" (within 14 days, while under 60%). One tap opens the
+// "Nudge for kudos" sheet: a group message with the group kudos link (copy, WhatsApp, Messages, Email, Instagram, QR),
+// each guest who hasn't left kudos with their own link, "Send for me" and the automatic reminder's switch.
+// The server side is server/kudosnudge.js.
+window.__kn=window.__kn||{};
+async function knLoad(id,force){ const c=window.__kn[id]; if(c&&!force&&(c.data||c.busy)) return c.data||c.busy;
+  const busy=fetch("/api/host/kudos-nudge/"+encodeURIComponent(id)).then(r=>r.ok?r.json():null).catch(()=>null).then(j=>{ window.__kn[id]={data:j,at:Date.now()}; return j }); window.__kn[id]={busy}; return busy }
+function knWhen(ms){ if(!ms) return ""; const d=new Date(ms), t=d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}).replace(" AM","am").replace(" PM","pm").replace(":00",""); return d.toDateString()===new Date().toDateString()?t:`${d.toLocaleDateString("en-US",{weekday:"short"})} ${t}` }
+function knAv(name,i){ const C=["#F2D48F","#C9DDC0","#F4C7B8","#D9D2F0","#BFE0E6","#F7D9A8"]; return `<span class="kn-av" style="background:${C[i%C.length]}" aria-hidden="true">${esc(String(name||"?").slice(0,1).toUpperCase())}</span>` }
+const knWa=(t,phone)=>`https://wa.me/${phone?String(phone).replace(/\D/g,"").replace(/^(\d{10})$/,"1$1"):""}?text=${encodeURIComponent(t)}`;
+const knSms=(t,phone)=>`sms:${phone?String(phone).replace(/[^\d+]/g,""):""}?&body=${encodeURIComponent(t)}`;
+const knMail=(t,{to="",bcc=[],subject=""}={})=>`mailto:${encodeURIComponent(to).replace(/%40/g,"@")}?${bcc.length?`bcc=${bcc.map(e=>encodeURIComponent(e).replace(/%40/g,"@")).join(",")}&`:""}subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(t)}`;
+const knOne=(g,K)=>`Hi ${g.first}, thank you for coming to ${K.title}! If you have 10 seconds, tap a few words about it: ${g.link}`;
+function knProgressLine(P){ return `${P.kudos} of ${P.guests} left kudos` }
+// the sheet
+async function knOpen(d){ if(!d?.id) return; document.getElementById("knSheet")?.remove();
+  const m=document.createElement("div"); m.className="modal-back"; m.id="knSheet"; m.innerHTML=`<div class="panel stack kn" role="dialog" aria-modal="true" aria-label="Nudge for kudos"><p class="note">Opening…</p></div>`; document.body.appendChild(m);
+  const close=()=>{ m.remove(); document.removeEventListener("keydown",esc_); removeEventListener("hashchange",close) }, esc_=e=>{ if(e.key==="Escape") close() }; document.addEventListener("keydown",esc_); setTimeout(()=>{ if(m.isConnected) addEventListener("hashchange",close) },400); m.onclick=e=>{ if(e.target===m) close() };
+  let K=await knLoad(d.id,true); if(!K){ m.querySelector(".kn").innerHTML=`<p>Couldn't load this. Try again.</p><div class="btns"><button class="btn ghost sm" type="button" id="knX">Close</button></div>`; m.querySelector("#knX").onclick=close; return }
+  let msg=K.group.message, bcc=false, qr=false;
+  const draw=()=>{ const P=K.progress, S=K.send, F=K.followUp, left=K.guests;
+    m.querySelector(".kn").innerHTML=`<div class="kn-top"><div><small class="eyebrow">Nudge for kudos</small><h3>${esc(knProgressLine(P))}</h3></div><button class="linkbtn kn-x" type="button" id="knX" aria-label="Close">Close</button></div>
+     <section class="kn-sec" aria-labelledby="knG"><h4 id="knG">Group message</h4><p class="note">For the group chat, WhatsApp or an Instagram DM. Edit it if you like.</p>
+      <label class="f"><span class="sr-only">Message</span><textarea id="knMsg" rows="3">${esc(msg)}</textarea></label>
+      <div class="kn-btns"><button class="btn primary sm" type="button" data-kn="copy">Copy message</button><a class="btn ghost sm" data-kn="wa" target="_blank" rel="noopener">WhatsApp</a><a class="btn ghost sm" data-kn="sms">Messages</a><a class="btn ghost sm" data-kn="mail">Email</a><button class="btn ghost sm" type="button" data-kn="ig">Instagram</button><button class="btn ghost sm" type="button" data-kn="qr" aria-expanded="${qr}">QR code</button></div>
+      ${K.bcc.length?`<label class="kn-bcc"><input type="checkbox" id="knBcc" ${bcc?"checked":""}> BCC the ${K.bcc.length} guest${K.bcc.length===1?"":"s"} who gave an email</label>`:""}
+      ${qr?`<div class="kn-qr"><img src="/api/host/kudos-nudge/${encodeURIComponent(K.eventId)}/qr.svg?${encodeURIComponent(K.group.link.slice(-8))}" alt="QR code for the kudos link" width="200" height="200"><p class="note">Show this at the door or the next event. Anyone who was in can leave kudos with the email or phone they replied with.</p><button class="linkbtn" type="button" id="knRot">New link (the old one stops working)</button></div>`:""}</section>
+     ${S.available?`<section class="kn-sec" aria-labelledby="knS"><h4 id="knS">Send for me</h4><p class="note">${S.used>=S.max?`You've sent ${S.max} reminders for this event. That's the most we send.`:S.eligible?`I'll text or email ${S.eligible} guest${S.eligible===1?"":"s"} who haven't left kudos: "${esc(S.line.replace(" <link>",""))} [their link]"`:"No one to remind right now. Guests reminded in the last 3 days, who opted out or who already left kudos are skipped."}</p>
+      <div class="kn-btns"><button class="btn sm" type="button" id="knSend" ${S.used>=S.max||!S.eligible?"disabled":""}>Send for me</button><span class="note">${S.used} of ${S.max} sent${S.lastAt?` · last ${esc(knWhen(S.lastAt))}`:""}</span></div></section>`:""}
+     ${F.available&&F.date?`<section class="kn-sec kn-fu"><div><b>${F.sent?`Reminder went out ${esc(F.day)}`:F.on?`Reminder goes out ${esc(F.day)}`:"Reminder is off"}</b><p class="note">${F.sent?"One gentle reminder to guests who hadn't left kudos.":"One gentle reminder to guests who haven't left kudos, 3 days after the first ask."}</p></div>${F.sent?"":`<button type="button" class="kn-sw" role="switch" aria-checked="${F.on}" id="knFu" aria-label="Automatic reminder"><i></i></button>`}</section>`:""}
+     <section class="kn-sec" aria-labelledby="knP"><h4 id="knP">${left.length?`${left.length} still to hear from`:"Everyone left kudos"}</h4>${left.length?`<p class="note">Each gets their own link. Tap to send it from your phone.</p>`:""}
+      <ul class="kn-list">${left.map((g,i)=>`<li data-rid="${esc(g.rid)}">${knAv(g.first,i)}<div class="kn-who"><b>${esc(g.name)}</b><small>${g.nudgedAt?`Nudged ${esc(knWhen(g.nudgedAt))}`:g.optedOut?"Opted out of messages":esc([g.phone,g.email].filter(Boolean).join(" · ")||"No phone or email")}</small></div>
+        <div class="kn-row">${g.optedOut?"":`${g.phone?`<a class="btn ghost sm" data-kv="text" href="${esc(knSms(knOne(g,K),g.phone))}">Text</a>`:""}${g.email?`<a class="btn ghost sm" data-kv="email" href="${esc(knMail(knOne(g,K),{to:g.email,subject:`How was ${K.title}?`}))}">Email</a>`:""}${g.phone?`<a class="btn ghost sm" data-kv="whatsapp" target="_blank" rel="noopener" href="${esc(knWa(knOne(g,K),g.phone))}">WhatsApp</a>`:""}`}${g.link?`<button class="linkbtn" type="button" data-kv="copy">Copy link</button>`:""}</div></li>`).join("")}</ul></section>`;
+    const q=s=>m.querySelector(s), text=()=>q("#knMsg")?.value.trim()||msg;
+    q("#knX").onclick=close; q("#knMsg").oninput=e=>{ msg=e.target.value };
+    const hrefs=()=>{ const t=text(); q('[data-kn="wa"]').href=knWa(t); q('[data-kn="sms"]').href=knSms(t); q('[data-kn="mail"]').href=knMail(t,{bcc:bcc?K.bcc:[],subject:`How was ${K.title}?`}) }; hrefs(); q("#knMsg").addEventListener("input",hrefs);
+    q("#knBcc")&&(q("#knBcc").onchange=e=>{ bcc=e.target.checked; hrefs() });
+    q('[data-kn="copy"]').onclick=()=>copyTxt(text(),{ok:"Copied. Paste it in the group chat."});
+    q('[data-kn="ig"]').onclick=async()=>{ await copyTxt(text(),{ok:"Copied. Paste it in your Instagram DM."}); window.open("https://www.instagram.com/direct/inbox/","_blank","noopener") };
+    q('[data-kn="qr"]').onclick=()=>{ msg=text(); qr=!qr; draw() };
+    q("#knRot")&&(q("#knRot").onclick=async()=>{ if(!confirm("Make a new kudos link? The old link and QR code stop working.")) return; const r=await fetch("/api/host/kudos-nudge/"+encodeURIComponent(K.eventId)+"/rotate",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}); if(r.ok){ const old=K.group.link; K=await r.json(); window.__kn[K.eventId]={data:K,at:Date.now()}; msg=msg.split(old).join(K.group.link); draw(); toast("New link made.") } });
+    q("#knSend")&&(q("#knSend").onclick=async e=>{ const b=e.currentTarget; b.disabled=true; b.textContent="Sending…";
+      try{ const r=await fetch("/api/host/kudos-nudge/"+encodeURIComponent(K.eventId)+"/send",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}), j=await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(j.message||"That didn't send. Try again."); toast(j.sent?`Sent to ${j.sent} guest${j.sent===1?"":"s"}.`:(j.message||"No one to remind right now.")) }catch(err){ toast(err.message) }
+      msg=text(); K=await knLoad(K.eventId,true)||K; draw() });
+    q("#knFu")&&(q("#knFu").onclick=async e=>{ const on=e.currentTarget.getAttribute("aria-checked")!=="true"; e.currentTarget.setAttribute("aria-checked",String(on));
+      await fetch("/api/host/kudos-nudge/"+encodeURIComponent(K.eventId)+"/follow-up",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({on})}).catch(()=>{}); K.followUp.on=on; msg=text(); draw(); knCard(d,true) });
+    m.querySelectorAll("[data-kv]").forEach(a=>a.addEventListener("click",async()=>{ const li=a.closest("li"), rid=li?.dataset.rid, g=K.guests.find(x=>x.rid===rid); if(!g) return;
+      if(a.dataset.kv==="copy") copyTxt(knOne(g,K),{ok:`Copied ${g.first}'s message.`});
+      const at=Date.now(); g.nudgedAt=at; g.nudgedVia=a.dataset.kv; const s=li.querySelector(".kn-who small"); if(s) s.textContent=`Nudged ${knWhen(at)}`; li.classList.add("done");
+      fetch("/api/host/kudos-nudge/"+encodeURIComponent(K.eventId)+"/nudged",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rid,via:a.dataset.kv})}).catch(()=>{}) }));
+  };
+  draw(); setTimeout(()=>m.querySelector("#knMsg")?.focus({preventScroll:true}),30) }
+window.knOpen=knOpen;
+// the After step: progress, who left kudos, Say thanks, Ask for kudos, the reminder line
+async function knCard(d,force){ try{ const el=document.getElementById("afterParty"); if(!el||!d?.id||!evOver(d)) return; let c=el.querySelector("#kudosNudge");
+    const K=await knLoad(d.id,force); if(!K||draft!==d) return; if(!c){ c=document.createElement("section"); c.id="kudosNudge"; c.className="kn-card"; const top=el.querySelector("#kudosAskLine")||el.querySelector(".ap-hero"); if(top) top.after(c); else el.prepend(c) }
+    const P=K.progress, F=K.followUp;
+    c.innerHTML=`<div class="kn-head"><div><b class="kn-big">${esc(knProgressLine(P))}</b>${P.givers.length?`<div class="kn-givers">${P.givers.slice(0,8).map((g,i)=>`<span class="kn-g">${knAv(g.first,i)}${esc(g.first)}</span>`).join("")}${P.givers.length>8?`<span class="note">and ${P.givers.length-8} more</span>`:""}</div>`:""}</div>
+      <div class="kn-btns">${P.kudos<P.guests?`<button class="btn primary sm" type="button" id="knAsk">Ask for kudos</button>`:""}${P.givers.length?`<button class="btn ghost sm" type="button" id="knThanks">Say thanks</button>`:""}</div></div>
+      ${F.available&&F.date&&P.kudos<P.guests?`<p class="note kn-fl">${F.sent?`Reminder went out ${esc(F.day)}.`:F.on?`Reminder goes out ${esc(F.day)}.`:"Reminder is off."}${F.sent?"":` <button type="button" class="kn-sw sm" role="switch" aria-checked="${F.on}" id="knFuC" aria-label="Automatic reminder"><i></i></button>`}</p>`:""}`;
+    c.querySelector("#knAsk")&&(c.querySelector("#knAsk").onclick=()=>knOpen(d));
+    c.querySelector("#knThanks")&&(c.querySelector("#knThanks").onclick=()=>{ const t=document.getElementById("ap-thanks"); if(t) t.click(); else copyTxt(`Thank you for the kudos, ${P.givers.map(g=>g.first).join(", ")}! It means a lot.`,{ok:"Copied. Paste it in the group chat."}) });
+    c.querySelector("#knFuC")&&(c.querySelector("#knFuC").onclick=async e=>{ const on=e.currentTarget.getAttribute("aria-checked")!=="true"; await fetch("/api/host/kudos-nudge/"+encodeURIComponent(d.id)+"/follow-up",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({on})}).catch(()=>{}); knCard(d,true) });
+  }catch(err){ console.warn(err) } }
+if(typeof drawAfterParty==="function"){ const _apKN=drawAfterParty; drawAfterParty=async function(){ const r=await _apKN.apply(this,arguments); try{ const d=draft; if(d?.id&&isCasual(d)) await knCard(d) }catch(err){ console.warn(err) } return r } }
+// Potto's list: "M of N guests left kudos. Nudge the rest?" once it's over, within 14 days, while under 60%
+if(typeof cosItems==="function"){ const _ciKN=cosItems; cosItems=function(d){ const I=_ciKN(d); try{ if(!d?.id||d.example||!isCasual(d)||!evOver(d)) return I; const end=d.endDate&&d.endDate>=(d.date||"")?d.endDate:d.date; if(!end||(Date.now()-new Date(end+"T12:00:00"))/864e5>15) return I;
+    const c=window.__kn[d.id]; if(!c){ knLoad(d.id).then(K=>{ if(K?.potto) knRedraw() }); return I }
+    const K=c.data; if(!K?.potto||I.some(x=>x.kn)) return I;
+    const P=K.progress; I.unshift({sev:"soon",kn:1,noWhy:1,t:`${P.kudos} of ${P.guests} guests left kudos. Nudge the rest?`,w:"One message to the group chat does it. I wrote it for you.",acts:[["Nudge for kudos",()=>knOpen(d)]]});
+    const k=I.findIndex(x=>x.t==="This one's done."); if(k>0) I.splice(k,1) }catch(err){ console.warn(err) } return I } }
+function knRedraw(){ clearTimeout(knRedraw.t); knRedraw.t=setTimeout(()=>{ try{ if(location.hash==="#studio"){ if(+step!==7) renderStep() } else if(typeof renderPrograms==="function"&&!document.getElementById("view-programs")?.hidden) renderPrograms() }catch(err){ console.warn(err) } },150) }
+{ const s=document.createElement("style"); s.textContent=`
+.kn{max-width:600px;margin:4vh auto;max-height:92vh;overflow:auto;gap:14px;background:#fff;color:#1F1A17;border:2px solid #1F1A17;border-radius:22px}
+.kn h3{margin:2px 0 0}.kn h4{margin:0 0 4px;font-size:16px}.kn .note{margin:0 0 8px}
+.kn-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.kn-sec{border-top:1px dashed #E4D9C8;padding-top:12px}
+.kn textarea{width:100%;font:inherit;font-size:16px;line-height:1.45;padding:10px 12px;border:1.5px solid #DCCFBE;border-radius:14px;background:#FFFCF7;color:#1F1A17;resize:vertical}
+.kn-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.kn-btns .btn{min-height:40px;text-decoration:none}
+.kn-bcc{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px}
+.kn-qr{display:grid;justify-items:center;gap:6px;margin-top:12px;text-align:center}.kn-qr img{width:200px;height:200px;border:1.5px solid #E4D9C8;border-radius:14px;padding:6px;background:#fff}
+.kn-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.kn-list li{display:grid;grid-template-columns:36px 1fr;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid #F1EADF}
+.kn-list li.done .kn-who small{color:#4F6B3A;font-weight:600}
+.kn-who{display:grid;min-width:0}.kn-who b{font-size:15px}.kn-who small{color:#665A51;overflow-wrap:anywhere}
+.kn-row{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.kn-row .btn{min-height:36px;padding:0 12px;text-decoration:none}
+.kn-av{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:14px;color:#1F1A17;border:1.5px solid #1F1A17;flex:none}
+.kn-fu{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.kn-sw{width:48px;height:28px;border-radius:999px;border:2px solid #1F1A17;background:#E4D9C8;position:relative;cursor:pointer;flex:none;padding:0;vertical-align:middle}
+.kn-sw i{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:1.5px solid #1F1A17;transition:left .15s}
+.kn-sw[aria-checked=true]{background:#6F7F5E}.kn-sw[aria-checked=true] i{left:22px}.kn-sw.sm{width:40px;height:24px}.kn-sw.sm i{width:16px;height:16px}.kn-sw.sm[aria-checked=true] i{left:18px}
+.kn-card{border:1.5px solid #1F1A17;border-radius:18px;background:#fff;padding:14px 16px;margin:12px 0}
+.kn-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-start}.kn-big{font-size:20px}
+.kn-givers{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}.kn-g{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14px}.kn-g .kn-av{width:26px;height:26px;font-size:12px}
+.kn-fl{display:flex;align-items:center;gap:8px;margin:10px 0 0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){.kn{margin:0 auto;border-radius:18px;max-height:none}#knSheet{padding:10px}}`; document.head.appendChild(s) }
+// ---------- end kudos nudges ----------
 </script>

@@ -13,6 +13,7 @@ import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { localParts } from "./reminders.js";
 import { KUDOS_TAGS, replyKey } from "./social.js";
+import { mountKudosNudge } from "./kudosnudge.js"; // kudos nudges: the host's sheet, the group link, Send for me, the reminder
 
 const DAY = 864e5, MORNING = 9, EVENING = 21, LAST_DAY = 3;
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -78,14 +79,15 @@ export async function runKudosAsks(store, { now = Date.now(), workspaces = null,
 
 /** Check every hour, like Potto's reminders. Returns {stop, run}. */
 export function scheduleKudosAsks(store, opts = {}) {
-  const tick = () => runKudosAsks(store, opts).catch((e) => console.warn("[kudos asks]", e?.message || e));
+  const tick = () => runKudosAsks(store, opts).catch((e) => console.warn("[kudos asks]", e?.message || e))
+    .then(() => opts.after?.()).catch((e) => console.warn("[kudos reminders]", e?.message || e)); // kudos nudges: the reminder 3 days later
   const t = setInterval(tick, 3600e3); t.unref?.(); const firstRun = setTimeout(tick, 120e3); firstRun.unref?.();
   return { stop: () => { clearInterval(t); clearTimeout(firstRun); }, run: tick };
 }
 
 /** For the host's app: "Kudos asked of N guests · M sent". */
 export function askStats(S, eventId) {
-  const asked = S.list("kudosasks").filter((d) => d.data?.eventId === eventId && ["sms", "email"].includes(d.data.channel)).length;
+  const asked = S.list("kudosasks").filter((d) => d.data?.eventId === eventId && !d.data.kind && ["sms", "email"].includes(d.data.channel)).length; // first asks only (nudges have a kind)
   const sent = S.list("kudos").filter((d) => d.data?.eventId === eventId && (d.data.love || (d.data.tags || []).length)).length;
   return { asked, sent };
 }
@@ -101,7 +103,7 @@ export function loopStats(S) {
 export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, publicOrigin, jobs = !process.env.NODE_TEST_CONTEXT }) {
   const hits = new Map(); const limited = (req, n) => { const k = (req.ip || "?") + req.path.split("/").slice(0, 4).join("/"), now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
-  const proofOf = (req) => X.rsvpProof(clean(req.params.eventId, 80), clean(req.query.rid, 80), clean(req.query.code, 40));
+  const proofOf = (req) => (X.kudosProof || X.rsvpProof)(clean(req.params.eventId, 80), clean(req.query.rid, 80), clean(req.query.code, 40)); // kudos nudges: or the group link's kudos-only code
   const run = (o = {}) => runKudosAsks(store, { C, canEmail: (e) => X.canEmail(e), ...o });
   app.locals.kudosAsks = { run, askStats, loopStats };
 
@@ -121,5 +123,8 @@ export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, 
   // the second-host loop, for the host who got the kudos (owner of the workspace only; counts, never people)
   app.get("/api/admin/loop-stats", (req, res) => { const u = ownerOnly(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json(loopStats(scopeStore(store, u.ws))); });
 
-  if (jobs) app.locals.kudosAskJob = scheduleKudosAsks(store, { C, canEmail: (e) => X.canEmail(e), origin: process.env.ENCORE_PUBLIC_URL || "" });
+  // ---- kudos nudges (server/kudosnudge.js) ----
+  const nudge = mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrigin, hostFirst: (ws, ev) => hostFirst(C, ws, ev) });
+  // ---- end kudos nudges ----
+  if (jobs) app.locals.kudosAskJob = scheduleKudosAsks(store, { C, canEmail: (e) => X.canEmail(e), origin: process.env.ENCORE_PUBLIC_URL || "", after: () => nudge.runFollowUps({ origin: process.env.ENCORE_PUBLIC_URL || "" }) });
 }

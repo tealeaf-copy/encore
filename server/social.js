@@ -407,7 +407,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/public/profile/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); const W = ws && getWorkspace(ws); if (!W) return bad(res, "No one by that name.", 404, "not_found");
     const P = X.eventProfile(W.ownerEmail); res.json({ strengths: X.hostStrengths(ws), profile: { attended: P.attended, hosted: P.hosted, traits: P.traits, loves: P.loves } }); });
   // kudos from guests (proved by their RSVP), vibes from hosts
-  app.post("/api/public/kudos", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(clean(b.eventId, 80), b.rid, b.code);
+  app.post("/api/public/kudos", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = (X.kudosProof || X.rsvpProof)(clean(b.eventId, 80), b.rid, b.code); // kudos nudges: the group link's kudos-only code works here too
     if (!P) return bad(res, "Kudos come from guests who replied. Open the link from your invite on the phone you used.", 403, "not_granted");
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500); if (!tags.length && !love && !improve && !["better", "same", "less"].includes(b.compare)) return bad(res, "Tap one of the chips or write a line first.");
@@ -417,7 +417,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const h = C.profileOf(P.ws); res.json({ ok: true, host: h?.handle ? { handle: h.handle, name: h.name } : null }); });
   app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); const kudos = S.list("kudos").filter((d) => d.data?.eventId === id).map((d) => withVerified(S, d.id, d.data)).sort((a, b) => b.at - a.at);
     // "Kudos asked of N guests · M sent": N from the ask job's log, M every kudos with words or chips for this event
-    const asked = S.list("kudosasks").filter((d) => d.data?.eventId === id && ["sms", "email"].includes(d.data.channel)).length; // the same count as askStats in server/kudosask.js
+    const asked = S.list("kudosasks").filter((d) => d.data?.eventId === id && !d.data.kind && ["sms", "email"].includes(d.data.channel)).length; // the same count as askStats in server/kudosask.js (first asks only; nudges have a kind)
     res.json({ kudos, ask: { asked, sent: kudos.filter((k) => k.love || (k.tags || []).length).length }, vibes: S.list("vibes").map((d) => d.data).filter((v) => v.eventId === id) }); });
   app.post("/api/host/vibes", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, S = scopeStore(store, u.ws), id = clean(b.eventId, 80); if (!S.get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
     const email = lc(clean(b.email, 200)), tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => VIBE_TAGS.some((k) => k[0] === t)); if (!email) return bad(res, "Which guest?");

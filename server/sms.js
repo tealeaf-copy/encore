@@ -9,6 +9,8 @@ export function smsConfig() {
   if (e.ENCORE_TWILIO_SID && e.ENCORE_TWILIO_TOKEN && /^\+\d{6,16}$/.test(e.ENCORE_TWILIO_FROM || "")) return { service: "twilio", sid: e.ENCORE_TWILIO_SID, token: e.ENCORE_TWILIO_TOKEN, from: e.ENCORE_TWILIO_FROM };
   return null;
 }
+// kudos nudges (server/kudosnudge.js): has this number replied STOP?
+export const smsStopped = (to) => { try { return !!(stopCheck && stopCheck(norm(to))); } catch { return false; } };
 const norm = (p) => { const d = String(p || "").replace(/[^\d+]/g, ""); return d.startsWith("+") ? d : d.length === 10 ? "+1" + d : d.length === 11 && d.startsWith("1") ? "+" + d : "+" + d; };
 /** Send one text. Returns { ok } or { ok:false, error }. Never throws. */
 export async function sendSms(cfg, { to, text }) {

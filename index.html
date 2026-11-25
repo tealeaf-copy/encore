@@ -11456,4 +11456,12 @@ function knRedraw(){ clearTimeout(knRedraw.t); knRedraw.t=setTimeout(()=>{ try{ 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:520px){.kn{margin:0 auto;border-radius:18px;max-height:none}#knSheet{padding:10px}}`; document.head.appendChild(s) }
 // ---------- end kudos nudges ----------
+// ---------- help panel ("Need a hand?", public/help.js): what Potto may know about where the host is ----------
+// Only the open event's id (the server reads its title and status itself), the step, and whether this is a host's
+// first run. Never guests. The panel uses it for its quick questions and for "stuck on a step" offers.
+window.__helpCtx=function(){ try{ const d=typeof draft!=="undefined"?draft:null, ev=typeof allEvents!=="undefined"?allEvents:[];
+  return { eventId:d&&d.id&&!d.example&&!d.sample?String(d.id):"", step:typeof step!=="undefined"?step:null, wizard:!!document.querySelector("#wizBg .wiz"), firstRun:!!window.__welcome||!(ev||[]).some(e=>e&&!e.example&&!e.sample) } }catch{ return {} } };
+// a failed save in the app counts toward "the same error twice"
+{ const _toastH=typeof toast==="function"?toast:null; if(_toastH){ toast=function(m){ try{ if(/couldn'?t|can'?t|went wrong|try again|failed/i.test(String(m||""))) window.dispatchEvent(new CustomEvent("encore:help-error",{detail:{message:String(m)}})) }catch{} return _toastH.apply(this,arguments) } } }
+// ---------- end help panel ----------
 </script>

@@ -37,4 +37,4 @@
     document.getElementById("f").onsubmit = async (ev) => { ev.preventDefault(); const F = ev.target, e = document.getElementById("e"); e.textContent = ""; F.querySelector("button").disabled = true;
       try { const j = await post("/api/password/forgot", { email: F.email.value }); app.innerHTML = `<div class="done">${brand}<h1>Check your email</h1><p class="ok">${j.message}</p><p class="sub" style="margin-top:12px">Nothing yet? Check spam or <a href="/forgot">send again</a>.</p><a class="alt" href="/login">Back to sign in</a></div>`; } catch (x) { e.textContent = x.message; F.querySelector("button").disabled = false; } };
   } })();
-</script></body></html>
+</script><script src="/help.js" defer></script></body></html>

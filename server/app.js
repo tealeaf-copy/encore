@@ -30,6 +30,7 @@ import { mountOnboard } from "./onboard.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountKudosAsk } from "./kudosask.js";
+import { mountHelp } from "./help.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -578,6 +579,8 @@ export function createApp({ store, dataDir }) {
   mountLeaderboard(app, { store, C, X, sendStatic });
   // kudos asked of every guest the morning after, the one-tap kudos page (/k/<event>) and the second-host loop count
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
+  // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
+  mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).
   const replyHits = new Map(); const replyLimited = (req, n) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };

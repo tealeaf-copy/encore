@@ -70,6 +70,9 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ENCORE_EMAIL_PER_HOUR` | `300` | Most emails one workspace can send per hour |
 | `ENCORE_FAKE_EMAIL` | `0` | `1` = record emails in the outbox without sending (demos and tests) |
 | `ENCORE_PUBLIC_URL` | request host | Base URL used in links inside emails |
+| `ENCORE_SUPPORT_EMAIL` | unset | Comma list: who gets an email for each "Talk to a person" message (see docs/onboarding.md) |
+| `ENCORE_SUPPORT_SMS` | unset | Comma list of phone numbers texted for each "Talk to a person" message |
+| `ENCORE_ADMIN_EMAILS` | unset | Comma list of accounts that can use the team help inbox at `/support` (404 for everyone else) |
 
 **Email, reminders and CRM writes.** With a sending service connected (Setup → Email from Encore), sign-off requests, guest invites and deadline reminders go from Encore, with replies to the sender; every message is logged in the outbox and the audit log. Deadline reminders run with `PM_CRON` (weekdays at 8am by default): each task owner gets one email listing what's late or due in two days, matched to teammates by name or role, at most once a day. Reading the CRM is open to the team; writing to it (attendee sync, follow-up tasks, account spend) is limited to people with the RevOps role, and anyone else's write waits in Setup → CRM writes until RevOps approves it.
 

@@ -78,3 +78,15 @@ Each reminder is recorded under `potto/<request>-<kind>`, so it is never sent tw
 - `ENCORE_EMAIL_SERVICE`, `ENCORE_EMAIL_KEY`, `ENCORE_EMAIL_FROM`: email (already used elsewhere).
 - `ENCORE_PUBLIC_URL`: links in reminder texts and emails.
 - `ENCORE_TZ`: fallback time zone for quiet hours.
+- `ENCORE_SUPPORT_EMAIL`: optional. Comma list of team addresses that get an email for every "Talk to a person" message, with a link to it in the team inbox. Sent through the default email service (`ENCORE_EMAIL_*`), so set that up too.
+- `ENCORE_SUPPORT_SMS`: optional. Comma list of phone numbers (E.164, like `+15551234567`) that get a short text for every message. Needs Twilio (`ENCORE_TWILIO_*`).
+- `ENCORE_ADMIN_EMAILS`: comma list of the accounts that can open the team inbox at `/support` and reply. Everyone else gets a 404 there.
+
+## Help: "Need a hand?" (`public/help.js`, `server/help.js`)
+
+Every signed-in page, and every onboarding step before the account exists (`/signup`, `/login`, `/forgot`, `/reset`, `/join`, `/onboard`), has a **Need a hand?** button in the bottom corner. It sits above the phone tab bar and any button already fixed at the bottom right (Edit page, Shop), and moves to the top left when a full-height dialog leaves no room. Escape closes the panel.
+
+- **Potto** answers from `docs/help.md`, which is the whole knowledge base: keep it true to the product. With `ANTHROPIC_API_KEY`, Claude answers in 1 to 4 short sentences from the guide, given the host's handle, what their page still needs, the page they're on and the open event's title and status (never a guest's name, email, phone or reply). Without a key, the best-matching section of the guide answers. Signed in: 30 questions an hour per person (`ENCORE_HELP_PER_HOUR`). Signed out, on the onboarding pages only: 10 an hour per IP (`ENCORE_HELP_PER_HOUR_IP`).
+- **Talk to a person** is always visible. Signed in, the reply goes to the account email (and an optional phone); signed out, an email is required. The page, the event, the browser, the app version and the chat with Potto are attached. A hidden honeypot field and per-IP limits keep bots out. Messages are stored under `system/support-<id>` with status open, waiting or solved. With neither `ENCORE_SUPPORT_EMAIL` nor `ENCORE_SUPPORT_SMS` set, they're still stored and show at `/support`.
+- **Replies** from `/support` reach the host as an in-app notification, an email (when email is set up) and under **Your conversations** in the help panel.
+- **Potto offers help once a session** ("Stuck? I can help, or get you a person.") when someone stays on a sign-up, onboarding, wizard, page-setup or share step for 60 seconds without moving on, sees the same error twice, or signup fails because of a host code or an email already in use.

@@ -9560,7 +9560,7 @@ function pastTidy(){ try{ const d=draft, host=document.getElementById("stepHost"
 const NAV_ICONS=(()=>{ const I=d=>`<svg class="nav-ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   return { home:I('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>'), search:I('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'), globe:I('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
     plus:I('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/>'), cal:I('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'), me:I('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'), people:I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.5 3.6-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><circle cx="17" cy="9.5" r="2.8"/><path d="M16 14.6c2.6 0 4.5 1.5 5.5 4.4"/>') } })();
-{ const s=document.createElement("style"); s.textContent=`body.friends-ws nav.tabs a .nav-ic{flex:none;margin-right:12px;vertical-align:-5px}body.friends-ws nav.tabs a{display:flex;align-items:center}`; document.head.appendChild(s) }
+{ const s=document.createElement("style"); s.textContent=`body.friends-ws nav.tabs a .nav-ic{flex:none;margin-right:12px;vertical-align:-5px}body.friends-ws nav.tabs a{display:flex;align-items:center}@media (max-width:760px){body.friends-ws nav.tabs a[href="/feed"],body.friends-ws nav.tabs a[href="/hosts"]{display:none!important}}`; document.head.appendChild(s) }
 function navIcons(){ try{ if(!window.__wsPersonal) return; document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.querySelector(".nav-ic")) return; const t=a.textContent.trim(), v=a.dataset.view||"", h=a.getAttribute("href")||"";
     const ic=v==="programs"||t==="Home"?NAV_ICONS.home:t==="Discover"||/\/discover/.test(h)?NAV_ICONS.search:t==="Hosts"||/^\/hosts$/.test(h)?NAV_ICONS.people:t==="Feed"||/\/feed/.test(h)?NAV_ICONS.globe:t==="My page"||/\/@/.test(h)?NAV_ICONS.me:t==="Plans"||/\/plans/.test(h)?NAV_ICONS.cal:v==="studio"||t==="Events"?NAV_ICONS.plus:""; if(ic) a.insertAdjacentHTML("afterbegin",ic) }) }catch{} }
 new MutationObserver(()=>{ clearTimeout(window.__niT); window.__niT=setTimeout(navIcons,80) }).observe(document.documentElement,{childList:true,subtree:true});
@@ -9961,6 +9961,35 @@ function tidyAfter(){ try{ if(+step!==7||!draft?.id||!isCasual(draft)) return; c
   host.querySelectorAll("h2,h3").forEach(h=>{ const t=h.textContent; if(/^\d+ (people|person) came/.test(t)) { const nt=t.replace(/^\d+ (people|person) came/,`${n} ${n===1?"person":"people"} came`); if(nt!==t) h.textContent=nt } });
   host.querySelectorAll("section,.panel,.card").forEach(sec=>{ const h=sec.querySelector("h3"); if(h&&/^(What this event did|Scorecard|Results that fit your goal|Results)$/.test(h.textContent.trim())&&!sec.contains(host.querySelector(".ap-hero"))) sec.style.display="none" }) }catch{} }
 new MutationObserver(()=>tidyAfter()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- A calmer Plan step for friends' gatherings: the essentials open, everything optional one tap away.
+// (Design review: the step asked "where" three times and showed the menu builder, the questions builder and six
+// Potto helpers at once, about 4,500px on a phone.)
+function tidyPlan(){ try{ if(+step!==1||!draft?.id||!isCasual(draft)) return; const host=$("#stepHost"); if(!host) return;
+  // one place to say where: the host kit's field
+  const miss=host.querySelector("#hostKit .pub-miss"); if(miss&&host.querySelector("#hostKit .hk-ess")&&miss.style.display!=="none") miss.style.display="none";
+  // menu, price and nearby alerts: optional, folded
+  const more=host.querySelector("#hostKit .hk-more"); if(more&&!more.dataset.fold){ more.dataset.fold=1; const used=!!((draft.menu&&((draft.menu.courses||draft.menu.items||[]).length||draft.menu.theme))||(draft.price&&draft.price!=="chip"));
+    const det=document.createElement("details"); det.className="hk-fold"; det.open=used; det.innerHTML=`<summary><span>🍽 Menu, seat price and nearby alerts</span><small>optional</small></summary>`; while(more.firstChild) det.appendChild(more.firstChild); more.appendChild(det) }
+  // your own RSVP questions: a button until there's a question
+  const qb=host.querySelector("#qbPanel"); if(qb&&!qb.dataset.fold){ qb.dataset.fold=1; if(!(draft.questions||[]).some(q=>q&&q.q)){ qb.classList.add("qb-folded"); const b=document.createElement("button"); b.type="button"; b.className="qb-open"; b.innerHTML=`<span><b>Ask your guests something</b><small>Allergies, their IG, how many sets… in your own words</small></span><span aria-hidden="true">＋</span>`; b.onclick=()=>{ qb.classList.remove("qb-folded"); b.remove() }; qb.prepend(b) } }
+  // Potto's helpers: the topics stay, the panel opens when you pick one
+  const pa=host.querySelector("#pipAgents"); if(pa&&!pa.dataset.fold){ const body=pa.querySelector("#paBody"), tabs=pa.querySelector(".pa-tabs"); if(body&&tabs){ pa.dataset.fold=1; body.hidden=true; tabs.addEventListener("click",()=>{ body.hidden=false },true) } }
+}catch(err){ console.warn(err) } }
+{ const st=document.createElement("style"); st.textContent=`.hk-fold{border:1.5px dashed var(--line,#E4D9C8);border-radius:16px;padding:10px 14px;margin-top:10px}.hk-fold>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;list-style:none}.hk-fold>summary::-webkit-details-marker{display:none}.hk-fold>summary::after{content:"＋";font-weight:700}.hk-fold[open]>summary::after{content:"−"}.hk-fold>summary small{color:var(--muted,#6B5F56);font-weight:400;margin-left:auto;margin-right:10px}.hk-fold[open]>summary{margin-bottom:10px}
+@media (max-width:760px){#pipAgents .pa-tabs{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}#pipAgents .pa-tabs>*{flex:none}}#qbPanel.qb-folded>:not(.qb-open){display:none!important}#qbPanel .qb-open{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}#qbPanel .qb-open span:first-child{display:grid;gap:2px}#qbPanel .qb-open small{color:var(--muted,#6B5F56)}#qbPanel .qb-open>span:last-child{font-weight:700;font-size:20px}#qbPanel .qb-open:focus-visible{outline:3px solid #C4532F;outline-offset:4px;border-radius:10px}`; document.head.appendChild(st) }
+new MutationObserver(()=>tidyPlan()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- A calmer Guests step: one way to invite open, the rest when it's useful
+function tidyGuests(){ try{ if(+step!==6||!draft?.id||!isCasual(draft)) return; const host=$("#stepHost"); if(!host) return;
+  const going=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===draft.id&&r.response==="going").length+((draft.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length);
+  // the read on the room needs a room; the group chat needs someone in it
+  const room=host.querySelector("#roomCard"); if(room) room.style.display=going>=2?"":"none";
+  const chat=host.querySelector("#hostChat"); if(chat) chat.style.display=going>=1?"":"none";
+  // texting from Pottery Lab is one option among the share buttons, folded
+  const txi=host.querySelector(".txi"); if(txi&&!txi.dataset.fold){ const lab=[...txi.children].find(x=>x.matches?.("label.f")&&/text it from Pottery Lab/i.test(x.textContent)); if(lab){ txi.dataset.fold=1; const det=document.createElement("details"); det.className="hk-fold"; det.innerHTML=`<summary><span>📲 Or text it from Pottery Lab</span><small>they reply YES or NO</small></summary>`; let n=lab; const take=[]; while(n){ take.push(n); n=n.nextElementSibling } lab.before(det); take.forEach(x=>det.appendChild(x)) } }
+  // "invite these first" is advice for the very start
+  const first=host.querySelector("#firstYes"); if(first) first.style.display=going>=3?"none":"";
+}catch(err){ console.warn(err) } }
+new MutationObserver(()=>tidyGuests()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- Your guest list, in and out (from host research: "don't make me re-enter guests"; "let me take my list with me") ----------
 function guestRows(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id), seen=new Set(), out=[], key=x=>String(x.email||x.phone||x.name||"").trim().toLowerCase();
   // RSVPs are also copied onto the guest list; one row per person, with the RSVP's answers and door check-in

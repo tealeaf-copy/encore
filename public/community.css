@@ -110,3 +110,6 @@ html body .ev.ev-poster{border:1px solid #E4D9C8!important;box-shadow:0 1px 2px 
 .ev-poster .ev-photo{transition:transform .5s ease}
 @media (prefers-reduced-motion:reduce){.ev-poster,.ev-poster *{transition:none!important}.ev-poster:hover{transform:none}}
 .hc-ex{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:600;color:#6B5F56;background:#F3ECE2;border-radius:999px;padding:2px 8px}
+
+/* phones: shorter poster art, so a screen shows more than one event (design review) */
+@media (max-width:760px){.ev-poster .ev-art{aspect-ratio:2/1!important}.ev-poster .ea-cover .ea-txt h3,.ev-poster .ea-cover .ea-title{font-size:clamp(20px,6vw,26px)!important}}

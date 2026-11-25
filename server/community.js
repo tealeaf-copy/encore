@@ -21,10 +21,10 @@ const URL_OK = (u) => !u || /^https:\/\/[^\s<>"]{3,300}$/i.test(u);
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 // Storefront choices: curated, so every page looks good and stays readable.
 export const STORE = {
-  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C"],
-  fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold"],
-  backgrounds: ["cream", "white", "blush", "sage", "night"],
-  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain"],
+  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30"],
+  fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold", "florist"],
+  backgrounds: ["cream", "white", "blush", "sage", "night", "petal"],
+  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning"],
   buttons: ["round", "soft", "square"],
   avatars: ["", "florist", "straight", "bob", "pixie", "bun", "ponytail", "curls", "waves", "afro", "braids", "locs", "hijab", "headwrap", "beanie", "beard", "shaved", "chef", "runner", "barista", "baker", "glasses", "hiker"],
 };
@@ -193,7 +193,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const ready = !pageGaps(h).length;
       if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
-    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, scrapSections: undefined, showcase: true, followers: 0, upcoming: 0, hosted: 0 });
+    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, scrapSections: undefined, showcase: true, ...(P.example ? { sample: true } : {}), followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
     { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }

@@ -1,0 +1,116 @@
+{
+ "handle": "sweetpea-sorrel",
+ "name": "Sweet Pea & Sorrel",
+ "example": true,
+ "tagline": "Flower shop & studio. Small bouquets, tied by hand in Carroll Gardens.",
+ "bio": "A made-up example: a tiny flower shop in Brooklyn. Seasonal bouquets wrapped in paper, flowers for weddings and small events, and an evening bouquet workshop once a month.",
+ "city": "Brooklyn",
+ "hood": "Carroll Gardens",
+ "tags": [
+  "flowers",
+  "bouquets",
+  "event flowers",
+  "workshops"
+ ],
+ "emoji": "💐",
+ "color": "#1F3D30",
+ "theme": {
+  "accent": "#1F3D30",
+  "font": "florist",
+  "bg": "petal",
+  "cover": "awning",
+  "buttons": "round",
+  "avatarArt": "florist"
+ },
+ "services": "Wedding & event flowers | Bouquets | Workshops",
+ "shop": {
+  "open": true,
+  "title": "Bouquets for pickup",
+  "note": "Tied the morning you pick them up, with whatever is best that week.",
+  "where": "Pickup at the shop in Carroll Gardens",
+  "slots": [
+   "Tue to Sat, 10:00–18:00"
+  ],
+  "items": [
+   {
+    "name": "Small market bouquet",
+    "desc": "Poppies, ranunculus and greens, wrapped in paper.",
+    "emoji": "💐",
+    "cents": 4500,
+    "stock": 12,
+    "max": 3
+   },
+   {
+    "name": "The big bunch",
+    "desc": "A full armful for a table or a big thank-you.",
+    "emoji": "🌸",
+    "cents": 9500,
+    "stock": 6,
+    "max": 2
+   }
+  ]
+ },
+ "forHire": true,
+ "respondsIn": "within a day",
+ "terms": "Free to cancel up to 7 days before. Inside 7 days, half the quote.",
+ "experiences": [
+  {
+   "name": "Bouquet workshop for your team",
+   "desc": "An evening at the flower bench: pick your stems, learn to tie a hand-held bouquet, and take it home wrapped.",
+   "emoji": "💐",
+   "min": 6,
+   "max": 16,
+   "price": "$85 a person",
+   "length": "2 hours",
+   "category": "workshop",
+   "includes": [
+    "All flowers, greens and paper",
+    "Snips and twine for everyone",
+    "A bouquet each to take home"
+   ],
+   "travels": false
+  },
+  {
+   "name": "Flowers for your event",
+   "desc": "Table arrangements, a welcome piece and small bouquets for a dinner, launch or small wedding.",
+   "emoji": "🌷",
+   "min": 10,
+   "max": 120,
+   "price": "from $600",
+   "length": "Set up before, cleared after",
+   "category": "culture",
+   "includes": [
+    "A call to plan colors and flowers",
+    "Delivery and setup in Brooklyn and Manhattan",
+    "Pickup of vases after"
+   ],
+   "travels": true
+  }
+ ],
+ "past": [
+  {
+   "title": "Spring bouquet night",
+   "date": "2026-04-16",
+   "time": "Thu · 7 to 9pm",
+   "place": "Carroll Gardens, Brooklyn",
+   "note": "Our first workshop at the shop.",
+   "about": "Twelve people, a long bench and buckets of ranunculus and poppies. Everyone tied a bouquet and took it home."
+  },
+  {
+   "title": "Mother's Day pickup",
+   "date": "2026-05-10",
+   "time": "Sun · 9am to 2pm",
+   "place": "Carroll Gardens, Brooklyn",
+   "note": "Bouquets, pre-ordered.",
+   "about": "Pre-ordered bouquets, wrapped and ready to pick up, with coffee on the stoop."
+  },
+  {
+   "title": "Peony and poppy workshop",
+   "date": "2026-06-11",
+   "time": "Thu · 7 to 9pm",
+   "place": "Carroll Gardens, Brooklyn",
+   "note": "Early summer flowers.",
+   "about": "A hands-on evening with peonies and poppies at their best. Snips, twine and a bouquet each to take home."
+  }
+ ]
+}

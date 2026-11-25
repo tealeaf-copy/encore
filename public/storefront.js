@@ -10,26 +10,101 @@
     playful: { label: "Playful", head: "Fredoka", body: "Instrument Sans", q: "Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700" },
     handmade: { label: "Handmade", head: "Caveat", body: "Nunito", q: "Caveat:wght@600;700&family=Nunito:wght@400;600;700" },
     bold: { label: "Bold", head: "Archivo Black", body: "Archivo", q: "Archivo+Black&family=Archivo:wght@400;500;600" },
+    florist: { label: "Florist", head: "Cormorant Garamond", body: "Lato", q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700&family=Pinyon+Script" },
   };
-  const BGS = { cream: { label: "Cream", bg: "#FBF6EF", card: "#FFFFFF", ink: "#2B211C", soft: "#75685F", line: "#EEE4D8" }, white: { label: "White", bg: "#FFFFFF", card: "#FAF8F5", ink: "#1F1A17", soft: "#6F655E", line: "#ECE6DF" }, blush: { label: "Blush", bg: "#FFF1F3", card: "#FFFFFF", ink: "#2B1D21", soft: "#7A6267", line: "#F5DCE1" }, sage: { label: "Sage", bg: "#F1F6F1", card: "#FFFFFF", ink: "#1E2A22", soft: "#5F6F64", line: "#DCE7DE" } };
-  const ACCENTS = ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C"];
-  const COVERS = { wash: "Soft wash", sunrise: "Sunrise", dusk: "Dusk", dots: "Dots", waves: "Waves", confetti: "Confetti", plain: "Plain" };
+  const BGS = { cream: { label: "Cream", bg: "#FBF6EF", card: "#FFFFFF", ink: "#2B211C", soft: "#75685F", line: "#EEE4D8" }, white: { label: "White", bg: "#FFFFFF", card: "#FAF8F5", ink: "#1F1A17", soft: "#6F655E", line: "#ECE6DF" }, blush: { label: "Blush", bg: "#FFF1F3", card: "#FFFFFF", ink: "#2B1D21", soft: "#7A6267", line: "#F5DCE1" }, sage: { label: "Sage", bg: "#F1F6F1", card: "#FFFFFF", ink: "#1E2A22", soft: "#5F6F64", line: "#DCE7DE" }, petal: { label: "Petal", bg: "#F4E9EC", card: "#FFFFFF", ink: "#17251D", soft: "#655A5E", line: "#E8D5DB" } };
+  const ACCENTS = ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30"];
+  const COVERS = { wash: "Soft wash", sunrise: "Sunrise", dusk: "Dusk", dots: "Dots", waves: "Waves", confetti: "Confetti", plain: "Plain", awning: "Awning" };
   const BUTTONS = { round: "999px", soft: "12px", square: "4px" };
   const lum = (hex) => { const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const loaded = new Set(); const loadFont = (k) => { if (loaded.has(k) || !FONTS[k]) return; loaded.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${FONTS[k].q}&display=swap`; document.head.appendChild(l); };
+  const AWNING = "repeating-linear-gradient(90deg, #B98A99 0 34px, #F8F1E8 34px 68px)";
   function cover(t) { const a = t.accent; if (t.coverUrl) return `center/cover no-repeat url("${t.coverUrl}")`;
-    return { wash: `radial-gradient(120% 140% at 90% 0%, color-mix(in srgb, ${a} 45%, #fff) 0%, transparent 60%), linear-gradient(135deg, color-mix(in srgb, ${a} 22%, #fff), #FFFDF9)`, sunrise: `radial-gradient(90% 120% at 80% 110%, #FFE6A7 0%, transparent 55%), linear-gradient(120deg, color-mix(in srgb, ${a} 85%, #000) 0%, ${a} 35%, #F7C59F 75%)`, dusk: `radial-gradient(70% 120% at 82% 18%, color-mix(in srgb, ${a} 75%, transparent) 0%, transparent 60%), radial-gradient(60% 100% at 12% 100%, color-mix(in srgb, ${a} 28%, transparent) 0%, transparent 65%), linear-gradient(160deg, #1A1310 0%, #2B1C15 100%)`, dots: `radial-gradient(color-mix(in srgb, ${a} 70%, #fff) 2px, transparent 2.5px) 0 0/18px 18px, color-mix(in srgb, ${a} 14%, #fff)`, waves: `repeating-radial-gradient(circle at 10% 120%, color-mix(in srgb, ${a} 30%, #fff) 0 14px, color-mix(in srgb, ${a} 12%, #fff) 14px 28px)`, confetti: `radial-gradient(circle at 20% 30%, ${a} 4px, transparent 5px), radial-gradient(circle at 70% 60%, #E0A030 4px, transparent 5px), radial-gradient(circle at 45% 80%, #5B7FD6 3px, transparent 4px), radial-gradient(circle at 85% 20%, #3E9C6E 3px, transparent 4px) 0 0/120px 90px, color-mix(in srgb, ${a} 10%, #fff)`, plain: `color-mix(in srgb, ${a} 22%, #fff)` }[t.cover] || "none"; }
+    return { wash: `radial-gradient(120% 140% at 90% 0%, color-mix(in srgb, ${a} 45%, #fff) 0%, transparent 60%), linear-gradient(135deg, color-mix(in srgb, ${a} 22%, #fff), #FFFDF9)`, sunrise: `radial-gradient(90% 120% at 80% 110%, #FFE6A7 0%, transparent 55%), linear-gradient(120deg, color-mix(in srgb, ${a} 85%, #000) 0%, ${a} 35%, #F7C59F 75%)`, dusk: `radial-gradient(70% 120% at 82% 18%, color-mix(in srgb, ${a} 75%, transparent) 0%, transparent 60%), radial-gradient(60% 100% at 12% 100%, color-mix(in srgb, ${a} 28%, transparent) 0%, transparent 65%), linear-gradient(160deg, #1A1310 0%, #2B1C15 100%)`, dots: `radial-gradient(color-mix(in srgb, ${a} 70%, #fff) 2px, transparent 2.5px) 0 0/18px 18px, color-mix(in srgb, ${a} 14%, #fff)`, waves: `repeating-radial-gradient(circle at 10% 120%, color-mix(in srgb, ${a} 30%, #fff) 0 14px, color-mix(in srgb, ${a} 12%, #fff) 14px 28px)`, confetti: `radial-gradient(circle at 20% 30%, ${a} 4px, transparent 5px), radial-gradient(circle at 70% 60%, #E0A030 4px, transparent 5px), radial-gradient(circle at 45% 80%, #5B7FD6 3px, transparent 4px), radial-gradient(circle at 85% 20%, #3E9C6E 3px, transparent 4px) 0 0/120px 90px, color-mix(in srgb, ${a} 10%, #fff)`, plain: `color-mix(in srgb, ${a} 22%, #fff)`, awning: AWNING }[t.cover] || "none"; }
   const DEF = { accent: "#E26D8E", font: "classic", bg: "cream", cover: "wash", buttons: "round", coverUrl: "", avatarUrl: "" };
+  // one-tap looks: a whole set of choices at once (each one is still an ordinary swatch value)
+  const LOOKS = { default: { label: "Default", set: { accent: DEF.accent, font: DEF.font, bg: DEF.bg, cover: DEF.cover, buttons: DEF.buttons } },
+    florist: { label: "Flower shop", set: { accent: "#1F3D30", font: "florist", bg: "petal", cover: "awning", buttons: "round" } } };
+  const lookOf = (t) => Object.keys(LOOKS).find((k) => Object.entries(LOOKS[k].set).every(([f, v]) => t[f] === v)) || "";
+  const FLORAL = /\b(flowers?|florists?|floral|bouquets?|blooms?|ikebana)\b/i;
+  const floralText = (h) => [h.name, h.tagline, h.bio, h.services, ...(h.tags || []), ...(h.experiences || []).map((x) => x.name), ...((h.shop && h.shop.items) || []).map((x) => x.name)].filter(Boolean).join(" ");
+  // ---- the awning look: a green oval sign with the host's name, flowers round it, and a band of what they offer ----
+  const esc0 = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // the band lists only what the host wrote: their services (when written as a short list), else their experiences, shop items and gifts by name
+  function bandItems(h) { const s = String(h.services || "").trim(), parts = s.split(/\s*(?:\||•|·|;|\n)\s*/).map((x) => x.trim()).filter(Boolean);
+    let L = parts.length > 1 && parts.every((x) => x.length <= 40) ? parts : s && s.length <= 48 && !/[.!?]$/.test(s) ? [s] : [];
+    if (!L.length) L = [...(h.experiences || []), ...((h.shop && h.shop.items) || []), ...(h.gifts || [])].map((x) => String(x?.name || "").trim()).filter((x) => x && x.length <= 48);
+    return L.filter((x, i) => L.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 4); }
+  // the small line under the name: the start of their tagline (up to the first stop), else their neighborhood or city
+  function badgeLine(h) { const t = String(h.tagline || "").split(/[.!?,:;—–]|\s-\s/)[0].trim(), w = t.split(/\s+/);
+    if (t && t.length <= 30) return t;
+    // too long: stop before a place or "for…" clause, then at a word, never on "and" or "&"
+    if (t && w.length >= 2) { let o = ""; for (const x of w) { if (o && /^(in|at|on|for|with|from|near|by)$/i.test(x)) break; if ((o + " " + x).trim().length > 30) break; o = (o + " " + x).trim(); }
+      o = o.replace(/(\s+(and|&|or|the|a|of|to))+$/i, "").replace(/[,&]$/, "").trim(); if (o.split(/\s+/).length >= 2) return o; }
+    return [h.hood, h.city].filter(Boolean)[0] || ""; }
+  // flat flowers: poppies (petals round a dark centre) and ranunculus (layered rings), with leaves and stems
+  const SHADE = { "#F4B29A": "#D98C72", "#E98973": "#C8634E", "#F6EBD9": "#D8C4A6", "#F2A33A": "#CB7C16" };
+  const f2 = (n) => Math.round(n * 10) / 10;
+  function poppy(x, y, r, c, rot = 0) { const sh = SHADE[c]; let o = "";
+    for (let i = 0; i < 5; i++) { const a = ((rot + i * 72) * Math.PI) / 180; o += `<circle cx="${f2(x + Math.cos(a) * r * 0.42)}" cy="${f2(y + Math.sin(a) * r * 0.42)}" r="${f2(r * 0.6)}" fill="${c}" stroke="${sh}" stroke-width="1.4"/>`; }
+    o += `<circle cx="${x}" cy="${y}" r="${f2(r * 0.5)}" fill="${sh}" opacity=".28"/><circle cx="${x}" cy="${y}" r="${f2(r * 0.24)}" fill="#2A2420"/>`;
+    for (let i = 0; i < 10; i++) { const a = (i * 36 * Math.PI) / 180; o += `<circle cx="${f2(x + Math.cos(a) * r * 0.33)}" cy="${f2(y + Math.sin(a) * r * 0.33)}" r="${f2(r * 0.045 + 0.6)}" fill="#2A2420"/>`; }
+    return o + `<circle cx="${x}" cy="${y}" r="${f2(r * 0.12)}" fill="#6E7F45"/>`; }
+  function ranun(x, y, r, c) { const sh = SHADE[c]; let o = `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="${sh}" stroke-width="1.4"/>`;
+    [0.8, 0.62, 0.45, 0.3].forEach((k, i) => { o += `<circle cx="${f2(x + (i % 2 ? -1 : 1) * r * 0.05)}" cy="${f2(y - r * 0.036 * (i + 1))}" r="${f2(r * k)}" fill="${i % 2 ? c : "#FFFFFF"}" fill-opacity="${i % 2 ? 1 : 0.18}" stroke="${sh}" stroke-width="1.3"/>`; });
+    return o + `<circle cx="${x}" cy="${f2(y - r * 0.2)}" r="${f2(r * 0.12)}" fill="#7C8F4C"/>`; }
+  const leaf = (x, y, s, a, c = "#5B8656") => `<g transform="translate(${x} ${y}) rotate(${a}) scale(${s})"><path d="M0 0C12-15 42-15 60 0C42 15 12 15 0 0Z" fill="${c}"/><path d="M4 0H52" stroke="#3F6640" stroke-width="1.6" stroke-linecap="round"/></g>`;
+  const stem = (d) => `<path d="${d}" fill="none" stroke="#4E7A4C" stroke-width="4" stroke-linecap="round"/>`;
+  // two bunches, one for each side of the sign (drawn in a 220 x 200 box)
+  const BUNCH = {
+    l: stem("M70 200C72 170 92 150 118 128") + stem("M40 200C42 180 52 165 60 150") + stem("M150 200C150 185 158 175 165 165") + stem("M30 150C32 120 36 100 42 82") + leaf(64, 176, 1, -60) + leaf(100, 160, 0.9, -20, "#6E9A62") + leaf(20, 128, 0.8, -100, "#6E9A62") + leaf(140, 188, 0.85, -35) +
+      ranun(42, 80, 20, "#F2A33A") + ranun(62, 150, 38, "#F6EBD9") + poppy(122, 116, 46, "#E98973", 10) + poppy(168, 166, 30, "#F4B29A", 40),
+    r: stem("M150 0C148 30 128 50 104 72") + stem("M190 0C188 20 178 34 168 46") + stem("M70 0C72 14 64 26 56 34") + leaf(156, 26, 1, 120) + leaf(118, 40, 0.9, 160, "#6E9A62") + leaf(196, 70, 0.8, 80, "#6E9A62") + leaf(80, 12, 0.85, 145) +
+      ranun(186, 116, 22, "#E98973") + ranun(160, 48, 36, "#F6EBD9") + poppy(100, 82, 44, "#F4B29A", 25) + poppy(54, 36, 28, "#F2A33A", 0),
+  };
+  const bunch = (k, cls) => `<svg class="${cls}" viewBox="0 0 220 200" aria-hidden="true">${BUNCH[k]}</svg>`;
+  const AW_CSS = `.cover.cv-awning{position:relative;overflow:hidden;height:300px;border-radius:24px 24px 0 0}.cv-aw{position:absolute;inset:0;pointer-events:none}
+    .aw-stripes{position:absolute;inset:0;background:linear-gradient(rgba(60,30,40,.16),transparent 22%),${AWNING};-webkit-mask:radial-gradient(circle at 50% 0,#000 16.5px,transparent 17px) 0 100%/34px 17px repeat-x,linear-gradient(#000 0 0) 0 0/100% calc(100% - 17px) no-repeat;mask:radial-gradient(circle at 50% 0,#000 16.5px,transparent 17px) 0 100%/34px 17px repeat-x,linear-gradient(#000 0 0) 0 0/100% calc(100% - 17px) no-repeat}
+    .aw-scrim{position:absolute;inset:0;background:radial-gradient(60% 70% at 50% 50%,rgba(20,30,24,.42),rgba(20,30,24,.12) 70%,transparent)}
+    .aw-badge{position:absolute;left:50%;top:calc(50% - 8px);width:min(400px,62%);transform:translate(-50%,-50%);container-type:inline-size}
+    .aw-oval{position:relative;z-index:1;aspect-ratio:1.72;border-radius:50%;background:var(--aw-g);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 14px 28px -12px rgba(20,30,24,.55);padding:0 15%;box-sizing:border-box}
+    .aw-oval::after{content:"";position:absolute;inset:3.2cqw;border:max(1.5px,.45cqw) solid rgba(255,255,255,.9);border-radius:50%}
+    .aw-oval b{font:400 calc(var(--k) * 1cqw)/1.05 "Pinyon Script","Great Vibes",cursive;letter-spacing:0;white-space:nowrap;padding:0 .1em}
+    .aw-oval small{margin-top:1.8cqw;font:700 clamp(8px,3cqw,12.5px)/1.2 "Lato","Instrument Sans",sans-serif;letter-spacing:.22em;text-transform:uppercase;opacity:.95;max-width:100%}
+    .aw-fl{position:absolute;z-index:2;filter:drop-shadow(0 6px 8px rgba(40,25,20,.18))}.aw-fl-l{width:48%;left:-27%;bottom:-36%}.aw-fl-r{width:46%;right:-26%;top:-36%}
+    .aw-c{position:absolute;z-index:0;width:min(190px,22%);filter:drop-shadow(0 6px 8px rgba(40,25,20,.14))}.aw-c-tl{left:-3%;top:-10%}.aw-c-br{right:-2%;bottom:-4%}
+    .cv-band{background:var(--aw-g);color:#F6EBD9;border-radius:0 0 18px 18px;padding:12px 18px 13px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 0;font:600 21px/1.3 "Cormorant Garamond",Georgia,serif;letter-spacing:.01em;text-align:center}
+    .cv-band i{font-style:normal;opacity:.55;margin:0 14px;font-weight:400}
+    .cv-band + .head{margin-top:20px}.cv-band + .head>div:nth-child(2){padding-top:12px}.cv-band + .head>#topFollow{margin-top:24px}
+    .cover.cv-awning:not(:has(+ .cv-band)){border-radius:24px}
+    @media (max-width:760px){.cover.cv-awning{height:232px;border-radius:20px 20px 0 0}.aw-badge{width:min(300px,74%);top:calc(50% - 6px)}.aw-fl-l{width:44%;left:-21%;bottom:-34%}.aw-fl-r{width:42%;right:-20%;top:-34%}.aw-c{display:none}.cv-band{font-size:15.5px;padding:9px 10px 10px;border-radius:0 0 16px 16px}.cv-band i{margin:0 8px}}`;
+  function awning(cv, h, t) { if (!document.getElementById("aw-css")) { const st = document.createElement("style"); st.id = "aw-css"; st.textContent = AW_CSS; document.head.appendChild(st); }
+    // the sign takes the accent when white reads well on it, else forest green
+    const g = contrast(t.accent, "#FFFFFF") >= 7 ? t.accent : "#1F3D30", name = String(h.name || "@" + (h.handle || "")).trim(), line = badgeLine(h), photo = !!t.coverUrl;
+    if (!photo) cv.style.background = "transparent"; cv.style.setProperty("--aw-g", g); cv.classList.add("cv-awning");
+    const box = document.createElement("div"); box.className = "cv-aw"; box.setAttribute("aria-hidden", "true");
+    box.innerHTML = `${photo ? `<div class="aw-scrim"></div>` : `<div class="aw-stripes"></div>${bunch("r", "aw-c aw-c-tl")}${bunch("l", "aw-c aw-c-br")}`}<div class="aw-badge">${bunch("l", "aw-fl aw-fl-l")}<div class="aw-oval" style="--k:${f2(Math.min(13.5, 190 / Math.max(10, name.length)))}"><b>${esc0(name)}</b>${line ? `<small>${esc0(line)}</small>` : ""}</div>${bunch("r", "aw-fl aw-fl-r")}</div>`;
+    cv.appendChild(box);
+    const L = bandItems(h); if (L.length) { const b = document.createElement("div"); b.id = "storeBand"; b.className = "cv-band"; b.style.setProperty("--aw-g", g); b.innerHTML = L.map((x) => `<span>${esc0(x)}</span>`).join(`<i aria-hidden="true">|</i>`); cv.after(b);
+      // a divider never ends a line: hide the ones that wrapped to the end of a line
+      const fix = () => document.querySelectorAll("#storeBand i").forEach((i) => { i.style.visibility = ""; const n = i.nextElementSibling; if (n && n.offsetTop > i.offsetTop + 4) i.style.visibility = "hidden"; });
+      requestAnimationFrame(fix); document.fonts?.ready.then(fix); if (!window.__awFix) { window.__awFix = 1; addEventListener("resize", fix); } } }
   function apply(h) { const t = { ...DEF, ...(h.theme || {}) }; if (!t.coverUrl && (h.gallery || [])[0]) t.coverUrl = h.gallery[0]; const _t = t, B = BGS[t.bg] || BGS.cream, F = FONTS[t.font] || FONTS.classic, root = document.documentElement.style; loadFont(t.font);
     // Guardrail: the accent is used for buttons; text on it is white or ink, whichever reads better. Accent text on the page darkens if it would be hard to read.
     const onAccent = contrast(t.accent, "#FFFFFF") >= 3 ? "#FFFFFF" : "#1F1A17", accentText = contrast(t.accent, B.bg) >= 3 ? t.accent : t.bg === "night" ? `color-mix(in srgb, ${t.accent} 60%, #fff)` : `color-mix(in srgb, ${t.accent} 60%, #000)`;
     Object.entries({ "--accent": t.accent, "--bg": B.bg, "--card": B.card, "--ink": B.ink, "--soft": B.soft, "--line": B.line, "--brand": t.accent, "--brand2": accentText, "--on-brand": onAccent, "--c": t.accent, "--pink": `color-mix(in srgb, ${t.accent} 14%, ${B.card})`, "--radius": BUTTONS[t.buttons] || "999px", "--head": `"${F.head}", Georgia, serif`, "--body": `"${F.body}", system-ui, sans-serif` }).forEach(([k, v]) => { root.setProperty(k, v); document.body.style.setProperty(k, v); });
     document.documentElement.dataset.theme = "light"; document.body.classList.add("store");
-    const cv = document.querySelector(".cover"); if (cv) { cv.style.background = cover(t);
+    // the Petal background and the Florist type are part of the Flower shop look: they win over the house paper and headings
+    document.body.classList.toggle("bg-petal", t.bg === "petal"); document.body.classList.toggle("font-florist", t.font === "florist");
+    if ((t.bg === "petal" || t.font === "florist") && !document.getElementById("petal-css")) { const st = document.createElement("style"); st.id = "petal-css"; st.textContent = `html body.store.bg-petal{background-color:var(--bg)!important;color:var(--ink)}body.store.font-florist h1,body.store.font-florist h2,body.store.font-florist h3,body.store.font-florist .nu-title{font-family:var(--head)!important;font-weight:600!important;letter-spacing:0!important}body.store.font-florist .head h1{font-size:clamp(32px,5vw,46px)}`; document.head.appendChild(st); }
+    // a made-up example page (a preset marked "example"): say so, rather than "isn't on Pottery Lab yet, claim this page"
+    if (h.showcase && h.example) { const n = document.querySelector(".sc-note"); if (n && !n.dataset.ex) { n.dataset.ex = 1; n.innerHTML = `<span><b>Example page.</b> A made-up shop, to show what a page can look like. Nothing here can be booked.</span><a href="/signup?mode=friends">Start your page</a>`; } }
+    const cv = document.querySelector(".cover"); if (cv) { cv.style.background = cover(t); cv.querySelector(".cv-aw")?.remove(); cv.classList.remove("cv-awning"); document.getElementById("storeBand")?.remove();
+      if (t.cover === "awning") { loadFont("florist"); awning(cv, h, t); }
       // no cover photo: draw what they make, as line-art stickers on the cover (bread for a baker, cups for a café)
       cv.querySelector(".cv-art")?.remove(); const EA = window.EventArt;
-      if (!t.coverUrl && EA && t.cover !== "plain-only") { const ks = EA.kindsOf({ title: `${h.tagline || ""} ${(h.tags || []).join(" ")}`, why: `${h.bio || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}` }).filter((k) => !["party", "tech", "talk", "workshop", "giveaway", "market"].includes(k)).slice(0, 3);
+      if (!t.coverUrl && EA && t.cover !== "awning") { const ks = EA.kindsOf({ title: `${h.tagline || ""} ${(h.tags || []).join(" ")}`, why: `${h.bio || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}` }).filter((k) => !["party", "tech", "talk", "workshop", "giveaway", "market"].includes(k)).slice(0, 3);
         if (ks.length) { const box = document.createElement("div"); box.className = "cv-art"; box.setAttribute("aria-hidden", "true"); box.innerHTML = ks.map((k, i) => `<span style="--r:${[-6, 5, -3][i]}deg">${EA.drawing(k, t.accent)}</span>`).join("");
           if (!document.getElementById("cv-art-css")) { const st = document.createElement("style"); st.id = "cv-art-css"; st.textContent = `.cover{position:relative;overflow:hidden}.cv-art{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:10px 28px;pointer-events:none}.cv-art span{width:min(170px,26%);transform:rotate(var(--r));filter:drop-shadow(0 0 0 #fff) drop-shadow(0 6px 10px rgba(31,26,23,.12));background:rgba(255,255,255,.55);border-radius:22px;padding:6px}.cv-art svg{width:100%;height:auto;display:block}@media (max-width:760px){.cv-art{padding:8px 14px}.cv-art span{width:30%}.cv-art span:nth-child(3){display:none}}`; document.head.appendChild(st); }
           cv.appendChild(box); } } }
@@ -69,6 +144,18 @@
     if ((mine.gallery || []).length < 3 && !document.getElementById("photoNudge") && !/Nothing coming up yet/.test(document.body.innerText) && !friends) { const n = document.createElement("div"); n.id = "photoNudge"; n.className = "photo-nudge"; n.innerHTML = `<b>${(mine.gallery || []).length ? `Add ${3 - mine.gallery.length} more photo${3 - mine.gallery.length === 1 ? "" : "s"}` : "Add 3 photos"}</b><span>The first one becomes your cover.</span><a class="btn" href="?bookings=1#photos">Add photos</a>`; (document.querySelector("main") || document.body).prepend(n); }
     const st = { theme: { ...DEF, ...(h.theme || {}) }, sections: { upcoming: true, kudos: true, photos: true, hire: true, tips: true, profile: true, past: true, ...(h.sections || {}) }, links: [...(h.links || [])], tagline: h.tagline || "", recommends: [...(h.recommends || [])] };
     Object.keys(FONTS).forEach(loadFont);
+    { const s0 = document.createElement("style"); s0.textContent = `.sws.looks .sw{min-width:92px}.sws.looks .sw i.lk-i{width:84px;height:46px;border-radius:10px;position:relative;border:1px solid #E6DDD2}.lk-florist::after{content:"";position:absolute;left:50%;top:50%;width:40px;height:24px;transform:translate(-50%,-50%);border-radius:50%;background:#1F3D30;box-shadow:inset 0 0 0 2px #1F3D30,inset 0 0 0 3px #fff}
+      .look-tip{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin:12px 0;padding:10px 14px;border-radius:16px;background:#fff;border:1.5px solid #1F3D30;font-size:15px}.look-tip i.lk-dot{display:inline-block;width:34px;height:22px;border-radius:6px;vertical-align:middle;margin-right:8px;background:repeating-linear-gradient(90deg,#B98A99 0 6px,#F8F1E8 6px 12px);position:relative}.look-tip i.lk-dot::after{content:"";position:absolute;inset:5px 8px;border-radius:50%;background:#1F3D30}.look-tip span{display:flex;gap:8px}.look-tip button{min-height:40px;border-radius:999px;padding:0 16px;font:600 14px inherit;font-family:inherit;cursor:pointer;border:1.5px solid #1F3D30}.look-tip .lt-yes{background:#1F3D30;color:#fff}.look-tip .lt-no{background:none;color:#1F3D30}`; document.head.appendChild(s0); }
+    // a florist on the default look: offer the Flower shop look once (Apply saves it; Not now is remembered on this device)
+    const tipKey = "encore-look-tip-" + h.handle, tipOff = (() => { try { return !!localStorage.getItem(tipKey); } catch { return false; } })();
+    if (!tipOff && lookOf(st.theme) !== "florist" && ["font", "bg", "cover"].every((k) => st.theme[k] === DEF[k]) && FLORAL.test(floralText(mine)) && !document.getElementById("lookTip")) {
+      const n = document.createElement("div"); n.id = "lookTip"; n.className = "look-tip"; n.setAttribute("role", "note"); n.innerHTML = `<b><i class="lk-dot" aria-hidden="true"></i>Try the Flower shop look</b><span><button type="button" class="lt-yes">Apply</button><button type="button" class="lt-no">Not now</button></span>`;
+      const off = () => { try { localStorage.setItem(tipKey, "1"); } catch {} };
+      n.querySelector(".lt-no").onclick = () => { off(); n.remove(); };
+      n.querySelector(".lt-yes").onclick = async () => { off(); Object.assign(st.theme, LOOKS.florist.set); live(); n.innerHTML = `<b>Saving…</b>`;
+        try { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: st.theme }) }); const k = await r.json().catch(() => ({})); if (!r.ok) throw new Error(k.message || "That didn't save. Try again."); if (k.host) Object.assign(h, k.host); n.innerHTML = `<b>Done. Change it any time in Edit page.</b>`; setTimeout(() => n.remove(), 4000); }
+        catch (e) { n.innerHTML = `<b>${esc0(e.message)}</b>`; } };
+      (document.querySelector("main") || document.body).prepend(n); }
     const fab = document.createElement("button"); fab.className = "store-fab"; fab.type = "button"; fab.innerHTML = "✏️ Edit page"; document.body.appendChild(fab);
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const live = () => apply({ ...h, theme: st.theme, sections: st.sections, links: st.links.filter((l) => l.label && /^https:\/\//.test(l.url)), tagline: st.tagline });
@@ -76,6 +163,7 @@
     function draw() { const t = st.theme;
       pane.innerHTML = `<div class="sp-head"><b>Make it yours</b><button type="button" class="sp-x" aria-label="Close">✕</button></div>
         <p class="sp-url">${location.host}/@${h.handle} <button type="button" id="sp-copy">Copy link</button></p><div id="spName"></div>
+        <h4>Looks</h4><div class="sws looks">${Object.entries(LOOKS).map(([k, L]) => `<button type="button" class="sw lk" data-look="${k}" aria-pressed="${lookOf(t) === k}" title="${L.label}"><i class="lk-i lk-${k}" style="background:${cover({ ...t, ...L.set, coverUrl: "" })}"></i><small>${L.label}</small></button>`).join("")}</div>
         <h4>Color</h4><div class="sws">${ACCENTS.map((a) => sw("accent", a, `<i style="background:${a}"></i>`)).join("")}</div>
         <h4>Font</h4><div class="sws fonts">${Object.entries(FONTS).map(([k, f]) => sw("font", k, `<span style="font-family:'${f.head}'">Aa</span><small>${f.label}</small>`, f.label)).join("")}</div>
         <h4>Background</h4><div class="sws">${Object.entries(BGS).map(([k, b]) => sw("bg", k, `<i style="background:${b.bg};border:1px solid ${b.line}"></i><small>${b.label}</small>`, b.label)).join("")}</div>
@@ -102,6 +190,7 @@
         try { if (!navigator.clipboard?.writeText) throw 0; await navigator.clipboard.writeText(link); b.textContent = "Link copied."; }
         catch { let f = pane.querySelector("#sp-link"); if (!f) { f = document.createElement("input"); f.id = "sp-link"; f.readOnly = true; f.value = link; f.setAttribute("aria-label", "Your page link"); f.style.cssText = "width:100%;box-sizing:border-box;margin-top:6px;padding:8px 10px;border:1px solid #DCCFBE;border-radius:10px;font:inherit"; b.after(f); } f.focus(); f.select(); b.textContent = "Copy the link below"; } };
       pane.querySelectorAll(".sw").forEach((b) => (b.onclick = () => { st.theme[b.dataset.k] = b.dataset.v; if (b.dataset.k === "cover") st.theme.coverUrl = ""; if (b.dataset.k === "avatarArt") st.theme.avatarUrl = ""; live(); draw(); }));
+      pane.querySelectorAll("[data-look]").forEach((b) => (b.onclick = () => { Object.assign(st.theme, LOOKS[b.dataset.look].set); live(); draw(); msg("Looks good. Tap Save."); }));
       pane.querySelectorAll("[data-sec]").forEach((c) => (c.onchange = () => { st.sections[c.dataset.sec] = c.checked; live(); }));
       pane.querySelector("#sp-tag").oninput = (e) => { st.tagline = e.target.value; live(); };
       pane.querySelectorAll("[data-rh],[data-rn]").forEach((x) => (x.oninput = () => { const i = +(x.dataset.rh ?? x.dataset.rn), raw = pane.querySelector(`[data-rh="${i}"]`).value.trim(), hd = (raw.match(/@([a-z0-9-]+)/i) || [, raw])[1].toLowerCase(); st.recommends[i] = { handle: hd, note: pane.querySelector(`[data-rn="${i}"]`).value.trim() }; }));
@@ -146,7 +235,7 @@
       at.after(b); const st = document.createElement("style"); st.textContent = `.bio-nudge{margin:12px 0 0;border:1.5px dashed #CDBFAE;background:none;color:inherit;border-radius:999px;padding:6px 12px;font:600 14px inherit;font-family:inherit;cursor:pointer}.bio-f{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;max-width:560px}.bio-f input{flex:1;min-width:0;min-height:44px;border:1px solid #D9CDBF;border-radius:12px;padding:0 12px;font:inherit}.bio-f button{min-height:44px;border-radius:999px;border:1px solid #1F1A17;background:#1F1A17;color:#fff;padding:0 16px;font:600 15px inherit;font-family:inherit}.bio-f small{flex-basis:100%;color:#B4412A}`; document.head.appendChild(st); } }
     if (/[?&]customize=1/.test(location.search)) fab.click();
   }
-  window.EncoreStore = { apply, editor, feature };
+  window.EncoreStore = { apply, editor, feature, bandItems, badgeLine, LOOKS, FONTS, BGS, COVERS, BUTTONS, ACCENTS, FLORAL, floralText };
 })();
 
 // ---- the host edits their next event right on their page: click a detail, change it, it saves ----

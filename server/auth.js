@@ -193,7 +193,7 @@ export function loginHandler(req, res) {
     if (!u) return deny(2, "That email and password don't match.");
     // Enforced SSO: password sign-in is off for the domain, except for the owner who set SSO up (break-glass).
     const sso = u.ws !== DEFAULT_WS ? ssoForEmail(u.email) : null;
-    if (sso && sso.enforce && sso.ws === u.ws && sso.configuredBy !== u.email) return isForm ? res.redirect(303, "/login?error=4") : res.status(401).json({ code: "sso_required", message: "Your company signs in with single sign-on. Use \"Sign in with SSO\".", sso: "/sso/start?email=" + encodeURIComponent(u.email) });
+    if (sso && sso.enforce && sso.ws === u.ws && sso.configuredBy !== u.email) return isForm ? res.redirect(303, "/login?error=4") : res.status(401).json({ code: "sso_required", message: "Your company uses single sign-on. Sign in with SSO instead.", sso: "/sso/start?email=" + encodeURIComponent(u.email) });
     // A personal password, when set, is required; the shared team password then doesn't work for that person.
     // Accounts made by sign-up or invite always have one.
     const personal = checkPersonal(u, password);
@@ -225,10 +225,10 @@ export function startPasswordReset(email) {
 }
 /** Sets the new password and signs out every existing session. Returns the person, or an error string. */
 export function finishPasswordReset(token, password) {
-  if (!/^[a-f0-9]{48}$/.test(String(token || ""))) return "This link has expired. Get a new one.";
-  if (String(password || "").length < 10) return "Use 10+ characters.";
-  const hit = store?.get(resetPath(token))?.data; if (!hit || hit.used || hit.exp < Date.now()) return "This reset link has expired. Ask for a new one.";
-  const u = getDbUser(hit.email); if (!u) return "This link has expired. Get a new one.";
+  if (!/^[a-f0-9]{48}$/.test(String(token || ""))) return "This link has expired.";
+  if (String(password || "").length < 10) return "Password needs 10+ characters.";
+  const hit = store?.get(resetPath(token))?.data; if (!hit || hit.used || hit.exp < Date.now()) return "This link has expired.";
+  const u = getDbUser(hit.email); if (!u) return "This link has expired.";
   putDbUser({ ...u, pw: hashPassword(password), gen: (u.gen || 0) + 1, pwChangedAt: Date.now() }); store.set(resetPath(token), { ...hit, used: Date.now() }); clearFailsFor(u.email);
   return getDbUser(u.email);
 }

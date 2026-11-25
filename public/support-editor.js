@@ -1,4 +1,4 @@
-// Supporters and wishlist, edited where the rest of your profile is: the "Edit my page" panel on /@you.
+// Support and wishlist, edited where the rest of your profile is: the "Edit my page" panel on /@you.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const css = `.se-sup{margin-top:14px;border-top:1px solid rgba(0,0,0,.08);padding-top:12px}.se-sup summary{cursor:pointer;font-weight:700;list-style:none}.se-sup summary::-webkit-details-marker{display:none}.se-sup summary::after{content:"+";float:right;font-weight:400}.se-sup[open] summary::after{content:"–"}
@@ -12,7 +12,7 @@
     if (!document.getElementById("seSupCss")) { const s = document.createElement("style"); s.id = "seSupCss"; s.textContent = css; document.head.appendChild(s); }
     const S = host.support || {}, W = (host.wishlist || []).length ? host.wishlist : [{ emoji: "🎲" }];
     const d = document.createElement("details"); d.className = "se-sup"; if (location.hash === "#support") d.open = true;
-    d.innerHTML = `<summary>Supporters and wishlist</summary><p class="hint">Let guests chip in. No one is charged until you turn on payments.</p>
+    d.innerHTML = `<summary>Support and wishlist</summary><p class="hint">Let guests chip in. No one is charged yet.</p>
       <label class="tg"><input type="checkbox" class="on" ${S.on ? "checked" : ""}> Show a pledge card on my page</label>
       <div class="r3"><label class="f">Monthly $<input class="m" type="number" min="0" max="999" value="${esc(S.monthly ?? 5)}"></label><label class="f">Yearly $<input class="y" type="number" min="0" max="999" value="${esc(S.yearly ?? 50)}"></label><label class="f">Founding $<input class="fo" type="number" min="0" max="999" value="${esc(S.founding || "")}" placeholder="optional"></label></div>
       <label class="f">A line for supporters<input class="note" maxlength="200" value="${esc(S.note || "")}" placeholder="Pledges cover ingredients so tickets stay free."></label>

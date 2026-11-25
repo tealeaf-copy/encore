@@ -26,7 +26,7 @@ test("Trust shows only real or labelled proof: no placeholder people or brands, 
   assert.match(I.insurance.text, /^Insurance certificate on file \(expires Mar 1, 2099\)$/); assert.ok(I.insurance.url);
   const E = trustFrom({ h, example: true, badges: [{ id: "legend" }] });
   assert.ok(E.workedWith.every((w) => w.label === "Example")); assert.deepEqual(E.badges, []); assert.equal(E.insurance.onFile, false);
-  const N = trustFrom({ h: { name: "Pottery Lab Studio" } }); assert.ok(N.isNewHere); assert.match(N.newLine, /^Requests are free/); assert.deepEqual(N.lines, []);
+  const N = trustFrom({ h: { name: "Pottery Lab Studio" } }); assert.ok(N.isNewHere); assert.match(N.newLine, /^Sending a request is free/); assert.deepEqual(N.lines, []);
 });
 
 test("The goal decides the match: an omakase counter beats a run for an exec dinner; a venue wins a meetup", () => {

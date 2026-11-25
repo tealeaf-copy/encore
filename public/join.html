@@ -28,7 +28,7 @@
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = { ...Object.fromEntries(new FormData(f)), token };
-    if (String(body.password || "").length < 10) { err.textContent = "Use 10+ characters."; return; }
+    if (String(body.password || "").length < 10) { err.textContent = "Password needs 10+ characters."; return; }
     go.disabled = true;
     try {
       const r = await fetch("/api/join", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });

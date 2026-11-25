@@ -104,7 +104,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 
   // ---- one location chip: tap to set your city ----
   if (P) $("#locCities").innerHTML = P.CITIES.map((c) => `<option value="${esc(c[0])}">`).join("");
-  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city ? "Small events near you" : "Small events, big welcome"; };
+  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && (!data.events.length || data.events.some(near)) ? "Small events near you" : "Small events, big welcome"; };
   const openLoc = (open) => { $("#locPanel").hidden = !open; $("#locBtn").setAttribute("aria-expanded", String(open)); if (open) { $("#locIn").value = city; $("#locNote").textContent = ""; $("#locIn").focus(); } };
   const setCity = (c, source) => { city = String(c || "").trim(); try { if (P) { if (source === "gps") { /* place.js already saved it */ } else P.setManual(city); } else localStorage.setItem("encore.city", city); } catch {} evShown = PAGE; farOpen = false; drawLoc(); drawAll(); };
   $("#locBtn").onclick = () => openLoc($("#locPanel").hidden);
@@ -147,6 +147,7 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     whyN = 0; const realN = data.events.filter((e) => !e.sample).length;
     const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
     const local = base.filter(near), far = city ? base.filter((e) => !near(e)) : [];
+    { const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && data.events.some(near) ? "Small events near you" : "Small events, big welcome"; } // no "near you" over "Nothing in Tokyo"
     const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter]) : "Coming up";
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
     let list = local, note = "", rest = [];

@@ -51,7 +51,7 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "event" : "events"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
     if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("an event in the next few weeks");
     if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
-  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first event: it starts your streak and fills your page." });
+  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first event to start a streak." });
   else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} events.` });
   return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
 }
@@ -174,6 +174,6 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
   const isNewHere = !example && !guests && !done.length && !events;
   return { example, guests, returning, kudos, events, followers, bookings: done.length, scrapbook: pastSb.length, returned, again, lines: lines.map((l) => ({ ...l, label: "" })), badges: example ? [] : badges,
     workedWith: W, testimonials, pastCorporate, socials, insurance, isNewHere,
-    newLine: isNewHere ? "Requests are free." : "",
+    newLine: isNewHere ? "Sending a request is free." : "",
     rules: { minN: MIN_N } };
 }

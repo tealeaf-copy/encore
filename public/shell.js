@@ -20,8 +20,8 @@
 })();
 (function () {
   if (window.__encoreShell) return; window.__encoreShell = 1;
-  const P = location.pathname, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand";
-  if (!(isG || /^\/(discover|feed|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
+  const P = location.pathname, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand", TABS_ONLY = P === "/" && document.body?.dataset?.shell === "tabs"; // the signed-out home keeps its own desktop header and takes only the phone tab bar
+  if (!(isG || TABS_ONLY || /^\/(discover|feed|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
   if (/^\/(teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/gifts\/plan/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
@@ -34,6 +34,7 @@
     me: I('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     people: I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.5 3.6-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><circle cx="17" cy="9.5" r="2.8"/><path d="M16 14.6c2.6 0 4.5 1.5 5.5 4.4"/>'),
     gift: I('<rect x="3.5" y="9" width="17" height="11.5" rx="1.5"/><path d="M12 9v11.5M3.5 13.5h17M12 9C10.5 6 7 5 7 7.5S10.5 9 12 9zm0 0c1.5-3 5-4 5-1.5S13.5 9 12 9z"/>'),
+    brief: I('<rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 13h17"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
   };
   const css = document.createElement("style");
@@ -74,17 +75,17 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
-        : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1", ICON.plus, "Start your page")
-        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/login", ICON.login, "Sign in") + (BRAND ? item("/gifts", ICON.gift, "Gifts") + item("/hosts/book", ICON.people, "For brands") : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
+        : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
+        : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + item("/hosts/book", ICON.brief, "For brands") + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
-    document.body.prepend(rail); document.body.classList.add("es-has-rail");
+    if (!TABS_ONLY) { document.body.prepend(rail); document.body.classList.add("es-has-rail"); }
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
-      tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
+      tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/feed", ICON.globe, "Feed") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
         (signed ? `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Start your page"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` : tab("/hosts", ICON.people, "Hosts")) +
-        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.people, "For brands") : tab("/signup?mode=friends", ICON.plus, "Start"))));
+        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Start"))));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1#studio">New event</a>` : ""}</nav>`;

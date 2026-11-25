@@ -50,7 +50,7 @@
   (function () { const q = new URLSearchParams(location.search), f = document.getElementById("f");
     const set = (m) => { f.mode.value = m; document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
       const fr = m === "friends", fol = fr && !!q.get("regularOf"); document.getElementById("h").textContent = fr ? (fol ? "Follow along" : "Start your page") : "Start your free trial";
-      document.getElementById("sub").textContent = fr ? (fol ? "Free. No card needed." : "Free to host friends.") : "14 days, every feature, no card.";
+      document.getElementById("sub").textContent = fr ? (fol ? "Hear about the next one." : "Free to host friends.") : "14 days, every feature, no card.";
       { const cw0 = document.getElementById("coWrap"); cw0.hidden = fol; if (fol) f.company.value = ""; }
       document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
       f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Follow" : "Create my page") : "Start free trial"; };
@@ -66,7 +66,7 @@
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">We'll email you if a host sends you a host code.</p>`;
+        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">We'll be in touch.</p>`;
       } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();
@@ -83,8 +83,8 @@
     if (document.getElementById("codeOk").classList.contains("bad")) return stop("That host code doesn't work. Check it with the host who sent it.", f.code);
     if (!String(body.name || "").trim()) return stop("Add your name.", f.elements.name);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || "").trim())) return stop("That email doesn't look right.", f.email);
-    if (body.mode === "work" && !String(body.company || "").trim()) return stop("Add your brand, or pick \"With friends\".", f.company);
-    if (String(body.password || "").length < 10) return stop("Use 10+ characters.", f.password);
+    if (body.mode === "work" && !String(body.company || "").trim()) return stop("Add your company, or pick \"With friends\".", f.company);
+    if (String(body.password || "").length < 10) return stop("Password needs 10+ characters.", f.password);
     go.disabled = true;
     try {
       const r = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });

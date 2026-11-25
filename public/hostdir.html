@@ -32,21 +32,23 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 <div class="wrap">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
   <h1>Find a host</h1>
-  <p class="lede">Run clubs, supper clubs, bakers and artists.</p>
+  <p class="lede">Bakers, potters, run crews and cooks.</p>
   <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select><span id="kinds" style="display:contents"></span></div></div>
   <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
   <button type="button" class="more" id="more" hidden></button>
-  <p class="teams">Here for a brand? <a href="/hosts/book">Request a date</a>.</p>
+  <p class="teams">Booking for a brand? <a href="/hosts/book">Request a date</a>.</p>
 </div>
 <script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const KINDS = [["all", "Everything"], ["food", "Food and dinners"], ["coffee", "Coffee and tea"], ["move", "Runs and hikes"], ["art", "Art and making"], ["music", "Music and games"], ["learn", "Workshops and talks"]];
-  const GROUP = { dinner: "food", cook: "food", bake: "food", potluck: "food", brunch: "food", picnic: "food", wine: "food", turkey: "food", coffee: "coffee", tea: "coffee", run: "move", hike: "move", walk: "move", bike: "move", yoga: "move", swim: "move", craft: "art", paint: "art", garden: "art", music: "music", games: "music", movie: "music", party: "music", book: "learn", workshop: "learn", talk: "learn", tech: "learn" };
+  // the same four lanes as Discover, so a host and their events sit under one name
+  const KINDS = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Somewhere new"]];
+  const GROUP = { dinner: "gather", cook: "make", bake: "make", potluck: "gather", brunch: "gather", picnic: "gather", wine: "gather", turkey: "make", coffee: "gather", tea: "gather", run: "move", hike: "move", walk: "move", bike: "move", yoga: "move", swim: "move", craft: "make", paint: "make", garden: "make", pottery: "make", music: "discover", games: "gather", movie: "gather", party: "gather", book: "gather", workshop: "discover", talk: "discover", tech: "discover" };
+  const OLD = { food: "make", coffee: "gather", art: "make", music: "discover", learn: "discover" }; // links shared before the lanes matched Discover
   const FIRST = 6, STEP = 12; // design review: six first, then "See all" reveals twelve at a time
-  const U = new URLSearchParams(location.search); let H = [], kind = U.get("type") || "all", city = U.get("city") || "", q = (U.get("q") || "").toLowerCase(), shown = FIRST;
+  const U = new URLSearchParams(location.search); let H = [], kind = OLD[U.get("type")] || U.get("type") || "all", city = U.get("city") || "", q = (U.get("q") || "").toLowerCase(), shown = FIRST;
   let mine = ""; try { mine = localStorage.getItem("encore.city") || ""; } catch {}
   const sync = () => { const P = new URLSearchParams(); if (kind !== "all") P.set("type", kind); if (city) P.set("city", city); if (q) P.set("q", q); history.replaceState(null, "", "/hosts" + (P.toString() ? "?" + P : "")); };
   const groupsOf = (h) => { const words = { title: [h.name, h.tagline, (h.tags || []).join(" "), (h.experiences || []).map((x) => x.name).join(" ")].join(" "), why: h.bio || "" }; const K = window.EventArt ? window.EventArt.kindsOf(words) : []; return new Set(K.map((k) => GROUP[k]).filter(Boolean)); };
@@ -82,7 +84,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     if (!(smart && smart.length)) L = [...L.filter((h) => !h.sample), ...L.filter((h) => h.sample)];
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
-    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or word.</p>`;
+    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or search.</p>`;
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = `Show ${Math.min(STEP, left)} more`;
   }

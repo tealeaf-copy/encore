@@ -234,6 +234,13 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
       const r = C.setProfile(ws, { ...W.host, handle: "bo-omecasa", name: "Bo's Omecasa", tagline: String(W.host.tagline || "").replace(/Eric/g, "Bo"), bio: String(W.host.bio || "").replace(/Eric/g, "Bo") });
       if (!r?.error) { store.set("system/handle-eric-cooks", { ws }); const S = scopeStore(store, ws);
         for (const d of S.list("events") || []) { const e = d.data || {}; if (/Eric/.test(e.hostName || "")) S.update("events/" + d.id, { hostName: "Bo" }); } } } } catch (err) { console.warn("rename example", err?.message); }
+  // and every place the example's own words still say Eric (menus, experiences, gifts, shop, event text) says Bo
+  try { const ws = C.wsOfHandle("bo-omecasa"), W = ws && getWorkspace(ws);
+    if (W && /@demo\.encore$/i.test(W.ownerEmail || "") && W.host) { const swap = (v) => typeof v === "string" ? v.replace(/\bEric Tan\b/g, "Bo").replace(/\bEric\b/g, "Bo").replace(/88 Java St,?\s*/g, "").replace(/\bGreenpoint,\s*Brooklyn\b/g, "Long Island City, Queens").replace(/\bGreenpoint\b/g, "Long Island City") : Array.isArray(v) ? v.map(swap) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, swap(x)])) : v;
+      { const u = getDbUser(W.ownerEmail); if (u && /\bEric\b/.test(u.name || "")) putDbUser({ ...u, name: "Bo" }); }
+      // owner request: Bo cooks in Long Island City, New York
+      if (/\b(Eric|Greenpoint)\b/.test(JSON.stringify(W.host))) updateWorkspace(ws, { host: { ...swap(W.host), city: "New York", hood: "Long Island City" } });
+      const S = scopeStore(store, ws); for (const d of S.list("events") || []) if (/\b(Eric|Greenpoint)\b/.test(JSON.stringify(d.data || {}))) S.set("events/" + d.id, swap(d.data)); } } catch (err) { console.warn("rename example text", err?.message); }
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   // change your own name; events that showed your old name as the host switch to the new one
   // the details you give when you RSVP, saved once so every RSVP fills them in (signed-in people; others keep them on their device)

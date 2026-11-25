@@ -1,4 +1,4 @@
-// A host's little shop: pre-orders for pickup (Eric's pandan honeycomb cake, Claire's club tees, Jackie's beans).
+// A host's little shop: pre-orders for pickup (Bo's pandan honeycomb cake, Claire's club tees, Jackie's beans).
 // Hosts list a few things with a price and how many they can make; people order with a pickup time; the host sees
 // orders, marks them paid or picked up, and can text everyone when it's ready.
 import crypto from "node:crypto";

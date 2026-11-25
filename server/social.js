@@ -178,6 +178,8 @@ export function makeSocial(store, { C, saveBlob }) {
     const vibe = tagList.slice(0, 3).map((t) => t.label.toLowerCase());
     const tippers = K.filter((k) => k.tipped).length, hostedN = ev.filter((x) => x.e.casual && x.e.date && x.e.date <= today()).length;
     return { dates: ev.map((x) => x.e.date).sort(), tippers, events: hostedN, kinds: Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([kind, n]) => ({ kind, n })), tags: tagList, vibe, guests: guests.size, returning, kudosCount: K.length,
+      // "would go again": of the guests who left feedback (tags, words or a comparison), how many said so; one definition for every page
+      againYes: K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length, againOf: K.filter((k) => (k.tags || []).length || k.love || k.compare).length,
       kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: k.love || "", tags: k.tags || [], at: k.at, event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
       moments: I.moments.filter((m) => m.ws === ws && isPublic(I.events.get(m.eventId)?.e)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
   }

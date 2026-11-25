@@ -27,8 +27,13 @@ test("Super host needs regular hosting, real guests and people coming back, rece
 });
 
 test("New hosts and milestones", () => {
-  const b = badgesFor({ dates: [weeksAgo(1)], guests: 12, createdAt: Date.now() - 10 * 864e5 }, NOW);
-  assert.ok(b.isNew); assert.ok(b.badges.some((x) => x.id === "m-guests" && x.n === 10));
+  const b = badgesFor({ dates: [weeksAgo(1)], guests: 8, createdAt: Date.now() - 10 * 864e5 }, NOW);
+  assert.ok(b.isNew);
+  // "New host" stops once 10 people have come, a brand has booked, or the host lists past clients
+  const b2 = badgesFor({ dates: [weeksAgo(1)], guests: 12, createdAt: Date.now() - 10 * 864e5 }, NOW);
+  assert.ok(!b2.isNew); assert.ok(b2.badges.some((x) => x.id === "m-guests" && x.n === 10));
+  assert.ok(!badgesFor({ dates: [weeksAgo(1)], guests: 3, createdAt: Date.now() - 10 * 864e5, bookings: 1 }, NOW).isNew, "a brand booking isn't new");
+  assert.ok(!badgesFor({ dates: [weeksAgo(1)], guests: 3, createdAt: Date.now() - 10 * 864e5, clients: 2 }, NOW).isNew, "past clients aren't new");
   assert.ok(!badgesFor({ dates: [], guests: 0, createdAt: Date.now() - 400 * 864e5 }, NOW).isNew);
   assert.ok(!badgesFor({ dates: [], guests: 0, createdAt: Date.now() - 2 * 864e5 }, NOW).isNew, "signing up alone is not hosting");
   assert.ok(badgesFor({ dates: Array.from({ length: 11 }, (_, i) => weeksAgo(i + 1)), guests: 30 }, NOW).badges.some((x) => x.label === "10+ gatherings"));

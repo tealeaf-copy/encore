@@ -28,6 +28,7 @@ import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
 import { mountDirectory } from "./directory.js";
+import { mountKudosAsk } from "./kudosask.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -570,6 +571,8 @@ export function createApp({ store, dataDir }) {
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });
   // the events directory: /events, its read-only API (/api/v1) for people and agents, and a public MCP server (/mcp/public)
   mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect: GUEST_REDIRECT, publicOrigin: (req) => originOf(req) });
+  // kudos asked of every guest the morning after, the one-tap kudos page (/k/<event>) and the second-host loop count
+  mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).
   const replyHits = new Map(); const replyLimited = (req, n) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };
@@ -863,7 +866,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(faq|followers|kudos|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
+  const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -1476,6 +1479,8 @@ export function createApp({ store, dataDir }) {
     const St = scopeStore(store, ws), eventId = String(after?.eventId || before?.eventId || ""), ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? St.get("events/" + eventId)?.data : null; if (!ev) return {};
     const was = before?.response || "", now = after?.response || "", title = titleOf(ev), owner = getWorkspace(ws)?.ownerEmail || "", who = firstOf(after?.name || before?.name) || "Someone", studio = `/?app=1&open=${encodeURIComponent(eventId)}#studio`;
     const promoted = await promoteWaitlist(req, ws, eventId);
+    // the second-host loop: a guest who sent another host kudos in the last 30 days says I'm in here (server/social.js)
+    if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }
     // the host's bell: every guest reply, and an email when someone asks to join
     if (req.guest && after && now && now !== was && owner) {
       const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];

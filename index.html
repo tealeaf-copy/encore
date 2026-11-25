@@ -11210,4 +11210,12 @@ if(typeof renderGuest==="function"){ const _rgZ=renderGuest; renderGuest=async f
     const b=document.createElement("a"); b.id="payPass"; b.className="btn ghost"; b.target="_blank"; b.rel="noopener"; b.style.marginLeft="8px"; b.href=payLinkFor(e.ticketUrl,amt,[M?.name,guestTitle(e),`${e.passCount} classes`].filter(Boolean).join(" · ")); b.textContent=`Pay ${amt} for ${+e.passCount}`; a.after(b);
     b.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} const ip=document.getElementById("gIPaid"); if(ip) ip.hidden=false }) }catch(err){ console.warn(err) } return r } }
 // ---------- end Potto reads ----------
+// ---------- kudos, asked of every guest ----------
+// The morning after, every guest who was in gets one text or email asking for kudos (server/kudosask.js).
+// The After step says how that went: "Kudos asked of N guests · M sent".
+if(typeof drawAfterParty==="function"){ const _apKA=drawAfterParty; drawAfterParty=async function(){ const r=await _apKA.apply(this,arguments); try{ const d=draft, el=document.getElementById("afterParty"); if(!el||!d?.id||el.querySelector("#kudosAskLine")) return r;
+    const j=await (await fetch("/api/host/kudos/"+encodeURIComponent(d.id))).json().catch(()=>null), a=j?.ask; if(!a||!a.asked||el.querySelector("#kudosAskLine")) return r;
+    const p=document.createElement("p"); p.id="kudosAskLine"; p.className="note"; p.style.cssText="margin:8px 0 0;font-weight:600"; p.textContent=`Kudos asked of ${a.asked} guest${a.asked===1?"":"s"} · ${a.sent} sent`;
+    const top=el.querySelector(".ap-hero"); if(top) top.after(p); else el.prepend(p) }catch(err){ console.warn(err) } return r } }
+// ---------- end kudos asks ----------
 </script>

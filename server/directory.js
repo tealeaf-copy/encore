@@ -13,7 +13,7 @@
 // no private feedback ("improve", "compare"). A host's page settings carry over: past events hidden on the page stay out,
 // kudos hidden on the page stay out, and `directory: false` on the profile takes their past events and reviews out.
 import { scopeStore, getWorkspace, allWorkspaceIds } from "./workspaces.js";
-import { KUDOS_TAGS } from "./social.js";
+import { KUDOS_TAGS, VERIFIED_LABEL, withVerified } from "./social.js";
 import { guessFormat, cleanLogos, isTalk, TALK_FORMATS, httpsLink, audienceOf } from "./scrapbook.js";
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
@@ -64,8 +64,13 @@ const csvCell = (v) => { let t = Array.isArray(v) ? v.join("; ") : v == null ? "
 // ---- reviews (guests' kudos) ----
 const EMPTY_REVIEWS = () => ({ count: 0, would_go_again_pct: null, top_tags: [], items: [] });
 const noContact = (t) => String(t || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…");
-// reviews are public: an email or phone number a guest typed into one is never shown
-function reviewItem(k) { return { name: first(k.name) || "A guest", text: s(noContact(k.love), 500), tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "" }; }
+// ---- reviews: verified labels (kudos ask work) ----
+// verified: "guest_list" (came, on the guest list), "rsvp" (replied I'm in) or null (we claim nothing). Picked field by
+// field: never the reviewer's email, the reply id, "improve" or "compare".
+const VERIFIED = new Set(Object.keys(VERIFIED_LABEL));
+function reviewItem(k) { const v = VERIFIED.has(k.verified) ? k.verified : null;
+  return { name: first(k.name) || "A guest", text: s(noContact(k.love), 500), tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "", verified: v, verified_label: v ? VERIFIED_LABEL[v] : "" }; }
+// ---- end verified labels ----
 // the host page's numbers: reviews are kudos with words or chips; "would go again" is the same definition the page uses
 function summarize(K, { items = 10 } = {}) {
   const shown = K.filter((k) => k.love || (k.tags || []).length).sort((a, b) => (b.at || 0) - (a.at || 0));
@@ -97,7 +102,8 @@ export function makeDirectory({ store, C, SB }) {
     for (const x of D.hosts) if (x.showcase && !hosts.has(x.handle)) { const P = C.showcaseOf(x.handle); if (P) addHost(P, { showcase: true }); }
 
     const reviewsFor = (H, eventId) => { if (!H?.ws || H.kudosOff) return EMPTY_REVIEWS();
-      if (!kudosOf.has(H.ws)) kudosOf.set(H.ws, scopeStore(store, H.ws).list("kudos").map((d) => d.data).filter((k) => k && typeof k === "object"));
+      // verified labels (kudos ask work): worked out on read and saved back, so older kudos get one too
+      if (!kudosOf.has(H.ws)) { const KS = scopeStore(store, H.ws); kudosOf.set(H.ws, KS.list("kudos").filter((d) => d.data && typeof d.data === "object").map((d) => withVerified(KS, d.id, d.data))); }
       return eventId ? summarize(kudosOf.get(H.ws).filter((k) => k.eventId === eventId), { items: null }) : summarize(kudosOf.get(H.ws), { items: null }); };
     const fromCard = (c, H, status) => ({ id: c.id, title: s(c.title, 140), status, start: /^\d{4}-\d{2}-\d{2}$/.test(c.date || "") ? c.date : "", time: [clock(c.startTime), clock(c.endTime)].filter(Boolean).join(" to "),
       city: s(c.city, 60), area: s(c.hood, 60), format: formatOf({ activity: c.activity, title: c.title, tags: c.tags }), tags: (Array.isArray(c.tags) ? c.tags : []).map((t) => s(t, 24)).filter(Boolean).slice(0, 8),
@@ -185,7 +191,17 @@ export function makeDirectory({ store, C, SB }) {
       location: e.format === "online" ? { "@type": "VirtualLocation", url: e.url } : { "@type": "Place", name: [e.area, e.city].filter(Boolean).join(", ") || "Shared with guests", address: { "@type": "PostalAddress", addressLocality: e.city || undefined } },
       organizer: { "@type": "Person", name: e.host.name, url: e.host.url }, url: e.url, ...(e.cover ? { image: e.cover } : {}),
       ...(e.price === "Free" ? { isAccessibleForFree: true, offers: { "@type": "Offer", price: 0, priceCurrency: "USD", url: e.url } } : amt ? { offers: { "@type": "Offer", price: +amt[1], priceCurrency: "USD", url: e.url } } : {}) }; }); }
-  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents };
+  // ---- "More like this" after kudos (kudos ask work) ----
+  // Three upcoming events like the one a guest just sent kudos for: the same format in the same city first, then the same
+  // format, then the same city. Other hosts lead (that's the second-host loop); the event itself is never in it.
+  function similar(base, { eventId = "", format = "", activity = "", title = "", city = "", host = "", limit = 3 } = {}) {
+    const D = data(base), me = D.events.find((e) => e.id === eventId), f = s(format || me?.format || (activity || title ? formatOf({ activity, title }) : ""), 24).toLowerCase(), c = s(city || me?.city, 60).toLowerCase(), h = s(host || me?.host?.handle, 30).toLowerCase();
+    const L = filterEvents(base, { status: "upcoming" }).filter((e) => e.id !== eventId), inCity = (e) => !!c && `${e.city} ${e.area}`.toLowerCase().includes(c), fits = (e) => !!f && f !== "other" && e.format === f;
+    const score = (e) => (fits(e) && inCity(e) ? 3 : fits(e) ? 2 : inCity(e) ? 1 : 0) * 2 + (e.host.handle !== h ? 1 : 0);
+    return L.map((e) => ({ e, n: score(e) })).filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || String(a.e.start).localeCompare(String(b.e.start))).slice(0, limit)
+      .map(({ e }) => ({ id: e.id, title: e.title, start: e.start, time: e.time, city: e.city, area: e.area, format: e.format, price: e.price, host: e.host, url: e.url, cover: e.cover })); }
+  // ---- end "More like this" ----
+  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar };
 }
 
 // ---- the public MCP server's tools (read-only) ----
@@ -200,7 +216,7 @@ export const PUBLIC_TOOLS = [
   { name: "list_hosts", description: "Hosts with a public page: name, city, what they host, event counts and a review summary.", inputSchema: { type: "object", properties: { q: str("Words to match"), city: str("City or neighborhood"), limit: { type: "number", description: "Up to 100 (default 50)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
   { name: "get_host", description: "One host's public profile, their events in the directory and recent reviews.", inputSchema: { type: "object", properties: { handle: str("The host's handle, e.g. atbo") }, required: ["handle"] }, annotations: { readOnlyHint: true } },
   { name: "list_formats", description: "Event counts by format and by city, for building filters.", inputSchema: { type: "object", properties: { status: str("upcoming, past or all (default)", { enum: ["upcoming", "past", "all"] }) } }, annotations: { readOnlyHint: true } },
-  { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
+  { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, how we know they were a guest (verified: guest_list = came, on the guest list; rsvp = replied I'm in; null = neither), plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
 ];
 
 export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect = "", publicOrigin }) {
@@ -299,7 +315,10 @@ function openapi(base) {
     components: { schemas: {
       Error: { type: "object", properties: { code: { type: "string" }, message: { type: "string" } } },
       TagCount: { type: "object", properties: { tag: { type: "string" }, label: { type: "string" }, count: { type: "integer" } } },
-      Review: { type: "object", properties: { name: { type: "string", description: "The guest's first name, or A guest" }, text: { type: "string", description: "What they loved" }, tags: { type: "array", items: { type: "string" } }, at: { type: "string", format: "date" } } },
+      // verified labels (kudos ask work)
+      Review: { type: "object", properties: { name: { type: "string", description: "The guest's first name, or A guest" }, text: { type: "string", description: "What they loved" }, tags: { type: "array", items: { type: "string" } }, at: { type: "string", format: "date" },
+        verified: { type: ["string", "null"], enum: ["guest_list", "rsvp", null], description: "How we know the reviewer was a guest: guest_list (replied I'm in and the host marked them as there), rsvp (replied I'm in), null (neither)" },
+        verified_label: { type: "string", description: "The label the site shows: \"Came, on the guest list\", \"Replied I'm in\", or empty" } } },
       ReviewEntry: { allOf: [ref("Review"), { type: "object", properties: { event: { type: ["object", "null"], properties: { id: { type: "string" }, title: { type: "string" }, url: { type: "string" } } }, host: ref("HostRef"), example: { type: "boolean" } } }] },
       Reviews: { type: "object", required: ["count"], properties: { count: { type: "integer" }, would_go_again_pct: { type: ["integer", "null"], description: "Share of guests who said they'd go again; null under 3 reviews" }, top_tags: { type: "array", items: ref("TagCount") }, items: { type: "array", items: ref("Review"), description: "Up to 10 in lists, all on GET /api/v1/events/{id}" } } },
       HostRef: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, url: { type: "string", format: "uri" } } },
@@ -343,7 +362,7 @@ Tools: search_events, get_event, list_hosts, get_host, list_formats, get_reviews
 
 ## Each event
 
-id, title, status (upcoming or past), start (YYYY-MM-DD), time, city, area (neighborhood), format, tags, price ("Free", "$20 a person"), spots_left, host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking.
+id, title, status (upcoming or past), start (YYYY-MM-DD), time, city, area (neighborhood), format, tags, price ("Free", "$20 a person"), spots_left, host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
 
 ## Speaking
 
@@ -355,6 +374,7 @@ Talks, keynotes, webinars, podcasts, panels and fireside chats from a host's scr
 - Places are a neighborhood or city. Street addresses and meet points go to guests who are in, never here.
 - No guest lists, guest counts, emails, phone numbers or pay links. A talk's audience is the size its speaker typed, nothing more.
 - Reviews are guests' kudos: a first name, what they loved, the chips they tapped and the date. Only guests who replied to that event can leave one. There are no star ratings. "would_go_again_pct" is null under 3 reviews.
+- Each review has "verified": "guest_list" (they replied I'm in and the host marked them as there; the site shows "Came, on the guest list"), "rsvp" (they replied I'm in; the site shows "Replied I'm in") or null. "verified_label" is that text. Don't claim more than the label says.
 - Imported past events have no reviews unless guests left kudos here. Their count is 0.
 - Hosts can keep their past events and reviews out of the directory.
 - Sample events from example hosts are marked example: true and left out unless you pass include_examples.

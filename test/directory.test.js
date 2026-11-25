@@ -116,7 +116,8 @@ test("Reviews: first names, loved lines, chips and counts; never the private par
   assert.deepEqual(R.top_tags[0], { tag: "food", label: "Amazing food", count: 2 });
   assert.deepEqual(R.items.map((k) => k.name).sort(), ["A guest", "Jo", "Mina", "Sam"]);
   assert.ok(R.items.find((k) => k.name === "Mina").tags.includes("Would go again"));
-  for (const k of R.items) assert.deepEqual(Object.keys(k).sort(), ["at", "name", "tags", "text"]);
+  for (const k of R.items) assert.deepEqual(Object.keys(k).sort(), ["at", "name", "tags", "text", "verified", "verified_label"]);
+  for (const k of R.items) assert.equal(k.verified, "rsvp", "older kudos with no reply on file read as Replied I'm in");
   assert.equal((await get("/api/v1/events/dirPast2")).data.reviews.count, 0, "no kudos, a count of 0");
   const H = (await get("/api/v1/hosts/ada-dir")).data; assert.equal(H.reviews.count, 4); assert.equal(H.reviews.would_go_again_pct, 75); assert.ok(H.events.length >= 5);
   const L = await get("/api/v1/reviews?host=ada-dir"); assert.equal(L.total, 4); assert.equal(L.data[0].event.id, "dirPast1");

@@ -373,11 +373,15 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     // regulars have accounts: the host knows who they are, and they can leave or come back from any device
     // signed in: one tap. Signed out: an email is enough (the confirmation email says how to stop).
-    const signedIn = acct && acct.ws !== DEFAULT_WS, given = clean(b.email, 200).toLowerCase();
+    // from the one-tap kudos page (/k/<event>): the guest's reply proves who they are, so its email is enough (never sent back to the page)
+    const proof = !clean(b.email, 200) && b.rid && b.code && b.eventId ? X?.rsvpProof?.(clean(b.eventId, 80), b.rid, b.code) : null;
+    if (proof && !b.name) b.name = proof.r.name || "";
+    const signedIn = acct && acct.ws !== DEFAULT_WS, given = (clean(b.email, 200) || (proof?.r?.email ? clean(proof.r.email, 200) : "")).toLowerCase();
     if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: given ? "That email doesn't look right." : "Add your email to follow." });
     const email = signedIn ? clean(acct.email, 200).toLowerCase() : given; b.name = b.name || (signedIn ? acct.name : "");
     const phone = /^\+?[0-9 ()-]{7,20}$/.test(String(b.phone || "").trim()) ? String(b.phone).trim() : "", prev = scopeStore(store, ws).list("followers").map((d) => d.data).find((f) => f.email === email);
     const isNew = C.follow(ws, { email, name: b.name, via: clean(b.via, 20) || "page", tastes: Array.isArray(b.tastes) ? b.tastes : [], phone }); if (isNew) scopeStore(store, ws).add("audit", { eventId: clean(b.eventId, 80), what: `${first(b.name) || "Someone"} followed you`, kind: "growth", at: Date.now() });
+    try { X?.loopTouch?.(email, ws, "follow"); } catch {} // the second-host loop (server/social.js)
     const out = { ok: true, followers: C.followersOf(ws).length, emailed: false, texted: false, signedIn: !!signedIn };
     // confirmations: the new regular gets an email and a text; the host hears about it too
     const h = C.profileOf(ws) || {}, hostName = h.name || "your host", page = `${publicOrigin(req)}/@${h.handle || ""}`, cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(), newPhone = phone && phone !== (prev?.phone || "");

@@ -80,6 +80,26 @@ export const TRAITS = {
   cheerleader: { name: "The Cheerleader", emoji: "📣", line: "Always the first to send kudos afterwards." },
 };
 export const KUDOS_TAGS = [["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"], ["again", "🔁", "Would go again"]];
+// ---- verified kudos: how we know the reviewer was a guest ----
+// "guest_list": the reply was I'm in and the host marked them as there (checked in at the door, tapped Came, or Attended
+// on the guest list). "rsvp": an I'm-in reply, nothing more. null: the reply wasn't I'm in (a Maybe who left kudos), so
+// we claim nothing. Kudos written before this existed have no reply to read when it's gone: they count as "rsvp".
+export const VERIFIED_LABEL = { guest_list: "Came, on the guest list", rsvp: "Replied I'm in" };
+export function kudosVerified(S, k) {
+  if (!k || !S) return null;
+  const r = k.rid ? S.get("rsvps/" + String(k.rid).replace(/[^A-Za-z0-9_-]/g, ""))?.data : null, ev = k.eventId ? S.get("events/" + k.eventId)?.data || {} : {};
+  const key = replyKey(r || k), row = key ? (ev.guests || []).find((g) => replyKey(g) === key) : null, onList = /Attended/.test(row?.status || "");
+  if (!r) return onList ? "guest_list" : "rsvp";
+  const came = r.noShow !== true && (r.noShow === false || !!r.checkedInAt || onList);
+  if (came && (r.response === "going" || onList)) return "guest_list";
+  return r.response === "going" ? "rsvp" : null;
+}
+/** The label, worked out again on read (the host may have marked who came since), and saved back when it changed. */
+export function withVerified(S, id, k) {
+  if (!k || typeof k !== "object") return k; let v = null; try { v = kudosVerified(S, k); } catch { return k; }
+  if (k.verified !== v && id) { try { S.update("kudos/" + id, { verified: v }); } catch {} }
+  return { ...k, verified: v };
+}
 export const VIBE_TAGS = [["spark", "⚡", "Energy"], ["chill", "🧘", "Easy company"], ["helper", "🙌", "Helped out"], ["welcome", "🤗", "Welcoming"], ["contributor", "🧺", "Brought a treat"]];
 
 export function makeSocial(store, { C, saveBlob }) {
@@ -125,7 +145,7 @@ export function makeSocial(store, { C, saveBlob }) {
       for (const [eid, rs] of byEv) { const ev = events.get(eid)?.e; if (!ev) continue; rs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); const firstAt = rs.find((r) => r.response === "going")?.createdAt || 0, evAt = Date.parse((ev.date || "") + "T" + (ev.startTime || "12:00")) || 0;
         rs.forEach((r, i) => { if (!r.email || r.response !== "going") return; addAtt(r.email, { eventId: eid, ws, name: r.name, at: Date.parse(ev.date || "") || r.createdAt || 0, early: i < 3 || r.createdAt - firstAt < DAY, last: !!evAt && evAt - (r.createdAt || 0) > 0 && evAt - (r.createdAt || 0) < 2 * DAY, filler: !!r.promotedAt, plusOne: !!r.plusOne, slot: r.slot || "", rsvpAt: r.createdAt }); }); }
       for (const d of S.list("moments")) moments.push({ id: d.id, ws, ...d.data });
-      for (const d of S.list("kudos")) kudos.push({ id: d.id, ws, ...d.data });
+      for (const d of S.list("kudos")) kudos.push({ id: d.id, ws, ...withVerified(S, d.id, d.data) }); // verified: worked out on read (see kudosVerified)
       for (const d of S.list("vibes")) vibes.push({ id: d.id, ws, ...d.data });
     }
     cache = { at: Date.now(), events, att, moments, kudos, vibes };
@@ -203,7 +223,7 @@ export function makeSocial(store, { C, saveBlob }) {
     return { dates: ev.map((x) => x.e.date).sort(), tippers, events: hostedN, kinds: Object.entries(kinds).sort((a, b) => b[1] - a[1]).map(([kind, n]) => ({ kind, n })), tags: tagList, vibe, guests: guests.size, returning, kudosCount: K.length,
       // "would go again": of the guests who left feedback (tags, words or a comparison), how many said so; one definition for every page
       againYes: K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length, againOf: K.filter((k) => (k.tags || []).length || k.love || k.compare).length,
-      kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: String(k.love || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), tags: k.tags || [], at: k.at, event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
+      kudos: K.filter((k) => k.love || (k.tags || []).length).slice(0, 30).map((k) => ({ name: first(k.name) || "A guest", love: String(k.love || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), tags: k.tags || [], at: k.at, verified: k.verified || null, verifiedLabel: VERIFIED_LABEL[k.verified] || "", event: I.events.get(k.eventId)?.e?.pubTitle || I.events.get(k.eventId)?.e?.name || "" })),
       moments: I.moments.filter((m) => m.ws === ws && isPublic(I.events.get(m.eventId)?.e)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => ({ url: m.url, type: m.type, caption: m.caption || "" })) };
   }
   // ---- turnout a host can show a sponsor or venue: totals only, never names ----
@@ -255,10 +275,11 @@ export function makeSocial(store, { C, saveBlob }) {
       const daysSince = Math.floor((now - Date.parse(e.date + "T12:00:00")) / DAY), title = e.pubTitle || e.name, host = C.profileOf(x.ws), hostName = first(host?.name || person(x.owner).name) || "your host";
       // the day after: ask guests for kudos
       if (((hoursAfter >= 1.5) || daysSince >= 1) && daysSince <= 3 && !done("kudos-" + x.id)) {
-        mark("kudos-" + x.id); const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true);
+        mark("kudos-" + x.id);
         for (const [em, L] of I.att) { if (!L.some((a) => a.eventId === x.id)) continue; out.kudosAsks++;
           notify(em, { kind: "kudos", key: "kudos-" + x.id, text: `How was ${title}? Send ${hostName} some kudos.`, link: `/g#rsvp-${x.id}`, eventId: x.id });
-          if (cfg && canEmail(em)) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Two taps of kudos makes a host's week: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
+          // the text or email asking for kudos is sent once per guest by the kudos ask job (server/kudosask.js), with a one-tap link
+        }
         notify(x.owner, { kind: "after", key: "after-" + x.id, text: `${title} is done. Say thanks while it's fresh.`, link: `/?app=1&open=${encodeURIComponent(x.id)}&step=7#studio`, eventId: x.id });
       }
       // prep alerts for the host (the shopping and baking checklist)
@@ -293,7 +314,17 @@ export function makeSocial(store, { C, saveBlob }) {
     const topHost = Object.entries(hosts).sort((a, b) => b[1] - a[1])[0];
     return { year, went: A.length, hosts: Object.keys(hosts).length, topHost: topHost ? { name: topHost[0], n: topHost[1] } : null, topKind: Object.entries(kinds).sort((a, b) => b[1] - a[1])[0]?.[0] || "", hosted: hosted.length, guests: guests.size, kudos: K.length, tips: K.filter((k) => k.tipped).length, kudosGiven: I.kudos.filter((k) => lc(k.email) === me && inYear(k.at)).length };
   }
-  return { recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
+  // ---- the second-host loop: a guest who sent kudos follows or says I'm in to a different host within 30 days ----
+  // One row per (giver, other host, follow or rsvp), kept in the scope of the host who got the kudos, with hashes only:
+  // never the guest's email or the other host's workspace. GET /api/admin/loop-stats counts them for that host.
+  function loopTouch(email, toWs, kind, now = Date.now()) {
+    const em = lc(email); if (!em || !toWs || !["follow", "rsvp"].includes(kind)) return 0; let n = 0;
+    const from = new Map(); for (const k of index().kudos) if (lc(k.email) === em && k.ws !== toWs && k.at && now - k.at >= 0 && now - k.at <= 30 * DAY && (!from.has(k.ws) || from.get(k.ws).at < k.at)) from.set(k.ws, k);
+    for (const [ws, k] of from) { const S = scopeStore(store, ws), id = `${hash(em)}-${hash("ws:" + toWs)}-${kind}`; if (S.get("kudosloop/" + id)) continue;
+      S.set("kudosloop/" + id, { giver: hash(em), to: hash("ws:" + toWs), kind, kudosAt: k.at, at: now, days: Math.floor((now - k.at) / DAY) }); n++; }
+    return n;
+  }
+  return { loopTouch, recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
 }
 
 export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw }) {
@@ -379,10 +410,13 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500); if (!tags.length && !love && !improve && !["better", "same", "less"].includes(b.compare)) return bad(res, "Tap one of the chips or write a line first.");
     if (!tags.length && !love) return bad(res, "Pick at least one thing you liked.");
-    P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
+    P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, verified: kudosVerified(P.S, { eventId: P.r.eventId, rid: P.rid }), via: b.via === "ask" ? "ask" : "page", ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
     const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "kudos-in", text: `💌 ${first(P.r.name) || "A guest"} sent kudos for ${P.ev?.pubTitle || P.ev?.name}${love ? `: "${love.slice(0, 80)}"` : ""}`, link: `/?app=1&open=${encodeURIComponent(P.r.eventId)}#studio`, eventId: P.r.eventId });
     const h = C.profileOf(P.ws); res.json({ ok: true, host: h?.handle ? { handle: h.handle, name: h.name } : null }); });
-  app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); res.json({ kudos: S.list("kudos").map((d) => d.data).filter((k) => k.eventId === id).sort((a, b) => b.at - a.at), vibes: S.list("vibes").map((d) => d.data).filter((v) => v.eventId === id) }); });
+  app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); const kudos = S.list("kudos").filter((d) => d.data?.eventId === id).map((d) => withVerified(S, d.id, d.data)).sort((a, b) => b.at - a.at);
+    // "Kudos asked of N guests · M sent": N from the ask job's log, M every kudos with words or chips for this event
+    const asked = S.list("kudosasks").filter((d) => d.data?.eventId === id && ["sms", "email"].includes(d.data.channel)).length; // the same count as askStats in server/kudosask.js
+    res.json({ kudos, ask: { asked, sent: kudos.filter((k) => k.love || (k.tags || []).length).length }, vibes: S.list("vibes").map((d) => d.data).filter((v) => v.eventId === id) }); });
   app.post("/api/host/vibes", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, S = scopeStore(store, u.ws), id = clean(b.eventId, 80); if (!S.get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
     const email = lc(clean(b.email, 200)), tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => VIBE_TAGS.some((k) => k[0] === t)); if (!email) return bad(res, "Which guest?");
     S.set("vibes/" + id + "--" + hash(email), { eventId: id, email, tags, at: Date.now() }); X.bust(); if (tags.length) X.notify(email, { kind: "vibe", key: `vibe-${id}-${tags.join()}`, text: `${first(u.name)} gave you ${tags.length === 1 ? "a badge" : "badges"} for ${S.get("events/" + id).data.pubTitle || S.get("events/" + id).data.name}: ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[2]).join(", ")}`, link: "/feed" }); res.json({ ok: true }); });

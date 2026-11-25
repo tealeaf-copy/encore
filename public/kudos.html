@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">
+<title>Leave kudos · Pottery Lab</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
+<style>
+/* One-tap kudos, from the link in the morning-after text or email (/k/<event>?rid=..&code=..). The reply id and code
+   prove it's a guest who replied, the same proof POST /api/public/kudos checks. Small on purpose: it opens instantly. */
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#A63A22;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8;--card:#fff}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:var(--ember-d)}main{max-width:520px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 40px}
+.top{display:flex;align-items:center;margin:4px 0 14px}.brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
+h1{font:700 30px/1.1 Fredoka,system-ui;margin:6px 0 4px}h2{font:600 20px/1.2 Fredoka,system-ui;margin:0 0 10px}
+.muted{color:var(--smoke)}.sub{margin:0 0 16px}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:16px;box-shadow:0 0 0 4px #fff,0 12px 28px -20px rgba(31,26,23,.55);display:grid;gap:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:#FFFCF7;color:var(--ink);border-radius:999px;min-height:44px;padding:0 14px;font:600 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.again{background:var(--butter);border-color:var(--ink);border-width:2px}.chip.again[aria-pressed=true]{background:var(--ink);color:#fff}
+.chip:focus-visible,.go:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+label.f{display:grid;gap:5px;font-weight:600}label.f small{font-weight:400;color:var(--smoke)}
+textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:16px;background:#FFFCF7;color:var(--ink)}textarea{resize:vertical;min-height:72px}
+.go{background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:52px;padding:0 20px;font:600 17px "Instrument Sans",system-ui,sans-serif;cursor:pointer;width:100%}.go:disabled{opacity:.6}
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.err{color:#A8341A;font-weight:600;margin:0}.err:empty{display:none}
+.thanks{text-align:center;display:grid;gap:12px;justify-items:center}.thanks .pot{width:56px;height:56px}
+.follow{display:grid;gap:8px;width:100%}.follow form{display:flex;gap:8px}.follow form input{flex:1}
+.more{margin-top:22px}.ev{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;text-decoration:none;color:var(--ink);margin-bottom:10px}
+.ev .im{width:64px;height:64px;border-radius:14px;background:var(--linen) center/cover no-repeat;display:grid;place-items:center;font:700 22px Fredoka,system-ui;color:var(--smoke)}
+.ev b{display:block;font:600 16px/1.25 Fredoka,system-ui}.ev small{color:var(--smoke);font-size:14px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body>
+<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
+<div id="body"><p class="muted">Opening…</p></div></main>
+<script>
+(function () {
+  const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const id = (location.pathname.match(/^\/k\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
+  const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body");
+  const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
+  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><circle cx="11.6" cy="19.6" r="1" fill="#1F1A17"/><circle cx="16.4" cy="19.6" r="1" fill="#1F1A17"/></svg>`;
+  const stop = (h, p) => { body.innerHTML = `<h1>${esc(h)}</h1><p class="muted">${esc(p)}</p>`; };
+  if (!id || !rid) return stop("This link isn't working", "Open the link from your text or email.");
+
+  fetch(`/api/public/kudos-page/${encodeURIComponent(id)}?${proof}`).then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) })).then(({ ok, j }) => {
+    if (!ok) return stop("This link isn't working", j.message || "Open the link from your text or email.");
+    const host = j.hostFirst || "your host";
+    if (!j.open) return stop(`${j.title}`, "Kudos open once it's happened.");
+    if (j.sent) return thanks(j);
+    body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc([day(j.date), j.hostFirst ? `at ${j.hostFirst}'s` : ""].filter(Boolean).join(" · "))}</p>
+      <div class="card"><div><h2>Tap what you loved</h2><div class="chips" id="tags">${j.tags.map((t) => `<button type="button" class="chip" data-k="${esc(t.k)}" aria-pressed="false"><span aria-hidden="true">${esc(t.emoji)}</span>${esc(t.label)}</button>`).join("")}</div></div>
+      <div class="chips"><button type="button" class="chip again" data-k="${esc(j.again.k)}" aria-pressed="false"><span aria-hidden="true">🔁</span>${esc(j.again.label)}</button></div>
+      <label class="f">A short note <small>Optional. It shows on ${esc(host)}'s page with your first name.</small><textarea id="love" maxlength="280" rows="2" placeholder="The food, the people, the moment it got loud"></textarea></label>
+      <p class="err" id="err"></p><button class="go" id="send" type="button">Send</button></div>`;
+    $$(".chip[data-k]").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"))));
+    $("#send").onclick = async () => {
+      const tags = $$(".chip[aria-pressed=true]").map((b) => b.dataset.k), love = $("#love").value.trim();
+      if (!tags.length && !love) { $("#err").textContent = "Tap a chip or write a line first."; return; }
+      const b = $("#send"); b.disabled = true; $("#err").textContent = "";
+      try { const r = await fetch("/api/public/kudos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: id, rid, code, tags, love, via: "ask" }) });
+        const x = await r.json().catch(() => ({})); if (!r.ok) throw new Error(x.message || "That didn't send. Try again.");
+        try { localStorage.setItem("encore-kudos-" + id, "1"); } catch {}
+        thanks(j);
+      } catch (e) { $("#err").textContent = e.message; b.disabled = false; }
+    };
+  }).catch(() => stop("Couldn't load this", "Check your connection and try again."));
+
+  function thanks(j) {
+    const host = j.hostFirst || "Your host";
+    body.innerHTML = `<div class="card thanks">${pot}<h1 style="margin:0">Thanks. ${esc(host)} will see this.</h1>
+      ${j.host ? `<div class="follow" id="fol"><button class="btn" type="button" id="follow">Follow ${esc(j.hostFirst || j.host.name)}</button><p class="muted" style="margin:0;font-size:14px">Hear first about the next one.</p></div>` : ""}</div>
+      <section class="more" id="more" hidden aria-labelledby="moreH"><h2 id="moreH">More like this</h2><div id="moreL"></div></section>`;
+    const fb = $("#follow"); if (fb) fb.onclick = () => follow(j);
+    fetch(`/api/public/kudos-more/${encodeURIComponent(id)}?${proof}`).then((r) => (r.ok ? r.json() : { events: [] })).then((m) => {
+      const L = (m.events || []).slice(0, 3); if (!L.length) return;
+      $("#moreL").innerHTML = L.map((e) => `<a class="ev" href="${esc(e.url)}"><span class="im" ${e.cover ? `style="background-image:url('${esc(e.cover)}')"` : ""}>${e.cover ? "" : esc((e.title || "?").slice(0, 1))}</span><span><b>${esc(e.title)}</b><small>${esc([day(e.start), e.area || e.city, e.price].filter(Boolean).join(" · "))}</small><br><small>by ${esc(e.host?.name || "")}</small></span></a>`).join("");
+      $("#more").hidden = false; }).catch(() => {});
+  }
+  async function follow(j, email = "") {
+    const b = $("#follow"); if (b) b.disabled = true;
+    try { const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle: j.host.handle, eventId: id, rid, code, via: "kudos", ...(email ? { email } : {}) }) });
+      const x = await r.json().catch(() => ({}));
+      if (r.status === 401 && x.code === "email_required") { // a reply with no email: ask for one, right here
+        $("#fol").innerHTML = `<form id="ff"><input type="email" id="fe" required autocomplete="email" placeholder="Your email" aria-label="Your email"><button class="btn" type="submit">Follow</button></form><p class="err" id="fErr">${email ? esc(x.message || "") : ""}</p>`;
+        $("#ff").onsubmit = (ev) => { ev.preventDefault(); follow(j, $("#fe").value.trim()); }; return; }
+      if (!r.ok) throw new Error(x.message || "That didn't work. Try again.");
+      $("#fol").innerHTML = `<span class="btn on" role="status">Following ${esc(j.hostFirst || j.host.name)}</span>`;
+    } catch (e) { if (b) { b.disabled = false; } const p = document.createElement("p"); p.className = "err"; p.textContent = e.message; $("#fol")?.appendChild(p); }
+  }
+})();
+</script></body></html>

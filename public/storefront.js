@@ -16,8 +16,10 @@
   const ACCENTS = ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30"];
   const COVERS = { wash: "Soft wash", sunrise: "Sunrise", dusk: "Dusk", dots: "Dots", waves: "Waves", confetti: "Confetti", plain: "Plain", awning: "Awning" };
   const BUTTONS = { round: "999px", soft: "12px", square: "4px" };
-  const lum = (hex) => { const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  // colour helpers are shared with the per-event looks (public/color.js); the copies below are only a fallback
+  const CC = (typeof window !== "undefined" && window.EncoreColor) || null;
+  const lum = CC ? CC.lum : (hex) => { const n = parseInt(hex.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const contrast = CC ? CC.contrast : (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const loaded = new Set(); const loadFont = (k) => { if (loaded.has(k) || !FONTS[k]) return; loaded.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${FONTS[k].q}&display=swap`; document.head.appendChild(l); };
   const AWNING = "repeating-linear-gradient(90deg, #B98A99 0 34px, #F8F1E8 34px 68px)";
   function cover(t) { const a = t.accent; if (t.coverUrl) return `center/cover no-repeat url("${t.coverUrl}")`;
@@ -95,6 +97,8 @@
     const onAccent = contrast(t.accent, "#FFFFFF") >= 3 ? "#FFFFFF" : "#1F1A17", accentText = contrast(t.accent, B.bg) >= 3 ? t.accent : t.bg === "night" ? `color-mix(in srgb, ${t.accent} 60%, #fff)` : `color-mix(in srgb, ${t.accent} 60%, #000)`;
     Object.entries({ "--accent": t.accent, "--bg": B.bg, "--card": B.card, "--ink": B.ink, "--soft": B.soft, "--line": B.line, "--brand": t.accent, "--brand2": accentText, "--on-brand": onAccent, "--c": t.accent, "--pink": `color-mix(in srgb, ${t.accent} 14%, ${B.card})`, "--radius": BUTTONS[t.buttons] || "999px", "--head": `"${F.head}", Georgia, serif`, "--body": `"${F.body}", system-ui, sans-serif` }).forEach(([k, v]) => { root.setProperty(k, v); document.body.style.setProperty(k, v); });
     document.documentElement.dataset.theme = "light"; document.body.classList.add("store");
+    // the house paper and Fredoka headings (playful.css) only while the host keeps the default background and font
+    document.body.classList.toggle("pl-house-bg", t.bg === DEF.bg); document.body.classList.toggle("pl-house-font", t.font === DEF.font);
     // the Petal background and the Florist type are part of the Flower shop look: they win over the house paper and headings
     document.body.classList.toggle("bg-petal", t.bg === "petal"); document.body.classList.toggle("font-florist", t.font === "florist");
     if ((t.bg === "petal" || t.font === "florist") && !document.getElementById("petal-css")) { const st = document.createElement("style"); st.id = "petal-css"; st.textContent = `html body.store.bg-petal{background-color:var(--bg)!important;color:var(--ink)}body.store.font-florist h1,body.store.font-florist h2,body.store.font-florist h3,body.store.font-florist .nu-title{font-family:var(--head)!important;font-weight:600!important;letter-spacing:0!important}body.store.font-florist .head h1{font-size:clamp(32px,5vw,46px)}`; document.head.appendChild(st); }

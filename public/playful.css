@@ -3,12 +3,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap");
 :root{--p-ink:#1F1A17;--p-paper:#FFF8EE;--p-butter:#FFE08A;--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:#C94A30;--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
 
-/* paper with a soft dot grid, always light */
+/* paper with a soft dot grid, always light.
+   Host pages (body.store, see storefront.js): the house paper and Fredoka headings apply only while the host keeps the
+   default background (pl-house-bg) and font (pl-house-font), so the background and fonts they pick actually show. */
 html{color-scheme:light}
-body{background-color:var(--p-paper)!important;background-image:radial-gradient(color-mix(in srgb,var(--p-ink) 9%,transparent) 1.2px,transparent 1.3px)!important;background-size:22px 22px!important;color:var(--p-ink)}
+body:where(:not(.store),.pl-house-bg){background-color:var(--p-paper)!important;background-image:radial-gradient(color-mix(in srgb,var(--p-ink) 9%,transparent) 1.2px,transparent 1.3px)!important;background-size:22px 22px!important;color:var(--p-ink)}
 
 /* chunky rounded headings */
-h1,h2,h3,.brand,.nu-title,.hero h1{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif!important;font-weight:600!important;letter-spacing:-.01em!important;font-variation-settings:normal!important}
+:where(body:not(.store),body.pl-house-font) h1,:where(body:not(.store),body.pl-house-font) h2,:where(body:not(.store),body.pl-house-font) h3,:where(body:not(.store),body.pl-house-font) .brand,:where(body:not(.store),body.pl-house-font) .nu-title,:where(body:not(.store),body.pl-house-font) .hero h1{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif!important;font-weight:600!important;letter-spacing:-.01em!important;font-variation-settings:normal!important}
 h1{line-height:1.02}
 .hero h1 .hl,.hero h1 em,h1 .hl{color:var(--p-ember)!important;font-style:normal!important;background:linear-gradient(transparent 62%,var(--p-butter) 62%,var(--p-butter) 92%,transparent 92%);padding:0 .08em;border-radius:6px}
 
@@ -78,11 +80,11 @@ input:focus,select:focus,textarea:focus{outline:3px solid var(--p-butter)!import
 h1,h2{text-wrap:balance}
 @media (max-width:700px){.hero::before,.hero::after{display:none}}
 /* one type family: Fredoka for display bits that were still serif */
-.go b,.step .n,.lv b,.fl b,.teams li b,p.quote,.pip-h b,.xp-foot b,span.n,.card .q,.nu-menu li,.nu-price,.type-cover span,.host-hello span,.menu-card p,#view-guest .type-cover span{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif!important;font-weight:600!important;font-variation-settings:normal!important}
+:where(body:not(.store),body.pl-house-font) .go b,:where(body:not(.store),body.pl-house-font) .step .n,:where(body:not(.store),body.pl-house-font) .lv b,:where(body:not(.store),body.pl-house-font) .fl b,:where(body:not(.store),body.pl-house-font) .teams li b,:where(body:not(.store),body.pl-house-font) p.quote,:where(body:not(.store),body.pl-house-font) .pip-h b,:where(body:not(.store),body.pl-house-font) .xp-foot b,:where(body:not(.store),body.pl-house-font) span.n,:where(body:not(.store),body.pl-house-font) .card .q,:where(body:not(.store),body.pl-house-font) .nu-menu li,:where(body:not(.store),body.pl-house-font) .nu-price,:where(body:not(.store),body.pl-house-font) .type-cover span,:where(body:not(.store),body.pl-house-font) .host-hello span,:where(body:not(.store),body.pl-house-font) .menu-card p,:where(body:not(.store),body.pl-house-font) #view-guest .type-cover span{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif!important;font-weight:600!important;font-variation-settings:normal!important}
 /* buttons win over older page rules */
 html body .btn,html body .btn.sm,html body a.btn{border:var(--p-line)!important;box-shadow:3px 3px 0 var(--p-ink)!important;border-radius:999px!important;font-weight:600!important}
 html body .btn:active{transform:translate(3px,3px)!important;box-shadow:0 0 0 var(--p-ink)!important}
-html body{background-color:var(--p-paper)!important}
+html body:where(:not(.store),.pl-house-bg){background-color:var(--p-paper)!important}
 html body .eyebrow,html body .nu-eyebrow{color:var(--p-ink)!important}
 /* one border system */
 .gk-grow,.pip-box,.lv,.fl,.step,.store-links a,.trychip,.ticket{border:2px solid var(--p-ink)!important;box-shadow:3px 3px 0 var(--p-ink)!important}

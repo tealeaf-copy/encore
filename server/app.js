@@ -31,6 +31,7 @@ import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountKudosAsk } from "./kudosask.js";
 import { mountHelp } from "./help.js";
+import { withCleanLook } from "./looks.js"; // per-event looks (Make it yours)
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -125,6 +126,8 @@ const PUBLIC_FIELDS = ["questions", "qStyle", "bookingId", "tentative", "hideHos
 PUBLIC_FIELDS.push("sessions", "passPrice", "passCount");
 // How the price reads: "$12 each" (priceUnit), "$40 for 2" (groupPrice for groupSize).
 PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
+// ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----
+PUBLIC_FIELDS.push("look");
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -1403,6 +1406,7 @@ export function createApp({ store, dataDir }) {
     if (!ownedWrite(req, res) || !versionOk(req, res)) return;
     const p = String(req.query.path || ""), St = S(req), before = St.get(p)?.data || null, isEv = /^events\/[^/]+$/.test(p), isR = /^rsvps\/[A-Za-z0-9_-]+$/.test(p);
     req.body = guardGuestReply(req, p, req.body);
+    if (isEv) req.body = withCleanLook(req.body); // per-event looks: allow-listed values only
     // the host letting someone in is remembered, so a later change of mind doesn't need asking again
     if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };
     if (isEv && !req.guest && before) rememberVersion(St, p, before);
@@ -1606,6 +1610,7 @@ export function createApp({ store, dataDir }) {
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
+    if (p === "events") body = withCleanLook(body); // per-event looks: allow-listed values only
     if (p === "rsvps") { if (req.guest && body && typeof body.response === "string") body = { ...body, response: body.response.toLowerCase() };
       // guests reply only to real events, once the event is over replies are closed, and one address can't flood an event
       if (req.guest) { const eidG = String(body?.eventId || ""), evG = /^[A-Za-z0-9_-]+$/.test(eidG) ? S(req).get("events/" + eidG)?.data : null;

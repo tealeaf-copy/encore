@@ -11059,4 +11059,155 @@ if(typeof renderGuest==="function"){ const _rgRR3=renderGuest; renderGuest=async
     a.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} b.hidden=false });
     b.onclick=async()=>{ b.disabled=true; try{ await db.doc("rsvps/"+M.rid).update({paidClaim:true,changedAt:Date.now()}); M.paidClaim=true; try{ localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify(M)) }catch{} pb.dataset.claimed=1; claimed() }catch(err){ b.disabled=false; b.textContent="Didn't go through. Tap to try again" } } }catch(err){ console.warn(err) } return r } }
 
+// ==================================================================
+// Potto reads the sentence: one last pass after every earlier parseEventText and quickStart wrapper, so the day,
+// time, repeat, course, pass, spots and title come out the same way every time. "Hike Sat 7am", "Beginner salsa
+// class Tuesdays 7pm, $20 a class or $70 for 4, 16 spots", "Book club first Sunday of the month 4pm".
+// The words part is pure and tested in test/parse-events.test.js.
+// ==================================================================
+// ---------- Potto reads: words ----------
+const PR_DAY=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+const PR_SHORT={sun:0,mon:1,tue:2,tues:2,wed:3,weds:3,thu:4,thur:4,thurs:4,fri:5,sat:6};
+const PR_MON=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const PR_NTH={first:1,"1st":1,second:2,"2nd":2,third:3,"3rd":3,fourth:4,"4th":4,last:-1};
+const PR_DAYS_RE="sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues|tue|weds|wed|thurs|thur|thu|fri|sat";
+const PR_MON_RE="jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?";
+const prISO=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+const prToday=()=>{ const x=new Date(); x.setHours(12,0,0,0); return x };
+const prClock=(h,m,ap)=>{ h=+h; m=+(m||0); if(ap==="pm"&&h<12) h+=12; if(ap==="am"&&h===12) h=0; return h<24&&m<60?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`:"" };
+// the nth weekday of a month (n=-1 is the last one)
+function prNthDate(y,mo,wd,n){ y+=Math.floor(mo/12); mo=((mo%12)+12)%12; const first=new Date(y,mo,1,12), d1=1+((wd-first.getDay()+7)%7); let day; if(n<0){ const dim=new Date(y,mo+1,0).getDate(); day=d1; while(day+7<=dim) day+=7 } else day=d1+7*(n-1); const x=new Date(y,mo,day,12); return x.getMonth()===mo?x:null }
+// every weekday the host named: "Sat", "on Tue", "this Fri", "next Sat", "Tuesdays", "every other Thursday".
+// A short day counts when it's capitalised, has on/this/next/every before it, or sits right before a time or date.
+function prDays(t){ const out=[], re=new RegExp(`\\b(?:(on|this|next|every(?: other)?)\\s+)?(${PR_DAYS_RE})(s)?\\b\\.?`,"gi"); let m;
+  while((m=re.exec(t))){ const w=m[2].toLowerCase(), full=PR_DAY.includes(w); let wd=full?PR_DAY.indexOf(w):PR_SHORT[w];
+    if(!full){ const before=t.slice(Math.max(0,m.index-4),m.index), after=t.slice(m.index+m[0].length);
+      const ok=!!m[1]||/^[A-Z]/.test(m[2])||new RegExp(`^\\s*(?:\\d|,|$|(?:${PR_MON_RE})\\b|(?:morning|night|evening|afternoon)s?\\b)`,"i").test(after);
+      if(!ok||/\bthe\s$/i.test(before)) continue }
+    out.push({wd,pre:(m[1]||"").toLowerCase(),plural:!!m[3]&&w!=="weds",index:m.index,text:m[0]}) }
+  return out }
+// "first Sunday of the month", "last Friday of each month", "every second Saturday"
+function prNth(t){ const m=t.match(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(every\\s+)?(first|1st|second|2nd|third|3rd|fourth|4th|last)\\s+(${PR_DAYS_RE})s?\\b\\.?(\\s+(?:of\\s+(?:the|each|every)\\s+month|(?:of\\s+)?(?:each|every)\\s+month|(?:of\\s+)?the\\s+month|monthly))?`,"i"));
+  if(!m) return null; const k=m[2].toLowerCase(), n=PR_NTH[k], w=m[3].toLowerCase(), wd=PR_DAY.includes(w)?PR_DAY.indexOf(w):PR_SHORT[w];
+  // "first Saturday in December" is one date, not a repeat; a bare "last Friday" needs a month word ("of the month", "monthly")
+  if(wd==null||new RegExp(`^\\s+(?:in|of)\\s+(?:${PR_MON_RE})\\b`,"i").test(t.slice(m.index+m[0].length))) return null;
+  if(n<0&&!m[4]&&!m[1]&&!/\b(monthly|each month|every month|of the month)\b/i.test(t)) return null;
+  return {n,wd,text:m[0]} }
+// a month-day date: "Dec 12", "Jan 6th", "6 Jan"; the next one from today
+function prDate(t,today){ let m=t.match(new RegExp(`\\b(${PR_MON_RE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?::\\d|am\\b|pm\\b))`,"i")), mo, dd;
+  if(m){ mo=PR_MON.indexOf(m[1].slice(0,3).toLowerCase()); dd=+m[2] } else { m=t.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${PR_MON_RE})\\b`,"i")); if(m){ mo=PR_MON.indexOf(m[2].slice(0,3).toLowerCase()); dd=+m[1] } }
+  if(!m||mo<0||dd<1||dd>31) return null; let x=new Date(today.getFullYear(),mo,dd,12); if(x<today) x=new Date(today.getFullYear()+1,mo,dd,12); return {date:x,text:m[0]} }
+// start and end: "7am", "7:30pm", "10am to 1pm", "2-4:30pm", "19:00"
+function prTimes(t){ const s=t.replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
+  const rg=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if(rg){ const ap2=rg[6].toLowerCase(); let ap1=(rg[3]||"").toLowerCase(); if(!ap1) ap1=ap2==="pm"&&(+rg[1]%12)>(+rg[4]%12)?"am":ap2; const a=prClock(rg[1],rg[2],ap1), b=prClock(rg[4],rg[5],ap2); if(a&&b) return {startTime:a,endTime:b} }
+  const one=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i); if(one){ const a=prClock(one[1],one[2],one[3].toLowerCase()); if(a) return {startTime:a} }
+  const h24=s.match(/(?<![$\d.:])\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(h24) return {startTime:prClock(h24[1],h24[2])};
+  return {} }
+// the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
+// characters, cut at a list or word boundary so "sourdough loaves and cardamom buns" isn't cut mid-list.
+function prTitle(text){ let t=String(text||"").trim().replace(/^(?:please\s+)?(?:let'?s\s+|i(?:'m| am)\s+(?:hosting|running|planning|doing|throwing)\s+|(?:plan|host|throw|organi[sz]e|set up)\s+|(?:run|make)\s+(?=(?:a|an|my|our)\s))/i,"").replace(/^(?:a|an|my|our)\s+/i,"").replace(/^public\s+/i,"");
+  t=t.split(/[;!?]|\.\s|,|\s+[-–\u2014]\s+|\s+(?:for|with|at|in|on)\s+(?:\d|about|around|my|our|mine|home|the\s|a\s|an\s)|\s+\$|\s+\d+\s*(?:people|guests|friends|ppl|spots|seats|places|sandwiches|cakes)\b/i)[0];
+  t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0];
+  const lead=t.match(new RegExp(`^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\\s+(\\S+)$`,"i"));
+  if(!lead){ const nth=prNth(t); if(nth) t=t.replace(nth.text," ");
+    t=t.replace(new RegExp(`\\b(?:starting|from|beginning)\\s+(?:on\\s+)?(?:(?:${PR_DAYS_RE}),?\\s+)?(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`,"gi")," ")
+      .replace(new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b(?:,?\\s+20\\d\\d)?`,"gi")," ")
+      .replace(new RegExp(`\\b\\d{1,2}\\s+(?:${PR_DAY.join("|")})s\\b`,"gi")," ").replace(/\b\d{1,2}\s+(?:weekly\s+)?sessions\b/gi," ");
+    for(const d of prDays(t).reverse()) t=t.slice(0,d.index)+" "+t.slice(d.index+d.text.length);
+    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/\b(?:noon|tonight|today|tomorrow|this weekend)\b/gi," ")
+      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next)\s+/i,"") }
+  t=t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim();
+  if(t.length>60){ const c=t.slice(0,61), cut=Math.max(c.lastIndexOf(", "),c.lastIndexOf(" and "),c.lastIndexOf(" & "),c.lastIndexOf(": ")); t=(cut>=20?c.slice(0,cut):c.replace(/\s+\S*$/,"")).replace(/[\s,:&-]+$/,"") }
+  return t?t.replace(/^./,c=>c.toUpperCase()):"" }
+// everything Potto reads from one sentence. Only what the host said is set.
+function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prToday(), o={};
+  const nth=prNth(t), dt=prDate(t,today), days=prDays(nth?t.replace(nth.text," "):t), day=nth?{wd:nth.wd,pre:"",plural:false}:days[0];
+  // the course: "8 week pottery wheel course", "6-week improv course", "8 sessions", "6 Wednesdays", "$320 for all 8"
+  const sp=(typeof seriesParse==="function"?seriesParse(t):{})||{};
+  const wk=t.match(/\b(\d{1,2})[- ]?weeks?\b(?:[- ]long)?[\s-]+(?:[a-z'’]+[\s-]+){0,3}?(?:course|series|class(?:es)?|workshop|program|programme|intensive|bootcamp|lessons?)\b(?![- ]?(?:pass|card|pack))/i);
+  const nd=t.match(new RegExp(`\\b(\\d{1,2})\\s+(${PR_DAY.join("|")})s\\b`,"i"));
+  const all=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:all|the)\s+(\d{1,2})\b(?!\s*(?:people|persons?|guests|spots|seats|ppl|friends|of us))/i);
+  const n=+(sp.sessions||(wk&&wk[1])||(nd&&nd[1])||(all&&all[2])||0);
+  if(n>=2&&n<=52){ o.sessions=n; o.course=true; o.label="workshop"; o.activity="workshop" }
+  // the weekday and the date
+  if(day) o.weekday=PR_DAY[day.wd];
+  if(dt){ let x=dt.date; if(o.course&&day&&x.getDay()!==day.wd){ x=new Date(x); while(x.getDay()!==day.wd) x.setDate(x.getDate()+1) } o.date=prISO(x) }
+  else if(nth){ let x=prNthDate(today.getFullYear(),today.getMonth(),nth.wd,nth.n); if(!x||x<today) x=prNthDate(today.getFullYear(),today.getMonth()+1,nth.wd,nth.n)||new Date(today.getFullYear(),today.getMonth()+1,1,12); o.date=prISO(x); o.nth=nth.n }
+  else if(day&&!/\b(tonight|today|tomorrow|this evening)\b/.test(lo)){ let k=(day.wd-today.getDay()+7)%7; if(day.pre==="this"){ /* the coming one, today included */ } else if(day.pre==="next"){ if(!k) k=7; k+=7 } else if(!k) k=7; const x=new Date(today); x.setDate(x.getDate()+k); o.date=prISO(x) }
+  Object.assign(o,prTimes(t));
+  // the repeat
+  if(o.course) o.repeat=/\bevery other\b|\bbiweekly\b|\bfortnightly\b/.test(lo)?"biweekly":"weekly";
+  else if(nth) o.repeat="monthly";
+  else if(/\bevery other\b|\bbiweekly\b|\bfortnightly\b/.test(lo)) o.repeat="biweekly";
+  else if(/\bevery (?:week|day)\b|\bweekly\b/.test(lo)||days.some(d=>d.pre==="every")) o.repeat="weekly";
+  else if(/\bmonthly\b|\bevery month\b/.test(lo)) o.repeat="monthly";
+  else if(day&&day.plural&&!dt&&day.pre!=="this"&&day.pre!=="next") o.repeat="weekly";
+  // money: "$20 a class", "$320 for all 8", "$30 a person", "$12 each", "$180"; the pass "$70 for 4"
+  const per=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a|per|\/)\s*(?:class|session|lesson|drop-?in|visit)\b|\$\s?(\d{1,5}(?:\.\d{2})?)\s*drop-?in\b/i);
+  const each=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:each|a person|per person|pp\b|a head|a seat|a spot|a ticket|per ticket)/i);
+  if(sp.passPrice){ o.passPrice=sp.passPrice; o.passCount=sp.passCount }
+  else if(per){ const bare=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:a\s+)?(\d{1,2})\b(?!\s*(?:-|\s)?(?:people|persons?|guests|spots|seats|ppl|friends|of us))/gi)].find(m=>!/for\s+(?:all|the)\s/i.test(m[0])); if(bare&&+bare[2]>=2){ o.passPrice=+bare[1]; o.passCount=+bare[2] } }
+  const amt=per?(per[1]||per[2]):all?all[1]:each?each[1]:([...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?!\s*k\b|\d)/gi)].map(m=>m[1]).find(v=>+v!==+o.passPrice)||"");
+  if(amt&&!(+amt>=1000)) { o.price="$"+amt; o.seatPrice=+amt }
+  // spots: "16 spots", "10 seats", "10 people". A course's session count or a pass count is never the headcount.
+  const hc=t.match(/\b(\d{1,4})\s*(?:spots|seats|people|guests|places|persons|ppl|friends|max)\b|\b(?:max|up to)\s+(\d{1,4})\b(?!\s*(?:am|pm|weeks?|sessions?|classes))/i);
+  if(hc) o.headcount=+(hc[1]||hc[2]);
+  if(/\bpre-?orders?\b/i.test(t)) o.preorder=true;
+  const title=prTitle(t); if(title) o.title=title;
+  return o }
+// ---------- Potto reads: wiring ----------
+{ const _peZ=parseEventText; parseEventText=function(t){ const o=_peZ.apply(this,arguments); try{ const p=prRead(t);
+    // what the host said wins over the earlier guesses
+    for(const k of ["weekday","date","startTime","endTime","repeat","sessions","course","price","seatPrice","passPrice","passCount","preorder","title","nth"]) if(p[k]!=null) o[k]=p[k];
+    if(p.course&&(o.casual||!o.label||/^(get-together|gathering at my place)$/i.test(o.label||""))){ o.label="workshop"; o.activity="workshop" }
+    if(p.headcount) o.headcount=p.headcount;
+    else if(o.headcount&&[p.sessions,p.passCount].includes(+o.headcount)) delete o.headcount;
+    if(p.date&&o.month) delete o.month;
+  }catch(e){ console.warn(e) } return o } }
+{ const _qsZ=quickStart; quickStart=function(text){ const r=_qsZ.apply(this,arguments); try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d.example||!(isCasual(d)||window.__wsPersonal)) return r;
+    const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=/\b(tonight|today|tomorrow|this evening)\b/i.test(t), typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
+    // the title: keep "Taco night"-style endings an earlier pass added to a short name
+    if(p.title&&p.title.length>=2){ const cur=String(d.pubTitle||d.name||""); if(!(cur.toLowerCase().startsWith(p.title.toLowerCase()+" ")&&/^(night|morning|afternoon|evening)$/i.test(cur.slice(p.title.length+1)))){ d.pubTitle=p.title; d.name=p.title } }
+    if(p.date&&!feeler&&!rel&&(!typedDate||!d.date||p.sessions)) d.date=p.date;
+    if(p.startTime){ d.startTime=p.startTime; if(p.endTime) d.endTime=p.endTime; else if(d.endTime&&d.endTime<=p.startTime) delete d.endTime }
+    if(p.repeat) d.repeat=p.repeat;
+    if(p.sessions){ d.sessions=p.sessions; if(!d.activity||/^(get-together|gathering at my place|pop-up)$/i.test(d.activity)) d.activity="workshop" }
+    if(p.price){ d.price=p.price; d.free=false }
+    if(p.passPrice){ d.passPrice=p.passPrice; d.passCount=p.passCount }
+    if(p.headcount) d.headcount=p.headcount; else if(+d.headcount&&[p.sessions,p.passCount].includes(+d.headcount)) d.headcount=0;
+    if(p.preorder) d.preorder=true;
+    try{ if(typeof renderStep==="function"&&location.hash==="#studio") renderStep() }catch{}
+  }catch(e){ console.warn(e) } return r } }
+// ---------- courses on the host side ----------
+// a course runs again from the week after its last session, not the next week of this one
+function prAgainDate(d){ const last=typeof seriesLast==="function"?seriesLast(d):null; if(!last) return ""; const step=d.repeat==="biweekly"?14:7, today=localISO(), key=String(d.pubTitle||d.name||"").toLowerCase();
+  let end=last; for(const e of (typeof allEvents!=="undefined"?allEvents:[])){ if(!e||e.example||e.id===d.id||!e.date||String(e.pubTitle||e.name||"").toLowerCase()!==key) continue; const l=seriesLast(e)||new Date(e.date+"T12:00:00"); if(l>end) end=l }
+  const x=new Date(end); let n=0; do{ x.setDate(x.getDate()+step); n++ }while(localISO(x)<today&&n<120); return localISO(x) }
+window.prAgainDate=prAgainDate;
+if(typeof window.nextFreshDate==="function"){ const _nfZ=window.nextFreshDate; window.nextFreshDate=function(d){ return +d?.sessions>1&&d.date?prAgainDate(d):_nfZ.apply(this,arguments) } }
+if(typeof hostKitHTML==="function"){ const _hkZ=hostKitHTML; hostKitHTML=function(d){ let h=_hkZ.apply(this,arguments); try{ if(+d?.sessions>1&&d.date) h=String(h).replace(/>Make the next one \([^)<]*\)</,`>Run it again (from ${esc(fmtDate(prAgainDate(d)))})<`) }catch{} return h } }
+if(typeof cosItems==="function"){ const _ciZ=cosItems; cosItems=function(d){ const I=_ciZ.apply(this,arguments); try{ if(+d?.sessions>1&&d.date) for(const it of I||[]) for(const a of it.acts||[]) if(a[0]==="Make the next one") a[0]=`Run it again (from ${fmtDate(prAgainDate(d))})` }catch{} return I } }
+// the host's header: "$180 for all 6" and "6 Wednesdays, Jan 6 to Feb 10", not "$180 a person"
+{ const _dhZ=drawHero; drawHero=function(){ const r=_dhZ.apply(this,arguments); try{ const d=draft; if(!d||!isCasual(d)) return r; const h=document.getElementById("heroHost"); if(!h) return r; const sp=seriesPrice(d);
+    if(sp){ const i=sp.indexOf(" "); h.querySelectorAll(".h2stats > div").forEach(x=>{ if(x.querySelector("span")?.textContent==="a person"){ x.querySelector("b").textContent=sp.slice(0,i); x.querySelector("span").textContent=sp.slice(i+1) } }) }
+    const sub=h.querySelector(".h2sub"), line=+d.sessions>1?seriesSpan(d):d.repeat&&d.date?`${seriesEvery(d,true)} from ${srMD(srDate(d.date))}`:"";
+    if(sub&&line&&d.date&&!sub.dataset.sr){ const f=fmtDate(d.date); if(sub.textContent.includes(f)){ sub.textContent=sub.textContent.replace(f,line); sub.dataset.sr=1 } } }catch(e){ console.warn(e) } return r } }
+// the wizard's summary says the same
+new MutationObserver(()=>{ try{ const sum=document.querySelector("#wizBg .wiz-sum"), d=typeof draft!=="undefined"?draft:null; if(!sum||sum.dataset.sr||!d||!d.date) return; sum.dataset.sr=1;
+  const line=+d.sessions>1?seriesSpan(d):d.repeat?`${seriesEvery(d,true)} from ${srMD(srDate(d.date))}`:""; const s=sum.querySelector("span"), f=fmtDate(d.date); if(line&&s&&s.textContent.startsWith(f)) s.textContent=line+s.textContent.slice(f.length);
+  const sp=seriesPrice(d); if(sp) sum.querySelectorAll("span").forEach(x=>{ if(x.textContent.includes(`${d.price} a person`)) x.textContent=x.textContent.replace(`${d.price} a person`,sp) }) }catch(err){ console.warn(err) } }).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- guests: the calendar and the class pass ----------
+// one date of a weekly class goes in the calendar once; only a course repeats there, and stops after N
+{ const _sgZ=seriesRRule; seriesRRule=function(d){ return document.getElementById("view-guest")&&!(+d?.sessions>1)&&window.__gEv===d?"":_sgZ.apply(this,arguments) } }
+// the full invite's Google Calendar link gets an end: the host's end time, else three hours (what the .ics says)
+new MutationObserver(()=>{ try{ const e=window.__gEv; if(!e?.date||!/^\d{2}:\d{2}$/.test(e.startTime||"")) return; document.querySelectorAll('#view-guest a[href*="calendar.google.com/calendar/render"]').forEach(a=>{ const u=new URL(a.href), ds=u.searchParams.get("dates")||"", m=ds.match(/^(\d{8}T\d{6})\/(\d{8}T\d{6})$/); if(!m||m[1]!==m[2]) return;
+    const end=/^\d{2}:\d{2}$/.test(e.endTime||"")&&e.endTime!==e.startTime?e.endTime:guestClock(e,"3:00"), x=new Date(e.date+"T12:00:00"); if(end<e.startTime) x.setDate(x.getDate()+1);
+    u.searchParams.set("dates",`${m[1]}/${localISO(x).replace(/-/g,"")}T${end.replace(":","")}00`); a.href=u.toString() }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// a class pass gets its own pay button next to Pay: "Pay $70 for 4"
+if(typeof renderGuest==="function"){ const _rgZ=renderGuest; renderGuest=async function(){ const r=await _rgZ.apply(this,arguments); try{ const e=window.__gEv, pb=document.querySelector("#view-guest #payBox"); if(!e?.id||!pb||!(+e.passPrice>0&&+e.passCount>1)||!e.ticketUrl||pb.querySelector("#payPass")) return r;
+    const a=pb.querySelector("a[href^='https://']"); if(!a) return r; const M=typeof myRsvp==="function"?myRsvp(e.id):null, amt=`$${+e.passPrice}`;
+    const b=document.createElement("a"); b.id="payPass"; b.className="btn ghost"; b.target="_blank"; b.rel="noopener"; b.style.marginLeft="8px"; b.href=payLinkFor(e.ticketUrl,amt,[M?.name,guestTitle(e),`${e.passCount} classes`].filter(Boolean).join(" · ")); b.textContent=`Pay ${amt} for ${+e.passCount}`; a.after(b);
+    b.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} const ip=document.getElementById("gIPaid"); if(ip) ip.hidden=false }) }catch(err){ console.warn(err) } return r } }
+// ---------- end Potto reads ----------
 </script>

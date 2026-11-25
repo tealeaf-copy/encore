@@ -166,8 +166,8 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     // count yourself in: the spots and "N in" lines move with your own yes (a returning guest is already counted)
     if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots")) $("#spots").textContent = S.spotsLine(S.left - 1); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
     const d = e.date ? e.date.replace(/-/g, "") : "", hm = (x) => x.replace(":", "") + "00", t = HHMM.test(e.startTime || "") ? hm(e.startTime) : "";
-    // the calendar end: the host's end time (next day when it ends after midnight), else two hours after the start
-    const endT = t ? (HHMM.test(e.endTime || "") && e.endTime !== e.startTime ? hm(e.endTime) : String(Math.min(23, +t.slice(0, 2) + 2)).padStart(2, "0") + t.slice(2)) : "";
+    // the calendar end: the host's end time (next day when it ends after midnight), else three hours after the start, like the full invite
+    const endT = t ? (HHMM.test(e.endTime || "") && e.endTime !== e.startTime ? hm(e.endTime) : String((+t.slice(0, 2) + 3) % 24).padStart(2, "0") + t.slice(2)) : "";
     const dEnd = t && endT < t ? (() => { const x = new Date(e.date + "T12:00:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); })() : d;
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
     const doorCode = yes && !paid && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl);
@@ -177,7 +177,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
       ${doorCode ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
-      <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a><button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
+      <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>${+e.passPrice > 0 && +e.passCount > 1 ? `<a class="btn pay" id="payPass" href="${esc(payLinkOf(pay, "$" + (+e.passPrice), [data.name, e.pubTitle || e.name, e.passCount + " classes"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.passPrice)} for ${esc(+e.passCount)}</a>` : ""}<button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
       ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
       <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -191,16 +191,17 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
     // review round 3 (paid spots): after Pay, the guest can say "I paid". It records a claim on their own reply;
     // the host still confirms. This device remembers the tap, so coming back shows "I paid" straight away.
     const payBtn = $("#payBtn"), iPaid = $("#iPaid");
-    if (payBtn && iPaid) { payBtn.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; });
+    const payPass = $("#payPass");
+    if (payBtn && iPaid) { [payBtn, payPass].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));
       iPaid.onclick = async () => { iPaid.disabled = true;
         try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
           try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
-          const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); iPaid.remove(); }
+          const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); payPass?.remove(); iPaid.remove(); }
         catch { iPaid.disabled = false; iPaid.textContent = "Didn't go through. Tap to try again"; } }; }
     if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`;
-      // series: the calendar entry repeats
-      if (cal && d && srRRule(e)) cal.href += "&recur=" + encodeURIComponent(srRRule(e)); }
+      // series: a course's calendar entry repeats and stops after N; one date of a weekly class goes in once
+      if (cal && d && +e.sessions > 1 && srRRule(e)) cal.href += "&recur=" + encodeURIComponent(srRRule(e)); }
   }
 })();
 </script>

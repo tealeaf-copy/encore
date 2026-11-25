@@ -12,7 +12,12 @@ const get = (path, cookie) => fetch(srv.base + path, { headers: cookie ? { cooki
 const put = (path, body, cookie) => fetch(srv.base + "/api/db/doc?path=" + path, { method: "PUT", headers: { ...J, cookie }, body: JSON.stringify(body) });
 const cookieOf = (r) => r.headers.get("set-cookie").split(";")[0];
 const join = async (name, email) => { const r = await post("/api/signup", { name, email, password: "long-password-1", mode: "friends" }); const b = await r.json(); assert.equal(r.status, 200, JSON.stringify(b)); return { cookie: cookieOf(r), ws: b.workspace.id }; };
-const rsvp = async (ws, body) => { const r = await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": ws }, body: JSON.stringify({ response: "going", createdAt: Date.now(), ...body }) }); const j = await r.json(); assert.equal(r.status, 200, JSON.stringify(j)); return j.id; };
+// one device key per guest (a guest's own phone); replies to events that have already happened are history,
+// written straight into the store the way they'd have arrived before the day
+const rsvp = async (ws, body) => { const data = { response: "going", createdAt: Date.now(), ...body }, key = "k-" + String(body.email || body.name || Math.random()).toLowerCase();
+  const r = await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": key, "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json();
+  if (r.status === 409 && j.code === "past") { const id = "r" + Math.random().toString(36).slice(2, 12); srv.store.set(`ws/${ws}/rsvps/${id}`, { ...data, _k: key }); return id; }
+  assert.equal(r.status, 200, JSON.stringify(j)); return j.id; };
 const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 
 before(async () => { srv = await startServer(); });

@@ -1288,6 +1288,15 @@ export function createApp({ store, dataDir }) {
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
     if (p === "rsvps") { const pol = rsvpPolicy(req, body); body = pol.body;
+      // no new or changed replies once the event day is over: turnout and a host's record depend on it
+      { const eid0 = String(body?.eventId || ""), ev0 = /^[A-Za-z0-9_-]+$/.test(eid0) ? S(req).get("events/" + eid0)?.data : null; if (req.guest && ev0?.date && ev0.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." }); }
+      // the same email from another device can't overwrite someone's reply: only the device that sent it (its guest key),
+      // a verified personal invite, or the host can change it
+      if (pol.prior && req.guest) { const sameDevice = !!pol.prior.data._k && pol.prior.data._k === guestKey(req), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});
+        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "Someone already replied with this email. Open the invite on the phone you used, or ask the host to change it." }); }
+      // never blank out what a guest already told the host
+      if (pol.prior) for (const k of ["name", "email", "phone", "dietary", "access"]) if (!String(body[k] ?? "").trim() && pol.prior.data[k]) delete body[k];
+      if (pol.prior && body.answers && typeof body.answers === "object" && !Array.isArray(body.answers) && !Object.keys(body.answers).length && pol.prior.data.answers) delete body.answers;
       if (pol.prior) { const freed = pol.prior.data.response === "going" && body.response !== "going"; S(req).set("rsvps/" + pol.prior.id, { ...pol.prior.data, ...body, _k: pol.prior.data._k || body._k, changedAt: Date.now() }); const promoted = freed ? await promoteWaitlist(req, String(body.eventId || "")) : null; return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, response: body.response, merged: true, ...(promoted ? { promoted: true } : {}) }); }
       const r0 = S(req).add(p, body); return res.json({ ...r0, response: body.response }); }
     const r = S(req).add(p, body);

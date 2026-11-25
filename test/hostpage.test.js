@@ -207,12 +207,22 @@ test("A home address in the place name reaches guests only after they're in; wal
   assert.ok(addr.ok && /Bedford/.test(addr.venueName), "the guest who's in gets it");
   // a past event where the door was used: only checked-in guests are named, walk-ins are counted but never named
   const past = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
-  await put("/api/db/doc?path=events/pa2", { kind: "social", casual: true, name: "Supper", date: past, published: true, guests: [{ name: "Eve Walker", status: "Attended", source: "Walk-in" }] }, c);
+  // replies arrive before the day (replies close once it's over), then the day passes
+  const pa2 = { kind: "social", casual: true, name: "Supper", published: true, guests: [{ name: "Eve Walker", status: "Attended", source: "Walk-in" }] };
+  await put("/api/db/doc?path=events/pa2", { ...pa2, date: "2026-12-21" }, c);
   for (const n of ["Ana Lopez", "Dung Pham"]) await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "pa2" + n }, body: JSON.stringify({ eventId: "pa2", name: n, response: "going" }) });
+  await put("/api/db/doc?path=events/pa2", { ...pa2, date: past }, c);
+  const late = await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "pa2-late" }, body: JSON.stringify({ eventId: "pa2", name: "Late Larry", response: "going" }) });
+  assert.equal(late.status, 409, "no replies after the day"); assert.equal((await late.json()).code, "past");
   const L = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const ana = (L.docs || L.items || L).find((d) => (d.data || d).name === "Ana Lopez");
   await put("/api/db/doc?path=rsvps/" + String(ana.id).split("/").pop(), { ...(ana.data || ana), checkedInAt: Date.now() }, c);
   const who = await (await fetch(srv.base + "/api/public/attendees/pa2")).json(); const names = who.attendees.map((a) => a.name).join(",");
   assert.match(names, /Ana/); assert.ok(!/Dung|Eve/.test(names), names); assert.equal(who.count, 2, "Ana and the walk-in came");
+  // someone else's phone can't overwrite a reply by reusing the email
+  const send = (k, body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": k }, body: JSON.stringify({ eventId: "pa1", ...body }) });
+  assert.equal((await send("own-k", { name: "Mai", email: "mai@example.com", response: "going" })).status, 200);
+  const hijack = await send("other-k", { name: "Not Mai", email: "MAI@example.com", response: "no" }); assert.equal(hijack.status, 409); assert.equal((await hijack.json()).code, "rsvp_exists");
+  assert.equal((await send("own-k", { name: "Mai", email: "mai@example.com", response: "maybe" })).status, 200, "her own phone can change it");
 });
 
 test("Example hosts (demo accounts) can't be sent anything; real hosts can", async () => {

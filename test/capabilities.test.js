@@ -153,7 +153,7 @@ test("your data: the owner can export everything (no secrets) and delete the wor
 test("RSVPs: seats are enforced on the server and each guest has one reply", async () => {
   const A = await signup("Seatco", "own@seatco.com", "Sia Owner");
   await put("events/evC", { name: "Dinner", headcount: 2, guests: [{ name: "Gia", email: "gia@x.com", status: "Going" }], updatedAt: 1 }, A.cookie);
-  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evC", ...body }) });
+  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k-" + String(body.email || body.name).toLowerCase(), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evC", ...body }) });
   const r1 = await (await g({ name: "Ann", email: "ann@x.com", response: "going" })).json();
   assert.equal(r1.response, "going");
   const r2 = await (await g({ name: "Ben", email: "ben@x.com", response: "going" })).json();
@@ -168,7 +168,7 @@ test("RSVPs: seats are enforced on the server and each guest has one reply", asy
 test("RSVPs: invited guests who say yes before the host opens the app still fill seats", async () => {
   const A = await signup("Seat2co", "own@seat2.com", "Sia Owner");
   await put("events/evS2", { name: "Dinner", headcount: 2, guests: [{ name: "Ana", email: "ana@x.com", status: "Invited" }, { name: "Bo", email: "bo@x.com", status: "Invited" }, { name: "Cy", email: "cy@x.com", status: "Invited" }], updatedAt: 1 }, A.cookie);
-  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k" + Math.random().toString(36).slice(2), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evS2", ...body }) });
+  const g = (body) => fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k-" + String(body.email || body.name).toLowerCase(), "x-encore-workspace": A.ws }, body: JSON.stringify({ eventId: "evS2", ...body }) });
   assert.equal((await (await g({ name: "Ana", email: "ana@x.com", response: "going" })).json()).response, "going");
   assert.equal((await (await g({ name: "Bo", email: "bo@x.com", response: "going" })).json()).response, "going");
   assert.equal((await (await g({ name: "Cy", email: "cy@x.com", response: "going" })).json()).response, "waitlist", "third yes for two seats");

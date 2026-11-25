@@ -18,13 +18,13 @@
   <h1>Join your team on Pottery Lab</h1>
   <p class="err" id="err" role="alert"></p>
   <label>Your name<input name="name" placeholder="Your name" autocomplete="name" required></label>
-  <label>Choose a password (10+ characters)<input name="password" type="password" placeholder="Choose a password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
+  <label>Password (10+ characters)<input name="password" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" minlength="10" required></label>
   <button type="submit" id="go">Join</button>
 </form>
 <script src="/authguard.js"></script><script>
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
   const token = location.hash.slice(1);
-  if (!/^[a-f0-9]{48}$/.test(token)) { err.textContent = "This invite link looks incomplete. Open the full link from your invite."; go.disabled = true; }
+  if (!/^[a-f0-9]{48}$/.test(token)) { err.textContent = "This link is cut off. Open the full link from your invite."; go.disabled = true; }
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = { ...Object.fromEntries(new FormData(f)), token };

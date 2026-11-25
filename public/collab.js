@@ -28,11 +28,11 @@
           let me = {}; try { me = await (await fetch("/api/me")).json(); } catch {}
           const nm = String(me.name || ""), slug = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
           err.innerHTML = `<span style="display:block;color:#1F1A17;font-weight:600;margin-bottom:6px">${esc(first)} will want to see who you are. Make your host page (20 seconds), and we'll send this right after.</span>
-            <span style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><input class="hp-name" placeholder="Page name, e.g. Kevin's Kitchen" value="${esc(nm ? nm.split(" ")[0] + "'s get-togethers" : "")}"><input class="hp-handle" placeholder="your-handle" value="${esc(slug(nm))}"></span>
+            <span style="display:grid;gap:8px;grid-template-columns:1fr 1fr"><input class="hp-name" placeholder="Page name, e.g. Kevin's Kitchen" value="${esc(nm ? nm.split(" ")[0] + "'s events" : "")}"><input class="hp-handle" placeholder="your-handle" value="${esc(slug(nm))}"></span>
             <button type="button" class="hp-go" style="margin-top:8px;width:100%">Create my page and send the request</button><a href="/" style="display:block;text-align:center;margin-top:6px;font-size:13px">Or set it up properly in Pottery Lab</a>`;
           err.querySelector(".hp-go").onclick = async () => { const b2 = err.querySelector(".hp-go"); b2.disabled = true; b2.textContent = "Creating…";
             try { const pr = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: err.querySelector(".hp-name").value.trim() || nm, handle: slug(err.querySelector(".hp-handle").value) || slug(nm), city: f.city.value }) }); const pj = await pr.json().catch(() => ({}));
-              if (!pr.ok) throw new Error(pr.status === 403 ? "Your account follows hosts but can't host yet. Ask a member for an invite code." : pj.message || "Couldn't create your page.");
+              if (!pr.ok) throw new Error(pr.status === 403 ? "Your account follows hosts but can't host yet. Ask a member for a host code." : pj.message || "Couldn't create your page.");
               btn.disabled = false; f.requestSubmit ? f.requestSubmit() : btn.click(); } catch (x) { b2.disabled = false; b2.textContent = "Create my page and send the request"; const m = document.createElement("span"); m.style.cssText = "display:block;color:#B3261E;margin-top:6px"; m.textContent = x.message; err.appendChild(m); } };
           btn.disabled = true; return; }
         if (e.code === "account_required" || /sign in/i.test(e.message)) { err.innerHTML = `${esc(e.message)} <a href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a>`; btn.disabled = false; return; }
@@ -46,10 +46,10 @@
     const first = String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""), side = document.querySelector("aside.side") || document.querySelector("main"); if (!side || document.getElementById("collabCard")) return;
     const card = document.createElement("div"); card.className = "card cl-card"; card.id = "collabCard";
     card.innerHTML = `<h3>Host something too?</h3><p class="muted">Send ${esc(String(h.name || first).replace(/\.$/, ""))} a collab idea: co-host a night, pop up together or swap guest lists.</p><button class="btn" type="button" id="clGo">Request a collab</button>`;
-    const fol = document.getElementById("follow"); fol ? fol.after(card) : side.appendChild(card);
+    const fol = document.getElementById("follow"); fol ? fol.after(card) : side.appendChild(card); document.getElementById("hostOwn")?.remove(); // one "host your own" prompt is enough
     card.querySelector("#clGo").onclick = async () => { const me = await J("/api/me");
       if (!me?.verified) { location.href = `/login?next=${encodeURIComponent(location.pathname + "?collab=1")}`; return; }
-      const p = (await J("/api/host/profile"))?.host; if (!p?.handle) { card.innerHTML = `<h3>Set up your page first</h3><p class="muted">Collabs are between hosts, so ${esc(first)} needs to see your page. It takes a couple of minutes.</p><a class="btn" href="/">Make my host page</a>`; return; }
+      const p = (await J("/api/host/profile"))?.host; if (!p?.handle) { card.innerHTML = `<h3>Set up your page first</h3><p class="muted">Collabs are between hosts, so ${esc(first)} needs to see your page first.</p><a class="btn" href="/">Make my host page</a>`; return; }
       sheet(h, p); };
     if (/[?&]collab=1/.test(location.search) && mine) sheet(h, mine); }
   window.EncoreCollab = { mount };

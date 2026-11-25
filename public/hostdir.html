@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script src="/authguard.js"></script>
 <title>Hosts · Pottery Lab</title>
-<meta name="description" content="Run clubs, supper clubs, bakers, artists and the people behind the best small gatherings. Follow the hosts you like and hear about their next one first.">
+<meta name="description" content="Run clubs, supper clubs, bakers, artists and the people behind the best small events. Follow one to hear first.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
@@ -32,12 +32,12 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 <div class="wrap">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
   <h1>Hosts on Pottery Lab</h1>
-  <p class="lede">Run clubs, supper clubs, bakers and artists. Follow the ones you like to hear about their next one first.</p>
-  <div class="bar"><input class="search" id="q" type="search" placeholder="Search: “pottery class for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">City</option></select><span id="kinds" style="display:contents"></span></div></div>
+  <p class="lede">Run clubs, supper clubs, bakers and artists. Follow one to hear first.</p>
+  <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">City</option></select><span id="kinds" style="display:contents"></span></div></div>
   <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
   <button type="button" class="more" id="more" hidden></button>
-  <p class="teams">Booking for a team, a client dinner or a wedding? <a href="/hosts/book">See hosts who take bookings</a>.</p>
+  <p class="teams">Booking for a brand? <a href="/hosts/book">See hosts who take bookings</a>.</p>
 </div>
 <script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
 <script>
@@ -59,7 +59,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const tint = (h) => { const a = (h.theme && h.theme.accent) || h.color || "#E0A030"; return `color-mix(in srgb, ${a} 28%, #FFF8EE)`; };
   // at most two small pills, and only ones that tell hosts apart ("New host" and "Takes bookings" were on nearly every card)
   const pills = (h) => { const b = (BADGES[h.handle] || []).filter((x) => !/^m-/.test(x.id) && x.id !== "new")[0], P = [];
-    if (h.sample) P.push(`<span class="ex">Example host</span>`);
+    if (h.sample) P.push(`<span class="ex">Example</span>`);
     if (b) P.push(`<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`);
     if (h.upcoming) P.push(`<span class="nx">${h.upcoming} coming up</span>`);
     if (h.showcase) P.push(`<span>Not on Pottery Lab yet</span>`);
@@ -67,7 +67,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const facts = (h) => [[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : ""].filter(Boolean).map(esc).join(" · ");
   const igOf = (h) => ((h.links || []).find((l) => /^https:\/\/(www\.)?instagram\.com\//i.test(l.url || "")) || {}).url || "";
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
-      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small get-togethers")}</span>${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
+      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
       <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
   function draw() { sync();
     const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
@@ -82,7 +82,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     if (!(smart && smart.length)) L = [...L.filter((h) => !h.sample), ...L.filter((h) => h.sample)];
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
-    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match that yet. Try another city or clear the search.</p>`;
+    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match yet. Try another city or search.</p>`;
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = shown === FIRST ? `See all ${L.length} hosts` : `Show ${Math.min(STEP, left)} more`;
   }

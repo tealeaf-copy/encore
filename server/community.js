@@ -63,15 +63,15 @@ export function makeCommunity(store) {
   function checkCode(code) {
     const founders = String(process.env.ENCORE_FOUNDER_CODES || "").split(",").map((x) => x.trim().toUpperCase()).filter(Boolean);
     if (code && founders.includes(String(code).toUpperCase())) return { ok: true, founder: true };
-    const c = getCode(code); if (!c) return { ok: false, message: "That invite code doesn't exist. Check it with the person who sent it." };
-    if (c.usedAt) return { ok: false, message: "That invite code has already been used. Ask for another one." };
+    const c = getCode(code); if (!c) return { ok: false, message: "That code doesn't work. Check it with whoever sent it." };
+    if (c.usedAt) return { ok: false, message: "That host code has already been used. Ask for another one." };
     return { ok: true, c };
   }
   function useCode(code, { ws, email, name }) {
     const c = getCode(code); if (!c) return null;
     store.update(codePath(code), { usedAt: Date.now(), usedByEmail: email, usedByName: name, usedByWs: ws });
     // The two people are connected: each follows the other's host page.
-    try { follow(c.ownerWs, { email, name, via: "invite" }); const inviter = getWorkspace(c.ownerWs); follow(ws, { email: c.ownerEmail, name: c.ownerName, via: "invite" }); scopeStore(store, c.ownerWs).add("audit", { eventId: "", what: `${first(name)} joined Pottery Lab with your invite code`, kind: "growth", at: Date.now() }); return inviter; } catch { return null; }
+    try { follow(c.ownerWs, { email, name, via: "invite" }); const inviter = getWorkspace(c.ownerWs); follow(ws, { email: c.ownerEmail, name: c.ownerName, via: "invite" }); scopeStore(store, c.ownerWs).add("audit", { eventId: "", what: `${first(name)} joined Pottery Lab with your host code`, kind: "growth", at: Date.now() }); return inviter; } catch { return null; }
   }
   // ---- host pages ----
   const handlePath = (h) => "system/handle-" + h;
@@ -123,7 +123,7 @@ export function makeCommunity(store) {
   }
   // who's going, for event previews: a count and up to three sketch faces (never names)
   const ARTS = ["florist", "curls", "bob", "chef", "runner", "barista", "baker", "glasses", "hiker"], TINTS = ["#E26D8E", "#E0A030", "#5B7FD6", "#3E9C6E", "#8C62C9"];
-const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "Seat Filler", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
+const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler: "Last-Minute Yes", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
   function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0;
       for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n += Math.max(1, Math.min(6, +r.party || (r.plusOne ? 2 : 1)));
         if (r.showMe !== false && faces.length < 3) { const h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); faces.push({ art: ARTS[h % ARTS.length], color: TINTS[(h >> 4) % TINTS.length] }); } }
@@ -160,7 +160,7 @@ const TYPE_NAMES = { host: "Host", spark: "Spark", chill: "Chill One", filler: "
   }
   // ---- what guests say about a host, from their own get-togethers (kudos and guest types) ----
   const TAGL = { food: "Amazing food", welcome: "Felt welcome", vibe: "Great vibe", organized: "So well organized", met: "Met new people", fun: "So much fun", spot: "Great spot", again: "Would go again" };
-  const TYPEL = { host: "Hosts", spark: "Sparks", chill: "Chill Ones", filler: "Seat Fillers", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" };
+  const TYPEL = { host: "Planners", spark: "Sparks", chill: "Chill Ones", filler: "Last-Minute Yeses", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" };
   function resonance(ws) { try { const S = scopeStore(store, ws), K = S.list("kudos").map((d) => d.data || {}), R = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.response === "going" && !r.noShow);
       const tags = {}; let again = 0; for (const k of K) { for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1; if ((k.tags || []).includes("again") || k.compare === "better") again++; }
       const seen = new Set(), types = {}; let back = 0; const per = {}; for (const r of R) { const k = String(r.email || r.phone || r.name || "").toLowerCase(); if (!k) continue; per[k] = (per[k] || 0) + 1; if (seen.has(k)) continue; seen.add(k); if (TYPEL[r.guestType]) types[r.guestType] = (types[r.guestType] || 0) + 1; }
@@ -243,7 +243,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
       if (earned) { store.set(key, { kind: "hostcodes", events: [...done] }); L = C.codesOf(u.email); } } catch {}
     const o = publicOrigin(req); res.json({ earned, perEvent: CODES_PER_MEMBER, codes: L.map((c) => ({ code: c.code, used: !!c.usedAt, usedBy: c.usedByName ? first(c.usedByName) : null, link: `${o}/join?code=${c.code}` })) }); });
   app.post("/api/waitlist", small, (req, res) => { if (limited(req, 5)) return res.status(429).json({ code: "rate_limited", message: "Too many requests from here." }); const b = req.body || {}, email = clean(b.email, 200).toLowerCase();
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Give a valid email so a host can send you a code." }); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants: clean(b.wants, 140) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
+    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add a valid email so a member can send you a code." }); const id = C.addWaitlist({ name: clean(b.name, 80), email, city: clean(b.city, 60), wants: clean(b.wants, 140) }); res.json({ ok: true, ref: "R-" + id.slice(0, 6).toUpperCase() }); });
   // Members see who's waiting (first name, city, what they'd host) and can send one of their codes.
   app.get("/api/waitlist", (req, res) => { const u = me(req, res); if (!u) return; res.json({ waiting: C.waitlist().slice(0, 30).map((w) => ({ id: w.id, name: first(w.name) || "Someone", city: w.city, wants: w.wants, at: w.at })) }); });
   // vouch for a guest: send someone who said yes to your event one of your codes, so they can host without waiting
@@ -251,20 +251,20 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     const b = req.body || {}, eventId = clean(b.eventId, 80), S = scopeStore(store, u.ws); if (!S.get("events/" + eventId)) return res.status(404).json({ code: "not_found", message: "No such event." });
     const r = S.list("rsvps").map((d) => d.data || {}).find((x) => x.eventId === eventId && x.email && x.email.toLowerCase() === String(b.email || "").toLowerCase() && x.response === "going"); if (!r) return res.status(404).json({ code: "not_found", message: "You can vouch for people who said yes to your event." });
     const to = r.email.toLowerCase(); if (C.codesOf(u.email).some((c) => c.sentTo === to)) return res.json({ ok: true, already: true });
-    const free = C.codesOf(u.email).find((c) => !c.usedAt && !c.sentTo); if (!free) return res.status(409).json({ code: "conflict", message: "You've used all your invites. Host another get-together to earn ten more." });
+    const free = C.codesOf(u.email).find((c) => !c.usedAt && !c.sentTo); if (!free) return res.status(409).json({ code: "conflict", message: "You've used all your host codes. Host another event to earn ten more." });
     store.update("system/code-" + free.code, { sentTo: to, sentAt: Date.now(), vouched: true });
     const link = `${publicOrigin(req)}/join?code=${free.code}`, cfg = emailConfig(u.ws, false) || emailConfig(DEFAULT_WS, true); let emailed = false;
-    if (cfg) { try { const x = await sendEmail(cfg, { to, subject: `${first(u.name)} thinks you'd be a great host`, text: `Hi ${first(r.name) || "there"},\n\n${first(u.name)} loved having you and sent you one of their Pottery Lab invites, so you can host your own get-together whenever you like. No waitlist.\n\nYour code: ${free.code}\nStart here: ${link}\n`, fromName: u.name }); emailed = !!x?.ok; } catch {} }
+    if (cfg) { try { const x = await sendEmail(cfg, { to, subject: `${first(u.name)} thinks you'd be a great host`, text: `Hi ${first(r.name) || "there"},\n\n${first(u.name)} loved having you and sent you one of their Pottery Lab host codes, so you can host your own events. No waitlist.\n\nYour code: ${free.code}\nStart here: ${link}\n`, fromName: u.name }); emailed = !!x?.ok; } catch {} }
     res.json({ ok: true, emailed, link }); });
   app.post("/api/waitlist/:id/invite", small, async (req, res) => { const u = me(req, res); if (!u) return; const w = store.get("system/wait-" + req.params.id)?.data; if (!w) return res.status(404).json({ code: "not_found", message: "They've already been invited." });
-    const free = C.codesOf(u.email).find((c) => !c.usedAt && !c.sentTo); if (!free) return res.status(409).json({ code: "conflict", message: "You've used all your invites." });
+    const free = C.codesOf(u.email).find((c) => !c.usedAt && !c.sentTo); if (!free) return res.status(409).json({ code: "conflict", message: "You've used all your host codes." });
     store.update("system/code-" + free.code, { sentTo: w.email, sentAt: Date.now() }); store.update("system/wait-" + w.id, { invitedAt: Date.now(), invitedBy: u.email });
     const link = `${publicOrigin(req)}/join?code=${free.code}`, cfg = emailConfig(u.ws, u.ws === DEFAULT_WS); let emailed = false;
-    if (cfg) { try { const r = await sendEmail(cfg, { to: w.email, subject: `${first(u.name)} invited you to Pottery Lab`, text: `Hi ${first(w.name) || "there"},\n\n${first(u.name)} saw you'd like to host ${w.wants || "something"}${w.city ? ` in ${w.city}` : ""} and sent you an invite to Pottery Lab.\n\nYour code: ${free.code}\nJoin here: ${link}\n`, fromName: u.name }); emailed = !!r.ok; } catch {} }
+    if (cfg) { try { const r = await sendEmail(cfg, { to: w.email, subject: `${first(u.name)} invited you to Pottery Lab`, text: `Hi ${first(w.name) || "there"},\n\n${first(u.name)} saw you'd like to host ${w.wants || "something"}${w.city ? ` in ${w.city}` : ""} and sent you a Pottery Lab host code.\n\nYour code: ${free.code}\nJoin here: ${link}\n`, fromName: u.name }); emailed = !!r.ok; } catch {} }
     res.json({ ok: true, emailed, link, code: free.code }); });
   // Host page: the owner edits it; anyone can read it.
   app.get("/api/host/profile", (req, res) => { const u = me(req, res); if (!u) return; res.json({ host: C.profileOf(u.ws), followers: C.followersOf(u.ws).length }); });
-  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Hosting on Pottery Lab is invite-only. Add an invite code to set up your page." }); const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
+  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Add a host code to set up your page." }); const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle/proof", (req, res) => { const ws = C.wsOfHandle(req.params.handle); if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." }); const R = C.resonance(ws); try { const H = X?.hostStrengths(ws); if (H && H.guests) { R.guests = H.guests; R.returning = Math.round((100 * (H.returning || 0)) / H.guests); } } catch {} res.json(R); });
   app.get("/api/public/gifts", (req, res) => { if (limited(req, 60)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const q = req.query || {}; res.json({ results: C.giftMakers({ city: clean(q.city, 60), qty: +q.qty || 0, budget: +q.budget || 0, occasion: clean(q.occasion, 20) }) }); });
@@ -313,9 +313,9 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     // confirmations: the new regular gets an email and a text; the host hears about it too
     const h = C.profileOf(ws) || {}, hostName = h.name || "your host", page = `${publicOrigin(req)}/@${h.handle || ""}`, cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true), sms = smsConfig(), newPhone = phone && phone !== (prev?.phone || "");
     const tasks = [], first1 = isNew || !prev?.confirmedAt;
-    if (first1 && cfg) tasks.push(sendEmail(cfg, { to: email, subject: `You're following ${hostName} on Pottery Lab`, text: `Hi ${first(b.name) || "there"},\n\nYou're now one of ${hostName}'s regulars. You'll hear first when they post something new${phone ? ", by email and by text" : ""}.\n\nTheir page: ${page}\n\nChanged your mind? Open their page and tap Following to stop.`, fromName: "Pottery Lab" }).then((r) => { out.emailed = !!r?.ok; }).catch(() => {}));
+    if (first1 && cfg) tasks.push(sendEmail(cfg, { to: email, subject: `You're following ${hostName} on Pottery Lab`, text: `Hi ${first(b.name) || "there"},\n\nYou're now following ${hostName}. You'll hear first when they post something new${phone ? ", by email and by text" : ""}.\n\nTheir page: ${page}\n\nChanged your mind? Open their page and tap Following to stop.`, fromName: "Pottery Lab" }).then((r) => { out.emailed = !!r?.ok; }).catch(() => {}));
     if ((first1 || newPhone) && phone && sms) tasks.push(sendSms(sms, { to: phone, text: `Pottery Lab: you're following ${hostName}. You'll get a text when they post something new. Reply STOP to stop texts.` }).then((r) => { out.texted = !!r?.ok; }).catch(() => {}));
-    if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Pottery Lab`, text: `${b.name || "Someone"} is now one of your regulars. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Pottery Lab" }).catch(() => {})); }
+    if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Pottery Lab`, text: `${b.name || "Someone"} is now following you. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Pottery Lab" }).catch(() => {})); }
     await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
   registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });

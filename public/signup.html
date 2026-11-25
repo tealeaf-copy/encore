@@ -1,11 +1,11 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Start your page · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px "Instrument Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
   form{background:#fff;padding:30px;border-radius:18px;border:1px solid #E9E1D6;box-shadow:0 1px 2px rgba(43,33,28,.05),0 18px 40px -24px rgba(43,33,28,.3);width:min(360px,calc(100vw - 32px));box-sizing:border-box}
-  .brand{display:flex;align-items:center;gap:8px;font:600 20px "Fraunces",Georgia,serif;margin-bottom:18px}
-  h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
+  .brand{display:flex;align-items:center;gap:8px;font:700 20px Fredoka,system-ui,sans-serif;margin-bottom:18px}
+  h1{margin:0 0 4px;font:600 28px/1.15 Fredoka,system-ui,sans-serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
   label{display:block;font-size:13px;font-weight:600;color:#2B211C;margin-bottom:12px}
   input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 12px;border-radius:12px}
   input{border:1px solid #E9E1D6;margin:6px 0 0;background:#fff;font-weight:400}input:focus{outline:2px solid #E8C3B5;outline-offset:1px}
@@ -91,6 +91,10 @@
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { err.textContent = j.message || "Couldn't create your page. Try again."; go.disabled = false; return; }
       try { if (body.city && window.EncorePlace) window.EncorePlace.setManual(window.EncorePlace.find(body.city)?.[0] || body.city); } catch {}
+      // the club or group name they typed becomes their page's name (and its link), so "Table for Twelve" is what guests see
+      { const club = String(body.company || "").trim().slice(0, 60); if (body.mode === "friends" && club && !q.get("regularOf") && !q.get("preset")) { const slug = club.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24).replace(/-+$/, "");
+        const save = (extra) => fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ name: club, ...extra }) }).then((r) => r.ok).catch(() => false);
+        try { if (!(slug.length >= 2 && (await save({ handle: slug }) || await save({ handle: slug + "-" + Math.floor(100 + Math.random() * 900) })))) await save({}); } catch {} } }
       // a prepared storefront (e.g. /signup?mode=friends&preset=tram): set it up on the new account, then open it
       { const pre = (new URLSearchParams(location.search).get("preset") || "").replace(/[^a-z0-9-]/g, ""); if (pre) { try { const P = await (await fetch("/presets/" + pre + ".json")).json(); let r2 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(P) });
         if (r2.status === 400) { const r3 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ ...P, handle: P.handle + "-" + Math.random().toString(36).slice(2, 5) }) }); r2 = r3; }

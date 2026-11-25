@@ -6,7 +6,7 @@
   const signed = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   const fmt = (d) => (d ? new Date(d + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "");
   const TILT = [-3, 2.2, -1.4, 3, -2.4, 1.2];
-  const CSS = `.sb{margin:40px 0 10px}.sb-h{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}.sb-h h2{margin:0;font:700 var(--fs-28-40,28px)/1.1 Fredoka,system-ui}.sb-h h2 em{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600;color:#C4532F}
+  const CSS = `.sb{margin:40px 0 10px}.sb-h{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}.sb-h h2{margin:0;font:700 var(--fs-28-40,28px)/1.1 Fredoka,system-ui}.sb-h h2 em{font:inherit;font-style:normal;color:#C94A30}
 .sb-sub{margin:4px 0 0;color:#6B5F56}.sb-add{border:2px solid #1F1A17;background:#FFE08A;border-radius:999px;padding:9px 16px;font-weight:700;font-size:14px;font-family:inherit;box-shadow:2px 2px 0 #1F1A17;cursor:pointer}
 .sb-year{margin:26px 0 10px;font:700 40px/1 Fredoka,system-ui;color:#1F1A17;display:inline-block;position:relative}.sb-year::after{content:"";position:absolute;left:-4px;right:-6px;bottom:2px;height:12px;background:#F6C9A8;z-index:-1;border-radius:6px;transform:rotate(-1.5deg)}
 .sb-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:26px 18px;padding:6px 4px}@media (max-width:560px){.sb-g{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}.pol{padding:7px 7px 9px}.pol .cap{font-size:16px}.pol .meta{font-size:13px}.pol .note{font-size:16px}.pol .stamp{font-size:13px;padding:0 6px}.sb-year{font-size:40px}}
@@ -47,7 +47,7 @@
         ${/^(Partiful|Luma|Eventbrite|Henly)$/.test(x.source || "") ? `<span class="stamp ${esc(x.source)}">${esc(x.source)}</span>` : ""}
         <div class="cap">${esc(x.title)}</div><div class="meta">${esc([fmt(x.date), x.place, x.guests ? `${x.guests} came` : ""].filter(Boolean).join(" · "))}</div>${x.note ? `<div class="note">“${esc(x.note)}”</div>` : ""}
         ${mine && x.id ? `<span class="own"><span data-act="photo" title="Add photos">📷</span><span data-act="edit" title="Edit">✎</span><span data-act="del" title="Remove">🗑</span></span>` : ""}</button>`; };
-    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${all.length ? "Every event you've hosted." : "Your past events live here."}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
+    sec.innerHTML = `<div class="sb-h"><div><h2>The <em>scrapbook</em></h2><p class="sb-sub">${mine ? (all.length ? "Every event you've hosted." : "Your past events live here.") : `Past events${first ? ` with ${esc(first)}` : ""}.`}</p></div>${mine ? `<button type="button" class="sb-add" id="sbAdd">＋ Add past events</button>` : ""}</div>
       ${all.length ? [...years].map(([y, L]) => `<div class="sb-year">${esc(y)}</div><div class="sb-g">${L.map(card).join("")}</div>`).join("") : `<div class="sb-empty">${window.Potto ? window.Potto.svg("carry", 96) : ""}<p>Bring in events from Partiful, Luma and more.</p></div>`}
       <input type="file" id="sbFile" accept="image/*" multiple hidden>`;
     let target = null;

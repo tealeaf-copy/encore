@@ -1,5 +1,6 @@
 // The frame around public pages: an icon rail on the left (hosts: Home, Discover, Feed, My page, Plans, New event, the app's order; brands: Home, Discover, Hosts, Requests, Gifts)
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
+// A friend's invite (/g) never shows the brands link: a guest opening a dinner invite isn't shopping for hosts.
 // Collapsible side navigation: one setting for both the public rail and the app's own sidebar, kept per device.
 (function () {
   if (window.__encoreNavFold) return; window.__encoreNavFold = 1;
@@ -78,7 +79,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
       (brand ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.people, "Hosts") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
         : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
         : signed ? item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans")
-        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + item("/hosts/book", ICON.brief, "For brands") + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
+        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     if (!TABS_ONLY) { document.body.prepend(rail); document.body.classList.add("es-has-rail"); }

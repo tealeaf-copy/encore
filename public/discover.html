@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Discover events · Pottery Lab</title>
 <meta name="description" content="Small events hosted by people near you: run clubs, hikes, pandan cake from a stoop. Follow the hosts you like.">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
@@ -43,11 +43,13 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 .endcards .card{padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.endcards h2,.endcards h3{font-size:20px;margin:0}.endcards p,.endcards small{margin:2px 0 0;color:var(--soft);font-size:14px}
 .endcards .btn{min-height:44px}.endcards a:not(.btn){color:var(--red)}
 #events .tags,#fyList .tags{display:none!important}
+/* until the events arrive, the sections under them wait too, so nothing on screen jumps down when the cards land */
+body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wait > footer{display:none!important}body.dc-wait #events{min-height:60vh}
 .ev .badge,.ev-badge{font-size:13px!important;padding:2px 8px!important;line-height:16px!important}
 .again{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:0;min-height:44px}
 </style>
 <script src="/authguard.js"></script><script src="/place.js"></script>
-</head><body>
+</head><body class="dc-wait">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
     <nav><a href="/discover" aria-current="page">Discover</a><a href="/hosts">Hosts</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
@@ -214,8 +216,9 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
     try { const st = await (await fetch("/api/host/discover-status", { credentials: "same-origin" })).json(); if (st && Array.isArray(st.gaps) && Array.isArray(st.waiting)) { MINE = { gaps: st.gaps, waiting: st.waiting, handle: String(st.handle || "") }; } } catch {} if (LOADED) drawEvents(); } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
   { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll();
-    if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; });
+  const ready = () => document.body.classList.remove("dc-wait"); setTimeout(ready, 8000);
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); ready();
+    if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; ready(); });
 })();
 </script><script src="/nav.js"></script>
 <script src="/shell.js"></script>

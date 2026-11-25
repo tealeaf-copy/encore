@@ -8,7 +8,7 @@
 @media (min-width:640px){.acct-bg{align-items:center}}
 .acct{background:#FFFCF7;color:#1F1A17;width:min(440px,100%);border-radius:22px 22px 0 0;padding:22px 20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.25);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:92vh;overflow:auto}
 @media (min-width:640px){.acct{border-radius:22px}}
-.acct h2{font:600 28px/1.15 "Fraunces",Georgia,serif;margin:0 0 6px}.acct p{margin:0 0 14px;color:#6F6259}
+.acct h2{font:600 28px/1.15 Fredoka,system-ui,sans-serif;margin:0 0 6px}.acct p{margin:0 0 14px;color:#6F6259}
 .acct form{display:grid;gap:10px}.acct label{display:grid;gap:4px;font-size:13px;font-weight:600}
 .acct input{border:1px solid #E7DFD3;border-radius:12px;padding:11px 12px;font-weight:400;font-size:16px;font-family:inherit;background:#fff}
 .acct,.acct button,.acct input{font-family:"Instrument Sans",system-ui,sans-serif}.acct button[type=submit]{border:2px solid #1F1A17;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(31,26,23,.08)}.acct .alt{border:1.5px solid #E4D9C8;border-radius:999px;padding:11px;background:#fff;color:#1F1A17;font-weight:600;font-size:16px;cursor:pointer;width:100%;margin-top:8px}

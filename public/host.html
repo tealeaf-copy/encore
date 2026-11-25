@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Host · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <style>
 .cover{height:210px;border-radius:28px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 55%,#fff),color-mix(in srgb,var(--c) 22%,var(--bg)));margin-top:4px}
@@ -74,7 +74,7 @@ body.store{font-family:var(--body)}body.store h1,body.store h2,body.store h3,bod
 .store-tag{font-size:16px;color:var(--soft);margin-top:2px}.store-links{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.store-links a{font-size:13px;font-weight:600;padding:5px 12px;border-radius:var(--radius,999px);border:1px solid var(--line);text-decoration:none;background:var(--card)}
 body.no-past .s-past,body.no-kudos .s-kudos,body.no-photos .s-photos,body.no-hire #hire,body.no-tips .s-tips,body.no-profile .s-profile{display:none}
 /* your own page: a preview of what guests see, without the guest buttons */
-body.is-owner .sup-f input[type=email],body.is-owner .sup-f button,body.is-owner [data-gift],body.is-owner .tipc,body.is-owner #inqOpen,body.is-owner #inqF{display:none!important}body.is-owner .sup-opts{pointer-events:none}.sup-err{color:#B3261E;font-size:14px;margin:8px 0 0}.sup-own{display:none;margin:8px auto 0!important}body.is-owner .sup-own{display:block}.sup-err:empty{display:none}
+body.is-owner .sup-f input[type=email],body.is-owner .sup-f button,body.is-owner [data-gift],body.is-owner .tipc,body.is-owner #inqOpen,body.is-owner #inqF{display:none!important}body.is-owner .sup-opts{pointer-events:none}body.is-owner #follow,body.is-owner #topFollow{display:none!important}.priv-ev{display:grid;gap:6px;align-content:start}.priv-tag{margin:0;padding:0 6px;font-size:13px;color:#6B5F56}.sup-err{color:#B3261E;font-size:14px;margin:8px 0 0}.sup-own{display:none;margin:8px auto 0!important}body.is-owner .sup-own{display:block}.sup-err:empty{display:none}
 body:has(#follow:not([hidden])) #subBox{display:none}
 .store-fab{position:fixed;right:16px;bottom:16px;z-index:30;border:0;border-radius:999px;padding:12px 18px;font:600 14px "Instrument Sans",system-ui;background:#2B211C;color:#fff;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);cursor:pointer}
 .store-pane{position:fixed;top:0;right:0;bottom:0;width:min(380px,100%);z-index:40;background:#fff;color:#2B211C;box-shadow:-20px 0 50px -20px rgba(0,0,0,.35);overflow:auto;padding:16px 18px 90px;font:14px/1.45 "Instrument Sans",system-ui,sans-serif;box-sizing:border-box}
@@ -115,12 +115,15 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
+  const mineP = /(?:^|;\s*)encore_in=1/.test(document.cookie) ? fetch("/api/host/profile", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null);
   let d; try { const r = await fetch("/api/public/host/" + encodeURIComponent(handle)); if (!r.ok) throw 0; d = await r.json(); } catch { m.innerHTML = `<div class="empty" style="margin-top:40px">${window.Potto ? `<span class="potto-empty">${window.Potto.svg("sleep", 92)}</span>` : ""}Nobody's home at this link. <a href="/hosts">Find a host</a></div>`; document.querySelector("body > footer")?.remove(); return; }
   // a run club that meets every Saturday is one card with its other dates, not a row of identical cards
   const series = (L) => { const out = [], seen = new Map(); for (const e of L || []) { const k = String(e.title || "").trim().toLowerCase(); const f = k && seen.get(k); if (f) { f._more = (f._more || 0) + 1; f._list.push(e); } else { const c = { ...e, _list: [] }; if (k) seen.set(k, c); out.push(c); } }
     for (const c of out) if (c._more) c._dates = c._list.slice(0, 3).map((x) => x.date ? new Date(x.date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "").filter(Boolean).join(", ") + (c._list.length > 3 ? "…" : ""); return out; };
   const h = d.host, first = h.showcase ? h.name : d.personal ? d.person : d.person ? (h.name || d.person) : (h.name || handle).split(/[\s']/)[0]; // a person's own name becomes their first name; a business name stays whole
   window.__encorePerson = first;
+  // the owner's own page: no Follow form for themselves, an Edit page button, and their private plans (only they see them)
+  const ownerHost = (await mineP)?.host, isOwner = !!ownerHost?.handle && ownerHost.handle === h.handle && !d.sample; if (isOwner) document.body.classList.add("is-owner");
   // a club or business name never "says yes" or gets followed: use the person's first name when the page name is long
   const short = String(first).trim().split(/\s+/).length > 2 && d.person ? String(d.person).trim().split(/\s+/)[0] : first; window.__encoreShort = short;
   if (d.sample) { h.sample = true; document.body.classList.add("example-host"); } // example page: no "Free to request" next to "Nothing here can be booked"
@@ -256,6 +259,11 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
       const sec = document.createElement("section"); sec.className = "proof"; sec.id = "proof"; sec.innerHTML = `<h2>${T.example ? "Example track record" : L.length ? "Track record" : "New on Pottery Lab"}</h2>${parts.join("")}`;
       const cs = document.querySelector("h2.sec.s-coming"); if (!d.upcoming.length && cs) { sec.style.marginBottom = "8px"; cs.before(sec); } else document.getElementById("extras")?.prepend(sec); }).catch(() => {}); }
     window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, d.upcoming); window.EncoreShop?.shop(h, first); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h, first); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
+  if (isOwner) { try { const nav = document.querySelector("header.top nav"); nav?.querySelectorAll('a[href^="/signup"]').forEach((a) => { a.href = "?edit=1"; a.textContent = "Edit page"; a.onclick = (ev) => { const fab = document.querySelector(".store-fab:not(.shop-fab)"); if (fab) { ev.preventDefault(); fab.click(); } }; }); } catch {}
+    fetch("/api/db/collection?path=events", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { docs: [] })).then((j) => { const today = new Date().toISOString().slice(0, 10), shown = new Set((d.upcoming || []).map((x) => x.id));
+      const P = (j.docs || []).filter((x) => x.data && !x.data.example && !x.data.sample && !shown.has(x.id) && x.data.date && x.data.date >= today && (x.data.name || x.data.pubTitle)).sort((a, b) => String(a.data.date).localeCompare(String(b.data.date))).slice(0, 6); if (!P.length) return;
+      const grid = document.querySelector(".grid.s-coming"); if (!grid) return; grid.querySelectorAll(".empty").forEach((x) => x.remove()); document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = false; x.style.display = ""; });
+      grid.insertAdjacentHTML("beforeend", P.map(({ id, data: e }) => `<div class="priv-ev">${C.eventCard({ id, title: e.pubTitle || e.name, name: e.name, date: e.date, startTime: e.startTime, activity: e.activity, emoji: e.emoji, hood: e.hood, city: e.city, casual: e.casual, coverPhoto: e.coverPhoto, host: null }).replace(/href="[^"]*"/, `href="/?app=1&amp;open=${encodeURIComponent(id)}#studio"`)}<p class="priv-tag">🔒 Only you see this. ${e.discoverable ? "Not on your page yet" : "Link only"}.</p></div>`).join("")); }).catch(() => {}); }
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You're following ${esc(short)}</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff), signedIn = /(?:^|;\s*)encore_in=1/.test(document.cookie);

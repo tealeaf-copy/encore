@@ -2,18 +2,18 @@
 <title>Pottery Lab · Host memorable experiences, with your fav people</title>
 <meta name="description" content="We've been the planner. This is the tool we wished we had.">
 <meta property="og:title" content="Pottery Lab · Host memorable experiences, with your fav people"><meta property="og:description" content="Run clubs, supper clubs, pottery nights. Host your people, keep every event on your page, and grow a following.">
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,0..100;1,9..144,300..600,0..100&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--sage:#6F7F5E;--butter:#F2D48F;--night:#15110E;--line:#E4D9C8}
 *{box-sizing:border-box}html,body{overflow-x:clip}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-h1,h2,h3{font-family:"Fraunces",Georgia,serif;font-weight:380;letter-spacing:-.015em;margin:0}
+h1,h2,h3{font-family:Fredoka,"Fredoka Fallback",system-ui,sans-serif;font-weight:600;letter-spacing:-.015em;margin:0}
 h1,h2,.lede,.sub{text-wrap:balance}
 .eyebrow{font:500 13px "Instrument Sans",system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--smoke)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:999px;padding:14px 22px;font:500 16px "Instrument Sans",system-ui;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform .18s ease-out,background .18s ease-out}
 .btn.primary{background:var(--ember);color:#fff}.btn.quiet{border-color:var(--line);background:transparent}.btn:active{transform:scale(.98)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:32px;padding:22px 0}.brand{display:flex;gap:8px;align-items:center;font:500 20px "Fraunces",Georgia,serif;text-decoration:none;white-space:nowrap}
+.top{display:flex;justify-content:space-between;align-items:center;gap:32px;padding:22px 0}.brand{display:flex;gap:8px;align-items:center;font:500 20px Fredoka,system-ui,sans-serif;text-decoration:none;white-space:nowrap}
 .top nav{display:flex;gap:26px;align-items:center;font-size:16px;font-weight:500}.top nav a{text-decoration:none;color:#5E534B;white-space:nowrap}.top nav a:not(.btn):hover{color:var(--ink)}.top nav .btn{margin-left:6px}.top nav .btn.sm{padding:9px 16px;font-size:14px;color:#fff}
 @media (max-width:1020px){.top nav a.hide-m{display:none}}
 @media (max-width:430px){.top .brand{gap:6px}.top nav{gap:10px!important}.top nav .nm-full{display:none}.top nav .btn{margin-left:0;padding:9px 13px;font-size:14px}}
@@ -27,7 +27,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 /* hero */
 .home .hero::before,.home .hero::after{display:none!important}
 .hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center;padding:40px 0 64px}
-.hero h1{font-size:clamp(42px,5.6vw,72px);line-height:1.02}.hero h1 .hl{white-space:nowrap}
+.hero h1{font-size:clamp(42px,5.6vw,72px);line-height:1.02}html body .hero h1{font-family:"Fredoka","Fredoka Fallback",system-ui,sans-serif!important}.hero h1 .hl{white-space:nowrap}
 .hero p.sub{font-size:21px;color:var(--smoke);max-width:500px;margin:20px 0 28px}
 
 /* a host page, in miniature */
@@ -54,7 +54,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 .live{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:28px}
 .lv{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;text-decoration:none;transition:transform .18s ease-out}.lv:hover{transform:translateY(-2px)}
 .lv .av{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;flex:none;font-size:28px;background:#fff}.lv .av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.lv div{min-width:0}.lv b{display:block;font:500 20px "Fraunces",Georgia,serif}.lv small{display:block;color:var(--smoke)}
+.lv div{min-width:0}.lv b{display:block;font:500 20px Fredoka,system-ui,sans-serif}.lv small{display:block;color:var(--smoke)}
 .lv small.tl{color:var(--ink);opacity:.75;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lv small.lv-tag{display:inline-block;margin-top:6px;font-size:13px;font-weight:600;background:#F3ECE2;color:#6B5F56;border-radius:999px;padding:2px 8px}
 
@@ -75,7 +75,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 @media (max-width:760px){.teams{grid-template-columns:minmax(0,1fr)}.req{transform:none}}
 .xps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}.xp{display:grid;gap:4px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.xp i{font-style:normal;font-size:26px}.xp b{font:600 18px Fredoka,system-ui}.xp small{color:var(--smoke);font-size:15px;line-height:1.4}@media (max-width:760px){.xps{grid-template-columns:minmax(0,1fr);gap:10px}}
 .dates{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.dates span{font:600 14px system-ui;padding:8px 12px;border-radius:999px;border:1.5px solid #1F1A17}.dates span.on{background:#1F1A17;color:#fff}.goal .bar{height:10px;border-radius:999px;background:#EFE6D8;overflow:hidden;border:1.5px solid #1F1A17}.goal .bar i{display:block;height:100%;background:#C94A30}.goal small{display:block;margin-top:8px;color:#665A51;font-size:14px}
-.feed{display:grid;gap:10px;margin-top:22px;max-width:760px}.fi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:inherit;text-decoration:none}.fi:hover{border-color:var(--ink)}.fi .av{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:22px;background:#FBE3CF}.fi .av svg,.fi .av img{width:100%;height:100%;object-fit:cover}.fi small{display:block;color:var(--smoke);font-size:13px}.fi b{display:block;font:600 17px/1.25 Fredoka,system-ui;margin:2px 0}.fi .go{font:600 13px system-ui;color:var(--smoke);white-space:nowrap}@media (max-width:760px){.fi{grid-template-columns:auto minmax(0,1fr)}.fi .go{grid-column:2}}
+.feed{display:grid;gap:10px;margin-top:22px;max-width:760px}.fi-sk{pointer-events:none;background:#FBF6EE!important;border-color:#EFE6D8!important}.fi-sk .av{background:#F3EADC!important}.fi-sk small,.fi-sk b{display:block;color:transparent}.fi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:inherit;text-decoration:none}.fi:hover{border-color:var(--ink)}.fi .av{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:22px;background:#FBE3CF}.fi .av svg,.fi .av img{width:100%;height:100%;object-fit:cover}.fi small{display:block;color:var(--smoke);font-size:13px}.fi b{display:block;font:600 17px/1.25 Fredoka,system-ui;margin:2px 0}.fi .go{font:600 13px system-ui;color:var(--smoke);white-space:nowrap}@media (max-width:760px){.fi{grid-template-columns:auto minmax(0,1fr)}.fi .go{grid-column:2}}
 .pg-book{display:block;transform:rotate(1deg)}.pg-book .snaps{grid-template-columns:repeat(3,minmax(0,1fr))}.sub-h{margin:40px 0 0;font-size:20px}.eyebrow+h2{margin-top:6px}.priv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:56px;align-items:center}
 .feats{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:12px}.feats li{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline}.feats b{font-weight:600}.feats span{color:var(--smoke)}
 .inv{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:20px;max-width:400px;width:100%;justify-self:end;transform:rotate(-1deg)}
@@ -107,6 +107,7 @@ footer{padding:40px 0 60px;color:var(--smoke);font-size:14px;display:flex;justif
 html body .eyebrow{font-size:13px!important}
 .pg,.inv{box-shadow:6px 6px 0 var(--ink)}
 </style>
+<link rel="stylesheet" id="craftCss" href="/craft.css"><link rel="stylesheet" id="systemCss" href="/system.css">
 </head><body class="home" data-shell="tabs">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
@@ -134,9 +135,9 @@ html body .eyebrow{font-size:13px!important}
   </div>
 </div>
 
-<section id="feedSec" hidden><div class="wrap"><span class="eyebrow">The feed</span><h2>Happening <em>soon</em>.</h2>
+<section id="feedSec"><div class="wrap"><span class="eyebrow">The feed</span><h2>Happening <em>soon</em>.</h2>
   <p class="lede">Open events from hosts on Pottery Lab. Tap one to see the invite.</p>
-  <div class="feed" id="feed"></div>
+  <div class="feed" id="feed" aria-busy="true"><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div><div class="fi fi-sk" aria-hidden="true"><span class="av"></span><div><small>&nbsp;</small><b>&nbsp;</b><small>&nbsp;</small></div></div></div>
   <p class="more"><a href="/discover">See everything on Discover →</a><a href="/feed" id="myFeed" hidden>Open your feed →</a></p>
 </div></section>
 
@@ -261,14 +262,14 @@ html body .eyebrow{font-size:13px!important}
       const E = (d.events || []).filter((e) => e.id && (e.title || e.name) && e.host?.name && !e.unlisted && (!e.date || e.date >= today)).sort((x, y) => String(x.date || "9").localeCompare(String(y.date || "9"))).slice(0, 6);
       const when = (e) => { if (!e.date) return ""; const dt = new Date(e.date + "T12:00"); const t = e.startTime ? (([h, m]) => { h = +h; return (h % 12 || 12) + (+m ? ":" + m : "") + (h < 12 ? "am" : "pm"); })(e.startTime.split(":")) : ""; return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (t ? " · " + t : ""); };
       const hav = (h) => h.avatarArt && A ? A.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h.emoji || "🎉");
-      if (E.length) { document.getElementById("feed").innerHTML = E.map((e) => `<a class="fi" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="av">${hav(e.host)}</span><div><small>${esc(e.host.name)} is hosting</small><b>${esc(e.emoji ? e.emoji + " " : "")}${esc(e.title || e.name)}</b><small>${esc([when(e), e.hood || e.city].filter(Boolean).join(" · "))}</small></div><span class="go">${e.going ? esc(e.going) + " in" : "See invite"}</span></a>`).join(""); document.getElementById("feedSec").hidden = false; }
-    } catch {}
+      if (E.length) { document.getElementById("feed").innerHTML = E.map((e) => `<a class="fi" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="av">${hav(e.host)}</span><div><small>${esc(e.host.name)} is hosting</small><b>${esc(e.emoji ? e.emoji + " " : "")}${esc(e.title || e.name)}</b><small>${esc([when(e), e.hood || e.city].filter(Boolean).join(" · "))}</small></div><span class="go">${e.going ? esc(e.going) + " in" : "See invite"}</span></a>`).join(""); document.getElementById("feed").removeAttribute("aria-busy"); } else document.getElementById("feedSec").hidden = true;
+    } catch { if (document.querySelector("#feed .fi-sk")) document.getElementById("feedSec").hidden = true; }
     const ok = (h) => h.handle && h.name && h.name.toLowerCase() !== h.handle.toLowerCase() && !/[<>]/.test(h.name) && (h.tagline || h.bio) && h.city;
     const H = (d.hosts || []).filter((h, i, all) => ok(h) && all.findIndex((x) => x.name === h.name) === i).sort((a, b) => ((!!a.showcase * 2 + !!a.sample) - (!!b.showcase * 2 + !!b.sample)) || (b.upcoming || 0) + (b.followers || 0) - ((a.upcoming || 0) + (a.followers || 0)));
     if (H.length < 3) return; H.length = H.length >= 6 ? 6 : 3;
     const av = (h) => h.theme?.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme?.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 52) : esc(h.emoji || "🎉");
     document.getElementById("live").innerHTML = H.map((h) => `<a class="lv" href="/@${esc(h.handle)}"><span class="av">${av(h)}</span><div><b>${esc(h.name)}</b><small>${esc([h.hood, h.city].filter(Boolean).join(", "))}</small><small class="tl">${esc(String(h.tagline || h.bio).slice(0, 90))}</small>${h.showcase ? `<small class="lv-tag">Not on Pottery Lab yet</small>` : h.sample ? `<small class="lv-tag">Example</small>` : ""}</div></a>`).join("");
-  }).catch(() => {});
+  }).catch(() => { const f = document.getElementById("feedSec"); if (f && document.querySelector("#feed .fi-sk")) f.hidden = true; });
 })();
 </script><script>
 // the example card opens Claire's page from anywhere on it, Follow pill included (some phones ignore taps on block links)

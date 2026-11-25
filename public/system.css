@@ -8,9 +8,12 @@
    - one selected-chip style: ink fill, white text.
    - small red text uses --sys-ember-text (#B04A30, 5:1 on cream). */
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+/* a stand-in shaped like Fredoka while it loads, so headings don't change size (and push the page down) when it arrives */
+@font-face{font-family:"Fredoka Fallback";src:local("Arial Bold"),local("Arial-BoldMT"),local("Liberation Sans Bold"),local("Helvetica Bold");font-weight:600 900;size-adjust:94.5%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
+@font-face{font-family:"Fredoka Fallback";src:local("Arial"),local("ArialMT"),local("Liberation Sans"),local("Helvetica");font-weight:100 599;size-adjust:100%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
 :root{
   --sys-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --sys-display:"Fredoka","Instrument Sans",system-ui,sans-serif;
+  --sys-display:"Fredoka","Fredoka Fallback","Instrument Sans",system-ui,sans-serif;
   --sys-accent:"Fraunces",Georgia,serif;
   --sys-hand:"Caveat",cursive;
   --fs-13:13px;--fs-14:14px;--fs-16:16px;--fs-20:20px;--fs-28:28px;--fs-40:40px;
@@ -24,6 +27,12 @@
   --fs-16-20:16px;--fs-20-28:20px;--fs-28-40:28px;
 }
 @media (min-width:861px){:root{--fs-16-20:20px;--fs-20-28:28px;--fs-28-40:40px}}
+
+/* ---- page background: the paper grain and the side menu's panel run the full length of the page, not just the first
+   screen (a fixed layer only covers the window, so a long page looked like it changed colour ~one screen down) ---- */
+html{position:relative;min-height:100%}
+html body::after{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:0!important}
+@media (min-width:861px){html.es-pre body::before{position:absolute!important}}
 
 /* ---- type ---- */
 body{font-family:var(--sys-sans)}

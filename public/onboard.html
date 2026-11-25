@@ -1,0 +1,472 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Set up with Potto · Pottery Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember2:#A93C26;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8;--card:#FFFDFA;--ok:#3E7A4F}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.5 "Instrument Sans",system-ui,sans-serif;overflow-x:hidden}
+h1,h2,h3,.btn,.f-name{font-family:Fredoka,"Instrument Sans",system-ui,sans-serif;font-weight:600}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.12;margin:6px 0 6px}
+h2{font-size:22px;margin:0 0 6px}
+p{margin:0 0 10px}
+a{color:var(--ember2)}
+[hidden]{display:none!important}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;max-width:1080px;margin:0 auto}
+.top .brand{font:600 20px Fredoka,system-ui;color:var(--ink);text-decoration:none}
+.top .later{font-size:15px;color:var(--smoke)}
+main{max-width:1080px;margin:0 auto;padding:0 16px 80px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 16px;padding:0;list-style:none}
+.steps button{font:600 13.5px "Instrument Sans",system-ui;border:1.5px solid var(--line);background:var(--card);color:var(--smoke);border-radius:999px;padding:6px 12px;min-height:34px;cursor:pointer}
+.steps button[aria-current="step"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.steps button.done{color:var(--ink);border-color:var(--ink)}
+.steps button:disabled{opacity:.45;cursor:default}
+.potto-row{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
+.potto-row .art{flex:0 0 auto;width:76px;height:76px}
+.say{position:relative;background:#fff;border:2.5px solid var(--ink);border-radius:18px;padding:10px 14px;font-size:17px;font-weight:500;margin:0;max-width:560px}
+.say::before{content:"";position:absolute;left:-10px;top:50%;margin-top:-8px;border:8px solid transparent;border-right:10px solid var(--ink);border-left:0}
+.say::after{content:"";position:absolute;left:-6px;top:50%;margin-top:-6px;border:6px solid transparent;border-right:8px solid #fff;border-left:0}
+.card{background:var(--card);border:2.5px solid var(--ink);border-radius:20px;padding:18px}
+.quiet{background:var(--linen);border:1.5px solid var(--line);border-radius:18px;padding:14px 16px}
+.muted{color:var(--smoke)}
+.small{font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 20px;border-radius:16px;border:2.5px solid var(--ink);background:var(--ember);color:#fff;font-size:17px;cursor:pointer;text-decoration:none;box-shadow:0 3px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.ghost{background:var(--card);color:var(--ink)}
+.btn.small{min-height:40px;padding:6px 14px;font-size:15px;border-width:2px;box-shadow:0 2px 0 var(--ink)}
+.btn.link{background:none;border:0;box-shadow:none;color:var(--ember2);padding:6px 4px;min-height:40px;text-decoration:underline;font:600 15px "Instrument Sans",system-ui}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spread{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+/* fields that welcome dictation and paste: big, they grow with what you say, nothing blocks pasted text */
+.field{position:relative;margin:10px 0}
+.field textarea,.field input{width:100%;font:inherit;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:16px;padding:14px 16px;min-width:0}
+.field textarea{resize:vertical;min-height:120px;overflow:hidden;line-height:1.45}
+.field.big textarea{font-size:20px;min-height:150px}
+.field.mic-on textarea,.field.mic-on input{padding-right:62px}
+.mic{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--butter);cursor:pointer;display:grid;place-items:center;padding:0}
+.mic svg{width:20px;height:20px}
+.mic.live{background:var(--ember);color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,74,48,.45)}50%{box-shadow:0 0 0 8px rgba(201,74,48,0)}}
+@media (prefers-reduced-motion:reduce){.mic.live{animation:none}}
+label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
+.q-progress{display:flex;gap:6px;margin:0 0 10px}
+.q-progress i{flex:1;height:6px;border-radius:4px;background:var(--line)}
+.q-progress i.on{background:var(--ember)}
+.q-hint{color:var(--smoke);margin:0 0 4px}
+.drop{display:grid;gap:4px;justify-items:center;border:2.5px dashed var(--ink);border-radius:20px;padding:22px 16px;text-align:center;background:#fff;cursor:pointer}
+.drop.over{background:#FFF4D9}
+.drop b{font:600 19px Fredoka,system-ui;display:block}
+.sources{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--butter);border:2px solid var(--ink);border-radius:999px;padding:4px 6px 4px 12px;font-size:14.5px;font-weight:600;max-width:100%}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.chip button{border:0;background:none;font-size:18px;line-height:1;cursor:pointer;width:30px;height:30px;border-radius:50%}
+.chip.work{background:#fff}
+.grid2{display:grid;gap:14px}
+@media (min-width:900px){.grid2{grid-template-columns:1fr 1fr}}
+.pk{background:#fff;border:2.5px solid var(--ink);border-radius:20px;padding:16px;margin:12px 0;position:relative}
+.pk.gift{border-style:solid;box-shadow:4px 4px 0 var(--butter)}
+.pk-top{display:flex;gap:10px;align-items:flex-start}
+.pk-emoji{font-size:28px;width:48px;height:48px;border-radius:14px;background:var(--linen);display:grid;place-items:center;flex:0 0 auto;border:0;cursor:pointer}
+.pk input,.pk textarea{font:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+.pk .f-name{font-size:20px;border-color:transparent;padding:6px 8px;margin-left:-8px}
+.pk .f-name:hover,.pk .f-name:focus{border-color:var(--line)}
+.pk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.pk-grid .wide{grid-column:1/-1}
+.pk-grid label{font-size:13.5px;font-weight:600;color:var(--smoke);display:block;margin-bottom:3px}
+.pk .people{display:flex;gap:6px;align-items:center}.pk .people input{width:100%}
+.pk details{margin-top:10px}.pk summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center;color:var(--ember2)}
+.pk textarea{min-height:70px;resize:vertical;overflow:hidden}
+.pk-x{position:absolute;right:10px;top:10px;width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:#fff;cursor:pointer;font-size:18px}
+.pk-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--linen);color:var(--smoke)}
+.tag.need{background:#FFE1D6;color:#8A2E17}
+.tag.live{background:#D8EEDC;color:#2C5A38}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:var(--ember);flex:0 0 auto}
+.sticky-go{position:sticky;bottom:0;background:linear-gradient(to top,var(--paper) 70%,rgba(247,241,232,0));padding:16px 0 10px;margin-top:8px;z-index:5}
+.sug{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:14px;margin:0 0 12px}
+.sug h3{font-size:17px;margin:0 0 6px}
+.sug .ok{color:var(--ok);font-weight:700;font-size:14.5px}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
+.swatches button{width:44px;height:44px;border-radius:50%;border:3px solid #fff;outline:2px solid var(--line);cursor:pointer}
+.swatches button[aria-pressed="true"]{outline:3px solid var(--ink)}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
+.opts button{min-height:40px;padding:6px 12px;border-radius:12px;border:2px solid var(--line);background:#fff;cursor:pointer;font:600 14.5px "Instrument Sans",system-ui;text-transform:capitalize}
+.opts button[aria-pressed="true"]{border-color:var(--ink);background:var(--butter)}
+.preview{position:sticky;top:12px;border:2.5px solid var(--ink);border-radius:22px;overflow:hidden;background:var(--pv-bg,#FBF6EF);color:var(--pv-ink,#2B211C)}
+.pv-cover{height:120px;background:var(--pv-cover)}
+.pv-body{padding:0 18px 18px}
+.pv-av{width:72px;height:72px;border-radius:50%;border:3px solid var(--pv-bg,#FBF6EF);background:#fff;display:grid;place-items:center;font-size:36px;margin-top:-36px}
+.pv-name{font-size:26px;margin:6px 0 2px}
+.pv-tag{font-weight:600;margin:0 0 8px}
+.pv-bio{font-size:15px;opacity:.85}
+.pv-pk{display:flex;justify-content:space-between;gap:10px;border-top:1px solid rgba(0,0,0,.12);padding:10px 0;font-size:15px}
+.pv-pk b{font-weight:600}
+.pv-btn{display:inline-block;margin-top:10px;background:var(--pv-accent);color:#fff;border-radius:999px;padding:9px 16px;font:600 15px Fredoka,system-ui}
+.pv-label{font-size:12.5px;font-weight:700;color:var(--smoke);margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.ev{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:12px 14px;margin:10px 0;display:grid;gap:8px;grid-template-columns:1fr auto}
+.ev input,.ev textarea{font:inherit;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;width:100%;min-width:0}
+.ev .ev-f{display:grid;gap:8px;grid-template-columns:1fr 1fr}.ev .ev-f .wide{grid-column:1/-1}
+.ev img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:2px solid var(--ink)}
+.gm{border:2px solid var(--ink);border-radius:18px;background:#fff;padding:14px;margin:12px 0}
+.gm-list{display:grid;gap:6px;margin:8px 0;max-height:340px;overflow:auto}
+.gm-list label{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px;border-radius:12px;border:1.5px solid var(--line);cursor:pointer}
+.gm-list small{display:block;color:var(--smoke)}
+.msg{min-height:22px;font-weight:600;color:var(--ember2);margin:6px 0}
+.msg.good{color:var(--ok)}
+.busy::after{content:"";display:inline-block;width:14px;height:14px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;margin-left:8px;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.done-card{text-align:center;padding:28px 18px}
+@media (max-width:520px){.pk-grid{grid-template-columns:1fr}.ev{grid-template-columns:1fr}.ev .ev-f{grid-template-columns:1fr}.potto-row .art{width:60px;height:60px}.say{font-size:16px}.btn{width:100%}.row.end .btn,.sticky-go .btn{width:100%}.spread .btn.link{width:auto}}
+</style></head><body>
+<header class="top"><a class="brand" href="/">pottery lab</a><a class="later" id="later" href="/">Finish later</a></header>
+<main>
+  <ol class="steps" id="steps" aria-label="Steps"></ol>
+  <div class="potto-row"><div class="art" id="pottoArt" aria-hidden="true"></div><p class="say" id="say" aria-live="polite"></p></div>
+
+  <!-- 1. a few questions -->
+  <section data-step="q" hidden>
+    <div class="q-progress" id="qProg" aria-hidden="true"></div>
+    <h1 id="qTitle"></h1>
+    <p class="q-hint" id="qHint"></p>
+    <div class="field big"><textarea id="qBox" rows="3" aria-labelledby="qTitle" autocapitalize="sentences" spellcheck="true"></textarea></div>
+    <div class="spread"><button type="button" class="btn link" id="qBack">Back</button><div class="row"><button type="button" class="btn ghost" id="qSkip">Skip</button><button type="button" class="btn" id="qNext">Next</button></div></div>
+    <p class="small muted" style="margin-top:14px">Have a price sheet, menu or old quote? <button type="button" class="btn link" data-go="bring" style="min-height:0;padding:0">Bring it instead</button></p>
+  </section>
+
+  <!-- 2. bring your own material -->
+  <section data-step="bring" hidden>
+    <h1>Bring what you have</h1>
+    <p class="muted">Price sheets, menus, catering decks, past quotes. PDF, .txt or .eml.</p>
+    <label class="drop" id="drop" tabindex="0"><input type="file" id="file" accept=".pdf,.txt,.eml,.md,.csv,application/pdf,text/plain,message/rfc822" multiple hidden><b>Drop files here</b><span class="muted small">or tap to choose</span></label>
+    <div class="sources" id="sources" aria-live="polite"></div>
+    <div class="grid2" style="margin-top:6px">
+      <div><label class="lab" for="paste">Paste an email, a quote or your prices</label><div class="field"><textarea id="paste" rows="5" spellcheck="true"></textarea></div><button type="button" class="btn ghost small" id="pasteAdd">Add this</button></div>
+      <div><label class="lab" for="link">Your website or Instagram</label><div class="field"><input id="link" type="url" inputmode="url" autocomplete="url" placeholder="https://"></div><button type="button" class="btn ghost small" id="linkAdd">Read it</button>
+        <div id="gmail" hidden></div></div>
+    </div>
+    <p class="msg" id="bringMsg" role="status"></p>
+    <div class="sticky-go"><div class="spread"><button type="button" class="btn link" data-go="q">Back to questions</button><button type="button" class="btn" id="makeGo">Make my packages</button></div></div>
+  </section>
+
+  <!-- 3. review drafts -->
+  <section data-step="review" hidden>
+    <h1>Your packages</h1>
+    <p class="muted" id="revNote">Nothing goes on your page until you tap Looks good.</p>
+    <h2 style="margin-top:18px">Experiences <span class="muted small">(brands book these for a group)</span></h2>
+    <div id="expList"></div>
+    <button type="button" class="btn ghost small" id="addExp">Add an experience</button>
+    <h2 style="margin-top:24px">Gift sets <span class="muted small">(brands order these by quantity)</span></h2>
+    <div id="giftList"></div>
+    <button type="button" class="btn ghost small" id="addGift">Add a gift set</button>
+    <p class="msg" id="revMsg" role="status"></p>
+    <div class="sticky-go"><div class="spread"><button type="button" class="btn link" data-go="bring">Add more material</button><button type="button" class="btn" id="looksGood">Looks good</button></div></div>
+  </section>
+
+  <!-- 4. page -->
+  <section data-step="page" hidden>
+    <h1>Make your page yours</h1>
+    <div class="grid2">
+      <div id="sugs"></div>
+      <div><p class="pv-label">Preview</p><div class="preview" id="preview"></div></div>
+    </div>
+    <p class="msg" id="pageMsg" role="status"></p>
+    <div class="sticky-go"><div class="spread"><button type="button" class="btn ghost" id="acceptAll">Use all</button><button type="button" class="btn" data-go="past">Next</button></div></div>
+  </section>
+
+  <!-- 5. past events -->
+  <section data-step="past" hidden>
+    <h1>Your past events</h1>
+    <p class="muted">One link per line. Brands like seeing what you've done.</p>
+    <div class="field big"><textarea id="pastBox" rows="4" placeholder="https://partiful.com/e/...&#10;https://lu.ma/..." spellcheck="false" aria-label="Links to events you've hosted"></textarea></div>
+    <button type="button" class="btn ghost small" id="pastRead">Read links</button>
+    <div id="pastList"></div>
+    <p class="msg" id="pastMsg" role="status"></p>
+    <div class="sticky-go"><div class="spread"><button type="button" class="btn link" data-go="remind">Skip</button><button type="button" class="btn" id="pastAdd" hidden>Add to my portfolio</button></div></div>
+  </section>
+
+  <!-- 6. reminders -->
+  <section data-step="remind" hidden id="reminders">
+    <h1>Reminders</h1>
+    <div class="card">
+      <div id="smsBlock"><label class="lab" for="phone">Your mobile</label><div class="field"><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(212) 555-0142"></div>
+        <label class="chk"><input type="checkbox" id="rSms" checked> Text me</label></div>
+      <p class="small muted" id="smsOff" hidden>Texts aren't set up on this server yet, so I'll email you.</p>
+      <label class="chk"><input type="checkbox" id="rEmail" checked> Email me</label>
+      <hr style="border:0;border-top:1.5px solid var(--line);margin:10px 0">
+      <p class="lab" style="margin-top:4px">Tell me when</p>
+      <label class="chk"><input type="checkbox" id="rWaiting" checked> A brand is waiting on a quote (after 4 hours, then the next morning)</label>
+      <label class="chk"><input type="checkbox" id="rAccepted" checked> A brand accepts, and a deposit or details are due</label>
+      <label class="chk"><input type="checkbox" id="rDayBefore" checked> The day before a booked event, with a checklist</label>
+      <p class="small muted">No texts from 9pm to 8am. Reply STOP to any text to stop them.</p>
+      <label class="chk"><input type="checkbox" id="rOff"> No reminders at all</label>
+    </div>
+    <p class="msg" id="remMsg" role="status"></p>
+    <div class="sticky-go"><div class="spread"><button type="button" class="btn link" data-go="past">Back</button><button type="button" class="btn" id="remSave">Save</button></div></div>
+  </section>
+
+  <!-- 7. done -->
+  <section data-step="done" hidden>
+    <div class="card done-card"><h1>You're set</h1><p class="muted" id="doneNote">Brands can send you requests now.</p><div class="row" style="justify-content:center;margin-top:12px"><a class="btn" id="seePage" href="/">See your page</a><button type="button" class="btn ghost" data-go="review">Edit packages</button></div></div>
+  </section>
+</main>
+<script src="/authguard.js"></script><script src="/mascot.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const api = async (url, body, opts = {}) => { const r = await fetch(url, { method: body === undefined ? "GET" : "POST", credentials: "same-origin", headers: body instanceof Blob || body instanceof ArrayBuffer ? { "Content-Type": "application/pdf" } : { "Content-Type": "application/json" }, ...(body === undefined ? {} : { body: body instanceof Blob || body instanceof ArrayBuffer ? body : JSON.stringify(body) }), ...opts });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "Something went wrong. Try again."), { status: r.status, code: j.code }); return j; };
+  const Q = new URLSearchParams(location.search);
+
+  // ---- Potto: one line per screen ----
+  const SAY = { q: "Six quick questions. Skip any you like, and talking works too.", bring: "Drop in a price sheet, an old quote or your website. I'll read it.", review: "Here's what I found. Fix anything, then tap Looks good.", reviewPreset: "I set up your packages from your page. Check them, then tap Looks good.", reviewEmpty: "I didn't find packages yet. Add one, or bring me a price sheet.", reviewLive: "Here's what's on your page. Change anything, or bring me more.", page: "A few ideas from what you told me. Tap the ones you like.", past: "Drop links to events you've hosted: Partiful, Luma, Eventbrite or your own site.", remind: "I'll text you when a brand is waiting on you.", done: "You're set. I'll keep an eye on requests." };
+  const POSE = { q: "wave", bring: "carry", review: "think", page: "cheer", past: "carry", remind: "run", done: "cheer" };
+  const STEPS = [["q", "Questions"], ["bring", "Your material"], ["review", "Packages"], ["page", "Your page"], ["past", "Past events"], ["remind", "Reminders"]];
+
+  // ---- state ----
+  const S = { step: "q", qi: 0, answers: {}, material: [], drafts: { experiences: [], gifts: [] }, seen: new Set(["q"]), host: null, store: null, sugg: null, applied: {}, preset: "", past: { cards: [], saved: false } };
+  const QS = [
+    ["sell", "What do you sell or make?", "Say it the way you'd tell a regular."],
+    ["asks", "What do brands ask you for?", "A coffee bar at a launch, a class for a team, gift boxes for clients..."],
+    ["prices", "What do you charge?", "For each one, if you can. \"$12 a person for the coffee bar, $45 a gift set.\""],
+    ["groups", "How many people can you serve?", "\"40 to 300 people\", or a number for each thing."],
+    ["lead", "How much notice do you need?", "\"2 weeks for events, 3 weeks for engraved gifts.\""],
+    ["travel", "Where do you travel or deliver?", "\"Manhattan and Brooklyn.\" Or \"only at the shop.\""],
+  ];
+
+  // ---- fields that grow, and a mic where the browser can listen ----
+  const grow = (t) => { if (!t || t.tagName !== "TEXTAREA") return; t.style.height = "auto"; t.style.height = Math.max(t.scrollHeight + 4, 0) + "px"; };
+  document.addEventListener("input", (e) => grow(e.target));
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  let rec = null, recBtn = null;
+  function stopMic() { try { rec?.stop(); } catch {} rec = null; if (recBtn) { recBtn.classList.remove("live"); recBtn.setAttribute("aria-pressed", "false"); recBtn.setAttribute("aria-label", "Talk instead of typing"); } recBtn = null; }
+  function addMic(field) { if (!SR || !field || field.querySelector(".mic")) return; const box = field.querySelector("textarea,input"); if (!box || box.type === "url" || box.type === "tel") return;
+    field.classList.add("mic-on"); const b = document.createElement("button"); b.type = "button"; b.className = "mic"; b.innerHTML = MIC; b.setAttribute("aria-label", "Talk instead of typing"); b.setAttribute("aria-pressed", "false"); field.appendChild(b);
+    b.onclick = () => { if (recBtn === b) return stopMic(); stopMic(); try { rec = new SR(); } catch { b.remove(); field.classList.remove("mic-on"); return; }
+      rec.lang = navigator.language || "en-US"; rec.continuous = true; rec.interimResults = true; const base = box.value ? box.value.replace(/\s*$/, " ") : ""; let finals = "";
+      rec.onresult = (ev) => { let interim = ""; for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) finals += r[0].transcript; else interim += r[0].transcript; } box.value = base + finals + interim; box.dispatchEvent(new Event("input", { bubbles: true })); };
+      rec.onerror = () => stopMic(); rec.onend = () => { if (recBtn === b) stopMic(); };
+      try { rec.start(); recBtn = b; b.classList.add("live"); b.setAttribute("aria-pressed", "true"); b.setAttribute("aria-label", "Stop listening"); box.focus(); } catch { stopMic(); } }; }
+  const mics = () => $$(".field").forEach(addMic);
+
+  // ---- steps ----
+  function drawSteps() { $("#steps").innerHTML = STEPS.map(([k, t]) => `<li><button type="button" data-go="${k}" ${k === S.step || (k === "q" && S.step === "q") ? 'aria-current="step"' : ""} class="${S.seen.has(k) && k !== S.step ? "done" : ""}" ${S.seen.has(k) ? "" : "disabled"}>${esc(t)}</button></li>`).join(""); }
+  function say(k) { $("#say").textContent = SAY[k] || ""; const art = $("#pottoArt"); if (window.Potto) art.innerHTML = window.Potto.svg(POSE[k.replace(/(Preset|Empty|Live)$/, "")] || "wave", 76); }
+  function go(step, opts = {}) { stopMic(); S.step = step; S.seen.add(step); $$("section[data-step]").forEach((s) => (s.hidden = s.dataset.step !== step)); drawSteps(); say(opts.say || step);
+    if (step === "q") drawQ(); if (step === "review") drawReview(); if (step === "page") drawPage(); if (step === "remind") drawRemind(); if (step === "bring") drawSources();
+    if (!opts.keepScroll) window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" }); save(); }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b && !b.disabled) { if (b.dataset.go === "q") S.qi = Math.min(S.qi, QS.length - 1); go(b.dataset.go); } });
+
+  // ---- 1. questions ----
+  function drawQ() { const [k, title, hint] = QS[S.qi]; $("#qTitle").textContent = title; $("#qHint").textContent = hint; const box = $("#qBox"); box.value = S.answers[k] || ""; grow(box);
+    $("#qProg").innerHTML = QS.map((_, i) => `<i class="${i <= S.qi ? "on" : ""}"></i>`).join(""); $("#qBack").style.visibility = S.qi ? "visible" : "hidden"; $("#qNext").textContent = S.qi === QS.length - 1 ? "Done" : "Next"; setTimeout(() => box.focus({ preventScroll: true }), 30); }
+  const keepQ = () => { const k = QS[S.qi][0], v = $("#qBox").value.trim(); if (v) S.answers[k] = v; else delete S.answers[k]; };
+  const nextQ = () => { stopMic(); if (S.qi < QS.length - 1) { S.qi++; drawQ(); save(); } else go("bring"); };
+  $("#qNext").onclick = () => { keepQ(); nextQ(); };
+  $("#qSkip").onclick = () => { delete S.answers[QS[S.qi][0]]; nextQ(); };
+  $("#qBack").onclick = () => { keepQ(); stopMic(); S.qi = Math.max(0, S.qi - 1); drawQ(); };
+  $("#qBox").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("#qNext").click(); } });
+  $("#qBox").addEventListener("input", () => { keepQ(); save(); });
+
+  // ---- 2. material ----
+  const bringMsg = (t, good) => { const m = $("#bringMsg"); m.textContent = t || ""; m.classList.toggle("good", !!good); };
+  function drawSources() { $("#sources").innerHTML = S.material.map((m, i) => `<span class="chip${m.working ? " work" : ""}"><span title="${esc(m.label)}">${esc(m.label)}${m.note ? ` · ${esc(m.note)}` : ""}</span>${m.working ? '<span class="busy" aria-label="Reading"></span>' : `<button type="button" aria-label="Remove ${esc(m.label)}" data-rm="${i}">×</button>`}</span>`).join("");
+    $$("#sources [data-rm]").forEach((b) => (b.onclick = () => { S.material.splice(+b.dataset.rm, 1); drawSources(); save(); })); }
+  // pdf.js 3.11.174 (the last UMD build) from cdnjs; when it can't load, the server reads the PDF instead
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  let pdfjsP = null;
+  const loadPdfjs = () => pdfjsP || (pdfjsP = new Promise((res, rej) => { if (window.pdfjsLib) return res(window.pdfjsLib); const s = document.createElement("script"); s.src = PDFJS + "pdf.min.js"; s.crossOrigin = "anonymous"; s.referrerPolicy = "no-referrer"; const t = setTimeout(() => rej(new Error("timeout")), 6000);
+    s.onload = () => { clearTimeout(t); if (!window.pdfjsLib) return rej(new Error("no pdfjs")); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js"; res(window.pdfjsLib); }; s.onerror = () => { clearTimeout(t); rej(new Error("blocked")); }; document.head.appendChild(s); }).catch((e) => { pdfjsP = null; throw e; }));
+  async function pdfInBrowser(buf) { const lib = await loadPdfjs(); const doc = await lib.getDocument({ data: new Uint8Array(buf) }).promise; let out = ""; for (let p = 1; p <= Math.min(doc.numPages, 40); p++) { const pg = await doc.getPage(p), tc = await pg.getTextContent(); let lastY = null, line = "";
+      for (const it of tc.items) { const y = it.transform?.[5]; if (lastY != null && Math.abs(y - lastY) > 2) { out += line.trim() + "\n"; line = ""; } line += it.str + (it.hasEOL ? "\n" : " "); lastY = y; } out += line.trim() + "\n\n"; } return { text: out.trim(), pages: doc.numPages }; }
+  async function readFile(f) { const item = { label: f.name.slice(0, 80), kind: /\.eml$/i.test(f.name) || f.type === "message/rfc822" ? "eml" : "text", text: "", working: true }; S.material.push(item); drawSources();
+    try { if (f.size > 12 * 1024 * 1024) throw new Error("That file is over 12 MB. Try a smaller copy."); const isPdf = /\.pdf$/i.test(f.name) || f.type === "application/pdf";
+      if (isPdf) { const buf = await f.arrayBuffer(); let r = null; try { r = await pdfInBrowser(buf); if (!r.text.trim()) r = null; } catch {} if (!r) r = await api("/api/onboard/pdf", new Blob([buf], { type: "application/pdf" })); item.text = r.text; item.note = `${r.pages || 1} page${r.pages === 1 ? "" : "s"}`; }
+      else item.text = await f.text();
+      if (!item.text.trim()) throw new Error("I couldn't find any text in " + f.name + ".");
+      item.working = false; bringMsg(`Got ${f.name}.`, true); }
+    catch (e) { S.material.splice(S.material.indexOf(item), 1); bringMsg(e.message || "I couldn't read that file."); }
+    drawSources(); save(); }
+  const drop = $("#drop"), file = $("#file");
+  file.onchange = () => { [...file.files].slice(0, 10).forEach(readFile); file.value = ""; };
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); file.click(); } });
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => [...(e.dataTransfer?.files || [])].slice(0, 10).forEach(readFile));
+  $("#pasteAdd").onclick = () => { const v = $("#paste").value.trim(); if (!v) { bringMsg("Paste something first."); return $("#paste").focus(); } const isEmail = /^(from|subject|to|date):/im.test(v) || /^(hi|hello|hey|dear)\b/i.test(v);
+    S.material.push({ label: isEmail ? `Pasted email ${S.material.filter((m) => /^Pasted/.test(m.label)).length + 1}` : `Pasted text ${S.material.filter((m) => /^Pasted/.test(m.label)).length + 1}`, kind: /^(from|subject):/im.test(v) ? "eml" : "text", text: v }); $("#paste").value = ""; grow($("#paste")); bringMsg("Added.", true); drawSources(); save(); };
+  $("#linkAdd").onclick = async () => { let u = $("#link").value.trim(); if (!u) return $("#link").focus(); if (/^@?[A-Za-z0-9._]{2,30}$/.test(u)) u = "https://www.instagram.com/" + u.replace(/^@/, "") + "/"; if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    const item = { label: u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60), kind: "text", text: "", working: true }; S.material.push(item); drawSources(); $("#linkAdd").disabled = true;
+    try { const r = await api("/api/onboard/link", { url: u }); item.text = r.text; item.working = false; $("#link").value = ""; bringMsg("Read " + item.label + ".", true); } catch (e) { S.material.splice(S.material.indexOf(item), 1); bringMsg(e.message); }
+    $("#linkAdd").disabled = false; drawSources(); save(); };
+  $("#makeGo").onclick = async () => { keepQ(); if (S.material.some((m) => m.working)) return bringMsg("Still reading. One moment."); const has = S.material.length || Object.keys(S.answers).length;
+    if (!has) { bringMsg(""); go("review", { say: "reviewEmpty" }); return; }
+    const b = $("#makeGo"); b.disabled = true; b.classList.add("busy"); bringMsg("");
+    try { const D = await api("/api/onboard/draft", { answers: S.answers, material: S.material.map((m) => ({ label: m.label, kind: m.kind, text: m.text })) });
+      const before = S.drafts.experiences.length + S.drafts.gifts.length; mergeDrafts(D); const n = S.drafts.experiences.length + S.drafts.gifts.length - before;
+      go("review", { say: n || before ? "review" : "reviewEmpty" }); }
+    catch (e) { bringMsg(e.message); } finally { b.disabled = false; b.classList.remove("busy"); } };
+
+  // Gmail: only when the server owner set it up
+  function drawGmail(g) { const el = $("#gmail"); if (!g?.enabled) { el.hidden = true; return; } el.hidden = false;
+    if (!g.connected) { el.innerHTML = `<div class="gm"><b>Gmail</b><p class="small muted" style="margin:4px 0 8px">Read-only. You pick which emails I read.</p><a class="btn ghost small" href="/api/onboard/gmail/start">Connect Gmail</a></div>`; return; }
+    el.innerHTML = `<div class="gm"><div class="spread"><b>Gmail${g.email ? ` · ${esc(g.email)}` : ""}</b><button type="button" class="btn link" id="gmOff">Disconnect</button></div><label class="lab" for="gmQ">Search your email</label><div class="field" style="margin:4px 0"><input id="gmQ" value="quote OR pricing OR catering OR invoice newer_than:2y"></div><button type="button" class="btn ghost small" id="gmFind">Find emails</button><div class="gm-list" id="gmList"></div><button type="button" class="btn small" id="gmUse" hidden>Use these</button></div>`;
+    $("#gmOff").onclick = async () => { await api("/api/onboard/gmail/disconnect", {}).catch(() => {}); drawGmail({ enabled: true, connected: false }); };
+    $("#gmFind").onclick = async () => { const b = $("#gmFind"); b.classList.add("busy"); try { const r = await api("/api/onboard/gmail/search", { q: $("#gmQ").value }); $("#gmList").innerHTML = r.messages.length ? r.messages.map((m) => `<label><input type="checkbox" value="${esc(m.id)}"><span><b>${esc(m.subject || "(no subject)")}</b><small>${esc(m.from)} · ${esc(m.date)}</small><small>${esc(m.snippet)}</small></span></label>`).join("") : `<p class="small muted">No emails matched. Try other words.</p>`; $("#gmUse").hidden = !r.messages.length; }
+      catch (e) { bringMsg(e.message); if (e.code === "not_connected") drawGmail({ enabled: true, connected: false }); } finally { b.classList.remove("busy"); } };
+    $("#gmUse").onclick = async () => { const ids = $$("#gmList input:checked").map((x) => x.value); if (!ids.length) return bringMsg("Tick the emails to use."); const b = $("#gmUse"); b.classList.add("busy");
+      try { const r = await api("/api/onboard/gmail/read", { ids }); for (const m of r.emails) S.material.push({ label: m.label, kind: "text", text: m.text }); bringMsg(`Added ${r.emails.length} email${r.emails.length === 1 ? "" : "s"}.`, true); drawSources(); save(); } catch (e) { bringMsg(e.message); } finally { b.classList.remove("busy"); } }; }
+
+  // ---- 3. review ----
+  const nkey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  function mergeDrafts(D) { for (const kind of ["experiences", "gifts"]) for (const x of D[kind] || []) { const hit = S.drafts[kind].find((y) => nkey(y.name) === nkey(x.name)); if (hit) { for (const [k, v] of Object.entries(x)) if ((hit[k] == null || hit[k] === "" || (Array.isArray(hit[k]) && !hit[k].length)) && v != null && v !== "") hit[k] = v; } else S.drafts[kind].push({ ...x, _k: Math.random().toString(36).slice(2, 9) }); } }
+  const $c = (c) => (c ? "$" + (c % 100 ? (c / 100).toFixed(2) : String(c / 100)) : "");
+  const toCents = (v) => { const m = String(v || "").replace(/,/g, "").match(/\d+(?:\.\d{1,2})?/); return m ? Math.round(+m[0] * 100) : 0; };
+  const tiersText = (T) => (T || []).map((t) => `${t.qty}+ ${$c(t.cents)}`).join("\n");
+  const parseTiers = (s) => String(s || "").split("\n").map((l) => { const m = l.replace(/,/g, "").match(/(\d+)\s*\+?\D+?(\d+(?:\.\d{1,2})?)/); return m ? { qty: +m[1], cents: Math.round(+m[2] * 100) } : null; }).filter((t) => t && t.qty > 1 && t.cents > 0);
+  const NEED = { name: "Add a name", price: "Add a price", size: "Check group size", length: "Add how long", lead: "Add lead time" };
+  function needs(x, gift) { const n = []; if (!x.name || (x._missing || []).includes("name")) n.push("name"); if (gift ? !x.cents : !x.price) n.push("price"); if (!gift && (x._missing || []).includes("size")) n.push("size"); if (!gift && !x.length) n.push("length"); if (gift && !x.lead) n.push("lead"); return n; }
+  function expCard(x, i) { const n = needs(x, false); return `<article class="pk" data-kind="experiences" data-i="${i}">
+      <button type="button" class="pk-x" data-del aria-label="Remove ${esc(x.name)}">×</button>
+      <div class="pk-top"><span class="pk-emoji" aria-hidden="true">${esc(x.emoji || "✨")}</span><div style="flex:1;min-width:0;padding-right:40px"><input class="f-name" data-f="name" value="${esc(x.name)}" aria-label="Name" placeholder="Name this experience">
+        <div class="pk-meta">${x._live ? '<span class="tag live">On your page now</span>' : x._from ? `<span class="tag">From ${esc(x._from)}</span>` : ""}${n.map((k) => `<span class="tag need">${NEED[k]}</span>`).join("")}</div></div></div>
+      <div class="pk-grid"><div><label>Price</label><input data-f="price" value="${esc(x.price)}" placeholder="$12 a person"></div>
+        <div><label>People</label><div class="people"><input data-f="min" type="number" inputmode="numeric" min="1" value="${esc(x.min)}" aria-label="Fewest people"><span>to</span><input data-f="max" type="number" inputmode="numeric" min="1" value="${esc(x.max)}" aria-label="Most people"></div></div>
+        <div><label>How long</label><input data-f="length" value="${esc(x.length)}" placeholder="3 hours"></div>
+        <div><label class="chk" style="margin-top:18px;color:var(--ink);font-size:15px"><input type="checkbox" data-f="travels" ${x.travels ? "checked" : ""}> We go to them</label></div></div>
+      <details ${!x.desc && !(x.includes || []).length ? "" : ""}><summary>Description, what's included, run of show</summary>
+        <div class="pk-grid"><div class="wide field" style="margin:0"><label>What it is</label><textarea data-f="desc" rows="2">${esc(x.desc)}</textarea></div>
+        <div class="wide field" style="margin:0"><label>What's included (one per line)</label><textarea data-f="includes" rows="3">${esc((x.includes || []).join("\n"))}</textarea></div>
+        <div class="wide field" style="margin:0"><label>Run of show (one per line, like "0:00 First pour")</label><textarea data-f="runOfShow" rows="3">${esc((x.runOfShow || []).join("\n"))}</textarea></div></div></details></article>`; }
+  function giftCard(x, i) { const n = needs(x, true); return `<article class="pk gift" data-kind="gifts" data-i="${i}">
+      <button type="button" class="pk-x" data-del aria-label="Remove ${esc(x.name)}">×</button>
+      <div class="pk-top"><span class="pk-emoji" aria-hidden="true">${esc(x.emoji || "🎁")}</span><div style="flex:1;min-width:0;padding-right:40px"><input class="f-name" data-f="name" value="${esc(x.name)}" aria-label="Name" placeholder="Name this gift set">
+        <div class="pk-meta">${x._live ? '<span class="tag live">On your page now</span>' : x._from ? `<span class="tag">From ${esc(x._from)}</span>` : ""}${n.map((k) => `<span class="tag need">${NEED[k]}</span>`).join("")}</div></div></div>
+      <div class="pk-grid"><div><label>Price each</label><input data-f="cents" inputmode="decimal" value="${esc($c(x.cents))}" placeholder="$45"></div>
+        <div><label>Order size</label><div class="people"><input data-f="minQty" type="number" inputmode="numeric" min="1" value="${esc(x.minQty)}" aria-label="Smallest order"><span>to</span><input data-f="maxQty" type="number" inputmode="numeric" min="1" value="${esc(x.maxQty)}" aria-label="Largest order"></div></div>
+        <div><label>Lead time</label><input data-f="lead" value="${esc(x.lead)}" placeholder="3 weeks"></div>
+        <div><label>Ships or delivers</label><input data-f="ships" value="${esc(x.ships)}" placeholder="Ships anywhere in the US"></div>
+        <div class="wide field" style="margin:0"><label>Price breaks (one per line, like "50+ $40")</label><textarea data-f="tiers" rows="2">${esc(tiersText(x.tiers))}</textarea></div></div>
+      <details><summary>Description and what they can personalize</summary><div class="pk-grid"><div class="wide field" style="margin:0"><label>What's in it</label><textarea data-f="desc" rows="2">${esc(x.desc)}</textarea></div>
+        <div class="wide field" style="margin:0"><label>They can personalize (one per line)</label><textarea data-f="personalize" rows="2">${esc((x.personalize || []).join("\n"))}</textarea></div></div></details></article>`; }
+  function drawReview() { const E = S.drafts.experiences, G = S.drafts.gifts;
+    $("#expList").innerHTML = E.length ? E.map(expCard).join("") : `<p class="quiet muted">No experiences yet.</p>`; $("#giftList").innerHTML = G.length ? G.map(giftCard).join("") : `<p class="quiet muted">No gift sets yet.</p>`;
+    $("#addExp").disabled = E.length >= 6; $("#addGift").disabled = G.length >= 8; $$("#expList textarea,#giftList textarea").forEach(grow); mics(); }
+  function readCard(card, changed) { const kind = card.dataset.kind, x = S.drafts[kind][+card.dataset.i]; if (!x) return;
+    for (const el of card.querySelectorAll("[data-f]")) { const f = el.dataset.f, v = el.type === "checkbox" ? el.checked : el.value;
+      if (["includes", "runOfShow", "personalize"].includes(f)) x[f] = String(v).split("\n").map((s) => s.trim()).filter(Boolean); else if (f === "cents") x.cents = toCents(v); else if (f === "tiers") x.tiers = parseTiers(v); else if (["min", "max", "minQty", "maxQty"].includes(f)) x[f] = Math.max(1, Math.round(+v || 1)); else x[f] = v; }
+    x._missing = (x._missing || []).filter((m) => !(m === "name" && x.name) && !(m === "size" && /^(min|max)$/.test(changed || ""))); }
+  ["expList", "giftList"].forEach((id) => { const L = $("#" + id); L.addEventListener("input", (e) => { const c = e.target.closest(".pk"); if (c) { readCard(c, e.target.dataset.f); save(); } });
+    L.addEventListener("change", (e) => { const c = e.target.closest(".pk"); if (c) { readCard(c, e.target.dataset.f); const meta = c.querySelector(".pk-meta"), kind = c.dataset.kind, x = S.drafts[kind][+c.dataset.i]; if (meta && x) meta.innerHTML = `${x._live ? '<span class="tag live">On your page now</span>' : x._from ? `<span class="tag">From ${esc(x._from)}</span>` : ""}${needs(x, kind === "gifts").map((k) => `<span class="tag need">${NEED[k]}</span>`).join("")}`; save(); } });
+    L.addEventListener("click", (e) => { const b = e.target.closest("[data-del]"); if (!b) return; const c = b.closest(".pk"); S.drafts[c.dataset.kind].splice(+c.dataset.i, 1); drawReview(); save(); }); });
+  $("#addExp").onclick = () => { S.drafts.experiences.push({ name: "", desc: "", emoji: "✨", min: 1, max: 20, price: "", length: "", includes: [], runOfShow: [], travels: false, _k: Math.random().toString(36).slice(2, 9) }); drawReview(); $$("#expList .pk").pop()?.querySelector(".f-name")?.focus(); };
+  $("#addGift").onclick = () => { S.drafts.gifts.push({ name: "", desc: "", emoji: "🎁", cents: 0, minQty: 1, maxQty: 200, tiers: [], lead: "", ships: "", personalize: [], _k: Math.random().toString(36).slice(2, 9) }); drawReview(); $$("#giftList .pk").pop()?.querySelector(".f-name")?.focus(); };
+  const revMsg = (t, good) => { const m = $("#revMsg"); m.textContent = t || ""; m.classList.toggle("good", !!good); };
+  $("#looksGood").onclick = async () => { $$("#expList .pk,#giftList .pk").forEach(readCard); const E = S.drafts.experiences, G = S.drafts.gifts;
+    const unnamed = [...E, ...G].findIndex((x) => !String(x.name || "").trim()); if (unnamed >= 0) { revMsg("Give every package a name, or remove it."); $$(".pk .f-name").find((i) => !i.value.trim())?.focus(); return; }
+    if (!E.length && !G.length) return revMsg("Add at least one package first.");
+    const b = $("#looksGood"); b.disabled = true; b.classList.add("busy"); revMsg("");
+    try { const r = await api("/api/onboard/publish", { experiences: E, gifts: G }); S.host = r.host; S.published = true; E.forEach((x, i) => { x.id = r.host.experiences[i]?.id || x.id; x._live = true; }); G.forEach((x, i) => { x.id = r.host.gifts[i]?.id || x.id; x._live = true; });
+      $("#seePage").href = "/@" + r.host.handle; $("#later").href = "/@" + r.host.handle; S.sugg = null; go("page"); }
+    catch (e) { revMsg(e.message); } finally { b.disabled = false; b.classList.remove("busy"); } };
+
+  // ---- 4. page ----
+  const COVER = { wash: (a) => `linear-gradient(135deg, ${a}33, ${a}88 60%, ${a}cc)`, sunrise: () => "linear-gradient(180deg,#F9C784,#F7A9B6)", dusk: () => "linear-gradient(180deg,#3B2A4D,#C06C84)", dots: (a) => `radial-gradient(${a}55 18%, transparent 20%) 0 0/22px 22px, #FFF7EC`, waves: (a) => `repeating-radial-gradient(circle at 0 100%, ${a}22 0 12px, ${a}55 12px 24px)`, confetti: () => "radial-gradient(circle at 20% 30%,#F2D48F 6px,transparent 7px),radial-gradient(circle at 70% 60%,#E26D8E 5px,transparent 6px),radial-gradient(circle at 45% 80%,#5B7FD6 5px,transparent 6px),radial-gradient(circle at 85% 25%,#3E9C6E 6px,transparent 7px),#FFF7EC", plain: (a) => `${a}22` };
+  const BG = { cream: ["#FBF6EF", "#2B211C"], white: ["#FFFFFF", "#1F1A17"], blush: ["#FDEEF0", "#2B211C"], sage: ["#EEF2E8", "#22281D"], night: ["#1C1714", "#F7F1E8"] };
+  const FONT = { classic: "Instrument Sans, system-ui", editorial: "Georgia, serif", modern: "system-ui, sans-serif", playful: "Fredoka, system-ui", handmade: "Fredoka, system-ui", bold: "Fredoka, system-ui" };
+  const pageView = () => { const h = S.host || {}, t = h.theme || {}, P = S.preview || {}; return { name: P.name ?? h.name ?? "", tagline: P.tagline ?? h.tagline ?? "", bio: P.bio ?? h.bio ?? "", accent: P.accent || t.accent || "#C2553A", cover: P.cover || t.cover || "wash", font: P.font || t.font || "classic", bg: P.bg || t.bg || "cream", emoji: P.emoji || h.emoji || "✨" }; };
+  function drawPreview() { const v = pageView(), [bg, ink] = BG[v.bg] || BG.cream, el = $("#preview"); el.style.setProperty("--pv-bg", bg); el.style.setProperty("--pv-ink", ink); el.style.setProperty("--pv-accent", v.accent); el.style.setProperty("--pv-cover", (COVER[v.cover] || COVER.wash)(v.accent));
+    const E = S.drafts.experiences.slice(0, 3), G = S.drafts.gifts.slice(0, 2);
+    el.innerHTML = `<div class="pv-cover"></div><div class="pv-body"><div class="pv-av">${esc(v.emoji)}</div><h2 class="pv-name" style="font-family:${FONT[v.font] || FONT.classic}">${esc(v.name || "Your page")}</h2>${v.tagline ? `<p class="pv-tag" style="color:${v.bg === "night" ? "#F7F1E8" : v.accent}">${esc(v.tagline)}</p>` : ""}${v.bio ? `<p class="pv-bio">${esc(v.bio)}</p>` : ""}
+      ${[...E.map((x) => [x.emoji, x.name, x.price]), ...G.map((x) => [x.emoji, x.name, x.cents ? $c(x.cents) + " each" : ""])].map(([e, n, p]) => `<div class="pv-pk"><span>${esc(e || "")} <b>${esc(n)}</b></span><span>${esc(p || "")}</span></div>`).join("")}<span class="pv-btn">Request a date</span></div>`; }
+  const pageMsg = (t, good) => { const m = $("#pageMsg"); m.textContent = t || ""; m.classList.toggle("good", !!good); };
+  async function applyPage(field, value) { const page = {}; if (["accent", "cover", "font", "bg"].includes(field)) page.theme = { [field]: value }; else page[field] = value;
+    try { const r = await api("/api/onboard/publish", { page }); S.host = r.host; S.applied[field] = value; delete (S.preview || {})[field]; $("#seePage").href = "/@" + r.host.handle; pageMsg(""); return true; } catch (e) { pageMsg(e.message); return false; } }
+  async function drawPage() { if (!S.sugg) { $("#sugs").innerHTML = `<p class="muted">Thinking<span class="busy"></span></p>`; try { S.sugg = await api("/api/onboard/suggest", { answers: S.answers, drafts: S.drafts }); if (S.presetPage) Object.assign(S.sugg, Object.fromEntries(Object.entries(S.presetPage).filter(([, v]) => v))); } catch (e) { S.sugg = {}; pageMsg(e.message); } }
+    const g = S.sugg, h = S.host || {}, t = h.theme || {}, st = S.store || { accents: [], covers: [], fonts: [], backgrounds: [] }; S.preview = S.preview || {};
+    const done = (f) => S.applied[f] != null || (f === "tagline" && g.tagline && h.tagline === g.tagline) || (f === "bio" && g.bio && h.bio === g.bio);
+    const textSug = (f, title, val) => `<div class="sug" data-sug="${f}"><h3>${title}</h3><div class="field" style="margin:4px 0 8px"><textarea data-v rows="2">${esc(S.preview[f] ?? val ?? "")}</textarea></div><div class="spread">${done(f) ? '<span class="ok">On your page</span>' : "<span></span>"}<button type="button" class="btn small" data-use="${f}">Use this</button></div></div>`;
+    const pick = (f, title, list, cur, sug, draw) => `<div class="sug" data-sug="${f}"><h3>${title}</h3><div class="${f === "accent" ? "swatches" : "opts"}">${list.map((x) => draw(x, x === (S.preview[f] || cur || sug))).join("")}</div><div class="spread">${done(f) ? '<span class="ok">On your page</span>' : `<span class="small muted">${sug ? (f === "accent" ? "Suggested from what you make." : `Suggested: ${esc(sug)}`) : ""}</span>`}<button type="button" class="btn small" data-use="${f}">Use this</button></div></div>`;
+    $("#sugs").innerHTML = [h.name ? "" : textSug("name", "Your name", g.name || S.company || ""), textSug("tagline", "Tagline", g.tagline || h.tagline), textSug("bio", "About you", g.bio || h.bio),
+      pick("accent", "Color", st.accents, S.applied.accent || (S.preview.accent ? "" : g.accent || t.accent), g.accent, (c, on) => `<button type="button" data-pick="${c}" style="background:${c}" aria-label="Color ${c}" aria-pressed="${on}"></button>`),
+      pick("cover", "Cover", st.covers, S.applied.cover || g.cover || t.cover, g.cover, (c, on) => `<button type="button" data-pick="${c}" aria-pressed="${on}">${esc(c)}</button>`),
+      pick("font", "Type", st.fonts, S.applied.font || g.font || t.font, g.font, (c, on) => `<button type="button" data-pick="${c}" aria-pressed="${on}" style="font-family:${FONT[c]}">${esc(c)}</button>`),
+      pick("bg", "Background", st.backgrounds, S.applied.bg || g.bg || t.bg, g.bg, (c, on) => `<button type="button" data-pick="${c}" aria-pressed="${on}">${esc(c)}</button>`)].join("");
+    for (const f of ["accent", "cover", "font", "bg"]) if (S.preview[f] == null) S.preview[f] = S.applied[f] || g[f] || t[f];
+    for (const f of ["tagline", "bio", "name"]) if (S.preview[f] == null) S.preview[f] = g[f] || h[f] || "";
+    if (S.preview.emoji == null) S.preview.emoji = h.emoji && h.emoji !== "🎉" ? h.emoji : g.emoji || h.emoji || "";
+    $$("#sugs textarea").forEach(grow); mics(); drawPreview(); }
+  $("#sugs").addEventListener("input", (e) => { const s = e.target.closest("[data-sug]"); if (s && e.target.matches("[data-v]")) { S.preview[s.dataset.sug] = e.target.value; drawPreview(); } });
+  $("#sugs").addEventListener("click", async (e) => { const p = e.target.closest("[data-pick]"); if (p) { const s = p.closest("[data-sug]"); S.preview[s.dataset.sug] = p.dataset.pick; s.querySelectorAll("[data-pick]").forEach((b) => b.setAttribute("aria-pressed", String(b === p))); drawPreview(); return; }
+    const u = e.target.closest("[data-use]"); if (!u) return; const f = u.dataset.use, v = S.preview[f]; if (!v) return pageMsg("Add something first."); u.disabled = true; u.classList.add("busy");
+    if (await applyPage(f, v)) { S.preview[f] = v; const s = u.closest(".sug"); s.querySelector(".spread > :first-child").outerHTML = '<span class="ok">On your page</span>'; } u.disabled = false; u.classList.remove("busy"); });
+  $("#acceptAll").onclick = async () => { const b = $("#acceptAll"); b.disabled = true; b.classList.add("busy"); const P = S.preview || {}, page = { theme: {} };
+    for (const f of ["name", "tagline", "bio", "emoji"]) if (P[f]) page[f] = P[f]; for (const f of ["accent", "cover", "font", "bg"]) if (P[f]) page.theme[f] = P[f];
+    try { const r = await api("/api/onboard/publish", { page }); S.host = r.host; for (const f of [...Object.keys(page).filter((k) => k !== "theme"), ...Object.keys(page.theme)]) S.applied[f] = page[f] ?? page.theme[f]; pageMsg("Your page is updated.", true); drawPage(); } catch (e) { pageMsg(e.message); } b.disabled = false; b.classList.remove("busy"); };
+
+  // ---- 5. past events: one adapter, so the bulk import endpoint can be swapped in without touching the step ----
+  const Portfolio = {
+    draftUrl: "/api/host/scrapbook/preview", // many links in, draft cards out, nothing saved (server/scrapbook.js)
+    commitUrl: "/api/host/scrapbook/add", // the cards the host kept, after editing
+    async drafts(links) { const r = await fetch(this.draftUrl, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ links }) }).catch(() => null);
+      if (r && r.status !== 404) { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "I couldn't read those links."); return { saved: false, cards: (j.drafts || j.cards || []).map(this.card), skipped: j.skipped || [] }; }
+      // older servers: the one-step import, which saves as it reads; edits and removals then go to each saved event
+      const j = await api("/api/host/scrapbook/import", { links: links.slice(0, 15) }); return { saved: true, cards: (j.added || []).map(this.card), skipped: j.skipped || [] }; },
+    card: (x) => ({ id: x.id || "", title: x.title || "", date: x.date || "", place: x.place || "", note: x.note || x.about || "", cover: x.cover || "", link: x.link || x.url || "", source: x.source || x.site || "", raw: x, removed: false }),
+    async commit(cards, saved) { const keep = cards.filter((c) => !c.removed && c.title.trim()), gone = cards.filter((c) => c.removed);
+      if (!saved) { const j = await api(this.commitUrl, { drafts: keep.map((c) => ({ ...c.raw, title: c.title, date: c.date, place: c.place, note: c.note, about: c.raw.about || "", link: c.link, cover: c.cover })) }); return (j.added || keep).length; }
+      for (const c of gone) if (c.id) await fetch("/api/host/scrapbook/" + encodeURIComponent(c.id), { method: "DELETE", credentials: "same-origin" });
+      for (const c of keep) if (c.id) await api("/api/host/scrapbook/" + encodeURIComponent(c.id), { title: c.title, date: c.date, place: c.place, note: c.note }); return keep.length; } };
+  const pastMsg = (t, good) => { const m = $("#pastMsg"); m.textContent = t || ""; m.classList.toggle("good", !!good); };
+  function drawPast() { const L = S.past.cards.filter((c) => !c.removed); $("#pastList").innerHTML = L.map((c) => { const i = S.past.cards.indexOf(c); return `<div class="ev" data-pi="${i}"><div class="ev-f"><div class="wide"><input data-pf="title" value="${esc(c.title)}" aria-label="Event title" placeholder="${c.title ? "Event title" : "Add the event title"}">${c.link && !c.title ? `<small class="muted">${esc(c.link)}</small>` : ""}</div><div><input data-pf="date" type="date" value="${esc(c.date)}" aria-label="Date"></div><div><input data-pf="place" value="${esc(c.place)}" aria-label="Where" placeholder="Where"></div><div class="wide field" style="margin:0"><textarea data-pf="note" rows="2" aria-label="A line about it" placeholder="A line about it">${esc(c.note)}</textarea></div>${c.source ? `<small class="muted">${esc(c.source)}</small>` : ""}</div><div style="display:grid;gap:8px;justify-items:end">${c.cover ? `<img src="${esc(c.cover)}" alt="">` : ""}<button type="button" class="pk-x" style="position:static" data-prm aria-label="Remove ${esc(c.title)}">×</button></div></div>`; }).join("");
+    $("#pastAdd").hidden = !L.length; $$("#pastList textarea").forEach(grow); mics(); }
+  $("#pastList").addEventListener("input", (e) => { const r = e.target.closest("[data-pi]"); if (r && e.target.dataset.pf) S.past.cards[+r.dataset.pi][e.target.dataset.pf] = e.target.value; });
+  $("#pastList").addEventListener("click", (e) => { const b = e.target.closest("[data-prm]"); if (b) { S.past.cards[+b.closest("[data-pi]").dataset.pi].removed = true; drawPast(); } });
+  $("#pastRead").onclick = async () => { const links = [...new Set($("#pastBox").value.split(/[\s,]+/).map((s) => s.trim()).filter((s) => /^https?:\/\//i.test(s) || /^[a-z0-9-]+\.[a-z]{2,}\//i.test(s)).map((s) => (/^https?:/i.test(s) ? s : "https://" + s)))];
+    if (!links.length) { pastMsg("Paste a link to an event you hosted."); return $("#pastBox").focus(); } const b = $("#pastRead"); b.disabled = true; b.classList.add("busy"); pastMsg("");
+    try { const r = await Portfolio.drafts(links); const hand = r.saved ? [] : r.skipped.filter((k) => k.link).map((k) => Portfolio.card({ link: k.link, source: (k.link.match(/^https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "" }));
+      S.past = { cards: [...S.past.cards, ...r.cards, ...hand], saved: r.saved }; drawPast();
+      pastMsg(r.cards.length ? `${r.cards.length} event${r.cards.length === 1 ? "" : "s"} found.${hand.length ? ` I couldn't read ${hand.length}, so add ${hand.length === 1 ? "its" : "their"} title by hand.` : ""}` : hand.length ? "I couldn't read those pages. Add the titles by hand." : r.skipped[0]?.why || "I couldn't find events at those links.", !!r.cards.length); }
+    catch (e) { pastMsg(e.message); } finally { b.disabled = false; b.classList.remove("busy"); } };
+  $("#pastAdd").onclick = async () => { const b = $("#pastAdd"); b.disabled = true; b.classList.add("busy"); try { const n = await Portfolio.commit(S.past.cards, S.past.saved); S.past = { cards: [], saved: false }; $("#pastBox").value = ""; drawPast(); pastMsg(`${n} event${n === 1 ? "" : "s"} in your portfolio.`, true); setTimeout(() => go("remind"), 700); } catch (e) { pastMsg(e.message); } finally { b.disabled = false; b.classList.remove("busy"); } };
+
+  // ---- 6. reminders ----
+  function drawRemind() { const r = S.rem || {}; $("#phone").value = r.phone || ""; $("#rSms").checked = r.phone ? r.sms !== false : true; $("#rEmail").checked = r.email !== false; $("#rWaiting").checked = r.waiting !== false; $("#rAccepted").checked = r.accepted !== false; $("#rDayBefore").checked = r.dayBefore !== false; $("#rOff").checked = !!r.off;
+    $("#smsBlock").hidden = !S.smsOn; $("#smsOff").hidden = !!S.smsOn; offState(); }
+  const offState = () => { const off = $("#rOff").checked; $$("#reminders .card input").forEach((i) => { if (i.id !== "rOff") i.disabled = off; }); };
+  $("#rOff").onchange = offState;
+  $("#remSave").onclick = async () => { const b = $("#remSave"), m = $("#remMsg"); b.disabled = true; b.classList.add("busy"); m.classList.remove("good");
+    let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch {}
+    try { const r = await api("/api/onboard/reminders", { phone: S.smsOn ? $("#phone").value : "", sms: S.smsOn && $("#rSms").checked, email: $("#rEmail").checked, waiting: $("#rWaiting").checked, accepted: $("#rAccepted").checked, dayBefore: $("#rDayBefore").checked, off: $("#rOff").checked, tz });
+      S.rem = r; m.textContent = r.off ? "Reminders are off." : r.texted ? "Saved. I just sent you a test text." : "Saved."; m.classList.add("good"); setTimeout(() => go("done"), 600); } catch (e) { m.textContent = e.message; } finally { b.disabled = false; b.classList.remove("busy"); } };
+
+  // ---- keep progress, so a busy owner can stop and pick up later ----
+  let saveT = 0; function save() { clearTimeout(saveT); saveT = setTimeout(() => { api("/api/onboard/save", { step: S.step, answers: S.answers, drafts: S.drafts }).catch(() => {}); }, 800); }
+
+  // ---- start ----
+  (async function start() {
+    let st; try { st = await api("/api/onboard/state"); } catch (e) { if (e.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search); return; } if (e.code === "invite_required") { $("main").innerHTML = `<div class="card" style="margin-top:20px"><h1>Add a host code first</h1><p class="muted">${esc(e.message)}</p></div>`; return; } $("#say").textContent = e.message; return; }
+    S.host = st.host; S.store = st.store; S.smsOn = !!st.sms; S.rem = st.reminders; S.company = st.company || st.name || ""; drawGmail(st.gmail);
+    if (st.host?.handle) { $("#later").href = "/@" + st.host.handle; $("#seePage").href = "/@" + st.host.handle; }
+    const live = (L) => (L || []).map((x) => ({ ...x, _live: true, _k: x.id }));
+    const preset = (Q.get("preset") || "").replace(/[^a-z0-9-]/g, "");
+    if (st.draft && !st.draft.published && !preset) { S.answers = st.draft.answers || {}; if ((st.draft.drafts?.experiences || []).length || (st.draft.drafts?.gifts || []).length) S.drafts = st.draft.drafts; }
+    if (!S.drafts.experiences.length && !S.drafts.gifts.length && (st.host?.experiences?.length || st.host?.gifts?.length)) S.drafts = { experiences: live(st.host.experiences), gifts: live(st.host.gifts) };
+    if (preset) { try { const P = await (await fetch("/presets/" + preset + ".json")).json(); const from = "your prepared page"; S.drafts = { experiences: (P.experiences || []).map((x) => ({ ...x, _from: from })), gifts: (P.gifts || []).map((x) => ({ ...x, _from: from })) };
+        // anything already on the page (signup may have set it up) keeps its id, so publishing doesn't make duplicates
+        S.drafts.experiences.forEach((x) => { const h = (st.host?.experiences || []).find((y) => nkey(y.name) === nkey(x.name)); if (h) x.id = h.id; }); S.drafts.gifts.forEach((x) => { const h = (st.host?.gifts || []).find((y) => nkey(y.name) === nkey(x.name)); if (h) x.id = h.id; });
+        S.presetPage = { name: P.name, tagline: P.tagline, bio: P.bio, emoji: P.emoji, accent: P.theme?.accent, cover: P.theme?.cover, font: P.theme?.font, bg: P.theme?.bg }; ["q", "bring"].forEach((k) => S.seen.add(k)); go("review", { say: "reviewPreset" }); mics(); return; } catch {} }
+    const g = Q.get("gmail"); if (g) { S.seen.add("bring"); go("bring"); bringMsg({ connected: "Gmail is connected. Search for quotes or inquiries.", declined: "Gmail wasn't connected.", expired: "That took a while. Try connecting again.", failed: "Gmail didn't connect. Try again." }[g] || "", g === "connected"); history.replaceState(null, "", "/onboard"); mics(); return; }
+    if (location.hash === "#reminders") { STEPS.forEach(([k]) => S.seen.add(k)); go("remind"); mics(); return; }
+    if (st.draft && !st.draft.published && ["bring", "review"].includes(st.draft.step)) { S.seen.add("bring"); if (S.drafts.experiences.length || S.drafts.gifts.length) S.seen.add("review"); go(st.draft.step === "review" && !(S.drafts.experiences.length || S.drafts.gifts.length) ? "bring" : st.draft.step); mics(); return; }
+    if (S.drafts.experiences.some((x) => x._live) || S.drafts.gifts.some((x) => x._live)) { ["q", "bring", "review", "page", "past", "remind"].forEach((k) => S.seen.add(k)); go("review", { say: "reviewLive" }); mics(); return; }
+    go("q"); mics();
+  })();
+})();
+</script></body></html>

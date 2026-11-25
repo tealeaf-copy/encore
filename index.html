@@ -5232,7 +5232,7 @@ async function renderGuest(){
     else if(dl){ const nameRow=$("#g-name",f)?.closest(".row"); if(nameRow){ nameRow.after(dl); if(sv) dl.after(sv) }
       if(dl.firstChild?.nodeType===3) dl.firstChild.nodeValue="Anything you don't eat?"; dt.placeholder="Nothing, I eat everything";
       const qs=["Vegetarian","Vegan","No pork","Gluten-free","Dairy-free","Nut allergy","Shellfish allergy"], box=document.createElement("div"); box.className="chips diet-q"; box.setAttribute("aria-label","Common answers");
-      box.innerHTML=qs.map(q=>`<button type="button" class="chip" data-dq="${q}" aria-pressed="${new RegExp("\\b"+q.replace(/[-]/g,"\\-")+"\\b","i").test(dt.value)}">${q}</button>`).join(""); dl.after(box); if(sv) box.after(sv);
+      box.innerHTML=qs.map(q=>`<button type="button" class="chip" data-dq="${q}" aria-pressed="${new RegExp("\\b"+q.replace(/[-]/g,"\\-")+"\\b","i").test(dt.value)}">${q}</button>`).join(""); dl.after(box); if(sv) box.after(sv); if(dt.value) box.classList.add("open"); dt.addEventListener("focus",()=>box.classList.add("open"));
       box.onclick=ev=>{ const b=ev.target.closest("[data-dq]"); if(!b) return; const q=b.dataset.dq, on=b.getAttribute("aria-pressed")!=="true", parts=dt.value.split(/,\s*/).map(x=>x.trim()).filter(Boolean).filter(x=>x.toLowerCase()!==q.toLowerCase()); if(on) parts.push(q); dt.value=parts.join(", "); b.setAttribute("aria-pressed",on); dt.dispatchEvent(new Event("input")); if(on&&/allergy/i.test(q)&&sv){ sv.hidden=false } } } }
   $("#g-photo").onchange=async ev=>{ try{ photo=await shrinkPhoto(ev.target.files?.[0]) }catch{ toast("We couldn't read that image. Try another one.") } };
   $$("#gResp button").forEach(b=>b.onclick=()=>{resp=b.dataset.v;$$("#gResp button").forEach(x=>x.setAttribute("aria-pressed",x===b))});
@@ -9398,7 +9398,7 @@ new MutationObserver(()=>{ try{ const k=document.getElementById("kudosAsk"), e=w
 // follow: never ask for an email we already have
 new MutationObserver(()=>{ try{ const i=document.getElementById("gf-email"); if(!i||i.value||i.dataset.pre) return; i.dataset.pre=1; const em=localStorage.getItem("encore.email")||""; if(em) i.value=em }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // phone: title and date before the cover
-{ const s=document.createElement("style"); s.textContent=`@media (max-width:860px){#view-guest.ev2 .invite.gx > .in{grid-row:1!important}#view-guest.ev2 .invite.gx > .ev2-side{grid-row:2!important}#view-guest.ev2 .ev2-side > .gxcover{aspect-ratio:16/9}}
+{ const s=document.createElement("style"); s.textContent=`@media (max-width:860px){#view-guest.ev2 .invite.gx > .ev2-side{grid-row:1!important;order:-1;width:100%;position:static!important}#view-guest.ev2 .invite.gx > .in{grid-row:2!important}#view-guest.ev2 .ev2-side > .gxcover{width:100%!important;max-width:none!important;aspect-ratio:16/9}}
 @media (max-width:600px){.es-top nav a:not(.cta){display:none}.es-top{gap:10px}.es-top .es-brand{margin-right:auto}}`; document.head.appendChild(s) }
 { const _rgA=renderGuest; renderGuest=async function(){ const r=await _rgA.apply(this,arguments); setTimeout(ev2Addr,900); return r } }
 // Potto: "tell me when…", "notify me…", "more like…" are alerts and searches, never new events
@@ -9980,7 +9980,7 @@ function tidyPlan(){ try{ if(+step!==1||!draft?.id||!isCasual(draft)) return; co
   const pa=host.querySelector("#pipAgents"); if(pa&&!pa.dataset.fold){ const body=pa.querySelector("#paBody"), tabs=pa.querySelector(".pa-tabs"); if(body&&tabs){ pa.dataset.fold=1; body.hidden=true; tabs.addEventListener("click",()=>{ body.hidden=false },true) } }
 }catch(err){ console.warn(err) } }
 { const st=document.createElement("style"); st.textContent=`.hk-fold{border:1.5px dashed var(--line,#E4D9C8);border-radius:16px;padding:10px 14px;margin-top:10px}.hk-fold>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;list-style:none}.hk-fold>summary::-webkit-details-marker{display:none}.hk-fold>summary::after{content:"＋";font-weight:700}.hk-fold[open]>summary::after{content:"−"}.hk-fold>summary small{color:var(--muted,#6B5F56);font-weight:400;margin-left:auto;margin-right:10px}.hk-fold[open]>summary{margin-bottom:10px}
-@media (max-width:760px){#pipAgents .pa-tabs{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}#pipAgents .pa-tabs>*{flex:none}}#qbPanel.qb-folded>:not(.qb-open){display:none!important}#qbPanel .qb-open{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}#qbPanel .qb-open span:first-child{display:grid;gap:2px}#qbPanel .qb-open small{color:var(--muted,#6B5F56)}#qbPanel .qb-open>span:last-child{font-weight:700;font-size:20px}#qbPanel .qb-open:focus-visible{outline:3px solid #C4532F;outline-offset:4px;border-radius:10px}`; document.head.appendChild(st) }
+@media (max-width:760px){#pipAgents .pa-tabs{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}#pipAgents .pa-tabs>*{flex:none}}#qbPanel.qb-folded>:not(.qb-open){display:none!important}section.panel.txi.txi-quiet{padding:4px 6px;background:transparent;border:0;box-shadow:none}section.panel.txi.txi-quiet>.hk-fold{margin-top:0}#qbPanel .qb-open{all:unset;box-sizing:border-box;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}#qbPanel .qb-open span:first-child{display:grid;gap:2px}#qbPanel .qb-open small{color:var(--muted,#6B5F56)}#qbPanel .qb-open>span:last-child{font-weight:700;font-size:20px}#qbPanel .qb-open:focus-visible{outline:3px solid #C4532F;outline-offset:4px;border-radius:10px}`; document.head.appendChild(st) }
 new MutationObserver(()=>tidyPlan()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- One red button per screen: the hero's next step. Everything else in the step is secondary.
 // (Design review: Share, Publish, Copy invite and Potto's nudge were all solid red on the same screen.)
@@ -10004,10 +10004,35 @@ function tidyInvite(){ try{ const e=window.__gEv, inn=document.querySelector("#v
   const acts=inn.querySelector(":scope > .ev2-acts"), form=document.getElementById("gForm"), past=e.date&&e.date<new Date().toISOString().slice(0,10);
   if(acts&&form&&!past&&!e.example&&!e.sample&&!inn.querySelector("#gTopCta")&&!(typeof myRsvp==="function"&&myRsvp(e.id))){ const send=document.getElementById("g-send"); const b=document.createElement("button"); b.type="button"; b.id="gTopCta"; b.className="btn primary"; b.textContent=send?.textContent.trim()||"Reply"; b.onclick=()=>{ form.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>document.getElementById("g-name")?.focus({preventScroll:true}),450) }; acts.before(b) }
 }catch(err){ console.warn(err) } }
-{ const st=document.createElement("style"); st.textContent=`#gTopCta{align-self:flex-start;min-width:220px;justify-content:center}@media (max-width:760px){#gTopCta{display:none!important}}
+{ const st=document.createElement("style"); st.textContent=`#gTopCta{align-self:flex-start;min-width:220px;justify-content:center}#view-guest .ev2-rsvp,#view-guest .ev2-kmp{display:none!important}#view-guest .gxcover .ea-txt{display:none!important}#view-guest #gForm .diet-q:not(.open){display:none}@media (max-width:760px){#gTopCta{display:none!important}}
 @media (min-width:861px){#view-guest.ev2 .invite.gx.ea-card-on{display:grid!important}}
 #view-guest .mc,#view-guest .mc a,#view-guest footer .mc{color:#4A3F38!important}`; document.head.appendChild(st) }
 new MutationObserver(()=>tidyInvite()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- Studio wayfinding on phones: the four steps are always visible, and "New event" lives in More
+function studioStrip(){ try{ if(!draft?.id||!(typeof isFriendsDraft==="function"&&isFriendsDraft())) return; const hero=document.querySelector("#view-studio .hero2"); if(!hero) return;
+  const L=[1,6,4,7].filter(n=>STEP_NAMES[n]); let nav=document.getElementById("stepStrip");
+  if(!nav||nav.previousElementSibling!==hero){ nav?.remove(); nav=document.createElement("nav"); nav.id="stepStrip"; nav.setAttribute("aria-label","Event steps"); hero.after(nav) }
+  const key=L.join()+":"+step; if(nav.dataset.k!==key){ nav.dataset.k=key; nav.innerHTML=L.map((n,i)=>`<button type="button" data-st="${n}" ${+step===n?'aria-current="step"':""}><span>${i+1}</span>${esc(String(STEP_NAMES[n]).replace(/^Invite page$/,"Invite"))}</button>`).join(""); nav.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{ step=+b.dataset.st; renderStep(); window.scrollTo({top:0}) }) }
+  const mb=document.getElementById("moreMenuBody"), nd=document.getElementById("newDraft"); if(mb&&nd&&!mb.querySelector("[data-newev]")){ const b=document.createElement("button"); b.type="button"; b.className="btn ghost sm"; b.dataset.newev=1; b.textContent="New event"; b.onclick=()=>nd.click(); mb.prepend(b) }
+}catch(err){ console.warn(err) } }
+{ const st=document.createElement("style"); st.textContent=`#stepStrip{display:none}
+@media (max-width:860px){#stepStrip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 4px}#stepStrip button{all:unset;box-sizing:border-box;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1.5px solid var(--line,#E4D9C8);background:#fff;font-weight:600;font-size:14px;cursor:pointer;color:var(--ink,#1F1A17)}#stepStrip button span{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--line,#E4D9C8);font-size:12px}#stepStrip button[aria-current]{background:var(--ink,#1F1A17);color:#fff;border-color:var(--ink,#1F1A17)}#stepStrip button[aria-current] span{background:#fff;color:var(--ink,#1F1A17)}#stepStrip button:focus-visible{outline:3px solid #C4532F;outline-offset:2px}
+body:has(#stepStrip) #stepBtn{display:none}body:has(#stepStrip) #newDraft{display:none}}`; document.head.appendChild(st) }
+new MutationObserver(()=>studioStrip()).observe(document.documentElement,{childList:true,subtree:true});
+// ---------- Invite step: see it first, pick a look in one row, fine-tune if you want
+function tidyInviteStep(){ try{ const sec=document.getElementById("inviteStudio"); if(!sec||sec.dataset.tidy) return; const g=sec.querySelector(".s2grid"), st=g?.querySelector(":scope > .stack"), ph=g?.querySelector(":scope > .phone"); if(!st||!ph) return; sec.dataset.tidy=1;
+  sec.classList.add("inv-tidy"); if(innerWidth<=860){ ph.style.setProperty("order","-1","important"); st.style.minWidth="0"; st.style.maxWidth="100%" }
+  // everything after the theme picker (effect, font, reply buttons, checkboxes) folds under "Fine-tune"; the action buttons stay
+  const kids=[...st.children], themeBox=kids.find(k=>k.querySelector?.(".thgrid")); if(!themeBox) return;
+  const det=document.createElement("details"); det.className="hk-fold"; det.innerHTML=`<summary><span>Fine-tune</span><small>effect, font, reply buttons</small></summary>`;
+  let n=themeBox.nextElementSibling; const move=[]; while(n){ if(!(n.classList.contains("btns")&&n.querySelector("button,a"))) move.push(n); n=n.nextElementSibling }
+  // keep checkboxes-only rows (.btns with labels) inside the fold too
+  move.forEach(x=>det.appendChild(x)); themeBox.after(det);
+}catch(err){ console.warn(err) } }
+{ const st=document.createElement("style"); st.textContent=`@media (max-width:860px){#inviteStudio.inv-tidy .s2grid{display:flex!important;flex-direction:column}#inviteStudio.inv-tidy .s2grid>.phone{order:-1;position:sticky;top:6px;z-index:3;max-height:46vh;overflow:hidden;transform:scale(.86);transform-origin:top center;margin-bottom:-6vh}
+#inviteStudio.inv-tidy .s2grid>.stack{min-width:0;max-width:100%}#inviteStudio.inv-tidy .thgrid{display:flex!important;max-width:100%;overflow-x:auto;gap:8px;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}#inviteStudio.inv-tidy .thgrid>*{flex:0 0 112px;scroll-snap-align:start}}
+#inviteStudio.inv-tidy .thgrid small,#inviteStudio.inv-tidy .thgrid .note{display:none}`; document.head.appendChild(st) }
+new MutationObserver(()=>tidyInviteStep()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- A calmer Guests step: one way to invite open, the rest when it's useful
 function tidyGuests(){ try{ if(+step!==6||!draft?.id||!isCasual(draft)) return; const host=$("#stepHost"); if(!host) return;
   const going=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===draft.id&&r.response==="going").length+((draft.guests||[]).filter(g=>/Going|Attended/.test(g.status||"")).length);
@@ -10016,8 +10041,13 @@ function tidyGuests(){ try{ if(+step!==6||!draft?.id||!isCasual(draft)) return; 
   const chat=host.querySelector("#hostChat"); if(chat) chat.style.display=going>=1?"":"none";
   // texting from Pottery Lab is one option among the share buttons, folded
   const txi=host.querySelector(".txi"); if(txi&&!txi.dataset.fold){ const lab=[...txi.children].find(x=>x.matches?.("label.f")&&/text it from Pottery Lab/i.test(x.textContent)); if(lab){ txi.dataset.fold=1; const det=document.createElement("details"); det.className="hk-fold"; det.innerHTML=`<summary><span>📲 Or text it from Pottery Lab</span><small>they reply YES or NO</small></summary>`; let n=lab; const take=[]; while(n){ take.push(n); n=n.nextElementSibling } lab.before(det); take.forEach(x=>det.appendChild(x)) } }
-  // "invite these first" is advice for the very start
-  const first=host.querySelector("#firstYes"); if(first) first.style.display=going>=3?"none":"";
+  // "invite these first" is advice for the very start, and the hero's Share button is how you send it
+  const first=host.querySelector("#firstYes"); if(first){ first.style.display=going>=3?"none":""; const fc=first.querySelector("#fyCopy"); if(fc) fc.closest(".btns")?.remove(); const nt=first.querySelector("p.note"); if(nt&&!first.querySelector(".fy")&&!nt.dataset.short){ nt.dataset.short=1; nt.textContent="Send it to the 3 friends who always say yes first. Once a few are in, everyone else says yes faster." } }
+  // one way to share: the red button opens the share sheet; the channel buttons and texting from Pottery Lab fold into one row
+  const txp=host.querySelector("section.panel.txi"); if(txp&&!txp.dataset.folded){ const txi=txp; txi.dataset.folded=1; const det=document.createElement("details"); det.className="hk-fold txi-fold"; det.innerHTML=`<summary><span>More ways to send</span><small>WhatsApp, Messages, Instagram, text from here</small></summary>`; while(txi.firstChild) det.appendChild(txi.firstChild); det.querySelectorAll(":scope > small.eyebrow, :scope > h3").forEach(x=>x.remove()); txi.appendChild(det); txi.classList.add("txi-quiet") }
+  host.querySelector("#wc-copy")?.remove();
+  // the door list is for the day itself
+  const door=host.querySelector("#gtDoor"); if(door){ const today=new Date().toISOString().slice(0,10), tmr=new Date(Date.now()+864e5).toISOString().slice(0,10); door.style.display=(!draft.date||draft.date===today||draft.date===tmr||draft.date<today)?"":"none" }
 }catch(err){ console.warn(err) } }
 new MutationObserver(()=>tidyGuests()).observe(document.documentElement,{childList:true,subtree:true});
 // ---------- Your guest list, in and out (from host research: "don't make me re-enter guests"; "let me take my list with me") ----------

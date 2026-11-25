@@ -24,11 +24,11 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
 .err{color:#A8341A;font-weight:600;min-height:0;margin:0}
 .ticket{background:#fff;border:2px dashed var(--ink);border-radius:22px;padding:18px;text-align:center;display:grid;gap:8px}.ticket h2{font:700 26px Fredoka,system-ui;margin:0}.ticket .code{font:700 30px/1 Fredoka,system-ui;letter-spacing:.12em;background:#FFE08A;border-radius:12px;padding:8px 14px;justify-self:center}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.btn{border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:10px 16px;font:600 15px inherit;text-decoration:none;color:var(--ink)}.btn.main{background:var(--ink);color:#fff}
-.stick{position:fixed;left:0;right:0;bottom:0;background:rgba(255,248,238,.96);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:10px;backdrop-filter:blur(6px)}.stick b{font:700 17px Fredoka,system-ui}
+.stick[hidden]{display:none!important}.stick{position:fixed;left:50%;transform:translateX(-50%);width:min(100%,560px);bottom:0;background:rgba(255,248,238,.96);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:10px;backdrop-filter:blur(6px)}.stick b{font:600 16px inherit}
 .stick a{background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:10px 18px;font:700 16px Fredoka,system-ui;text-decoration:none}
 .full{display:block;text-align:center;margin:18px 0 0;font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style></head><body>
+.ini{font:700 18px Fredoka,system-ui;color:var(--ink)}</style></head><body>
 <main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div><p class="muted">Opening the invite…</p></main>
 <script src="/eventart.js"></script><script src="/questions.js" defer></script>
 <script>
@@ -56,22 +56,23 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
     document.title = `${title} · Pottery Lab`;
     const cover = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(e.coverPhoto || "") || /^https:\/\/[^\s"'<>()]+$/.test(e.coverPhoto || "") ? `<img src="${esc(e.coverPhoto)}" alt="">` : window.EventArt ? (window.EventArt.ensureCss?.(), window.EventArt.cover(e, { title: "", label: "" })) : "";
     const where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(" · ");
-    const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : esc(h.emoji || "🎉");
+    const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji ? esc(h.emoji) : `<span class="ini">${esc(String(h.name || "?").trim().charAt(0).toUpperCase())}</span>`);
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const full = left === 0;
     $("#m").innerHTML = $("#m .top").outerHTML + `<div class="cov">${cover}</div><h1>${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? " · exact address once you're in" : ""}</div>` : ""}${A.seats ? `<div class="muted">👥 ${full ? "Full: you'll join the waitlist" : `${left} of ${A.seats} spots left`}</div>` : ""}</div>
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? " · exact address once you're in" : ""}</div>` : ""}${A.seats ? `<div class="muted">👥 ${full ? "Full: you'll join the waitlist" : left === A.seats ? `${A.seats} spots open` : `${left} of ${A.seats} spots open`}</div>` : ""}</div>
       ${h.name ? `<div class="host"><span class="av">${av}</span><span>Hosted by <b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>` : esc(h.name)}</b></span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${A.count ? `<p style="margin:14px 0 4px;font-weight:600">${A.count} going</p><div class="going">${names}</div>` : ""}
-      <form id="f" novalidate><div class="resp" role="radiogroup" aria-label="Your answer"><label><input type="radio" name="r" value="going" checked> ${esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't make it</label></div>
+      <form id="f" novalidate><div class="resp" role="radiogroup" aria-label="Your answer"><label><input type="radio" name="r" value="going" checked> ${esc(e.rsvpWords?.yes || "I'm in")}</label>${e.noMaybe ? "" : `<label><input type="radio" name="r" value="maybe"> Maybe</label>`}<label><input type="radio" name="r" value="no"> Can't go</label></div>
         <label class="f">Your name<input type="text" id="nm" autocomplete="name" maxlength="80" required></label>
         <label class="f">Email or phone <small>optional: so ${esc(String(h.name || "the host").split(" ")[0])} can send updates. Your RSVP counts without it.</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"></label>
         ${foody ? `<label class="f">Anything you don't eat? <small>optional</small><input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(e.qStyle?.button || "Send my RSVP")}</button></form>
       <a class="full" id="fullLink">See the full invite, the group chat and who's coming →</a>`;
     $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
-    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<span><b>${esc(when(e).split(" · ")[0] || title)}</b><br><small class="muted">${esc(e.hood || e.city || "")}</small></span><a href="#f">${esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick);
+    const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<span><b>${esc(when(e).split(" · ")[0] || title)}</b><br><small class="muted">${esc(e.hood || e.city || "")}</small></span><a href="#f">${esc(e.rsvpWords?.yes || "I'm in")}</a>`; document.body.appendChild(stick); stick.hidden = true;
+    { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);
     const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name === "r" && $("#qs")) $("#qs").hidden = ev.target.value === "no"; }); if (Q.length && !window.Questions) addEventListener("load", startQ);

@@ -90,3 +90,24 @@ Every signed-in page, and every onboarding step before the account exists (`/sig
 - **Talk to a person** is always visible. Signed in, the reply goes to the account email (and an optional phone); signed out, an email is required. The page, the event, the browser, the app version and the chat with Potto are attached. A hidden honeypot field and per-IP limits keep bots out. Messages are stored under `system/support-<id>` with status open, waiting or solved. With neither `ENCORE_SUPPORT_EMAIL` nor `ENCORE_SUPPORT_SMS` set, they're still stored and show at `/support`.
 - **Replies** from `/support` reach the host as an in-app notification, an email (when email is set up) and under **Your conversations** in the help panel.
 - **Potto offers help once a session** ("Stuck? I can help, or get you a person.") when someone stays on a sign-up, onboarding, wizard, page-setup or share step for 60 seconds without moving on, sees the same error twice, or signup fails because of a host code or an email already in use.
+- `ENCORE_SIGNUP_PER_HOUR`: sign-ups and invite joins allowed from one IP address per hour. Default 20, so a class or a party on one wifi network can all start pages. Raise it for a big in-person launch.
+- `ENCORE_ADMIN_EMAILS`: comma-separated emails that may read the funnel at `/api/admin/funnel`. Everyone else gets a 404.
+- `ENCORE_LEGAL_NAME`, `ENCORE_LEGAL_ADDRESS`: the company name and address shown on `/privacy` and `/terms`. Without them the pages say "Pottery Lab" and show no address.
+
+## Sign-up limits behind Vercel
+
+The sign-up limit counts per IP address. Render passes the visitor's real IP in `X-Forwarded-For`, and `ENCORE_TRUST_PROXY=1` (set in `render.yaml`) tells the server to read it. Leave that setting as it is.
+
+Traffic that comes through the Vercel rewrite (`vercel.json`) is different: Vercel makes the request to Render itself, so the IP the server reads is Vercel's, not the visitor's. Every visitor who comes in that way shares one IP, and after `ENCORE_SIGNUP_PER_HOUR` sign-ups in an hour, everyone else on that path sees "Too many sign-ups from here." The login limit has the same problem.
+
+The fix is to point the custom domain straight at Render, with no Vercel in between. Follow `docs/domain-switch.md`: add the domain in Render's Custom Domains, create the DNS records Render shows, and keep the Vercel project only as a fallback for the old address (or remove its domain). Until then, a higher `ENCORE_SIGNUP_PER_HOUR` keeps the shared IP from blocking real people.
+
+## Funnel metrics
+
+`server/metrics.js` records one row per step, with a timestamp, the workspace id and the event id. No names, emails or phone numbers. The steps: `signup` (with the `ref` event and whether a host code was used), `first_event_created`, `share_clicked` (the app sends it when a host taps Share invite), `first_reply`, `three_replies`, `event_done`, `kudos_received`, `guest_follow` and `guest_became_host`.
+
+`GET /api/admin/funnel` (signed in as an email in `ENCORE_ADMIN_EMAILS`) returns each step's count overall and for the last 7 and 30 days, and activation: hosts who shared an event and got 3 or more replies from guests within 7 days of signing up.
+
+## Guests who become hosts
+
+When hosting is invite-only, a guest can still start a page without a host code if they sign up from an event they came to (`/signup?mode=friends&ref=<event id>`, the link on the "You're in" screen and the kudos thanks screen) and either replied I'm in to it with the same email or sent it kudos. The new workspace records `vouchedBy`, its audit log says so, and the server logs a `[signup] vouch` line.

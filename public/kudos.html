@@ -85,14 +85,17 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
   function thanks(j) {
     const host = j.hostFirst || "Your host";
     body.innerHTML = `<div class="card thanks">${pot}<h1 style="margin:0">Thanks. ${esc(host)} will see this.</h1>
-      ${j.host ? `<div class="follow" id="fol"><button class="btn" type="button" id="follow">Follow ${esc(j.hostFirst || j.host.name)}</button><p class="muted" style="margin:0;font-size:14px">Hear first about the next one.</p></div>` : ""}</div>
+      ${j.host ? `<div class="follow" id="fol"><button class="btn" type="button" id="follow">Follow ${esc(j.hostFirst || j.host.name)}</button><p class="muted" style="margin:0;font-size:14px">Hear first about the next one.</p></div>` : ""}
+      <p class="muted yourturn" id="yourTurn" style="margin:6px 0 0;font-size:14px"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(id)}">Your turn? Hosting friends is free.</a></p></div>
       <section class="more" id="more" hidden aria-labelledby="moreH"><h2 id="moreH">More like this</h2><div id="moreL"></div></section>`;
     const fb = $("#follow"); if (fb) fb.onclick = () => follow(j);
     fetch(`/api/public/kudos-more/${encodeURIComponent(id)}?${proof}`).then((r) => (r.ok ? r.json() : { events: [] })).then((m) => {
-      const L = (m.events || []).slice(0, 3); if (!L.length) return;
+      const L = (m.events || []).slice(0, 3); if (!L.length) return noMore();
       $("#moreL").innerHTML = L.map((e) => `<a class="ev" href="${esc(e.url)}"><span class="im" ${e.cover ? `style="background-image:url('${esc(e.cover)}')"` : ""}>${e.cover ? "" : esc((e.title || "?").slice(0, 1))}</span><span><b>${esc(e.title)}</b><small>${esc([day(e.start), e.area || e.city, e.price].filter(Boolean).join(" · "))}</small><br><small>by ${esc(e.host?.name || "")}</small></span></a>`).join("");
-      $("#more").hidden = false; }).catch(() => {});
+      $("#more").hidden = false; }).catch(noMore);
   }
+  // nothing similar coming up: point at everything else instead of an empty space
+  function noMore() { const m = $("#more"); if (!m) return; $("#moreL").innerHTML = `<p class="muted" style="margin:0">Nothing like it coming up yet. <a href="/discover">See what's on</a></p>`; m.hidden = false; }
   async function follow(j, email = "") {
     const b = $("#follow"); if (b) b.disabled = true;
     try { const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle: j.host.handle, eventId: id, rid, code, via: "kudos", ...(email ? { email } : {}) }) });

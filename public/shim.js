@@ -33,7 +33,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
     if (res.ok && isGuest() && data && typeof data === "object" && data.workspace && !window.__encoreWs) window.__encoreWs = String(data.workspace);
     if (!res.ok) {
       const code = data?.code || (res.status === 429 ? "rate_limited" : res.status === 401 || res.status === 403 ? "not_granted" : "upstream_error");
-      throw capError(code, data?.message || `Request failed (${res.status})`);
+      throw capError(code, data?.message || `Request failed (${res.status})`, { status: res.status });
     }
     return data;
   }

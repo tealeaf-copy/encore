@@ -22,7 +22,7 @@ function load(today = "2026-11-25T10:00:00") {
     cut("{ const _peSr=parseEventText", "{ const _qsSr=quickStart"),
     cut("// ---------- Potto reads: words", "{ const _qsZ=quickStart"),
   ].join("\n");
-  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent;", ctx);
+  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap;", ctx);
   return ctx;
 }
 
@@ -123,6 +123,17 @@ const CASES = [
   ["Bread workshop Sat 10am", { label: "workshop" }],
   ["Matcha workshop Sun 2pm", { label: "workshop" }],
   ["Salsa night Fri 9pm", { activity: undefined }],
+  // launch review: a hyphenated neighbourhood and a named meeting point are the place, not a cut-off city
+  ["Run club in Bed-Stuy Sat 8am", { meetPoint: "Bed-Stuy", hood: "Bed-Stuy", city: undefined, title: "Run club", startTime: "08:00" }],
+  ["Coffee walk in Prospect Lefferts-Gardens Sun 9am", { hood: "Prospect Lefferts-Gardens", title: "Coffee walk" }],
+  ["Picnic at Grand Army Plaza Sun 1pm", { meetPoint: "Grand Army Plaza", title: "Picnic", weekday: "sunday", startTime: "13:00" }],
+  ["Brunch at The Smith Sun 11am", { meetPoint: "The Smith", title: "Brunch" }],
+  ["Taco night at my place Saturday at 7", { meetPoint: undefined, title: "Taco night" }],
+  ["Dinner at 7 on Sat", { meetPoint: undefined, startTime: "19:00" }],
+  // end times stay, and "to noon" leaves nothing in the name
+  ["Hike Sat 9 to noon", { startTime: "09:00", endTime: "12:00", title: "Hike" }],
+  ["Bake sale pop-up Sat 10am to noon, $5 each", { startTime: "10:00", endTime: "12:00", title: "Bake sale pop-up" }],
+  ["Market Sat 10-noon", { startTime: "10:00", endTime: "12:00" }],
 ];
 
 for (const [input, want] of CASES) {
@@ -206,4 +217,13 @@ test("who's coming finds the event by a loose name, else the next one", () => {
   assert.equal(c.prMatchEvent("", E, "2026-11-25").id, "b");
   assert.equal(c.prMatchEvent("next one", E, "2026-11-25").id, "b");
   assert.equal(c.prMatchEvent("karaoke", E, "2026-11-25"), null);
+});
+
+test("a pop-up has no default spot cap unless the host gave a number", () => {
+  assert.equal(c.prPopupNoCap("Sourdough pop-up Sat 10am"), true);
+  assert.equal(c.prPopupNoCap("Bake sale Sat 9am, $3 each"), true);
+  assert.equal(c.prPopupNoCap("Pop-up Sat 10am, 24 loaves"), false, "a batch size is a cap");
+  assert.equal(c.prPopupNoCap("Pop-up dinner Sat 7pm, 12 spots"), false);
+  assert.equal(c.prPopupNoCap("Dinner Sat 7pm"), false, "not a pop-up");
+  assert.equal(c.parseEventText("Sourdough pop-up Sat 10am").headcount, undefined);
 });

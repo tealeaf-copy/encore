@@ -37,3 +37,13 @@ Message to send explorers:
 - RSVPs per event (goal: 6 or more), and the share of the first 3 that come from the "Invite these first" list.
 - Guests who take the quiz or follow a host after RSVPing.
 - Anything that breaks: ask hosts to screenshot it and send it to you directly.
+
+## Backups and disk
+
+The database and uploads live on the Render disk (`render.yaml`, 10 GB, mounted at `/app/data`).
+
+- **Render snapshots.** Render snapshots persistent disks once a day (check Render's disk docs for how long they're kept on your plan). Restore one from the service's **Disks** tab. A restore puts back the whole disk, so it rolls back everything written since.
+- **A nightly copy you control.** Snapshots stay inside Render. Once a night, also make a clean copy of the database with SQLite's `VACUUM INTO`, which works while the server is running and writes one consistent file. From the service's shell (the image has Node and better-sqlite3, not the sqlite3 CLI):
+  `mkdir -p /app/data/backups && cd /app && node -e "require('better-sqlite3')('/app/data/encore.db').exec(\"VACUUM INTO '/app/data/backups/encore-\" + new Date().toISOString().slice(0, 10) + \".db'\")"`
+  Copy the file off Render (for example to S3 or Backblaze), and delete copies older than 30 days so the disk doesn't fill. Uploads are files in `/app/data/assets`; copy that folder too.
+- **Check it.** Once a month, open a copy and count the rows (`SELECT count(*) FROM docs`) to make sure it isn't empty.

@@ -34,8 +34,9 @@ import { mountHelp } from "./help.js";
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
-import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE } from "./email.js";
+import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVICES, EMAIL_RE, useUnsubStore, readUnsubToken, setUnsubscribed, isUnsubscribed } from "./email.js";
 import { runReminders } from "./reminders.js";
+import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from "./metrics.js";
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
@@ -230,6 +231,8 @@ export function createApp({ store, dataDir }) {
   fs.mkdirSync(assetsDir, { recursive: true });
   const runs = new Map(); // runId -> { pending: Map<toolUseId, resolve> }
   useAuthStore(store);
+  useMetricsStore(store);
+  useUnsubStore(store);
 
   app.disable("x-powered-by");
   // Only trust X-Forwarded-For when told to (ENCORE_TRUST_PROXY=1 behind one proxy, a hop count, or an Express trust value
@@ -273,11 +276,13 @@ export function createApp({ store, dataDir }) {
   app.post("/api/logout", logoutHandler);
 
   // ---------- self-serve sign-up (ENCORE_SIGNUP=1) ----------
-  const signupHits = new Map(); // ip -> { n, start }: 5 sign-ups / joins per IP per hour
+  // ip -> { n, start }: ENCORE_SIGNUP_PER_HOUR sign-ups / joins per IP per hour (default 20: a class or a launch party signing
+  // up on one wifi network shares an IP). Behind a Vercel rewrite every visitor shares one IP, see docs/onboarding.md.
+  const signupHits = new Map();
   const signupLimited = (req) => {
     const k = req.ip || "?", now = Date.now(); let h = signupHits.get(k);
     if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; signupHits.set(k, h); }
-    return ++h.n > Number(process.env.ENCORE_SIGNUP_PER_HOUR || 5);
+    return ++h.n > Number(process.env.ENCORE_SIGNUP_PER_HOUR || 20);
   };
   const small = express.json({ limit: "10kb" });
   // Example hosts (demo accounts) show what a page looks like; nothing real can be sent to them or their events:
@@ -304,11 +309,18 @@ export function createApp({ store, dataDir }) {
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
-    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
+    // A guest of the event they came from (an I'm in reply with this email, or kudos they sent) is vouched for by that
+    // event's host: no host code needed, even when hosting is invite-only.
+    const vouch = guestVouch(ref, email);
+    if ((needCode && !regular && !vouch) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
-    if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} followed you`, kind: "growth", at: Date.now() }); } catch {} }
-    if (!regular || !needCode) C.issueCodes({ ws: W.id, email, name });
+    if (vouch) { try { const by = getWorkspace(vouch.ws), instead = needCode && !codeCheck?.ok;
+      updateWorkspace(W.id, { vouchedBy: { ws: vouch.ws, eventId: vouch.eventId, via: vouch.via, at: Date.now(), ...(instead ? { insteadOfCode: true } : {}) } });
+      scopeStore(store, W.id).add("audit", { eventId: "", what: `Started hosting as a guest of ${by?.company || "another host"}'s event (${vouch.via === "kudos" ? "sent kudos" : "was in"})`, kind: "growth", at: Date.now() });
+      console.log(`[signup] vouch: ws ${W.id} via ${vouch.via} on event ${vouch.eventId} (host ws ${vouch.ws})${instead ? ", instead of a host code" : ""}`); } catch {} }
+    if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode && !vouch, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} followed you`, kind: "growth", at: Date.now() }); } catch {} }
+    if (!regular || !needCode || vouch) C.issueCodes({ ws: W.id, email, name });
     { const city = String(b.city || "").trim().slice(0, 60); if (city) { try { const W2 = getWorkspace(W.id); updateWorkspace(W.id, { city, host: { ...(W2?.host || {}), city: W2?.host?.city || city } }); } catch {} } }
     if (personal) { try { X.ensureProfile({ ws: W.id, name, email }); } catch {} }
     // A brand's first minute: Pottery Lab starts researching the company while they look around.
@@ -318,12 +330,23 @@ export function createApp({ store, dataDir }) {
     putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
     scopeStore(store, W.id).add("audit", { eventId: "", what: `${company} workspace created`, kind: "team", who: name, email, verified: true, at: Date.now() });
     startSession(req, res, email, W.id);
+    track("signup", { ws: W.id, ref: ref || undefined, code: !!codeCheck?.ok });
+    if (vouch) track("guest_became_host", { ws: W.id, ref: vouch.eventId, via: vouch.via });
     // ?template=…&plan=… from the landing page ride along to the app's welcome screen.
     const q = new URLSearchParams({ welcome: "1" });
     for (const k of ["template", "plan"]) { const v = String(b[k] ?? "").trim(); if (/^[A-Za-z0-9_-]{1,60}$/.test(v)) q.set(k, v); }
     if (q.get("plan") && PLANS.includes(q.get("plan"))) updateWorkspace(W.id, { interestedIn: q.get("plan") });
     res.json({ ok: true, workspace: { id: W.id, company: W.company, plan: W.plan, trialEndsAt: W.trialEndsAt }, redirect: "/?" + q.toString() });
   });
+  /** Did this email reply I'm in to the event `ref`, or send it kudos? Then that event's host vouches for them. */
+  function guestVouch(ref, email) {
+    if (!ref || !email) return null; const ws = workspaceOfEvent(ref); if (!ws || ws === DEFAULT_WS) return null;
+    const St = scopeStore(store, ws); if (!St.get("events/" + ref)) return null;
+    const same = (d) => d.data?.eventId === ref && String(d.data?.email || "").trim().toLowerCase() === email;
+    if (St.list("rsvps").some((d) => same(d) && (d.data.response === "going" || d.data.status === "Attended"))) return { ws, eventId: ref, via: "reply" };
+    if (St.list("kudos").some(same)) return { ws, eventId: ref, via: "kudos" };
+    return null;
+  }
   app.post("/api/join", small, (req, res) => {
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many tries from here. Try again later." });
     const b = req.body || {}, inv = getInvite(b.token), name = String(b.name || "").trim().slice(0, 120);
@@ -337,6 +360,18 @@ export function createApp({ store, dataDir }) {
     startSession(req, res, inv.email, inv.ws);
     res.json({ ok: true, email: inv.email, redirect: "/?welcome=1" });
   });
+  // ---------- funnel metrics (server/metrics.js) ----------
+  // The app reports the few steps only a browser sees (share_clicked). Signed-in hosts only, whitelisted names, rate limited.
+  const trackHits = new Map();
+  app.post("/api/track", small, (req, res) => {
+    const u = currentUser(req), ws = u ? sessionWorkspace(req) : null; if (!u || !ws || ws === DEFAULT_WS) return res.status(401).json({ code: "not_granted", message: "Sign in first." });
+    const name = String(req.body?.name || ""); if (!CLIENT_STEPS.has(name)) return res.status(400).json({ code: "invalid", message: "Unknown step." });
+    const now = Date.now(), k = ws, h = (trackHits.get(k) || []).filter((t) => now - t < 3600e3); if (h.length >= 60) return res.status(429).json({ code: "rate_limited", message: "Slow down." });
+    h.push(now); trackHits.set(k, h); if (trackHits.size > 5000) trackHits.clear();
+    const eventId = String(req.body?.eventId || ""), ok = /^[A-Za-z0-9_-]{1,80}$/.test(eventId) && !!scopeStore(store, ws).get("events/" + eventId);
+    track(name, { ws, ...(ok ? { eventId } : {}) }); res.json({ ok: true }); });
+  // Owner-only: people listed in ENCORE_ADMIN_EMAILS. Everyone else gets a 404, as if the route weren't here.
+  app.get("/api/admin/funnel", (req, res) => { const u = currentUser(req); if (!u || !isAdmin(u.email)) return res.status(404).json({ code: "not_found", message: "Not found." }); res.json(funnel()); });
   // Contact / security-review inbox, open to signed-out visitors.
   const contactHits = new Map();
   app.post("/api/contact", small, (req, res) => {
@@ -435,6 +470,27 @@ export function createApp({ store, dataDir }) {
     catch (e) { res.status(500).type("application/javascript").send("/* estimate unavailable */"); }
   });
   app.get("/security", (req, res) => sendStatic(res, "security.html", "<p>Security page missing.</p>"));
+  // Privacy Policy and Terms (drafts for a lawyer to review). The legal name and address come from ENCORE_LEGAL_NAME and
+  // ENCORE_LEGAL_ADDRESS, the same values /api/public/legal gives; without them the pages say "Pottery Lab" and no address.
+  const legalPage = (file) => async (req, res) => {
+    let html; try { html = await fsp.readFile(path.join(PUBLIC_DIR, file), "utf8"); } catch { return res.status(404).send("<p>Page missing.</p>"); }
+    const name = String(process.env.ENCORE_LEGAL_NAME || "").trim() || "Pottery Lab", addr = String(process.env.ENCORE_LEGAL_ADDRESS || "").trim();
+    sendText(req, res, html.replaceAll('{{LEGAL_NAME}} ("Pottery Lab", "we")', name !== "Pottery Lab" ? `${esc(name)} ("Pottery Lab", "we")` : 'Pottery Lab ("we")').replaceAll("{{LEGAL_NAME}}", esc(name)).replaceAll("{{LEGAL_ADDRESS}}", addr ? ", " + esc(addr) : "")); };
+  // Unsubscribe from guest and follower mail (server/email.js). The emailed link opens a page with one button, so a mail
+  // scanner opening the link doesn't unsubscribe anyone; mail apps' one-click unsubscribe POSTs straight here.
+  const unsubPage = (title, body) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)} · Pottery Lab</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>body{margin:0;background:#F7F1E8;color:#1F1A17;font:16px/1.55 "Instrument Sans",system-ui,sans-serif}main{max-width:460px;margin:0 auto;padding:56px 16px}h1{font:600 30px/1.15 Fredoka,system-ui,sans-serif;margin:0 0 8px}p{color:#4A403A}button{min-height:44px;border:0;border-radius:999px;padding:12px 22px;font:600 16px system-ui;background:#C94A30;color:#fff;cursor:pointer}button.quiet{background:transparent;color:#A8441F;padding:12px 0}a{color:#A8441F}</style></head><body><main><p><a href="/">pottery lab</a></p><h1>${esc(title)}</h1>${body}</main></body></html>`;
+  app.get("/unsubscribe", (req, res) => { const t = String(req.query.t || "").slice(0, 400), email = readUnsubToken(t);
+    res.set("Cache-Control", "no-store").set("Referrer-Policy", "no-referrer");
+    if (!email) return res.status(400).type("html").send(unsubPage("This link isn't working", "<p>Open the unsubscribe link from your email again.</p>"));
+    const off = isUnsubscribed(email);
+    res.type("html").send(unsubPage(off ? "You're unsubscribed" : "Stop these emails?", off ? `<p>${esc(email)} won't get event reminders, announcements or kudos asks.</p><form method="post"><input type="hidden" name="t" value="${esc(t)}"><input type="hidden" name="on" value="1"><button class="quiet">Turn them back on</button></form>` : `<p>${esc(email)} will stop getting event reminders, announcements, confirmations and kudos asks from Pottery Lab hosts.</p><form method="post"><input type="hidden" name="t" value="${esc(t)}"><button>Unsubscribe</button></form>`)); });
+  app.post("/unsubscribe", express.urlencoded({ extended: false, limit: "4kb" }), (req, res) => { const t = String(req.body?.t || req.query.t || "").slice(0, 400), email = readUnsubToken(t);
+    res.set("Cache-Control", "no-store");
+    if (!email) return res.status(400).type("html").send(unsubPage("This link isn't working", "<p>Open the unsubscribe link from your email again.</p>"));
+    const on = String(req.body?.on || "") === "1"; setUnsubscribed(email, !on);
+    res.type("html").send(unsubPage(on ? "Emails are back on" : "You're unsubscribed", on ? `<p>${esc(email)} will get event emails again.</p>` : `<p>${esc(email)} won't get event reminders, announcements or kudos asks. Texts stop when you reply STOP.</p><form method="post"><input type="hidden" name="t" value="${esc(t)}"><input type="hidden" name="on" value="1"><button class="quiet">Undo</button></form>`)); });
+  app.get(["/privacy", "/privacy.html"], legalPage("privacy.html"));
+  app.get(["/terms", "/terms.html"], legalPage("terms.html"));
 
   // The app page is the same for everyone (data comes from the API), so build it once per edit of the file, keep it in
   // memory with an ETag, and pre-compress it with brotli at full quality in the background. Browsers revalidate on every
@@ -1352,6 +1408,7 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest && before) rememberVersion(St, p, before);
     const r = how === "put" ? St.set(p, req.body) : St.update(p, req.body), after = how === "put" ? req.body : r.data;
     afterEventWrite(St, p);
+    if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
       if (before && (before.headcount !== after.headcount || before.autoWait !== after.autoWait || before.plusOnes !== after.plusOnes || !same(before.guests || [], after.guests || []))) { try { const pr = await promoteWaitlist(req, req.ws, p.split("/")[1]); if (pr.length) extra.promoted = pr; } catch {} } }
@@ -1443,11 +1500,12 @@ export function createApp({ store, dataDir }) {
   const hostFirstOf = (ws, ev) => firstOf(ev?.hostName) || firstOf(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name) || firstOf(C.profileOf(ws)?.name) || "Your host";
   const emailOn = (ws) => !!(emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true));
   /** Email on behalf of a workspace when no one is signed in (a guest's reply moved something): logged in its outbox. */
-  async function mailWs(ws, { to, subject, text, eventId = "", kind = "email", fromName = "" }) {
+  async function mailWs(ws, { to, subject, text, eventId = "", kind = "email", fromName = "", list, origin }) {
     const cfg = emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true); if (!cfg) return { ok: false, code: "email_off" };
     const St = scopeStore(store, ws), hour = Date.now() - 36e5;
     if (St.list("outbox").filter((d) => d.data?.at > hour).length >= +(process.env.ENCORE_EMAIL_PER_HOUR || 300)) return { ok: false, code: "rate_limited" };
-    const r = await sendEmail(cfg, { to, subject, text, fromName });
+    const r = await sendEmail(cfg, { to, subject, text, fromName, list, origin });
+    if (r.code === "unsubscribed") return r; // nothing was sent, so nothing to log
     St.add("outbox", { kind, eventId, to: [].concat(to), subject: String(subject || "").slice(0, 200), by: null, at: Date.now(), status: r.ok ? "sent" : "failed", error: r.error || null, providerId: r.id || null });
     return r;
   }
@@ -1477,9 +1535,41 @@ export function createApp({ store, dataDir }) {
     const title = titleOf(ev), when = whenOf(ev), owner = getWorkspace(ws)?.ownerEmail || "";
     for (const d of done) { const r = d.data, to = String(r.email || "").trim(), name = firstOf(r.name) || "there";
       if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "waitlist", key: "in-" + d.id, text: `🎉 A spot opened up. You're in for ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
-        if (X.canEmail(to)) { try { await mailWs(ws, { to, subject: `A spot opened up: ${title}`, text: `Hi ${name},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the details: ${replyLink(req, ws, eventId, d.id)}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "waitlist", fromName: hostFirstOf(ws, ev) }); } catch {} } }
+        if (X.canEmail(to)) { try { await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `A spot opened up: ${title}`, text: `Hi ${name},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the details: ${replyLink(req, ws, eventId, d.id)}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "waitlist", fromName: hostFirstOf(ws, ev) }); } catch {} } }
       if (owner) X.notify(owner, { kind: "reply", key: "promo-" + d.id, text: `${firstOf(r.name) || "Someone"} moved up from the waitlist for ${title}.`, link: `/?app=1&open=${encodeURIComponent(eventId)}#studio`, eventId }); }
     return done.map((d) => d.id);
+  }
+  /** Google Calendar link for an event (the host's end time, else three hours after the start; like the invite's button). */
+  function calendarLink(ev, where, details) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ev?.date || "")) return "";
+    const d = ev.date.replace(/-/g, ""), hm = (x) => (/^\d{2}:\d{2}$/.test(x || "") ? x.replace(":", "") + "00" : ""), t = hm(ev.startTime);
+    let dates = `${d}/${d}`;
+    if (t) { let end = hm(ev.endTime); if (!end || end === t) end = String((+t.slice(0, 2) + 3) % 24).padStart(2, "0") + t.slice(2);
+      const next = () => { const x = new Date(ev.date + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); };
+      dates = `${d}T${t}/${end < t ? next() : d}T${end}`; }
+    const tz = /^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)+$/.test(ev.tz || "") ? `&ctz=${encodeURIComponent(ev.tz)}` : "";
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titleOf(ev))}&dates=${dates}${tz}&location=${encodeURIComponent(where || "")}&details=${encodeURIComponent(details || "")}`;
+  }
+  /** A guest's own reply, confirmed by email: "You're in" for I'm in on an open event, "Asked" for Ask to join on an event
+   * where the host lets each guest in. Once per reply, only to the email on it, only when email is set up and the address
+   * hasn't opted out. The place is only what the guest's own invite already shows (never an address it hides). */
+  async function confirmReply(req, ws, id, ev, was, r) {
+    const kind = r.response === "going" && !ev.approvalRequired ? "in" : r.response === "requested" && ev.approvalRequired ? "asked" : "";
+    if (!kind || was === r.response || r.confirmMailAt) return false;
+    const to = String(r.email || "").trim(); if (!EMAIL_OK(to) || !emailOn(ws) || !X.canEmail(to) || isUnsubscribed(to)) return false;
+    const St = scopeStore(store, ws); try { St.update("rsvps/" + id, { confirmMailAt: Date.now() }); } catch { return false; } // marked first: never twice
+    const pe = publicEvent(ev), title = titleOf(ev), host = hostFirstOf(ws, ev), when = whenOf(ev), origin = originOf(req), link = replyLink(req, ws, r.eventId, id);
+    const where = [pe.meetPoint || pe.venueName, pe.venueAddr, pe.hood || pe.city].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", ");
+    const handle = C.profileOf(ws)?.handle, cal = calendarLink(ev, where, `${origin}/e/${encodeURIComponent(r.eventId)}`);
+    const lines = [`Hi ${firstOf(r.name) || "there"},`, "", kind === "in" ? `You're in for ${title}.` : `You asked to join ${title}. ${host === "Your host" ? "Your host lets" : host + " lets"} each guest in, and you'll get an email when you're in.`, ""];
+    if (when) lines.push(`When: ${when}`);
+    if (where) lines.push(`Where: ${where}${pe.addrHidden ? (kind === "in" ? " (the exact address is on your invite)" : " (the exact address comes once you're in)") : ""}`);
+    lines.push("", `Your invite, to see or change your reply: ${link}`);
+    if (cal) lines.push(`Add to calendar: ${cal}`);
+    if (handle && !ev.hideHostFollow) lines.push(`Follow ${host === "Your host" ? "your host" : host}: ${origin}/@${encodeURIComponent(handle)}`);
+    if (kind === "in") lines.push("", "Plans changed? Open your invite and tap Can't go, so someone else can have the spot.");
+    const m = await mailWs(ws, { list: "guest", origin, to, subject: `${kind === "in" ? "You're in" : "Asked"}: ${title}`, text: lines.join("\n") + "\n", eventId: r.eventId, kind: "confirm", fromName: host === "Your host" ? "" : host });
+    return !!m.ok;
   }
   /** After a reply changes: move the waitlist up, tell the host about guests' replies, tell a guest the host let them in.
    * Returns what the reply's sender should know: where it landed and, on the waitlist, their place in line. */
@@ -1500,11 +1590,15 @@ export function createApp({ store, dataDir }) {
     if (!req.guest && after && now === "going" && was && was !== "going" && ["requested", "waitlist", "maybe", "declined", "no"].includes(was)) {
       const to = String(after.email || "").trim(), host = hostFirstOf(ws, ev), when = whenOf(ev), link = replyLink(req, ws, eventId, id); letIn = { emailed: false, texted: false };
       if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "letin", key: "letin-" + id, text: `🎉 ${host} let you in to ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
-        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
+        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
       const sms = smsConfig(); if (!letIn.emailed && sms && after.phone && after.smsOk !== false) { try { letIn.texted = !!(await sendSms(sms, { to: after.phone, text: `${host} let you in to ${title}${when ? `, ${when}` : ""}. Details: ${link} Reply STOP to opt out.` })).ok; } catch {} }
     }
     const fin = St.get("rsvps/" + id)?.data, all = St.list("rsvps").filter((d) => d.data?.eventId === eventId);
-    return { ...(fin ? { response: fin.response } : {}), ...(fin?.response === "waitlist" ? { waitlistPos: waitlistPos(all, id), waiting: waitlistOf(all).length } : {}), ...(fin?.partyCut ? { party: fin.party, partyCut: true } : {}), ...(promoted.length ? { promoted: true, promotedIds: promoted } : {}), ...(letIn ? { letIn } : {}) };
+    // funnel: a host's first reply from a guest, and an event's third (people the host added by hand don't count)
+    if (req.guest && after && !before && ws !== DEFAULT_WS) { trackOnce("first_reply", ws, { ws, eventId }); if (all.filter((d) => d.data?._k).length >= 3) trackOnce("three_replies", eventId, { ws, eventId }); }
+    // the guest's own confirmation email, once per reply (never for a reply the host added by hand)
+    let confirmed = false; if (req.guest && fin) { try { confirmed = await confirmReply(req, ws, id, ev, was, fin); } catch (e) { console.warn("[confirm]", e?.message); } }
+    return { ...(confirmed ? { confirmEmailed: true } : {}), ...(fin ? { response: fin.response } : {}), ...(fin?.response === "waitlist" ? { waitlistPos: waitlistPos(all, id), waiting: waitlistOf(all).length } : {}), ...(fin?.partyCut ? { party: fin.party, partyCut: true } : {}), ...(promoted.length ? { promoted: true, promotedIds: promoted } : {}), ...(letIn ? { letIn } : {}) };
   }
   app.post("/api/db/collection", json, async (req, res) => {
     const p = String(req.query.path || "");
@@ -1532,7 +1626,7 @@ export function createApp({ store, dataDir }) {
         return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, merged: true, ...a, response: a.response || next.response }); }
       const r0 = S(req).add(p, body), a = await afterRsvp(req, req.ws, r0.id, null, body).catch(() => ({})); return res.json({ ...r0, ...a, response: a.response || body.response }); }
     const r = S(req).add(p, body);
-    if (p === "events" && !req.guest) claimEvent(r.id, req.ws);
+    if (p === "events" && !req.guest) { claimEvent(r.id, req.ws); if (!body?.sample && !body?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: r.id }); }
     // a guest's reply says where it landed (a full event puts "going" on the waitlist)
     res.json(p === "rsvps" && body?.response ? { ...r, response: body.response } : r);
   });

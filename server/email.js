@@ -3,6 +3,31 @@
 // encrypted with its other connections. The default workspace can use ENCORE_EMAIL_SERVICE / ENCORE_EMAIL_KEY /
 // ENCORE_EMAIL_FROM instead. ENCORE_FAKE_EMAIL=1 records messages without sending them (demos and tests).
 import { connectionTokens } from "./workspaces.js";
+import { createHmac, createHash, randomBytes, timingSafeEqual } from "node:crypto";
+
+// ---------- unsubscribe (guest and follower mail) ----------
+// Mail to guests and followers (reminders, announcements, kudos asks, confirmations) is sent with list: "guest". Each such
+// message carries a List-Unsubscribe header and a footer link to /unsubscribe?t=<token>; the token is the address, signed
+// with SESSION_SECRET. Once an address unsubscribes, sendEmail drops every list: "guest" message to it.
+let unsubStore = null;
+export const useUnsubStore = (store) => { unsubStore = store; };
+const lc = (e) => String(e || "").trim().toLowerCase();
+const RANDOM_SECRET = randomBytes(32).toString("hex"); // without SESSION_SECRET (local use), links work until a restart
+const unsubSecret = () => process.env.SESSION_SECRET || RANDOM_SECRET;
+const unsubKey = (email) => "system/unsub-" + createHash("sha256").update(lc(email)).digest("hex").slice(0, 32);
+const sig = (email) => createHmac("sha256", unsubSecret()).update("unsub|" + lc(email)).digest("base64url").slice(0, 32);
+export const unsubToken = (email) => Buffer.from(lc(email)).toString("base64url") + "." + sig(email);
+/** The address a token was made for, or null when it isn't one of ours. */
+export function readUnsubToken(t) {
+  const [a, s] = String(t || "").split("."); if (!a || !s) return null;
+  let email = ""; try { email = Buffer.from(a, "base64url").toString("utf8"); } catch { return null; }
+  if (!EMAIL_RE.test(email)) return null; const want = Buffer.from(sig(email)), got = Buffer.from(s);
+  return want.length === got.length && timingSafeEqual(want, got) ? lc(email) : null;
+}
+export const isUnsubscribed = (email) => { try { return !!unsubStore?.get(unsubKey(email))?.data?.off; } catch { return false; } };
+export function setUnsubscribed(email, off = true) { if (!unsubStore || !EMAIL_RE.test(lc(email))) return false; unsubStore.set(unsubKey(email), { email: lc(email), off: !!off, at: Date.now() }); return true; }
+const baseUrl = (origin) => String(origin || process.env.ENCORE_PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, "");
+export const unsubLink = (email, origin) => `${baseUrl(origin)}/unsubscribe?t=${unsubToken(email)}`;
 
 export const EMAIL_SERVICES = {
   resend: { name: "Resend", check: (key) => ["https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } }] },
@@ -26,26 +51,36 @@ export const publicEmailConfig = (c) => (c ? { enabled: true, service: c.service
 
 const clean = (s, n) => String(s ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, n);
 
-/** Send one plain-text message. Returns { ok, id } or { ok:false, error }. Never throws. */
-export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName }) {
+/** Send one plain-text message. Returns { ok, id } or { ok:false, error }. Never throws.
+ * list: "guest" for mail to guests and followers: skipped for unsubscribed addresses, and sent with a List-Unsubscribe
+ * header and an unsubscribe footer (origin: the public address for the link, else ENCORE_PUBLIC_URL). */
+export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin }) {
   if (!cfg) return { ok: false, error: "Email isn't set up for this workspace." };
-  const rcpt = [].concat(to || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
-  const copy = [].concat(cc || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
+  let rcpt = [].concat(to || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
+  const copy = list === "guest" ? [] : [].concat(cc || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
   if (!rcpt.length) return { ok: false, error: "No valid recipient." };
-  const subj = clean(subject, 200) || "(no subject)", body = String(text || "").slice(0, 20000);
+  let headers = null, footer = "";
+  if (list === "guest") {
+    rcpt = rcpt.filter((x) => !isUnsubscribed(x)); if (!rcpt.length) return { ok: false, code: "unsubscribed", error: "They unsubscribed from these emails." };
+    if (rcpt.length > 1) { const rs = []; for (const x of rcpt) rs.push(await sendEmail(cfg, { to: x, subject, text, replyTo, fromName, list, origin })); return rs.find((r) => r.ok) || rs[0]; }
+    const link = unsubLink(rcpt[0], origin);
+    headers = { "List-Unsubscribe": `<${link}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
+    footer = `\n\n--\nDon't want these emails? Unsubscribe: ${link}\n`;
+  }
+  const subj = clean(subject, 200) || "(no subject)", body = String(text || "").slice(0, 20000 - footer.length) + footer;
   const name = clean(fromName || cfg.fromName, 80).replace(/[<>"]/g, ""), from = name ? `${name} <${cfg.from}>` : cfg.from;
   const reply = replyTo && EMAIL_RE.test(replyTo) ? replyTo : null;
-  if (cfg.service === "fake") { const id = "fake-" + (fakeOutbox.length + 1); fakeOutbox.push({ id, from, to: rcpt, cc: copy, subject: subj, text: body, replyTo: reply }); return { ok: true, id }; }
+  if (cfg.service === "fake") { const id = "fake-" + (fakeOutbox.length + 1); fakeOutbox.push({ id, from, to: rcpt, cc: copy, subject: subj, text: body, replyTo: reply, ...(headers ? { headers } : {}) }); return { ok: true, id }; }
   let url, init;
   if (cfg.service === "resend") {
     url = "https://api.resend.com/emails";
-    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: rcpt, ...(copy.length ? { cc: copy } : {}), subject: subj, text: body, ...(reply ? { reply_to: reply } : {}) }) };
+    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: rcpt, ...(copy.length ? { cc: copy } : {}), subject: subj, text: body, ...(reply ? { reply_to: reply } : {}), ...(headers ? { headers } : {}) }) };
   } else if (cfg.service === "postmark") {
     url = "https://api.postmarkapp.com/email";
-    init = { headers: { "X-Postmark-Server-Token": cfg.key, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ From: from, To: rcpt.join(","), ...(copy.length ? { Cc: copy.join(",") } : {}), Subject: subj, TextBody: body, ...(reply ? { ReplyTo: reply } : {}), MessageStream: "outbound" }) };
+    init = { headers: { "X-Postmark-Server-Token": cfg.key, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ From: from, To: rcpt.join(","), ...(copy.length ? { Cc: copy.join(",") } : {}), Subject: subj, TextBody: body, ...(reply ? { ReplyTo: reply } : {}), ...(headers ? { Headers: Object.entries(headers).map(([Name, Value]) => ({ Name, Value })) } : {}), MessageStream: "outbound" }) };
   } else if (cfg.service === "sendgrid") {
     url = "https://api.sendgrid.com/v3/mail/send";
-    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ personalizations: [{ to: rcpt.map((email) => ({ email })), ...(copy.length ? { cc: copy.map((email) => ({ email })) } : {}) }], from: name ? { email: cfg.from, name } : { email: cfg.from }, ...(reply ? { reply_to: { email: reply } } : {}), subject: subj, content: [{ type: "text/plain", value: body }] }) };
+    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ personalizations: [{ to: rcpt.map((email) => ({ email })), ...(copy.length ? { cc: copy.map((email) => ({ email })) } : {}) }], from: name ? { email: cfg.from, name } : { email: cfg.from }, ...(reply ? { reply_to: { email: reply } } : {}), subject: subj, content: [{ type: "text/plain", value: body }], ...(headers ? { headers } : {}) }) };
   } else return { ok: false, error: "Unknown email service." };
   try {
     const r = await fetch(url, { method: "POST", ...init, signal: AbortSignal.timeout(15_000) });

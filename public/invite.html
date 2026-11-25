@@ -28,6 +28,9 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
 .stick[hidden]{display:none!important}.stick{position:fixed;left:50%;transform:translateX(-50%);width:min(100%,560px);bottom:0;background:rgba(255,248,238,.96);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:10px;backdrop-filter:blur(6px)}.stick b{font-weight:600;font-size:16px;font-family:inherit}
 .stick a{flex:1;justify-content:center;background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;text-decoration:none}
 .full{display:block;text-align:center;margin:18px 0 0;font-weight:600}
+.consent{margin:0;font-size:13px;line-height:1.45;color:var(--smoke);text-align:center}.consent a{color:inherit}
+.legal{max-width:520px;margin:0 auto;padding:8px 16px 28px;text-align:center;font-size:13px;color:var(--smoke)}.legal a{color:inherit;margin:0 6px}
+.yourturn{text-align:center;margin:14px 0 0;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .ini{font:700 20px Fredoka,system-ui;color:var(--ink)}
 .kit{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;margin:6px 0 12px}.kit p{margin:2px 0 0}.kit b{font-weight:600}
@@ -35,6 +38,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
 .btn.pay{background:var(--ember);border-color:var(--ember);color:#fff}.linkbtn{background:none;border:0;color:var(--smoke);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;justify-self:center;min-height:44px}
 [hidden]{display:none!important}</style><link rel="stylesheet" href="/system.css"></head><body>
 <main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div><p class="muted">Opening your invite…</p></main>
+<footer class="legal"><a href="/">Pottery Lab</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></footer>
 <script src="/eventart.js"></script><script src="/questions.js" defer></script>
 <script>
 (function () {
@@ -129,7 +133,8 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
         ${foody ? `<label class="f" id="dtL">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
         ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc((typeof srPrice === "function" && srPrice(e)) || priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
-        <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button></form>
+        <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button>
+        <p class="consent" id="consent">By replying you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. If you add a phone, you'll get event texts; reply STOP to stop.</p></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
     // ---------- series: the when line says it repeats, the price line says what the course or pass costs ----------
     { const sw = srWhen(e), wb = $("#m .facts > div:first-child > b"); if (sw && wb) { wb.textContent = sw; if (!srSpan(e) && e.date) { const nx = document.createElement("div"); nx.className = "muted"; nx.id = "nextOne"; nx.textContent = `Next one ${when({ date: e.date })}`; wb.parentElement.after(nx); } }
@@ -183,7 +188,8 @@ select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14p
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
       <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>${+e.passPrice > 0 && +e.passCount > 1 ? `<a class="btn pay" id="payPass" href="${esc(payLinkOf(pay, "$" + (+e.passPrice), [data.name, e.pubTitle || e.name, e.passCount + " classes"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.passPrice)} for ${esc(+e.passCount)}</a>` : ""}<button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
       ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
-      <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>`;
+      <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>
+      ${yes ? `<p class="yourturn muted" id="yourTurn"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(eid)}">Your turn? Hosting friends is free.</a></p>` : ""}`;
     if (!S.back) document.getElementById("tk").scrollIntoView({ behavior: "smooth", block: "center" });
     // a guest who steps out frees their spot and hears it went through
     const out = $("#out"); if (out) out.onclick = async () => { out.disabled = true;

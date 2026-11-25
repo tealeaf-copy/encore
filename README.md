@@ -49,7 +49,9 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ENCORE_MCP_TOKENS` | unset | Per-person MCP tokens: `Name\|email\|token`, comma separated, 32+ characters each |
 | `ENCORE_MCP_RATE_PER_MIN` | `120` | MCP messages per minute per token (each message in a batch counts) |
 | `ENCORE_SIGNUP` | `0` | `1` = self-serve sign-up with workspaces and 14-day trials (needs `SESSION_SECRET`) |
-| `ENCORE_SIGNUP_PER_HOUR` | `5` | Sign-ups and invite joins allowed per IP per hour |
+| `ENCORE_SIGNUP_PER_HOUR` | `20` | Sign-ups and invite joins allowed per IP per hour. Behind a Vercel rewrite every visitor shares one IP: see docs/onboarding.md |
+| `ENCORE_ADMIN_EMAILS` | unset | Comma list of emails that may read `GET /api/admin/funnel` (404 for everyone else) |
+| `ENCORE_LEGAL_NAME` / `ENCORE_LEGAL_ADDRESS` | unset | Company name and address on `/privacy` and `/terms` (default "Pottery Lab", no address) |
 | `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
 | `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |
 | `SLACK_BOT_TOKEN` | unset | Slack Web API (send messages, DMs by email, find users) |

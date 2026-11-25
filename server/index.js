@@ -20,6 +20,17 @@ function loadDotEnv(file) {
 }
 loadDotEnv(path.join(ROOT, ".env"));
 
+// Errors nobody caught: log them as one JSON line with what we know, so they show up in Render's logs and can be searched.
+// A rejected promise is logged and the server keeps running. An uncaught exception leaves the process in an unknown state,
+// so it's logged and the process exits; Render starts it again.
+const logCrash = (kind, err, extra = {}) => {
+  const e = err instanceof Error ? err : new Error(typeof err === "string" ? err : JSON.stringify(err ?? null));
+  try { console.error(JSON.stringify({ level: "error", kind, at: new Date().toISOString(), message: String(e.message || "").slice(0, 2000), name: e.name, code: e.code, stack: String(e.stack || "").split("\n").slice(0, 12).join("\n"), pid: process.pid, uptimeS: Math.round(process.uptime()), ...extra })); }
+  catch { console.error(`[${kind}]`, e); }
+};
+process.on("unhandledRejection", (reason) => logCrash("unhandledRejection", reason));
+process.on("uncaughtException", (err, origin) => { logCrash("uncaughtException", err, { origin }); process.exitCode = 1; setTimeout(() => process.exit(1), 200).unref(); });
+
 const { openStore } = await import("./db.js");
 const { createApp } = await import("./app.js");
 const { schedulePm } = await import("./pm.js");

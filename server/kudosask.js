@@ -66,7 +66,7 @@ export async function runKudosAsks(store, { now = Date.now(), workspaces = null,
         S.set(key, { eventId, rid, at: now, channel: "pending" }); // logged first: a crash mid-send never means a second ask
         let channel = "none", error = null;
         if (bySms) { const x = await sendSms(sms, { to: r.phone, text: `${line} Reply STOP to opt out.` }); if (x.ok) channel = "sms"; else error = x.error || "text failed"; }
-        if (channel === "none" && byEmail) { const x = await sendEmail(email, { to: em, subject: `How was ${title}?`, text: `Hi ${first(r.name) || "there"},\n\n${line}\n`, fromName: C?.profileOf?.(ws)?.name || "" }); if (x.ok) channel = "email"; else error = x.error || "email failed"; }
+        if (channel === "none" && byEmail) { const x = await sendEmail(email, { list: "guest", origin, to: em, subject: `How was ${title}?`, text: `Hi ${first(r.name) || "there"},\n\n${line}\n`, fromName: C?.profileOf?.(ws)?.name || "" }); if (x.ok) channel = "email"; else error = x.error || "email failed"; }
         S.set(key, { eventId, rid, at: now, channel, ...(error && channel === "none" ? { error: String(error).slice(0, 200) } : {}) });
         if (channel === "none") { row.skipped++; continue; }
         row.asked++; row[channel]++; S.add("outbox", { kind: "kudos-ask", eventId, to: [channel === "sms" ? r.phone : em], subject: line.slice(0, 200), at: now, status: "sent" });

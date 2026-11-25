@@ -165,6 +165,70 @@ export function parseEvents(html, url = "") {
 /** The one event a page is about (kept for callers that read a single event). */
 export function parseEventPage(html, url = "") { return parseEvents(html, url)[0] || { title: "", date: "", place: "", about: "", image: "", url }; }
 
+// ---------- featured events and named sections ----------
+// A host can feature up to 6 events (in their order) and group the rest into up to 8 named sections, by what they were
+// for. A "program" section is one card with a dated timeline (a company's year of coffees, dinners and workshops).
+// Role, room ("who was there") and proof are host-written lines; nothing here fills them in, least of all with numbers.
+export const MAX_FEATURED = 6, MAX_SECTIONS = 8;
+export const ROLES = ["Organized", "Produced", "Hosted", "Co-hosted", "Lead host"];
+export const FORMATS = ["dinner", "summit", "conference", "meetup", "workshop", "online", "booth", "coffee", "breakfast", "lunch", "happy hour", "panel", "offsite", "party", "tour", "class", "launch", "roadshow"];
+export const LIMITS = { role: 40, room: 120, proof: 140, format: 24, company: 60, name: 60, blurb: 140 };
+const SEC_ID = /^[a-z0-9-]{1,24}$/;
+const cleanFormat = (v) => clean(v, LIMITS.format).toLowerCase();
+const cleanLine = (v, n) => clean(scrubAddress(v), n);
+/** Sections as stored: [{ id, name, blurb, kind: "list" | "program", order }], at most 8, in order. */
+export function cleanScrapSections(L) {
+  const out = [], seen = new Set();
+  for (const x of (Array.isArray(L) ? L : []).slice(0, 50)) { if (out.length >= MAX_SECTIONS) break; const name = clean(x?.name, LIMITS.name); if (!name) continue;
+    let id = SEC_ID.test(String(x?.id || "")) ? String(x.id) : ""; if (!id || seen.has(id)) id = crypto.randomBytes(4).toString("hex"); seen.add(id);
+    out.push({ id, name, blurb: clean(x?.blurb, LIMITS.blurb), kind: x?.kind === "program" ? "program" : "list", order: isFinite(+x?.order) ? +x.order : out.length }); }
+  return out.map((x, i) => ({ ...x, i })).sort((a, b) => a.order - b.order || a.i - b.i).map(({ i, ...x }, n) => ({ ...x, order: n }));
+}
+/** A prepared page's scrapbook as a claimed page starts with it: its items (with their sections and featured order) and its sections. */
+export function presetToScrapbook(P) { const sections = cleanScrapSections(P?.scrapSections || (Array.isArray(P?.sections) ? P.sections : [])), ids = new Set(sections.map((s) => s.id));
+  return { sections, items: (P?.scrapbook || []).map((x) => ({ ...x, section: ids.has(x.section) ? x.section : "" })) }; }
+
+// what a past event was, guessed from its words (for suggestions only; never stored unless the host keeps it)
+export function guessFormat(x) { if (x?.format) return x.format; const t = `${x?.title || ""} ${x?.about || ""}`.toLowerCase(), place = String(x?.place || "");
+  if (/^online$/i.test(place) || /\b(webinar|virtual|online|livestream|zoom)\b/.test(t)) return "online";
+  for (const [f, re] of [["summit", /\bsummit\b/], ["conference", /\bconference|\bconf\b|user group|\bforum\b/], ["booth", /\bbooth\b/], ["roadshow", /roadshow/], ["workshop", /workshop|masterclass|hands-on/], ["dinner", /dinner|supper|omakase/], ["breakfast", /breakfast|brunch/], ["lunch", /\blunch/], ["coffee", /coffee|matcha|cafe\b/], ["happy hour", /happy hour|drinks|mixer/], ["meetup", /meetup|meet-up|community|club\b/], ["panel", /\bpanel\b|fireside/], ["offsite", /offsite|retreat/], ["party", /party|celebration/], ["launch", /\blaunch\b/]]) if (re.test(t)) return f;
+  return ""; }
+const NOT_COMPANY = new Set("the a an and or of for with at in on to by from our my your this that x vs exec execs executive executives customer customers community partner partners annual spring summer fall autumn winter night day morning evening happy hour dinner dinners supper coffee breakfast lunch brunch summit conference meetup workshop online webinar booth panel party launch roundtable session series club social mixer kickoff field program q1 q2 q3 q4 nyc sf la new york san francisco brooklyn chicago boston austin seattle london toronto denver miami atlanta dallas jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december cmo cfo cio cto ciso vp leaders founders".split(" "));
+const companyWords = (x) => [...new Set((String(x?.title || "").match(/\b[A-Z][A-Za-z0-9&.'-]{1,30}\b/g) || []).map((w) => w.replace(/['’]s$/, "")).filter((w) => !NOT_COMPANY.has(w.toLowerCase())))];
+/**
+ * Potto's "Sort my events": sections by goal for the events that aren't in one yet. Suggestions only; the host confirms.
+ * Field programs (3+ events for one company in one year) come first, then online, customer events, dinners, partner and community.
+ * Returns [{ id, name, blurb, kind, items: [ids] }] in the order a page would show them, and a format guess per event that has none.
+ */
+export function suggestSections(items, existing = []) {
+  const have = new Set((existing || []).map((s) => s.id)), pool = (items || []).filter((x) => x.id && !(x.section && have.has(x.section))), taken = new Set(), formats = {};
+  for (const x of pool) if (!x.format) { const g = guessFormat(x); if (g) formats[x.id] = g; }
+  const fmt = (x) => x.format || formats[x.id] || "", text = (x) => `${x.title || ""} ${x.about || ""} ${x.room || ""} ${x.company || ""}`;
+  const programs = [];
+  // a company named on the event, or a name that recurs in titles across different kinds of events in one year
+  for (let round = 0; round < 2; round++) { const G = new Map();
+    for (const x of pool) { if (taken.has(x.id) || !x.date) continue; const y = x.date.slice(0, 4), keys = round === 0 ? (x.company ? [x.company.trim()] : []) : companyWords(x);
+      for (const k of keys) { const g = `${k.toLowerCase()}|${y}`; if (!G.has(g)) G.set(g, { name: k, year: y, L: [] }); G.get(g).L.push(x); } }
+    for (const g of [...G.values()].sort((a, b) => b.L.length - a.L.length)) { const L = g.L.filter((x) => !taken.has(x.id)); if (L.length < 3) continue;
+      if (round === 1 && new Set(L.map(fmt).filter(Boolean)).size < 2) continue; // five dinners in one city aren't a program
+      L.forEach((x) => taken.add(x.id)); programs.push({ name: `${g.name}, ${g.year}`, blurb: "", kind: "program", items: L.sort((a, b) => String(a.date).localeCompare(String(b.date))).map((x) => x.id) }); } }
+  const EXEC = /\b(exec|execs|executive|executives|cxo|c-suite|leaders|leadership|cmo|cfo|cio|cto|ciso|cro|vps?|founders|chief)\b/i;
+  const RULES = [
+    ["online", "Online", (x) => fmt(x) === "online" || /^online$/i.test(x.place || "")],
+    ["customer", "Customer events", (x) => ["summit", "conference", "booth", "roadshow"].includes(fmt(x)) || /\b(customer|customers|user group|roadshow|advisory board|cab)\b/i.test(text(x))],
+    ["dinners", "Executive dinners", (x) => ["dinner", "breakfast", "lunch"].includes(fmt(x)) || /\b(dinner|supper)\b/i.test(x.title || "")],
+    ["community", "Partner and community", (x) => ["meetup", "happy hour", "party", "panel", "coffee"].includes(fmt(x)) || /\b(meetup|community|partner|partners|mixer|happy hour|club)\b/i.test(text(x))],
+  ], found = {};
+  for (const [k, name, test] of RULES) { const L = pool.filter((x) => !taken.has(x.id) && test(x)); if (!L.length) continue; L.forEach((x) => taken.add(x.id)); found[k] = { name, L }; }
+  if (found.dinners && !found.dinners.L.some((x) => EXEC.test(text(x)))) found.dinners.name = "Dinners";
+  const list = (k) => (found[k] ? [{ name: found[k].name, blurb: "", kind: "list", items: found[k].L.map((x) => x.id) }] : []);
+  // a section the host already has by that name takes the events; new ones fill the free slots (8 in all)
+  let room = Math.max(0, MAX_SECTIONS - (existing || []).length); const out = [];
+  for (const s of [...list("customer"), ...list("dinners"), ...programs, ...list("community"), ...list("online")]) { const same = (existing || []).find((e) => e.name.toLowerCase() === s.name.toLowerCase());
+    if (same) out.push({ ...s, id: same.id, kind: same.kind, existing: true }); else if (room > 0) { room--; out.push({ id: "s" + crypto.randomBytes(3).toString("hex") + out.length, ...s }); } }
+  return { sections: out, formats };
+}
+
 // ---------- routes ----------
 // the reader the routes use; tests swap in saved pages so they never touch the network
 let fetcher = safeFetch;
@@ -177,12 +241,18 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   // a claimed prepared page starts with the prepared page's past events, once (removing one later sticks)
   const seed = (ws) => { try { if (S(ws).get("scrapbookmeta/seed")) return; const h = C.profileOf?.(ws); if (!h?.handle || !C.showcasePreset) return;
       const P = C.showcasePreset(h.handle) || (/^(.+)-[a-z0-9]{3}$/.test(h.handle) ? C.showcasePreset(h.handle.replace(/-[a-z0-9]{3}$/, "")) : null); if (!P?.scrapbook?.length) return;
-      S(ws).set("scrapbookmeta/seed", { from: P.handle, at: Date.now() }); for (const x of P.scrapbook) save(ws, { ...x, id: "", photos: [], at: Date.now() }); } catch {} };
+      S(ws).set("scrapbookmeta/seed", { from: P.handle, at: Date.now() }); const B = presetToScrapbook(P); if (B.sections.length) setSections(ws, B.sections);
+      let fo = 0; for (const x of [...B.items].sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0))) save(ws, { ...x, id: "", photos: [], at: Date.now(), featured: !!x.featured && fo < MAX_FEATURED, featuredOrder: x.featured && fo < MAX_FEATURED ? ++fo : 0 }); } catch {} };
+  const sectionsOf = (ws) => cleanScrapSections(S(ws).get("scrapbookmeta/sections")?.data?.list || []);
+  const setSections = (ws, L) => { const list = cleanScrapSections(L); S(ws).set("scrapbookmeta/sections", { list, at: Date.now() }); return list; };
+  const featuredIds = (L) => L.filter((x) => x.featured).sort((a, b) => (a.featuredOrder || 0) - (b.featuredOrder || 0)).map((x) => x.id);
   const list = (ws) => { seed(ws); return S(ws).list("scrapbook").map((d) => ({ id: String(d.id).split("/").pop(), ...d.data })).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || (b.at || 0) - (a.at || 0)); };
   const save = (ws, item) => { const id = item.id || crypto.randomBytes(6).toString("hex"), link = safeUrl(item.link)?.href || "", source = item.source && SOURCES.includes(item.source) ? item.source : link ? sourceOf(new URL(link).hostname) : "";
     const v = { title: clean(item.title, 140) || "A past event", date: isoDate(item.date), time: clean(item.time, 40), place: safePlace(item.place), guests: Math.max(0, Math.min(10000, Math.round(+item.guests || 0))) || 0,
       note: clean(item.note, 400), about: clean(scrubAddress(item.about), 600), source, site: source === "Web" ? siteOf(link) : "", link,
-      photos: (Array.isArray(item.photos) ? item.photos : []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12), cover: COVER_OK(item.cover) ? item.cover : "", at: item.at || Date.now() };
+      photos: (Array.isArray(item.photos) ? item.photos : []).filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12), cover: COVER_OK(item.cover) ? item.cover : "", at: item.at || Date.now(),
+      featured: !!item.featured, featuredOrder: item.featured ? Math.max(0, Math.round(+item.featuredOrder || 0)) : 0, section: SEC_ID.test(String(item.section || "")) ? String(item.section) : "",
+      role: clean(item.role, LIMITS.role), room: cleanLine(item.room, LIMITS.room), proof: cleanLine(item.proof, LIMITS.proof), format: cleanFormat(item.format), company: clean(item.company, LIMITS.company) };
     S(ws).set("scrapbook/" + id, v); return { id, ...v }; };
   const keepImage = async (src, ws) => { if (!src || !saveImage) return ""; const r = await fetcher(src, { limit: MAX_IMG, kind: "image" }); if (!r) return ""; try { return (await saveImage(r.buf, r.type.split(";")[0].trim(), ws)) || ""; } catch { return ""; } };
   // read links into drafts; nothing is saved except a copy of each cover image (so the draft can show it)
@@ -197,9 +267,36 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
     return { drafts, skipped }; };
 
   // the public scrapbook: imported events plus the ones hosted here
-  app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [] });
-    res.json({ items: list(ws).map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover })) }); });
-  app.get("/api/host/scrapbook", (req, res) => { const u = me(req, res); if (!u) return; res.json({ items: list(u.ws) }); });
+  // sections come back in order, only the ones with an event in them; featured is the host's order (at most 6)
+  app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [], sections: [], featured: [] });
+    const L = list(ws), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
+    res.json({ items: L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "" })),
+      sections: secs.filter((s) => used.has(s.id)), featured: featuredIds(L).slice(0, MAX_FEATURED) }); });
+  app.get("/api/host/scrapbook", (req, res) => { const u = me(req, res); if (!u) return; const L = list(u.ws); res.json({ items: L, sections: sectionsOf(u.ws), featured: featuredIds(L), limits: { ...LIMITS, featured: MAX_FEATURED, sections: MAX_SECTIONS }, roles: ROLES, formats: FORMATS }); });
+  // Potto's "Sort my events": suggested sections for the events not in one yet. Nothing changes until the host confirms (PUT below).
+  app.get("/api/host/scrapbook/suggest", (req, res) => { const u = me(req, res); if (!u) return; res.json(suggestSections(list(u.ws), sectionsOf(u.ws))); });
+  // the whole list of sections (create, rename, reorder, delete, list or program), plus optional moves and formats in one go
+  app.put("/api/host/scrapbook-sections", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};
+    if (!Array.isArray(b.sections)) return res.status(400).json({ code: "invalid", message: "Send the list of sections." });
+    if (b.sections.length > MAX_SECTIONS) return res.status(400).json({ code: "limit", message: `Up to ${MAX_SECTIONS} sections.` });
+    for (const x of b.sections) { if (!clean(x?.name, 200)) return res.status(400).json({ code: "invalid", message: "Every section needs a name." });
+      if (clean(x?.name, 500).length > LIMITS.name) return res.status(400).json({ code: "too_long", message: `Keep section names to ${LIMITS.name} characters.` });
+      if (clean(x?.blurb, 500).length > LIMITS.blurb) return res.status(400).json({ code: "too_long", message: `Keep the line under a section to ${LIMITS.blurb} characters.` });
+      if (x?.kind != null && !["list", "program"].includes(x.kind)) return res.status(400).json({ code: "invalid", message: "A section is a list or a program." }); }
+    // ids the client made up for new sections are kept when they're valid; moves follow any id the server had to change
+    const remap = {}, seen = new Set(), given = b.sections.map((x, i) => { const id = SEC_ID.test(String(x?.id || "")) && !seen.has(String(x.id)) ? String(x.id) : crypto.randomBytes(4).toString("hex"); if (x?.id && String(x.id) !== id) remap[String(x.id)] = id; seen.add(id); return { ...x, id, order: x?.order ?? i }; });
+    const secs = setSections(u.ws, given), ok = new Set(secs.map((s) => s.id)), assign = b.assign && typeof b.assign === "object" ? b.assign : {}, formats = b.formats && typeof b.formats === "object" ? b.formats : {};
+    for (const x of list(u.ws)) { let sec = x.section; if (Object.prototype.hasOwnProperty.call(assign, x.id)) { const t = remap[assign[x.id]] || String(assign[x.id] || ""); if (!t || ok.has(t)) sec = t; }
+      if (sec && !ok.has(sec)) sec = ""; const f = !x.format && formats[x.id] ? cleanFormat(formats[x.id]) : x.format;
+      if (sec !== x.section || f !== x.format) S(u.ws).set("scrapbook/" + x.id, { ...S(u.ws).get("scrapbook/" + x.id).data, section: sec, format: f }); }
+    const L = list(u.ws); res.json({ sections: secs, items: L, featured: featuredIds(L) }); });
+  // the featured row, in the host's order: these ids are featured, every other event isn't
+  app.put("/api/host/scrapbook-featured", small, (req, res) => { const u = me(req, res); if (!u) return; const ids = Array.isArray(req.body?.ids) ? [...new Set(req.body.ids.map((x) => String(x).replace(/[^a-f0-9]/g, "")))] : null;
+    if (!ids) return res.status(400).json({ code: "invalid", message: "Send the featured events in order." });
+    if (ids.length > MAX_FEATURED) return res.status(400).json({ code: "limit", message: `You can feature up to ${MAX_FEATURED} events.` });
+    const L = list(u.ws), have = new Set(L.map((x) => x.id)); if (ids.some((id) => !have.has(id))) return res.status(404).json({ code: "not_found", message: "One of those isn't in your scrapbook." });
+    for (const x of L) { const i = ids.indexOf(x.id), want = i >= 0, fo = want ? i + 1 : 0; if (want !== !!x.featured || fo !== (x.featuredOrder || 0)) S(u.ws).set("scrapbook/" + x.id, { ...S(u.ws).get("scrapbook/" + x.id).data, featured: want, featuredOrder: fo }); }
+    res.json({ featured: ids }); });
   // Potto's "Drop links to past events": text with links in it (pasted, dropped or dictated) or a list → draft cards, nothing saved yet
   app.post("/api/host/scrapbook/preview", small, async (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {};
     const links = [...new Set([...extractLinks(b.text || ""), ...(Array.isArray(b.links) ? b.links : []).flatMap((l) => extractLinks(String(l)))])].slice(0, MAX_LINKS);
@@ -216,10 +313,21 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
     let skipped = []; const links = (Array.isArray(b.links) ? b.links : []).map(String).slice(0, MAX_LINKS);
     if (links.length) { if (overLimit(u.ws, links.length)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of links for one hour. Try again in a bit." }); const r = await readLinks(u.ws, links); skipped = r.skipped; out.push(...addDrafts(u.ws, r.drafts)); }
     if (Array.isArray(b.drafts)) out.push(...addDrafts(u.ws, b.drafts));
-    for (const r of (Array.isArray(b.rows) ? b.rows : []).slice(0, 100)) { if (!clean(r?.title, 140)) continue; out.push(save(u.ws, { ...r, link: "", source: "CSV", photos: [], cover: "" })); }
-    if (b.item && clean(b.item.title, 140)) out.push(save(u.ws, { ...b.item, link: "", source: "" }));
+    for (const r of (Array.isArray(b.rows) ? b.rows : []).slice(0, 100)) { if (!clean(r?.title, 140)) continue; out.push(save(u.ws, { ...r, link: "", source: "CSV", photos: [], cover: "", featured: false, section: "", proof: "" })); }
+    if (b.item && clean(b.item.title, 140)) out.push(save(u.ws, { ...b.item, link: "", source: "", featured: false, section: "" }));
     res.json({ added: out, skipped }); });
-  app.post("/api/host/scrapbook/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id).replace(/[^a-f0-9]/g, ""); const cur = S(u.ws).get("scrapbook/" + id)?.data; if (!cur) return res.status(404).json({ code: "not_found", message: "Not in your scrapbook." });
-    res.json({ item: save(u.ws, { ...cur, ...req.body, id, source: cur.source, link: cur.link, at: cur.at, cover: req.body?.cover !== undefined && COVER_OK(req.body.cover) ? req.body.cover : cur.cover }) }); });
+  // change one event: its details, ☆ featured, its section, and the role / room / proof / format lines (POST kept for older pages)
+  const TOO_LONG = { role: "Keep your role short (40 characters).", room: "Keep who was there to one line (120 characters).", proof: "Keep the proof to one line (140 characters).", format: "Keep the format short (24 characters).", company: "Keep the company name to 60 characters." };
+  const patch = (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id).replace(/[^a-f0-9]/g, ""); const cur = S(u.ws).get("scrapbook/" + id)?.data; if (!cur) return res.status(404).json({ code: "not_found", message: "Not in your scrapbook." });
+    const b = req.body && typeof req.body === "object" ? req.body : {};
+    for (const k of Object.keys(TOO_LONG)) if (b[k] != null && clean(b[k], 1000).length > LIMITS[k]) return res.status(400).json({ code: "too_long", field: k, message: TOO_LONG[k] });
+    const next = { ...cur, ...b, id, source: cur.source, link: cur.link, at: cur.at, cover: b.cover !== undefined && COVER_OK(b.cover) ? b.cover : cur.cover, featured: cur.featured, featuredOrder: cur.featuredOrder, section: cur.section || "" };
+    if (b.section !== undefined) { const sec = String(b.section || ""); if (sec && !sectionsOf(u.ws).some((s) => s.id === sec)) return res.status(400).json({ code: "invalid", field: "section", message: "That section isn't there any more." }); next.section = sec; }
+    if (b.featured !== undefined) { const want = !!b.featured;
+      if (want && !cur.featured) { const F = list(u.ws).filter((x) => x.featured); if (F.length >= MAX_FEATURED) return res.status(400).json({ code: "limit", message: `You can feature up to ${MAX_FEATURED} events. Unfeature one first.` }); next.featured = true; next.featuredOrder = Math.max(0, ...F.map((x) => x.featuredOrder || 0)) + 1; }
+      if (!want) { next.featured = false; next.featuredOrder = 0; } }
+    res.json({ item: save(u.ws, next) }); };
+  app.post("/api/host/scrapbook/:id", small, patch);
+  app.patch("/api/host/scrapbook/:id", small, patch);
   app.delete("/api/host/scrapbook/:id", (req, res) => { const u = me(req, res); if (!u) return; const id = String(req.params.id).replace(/[^a-f0-9]/g, ""); S(u.ws).delete("scrapbook/" + id); res.json({ ok: true }); });
 }

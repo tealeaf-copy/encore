@@ -173,3 +173,11 @@ test("Public MCP: initialize, tools/list, tools/call search_events and get_revie
   assert.equal((await post("/mcp/public", { jsonrpc: "2.0", method: "notifications/initialized" })).status, 202);
   const priv = await post("/mcp", { jsonrpc: "2.0", id: 1, method: "tools/list" }); assert.equal(priv.status, 401, "the private MCP still needs a token");
 });
+
+test("Reviews never show an email or phone number a guest typed", async () => {
+  const src = (await import("node:fs")).readFileSync(new URL("../server/directory.js", import.meta.url), "utf8");
+  const m = src.match(/const noContact = (\(t\) => [^\n]+);/); assert.ok(m, "noContact exists");
+  const noContact = eval(m[1]);
+  assert.equal(noContact("Email me at ana@example.com or call (415) 555-0101!"), "Email me at … or call …!");
+  assert.equal(noContact("Came with 2 friends, 10/10"), "Came with 2 friends, 10/10");
+});

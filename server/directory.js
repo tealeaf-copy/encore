@@ -58,7 +58,9 @@ const csvCell = (v) => { let t = Array.isArray(v) ? v.join("; ") : v == null ? "
 
 // ---- reviews (guests' kudos) ----
 const EMPTY_REVIEWS = () => ({ count: 0, would_go_again_pct: null, top_tags: [], items: [] });
-function reviewItem(k) { return { name: first(k.name) || "A guest", text: s(k.love, 500), tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "" }; }
+const noContact = (t) => String(t || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…");
+// reviews are public: an email or phone number a guest typed into one is never shown
+function reviewItem(k) { return { name: first(k.name) || "A guest", text: s(noContact(k.love), 500), tags: (k.tags || []).filter((t) => TAG_LABEL[t]).map((t) => TAG_LABEL[t]), at: k.at ? new Date(k.at).toISOString().slice(0, 10) : "" }; }
 // the host page's numbers: reviews are kudos with words or chips; "would go again" is the same definition the page uses
 function summarize(K, { items = 10 } = {}) {
   const shown = K.filter((k) => k.love || (k.tags || []).length).sort((a, b) => (b.at || 0) - (a.at || 0));

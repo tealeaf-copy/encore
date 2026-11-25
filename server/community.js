@@ -9,6 +9,7 @@ import { registerSearch } from "./search.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
+import { seatsOf } from "./social.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 10;
@@ -117,16 +118,25 @@ export function makeCommunity(store) {
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted"];
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
     if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
-  // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover
-  function eventsOf(ws, { upcoming = true, discoverableOnly = true, onPage = false } = {}) {
+  // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover.
+  // privateToo: link-only events that were shared (published). Past ones belong in the scrapbook (title, date, cover,
+  // photos and kudos; never the place or who came); upcoming ones are only ever shown to the host themselves.
+  // A host can keep one off with scrapbook: false.
+  const isPrivateShared = (e) => !e.discoverable && !!e.published && e.scrapbook !== false && !e.cancelled;
+  function eventsOf(ws, { upcoming = true, discoverableOnly = true, onPage = false, privateToo = false, owner = false } = {}) {
     const today = new Date().toISOString().slice(0, 10), host = profileOf(ws);
-    return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && (!discoverableOnly || (e.discoverable && (onPage || !e.unlisted))) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).map(({ id, e }) => ({ ...publicCard(id, e, host), ...(upcoming ? goingOf(ws, id, e) : {}) }));
+    const listed = (e) => !discoverableOnly || (e.discoverable && (onPage || !e.unlisted)) || (privateToo && isPrivateShared(e));
+    return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && listed(e) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9")))
+      .map(({ id, e }) => { const c = { ...publicCard(id, e, host), ...(upcoming && e.discoverable ? goingOf(ws, id, e) : {}) }; if (e.discoverable) return c;
+        for (const k of ["meetPoint", "headcount", "price", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
+        // strangers get a card, not a way in: no event id that opens the invite or its guest list
+        return { ...c, ...(owner ? {} : { id: "p-" + crypto.createHash("sha256").update(ws + "|" + id).digest("hex").slice(0, 16) }), private: true }; });
   }
   // who's going, for event previews: a count and up to three sketch faces (never names)
   const ARTS = ["florist", "curls", "bob", "chef", "runner", "barista", "baker", "glasses", "hiker"], TINTS = ["#E26D8E", "#E0A030", "#5B7FD6", "#3E9C6E", "#8C62C9"];
 const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler: "Last-Minute Yes", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
   function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0;
-      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n += Math.max(1, Math.min(6, +r.party || (r.plusOne ? 2 : 1)));
+      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n += seatsOf(r, e);
         if (r.showMe !== false && faces.length < 3) { const h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); faces.push({ art: ARTS[h % ARTS.length], color: TINTS[(h >> 4) % TINTS.length] }); } }
       // the crowd in one line: the two most common guest types (from the quiz), never names
       const T = {}; for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId === id && r.response === "going" && TYPE_NAMES[r.guestType]) T[r.guestType] = (T[r.guestType] || 0) + 1; }
@@ -145,9 +155,15 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
     if (!(h.theme?.avatarArt || h.theme?.avatarUrl || (h.gallery || []).length || (h.emoji && h.emoji !== "🎉"))) out.push("a face or photo");
     return out; }
   // for the signed-in host on Discover: their own live events Discover can't list yet, and why
-  function discoverStatus(ws) { const h = profileOf(ws), sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""), gaps = sample ? [] : pageGaps(h);
-    const today = new Date().toISOString().slice(0, 10), live = scopeStore(store, ws).list("events").map((d) => d.data).filter((e) => e && !e.example && e.discoverable && !e.unlisted && (e.date || "9999") >= today);
-    return { handle: h?.handle || "", gaps: live.length ? gaps : [], waiting: gaps.length ? live.map((e) => ({ title: e.pubTitle || e.name || "", city: e.city || h?.city || "" })).slice(0, 5) : [] }; }
+  // With eventId: just that event, cheap enough to ask at the moment the host shares (one read, no list), with the line to show.
+  function discoverStatus(ws, eventId = "") { const h = profileOf(ws), sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""), gaps = sample ? [] : pageGaps(h);
+    const today = new Date().toISOString().slice(0, 10);
+    if (eventId) { const e = scopeStore(store, ws).get("events/" + eventId)?.data; if (!e) return { handle: h?.handle || "", gaps, event: null };
+      const past = !!e.date && e.date < today, onPage = !!e.discoverable && !!h?.handle, wanted = !!e.discoverable && !e.unlisted, onDiscover = wanted && !past && !gaps.length;
+      const needs = gaps.filter((g) => g !== "a page"), line = !e.discoverable ? "Link only. Only people with the link can see it." : !h?.handle ? "Discover lists it once you have a page." : onDiscover ? "Live · On your page and Discover" : !wanted ? "Live · On your page. Kept off Discover." : past ? "On your page. Past events don't show on Discover." : `Live · On your page. Discover lists it once your page has ${needs.join(" and ")}.`;
+      return { handle: h?.handle || "", gaps, event: { id: eventId, onPage, onDiscover, wanted, needs: wanted && !past ? gaps : [], line } }; }
+    const live = scopeStore(store, ws).list("events").map((d) => d.data).filter((e) => e && !e.example && e.discoverable && !e.unlisted && (e.date || "9999") >= today);
+    return { handle: h?.handle || "", gaps: live.length ? gaps : [], pageGaps: gaps, waiting: gaps.length ? live.map((e) => ({ title: e.pubTitle || e.name || "", city: e.city || h?.city || "" })).slice(0, 5) : [] }; }
   function discover() {
     const hosts = [], events = [];
     const hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
@@ -314,7 +330,8 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     const recs = (h.recommends || []).map((r) => { const c = card(r.handle); return c ? { ...c, note: r.note || "" } : null; }).filter(Boolean);
     const recBy = []; for (const w of allWorkspaceIds()) { if (w === ws) continue; const o = C.profileOf(w); const r = o?.handle && (o.recommends || []).find((x) => x.handle === h.handle); if (r) recBy.push({ ...card(o.handle), note: r.note || "" }); }
     const hx = { ...publicHost(h), recs, recBy: recBy.slice(0, 12), experiences: (h.experiences || []).map((x) => ({ ...x, openDates: C.openDatesOf(ws, x) })) };
-    const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""); res.json({ sample, friends: !sample && getWorkspace(ws)?.plan === "friends", person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), personal: (() => { const full = String(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || "").trim().toLowerCase(), nm = String(h.name || "").trim().toLowerCase(), f = first(full); return !!f && (nm === full || nm === f || (nm.split(/\s+/).length <= 2 && nm.split(/\s+/)[0] === f)); })(), rising: sample ? null : (C.discover().hosts.find((x) => x.handle === h.handle) || {}).rising || null, host: sample ? { ...hx, supportUrl: "", fanclubUrl: "", links: [], socials: {}, venmo: "", instagram: "" } : hx, followers: C.followersOf(ws).length, supporters: scopeStore(store, ws).list("pledges").filter((d) => d.data?.tier && d.data.tier !== "none").length, gifted: scopeStore(store, ws).list("gifts").reduce((m, d) => { const k = d.data?.itemId; if (k) m[k] = (m[k] || 0) + 1; return m; }, {}), upcoming: C.eventsOf(ws, { onPage: true }), past: C.eventsOf(ws, { upcoming: false, onPage: true }).slice(-12).reverse() }); });
+    const sample = /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""), viewer = currentUser(req), own = !!viewer && viewer.ws === ws && ws !== DEFAULT_WS; if (own) res.set("Cache-Control", "private, no-store");
+    res.json({ sample, friends: !sample && getWorkspace(ws)?.plan === "friends", person: first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""), personal: (() => { const full = String(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || "").trim().toLowerCase(), nm = String(h.name || "").trim().toLowerCase(), f = first(full); return !!f && (nm === full || nm === f || (nm.split(/\s+/).length <= 2 && nm.split(/\s+/)[0] === f)); })(), rising: sample ? null : (C.discover().hosts.find((x) => x.handle === h.handle) || {}).rising || null, host: sample ? { ...hx, supportUrl: "", fanclubUrl: "", links: [], socials: {}, venmo: "", instagram: "" } : hx, followers: C.followersOf(ws).length, supporters: scopeStore(store, ws).list("pledges").filter((d) => d.data?.tier && d.data.tier !== "none").length, gifted: scopeStore(store, ws).list("gifts").reduce((m, d) => { const k = d.data?.itemId; if (k) m[k] = (m[k] || 0) + 1; return m; }, {}), upcoming: own ? C.eventsOf(ws, { onPage: true, privateToo: true, owner: true }).map((e) => (e.private ? { ...e, onlyYou: true } : e)) : C.eventsOf(ws, { onPage: true }), past: C.eventsOf(ws, { upcoming: false, onPage: true, privateToo: true, owner: own }).slice(-12).reverse(), ...(own ? { own: true } : {}) }); });
   // pledge support: records the tier and follows the host; no card is taken
   app.post("/api/public/pledge", small, (req, res) => { if (limited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of pledges at once. Try again in a bit." }); const b = req.body || {}, ws = C.wsOfHandle(b.handle), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     const acct = currentUser(req), email = String(acct?.email || b.email || "").trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ code: "invalid", message: "Add your email so the host knows who you are." });
@@ -341,10 +358,11 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     const tasks = [], first1 = isNew || !prev?.confirmedAt;
     if (first1 && cfg) tasks.push(sendEmail(cfg, { to: email, subject: `You're following ${hostName} on Pottery Lab`, text: `Hi ${first(b.name) || "there"},\n\nYou're now following ${hostName}. You'll hear first when they post something new${phone ? ", by email and by text" : ""}.\n\nTheir page: ${page}\n`, fromName: "Pottery Lab" }).then((r) => { out.emailed = !!r?.ok; }).catch(() => {}));
     if ((first1 || newPhone) && phone && sms) tasks.push(sendSms(sms, { to: phone, text: `Pottery Lab: you're following ${hostName}. You'll get a text when they post something new. Reply STOP to stop texts.` }).then((r) => { out.texted = !!r?.ok; }).catch(() => {}));
+    if (isNew) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && owner !== email) X?.notify?.(owner, { kind: "follower", key: "fol-" + crypto.createHash("sha256").update(email).digest("hex").slice(0, 16), text: `👋 ${first(b.name) || "Someone new"} followed you. They'll hear first about your next event.`, link: h.handle ? `/@${h.handle}` : "/", eventId: "" }); }
     if (first1) { const owner = (getWorkspace(ws)?.ownerEmail || "").toLowerCase(); if (owner && cfg) tasks.push(sendEmail(cfg, { to: owner, subject: `${first(b.name) || "Someone"} just followed you on Pottery Lab`, text: `${b.name || "Someone"} is now following you. They'll hear first about your next event.\n\nSee everyone who follows you: ${publicOrigin(req)}/`, fromName: "Pottery Lab" }).catch(() => {})); }
     await Promise.all(tasks); if (first1) { out.confirmed = true; try { const S = scopeStore(store, ws), k = S.list("followers").find((d) => d.data?.email === email); if (k) S.update("followers/" + k.id, { confirmedAt: Date.now() }); } catch {} } res.json(out); });
   app.get("/api/public/discover", (req, res) => res.json(C.discover()));
-  app.get("/api/host/discover-status", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ gaps: [], waiting: [] }); res.json(C.discoverStatus(u.ws)); });
+  app.get("/api/host/discover-status", (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.json({ gaps: [], waiting: [] }); res.set("Cache-Control", "private, no-store"); res.json(C.discoverStatus(u.ws, clean(req.query.eventId, 80).replace(/[^A-Za-z0-9_-]/g, ""))); });
   registerSearch(app, { hosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get("/api/public/cards", (req, res) => { const ids = String(req.query.ids || "").split(",").map((x) => x.trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)).slice(0, 20), cards = {};
     for (const id of ids) { const c = C.cardOf(id); if (c) cards[id] = c; }

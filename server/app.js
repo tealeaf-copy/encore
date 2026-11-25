@@ -15,7 +15,8 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
-import { makeSocial, mountSocial } from "./social.js";
+import { makeSocial, mountSocial, seatsOf, seatsTaken, waitlistOf, waitlistPos } from "./social.js";
+import { smsConfig, sendSms } from "./sms.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
 import { mountScrapbook } from "./scrapbook.js";
@@ -65,6 +66,28 @@ export const publicBrand = (data) => Object.fromEntries(PUBLIC_BRAND_FIELDS.filt
 // for "Can't make it" and approval-required events.)
 const GUEST_RSVP_RESPONSES = new Set(["going", "maybe", "declined", "no", "requested"]);
 const GUEST_WALL_STATUSES = new Set(["going", "maybe", "hidden", "cancelled"]);
+// The only fields a guest's reply may carry (what the light and full invites send). Everything else on a reply
+// (paid, let in, checked in, promoted, the device keys) is the host's or the server's and is never taken from a guest.
+const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
+const GUEST_FLAGS = ["plusOne", "severe", "showOnWall", "showMe", "smsOk"];
+export const GUEST_RSVP_KEYS = new Set([...Object.keys(GUEST_TEXT), ...GUEST_FLAGS, "party", "guestIndex", "createdAt", "changedAt", "photo", "dates", "answers", "utm", "source"]);
+// A guest's whole reply, photo included, fits in this many bytes; real replies are a few hundred.
+export const GUEST_BODY_MAX = 64 * 1024;
+function cleanGuestRsvp(b) {
+  const o = {};
+  for (const [k, n] of Object.entries(GUEST_TEXT)) if (b[k] != null) o[k] = String(b[k]).replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
+  if (o.phone != null) o.phone = o.phone.replace(/[^\d+ ()-]/g, "");
+  if (o.contactVia != null && !["email", "sms", "whatsapp"].includes(o.contactVia)) delete o.contactVia;
+  for (const k of GUEST_FLAGS) if (b[k] != null) o[k] = !!b[k];
+  if (b.party != null) o.party = Math.max(1, Math.min(6, Math.floor(+b.party) || 1));
+  if (b.guestIndex != null && Number.isFinite(+b.guestIndex)) o.guestIndex = Math.max(-1, Math.min(10000, Math.floor(+b.guestIndex)));
+  for (const k of ["createdAt", "changedAt"]) if (b[k] != null && Number.isFinite(+b[k])) o[k] = Math.min(+b[k], Date.now() + 864e5);
+  if (typeof b.photo === "string" && ((/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 60000) || /^\/_blob\/[A-Za-z0-9]{20}$/.test(b.photo))) o.photo = b.photo;
+  if (Array.isArray(b.dates)) o.dates = b.dates.slice(0, 20).map((d) => String(d ?? "").slice(0, 40)).filter(Boolean);
+  if (b.answers !== undefined) o.answers = b.answers; // cleaned in guestShape
+  if (b.utm !== undefined) o.utm = b.utm;
+  return o;
+}
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
 function cleanUtm(u) {
   if (typeof u === "string") return u.slice(0, 300);
@@ -529,6 +552,29 @@ export function createApp({ store, dataDir }) {
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
+  // ---------- a guest's own reply, from any phone or browser ----------
+  // "Email me my link": sends the link to the address on the reply (never says whether there is one).
+  const replyHits = new Map(); const replyLimited = (req, n) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };
+  app.post("/api/public/reply/link", small, async (req, res) => { if (replyLimited(req, 10)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
+    const eventId = String(req.body?.eventId || "").slice(0, 80), email = String(req.body?.email || "").trim().toLowerCase(), ws = /^[A-Za-z0-9_-]+$/.test(eventId) ? workspaceOfEvent(eventId) : null;
+    if (!ws || !EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add the email you replied with." });
+    const on = emailOn(ws), d = on ? scopeStore(store, ws).list("rsvps").find((x) => x.data?.eventId === eventId && String(x.data.email || "").trim().toLowerCase() === email) : null;
+    if (d) await sendReplyLink(req, ws, d.id).catch(() => false);
+    res.json({ ok: true, emailOn: on, message: on ? "If you replied with that email, a link is on its way. Open it here to change your reply." : "Email isn't set up for this event. Open the invite on the phone or browser you used, or ask your host." }); });
+  // Opening the emailed link: this browser can now see and change the reply (the first device keeps working too).
+  app.post("/api/public/reply/claim", small, (req, res) => { if (replyLimited(req, 30)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
+    const eventId = String(req.body?.eventId || "").slice(0, 80), rid = String(req.body?.rid || "").slice(0, 80), t = String(req.body?.t || ""), k = String(req.get("x-encore-key") || "").slice(0, 64);
+    const ws = /^[A-Za-z0-9_-]+$/.test(eventId) ? workspaceOfEvent(eventId) : null, St = ws && scopeStore(store, ws), d = St && /^[A-Za-z0-9_-]+$/.test(rid) ? St.get("rsvps/" + rid) : null;
+    if (!d || d.data?.eventId !== eventId || !eq(replyToken(ws, rid), t)) return res.status(404).json({ code: "not_found", message: "This link doesn't work any more. Ask for a new one from the invite." });
+    if (k.length < 8) return res.status(400).json({ code: "invalid", message: "Missing guest key." });
+    const r = d.data; if (r._k !== k && !(r._keys || []).includes(k)) St.update("rsvps/" + rid, { _keys: [...(r._keys || []).filter((x) => x !== k), k].slice(-5) });
+    const all = St.list("rsvps").filter((x) => x.data?.eventId === eventId);
+    res.json({ ok: true, rid, eventId, code: r.code || "", name: r.name || "", email: r.email || "", response: r.response || "", party: r.party || 1, dietary: r.dietary || "", ...(r.response === "waitlist" ? { waitlistPos: waitlistPos(all, rid), waiting: waitlistOf(all).length } : {}) }); });
+  // Where a reply stands, for the guest who holds its id and code: the response and, on the waitlist, their place in line.
+  app.get("/api/public/reply/:eventId", (req, res) => { const eventId = String(req.params.eventId || "").slice(0, 80), P = X.rsvpProof(eventId, req.query.rid, req.query.code);
+    if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
+    const all = P.S.list("rsvps").filter((x) => x.data?.eventId === eventId), ev = P.ev || {}, seats = +ev.headcount || 0, waiting = waitlistOf(all).length;
+    res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), decidedAt: P.r.decidedAt || null, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
   mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));
@@ -1140,24 +1186,66 @@ export function createApp({ store, dataDir }) {
     res.json(doc ? { exists: true, id: doc.id, data, updated: doc.updated, ...where } : { exists: false, id: p.split("/").pop(), ...where });
   });
   const guestKey = (req) => String(req.get("x-encore-key") || "").slice(0, 64);
-  // Saves carry the version they started from; a stale save gets 409 instead of overwriting someone else's change.
+  // ---------- two devices, one event ----------
+  // Saves carry the version they started from (_base). The server keeps the last few versions of each event, so a save
+  // that started from an older version is merged field by field: what only you changed is saved, what only the other
+  // device changed is kept, and only a field both changed differently is a conflict (409, with what changed).
+  // A save may also name the fields it changed (_fields): then only those are written, whatever else the draft holds.
+  const stable = (v) => JSON.stringify(v === undefined ? null : v, (k, x) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map((kk) => [kk, x[kk]])) : x));
+  const same = (a, b) => stable(a) === stable(b);
+  const histPath = (p) => "evhist/" + p.split("/")[1];
+  function rememberVersion(St, p, data) {
+    if (!data?.updatedAt || !/^events\/[^/]+$/.test(p)) return;
+    try { const L0 = St.get(histPath(p))?.data?.versions || []; if (L0.some((v) => v.v === data.updatedAt)) return;
+      let L = [...L0, { v: data.updatedAt, data }].slice(-6); while (L.length > 1 && JSON.stringify(L).length > 1_500_000) L = L.slice(1);
+      St.set(histPath(p), { versions: L }); } catch {}
+  }
+  const versionAt = (St, p, v) => (St.get(histPath(p))?.data?.versions || []).find((x) => x.v === v)?.data || null;
+  // worked out by each device on its own (the stage label) or only ever added to (the activity log): never a conflict
+  const SOFT_FIELDS = new Set(["status", "log", "updatedAt", "createdAt", "example"]);
+  const CONFLICT_MSG = "This event changed on another device while you edited the same part. Reload to see their version, then make your change again.";
   const versionOk = (req, res) => {
     const p = String(req.query.path || "");
     if (!/^events\//.test(p) || req.guest) return true;
     const m = /^events\/([^/]+)$/.exec(p);
     if (m && !claimEvent(m[1], sessionWorkspace(req))) { res.status(409).json({ code: "conflict", message: "That event id is already used. Save it under a new id." }); return false; }
-    const base = req.body?._base; if (req.body) { delete req.body._base; delete req.body.approvals; }
+    const base = req.body?._base, F = Array.isArray(req.body?._fields) ? req.body._fields.filter((k) => typeof k === "string" && /^[A-Za-z][A-Za-z0-9_]{0,60}$/.test(k) && !SOFT_FIELDS.has(k)).slice(0, 300) : null;
+    if (req.body) { delete req.body._base; delete req.body._fields; delete req.body.approvals; }
     const cur = S(req).get(p);
+    if (!m || !cur || !cur.data?.updatedAt) return true;
+    const mine = req.body && typeof req.body === "object" ? req.body : {}, theirs = cur.data;
+    const fields = req.method === "PATCH" ? Object.keys(mine).filter((k) => !SOFT_FIELDS.has(k)) : F;
+    if (base === theirs.updatedAt && !(fields && req.method === "PUT")) return true; // up to date: save as sent
     // A save that doesn't say which version it started from can't overwrite a versioned event.
-    if (base == null && cur && cur.data?.updatedAt) { res.status(409).json({ code: "conflict", message: "This save didn't say which version of the event it started from. Reload the event, then save again." }); return false; }
-    if (base != null && cur && cur.data?.updatedAt && cur.data.updatedAt !== base) { res.status(409).json({ code: "conflict", message: "Someone else changed this event since you opened it. Reload to see their changes, then save again." }); return false; }
+    if (base == null) { res.status(409).json({ code: "conflict", message: "This save didn't say which version of the event it started from. Reload the event, then save again.", current: theirs, updatedAt: theirs.updatedAt }); return false; }
+    const was = base === theirs.updatedAt ? theirs : versionAt(S(req), p, base);
+    if (!fields && !was) { res.status(409).json({ code: "conflict", message: "Someone else changed this event since you opened it. Reload to see their changes, then save again.", changed: Object.keys({ ...mine, ...theirs }).filter((k) => !SOFT_FIELDS.has(k) && !same(mine[k], theirs[k])), current: theirs, updatedAt: theirs.updatedAt }); return false; }
+    const out = { ...theirs }, conflicts = [], kept = [];
+    if (fields) {
+      for (const k of fields) { if (was && !same(theirs[k], was[k]) && !same(theirs[k], mine[k])) { conflicts.push(k); continue; } if (k in mine) out[k] = mine[k]; else if (req.method === "PUT") delete out[k]; }
+      if (was) for (const k of Object.keys({ ...theirs, ...was })) if (!fields.includes(k) && !SOFT_FIELDS.has(k) && !same(theirs[k], was[k])) kept.push(k);
+    } else {
+      for (const k of new Set([...Object.keys(mine), ...Object.keys(theirs), ...Object.keys(was)])) { if (SOFT_FIELDS.has(k)) continue;
+        const a = mine[k], t = theirs[k], b0 = was[k];
+        if (same(a, t)) continue;
+        if (same(a, b0)) { kept.push(k); continue; } // only the other device changed it: keep theirs
+        if (same(t, b0)) { if (k in mine) out[k] = a; else delete out[k]; continue; } // only you changed it
+        conflicts.push(k); }
+    }
+    if (conflicts.length) { res.status(409).json({ code: "conflict", message: CONFLICT_MSG, conflicts, changed: kept, current: theirs, updatedAt: theirs.updatedAt }); return false; }
+    for (const k of ["status", "example"]) if (k in mine) out[k] = mine[k];
+    if (Array.isArray(mine.log) || Array.isArray(theirs.log)) { const seen = new Set((theirs.log || []).map(stable)); out.log = [...(theirs.log || []), ...(mine.log || []).filter((x) => !seen.has(stable(x)))].slice(-500); }
+    out.updatedAt = Math.max(+mine.updatedAt || Date.now(), (+theirs.updatedAt || 0) + 1);
+    req.body = out; if (base !== theirs.updatedAt || kept.length) req.merged = { merged: true, theirs: kept, updatedAt: out.updatedAt };
     return true;
   };
   // Guest RSVPs and wall entries: the server stamps the source and only takes the statuses a guest may choose.
   const guestShape = (req, res, collection) => {
     if (!req.guest) return true;
-    const b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+    let b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
+    if (GUEST_COLLECTIONS.has(collection) && Buffer.byteLength(JSON.stringify(b)) > GUEST_BODY_MAX) { res.status(413).json({ code: "too_large", message: "That's too much to send. Try a smaller photo or a shorter note." }); return false; }
     if (collection === "rsvps") {
+      b = cleanGuestRsvp(b);
       for (const k of ["response", "status"]) if (b[k] != null && !GUEST_RSVP_RESPONSES.has(String(b[k]).toLowerCase())) { res.status(400).json({ code: "invalid", message: "Pick I'm in, Maybe or Can't go." }); return false; }
       const utm = cleanUtm(b.utm); delete b.utm;
       // Ticketed dinners can open to followers first: everyone else waits until the window closes.
@@ -1188,28 +1276,63 @@ export function createApp({ store, dataDir }) {
     if (!req.guest) return true;
     if (exampleWrite(req, res)) return false;
     if (String(req.query.path || "").startsWith("nominations/")) return nominationOk(req, res);
-    if (!guestShape(req, res, String(req.query.path || "").split("/")[0])) return false;
+    const col = String(req.query.path || "").split("/")[0];
+    if (!guestShape(req, res, col)) return false;
     const p = String(req.query.path || ""), cur = S(req).get(p), k = guestKey(req);
     if (!k) { res.status(403).json({ code: "not_granted", message: "Missing guest key." }); return false; }
-    if (cur && cur.data?._k !== k) { res.status(403).json({ code: "not_granted", message: "You can only change your own response." }); return false; }
-    req.body = { ...(req.body || {}), _k: k };
+    if (cur && !keyOk(cur.data, k)) { res.status(403).json({ code: "not_granted", message: "You can only change your own response." }); return false; }
+    const b = { ...(req.body || {}) }; delete b._k; delete b._keys;
+    if (col === "rsvps") {
+      if (cur) { b.eventId = cur.data.eventId; if (req.method === "PUT") for (const [kk, v] of Object.entries(cur.data)) if (!GUEST_RSVP_KEYS.has(kk) && !(kk in b)) b[kk] = v; }
+      else { const eid = String(b.eventId || ""); if (!/^[A-Za-z0-9_-]{1,80}$/.test(eid) || !S(req).get("events/" + eid)) { res.status(404).json({ code: "not_found", message: "That event isn't here any more." }); return false; }
+        if (rsvpLimited(req, eid)) { res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); return false; } }
+    }
+    req.body = { ...b, _k: cur?.data?._k || k, ...(Array.isArray(cur?.data?._keys) ? { _keys: cur.data._keys } : {}) };
     return true;
   };
+  // the device that sent a reply, or one the guest added from the "change my reply" email link
+  const keyOk = (d, k) => !!k && (d?._k === k || (Array.isArray(d?._keys) && d._keys.includes(k)));
+  const rsvpHits = new Map();
+  /** Guest replies from one address: a few dozen an hour per event (a team on one office network), more across events. */
+  function rsvpLimited(req, eventId) {
+    const now = Date.now(), per = +(process.env.ENCORE_RSVP_PER_HOUR || 40), ip = req.ip || "?"; if (rsvpHits.size > 50_000) rsvpHits.clear();
+    const hit = (k, n) => { let h = rsvpHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; rsvpHits.set(k, h); } return ++h.n > n; };
+    const a = hit(ip + "|" + eventId, per), b = hit(ip, +(process.env.ENCORE_RSVP_IP_PER_HOUR || 150)); return a || b;
+  }
   // A guest changing their own reply goes through the same rules as a first reply: a full event puts a new "I'm in"
   // on the waitlist, and an event where the host lets people in keeps it as "asked" until the host does.
   function guardGuestReply(req, path, body) {
-    if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body || body.response !== "going") return body;
-    const cur = S(req).get(path)?.data || {}; if (cur.response === "going") return body;
-    const ev = S(req).get("events/" + String(cur.eventId || body.eventId || ""))?.data; if (!ev) return body;
-    if (ev.approvalRequired && (!cur.response || ["requested", "declined"].includes(cur.response))) return { ...body, response: "requested" };
-    const pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId });
-    return pol.body.response === "going" ? body : { ...body, response: pol.body.response };
+    if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body) return body;
+    if (body.response !== "going" && body.party == null && body.plusOne == null) return body;
+    const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
+    const o = pol.body; if (!o.eventId) return body;
+    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}) };
   }
-  app.put("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; req.body = guardGuestReply(req, String(req.query.path || ""), req.body); const r = S(req).set(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
-  app.patch("/api/db/doc", json, (req, res) => { if (!ownedWrite(req, res) || !versionOk(req, res)) return; req.body = guardGuestReply(req, String(req.query.path || ""), req.body); const r = S(req).update(String(req.query.path || ""), req.body); afterEventWrite(S(req), String(req.query.path || "")); res.json(r); });
-  app.delete("/api/db/doc", (req, res) => { const p = String(req.query.path || ""), u = currentUser(req);
+  // one path for every change to a document: the waitlist moves up when a spot opens, people hear what they need to,
+  // and an event remembers its last few versions (for merging saves from two devices)
+  async function writeDoc(req, res, how) {
+    if (!ownedWrite(req, res) || !versionOk(req, res)) return;
+    const p = String(req.query.path || ""), St = S(req), before = St.get(p)?.data || null, isEv = /^events\/[^/]+$/.test(p), isR = /^rsvps\/[A-Za-z0-9_-]+$/.test(p);
+    req.body = guardGuestReply(req, p, req.body);
+    // the host letting someone in is remembered, so a later change of mind doesn't need asking again
+    if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };
+    if (isEv && !req.guest && before) rememberVersion(St, p, before);
+    const r = how === "put" ? St.set(p, req.body) : St.update(p, req.body), after = how === "put" ? req.body : r.data;
+    afterEventWrite(St, p);
+    const extra = {};
+    if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
+      if (before && (before.headcount !== after.headcount || before.autoWait !== after.autoWait || before.plusOnes !== after.plusOnes || !same(before.guests || [], after.guests || []))) { try { const pr = await promoteWaitlist(req, req.ws, p.split("/")[1]); if (pr.length) extra.promoted = pr; } catch {} } }
+    if (isR) { try { Object.assign(extra, await afterRsvp(req, req.ws, p.split("/")[1], before, after)); } catch (e) { console.warn("afterRsvp", e?.message); } }
+    res.json({ ...r, ...extra });
+  }
+  app.put("/api/db/doc", json, (req, res) => writeDoc(req, res, "put"));
+  app.patch("/api/db/doc", json, (req, res) => writeDoc(req, res, "patch"));
+  app.delete("/api/db/doc", async (req, res) => { const p = String(req.query.path || ""), u = currentUser(req);
     if (/^events\//.test(p) && authEnabled() && u && !((u.owner || (u.roles || []).some((r) => /event lead|admin|owner/i.test(r))))) return res.status(403).json({ code: "not_granted", message: "Only the workspace owner or an event lead can delete an event." });
-    const r = S(req).delete(p); afterEventWrite(S(req), p); res.json(r); });
+    const before = /^rsvps\/[A-Za-z0-9_-]+$/.test(p) ? S(req).get(p)?.data : null;
+    const r = S(req).delete(p); afterEventWrite(S(req), p); if (/^events\/[^/]+$/.test(p)) S(req).delete(histPath(p));
+    if (before?.eventId) { try { await afterRsvp(req, req.ws, p.split("/")[1], before, null); } catch {} }
+    res.json(r); });
   // ---------- conference nominations by link (sales and execs, no login) ----------
   const confnomToken = (ws) => hmac32("confnom|" + ws);
   app.get("/api/confnomlink", (req, res) => {
@@ -1259,39 +1382,94 @@ export function createApp({ store, dataDir }) {
     }
     res.json({ docs });
   });
-  /** Seats are enforced here, not in the guest's browser: a yes past the seat count becomes a waitlist place.
-   * One reply per guest: the same email (or the same personal link) updates the earlier reply. */
-  function rsvpPolicy(req, body) {
+  /** Spots are enforced here, not in the guest's browser: a yes past the spots left becomes a waitlist place, and
+   * while anyone is waiting a new yes joins the line behind them. Spots count people: a party of three holds three.
+   * One reply per guest: the same email (or the same personal link) updates the earlier reply. selfId: the reply being changed. */
+  function rsvpPolicy(req, body, selfId = null) {
     const eventId = String(body?.eventId || ""); if (!/^[A-Za-z0-9_-]+$/.test(eventId)) return { body };
     const ev = S(req).get("events/" + eventId)?.data; if (!ev) return { body };
     const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), em = String(body.email || "").trim().toLowerCase(), inv = String(req.get("x-encore-invite") || "").split("~")[0];
-    const prior = all.find((d) => (em && String(d.data.email || "").trim().toLowerCase() === em) || (inv && d.data._inv === inv));
-    const G = ev.guests || [], seen = new Set(G.flatMap((g) => [String(g.email || "").toLowerCase(), String(g.name || "").toLowerCase()]).filter(Boolean));
-    // Everyone holding a seat, counted once: host-marked guests plus the latest yes from each RSVP, whether or not the host has opened the app since.
-    const keyOf = (x) => String(x.email || x.name || "").trim().toLowerCase(), held = new Set(G.filter((g) => g.status === "Going" || g.status === "Attended").map(keyOf).filter(Boolean));
-    for (const d of all) { if (d === prior) continue; const k = keyOf(d.data); if (!k) continue; if (d.data.response === "going") held.add(k); else if (["no", "waitlist"].includes(d.data.response) && !G.some((g) => keyOf(g) === k && g.status === "Attended")) held.delete(k); }
-    const going = held.size - (held.has(em) ? 1 : 0);
+    const prior = selfId ? all.find((d) => d.id === selfId) : all.find((d) => (em && String(d.data.email || "").trim().toLowerCase() === em) || (inv && d.data._inv === inv));
+    const G = ev.guests || [], pr = prior?.data || {};
     const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
     const out = { ...body, ...(inv ? { _inv: inv } : {}) };
-    if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && going >= +ev.headcount) out.response = "waitlist";
+    if (out.party != null || out.plusOne != null) out.party = seatsOf(out, ev);
+    // ask-to-join: a guest's yes is a request until the host lets them in (once let in, they can change their mind back)
+    if (req.guest && ev.approvalRequired && out.response === "going" && pr.response !== "going" && !pr.letInAt) out.response = "requested";
+    if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready) {
+      const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = seatsOf(out, ev);
+      if (pr.response === "going") { const room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = room; out.partyCut = true; } } // already in: keeps their spots
+      else if (taken + mine > cap || waitlistOf(all.filter((d) => d.id !== prior?.id)).length) out.response = "waitlist";
+    }
+    if (out.response === "waitlist") out.waitAt = pr.response === "waitlist" && pr.waitAt ? pr.waitAt : Date.now();
     return { body: out, prior };
   }
-  // A seat freed by a decline goes to the first person on the waitlist, who is told by email when email is on.
-  async function promoteWaitlist(req, eventId) {
-    const ev = S(req).get("events/" + eventId)?.data; if (!ev || ev.autoWait === false || !(+ev.headcount > 0)) return null;
-    const all = S(req).list("rsvps").filter((d) => d.data?.eventId === eventId), G = ev.guests || [];
-    const keyOf = (x) => String(x.email || x.name || "").trim().toLowerCase(), held = new Set(G.filter((g) => g.status === "Going" || g.status === "Attended").map(keyOf).filter(Boolean));
-    for (const d of all) { const k = keyOf(d.data); if (!k) continue; if (d.data.response === "going") held.add(k); else if (["no", "waitlist"].includes(d.data.response) && !G.some((g) => keyOf(g) === k && g.status === "Attended")) held.delete(k); }
-    // count seats, not replies: a party of three holds three seats
-    const seatsOf = (x) => Math.max(1, Math.min(6, +x.party || (x.plusOne ? 2 : 1))), partyOf = new Map(all.map((d) => [keyOf(d.data), seatsOf(d.data)])); for (const g of G) if (!partyOf.has(keyOf(g))) partyOf.set(keyOf(g), seatsOf(g));
-    const taken = [...held].reduce((a, k) => a + (partyOf.get(k) || 1), 0), free = +ev.headcount - taken; if (free <= 0) return null;
-    // the first waitlisted group that fits the seats that opened
-    const next = all.filter((d) => d.data.response === "waitlist" && seatsOf(d.data) <= free).sort((a, b) => (a.data.changedAt || a.data.createdAt || 0) - (b.data.changedAt || b.data.createdAt || 0))[0];
-    if (!next) return null;
-    S(req).set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() });
-    const to = String(next.data.email || "").trim(), title = ev.pubTitle || ev.copy?.title || "the event";
-    if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { try { await mailFrom(req, { to, subject: `A spot opened up: ${title}`, text: `Hi ${String(next.data.name || "").split(" ")[0] || "there"},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${ev.date ? " on " + new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""}.\n\nPlans changed? Open your invite and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "waitlist" }); } catch {} }
-    return next.id;
+  const titleOf = (ev) => String(ev?.pubTitle || ev?.name || ev?.copy?.title || "").trim() || "your event";
+  const firstOf = (n) => String(n || "").trim().split(/\s+/)[0] || "";
+  const whenOf = (ev) => (/^\d{4}-\d{2}-\d{2}$/.test(ev?.date || "") ? new Date(ev.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "") + (/^\d{2}:\d{2}$/.test(ev?.startTime || "") ? " · " + new Date("2000-01-01T" + ev.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(":00", "").replace(" ", "").toLowerCase() : "");
+  const hostFirstOf = (ws, ev) => firstOf(ev?.hostName) || firstOf(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name) || firstOf(C.profileOf(ws)?.name) || "Your host";
+  const emailOn = (ws) => !!(emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true));
+  /** Email on behalf of a workspace when no one is signed in (a guest's reply moved something): logged in its outbox. */
+  async function mailWs(ws, { to, subject, text, eventId = "", kind = "email", fromName = "" }) {
+    const cfg = emailConfig(ws, ws === DEFAULT_WS) || emailConfig(DEFAULT_WS, true); if (!cfg) return { ok: false, code: "email_off" };
+    const St = scopeStore(store, ws), hour = Date.now() - 36e5;
+    if (St.list("outbox").filter((d) => d.data?.at > hour).length >= +(process.env.ENCORE_EMAIL_PER_HOUR || 300)) return { ok: false, code: "rate_limited" };
+    const r = await sendEmail(cfg, { to, subject, text, fromName });
+    St.add("outbox", { kind, eventId, to: [].concat(to), subject: String(subject || "").slice(0, 200), by: null, at: Date.now(), status: r.ok ? "sent" : "failed", error: r.error || null, providerId: r.id || null });
+    return r;
+  }
+  // a link that opens a guest's own reply on any phone or browser: the reply id plus a signature only the server can make
+  const replyToken = (ws, rid) => hmac32("reply:" + tag(ws) + rid);
+  const replyLink = (req, ws, eventId, rid) => `${originOf(req)}/e/${encodeURIComponent(eventId)}#reply=${encodeURIComponent(rid)}.${replyToken(ws, rid)}`;
+  /** Email a guest the link to their own reply (only to the address on the reply, at most every 10 minutes). */
+  async function sendReplyLink(req, ws, rid) {
+    const St = scopeStore(store, ws), r = St.get("rsvps/" + rid)?.data, to = String(r?.email || "").trim(); if (!r || !EMAIL_OK(to) || !emailOn(ws)) return false;
+    if (r.linkSentAt && Date.now() - r.linkSentAt < 10 * 60e3) return true;
+    const ev = St.get("events/" + r.eventId)?.data || {}, title = titleOf(ev), when = whenOf(ev);
+    const m = await mailWs(ws, { to, subject: `Your reply: ${title}`, text: `Hi ${firstOf(r.name) || "there"},\n\nHere's the link to your reply for ${title}${when ? ` (${when})` : ""}. Open it on the phone or browser you're using now to see or change it:\n${replyLink(req, ws, r.eventId, rid)}\n\nDidn't ask for this? You can ignore it. Your reply stays as it is.\n`, eventId: r.eventId, kind: "reply-link", fromName: hostFirstOf(ws, ev) });
+    if (m.ok) { try { St.update("rsvps/" + rid, { linkSentAt: Date.now() }); } catch {} }
+    return !!m.ok;
+  }
+  /** Spots freed by any path (a guest's Can't go, the host saying Not this time, a bigger cap) go to the waitlist in order:
+   * the first group that fits gets in, and is told by email (when email is on) and in their bell. */
+  async function promoteWaitlist(req, ws, eventId) {
+    const St = scopeStore(store, ws), ev = St.get("events/" + eventId)?.data; if (!ev || ev.autoWait === false || !(+ev.headcount > 0)) return [];
+    const done = [];
+    for (let i = 0; i < 100; i++) {
+      const all = St.list("rsvps").filter((d) => d.data?.eventId === eventId), free = +ev.headcount - seatsTaken(ev, all); if (free <= 0) break;
+      // ask-to-join events: only people the host already let in move up on their own; the host decides the rest
+      const next = waitlistOf(all).find((d) => seatsOf(d.data, ev) <= free && (!ev.approvalRequired || d.data.letInAt)); if (!next) break;
+      St.set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() }); done.push(next);
+    }
+    const title = titleOf(ev), when = whenOf(ev), owner = getWorkspace(ws)?.ownerEmail || "";
+    for (const d of done) { const r = d.data, to = String(r.email || "").trim(), name = firstOf(r.name) || "there";
+      if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "waitlist", key: "in-" + d.id, text: `🎉 A spot opened up. You're in for ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
+        if (X.canEmail(to)) { try { await mailWs(ws, { to, subject: `A spot opened up: ${title}`, text: `Hi ${name},\n\nGood news: a spot opened up and it's yours. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the details: ${replyLink(req, ws, eventId, d.id)}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "waitlist", fromName: hostFirstOf(ws, ev) }); } catch {} } }
+      if (owner) X.notify(owner, { kind: "reply", key: "promo-" + d.id, text: `${firstOf(r.name) || "Someone"} moved up from the waitlist for ${title}.`, link: `/?app=1&open=${encodeURIComponent(eventId)}#studio`, eventId }); }
+    return done.map((d) => d.id);
+  }
+  /** After a reply changes: move the waitlist up, tell the host about guests' replies, tell a guest the host let them in.
+   * Returns what the reply's sender should know: where it landed and, on the waitlist, their place in line. */
+  async function afterRsvp(req, ws, id, before, after) {
+    const St = scopeStore(store, ws), eventId = String(after?.eventId || before?.eventId || ""), ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? St.get("events/" + eventId)?.data : null; if (!ev) return {};
+    const was = before?.response || "", now = after?.response || "", title = titleOf(ev), owner = getWorkspace(ws)?.ownerEmail || "", who = firstOf(after?.name || before?.name) || "Someone", studio = `/?app=1&open=${encodeURIComponent(eventId)}#studio`;
+    const promoted = await promoteWaitlist(req, ws, eventId);
+    // the host's bell: every guest reply, and an email when someone asks to join
+    if (req.guest && after && now && now !== was && owner) {
+      const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
+      if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: line, link: studio, eventId });
+      if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
+    }
+    // the host let someone in: tell the guest by email, text and their bell
+    let letIn = null;
+    if (!req.guest && after && now === "going" && was && was !== "going" && ["requested", "waitlist", "maybe", "declined", "no"].includes(was)) {
+      const to = String(after.email || "").trim(), host = hostFirstOf(ws, ev), when = whenOf(ev), link = replyLink(req, ws, eventId, id); letIn = { emailed: false, texted: false };
+      if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "letin", key: "letin-" + id, text: `🎉 ${host} let you in to ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
+        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
+      const sms = smsConfig(); if (!letIn.emailed && sms && after.phone && after.smsOk !== false) { try { letIn.texted = !!(await sendSms(sms, { to: after.phone, text: `${host} let you in to ${title}${when ? `, ${when}` : ""}. Details: ${link} Reply STOP to opt out.` })).ok; } catch {} }
+    }
+    const fin = St.get("rsvps/" + id)?.data, all = St.list("rsvps").filter((d) => d.data?.eventId === eventId);
+    return { ...(fin ? { response: fin.response } : {}), ...(fin?.response === "waitlist" ? { waitlistPos: waitlistPos(all, id), waiting: waitlistOf(all).length } : {}), ...(fin?.partyCut ? { party: fin.party, partyCut: true } : {}), ...(promoted.length ? { promoted: true, promotedIds: promoted } : {}), ...(letIn ? { letIn } : {}) };
   }
   app.post("/api/db/collection", json, async (req, res) => {
     const p = String(req.query.path || "");
@@ -1300,22 +1478,24 @@ export function createApp({ store, dataDir }) {
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
     if (p === "rsvps") { if (req.guest && body && typeof body.response === "string") body = { ...body, response: body.response.toLowerCase() };
-      const pol = rsvpPolicy(req, body); body = pol.body;
-      // guests reply only to real events, and on ask-to-join events a guest's "going" is a request until the host lets them in
+      // guests reply only to real events, once the event is over replies are closed, and one address can't flood an event
       if (req.guest) { const eidG = String(body?.eventId || ""), evG = /^[A-Za-z0-9_-]+$/.test(eidG) ? S(req).get("events/" + eidG)?.data : null;
         if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
-        if (evG.approvalRequired && body.response === "going" && pol.prior?.data?.response !== "going") body = { ...body, response: "requested" }; }
-      // no new or changed replies once the event day is over: turnout and a host's record depend on it
-      { const eid0 = String(body?.eventId || ""), ev0 = /^[A-Za-z0-9_-]+$/.test(eid0) ? S(req).get("events/" + eid0)?.data : null; if (req.guest && ev0?.date && ev0.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." }); }
-      // the same email from another device can't overwrite someone's reply: only the device that sent it (its guest key),
-      // a verified personal invite, or the host can change it
-      if (pol.prior && req.guest) { const sameDevice = !!pol.prior.data._k && pol.prior.data._k === guestKey(req), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});
-        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "You already replied with this email. Open the invite where you replied." }); }
+        if (evG.date && evG.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." });
+        if (rsvpLimited(req, eidG)) return res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); }
+      const pol = rsvpPolicy(req, body); body = pol.body;
+      // the same email from another device can't overwrite someone's reply: only a device that sent it or opened the emailed
+      // link (its guest key), a verified personal invite, or the host can change it. Anyone else gets the link sent to that email.
+      if (pol.prior && req.guest) { const sameDevice = keyOk(pol.prior.data, guestKey(req)), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});
+        if (!sameDevice && !viaInvite) { const emailed = await sendReplyLink(req, req.ws, pol.prior.id).catch(() => false), host = hostFirstOf(req.ws, S(req).get("events/" + String(body.eventId))?.data);
+          return res.status(409).json({ code: "rsvp_exists", emailed, message: emailed ? "You already replied with this email. We sent you a link: open it here to change your reply." : `You already replied with this email. To change it, open the invite on the phone or browser you used, or ask ${host === "Your host" ? "your host" : host}.` }); } }
       // never blank out what a guest already told the host
       if (pol.prior) for (const k of ["name", "email", "phone", "dietary", "access"]) if (!String(body[k] ?? "").trim() && pol.prior.data[k]) delete body[k];
       if (pol.prior && body.answers && typeof body.answers === "object" && !Array.isArray(body.answers) && !Object.keys(body.answers).length && pol.prior.data.answers) delete body.answers;
-      if (pol.prior) { const freed = pol.prior.data.response === "going" && body.response !== "going"; S(req).set("rsvps/" + pol.prior.id, { ...pol.prior.data, ...body, _k: pol.prior.data._k || body._k, changedAt: Date.now() }); const promoted = freed ? await promoteWaitlist(req, String(body.eventId || "")) : null; return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, response: body.response, merged: true, ...(promoted ? { promoted: true } : {}) }); }
-      const r0 = S(req).add(p, body); return res.json({ ...r0, response: body.response }); }
+      if (pol.prior) { const before = pol.prior.data, next = { ...before, ...body, _k: before._k || body._k, ...(Array.isArray(before._keys) ? { _keys: before._keys } : {}), changedAt: Date.now() };
+        S(req).set("rsvps/" + pol.prior.id, next); const a = await afterRsvp(req, req.ws, pol.prior.id, before, next).catch(() => ({}));
+        return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, merged: true, ...a, response: a.response || next.response }); }
+      const r0 = S(req).add(p, body), a = await afterRsvp(req, req.ws, r0.id, null, body).catch(() => ({})); return res.json({ ...r0, ...a, response: a.response || body.response }); }
     const r = S(req).add(p, body);
     if (p === "events" && !req.guest) claimEvent(r.id, req.ws);
     // a guest's reply says where it landed (a full event puts "going" on the waitlist)

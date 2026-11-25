@@ -46,6 +46,26 @@ export function alertMatches(a, ev, evGeo) {
 }
 
 export const newcomerEmoji = () => "🌱";
+// ---- spots: one count used everywhere (the seat check, the waitlist, previews) ----
+/** The most people one reply can bring: the guest plus the plus-ones the host allows (one by default), at most 6. */
+export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)));
+/** How many spots one reply (or host-marked guest) holds: a party of three holds three. */
+export const seatsOf = (r, ev) => Math.max(1, Math.min(ev ? partyMax(ev) : 6, Math.floor(+r?.party) || (+r?.plusOnes > 0 ? 1 + Math.floor(+r.plusOnes) : r?.plusOne ? 2 : 1)));
+export const replyKey = (x) => lc(x?.email || x?.name || (x?.phone ? "tel:" + String(x.phone).replace(/[^\d+]/g, "") : ""));
+/** Spots held at an event: host-marked guests plus the latest reply from each person, counted once each.
+ *  skip: a reply id to leave out (the reply being changed); skipKey: that person's email or name. */
+export function seatsTaken(ev, docs, { skip = null, skipKey = "" } = {}) {
+  const G = ev?.guests || [], held = new Map(), attended = new Set(G.filter((g) => g.status === "Attended").map(replyKey).filter(Boolean));
+  for (const g of G) if (g.status === "Going" || g.status === "Attended") { const k = replyKey(g); if (k) held.set(k, seatsOf(g, ev)); }
+  for (const d of docs) { if (d.id === skip) continue; const r = d.data || {}, k = replyKey(r) || "id:" + d.id;
+    if (r.response === "going") held.set(k, seatsOf(r, ev)); else if (["no", "waitlist", "declined"].includes(r.response) && !attended.has(k)) held.delete(k); }
+  if (skipKey) held.delete(lc(skipKey));
+  return [...held.values()].reduce((a, b) => a + b, 0);
+}
+/** The waitlist in order: who joined it first goes in first. */
+export const waitlistOf = (docs) => docs.filter((d) => d.data?.response === "waitlist").sort((a, b) => (a.data.waitAt || a.data.changedAt || a.data.createdAt || 0) - (b.data.waitAt || b.data.changedAt || b.data.createdAt || 0));
+/** A reply's place on the waitlist (1 = next in), or 0 when it isn't on it. */
+export const waitlistPos = (docs, id) => waitlistOf(docs).findIndex((d) => d.id === id) + 1;
 // ---- attendee and host traits ----
 export const TRAITS = {
   host: { name: "The Planner", emoji: "🏡", line: "Usually the one who makes it happen." },
@@ -389,10 +409,12 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const short = (n) => { const w = String(n || "").trim().split(/\s+/).filter(Boolean); return w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest"; }, seen = new Set(), out = []; let total = 0;
     const R0 = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === id), past = !!ev.date && ev.date < today(), door = past && (R0.some((r) => r.checkedInAt) || (ev.guests || []).some((g) => /Attended/.test(g.status || "")));
     const arche = (email, gt) => { if (TRAITS[gt] && gt !== "early") return { name: TRAITS[gt].name, emoji: TRAITS[gt].emoji }; try { const P2 = email ? X.eventProfile(email) : null; if (P2?.top && (P2.attended || 0) >= 2) return { name: P2.top.name, emoji: P2.top.emoji }; } catch {} const q = TRAITS[gt]; if (q) return { name: q.name, emoji: q.emoji }; return { name: "New to Pottery Lab", emoji: newcomerEmoji(email || gt || "") }; };
-    for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = (r.response === "going" || (ev.stage === "interest" && r.interest === "in")) && !r.noShow && (!door || !!r.checkedInAt); if (r.eventId !== id || !yes) continue; const k = lc(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id); if (seen.has(k)) continue; seen.add(k); total += 1 + (r.plusOne ? 1 : 0); if (r.showMe === false) continue;
+    for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = (r.response === "going" || (ev.stage === "interest" && r.interest === "in")) && !r.noShow && (!door || !!r.checkedInAt); if (r.eventId !== id || !yes) continue; const k = lc(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id); if (seen.has(k)) continue; seen.add(k); total += seatsOf(r, ev); if (r.showMe === false) continue;
       out.push({ name: short(r.name), archetype: arche(lc(r.email) || lc("name:" + (r.name || d.id)), r.guestType), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email || r.phone ? { key: hash(lc(r.email || "tel:" + String(r.phone).replace(/[^\d+]/g, ""))) } : {}) }); }
     const names = new Set(out.map((o) => lc(o.name))); const replied = new Set(R0.flatMap((r) => [lc(r.email || ""), r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "", lc(r.name || ""), r.name ? lc(short(r.name)) : ""]).filter(Boolean)); const gone = new Set(S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === id && r.noShow).flatMap((r) => [lc(r.email || ""), lc(short(r.name)), lc(r.name || "")]).filter(Boolean)); for (const g of ev.guests || []) { if (gone.has(lc(g.email || "")) || gone.has(lc(g.name || "")) || gone.has(lc(short(g.name)))) continue; if (g.source !== "Walk-in" && (replied.has(lc(g.email || "")) || (g.phone && replied.has("tel:" + String(g.phone).replace(/[^\d+]/g, ""))) || replied.has(lc(g.name || "")) || replied.has(lc(short(g.name))))) continue; if (!/^(Going|Attended)$/.test(g.status || "") || (door && g.status !== "Attended")) continue; if (g.source === "Walk-in") { total++; continue; } const k = lc(g.email || (g.phone ? "tel:" + String(g.phone).replace(/[^\d+]/g, "") : "") || g.name); if (!k || seen.has(k) || names.has(lc(short(g.name)))) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
-    res.json({ attendees: out.slice(0, 40), count: total, seats: +ev.headcount || 0, checked: !!door }); });
+    // spots left as a new guest would get them: none while anyone is waiting (the waitlist goes first)
+    const RD = S.list("rsvps").filter((d) => d.data?.eventId === id), waiting = waitlistOf(RD).length, seats = +ev.headcount || 0, left = seats && ev.autoWait !== false ? (waiting ? 0 : Math.max(0, seats - seatsTaken(ev, RD))) : null;
+    res.json({ attendees: out.slice(0, 40), count: total, seats, checked: !!door, waiting, ...(left != null ? { left } : {}) }); });
   // a guest's card, opened from Who's coming: only for people who chose to be shown, never their email
   app.get("/api/public/person/:eventId/:key", (req, res) => { const id = clean(req.params.eventId, 80), key = clean(req.params.key, 40), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example || ev.hideGuests) return bad(res, "Not shown.", 404, "not_found");
@@ -498,7 +520,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const isNew = C.follow(P.ws, { email: /@/.test(email) ? email : "", name: clean(P.r.name, 80), via: "rsvp", phone }); res.json({ ok: true, isNew, followers: C.followersOf(P.ws).length }); });
   // the exact address, for guests who are in
   app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
-    res.json({ ok: true, meetPoint: P.ev.meetPoint || "", venueName: P.ev.venueName || "", venueAddr: P.ev.venueAddr || "" }); });
+    // guests read "Mina's place", never the host's own "my place" (as on the invite itself)
+    const hn = first(getDbUser(getWorkspace(P.ws)?.ownerEmail || "")?.name || ""), mine = (x) => String(x || "").replace(/\b(my|our) (place|apartment|flat|house|home)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`));
+    res.json({ ok: true, meetPoint: mine(P.ev.meetPoint), venueName: mine(P.ev.venueName), venueAddr: mine(P.ev.venueAddr) }); });
   // your RSVP follows your account: open an invite on any device, signed in, and it knows your answer
   app.get("/api/me/rsvp/:eventId", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ rsvp: null }); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return res.json({ rsvp: null });
     const d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data?.email) === lc(u.email)).sort((a, b) => (b.data.changedAt || b.data.at || 0) - (a.data.changedAt || a.data.at || 0))[0];

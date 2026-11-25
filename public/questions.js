@@ -9,12 +9,13 @@
   // starters, in a host's voice, to edit freely
   // food events already ask "Anything you don't eat?" with one-tap answers, so the allergies starter isn't offered there
   const hasDietChips = (ev) => { try { return typeof FOODY === "function" ? !!FOODY(ev) : /dinner|supper|brunch|bake|cook|potluck|tasting|food|cake|bread|coffee|matcha|tea/i.test(`${ev.activity || ""} ${ev.name || ""} ${ev.pubTitle || ""}`); } catch { return false; } };
+  const friendsEv = (ev) => { try { return typeof isCasual === "function" ? !!isCasual(ev) : !!ev.casual; } catch { return !!ev.casual; } };
   const STARTERS = [
     { q: "any allergies?", type: "short", placeholder: "nope, or tell us", diet: true },
-    { q: "have you followed us? 😤", type: "yesno" },
-    { q: "your ig handle (just in case things happen)", type: "instagram" },
+    { q: "have you followed us? 😤", type: "yesno", biz: true },
+    { q: "your Instagram?", type: "instagram" },
     { q: "want in on the group chat? 💬", type: "yesno" },
-    { q: "how many sets?", type: "number", min: 1, max: 6 },
+    { q: "how many sets?", type: "number", min: 1, max: 6, biz: true },
     { q: "pick a pickup time", type: "time", options: ["5:45 pm", "6:00 pm", "6:15 pm", "6:30 pm"] },
     { q: "how hungry are you, honestly?", type: "emoji", options: ["🙂", "😋", "🤤", "🐷"] },
     { q: "a song for the playlist 🎶", type: "short" },
@@ -42,13 +43,13 @@
   function builder(box, ev, onChange) { css(); ev.questions = (ev.questions || []).map(norm); ev.qStyle = ev.qStyle || {};
     const save = () => onChange?.(ev);
     const draw = () => { const Q = ev.questions, P = ev.qStyle;
-      box.innerHTML = `<div class="qb"><div class="qb-starters" aria-label="Add a question">${STARTERS.map((s, i) => [s, i]).filter(([s]) => !Q.some((q) => q.q === s.q) && !(s.diet && hasDietChips(ev))).map(([s, i]) => `<button type="button" data-add="${i}">＋ ${esc(s.q)}</button>`).join("")}<button type="button" data-add="new">＋ Write your own</button></div>
+      box.innerHTML = `<div class="qb"><div class="qb-starters" aria-label="Add a question">${STARTERS.map((s, i) => [s, i]).filter(([s]) => !Q.some((q) => q.q === s.q) && !(s.diet && hasDietChips(ev)) && !(s.biz && friendsEv(ev))).map(([s, i]) => `<button type="button" data-add="${i}">＋ ${esc(s.q)}</button>`).join("")}<button type="button" data-add="new">＋ Write your own</button></div>
         ${Q.map((q, i) => `<div class="qb-q" data-i="${i}"><div class="r"><input type="text" class="qt" value="${esc(q.q)}" placeholder="Ask it your way (emoji welcome)" data-k="q"><select data-k="type">${Object.entries(TYPES).map(([k, l]) => `<option value="${k}" ${q.type === k ? "selected" : ""}>${l}</option>`).join("")}</select><span class="tools"><button type="button" data-mv="-1" title="Up">↑</button><button type="button" data-mv="1" title="Down">↓</button><button type="button" data-del title="Remove">✕</button></span></div>
           ${/choice|multi|emoji|time/.test(q.type) ? `<div class="r"><input type="text" style="flex:1" value="${esc(q.options.join(", "))}" placeholder="${q.type === "time" ? "5:45 pm, 6:00 pm, 6:15 pm" : q.type === "emoji" ? "🙂, 😋, 🤤" : "Option one, Option two"}" data-k="options"><small>separate with commas</small></div>` : ""}
           ${q.type === "number" ? `<div class="r"><small>From</small><input type="text" style="width:60px" value="${q.min}" data-k="min"><small>to</small><input type="text" style="width:60px" value="${q.max}" data-k="max"></div>` : ""}
           <label class="r" style="font-size:13px"><input type="checkbox" data-k="required" ${q.required ? "checked" : ""}> Required</label></div>`).join("")}
         ${Q.length ? `<details ${P.title || P.button || P.thanks ? "open" : ""}><summary style="cursor:pointer;font-weight:600">✨ Give it personality</summary><div class="qb-pers" style="margin-top:8px"><label>Form title<input data-p="title" value="${esc(P.title || "")}" placeholder="Who's picking up?"></label><label>Button<input data-p="button" value="${esc(P.button || "")}" placeholder="Count me in 🍰"></label><label>Thank-you line<input data-p="thanks" value="${esc(P.thanks || "")}" placeholder="See you at 5:45! Bring an appetite."></label></div></details>
-          <button type="button" class="btn ghost sm" data-preview style="justify-self:start">👀 Preview as a guest</button><div data-pv></div>` : `<small style="color:#6B5F56">Add questions in your own words. Guests answer them one at a time, like a little conversation.</small>`}</div>`; };
+          <button type="button" class="btn ghost sm" data-preview style="justify-self:start">👀 Preview as a guest</button><div data-pv></div>` : `<small style="color:#6B5F56">Guests answer one at a time.</small>`}</div>`; };
     draw();
     box.onclick = (e) => { const a = e.target.closest("[data-add]"); if (a) { const s = a.dataset.add === "new" ? { q: "", type: "short" } : STARTERS[+a.dataset.add]; ev.questions.push(norm({ ...s, options: [...(s.options || [])] })); draw(); save(); if (a.dataset.add === "new") box.querySelector(".qb-q:last-of-type .qt")?.focus(); return; }
       const c = e.target.closest(".qb-q"), i = c ? +c.dataset.i : -1;
@@ -64,7 +65,7 @@
     const P = ev.qStyle || {}; let i = 0; const el = document.createElement("div"); el.className = "tf"; box.appendChild(el);
     const val = (q) => answers[q.id], has = (q) => { const v = val(q); return Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== ""; };
     const draw = (done = false) => { const pct = Math.round(((done ? Q.length : i) / Q.length) * 100);
-      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Last step: send your RSVP below ↓"}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
+      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Done. Now send your reply."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
       const q = Q[i], v = val(q), opts = q.options.length ? q.options : q.type === "yesno" ? ["Yes", "No"] : q.type === "emoji" ? ["😐", "🙂", "😍"] : [];
       let input = "";
       if (q.type === "short" || q.type === "instagram" || q.type === "phone") input = `<input type="${q.type === "phone" ? "tel" : "text"}" value="${esc(v ?? "")}" placeholder="${esc(q.placeholder || (q.type === "instagram" ? "@yourhandle" : q.type === "phone" ? "(917) 555 0142" : "Type your answer"))}" maxlength="200">`;
@@ -73,19 +74,19 @@
       else input = `<div class="tf-opts ${q.type === "emoji" ? "emoji" : ""}" role="group">${opts.map((o, k) => `<button type="button" data-o="${esc(o)}" aria-pressed="${Array.isArray(v) ? v.includes(o) : v === o}">${q.type === "emoji" ? "" : `<span class="tf-key">${String.fromCharCode(65 + k)}</span>`}${esc(o)}</button>`).join("")}</div>`;
       el.innerHTML = `<div class="tf-bar"><i style="width:${pct}%"></i></div><div class="tf-top"><span class="tf-n">${esc(P.title || "A few quick questions")} · ${i + 1} of ${Q.length}</span><span class="tf-pt">${window.Potto ? window.Potto.svg(i % 3 === 2 ? "cheer" : "wave", 64, "Potto") : ""}</span></div>
         <div class="tf-q" id="tfq-${esc(q.id)}">${esc(q.q)}${q.required ? "" : "<small>(optional)</small>"}</div><div class="tf-a" role="group" aria-labelledby="tfq-${esc(q.id)}">${input.replace(/<(input|textarea)\b/g, `<$1 aria-labelledby="tfq-${esc(q.id)}"`)}</div><div class="tf-err" role="alert"></div>
-        <div class="tf-nav">${i ? `<button type="button" class="bk" data-back>← Back</button>` : "<span></span>"}<span><small>${q.type === "short" || q.type === "instagram" || q.type === "phone" ? "press Enter ↵ " : ""}</small><button type="button" class="ok" data-next>${i === Q.length - 1 ? esc(P.button || "Done") : "OK ✓"}</button></span></div>`;
+        <div class="tf-nav">${i ? `<button type="button" class="bk" data-back>← Back</button>` : "<span></span>"}<span><button type="button" class="ok" data-next>${i === Q.length - 1 ? esc(P.button || "Done") : "OK ✓"}</button></span></div>`;
       if (q.type === "number" && v == null) answers[q.id] = q.min;
       const f = el.querySelector("input,textarea"); if (f && !preview) setTimeout(() => f.focus({ preventScroll: true }), 50); };
     let autoAt = 0;
     const next = (e) => { if (e && Date.now() - autoAt < 450) return; const q = Q[i], f = el.querySelector(".tf-a input,.tf-a textarea"); if (f) answers[q.id] = q.type === "instagram" && f.value.trim() ? "@" + f.value.trim().replace(/^@+/, "") : f.value.trim();
-      if (q.required && !has(q)) { el.querySelector(".tf-err").textContent = "This one's needed 🙏"; return; } if (i < Q.length - 1) { i++; draw(); } else draw(true); };
+      if (q.required && !has(q)) { el.querySelector(".tf-err").textContent = "Answer this one first."; return; } if (i < Q.length - 1) { i++; draw(); } else draw(true); };
     el.addEventListener("click", (e) => { const q = Q[i];
       if (e.target.closest("[data-edit]")) { i = 0; draw(); return; } if (e.target.closest("[data-back]")) { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f) answers[q.id] = f.value.trim(); i = Math.max(0, i - 1); draw(); return; } if (e.target.closest("[data-next]")) return next(e);
       const st = e.target.closest("[data-st]"); if (st) { answers[q.id] = Math.max(q.min, Math.min(q.max, (+answers[q.id] || q.min) + +st.dataset.st)); el.querySelector(".tf-step b").textContent = answers[q.id]; return; }
       const o = e.target.closest("[data-o]"); if (o) { if (q.type === "multi") { const L = new Set(answers[q.id] || []); L.has(o.dataset.o) ? L.delete(o.dataset.o) : L.add(o.dataset.o); answers[q.id] = [...L]; o.setAttribute("aria-pressed", String(L.has(o.dataset.o))); } else { answers[q.id] = o.dataset.o; el.querySelectorAll("[data-o]").forEach((b) => b.setAttribute("aria-pressed", String(b === o))); setTimeout(() => { next(); autoAt = Date.now(); }, 260); } } });
     el.addEventListener("keydown", (e) => { const q = Q[i]; if (e.key === "Enter" && !e.shiftKey && e.target.tagName !== "TEXTAREA") { e.preventDefault(); next(); } else if (/^[a-j]$/i.test(e.key) && !/INPUT|TEXTAREA/.test(e.target.tagName)) { const b = el.querySelectorAll("[data-o]")[e.key.toLowerCase().charCodeAt(0) - 97]; b?.click(); } });
     draw();
-    return { missing: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i]) answers[Q[i].id] = f.value.trim(); const k = Q.findIndex((q) => q.required && !has(q)); if (k < 0) return null; i = k; draw(); el.querySelector(".tf-err").textContent = "This one's needed 🙏"; el.scrollIntoView({ behavior: "smooth", block: "center" }); return Q[k]; } };
+    return { missing: () => { const f = el.querySelector(".tf-a input,.tf-a textarea"); if (f && Q[i]) answers[Q[i].id] = f.value.trim(); const k = Q.findIndex((q) => q.required && !has(q)); if (k < 0) return null; i = k; draw(); el.querySelector(".tf-err").textContent = "Answer this one first."; el.scrollIntoView({ behavior: "smooth", block: "center" }); return Q[k]; } };
   }
   window.Questions = { builder, flow, TYPES, STARTERS, norm };
 })();

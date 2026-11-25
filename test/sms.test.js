@@ -72,3 +72,14 @@ test("The Twilio request itself: right account URL, basic auth, From/To/Body, an
     const down = await sendSms({ service: "twilio", sid: "ACtest123", token: "x", from: "+14155550000" }, { to: "+14155550199", text: "hi" }); assert.equal(down.ok, false);
   } finally { globalThis.fetch = real; }
 });
+
+test("Texted replies understand the invite's own words: I'm in, Maybe, Can't go", async () => {
+  const h = await post("/api/signup", { name: "Words Host", email: "words.host@example.com", password: "long-password-1", mode: "friends" }); const hc = cookieOf(h);
+  const day = new Date(Date.now() + 4 * 864e5).toISOString().slice(0, 10);
+  await fetch(srv.base + "/api/db/doc?path=events/wd1", { method: "PUT", headers: { ...J, cookie: hc }, body: JSON.stringify({ kind: "social", casual: true, name: "Words night", date: day, published: true }) });
+  const rid = (await (await post("/api/db/collection?path=rsvps", { eventId: "wd1", name: "Ivy", phone: "+14155550177", response: "maybe", code: "iv1" }, hc)).json()).id;
+  const now = async () => (await (await fetch(srv.base + "/api/db/doc?path=rsvps/" + rid, { headers: { cookie: hc } })).json()).data.response;
+  await form("/api/public/sms/inbound", { From: "+14155550177", Body: "I'm in!" }); assert.equal(await now(), "going");
+  await form("/api/public/sms/inbound", { From: "+14155550177", Body: "Can't go, sorry" }); assert.equal(await now(), "no");
+  await form("/api/public/sms/inbound", { From: "+14155550177", Body: "Maybe" }); assert.equal(await now(), "maybe");
+});

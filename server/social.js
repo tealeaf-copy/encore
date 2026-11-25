@@ -44,7 +44,7 @@ export function alertMatches(a, ev, evGeo) {
   return !a.radiusMi; // a distance rule needs a location on both sides
 }
 
-export const newcomerEmoji = (key) => { const F = ["🌻", "🍋", "🫐", "🌶️", "🍑", "🥝", "🍄", "🌈", "🪴", "🐝"]; const h = [...String(key)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); return F[h % F.length]; };
+export const newcomerEmoji = () => "🌱";
 // ---- attendee and host traits ----
 export const TRAITS = {
   host: { name: "The Host", emoji: "🏡", line: "Usually the one who makes it happen." },
@@ -235,8 +235,8 @@ export function makeSocial(store, { C, saveBlob }) {
         mark("kudos-" + x.id); const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true);
         for (const [em, L] of I.att) { if (!L.some((a) => a.eventId === x.id)) continue; out.kudosAsks++;
           notify(em, { kind: "kudos", key: "kudos-" + x.id, text: `How was ${title}? Send ${hostName} some kudos.`, link: `/g#rsvp-${x.id}`, eventId: x.id });
-          if (cfg && canEmail(em)) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Hosts rarely hear what landed, so two taps of kudos means a lot: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
-        notify(x.owner, { kind: "after", key: "after-" + x.id, text: `You hosted ${title}. Add a photo or two while it's fresh.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id });
+          if (cfg && canEmail(em)) sendEmail(cfg, { to: em, subject: `How was ${title}?`, text: `Hi ${first(L.find((a) => a.eventId === x.id)?.name) || "there"},\n\n${hostName} put ${title} together. Two taps of kudos means a lot to a host: ${origin}/g#rsvp-${x.id}\n\nYou can also tell them one thing for next time. Only they see that.`, fromName: host?.name || "" }).catch(() => {}); }
+        notify(x.owner, { kind: "after", key: "after-" + x.id, text: `You hosted ${title}. Add a photo or two while it's fresh.`, link: `/?app=1&open=${encodeURIComponent(x.id)}&step=7#studio`, eventId: x.id });
       }
       // prep alerts for the host (the shopping and baking checklist)
       for (const t of e.prep || []) { if (t.done || !t.due) continue; const dd = Math.round((Date.parse(t.due + "T09:00:00") - now) / DAY); if (dd > 0 || dd < -2) continue; const k = "prep-" + x.id + "-" + hash(t.text + t.due); if (done(k)) continue; mark(k); out.prepAlerts++;
@@ -248,14 +248,14 @@ export function makeSocial(store, { C, saveBlob }) {
           const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true), when = `${new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${e.startTime ? " at " + new Date("2000-01-01T" + e.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}`, where = e.meetPoint || e.venueName || "", link = `${origin}/g#rsvp-${x.id}`;
           let sent = 0; const seen = new Set();
           for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== x.id || r.response !== "going") continue; const who = lc(r.email || r.phone || d.id); if (seen.has(who)) continue; seen.add(who); let got = false;
-            if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} can plan: ${link}` }).catch(() => {}); got = true; }
-            if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}! Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't go? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
+            if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} knows: ${link}` }).catch(() => {}); got = true; }
+            if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}. Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't go? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
             if (got) sent++; }
-          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Reminder sent to ${sent} ${sent === 1 ? "guest" : "guests"} for ${title}.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id }); } }
+          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title}.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id }); } }
       // giveaways: text each pickup window an hour before
       if (sms && /giveaway/.test(e.activity || "") && e.date === today(now)) for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId !== x.id || r.response !== "going" || !PHONE_OK(r.phone) || !r.slot) continue;
         const start = Date.parse(`${e.date}T${String(r.slot).match(/\d{1,2}:\d{2}/)?.[0]?.padStart(5, "0") || "00:00"}:00`), k = "sms-" + d.id; if (!(start - now <= 3600e3 && start - now > 0) || done(k)) continue; mark(k);
-        const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name)}! Your ${title} pickup is ${r.slot} at ${e.meetPoint || "the usual spot"}. Running late or can't come? ${origin}/g#rsvp-${x.id}` }); if (ok.ok) out.texts++; }
+        const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name)}. Your ${title} pickup is ${r.slot} at ${e.meetPoint || "the usual spot"}. Running late or can't go? ${origin}/g#rsvp-${x.id}` }); if (ok.ok) out.texts++; }
     }
     return out;
   }
@@ -477,7 +477,9 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (!best) return twiml(res, "Hi! This is Pottery Lab. We couldn't find an invite for this number. Open the link your host sent to RSVP.");
     const { S, ev, eventId } = best, title = ev.pubTitle || ev.name || "the event", link = `${publicOrigin(req)}/g#rsvp-${eventId}`;
     const mine = S.list("rsvps").find((d) => d.data?.eventId === eventId && normPhone(d.data?.phone) === from);
-    const resp = /^(yes|y|yep|yeah|yup|in|going|sure|ok|okay|absolutely|totally)$/.test(word) || /^(👍|✅|🙌)/u.test(body) ? "going" : /^(maybe|m|perhaps|possibly|prob|probably)$/.test(word) ? "maybe" : /^(no|n|nope|out|cant|can't|sorry|pass)$/.test(word) ? "no" : null;
+    // the invite text says "I'm in, Maybe or Can't go": accept those phrases, not just one-word replies
+    const phrase = body.toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim();
+    const resp = /^(i'?m in|i am in|count me in|im in)\b/.test(phrase) || /^(yes|y|yep|yeah|yup|in|going|sure|ok|okay|absolutely|totally)$/.test(word) || /^(👍|✅|🙌)/u.test(body) ? "going" : /^(can'?t go|cannot go|can not go|can'?t make it)\b/.test(phrase) ? "no" : /^(maybe|m|perhaps|possibly|prob|probably)$/.test(word) ? "maybe" : /^(no|n|nope|out|cant|can't|sorry|pass)$/.test(word) ? "no" : null;
     if (!resp) { // a name, after they said yes
       if (mine && /^Guest/.test(mine.data.name || "") && body.length >= 2 && body.length <= 40) { S.update("rsvps/" + mine.id, { name: clean(body, 60), changedAt: Date.now() }); return twiml(res, `Thanks, ${first(body)}! You're in for ${title}. Who's coming and the group chat: ${link}`); }
       return twiml(res, `Reply YES, MAYBE or NO for ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}. Details: ${link}`); }

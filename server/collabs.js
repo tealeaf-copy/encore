@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { getWorkspace, DEFAULT_WS } from "./workspaces.js";
 
 const clean = (v, n = 300) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
-export const COLLAB_KINDS = [["cohost", "Co-host an event"], ["popup", "Pop up together"], ["swap", "Swap guest lists"], ["other", "Something else"]];
+export const COLLAB_KINDS = [["cohost", "Co-host an event"], ["popup", "Pop up together"], ["swap", "Share each other's events"], ["other", "Something else"]];
 
 export function mountCollabs(app, { store, small, currentUser, C, X }) {
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "account_required", message: "Sign in to suggest a collab." }); return null; } return u; };
@@ -24,7 +24,7 @@ export function mountCollabs(app, { store, small, currentUser, C, X }) {
     if (limited(u.ws, 10)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of collab ideas for one day. Try again tomorrow." });
     const b = req.body || {}, idea = clean(b.idea, 1200), kind = COLLAB_KINDS.some(([k]) => k === b.kind) ? b.kind : "other";
     if (idea.length < 10) return res.status(400).json({ code: "invalid", message: "Say a little about the idea." });
-    if (all().some((c) => c.fromWs === u.ws && c.toWs === toWs && c.status === "new")) return res.status(409).json({ code: "conflict", message: `You already sent ${to.name} an idea. Give them a minute.` });
+    if (all().some((c) => c.fromWs === u.ws && c.toWs === toWs && c.status === "new")) return res.status(409).json({ code: "conflict", message: `You've already sent ${to.name} an idea.` });
     const c = { kind: "collab", collabKind: kind, id: crypto.randomBytes(6).toString("hex"), fromWs: u.ws, toWs, from, to, idea, when: clean(b.when, 80), city: clean(b.city, 80), status: "new", at: Date.now(), thread: [] };
     put(c);
     X?.notify?.(emailOf(toWs), { kind: "collab", text: `🤝 ${from.name} wants to collab: ${idea.slice(0, 120)}`, link: `/@${to.handle}?collabs=1` });

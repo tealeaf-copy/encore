@@ -28,7 +28,7 @@ const step = (name, ok) => { console.log(`${ok ? "✓" : "✗"} ${name}`); if (!
   await gp.fill("#g-name", "Smoke Guest");
   // the host's own questions, answered through the card a guest sees
   await gp.waitForSelector("#tfBox .tf-a input", { timeout: 10000 }); await gp.fill("#tfBox .tf-a input", "salsa verde"); await gp.click("#tfBox [data-next]");
-  await gp.click('#tfBox [data-st="1"]'); await gp.click("#tfBox [data-next]"); await gp.waitForTimeout(300);
+  await gp.click('#tfBox [data-st="1"]'); await gp.waitForTimeout(300); // last question: no Done button, Send is the next step
   await gp.click("#g-send"); await gp.waitForTimeout(2500);
   step("guest RSVPs", await gp.evaluate(() => !!document.querySelector("#view-guest .ticket")));
   const rs = await (await fetch(B + "/api/db/collection?path=rsvps", { headers: { cookie: ck } })).json(), mine = (rs.docs || rs.items || rs).map((d) => d.data || d).find((r) => r.name === "Smoke Guest");
@@ -39,7 +39,7 @@ const step = (name, ok) => { console.log(`${ok ? "✓" : "✗"} ${name}`); if (!
   // the light invite at /e/<id> (what share links open): a second guest says yes there, and the host gets it
   const g2 = await b.newContext({ ...devices["iPhone 13"] }); const lp = await g2.newPage(); watch(lp, "lite guest");
   await lp.goto(`${B}/e/${id}`); await lp.waitForSelector("#nm", { timeout: 15000 }); await lp.fill("#nm", "Lite Guest");
-  await lp.waitForSelector("#qs .tf-a input", { timeout: 8000 }); await lp.fill("#qs .tf-a input", "tortilla chips"); await lp.click("#qs [data-next]"); await lp.click('#qs [data-st="1"]'); await lp.click("#qs [data-next]");
+  await lp.waitForSelector("#qs .tf-a input", { timeout: 8000 }); await lp.fill("#qs .tf-a input", "tortilla chips"); await lp.click("#qs [data-next]"); await lp.click('#qs [data-st="1"]');
   await lp.click("#send"); await lp.waitForSelector("#tk", { timeout: 10000 });
   const rs2 = await (await fetch(B + "/api/db/collection?path=rsvps", { headers: { cookie: ck } })).json(), lite = (rs2.docs || rs2.items || rs2).map((d) => d.data || d).find((r) => r.name === "Lite Guest");
   step("a guest RSVPs on the light invite, answers included", lite?.response === "going" && lite?.answers?.q1 === "tortilla chips");

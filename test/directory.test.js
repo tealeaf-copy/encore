@@ -65,7 +65,7 @@ test("Upcoming events are exactly what Discover lists", async () => {
 test("One record shape, with the public price, time, place and links", async () => {
   const e = (await get("/api/v1/events/dirOpen1")).data;
   assert.equal(e.status, "upcoming"); assert.equal(e.start, day(20)); assert.equal(e.time, "7pm"); assert.equal(e.city, "Brooklyn"); assert.equal(e.area, "Bed-Stuy");
-  assert.equal(e.format, "dinner"); assert.equal(e.price, "$20 a person"); assert.equal(e.spots_left, null); assert.equal(e.source, "hosted"); assert.equal(e.example, false);
+  assert.equal(e.format, "dinner"); assert.equal(e.price, "$20 a person"); assert.equal(e.spots_left, 12, "a public headcount of 12 and no replies yet: 12 spots left"); assert.equal(e.source, "hosted"); assert.equal(e.example, false);
   assert.deepEqual(e.host, { handle: "ada-dir", name: "Ada's Table", url: srv.base + "/@ada-dir" }); assert.equal(e.url, srv.base + "/e/dirOpen1"); assert.deepEqual(e.tags, ["dumplings"]);
   for (const k of ["id", "title", "status", "start", "time", "city", "area", "format", "tags", "price", "spots_left", "host", "url", "source", "original_link", "companies", "cover", "example", "reviews"]) assert.ok(k in e, k);
   assert.equal((await get("/api/v1/events/dirRun1")).data.price, "Free");
@@ -149,7 +149,7 @@ test("API: CORS open, cached, OpenAPI is valid JSON, CSV has a header", async ()
   for (const p of ["/api/v1/events", "/api/v1/events/{id}", "/api/v1/events.csv", "/api/v1/hosts", "/api/v1/hosts/{handle}", "/api/v1/formats", "/api/v1/reviews"]) assert.ok(spec.paths[p], p);
   const c = await fetch(srv.base + "/api/v1/events.csv?status=all"); assert.match(c.headers.get("content-type"), /text\/csv/);
   const lines = (await c.text()).trim().split(/\r\n/);
-  assert.equal(lines[0], "id,title,status,start,time,city,area,format,tags,price,spots_left,host_handle,host_name,host_url,url,source,original_link,companies,cover,example,review_count,would_go_again_pct");
+  assert.equal(lines[0], "id,title,status,start,time,city,area,format,tags,price,spots_left,host_handle,host_name,host_url,url,source,original_link,companies,cover,example,review_count,would_go_again_pct,when,repeat,sessions,pass_price,pass_count");
   assert.ok(lines.length > 3);
   const llms = await (await fetch(srv.base + "/llms.txt")).text(); assert.match(llms, /\/mcp\/public/); assert.match(llms, /openapi\.json/); assert.ok(!/—/.test(llms), "no em dashes");
   const page = await (await fetch(srv.base + "/events")).text();

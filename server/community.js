@@ -133,9 +133,13 @@ export function makeCommunity(store) {
     return !cur;
   }
   // ---- public events and discover ----
-  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted"];
+  const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted",
+    // series (a class that repeats, a course, a class pass), a pre-order priced by the item, and whether the host hides who is going
+    "repeat", "sessions", "passPrice", "passCount", "preorder", "hideGuests"];
+  // the host's neighborhood only stands in for an event in the host's own city (an event elsewhere shows its own city)
+  const sameCity = (a, b) => { const k = (v) => String(v || "").split(",")[0].trim().toLowerCase(); return !k(a) || k(a) === k(b); };
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
-    if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
+    if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood && sameCity(e.city, host.city)) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover.
   // privateToo: link-only events that were shared (published). Past ones belong in the scrapbook (title, date, cover,
   // photos and kudos; never the place or who came); upcoming ones are only ever shown to the host themselves.
@@ -146,7 +150,7 @@ export function makeCommunity(store) {
     const listed = (e) => !discoverableOnly || (e.discoverable && (onPage || !e.unlisted)) || (privateToo && isPrivateShared(e));
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && listed(e) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9")))
       .map(({ id, e }) => { const c = { ...publicCard(id, e, host), ...(upcoming && e.discoverable ? goingOf(ws, id, e) : {}) }; if (e.discoverable) return c;
-        for (const k of ["meetPoint", "headcount", "price", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
+        for (const k of ["meetPoint", "headcount", "price", "passPrice", "passCount", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
         // strangers get a card, not a way in: no event id that opens the invite or its guest list
         return { ...c, ...(owner ? {} : { id: "p-" + crypto.createHash("sha256").update(ws + "|" + id).digest("hex").slice(0, 16) }), private: true }; });
   }

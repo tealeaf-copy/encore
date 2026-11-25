@@ -84,7 +84,7 @@ test("A talk by hand: fields cleaned, shown on the public page, and in the direc
   assert.equal(sp.data.find((x) => x.format === "podcast").speaking.audience, null, "no audience typed, none shown");
   assert.deepEqual((await get("/api/v1/events?status=past&format=talk&host=lena-talks")).data.map((x) => x.id).sort(), sp.data.map((x) => x.id).sort(), "format=talk matches every speaking format");
   const din = (await get("/api/v1/events?status=past&host=lena-talks")).data.find((x) => x.title === "Pierogi night"); assert.equal(din.speaking, null);
-  assert.equal((await get("/api/v1/events?status=past&q=small+dinners")).total, 1, "the topic is searchable");
+  assert.equal((await get("/api/v1/events?status=past&q=small+dinners")).data[0].title, "Hosting for strangers", "the topic is searchable (both words match it, so it comes first)");
   const F = await get("/api/v1/formats"); assert.ok(F.types.speaking >= 2); assert.ok(F.formats.find((f) => f.format === "keynote")); assert.ok(F.formats.find((f) => f.format === "podcast"));
   // the public MCP server
   const rpc = await (await post("/mcp/public", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "search_events", arguments: { format: "talk", status: "past" } } }, "")).json();

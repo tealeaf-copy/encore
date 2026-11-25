@@ -142,17 +142,18 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
   let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? "✨ Picked for you" : ""].filter(Boolean).join(" · ");
   const byDate = (a, b) => String(a.date || "9").localeCompare(String(b.date || "9"));
-  const LANE_H = { move: "Runs, hikes and rides", make: "Make & taste", gather: "Dinners, coffee and good talk", discover: "Somewhere new" };
+  const LANE_H = { move: "Move", make: "Make & taste", gather: "Gather", discover: "Somewhere new" }; // one name per lane: the chip, this heading and the quiz
   function drawEvents() {
     whyN = 0; const realN = data.events.filter((e) => !e.sample).length;
     const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
     const local = base.filter(near), far = city ? base.filter((e) => !near(e)) : [];
     { const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && data.events.some(near) ? "Small events near you" : "Small events, big welcome"; } // no "near you" over "Nothing in Tokyo"
     const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter]) : "Coming up";
-    $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what;
+    $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what; $("#evH").hidden = !!(QTEXT && !base.length && data.events.length);
     let list = local, note = "", rest = [];
     if (!data.events.length) note = "No open events right now. Hosts are cooking something up.";
-    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. Here's everywhere else. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>.`; }
+    else if (QTEXT && !base.length) note = `No events match “${esc(PRM.get("q"))}” yet.`;
+    else if (city && !local.length) { list = far; note = `Nothing ${filter === "all" ? "" : "like that "}in ${esc(city)} yet. <a href="${SIGNED ? "/?app=1#studio" : "/signup?mode=friends"}">Host the first one</a>, or browse everywhere.`; }
     else if (city) rest = far;
     else if (!base.length) note = QTEXT ? `No events match “${esc(PRM.get("q"))}” yet.` : `Nothing here yet. <a href="#" onclick="document.querySelector('[data-f=all]')?.click();return false">See everything</a>.`;
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";

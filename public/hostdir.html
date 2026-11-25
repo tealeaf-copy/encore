@@ -63,13 +63,14 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const pills = (h) => { const b = (BADGES[h.handle] || []).filter((x) => !/^m-/.test(x.id) && x.id !== "new")[0], P = [];
     if (h.sample) P.push(`<span class="ex">Example</span>`);
     if (b) P.push(`<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`);
-    if (h.upcoming) P.push(`<span class="nx">${h.upcoming} ${h.upcoming === 1 ? "event" : "events"} soon</span>`);
     if (h.showcase) P.push(`<span>Not on Pottery Lab yet</span>`);
     return P.slice(0, 2).join(""); };
-  const facts = (h) => [[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : ""].filter(Boolean).map(esc).join(" · ");
+  const facts = (h) => [[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : "", h.hosted ? `${h.hosted} ${h.hosted === 1 ? "event" : "events"}` : ""].filter(Boolean).map(esc).join(" · ");
+  // "Next: Sunrise 5K, Sat, Nov 28", the same line Discover's host cards show
+  let EVS = []; const nextOf = (h) => { const n = EVS.filter((e) => e.host?.handle === h.handle && e.stage !== "interest" && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0]; if (!n) return ""; const d = new Date(n.date + "T12:00"); return `Next: ${n.title}${isNaN(d) ? "" : ", " + d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}`; };
   const igOf = (h) => ((h.links || []).find((l) => /^https:\/\/(www\.)?instagram\.com\//i.test(l.url || "")) || {}).url || "";
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
-      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
+      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `<span class="nx-l" style="display:block;font-weight:600;color:#2B211C;margin:4px 0 2px">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
       <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
   function draw() { sync();
     const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
@@ -84,7 +85,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     if (!(smart && smart.length)) L = [...L.filter((h) => !h.sample), ...L.filter((h) => h.sample)];
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
-    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or search.</p>`;
+    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or word.</p>`;
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = `Show ${Math.min(STEP, left)} more`;
   }
@@ -97,7 +98,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   $("#q").onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(aiT); askAI(); } };
   let BADGES = {};
   fetch("/api/public/hosts/showcase").then((r) => r.json()).then((j) => { BADGES = j.badges || {}; if (H.length) draw(); }).catch(() => {});
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => {
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { EVS = d.events || [];
     // one card per display name (demo data has several "Claire's Run Crew"): a real host always wins over an example; then the one with more going on
     const best = new Map(); for (const h of (d.hosts || []).filter((h) => h.handle && h.name && !/[<>]/.test(h.name))) { const k = h.name.trim().toLowerCase(), cur = best.get(k); if (!cur || (cur.sample && !h.sample) || (!!cur.sample === !!h.sample && (activity(h) > activity(cur) || (activity(h) === activity(cur) && done(h) > done(cur))))) best.set(k, h); }
     H = [...best.values()].map((h) => ({ ...h, _g: groupsOf(h) }))

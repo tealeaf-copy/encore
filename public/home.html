@@ -32,7 +32,9 @@ section{padding:72px 0;border-top:1px solid var(--line)}section h2{font-size:var
 footer{padding:40px 0 60px;color:var(--smoke);font-size:14px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line)}footer a{color:var(--smoke)}
 @media (max-width:860px){.hero{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:24px}.stack{height:auto;max-width:360px;margin:0 auto;width:100%;display:flex;flex-direction:column}.card{position:relative;width:100%;top:auto!important;left:auto!important;right:auto!important}.card+.card{margin-top:-10px}.example{position:static;text-align:right;margin-top:8px}.steps{grid-template-columns:minmax(0,1fr)}.teams{grid-template-columns:minmax(0,1fr);padding:36px 24px}.top nav a.hide-m{display:none}}
 @media (prefers-reduced-motion:reduce){.btn,.lv{transition:none}}
-</style><link rel="stylesheet" href="/playful.css"><style>
+
+/* phones: the tab bar's Sign up covers the closing call to action */
+@media (max-width:860px){.end .ctas{display:none}}</style><link rel="stylesheet" href="/playful.css"><style>
 /* tidy layout */
 .home .hero::before,.home .hero::after{display:none!important}
 .top nav .btn.sm{padding:9px 16px;font-size:14px;color:#fff}
@@ -90,7 +92,7 @@ html body .eyebrow{font-size:13px!important}
     <nav><a href="/discover">Discover</a><a href="/hosts" class="hide-m">Hosts</a><a href="/hosts/book" class="hide-m">For brands</a><a href="/login">Sign in</a><a class="btn primary sm" href="/signup?mode=friends"><span>Start <span class="nm-full">your page</span></span></a></nav></header>
   <div class="hero">
     <div><h1>Host what you love.<br><span class="hl">Get booked</span> for&nbsp;it.<svg class="doodle d-spark" viewBox="0 0 60 60" aria-hidden="true"><path d="M30 6v14M30 40v14M6 30h14M40 30h14M14 14l8 8M38 38l8 8M46 14l-8 8M22 38l-8 8" stroke="#E0A030" stroke-width="4" stroke-linecap="round" fill="none"/></svg></h1>
-      <p class="sub">Start with friends. Brands find you later.</p>
+      <p class="sub">Host friends first. Brands find you later.</p>
       <div class="ctas"><a class="btn primary" href="/signup?mode=friends">Start your page</a><a class="btn quiet" href="/hosts">Find a host</a></div>
       <p class="small" id="inviteOnlyLine" hidden>Hosting is invite-only for now. Got a host code? <a href="/signup?mode=friends">Use it here</a>.</p>
       <p class="small">Got an invite? Open the link. No account needed.</p></div>
@@ -99,8 +101,8 @@ html body .eyebrow{font-size:13px!important}
 <section class="makes" aria-label="Things people host on Pottery Lab"><div class="mk-track"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span><span aria-hidden="true" class="mk-dup"><span class="mk">🏺 Pottery nights</span><span class="mk">🍞 Sourdough Sundays</span><span class="mk">🍵 Matcha mornings</span><span class="mk">💐 Bouquet workshops</span><span class="mk">✏️ Sketch walks</span><span class="mk">🍜 Supper clubs</span><span class="mk">🏃 Run clubs</span><span class="mk">🧶 Knit circles</span><span class="mk">🎨 Live portraits</span><span class="mk">☕ Phin coffee pop-ups</span><span class="mk">🌿 Plant swaps</span><span class="mk">📚 Book clubs</span></span></div></section>
 <section><div class="wrap"><h2>Three steps, <em>zero</em> spreadsheets.</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Describe it in a sentence. We make the invite and chase the replies.</p></div>
-    <div class="step"><div class="n">2</div><h3>Build your page</h3><p>Each event adds photos and kind words. Followers hear about the next one.</p></div>
+    <div class="step"><div class="n">1</div><h3>Host for friends</h3><p>Describe it in a sentence. We make the invite and chase replies.</p></div>
+    <div class="step"><div class="n">2</div><h3>Build your page</h3><p>Every event adds photos and kind words to it.</p></div>
     <div class="step"><div class="n">3</div><h3>Get booked by brands</h3><p>Brands send a request. You quote, or pass.</p></div>
   </div>
 </div></section>

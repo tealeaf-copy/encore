@@ -20,19 +20,19 @@
 <script src="/placesearch.js"></script>
 <script src="/mascot.js"></script></head><body>
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
-  <h1 id="h">Start your free trial</h1>
-  <p class="sub" id="sub">14 days, every feature, no card.</p>
-  <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="true">For a brand</button><button type="button" role="tab" data-mode="friends" aria-selected="false">With friends</button></div>
+  <h1 id="h">Start your page</h1>
+  <p class="sub" id="sub">Free to host friends.</p>
+  <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="false">For a brand</button><button type="button" role="tab" data-mode="friends" aria-selected="true">With friends</button></div>
   <p class="err" id="err" role="alert"></p>
   <label id="codeWrap" hidden><span>Host code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode" id="nocodeHint" hidden>No host code? Ask a host you know, or <a href="#wl" onclick="document.getElementById('f').hidden=true;document.getElementById('wl').hidden=false;return false">join the waitlist</a>.</small></label>
   <label>Your name<input name="name" placeholder="e.g. Dana Park" autocomplete="name" required></label>
-  <label><span id="emL">Work email</span><input name="email" type="email" placeholder="you@example.com" autocomplete="email" required></label>
-  <label id="coWrap"><span id="coL">Company</span><input name="company" placeholder="Company" autocomplete="organization"></label>
+  <label><span id="emL">Email</span><input name="email" type="email" placeholder="you@example.com" autocomplete="email" required></label>
+  <label id="coWrap"><span id="coL">Group name (optional)</span><input name="company" placeholder="e.g. Saturday Run Club" autocomplete="organization"></label>
   <label id="cityWrap"><span>Your city</span><span style="display:flex;flex-direction:column;gap:6px"><input name="city" id="cityIn" list="suCities" placeholder="e.g. New York" autocomplete="address-level2" style="width:100%;box-sizing:border-box"><button type="button" id="cityGps" style="align-self:flex-start;white-space:nowrap;border:1px solid #E7DFD3;background:#fff;border-radius:12px;padding:6px 12px;font-size:14px;color:#1F1A17;font:inherit;cursor:pointer">📍 Use my location</button></span><datalist id="suCities"></datalist></label>
-  <label id="webWrap"><span>Company website <small style="font-weight:400;color:#75685F">(optional)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
-  <input type="hidden" name="mode" value="work">
+  <label id="webWrap" hidden style="display:none"><span>Company website <small style="font-weight:400;color:#75685F">(optional)</small></span><input name="website" placeholder="e.g. fernwoodlabs.com" autocomplete="url" inputmode="url"></label>
+  <input type="hidden" name="mode" value="friends">
   <label>Password <small style="font-weight:400;color:#75685F">(10+ characters)</small><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
-  <button type="submit" id="go">Start free trial</button>
+  <button type="submit" id="go">Create my page</button>
   <a href="/login">Already have an account? Sign in</a>
 </form>
 <form id="wl" hidden novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
@@ -55,7 +55,7 @@
       document.getElementById("emL").textContent = fr ? "Email" : "Work email"; document.getElementById("coL").textContent = fr ? "Group name (optional)" : "Company";
       f.company.placeholder = fr ? "e.g. Saturday Run Club" : "Company"; { const w = document.getElementById("webWrap"); w.hidden = fr; w.style.display = fr ? "none" : ""; if (fr) f.website.value = ""; } document.getElementById("go").textContent = fr ? (fol ? "Follow" : "Create my page") : "Start free trial"; };
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
-    if (q.get("mode") !== "work") set("friends"); else document.getElementById("modes").hidden = false;
+    if (q.get("mode") !== "work") set("friends"); else { set("work"); document.getElementById("modes").hidden = false; }
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), wl = document.getElementById("wl");
     let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That host code doesn't work."; } catch {} }, 250); };
     ci.addEventListener("input", check);
@@ -66,7 +66,7 @@
     wl.addEventListener("submit", async (e) => { e.preventDefault(); const b = Object.fromEntries(new FormData(wl)), er = document.getElementById("wlErr"); er.textContent = "";
       try { const r = await fetch("/api/waitlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) { er.textContent = j.message || "Couldn't add you. Try again."; return; }
-        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">We'll be in touch.</p>`;
+        wl.innerHTML = `<div class="brand">pottery lab</div><h1>You're on the waitlist</h1><p class="done">We'll email you when there's room.</p>`;
       } catch { er.textContent = "Can't reach Pottery Lab. Check your connection."; } });
     try { const br = q.get("brief"); if (br) localStorage.setItem("encore.brief", br.slice(0, 200)); } catch {}
   })();

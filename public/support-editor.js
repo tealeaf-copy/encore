@@ -24,7 +24,7 @@
     // saved by the pane's one Save button
     d._save = async () => { if (!dirty) return ""; const msg = d.querySelector(".msg"), v = (c) => d.querySelector(c).value.trim(); msg.textContent = "";
       const wishlist = [...d.querySelectorAll(".wl")].map((r) => ({ emoji: r.querySelector(".e").value.trim(), name: r.querySelector(".n").value.trim(), price: r.querySelector(".p").value.trim(), url: r.querySelector(".u").value.trim() })).filter((x) => x.name);
-      if (wishlist.some((x) => x.url && !/^https:\/\//i.test(x.url))) { msg.textContent = "Links need to start with https://"; throw new Error("Wishlist links need to start with https://"); }
+      if (wishlist.some((x) => x.url && !/^https:\/\//i.test(x.url))) { msg.textContent = "Links must start with https://"; throw new Error("Links must start with https://"); }
       { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ support: { on: d.querySelector(".on").checked, monthly: +v(".m"), yearly: +v(".y"), founding: +v(".fo"), note: v(".note") }, wishlist, city: host.city || "" }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't save.");
         Object.assign(host, j.host || {}); dirty = false; try { window.EncoreDrawSupport?.({ support: host.support || {}, wishlist: host.wishlist || [] }); } catch {} return ""; } };
   }

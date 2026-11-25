@@ -1,4 +1,4 @@
-// One header for every public page. Signed in: Home, Discover, Feed, Plans, My page.
+// One header for every public page. Hosts: Home, Discover, Feed, New event, Plans, My page. Brands: Discover, For brands, Requests, Gifts.
 // Signed out: Discover, Hosts, For brands, Sign in, Start your page. On phones the links scroll instead of getting cut off.
 (function () {
   if (window.__encoreNav) return; window.__encoreNav = 1;
@@ -14,7 +14,8 @@
     if (!me?.verified) return draw(document.body?.dataset?.audience === "brand" ? [["/discover", "Discover"], ["/hosts", "Hosts"], ["/gifts", "Gifts"], ["/login", "Sign in"], ["/hosts/book", "For brands", 1]] : [["/discover", "Discover"], ["/hosts", "Hosts"], ["/hosts/book", "For brands"], ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json().catch(() => ({}));
     if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ["/?app=1", "Host something", 1]]);
-    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/?app=1#studio", "New event", 1]]);
+    if (W?.personal === false && W?.plan !== "self-hosted" && !W?.handle) return draw([["/discover", "Discover"], ["/hosts/book", "For brands"], ["/requests", "Requests"], ["/gifts", "Gifts"]]);
+    draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/feed", "Feed"], ["/?app=1#studio", "New event", 1], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : [])]);
   } catch {} };
   run(); window.addEventListener("encore:signedin", run);
 })();

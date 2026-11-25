@@ -24,7 +24,7 @@
 <script src="/authguard.js"></script><script>
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
   const token = location.hash.slice(1);
-  if (!/^[a-f0-9]{48}$/.test(token)) { err.innerHTML = 'This link looks cut off. Open the full link from your email, or <a href="/login">sign in</a>.'; f.querySelectorAll("label, button").forEach((x) => x.remove()); }
+  if (!/^[a-f0-9]{48}$/.test(token)) { err.innerHTML = 'This link looks cut off. Open the one in your email, or <a href="/login">sign in</a>.'; f.querySelectorAll("label, button").forEach((x) => x.remove()); }
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = { ...Object.fromEntries(new FormData(f)), token };

@@ -1,4 +1,4 @@
-// The frame around public pages: an icon rail on the left (Home, Discover, Feed, New event, Your plans, Alerts, you)
+// The frame around public pages: an icon rail on the left (hosts: Home, Discover, Feed, New event, Plans, My page; brands: Discover, For brands, Requests, Gifts)
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
 // Collapsible side navigation: one setting for both the public rail and the app's own sidebar, kept per device.
 (function () {
@@ -35,6 +35,7 @@
     people: I('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.5 3.6-5.2 6.5-5.2s5.3 1.7 6.5 5.2"/><circle cx="17" cy="9.5" r="2.8"/><path d="M16 14.6c2.6 0 4.5 1.5 5.5 4.4"/>'),
     gift: I('<rect x="3.5" y="9" width="17" height="11.5" rx="1.5"/><path d="M12 9v11.5M3.5 13.5h17M12 9C10.5 6 7 5 7 7.5S10.5 9 12 9zm0 0c1.5-3 5-4 5-1.5S13.5 9 12 9z"/>'),
     brief: I('<rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 13h17"/>'),
+    inbox: I('<path d="M3.5 13.5 6 5h12l2.5 8.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19z"/><path d="M3.5 13.5H9a3 3 0 0 0 6 0h5.5"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
   };
   const css = document.createElement("style");
@@ -71,11 +72,12 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
   const link = (href, icon, tip, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = p !== "/" && p === P ? ' aria-current="page"' : ""; return `<a href="${href}" data-tip="${tip}" aria-label="${tip}"${cur}>${icon}${extra}</a>`; };
   function draw(me, W, alerts) {
     const rail = document.createElement("nav"); rail.className = "es-rail"; rail.setAttribute("aria-label", "Pottery Lab");
-    const signed = !!me?.verified, host = signed && !W?.regularOnly, ini = String(me?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "🙂";
+    const signed = !!me?.verified, brand = signed && W?.personal === false && W?.plan !== "self-hosted" && !W?.handle, host = signed && !W?.regularOnly && !brand, ini = String(me?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "🙂";
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
-      (host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
-        : signed ? item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/?app=1#studio", ICON.plus, "New event")
+      (brand ? item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.brief, "For brands") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
+        : host ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/?app=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page")
+        : signed ? item("/discover", ICON.search, "Discover") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans")
         : item("/discover", ICON.search, "Discover") + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + item("/hosts/book", ICON.brief, "For brands") + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a>` : "");
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
@@ -83,9 +85,9 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       const tab = (href, icon, label) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
-      tabs.innerHTML = host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/feed", ICON.globe, "Feed") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? tab("/feed", ICON.globe, "Feed") : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") +
-        (signed ? `<a class="es-plus" href="${host ? "/?app=1#studio" : "/signup?mode=friends"}" aria-label="${host ? "New event" : "Start your page"}"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` : tab("/hosts", ICON.people, "Hosts")) +
-        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Start"))));
+      tabs.innerHTML = brand ? tab("/discover", ICON.search, "Discover") + tab("/hosts/book", ICON.brief, "For brands") + tab("/requests", ICON.inbox, "Requests") + tab("/gifts", ICON.gift, "Gifts") : host ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/feed", ICON.globe, "Feed") + tab("/?app=1#studio", ICON.plus, "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed ? "" : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") + (signed ? tab("/feed", ICON.globe, "Feed") : "") +
+        (signed ? `<a class="es-plus" href="/signup?mode=friends" aria-label="Start your page"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></a>` : tab("/hosts", ICON.people, "Hosts")) +
+        (signed ? tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", `<span class="es-av" style="width:24px;height:24px;font-size:13px">${ini}</span>`, "Me") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Sign up"))));
       document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1#studio">New event</a>` : ""}</nav>`;
@@ -98,7 +100,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     if (!hint) { try { localStorage.removeItem(KEYS); } catch {} paint({}, {}); return; }
     if (cached) paint(cached.me, cached.W);
     let me = {}, W = {}; const [a, b] = await Promise.all([fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json()).catch(() => ({})), fetch("/api/workspace", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}))]); me = a || {}; W = me.verified ? b || {} : {};
-    const keep = { me: { verified: me.verified, name: me.name, ws: me.ws, alerts: me.alerts, handle: me.handle }, W: { handle: W.handle, personal: W.personal, company: W.company, regularOnly: W.regularOnly } };
+    const keep = { me: { verified: me.verified, name: me.name, ws: me.ws, alerts: me.alerts, handle: me.handle }, W: { handle: W.handle, personal: W.personal, company: W.company, regularOnly: W.regularOnly, plan: W.plan } };
     const fresh = JSON.stringify(keep); if (cached && JSON.stringify(cached) === fresh) return; try { localStorage.setItem(KEYS, fresh); } catch {} paint(me, W); };
   window.addEventListener("encore:signedin", () => setTimeout(go, 300));
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go();

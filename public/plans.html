@@ -24,11 +24,11 @@ h2.sub{font-size:20px;margin-top:22px}
     <h2 class="sub">You're going</h2><div class="plans" id="ev"></div>
     <p style="margin:18px 0 0" id="reqLink" hidden><a href="/requests" style="font-weight:600">Your requests to hosts</a></p>
     <h2 class="sub" id="ordH" hidden>Orders</h2><div class="plans" id="ord"></div>
-    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your reply details</h2><span class="rp-sub">Fill these in once. We'll add them when you reply.</span></summary>
+    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">Fill in once. We add them when you reply.</span></summary>
       <form id="rpForm"><label>Your name<input name="name" autocomplete="name"></label><label>Email or phone<input name="contact" autocomplete="email"></label>
         <label>Anything you don't eat?<input name="dietary" placeholder="e.g. Vegetarian, nut allergy"></label><div class="rp-q" id="rpQ"></div>
         <label class="rp-chk"><input type="checkbox" name="severe"> It's a severe allergy</label>
-        <label>Anything else?<input name="access" placeholder="e.g. step-free entrance"></label>
+        <label>Access needs<input name="access" placeholder="e.g. step-free entrance"></label>
         <div class="rp-btns"><button type="submit" class="rp-save">Save</button><button type="button" class="rp-forget" id="rpForget">Forget my details</button><span id="rpMsg" role="status"></span></div></form></details>
   </main>
 </div>
@@ -45,7 +45,7 @@ h2.sub{font-size:20px;margin-top:22px}
 
   // what you're hosting (signed in): your own upcoming events, straight to the plan
   try { const r = await fetch("/api/db/collection?path=events"); if (r.ok) { const j = await r.json(); const L = (Array.isArray(j) ? j : j.docs || j.items || []).map((d) => ({ id: d.id, ...(d.data || d) })).filter((e) => e && e.id && !e.example && !e.parentId && ((e.date && e.date >= new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)) || (!e.date && e.stage === "interest"))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    const card = (e) => `<a class="plan" href="/#studio" data-open="${esc(e.id)}"><span class="ic">${esc(((t) => [["turkey","🦃"],["thanksgiving","🦃"],["taco","🌮"],["matcha","🍵"],["game","🎲"],["board","🎲"],["run","🏃"],["dumpling","🥟"],["hike","🥾"],["pizza","🍕"],["brunch","🥞"],["picnic","🧺"],["coffee","☕"],["movie","🎬"],["bake","🧁"],["cake","🎂"],["cook","🍳"],["dinner","🍽️"],["potluck","🥘"],["karaoke","🎤"],["book","📚"]].find(([k]) => t.includes(k))?.[1])(String(e.pubTitle || e.name || "").toLowerCase()) || (e.emoji && e.emoji !== "🎉" ? e.emoji : "🗓"))}</span><span><b>${esc(e.pubTitle || e.name || "Your event")}</b><small>${esc(when(e))}</small><small style="display:block;color:var(--brand2,#C94A30);font-weight:600">${e.date && e.date < today ? "See how it went" : e.published || e.stage === "interest" ? "Manage" : "Draft"}</small></span></a>`;
+    const card = (e) => `<a class="plan" href="/#studio" data-open="${esc(e.id)}"><span class="ic">${esc(((t) => [["turkey","🦃"],["thanksgiving","🦃"],["taco","🌮"],["matcha","🍵"],["game","🎲"],["board","🎲"],["run","🏃"],["dumpling","🥟"],["hike","🥾"],["pizza","🍕"],["brunch","🥞"],["picnic","🧺"],["coffee","☕"],["movie","🎬"],["bake","🧁"],["cake","🎂"],["cook","🍳"],["dinner","🍽️"],["potluck","🥘"],["karaoke","🎤"],["book","📚"]].find(([k]) => t.includes(k))?.[1])(String(e.pubTitle || e.name || "").toLowerCase()) || (e.emoji && e.emoji !== "🎉" ? e.emoji : "🗓"))}</span><span><b>${esc(e.pubTitle || e.name || "Your event")}</b><small>${esc(when(e))}</small><small style="display:block;color:var(--brand2,#C94A30);font-weight:600">${e.date && e.date < today ? "See how it went" : e.published || e.stage === "interest" ? "Open" : "Draft"}</small></span></a>`;
     const up = L.filter((e) => !(e.date && e.date < today)), done = L.filter((e) => e.date && e.date < today).reverse();
     if (up.length) { document.getElementById("hostSec").hidden = false; document.getElementById("host").innerHTML = up.slice(0, 8).map(card).join(""); }
     if (done.length) { document.getElementById("doneSec").hidden = false; document.getElementById("hostDone").innerHTML = done.slice(0, 8).map(card).join(""); }
@@ -85,7 +85,9 @@ h2.sub{font-size:20px;margin-top:22px}
   f.dietary.oninput = syncQ;
   const fill = (P) => { if (!P) return syncQ(); if (P.name || P.dietary) document.getElementById("rpCard").open = true; f.name.value = P.name || ""; f.contact.value = P.contactVia && P.contactVia !== "email" ? P.phone || "" : P.email || P.phone || ""; f.dietary.value = P.dietary || ""; f.severe.checked = !!P.severe; f.access.value = P.access || ""; syncQ(); };
   fill(local());
-  if (signed) fetch("/api/me/rsvp-profile", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : {})).then((j) => { const S = j.profile, L = local(); if (S && (!L || (S.updatedAt || 0) >= (L.updatedAt || 0))) fill(S); }).catch(() => {});
+  if (signed) fetch("/api/me/rsvp-profile", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : {})).then((j) => { const S = j.profile, L = local(); if (S && (!L || (S.updatedAt || 0) >= (L.updatedAt || 0))) fill(S); }).catch(() => {})
+    // a signed-in member never retypes their own name and email
+    .finally(() => fetch("/api/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((u) => { if (!u) return; if (!f.name.value.trim() && u.name) f.name.value = u.name; if (!f.contact.value.trim() && u.email) f.contact.value = u.email; }).catch(() => {}));
   f.onsubmit = async (e) => { e.preventDefault(); const c = f.contact.value.trim(), isMail = /@/.test(c);
     if (!f.name.value.trim()) { msg.textContent = "Add your name first."; f.name.focus(); return; }
     const P = { name: f.name.value.trim(), email: isMail ? c : "", phone: isMail ? "" : c.replace(/[^\d+]/g, ""), contactVia: c ? (isMail ? "email" : "sms") : "", dietary: f.dietary.value.trim(), severe: f.severe.checked, access: f.access.value.trim(), updatedAt: Date.now() };

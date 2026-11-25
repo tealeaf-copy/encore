@@ -227,7 +227,7 @@ export function createApp({ store, dataDir }) {
     const r = EMAIL_RE.test(email) ? startPasswordReset(email) : null;
     if (r) { const cfg = emailConfig(r.user.ws, false) || emailConfig(DEFAULT_WS, true); const link = `${originOf(req)}/reset?token=${r.token}`;
       if (cfg) await sendEmail(cfg, { to: r.user.email, subject: "Reset your Pottery Lab password", text: `Hi ${String(r.user.name || "").split(" ")[0] || "there"},\n\nSomeone (hopefully you) asked to reset the password for this Pottery Lab account. Choose a new one here:\n\n${link}\n\nThe link works once and expires in an hour. If you didn't ask, ignore this email; your password stays the same.` }).catch(() => {}); }
-    res.json({ ok: true, message: "If that email has a Pottery Lab account, a reset link is on its way. It expires in an hour." }); });
+    res.json({ ok: true, message: "If that email has an account, a link is on its way. It works for an hour." }); });
   app.post("/api/password/reset", express.json({ limit: "4kb" }), (req, res) => { if (resetLimited("rs:" + (req.ip || "?"), 20)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
     const u = finishPasswordReset(req.body?.token, req.body?.password); if (typeof u === "string") return res.status(400).json({ code: "invalid", message: u });
     startSessionFor(req, res, u.email, u.ws); res.json({ ok: true }); });
@@ -259,7 +259,7 @@ export function createApp({ store, dataDir }) {
     if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
     const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || (b.mode !== "work" && !String(b.company || "").trim());
-    const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "gatherings" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
+    const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "events" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
     if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Use a password of at least 10 characters." });
@@ -267,7 +267,7 @@ export function createApp({ store, dataDir }) {
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
-    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Pottery Lab is invite-only for now. Ask a member for a code, or join the waitlist." }); }
+    if ((needCode && !regular) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Pottery Lab is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
     const W = createWorkspace({ company, ownerEmail: email, personal, ref });
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (regular) { updateWorkspace(W.id, { regularOnly: !!needCode, regularOf: regHandle }); try { C.follow(regWs, { email, name, via: "signup", tastes: [] }); scopeStore(store, regWs).add("audit", { eventId: "", what: `${name.split(/\s+/)[0]} joined your regulars`, kind: "growth", at: Date.now() }); } catch {} }
@@ -1293,7 +1293,7 @@ export function createApp({ store, dataDir }) {
       // the same email from another device can't overwrite someone's reply: only the device that sent it (its guest key),
       // a verified personal invite, or the host can change it
       if (pol.prior && req.guest) { const sameDevice = !!pol.prior.data._k && pol.prior.data._k === guestKey(req), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});
-        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "You've already replied with this email. Open the invite where you replied, or ask the host." }); }
+        if (!sameDevice && !viaInvite) return res.status(409).json({ code: "rsvp_exists", message: "You already replied with this email. Open the invite where you replied." }); }
       // never blank out what a guest already told the host
       if (pol.prior) for (const k of ["name", "email", "phone", "dietary", "access"]) if (!String(body[k] ?? "").trim() && pol.prior.data[k]) delete body[k];
       if (pol.prior && body.answers && typeof body.answers === "object" && !Array.isArray(body.answers) && !Object.keys(body.answers).length && pol.prior.data.answers) delete body.answers;

@@ -182,7 +182,7 @@ test("Hosting with friends: free, no trial clock, no company needed, and a guest
   const r = await fetch(srv.base + "/api/signup", { method: "POST", headers: J, body: JSON.stringify({ name: "Maya Ortiz", email: "maya@friends.example", password: "longpassword123", mode: "friends" }) });
   assert.equal(r.status, 200); const j = await r.json();
   assert.equal(j.workspace.plan, "friends"); assert.equal(j.workspace.trialEndsAt, undefined);
-  assert.match(j.workspace.company, /Maya's gatherings/);
+  assert.match(j.workspace.company, /Maya's events/);
   const cookie = r.headers.get("set-cookie").split(";")[0];
   const ws = await (await fetch(srv.base + "/api/workspace", { headers: { cookie } })).json();
   assert.equal(ws.personal, true); assert.equal(ws.trial, false);

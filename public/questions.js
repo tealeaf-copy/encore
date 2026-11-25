@@ -49,7 +49,7 @@
           ${q.type === "number" ? `<div class="r"><small>From</small><input type="text" style="width:60px" value="${q.min}" data-k="min"><small>to</small><input type="text" style="width:60px" value="${q.max}" data-k="max"></div>` : ""}
           <label class="r" style="font-size:13px"><input type="checkbox" data-k="required" ${q.required ? "checked" : ""}> Required</label></div>`).join("")}
         ${Q.length ? `<details ${P.title || P.button || P.thanks ? "open" : ""}><summary style="cursor:pointer;font-weight:600">✨ Give it personality</summary><div class="qb-pers" style="margin-top:8px"><label>Form title<input data-p="title" value="${esc(P.title || "")}" placeholder="Who's picking up?"></label><label>Button<input data-p="button" value="${esc(P.button || "")}" placeholder="Count me in 🍰"></label><label>Thank-you line<input data-p="thanks" value="${esc(P.thanks || "")}" placeholder="See you at 5:45! Bring an appetite."></label></div></details>
-          <button type="button" class="btn ghost sm" data-preview style="justify-self:start">👀 Preview as a guest</button><div data-pv></div>` : `<small style="color:#6B5F56">Guests answer one at a time.</small>`}</div>`; };
+          <button type="button" class="btn ghost sm" data-preview style="justify-self:start">👀 Preview as a guest</button><div data-pv></div>` : ""}</div>`; };
     draw();
     box.onclick = (e) => { const a = e.target.closest("[data-add]"); if (a) { const s = a.dataset.add === "new" ? { q: "", type: "short" } : STARTERS[+a.dataset.add]; ev.questions.push(norm({ ...s, options: [...(s.options || [])] })); draw(); save(); if (a.dataset.add === "new") box.querySelector(".qb-q:last-of-type .qt")?.focus(); return; }
       const c = e.target.closest(".qb-q"), i = c ? +c.dataset.i : -1;
@@ -65,7 +65,7 @@
     const P = ev.qStyle || {}; let i = 0; const el = document.createElement("div"); el.className = "tf"; box.appendChild(el);
     const val = (q) => answers[q.id], has = (q) => { const v = val(q); return Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== ""; };
     const draw = (done = false) => { const pct = Math.round(((done ? Q.length : i) / Q.length) * 100);
-      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Done. Now send your reply."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
+      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Done. Now send it."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:#6B5F56;cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
       const q = Q[i], v = val(q), opts = q.options.length ? q.options : q.type === "yesno" ? ["Yes", "No"] : q.type === "emoji" ? ["😐", "🙂", "😍"] : [];
       let input = "";
       if (q.type === "short" || q.type === "instagram" || q.type === "phone") input = `<input type="${q.type === "phone" ? "tel" : "text"}" value="${esc(v ?? "")}" placeholder="${esc(q.placeholder || (q.type === "instagram" ? "@yourhandle" : q.type === "phone" ? "(917) 555 0142" : "Type your answer"))}" maxlength="200">`;

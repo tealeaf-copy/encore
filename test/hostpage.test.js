@@ -159,7 +159,7 @@ test("Share links (/e/<id>) carry the event's title and date for link previews, 
   const c = cookieOf(r0);
   await put("/api/db/doc?path=events/sh1", { kind: "social", casual: true, name: "Dumpling night <3", date: "2026-12-12", startTime: "19:00", city: "Brooklyn", published: true }, c);
   const r = await fetch(srv.base + "/e/sh1", { redirect: "manual" }); assert.equal(r.status, 200); const html = await r.text();
-  assert.match(html, /og:title" content="Dumpling night &lt;3"/); assert.match(html, /Sat, Dec 12 · 7:00 PM · Brooklyn/); assert.match(html, /url=\/g#rsvp-sh1/);
+  assert.match(html, /og:title" content="Dumpling night &lt;3"/); assert.match(html, /Sat, Dec 12 · 7:00 PM · Brooklyn/); assert.match(html, /id="nm"|Opening the invite/); assert.ok(html.length < 40000, "the invite page itself is small");
   const miss = await fetch(srv.base + "/e/nope123", { redirect: "manual" }); assert.equal(miss.status, 302); assert.equal(miss.headers.get("location"), "/g#rsvp-nope123");
 });
 

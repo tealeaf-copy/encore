@@ -464,9 +464,14 @@ export function createApp({ store, dataDir }) {
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
       desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
       img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
-    res.set("Cache-Control", "public, max-age=300").type("html").send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${e(title)} · Pottery Lab</title><meta name="viewport" content="width=device-width,initial-scale=1">
+    // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
+    // it doesn't handle (approvals, paid seats, polls, past events) to the full invite at /g#rsvp-<id>
+    const meta = `<title>${e(title)} · Pottery Lab</title>
 <meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "RSVP on Pottery Lab")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
-<meta name="description" content="${e(desc)}"><meta http-equiv="refresh" content="0;url=${e(to)}"><link rel="canonical" href="${e(base + "/e/" + id)}"></head><body><p><a href="${e(to)}">Open the invite: ${e(title)}</a></p><script src="/e-go.js"></script></body></html>`); });
+<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">`;
+    let page = ""; try { page = fs.readFileSync(path.join(PUBLIC_DIR, "invite.html"), "utf8"); } catch {}
+    if (!page) return res.redirect(302, to);
+    res.set("Cache-Control", "public, max-age=120").type("html").send(page.replace("<!--META-->", meta)); });
   // A no-login demo: the page without the shim runs on its built-in sample data and saves nothing here.
   app.get("/demo", async (req, res, next) => {
     try {

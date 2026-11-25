@@ -193,3 +193,24 @@ test("Turnout counts a guest once even when their RSVP is also copied onto the g
   const t = (await (await fetch(srv.base + "/api/public/host/dup-turnout/turnout")).json()).turnout;
   assert.equal(t.saidYes, 2); assert.equal(t.came, 1); assert.equal(t.showRate, 50); assert.equal(t.returning, 0);
 });
+
+test("A home address in the place name reaches guests only after they're in; walk-ins and no-shows never appear in 'who came'", async () => {
+  const r0 = await post("/api/signup", { name: "Priv Two", email: "priv.two@example.com", password: "long-password-1", mode: "friends" });
+  const c = cookieOf(r0), ws = (await r0.json()).workspace.id;
+  const G = { ...J, "x-encore-guest": "1", "x-encore-workspace": ws };
+  await put("/api/db/doc?path=events/pa1", { kind: "social", casual: true, name: "Coffee morning", date: "2026-12-20", published: true, venueName: "My apartment, 214 Bedford Ave", city: "Brooklyn" }, c);
+  const pub = await (await fetch(srv.base + "/api/db/doc?path=events/pa1", { headers: G })).json();
+  assert.ok(!JSON.stringify(pub).includes("Bedford"), "no street address before RSVP"); assert.equal(pub.data.addrHidden, true);
+  const rv = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "pa-k1" }, body: JSON.stringify({ eventId: "pa1", name: "Lan Vo", response: "going", code: "c0de1" }) })).json();
+  const rid = String(rv.id || rv.doc?.id || "").split("/").pop(); const list = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const mine = (list.docs || list.items || list).find((d) => (d.data || d).name === "Lan Vo"); const code = (mine.data || mine).code;
+  const addr = await (await fetch(srv.base + `/api/public/address/pa1?rid=${encodeURIComponent(rid || String(mine.id).split("/").pop())}&code=${encodeURIComponent(code)}`)).json();
+  assert.ok(addr.ok && /Bedford/.test(addr.venueName), "the guest who's in gets it");
+  // a past event where the door was used: only checked-in guests are named, walk-ins are counted but never named
+  const past = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
+  await put("/api/db/doc?path=events/pa2", { kind: "social", casual: true, name: "Supper", date: past, published: true, guests: [{ name: "Eve Walker", status: "Attended", source: "Walk-in" }] }, c);
+  for (const n of ["Ana Lopez", "Dung Pham"]) await fetch(srv.base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...G, "x-encore-key": "pa2" + n }, body: JSON.stringify({ eventId: "pa2", name: n, response: "going" }) });
+  const L = await (await fetch(srv.base + "/api/db/collection?path=rsvps", { headers: { cookie: c } })).json(); const ana = (L.docs || L.items || L).find((d) => (d.data || d).name === "Ana Lopez");
+  await put("/api/db/doc?path=rsvps/" + String(ana.id).split("/").pop(), { ...(ana.data || ana), checkedInAt: Date.now() }, c);
+  const who = await (await fetch(srv.base + "/api/public/attendees/pa2")).json(); const names = who.attendees.map((a) => a.name).join(",");
+  assert.match(names, /Ana/); assert.ok(!/Dung|Eve/.test(names), names); assert.equal(who.count, 2, "Ana and the walk-in came");
+});

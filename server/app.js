@@ -94,6 +94,8 @@ export function eventMoney(e) {
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
   return { cost, committed, currency: e.currency || "USD" };
 }
+/** Does this place text give away where someone lives, or a street address? */
+export const looksLikeAddress = (t) => { const x = String(t || ""); return /\b\d{1,6}[a-z]?\s+[A-Za-zÀ-ÿ'.-]+(\s+[A-Za-zÀ-ÿ'.-]+){0,3}\s+(st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|dr|drive|pl|place|way|ct|court|ter|terrace|pkwy|parkway|hwy|sq|square)\b\.?/i.test(x) || /\b(apt|apartment|unit|suite|flat|floor)\s*#?\s*\w+|#\s*\d+|\b(my|our)\s+(place|apartment|flat|house|home|backyard|rooftop|loft)\b|['’]s\s+(place|apartment|flat|house|home)\b/i.test(x); };
 export function publicEvent(data, view) {
   const e = Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]]));
   e.guests = data.noWall ? [] : (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
@@ -105,6 +107,9 @@ export function publicEvent(data, view) {
   // casual get-togethers: the exact address only goes to people who are in (GET /api/public/address/:id with their RSVP code).
   // When the host approves each guest, the meeting point waits for the yes too; the page shows the neighbourhood.
   if (data.casual && view !== "plan") { if (e.venueAddr) { delete e.venueAddr; e.addrHidden = true; }
+    // a place name that is really a home or a street address ("My apartment, 214 Bedford Ave") is an address too:
+    // guests get it after they're in, through the RSVP-checked address endpoint
+    for (const k of ["venueName", "meetPoint"]) if (e[k] && looksLikeAddress(e[k])) { delete e[k]; e.addrHidden = true; }
     if (data.approvalRequired) { if (e.meetPoint || e.venueName || e.venues) e.addrHidden = true; delete e.meetPoint; delete e.venueName; delete e.venues; } }
   return e;
 }

@@ -37,7 +37,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 .pg-body{padding:0 18px 18px}
 .pg-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:-30px}
 .pg-av{width:64px;height:64px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);display:grid;place-items:center;overflow:hidden;font-size:32px}
-.pg-follow{font-weight:600;font-size:14px;background:var(--ink);color:#fff;border-radius:999px;padding:7px 16px}
+.pg-cap a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}.pg-follow{font-weight:600;font-size:14px;background:var(--ink);color:#fff;border-radius:999px;padding:7px 16px}
 .pg b.nm{display:block;font:600 22px/1.15 "Fredoka","Instrument Sans",system-ui;margin-top:10px}
 .pg small{display:block;color:var(--smoke);font-size:14px}
 .pg-lbl{margin:14px 0 6px;font:600 13px "Instrument Sans";letter-spacing:.1em;text-transform:uppercase;color:var(--smoke)}
@@ -129,7 +129,7 @@ html body .eyebrow{font-size:13px!important}
           <div class="kudo"><span>🤗 Felt welcome</span><span>🔁 Would go again</span></div>
         </div>
       </a>
-      <span class="pg-cap">An example page. Yours starts with one event.</span>
+      <span class="pg-cap">An example page. <a href="/@claire-runs">See Claire's page →</a></span>
     </div>
   </div>
 </div>
@@ -270,4 +270,7 @@ html body .eyebrow{font-size:13px!important}
     document.getElementById("live").innerHTML = H.map((h) => `<a class="lv" href="/@${esc(h.handle)}"><span class="av">${av(h)}</span><div><b>${esc(h.name)}</b><small>${esc([h.hood, h.city].filter(Boolean).join(", "))}</small><small class="tl">${esc(String(h.tagline || h.bio).slice(0, 90))}</small>${h.showcase ? `<small class="lv-tag">Not on Pottery Lab yet</small>` : h.sample ? `<small class="lv-tag">Example</small>` : ""}</div></a>`).join("");
   }).catch(() => {});
 })();
+</script><script>
+// the example card opens Claire's page from anywhere on it, Follow pill included (some phones ignore taps on block links)
+(function () { const g = document.querySelector("a.pg"); if (!g) return; g.style.cursor = "pointer"; g.addEventListener("click", (e) => { if (e.metaKey || e.ctrlKey) return; e.preventDefault(); location.href = "/@claire-runs"; }); })();
 </script></body></html>

@@ -75,6 +75,7 @@ h2 em{font-style:normal;font-weight:inherit;color:#B04A30}
 @media (max-width:760px){.teams{grid-template-columns:minmax(0,1fr)}.req{transform:none}}
 .xps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:26px}.xp{display:grid;gap:4px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}.xp i{font-style:normal;font-size:26px}.xp b{font:600 18px Fredoka,system-ui}.xp small{color:var(--smoke);font-size:15px;line-height:1.4}@media (max-width:760px){.xps{grid-template-columns:minmax(0,1fr);gap:10px}}
 .dates{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.dates span{font:600 14px system-ui;padding:8px 12px;border-radius:999px;border:1.5px solid #1F1A17}.dates span.on{background:#1F1A17;color:#fff}.goal .bar{height:10px;border-radius:999px;background:#EFE6D8;overflow:hidden;border:1.5px solid #1F1A17}.goal .bar i{display:block;height:100%;background:#C94A30}.goal small{display:block;margin-top:8px;color:#665A51;font-size:14px}
+.feed{display:grid;gap:10px;margin-top:22px;max-width:760px}.fi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:inherit;text-decoration:none}.fi:hover{border-color:var(--ink)}.fi .av{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:22px;background:#FBE3CF}.fi .av svg,.fi .av img{width:100%;height:100%;object-fit:cover}.fi small{display:block;color:var(--smoke);font-size:13px}.fi b{display:block;font:600 17px/1.25 Fredoka,system-ui;margin:2px 0}.fi .go{font:600 13px system-ui;color:var(--smoke);white-space:nowrap}@media (max-width:760px){.fi{grid-template-columns:auto minmax(0,1fr)}.fi .go{grid-column:2}}
 .pg-book{display:block;transform:rotate(1deg)}.pg-book .snaps{grid-template-columns:repeat(3,minmax(0,1fr))}.sub-h{margin:40px 0 0;font-size:20px}.eyebrow+h2{margin-top:6px}.priv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:56px;align-items:center}
 .feats{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:12px}.feats li{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;align-items:baseline}.feats b{font-weight:600}.feats span{color:var(--smoke)}
 .inv{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:6px 6px 0 var(--ink);padding:20px;max-width:400px;width:100%;justify-self:end;transform:rotate(-1deg)}
@@ -132,6 +133,12 @@ html body .eyebrow{font-size:13px!important}
     </div>
   </div>
 </div>
+
+<section id="feedSec" hidden><div class="wrap"><span class="eyebrow">The feed</span><h2>Happening <em>soon</em>.</h2>
+  <p class="lede">Open events from hosts on Pottery Lab. Tap one to see the invite.</p>
+  <div class="feed" id="feed"></div>
+  <p class="more"><a href="/discover">See everything on Discover →</a><a href="/feed" id="myFeed" hidden>Open your feed →</a></p>
+</div></section>
 
 <section><div class="wrap"><span class="eyebrow">What you can host</span><h2>If you love it, you can <em>host</em> it.</h2>
   <div class="xps">
@@ -195,7 +202,7 @@ html body .eyebrow{font-size:13px!important}
   <h3 class="sub-h">Hosts worth following</h3>
   <div class="live" id="live">
     <a class="lv" href="/@claire-runs"><span class="av" data-art="runner" data-accent="#E26D8E">🏃‍♀️</span><div><b>Claire's Run Crew</b><small>Williamsburg, New York</small><small class="tl">Saturday runs. Nobody gets left behind.</small><small class="lv-tag">Example</small></div></a>
-    <a class="lv" href="/@eric-cooks"><span class="av" data-art="chef" data-accent="#E0A030">🍣</span><div><b>Eric's Table</b><small>Greenpoint, New York</small><small class="tl">Twelve seats, seven courses, and cake on Saturdays.</small><small class="lv-tag">Example</small></div></a>
+    <a class="lv" href="/@bo-omecasa"><span class="av" data-art="chef" data-accent="#E0A030">🍣</span><div><b>Bo's Omecasa</b><small>Greenpoint, New York</small><small class="tl">Twelve seats, seven courses, and cake on Saturdays.</small><small class="lv-tag">Example</small></div></a>
     <a class="lv" href="/@hoa-flowers"><span class="av" data-art="florist" data-accent="#E26D8E">💐</span><div><b>Hoa Flower Studio</b><small>Bushwick, New York</small><small class="tl">Everyone leaves with flowers and a little less stress.</small><small class="lv-tag">Example</small></div></a>
   </div>
   <p class="more"><a href="/discover">Browse Discover →</a><a href="/quiz">Find your type →</a></p>
@@ -243,12 +250,19 @@ html body .eyebrow{font-size:13px!important}
 <script src="/shell.js"></script><script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/community.js"></script><script src="/avatars.js"></script><script src="/mascot.js"></script>
 <script>
 (function () {
+  if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) { const m = document.getElementById("myFeed"); if (m) m.hidden = false; }
   fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c?.inviteOnly) document.getElementById("inviteOnlyLine").hidden = false; }).catch(() => {});
   try { if (window.Potto) { document.getElementById("pottoEnd").innerHTML = Potto.svg("wave", 96, "Potto waving"); document.getElementById("pottoSay").innerHTML = Potto.svg("think", 48, "Potto"); } } catch {}
   const A = window.EncoreAvatars;
   try { if (A) { document.getElementById("pgAv").innerHTML = A.svg("runner", "#E26D8E", 64); document.querySelectorAll("#live .av[data-art]").forEach((el) => { el.innerHTML = A.svg(el.dataset.art, el.dataset.accent, 52); }); } } catch {}
   const esc = window.EncoreCommunity?.esc || ((s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"));
   fetch("/api/public/discover").then((r) => r.json()).then((d) => {
+    try { const today = new Date().toISOString().slice(0, 10);
+      const E = (d.events || []).filter((e) => e.id && (e.title || e.name) && e.host?.name && !e.unlisted && (!e.date || e.date >= today)).sort((x, y) => String(x.date || "9").localeCompare(String(y.date || "9"))).slice(0, 6);
+      const when = (e) => { if (!e.date) return ""; const dt = new Date(e.date + "T12:00"); const t = e.startTime ? (([h, m]) => { h = +h; return (h % 12 || 12) + (+m ? ":" + m : "") + (h < 12 ? "am" : "pm"); })(e.startTime.split(":")) : ""; return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) + (t ? " · " + t : ""); };
+      const hav = (h) => h.avatarArt && A ? A.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h.emoji || "🎉");
+      if (E.length) { document.getElementById("feed").innerHTML = E.map((e) => `<a class="fi" href="/g#rsvp-${encodeURIComponent(e.id)}"><span class="av">${hav(e.host)}</span><div><small>${esc(e.host.name)} is hosting</small><b>${esc(e.emoji ? e.emoji + " " : "")}${esc(e.title || e.name)}</b><small>${esc([when(e), e.hood || e.city].filter(Boolean).join(" · "))}</small></div><span class="go">${e.going ? esc(e.going) + " in" : "See invite"}</span></a>`).join(""); document.getElementById("feedSec").hidden = false; }
+    } catch {}
     const ok = (h) => h.handle && h.name && h.name.toLowerCase() !== h.handle.toLowerCase() && !/[<>]/.test(h.name) && (h.tagline || h.bio) && h.city;
     const H = (d.hosts || []).filter((h, i, all) => ok(h) && all.findIndex((x) => x.name === h.name) === i).sort((a, b) => ((!!a.showcase * 2 + !!a.sample) - (!!b.showcase * 2 + !!b.sample)) || (b.upcoming || 0) + (b.followers || 0) - ((a.upcoming || 0) + (a.followers || 0)));
     if (H.length < 3) return; H.length = H.length >= 6 ? 6 : 3;

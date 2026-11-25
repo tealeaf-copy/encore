@@ -227,6 +227,12 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
+  // one-time rename of an example account (owner request): Eric's Table becomes Bo's Omecasa at /@bo-omecasa; the old link keeps working
+  try { const ws = C.wsOfHandle("eric-cooks") || C.wsOfHandle("bo-omecasa"), W = ws && getWorkspace(ws);
+    if (W && /@demo\.encore$/i.test(W.ownerEmail || "") && W.host && W.host.name === "Eric's Table") {
+      const r = C.setProfile(ws, { ...W.host, handle: "bo-omecasa", name: "Bo's Omecasa", tagline: String(W.host.tagline || "").replace(/Eric/g, "Bo"), bio: String(W.host.bio || "").replace(/Eric/g, "Bo") });
+      if (!r?.error) { store.set("system/handle-eric-cooks", { ws }); const S = scopeStore(store, ws);
+        for (const d of S.list("events") || []) { const e = d.data || {}; if (/Eric/.test(e.hostName || "")) S.update("events/" + d.id, { hostName: "Bo" }); } } } } catch (err) { console.warn("rename example", err?.message); }
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   // change your own name; events that showed your old name as the host switch to the new one
   // the details you give when you RSVP, saved once so every RSVP fills them in (signed-in people; others keep them on their device)

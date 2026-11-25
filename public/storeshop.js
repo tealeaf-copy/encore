@@ -365,10 +365,10 @@
   // ---- owner: shop and bookings ----
   async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
-    let personal = false; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); personal = !!W?.personal; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button"; fab.innerHTML = "🛍 Shop and bookings"; document.body.appendChild(fab);
+    let personal = false; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); personal = !!W?.personal; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button"; fab.innerHTML = `🛍 <span class="sf-long">Shop and bookings</span><span class="sf-short">Shop</span>`; fab.setAttribute("aria-label", "Shop and bookings"); document.body.appendChild(fab);
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const st = { shop: JSON.parse(JSON.stringify(mine.shop || { open: false, title: "", note: "", where: "", slots: [], items: [], payUrl: "" })), exps: JSON.parse(JSON.stringify(mine.experiences || [])) };
-    let tab = /[?&]orders=1/.test(location.search) ? "orders" : personal && !(mine.shop?.items || []).length ? "book" : "shop";
+    let tab = /[?&]orders=1/.test(location.search) ? "orders" : "shop"; // hosts first: the shop (pre-orders, pickup) opens before brand bookings
     hireCard(); let reqShown = false;
     async function draw() { const s = st.shop;
       pane.innerHTML = `<div class="sp-head"><b>Shop and bookings</b><button type="button" class="sp-x" aria-label="Close">✕</button></div><div class="sp-tabs">${[["shop", "Shop"], ["orders", "Orders"], ["book", "Team bookings"], ["collab", "Collabs"]].map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div><div id="spBody"></div>`;
@@ -445,7 +445,7 @@
       sec.querySelector("#owForHire").onchange = async (e) => { const v = e.target.checked; try { const j = await post("/api/host/profile", { forHire: v }); mine.forHire = !!j.host.forHire; C().oink?.(); if (v && nx && !document.getElementById("book")) { location.reload(); return; } if (!v) document.getElementById("book")?.remove(); hireCard(); if (!pane.hidden && tab === "book") draw(); } catch (er) { e.target.checked = !v; alert(er.message); } };
       sec.querySelectorAll("[data-ow]").forEach((b) => (b.onclick = () => { tab = "book"; $$(".store-pane").forEach((p) => (p.hidden = true)); pane.hidden = false; draw().then(() => { if (b.dataset.ow === "list") pane.querySelector("#owList")?.scrollIntoView({ block: "start" }); }); })); }
     fab.onclick = () => { $$(".store-pane").forEach((p) => p !== pane && (p.hidden = true)); pane.hidden = !pane.hidden; if (!pane.hidden) draw(); };
-    if (/[?&]orders=1/.test(location.search)) fab.click(); if (/[?&]bookings=1/.test(location.search)) { tab = "book"; fab.click(); } if (/[?&]collabs=1/.test(location.search)) { tab = "collab"; fab.click(); } }
+    if (/[?&]orders=1/.test(location.search)) fab.click(); if (/[?&]shop=1/.test(location.search)) { tab = "shop"; fab.click(); } if (/[?&]bookings=1/.test(location.search)) { tab = "book"; fab.click(); } if (/[?&]collabs=1/.test(location.search)) { tab = "collab"; fab.click(); } }
 
   // ---- share: make the page easy to find ----
   function share(h) { const head = document.querySelector(".head > div"); if (!head || document.getElementById("shareBtn")) return; const b = document.createElement("button"); b.id = "shareBtn"; b.type = "button"; b.className = "share-btn"; b.textContent = "Share";

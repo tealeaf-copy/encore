@@ -24,7 +24,7 @@ h2.sub{font-size:20px;margin-top:22px}
     <h2 class="sub">You're going</h2><div class="plans" id="ev"></div>
     <p style="margin:18px 0 0" id="reqLink" hidden><a href="/requests" style="font-weight:600">Your requests to hosts</a></p>
     <h2 class="sub" id="ordH" hidden>Orders</h2><div class="plans" id="ord"></div>
-    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">Saved for your next I'm in.</span></summary>
+    <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">Filled in for you next time.</span></summary>
       <form id="rpForm"><label>Your name<input name="name" autocomplete="name"></label><label>Email or phone<input name="contact" autocomplete="email"></label>
         <label>Anything you don't eat?<input name="dietary" placeholder="e.g. Vegetarian, nut allergy"></label><div class="rp-q" id="rpQ"></div>
         <label class="rp-chk"><input type="checkbox" name="severe"> It's a severe allergy</label>
@@ -74,7 +74,7 @@ h2.sub{font-size:20px;margin-top:22px}
 <style>.rp-card{margin:34px 0 10px;padding:20px;border:1px solid #E9E1D6;border-radius:20px;background:#fff;max-width:620px}.rp-card h2{margin:0 0 4px;font-size:20px;display:inline}.rp-card summary{cursor:pointer;list-style:none}.rp-card summary::-webkit-details-marker{display:none}.rp-card summary::after{content:"Open ▾";float:right;font-size:13px;color:#C4532F;font-weight:600}.rp-card[open] summary::after{content:"Close ▴"}.rp-card summary .rp-sub{display:block;margin-top:4px}.rp-sub{color:#6B5F56;margin:0 0 14px;font-size:14.5px}
 #rpForm{display:grid;gap:12px}#rpForm label{display:grid;gap:4px;font-weight:600;font-size:14px}#rpForm input:not([type=checkbox]){padding:10px 12px;border:1px solid #DCCFBE;border-radius:12px;font:inherit;font-weight:400}
 .rp-chk{display:flex!important;align-items:center;gap:8px;font-weight:500!important}.rp-q{display:flex;flex-wrap:wrap;gap:6px}.rp-q button{border:1px solid #E9E1D6;background:#FBF6EF;border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}.rp-q button[aria-pressed=true]{background:#FFE08A;border-color:#E8C65A}
-.rp-btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rp-save{background:#C4532F;color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:600;font-size:15px;font-family:inherit;cursor:pointer}.rp-forget{background:none;border:0;text-decoration:underline;color:#6B5F56;cursor:pointer;font:inherit}#rpMsg{color:#1E6B45;font-size:14px}</style>
+.rp-btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.rp-save:disabled{opacity:.5;cursor:default}.rp-save{background:#C4532F;color:#fff;border:0;border-radius:999px;padding:10px 18px;font-weight:600;font-size:15px;font-family:inherit;cursor:pointer}.rp-forget{background:none;border:0;text-decoration:underline;color:#6B5F56;cursor:pointer;font:inherit}#rpMsg{color:#1E6B45;font-size:14px}</style>
 <script>
 // your saved RSVP details: the same ones the RSVP form fills in (this device, and your account when signed in)
 (function () { const KEY = "encore.rsvpProfile", f = document.getElementById("rpForm"), msg = document.getElementById("rpMsg"), signed = /(?:^|;\s*)encore_in=1/.test(document.cookie);
@@ -88,12 +88,13 @@ h2.sub{font-size:20px;margin-top:22px}
   if (signed) fetch("/api/me/rsvp-profile", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : {})).then((j) => { const S = j.profile, L = local(); if (S && (!L || (S.updatedAt || 0) >= (L.updatedAt || 0))) fill(S); }).catch(() => {})
     // a signed-in member never retypes their own name and email
     .finally(() => fetch("/api/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((u) => { if (!u) return; if (!f.name.value.trim() && u.name) f.name.value = u.name; if (!f.contact.value.trim() && u.email) f.contact.value = u.email; }).catch(() => {}));
+  const saveBtn = f.querySelector(".rp-save"); if (saveBtn) { saveBtn.disabled = true; f.addEventListener("input", () => { saveBtn.disabled = false; msg.textContent = ""; }); f.addEventListener("change", () => { saveBtn.disabled = false; }); }
   f.onsubmit = async (e) => { e.preventDefault(); const c = f.contact.value.trim(), isMail = /@/.test(c);
     if (!f.name.value.trim()) { msg.textContent = "Add your name first."; f.name.focus(); return; }
     const P = { name: f.name.value.trim(), email: isMail ? c : "", phone: isMail ? "" : c.replace(/[^\d+]/g, ""), contactVia: c ? (isMail ? "email" : "sms") : "", dietary: f.dietary.value.trim(), severe: f.severe.checked, access: f.access.value.trim(), updatedAt: Date.now() };
     try { localStorage.setItem(KEY, JSON.stringify(P)); } catch {}
     if (signed) await fetch("/api/me/rsvp-profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(P) }).catch(() => {});
-    msg.textContent = "Saved."; };
+    msg.textContent = "Saved."; if (saveBtn) saveBtn.disabled = true; };
   document.getElementById("rpForget").onclick = async () => { try { localStorage.removeItem(KEY); } catch {} if (signed) await fetch("/api/me/rsvp-profile", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }) }).catch(() => {}); fill({}); msg.textContent = "Forgotten."; };
 })();
 </script>

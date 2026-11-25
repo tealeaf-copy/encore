@@ -263,7 +263,7 @@ export function createApp({ store, dataDir }) {
     if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
     if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
     if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Password needs 10+ characters." });
-    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "That email already has a Pottery Lab account. Sign in instead." });
+    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "You already have an account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);

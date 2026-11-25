@@ -60,7 +60,7 @@ export const TRAITS = {
   cheerleader: { name: "The Cheerleader", emoji: "📣", line: "Always the first to send kudos afterwards." },
 };
 export const KUDOS_TAGS = [["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"], ["again", "🔁", "Would go again"]];
-export const VIBE_TAGS = [["spark", "⚡", "Brought energy"], ["chill", "🧘", "Easy company"], ["helper", "🙌", "Helped out"], ["welcome", "🤗", "Welcomed people"], ["contributor", "🧺", "Brought a treat"]];
+export const VIBE_TAGS = [["spark", "⚡", "Energy"], ["chill", "🧘", "Easy company"], ["helper", "🙌", "Helped out"], ["welcome", "🤗", "Welcoming"], ["contributor", "🧺", "Brought a treat"]];
 
 export function makeSocial(store, { C, saveBlob }) {
   useSmsStop((num) => !!store.get("system/smsstop-" + hash(num)));
@@ -252,7 +252,7 @@ export function makeSocial(store, { C, saveBlob }) {
             if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} knows: ${link}` }).catch(() => {}); got = true; }
             if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}. Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't go? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
             if (got) sent++; }
-          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Potto reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title}.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id }); } }
+          out.reminders = (out.reminders || 0) + sent; if (sent) notify(x.owner, { kind: "reminded", key: "remind-" + x.id, text: `Reminded ${sent} ${sent === 1 ? "guest" : "guests"} about ${title}.`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id }); } }
       // giveaways: text each pickup window an hour before
       if (sms && /giveaway/.test(e.activity || "") && e.date === today(now)) for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId !== x.id || r.response !== "going" || !PHONE_OK(r.phone) || !r.slot) continue;
         const start = Date.parse(`${e.date}T${String(r.slot).match(/\d{1,2}:\d{2}/)?.[0]?.padStart(5, "0") || "00:00"}:00`), k = "sms-" + d.id; if (!(start - now <= 3600e3 && start - now > 0) || done(k)) continue; mark(k);
@@ -363,7 +363,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/host/kudos/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); res.json({ kudos: S.list("kudos").map((d) => d.data).filter((k) => k.eventId === id).sort((a, b) => b.at - a.at), vibes: S.list("vibes").map((d) => d.data).filter((v) => v.eventId === id) }); });
   app.post("/api/host/vibes", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, S = scopeStore(store, u.ws), id = clean(b.eventId, 80); if (!S.get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
     const email = lc(clean(b.email, 200)), tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => VIBE_TAGS.some((k) => k[0] === t)); if (!email) return bad(res, "Which guest?");
-    S.set("vibes/" + id + "--" + hash(email), { eventId: id, email, tags, at: Date.now() }); X.bust(); if (tags.length) X.notify(email, { kind: "vibe", key: `vibe-${id}-${tags.join()}`, text: `${first(u.name)} thanked you for ${S.get("events/" + id).data.pubTitle || S.get("events/" + id).data.name}: ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[2]).join(", ")} ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[1]).join("")}`, link: "/feed" }); res.json({ ok: true }); });
+    S.set("vibes/" + id + "--" + hash(email), { eventId: id, email, tags, at: Date.now() }); X.bust(); if (tags.length) X.notify(email, { kind: "vibe", key: `vibe-${id}-${tags.join()}`, text: `${first(u.name)} gave you ${tags.length === 1 ? "a badge" : "badges"} for ${S.get("events/" + id).data.pubTitle || S.get("events/" + id).data.name}: ${tags.map((t) => VIBE_TAGS.find((k) => k[0] === t)[2]).join(", ")}`, link: "/feed" }); res.json({ ok: true }); });
   // the event FAQ: guests ask and upvote; the host answers and publishes. Only published answers are public.
   const faqOf = (S, id) => S.list("faq").map((d) => ({ key: d.id, ...d.data })).filter((q) => q.eventId === id);
   const faqView = (q) => ({ id: q.key, q: q.q, a: q.a || "", votes: q.votes || 0, by: q.by || "", host: !!q.fromHost, at: q.at });
@@ -423,7 +423,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g, i, A) => g.fact && A.findIndex((h) => lc(h.fact) === lc(g.fact)) === i);
     const common = [], differ = [], prompts = [], pairs = [];
     if (lanes[0] && lanes[0][1] >= 2 && !(ev.date && ev.date < new Date().toISOString().slice(0, 10)) && G.some((g) => g.attended > 0)) { const lab = LANE[lanes[0][0]]; if (lab) common.push(`${lanes[0][1]} of them love ${lab}.`); }
-    if (G.length >= 2 && firstTimers.length === G.length) common.push("Everyone's new here. Start with names and one good thing from the week.");
+    if (G.length >= 2 && firstTimers.length === G.length) common.push("Everyone's new. Start with names and one good thing from the week.");
     if (firstTimers.length && firstTimers.length < G.length) common.push(`${firstTimers.slice(0, 3).join(", ")} ${firstTimers.length === 1 ? "is" : "are"} new. Put them next to someone who's been before.`);
     if (regulars.length) differ.push(`${regulars.slice(0, 2).join(" and ")} ${regulars.length === 1 ? "has" : "have"} been to 3 or more. Ask them to welcome the new faces.`);
     { const typed = G.filter((g) => g.arche !== "New to Pottery Lab"); for (let i = 0; i < typed.length && pairs.length < 2; i++) for (let j = i + 1; j < typed.length; j++) if (typed[i].arche !== typed[j].arche) { pairs.push(`Seat ${typed[i].name} next to ${typed[j].name}.`); break; } }
@@ -449,7 +449,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     for (const d of S.list("kudos")) { const kd = d.data || {}; if (kd.email) bump({ email: kd.email, name: kd.name }, "kudos"); }
     try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email || f.phone || ""); if (!k2) continue; if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
     const L = [...P.entries()].filter(([k2]) => !already.has(k2)).map(([k2, x]) => { const score = x.early * 3 + x.came * 3 + x.yes * 2 + x.kudos + (x.follows ? 1 : 0) - x.no;
-      const why = [x.early ? `replied first ${x.early === 1 ? "once" : `${x.early} times`}` : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent you kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
+      const why = [x.early ? (x.early === 1 ? "said yes early once" : `said yes early ${x.early} times`) : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent you kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
       return { name: x.name || (x.email ? x.email.split("@")[0] : "A friend"), email: x.email, phone: x.phone, score, why: why.length ? why.join(" · ") : "follows you", early: x.early >= 1 }; }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
     res.json({ people: L, history: R.length }); });
   // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----
@@ -490,7 +490,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (mine) S.update("rsvps/" + rid, { response: final, changedAt: Date.now(), via: "text" }); else { code = crypto.randomBytes(6).toString("hex"); const r0 = S.add("rsvps", { eventId, name, phone: from, response: final, code, via: from.length ? "text" : "", at: Date.now(), changedAt: Date.now(), showMe: true }); rid = r0.id; }
     try { X.bust(); } catch {}
     const pass = `${publicOrigin(req)}/g?r=${encodeURIComponent(rid)}.${encodeURIComponent(code)}#rsvp-${eventId}`, askName = /^Guest/.test(name) ? " Reply with your name so your host knows it's you." : "";
-    const msg = final === "going" ? `You're in for ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}! 🎉 See who's coming and join the group chat: ${pass}${askName}` : final === "requested" ? `Got it! Your host approves each spot and will text you soon. ${pass}${askName}` : final === "waitlist" ? `It's full right now, so you're on the waitlist. If a spot opens, it's yours. ${pass}` : final === "maybe" ? `Marked you as maybe. Reply I'm in any time. ${pass}` : `No worries, we'll tell your host. Reply YES if plans change.`;
+    const msg = final === "going" ? `You're in for ${title}${whenOf(ev) ? `, ${whenOf(ev)}` : ""}. Who's coming and the group chat: ${pass}${askName}` : final === "requested" ? `Asked. ${first(C.profileOf(best.ws)?.name || "") || "Your host"} will let you know. ${pass}${askName}` : final === "waitlist" ? `It's full right now, so you're on the waitlist. If a spot opens, it's yours. ${pass}` : final === "maybe" ? `Marked you as maybe. Reply I'm in any time. ${pass}` : `No worries, we'll tell your host. Reply YES if plans change.`;
     return twiml(res, msg); });
   // "Keep me posted" on the RSVP form: a guest (no account needed) follows the host, proved by their RSVP code
   app.post("/api/public/keep-posted", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(clean(b.eventId, 80), b.rid, b.code); if (!P) return bad(res, "RSVP first.", 403, "not_granted");
@@ -552,7 +552,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id); res.json({ messages: chatList(S, id, "host"), phones: R.filter((r) => r.response === "going" && r.phone).map((r) => ({ name: r.name, phone: r.phone, slot: r.slot || "" })), sms: !!smsConfig() }); });
   app.post("/api/host/chat/:eventId", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const text = clean(req.body?.text, 600); if (!text) return bad(res, "Say something first."); S.add("chat", { eventId: id, by: first(u.name) || "Host", role: "host", text, private: false, pinned: !!req.body?.pinned, at: Date.now() });
-    let texted = 0; const hr = new Date().getHours(); if (req.body?.sms && smsConfig() && (hr >= 21 || hr < 8) && !req.body?.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late, so Potto held the text. Send it in the morning, or tap again to send anyway." });
+    let texted = 0; const hr = new Date().getHours(); if (req.body?.sms && smsConfig() && (hr >= 21 || hr < 8) && !req.body?.anyway) return res.status(409).json({ code: "quiet_hours", message: "It's late, so I held the text. Tap again to send anyway." });
     if (req.body?.sms && smsConfig()) { const slot = clean(req.body?.slot, 40); for (const d of S.list("rsvps")) { const r = d.data; if (r.eventId === id && r.response === "going" && PHONE_OK(r.phone) && (!slot || r.slot === slot)) { const ok = await sendSms(smsConfig(), { to: r.phone, text: `${first(u.name)} (${ev.pubTitle || ev.name}): ${text}` }); if (ok.ok) texted++; } } }
     res.json({ ok: true, texted }); });
   // interest check → it's on: tell everyone who said they were in or maybe

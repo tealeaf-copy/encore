@@ -9,8 +9,8 @@ form{display:flex;flex-wrap:wrap;gap:8px}input{flex:1 1 200px;min-width:0;paddin
 <div class="wrap"><header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><nav><a href="/hosts/book">Book a host</a><a href="/gifts">Gifts</a></nav></header>
 <h1>Set up Pottery Lab as a vendor</h1><p class="lede">One vendor setup covers every host.</p>
 <div class="box"><h2>The terms</h2><dl>
-<dt>Who you contract with</dt><dd id="who">Pottery Lab. Hosts and makers are paid by Pottery Lab; you never onboard them one by one.</dd>
-<dt>Paying</dt><dd>Card when you confirm, or an invoice paid against your PO within 30 days.</dd>
+<dt>Who you contract with</dt><dd id="who">Pottery Lab.</dd>
+<dt>Paying</dt><dd>Each host collects payment with their own pay link. Pottery Lab gives you a PDF invoice for your records.</dd>
 <dt>Deposit</dt><dd>50% deposit to confirm. The rest is due 7 days after the event, once everything listed is delivered.</dd>
 <dt>Cancelling</dt><dd>The host's terms, shown before you confirm. If none: Free to cancel up to 7 days before. Inside 7 days, half the quote.</dd>
 <dt>If a host can't make it</dt><dd>A vetted replacement or a full refund, your choice.</dd>
@@ -24,7 +24,7 @@ form{display:flex;flex-wrap:wrap;gap:8px}input{flex:1 1 200px;min-width:0;paddin
 </div>
 <script src="/authguard.js"></script><script src="/shell.js" defer></script>
 <script>
-fetch("/api/public/legal").then((r) => r.json()).then((L) => { if (L && L.name) document.getElementById("who").textContent = `${L.name}${L.address ? ", " + L.address : ""}${L.taxId ? " (tax ID " + L.taxId + ")" : ""}. Hosts and makers are paid by Pottery Lab; you never onboard them one by one.`; }).catch(() => {});
+fetch("/api/public/legal").then((r) => r.json()).then((L) => { if (L && L.name) document.getElementById("who").textContent = `${L.name}${L.address ? ", " + L.address : ""}${L.taxId ? " (tax ID " + L.taxId + ")" : ""}.`; }).catch(() => {});
 // the fee line comes from one place (server/market.js); it is off until a fee exists
 fetch("/api/public/policy").then((r) => r.json()).then((P) => { if (P?.fee) document.getElementById("quotes").textContent += ` ${P.fee}.`; }).catch(() => {});
 document.getElementById("kit").onsubmit = async (e) => { e.preventDefault(); const t = e.target, err = document.getElementById("kitErr"), btn = t.querySelector("button"); err.textContent = "";

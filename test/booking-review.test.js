@@ -78,3 +78,15 @@ test("A read-only status link for teammates: status and money, no messages, can'
   const out = await (await get(`/api/public/booking/${r.id}/results?t=${t}`)).json();
   assert.equal(out.costPerMeeting, 325); assert.deepEqual(out.campaign.posts, ["https://www.instagram.com/p/abc"]); assert.equal(out.campaign.reach, 12400); assert.equal(out.campaign.redemptions, 22);
 });
+
+test("Listing opt-in: listOk is saved only when the brand ticks it (default off), and a host's status change reads as a sentence", async () => {
+  const { hc, x } = await host("review-listok", { name: "Tea tasting", min: 4, max: 20, price: "$40 a person", category: "drinks" });
+  const ask = async (extra, email) => { const r = await (await post("/api/public/book/review-listok", { name: "Ana Lee", company: "Helix", email, experienceId: x.id, people: 8, date: day(20), when: "later", ...extra })).json(); const t = new URL(r.status).searchParams.get("t"); return { r, t, j: await (await get(`/api/public/booking/${r.id}?t=${t}`)).json() }; };
+  const yes = await ask({ listOk: true }, "ana@helix.example"), no = await ask({}, "bo@helix.example"), str = await ask({ listOk: "yes" }, "cy@helix.example");
+  assert.equal(yes.j.booking.listOk, true);
+  assert.equal(no.j.booking.listOk, undefined, "not ticked: never listed");
+  assert.equal(str.j.booking.listOk, undefined, "only a real true counts");
+  assert.equal(typeof yes.j.emailOn, "boolean"); assert.equal(yes.j.host.person, "Tram");
+  assert.equal((await post(`/api/host/bookings/${yes.r.id}`, { status: "done" }, hc)).status, 200);
+  const h2 = (await (await get(`/api/public/booking/${yes.r.id}?t=${yes.t}`)).json()).booking.history; assert.equal(h2.at(-1).what, "marked it done");
+});

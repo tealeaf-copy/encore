@@ -26,7 +26,7 @@
   // opts.noDeposit: the page already shows the deposit (the tracker does, once per state), so the card leaves it out
   function card(scope, hostName, quote, opts = {}) { style(); const s = scope || { deliverables: [], usage: "organic30" }, host = esc(String(hostName || "The host").replace(/\.$/, "")), D = DELIV.filter(([k]) => (s.deliverables || []).includes(k));
     const usage = USAGE.find(([k]) => k === s.usage)?.[1] || USAGE[0][1];
-    return `<div class="bt-card" id="agreement"><h3>The agreement</h3><small style="color:#6B5F56">Same terms on every booking.</small>
+    return `<div class="bt-card" id="agreement"><h3>The agreement</h3>
       <div class="bt-g"><div><b class="k">Included</b><ul><li>The experience as listed, on the agreed date</li>${D.map(([, l]) => `<li>${esc(l.replace(/^\S+\s/, ""))}</li>`).join("")}${D.length ? "<li>One round of changes on anything delivered</li>" : ""}</ul></div>
       <div><b class="k">Not included</b><ul>${[...EXCLUDED, ...(D.length ? EXCLUDED_CONTENT : [])].filter((x) => !(s.usage === "paid" && /^Paid ads/.test(x))).map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
       ${D.length ? `<div><b class="k">Usage</b><ul><li>${esc(usage)}</li><li>Starts once the balance is paid</li><li>Credit ${host} when you post</li></ul></div>` : ""}</div>

@@ -141,3 +141,12 @@ test("A welcome for two groups of new staff: welcome notes, no public-sector gat
   const T = p.playbook.timeline, ship = T.findIndex((t) => t.step === "Makers ship"), arrive = T.findIndex((t) => t.step === "Gifts arrive at home");
   assert.ok(ship >= 0 && arrive > ship, "gifts arrive after they ship");
 });
+
+test("No date: the timeline uses its own offsets (never '999 days'), and a late date gets one short warning", () => {
+  for (const kind of ["employees", "b2b", "press"]) {
+    const p = planFromInput(readBody({ company: "Orbit Labs", moment: "Remote new-hire welcome", kind, audience: "40 new hires", budget: "$60" }));
+    for (const t of p.playbook.timeline) assert.doesNotMatch(t.when, /\b\d{3,} days\b/, `${kind}: ${t.when}`);
+  }
+  const soon = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), q = planFromInput(readBody({ company: "Exa", moment: "Launching Snapshot", kind: "b2b", audience: "40 customers", budget: "$60", date: soon }));
+  assert.ok(q.timing?.late); assert.match(q.timing.text, /is too soon for handmade\.$/); assert.doesNotMatch(q.timing.text, /needed ordering/);
+});

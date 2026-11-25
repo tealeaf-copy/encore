@@ -213,7 +213,7 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     out.sort((a, b) => b.score - a.score); ex.sort((a, b) => b.score - a.score);
     const results = out.slice(0, 3);
     return { goal, goalLabel: G.label, audience: AUDIENCE_WORD[G.audience], audienceKind: G.audience, results, available: out.length, examples: results.length < 3 ? ex.slice(0, 3 - results.length) : [], cityHosts, recruit: results.length < 3,
-      cities: coverage(list), guarantee: "If your host cancels or can't make it, Pottery Lab finds a vetted replacement or refunds you in full." }; }
+      cities: coverage(list), guarantee: "If your host can't make it, we find a replacement or refund you." }; }
   // a team vote on exactly the shortlist the organizer saw (real hosts only, never examples). Read and voted on through
   // /api/public/teams/saved/:id (server/community.js), which keeps the same stored shape.
   app.post("/api/public/teams/vote", small, (req, res) => { if (limited(req, 20)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, q0 = b.query || {};

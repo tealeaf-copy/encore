@@ -7,6 +7,8 @@
 const B = String(process.argv[2] || "").replace(/\/$/, ""), FIRST_CODE = process.argv[3] || "";
 if (!/^https?:\/\//.test(B)) { console.error("Usage: node scripts/seed-demo.cjs https://your-encore-address [code]"); process.exit(1); } const J = { "content-type": "application/json" };
 const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+// the Saturday on or before n days from now (Saturday runs fall on Saturdays)
+const sat = (n) => { const d = new Date(Date.now() + n * 864e5); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 1) % 7)); return d.toISOString().slice(0, 10); };
 const jar = {};
 async function call(who, method, path, body, headers = {}) { const r = await fetch(B + path, { method, headers: { ...J, ...(jar[who] ? { cookie: jar[who] } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined }); const sc = (r.headers.getSetCookie?.() || [r.headers.get("set-cookie")].filter(Boolean)).map((c) => c.split(";")[0]).filter((c) => !/=$/.test(c)); if (sc.length) jar[who] = sc.join("; "); const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = t; } if (!r.ok) throw new Error(`${method} ${path} ${r.status} ${t.slice(0, 200)}`); return j; }
 const pw = "encore-demo-2026";
@@ -39,7 +41,7 @@ async function rsvp(host, body) { const r = await fetch(B + "/api/db/collection?
   // Claire: past runs with regulars, kudos and tips
   const G = [["Priya Shah", "priya@demo.encore"], ["Dev Rao", "dev@demo.encore"], ["Sam Lee", "sam@demo.encore"], ["Maya Ortiz", "maya@demo.encore"], ["Ben Cho", "ben@demo.encore"], ["Lena Park", "lena@demo.encore"]];
   for (const [i, n] of [[1, -21], [2, -14], [3, -7]]) {
-    const id = "crun" + i; await ev("claire", id, { hostName: "Claire Nguyen", name: "Beginner-friendly Saturday run", pubTitle: i === 1 ? "First-timers' 5k" : "Beginner-friendly Saturday run", activity: "run club", date: day(n), startTime: "08:00", city: "New York", hood: "Williamsburg", meetPoint: "McCarren Park track, north gate", discoverable: true, headcount: 20, audienceWho: "New runners, no-drop pace" });
+    const id = "crun" + i; await ev("claire", id, { hostName: "Claire Nguyen", name: "Beginner-friendly Saturday run", pubTitle: i === 1 ? "First-timers' 5k" : "Beginner-friendly Saturday run", activity: "run club", date: sat(n), startTime: "08:00", city: "New York", hood: "Williamsburg", meetPoint: "McCarren Park track, north gate", discoverable: true, headcount: 20, audienceWho: "New runners, no-drop pace" });
     for (const [k, [nm, em]] of G.slice(0, 3 + i).entries()) { const rid = await rsvp("claire", { eventId: id, name: nm, email: em, code: "C" + i + k, plusOne: k === 1 && i === 2, slot: k === 2 ? "Coffee for the group" : "" });
       if (i === 3 && k < 4) await call("x", "POST", "/api/public/kudos", { eventId: id, rid, code: "C" + i + k, tags: [["welcome", "vibe"], ["organized", "met"], ["fun", "again"], ["welcome", "again"]][k], love: ["I'd never run with a group before. Claire made it feel so easy.", "The no-drop pace group is the best thing in Brooklyn on a Saturday.", "Coffee after with everyone was my favourite part.", "Came alone, left with five friends."][k], improve: k === 1 ? "A water stop halfway would help in summer." : "" });
       if (i === 3 && k < 2) await call("x", "POST", "/api/public/tipped", { eventId: id, rid, code: "C" + i + k, amount: k ? 5 : 10 }); }

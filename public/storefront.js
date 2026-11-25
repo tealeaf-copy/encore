@@ -54,7 +54,7 @@
     box.hidden = false; window.__nextUpEvent = e;
     // the featured event isn't repeated straight below it in "Coming up"
     // (a repeating event's other dates move up into the featured card, so the event shows once)
-    try { const grid = document.querySelector(".grid.s-coming"); if (grid) { const want = "/g#rsvp-" + encodeURIComponent(e.id); [...grid.querySelectorAll('a[href*="rsvp-"]')].filter((a) => a.getAttribute("href") === want).forEach((a) => { const card = a.closest(".ev-series") || a.closest(".grid.s-coming > *"); if (!card) return; const more = card.querySelector(".more-dates"); if (more && !box.querySelector(".nu-more")) { const p = document.createElement("p"); p.className = "nu-more"; p.textContent = more.textContent; box.querySelector(".nu-meta")?.after(p); } card.remove(); }); if (!grid.children.length) document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; }); } } catch {} if (document.body.classList.contains("is-owner")) setTimeout(() => { window.EncoreInlineEdit?.(e); ownerCta(e); }, 50);
+    try { const grid = document.querySelector(".grid.s-coming"); if (grid) { const want = "/g#rsvp-" + encodeURIComponent(e.id); [...grid.querySelectorAll('a[href*="rsvp-"],a[data-href*="rsvp-"]')].filter((a) => (a.getAttribute("href") || a.dataset.href) === want).forEach((a) => { const card = a.closest(".ev-series") || a.closest(".grid.s-coming > *"); if (!card) return; const more = card.querySelector(".more-dates"); if (more && !box.querySelector(".nu-more")) { const p = document.createElement("p"); p.className = "nu-more"; p.textContent = more.textContent; box.querySelector(".nu-meta")?.after(p); } card.remove(); }); if (!grid.children.length) document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; }); } } catch {} if (document.body.classList.contains("is-owner")) setTimeout(() => { window.EncoreInlineEdit?.(e); ownerCta(e); }, 50);
     // the featured one doesn't need repeating; hide "Coming up" when it's the only one
     if ((up || []).length === 1) { const hs = [...document.querySelectorAll("h2.sec")].find((x) => /Coming up/.test(x.textContent)); if (hs) { hs.style.display = "none"; if (hs.nextElementSibling) hs.nextElementSibling.style.display = "none"; } } }
   // ---- the editor, for the owner only ----
@@ -170,7 +170,7 @@
     el.addEventListener("click", (ev) => { if (ev.target.closest("input,textarea,a")) return; open(); }); el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && !el.querySelector("input,textarea")) { ev.preventDefault(); open(); } });
   }
   window.EncoreInlineEdit = function (e) {
-    const box = document.getElementById("nextUp"); if (!box || !e?.id) return; const id = e.id;
+    const box = document.getElementById("nextUp"); if (!box || !e?.id || box.dataset.ieInit === e.id) return; box.dataset.ieInit = e.id; const id = e.id;
     if (!box.querySelector(".ie-hint")) box.insertAdjacentHTML("afterbegin", `<p class="ie-hint">✏️ Tap anything to edit it.</p>`);
     const tEl = box.querySelector(".nu-title"); if (tEl && !tEl.textContent.trim()) { tEl.classList.add("ie-empty"); tEl.textContent = "Add a title"; }
     editable(tEl, { id, field: "title", required: true, get: () => e.dinnerTheme || e.title, toPatch: (v) => { e.title = v; return e.dinnerTheme ? { dinnerTheme: v } : { pubTitle: v }; } });

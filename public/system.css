@@ -81,7 +81,7 @@ html :is(body,#view-guest) :is(.invite.th-candlelight,.invite.th-midnight) .chip
 /* ---- tap targets on phones: 44px. Text links and the logo get a taller hit box (padding cancelled by a negative
    margin, so nothing moves); fields and icon buttons grow to 44 ---- */
 @media (max-width:860px){
-  html body :is(a.brand,a.es-brand,.top nav a:not([class]),.ftl a,footer a:not([class]),.who a,.ex-note a,.linkbtn,.g-fun>summary,.g-more>summary,.series>summary,.wc-add>summary,.hk-fold>summary){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}
+  html body :is(a.brand,a.es-brand,.top nav:not(.tabs) a:not([class]),.ftl a,footer a:not([class]),.who a,.ex-note a,.linkbtn,.g-fun>summary,.g-more>summary,.series>summary,.wc-add>summary,.hk-fold>summary){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}
   html body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select){min-height:var(--btn-md)}
   html body .h2link{padding-top:14px;padding-bottom:14px;margin-top:-10px;margin-bottom:-10px}
   html body :is(.more-btn,.btn.ghost:empty){min-width:var(--btn-md)}

@@ -65,6 +65,8 @@
   const shade = (h, k) => { const n = parseInt(h.slice(1), 16), f = (v) => Math.max(0, Math.min(255, Math.round(v + (k > 0 ? (255 - v) * k : v * k)))); return "#" + [f((n >> 16) & 255), f((n >> 8) & 255), f(n & 255)].map((v) => v.toString(16).padStart(2, "0")).join(""); };
   function lookVars(L) { const p = (L?.palette || []).filter(okHex); const bg = p[0] || "#FDE6A6", dark = lum(bg) < 0.25;
     let ink = p[1] && contrast(p[1], bg) >= 4.5 ? p[1] : dark ? "#FFFDF8" : "#1F1A17"; let acc = p[2] || p[1] || "#C94A30"; if (contrast(acc, bg) < 1.4) acc = dark ? "#F2D48F" : "#C94A30";
+    // the stamp's text must reach 4.5:1: nudge the accent darker (white text) or lighter (ink text) until it does
+    for (let i = 0; i < 8 && Math.max(contrast("#1F1A17", acc), contrast("#FFFFFF", acc)) < 4.5; i++) acc = shade(acc, contrast("#FFFFFF", acc) >= contrast("#1F1A17", acc) ? -0.08 : 0.08);
     const accInk = contrast("#1F1A17", acc) >= contrast("#FFFFFF", acc) ? "#1F1A17" : "#FFFFFF";
     return `--f0:${bg};--f0b:${shade(bg, dark ? 0.12 : -0.08)};--f1:${ink};--f2:${acc};--f2i:${accInk}`; }
   const fontOf = (L) => { const k = L?.titleFont; if (k && window.EncoreLooks?.loadFont) try { window.EncoreLooks.loadFont(k); } catch {} return FONT_CSS[k] || "Fredoka,system-ui,sans-serif"; };

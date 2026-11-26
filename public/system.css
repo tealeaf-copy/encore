@@ -173,3 +173,6 @@ html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,.fv-stk,.fv-hostc,.party,.
 }
 @media (max-width:860px){html body :is(.pin-cities button,.pli-host,.pli-real,.rp-save,.sc-ig a,.sc-note a){min-height:44px!important}html body .pli-real{display:inline-flex!important;align-items:center}}
 html body :is(article.fc small,article.fc .chip,.lg-more,article.prog small){font-size:13px!important}
+@media (max-width:860px){html body .fside :is(.btn,a.av){min-height:44px!important}html body .fside a.av{min-width:44px!important;height:44px!important;width:44px!important}html body .fside .btn{display:inline-flex;align-items:center}html body :is(.fside h3 a,a.sd-link,.sd-link,.fv-more a,.recap a,.wrap>footer a,header a.brand){padding-top:12px;padding-bottom:12px;margin-top:-12px;margin-bottom:-12px}html body .sd-link{min-height:44px}}
+html body :is(article.fc small,article.prog small,.prog-k){font-size:13px!important}
+@media (max-width:860px){html body :is(header a:not([class]),header nav a:not([class]),.pg-cap a,.top>a:not([class]),.brand-foot a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}

@@ -109,7 +109,7 @@ export function mountPhotos(app, { store, assetsDir, currentUser, C, raw, small 
 
   // what's set now: the profile picture (page or account) and the page cover, with their originals and focal points
   const mine = (u) => { const h = C.profileOf(u.ws), t = h?.theme || {}, a = store.get(avatarPath(u.email))?.data || {};
-    return { hasPage: !!h?.handle, handle: h?.handle || "", avatar: { url: t.avatarUrl || a.url || "", source: t.avatarSource || a.source || "", focus: t.avatarFocus || a.focus || null, art: t.avatarArt || "" }, page: { url: t.coverUrl || "", source: t.coverSource || "", focus: t.coverFocus || null, wash: t.cover || "" } }; };
+    return { hasPage: !!h?.handle, handle: h?.handle || "", avatar: { url: t.avatarUrl || a.url || "", source: t.avatarSource || a.source || "", focus: t.avatarFocus || a.focus || null, art: t.avatarArt || a.art || "" }, page: { url: t.coverUrl || "", source: t.coverSource || "", focus: t.coverFocus || null, wash: t.cover || "" } }; };
   app.get("/api/photos/mine", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store").json(mine(u)); });
 
   // put a photo (or a template, or nothing) on the profile picture, the page cover or an event's cover
@@ -124,7 +124,7 @@ export function mountPhotos(app, { store, assetsDir, currentUser, C, raw, small 
       const patch = url ? { coverPhoto: url, coverSource: source || url, coverFocus: focus, coverArt: null } : template ? { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: { kind: template, tone: ev.coverArt?.tone || "" } } : { coverPhoto: "", coverSource: "", coverFocus: null };
       S.update("events/" + id, { ...patch, updatedAt: Date.now() }); return res.json({ ok: true, ...patch }); }
     const h = C.profileOf(u.ws);
-    if (kind === "avatar") { store.set(avatarPath(u.email), { url, source: url ? source || url : "", focus: url ? focus : null, at: Date.now() });
+    if (kind === "avatar") { const was = store.get(avatarPath(u.email))?.data || {}; store.set(avatarPath(u.email), { url, source: url ? source || url : "", focus: url ? focus : null, art: template || (url ? "" : was.art || ""), at: Date.now() });
       if (h?.handle) { const theme = { ...(h.theme || {}), avatarUrl: url, avatarSource: url ? source || url : "", avatarFocus: url ? focus : null, ...(template ? { avatarArt: template } : {}) }; const r = C.setProfile(u.ws, { theme }); if (r.error) return bad(res, r.error); }
       return res.json({ ok: true, ...mine(u) }); }
     if (!h?.handle) return bad(res, "Start your page first, then add its cover.", 400, "no_page");

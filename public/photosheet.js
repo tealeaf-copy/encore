@@ -41,7 +41,7 @@
 .phs-t{all:unset;box-sizing:border-box;position:relative;display:block;border-radius:12px;overflow:hidden;background:#EFE6D8;border:1.5px solid #E4D9C8;cursor:pointer}
 .phs-t img,.phs-t svg{display:block;width:100%;height:100%;object-fit:cover}.phs-t[aria-pressed=true]{border-color:#1F1A17;box-shadow:0 0 0 2px #1F1A17}
 .phs-t .phs-l{position:absolute;left:0;right:0;bottom:0;padding:2px 6px;background:rgba(255,252,247,.88);font-size:13px;color:#1F1A17;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.phs-quiet{color:#665A51;font-size:13px;margin:0}
+.phs-quiet{grid-column:1/-1;color:#665A51;font-size:13px;margin:0}
 .phs-rm{all:unset;display:block;width:100%;text-align:center;min-height:44px;line-height:44px;margin-top:16px;color:#B04A30;font-weight:600;cursor:pointer;border-radius:999px}
 .phs-frame{position:relative;margin:0 auto 8px;border-radius:16px;overflow:hidden;background:#1F1A17;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .phs-frame:active{cursor:grabbing}.phs-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
@@ -113,7 +113,7 @@
           box.querySelectorAll("[data-t]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { const r = await save({ template: T[+b.dataset.t].id }); close(r); } catch (err) { say(err.message); b.disabled = false; } })); };
         if (Array.isArray(opts.templates)) showT(opts.templates);
         else fetch("/api/public/photos/templates?kind=" + kind).then((r) => r.json()).then((j) => showT((j.templates || []).filter((t) => (t.kind === "portrait" ? window.EncoreAvatars : t.kind === "art" ? window.EventArt : true)).map((t) => ({ ...t, on: t.id === opts.currentTemplate })))).catch(() => showT([]));
-        setTimeout(() => body.querySelector(".phs-up input")?.closest("label")?.focus?.(), 30);
+        setTimeout(() => { const d = bg.querySelector(".phs"); d.tabIndex = -1; d.style.outline = "none"; d.focus({ preventScroll: true }); }, 30);
       }
 
       // ---- the frame: drag to choose what stays in view, then Use photo ----
@@ -146,5 +146,13 @@
       home();
     });
   }
-  window.PhotoSheet = { open, KINDS };
+  // the signed-in person's own profile picture and page cover, with what's set now filled in
+  const mine = () => fetch("/api/photos/mine", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  async function profile(opts = {}) { const m = await mine(); if (!m) { location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search); return null; } return open({ for: "avatar", current: m.avatar, currentTemplate: m.avatar.art, ...opts }); }
+  async function pageCover(opts = {}) { const m = await mine(); if (!m) return null; return open({ for: "page", current: m.page, currentTemplate: m.page.wash, ...opts }); }
+  // a face for a profile picture: the photo, else the drawn portrait, else the first letter
+  function face(a = {}, name = "", size = 56) { if (a.url) return `<img src="${esc(a.url)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block">`;
+    if (a.art && window.EncoreAvatars) return `<span style="display:block;width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;background:#EFE6D8">${window.EncoreAvatars.svg(a.art, "#C94A30", size)}</span>`;
+    return `<span style="display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:50%;background:#F2D48F;color:#1F1A17;font:600 ${Math.round(size * 0.42)}px Fredoka,system-ui">${esc((String(name).trim()[0] || "?").toUpperCase())}</span>`; }
+  window.PhotoSheet = { open, KINDS, profile, pageCover, mine, face };
 })();

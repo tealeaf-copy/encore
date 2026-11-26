@@ -138,7 +138,7 @@
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button>
         <p class="consent" id="consent">By replying you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. If you add a phone, you'll get event texts; reply STOP to stop.</p></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
-    if (LK) { document.body.classList.add("lk-invite"); LK.css(); if (LK.has(look)) LK.apply(document.body, e); } // per-event looks: colours, title font and effect
+    if (LK) { document.body.classList.add("lk-invite"); LK.css(); if (LK.has(look) || window.__encoreKit) LK.apply(document.body, e); } // per-event looks: colours, title font and effect
     document.body.classList.toggle("lk-poster", !!$("#m .cov.poster"));
     if (TI && $("#ptTiers")) TI.wire($("#f"), e); // the harvest menu card (menucard.js), above the reply
     if (look.menuStyle === "harvest" && (e.courses || []).length) more("/menucard.js", () => { const c = document.createElement("div"); c.id = "menuCard"; c.innerHTML = window.MenuCard.html({ style: "harvest", theme: e.dinnerTheme, courses: e.courses, price: LK.priceLine(e) }); ($("#f") || $("#tk"))?.before(c); });

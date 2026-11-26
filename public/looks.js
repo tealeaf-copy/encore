@@ -192,7 +192,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
   function css() { if (typeof document === "undefined" || document.getElementById("lk-css")) return; const s = document.createElement("style"); s.id = "lk-css"; s.textContent = CSS + INVITE_CSS; document.head.appendChild(s); }
   const CLS = ["lk-on", "lk-dark", "lk-light", "lk-up", "lk-page"];
   /** Dress `el` (the body on an invite, a frame in the preview) in the event's look. Returns the colours used, or null. */
-  function apply(el, e, { fixed = true, page = true } = {}) { css(); const L = lookOf(e);
+  function apply(el, e, { fixed = true, page = true } = {}) { css(); const BK = window.EncoreBrandKit; if (BK) e = BK.eventFor(e, el, { fixed, page }); /* the host's brand kit: fonts from the kit unless the event overrides them; no look, the kit's colours */ const L = lookOf(e);
     el.__lkStop?.(); el.__lkStop = null; if (el === document.body) document.documentElement.classList.remove("lk-root"); el.classList.remove(...CLS, ...[...el.classList].filter((c) => /^lk-(fx|font|vibe)-/.test(c)));
     if (!has(L)) return null;
     const T = colors(L), F = FONTS[L.titleFont]; el.classList.add("lk-on"); if (page && T) el.classList.add("lk-page");
@@ -205,7 +205,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     const stops = [];
     if (L.effect && L.effect !== "none") { el.classList.add("lk-fx-" + L.effect); stops.push(effect(el, L.effect, { fixed, dark: !!T?.dark, colors: particleColors(L, T) })); }
     if (L.lights) { el.classList.add("lk-fx-lights"); stops.push(lights(el, { fixed })); }
-    decorate(el === document.body ? document : el, e);
+    decorate(el === document.body ? document : el, e); if (BK) BK.after(el, e);
     el.__lkStop = () => stops.forEach((f) => f());
     return T; }
   // ---------- the cover: card deck and stickers, on every cover inside root (the invite's .cov, /g's .gxcover, the preview's .mk-cov) ----------

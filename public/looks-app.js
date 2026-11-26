@@ -45,7 +45,7 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
   let gSig = "";
   function guest() { const host = document.getElementById("view-guest"), e = window.__gEv;
     if (!host || !e?.id || !host.classList.contains("ev2") || host.hidden || host.offsetParent === null) { if (gSig) { LK.apply(document.body, {}); gSig = ""; } return; }
-    const L = LK.lookOf(e); if (!LK.has(L)) return;
+    const L = LK.lookOf(e); if (!LK.has(L) && !window.EncoreBrandKit?.current) return; /* a host's brand kit dresses an event with no look */
     if (!document.getElementById("lk-gcss")) { const s = document.createElement("style"); s.id = "lk-gcss"; s.textContent = GCSS; document.head.appendChild(s); }
     const sig = e.id + JSON.stringify(L); if (sig !== gSig) { gSig = sig; LK.apply(document.body, e); }
     LK.decorate(host, e);
@@ -94,6 +94,8 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
   const flyerPal = new Map();
   const clock = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return ""; const h = +m[1]; return `${h % 12 || 12}${m[2] === "00" ? "" : ":" + m[2]}${h >= 12 ? "pm" : "am"}`; }; // coverPhoto url -> palette read from it
 
+  // brand kits (public/brandkit.js): an event's title font is its own only when the host picked one for it
+  const own = (L) => (window.EncoreBrandKit ? window.EncoreBrandKit.ownFont(L) : !!L.titleFont);
   function panelHTML(d) { const L = LK.lookOf(d), u = LK.safeSrc(d.coverPhoto), fp = flyerPal.get(u), ask = !!d.approvalRequired, fit = LK.fitOf(L), pal = L.palette || [];
     const chip = (attr, v, on, inner, extra = "") => `<button type="button" class="mk-c" ${attr}="${esc(v)}" aria-pressed="${!!on}"${extra}>${inner}</button>`;
     return `<section class="mk" id="mkPanel" aria-label="Make it yours"><div class="mk-l">
@@ -108,7 +110,7 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
       <div class="mk-row"><b>Stickers</b><div class="mk-stray" role="group" aria-label="Add a sticker">${Object.entries(LK.STICKERS).map(([k, v]) => `<button type="button" class="mk-stb" data-st="${k}" aria-label="Add ${esc(v.label.toLowerCase())} sticker" title="${esc(v.label)}"${(L.stickers || []).length >= LK.MAX_STICKERS ? " disabled" : ""}>${LK.stickerSVG(k)}</button>`).join("")}</div>
         <small class="note">${(L.stickers || []).length ? `${(L.stickers || []).length} of ${LK.MAX_STICKERS} on your cover. Drag them around in the preview, double-tap one to take it off. <button type="button" class="linkbtn" id="mkStShuf">Shuffle</button> · <button type="button" class="linkbtn" id="mkStX">Clear</button>` : `Tap one to put it on your cover, up to ${LK.MAX_STICKERS}.`}</small></div>
       <div class="mk-row"><b>Effect</b><div class="mk-chips">${LK.EFFECTS.map(([k, l]) => chip("data-fx", k, (L.effect || "none") === k, esc(l))).join("")}${chip("data-lights", "1", !!L.lights, "💡 String lights")}</div></div>
-      <div class="mk-row"><b>Title font</b><div class="mk-chips">${chip("data-font", "", !L.titleFont, "House")}${Object.entries(LK.FONTS).map(([k, F]) => chip("data-font", k, L.titleFont === k, `<span style="font-family:${esc(F.css)};font-weight:${F.w}">Aa</span> ${esc(F.label)}`)).join("")}</div></div>
+      <div class="mk-row"><b>Title font</b><div class="mk-chips">${chip("data-font", "", !own(L), "Use my brand")}${Object.entries(LK.FONTS).map(([k, F]) => chip("data-font", k, own(L) && L.titleFont === k, `<span style="font-family:${esc(F.css)};font-weight:${F.w}">Aa</span> ${esc(F.label)}`)).join("")}</div><small class="note">${own(L) ? "This event has its own title font. Use my brand puts your kit's fonts back." : "Fonts come from your brand kit."} <button type="button" class="linkbtn" data-brandkit>Brand kit</button></small></div>
       <div class="mk-row"><b>Button</b><div class="mk-chips">${LK.LABELS.filter((x) => (ask ? x === "Ask to join" : x !== "Ask to join")).map((x) => chip("data-lbl", x, ask || (L.buttonLabel || "I'm in") === x, esc(x))).join("")}</div>${ask ? `<small class="note">You let each guest in, so the button says Ask to join.</small>` : ""}
         <div class="mk-em" role="group" aria-label="Button emoji"><button type="button" class="mk-e" data-em="" aria-pressed="${!L.buttonEmoji}" aria-label="No emoji">∅</button>${LK.EMOJI.map((x) => `<button type="button" class="mk-e" data-em="${x}" aria-pressed="${L.buttonEmoji === x}">${x}</button>`).join("")}</div></div>
       <div class="mk-row"><b>Update</b><div class="mk-upd"><input type="text" id="mkUpd" maxlength="80" placeholder="Moved to the back room this year" value="${esc(L.update?.text || "")}"><button type="button" class="btn sm" id="mkUpdGo">${L.update?.text ? "Change" : "Post"}</button>${L.update?.text ? `<button type="button" class="linkbtn" id="mkUpdX">Clear</button>` : ""}</div><small class="note">Shows at the top of the invite, with the time you posted it.</small></div>
@@ -122,11 +124,11 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
 
   // what a chip would do, as a new look (used for the click and for the live preview on hover or focus)
   function nextLook(b, L, d) {
-    if (b.dataset.vibe) { const v = LK.VIBES[b.dataset.vibe].look, n = { ...L, ...v, vibe: b.dataset.vibe }; if (!v.lights) delete n.lights; if (!v.coverStyle) delete n.coverStyle; if (!v.menuStyle) delete n.menuStyle; if (d.approvalRequired) n.buttonLabel = "Ask to join"; if (v.effect === "none") delete n.effect; return n; }
+    if (b.dataset.vibe) { const v = LK.VIBES[b.dataset.vibe].look, n = { ...L, ...v, vibe: b.dataset.vibe }; delete n.ownFont; if (!v.lights) delete n.lights; if (!v.coverStyle) delete n.coverStyle; if (!v.menuStyle) delete n.menuStyle; if (d.approvalRequired) n.buttonLabel = "Ask to join"; if (v.effect === "none") delete n.effect; return n; }
     const put = (patch) => { const n = { ...L, ...patch }; if (!("vibe" in patch) && ("palette" in patch || "effect" in patch || "titleFont" in patch)) delete n.vibe; for (const k of Object.keys(n)) if (n[k] === undefined) delete n[k]; return n; };
     if (b.dataset.sw) { const s = LK.SWATCHES.find((x) => x[0] === b.dataset.sw); return put({ palette: s.slice(0, 3) }); }
     if (b.dataset.fx) return put({ effect: b.dataset.fx === "none" ? undefined : b.dataset.fx });
-    if ("font" in b.dataset) return put({ titleFont: b.dataset.font || undefined });
+    if ("font" in b.dataset) return put({ titleFont: b.dataset.font || undefined, ownFont: b.dataset.font ? true : undefined });
     if ("em" in b.dataset) return put({ buttonEmoji: b.dataset.em || undefined });
     if (b.dataset.lbl) return put({ buttonLabel: b.dataset.lbl });
     if (b.dataset.lights) return put({ lights: L.lights ? undefined : true });
@@ -156,8 +158,8 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
 
   async function flyerPalette(u) { if (!u) return null; if (flyerPal.has(u)) return flyerPal.get(u); try { const r = await LK.readImage(u); flyerPal.set(u, r.palette); return r.palette; } catch { return null; } }
 
-  function mount(box, d, save) { pcss(); Object.keys(LK.FONTS).forEach((k) => LK.loadFont(k)); /* the font chips show in their own fonts */ box.innerHTML = panelHTML(d); preview(box, d);
-    let t = 0, roll = ""; const commit = (msg) => { d.look = { ...LK.lookOf(d) }; for (const k of Object.keys(d.look)) if (d.look[k] == null || d.look[k] === "") delete d.look[k];
+  function mount(box, d, save) { pcss(); { const L0 = LK.lookOf(d); if (!L0.kit) { d.look = { ...L0, kit: 1 }; if (L0.titleFont) d.look.ownFont = true; } } /* brand kits: a look from before kits keeps its font as its own */ window.EncoreBrandKit?.mine?.(); Object.keys(LK.FONTS).forEach((k) => LK.loadFont(k)); /* the font chips show in their own fonts */ box.innerHTML = panelHTML(d); preview(box, d);
+    let t = 0, roll = ""; const commit = (msg) => { d.look = { ...LK.lookOf(d), kit: 1 }; if (d.look.ownFont !== true) delete d.look.ownFont; for (const k of Object.keys(d.look)) if (d.look[k] == null || d.look[k] === "") delete d.look[k];
       clearTimeout(t); t = setTimeout(() => { Promise.resolve(save()).catch(() => tst("That didn't save. Try again.")); }, 500); const pvOn = box.querySelector("#mkPanel")?.classList.contains("pv-on"); box.innerHTML = panelHTML(d); if (pvOn) openPv(); preview(box, d); wire(); if (msg) tst(msg); };
     const openPv = () => { const P2 = box.querySelector("#mkPanel"), pv = box.querySelector("#mkPvT"); if (!P2 || !pv) return; P2.classList.add("pv-on"); pv.setAttribute("aria-expanded", "true"); pv.textContent = "Hide preview"; };
     const small = () => matchMedia("(max-width:760px)").matches;
@@ -176,7 +178,7 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
       if (pv) pv.onclick = () => { const on = !P2.classList.contains("pv-on"); P2.classList.toggle("pv-on", on); pv.setAttribute("aria-expanded", on); pv.textContent = on ? "Hide preview" : "Preview"; };
       P2.onclick = async (ev) => { const b = ev.target.closest("button"); if (!b || b.id === "mkPvT") return; const L = LK.lookOf(d), u = LK.safeSrc(d.coverPhoto);
         if (b.id === "mkSur") { const fp = u ? await flyerPalette(u) : null; const n = LK.surprise(d, { keepPalette: fp, avoid: L.vibe }); d.look = { ...L, ...n, lights: !!n.lights }; if (!n.vibe) delete d.look.vibe; if (!n.lights) delete d.look.lights; if (!n.coverStyle || u) delete d.look.coverStyle; if (!n.menuStyle) delete d.look.menuStyle; if (n.effect === "none") delete d.look.effect;
-          roll = rolled(d.look); if (small()) openPv(); return commit(); }
+          delete d.look.ownFont; roll = rolled(d.look); if (small()) openPv(); return commit(); }
         if (b.dataset.st) { const n = nextLook(b, L, d); if (!n) return tst(`That's ${LK.MAX_STICKERS} stickers. Take one off to add another.`); d.look = n; if (small()) openPv(); commit(); const last = box.querySelector(".mk-in .lk-st:last-child"); last?.classList.add("lk-pop"); return; }
         if (b.id === "mkStX") { const n = { ...L }; delete n.stickers; d.look = n; return commit("Stickers off."); }
         if (b.id === "mkStShuf") { d.look = { ...L, stickers: shuffle(LK.cleanStickers(L.stickers)) }; return commit(); }
@@ -190,7 +192,7 @@ html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filte
         if (b.dataset.sw) { const s = LK.SWATCHES.find((x) => x[0] === b.dataset.sw); return set({ palette: s.slice(0, 3) }); }
         if (b.dataset.fx) return set({ effect: b.dataset.fx === "none" ? undefined : b.dataset.fx });
         if (b.dataset.lights) return set({ lights: L.lights ? undefined : true });
-        if ("font" in b.dataset) return set({ titleFont: b.dataset.font || undefined });
+        if ("font" in b.dataset) return set({ titleFont: b.dataset.font || undefined, ownFont: b.dataset.font ? true : undefined }, b.dataset.font ? "" : "Back to your brand kit's fonts.");
         if (b.dataset.lbl) return set({ buttonLabel: b.dataset.lbl });
         if ("em" in b.dataset) return set({ buttonEmoji: b.dataset.em || undefined });
         if (b.id === "mkUpdGo") { const v = box.querySelector("#mkUpd").value.trim().slice(0, 80); return set({ update: v ? { text: v, at: Date.now() } : undefined }, v ? "Update posted. It shows at the top of the invite." : ""); }

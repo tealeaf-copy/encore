@@ -133,7 +133,7 @@
   // an event coming up: the flyer or cover big at 4:5 (a poster sits whole on linen), then who, what, when, one button
   function flyer(e, { by = null, eager = false } = {}) { const L = e.look || {}, poster = L.coverFit === "poster" && L.coverW && L.coverH, st = statusOf(e);
     const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="${L.coverW || 800}" height="${L.coverH || 1000}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" style="object-fit:${poster ? "contain" : "cover"}">` : art(e, { title: "" }); /* the heading below has the title: never twice */
-    return `<article class="fv-card fv-ev${poster ? " poster" : ""}" data-fv-id="${esc(e.id || "")}">
+    return `<article class="fv-card fv-ev kit-story${poster ? " poster" : ""}" data-fv-id="${esc(e.id || "")}" style="${window.EncoreBrandKit?.storyStyle(e.host) || ""}">
       <a class="fv-media" href="${esc(e.cta?.url || e.url)}" tabindex="-1" aria-hidden="true">${media}</a>
       <div class="fv-body"><p class="fv-host">${avatar(e.host, 24)}<span><b>${esc(e.host?.name || "A host")}</b>${by?.note ? ` · ${esc(by.note)}` : ""}</span></p>
         <h3 class="fv-title"><a href="${esc(e.cta?.url || e.url)}">${esc(e.title)}</a></h3><p class="fv-data">${esc([when(e), where(e)].filter(Boolean).join(" · "))}</p>

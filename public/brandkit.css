@@ -1,0 +1,92 @@
+/* A host's brand kit (public/brandkit.js sets --kit-* on <html> and the kit-* classes; docs/brand-kit.md has the rules).
+   This layer sits on top of the design tokens in system.css: it points the tokens at the kit and leaves every rule that
+   reads them alone. Two families per page, always: the display face for display and titles, the body face for
+   everything else (meta, chips, list items, prices with tabular figures). Owner tools and the editor stay in the house
+   faces (.kit-off). */
+
+/* ---- tokens, pointed at the kit ---- */
+html.kit-on{
+  --sys-display:var(--kit-display);--sys-sans:var(--kit-body);--sys-mono:var(--kit-body);--sys-accent:var(--kit-display);--sys-hand:var(--kit-body);
+  --sys-ink:var(--kit-ink);--sys-ember:var(--kit-btn);--sys-ember-press:color-mix(in srgb,var(--kit-btn) 86%,#000);--sys-ember-text:var(--kit-accent-text);--p-ember:var(--kit-btn);
+  --ink:var(--kit-ink);--smoke:var(--kit-soft);--paper:var(--kit-page);--card:var(--kit-surface);--line:var(--kit-line);--line-strong:var(--kit-line-strong);
+  --r-sm:var(--kit-r-field);--r-md:var(--kit-r-card);--r-lg:var(--kit-r-sheet);--btn-radius:var(--kit-r-btn);
+  --chip-on-bg:var(--kit-ink);--chip-on-ink:var(--kit-surface);
+  /* the type scale, by role (13 / 14 / 16 / 20 / 28 / 40) */
+  --kit-fs-display:calc(28px * var(--kit-dk,1));--kit-fs-title:calc(20px * var(--kit-dk,1));--kit-fs-body:16px;--kit-fs-meta:14px;--kit-fs-small:13px;--kit-fs-price:20px;
+}
+@media (min-width:861px){html.kit-on{--kit-fs-display:calc(40px * var(--kit-dk,1));--kit-fs-title:calc(28px * var(--kit-dk,1))}}
+
+/* ---- two families: body face everywhere, display face for display and titles ---- */
+html.kit-on body :where(*:not(.kit-off,.kit-off *,svg,svg *,.lk-title,.kit-keep)){font-family:var(--kit-body)!important}
+html.kit-on body :where(h1,h2,h3,.kit-d,.nu-title,.lk-title,.gxhi,.mh-title,.mc-hv figcaption b):where(:not(.kit-off,.kit-off *)){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important;letter-spacing:var(--kit-dls)}
+/* the full invite (/g) has id-level font rules: the same two families, one step stronger. The title keeps --lk-title,
+   which public/brandkit.js points at the kit's display face unless the event has its own font */
+html.kit-on body #view-guest.ev2 :where(*:not(.kit-off,.kit-off *,svg,svg *,.lk-title,h1,h2,h3)){font-family:var(--kit-body)!important}
+html.kit-on body #view-guest.ev2 :where(h1,h2,h3):where(:not(.lk-title,.kit-off *)){font-family:var(--kit-display)!important}
+html.kit-on body #view-guest.ev2 :is(.gxfacts > span[data-k=When] b,.type-cover span,.party h2,.ev2-free b){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important}
+/* numbers line up: data, prices and counts in the body face with tabular figures */
+html.kit-on body :where(.num,.nu-price,.si-p,.bx-p,.shop-total b,.kit-price,input[type=number],input[type=date],input[type=time]){font-variant-numeric:tabular-nums;letter-spacing:0}
+/* no italics for emphasis, in any face */
+html.kit-on body :where(h1,h2,h3) em{font-style:normal;color:var(--kit-accent-text)}
+
+/* ---- buttons: filled pill (the token) or outlined ---- */
+html.kit-btn-outline body :is(.btn.primary,a.btn.primary,button.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,.nu-go,.g-bar .btn):not(:disabled){background:transparent!important;color:var(--kit-accent-text)!important;border:1.5px solid var(--kit-btn)!important}
+@media (hover:hover){html.kit-btn-outline body :is(.btn.primary,a.go,button.go,.nu-go,.book-toggle):not(:disabled):hover{background:var(--kit-tint)!important}}
+html.kit-on body.store :is(.btn,.nu-go,.top nav a.cta){border-radius:var(--kit-r-btn)!important}
+
+/* ---- the host page: cards and corners from the kit ---- */
+html.kit-on body.store{background-color:var(--kit-page)}
+html.kit-on body.store :is(.next-up,.shop,.book,.hire){border-radius:var(--kit-r-sheet)!important;border-color:var(--kit-line)!important}
+html.kit-on body.store :is(.card,.ev,.kq,.bx,.si,.sub,.your-order){border-radius:var(--kit-r-card)}
+html.kit-on body.store :is(.next-up,.shop)::before{height:3px;background:var(--kit-accent)}
+html.kit-on body.store .store-tag{color:var(--kit-soft);font-size:var(--kit-fs-body)}
+
+/* ---- the Next up card: kit roles throughout ---- */
+html.kit-on body .next-up .nu-eyebrow{font:600 var(--kit-fs-small)/1.2 var(--kit-body)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--kit-accent-text)}
+html.kit-on body .next-up .nu-title{font-size:var(--kit-fs-display)!important;line-height:1.08;margin:8px 0 4px;color:var(--kit-ink);text-wrap:balance}
+html.kit-on body .next-up .nu-sub{font:400 var(--kit-fs-body)/1.4 var(--kit-body)!important;color:var(--kit-soft)}
+/* chips: calm, quiet line, body face, the meta size */
+html.kit-on body .next-up .nu-meta{gap:8px;margin:16px 0}
+html.kit-on body .next-up .nu-meta span,html.kit-on body .next-up[class*="tpl-"] .nu-meta span{border:1.5px solid var(--kit-line-strong)!important;background:transparent!important;color:var(--kit-ink)!important;font:500 var(--kit-fs-meta)/1.3 var(--kit-body)!important;padding:5px 12px!important;border-radius:var(--kit-r-chip)!important;min-height:32px;box-sizing:border-box}
+html.kit-on body .next-up .nu-meta span::before{display:none!important}
+/* the menu: the body face at body size, a small accent bullet */
+html.kit-on body .next-up .nu-menu{list-style:none;margin:16px 0;padding:0;display:grid;gap:6px}
+html.kit-on body .next-up .nu-menu li{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:baseline;font:400 var(--kit-fs-body)/1.5 var(--kit-body)!important;color:var(--kit-ink)}
+html.kit-on body .next-up .nu-menu li::before{content:""!important;width:6px;height:6px;border-radius:50%;background:var(--kit-accent);transform:translateY(-2px);padding:0!important;align-self:center}
+html.kit-on body .next-up .nu-for{font:400 var(--kit-fs-body)/1.5 var(--kit-body)!important}
+/* the price: body face, semibold, tabular, the title size; "a person" stays plain */
+html.kit-on body .next-up .nu-price{font:600 var(--kit-fs-price)/1.2 var(--kit-body)!important;font-variant-numeric:tabular-nums;color:var(--kit-ink)}
+html.kit-on body .next-up .nu-price small{font:400 var(--kit-fs-meta) var(--kit-body)!important;color:var(--kit-soft)}
+html.kit-on body .next-up .nu-cta{border-top:1px solid var(--kit-line);padding-top:16px;margin-top:8px}
+html.kit-on body .next-up .nu-early{font-size:var(--kit-fs-small);color:var(--kit-soft)}
+/* "Example only": the token chip, not a dashed sticker */
+html.kit-on body .ex-off{display:inline-flex;align-items:center;min-height:var(--btn-md,44px);padding:0 18px;border-radius:var(--kit-r-btn);background:var(--kit-tint);border:1.5px solid var(--kit-line-strong);color:var(--kit-soft);font:600 var(--kit-fs-meta)/1 var(--kit-body)!important;box-sizing:border-box;white-space:nowrap}
+html.kit-on body .ex-tag{background:var(--kit-surface)!important;border:1.5px solid var(--kit-line-strong)!important;color:var(--kit-soft)!important;font:600 12px/1.3 var(--kit-body)!important}
+
+/* ---- shop and experience cards ---- */
+html.kit-on body .si-b b,html.kit-on body .bx b{font:600 var(--kit-fs-body)/1.3 var(--kit-body)!important}
+html.kit-on body :is(.si-p,.bx-p){font:600 var(--kit-fs-body) var(--kit-body)!important;font-variant-numeric:tabular-nums}
+html.kit-on body .shop-total b{font:600 var(--kit-fs-price) var(--kit-body)!important}
+html.kit-on body .si-em,html.kit-on body .bx-em{background:var(--kit-tint)}
+html.kit-on body .slots input:checked+span{background:var(--kit-btn);color:var(--kit-on-btn)}
+
+/* ---- tags and small chips on host pages: one calm chip ---- */
+html.kit-on body.store :is(.tags i,.ev-p,.perk,.trust-line span,.gigs span,.store-links a){border:1.5px solid var(--kit-line-strong)!important;background:var(--kit-surface)!important;color:var(--kit-ink)!important;border-radius:var(--kit-r-chip)!important;font-weight:500}
+
+/* ---- the logo: on the host page head, in place of the name's first line when the host has one ---- */
+.kit-logo{display:block;height:44px;width:auto;max-width:200px;object-fit:contain;margin:0 0 8px}
+
+/* ---- story cards in the feed (public/feedvisual.js): the kit's face and accent, nothing else ---- */
+.kit-story[style*="--kit-display"] .fv-title:not([data-fv-font]){font-family:var(--kit-display)!important;font-weight:var(--kit-dw,700)!important}
+.kit-story[style*="--kit-accent"] .fv-host b{color:var(--kit-accent-text)}
+
+/* ---- owner banner: a suggested kit, accepted in one tap ---- */
+.bk-sug{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;max-width:960px;margin:14px auto;padding:14px 16px;border-radius:16px;background:#FFFCF7;border:1.5px solid #E4D9C8;font:400 15px/1.4 "Instrument Sans",system-ui,sans-serif;color:#1F1A17}
+.bk-sug b{font-weight:600}.bk-sug .bk-sug-a{display:flex;gap:8px;flex-wrap:wrap}
+.bk-sug button{min-height:44px;padding:0 16px;border-radius:999px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17}
+.bk-sug button.go1{background:#C94A30;border-color:#C94A30;color:#fff}
+.bk-sug button:focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
+.bk-entry{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:#FFF8EE;border:1.5px solid #E4D9C8}
+.bk-entry small{display:block;color:#665A51;font-size:13px}.bk-entry button{min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid #1F1A17;background:#1F1A17;color:#fff;font:600 13px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
+/* with a saved kit, the older colour, font and background swatches in the page editor are the kit's job */
+html.kit-saved .store-pane :is(.sws.fonts,.sws.accents,.sws.bgs),html.kit-saved .store-pane h4:has(+ :is(.sws.fonts,.sws.accents,.sws.bgs)){display:none}

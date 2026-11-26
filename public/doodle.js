@@ -9,7 +9,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const CSS = `.dd-bg{position:fixed;inset:0;background:rgba(31,26,23,.55);z-index:2147482000;display:grid;place-items:center;padding:12px}
 .dd{background:#FFF8EE;border-radius:24px;border:2.5px solid #1F1A17;box-shadow:0 0 0 5px #fff,0 18px 50px -20px rgba(0,0,0,.6);width:min(940px,100%);max-height:calc(100vh - 24px);overflow:auto;padding:14px;display:grid;gap:10px;font:16px/1.4 "Instrument Sans",system-ui,sans-serif;color:#1F1A17}
-.dd-h{display:flex;justify-content:space-between;align-items:center;gap:10px}.dd-h b{font:700 20px var(--sys-display)}.dd-h small{color:#6B5F56}
+.dd-h{display:flex;justify-content:space-between;align-items:center;gap:10px}.dd-h b{font:700 20px var(--pl-font-text)}.dd-h small{color:#6B5F56}
 .dd-stage{position:relative;border-radius:16px;overflow:hidden;border:2px solid #1F1A17;background:#fff;touch-action:none}.dd-stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
 .dd-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.dd-g{display:flex;gap:5px;align-items:center;padding:5px 7px;border:1.5px solid #E4D9C8;border-radius:999px;background:#fff}
 .dd-g button{border:0;background:none;cursor:pointer;border-radius:999px;display:grid;place-items:center;min-width:30px;height:30px;font-weight:600;font-size:13px;font-family:inherit;color:#1F1A17}

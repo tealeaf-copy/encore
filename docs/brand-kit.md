@@ -99,8 +99,8 @@ The 2026 brand is **Bone and clay**: calm, crafted and grown-up. Think of a well
 
 | Role | Face | Use |
 |---|---|---|
-| Display | **Instrument Serif** (400, one weight) | Headings 20px and up, event titles, the wordmark. Tracking -0.015em. Never bold: the page sets `font-synthesis-weight:none`. |
-| Text | **Instrument Sans** (400 to 700) | Body, labels, names, buttons, chips, small titles under 20px (`--sys-title`). |
+| Display | **Instrument Serif** (400, one weight) | Large titles only, 24px and up (`--pl-display-min`), and the wordmark. Tracking -0.015em. Never bold: the page sets `font-synthesis-weight:none`. |
+| Text | **Instrument Sans** (400 to 700) | Body, labels, names, buttons, chips, event and card titles under 24px at 600 (`--sys-title`), every `h3`. |
 | Mono | **JetBrains Mono** (400, 500) | Data only: dates, times, counts, step numbers, small eyebrows. Never prose or headings. |
 | Hand | Caveat (600) | Captions on scrapbook photos only. Never in routine UI. |
 
@@ -108,6 +108,17 @@ The 2026 brand is **Bone and clay**: calm, crafted and grown-up. Think of a well
 - **Scale:** 13 / 14 / 16 / 20 / 28 / 40, plus a hero display (44 to 80). Labels 14 semibold, help text 13, field text 16 (iOS zooms below that).
 - No italics for emphasis. An accent word in a heading (`<em>`) changes colour to clay instead.
 - Buttons are always the text face, never the serif.
+
+### Reading rules (any brand)
+
+These hold whatever the palette and faces are, and the tests check them:
+
+- **Body text is 16px or more** (`--pl-body-size`), paragraphs at line height 1.5 (`--pl-body-lh`).
+- **The display face only at 24px and up** (`--pl-display-min`). Anything smaller (card titles, event names in lists, `h3`, section heads) is the text face at 600. `test/readability.test.js` scans every stylesheet for the display face under 24px; the wordmark is the one exception and is pinned at 25px.
+- **Secondary text is not faint:** soft ink reads about 7:1 on the page and cards, muted text at least 4.5:1 on every surface, including tinted panels.
+- **Cards have a clear edge:** a line you can see (`--pl-line`), not just a slightly whiter fill.
+- **Feed cards:** the title is the text face at 600 and 20px; the date and the place each sit on their own line in ink, not grey mono.
+- **No text on a busy cover** without a solid chip or a scrim behind it.
 
 ### Colors
 
@@ -117,10 +128,10 @@ The 2026 brand is **Bone and clay**: calm, crafted and grown-up. Think of a well
 | `--pl-surface` | Paper | #FBF9F5 | cards, fields, sheets |
 | `--pl-raised` | Stone | #ECE6DB | quiet panels, chips, secondary fills |
 | `--pl-ink` | Ink | #1D1B18 | text, selected chips |
-| `--pl-soft` | Soft ink | #5D564E | secondary text |
-| `--pl-muted` | Muted | #6E665D | meta, placeholders (still AA) |
-| `--pl-line` | Line | #E2DCD1 | card lines |
-| `--pl-line-strong` | Strong line | #CFC6B8 | fields, outlined buttons |
+| `--pl-soft` | Soft ink | #4E4841 | secondary text (7:1 on the page) |
+| `--pl-muted` | Muted | #5D564E | meta, placeholders (AA on every surface) |
+| `--pl-line` | Line | #D5CCBD | card lines: a clear edge |
+| `--pl-line-strong` | Strong line | #B5AA98 | fields, outlined buttons |
 | `--pl-accent` | Clay | #9A4128 | primary buttons, focus, accent words |
 | `--pl-accent-press` | Clay, pressed | #82361F | hover and pressed |
 | `--pl-accent-text` | Clay text | #8E3B24 | links and accent text |
@@ -210,6 +221,7 @@ Each host can have their own kit (`server/brandkit.js`, `public/brandkit.js`, `p
 - **A kit is:** one font pairing (a display face and a body face), a palette (page, cards, text, accent, an optional second accent), corners (soft or crisp), buttons (filled pill or outlined), covers (photo, line art or card deck), an optional logo and a voice line.
 - **Pairings:** Pottery Lab (Instrument Serif + Instrument Sans, the house kit), Supper club, Flower shop, Pantry (slab), Studio, Market day, Terminal (mono headings), Arcade (pixel headings).
 - **Two families per page, always.** Display and titles use the display face. Body, meta, chips, list items and prices use the body face. Prices use tabular figures.
+- **Reading guardrails.** Body text is 16px or more (`--kit-body-min`). The body face is always a sturdy text face: never a script, hairline, mono or display-only face (`EncoreBrandKit.bodyOk`, checked on save). The display face is for titles of 20px and up, 24px for thin faces (Pottery Lab, Flower shop: `html.kit-thin`); `h3` and anything smaller is the body face at 600.
 - **Colors pass AA.** Text and quiet text read at 4.5:1 on the page and cards, buttons stand out at 3:1 and carry 4.5:1 text, and accent text reads at 4.5:1. The page stays light; dark moods belong to an event's look.
 - **Events inherit the kit.** An event's title font is its own only when the host picks one for that event; "Use my brand" puts the kit's back. Looks from before kits keep their font.
 - **Where it shows:** the host page, /g and /e, menu cards, shop and experience cards, story cards (face and accent only), /x pages (`brandKitHead` on the server, `EncoreBrandKit.host(h)` in the page) and guest emails (accent and logo).

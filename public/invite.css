@@ -27,7 +27,7 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
 .legal{max-width:520px;margin:0 auto;padding:8px 16px 28px;text-align:center;font-size:13px;color:var(--smoke)}.legal a{color:inherit;margin:0 6px}body.lk-on .legal,body.lk-on .consent{color:var(--lk-soft,var(--smoke))}body.lk-on .consent a{color:inherit}
 .yourturn{text-align:center;margin:14px 0 0;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-.ini{font:700 20px var(--sys-display);color:var(--ink)}
+.ini{font:700 20px var(--pl-font-text);color:var(--ink)}
 .ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}/* round 12: line glyphs in the meta lines, not emoji */
 .kit{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;margin:6px 0 12px}.kit p{margin:2px 0 0}.kit b{font-weight:600}
 select{width:100%;padding:12px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:16px;background:var(--pl-surface);color:var(--ink)}

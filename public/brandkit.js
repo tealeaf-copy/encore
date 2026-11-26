@@ -11,15 +11,21 @@
   // ---- the pairings: a display face and a body face that work together ----
   // dw: display weight, dls: display letter spacing, dk: display size factor (wide or small faces are scaled to sit right)
   const PAIRS = {
-    house: { label: "Pottery Lab", note: "A quiet serif and a clean sans", display: "Instrument Serif", body: "Instrument Sans", dfb: '"PL Display Fallback", Georgia, serif', bfb: "system-ui, -apple-system, sans-serif", dw: 400, dls: "-.015em", dk: 1.08, q: "Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700" },
+    house: { label: "Pottery Lab", note: "A quiet serif and a clean sans", display: "Instrument Serif", body: "Instrument Sans", dfb: '"PL Display Fallback", Georgia, serif', bfb: "system-ui, -apple-system, sans-serif", thin: true, dw: 400, dls: "-.015em", dk: 1.08, q: "Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700" },
     supper: { label: "Supper club", note: "A classic serif", display: "Playfair Display", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "-.005em", dk: 1, q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
-    florist: { label: "Flower shop", note: "Soft and elegant", display: "Cormorant Garamond", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "0", dk: 1.1, q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700" },
+    florist: { label: "Flower shop", note: "Soft and elegant", display: "Cormorant Garamond", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", thin: true, dw: 600, dls: "0", dk: 1.1, q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700" },
     pantry: { label: "Pantry", note: "A warm slab", display: "Zilla Slab", body: "Work Sans", dfb: 'Rockwell, "Roboto Slab", Georgia, serif', bfb: "system-ui, sans-serif", dw: 700, dls: "-.005em", dk: 1.04, q: "Zilla+Slab:wght@600;700&family=Work+Sans:wght@400;500;600" },
     studio: { label: "Studio", note: "Clean and modern", display: "Space Grotesk", body: "Inter", dfb: "system-ui, sans-serif", bfb: "system-ui, sans-serif", dw: 700, dls: "-.02em", dk: 1, q: "Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600" },
     market: { label: "Market day", note: "Loud and bold", display: "Archivo Black", body: "Archivo", dfb: '"Arial Black", system-ui, sans-serif', bfb: "system-ui, sans-serif", dw: 400, dls: "-.01em", dk: 0.92, q: "Archivo+Black&family=Archivo:wght@400;500;600" },
     terminal: { label: "Terminal", note: "Mono headings, plain text", display: "IBM Plex Mono", body: "IBM Plex Sans", dfb: "ui-monospace, Menlo, monospace", bfb: "system-ui, sans-serif", dw: 600, dls: "-.02em", dk: 0.92, q: "IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600" },
     arcade: { label: "Arcade", note: "8-bit headings", display: "Silkscreen", body: "Inter", dfb: "ui-monospace, monospace", bfb: "system-ui, sans-serif", dw: 400, dls: "0", dk: 0.78, q: "Silkscreen:wght@400;700&family=Inter:wght@400;500;600" },
   };
+  // ---- reading guardrails, whatever the kit (docs/brand-kit.md "Host brand kits") ----
+  // body text never under 16px; the display face only for titles of 20px and up (24px for a thin or condensed face, the
+  // "thin" pairs); smaller headings, meta, buttons and body are the body face, which is always a sturdy text face: never
+  // a script, a hairline or a display-only face
+  const GUARD = { bodyMin: 16, displayMin: 20, thinDisplayMin: 24, bodyNever: /\b(script|hand|brush|cursive|hairline|thin|display|black|silkscreen|pixel|mono)\b/i };
+  const bodyOk = (P) => !!P && !GUARD.bodyNever.test(P.body);
   // ---- starter kits, named by vibe ----
   const STARTERS = {
     house: { label: "Pottery Lab", vibe: "Calm and crafted", pair: "house", page: "#F4F0E8", surface: "#FBF9F5", ink: "#1D1B18", accent: "#9A4128", accent2: "#E3D7BE", corners: "soft", buttons: "pill", cover: "lineart" },
@@ -70,7 +76,7 @@
     const ink0 = norm(k.ink) || "#1D1B18", ink = C.worst(ink0, bgs) >= 4.5 ? ink0 : C.inkFor(bgs, ink0), soft = C.softFor(ink, bgs);
     const accent = norm(k.accent) || HOUSE.accent, btn = C.buttonFor(accent, bgs), onBtn = C.onColor(btn), accentText = textOn(accent, bgs, ink);
     const accent2 = norm(k.accent2) || C.mix(accent, page, 0.55);
-    return { page, surface, ink, soft, line: C.mix(page, ink, 0.12), lineStrong: C.mix(page, ink, 0.2), accent, accentText, accent2, btn, onBtn, tint: C.mix(surface, accent, 0.08) }; }
+    return { page, surface, ink, soft, line: C.mix(page, ink, 0.17), lineStrong: C.mix(page, ink, 0.3), accent, accentText, accent2, btn, onBtn, tint: C.mix(surface, accent, 0.08) }; }
   /** The contrast numbers the editor shows: text on the page and cards, the button, and accent text. */
   function checks(k) { const C = CC(), T = derive(k); if (!C) return []; const bgs = [T.page, T.surface];
     return [{ k: "text", label: "Text", ratio: C.worst(T.ink, bgs), need: 4.5 }, { k: "quiet", label: "Quiet text", ratio: C.worst(T.soft, bgs), need: 4.5 }, { k: "button", label: "Button text", ratio: C.contrast(T.btn, T.onBtn), need: 4.5 }, { k: "edge", label: "Button edge", ratio: C.worst(T.btn, bgs), need: 3 }, { k: "accent", label: "Accent text", ratio: C.worst(T.accentText, bgs), need: 4.5 }]
@@ -81,13 +87,13 @@
   function fonts(k) { const P = PAIRS[k?.pair] || PAIRS.house; return { display: stack(P.display, P.dfb), body: stack(P.body, P.bfb), dw: P.dw, dls: P.dls, dk: P.dk, href: `https://fonts.googleapis.com/css2?family=${P.q}&display=swap`, families: [P.display, P.body] }; }
   /** The --kit-* variables for a kit, as an object. */
   function vars(k) { k = k && PAIRS[k.pair] ? k : { ...pick(HOUSE), starter: "house" }; const T = derive(k), F = fonts(k), soft = k.corners !== "crisp";
-    return { "--kit-display": F.display, "--kit-body": F.body, "--kit-dw": String(F.dw), "--kit-dls": F.dls, "--kit-dk": String(F.dk),
+    return { "--kit-display": F.display, "--kit-body": F.body, "--kit-dw": String(F.dw), "--kit-dls": F.dls, "--kit-dk": String(F.dk), "--kit-display-min": (PAIRS[k.pair]?.thin ? GUARD.thinDisplayMin : GUARD.displayMin) + "px", "--kit-body-min": GUARD.bodyMin + "px",
       "--kit-page": T.page, "--kit-surface": T.surface, "--kit-ink": T.ink, "--kit-soft": T.soft, "--kit-line": T.line, "--kit-line-strong": T.lineStrong,
       "--kit-accent": T.accent, "--kit-accent-text": T.accentText, "--kit-accent2": T.accent2, "--kit-btn": T.btn, "--kit-on-btn": T.onBtn, "--kit-tint": T.tint,
       "--kit-r-card": soft ? "16px" : "6px", "--kit-r-sheet": soft ? "24px" : "10px", "--kit-r-btn": soft ? "12px" : "8px", "--kit-r-chip": soft ? "999px" : "6px", "--kit-r-field": soft ? "12px" : "6px" }; }
   const cssText = (k) => Object.entries(vars(k)).map(([n, v]) => `${n}:${String(v).replace(/[;{}<>]/g, "")}`).join(";");
   /** The classes a page wears for a kit (on <html>). */
-  const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
+  const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), ...(PAIRS[k?.pair]?.thin ? ["kit-thin"] : []), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
 
   // ---- event looks inherit the kit ----
   const HEX = /^#[0-9a-f]{6}$/i;
@@ -114,7 +120,7 @@
     for (const [re, k, what] of KINDS) if (re.test(text)) return { starter: k, why: `for ${what}` };
     return { starter: "house", why: "the house look" }; }
 
-  const API = { PAIRS, STARTERS, ENUMS, HOUSE, FROM_FONT, fromTheme, themeOf, starter, kitOf, isHouse, derive, checks, fonts, vars, cssText, classes, lookFor, ownFont, hasLook, suggest };
+  const API = { GUARD, bodyOk, PAIRS, STARTERS, ENUMS, HOUSE, FROM_FONT, fromTheme, themeOf, starter, kitOf, isHouse, derive, checks, fonts, vars, cssText, classes, lookFor, ownFont, hasLook, suggest };
 
   // ================= the browser: set once per page =================
   if (typeof document === "undefined" || typeof window === "undefined") { root.EncoreBrandKit = API; return; }

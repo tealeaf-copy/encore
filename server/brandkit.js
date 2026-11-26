@@ -31,7 +31,7 @@ export function cleanKit(k, cur) {
   const from = st && k.fromStarter === true ? BK.starter(st) : null; // { starter, fromStarter: true } takes the whole starter kit
   const src = from || k;
   const one = (key, list) => (list.includes(src[key]) ? src[key] : list.includes(base[key]) ? base[key] : list[0]);
-  const out = { v: 1, pair: PAIRS[src.pair] ? src.pair : base.pair, page: hex(src.page) || base.page, surface: hex(src.surface) || base.surface, ink: hex(src.ink) || base.ink, accent: hex(src.accent) || base.accent,
+  const out = { v: 1, pair: PAIRS[src.pair] && BK.bodyOk(PAIRS[src.pair]) ? src.pair : base.pair, page: hex(src.page) || base.page, surface: hex(src.surface) || base.surface, ink: hex(src.ink) || base.ink, accent: hex(src.accent) || base.accent,
     accent2: src.accent2 === "" ? "" : hex(src.accent2) || base.accent2 || "", corners: one("corners", BK.ENUMS.corners), buttons: one("buttons", BK.ENUMS.buttons), cover: one("cover", BK.ENUMS.cover),
     logo: k.logo === "" ? "" : LOGO_OK(k.logo) ? k.logo : LOGO_OK(base.logo) ? base.logo : "", voice: "voice" in k ? cleanVoice(k.voice) : cleanVoice(base.voice), starter: st, at: Date.now() };
   // AA: what's stored is what's drawn

@@ -41,7 +41,7 @@
 .pin-main{min-height:52px;padding:0 24px;border:2.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 var(--pl-ink)}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
 .pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer;min-height:44px}
 .pin-n{font:600 14px "Instrument Sans",system-ui;color:var(--pl-soft)}
-.pin h3{font:600 20px var(--sys-display);margin:18px 0 8px}
+.pin h3{font:600 20px var(--pl-font-text);margin:18px 0 8px}
 .pin-hosts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:12px}
 .pin-host{position:relative;background:#fff;border:2px solid var(--pl-ink);border-radius:18px;padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 var(--pl-ink);transform:rotate(var(--r,0deg))}
 .pin-host .av{width:54px;height:54px;border-radius:50%;border:2px solid var(--pl-ink);display:grid;place-items:center;font-size:26px;background:var(--pl-sand-soft);overflow:hidden}.pin-host .av img{width:100%;height:100%;object-fit:cover}

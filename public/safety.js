@@ -19,7 +19,7 @@
 @media (min-width:640px){.sf-bg{align-items:center}}
 .sf{background:var(--pl-surface);color:var(--pl-ink);width:min(440px,100%);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:90dvh;overflow:auto;border-top:1.5px solid var(--pl-frame)}
 @media (min-width:640px){.sf{border-radius:24px;border:1.5px solid var(--pl-frame)}}
-.sf h2{font:600 20px/1.2 var(--sys-display);margin:0 0 4px}.sf p{margin:0 0 12px;color:var(--pl-soft);font-size:14px}
+.sf h2{font:600 20px/1.2 var(--pl-font-text);margin:0 0 4px}.sf p{margin:0 0 12px;color:var(--pl-soft);font-size:14px}
 .sf .sf-act{display:grid;gap:8px}.sf button{font:600 16px/1 var(--sys-title);min-height:44px;border-radius:999px;border:1.5px solid var(--pl-line-strong);background:#fff;color:var(--pl-ink);cursor:pointer;padding:0 16px;text-align:left}
 .sf button.sf-go{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff;text-align:center}.sf button.sf-x{text-align:center;border:0;background:transparent;color:var(--pl-soft)}
 .sf label{display:flex;gap:10px;align-items:center;min-height:44px;font-size:16px;border-bottom:1.5px solid var(--pl-line)}.sf label:last-of-type{border-bottom:0}.sf input[type=radio]{width:20px;height:20px;accent-color:var(--pl-accent)}

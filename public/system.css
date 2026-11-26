@@ -27,10 +27,10 @@
   --pl-surface:#FBF9F5;     /* cards, fields, sheets */
   --pl-raised:#ECE6DB;      /* quiet panels, chips, secondary fills */
   --pl-ink:#1D1B18;         /* text, selected chips */
-  --pl-soft:#5D564E;        /* secondary text */
-  --pl-muted:#6E665D;       /* meta and placeholders, still AA */
-  --pl-line:#E2DCD1;        /* card lines */
-  --pl-line-strong:#CFC6B8; /* field and outlined button lines */
+  --pl-soft:#4E4841;        /* secondary text: 7:1 on the page, AA on every panel */
+  --pl-muted:#5D564E;       /* meta and placeholders: AA on every surface */
+  --pl-line:#D5CCBD;        /* card lines: a clear edge on the page */
+  --pl-line-strong:#B5AA98; /* field and outlined button lines */
   --pl-accent:#9A4128;      /* clay: primary fills, accent words */
   --pl-accent-press:#82361F;
   --pl-accent-text:#8E3B24; /* clay text on bone and white */
@@ -46,6 +46,8 @@
   --pl-danger:#A3321E;--pl-danger-soft:#F5E2DC;
   --pl-focus:rgba(154,65,40,.28);
   /* shape: moderate corners, thin lines, almost no shadow */
+  /* reading: body text never under 16px, at an easy line height; the display face only at --pl-display-min and up */
+  --pl-body-size:16px;--pl-body-lh:1.5;--pl-display-min:24px;
   --pl-r-btn:10px;--pl-r-sm:8px;--pl-r-md:12px;--pl-r-lg:16px;
   --pl-bw:1px;
   --pl-shadow:0 1px 2px rgba(29,27,24,.05);
@@ -93,8 +95,11 @@ html body::after{position:absolute!important;top:0!important;right:0!important;b
 @media (min-width:861px){html.es-pre body::before{position:absolute!important}}
 
 /* ---- type ---- */
-body{font-family:var(--sys-sans)}
-h1,h2,h3{font-family:var(--sys-display)}
+body{font-family:var(--sys-sans);font-size:var(--pl-body-size)}
+:where(p,li,dd,blockquote){line-height:var(--pl-body-lh)}
+h1,h2{font-family:var(--sys-display)}
+/* small headings read in the text face: the display serif is for large titles only (docs/brand-kit.md "Type") */
+h3{font-family:var(--sys-title);font-weight:600}
 /* controls the page never sized get the scale, not the browser's 13.33px */
 :where(button,input[type=submit],input[type=button]){font-size:var(--fs-14);font-family:inherit}
 :where(input,select,textarea){font-size:var(--fs-16);font-family:inherit}
@@ -241,7 +246,7 @@ html body :is(.fv-potto,.pb-head>svg.potto,.cg-hi>svg.potto,.cg-box svg.potto,.c
    kit never restyles it */
 html body :is(a.brand,a.es-brand,.es-rail .es-logo span){font-family:var(--pl-font-display)!important;font-weight:400!important;font-size:25px!important;letter-spacing:-.01em!important;line-height:1!important;color:var(--pl-ink)!important;text-decoration:none}
 html body .es-rail .es-logo span{font-size:28px!important}
-html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:24px;height:24px;flex:none;color:var(--pl-ink)}
+html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:24px;height:24px;flex:none;color:inherit}
 /* covers sit on the page with a hairline, not a thick ink frame and an offset shadow; notes are solid, not dashed */
 html body :is(.gxcover,.cov,.hcover){box-shadow:none!important;border-width:1px!important;border-color:var(--pl-line)!important}
 html body #gExample{border-style:solid!important;border-width:1px!important;border-color:var(--pl-line-strong)!important;background:var(--pl-sand-soft)!important}

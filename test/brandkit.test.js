@@ -122,7 +122,9 @@ test("suggestions for new hosts: from their first event's look, else what they h
 test("two families at most: every element in the body face, display and titles in the display face, prices and chips in the body face", () => {
   const css = pub("brandkit.css");
   assert.match(css, /html\.kit-on body :where\(\*:not\([^)]*\)\)\{font-family:var\(--kit-body\)!important\}/, "the body face everywhere");
-  assert.match(css, /html\.kit-on body :where\(h1,h2,h3,[^)]*\.nu-title[^)]*\)[^{]*\{font-family:var\(--kit-display\)!important/, "the display face for display and titles");
+  assert.match(css, /html\.kit-on body :where\(h1,h2,[^)]*\.nu-title[^)]*\)[^{]*\{font-family:var\(--kit-display\)!important/, "the display face for display and titles");
+  // small headings read in the body face at 600, never the display face
+  assert.match(css, /html\.kit-on body :where\(h3\)[^{]*\{font-family:var\(--kit-body\)!important;font-weight:600!important/, "h3 in the body face");
   // the only families a kit page names are the kit's own two
   const fams = new Set([...css.matchAll(/font(?:-family)?:[^;}]*/g)].map((m) => m[0]).filter((d) => !/var\(--kit-/.test(d) && /"[A-Z]/.test(d) && !/Instrument Sans|Fredoka/.test(d)));
   assert.deepEqual([...fams], [], "no third family hard-coded for kit pages");
@@ -207,4 +209,18 @@ test("rendered: a host page and its invite use at most two families, the kit's; 
     assert.deepEqual(nu, { ".nu-title": "Playfair Display", ".nu-menu li": "Lato", ".nu-price": "Lato", ".nu-meta span": "Lato" });
     assert.equal(await p.evaluate(() => getComputedStyle(document.querySelector("#nextUp .nu-menu li")).fontSize), "16px");
   } finally { await br.close(); }
+});
+
+test("reading guardrails: body text at 16px or more, the body face never a script or thin face, thin display faces only at 24px and up", () => {
+  const css = pub("brandkit.css");
+  assert.match(css, /html\.kit-on body\{font-size:max\(var\(--kit-fs-body\),var\(--kit-body-min,16px\)\)\}/);
+  assert.match(css, /html\.kit-thin\{--kit-fs-title:max\([^;]*,24px\)\}/);
+  assert.equal(BK.GUARD.bodyMin, 16);
+  for (const [k, P] of Object.entries(BK.PAIRS)) { assert.ok(BK.bodyOk(P), `${k}: ${P.body} is a sturdy text face`);
+    const v = BK.vars({ ...BK.starter(k) }); assert.equal(v["--kit-body-min"], "16px"); assert.equal(v["--kit-display-min"], P.thin ? "24px" : "20px", k); }
+  for (const f of ["Dancing Script", "Pacifico Script", "Raleway Thin", "Silkscreen", "IBM Plex Mono", "Archivo Black"]) assert.ok(!BK.bodyOk({ body: f }), `${f} is never body text`);
+  // a script, thin or display-only body is refused on save: the kit keeps its pairing
+  assert.equal(BK.PAIRS.house.thin, true); assert.equal(BK.PAIRS.florist.thin, true);
+  // every starter kit: text, quiet text, button label and accent text at AA; the button edge at 3:1
+  for (const k of Object.keys(BK.STARTERS)) for (const c of BK.checks(BK.starter(k))) assert.ok(c.ok, `${k} ${c.label} ${c.ratio}`);
 });

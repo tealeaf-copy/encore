@@ -21,11 +21,16 @@ html.kit-on{
 
 /* ---- two families: body face everywhere, display face for display and titles ---- */
 html.kit-on body :where(*:not(.kit-off,.kit-off *,.store-pane,.store-pane *,.store-fab,.store-fab *,svg,svg *,.lk-title,.kit-keep)){font-family:var(--kit-body)!important}
-html.kit-on body :where(h1,h2,h3,.kit-d,.nu-title,.lk-title,.gxhi,.mh-title,.mc-hv figcaption b):where(:not(.kit-off,.kit-off *,.store-pane *)){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important;letter-spacing:var(--kit-dls)}
+html.kit-on body :where(h1,h2,.kit-d,.nu-title,.lk-title,.gxhi,.mh-title,.mc-hv figcaption b):where(:not(.kit-off,.kit-off *,.store-pane *)){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important;letter-spacing:var(--kit-dls)}
+/* reading guardrails: body text at 16px or more; small headings (h3) in the body face at 600, never the display face,
+   which is for titles of 20px and up (24px for a thin face, html.kit-thin) */
+html.kit-on body{font-size:max(var(--kit-fs-body),var(--kit-body-min,16px))}
+html.kit-on body :where(h3):where(:not(.lk-title,.kit-d,.kit-off,.kit-off *,.store-pane *)){font-family:var(--kit-body)!important;font-weight:600!important;letter-spacing:0}
+html.kit-thin{--kit-fs-title:max(calc(20px * var(--kit-dk,1)),24px)}
 /* the full invite (/g) has id-level font rules: the same two families, one step stronger. The title keeps --lk-title,
    which public/brandkit.js points at the kit's display face unless the event has its own font */
 html.kit-on body #view-guest.ev2 :where(*:not(.kit-off,.kit-off *,svg,svg *,.lk-title,h1,h2,h3)){font-family:var(--kit-body)!important}
-html.kit-on body #view-guest.ev2 :where(h1,h2,h3):where(:not(.lk-title,.kit-off *)){font-family:var(--kit-display)!important}
+html.kit-on body #view-guest.ev2 :where(h1,h2):where(:not(.lk-title,.kit-off *)){font-family:var(--kit-display)!important}
 html.kit-on body #view-guest.ev2 :is(.gxfacts > span[data-k=When] b,.type-cover span,.party h2,.ev2-free b){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important}
 /* numbers line up: data, prices and counts in the body face with tabular figures */
 html.kit-on body :where(.num,.nu-price,.si-p,.bx-p,.shop-total b,.kit-price,input[type=number],input[type=date],input[type=time]){font-variant-numeric:tabular-nums;letter-spacing:0}

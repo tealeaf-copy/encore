@@ -20,8 +20,9 @@ test("brand tokens: every text and background pair passes AA", () => {
   const pairs = [];
   const text = (fg, bgs, need = 4.5) => { for (const bg of bgs) pairs.push([fg, bg, need]); };
   text("ink", ["page", "surface", "raised", "sand", "sand-soft", "accent-soft", "success-soft", "warning-soft", "danger-soft"]);
-  text("soft", ["page", "surface", "raised", "sand-soft"]);
-  text("muted", ["page", "surface"]);
+  text("soft", ["page", "surface", "raised", "sand", "sand-soft", "accent-soft"]);
+  text("soft", ["page", "surface"], 7); // secondary text reads like body text: about 7:1 on the page and cards
+  text("muted", ["page", "surface", "raised", "sand", "sand-soft", "accent-soft"]);
   text("accent-text", ["page", "surface", "accent-soft", "sand-soft"]);
   text("on-accent", ["accent", "accent-press"]);
   text("surface", ["ink"]); // a selected chip: light text on ink
@@ -37,4 +38,12 @@ test("brand tokens: the old house brand is gone from the tokens and the type", (
   assert.doesNotMatch(block, /#C94A30|#F7F1E8|#1F1A17|Fredoka/i);
   assert.match(css, /--sys-display:var\(--pl-font-display\)/); assert.match(css, /--sys-title:var\(--pl-font-text\)/);
   assert.match(css, /--ink:var\(--pl-ink\)/); assert.match(css, /--sys-ember:var\(--pl-accent\)/);
+});
+
+test("brand tokens: cards have a clear edge, and body text has a floor", () => {
+  assert.ok(ratio(T["line"], T["surface"]) >= 1.4, "a card line you can see on its card");
+  assert.ok(ratio(T["line-strong"], T["surface"]) >= 2, "field and outlined button lines");
+  assert.match(block, /--pl-body-size:16px/); assert.match(block, /--pl-body-lh:1\.5/); assert.match(block, /--pl-display-min:24px/);
+  assert.match(css, /body\{font-family:var\(--sys-sans\);font-size:var\(--pl-body-size\)\}/);
+  assert.match(css, /\nh1,h2\{font-family:var\(--sys-display\)\}/); assert.match(css, /\nh3\{font-family:var\(--sys-title\);font-weight:600\}/);
 });

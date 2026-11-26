@@ -151,7 +151,7 @@
     return `<article class="fv-card fv-ev kit-story${poster ? " poster" : ""}" data-fv-id="${esc(e.id || "")}" style="${window.EncoreBrandKit?.storyStyle(e.host) || ""}">
       <a class="fv-media" href="${esc(e.cta?.url || e.url)}" tabindex="-1" aria-hidden="true">${media}</a>
       <div class="fv-body"><p class="fv-host">${avatar(e.host, 24)}<span><b>${esc(e.host?.name || "A host")}</b>${by?.note ? ` · ${esc(by.note)}` : ""}</span></p>
-        <h3 class="fv-title"><a href="${esc(e.cta?.url || e.url)}">${esc(e.title)}</a></h3><p class="fv-data">${esc([when(e), where(e)].filter(Boolean).join(" · "))}</p>
+        <h3 class="fv-title"><a href="${esc(e.cta?.url || e.url)}">${esc(e.title)}</a></h3><p class="fv-data">${[when(e), where(e)].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</p>
         ${friendsSpot(e)}${togetherSpot(e)}${st ? `<p class="fv-cap2">${esc(st)}</p>` : ""}
         <div class="fv-acts"><a class="fv-btn primary" data-fv-in href="${esc(e.cta?.url || e.url)}">${esc(btnText(e, e.cta?.label || "I'm in"))}</a>${more([withBtn(e), saveSpot({ kind: "event", id: e.id, ref: e.id, title: e.title, url: e.url, image: e.cover || "", img: e.cover || "" })], e.title)}</div></div></article>`; }
   // "Come with me?" (public/comewith.js): signed in, a link for one friend from your own reply; "Mia and Jo are in" once both are
@@ -401,14 +401,14 @@
 .fv-lede{margin:0;max-width:46ch;font-size:16px;line-height:1.5;color:var(--fv-ink)}.fv-sub{margin:8px 0 0;font-size:14px;color:var(--fv-smoke)}.fv-sub a{display:inline-block;padding:13px 0;margin:-13px 0;color:var(--fv-ember-d);font-weight:600}
 .fv-potto{position:absolute;right:0;top:4px;width:64px}.fv-potto svg{width:64px;height:auto}
 /* section heads: a heading and at most one line */
-.fv-sec{display:flex;flex-direction:column;gap:20px}.fv-sec[hidden]{display:none}.fv-h{margin:0}.fv-h h2{margin:0;font:600 20px/1.2 var(--sys-display)}.fv-h p{margin:6px 0 0;color:var(--fv-smoke);font-size:14px;line-height:1.45;max-width:52ch}
+.fv-sec{display:flex;flex-direction:column;gap:20px}.fv-sec[hidden]{display:none}.fv-h{margin:0}.fv-h h2{margin:0;font:600 20px/1.2 var(--pl-font-text)}.fv-h p{margin:6px 0 0;color:var(--fv-smoke);font-size:14px;line-height:1.45;max-width:52ch}
 .fv-sub-h{margin:12px 0 -8px;font:600 14px "Instrument Sans",system-ui;color:var(--fv-smoke)}
 .fv-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:40px 24px}
 /* shared card bits */
 .fv-card{position:relative;min-width:0}
 .fv-by,.fv-host{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;line-height:1.3;color:var(--fv-smoke);min-width:0}.fv-by b,.fv-host b{color:var(--fv-ink);font-weight:600}.fv-by>span,.fv-host>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fv-title{margin:10px 0 4px;font:600 20px/1.2 var(--sys-display);color:var(--fv-ink);text-wrap:balance;overflow-wrap:anywhere}.fv-title a{display:inline-block;padding:10px 0;margin:-10px 0;color:inherit;text-decoration:none}.fv-title a:hover{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
-.fv-data{margin:0;font:400 13px/1.5 var(--fv-mono);letter-spacing:-.01em;color:var(--fv-smoke);font-variant-numeric:tabular-nums}
+.fv-title{margin:10px 0 4px;font:600 20px/1.2 var(--pl-font-text);color:var(--fv-ink);text-wrap:balance;overflow-wrap:anywhere}.fv-title a{display:inline-block;padding:10px 0;margin:-10px 0;color:inherit;text-decoration:none}.fv-title a:hover{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.fv-data span{display:block}.fv-data{margin:0;font:500 15px/1.45 var(--pl-font-text);color:var(--fv-ink);font-variant-numeric:tabular-nums}
 .fv-cap2{margin:6px 0 0;font-size:13px;color:var(--fv-smoke)}
 .fv-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
 .fv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 20px;border-radius:999px;border:1.5px solid var(--fv-line2);background:var(--fv-card);color:var(--fv-ink);font:600 15px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer;transition:background .2s,border-color .2s,transform .15s var(--fv-ease)}
@@ -466,7 +466,7 @@
 .fv-inspo .pli-fly{border-radius:12px}
 .fv-artfb{display:grid;place-items:center;height:100%;font-size:48px;background:var(--pl-sand)}
 /* the end */
-.fv-end{margin:64px 0 24px;padding-top:24px;border-top:1.5px solid var(--fv-line);text-align:center}.fv-end p{margin:0 0 6px;color:var(--fv-smoke);font-size:14px}.fv-end p:first-of-type{font:600 20px var(--sys-display);color:var(--fv-ink)}.fv-end a{color:var(--fv-ember-d);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
+.fv-end{margin:64px 0 24px;padding-top:24px;border-top:1.5px solid var(--fv-line);text-align:center}.fv-end p{margin:0 0 6px;color:var(--fv-smoke);font-size:14px}.fv-end p:first-of-type{font:600 20px var(--pl-font-text);color:var(--fv-ink)}.fv-end a{color:var(--fv-ember-d);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
 /* loading: the opening and a card, the size they'll be */
 .fv-skel{display:grid;gap:12px;padding:20px 0}.fv-skel i{display:block;border-radius:10px;background:linear-gradient(90deg,var(--fv-linen) 0,#F5EDE1 40%,var(--fv-linen) 80%) 0 0/300% 100%;animation:fv-shim 1.6s linear infinite}
 .fv-skel .k{width:40%;height:14px}.fv-skel .h{width:80%;height:32px}.fv-skel .l{width:65%;height:16px}.fv-skel .m{aspect-ratio:4/5;max-height:60vh;border-radius:16px;margin-top:24px}.fv-skel .t{width:55%;height:22px}

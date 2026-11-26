@@ -17,6 +17,7 @@ import { momentsOnPage } from "./feedvisual.js";
 const ID = /^[A-Za-z0-9_-]{2,80}$/, ISO = /^\d{4}-\d{2}-\d{2}$/;
 const clean = (v, n = 120) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 const closed = (e) => !!e && (e.private === true || e.friendsOnly === true || e.visibility === "private" || e.visibility === "friends");
+const hiddenNames = (ev) => !!(ev?.hideGuests || ev?.noWall || ev?.discreet || ev?.chatham);
 /** Shown to strangers on the host page: an open, listed-on-the-page event. */
 export const onPage = (e) => !!e && !e.example && !e.sample && !e.cancelled && !!e.discoverable && !closed(e) && !e.approvalRequired;
 const MEDIA_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png)$/.test(u || "");
@@ -61,9 +62,9 @@ export function mountSeries(app, { store, small, C, ownerOnly }) {
       const entries = past.slice(0, 24).map(({ id, e }) => { const N = notesOf(e), L = S.get("lineup/" + id)?.data || null, cfg = e.lineup && typeof e.lineup === "object" ? e.lineup : null;
         const demos = N.demos.length ? N.demos : cfg?.kind === "demos" && L ? (L.demos || []).map((d) => clean(d.title, 80)).filter(Boolean).slice(0, 8) : [];
         let games = N.games; if (!games.length && cfg?.kind === "poll" && L?.votes) { const opts = list(cfg.options, 8, 40), tally = opts.map((o, i) => [o, Object.values(L.votes).filter((v) => v === i).length]).sort((a, b) => b[1] - a[1]); if (tally[0]?.[1]) games = [tally[0][0]]; }
-        const champ = cfg?.kind === "bracket" && L?.champion ? clean(S.get("rsvps/" + L.champion)?.data?.name, 60).split(" ")[0] : "";
+        const champ = cfg?.kind === "bracket" && L?.champion && !hiddenNames(e) ? clean(S.get("rsvps/" + L.champion)?.data?.name, 60).split(" ")[0] : "";
         const photos = momentsOnPage(e) ? moments.filter((m) => m.data.eventId === id).sort((a, b) => (a.data.at || 0) - (b.data.at || 0)).slice(0, 6).map((m) => m.data.url) : [];
-        return { id, n: n(id), date: e.date, came: e.hideGuests || e.discreet ? null : cameTo(S, id, e).length, demos, games, ...(champ && !e.hideGuests ? { champion: champ } : {}), note: N.note, photos, url: `/e/${encodeURIComponent(id)}` }; });
+        return { id, n: n(id), date: e.date, came: hiddenNames(e) ? null : cameTo(S, id, e).length || null, demos, games, ...(champ ? { champion: champ } : {}), note: N.note, photos, url: `/e/${encodeURIComponent(id)}` }; });
       out.push({ root: x.root, title: x.title, episodes: x.total, entries, next: next ? { id: next.id, n: n(next.id), date: next.e.date, startTime: /^\d{2}:\d{2}$/.test(next.e.startTime || "") ? next.e.startTime : "", url: `/e/${encodeURIComponent(next.id)}` } : null,
         forks: forkCount(store, x.ids, ws), forkFrom: (past[0] || next).id });
     }
@@ -74,8 +75,8 @@ export function mountSeries(app, { store, small, C, ownerOnly }) {
 
   app.post("/api/host/series/:id/notes", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.params.id, 80), S = scopeStore(store, u.ws), ev = ID.test(id) ? S.get("events/" + id)?.data : null; if (!ev) return bad(res, "No such event.", 404, "not_found");
     const b = req.body || {}, N = notesOf({ changelog: { demos: b.demos, games: b.games, note: b.note } }), base = b.episodeBase != null ? Math.max(0, Math.min(5000, Math.floor(+b.episodeBase) || 0)) : null;
-    S.update("events/" + id, { changelog: N, ...(base != null ? { episodeBase: base } : {}) }); res.json({ ok: true, notes: N, episode: episodeOf(store, id, u.ws) }); });
+    S.update("events/" + id, { changelog: N, ...(base != null ? { episodeBase: base } : {}) }); res.json({ ok: true, notes: N, episode: episodeOf(store, id, u.ws, { host: true }) }); });
   app.get("/api/host/series/:id", (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.params.id, 80), ev = ID.test(id) ? scopeStore(store, u.ws).get("events/" + id)?.data : null; if (!ev) return bad(res, "No such event.", 404, "not_found");
-    res.set("Cache-Control", "private, no-store").json({ notes: notesOf(ev), episodeBase: +ev.episodeBase || 0, episode: episodeOf(store, id, u.ws) }); });
+    res.set("Cache-Control", "private, no-store").json({ notes: notesOf(ev), episodeBase: +ev.episodeBase || 0, episode: episodeOf(store, id, u.ws, { host: true }) }); });
   app.locals.series = { changelog };
 }

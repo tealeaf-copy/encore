@@ -38,7 +38,10 @@ html body.lk-on.lk-fx-jarwall #view-guest .gxcover{box-shadow:0 0 0 2px #FBF4E4,
 html body.lk-on #view-guest #menuCard .mc-hv{margin-top:18px}html body.lk-on.lk-fx-lanterns #view-guest .gxcover{box-shadow:0 0 0 2px #F1DFB8,0 24px 60px -18px rgba(242,138,58,.55)!important}
 html body.lk-on.lk-fx-lanterns #view-guest #menuCard .mc{margin-top:18px}
 html body.lk-on.lk-fx-lanterns #view-guest .mc .mc-c b{color:#1F1A17!important}html body.lk-on.lk-fx-lanterns #view-guest .mc .mc-c small{color:#5A4E45!important}html body.lk-on.lk-fx-lanterns #view-guest .mc .mc-h{color:#B3321F!important}html body.lk-on.lk-fx-lanterns #view-guest .mc .mc-fin b{color:#F4EAD3!important}
-html body.lk-on .ev2-chat>p.ev2-foot,html body.lk-on .ev2-chat>p.ev2-foot a{color:var(--lk-ink)!important}`;
+html body.lk-on .ev2-chat>p.ev2-foot,html body.lk-on .ev2-chat>p.ev2-foot a{color:var(--lk-ink)!important}
+/* review round 14: "More from Ada" follows the look's card, and on a dark look the side rail lets the page show through */
+html body.lk-on .ev2-chat .ev2-more{background:var(--lk-card)!important;color:var(--lk-card-ink)!important;border:1px solid var(--lk-line)!important}html body.lk-on .ev2-chat .ev2-more :is(h4,b,.em-head){color:var(--lk-card-ink)!important}html body.lk-on .ev2-chat .ev2-more small{color:color-mix(in srgb,var(--lk-card-ink) 72%,var(--lk-card))!important}
+html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filter:none!important;border-right-color:transparent!important}html body.lk-on.lk-dark .es-rail :is(a,a>span,.es-out,.es-logo,.es-logo>span,.nav-fold){color:var(--lk-ink)!important}html body.lk-on.lk-dark .es-rail :is(a:hover,a[aria-current]){background:color-mix(in srgb,var(--lk-ink) 12%,transparent)!important}`;
   let gSig = "";
   function guest() { const host = document.getElementById("view-guest"), e = window.__gEv;
     if (!host || !e?.id || !host.classList.contains("ev2") || host.hidden || host.offsetParent === null) { if (gSig) { LK.apply(document.body, {}); gSig = ""; } return; }

@@ -22,7 +22,7 @@
     x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>', term: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7l5 5-5 5M12 17h7"/></svg>' };
 
   // ---------- the block ----------
-  function lineupHTML(L, M) {
+  function lineupHTML(L, M, o = {}) {
     if (!L) return ""; if (L.locked) return "";
     const head = (eyebrow) => `<p class="sl-eyebrow">${esc(eyebrow)}</p><p class="sl-big">${esc(L.title)}</p>`;
     if (L.kind === "demos") {
@@ -34,7 +34,7 @@
     }
     if (L.kind === "poll") { const max = Math.max(1, ...L.options.map((o) => o.votes));
       return `<section class="sl-card" id="slLineup" aria-label="${esc(L.title)}">${head(`Poll · ${L.votes} vote${L.votes === 1 ? "" : "s"}`)}<div class="sl-opts">${L.options.map((o) => `<button type="button" class="sl-opt" data-sl="vote" data-i="${o.i}" aria-pressed="${L.myVote === o.i}"${L.canAct && !L.past ? "" : " disabled"}><span class="bar" style="width:${Math.round((100 * o.votes) / max)}%"></span><span>${esc(o.label)}</span><span class="sl-mono">${o.votes}</span></button>`).join("")}</div>
-        ${L.canAct || L.past ? "" : `<p class="sl-sub">Reply to vote. One vote each.</p>`}<p class="sl-msg" role="status"></p></section>`; }
+        ${L.canAct || L.past ? "" : `<p class="sl-sub">${o.ask ? `Vote once ${esc(o.host || "the host")} lets you in.` : "Reply to vote. One vote each."}</p>`}<p class="sl-msg" role="status"></p></section>`; }
     const R = L.rounds || [], names = (n) => (n === R.length - 1 ? "Final" : n === R.length - 2 ? "Semis" : `Round ${n + 1}`);
     const br = R.length ? `<div class="sl-br">${R.map((round, r) => `<div class="sl-rnd"><h5>${names(r)}</h5>${round.map((x) => `<div class="sl-m"><div class="${x.w === "a" ? "w" : x.w ? "l" : ""}"><span>${esc(x.a || (x.bye ? "Bye" : "TBD"))}</span></div><div class="${x.w === "b" ? "w" : x.w ? "l" : ""}"><span>${esc(x.b || (x.bye ? "Bye" : "TBD"))}</span></div></div>`).join("")}</div>`).join("")}</div>` : "";
     const act = L.past || L.seeded ? "" : L.canAct ? `<button type="button" class="sl-btn ${L.mine ? "ghost" : ""}" data-sl="optin" data-on="${L.mine ? "0" : "1"}">${L.mine ? "Leave the bracket" : "Put me in the bracket"}</button>` : `<p class="sl-sub">Reply I'm in to play.</p>`;
@@ -51,9 +51,13 @@
 
   // ---------- quiet guests ----------
   const pendKey = (id) => "encore-quiet-" + id;
-  function quietFormHTML(id) { const P = ls.get(pendKey(id)) || {};
+  /** "Ask me about" ideas that fit the night: food, games, hack nights. Pure. */
+  const askHint = (e) => { const t = [e?.kind, e?.activity, e?.pubTitle, e?.name].filter(Boolean).join(" ").toLowerCase();
+    return /hack|demo|build|maker|code|coding/.test(t) ? "What you're building" : /game|board|lan\b|smash|bracket|watch party|tournament|poker|chess|d&d|dnd|trivia/.test(t) ? "Favorite game, what you're learning"
+      : /dinner|supper|potluck|brunch|lunch|food|cook|bake|bread|meal|tasting|wine|picnic|bbq|feast/.test(t) ? "Favorite dish, a recent trip" : "Something you're into, a recent trip"; };
+  function quietFormHTML(id, e) { const P = ls.get(pendKey(id)) || {};
     return `<div class="sl-quietform" id="slQuietForm"><label class="sl-check"><input type="checkbox" id="slSolo"${P.solo ? " checked" : ""}><span>Coming solo<small>We'll say how many others are, never who.</small></span></label>
-      <label class="sl-lab" style="margin:8px 0 0;font-weight:500">Ask me about <small>Optional, on Who's coming for guests who are in. 60 characters, no contact details.</small><input id="slAsk" maxlength="60" autocomplete="off" placeholder="Rust, mechanical keyboards, Factorio" value="${esc(P.askMe || "")}"></label></div>`; }
+      <label class="sl-lab" style="margin:8px 0 0;font-weight:500">Ask me about <small>Optional, on Who's coming for guests who are in. 60 characters, no contact details.</small><input id="slAsk" maxlength="60" autocomplete="off" placeholder="${esc(askHint(e))}" value="${esc(P.askMe || "")}"></label></div>`; }
   async function syncQuiet(id) { const M = mineOf(id), P = ls.get(pendKey(id)); if (!M || !P || P.synced === M.rid + "|" + (P.solo ? 1 : 0) + "|" + (P.askMe || "")) return null;
     const r = await post(`/api/public/quiet/${encodeURIComponent(id)}`, { rid: M.rid, code: M.code, solo: !!P.solo, askMe: P.askMe || "" }); if (r.ok) ls.set(pendKey(id), { ...P, askMe: r.j.askMe, synced: M.rid + "|" + (r.j.solo ? 1 : 0) + "|" + (r.j.askMe || "") }); return r.ok ? r.j : null; }
   function wireQuiet(el, id, after) { const save = () => { ls.set(pendKey(id), { ...(ls.get(pendKey(id)) || {}), solo: !!$("#slSolo", el)?.checked, askMe: ($("#slAsk", el)?.value || "").trim().slice(0, 60), synced: "" }); };
@@ -72,31 +76,36 @@
       ${curl ? `<section class="sl-card" id="slCurl"><p class="sl-eyebrow">Reply from a terminal</p><code class="sl-code" id="slCurlLine">${esc(curl)}</code><p class="sl-sub">Swap <span class="sl-mono">"in"</span> for <span class="sl-mono">"maybe"</span> or <span class="sl-mono">"no"</span>. This has your own reply code, so keep it to yourself.</p><button type="button" class="sl-btn ghost sm" data-sl="curl">${ICON.term}Copy</button></section>` : ""}`; }
   async function copy(text, btn) { let ok = false; try { await navigator.clipboard.writeText(text); ok = true; } catch { try { const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch {} }
     if (btn) { const was = btn.innerHTML; btn.textContent = ok ? "Copied" : "Couldn't copy"; setTimeout(() => (btn.innerHTML = was), 1600); } }
+  // the invite's public words, never the host's planning brief (`concept`)
+  const pubCopy = (e) => String(e?.pubDesc || (typeof e?.copy === "string" ? e.copy : e?.copy?.description || e?.copy?.tagline) || "").trim().slice(0, 400);
   async function markdownOf(id, e) {
     const [H, EP] = await Promise.all([getJ(`/api/public/event-host/${encodeURIComponent(id)}`), getJ(`/api/public/episode/${encodeURIComponent(id)}`)]);
     const t = String(e?.pubTitle || e?.name || "").trim(), title = EP?.episode && !/#\d+\s*$/.test(t) ? `${t} #${EP.episode}` : t;
-    return window.PlainText.toMarkdown({ title, date: e?.date, startTime: e?.startTime, endTime: e?.endTime, area: [e?.hood, String(e?.city || "").split(",")[0]].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", "), host: H?.host?.name || "", url: `${location.origin}/e/${encodeURIComponent(id)}`, concept: e?.concept || "" }); }
+    return window.PlainText.toMarkdown({ title, date: e?.date, startTime: e?.startTime, endTime: e?.endTime, area: [e?.hood, String(e?.city || "").split(",")[0]].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", "), host: H?.host?.name || "", url: `${location.origin}/e/${encodeURIComponent(id)}`, concept: pubCopy(e) }); }
   function wireTools(el, id, e) { $('[data-sl="md"]', el)?.addEventListener("click", async (ev) => { const b = ev.currentTarget; copy(await markdownOf(id, e), b); });
     $('[data-sl="curl"]', el)?.addEventListener("click", (ev) => copy($("#slCurlLine", el)?.textContent || "", ev.currentTarget)); }
 
   // ---------- put it on the page ----------
-  let busy = false, sig = "", T = 0;
+  let busy = false, sig = "", T = 0; const hosts = {};
   async function run(ctx) {
     if (busy) return; const { id, e, anchor, form } = ctx; if (!id || !anchor) return; const M = mineOf(id), s = [id, M?.rid || "", M?.response || "", !!form, !!$("#tk"), !!$("#tbMe")].join("|");
-    if (form && !$("#slQuietForm", form.closest("form,#gForm,.panel") || document)) { form.insertAdjacentHTML("afterend", quietFormHTML(id)); wireQuiet(form.parentElement, id, () => { sig = ""; schedule(); }); }
+    if (form && !$("#slQuietForm", form.closest("form,#gForm,.panel") || document)) { form.insertAdjacentHTML("afterend", quietFormHTML(id, e)); wireQuiet(form.parentElement, id, () => { sig = ""; schedule(); }); }
+    { const a = $("#slAsk"); if (a && e) a.placeholder = askHint(e); } // the light invite reads its event after the form is up
     if (s === sig && $("#slBox")) return; busy = true; sig = s;
     try { await syncQuiet(id); const [Lj, Q] = await Promise.all([getJ(`/api/public/lineup/${encodeURIComponent(id)}${proofQ(M)}`), getJ(`/api/public/quiet/${encodeURIComponent(id)}${proofQ(M)}`)]);
       let box = $("#slBox"); if (!box) { box = document.createElement("div"); box.id = "slBox"; } const at = ctx.place(); if (at && box.previousElementSibling !== at) at.after(box);
-      const draw = (L) => { box.innerHTML = lineupHTML(L, M) + quietHTML(Q) + toolsHTML(id, e, M); wireLineup(box, id, M, draw); wireTools(box, id, e); };
+      const askIn = !!e?.approvalRequired && Lj?.lineup?.kind === "poll" && !Lj.lineup.canAct, hostFirst = askIn ? (hosts[id] ||= getJ(`/api/public/event-host/${encodeURIComponent(id)}`).then((j) => j?.person || "")) : null;
+      const opts = { ask: askIn, host: hostFirst ? await hostFirst : "" };
+      const draw = (L) => { box.innerHTML = lineupHTML(L, M, opts) + quietHTML(Q) + toolsHTML(id, e, M); wireLineup(box, id, M, draw); wireTools(box, id, e); };
       draw(Lj?.lineup || null);
       // who's coming on /g: the Ask me about card sits under it
       const who = $("#whoGoing"), ask = $("#slAskMe", box); if (who && ask) who.after(ask);
     } finally { busy = false; } }
   function ctxOf() {
     if (/^\/[ei]\/[A-Za-z0-9_-]{2,80}$/.test(location.pathname)) { const id = location.pathname.split("/")[2], m = $("#m"); if (!m || !$(".cov", m)) return null; const f = $("#f");
-      return { id, e: window.__slEv || null, form: f && !f.querySelector("#slQuietForm") ? f.querySelector(".resp") || f.querySelector("button[type=submit], button:not([type])")?.previousElementSibling || null : null, anchor: $("#tk") || f, place: () => $("#tbMe") || $("#tk") || $("#f") }; }
+      return { id, e: window.__slEv || null, form: f && !f.querySelector("#slQuietForm") ? f.querySelector("#ct")?.closest("label") || f.querySelector(".resp") || f.querySelector("button[type=submit], button:not([type])")?.previousElementSibling || null : null, anchor: $("#tk") || f, place: () => $("#tbMe") || $("#tk") || $("#f") }; }
     if (location.pathname === "/g") { const e = window.__gEv, host = $("#view-guest"); if (!e?.id || !host || host.hidden || e.example || e.sample) return null;
-      const resp = $("#gResp", host); return { id: e.id, e, form: resp && !$("#slQuietForm", host) ? resp : null, anchor: $("#gForm", host) || $(".invite", host), place: () => $("#tbMe", host) || $("#gForm", host) || $(".ticket", host)?.closest(".panel") || $(".invite", host) }; }
+      const resp = $("#gResp", host), em = $("#g-email", host), after = em?.closest(".row") || em?.closest("label") || resp; return { id: e.id, e, form: after && !$("#slQuietForm", host) ? after : null, anchor: $("#gForm", host) || $(".invite", host), place: () => $("#tbMe", host) || $("#gForm", host) || $(".ticket", host)?.closest(".panel") || $(".invite", host) }; }
     return null; }
   function schedule() { if (T) return; T = setTimeout(() => { T = 0; const c = ctxOf(); if (c) run(c).catch((err) => console.warn("[slots]", err)); }, 160); }
 
@@ -111,6 +120,7 @@
       <label class="sl-lab" data-k="bracket"${kind === "bracket" ? "" : " hidden"}>Bracket size<select id="slSize">${[4, 8, 16].map((n) => `<option${+L.size === n || (!L.size && n === 8) ? " selected" : ""}>${n}</option>`).join("")}</select></label>
       <div id="slLive"></div>
       <label class="sl-lab">First-timer table<small>Shown only to guests who tick Coming solo.</small><input id="slFirstNote" maxlength="200" value="${esc(d.firstTimerNote || "")}" placeholder="Sit at the window table. Jo will say hi."></label>
+      <div class="sl-lab" role="group" aria-labelledby="slSerQ"><span id="slSerQ">Is this a series?<small>Yes numbers it with the other dates of the same name. No keeps it a one-off. Leave both off and we go by the dates.</small></span><span class="sl-row">${[["yes", "Yes", true], ["no", "No", false]].map(([k, t, v]) => `<button type="button" class="sl-btn ghost sm" data-ser="${k}" aria-pressed="${d.series === v}">${t}</button>`).join("")}</span></div>
       <div><p class="sl-h">This episode</p><div class="sl-two" style="margin-top:8px"><label class="sl-lab">Demos shown<small>One per line. In the changelog on your page.</small><textarea id="slDemos" rows="2">${esc((N.demos || []).join("\n"))}</textarea></label><label class="sl-lab">Games played<textarea id="slGames" rows="2">${esc((N.games || []).join("\n"))}</textarea></label></div>
         <label class="sl-lab" style="margin-top:8px">Episodes before Pottery Lab<small>Counts on from here: 13 makes the next one #14.</small><input id="slBase" type="number" min="0" max="5000" inputmode="numeric" value="${+d.episodeBase || 0}"></label><p class="sl-sub" id="slEp" style="margin:6px 0 0"></p></div>
       <div><p class="sl-h">Discord or Slack</p><p class="sl-sub" style="margin:4px 0 8px">Paste an incoming webhook. It posts "Maya is in" (first names only), the last few spots and a reminder the day before, for open events only.</p>
@@ -138,8 +148,12 @@
       box.querySelectorAll("[data-win]").forEach((b) => (b.onclick = () => { const [r, m, ...rid] = b.dataset.win.split("-"); act({ action: "winner", round: +r, match: +m, rid: b.textContent === "Undo" ? "" : rid.join("-") }); }));
       const sd = $("#slSeed", box); if (sd) sd.onclick = () => act({ action: "seed" }); }
     live();
+    // "Is this a series?": Yes forces it, No overrides the guess, pressing the chosen one again leaves it to the dates
+    el.querySelectorAll("[data-ser]").forEach((b) => (b.onclick = () => { const v = b.dataset.ser === "yes", on = b.getAttribute("aria-pressed") !== "true";
+      d.series = on ? v : null; el.querySelectorAll("[data-ser]").forEach((x) => x.setAttribute("aria-pressed", String(on && x === b))); save(); setTimeout(epLine, 900); }));
     // the episode number, the webhook and the feed
-    if (d.id) getJ(`/api/host/series/${encodeURIComponent(d.id)}`).then((j) => { const p = $("#slEp", el); if (p && j?.episode) p.innerHTML = `This is <span class="sl-mono">${esc(j.episode.label)}</span> of ${j.episode.total}.`; });
+    function epLine() { if (d.id) getJ(`/api/host/series/${encodeURIComponent(d.id)}`).then((j) => { const p = $("#slEp", el); if (p) p.innerHTML = j?.episode ? `This is <span class="sl-mono">${esc(j.episode.label)}</span> of ${j.episode.total}.` : ""; }); }
+    epLine();
     getJ("/api/host/webhook").then((j) => { if (j?.on) { $("#slHook", el).placeholder = j.url; $("#slHookTest", el).hidden = false; $("#slHookMsg", el).textContent = `Posting to ${j.kind === "slack" ? "Slack" : "Discord"}.`; } });
     $("#slHookSave", el).onclick = async () => { const url = v("#slHook").trim(), m = $("#slHookMsg", el); const r = await fetch("/api/host/webhook", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) }); const j = await r.json().catch(() => ({}));
       if (!r.ok) { m.textContent = j.message || "Couldn't save that."; return; } $("#slHook", el).value = ""; $("#slHook", el).placeholder = j.url || "https://discord.com/api/webhooks/..."; $("#slHookTest", el).hidden = !j.on; m.textContent = j.on ? `Saved. Posting to ${j.kind === "slack" ? "Slack" : "Discord"}.` : "Turned off."; };
@@ -149,7 +163,7 @@
     return el;
   }
 
-  window.Slots = { lineupHTML, quietHTML, hostPanel, run: schedule, markdownOf, ctx: ctxOf, draw: (c) => run(c) };
+  window.Slots = { lineupHTML, quietHTML, hostPanel, askHint, quietFormHTML, run: schedule, markdownOf, ctx: ctxOf, draw: (c) => run(c) };
   if (typeof document === "undefined") return;
   if (/^\/[ei]\/[A-Za-z0-9_-]{2,80}$/.test(location.pathname) || location.pathname === "/g") {
     css(); add("/plain.js"); add("/series.js");

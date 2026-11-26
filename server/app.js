@@ -16,7 +16,7 @@ import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, partyMax, dueCents } from "./social.js";
-import { ordersClosed, tzOk } from "./tz.js";
+import { ordersClosed, tzOk, todayIn, eventTz } from "./tz.js";
 // review round 11: an event keeps a valid IANA time zone only (from its tz field, else the x-encore-tz header the browser may send on create)
 const withTz = (body, req, fresh) => { if (!body || typeof body !== "object" || Array.isArray(body)) return body; const o = { ...body };
   if (o.tz != null && !(typeof o.tz === "string" && o.tz.length <= 64 && tzOk(o.tz))) delete o.tz;
@@ -736,7 +736,8 @@ export function createApp({ store, dataDir }) {
     if (!P || !P.ev || !(P.r._k || (P.r._keys || [])[0])) return res.status(404).json({ code: "not_found", message: "No such reply." });
     let response = { in: "going", going: "going", yes: "going", maybe: "maybe", no: "no", out: "no", cant: "no" }[String(b.response || "").trim().toLowerCase()];
     if (!response) return res.status(400).json({ code: "invalid", message: 'Send response "in", "maybe" or "no".' });
-    if (response === "going" && P.ev.approvalRequired && P.r.response !== "going") response = "requested";
+    // ask to join: a request until the host lets them in; once let in (letInAt), a later "in" stays in (rsvpPolicy)
+    if (response === "going" && P.ev.approvalRequired && P.r.response !== "going" && !P.r.letInAt) response = "requested";
     Object.defineProperty(req, "query", { value: { path: "rsvps/" + P.rid }, configurable: true, writable: true });
     req.headers["x-encore-guest"] = "1"; req.headers["x-encore-key"] = String(P.r._k || P.r._keys[0]); req.guest = true; req.ws = P.ws; req.body = { response, changedAt: Date.now() };
     const send = res.json.bind(res); res.json = (o) => send(res.statusCode >= 400 ? { code: o?.code, message: o?.message } : { ok: true, response: o?.response || o?.data?.response || response, ...(o?.waitlistPos ? { waitlistPos: o.waitlistPos } : {}) });
@@ -1515,18 +1516,29 @@ export function createApp({ store, dataDir }) {
   // on the waitlist, and an event where the host lets people in keeps it as "asked" until the host does.
   function guardGuestReply(req, path, body) {
     if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body) return body;
+    // review round 14: a changed answer on a cancelled or past event is refused, and so is Maybe where the host left it off
+    if (body.response != null) { const was = S(req).get(path)?.data || {}, ev = S(req).get("events/" + String(was.eventId || body.eventId || ""))?.data;
+      if (ev && body.response !== was.response) {
+        if (ev.cancelled) throw httpError(409, "event_cancelled", `${titleOf(ev)} was cancelled, so replies are closed.`);
+        if (eventOver(ev)) throw httpError(409, "event_past", `${titleOf(ev)} already happened, so replies are closed.`);
+        if (body.response === "maybe" && noMaybe(ev)) throw httpError(400, "no_maybe", `${hostFirstOf(req.ws, ev)} asked for a yes or no on this one. Send "in" or "no".`); } }
     if (body.response !== "going" && body.party == null && body.plusOne == null && body.orderLines == null && body.tiers == null) return body;
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
     if (pol.error) throw httpError(pol.status || 409, pol.code || "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
     return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}) };
   }
+  /** Over: its last day is before today where it happens. Pure apart from the clock. */
+  const eventOver = (ev) => { const d = /^\d{4}-\d{2}-\d{2}$/.test(ev?.endDate || "") && ev.endDate >= (ev.date || "") ? ev.endDate : ev?.date; return /^\d{4}-\d{2}-\d{2}$/.test(d || "") && d < todayIn(eventTz(ev)); };
+  /** No Maybe button on the invite (the editor's "No Maybe option"; dinners and summits leave it off unless the host turns it on). */
+  const noMaybe = (ev) => (ev?.noMaybe != null ? !!ev.noMaybe : ["dinner", "summit"].includes(String(ev?.kind || "")));
   // one path for every change to a document: the waitlist moves up when a spot opens, people hear what they need to,
   // and an event remembers its last few versions (for merging saves from two devices)
   async function writeDoc(req, res, how) {
     if (!ownedWrite(req, res) || !versionOk(req, res)) return;
     const p = String(req.query.path || ""), St = S(req), before = St.get(p)?.data || null, isEv = /^events\/[^/]+$/.test(p), isR = /^rsvps\/[A-Za-z0-9_-]+$/.test(p);
     req.body = guardGuestReply(req, p, req.body);
+    if (isEv && req.body && typeof req.body === "object" && "series" in req.body && typeof req.body.series !== "boolean") { const { series, ...rest } = req.body; req.body = series === "yes" || series === "true" ? { ...rest, series: true } : series === "no" || series === "false" ? { ...rest, series: false } : { ...rest, series: null }; } // review round 14: "Is this a series?" is true, false or null (unset) (server/episodes.js)
     if (isEv) { req.body = withTz(withCleanLook(req.body), req, !before); if (how === "put" && before?.tz && req.body && typeof req.body === "object" && !("tz" in req.body)) req.body = { ...req.body, tz: before.tz }; } // per-event looks: allow-listed values only; a real time zone, kept
     // the host letting someone in is remembered, so a later change of mind doesn't need asking again
     if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };
@@ -1714,7 +1726,7 @@ export function createApp({ store, dataDir }) {
    * hasn't opted out. The place is only what the guest's own invite already shows (never an address it hides). */
   async function confirmReply(req, ws, id, ev, was, r) {
     const kind = r.response === "going" && !ev.approvalRequired ? "in" : r.response === "requested" && ev.approvalRequired ? "asked" : "";
-    if (!kind || was === r.response || r.confirmMailAt) return false;
+    if (!kind || was === r.response || r.confirmMailAt || ev.cancelled || eventOver(ev)) return false; // never "You're in" for a cancelled or past event
     const to = String(r.email || "").trim(); if (!EMAIL_OK(to) || !emailOn(ws) || !X.canEmail(to) || isUnsubscribed(to)) return false;
     const St = scopeStore(store, ws); try { St.update("rsvps/" + id, { confirmMailAt: Date.now() }); } catch { return false; } // marked first: never twice
     const pe = publicEvent(ev), title = titleOf(ev), host = hostFirstOf(ws, ev), when = whenOf(ev), origin = originOf(req), link = replyLink(req, ws, r.eventId, id);

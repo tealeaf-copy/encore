@@ -22,7 +22,8 @@
   async function episode(id) { if (!known.has(id)) known.set(id, getJ(`/api/public/episode/${encodeURIComponent(id)}`)); return known.get(id); }
   async function onInvite() {
     const g = location.pathname === "/g", id = g ? window.__gEv?.id : location.pathname.split("/")[2]; if (!id || !ID.test(id)) return;
-    const h1 = g ? $("#view-guest .invite h1") || $("#view-guest h1") : $("#m h1.lk-title"); if (!h1 || h1.querySelector(".sl-ep") || /#\d+\s*$/.test(h1.textContent)) return;
+    // /g's title is the invite card's <h3 role="heading" aria-level="1"> (review round 14), not an <h1>
+    const h1 = g ? $('#view-guest .invite [role="heading"][aria-level="1"]') || $("#view-guest .invite h1") || $("#view-guest h1") : $("#m h1.lk-title"); if (!h1 || h1.querySelector(".sl-ep") || /#\d+\s*$/.test(h1.textContent)) return;
     const j = await episode(id); if (!j?.episode || h1.querySelector(".sl-ep")) return;
     h1.insertAdjacentHTML("beforeend", ` <span class="sl-ep" title="Episode ${j.episode} of ${esc(j.series)}">#${j.episode}</span>`);
     // a past episode's "Host one like this" is a fork here
@@ -40,7 +41,7 @@
     if (!L.length) { sec.innerHTML = `<p class="sr-sub" style="margin:16px 0"><a href="${esc(feed)}" style="color:inherit">Subscribe to this calendar</a></p>`; anchor.before(sec); return; }
     sec.innerHTML = `<div class="sr-head"><h2 class="sec" style="margin:0">Series</h2><a class="sr-sub" href="${esc(feed)}" style="color:inherit">Subscribe (webcal)</a></div>` + L.map((s) => `<article class="sr-series" id="series-${esc(s.root)}">
       <div class="sr-top"><div><h3>${esc(s.title)}</h3><p><span class="sl-mono">${s.episodes}</span> episode${s.episodes === 1 ? "" : "s"} · ${forkLine(s.forks)}</p></div><button type="button" class="sl-btn ghost sm" data-sr-fork="${esc(s.forkFrom)}" data-title="${esc(s.title)}">${FORK}Fork this</button></div>
-      <ol class="sr-log">${s.next ? `<li class="sr-e next"><span class="sr-n sl-mono">#${s.next.n}</span><div class="sr-meta"><a href="${esc(s.next.url)}">Next: ${esc(day(s.next.date))}</a></div></li>` : ""}${s.entries.map((e) => `<li class="sr-e"><span class="sr-n sl-mono">#${e.n}</span><div class="sr-meta"><span class="sr-d sl-mono">${esc(day(e.date))}</span>${e.came != null ? ` · <span class="sl-mono">${e.came}</span> came` : ""}${e.champion ? ` · won by ${esc(e.champion)}` : ""}${e.note ? `<div>${esc(e.note)}</div>` : ""}
+      <ol class="sr-log">${s.next ? `<li class="sr-e next"><span class="sr-n sl-mono">#${s.next.n}</span><div class="sr-meta"><a href="${esc(s.next.url)}">Next: ${esc(day(s.next.date))}</a></div></li>` : ""}${s.entries.map((e) => `<li class="sr-e"><span class="sr-n sl-mono">#${e.n}</span><div class="sr-meta"><span class="sr-d sl-mono">${esc(day(e.date))}</span>${e.came > 0 ? ` · <span class="sl-mono">${e.came}</span> came` : ""}${e.champion ? ` · won by ${esc(e.champion)}` : ""}${e.note ? `<div>${esc(e.note)}</div>` : ""}
         ${e.demos.length || e.games.length ? `<ul class="sr-tags">${e.demos.map((x) => `<li>Demo: ${esc(x)}</li>`).join("")}${e.games.map((x) => `<li>Played: ${esc(x)}</li>`).join("")}</ul>` : ""}
         ${e.photos.length ? `<div class="sr-strip">${e.photos.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div>` : ""}</div></li>`).join("")}</ol></article>`).join("");
     anchor.before(sec);

@@ -14,7 +14,7 @@
 //   75-octet line folding, CRLF, UTC times. The place is the area only (neighborhood, city); the exact address goes in a
 //   guest's own .ics only when their reply proof (rid + code) says they're in.
 import { scopeStore, allWorkspaceIds, getWorkspace, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
-import { seatsTaken, seatsOf } from "./social.js";
+import { seatsTaken, seatsOf, guestPlace } from "./social.js";
 import { eventTz, zonedMs, todayIn, hourIn } from "./tz.js";
 import { episodeOf } from "./episodes.js";
 import { latestReplies } from "./tables.js";
@@ -25,7 +25,11 @@ const first = (n) => { const w = String(n || "").trim().split(/\s+/)[0] || ""; r
 const closed = (e) => !!e && (e.private === true || e.friendsOnly === true || e.visibility === "private" || e.visibility === "friends");
 const hiddenNames = (ev) => !!(ev?.hideGuests || ev?.noWall || ev?.discreet || ev?.chatham);
 /** Open enough to talk about in a channel or a public calendar. */
-export const openEvent = (e) => !!e && !e.example && !e.sample && !e.cancelled && !closed(e) && !e.approvalRequired && e.stage !== "interest" && !!(e.discoverable || e.published);
+export const openEvent = (e) => !!e && !e.example && !e.sample && !e.cancelled && !closed(e) && !e.approvalRequired && e.stage !== "interest" && !!e.discoverable && e.published !== false;
+/** Details are gated: private, friends-only or Ask to join. Their calendar entry carries no description (review round 14). */
+const gated = (e) => closed(e) || !!e?.approvalRequired;
+/** The invite's public words (pubDesc, or the page copy's description or tagline), never the host's planning brief (`concept`). Pure. */
+export const publicCopy = (ev) => { const C = ev?.copy, c = typeof C === "string" ? C : C && typeof C === "object" ? C.description || C.tagline || "" : ""; return clean(String(ev?.pubDesc || c || "").replace(/\]\([^)]*\)/g, "]").replace(/[\[\]*_~`#>]/g, ""), 400); };
 const isDemo = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
 const titleOf = (store, id, ev, ws) => { const t = String(ev?.pubTitle || ev?.name || "").replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 120) || "the event", x = episodeOf(store, id, ws); return x && !/#\d+\s*$/.test(t) ? `${t} #${x.n}` : t; };
 const dayOf = (d) => (ISO.test(d || "") ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "");
@@ -45,8 +49,10 @@ export function webhookOf(raw) {
   return null;
 }
 const masked = (W) => (W ? W.url.replace(/\/[^/]+$/, "/" + "•".repeat(6)) : "");
-/** Words for a channel: no markup, no pings, no links but ours. Pure. */
-export const chatSafe = (s, kind) => { const t = clean(s, 300).replace(/[*_~`|>\\]/g, "").replace(/@(everyone|here|channel)/gi, "$1"); return kind === "slack" ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : t; };
+/** A first name a channel may show ("Maya", "Anne-Marie", "D'Arcy"), or "" for anything else: links, markup, handles. Pure. */
+export const chatName = (n) => { const f = first(n); return /^[\p{L}][\p{L}'. -]{0,23}$/u.test(f) && !/\.\p{L}/u.test(f) ? f : ""; };
+/** Words for a channel: no markup, no links, no pings; the only link is ours, added after. Pure. */
+export const chatSafe = (s, kind) => { const t = clean(String(s ?? "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\b(?:https?:\/\/|www\.)\S+/gi, "").replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|gg|co|me|xyz|app|dev|ly|link|site|ru|cn|tk)\b(?:\/\S*)?/gi, ""), 300).replace(/[*_~`|>\\[\]]/g, "").replace(/(^|\s)#+\s/g, "$1").replace(/@(everyone|here|channel)/gi, "$1").replace(/\s+([.,!?])/g, "$1").replace(/\s+/g, " ").trim(); return kind === "slack" ? t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : t; };
 export const payloadOf = (kind, text, link) => (kind === "slack" ? { text: link ? `${text} <${link}|Open the invite>` : text } : { content: link ? `${text}\n${link}` : text, username: "Pottery Lab", allowed_mentions: { parse: [] } });
 
 // ---------- calendars ----------
@@ -68,7 +74,8 @@ export function vevent({ id, ev, title, url, location = "", host = "", now = Dat
     if (Number.isFinite(s)) L.push(`DTSTART:${utcStamp(s)}`, `DTEND:${utcStamp(e)}`); }
   else { const d = ev.date.replace(/-/g, ""), nx = new Date(Date.parse((ISO.test(ev.endDate || "") && ev.endDate > ev.date ? ev.endDate : ev.date) + "T12:00:00Z") + 864e5).toISOString().slice(0, 10).replace(/-/g, ""); L.push(`DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${nx}`); }
   L.push(`SUMMARY:${icsText(title)}`); if (location) L.push(`LOCATION:${icsText(location)}`);
-  const desc = [clean(ev.concept || ev.pubDesc, 400), host ? `Hosted by ${host}` : "", url].filter(Boolean).join("\n"); if (desc) L.push(`DESCRIPTION:${icsText(desc)}`);
+  // the public copy, the host and the link; no DESCRIPTION at all on a private, friends-only or Ask to join event
+  const desc = gated(ev) ? "" : [publicCopy(ev), host ? `Hosted by ${host}` : "", url].filter(Boolean).join("\n"); if (desc) L.push(`DESCRIPTION:${icsText(desc)}`);
   if (url && /^https?:\/\/[^\s"<>]+$/.test(url)) L.push(`URL:${url}`);
   L.push("END:VEVENT"); return L;
 }
@@ -102,7 +109,7 @@ export function mountHooksOut(app, { store, small, C, ownerOnly, publicOrigin, p
   async function onReply(ws, rid) {
     if (!ws || ws === DEFAULT_WS || isDemo(ws)) return; const W = cfgOf(ws); if (!W) return; const S = scopeStore(store, ws), r = S.get("rsvps/" + rid)?.data; if (!r?.eventId || r.response !== "going") return;
     const id = r.eventId, ev = S.get("events/" + id)?.data; if (!openEvent(ev) || (ev.date && ev.date < todayIn(eventTz(ev)))) return; const t = titleOf(store, id, ev, ws), link = linkOf(W, id);
-    if (W.on.joins) { const nm = !hiddenNames(ev) && r.showMe !== false ? first(r.name) : ""; await once(ws, `in-${rid}`, nm ? `${nm} is in for ${t}.` : `One more is in for ${t}.`, link); }
+    if (W.on.joins) { const nm = !hiddenNames(ev) && r.showMe !== false ? chatName(r.name) : ""; await once(ws, `in-${rid}`, nm ? `${nm} is in for ${t}.` : `One more is in for ${t}.`, link); }
     const left = spotsLeft(S, id, ev); if (W.on.spots && left != null && left >= 1 && left <= 3) await once(ws, `spots-${id}-${left}`, `${left} spot${left === 1 ? "" : "s"} left for ${t}.`, link);
   }
   store.events?.on?.("change", (e) => { const m = /^ws\/([^/]+)\/rsvps\/([A-Za-z0-9_-]+)$/.exec(String(e?.path || "")); if (!m) return; setImmediate(() => { onReply(m[1], m[2]).catch(() => {}); }); });
@@ -142,9 +149,9 @@ export function mountHooksOut(app, { store, small, C, ownerOnly, publicOrigin, p
     const E = isDemo(ws) ? [] : S.list("events").filter((d) => ID.test(d.id) && openEvent(d.data) && !!d.data.discoverable && ISO.test(d.data.date || "") && d.data.date >= since).sort((a, b) => a.data.date.localeCompare(b.data.date)).slice(0, 200);
     sendIcs(res, handle, calendar(`${clean(h.name, 80)} on Pottery Lab`, E.map((d) => vevent({ id: d.id, ev: d.data, title: titleOf(store, d.id, d.data, ws), url: `${base}/e/${encodeURIComponent(d.id)}`, location: areaOf(d.data), host: clean(h.name, 80) })))); });
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})\.ics$/, (req, res) => { if (limited("c:" + (req.ip || "?"), 300)) return res.status(429).type("text").send("Slow down.");
-    const id = req.params[0], ws = workspaceOfEvent(id), S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data; if (!ev || ev.example || ev.cancelled) return res.status(404).type("text").send("No such event.");
+    const id = req.params[0], ws = workspaceOfEvent(id), S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data; if (!ev || ev.example || ev.cancelled || !(ev.published || ev.discoverable)) return res.status(404).type("text").send("No such event.");
     const P = req.query.rid ? app.locals.social?.rsvpProof?.(id, String(req.query.rid).slice(0, 80), String(req.query.code || "").slice(0, 40)) : null, going = P?.r?.response === "going";
-    const exact = going ? [clean(ev.meetPoint || ev.venueName, 120), clean(ev.venueAddr, 200)].filter(Boolean).join(", ") : "", base = publicOrigin(req), h = C.profileOf?.(ws);
+    const say = going ? guestPlace(ws) : null, exact = going ? [clean(say(ev.meetPoint || ev.venueName), 120), clean(say(ev.venueAddr), 200)].filter(Boolean).join(", ") : "", base = publicOrigin(req), h = C.profileOf?.(ws);
     if (going) res.set("Cache-Control", "private, no-store");
     const body = calendar(clean(ev.pubTitle || ev.name, 80) || "Event", [vevent({ id, ev, title: titleOf(store, id, ev, ws), url: `${base}/e/${encodeURIComponent(id)}`, location: exact || areaOf(ev), host: closed(ev) ? "" : clean(h?.name, 80) })]);
     res.set({ "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="event.ics"`, ...(going ? {} : { "Cache-Control": "public, max-age=300" }) }).send(body); });

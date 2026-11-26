@@ -44,21 +44,21 @@ after(async () => { for (const k of Object.keys(ENV)) delete process.env[k]; awa
 test("pure: series join by repeat chain or by the same name, numbered from the first; markers come off the title", () => {
   assert.equal(baseTitle("Hack Night #13"), "Hack Night"); assert.equal(baseTitle("hack night ep. 14"), "hack night"); assert.equal(baseTitle("Root night"), "Root night");
   const M = episodeMap([{ id: "a1", data: { name: "Hack night", date: "2026-01-01" } }, { id: "a2", data: { name: "Hack Night #2", date: "2026-01-08" } }, { id: "b1", data: { name: "Renamed", date: "2026-01-15", seriesId: "a1" } },
-    { id: "c1", data: { name: "One off", date: "2026-01-02" } }, { id: "d1", data: { name: "Weekly", date: "2026-01-03", repeat: "weekly", episodeBase: 9 } }, { id: "x", data: { name: "Hack night", date: "2026-01-04", example: true } }]);
+    { id: "c1", data: { name: "One off", date: "2026-01-02" } }, { id: "d1", data: { name: "Weekly", date: "2026-01-03", repeat: "weekly", episodeBase: 9 } }, { id: "x", data: { name: "Hack night", date: "2026-01-04", example: true } }], { host: true });
   assert.deepEqual(["a1", "a2", "b1"].map((k) => M.get(k).n), [1, 2, 3]); assert.equal(M.get("a1").total, 3); assert.equal(M.has("c1"), false, "a one-off isn't a series"); assert.equal(M.get("d1").n, 10, "the host's own count before"); assert.equal(M.has("x"), false);
 });
 
 test("episodes: on the invite, on cards and in the directory; the changelog leaves private episodes out", async () => {
-  const E = await get("/api/public/episode/hn4"); assert.equal(E.j.episode, 4); assert.equal(E.j.label, "Hack night #4"); assert.match(E.j.changelog, /^\/@ada-hacks#series-hn1$/);
+  const E = await get("/api/public/episode/hn4"); assert.equal(E.j.episode, 3, "the private #3 never counts in public (round 14)"); assert.equal(E.j.label, "Hack night #3"); assert.match(E.j.changelog, /^\/@ada-hacks#series-hn1$/);
   assert.equal((await get("/api/public/episode/solo1")).j.episode, null);
-  const N = await get("/api/public/episodes?ids=hn4,hn3,solo1"); assert.deepEqual(N.j.episodes, { hn4: 4 }, "private and one-off events give nothing");
-  const D = await get("/api/v1/events?q=hack"); const rec = (D.j.data || []).find((e) => e.id === "hn4"); assert.ok(rec, JSON.stringify(D.j).slice(0, 300)); assert.equal(rec.episode, 4);
+  const N = await get("/api/public/episodes?ids=hn4,hn3,solo1"); assert.deepEqual(N.j.episodes, { hn4: 3 }, "private and one-off events give nothing");
+  const D = await get("/api/v1/events?q=hack"); const rec = (D.j.data || []).find((e) => e.id === "hn4"); assert.ok(rec, JSON.stringify(D.j).slice(0, 300)); assert.equal(rec.episode, 3);
   for (const [n, k] of [["Lin Ko", "lin1"], ["Sam Ortiz", "sam1"]]) assert.equal((await post("/api/db/collection?path=rsvps", { eventId: "hn1", name: n, email: k + "@t.example", response: "going", code: "H" + k }, { cookie: host })).status, 200);
   S().add("moments", { eventId: "hn1", url: "/_blob/AAAAAAAAAAAAAAAAAAAA", type: "photo", at: 1 }); S().add("moments", { eventId: "hn1", url: "javascript:alert(1)", type: "photo", at: 2 });
   const C = await get("/api/public/host/ada-hacks/series"); const s = C.j.series.find((x) => x.root === "hn1"); assert.ok(s, JSON.stringify(C.j));
   assert.deepEqual(s.entries.map((x) => x.n), [2, 1], "past episodes on the page, newest first; the private #3 is left out");
   const e1 = s.entries.find((x) => x.n === 1); assert.equal(e1.came, 2); assert.deepEqual(e1.demos, ["A tiny Forth", "LED matrix"]); assert.deepEqual(e1.photos, ["/_blob/AAAAAAAAAAAAAAAAAAAA"], "only stored photos");
-  assert.equal(s.next.n, 4); assert.equal(s.forks, 0); assert.ok(!JSON.stringify(C.j).includes("Lin"), "no names in the changelog");
+  assert.equal(s.next.n, 3); assert.equal(s.forks, 0); assert.ok(!JSON.stringify(C.j).includes("Lin"), "no names in the changelog");
   const notes = await post("/api/host/series/hn2/notes", { demos: "Rust TUI, <b>x</b>", games: ["Factorio"], note: "Power cut at 9" }, { cookie: host }); assert.equal(notes.status, 200);
   assert.deepEqual((await notes.json()).notes, { demos: ["Rust TUI", "x"], games: ["Factorio"], note: "Power cut at 9" });
   assert.equal((await post("/api/host/series/hn2/notes", { demos: "x" })).status, 403, "the host only");
@@ -107,11 +107,11 @@ test("slots: a game poll, one vote per reply; a bracket seeded from guests who o
 });
 
 test("quiet guests: coming solo is a count, Ask me about is scrubbed and only for guests who are in, the first-timer note only for solo guests", async () => {
-  assert.equal(scrubAsk("Rust, mail me a@b.co or +1 (555) 123-4567, see https://x.io @handle"), "Rust, mail me or , see");
+  assert.equal(scrubAsk("Rust, mail me a@b.co or +1 (555) 123-4567, see https://x.io @handle"), "Rust", "a clause with contact details goes whole (round 14)");
   const a = await guest("solo1", "Una Solo", "una1"), b = await guest("solo1", "Vic Solo", "vic1"), c = await guest("solo1", "Wes Pair", "wes1");
   for (const [rid, code] of [[a, "Cuna1"], [b, "Cvic1"]]) assert.equal((await post("/api/public/quiet/solo1", { rid, code, solo: true, askMe: "keyboards, call 555 123 4567" })).status, 200);
   assert.equal((await get("/api/public/quiet/solo1")).j.solo, 2, "a stranger sees a count");
-  const me = (await get(`/api/public/quiet/solo1?rid=${a}&code=Cuna1`)).j; assert.equal(me.solo, 1, "others"); assert.equal(me.me.askMe, "keyboards, call");
+  const me = (await get(`/api/public/quiet/solo1?rid=${a}&code=Cuna1`)).j; assert.equal(me.solo, 1, "others"); assert.equal(me.me.askMe, "keyboards");
   assert.deepEqual(me.askMe.map((x) => x.name).sort(), ["Una", "Vic"]); assert.ok(!JSON.stringify(me).includes("Solo"), "first names only"); assert.equal(me.firstTimer, "");
   assert.equal((await get("/api/public/quiet/solo1")).j.askMe.length, 0, "strangers don't see the lines");
   await post("/api/public/quiet/hn4", { rid: (await guest("hn4", "Zed First", "zed4")), code: "Czed4", solo: true });
@@ -150,7 +150,7 @@ test("calendars: per host (open events only) and per event, escaped and folded p
   const one = calendar("x", [vevent({ id: "e1", ev: { date: "2026-12-03", startTime: "19:00", endTime: "01:00", tz: "America/New_York", concept: "Bring a laptop; or don't, ok" }, title: "Hack, night", url: "https://p.example/e/e1", now: 0 })]);
   assert.match(one, /DTSTART:20261204T000000Z\r\nDTEND:20261204T060000Z/); assert.match(one, /SUMMARY:Hack\\, night/); assert.ok(one.endsWith("END:VCALENDAR\r\n")); assert.ok(!/[^\r]\n/.test(one), "CRLF only");
   const H = await fetch(srv.base + "/@ada-hacks.ics"); assert.equal(H.status, 200); assert.match(H.headers.get("content-type"), /text\/calendar/); const ht = await H.text();
-  assert.match(ht, /SUMMARY:Hack night #4/); assert.ok(!ht.includes("Friends LAN") && !ht.includes("UID:hn3@"), "no private events"); assert.match(ht, /LOCATION:Gowanus\\, Brooklyn/);
+  assert.match(ht, /SUMMARY:Hack night #3/); assert.ok(!ht.includes("Friends LAN") && !ht.includes("UID:hn3@"), "no private events"); assert.match(ht, /LOCATION:Gowanus\\, Brooklyn/);
   assert.ok((await put("events/addr", { ...base, name: "Secret spot", date: day(9), venueName: "Unit 4", venueAddr: "12 Hidden St" })).ok);
   assert.ok(!(await (await fetch(srv.base + "/e/addr.ics")).text()).includes("Hidden St"), "the address isn't public");
   const g = await guest("addr", "Tia In", "tia1"); assert.ok((await (await fetch(srv.base + `/e/addr.ics?rid=${g}&code=Ctia1`)).text()).includes("12 Hidden St"), "a guest who's in gets it");

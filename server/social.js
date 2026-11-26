@@ -78,6 +78,8 @@ export function dueCents(ev, r) {
 /** What one reply holds against the cap: on a pre-order, the items ordered (2 loaves hold 2); otherwise its spots. */
 export const heldOf = (r, ev) => { if (r?.pairOf) return 0; if (ev?.preorder && Array.isArray(r?.orderLines) && r.orderLines.length) return r.orderLines.reduce((a, x) => a + Math.max(0, Math.floor(+x?.qty) || 0), 0); return seatsOf(r, ev) + holdsOf(r, ev) /* "Come with me?": a friend's spot, held 48 hours */; };
 export const replyKey = (x) => lc(x?.email || x?.name || (x?.phone ? "tel:" + String(x.phone).replace(/[^\d+]/g, "") : ""));
+/** The host's "my place" as guests read it: "Mina's place" (the address endpoint, a guest's own .ics). */
+export const guestPlace = (ws) => { const hn = first(getDbUser(getWorkspace(ws)?.ownerEmail || "")?.name || ""); return (x) => String(x || "").replace(/\b(my|our) (place|apartment|flat|house|home)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)); };
 /** Spots held at an event: host-marked guests plus the latest reply from each person, counted once each.
  *  skip: a reply id to leave out (the reply being changed); skipKey: that person's email or name. */
 export function seatsTaken(ev, docs, { skip = null, skipKey = "" } = {}) {
@@ -617,7 +619,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   // the exact address, for guests who are in
   app.get("/api/public/address/:eventId", (req, res) => { const P = X.rsvpProof(clean(req.params.eventId, 80), req.query.rid, req.query.code); if (!P || P.r.response !== "going" || !P.ev) return res.json({ ok: false });
     // guests read "Mina's place", never the host's own "my place" (as on the invite itself)
-    const hn = first(getDbUser(getWorkspace(P.ws)?.ownerEmail || "")?.name || ""), mine = (x) => String(x || "").replace(/\b(my|our) (place|apartment|flat|house|home)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`));
+    const mine = guestPlace(P.ws);
     res.json({ ok: true, meetPoint: mine(P.ev.meetPoint), venueName: mine(P.ev.venueName), venueAddr: mine(P.ev.venueAddr) }); });
   // your RSVP follows your account: open an invite on any device, signed in, and it knows your answer
   app.get("/api/me/rsvp/:eventId", (req, res) => { const u = currentUser(req); if (!u?.email) return res.json({ rsvp: null }); const id = clean(req.params.eventId, 80), ws = workspaceOfEvent(id); if (!ws) return res.json({ rsvp: null });

@@ -54,3 +54,15 @@
 @media (max-width:520px){.sl-two{grid-template-columns:1fr}.sr-e{grid-template-columns:3.4em 1fr}}
 .sl-card form,.sl-card form.sl-row{border:0;padding:0;margin:0 0 8px;background:none;box-shadow:none;border-radius:0}
 .sl-tools .sl-btn.ghost{border:1.5px solid var(--sl-field)}
+/* review round 14: on a look, the slot, quiet and curl cards follow the look's card (bg, ink, line), not cream; inside the
+   invite's white panels on /g they take the panel's colours. The quiet form's "Ask me about" gets a field border. */
+.sl-quietform{--sl-ink:var(--ink,#1F1A17);--sl-soft:var(--smoke,var(--muted,#5E534B));--sl-field:#CFC3B4;--sl-bg:transparent}
+body.lk-on :is(.sl-card,.sl-quietform){--sl-bg:var(--lk-card,#fff);--sl-ink:var(--lk-card-ink,#1F1A17);--sl-line:var(--lk-line,#E4D9C8);--sl-soft:color-mix(in srgb,var(--lk-card-ink,#1F1A17) 72%,var(--lk-card,#fff));--sl-field:color-mix(in srgb,var(--lk-card-ink,#1F1A17) 28%,var(--lk-card,#fff));--sl-acc:var(--lk-card-ink,#A8441F)}
+body.lk-on #view-guest :is(.ev2-rs>.stack,#whoGoing) :is(.sl-card,.sl-quietform){--sl-bg:transparent;--sl-ink:#1F1A17;--sl-line:rgba(0,0,0,.1);--sl-soft:#5E534B;--sl-field:#CFC3B4;--sl-acc:#A8441F}
+body.lk-on :is(.sl-card,.sl-quietform) :is(.sl-in,#slAsk){background:color-mix(in srgb,var(--sl-ink) 5%,var(--sl-bg))!important;color:var(--sl-ink)!important;border:1.5px solid var(--sl-field)!important}
+body.lk-on .sl-card .sl-btn:not(.ghost){background:var(--sl-ink);color:var(--sl-bg);border-color:var(--sl-ink)}
+#slAsk{display:block;box-sizing:border-box;width:100%;min-height:44px;margin-top:6px;padding:10px 12px;border:1.5px solid var(--sl-field);border-radius:12px;font:inherit;font-size:16px;font-weight:400;background:var(--sl-bg);color:var(--sl-ink)}
+#slAsk:focus{outline:none;border-color:var(--sl-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--sl-acc,#A8441F) 22%,transparent)}
+.sl-panel [data-ser][aria-pressed=true]{background:var(--sl-ink);color:var(--sl-bg);border-color:var(--sl-ink)}
+body.lk-on .sl-card form{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
+.sl-ep{color:inherit!important;-webkit-text-fill-color:currentColor}

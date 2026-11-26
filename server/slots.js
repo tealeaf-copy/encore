@@ -31,9 +31,16 @@ export function lineupOf(ev) {
   if (L.kind === "poll") { const options = (Array.isArray(L.options) ? L.options : String(L.options || "").split(/\n|,/)).map((o) => clean(o, 40)).filter((o, i, a) => o && a.indexOf(o) === i).slice(0, 8); return options.length >= 2 ? { kind: "poll", title: title || "What should we play?", options } : null; }
   return { kind: "bracket", title: title || "Bracket", size: [4, 8, 16].includes(+L.size) ? +L.size : 8 };
 }
+// review round 14: a clause (between commas) that carries a way to reach someone goes whole, not just the handle, so
+// "Zig, email me at zed@x.io, retro consoles" keeps "Zig, retro consoles"
+const CONTACT = [/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, /\b(?:https?:\/\/|www\.)\S+/i, /\b[a-z0-9-]+\.(?:com|io|dev|net|org|me|app|gg|xyz|co|ly|link|so|sh)\b/i,
+  /(?:\+?\d[\s().-]*){7,}\d/, /@[A-Za-z0-9_.]{2,}/, /\S#\d{4}\b/, // email, link, domain, phone, @handle, a Discord tag (name#1234)
+  /\bd[i1!|]sc[o0]rd\b\s*[:=@-]?\s*(?!(?:bots?|servers?|communit(?:y|ies)|mods?|nitro|api|stuff|dev)\b)[A-Za-z0-9_.]{2,32}/i, // discord ann_42, disc0rd: ann
+  /\b\S+\s*[([]?\s*at\s*[)\]]?\s*\S+\s*[([]?\s*dot\s*[)\]]?\s*[a-z]{2,}\b/i, // ann at gmail dot com
+  /\b(?:e-?mail|text|call|dm|ping|message|msg|find|reach|add|hit)\s+me\b/i, /\b(?:telegram|whatsapp|signal|snapchat|insta(?:gram)?|wechat|line id|kik)\b/i];
 /** "Ask me about": short, and no way to reach anyone in it. Pure. */
-export const scrubAsk = (v) => clean(v, 200).replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "").replace(/\b(?:https?:\/\/|www\.)\S+/gi, "").replace(/\b[a-z0-9-]+\.(?:com|io|dev|net|org|me|app|gg|xyz|co)\b\S*/gi, "")
-  .replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "").replace(/@[A-Za-z0-9_.]{2,}/g, "").replace(/\s+/g, " ").replace(/^[\s,;:.-]+|[\s,;:-]+$/g, "").trim().slice(0, 60);
+export const scrubAsk = (v) => clean(v, 200).split(/\s*[,;|]\s*|\s+\/\s+/).map((c) => c.trim()).filter((c) => c && !CONTACT.some((re) => re.test(c)))
+  .join(", ").replace(/\s+/g, " ").replace(/^[\s,;:.-]+|[\s,;:-]+$/g, "").trim().slice(0, 60).replace(/[\s,;:-]+$/, "");
 
 /** Seed positions for a bracket of `size`: top seeds meet the lowest (and get the byes). Pure. */
 export function seedOrder(size) { let o = [1, 2]; while (o.length < size) { const n = o.length * 2 + 1; o = o.flatMap((x) => [x, n - x]); } return o; }
@@ -81,6 +88,8 @@ export function mountSlots(app, { store, small, X, ownerOnly }) {
   const guestWrite = (fn) => (req, res) => { if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, id = clean(req.params.id, 80), P = proof(id, b.rid, b.code);
     if (!P) return bad(res, "Reply first, then you can add yourself here.", 403, "not_granted"); const B = lineupOf(P.ev); if (!B) return bad(res, "This one doesn't have that.", 404, "not_found");
     if (P.ev.date && P.ev.date < new Date().toISOString().slice(0, 10)) return bad(res, "This one has already happened.", 409, "past");
+    // review round 14: the same lock as the view: on a private or friends-only event only guests who are in take part
+    if (closed(P.ev) && P.r.response !== "going") return bad(res, "This is for guests who are in.", 409, "locked");
     const L = rec(P.S, id), err = fn(B, L, P, b); if (err) return bad(res, err, 409, "not_allowed");
     P.S.set("lineup/" + id, { ...L, eventId: id, at: Date.now() }); res.json({ ok: true, lineup: view({ ...P, id }, P) }); };
   app.post("/api/public/lineup/:id/claim", small, guestWrite((B, L, P, b) => {
@@ -91,7 +100,7 @@ export function mountSlots(app, { store, small, X, ownerOnly }) {
     const live = goingNow(P.S, P.r.eventId); if (L.demos.filter((d) => live.has(d.rid)).length >= B.slots) return "All the slots are taken.";
     L.demos.push({ rid: P.rid, title, at: Date.now() }); return ""; }));
   app.post("/api/public/lineup/:id/vote", small, guestWrite((B, L, P, b) => {
-    if (B.kind !== "poll") return "There's no poll on this one."; if (!["going", "maybe"].includes(P.r.response)) return "Reply first.";
+    if (B.kind !== "poll") return "There's no poll on this one."; if (!["going", "maybe"].includes(P.r.response)) return P.r.response === "requested" ? "Vote once the host lets you in." : "Reply first.";
     const i = b.option == null || b.option === "" ? null : Math.floor(+b.option); L.votes = { ...(L.votes || {}) };
     if (i == null) { delete L.votes[P.rid]; return ""; } if (!(i >= 0 && i < B.options.length)) return "Pick one of the options."; L.votes[P.rid] = i; return ""; }));
   app.post("/api/public/lineup/:id/optin", small, guestWrite((B, L, P, b) => {

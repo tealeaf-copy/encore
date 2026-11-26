@@ -143,7 +143,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
 
   // ---- what kind of thing: one row of chips ----
   function drawFilters() {
-    const lanes = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Somewhere new"]];
+    const lanes = [["all", "Everything"], ["move", "Move"], ["make", "Make & taste"], ["gather", "Gather"], ["discover", "Somewhere new"]];
     $("#filters").innerHTML = lanes.map(([k, t]) => `<button type="button" aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; evShown = PAGE; farOpen = false; drawFilters(); drawEvents(); });
   }

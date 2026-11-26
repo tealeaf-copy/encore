@@ -67,7 +67,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 <script>
 (() => {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const CATS = [["all", "All"], ["supper", "🍽️ Supper clubs"], ["movement", "🏃 Runs and hikes"], ["workshop", "🏺 Workshops"], ["popup", "🧁 Pop-ups"], ["talks", "🎤 Talks"], ["community", "☕ Community"]];
+  const CATS = [["all", "All"], ["supper", "Supper clubs"], ["movement", "Runs and hikes"], ["workshop", "Workshops"], ["popup", "Pop-ups"], ["talks", "Talks"], ["community", "Community"]];
   const P = new URLSearchParams(location.search);
   const st = { city: P.get("city") || "", category: CATS.some(([k]) => k === P.get("category")) ? P.get("category") : "all", period: P.get("period") === "all" ? "all" : "month" };
   // the period counts as picked only when the link or a tap says so; otherwise an empty month falls back to All time
@@ -91,7 +91,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
     boards = j.boards || []; cities = j.cities || []; const B = j.data || {}; if (!st.city && B.city) { st.city = B.city; sync(); }
     fell = B.fell_back === "all"; if (B.period) st.period = B.period; document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === st.period)));
     drawCities(); drawCats();
-    if (!B.qualified) { const what = st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].replace(/^\S+\s/, "").toLowerCase()), Rz = B.rising || [];
+    if (!B.qualified) { const what = st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].toLowerCase()), Rz = B.rising || [];
       // cold start: no ranks or scores yet, just who's been hosting here lately, and an open door for the next host
       $("#board").innerHTML = Rz.length ? `<div class="bh"><div><h2>Rising in ${esc(st.city)}</h2><p>Hosts who've hosted here lately. A board with ranks starts once ${B.min_hosts || 3} hosts have hosted ${what}.</p></div></div>
         <ul class="list rising" aria-label="Rising in ${esc(st.city)}">${Rz.map((h) => `<li class="row">${av(h)}<span><a class="nm" href="${esc(h.url)}">${esc(h.name)}</a><span class="why">Hosted recently</span></span><a class="fo" href="${esc(h.url)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a></li>`).join("")}</ul>

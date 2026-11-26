@@ -96,7 +96,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       // six tabs at 390px: "New event" reads "New" under 400px (its aria-label keeps the full name), and the labels get a little room
-      if (!document.getElementById("es-nl")) { const st = document.createElement("style"); st.id = "es-nl"; st.textContent = ".es-tabs .nl-short{display:none}@media (max-width:399px){.es-tabs .nl-full{display:none}.es-tabs .nl-short{display:inline}.es-tabs b{font-size:11.5px;letter-spacing:-.01em}}"; document.head.appendChild(st); }
+      if (!document.getElementById("es-nl")) { const st = document.createElement("style"); st.id = "es-nl"; st.textContent = ".es-tabs .nl-short{display:none}@media (max-width:399px){.es-tabs .nl-full{display:none}.es-tabs .nl-short{display:inline}.es-tabs b{font-size:13px;letter-spacing:-.01em}}"; document.head.appendChild(st); }
       const chatTab = `<a href="/chats"${P === "/chats" ? ' aria-current="page"' : ""}>${ICON.chat}<b>Chats</b><span class="es-tn" data-chats-badge hidden></span></a>`;
       const meCur = /^\/(plans|saved|ideas)$/.test(P) || (W?.handle && P === "/@" + W.handle), meTab = `<a href="/plans" data-me aria-label="Me: Home, Plans, My page"${meCur ? ' aria-current="page"' : ""}>${ICON.me}<b>Me</b></a>`;
       const tab = (href, icon, label, aria) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${aria ? ` aria-label="${aria}"` : ""}${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };

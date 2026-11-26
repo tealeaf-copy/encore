@@ -58,7 +58,7 @@ a{color:inherit}.wrap{max-width:1240px;margin:0 auto;padding:22px 16px 120px}
     for (let i = 0; i < n; i++) { const c = document.createElement("div"); c.className = "col"; wall.appendChild(c); cols.push(c); } for (const el of cards) place(el); }
   function place(el) { let best = cols[0]; for (const c of cols) if (c.offsetHeight < best.offsetHeight - 40) best = c; best.appendChild(el); }
   function chips() { const mine = me.interests.length;
-    $("#chips").innerHTML = (mine ? `<button class="chip me" data-t="" aria-pressed="${!tag}">✨ For you</button>` : `<button class="chip" data-t="" aria-pressed="${!tag}">Everything</button>`) + INT.map((i) => `<button class="chip" data-t="${esc(i.id)}" aria-pressed="${tag === i.id}"><span aria-hidden="true">${esc(i.emoji)}</span>${esc(i.label)}</button>`).join("");
+    $("#chips").innerHTML = (mine ? `<button class="chip me" data-t="" aria-pressed="${!tag}">For you</button>` : `<button class="chip" data-t="" aria-pressed="${!tag}">Everything</button>`) + INT.map((i) => `<button class="chip" data-t="${esc(i.id)}" aria-pressed="${tag === i.id}">${esc(i.label)}</button>`).join("");
     $("#chips").querySelectorAll(".chip").forEach((b) => (b.onclick = () => setTag(b.dataset.t)));
     $("#nudge").hidden = !!mine; $("#editMe").hidden = !mine; }
   function setTag(t) { tag = t; const u = new URL(location.href); t ? u.searchParams.set("tag", t) : u.searchParams.delete("tag"); history.replaceState(null, "", u); chips(); reset(); scrollTo({ top: Math.min(scrollY, $(".bar").offsetTop), behavior: "smooth" }); }

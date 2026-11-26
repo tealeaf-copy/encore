@@ -23,7 +23,7 @@
   function go(id, title = "") { if (!ID.test(id || "")) return; ls.del("pl.hostIdea"); ls.set("pl.hostLike", { id, title: String(title || "").slice(0, 80), at: Date.now() });
     location.href = signed() ? "/?app=1&like=" + encodeURIComponent(id) : "/signup?mode=friends&from=like&like=" + encodeURIComponent(id); }
   document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-pl-like]"); if (!b) return; e.preventDefault(); e.stopPropagation(); go(b.dataset.plLike, b.dataset.title || ""); }, true);
-  const button = (id, { title = "", sm = false } = {}) => { css(); return `<button type="button" class="hl-btn${sm ? " sm" : ""}" data-pl-like="${esc(id)}" data-title="${esc(title)}"><span aria-hidden="true">✨</span> Host one like this</button>`; };
+  const button = (id, { title = "", sm = false } = {}) => { css(); return `<button type="button" class="hl-btn${sm ? " sm" : ""}" data-pl-like="${esc(id)}" data-title="${esc(title)}"><i class="gl" style="--g:var(--g-spark)" aria-hidden="true"></i> Host one like this</button>`; };
 
   // ---- "3 people hosted this after seeing it": fill the placeholders, a few at a time ----
   const known = new Map(); let fillT = 0;

@@ -120,7 +120,7 @@
     const potto = window.Potto ? `<span class="pin-potto" aria-hidden="true">${window.Potto.svg("cheer", 86, "")}</span>` : "";
     const step1 = () => { box.innerHTML = `${potto}<button class="pin-x" type="button" aria-label="Close">×</button>
       <h2 id="pinH">What are you <em>into?</em></h2><p class="pin-sub">${opts.after === "signup" ? "Pick a few. We'll find hosts to follow and things to do." : "Pick a few. We'll show you hosts and events near you. No account needed."}</p>
-      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#F2D48F"}"><span aria-hidden="true">${esc(i.emoji)}</span>${esc(i.label)}</button>`).join("")}</div>
+      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#F2D48F"}">${esc(i.label)}</button>`).join("")}</div>
       <div class="pin-city"><label for="pinCity">Your city</label><input id="pinCity" autocomplete="address-level2" placeholder="e.g. Brooklyn" value="${esc(city)}" maxlength="60">
         ${cities.length ? `<div class="pin-cities" role="group" aria-label="Cities with events">${cities.map((c) => `<button type="button" data-c="${esc(c)}" aria-pressed="${c.toLowerCase() === city.toLowerCase()}">${esc(c)}</button>`).join("")}</div>` : ""}</div>
       <div class="pin-go"><button class="pin-main" type="button" id="pinGo">Show me</button><button class="pin-skip" type="button" id="pinSkip">Not now</button><span class="pin-n" id="pinN" aria-live="polite"></span></div>`;
@@ -135,7 +135,7 @@
       <div class="pin-go"><a class="pin-main" href="/ideas" style="display:inline-grid;place-items:center;text-decoration:none">See ideas</a><button class="pin-skip" type="button" id="pinDone">Done</button></div>`;
       box.querySelector(".pin-x").onclick = close; box.querySelector("#pinDone").onclick = close; box.querySelector("#pinEdit").onclick = step1; box.scrollTop = 0;
       await suggestions(box.querySelector("#pinS"), v); };
-    step1(); box.querySelector(".pin-chip")?.focus({ preventScroll: true }); }
+    step1(); { const hd = box.querySelector("h1,h2,h3") || box.querySelector(".pin-chip"); if (hd && !hd.matches("button")) { hd.tabIndex = -1; hd.style.outline = "none"; } hd?.focus({ preventScroll: true }); } }
 
   /** The first visit to /feed, /events or /discover, signed out: show the picker once. */
   // on /feed the swipe deck (public/swipedeck.js) comes first; its "Pick topics instead" opens this picker

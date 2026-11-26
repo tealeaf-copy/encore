@@ -44,7 +44,7 @@
     const stamps = (P.stamps || []).slice(0, 24).map((s) => `<a class="pp-stamp" style="--r:${(hash(s.eventId) % 17) - 8}deg"${s.url ? ` href="${esc(s.url)}"` : ""}>${stampSvg(s, 112)}<small>${esc(s.public ? s.title : "A private event")}</small></a>`).join("");
     const next = (P.next || []).slice(0, 3).map((s) => `<div class="pp-stamp"><span class="pp-next">Next: ${esc(s.public ? s.title : "something private")}</span></div>`).join("");
     return `<section class="pp" aria-label="Your scene"><div class="pp-top"><div><div class="pp-k">PASSPORT · POTTERY LAB</div><h2>${esc(P.first || "Your")}'s <em>scene</em></h2></div>
-      <button type="button" class="pp-share" data-pp-share>📸 Share my scene</button></div>
+      <button type="button" class="pp-share" data-pp-share><i class="gl" style="--g:var(--g-share)" aria-hidden="true"></i> Share my scene</button></div>
       <div class="pp-stats"><div class="pp-stat" style="--r:-2deg"><b>${c.events || 0}</b><span>${c.events === 1 ? "event" : "events"}</span></div><div class="pp-stat" style="--r:1.5deg"><b>${c.hosts || 0}</b><span>${c.hosts === 1 ? "host followed" : "hosts followed"}</span></div><div class="pp-stat" style="--r:-1deg"><b>${c.kudos || 0}</b><span>kudos given</span></div></div>
       ${stamps || next ? `<div class="pp-stamps">${stamps}${next}</div>` : `<p class="pp-empty">Your first stamp lands the day after your first event.</p>`}
       ${(P.hosts || []).length ? `<h3>Hosts you follow</h3><div class="pp-hosts">${P.hosts.slice(0, 12).map((h) => `<a href="/@${esc(h.handle)}">${esc(h.emoji || "🙂")} ${esc(h.name)}</a>`).join("")}</div>` : ""}

@@ -55,7 +55,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   // the same four lanes as Discover, so a host and their events sit under one name
-  const KINDS = [["all", "Everything"], ["move", "🏃 Move"], ["make", "🍰 Make & taste"], ["gather", "☕ Gather"], ["discover", "🧭 Somewhere new"]];
+  const KINDS = [["all", "Everything"], ["move", "Move"], ["make", "Make & taste"], ["gather", "Gather"], ["discover", "Somewhere new"]];
   const GROUP = { dinner: "gather", cook: "make", bake: "make", potluck: "gather", brunch: "gather", picnic: "gather", wine: "gather", turkey: "make", coffee: "gather", tea: "gather", run: "move", hike: "move", walk: "move", bike: "move", yoga: "move", swim: "move", craft: "make", paint: "make", garden: "make", pottery: "make", music: "discover", games: "gather", movie: "gather", party: "gather", book: "gather", workshop: "discover", talk: "discover", tech: "discover" };
   const OLD = { food: "make", coffee: "gather", art: "make", music: "discover", learn: "discover" }; // links shared before the lanes matched Discover
   const FIRST = 6, STEP = 12; // design review: six first, then "See all" reveals twelve at a time

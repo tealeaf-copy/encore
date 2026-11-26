@@ -86,7 +86,7 @@ test("a new Google identity needs an invite code; the code survives the OAuth ro
   assert.equal((await (await J.get("/api/auth/config")).json()).held.from, "Maya");
   // the join cookie is gone by the callback (another tab, a cleared cookie): the OAuth state carried the code
   const to = await oauth(J, "google", { email: "Gia@Example.com", name: "Gia Rossi", dropJoinCookie: true });
-  assert.match(to, /^\/\?welcome=1/);
+  assert.match(to, /^\/(feed)?\?welcome=1/);
   const m = await me(J); assert.equal(m.email, "gia@example.com"); assert.equal(m.name, "Gia Rossi"); assert.equal(m.emailVerified, true, "Google proved the email");
   assert.equal((await (await fetch(srv.base + "/api/codes/" + H.code)).json()).valid, false, "the code is used up");
   assert.ok(!(await srv.store.get("system/u-" + crypto.createHash("sha256").update("gia@example.com").digest("hex").slice(0, 40)))?.data?.pw, "no password on a passwordless account");

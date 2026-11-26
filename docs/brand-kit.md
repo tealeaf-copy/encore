@@ -152,3 +152,15 @@ The thick line and the tilts belong to illustrations, Potto, scrapbook photos an
 - "Unlock seamless event experiences." (filler)
 - "Join 10,000 hosts." (invented number)
 - "Brands find you later." (brands lead the story)
+
+## Host brand kits
+
+Each host can have their own kit (`server/brandkit.js`, `public/brandkit.js`, `public/brandkit.css`). It sits on top of the UI tokens above: a page sets `--kit-*` once on `<html>`, and `brandkit.css` points the tokens at them.
+
+- **A kit is:** one font pairing (a display face and a body face), a palette (page, cards, text, accent, an optional second accent), corners (soft or crisp), buttons (filled pill or outlined), covers (photo, line art or card deck), an optional logo and a voice line.
+- **Pairings:** Pottery Lab (Fredoka + Instrument Sans, the house kit), Supper club, Flower shop, Pantry (slab), Studio, Market day, Terminal (mono headings), Arcade (pixel headings).
+- **Two families per page, always.** Display and titles use the display face. Body, meta, chips, list items and prices use the body face. Prices use tabular figures.
+- **Colors pass AA.** Text and quiet text read at 4.5:1 on the page and cards, buttons stand out at 3:1 and carry 4.5:1 text, and accent text reads at 4.5:1. The page stays light; dark moods belong to an event's look.
+- **Events inherit the kit.** An event's title font is its own only when the host picks one for that event; "Use my brand" puts the kit's back. Looks from before kits keep their font.
+- **Where it shows:** the host page, /g and /e, menu cards, shop and experience cards, story cards (face and accent only), /x pages (`brandKitHead` on the server, `EncoreBrandKit.host(h)` in the page) and guest emails (accent and logo).
+- **Voice line:** one plain line, no em dashes, at most 80 characters. It is the page's tagline too.

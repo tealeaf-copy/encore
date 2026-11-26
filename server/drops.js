@@ -51,7 +51,7 @@ export function cleanDrop(b = {}, cur = {}) {
 /** The drop as the event it is under the hood. The exact address goes in venueAddr, which a casual event keeps for guests who are in. */
 export function dropEvent(d, host = {}, cur = {}) {
   return { ...cur, name: d.title, pubTitle: d.title, why: d.note, drop: true, preorder: true, casual: true, always: d.always, date: d.date, startTime: "",
-    slots: d.slots, orderItems: d.items, priceUnit: "each", price: "", headcount: 0, hood: d.area, meetPoint: d.area, venueName: "", venueAddr: d.address, city: cur.city || host.city || "",
+    slots: d.slots, orderItems: d.items, priceUnit: "each", price: "", headcount: 0, hood: d.area, meetPoint: "", venueName: "", venueAddr: d.address, city: cur.city || host.city || "",
     ticketUrl: d.payUrl, ticketNote: d.pay === "pickup" ? "Pay at pickup" : "", orderBy: d.orderBy, orderByDate: d.orderByDate, ordersPaused: !d.open, repeat: d.repeatWeekly ? "weekly" : "",
     hostName: host.name || cur.hostName || "", published: true, discoverable: true, unlisted: cur.unlisted ?? false, batchAt: cur.batchAt || Date.now(), updatedAt: Date.now(), createdAt: cur.createdAt || Date.now() };
 }
@@ -92,9 +92,9 @@ export const liveDrops = (store, ws) => dropsOf(store, ws).filter(({ e }) => e.a
 
 /** Turn a host's old shop into an always-available drop, once. Returns the new event id or "". */
 export function shopToDrop(store, C, ws) {
-  const W = getWorkspace(ws), h = W?.host, s = h?.shop; if (!s || s.eventId || !(s.items || []).length) return "";
+  const W = getWorkspace(ws), h = W?.host, s = h?.shop; if (!s || s.eventId || !(s.items || []).some((x) => +x.cents > 0)) return ""; // a shop with no priced item is set up again (its words prefill the setup)
   const id = newId(); if (!claimEvent(id, ws)) return "";
-  const d = { title: s.title || "From the shop", note: s.note || "", items: s.items.map((x) => ({ id: x.id, name: x.name, price: (+x.cents || 0) / 100, desc: x.desc || "", stock: +x.stock || 0, max: +x.max || 6, photo: x.photo || "" })),
+  const d = { title: s.title || "From the shop", note: s.note || "", items: s.items.filter((x) => +x.cents > 0).map((x) => ({ id: x.id, name: x.name, price: (+x.cents || 0) / 100, desc: x.desc || "", stock: +x.stock || 0, max: +x.max || 6, photo: x.photo || "" })),
     slots: s.slots || [], area: s.where || h.hood || h.city || "", address: s.address || "", always: true, date: "", orderBy: "", orderByDate: "", pay: s.payUrl ? "link" : "pickup", payUrl: s.payUrl || "", open: !!s.open, repeatWeekly: false };
   scopeStore(store, ws).set("events/" + id, { id, ...dropEvent(d, h), fromShop: s.dropId || true });
   updateWorkspace(ws, { host: { ...h, shop: { ...s, eventId: id, migratedAt: Date.now() } } });
@@ -114,7 +114,7 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
   app.get("/api/host/drops", (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u);
     // a shop set up before drops existed becomes one now (the first time its owner looks)
     try { shopToDrop(store, C, u.ws); } catch {}
-    res.json({ handle: h.handle || "", legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "" } : null,
+    res.json({ handle: h.handle || "", legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "", items: (h.shop.items || []).filter((x) => x.name).map((x) => ({ name: x.name, price: +x.cents ? x.cents / 100 : "", stock: x.stock || "", photo: x.photo || "" })) } : null,
       drops: dropsOf(store, u.ws).sort((a, b) => (b.e.createdAt || 0) - (a.e.createdAt || 0)).map(({ id, e }) => ({ ...dropOf(id, e), url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, path: `/e/${encodeURIComponent(id)}`, batch: counts(S, id, e) })) }); });
 
   app.post("/api/host/drops", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u); if (!h.handle) return bad(res, "Set up your page first.");

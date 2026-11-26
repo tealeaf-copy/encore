@@ -152,6 +152,8 @@ PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
 // review round 7: a pre-order's items ("Country loaf $12") for the order form, and the date before this one of a repeat
 // (so the light invite can say "You were in last week. In again?")
 PUBLIC_FIELDS.push("preorder", "orderItems", "prevId", "seriesId");
+// a drop (server/drops.js): an order-ahead pre-order, and whether it's always available (no date)
+PUBLIC_FIELDS.push("drop", "always");
 // review round 11: when orders close ("Order by Thu"), and pairs and groups counted as such ("6 pairs", "3 groups")
 PUBLIC_FIELDS.push("orderBy", "orderByDate", "orderDeadline", "headUnit", "unitCount", "groupCount", "stockUnit");
 // ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----

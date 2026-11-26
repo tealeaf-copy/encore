@@ -12579,7 +12579,7 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
      channels" panel in the studio; and the plain-text power path on Home: paste a Discord message or Markdown, or drop
      an .ics file (public/plain.js). Server: server/slots.js, server/series.js, server/episodes.js, server/hooksout.js.
      ================================================================== -->
-<link rel="stylesheet" href="/slots.css"><script src="/plain.js" defer></script><script src="/slots.js" defer></script><script src="/series.js" defer></script>
+<link rel="stylesheet" href="/slots.css"><script src="/drop.js" defer></script><script src="/plain.js" defer></script><script src="/slots.js" defer></script><script src="/series.js" defer></script>
 <script>
 (function(){
   const q=(s,el=document)=>el.querySelector(s), PT=()=>window.PlainText;
@@ -12830,7 +12830,7 @@ function hvStatus(d,c,stage){ if(stage==="new") return ["Not started",""]; if(st
   const bits=[`${c.in} in`]; if(c.full) bits.push("full"); else if(c.left!=null) bits.push(hvPlural(c.left,"spot")+" left"); if(c.ask) bits.push(`${c.ask} asking`); if(c.wait) bits.push(`${c.wait} waiting`);
   return [bits.join(" · "),"live"] }
 // the one ember button: [label, action]
-function hvPrimary(d,c,stage){ if(stage==="new") return ["Start","create"];
+function hvPrimary(d,c,stage){ if(stage==="new") return ["Start","create"]; if(d.drop&&stage!=="draft") return [c.in?`See ${c.in===1?"1 order":c.in+" orders"}`:"Share your drop",c.in?"orders":"share"];
   if(stage==="after") return ["Ask for photos","photos"]; if(stage==="today") return ["Check in","door"];
   if(stage==="draft") return (!d.date&&d.stage!=="interest")||(!d.startTime&&d.stage!=="interest")||!(String(d.meetPoint||d.venueName||d.venueAddr||"").trim()||d.city)?["Add the details","edit"]:["Share invite","publish"];
   if(c.ask) return [c.ask===1?"Review 1 ask":`Review ${c.ask} asks`,"asks"];
@@ -12874,7 +12874,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const want=()=>{ try{ return !window.__hvClassic&&!isGuestRoute()&&!!draft&&!draft.example&&(isCasual(draft)||!!window.__wsPersonal) }catch{ return false } };
   const saveQ=async()=>{ try{ return await saveEvent(true) }catch(e){ console.warn(e); return false } };
   const placeLine=d=>String(d.meetPoint||d.venueName||"").trim()||d.city||"";
-  const whenLine=d=>{ if(d.stage==="interest"&&!d.date) return (d.dateOptions||[]).length?`Date to pick: ${(d.dateOptions||[]).map(fmtDate).join(", ")}`:"Date to pick"; return [d.date?fmtDate(d.date):"No date yet",d.startTime?clock12(d.startTime):""].filter(Boolean).join(" · ") };
+  const whenLine=d=>{ if(d.drop&&(d.always||!d.date)) return ["Always available",(d.slots||[]).length?"pick up "+d.slots.join(", "):""].filter(Boolean).join(", "); if(d.stage==="interest"&&!d.date) return (d.dateOptions||[]).length?`Date to pick: ${(d.dateOptions||[]).map(fmtDate).join(", ")}`:"Date to pick"; return [d.date?fmtDate(d.date):"No date yet",d.startTime?clock12(d.startTime):""].filter(Boolean).join(" · ") };
   const link=d=>typeof inviteLink==="function"?inviteLink(d):location.origin+"/e/"+encodeURIComponent(d.id||"");
   const people=d=>hvPeople(d,typeof allRsvps!=="undefined"?allRsvps:[]);
 
@@ -12993,7 +12993,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   function act(a,d,b){ switch(a){
     case "home": location.hash="#programs"; return;
     case "create": openCreate(""); return;
-    case "edit": openDetails("edit"); return;
+    case "edit": if(d.drop&&window.EncoreDrop){ fetch("/api/host/drops").then(r=>r.json()).then(j=>{ const x=(j.drops||[]).find(y=>y.id===d.id); if(x) window.EncoreDrop.setup({drop:x,onDone:()=>location.reload()}); else openDetails("edit") }).catch(()=>openDetails("edit")); return } openDetails("edit"); return;
+    case "orders": if(window.EncoreDrop) window.EncoreDrop.inbox({only:d.id}); return;
     case "publish": openDetails("share"); return;
     case "share": openShare(d,false); return;
     case "copyinv": copyTxt(inviteText(d),{ok:"Invite copied. Paste it in your group chat."}); return;
@@ -13025,7 +13026,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 
   // --- create: What's the plan? ---
   const TPL=[["Supper club","Supper club at my place, Saturday 7pm, 8 seats, $35 a person"],["Hack night","Hack night at the office, Thursday 6:30pm, about 20 people, pizza and lightning demos"],["Game night","Board game night at my place, Friday 7pm, 6 people, bring a snack"],["Potluck","Potluck in the park, Sunday 1pm, everyone brings a dish"],["Run club","Easy 5k run, Saturday 8am, McCarren Park, coffee after"],["Book club","Book club at the café, first Tuesday 7pm, 10 people"]];
-  function openCreate(seed){ const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
+  function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } }});
+    const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
       <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>A Discord message, Markdown or an .ics file works too.</small></label>
       <div><p class="sect" style="margin:0 0 8px">Or start from one of these</p><div class="tpl">${TPL.map(([n],i)=>`<button type="button" data-tpl="${i}">${E(n)}</button>`).join("")}</div></div><p class="err" id="hvErr" role="alert"></p>`,
       foot:`<button class="hv-b pri" type="button" id="hvNext">Next</button>`});

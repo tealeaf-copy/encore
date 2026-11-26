@@ -21,13 +21,22 @@ window.InviteOrder = function (e, ws, H, U) {
   let items = [], shop = null; const qty = {};
   const draw = () => { const box = $("#ordItems");
     if (!items.length) { box.innerHTML = `<label class="f">What would you like?<input type="text" id="oFree" maxlength="200" placeholder="2 loaves, 1 focaccia"></label>`; $("#ordTot").textContent = ""; return; }
-    box.innerHTML = items.map((x) => `<div class="it" data-id="${esc(x.id)}"><span><b>${esc(x.name)}</b>${x.cents ? `<small>${money(x.cents)}${x.left === 0 ? " · sold out" : x.left ? ` · ${x.left} left` : ""}</small>` : ""}</span><span class="st"><button type="button" data-d="-1" aria-label="One less ${esc(x.name)}">−</button><b aria-live="polite">${qty[x.id] || 0}</b><button type="button" data-d="1" aria-label="One more ${esc(x.name)}"${x.left === 0 ? " disabled" : ""}>+</button></span></div>`).join("");
+    box.innerHTML = items.map((x) => `<div class="it" data-id="${esc(x.id)}">${x.photo ? `<img src="${esc(x.photo)}" alt="" style="width:48px;height:48px;border-radius:12px;object-fit:cover;flex:none">` : ""}<span><b>${esc(x.name)}</b>${x.cents ? `<small>${money(x.cents)}${x.left === 0 ? " · sold out" : x.left ? ` · ${x.left} left` : ""}</small>` : ""}</span><span class="st"><button type="button" data-d="-1" aria-label="One less ${esc(x.name)}">−</button><b aria-live="polite">${qty[x.id] || 0}</b><button type="button" data-d="1" aria-label="One more ${esc(x.name)}"${x.left === 0 ? " disabled" : ""}>+</button></span></div>`).join("");
     const t = items.reduce((a, x) => a + (qty[x.id] || 0) * (x.cents || 0), 0), n = items.reduce((a, x) => a + (qty[x.id] || 0), 0);
     $("#ordTot").textContent = n ? `${n} item${n === 1 ? "" : "s"}${t ? ` · ${money(t)}` : ""}` : ""; };
   form.addEventListener("click", (ev) => { const b = ev.target.closest("[data-d]"); if (!b) return; const row = b.closest("[data-id]"), x = items.find((i) => i.id === row.dataset.id); if (!x) return;
     const cap = Math.min(x.max || 20, x.left == null ? 99 : x.left); qty[x.id] = Math.max(0, Math.min(cap, (qty[x.id] || 0) + +b.dataset.d)); draw(); });
   // the shop's items when the host's shop is open; else what the host typed ("country loaf $12, focaccia $9")
-  (handle ? fetch("/api/public/shop/" + encodeURIComponent(handle)).then((r) => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null)).then((j) => {
+  // a drop (server/drops.js): its menu with photos, the per-order max and what's left this batch; when and where in plain words
+  // a drop is ordered, not joined: no "I'm in if a friend is" or calendar file, and the address comes after ordering
+  if (e.drop) { css.textContent += "#tbMe,#slBox{display:none!important}"; const fx = document.querySelector(".facts"); if (fx) fx.innerHTML = fx.innerHTML.replace(/address when you're in/, "exact address after you order"); }
+  if (e.drop && eid) { fetch("/api/public/drop/" + encodeURIComponent(eid)).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((j) => { const d = j?.drop; if (!d) return;
+    items = d.items.map((x) => ({ id: "i" + x.i, i: x.i, name: x.name, cents: Math.round(x.price * 100), max: x.max || 20, left: x.left, photo: x.photo, desc: x.desc })); draw();
+    const h2 = form.querySelector("h2.ask"), info = document.createElement("p"); info.className = "muted"; info.id = "ordWhen"; info.style.margin = "0 0 8px";
+    info.textContent = d.paused ? "Orders are paused right now. Follow the host to hear when they open." : [d.always ? "Order any time" : "", d.area ? `Pick up in ${d.area}` : "", d.hasAddress ? "The exact address shows once you order" : "", d.payAtPickup ? "Pay at pickup" : "Pay with the host's link after you order"].filter(Boolean).join(". ") + ".";
+    h2?.after(info); if (d.paused) { const go = form.querySelector("#oGo"); if (go) { go.disabled = true; go.textContent = "Orders paused"; } } });
+  }
+  if (!e.drop) (handle ? fetch("/api/public/shop/" + encodeURIComponent(handle)).then((r) => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null)).then((j) => {
     // the event's own items win; the host's shop is used only when the event lists none
     shop = !(e.orderItems || []).length && j?.shop && (j.shop.items || []).length ? j.shop : null;
     items = shop ? shop.items.map((x) => ({ id: x.id, name: x.name, cents: x.cents, max: x.max, left: x.left })) : (Array.isArray(e.orderItems) ? e.orderItems : []).slice(0, 8).map((x, i) => ({ id: "i" + i, i, name: String(x.name || "").slice(0, 60), cents: Math.round((+x.price || 0) * 100), max: 20, left: null })).filter((x) => x.name);
@@ -49,7 +58,8 @@ window.InviteOrder = function (e, ws, H, U) {
         const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); rid = String(j.id || j.doc?.id || "").split("/").pop(); code = rc;
         U.ls.set("encore-rsvp-" + eid, JSON.stringify({ rid, code: rc, name, ct: c, gi: -1, response: "going", order: text, total, slot, wall: false, eventId: eid, data: {} }));
-        if (total && /^https:\/\//.test(e.ticketUrl || "")) pay = U.payLinkOf(e.ticketUrl, money(total), [name, e.pubTitle || e.name].filter(Boolean).join(" · ")); }
+        if (total && /^https:\/\//.test(e.ticketUrl || "")) pay = U.payLinkOf(e.ticketUrl, money(total), [name, e.pubTitle || e.name].filter(Boolean).join(" · "));
+        if (e.drop) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(rc)}`)).json(); where = a?.ok ? [a.venueAddr, e.hood].filter(Boolean).join(", ") : ""; } catch {} } }
       window.InviteOrder.ticket(e, ws, H, U, { rid, order: text, total, pay, name, code, shop: !!shop, where }, form);
       document.getElementById("tk")?.scrollIntoView({ behavior: "smooth", block: "center" }); }
     catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "Didn't go through. Check your connection and try again." : err.message; go.disabled = false; } };
@@ -65,7 +75,7 @@ window.InviteOrder.ticket = function (e, ws, H, U, M, el) {
   const tapped = (() => { try { return !!U.ls.get("encore-paytap-" + eid); } catch { return false; } })(), rid = M.rid || "";
   const status = M.paid ? "Paid. See you at pickup." : M.paidClaim ? `Got it. ${first} will check and confirm.` : `${first} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.`;
   if (!el) return;
-  el.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(M.order || "")}</p>${M.code && M.shop ? `<p class="muted" style="margin:0">Order #${esc(M.code)}. Show this at pickup.</p>` : ""}${M.where ? `<p class="muted" style="margin:0">📍 ${esc(M.where)}</p>` : ""}
+  el.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(M.order || "")}</p>${M.code && (M.shop || e.drop) ? `<p class="muted" style="margin:0">Order #${esc(String(M.code).slice(0, 6))}. Show this at pickup.</p>` : ""}${M.where ? `<p class="muted" style="margin:0">Pickup: ${esc(M.where)}</p>` : ""}
     <p class="muted" style="margin:0">${esc(status)}</p><div class="btns">${pay && !M.paid && !M.paidClaim ? `<a class="btn pay" id="oPay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}${pay && rid && !M.paid && !M.paidClaim ? `<button type="button" class="btn" id="oPaid"${tapped ? "" : " hidden"}>I paid</button>` : ""}</div></div>`;
   // review round 10: after Pay, "I paid" records a claim on their own reply, as on any paid invite. The host still confirms.
   const oPay = $("#oPay"), oPaid = $("#oPaid");

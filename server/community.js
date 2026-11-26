@@ -155,7 +155,7 @@ export function makeCommunity(store) {
   // ---- public events and discover ----
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted",
     // series (a class that repeats, a course, a class pass), a pre-order priced by the item, and whether the host hides who is going
-    "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests",
+    "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests", "drop",
     // review round 7: what guests should expect to spend when it isn't a paid spot ("About $40 food cost"), and "at the door"
     "costNote", "ticketNote", "groupPrice", "groupSize", "hostName",
     // review round 12: the event's look, so a host page that never picked one can wear the latest event's

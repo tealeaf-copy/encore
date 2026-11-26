@@ -126,7 +126,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script>
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -282,7 +282,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
       const sec = document.createElement("section"); sec.className = "proof"; sec.id = "proof"; sec.innerHTML = `<h2>${T.example ? "Example track record" : L.length ? "Track record" : "New on Pottery Lab"}</h2>${parts.join("")}`;
       const cs = document.querySelector("h2.sec.s-coming"); if (!d.upcoming.length && cs) { sec.style.marginBottom = "8px"; cs.before(sec); } else document.getElementById("extras")?.prepend(sec); }).catch(() => {}); }
     { const L0 = window.EncoreStore?.withEventLook?.(h, [...(d.upcoming || []), ...(d.past || [])]); if (L0 && L0 !== h) h.theme = L0.theme; } // review round 12: a new page wears its latest event's look
-    window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, d.upcoming); window.EncoreShop?.shop(h, first); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h, first); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
+    window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, (d.upcoming || []).filter((e) => !e.drop)); /* a drop is ordered from "What I offer", not joined */ window.EncoreShop?.shop(h, first); window.EncoreDrop?.offer(h, first, d, isOwner); if (isOwner) window.EncoreStore?.coverButton?.(h); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h, first); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
   if (isOwner) { try { const nav = document.querySelector("header.top nav"); nav?.querySelectorAll('a[href^="/signup"]').forEach((a) => { a.href = "?edit=1"; a.textContent = "Edit page"; a.onclick = (ev) => { const fab = document.querySelector(".store-fab:not(.shop-fab)"); if (fab) { ev.preventDefault(); fab.click(); } }; }); } catch {}
     fetch("/api/db/collection?path=events", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { docs: [] })).then((j) => { const today = new Date().toISOString().slice(0, 10), shown = new Set((d.upcoming || []).map((x) => x.id));
       const P = (j.docs || []).filter((x) => x.data && !x.data.example && !x.data.sample && !shown.has(x.id) && x.data.date && x.data.date >= today && (x.data.name || x.data.pubTitle)).sort((a, b) => String(a.data.date).localeCompare(String(b.data.date))).slice(0, 6); if (!P.length) return;

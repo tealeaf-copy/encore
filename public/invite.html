@@ -93,7 +93,7 @@
       // only the common case lives here: a friends' event, open or Ask to join. Everything else opens the full invite:
       // work events (more fields), "would you come?" polls, slots, chip-ins, a pay step, plus-ones, a phone the host
       // asked for, and paid spots on an Ask to join event (they pay after the host lets them in). When unsure, hand off.
-      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
+      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || (!e.date && !e.drop) || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
       render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
       // a returning pre-order guest sees their order

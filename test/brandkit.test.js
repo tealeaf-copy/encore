@@ -158,7 +158,7 @@ test("the API: a host reads, is suggested and saves a kit; it's on their page, e
   assert.equal(j.kit.accent, "#2F5FD0"); assert.equal(j.kit.pair, "terminal"); assert.equal(j.kit.voice, "Ship one small thing, every other Thursday"); assert.equal(j.kit.evil, undefined);
   const pubHost = await (await fetch(srv.base + "/api/public/host/kai-builds")).json(); assert.equal(pubHost.host.kit.pair, "terminal"); assert.equal(pubHost.host.tagline, "Ship one small thing, every other Thursday");
   const eh = await (await fetch(srv.base + "/api/public/event-host/bkhack")).json(); assert.equal(eh.host.kit.pair, "terminal", "event pages get the kit");
-  const inv = await (await fetch(srv.base + "/e/bkhack")).text(); assert.match(inv, /<script src="\/brandkit\.js"><\/script>/); assert.ok(inv.length < 40000, "the light invite stays small with a kit: " + inv.length);
+  const inv = await (await fetch(srv.base + "/e/bkhack")).text(); assert.match(inv, /<script src="\/brandkit\.js(\?v=[\w-]+)?"><\/script>/); assert.ok(inv.length < 40000, "the light invite stays small with a kit: " + inv.length);
   // other profile saves keep the kit
   await post("/api/host/profile", { bio: "Bring a laptop." }, c); assert.equal((await (await fetch(srv.base + "/api/host/brandkit", { headers: { cookie: c } })).json()).kit.pair, "terminal");
   // logos: an image this workspace uploaded, not svg, not someone else's, not a made-up id

@@ -37,6 +37,9 @@ export function openStore(file) {
   if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new Database(file);
   db.pragma("journal_mode = WAL");
+  // a second connection (a backup, the sqlite3 shell, a second process during a deploy) waits up to 5s for a lock
+  // instead of failing the request with SQLITE_BUSY
+  db.pragma("busy_timeout = 5000");
   db.exec(`CREATE TABLE IF NOT EXISTS docs (
     path TEXT PRIMARY KEY,
     parent TEXT NOT NULL,
@@ -64,7 +67,15 @@ export function openStore(file) {
     const segs = parsePath(p, "doc");
     return { parent: segs.slice(0, -1).join("/"), id: segs[segs.length - 1] };
   };
-  const notify = (p, parent) => events.emit("change", { path: p, parent });
+  // Reads of a whole collection are cached until a write to that collection (or a prefix delete): an invite or the
+  // feed lists the same collection many times per request (each event's guests, its host's kit), and under load the
+  // SELECT and JSON.parse of every row was most of the server's time. ver: writes per collection; epoch: prefix deletes.
+  const ver = new Map(), rowsCache = new Map(), sharedCache = new Map(); let epoch = 0;
+  const bump = (parent) => ver.set(parent, (ver.get(parent) || 0) + 1);
+  const fresh = (C, k) => { const c = C.get(k); return c && c.v === (ver.get(k) || 0) && c.e === epoch ? c : null; };
+  const keep = (C, k, val) => { if (C.size > 400) C.clear(); C.set(k, { v: ver.get(k) || 0, e: epoch, val }); return val; };
+  const rowsOf = (collection) => fresh(rowsCache, collection)?.val || keep(rowsCache, collection, q.list.all(collection));
+  const notify = (p, parent) => { bump(parent); events.emit("change", { path: p, parent }); };
   const asObject = (v) => {
     if (!v || typeof v !== "object" || Array.isArray(v)) throw httpError(400, "bad_data", "Document data must be a JSON object.");
     return v;
@@ -112,10 +123,15 @@ export function openStore(file) {
     /** Every document under a path prefix (for workspace export). */
     dumpPrefix(prefix) { return q.dumpP.all(prefix.length, prefix).map((r) => ({ path: r.path, data: JSON.parse(r.data), updated: r.updated })); },
     /** Delete every document under a path prefix (for workspace deletion). Returns how many. */
-    deletePrefix(prefix) { return q.delP.run(prefix.length, prefix).changes; },
+    deletePrefix(prefix) { epoch++; return q.delP.run(prefix.length, prefix).changes; },
     list(collection) {
       parsePath(collection, "collection");
-      return q.list.all(collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated }));
+      return rowsOf(collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated }));
+    },
+    /** list(), parsed once and shared until the collection changes. Read only: never change what it returns. */
+    listShared(collection) {
+      parsePath(collection, "collection");
+      return fresh(sharedCache, collection)?.val || keep(sharedCache, collection, rowsOf(collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated })));
     },
     /** The documents of one collection whose ids start with idPrefix ("system", "ws-" → every workspace). */
     listPrefix(collection, idPrefix) {

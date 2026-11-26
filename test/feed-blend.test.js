@@ -189,7 +189,7 @@ test("Contacts: only people who opted in match, blocks hold, no hash is stored, 
 });
 
 test("The + sheet: a Create button on the feed, tiles that fit each person, posts through the feed's own endpoint", async () => {
-  const feed = await (await get("/feed")).text(); assert.ok(feed.includes('src="/composer.js"'));
+  const feed = await (await get("/feed")).text(); assert.match(feed, /src="\/composer\.js(\?v=[\w-]+)?"/); // served pages carry ?v=<hash> (server/perf.js)
   const js = fs.readFileSync(new URL("../public/composer.js", import.meta.url), "utf8");
   assert.ok(js.includes('aria-label", "Create"') && js.includes("prefers-reduced-motion") && js.includes("safe-area-inset-bottom"));
   assert.ok(js.includes('"/api/me/posts"') && js.includes('"/api/host/club/posts"') && !/\u2014/.test(js), "the feed's own posts and the club's, no em dashes");

@@ -26,6 +26,7 @@ export function scopeStore(store, ws) {
     delete: (p) => store.delete(pre + p),
     add: (c, d) => { const r = store.add(pre + c, d); return { ...r, path: strip(r.path) }; },
     list: (c) => store.list(pre + c),
+    listShared: (c) => (store.listShared ? store.listShared(pre + c) : store.list(pre + c)), // read only (server/db.js)
     listPrefix: (c, idp) => store.listPrefix(pre + c, idp),
     close: () => {},
   };

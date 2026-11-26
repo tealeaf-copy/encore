@@ -101,7 +101,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   const placeOf = (e) => clean(e.hood || e.city || "", 60);
   const descOf = (e, ws) => { for (const k of ["blurb", "pubDesc", "desc", "description", "about", "dinnerTheme", "audienceWho"]) if (typeof e[k] === "string" && clean(e[k]).length > 3) return clean(scrub(e[k]), 140);
     const t = clean(C.profileOf(ws)?.tagline || "", 140); return t || [e.activity, placeOf(e)].filter(Boolean).join(" in "); };
-  const rsvpsOf = (ws, id) => { try { return scopeStore(store, ws).list("rsvps").map((d) => ({ id: d.id, ...(d.data || {}) })).filter((r) => r.eventId === id); } catch { return []; } };
+  const rsvpsOf = (ws, id) => { try { return scopeStore(store, ws).listShared("rsvps").filter((d) => d.data?.eventId === id).map((d) => ({ id: d.id, ...(d.data || {}) })); } catch { return []; } }; // listShared: read only, parsed once per change (server/db.js)
   const face = (p, name) => ({ name, emoji: p?.emoji || "", color: p?.color || "", handle: p?.handle || "" });
   // the host on top of every card, with a small Follow when the viewer doesn't follow them yet
   const hostLead = (v, ws, h) => ({ ...h, following: v.followed.has(ws), mine: !!v.ws && v.ws === ws, page: `/@${h.handle}` });

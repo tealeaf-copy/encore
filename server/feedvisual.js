@@ -148,7 +148,7 @@ export function makeFeedVisual(store, { C, X }) {
       approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", coverArt: artOf(e), look: lookOf(e), host: h, url: `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
       ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
-        const T = togetherOf(scopeStore(store, x.ws).list("rsvps"), e, x.id); return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
+        const T = togetherOf(scopeStore(store, x.ws).listShared("rsvps"), e, x.id); /* read only: parsed once per change (server/db.js) */ return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
       fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY, cta: email && lc(x.owner || "") === email ? { label: "Manage", url: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, own: true } /* the host's own event: not I'm in */ : past ? afterCta(I, x) : eventCta(e, x.id) };
   }
   // ---------- prepared pages ----------

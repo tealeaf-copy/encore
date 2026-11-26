@@ -64,7 +64,8 @@ import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
 import { mountIdeasNudge } from "./ideasnudge.js"; // "Ideas to try" where people feel stuck; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
-import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
+import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js";
+import { optimizeHtml, assetCache, fontRequest, fontCss, compressJson, idempotency, errorMiddleware, withPreload } from "./perf.js"; // versioned assets, local fonts, compressed JSON, idempotency keys (server/perf.js) // per-event looks (Make it yours), price tiers
 import { mountBrandKit, brandKitHead } from "./brandkit.js"; // a host's brand kit: one look for their page, events and invites
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
@@ -301,6 +302,15 @@ export function createApp({ store, dataDir }) {
   useUnsubStore(store);
 
   app.disable("x-powered-by");
+  // ---- speed and robustness at the HTTP layer (server/perf.js) ----
+  // every HTML page sent as a string gets versioned script/style URLs and local fonts
+  app.use((req, res, next) => { const send = res.send; res.send = function (body) { if (typeof body === "string" && (/^text\/html/.test(this.get("Content-Type") || "") || (!this.get("Content-Type") && /^\s*<(!doctype|html|head)/i.test(body)))) body = optimizeHtml(body, PUBLIC_DIR); return send.call(this, body); }; next(); });
+  app.use("/api", compressJson());
+  const idem = idempotency({ who: (req) => (/(?:^|;\s*)encore_auth=([^;]+)/.exec(req.headers.cookie || "") || [])[1] || req.get("x-encore-key") || req.ip || "" }); app.locals.idempotency = idem; app.use(idem);
+  // fonts: the families our pages ask Google for, served from public/fonts (font files never change name in place)
+  app.get("/fonts/css2", (req, res) => { const q = req.originalUrl.split("?")[1] || "", faces = fontRequest(PUBLIC_DIR, q); if (!faces) return res.redirect(302, "https://fonts.googleapis.com/css2?" + q);
+    sendText(req, res, fontCss(faces), { type: "text/css", cache: "public, max-age=86400, stale-while-revalidate=604800" }); });
+  app.get(/^\/fonts\/([a-z0-9-]+\.woff2)$/, (req, res, next) => res.sendFile(path.join(PUBLIC_DIR, "fonts", req.params[0]), { maxAge: "365d", immutable: true, dotfiles: "allow", headers: { "Access-Control-Allow-Origin": "*" } }, (err) => err && next()));
   // Only trust X-Forwarded-For when told to (ENCORE_TRUST_PROXY=1 behind one proxy, a hop count, or an Express trust value
   // such as "loopback"); otherwise anyone could pick their own IP and dodge the login limit.
   const tp = String(process.env.ENCORE_TRUST_PROXY || "").trim();
@@ -632,7 +642,7 @@ export function createApp({ store, dataDir }) {
   async function builtPage() {
     const st = await fsp.stat(PAGE_FILE); if (pageCache && pageCache.mtime === st.mtimeMs) return pageCache;
     if (pageBuilding) return pageBuilding;
-    pageBuilding = (async () => { const html = Buffer.from(process.env.ENCORE_INLINE_APP === "1" ? HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL : splitPage(pwaHead(HEAD) + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL)), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
+    pageBuilding = (async () => { const html = Buffer.from(process.env.ENCORE_INLINE_APP === "1" ? HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL : optimizeHtml(splitPage(pwaHead(HEAD) + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL), PUBLIC_DIR)), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
       const P = { mtime: st.mtimeMs, html, etag, br: null, gz: zlib.gzipSync(html, { level: 9 }) }; pageCache = P;
       zlib.brotliCompress(html, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: html.length } }, (err, out) => { if (!err && pageCache === P) P.br = out; });
       return P; })().finally(() => { pageBuilding = null; });
@@ -718,12 +728,15 @@ export function createApp({ store, dataDir }) {
   // by content hash, so a page or script is compressed once per version.
   const brCache = new Map();
   function sendText(req, res, body, { type = "html", cache = "private, no-cache" } = {}) {
-    if (type === "html" && !Buffer.isBuffer(body)) body = pwaHead(body, req.path); // app store: manifest, icons, service worker, native bridge
+    if (type === "html" && !Buffer.isBuffer(body)) body = withPreload(optimizeHtml(pwaHead(body, req.path), PUBLIC_DIR), req.path, req.headers.cookie); // app store: manifest, icons, service worker, native bridge; versioned assets, local fonts, the page's first API read
     const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body)), etag = '"' + crypto.createHash("sha1").update(buf).digest("base64url").slice(0, 20) + '"';
     res.set({ "Cache-Control": cache, ETag: etag, Vary: "Accept-Encoding" }).type(type);
     if (req.headers["if-none-match"] === etag) return res.status(304).end();
     if (buf.length > 1024 && /\bbr\b/.test(req.headers["accept-encoding"] || "")) { let br = brCache.get(etag);
-      if (!br) { br = zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: buf.length < 400000 ? 11 : 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }); if (brCache.size > 400) brCache.clear(); brCache.set(etag, br); }
+      // the first request for a version gets a fast brotli (a few ms, never a stall for everyone else); the full-quality
+      // one is made in the background and serves every request after it
+      if (!br) { br = zlib.brotliCompressSync(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }); if (brCache.size > 400) brCache.clear(); brCache.set(etag, br);
+        if (buf.length < 400000) zlib.brotliCompress(buf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length } }, (err, out) => { if (!err && brCache.get(etag) === br) brCache.set(etag, out); }); }
       return res.set("Content-Encoding", "br").send(br); }
     if (buf.length > 1024 && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) { const k = "gz" + etag; let gz = brCache.get(k);
       if (!gz) { gz = zlib.gzipSync(buf, { level: 9 }); if (brCache.size > 400) brCache.clear(); brCache.set(k, gz); }
@@ -736,7 +749,7 @@ export function createApp({ store, dataDir }) {
     const f = path.join(PUBLIC_DIR, req.path); if (!f.startsWith(PUBLIC_DIR + path.sep)) return next();
     try { const st = await fsp.stat(f); if (!st.isFile()) return next(); let c = fileCache.get(f); if (!c || c.mtime !== st.mtimeMs) { c = { mtime: st.mtimeMs, buf: await fsp.readFile(f) }; fileCache.set(f, c); }
       const type = { js: "application/javascript", css: "text/css", svg: "image/svg+xml", json: "application/json" }[req.path.split(".").pop()];
-      return sendText(req, res, c.buf, { type, cache: "public, max-age=300" }); } catch { return next(); } });
+      return sendText(req, res, c.buf, { type, cache: assetCache(PUBLIC_DIR, req.path, typeof req.query.v === "string" ? req.query.v : "") }); } catch { return next(); } });
   app.use(express.static(PUBLIC_DIR, { index: false }));
 
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
@@ -2113,15 +2126,10 @@ export function createApp({ store, dataDir }) {
   // any other page that doesn't exist: a friendly page with a way back, not a bare "Cannot GET"
   app.use((req, res, next) => { if (req.method !== "GET" && req.method !== "HEAD") return next(); res.status(404); sendStatic(res, "404.html", "<p>Page not found.</p>"); });
   // eslint-disable-next-line no-unused-vars
-  app.use((err, req, res, next) => {
-    if (res.headersSent) return res.end();
-    if (err?.type === "entity.too.large") return res.status(413).json({ code: "too_large", message: "Request body is too large." });
-    if (err?.type === "entity.parse.failed") return res.status(400).json({ code: "bad_json", message: "Body is not valid JSON." });
-    const code = err?.code || "server_error";
-    const status = err?.status || (code === "server_not_connected" || code === "tool_not_found" ? 404 : code === "tool_error" ? 502 : 500);
-    if (status >= 500 && code === "server_error") console.error("[http]", err);
-    res.status(status).json({ code, message: String(err?.message || "Something went wrong.") });
-  });
+  // One bad request never takes the server down: anything a route throws ends here. The API answers JSON; a page that
+  // fails gets a friendly page with a way back. Unexpected errors are logged once, as one line with the route, and the
+  // answer never carries their message (it can hold internals).
+  app.use(errorMiddleware({ page: () => fs.readFileSync(path.join(PUBLIC_DIR, "404.html"), "utf8") })); // server/perf.js
 
   return app;
 }

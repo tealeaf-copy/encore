@@ -99,7 +99,8 @@ test("password gate and guest exemptions", async () => {
 test("GET /?app=1 wraps index.html with the shim", async () => {
   const html = await (await fetch(srv.base + "/?app=1")).text();
   assert.ok(html.startsWith('<!doctype html><html lang="en"><head><meta charset="utf-8">'));
-  assert.match(html, /<script src="\/shim.js"><\/script><script src="\/avatars.js"><\/script><script src="\/account.js"><\/script><\/head><body><title>/);
+  // served scripts carry ?v=<hash of the file> (server/perf.js), cached for a year
+  assert.match(html, /<script src="\/shim.js\?v=[\w-]+"><\/script><script src="\/avatars.js\?v=[\w-]+"><\/script><script src="\/account.js\?v=[\w-]+"><\/script><\/head><body><title>/);
   assert.ok(html.endsWith("</body></html>"));
   // the app's big scripts and styles come as cached files
   const assets = [...html.matchAll(/src="(\/_app\/[A-Za-z0-9_-]{16}\.js)"/g)].map((m) => m[1]); assert.ok(assets.length >= 1 && html.length < 80000, "the page itself stays small");

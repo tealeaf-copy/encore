@@ -114,7 +114,7 @@ test("the event save path cleans the look, and guests get it on the public event
   assert.equal(pub3.data.look.effect, "twinkle"); assert.equal(pub3.data.look.lights, true); assert.equal(pub3.data.look.update.text, "Moved to The Progress"); assert.deepEqual(pub3.data.look.palette, ["#5A0F1E"]);
   // the light invite loads the helpers and draws the look
   const html = await (await fetch(srv.base + "/e/looks1")).text();
-  assert.match(html, /src="\/color\.js"/); assert.match(html, /src="\/looks\.js"/); assert.match(html, /LK\.apply\(document\.body, e\)/);
+  assert.match(html, /src="\/color\.js(\?v=[\w-]+)?"/); assert.match(html, /src="\/looks\.js(\?v=[\w-]+)?"/); // served pages carry ?v=<hash> (server/perf.js) assert.match(html, /LK\.apply\(document\.body, e\)/);
 });
 
 test("host pages: the house paper and headings only for the default look", () => {

@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { mountAccount } from "./account.js";
 import { mountSafety } from "./safety.js";
 import { mountPush } from "./push.js";
+import { SPECULATION } from "./perf.js";
 
 const PUBLIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
@@ -51,7 +52,9 @@ const SPLASH_LINKS = splash.map((s) => `<link rel="apple-touch-startup-image" me
 const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test(location.pathname))addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>`;
 // The light invite (/e/, /i/) has a 40,000-character budget: it gets only the essentials.
 const LIGHT = `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
-const FULL = LIGHT + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
+// every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
+// link a finger lands on (server/perf.js)
+const FULL = `<script src="/netguard.js"></script>` + LIGHT + SPECULATION + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
 // Report and block (public/safety.js) where people's posts, photos, kudos and host pages show
 const SAFETY_PAGES = /^\/($|feed|@|h\/|x\/|discover|photos|kudos|leaderboard|settings|community|g$)/;
 

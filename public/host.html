@@ -99,7 +99,18 @@ body.is-owner{padding-bottom:110px}
 .own-gig{border-style:dashed}
 @media (max-width:600px){body.is-owner .store-fab{bottom:14px!important;top:auto!important}body.is-owner .store-fab.shop-fab{bottom:76px!important}body.is-owner main,body.is-owner .wrap{padding-bottom:84px}}
 @media (max-width:860px){body.es-has-tabs .store-fab{bottom:calc(84px + env(safe-area-inset-bottom))!important;top:auto!important}body.es-has-tabs .store-fab.shop-fab{bottom:calc(146px + env(safe-area-inset-bottom))!important}body.es-has-tabs.is-owner main,body.es-has-tabs.is-owner .wrap{padding-bottom:160px}body.es-has-tabs .store-pane{z-index:70}}
-body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important;gap:18px}.ev-series{display:grid;gap:6px;align-content:start}.potto-empty{display:block;width:92px;margin:0 auto 6px}.more-dates{margin:0;font-size:13px;color:#6B5F56;padding:0 6px}#m .ev-by{display:none!important}.ev-face.host{display:none!important}</style><link rel="stylesheet" href="/playful.css">
+body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important;gap:18px}.ev-series{display:grid;gap:6px;align-content:start}.potto-empty{display:block;width:92px;margin:0 auto 6px}.more-dates{margin:0;font-size:13px;color:#6B5F56;padding:0 6px}#m .ev-by{display:none!important}.ev-face.host{display:none!important}
+/* What guests say, calm: one summary line, then quotes as a quiet list (no chips, no emoji, no badges) */
+.vibe-line{margin:6px 0 0;color:var(--muted,#6B6058);font-size:16px;line-height:1.5}
+.s-kudos .wall{display:block!important;columns:auto!important}
+.s-kudos .wall .kq.kq{background:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;padding:16px 40px 16px 0!important;margin:0!important;transform:none!important}
+.s-kudos .wall .kq.kq:first-child{border-top:0!important;padding-top:4px!important}
+.s-kudos .kq p{margin:0 0 6px;font-size:17px;line-height:1.45}
+.s-kudos .kq small{color:var(--muted,#6B6058);font-size:14px}
+.s-kudos .kq .t,.s-kudos .kq .vf{display:none!important}
+.s-kudos .kq .sf-more{position:absolute!important;top:12px;right:0;width:36px;height:36px;border:0!important;background:none!important;opacity:.55}
+.s-kudos .kq .sf-more:hover,.s-kudos .kq .sf-more:focus-visible{opacity:1}
+</style><link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
 <script src="/authguard.js"></script><script src="/placesearch.js"></script>
 </head><body>
@@ -181,8 +192,8 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
     const ex = document.getElementById("extras"), se = document.getElementById("sideExtras");
     // one section for what guests think: the numbers, the words they picked, and a few kudos (the rest one tap away)
     const KQ = (S.kudos || []).filter((k) => k.love || (k.tags || []).length), kq = (k) => `<div class="kq">${k.love ? `<p>"${esc(k.love)}"</p>` : ""}<small>${esc(k.name)}${k.event ? ` · at ${esc(k.event)}` : ""}</small></div>`;
-    ex.innerHTML = `${S.tags?.length || KQ.length ? `<section class="s-vibe" aria-labelledby="vibeH"><h2 class="sec" id="vibeH" style="margin-top:22px">What guests say</h2>${S.tags?.length ? `<div class="vibe">${S.tags.slice(0, 4).map((t) => `<span>${t.emoji} ${esc(t.label)}<b>×${t.n}</b></span>`).join("")}</div>` : ""}${S.kinds?.length > 1 ? `<p class="muted" style="margin:6px 0 0">Mostly hosts: ${S.kinds.slice(0, 4).map((k) => esc(W[k.kind] || k.kind) + ` (${k.n})`).join(", ")}</p>` : ""}
-      ${KQ.length ? `<div class="s-kudos" style="margin-top:14px"><div class="wall">${KQ.slice(0, 4).map(kq).join("")}</div>${KQ.length > 4 ? `<details class="more-kudos"><summary>Read ${Math.min(KQ.length, 18) - 4} more</summary><div class="wall">${KQ.slice(4, 18).map(kq).join("")}</div></details>` : ""}</div>` : ""}</section>` : ""}
+    ex.innerHTML = `${S.tags?.length || KQ.length ? `<section class="s-vibe" aria-labelledby="vibeH"><h2 class="sec" id="vibeH" style="margin-top:22px">What guests say</h2>${S.tags?.length ? `<p class="vibe-line">Most often: ${S.tags.slice(0, 3).map((t) => esc(String(t.label).charAt(0).toLowerCase() + String(t.label).slice(1))).join(" · ")}</p>` : ""}
+      ${KQ.length ? `<div class="s-kudos" style="margin-top:14px"><div class="wall">${KQ.slice(0, 3).map(kq).join("")}</div>${KQ.length > 3 ? `<details class="more-kudos"><summary>Read ${Math.min(KQ.length, 18) - 3} more</summary><div class="wall">${KQ.slice(3, 18).map(kq).join("")}</div></details>` : ""}</div>` : ""}</section>` : ""}
       ${(h.gallery || []).length ? `<div class="s-work"><h2 class="sec" style="margin-top:22px">Recent work</h2><div class="gal work">${h.gallery.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div></div>` : ""}
       ${S.moments?.length ? `<div class="s-photos"><h2 class="sec" style="margin-top:22px">Photos</h2><div class="gal">${S.moments.map((m) => m.type === "video" ? `<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>` : `<img src="${esc(m.url)}" alt="${esc(m.caption || "")}" loading="lazy">`).join("")}</div></div>` : ""}`;
     if ((h.gifts || []).length) window.EncoreShop?.gifts?.(h, first);

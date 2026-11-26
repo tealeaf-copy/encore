@@ -28,7 +28,7 @@
     row.innerHTML = (info?.[id] ? html(info[id]) : "") + (window.PLSave ? window.PLSave.button({ kind: "event", ref: id, title }, info?.[id] ? { icon: true } : { label: "Save" }) : "");
     if (!row.innerHTML) return; anchor.after(row); }
   async function boot() { const id = idOf(); if (!id) return; css();
-    if (!window.PLSave && !document.querySelector('script[src="/save.js"]')) { const s = document.createElement("script"); s.src = "/save.js"; s.onload = () => { document.querySelectorAll(".plf").forEach((x) => x.remove()); place(); }; document.head.appendChild(s); }
+    if (!window.PLSave && !document.querySelector('script[src="/save.js"],script[src^="/save.js?"]')) { const s = document.createElement("script"); s.src = "/save.js"; s.onload = () => { document.querySelectorAll(".plf").forEach((x) => x.remove()); place(); }; document.head.appendChild(s); }
     info = await get([id]); document.querySelectorAll(".plf").forEach((x) => x.remove()); place();
     new MutationObserver(() => { clearTimeout(window.__plfT); window.__plfT = setTimeout(place, 120); }).observe(document.body, { childList: true, subtree: true }); }
   window.addEventListener("hashchange", () => { info = null; boot(); });

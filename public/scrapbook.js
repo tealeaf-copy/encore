@@ -81,7 +81,7 @@
   const api = async (method, url, body) => { const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't save. Try again."); return j; };
 
   async function mount(h, { first = "", past = [], anchor, focus = "" } = {}) { css(); let items = [], sections = [], mine = false;
-    if (!window.PLHostLike && !document.querySelector('script[src="/hostlike.js"]')) { const s = document.createElement("script"); s.src = "/hostlike.js"; s.defer = true; document.head.appendChild(s); } // "Host one like this" on events hosted here
+    if (!window.PLHostLike && !document.querySelector('script[src="/hostlike.js"],script[src^="/hostlike.js?"]')) { const s = document.createElement("script"); s.src = "/hostlike.js"; s.defer = true; document.head.appendChild(s); } // "Host one like this" on events hosted here
     if (!document.getElementById("sbCss2")) { const s = document.createElement("style"); s.id = "sbCss2"; s.textContent = SB_CSS2; document.head.appendChild(s); }
     if (h.showcase) { items = (h.scrapbook || []).map((x) => ({ ...x, ro: true })); sections = h.scrapSections || []; } // a prepared page: its past events, read-only
     else { if (signed()) { try { const me = await (await fetch("/api/host/profile")).json(); mine = me?.host?.handle === h.handle; } catch {} }

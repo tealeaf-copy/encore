@@ -38,7 +38,7 @@
 .pp-cap{font:600 20px Caveat,cursive;color:var(--pl-accent-text);transform:rotate(-2deg);display:inline-block}
 .pp-empty{color:var(--pl-soft);margin:8px 0}
 @media (max-width:520px){.pp{padding:16px 12px 14px}.pp-stamps{grid-template-columns:repeat(3,1fr);gap:2px 4px}.pp-stamp svg{width:96px;height:96px}.pp-next{width:88px;height:88px}}`;
-  const css = () => { if (document.getElementById("ppCss")) return; if (![...document.querySelectorAll('link[href*="fonts.googleapis"]')].some((l) => /Caveat/.test(l.href))) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap"; document.head.appendChild(l); } const s = document.createElement("style"); s.id = "ppCss"; s.textContent = CSS; document.head.appendChild(s); };
+  const css = () => { if (document.getElementById("ppCss")) return; if (![...document.querySelectorAll('link[href*="fonts.googleapis"],link[href^="/fonts/css2"]')].some((l) => /Caveat/.test(l.href))) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap"; document.head.appendChild(l); } const s = document.createElement("style"); s.id = "ppCss"; s.textContent = CSS; document.head.appendChild(s); };
 
   function card(P) { css(); if (!P) return ""; const c = P.counts || {};
     const stamps = (P.stamps || []).slice(0, 24).map((s) => `<a class="pp-stamp" style="--r:${(hash(s.eventId) % 17) - 8}deg"${s.url ? ` href="${esc(s.url)}"` : ""}>${stampSvg(s, 112)}<small>${esc(s.public ? s.title : "A private event")}</small></a>`).join("");

@@ -7,7 +7,7 @@
   const q = proof?.rid && proof?.code ? `?rid=${encodeURIComponent(proof.rid)}&code=${encodeURIComponent(proof.code)}` : "";
   fetch(`/api/public/plan/${encodeURIComponent(id)}${q}`, { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { const P = j?.plan; if (!P || P.locked) return;
     const L = P.days.flatMap((d) => d.items.map((x) => ({ ...x, d }))); if (!L.length) return;
-    if (!document.querySelector('link[href="/timeline.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/timeline.css"; document.head.appendChild(l); }
+    if (!document.querySelector('link[href="/timeline.css"],link[href^="/timeline.css?"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/timeline.css"; document.head.appendChild(l); }
     const sec = document.createElement("section"); sec.className = "pl-planhook"; sec.setAttribute("aria-label", "The plan");
     sec.style.cssText = "max-width:560px;margin:8px auto 24px;padding:0 16px";
     const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })(), today = T.localDay(Date.now(), tz);

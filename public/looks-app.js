@@ -3,7 +3,7 @@
 // This file reads the app's own globals (draft, saveEvent, uploadCover, safeCover) the way its other add-ons do.
 (function () {
   // price tiers ("Adults $55 · Kids $35", public/tiers.js): the sentence reader, Edit details and the full invite's picker
-  if (typeof document !== "undefined" && !document.querySelector('script[src="/tiers.js"]')) { const t = document.createElement("script"); t.src = "/tiers.js"; t.defer = true; document.head.appendChild(t); }
+  if (typeof document !== "undefined" && !document.querySelector('script[src="/tiers.js"],script[src^="/tiers.js?"]')) { const t = document.createElement("script"); t.src = "/tiers.js"; t.defer = true; document.head.appendChild(t); }
   const LK = window.EncoreLooks, C = window.EncoreColor; if (!LK || !C) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const appDraft = () => { try { return typeof draft !== "undefined" ? draft : null; } catch { return null; } }; // eslint-disable-line no-undef

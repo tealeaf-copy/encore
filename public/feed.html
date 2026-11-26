@@ -17,7 +17,7 @@
 @media (max-width:980px){.fgrid{grid-template-columns:minmax(0,1fr)}.fside{position:static}}
 .top{position:sticky;top:0;background:var(--bg);z-index:5}
 .bell{position:relative;background:none;border:0;font-size:22px;cursor:pointer;min-width:44px;min-height:44px;display:inline-grid;place-items:center;padding:0;color:var(--ink)}.bell .gl{width:22px;height:22px}.bell i#bellN{position:absolute;top:2px;right:2px;background:var(--brand);color:#fff;font:600 13px/1.2 var(--sys-sans,system-ui);border-radius:99px;padding:1px 6px;font-style:normal}
-.rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+.rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 14px;scrollbar-width:none}.rail-wait:empty{min-height:103px;box-sizing:border-box}.rail::-webkit-scrollbar{display:none}
 .ring{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;cursor:pointer;color:var(--ink);font:500 12px "IBM Plex Sans",system-ui;width:72px}
 .ring span{width:66px;height:66px;border-radius:50%;padding:3px;background:var(--pl-accent);display:grid;place-items:center}.ring span b{width:100%;height:100%;border-radius:50%;background:var(--card);border:3px solid var(--bg);display:grid;place-items:center;font-size:28px;overflow:hidden}
 .ring span b img{width:100%;height:100%;object-fit:cover}.ring.add span{background:var(--line)}.ring small{max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -108,6 +108,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   <div class="fgrid"><div class="fcol">
   <div class="rail" id="rail" aria-label="Stories"></div>
   <div class="tabs" role="tablist" hidden><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">Mine</button><button data-t="alerts" aria-selected="false">Watching</button><button data-t="friends" aria-selected="false">Friends</button></div>
+  <script>/* signed in: the stories row and the tabs hold their place from the first paint, so the feed doesn't drop 158px when they fill */ if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) { document.querySelector(".tabs").hidden = false; document.getElementById("rail").classList.add("rail-wait"); }</script>
   <main id="m" data-calm="feed"></main>
   </div><aside class="fside" id="side" aria-label="Suggestions"></aside></div>
 </div>
@@ -133,7 +134,12 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
   // the "+" (public/composer.js): a post, a photo, a link, Who's in?, and tiles for an event, a drop, photos, the fan club
   window.PLToast = (t) => toast(t); try { window.PLComposer?.mount({ onPosted: () => load() }); } catch {}
-  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
+  window.PLFeedReload = () => load(); // the city from your workspace lands after the first draw: redraw in place, no page reload
+  // your workspace's city, asked for alongside the feed the first time on a device, so the first draw already has it
+  // (the page used to draw, then reload itself once to pick the city up)
+  let cityP = null; const cityReady = () => cityP || (cityP = (async () => { try { if (window.EncorePlace?.get?.()?.city || localStorage.getItem("encore.city") || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return;
+    const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); sessionStorage.setItem("encore.feedCity", "1"); } } catch {} })());
+  async function load() { try { [F] = await Promise.all([api("/api/me/feed"), cityReady()]); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
   // ---- leaderboards: the weekly card, moments ("Mai is now #2"), your own standing ----
   const lbAv = (h) => `<span class="lav" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 44) : esc(h.emoji || "🎉")}</span>`;
   const lbBadges = (e) => (e.badges || []).filter((b) => b.id === "super" || b.id === "legend").map((b) => `<span class="bdg">${esc(b.emoji)} ${esc(b.id === "legend" ? "Local legend" : b.label)}</span>`).join("") + (e.streak && e.streak.weeks >= 3 ? `<span class="bdg">🔥 ${e.streak.weeks}-week streak</span>` : "");
@@ -258,7 +264,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   if (location.hash === "#bell") setTimeout(() => $("#bell")?.click(), 300);
   load();
 })();
-</script><script>(async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); location.reload(); } } } catch {} })();</script>
+</script><script>(async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); if (window.PLFeedReload) window.PLFeedReload(); else location.reload(); } } } catch {} })();</script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body></html>

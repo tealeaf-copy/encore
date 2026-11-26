@@ -27,6 +27,8 @@ h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;
 .pv-aside{display:none}
 @media (min-width:900px){.pv-grid{grid-template-columns:minmax(0,1fr) 272px;align-items:start}.pv-aside{display:grid;gap:14px;position:sticky;top:16px}.pv-grid.is-cal .pv-aside{display:none}.pv-grid.is-cal{grid-template-columns:minmax(0,1fr)}.pv-head h1{font-size:40px}}
 .pv-load{padding:24px 0;color:var(--pl-soft)}
+/* while the plans load: the kicker line keeps its height, and what sits below the plans waits unseen, so nothing jumps when they land */
+.pv-kick:empty::before{content:"\00a0"}main.pv:has(.pv-load) #ppFoot,main.pv:has(.pv-load) #rpCard{visibility:hidden}
 .pv-empty{margin:18px 0;padding:22px 18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
 .pv-empty p{margin:0 0 14px;font:600 18px/1.4 var(--pl-font-text)}
 .pv-sugg{display:flex;flex-wrap:wrap;gap:8px}

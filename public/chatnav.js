@@ -10,9 +10,14 @@
   const has = () => signed() || proofs().length > 0;
   let n = window.__plChatsUnread || 0;
   function set(k) { n = +k || 0; document.querySelectorAll("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); b.setAttribute("aria-label", n ? `${n} chat${n === 1 ? "" : "s"} with new messages` : ""); }); }
-  let t = 0, busy = false;
-  async function poll() { clearTimeout(t); set(window.__plChatsUnread ?? n); if (!has()) return; if (!document.hidden && !busy && location.pathname.split("/")[1] !== "chats") { busy = true; try { const r = await fetch("/api/chats/badge", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proofs: proofs() }) }); if (r.ok) set((await r.json()).unread); } catch {} busy = false; } t = setTimeout(poll, 30000); }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+  // one task on the shared poller (public/poller.js): every 30 seconds while the tab shows, paused while it's hidden,
+  // slower after a failure; the old timer loop stays as the fallback when the poller can't load
+  let t = 0, busy = false, task = null;
+  async function check() { set(window.__plChatsUnread ?? n); if (!has() || location.pathname.split("/")[1] === "chats") return;
+    const r = await fetch("/api/chats/badge", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proofs: proofs() }) }); if (!r.ok) throw new Error("badge " + r.status); set((await r.json()).unread); }
+  async function poll() { if (window.PLPoll) { if (task) task.kick(); else task = window.PLPoll.every("chat-badge", check, { ms: 30000, now: true }); return; }
+    clearTimeout(t); set(window.__plChatsUnread ?? n); if (!has()) return; if (!document.hidden && !busy) { busy = true; try { await check(); } catch {} busy = false; } t = setTimeout(poll, 30000); }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !window.PLPoll) poll(); });
   const ICON = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const CHAT = ICON('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17h0A1.5 1.5 0 0 1 4 15.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>');
   // the Me sheet: everything that left the bottom bar
@@ -54,5 +59,6 @@ button.plme-r{width:100%;border:0;background:none;font:inherit;text-align:left;c
   window.PLChatNav = { set, poll, me, has, CHAT, proofs, get n() { return n; } };
   // a new account that hasn't confirmed its email sees one line about it (public/verifybanner.js)
   const verify = () => { if (signed() && !window.__plVerify) { const t = document.createElement("script"); t.src = "/verifybanner.js"; t.defer = true; document.head.appendChild(t); } };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { app(); poll(); verify(); }); else { app(); poll(); verify(); }
+  const start = () => { app(); (window.PLPoll ? Promise.resolve() : need("/poller.js")).catch(() => {}).then(poll); verify(); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();

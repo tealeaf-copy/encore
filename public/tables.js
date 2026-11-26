@@ -95,7 +95,7 @@
   // and the host (under the "Mia wants you to come" banner on a friend's link), their bits under the reply ----------
   if (typeof document !== "undefined" && /^\/[ei]\/[A-Za-z0-9_-]{2,80}/.test(location.pathname)) {
     const id = location.pathname.split("/")[2]; let T = null, state = "", busy = false, timer = null;
-    if (!document.querySelector('link[href="/tables.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/tables.css"; document.head.appendChild(l); }
+    if (!document.querySelector('link[href="/tables.css"],link[href^="/tables.css?"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/tables.css"; document.head.appendChild(l); }
     const run = async () => { if (busy) return; const m = document.getElementById("m"), cov = m && m.querySelector(".cov"); if (!cov) return; const now = document.getElementById("tk") ? "tk" : document.getElementById("f") ? "f" : ""; if (!now) return;
       const pl = document.getElementById("tbPlan"), hi0 = m.querySelector(".cwm-hello"); if (now === state && document.getElementById("tbMe") && !(hi0 && pl && pl.previousElementSibling !== hi0)) return; busy = true;
       try { if (!T || now !== state) T = await load(id); state = now; if (!T) return;

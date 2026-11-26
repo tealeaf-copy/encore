@@ -62,7 +62,7 @@
 @keyframes plc-rise{0%,100%{transform:translateY(0);opacity:.35}35%{transform:translateY(-5px);opacity:1}70%{transform:translateY(0);opacity:.7}}
 @media (prefers-reduced-motion:reduce){.plc,.plc-fade{transition:none}.plc *{animation:none!important}.plc .plc-d{opacity:.7}}
 /* same-document view changes (pages that swap views in place) fade, softly and briefly */
-::view-transition-old(root),::view-transition-new(root){animation-duration:.2s;animation-timing-function:ease}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.15s;animation-timing-function:ease}
 @media (prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none}}`;
   function css() { if (document.getElementById("plCalmCss")) return; const s = document.createElement("style"); s.id = "plCalmCss"; s.textContent = CSS; (document.head || document.documentElement).appendChild(s); }
 

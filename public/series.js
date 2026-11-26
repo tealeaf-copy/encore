@@ -8,7 +8,7 @@
   const $ = (s, el = document) => el.querySelector(s);
   const getJ = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "");
-  const css = () => { if (!document.querySelector('link[href="/slots.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/slots.css"; document.head.appendChild(l); } };
+  const css = () => { if (!document.querySelector('link[href="/slots.css"],link[href^="/slots.css?"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/slots.css"; document.head.appendChild(l); } };
   const ID = /^[A-Za-z0-9_-]{2,80}$/, signed = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   /** Fork: the same draft "Host one like this" makes (public/hostlike.js), from this episode. */
   function fork(id, title) { if (!ID.test(id || "")) return; try { localStorage.removeItem("pl.hostIdea"); localStorage.setItem("pl.hostLike", JSON.stringify({ id, title: String(title || "").slice(0, 80), at: Date.now() })); } catch {}

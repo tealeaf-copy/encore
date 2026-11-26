@@ -21,7 +21,11 @@
   const add = () => { for (const bar of document.querySelectorAll(".es-rail, header.top")) { if (bar.querySelector(".nav-fold")) continue; if (bar.matches("header.top") && getComputedStyle(bar).position !== "fixed") continue;
       document.querySelectorAll("nav.tabs a").forEach((a) => { if (!a.dataset.label) a.dataset.label = a.textContent.trim(); });
       const b = document.createElement("button"); b.type = "button"; b.className = "nav-fold"; b.innerHTML = ICON; b.onclick = () => set(!on); if (getComputedStyle(bar).position === "static") bar.style.position = "relative"; bar.appendChild(b); set(on); } };
-  const warmed = new Set(); const warm = (e) => { const a = e.target.closest?.(".es-rail a[href], header.top nav.tabs a[href]"); if (!a) return; const u = new URL(a.href, location.href); if (u.origin !== location.origin || warmed.has(u.pathname) || u.pathname === location.pathname) return; warmed.add(u.pathname); const l = document.createElement("link"); l.rel = "prefetch"; l.href = u.pathname; document.head.appendChild(l); };
+  // a finger landing on (or a pointer resting over) a link to one of our pages warms it: the service worker fetches the
+  // page into its cache (public/sw.js), so the tap opens it at once; without one, a prefetch hint. Browsers with
+  // speculation rules (server/perf.js) prefetch on their own as well.
+  const warmed = new Set(); const warm = (e) => { const a = e.target.closest?.("a[href]"); if (!a || a.target === "_blank" || a.hasAttribute("download") || a.hasAttribute("data-no-prefetch")) return; let u; try { u = new URL(a.href, location.href); } catch { return; } if (u.origin !== location.origin || /^\/(api|_blob|logout|verify|unsubscribe|sso)\b/.test(u.pathname)) return; const k = u.pathname + u.search; if (warmed.has(k) || (u.pathname === location.pathname && u.search === location.search)) return; warmed.add(k);
+    const sw = navigator.serviceWorker?.controller; if (sw) { try { sw.postMessage({ warm: k }); } catch {} return; } const l = document.createElement("link"); l.rel = "prefetch"; l.href = k; document.head.appendChild(l); };
   document.addEventListener("pointerover", warm, { passive: true }); document.addEventListener("touchstart", warm, { passive: true });
   const mo = new MutationObserver(() => { clearTimeout(window.__navFoldT); window.__navFoldT = setTimeout(add, 80); }); 
   const start = () => { add(); mo.observe(document.body, { childList: true, subtree: true }); }; if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
@@ -130,7 +134,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
 // ---- hooks for new people (server/hooks.js): "What are you into?" on a first visit to /feed, /events or /discover,
 // signed out and dismissible; Save buttons work on these pages too ----
 (function () { try { if (window.__plHooksLoad) return; window.__plHooksLoad = 1; const P = location.pathname; if (!/^\/(feed|events|discover)$/.test(P)) return;
-  const add = (src, cb) => { if (document.querySelector(`script[src="${src}"]`)) return cb && cb(); const s = document.createElement("script"); s.src = src; s.defer = true; if (cb) s.onload = cb; document.head.appendChild(s); };
+  const add = (src, cb) => { if (document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return cb && cb(); const s = document.createElement("script"); s.src = src; s.defer = true; if (cb) s.onload = cb; document.head.appendChild(s); };
   add("/save.js"); if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; let seen = false; try { seen = !!(localStorage.getItem("pl.interestsSeen") || localStorage.getItem("pl.interests")); } catch {} if (seen) return;
   add("/interests.js", () => window.PLInterests?.maybeAuto()); } catch {} })();
 

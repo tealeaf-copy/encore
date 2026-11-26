@@ -13,4 +13,4 @@ button,input,select,textarea{font-family:inherit}
 /* people who ask their device for less motion get still pages everywhere */
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 /* soft page-to-page fades where the browser has cross-document View Transitions (public/calm.js has the rest); none for less motion */
-@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.2s}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}
+@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.15s}@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}

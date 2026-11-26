@@ -373,7 +373,7 @@
 
   // ---------- styles ----------
   // load a helper script once; run cb when it's there
-  function need(src, cb) { const s0 = document.querySelector(`script[src="${src}"]`); if (s0) { if (s0.dataset.ok) cb?.(); else s0.addEventListener("load", () => cb?.()); return; } const s = document.createElement("script"); s.src = src; s.onload = () => { s.dataset.ok = 1; cb?.(); }; document.head.appendChild(s); }
+  function need(src, cb) { const s0 = document.querySelector(`script[src="${src}"],script[src^="${src}?"]`); if (s0) { if (s0.dataset.ok) cb?.(); else s0.addEventListener("load", () => cb?.()); return; } const s = document.createElement("script"); s.src = src; s.onload = () => { s.dataset.ok = 1; cb?.(); }; document.head.appendChild(s); }
   need("/hostlike.js");
   function css() { if (document.getElementById("fvCss")) return; const s = document.createElement("style"); s.id = "fvCss"; s.textContent = CSS_TEXT; document.head.appendChild(s); }
   const CSS_TEXT = `
@@ -580,7 +580,7 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
   window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER };
   // the swipe deck (public/swipedeck.js) on a first visit to /feed, signed in or out; it decides whether to show itself
   if (location.pathname === "/feed" || location.pathname === "/") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
-    const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };
+    const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"],script[src^="/swipedeck.js?"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };
     if (!done) document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go(); }
 })();
 // ---- end visual feed ----

@@ -8,7 +8,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", last); else last(); window.addEventListener("load", last); } catch {} })();
 (function () { try { if (!document.querySelector('link[rel~="icon"]')) { const l = document.createElement("link"); l.rel = "icon"; l.type = "image/svg+xml"; l.href = "/favicon.svg"; (document.head || document.documentElement).appendChild(l); } } catch {} })();
 // the calm loader (public/calm.js) for every page that waits on its data; pages that need it before their first script load it themselves
-(function () { try { if (!window.PLCalm && !document.querySelector('script[src="/calm.js"]')) { const s = document.createElement("script"); s.src = "/calm.js"; (document.head || document.documentElement).appendChild(s); } } catch {} })();
+(function () { try { if (!window.PLCalm && !document.querySelector('script[src="/calm.js"],script[src^="/calm.js?"]')) { const s = document.createElement("script"); s.src = "/calm.js"; (document.head || document.documentElement).appendChild(s); } } catch {} })();
 // Side navigation, before the first paint: reserve its space and apply the collapsed setting now, so nothing
 // jumps sideways when the nav itself is drawn a moment later (by shell.js on public pages, by the app on /).
 (function () {

@@ -58,7 +58,7 @@
 
   // ---- the inbox ----
   let B = null, q = "";
-  async function loadInbox() { try { B = await api("/api/chats", { proofs: proofs() }); } catch { B = B || { chats: [] }; } paintRows(); badge(); }
+  async function loadInbox() { let ok = true; try { B = await api("/api/chats", { proofs: proofs() }); } catch { ok = false; B = B || { chats: [] }; } paintRows(); badge(); return ok; }
   function badge() { const n = (B?.chats || []).filter((c) => c.unread > 0).length; window.__plChatsUnread = n; document.title = (n ? `(${n}) ` : "") + "Chats · Pottery Lab"; $$("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); }); try { window.PLChatNav?.set?.(n); } catch {} }
   function rowHTML(c) { const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0;
     const last = c.locked ? `${G.lock}<span>${esc(c.lockedLine || "")}</span>` : c.last ? `<span>${c.last.system ? esc(c.last.text) : `${esc(c.last.by)}: ${esc(c.last.text)}`}</span>` : `<span>${c.role === "host" ? "Say hi to your guests" : "Say hi to the group"}</span>`;
@@ -110,7 +110,7 @@
       delay = Math.min(30000, delay * 2); }
     finally { loading = false; } schedule(); }
   function schedule() { clearTimeout(timer); if (route.id) timer = setTimeout(() => poll(), delay); }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { delay = 3000; idle = 0; poll(true); loadInbox(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { delay = 3000; idle = 0; poll(true); if (!window.PLPoll) loadInbox(); } });
   addEventListener("focus", () => { if (route.id) { idle = 0; poll(); } });
 
   const isHost = () => T?.me?.role === "host" || T?.me?.role === "cohost";
@@ -250,5 +250,6 @@
   // ---- start ----
   document.body.classList.toggle("ch-open", !!route.id); fit();
   loadInbox().then(() => { if (!route.id && wide() && B?.chats?.length) { const first = B.chats.find((c) => !c.locked); if (first) { route.id = first.id; history.replaceState({ chat: first.id }, "", "/chats/" + encodeURIComponent(first.id)); paintRows(); } } openThread(); });
-  setInterval(() => { if (!document.hidden) loadInbox(); }, 12000);
+  // the inbox refreshes every 12 seconds while the tab shows, on the shared poller (public/poller.js), paused while hidden
+  if (window.PLPoll) window.PLPoll.every("chat-inbox", async () => { if (!(await loadInbox())) throw new Error("inbox"); }, { ms: 12000, max: 120000 }); else setInterval(() => { if (!document.hidden) loadInbox(); }, 12000);
 })();

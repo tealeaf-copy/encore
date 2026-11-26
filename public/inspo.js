@@ -97,7 +97,7 @@
         <div class="pli-acts"><button type="button" class="pli-host" data-pli-host="${esc(x.id)}" aria-label="Host this: ${esc(x.title)}">Host this</button><details class="pli-more"><summary aria-label="More for ${esc(x.title)}"><span aria-hidden="true"></span></summary><div class="pli-menu">${save}${real}${host}${counts}</div></details></div></div></div></article>`; }
   // "3 people hosted this after seeing it" (public/hostlike.js fills it in): an idea, or the real event a card came from
   const hostedKey = (x) => (x.type === "idea" && /^idea-[A-Za-z0-9_-]{2,110}$/.test(x.id || "") ? x.id : x.save?.kind === "event" && /^[A-Za-z0-9_-]{2,80}$/.test(x.save.ref || "") ? x.save.ref : "");
-  if (!document.querySelector('script[src="/hostlike.js"]')) { const s = document.createElement("script"); s.src = "/hostlike.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); }
+  if (!document.querySelector('script[src="/hostlike.js"],script[src^="/hostlike.js?"]')) { const s = document.createElement("script"); s.src = "/hostlike.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); }
 
   /** "Host this": signed in, a new event from this idea; signed out, signup first and the idea waits in this browser. */
   function hostThis(id) { const x = items.get(id); try { localStorage.removeItem("pl.hostLike"); localStorage.setItem("pl.hostIdea", JSON.stringify({ id, title: x?.title || "", at: Date.now() })); } catch {}

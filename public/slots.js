@@ -7,8 +7,8 @@
   if (window.Slots) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
-  const add = (src) => { if (document.querySelector(`script[src="${src}"]`)) return; const t = document.createElement("script"); t.src = src; t.defer = true; document.head.appendChild(t); };
-  const css = () => { if (!document.querySelector('link[href="/slots.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/slots.css"; document.head.appendChild(l); } };
+  const add = (src) => { if (document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return; const t = document.createElement("script"); t.src = src; t.defer = true; document.head.appendChild(t); };
+  const css = () => { if (!document.querySelector('link[href="/slots.css"],link[href^="/slots.css?"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/slots.css"; document.head.appendChild(l); } };
   const ls = { get: (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
   const gkey = () => { let k = ""; try { k = localStorage.getItem("encore.gkey") || ""; } catch {} return k; };
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", ...(gkey() ? { "x-encore-key": gkey() } : {}) }, body: JSON.stringify(body) }).then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) }));

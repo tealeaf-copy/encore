@@ -16,6 +16,11 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
   const isGuest = () => /^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash || "");
   const capError = (code, message, extra) => Object.assign({ code, message }, extra || {});
 
+  // a create sent twice within 10 seconds with the same content (autosave racing the Save button, a double tap, a retry
+  // after a dropped answer) carries the same Idempotency-Key, so the server makes one (server/perf.js)
+  const IDEM_COLLECTIONS = /^(events|rsvps|kudos|orders)$/, idemKeys = new Map();
+  const idemKey = (path, body) => { const s = path + JSON.stringify(body, (k, v) => (/^(createdAt|updatedAt|_base)$/.test(k) ? undefined : v)); let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    const now = Date.now(), k = idemKeys.get(h); if (k && now - k.at < 10000) return k.key; for (const [x, v] of idemKeys) if (now - v.at > 10000) idemKeys.delete(x); const key = "c-" + (h >>> 0).toString(36) + "-" + now.toString(36); idemKeys.set(h, { at: now, key }); return key; };
   const guestKey = () => { try { let k = localStorage.getItem("encore.gkey"); if (!k) { k = randomId().slice(0, 32); localStorage.setItem("encore.gkey", k); } return k; } catch { return ""; } };
   async function api(method, url, body, { raw = false, headers = {} } = {}) {
     const h = { ...headers };
@@ -248,7 +253,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
       id: path.split("/").pop(),
       doc: (id) => docRef(`${path}/${id || randomId()}`),
       async add(obj) {
-        const r = await api("POST", `/api/db/collection?path=${enc(path)}`, clone(obj));
+        const body = clone(obj), r = await api("POST", `/api/db/collection?path=${enc(path)}`, body, { headers: IDEM_COLLECTIONS.test(path) ? { "Idempotency-Key": idemKey(path, body) } : {} });
         const ref = docRef(`${path}/${r.id}`); if (r.response) ref.response = r.response; return ref;
       },
     };

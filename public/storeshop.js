@@ -3,7 +3,9 @@
 (function () {
   const C = () => window.EncoreCommunity, esc = (s) => C().esc(s);
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const post = async (u, b) => { const r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Something went wrong."); return j; };
+  // an order or booking sent twice from this page (a double tap, a retry after a dropped answer) runs once (server/perf.js)
+const PAGE_KEY = Math.random().toString(36).slice(2, 10), idemOf = (s) => "p-" + PAGE_KEY + "-" + [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7).toString(36);
+const post = async (u, b) => { const s = JSON.stringify(b || {}), r = await fetch(u, { method: "POST", headers: { "Content-Type": "application/json", ...(/^\/api\/public\/(order|book)\//.test(u) ? { "Idempotency-Key": idemOf(u + s) } : {}) }, body: s }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Something went wrong."); return j; };
   const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
   // review round 8: a line under a name that only repeats the name is hidden (speaker cards: "Keynote" / "Keynote")
   const subOf = (x) => { const d = String(x?.desc || "").trim(), k = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); return d && k(d) !== k(x?.name) ? d : ""; };

@@ -50,7 +50,9 @@ window.InviteOrder = function (e, ws, H, U) {
     const total = lines.reduce((a, x) => a + qty[x.id] * (x.cents || 0), 0), text = (lines.length ? lines.map((x) => `${qty[x.id]} × ${x.name}`).join(", ") : free) + (slot ? ` · pickup ${slotLabel(slot)}` : "") + (total ? ` · ${money(total)}` : "");
     const go = $("#oGo"); go.disabled = true;
     try { let pay = "", code = "", where = "", rid = "";
-      if (shop) { const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "", eventId: eid }) }); const j = await r.json().catch(() => ({}));
+      // the same order sent twice from this page (a double tap, a retry after a dropped answer) is placed once (server/perf.js)
+      if (shop) { const ob = JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "", eventId: eid }), ok = (window.__plOk ||= Math.random().toString(36).slice(2, 10));
+        const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": "order-" + ok + "-" + [...ob].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7).toString(36) }, body: ob }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); pay = j.payUrl || ""; code = j.code || ""; where = j.where || "";
         U.ls.set(`encore.order.${handle}.${code}`, JSON.stringify({ code, total: j.total, slot, at: Date.now(), lines: lines.map((x) => ({ name: x.name, qty: qty[x.id] })) })); }
       else { const rc = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");

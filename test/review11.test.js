@@ -77,7 +77,7 @@ test("3. pairs and groups: one helper says 6 pairs / 3 pairs left everywhere, an
   for (const f of ["index.html", "public/invite.html", "public/host.html"]) assert.match(read(f), /<script src="\/spots\.js"><\/script>/, f);
   assert.ok((await put("r11Matcha", { kind: "social", casual: true, name: "Couples matcha", date: day(8), city: "Brooklyn", published: true, discoverable: true, price: "$60", groupPrice: 60, groupSize: 2, headcount: 12, headUnit: "pairs", unitCount: 6 })).ok);
   const pg = await (await fetch(srv.base + "/api/public/host/loaves-r11")).json(), c = pg.upcoming.find((x) => x.id === "r11Matcha");
-  assert.ok(c, "on the page"); assert.equal(c.headUnit, "pairs"); assert.equal(c.unitCount, 6); assert.equal(c.priceLine, "$60 for 2");
+  assert.ok(c, "on the page"); assert.equal(c.headUnit, "pairs"); assert.equal(c.unitCount, 6); assert.equal(c.priceLine, "$60 a pair", "review round 13: a pairs event says a pair");
 });
 
 test("4 and 7. the directory: $60 for 2, from $3 each, a pre-order record, no per-person offer for a group", async () => {
@@ -90,7 +90,7 @@ test("4 and 7. the directory: $60 for 2, from $3 each, a pre-order record, no pe
   const e = (await (await fetch(srv.base + "/api/v1/events/r11Bagels")).json()).data;
   assert.equal(e.preorder, true); assert.deepEqual(e.items, [{ name: "Everything bagel", price: 3 }, { name: "Dozen", price: 30 }]); assert.equal(e.order_by, "Thursday");
   assert.equal(e.price, "from $3 each"); assert.equal(e.spots_left, 35, "40 minus the 5 items ordered");
-  const m = (await (await fetch(srv.base + "/api/v1/events/r11Matcha")).json()).data; assert.equal(m.price, "$60 for 2"); assert.equal(m.preorder, undefined);
+  const m = (await (await fetch(srv.base + "/api/v1/events/r11Matcha")).json()).data; assert.equal(m.price, "$60 a pair"); assert.equal(m.preorder, undefined);
   const html = await (await fetch(srv.base + "/events")).text().catch(() => "");
   if (/application\/ld\+json/.test(html)) assert.doesNotMatch(html, /"price":60,"priceCurrency"/, "no per-person offer for a pair");
   const llms = await (await fetch(srv.base + "/llms.txt")).text();

@@ -49,7 +49,19 @@ export function findHold(S, eventId, token) {
  */
 export function friendTerms(req, S, ev, eventId, selfId = null, now = Date.now()) {
   const tok = tokenFromCookie(req, eventId); if (!tok || !ev) return null;
-  const F = findHold(S, eventId, tok); if (!F) return null; const { inviter, hold } = F, ir = inviter.data || {};
+  return termsOf(S, ev, findHold(S, eventId, tok), eventId, selfId, now);
+}
+/** The hold a link made, by the hash of its token (what an "I'm in if" record keeps from the friend's browser). */
+export function findHoldByHash(S, eventId, h) {
+  if (!/^[0-9a-f]{32}$/.test(String(h || ""))) return null;
+  for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== eventId || !Array.isArray(r.withHolds)) continue;
+    const x = r.withHolds.find((y) => y && y.h === h); if (x) return { inviter: d, hold: x }; }
+  return null;
+}
+/** review round 13: the same terms for a reply the server makes later ("I'm in if Mia is" settling), from the stored hash. */
+export const friendTermsByHash = (S, ev, eventId, h, selfId = null, now = Date.now()) => (ev ? termsOf(S, ev, findHoldByHash(S, eventId, h), eventId, selfId, now) : null);
+function termsOf(S, ev, F, eventId, selfId, now) {
+  if (!F) return null; const { inviter, hold } = F, ir = inviter.data || {};
   if (inviter.id === selfId || ir.response !== "going") return null; // never your own link; the inviter has to be in
   if (hold.by && hold.by !== selfId) return null; // someone else already used it
   if (unitEvent(ev)) { const joined = S.list("rsvps").filter((d) => d.id !== selfId && d.data?.pairOf === inviter.id && d.data?.response === "going").length;

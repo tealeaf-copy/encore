@@ -40,11 +40,12 @@
   // ---------- what guests see ----------
   const COMFORT = { solo: "Come alone friendly", beginner: "Beginner friendly", quiet: "Quiet corner", leave: "Leave anytime", nospeech: "No speeches" };
   const has = (T) => !!T && !!(T.first30 || T.size || (T.comfort || []).length || T.noise || (T.agenda || []).length || (T.cohosts || []).length || T.last);
-  /** The plan card: first 30 minutes, group size, start and end, comfort notes, who's in and who came last time. */
-  function plan(T) {
+  /** The plan card: first 30 minutes, group size, start and end, comfort notes, who's in and who came last time.
+   *  opts.noWho: the page already has its own who's-in row, so no "In so far" line here. */
+  function plan(T, opts = {}) {
     if (!has(T)) return ""; const when = T.start ? `${clock(T.start)}${T.end ? ` to ${clock(T.end)}` : ""}` : "";
     const facts = [T.sizeText && ["Group", `<span class="tb-mono">${esc(T.sizeText)}</span> people`], when && ["Time", `<span class="tb-mono">${esc(when)}</span>`], T.noise && ["Noise", esc(T.noise.label)]].filter(Boolean);
-    const names = (T.names || []).length ? `<p class="tb-who"><span class="tb-k">In so far</span> ${and(T.names.map(esc).concat(T.more ? [`<span class="tb-mono">${T.more}</span> more`] : []))}</p>` : "";
+    const names = !opts.noWho && (T.names || []).length ? `<p class="tb-who"><span class="tb-k">In so far</span> ${and(T.names.map(esc).concat(T.more ? [`<span class="tb-mono">${T.more}</span> more`] : []))}</p>` : "";
     const L = T.last, rest = L ? L.count - Math.min(4, L.names.length) : 0, last = L && L.count ? `<p class="tb-last"><span class="tb-k">Last time</span> <span class="tb-mono">${esc(day(L.date))}</span> · ${L.names.length ? and(L.names.slice(0, 4).map(esc).concat(rest > 0 ? [`<span class="tb-mono">${rest}</span> more`] : [])) : `<span class="tb-mono">${L.count}</span> came`}${(L.back || []).length ? `. ${esc(and(L.back.slice(0, 3)))} ${L.back.length === 1 ? "is" : "are"} back` : ""}</p>` : "";
     return `<section class="tb-plan" id="tbPlan" aria-label="What we're doing">${T.first30 ? `<p class="tb-eyebrow">First 30 minutes</p><p class="tb-first">${esc(T.first30)}</p>` : `<p class="tb-eyebrow">What to expect</p>`}
       ${facts.length ? `<dl class="tb-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
@@ -60,19 +61,24 @@
   /** After the reply form, or in place of it: "I'm in if Sam is", the taste questions, "You're at table 2 with Ada and Lin". */
   function me(box, id, T, host, opts = {}) {
     const M = mineOf(id), m = T?.me, resp = m?.response || M?.response || "", out = [];
-    if (m?.table) out.push(`<div class="tb-card tb-seat" id="tbSeat"><p class="tb-eyebrow">Your table</p><p class="tb-big">Table <span class="tb-mono">${m.table.n}</span>${m.table.with.length ? ` with ${esc(and(m.table.with))}` : ""}</p></div>`);
+    // tablemates who chose to show their name, the rest only counted ("with Ada and 2 others")
+    const mates = m?.table ? m.table.with.map(esc).concat(+m.table.others > 0 ? [`<span class="tb-mono">${+m.table.others}</span> other${+m.table.others === 1 ? "" : "s"}`] : []) : [];
+    if (m?.table) out.push(`<div class="tb-card tb-seat" id="tbSeat"><p class="tb-eyebrow">Your table</p><p class="tb-big">Table <span class="tb-mono">${m.table.n}</span>${mates.length ? ` with ${and(mates)}` : ""}</p></div>`);
+    if (m?.metWith && resp === "maybe" && m.order) out.push(`<p class="tb-note" id="tbMet">${esc(m.metWith.split(" ")[0])} is in. Pick what you'd like above to order.</p>`);
     if (m?.metWith && resp === "going") out.push(`<p class="tb-note" id="tbMet">${esc(m.metWith.split(" ")[0])} is in, so you're in.</p>`);
     if (T?.open && resp === "going" && (T.open.questions || []).length && !m?.table) {
       const A = m?.taste || {}; out.push(`<form class="tb-card tb-taste" id="tbTaste"><p class="tb-eyebrow">Open table</p><p class="tb-big">${m?.taste ? "Your answers" : `${T.open.questions.length === 2 ? "Two" : T.open.questions.length === 3 ? "Three" : "A"} quick question${T.open.questions.length > 1 ? "s" : ""}`}</p><p class="tb-sub">${esc(host || "Your host")} uses these to put you at a table of about <span class="tb-mono">${T.open.size}</span>.</p>
         ${T.open.questions.map((q) => `<fieldset><legend>${esc(q.q)}</legend><div class="tb-opts">${q.options.map((o) => `<label><input type="radio" name="${q.id}" value="${esc(o)}"${A[q.id] === o ? " checked" : ""}><span>${esc(o)}</span></label>`).join("")}</div></fieldset>`).join("")}
         <button class="tb-btn" type="submit">${m?.taste ? "Update" : "Save answers"}</button><p class="tb-msg" role="status"></p></form>`); }
-    const canIf = !opts.noIf && !(resp === "going" || resp === "waitlist" || resp === "requested");
+    const canIf = !opts.noIf && !m?.order && !(resp === "going" || resp === "waitlist" || resp === "requested");
     if (canIf) out.push(m?.ifWith ? `<div class="tb-card tb-if" id="tbIf"><p class="tb-big">You're in once ${esc(m.ifWith)} is.</p><p class="tb-sub">We'll tell you when. ${esc(m.ifWith.split(" ")[0])} won't see this.</p><button class="tb-link" type="button" data-tb-ifoff>Change</button></div>`
       : `<details class="tb-card tb-if" id="tbIf"${opts.openIf ? " open" : ""}><summary>I'm in if a friend is</summary><form class="tb-ifform"><p class="tb-sub">Name them. When they reply I'm in, you're in too. They won't see this.</p>
         <label class="tb-f"><span>Their name</span><input name="with" autocomplete="off" required maxlength="60" placeholder="Sam"></label>
         ${M?.rid ? "" : `<label class="tb-f"><span>Your name</span><input name="me" autocomplete="name" required maxlength="80"></label><label class="tb-f"><span>Your email</span><input name="email" type="email" autocomplete="email" maxlength="200"><small>So we can tell you when you're in.</small></label>`}
         <button class="tb-btn" type="submit">Save</button><p class="tb-msg" role="status"></p></form></details>`);
     box.innerHTML = out.join(""); box.hidden = !out.length;
+    // review round 13: the closed panel's fields are hidden outright, so the page has one "Your name" (the reply's) until it opens
+    const det = box.querySelector("details#tbIf"), iff = det?.querySelector(".tb-ifform"); if (det && iff) { iff.hidden = !det.open; det.addEventListener("toggle", () => { iff.hidden = !det.open; }); }
     const msg = (f, t) => { const p = f.querySelector(".tb-msg"); if (p) p.textContent = t; };
     box.querySelector("#tbTaste")?.addEventListener("submit", async (ev) => { ev.preventDefault(); const f = ev.target, A = {}; for (const q of T.open.questions) { const x = f.querySelector(`input[name=${q.id}]:checked`); if (x) A[q.id] = x.value; }
       const r = await post(`/api/public/table/${encodeURIComponent(id)}/taste`, { rid: M?.rid, code: M?.code, answers: A }); msg(f, r.ok ? "Saved. You'll see your table here once it's set." : r.j.message || "Couldn't save that."); });
@@ -85,14 +91,19 @@
   }
   root.Tables = { read, tidy, apply, plan, me, load, has, clock, COMFORT };
 
-  // ---------- the light invite (/e/:id, public/invite.html): the plan above the cover, their bits under the reply ----------
-  if (typeof document !== "undefined" && /^\/e\/[A-Za-z0-9_-]{2,80}/.test(location.pathname)) {
+  // ---------- the light invite (/e/:id and a Come with me link, /i/:id; public/invite.html): the plan under the title, date
+  // and the host (under the "Mia wants you to come" banner on a friend's link), their bits under the reply ----------
+  if (typeof document !== "undefined" && /^\/[ei]\/[A-Za-z0-9_-]{2,80}/.test(location.pathname)) {
     const id = location.pathname.split("/")[2]; let T = null, state = "", busy = false, timer = null;
     if (!document.querySelector('link[href="/tables.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/tables.css"; document.head.appendChild(l); }
     const run = async () => { if (busy) return; const m = document.getElementById("m"), cov = m && m.querySelector(".cov"); if (!cov) return; const now = document.getElementById("tk") ? "tk" : document.getElementById("f") ? "f" : ""; if (!now) return;
-      if (now === state && document.getElementById("tbMe")) return; busy = true;
+      const pl = document.getElementById("tbPlan"), hi0 = m.querySelector(".cwm-hello"); if (now === state && document.getElementById("tbMe") && !(hi0 && pl && pl.previousElementSibling !== hi0)) return; busy = true;
       try { if (!T || now !== state) T = await load(id); state = now; if (!T) return;
-        if (!document.getElementById("tbPlan")) { const h = plan(T); if (h) cov.insertAdjacentHTML("beforebegin", h); }
+        // review round 13: below the title and what/when/where, not above the cover; redrawn once they reply ("In so far"
+        // only when the page has no row of who's in of its own)
+        const hi = m.querySelector(".cwm-hello"), at = hi || m.querySelector(".host") || m.querySelector(".facts") || m.querySelector("h1") || cov, old = document.getElementById("tbPlan"), h = plan(T, { noWho: !!m.querySelector(".going") });
+        if (old && ((hi && old.previousElementSibling !== hi) || old.dataset.st !== now)) old.remove();
+        if (!document.getElementById("tbPlan") && h) { at.insertAdjacentHTML("afterend", h); const el = document.getElementById("tbPlan"); if (el) el.dataset.st = now; }
         let box = document.getElementById("tbMe"); if (!box) { box = document.createElement("div"); box.id = "tbMe"; } (document.getElementById("tk") || document.getElementById("f"))?.after(box);
         me(box, id, T, (T.hosts || [])[0] || "", { noIf: T.past, onChange: () => location.reload() }); } finally { busy = false; } };
     new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(run, 120); }).observe(document.documentElement, { childList: true, subtree: true });

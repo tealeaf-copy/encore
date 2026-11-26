@@ -179,7 +179,7 @@ test("second-RSVP rate counts people who came and replied I'm in again, per host
 test("the roster is the host's: CSV and JSON with consent fields, owner only", async () => {
   await guest("tbNow", "Una Reyes", "una", "going", { phone: "+1 555 0100", smsOk: false, showMe: false });
   const csv = await (await fetch(srv.base + "/api/host/roster.csv?series=tbNow", { headers: { cookie: host } })).text();
-  const [head, ...rows] = csv.trim().split("\r\n"); assert.equal(head, "name,email,phone,times_in,first_date,last_date,events,emails_ok,texts_ok,shown_to_guests,follows_you");
+  const [head, ...rows] = csv.trim().split("\r\n"); assert.equal(head, "name,email,phone,times_in,no_shows,first_date,last_date,events,emails_ok,texts_ok,shown_to_guests,follows_you");
   const ada = rows.find((r) => r.startsWith("Ada Lovelace")); assert.match(ada, /,2,/, "two dates in the series"); assert.ok(!rows.some((r) => r.startsWith("Rae")), "other events aren't in this series' roster");
   const J2 = await (await fetch(srv.base + "/api/host/roster.json?series=tbNow", { headers: { cookie: host } })).json();
   assert.equal(J2.group, "Root night"); assert.deepEqual(J2.hosts, ["Mina", "Jo"]); assert.ok(J2.consent.emails_ok);

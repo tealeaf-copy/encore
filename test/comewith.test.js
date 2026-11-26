@@ -143,7 +143,8 @@ test("Host one like this: counts hosts who shared a draft made from the event, o
   assert.deepEqual((await (await fetch(srv.base + "/api/public/like-counts?ids=hlpast,cwask")).json()).counts, { hlpast: 2 });
   // a private event never shows the count
   await put("hlpriv", { kind: "social", casual: true, name: "Secret supper", date: day(-2), published: true });
-  assert.equal((await (await fetch(srv.base + "/api/public/like/hlpriv")).json()).line, "");
+  assert.equal((await fetch(srv.base + "/api/public/like/hlpriv")).status, 404, "a private event is no such event to anyone but its host");
+  assert.equal((await (await fetch(srv.base + "/api/public/like/hlpriv", { headers: { cookie: host } })).json()).line, "", "its host can still copy it, with no count");
   assert.equal((await started("", "hlpast", "x1")).status, 401);
 });
 

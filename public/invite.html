@@ -36,11 +36,13 @@
   const clock = (t) => HHMM.test(t || "") ? new Date("2000-01-01T" + t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
   // "Sat, Dec 12 · 7pm to 10pm", the one format on both invites
   const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? e.date === ltd ? "Today" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
-  const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
+  // review round 13: a group price alone ("$40 a pair") is a paid event too
+  const gpOf = (e) => { const m = String(e.groupPrice ?? "").replace(/,/g, "").match(/(\d+(?:\.\d{1,2})?)/); return m && +m[1] > 0 && Math.floor(+e.groupSize) > 1 ? +m[1] : 0; };
+  const paidOf = (e) => !!((e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim())) || (e.price !== "chip" && e.free !== true && gpOf(e)));
   const TI = window.EncoreTiers, tierAmt = (e, P) => (TI && TI.total(e, P) ? TI.money(TI.total(e, P)) : e.price); // price tiers (tiers.js): "Adults $55 · Kids $35", the sum to pay
   const priceText = (e) => { if (TI && TI.line(e)) return TI.line(e); const p = String(e.price).trim(), amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : p; };
     // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
-    if (+e.groupPrice > 0 && +e.groupSize > 1) return `${amt(e.groupPrice)} for ${+e.groupSize}`;
+    if (gpOf(e)) return +e.groupSize === 2 && e.headUnit === "pairs" ? `${amt(e.groupPrice)} a pair` : `${amt(e.groupPrice)} for ${+e.groupSize}`;
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
     if (e.priceUnit === "total" && !(+e.sessions > 1)) return +e.dropIn > 0 ? `${amt(p)} for the course, or ${amt(e.dropIn)} a class` : `${amt(p)} total`; // round 8: "$280 total or $50 drop in"
     return /a person|per person|each/i.test(p) ? p : `${/^\d/.test(p) ? amt(p) : p} a person`; };

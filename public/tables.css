@@ -55,3 +55,6 @@
 .tb-home{margin:18px 0 0;padding:14px 18px;border:1px solid var(--tb-line);border-radius:14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between;--tb-line:var(--line,#E4D9C8);--tb-soft:var(--smoke,var(--muted,#5E534B))}
 .tb-home p{margin:0;font-size:14px}.tb-home a{font-weight:600}
 @media (prefers-reduced-motion:reduce){.tb-plan,.tb-card{transition:none}}
+/* review round 13: the one "New" badge (first time with this host), and a stat with nothing to count yet */
+.tb-new{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#E7F0DF;color:#2F5D3A;font:600 11px/1.5 system-ui,sans-serif;vertical-align:1px}small.tb-new{display:inline-block;margin:4px 0 0}
+.tb-stat b.tb-none{font:600 18px/1.2 system-ui,sans-serif;letter-spacing:0;padding-top:6px}

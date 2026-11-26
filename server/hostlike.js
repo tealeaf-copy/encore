@@ -48,6 +48,9 @@ export function mountHostLike(app, { store, small, currentUser }) {
   // what a new draft starts from: never the address, the host or the guests
   app.get("/api/public/like/:eventId", (req, res) => { const id = String(req.params.eventId || ""); if (!ID_OK.test(id)) return bad(res, "No such event.", 404, "not_found");
     const ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null; if (!ev || ev.example || ev.cancelled) return bad(res, "No such event.", 404, "not_found");
+    // review round 13: only an event on Discover (or the host's own) can be copied; a private one is "no such event" to everyone else
+    const mine = (() => { try { const u = currentUser(req); return !!u && u.ws === ws; } catch { return false; } })();
+    if (!isPublicEvent(ev) && !mine) return bad(res, "No such event.", 404, "not_found");
     const pub = isPublicEvent(ev), n = pub ? counted(id) : 0, L = ev.look && typeof ev.look === "object" ? ev.look : null, art = typeof ev.coverArt === "object" && ev.coverArt?.kind ? { kind: clean(ev.coverArt.kind, 40), ...(ev.coverArt.tone ? { tone: clean(ev.coverArt.tone, 20) } : {}) } : null;
     res.set("Cache-Control", "public, max-age=60");
     res.json({ ok: true, id, title: clean(ev.pubTitle || ev.name, 80), kind: kindOf(ev), price: roughPrice(ev), size: roughSize(ev), past: !!ev.date && ev.date < new Date().toISOString().slice(0, 10),

@@ -15,7 +15,7 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
-import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, dueCents } from "./social.js";
+import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, partyMax, dueCents } from "./social.js";
 import { ordersClosed, tzOk } from "./tz.js";
 // review round 11: an event keeps a valid IANA time zone only (from its tz field, else the x-encore-tz header the browser may send on create)
 const withTz = (body, req, fresh) => { if (!body || typeof body !== "object" || Array.isArray(body)) return body; const o = { ...body };
@@ -45,7 +45,7 @@ import { mountSlots } from "./slots.js"; // review round 13: slots on the invite
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
-import { withCleanLook, cleanPicks, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
+import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -161,6 +161,8 @@ export function eventMoney(e) {
 export const looksLikeAddress = (t) => { const x = String(t || ""); return /\b\d{1,6}[a-z]?\s+[A-Za-zÀ-ÿ'.-]+(\s+[A-Za-zÀ-ÿ'.-]+){0,3}\s+(st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|dr|drive|pl|place|way|ct|court|ter|terrace|pkwy|parkway|hwy|sq|square)\b\.?/i.test(x) || /\b(apt|apartment|unit|suite|flat|floor)\s*#?\s*\w+|#\s*\d+|\b(my|our)\s+(place|apartment|flat|house|home|backyard|rooftop|loft)\b|['’]s\s+(place|apartment|flat|house|home)\b/i.test(x); };
 export function publicEvent(data, view) {
   const e = Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]]));
+  // review round 13: a group price saved as text ("$40") reaches the pages as the number they read it as
+  if (typeof e.groupPrice === "string") { const m = e.groupPrice.replace(/,/g, "").match(/(\d+(?:\.\d{1,2})?)/); if (m && +m[1] > 0) e.groupPrice = +m[1]; else delete e.groupPrice; }
   e.guests = data.noWall ? [] : (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
   if (data.launch) e.launch = { platform: data.launch.platform, url: data.launch.url, qsOnRsvp: data.launch.qsOnRsvp };
   const v = data.venues?.venues?.[data.venuePick ?? 0];
@@ -685,7 +687,7 @@ export function createApp({ store, dataDir }) {
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
   // ---- repeats: weekly and monthly events make their next date the morning after, and old links show it (server/repeats.js) ----
   mountRepeats(app, { store, C, X, ownerOnly: (req, res) => ownerOnly(req, res), workspaceOfEvent });
-  mountTables(app, { store, small, C, X, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
+  mountTables(app, { store, small, C, X, currentUser, serverReply: (...a) => serverReply(...a), ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
   mountSeries(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: episodes and the changelog (server/series.js)
   mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
   mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
@@ -1507,11 +1509,11 @@ export function createApp({ store, dataDir }) {
   // on the waitlist, and an event where the host lets people in keeps it as "asked" until the host does.
   function guardGuestReply(req, path, body) {
     if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body) return body;
-    if (body.response !== "going" && body.party == null && body.plusOne == null && body.orderLines == null) return body;
+    if (body.response !== "going" && body.party == null && body.plusOne == null && body.orderLines == null && body.tiers == null) return body;
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
     if (pol.error) throw httpError(pol.status || 409, pol.code || "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
-    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}) };
+    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}) };
   }
   // one path for every change to a document: the waitlist moves up when a spot opens, people hear what they need to,
   // and an event remembers its last few versions (for merging saves from two devices)
@@ -1601,7 +1603,14 @@ export function createApp({ store, dataDir }) {
     const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
     const out = { ...body, ...(inv ? { _inv: inv } : {}) };
     // "Come with me?" (server/comewith.js): a friend's reply through the link fills the spot held for them, or joins the pair
-    const cw = req.guest && !pr.withOf ? friendTerms(req, S(req), ev, eventId, prior?.id || null) : null;
+    // (a reply the server makes for a guest passes the link's terms in: serverReply below)
+    const cw = req.guest && !pr.withOf ? ("cwTerms" in req ? req.cwTerms : friendTerms(req, S(req), ev, eventId, prior?.id || null)) : null;
+    // review round 13: on a tiered event the party is what was picked ("2 Adults, 1 Kids" is 3), only tiers the event has
+    // count, and more than one reply may hold is an error rather than a quiet cut (what they pay follows the same picks)
+    { const TT = cleanTiers(ev.priceTiers); if (TT.length && out.tiers != null) {
+      const P = cleanPicks(out.tiers).map((p) => { const t = TT.find((x) => x.label.toLowerCase() === p.label.toLowerCase()); return t ? { label: t.label, n: p.n } : null; }).filter(Boolean), n = P.reduce((a, p) => a + p.n, 0), max = partyMax(ev);
+      if (n > max) return { body: out, prior, error: `Pick up to ${max}.`, status: 400, code: "invalid_party" };
+      out.tiers = P; if (n) out.party = Math.min(max, n); else delete out.tiers; } }
     // review round 11: a pairs or group-only booking comes in whole groups (1 becomes 2 for pairs), and says so when it changed
     if (!cw?.pairOf && (out.party != null || out.plusOne != null || (partyUnit(ev) > 1 && out.response === "going"))) { const asked = Math.floor(+out.party) || 0; out.party = seatsOf({ ...out, response: out.response || "going" }, ev); if (partyUnit(ev) > 1 && asked && asked !== out.party) out.partyCut = true; }
     if (cw) { out.withOf = cw.withOf; out._withH = cw.withH; if (cw.pairOf) { out.pairOf = cw.pairOf; delete out.party; } }
@@ -1685,7 +1694,7 @@ export function createApp({ store, dataDir }) {
   // as the invite's Pay button) and "Already paid? Open your invite and tap I paid: <link>". At the door: "Pay $45 at the
   // door." With neither: "<Host> will send you a way to pay." Free and pay-what-you-like events get nothing.
   function payLines(ev, r, host, link) {
-    const p = String(ev?.price || "").trim(); if (!p || p === "chip" || /^(free|\$?0)$/i.test(p)) return [];
+    const p = String(ev?.price || "").trim(); const gpOnly = !p && ev?.free !== true && Math.floor(+ev?.groupSize) > 1 && parseFloat(String(ev?.groupPrice ?? "").replace(/[^\d.]/g, "")) > 0; /* review round 13: "$40 a pair" alone is a price */ if (!gpOnly && (!p || p === "chip" || /^(free|\$?0)$/i.test(p))) return [];
     // price tiers: the sum of each tier's price × how many; else (review round 11) the price a person × its spots, or the group price × its groups (dueCents, server/social.js)
     const tt = tierTotal(ev, r), cents = tt > 0 ? Math.round(tt * 100) : dueCents(ev, r); if (!(cents > 0)) return [];
     const amt = "$" + (cents / 100).toFixed(cents % 100 ? 2 : 0), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
@@ -1742,7 +1751,7 @@ export function createApp({ store, dataDir }) {
     if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }
     // the host's bell: every guest reply, and an email when someone asks to join
     if (req.guest && after && now && now !== was && owner) {
-      const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
+      const line = (typeof req.hostLine === "function" && req.hostLine(now, who, title)) || { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
       // review round 7: a pre-order reply says what they ordered
       if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
       if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
@@ -1761,6 +1770,26 @@ export function createApp({ store, dataDir }) {
     // the guest's own confirmation email, once per reply (never for a reply the host added by hand)
     let confirmed = false; if (req.guest && fin) { try { confirmed = await confirmReply(req, ws, id, ev, was, fin); } catch (e) { console.warn("[confirm]", e?.message); } }
     return { ...(confirmed ? { confirmEmailed: true } : {}), ...(fin ? { response: fin.response } : {}), ...(fin?.response === "waitlist" ? { waitlistPos: waitlistPos(all, id), waiting: waitlistOf(all).length } : {}), ...(fin?.partyCut ? { party: fin.party, partyCut: true } : {}), ...(promoted.length ? { promoted: true, promotedIds: promoted } : {}), ...(letIn ? { letIn } : {}) };
+  }
+  /** review round 13: a reply the server makes for a guest ("Same table next time?", "I'm in if Sam is") goes through the
+   * same rules as the guest's own I'm in (rsvpPolicy: ask to join, the waitlist, a Come with me hold) and the same steps
+   * after (afterRsvp: the host's bell and ask email, the "You're in" email with how to pay, the waitlist moving up).
+   * A pre-order is never answered for them: they pick what they want themselves (state "order", nothing written).
+   * rid: their reply to this event, if any; base: the new reply's fields; cw: Come with me terms ({ withOf, withH, credit }).
+   * Returns { state: "in" | "requested" | "waitlist" | "order" | "already" | "gone", rid, code, confirmEmailed }. */
+  async function serverReply(ws, { eventId, rid = null, base = {}, patch = {}, origin = "", cw = null, hostLine = null } = {}) {
+    const St = scopeStore(store, ws), ev = /^[A-Za-z0-9_-]+$/.test(String(eventId || "")) ? St.get("events/" + eventId)?.data : null; if (!ev || ev.cancelled) return { state: "gone" };
+    const cur = rid ? St.get("rsvps/" + rid)?.data || null : null; if (rid && !cur) rid = null;
+    if (cur?.response === "going") return { state: "already", rid, code: cur.code || "" };
+    if (ev.preorder) return { state: "order", rid, code: cur?.code || "" };
+    let u; try { u = new URL(origin || process.env.ENCORE_PUBLIC_URL || "http://localhost"); } catch { u = new URL("http://localhost"); }
+    const H = { host: u.host }, req = { guest: true, ws, cwTerms: cw || null, hostLine, headers: H, get: (k) => H[String(k).toLowerCase()] || "", protocol: u.protocol.replace(":", ""), secure: u.protocol === "https:", ip: "server", query: {}, body: {} };
+    const now = Date.now(), body = { ...(cur || base), ...patch, eventId, response: "going", changedAt: now };    const pol = rsvpPolicy(req, body, rid); if (pol.error) return { state: "gone", error: pol.error, rid };
+    const next = { ...pol.body }; let id = rid;
+    if (id) St.set("rsvps/" + id, next); else { if (!next.code) next.code = randomBytes(4).toString("hex").toUpperCase(); next.createdAt = now; id = St.add("rsvps", next).id; }
+    const a = await afterRsvp(req, ws, id, cur, next).catch((e) => { console.warn("[serverReply]", e?.message); return {}; });
+    const fin = St.get("rsvps/" + id)?.data || next;
+    return { state: fin.response === "going" ? "in" : fin.response, rid: id, code: fin.code || "", confirmEmailed: !!a.confirmEmailed };
   }
   app.post("/api/db/collection", json, async (req, res) => {
     const p = String(req.query.path || "");

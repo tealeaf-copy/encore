@@ -164,7 +164,7 @@ body.lk-invite.lk-fx-pixels main{padding-top:calc(max(12px,env(safe-area-inset-t
 .lk-jw .pt-glow{animation:lk-jwflick 9s ease-in-out infinite}.lk-jw.inbox{height:var(--jw-h,128px);z-index:0}
 @keyframes lk-jwglow{0%,100%{opacity:.75}50%{opacity:1}}@keyframes lk-jwflick{0%,100%{opacity:1}40%{opacity:.9}55%{opacity:.97}}
 @media (prefers-reduced-motion:reduce){.lk-jw::after,.lk-jw .pt-glow{animation:none}}
-.lk-hex{background-repeat:repeat}
+.lk-hex{background-repeat:repeat;-webkit-mask:linear-gradient(180deg,transparent 0,#000 30%,#000 70%,transparent 100%);mask:linear-gradient(180deg,transparent 0,#000 30%,#000 70%,transparent 100%)} /* review round 13: the floor fades in and out, no hard edge */
 body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 132px)}
 @media (min-width:700px){body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 176px)}}`;
   // the light invite (public/invite.html, body.lk-invite): its cards, form and buttons in the look's colours, and the flyer

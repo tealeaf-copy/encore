@@ -48,8 +48,10 @@ h1{font:700 30px/1.12 Fredoka,system-ui;margin:0 0 8px}.muted{color:var(--smoke)
     b.onclick = async () => { b.disabled = true; b.textContent = "One moment…";
       const r = await fetch(`/api/public/again/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json", "x-encore-key": gk }, body: JSON.stringify({ rid, code }) }).catch(() => null), x = r ? await r.json().catch(() => ({})) : {};
       const act = document.getElementById("act"); if (!r || !r.ok) { b.disabled = false; b.textContent = "I'm in"; act.insertAdjacentHTML("beforeend", `<p class="muted">${esc(x.message || "Couldn't save that. Try again.")}</p>`); return; }
-      if (x.next && x.rid && x.code) { try { localStorage.setItem("encore-rsvp-" + x.next.id, JSON.stringify({ rid: x.rid, code: x.code, name: x.name || "", gi: -1, response: x.state === "waitlist" ? "waitlist" : "going", wall: false, eventId: x.next.id, data: {} })); } catch {} }
+      if (x.next && x.rid && x.code && x.state !== "order") { try { localStorage.setItem("encore-rsvp-" + x.next.id, JSON.stringify({ rid: x.rid, code: x.code, name: x.name || "", gi: -1, response: x.state === "waitlist" ? "waitlist" : x.state === "requested" ? "requested" : "going", wall: false, eventId: x.next.id, data: {} })); } catch {} }
       act.innerHTML = x.state === "pledged" ? `<p class="done">You're in once the next date is set.</p><p class="muted">We'll email you when it's up.</p>`
+        : x.state === "order" ? `<p class="done">The next one is up. Pick what you'd like on the invite.</p><p><a href="/e/${encodeURIComponent(x.next.id)}">Open the invite to order</a></p>`
+        : x.state === "requested" ? `<p class="done">You asked to join ${esc(day(x.next.date))}. The host lets each guest in, and you'll get an email when you're in.</p><p><a href="/e/${encodeURIComponent(x.next.id)}">Open the invite</a></p>`
         : x.state === "waitlist" ? `<p class="done">It's full, so you're on the waitlist for ${esc(day(x.next.date))}.</p><p><a href="/e/${encodeURIComponent(x.next.id)}">Open the invite</a></p>`
         : `<p class="done">You're in for ${esc(day(x.next.date))}.</p><p><a href="/e/${encodeURIComponent(x.next.id)}">Open the invite</a></p>`; };
   }

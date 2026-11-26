@@ -22,9 +22,10 @@ import crypto from "node:crypto";
 import { randomId } from "./db.js";
 import { scopeStore, allWorkspaceIds, getWorkspace, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { emailConfig, sendEmail, EMAIL_RE, isUnsubscribed } from "./email.js";
-import { replyKey, seatsTaken, seatsOf } from "./social.js";
+import { replyKey } from "./social.js";
 import { seriesSiblings } from "./repeats.js";
 import { hostFirst } from "./kudosask.js";
+import { tokenFromCookie, findHold, friendTermsByHash } from "./comewith.js";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/, HHMM = /^\d{2}:\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
 const clean = (v, n = 200) => String(v ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -72,6 +73,15 @@ export function cameTo(S, eventId, ev) {
   return out;
 }
 const shownNames = (L) => L.filter((x) => x.r.showMe !== false && !(x.r.host && x.r.showMe === false)).map((x) => first(x.r.name)).filter(Boolean);
+/** "Table 2 with Ada and 2 others": tablemates who chose to show their name by first name, the rest only counted. Pure. */
+export const withLine = (names, others = 0) => { const L = [...names]; if (others > 0) L.push(`${others} other${others === 1 ? "" : "s"}`); return andList(L); };
+/** review round 13: the one "New" badge: first time with this host. Of the people replying to this event, the reply keys
+ *  of those who didn't come to any earlier date the host ran (any of their events, not only this series). */
+export function newWithHost(S, eventId, ev = S.get("events/" + eventId)?.data, today = new Date().toISOString().slice(0, 10)) {
+  const cut = ev && ISO.test(ev.date || "") && ev.date < today ? ev.date : today, before = new Set();
+  for (const d of S.list("events")) { const e = d.data; if (!e || d.id === eventId || e.example || e.sample || e.cancelled || !ISO.test(e.date || "") || !(e.date < cut)) continue; for (const x of cameTo(S, d.id, e)) before.add(x.k); }
+  return new Set(latestReplies(S, eventId).map((x) => x.k).filter((k) => k && !before.has(k)));
+}
 
 // ---- "I'm in if Sam is" ----
 const norm = (s) => lc(s).normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9@. ]/g, "").replace(/\s+/g, " ").trim();
@@ -95,10 +105,14 @@ export function suggestTables(guests, size = 4) {
   const by = new Map(G.map((g) => [g.rid, g])), sim = (a, b) => Object.keys(a.answers || {}).reduce((s, q) => s + (a.answers[q] && a.answers[q] === b.answers?.[q] ? 1 : 0), 0);
   const unit = (g) => { const U = [g.rid]; if (g.with && by.has(g.with) && g.with !== g.rid) U.push(g.with); for (const h of G) if (h.with === g.rid && !U.includes(h.rid)) U.push(h.rid); return U; };
   const left = new Set(G.map((g) => g.rid)), T = [];
-  for (const cap of caps) { const t = []; const seed = G.find((g) => left.has(g.rid)); if (!seed) break;
-    for (const r of unit(seed)) if (left.has(r) && t.length < Math.max(cap, 2)) { t.push(r); left.delete(r); }
-    while (t.length < cap && left.size) { let best = null, bs = -1; for (const r of left) { const s = t.reduce((a, x) => a + sim(by.get(x), by.get(r)), 0); if (s > bs) { bs = s; best = r; } }
-      for (const r of unit(by.get(best))) if (left.has(r) && t.length < cap + 1) { t.push(r); left.delete(r); } }
+  // review round 13: each table starts with someone who has been before (back: true) while there are enough of them, and
+  // tables lean towards a mix of new and returning faces; answers in common still decide within that
+  const mixed = G.some((g) => g.back) && G.some((g) => !g.back), seeds = new Set(mixed ? G.filter((g) => g.back).slice(0, caps.length).map((g) => g.rid) : []);
+  for (const cap of caps) { const t = []; const seed = G.find((g) => left.has(g.rid) && seeds.has(g.rid)) || G.find((g) => left.has(g.rid) && !seeds.has(g.rid)) || G.find((g) => left.has(g.rid)); if (!seed) break; seeds.delete(seed.rid);
+    for (const r of unit(seed)) if (left.has(r) && t.length < Math.max(cap, 2)) { t.push(r); left.delete(r); seeds.delete(r); }
+    while (t.length < cap && left.size) { let best = null, bs = -1; const nb = t.filter((x) => by.get(x).back).length, nn = t.length - nb, free = [...left].some((x) => !seeds.has(x));
+      for (const r of left) { if (free && seeds.has(r)) continue; const s = 2 * t.reduce((a, x) => a + sim(by.get(x), by.get(r)), 0) + (mixed && (by.get(r).back ? nb < nn : nn <= nb) ? 1 : 0); if (s > bs) { bs = s; best = r; } }
+      for (const r of unit(by.get(best))) if (left.has(r) && t.length < cap + 1) { t.push(r); left.delete(r); seeds.delete(r); } }
     T.push(t); }
   for (const r of left) T.sort((a, b) => a.length - b.length)[0].push(r); // anyone left joins the smallest table
   return T.filter((t) => t.length);
@@ -137,23 +151,26 @@ export function secondRsvp(S, today = new Date().toISOString().slice(0, 10)) {
 }
 
 // ---- the roster ----
-const CSV_COLS = ["name", "email", "phone", "times_in", "first_date", "last_date", "events", "emails_ok", "texts_ok", "shown_to_guests", "follows_you"];
-const csvCell = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const CSV_COLS = ["name", "email", "phone", "times_in", "no_shows", "first_date", "last_date", "events", "emails_ok", "texts_ok", "shown_to_guests", "follows_you"];
+// a cell that a spreadsheet would run as a formula gets a leading ', except a phone number ("+1 (555) 123-4567") stays as typed
+const csvCell = (v) => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s) && !/^\+[\d\s()-]+$/.test(s)) s = "'" + s; return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 export function rosterOf(S, { root = "", followers = [], canEmail = () => true } = {}) {
   const F = new Set(followers.map((f) => lc(f.email)).filter(Boolean)), people = new Map();
-  for (const d of S.list("events")) { const ev = d.data; if (!ev || ev.example || ev.sample || !ISO.test(ev.date || "")) continue; if (root && (ev.seriesId || d.id) !== root && d.id !== root) continue;
-    for (const x of latestReplies(S, d.id)) { if (!["going", "maybe", "waitlist"].includes(x.r.response)) continue; const p = people.get(x.k) || { name: "", email: "", phone: "", dates: [], events: [], smsOk: null, showMe: null };
+  for (const d of S.list("events")) { const ev = d.data; if (!ev || ev.example || ev.sample || ev.cancelled || !ISO.test(ev.date || "")) continue; if (root && (ev.seriesId || d.id) !== root && d.id !== root) continue;
+    for (const x of latestReplies(S, d.id)) { if (!["going", "maybe", "waitlist"].includes(x.r.response)) continue; const p = people.get(x.k) || { name: "", email: "", phone: "", dates: [], events: [], noShows: 0, smsOk: null, showMe: null };
       p.name = p.name || clean(x.r.name, 80); p.email = p.email || lc(x.r.email); p.phone = p.phone || clean(x.r.phone, 30);
       if (x.r.response === "going" && x.r.noShow !== true) { p.dates.push(ev.date); p.events.push(`${clean(ev.pubTitle || ev.name, 60)} (${ev.date})`); }
-      if (x.r.smsOk === false) p.smsOk = false; else if (p.smsOk == null && x.r.phone) p.smsOk = true; if (x.r.showMe === false) p.showMe = false; else if (p.showMe == null) p.showMe = true;
+      if (x.r.response === "going" && x.r.noShow === true) p.noShows++;
+      // texts only with a yes to texts (the reply's texts box, or "text me" as how to reach them), never from a phone alone; STOP wins
+      if (x.r.smsOk === false) p.smsOk = false; else if (p.smsOk !== false && (x.r.smsOk === true || x.r.contactVia === "sms")) p.smsOk = true; if (x.r.showMe === false) p.showMe = false; else if (p.showMe == null) p.showMe = true;
       people.set(x.k, p); } }
-  return [...people.values()].map((p) => { const ds = [...new Set(p.dates)].sort(); return { name: p.name, email: p.email, phone: p.phone, times_in: ds.length, first_date: ds[0] || "", last_date: ds[ds.length - 1] || "", events: p.events.join("; "),
-    emails_ok: !!p.email && EMAIL_RE.test(p.email) && !isUnsubscribed(p.email) && canEmail(p.email) !== false, texts_ok: !!p.phone && p.smsOk !== false, shown_to_guests: p.showMe !== false, follows_you: !!p.email && F.has(p.email) }; })
+  return [...people.values()].map((p) => { const ds = [...new Set(p.dates)].sort(); return { name: p.name, email: p.email, phone: p.phone, times_in: ds.length, no_shows: p.noShows, first_date: ds[0] || "", last_date: ds[ds.length - 1] || "", events: p.events.join("; "),
+    emails_ok: !!p.email && EMAIL_RE.test(p.email) && !isUnsubscribed(p.email) && canEmail(p.email) !== false, texts_ok: !!p.phone && p.smsOk === true, shown_to_guests: p.showMe !== false, follows_you: !!p.email && F.has(p.email) }; })
     .sort((a, b) => b.times_in - a.times_in || a.name.localeCompare(b.name));
 }
 export const rosterCsv = (rows) => [CSV_COLS.join(","), ...rows.map((r) => CSV_COLS.map((c) => csvCell(typeof r[c] === "boolean" ? (r[c] ? "yes" : "no") : r[c])).join(","))].join("\r\n") + "\r\n";
 
-export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = () => null, sendStatic, publicOrigin, jobs = !process.env.NODE_TEST_CONTEXT }) {
+export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = () => null, sendStatic, publicOrigin, serverReply = null, jobs = !process.env.NODE_TEST_CONTEXT }) {
   const hits = new Map(), limited = (req, n = 240) => { const k = (req.ip || "?") + req.path.split("/").slice(0, 4).join("/"), now = Date.now(); if (hits.size > 20000) hits.clear(); let h = hits.get(k); if (!h || now - h.start > 3600e3) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const mailCfg = (ws) => emailConfig(ws, false) || emailConfig(DEFAULT_WS, true);
@@ -170,14 +187,15 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     const { S, ev, id, ws } = E, T = tableOf(ev), today = todayAt(ev), going = P && P.r.response === "going";
     const namesOk = !hiddenNames(ev) && (!closed(ev) || going || isHost), now = cameTo(S, id, ev), names = namesOk ? shownNames(now) : [];
     let last = null; const prev = seriesSiblings(S, id, ev).filter((x) => x.data.date < ev.date && x.data.date < today).sort((a, b) => b.data.date.localeCompare(a.data.date))[0];
-    if (prev) { const L = cameTo(S, prev.id, prev.data), nowK = new Set(now.map((x) => x.k)); last = { date: prev.data.date, count: L.length, names: namesOk ? shownNames(L).slice(0, 6) : [], back: namesOk ? shownNames(L.filter((x) => nowK.has(x.k))).slice(0, 6) : [] }; }
+    if (prev && !hiddenNames(ev)) { const L = cameTo(S, prev.id, prev.data), nowK = new Set(now.map((x) => x.k)); last = { date: prev.data.date, count: L.length, names: namesOk ? shownNames(L).slice(0, 6) : [], back: namesOk ? shownNames(L.filter((x) => nowK.has(x.k))).slice(0, 6) : [] }; }
     const out = { first30: T.first30, size: T.size, sizeText: sizeText(T.size), comfort: T.comfort.map((k) => ({ k, label: COMFORT.find((c) => c[0] === k)[1] })), noise: T.noise ? { k: T.noise, label: NOISE[T.noise] } : null, agenda: T.agenda,
       start: HHMM.test(ev.startTime || "") ? ev.startTime : "", end: HHMM.test(ev.endTime || "") ? ev.endTime : "", hosts: hostOf(ws, ev), cohosts: T.cohosts.map((c) => ({ name: first(c.name), handle: c.handle || "" })),
-      names: names.slice(0, 4), more: Math.max(0, now.length - Math.min(4, names.length)), count: now.length, last, open: T.open ? { size: T.open.size, questions: T.open.questions } : null, past: ISO.test(ev.date || "") && ev.date < today, me: null };
+      names: names.slice(0, 4), more: namesOk ? Math.max(0, now.length - Math.min(4, names.length)) : 0, count: namesOk ? now.length : 0, // review round 13: no head count where names are hidden
+      last, open: T.open ? { size: T.open.size, questions: T.open.questions } : null, past: ISO.test(ev.date || "") && ev.date < today, me: null };
     if (P) { const I = S.get("ifwith/" + P.rid)?.data, tasted = S.get("taste/" + P.rid)?.data, TB = S.get("tables/" + id)?.data; let table = null;
-      if (TB?.confirmedAt && going) { const i = (TB.tables || []).findIndex((t) => t.includes(P.rid)); if (i >= 0) { const others = TB.tables[i].filter((r) => r !== P.rid).map((r) => first(S.get("rsvps/" + r)?.data?.name)).filter(Boolean); table = { n: i + 1, with: others }; } }
+      if (TB?.confirmedAt && going) { const i = (TB.tables || []).findIndex((t) => t.includes(P.rid)); if (i >= 0) { const M = TB.tables[i].filter((r) => r !== P.rid).map((r) => S.get("rsvps/" + r)?.data).filter(Boolean), shown = M.filter((r) => r.showMe !== false).map((r) => first(r.name)).filter(Boolean); table = { n: i + 1, with: shown, others: M.length - shown.length }; } }
       const ag = S.get("sametable/" + id + "--" + P.rid)?.data;
-      out.me = { response: P.r.response, ifWith: I && I.state === "waiting" ? clean(I.name, 60) : "", metWith: I?.state === "in" ? clean(I.name, 60) : "", taste: tasted?.answers || null, table, again: ag ? { tapped: !!ag.tappedAt, state: ag.state || "" } : null }; }
+      out.me = { response: P.r.response, ifWith: I && I.state === "waiting" ? clean(I.name, 60) : "", metWith: I?.state === "in" ? clean(I.name, 60) : "", order: I?.state === "in" && I.landed === "order", taste: tasted?.answers || null, table, again: ag ? { tapped: !!ag.tappedAt, state: ag.state || "" } : null }; }
     return out;
   }
   app.get("/api/public/table/:eventId", (req, res) => { if (limited(req)) return bad(res, "Slow down.", 429, "rate_limited"); const E = evOf(clean(req.params.eventId, 80)); if (!E) return bad(res, "No such event.", 404, "not_found");
@@ -195,13 +213,19 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
           if (me.response === "going") { S.update("ifwith/" + d.id, { state: "in", metAt: Date.now() }); continue; }
           const all = S.list("rsvps").filter((x) => x.data?.eventId === eventId), hit = latestReplies(S, eventId).find((x) => x.id !== I.rid && x.r.response === "going" && x.r.noShow !== true && nameMatches(x.r, I.name));
           if (!hit) continue;
-          const ask = !!ev.approvalRequired, full = !ask && +ev.headcount > 0 && ev.autoWait !== false && seatsTaken(ev, all, { skip: I.rid, skipKey: replyKey(me) }) + seatsOf(me, ev) > +ev.headcount, now = Date.now(), landed = ask ? "requested" : full ? "waitlist" : "going";
-          S.update("ifwith/" + d.id, { state: "in", metAt: now, landed }); // marked first: never twice
-          S.update("rsvps/" + I.rid, { response: landed, ...(full ? { waitAt: now } : {}), changedAt: now, ifWithMet: clean(I.name, 60) }); n++; changed = true;
-          const em = lc(me.email), t = title(ev), who = first(I.name) || "Your friend", link = `/g#rsvp-${eventId}`;
-          if (em) { X.notify(em, { kind: "ifwith", key: `ifwith-${d.id}`, text: ask ? `${who} is in for ${t}, so you asked to join. The host lets each guest in.` : full ? `${who} is in for ${t}. It's full, so you're on the waitlist.` : `${who} is in, so you're in for ${t}.`, link, eventId });
-            if (landed === "going") await mail(ws, ev, em, `You're in: ${t}`, `Hi ${first(me.name) || "there"},\n\n${who} is in for ${t}, so you are too, like you asked.${ev.date ? `\n\nWhen: ${fmtDay(ev.date)}${ev.startTime ? `, ${ev.startTime}` : ""}` : ""}\n\nYour invite: ${origin}/e/${encodeURIComponent(eventId)}\n\nPlans changed? Open it and tap Can't go.\n`, origin); }
-          const owner = ownerEmail(ws); if (owner) X.notify(owner, { kind: "reply", key: `ifwith-host-${d.id}`, text: `${first(me.name) || "A guest"} is in for ${t} (they were in if ${who} was).`, link: `/?app=1&open=${encodeURIComponent(eventId)}#studio`, eventId }); }
+          const now = Date.now(), em = lc(me.email), t = title(ev), who = first(I.name) || "Your friend", link = `/g#rsvp-${eventId}`, invite = `${origin}/e/${encodeURIComponent(eventId)}`;
+          // review round 13: a pre-order is never ordered for them: the Maybe stays, and they're told to pick what they want
+          if (ev.preorder) { S.update("ifwith/" + d.id, { state: "in", metAt: now, landed: "order" }); n++; changed = true;
+            if (em) { X.notify(em, { kind: "ifwith", key: `ifwith-${d.id}`, text: `${who} is in for ${t}. Open your invite to order.`, link, eventId });
+              await mail(ws, ev, em, `${who} is in: ${t}`, `Hi ${first(me.name) || "there"},\n\n${who} is in for ${t}, like you asked. Open your invite to order what you'd like:\n${invite}\n`, origin); }
+            continue; }
+          S.update("ifwith/" + d.id, { state: "in", metAt: now }); // marked first: never twice
+          // the same rules as their own I'm in (ask to join, the waitlist, a Come with me link they opened), and the same emails
+          const cw = I.withH ? friendTermsByHash(S, ev, eventId, I.withH, I.rid) : null, guest = first(me.name) || "A guest";
+          const R = serverReply ? await serverReply(ws, { eventId, rid: I.rid, patch: { ifWithMet: clean(I.name, 60) }, origin, cw, hostLine: (st) => (st === "going" ? `${guest} is in for ${t} (they were in if ${who} was).` : "") }) : { state: "gone" };
+          const landed = R.state === "in" ? "going" : R.state; S.update("ifwith/" + d.id, { landed }); n++; changed = true;
+          if (em && ["going", "requested", "waitlist"].includes(landed)) { X.notify(em, { kind: "ifwith", key: `ifwith-${d.id}`, text: landed === "requested" ? `${who} is in for ${t}, so you asked to join. The host lets each guest in.` : landed === "waitlist" ? `${who} is in for ${t}. It's full, so you're on the waitlist.` : `${who} is in, so you're in for ${t}.`, link, eventId });
+            if (landed === "going" && !R.confirmEmailed) await mail(ws, ev, em, `You're in: ${t}`, `Hi ${first(me.name) || "there"},\n\n${who} is in for ${t}, so you are too, like you asked.${ev.date ? `\n\nWhen: ${fmtDay(ev.date)}${ev.startTime ? `, ${ev.startTime}` : ""}` : ""}\n\nYour invite: ${invite}\n\nPlans changed? Open it and tap Can't go.\n`, origin); } }
         if (!changed) break; } } finally { resolving.delete(key); }
     return n;
   }
@@ -224,21 +248,23 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     if (name.length < 2) return bad(res, "Add their name.");
     if (nameMatches(P.r, name) && !name.includes("@")) return bad(res, "That's your own name. Who would you come with?");
     if (P.r.response === "going") return res.json({ ok: true, state: "in" });
-    P.S.set("ifwith/" + P.rid, { eventId: id, rid: P.rid, name, state: "waiting", at: Date.now() });
+    // review round 13: a Come with me link this browser opened goes with the record, so when it settles their reply fills the held spot
+    const tok = tokenFromCookie(req, id), F = tok ? findHold(P.S, id, tok) : null, withH = F && F.inviter.id !== P.rid ? F.hold.h : "";
+    P.S.set("ifwith/" + P.rid, { eventId: id, rid: P.rid, name, state: "waiting", at: Date.now(), ...(withH ? { withH } : {}) });
     if (!["maybe", "waitlist", "requested"].includes(P.r.response)) P.S.update("rsvps/" + P.rid, { response: "maybe", changedAt: Date.now() });
     await resolveIfWith(P.ws, id, publicOrigin(req)); const I = P.S.get("ifwith/" + P.rid)?.data;
-    res.json({ ok: true, state: I?.state === "in" ? (I.landed === "waitlist" || I.landed === "requested" ? I.landed : "in") : "waiting", name, ...(made ? made : {}), response: P.S.get("rsvps/" + P.rid)?.data?.response || "" }); });
+    res.json({ ok: true, state: I?.state === "in" ? (["waitlist", "requested", "order"].includes(I.landed) ? I.landed : "in") : "waiting", name, ...(made ? made : {}), response: P.S.get("rsvps/" + P.rid)?.data?.response || "" }); });
 
   // ---------- open table: taste answers, suggested and confirmed tables ----------
   app.post("/api/public/table/:eventId/taste", small, (req, res) => { if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, id = clean(req.params.eventId, 80), P = proof(id, b.rid, b.code);
-    if (!P) return bad(res, "Reply first.", 403, "not_granted"); const T = tableOf(P.ev); if (!T.open) return bad(res, "This one doesn't have tables.", 404, "not_found");
+    if (!P) return bad(res, "Reply first.", 403, "not_granted"); if (P.r.response !== "going") return bad(res, "These are for guests who are in.", 403, "not_granted"); const T = tableOf(P.ev); if (!T.open) return bad(res, "This one doesn't have tables.", 404, "not_found");
     const A = {}; for (const q of T.open.questions) { const v = clean(b.answers?.[q.id], 40); if (v && q.options.includes(v)) A[q.id] = v; }
     P.S.set("taste/" + P.rid, { eventId: id, rid: P.rid, answers: A, at: Date.now() }); res.json({ ok: true, answers: A }); });
   function hostTable(ws, id) {
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev) return null; const T = tableOf(ev), today = todayAt(ev);
     const now = latestReplies(S, id).filter((x) => x.r.response === "going" && x.r.noShow !== true), If = S.list("ifwith").filter((d) => d.data?.eventId === id).map((d) => d.data);
     const withOf = (rid) => { const I = If.find((x) => x.rid === rid && x.state === "in"); if (!I) return null; const h = now.find((x) => x.id !== rid && nameMatches(x.r, I.name)); return h?.id || null; };
-    const G = now.filter((x) => x.id).sort((a, b) => (a.r.createdAt || 0) - (b.r.createdAt || 0)).map((x) => ({ rid: x.id, name: clean(x.r.name, 60), answers: S.get("taste/" + x.id)?.data?.answers || {}, with: withOf(x.id) }));
+    const NEW = newWithHost(S, id, ev), G = now.filter((x) => x.id).sort((a, b) => (a.r.createdAt || 0) - (b.r.createdAt || 0)).map((x) => ({ rid: x.id, name: clean(x.r.name, 60), answers: S.get("taste/" + x.id)?.data?.answers || {}, with: withOf(x.id), back: !NEW.has(x.k) }));
     const TB = S.get("tables/" + id)?.data, confirmed = !!TB?.confirmedAt, valid = new Set(G.map((g) => g.rid));
     const tables = confirmed ? (TB.tables || []).map((t) => t.filter((r) => valid.has(r))).filter((t) => t.length) : T.open ? suggestTables(G, T.open.size) : [];
     if (confirmed) { const placed = new Set(tables.flat()), late = G.filter((g) => !placed.has(g.rid)).map((g) => g.rid); if (late.length) tables.push(late); }
@@ -246,8 +272,10 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     const lastL = prev ? cameTo(S, prev.id, prev.data) : [], lastK = new Set(lastL.map((x) => x.k)), nowK = new Set(now.map((x) => x.k));
     const AG = S.list("sametable").filter((d) => d.data?.eventId === id).map((d) => d.data), M = secondRsvp(S, today), root = ev.seriesId || id;
     return { table: T, open: !!T.open, confirmed, confirmedAt: TB?.confirmedAt || null,
-      guests: G.map((g) => ({ rid: g.rid, name: g.name, answers: g.answers, back: lastK.has(replyKey(S.get("rsvps/" + g.rid)?.data)) })),
-      tables: tables.map((t) => t.map((rid) => { const g = G.find((x) => x.rid === rid); return { rid, name: g?.name || "Guest", answers: g?.answers || {} }; })),
+      guests: G.map((g) => ({ rid: g.rid, name: g.name, answers: g.answers, back: lastK.has(replyKey(S.get("rsvps/" + g.rid)?.data)), new: !g.back })),
+      // review round 13: everyone replying, with the one "New" (first time with this host) the Guests step and Your crowd use too
+      people: latestReplies(S, id).filter((x) => x.id && ["going", "maybe", "requested", "waitlist"].includes(x.r.response)).map((x) => ({ rid: x.id, name: clean(x.r.name, 60), new: NEW.has(x.k) })),
+      tables: tables.map((t) => t.map((rid) => { const g = G.find((x) => x.rid === rid); return { rid, name: g?.name || "Guest", answers: g?.answers || {}, new: !!g && !g.back }; })),
       ifWith: If.map((I) => ({ rid: I.rid, guest: clean(S.get("rsvps/" + I.rid)?.data?.name, 60), name: clean(I.name, 60), state: I.state, landed: I.landed || "" })),
       last: prev ? { id: prev.id, date: prev.data.date, came: lastL.map((x) => clean(x.r.name, 60)), back: lastL.filter((x) => nowK.has(x.k)).map((x) => clean(x.r.name, 60)), notYet: lastL.filter((x) => !nowK.has(x.k)).map((x) => clean(x.r.name, 60)) } : null,
       sameTable: { asked: AG.filter((a) => a.channel !== "pending").length, tapped: AG.filter((a) => a.tappedAt).length },
@@ -260,8 +288,8 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     if (!tables.length) return bad(res, "No tables to save yet.");
     const confirm = req.body?.confirm !== false, at = Date.now(); S.set("tables/" + id, { eventId: id, tables, ...(confirm ? { confirmedAt: at } : {}), at });
     let told = 0; const origin = publicOrigin(req), t = title(ev);
-    if (confirm) for (const [i, T] of tables.entries()) for (const rid of T) { const r = S.get("rsvps/" + rid)?.data, em = lc(r?.email); if (!em) continue; const others = T.filter((x) => x !== rid).map((x) => first(S.get("rsvps/" + x)?.data?.name)).filter(Boolean), sig = hash(i + ":" + T.join(","));
-      const line = others.length ? `You're at table ${i + 1} with ${andList(others)}.` : `You're at table ${i + 1}.`;
+    if (confirm) for (const [i, T] of tables.entries()) for (const rid of T) { const r = S.get("rsvps/" + rid)?.data, em = lc(r?.email); if (!em) continue; const M = T.filter((x) => x !== rid).map((x) => S.get("rsvps/" + x)?.data).filter(Boolean), shown = M.filter((x) => x.showMe !== false).map((x) => first(x.name)).filter(Boolean), sig = hash(i + ":" + T.join(","));
+      const line = M.length ? `You're at table ${i + 1} with ${withLine(shown, M.length - shown.length)}.` : `You're at table ${i + 1}.`; // only names people chose to show
       if (X.notify(em, { kind: "table", key: `table-${id}-${rid}-${sig}`, text: `${t}: ${line}`, link: `/g#rsvp-${id}`, eventId: id })) { told++; const log = "tablemail/" + id + "--" + rid;
         if (S.get(log)?.data?.sig !== sig) { S.set(log, { sig, at }); await mail(u.ws, ev, em, `${t}: your table`, `Hi ${first(r.name) || "there"},\n\n${line}\n\n${ev.date ? `${fmtDay(ev.date)}${ev.startTime ? `, ${ev.startTime}` : ""}. ` : ""}Your invite: ${origin}/e/${encodeURIComponent(id)}\n`, origin); } } }
     res.json({ ok: true, confirmed: confirm, told, ...hostTable(u.ws, id) }); });
@@ -273,21 +301,24 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     const name = clean(ev ? ev.pubTitle || ev.name : C.profileOf?.(u.ws)?.name || "guests", 60).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guests";
     res.set("Cache-Control", "private, no-store");
     if (/\.csv$/.test(req.path)) return res.type("text/csv; charset=utf-8").set("Content-Disposition", `attachment; filename="${name}-roster.csv"`).send(rosterCsv(rows));
-    res.set("Content-Disposition", `${/\.json$/.test(req.path) ? "attachment" : "inline"}; filename="${name}-roster.json"`).json({ group: ev ? title(ev) : "All your guests", series: rootId || null, exportedAt: new Date().toISOString(), hosts: ev ? hostOf(u.ws, ev) : [], consent: { emails_ok: "Has an email and hasn't unsubscribed or turned off emails", texts_ok: "Gave a phone and didn't reply STOP", shown_to_guests: "Chose to show their name to other guests", follows_you: "Follows your page" }, people: rows }); });
+    res.set("Content-Disposition", `${/\.json$/.test(req.path) ? "attachment" : "inline"}; filename="${name}-roster.json"`).json({ group: ev ? title(ev) : "All your guests", series: rootId || null, exportedAt: new Date().toISOString(), hosts: ev ? hostOf(u.ws, ev) : [], consent: { emails_ok: "Has an email and hasn't unsubscribed or turned off emails", texts_ok: "Gave a phone, said yes to texts and didn't reply STOP", no_shows: "Times they replied I'm in and didn't come", shown_to_guests: "Chose to show their name to other guests", follows_you: "Follows your page" }, people: rows }); });
 
   // ---------- Same table next time? ----------
   const againLink = (origin, id, rid, code) => `${origin}/again/${encodeURIComponent(id)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`;
   /** The next date of this event's series that guests can reply to (made), or null. */
   const nextMade = (S, id, ev, today) => seriesSiblings(S, id, ev).filter((x) => x.data.date > ev.date && x.data.date >= today && !x.data.cancelled).sort((a, b) => a.data.date.localeCompare(b.data.date))[0] || null;
-  /** Reply I'm in to `nid` for the person on reply `r` (or move their reply there to I'm in). Returns "in", "waitlist" or "already". */
-  function replyFor(S, nid, nev, r, gkey = "") {
-    const k = replyKey(r), all = S.list("rsvps").filter((d) => d.data?.eventId === nid), mine = latestReplies(S, nid).find((x) => x.k === k && k);
+  /** Reply I'm in to `nid` for the person on reply `r` (or move their reply there to I'm in), through the same rules as
+   *  their own I'm in (serverReply in server/app.js): "in", "requested" (ask to join), "waitlist", "order" (a pre-order:
+   *  nothing is written, they pick what they want), or "already". */
+  async function replyFor(ws, S, nid, nev, r, { gkey = "", origin = "", hostLine = null } = {}) {
+    const k = replyKey(r), mine = latestReplies(S, nid).find((x) => x.k === k && k);
     if (mine?.r.response === "going") return { state: "already", rid: mine.id, code: mine.r.code };
-    const full = +nev.headcount > 0 && nev.autoWait !== false && seatsTaken(nev, all, { skip: mine?.id, skipKey: k }) + 1 > +nev.headcount, now = Date.now(), resp = full ? "waitlist" : "going";
-    if (mine) { S.update("rsvps/" + mine.id, { response: resp, changedAt: now, ...(full ? { waitAt: now } : {}), via: "again" }); return { state: full ? "waitlist" : "in", rid: mine.id, code: mine.r.code }; }
-    const code = crypto.randomBytes(4).toString("hex").toUpperCase(), body = { eventId: nid, name: clean(r.name, 80), ...(r.email ? { email: lc(r.email) } : {}), ...(r.phone ? { phone: clean(r.phone, 30) } : {}), response: resp, code, createdAt: now, changedAt: now, source: "guest", via: "again", showMe: r.showMe !== false, ...(r.smsOk === false ? { smsOk: false } : {}), ...(full ? { waitAt: now } : {}), ...(gkey ? { _k: gkey } : r._k ? { _k: r._k } : {}) };
-    const a = S.add("rsvps", body); return { state: full ? "waitlist" : "in", rid: a.id, code };
+    if (nev.preorder || !serverReply) return { state: nev.preorder ? "order" : "gone", rid: mine?.id || "", code: mine?.r.code || "" };
+    const base = { name: clean(r.name, 80), ...(r.email ? { email: lc(r.email) } : {}), ...(r.phone ? { phone: clean(r.phone, 30) } : {}), source: "guest", via: "again", showMe: r.showMe !== false, ...(r.smsOk === false ? { smsOk: false } : r.smsOk === true ? { smsOk: true } : {}), ...(gkey ? { _k: gkey } : r._k ? { _k: r._k } : {}) };
+    const R = await serverReply(ws, { eventId: nid, rid: mine?.id || null, base, patch: { via: "again" }, origin, hostLine });
+    return { ...R, state: R.state === "going" ? "in" : R.state };
   }
+  const againLine = (st, t, d) => st === "order" ? `The next ${t} is up (${d}). Open your invite to order.` : st === "requested" ? `The next ${t} is up (${d}). You asked to join; the host lets each guest in.` : st === "waitlist" ? `The next ${t} is up (${d}). It's full, so you're on the waitlist.` : `The next ${t} is up: ${d}. You're in, like you asked.`;
   async function runSameTable({ now = Date.now(), workspaces = null, origin = process.env.ENCORE_PUBLIC_URL || "" } = {}) {
     const out = { asked: 0, emailed: 0, inbox: 0, converted: 0, events: [] };
     for (const ws of workspaces || allWorkspaceIds()) { if (ws === DEFAULT_WS || isDemo(ws)) continue; const S = scopeStore(store, ws);
@@ -304,9 +335,12 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
       // spots held for a date that wasn't made yet: reply once it is
       for (const d of S.list("againpledge").filter((x) => x.data && !x.data.doneAt)) { const P = d.data, ev = S.get("events/" + P.eventId)?.data; if (!ev) continue; const nx = nextMade(S, P.eventId, ev, todayAt(ev, now)); if (!nx) continue;
         const r = S.get("rsvps/" + P.rid)?.data; if (!r) { S.update("againpledge/" + d.id, { doneAt: now, state: "gone" }); continue; }
-        S.update("againpledge/" + d.id, { doneAt: now, nextId: nx.id }); const R = replyFor(S, nx.id, nx.data, r); S.update("againpledge/" + d.id, { state: R.state }); out.converted++;
-        const em = lc(r.email), t = title(nx.data), line = R.state === "waitlist" ? `The next ${t} is up (${fmtDay(nx.data.date)}). It's full, so you're on the waitlist.` : `The next ${t} is up: ${fmtDay(nx.data.date)}. You're in, like you asked.`;
-        if (em) { X.notify(em, { kind: "sametable", key: "againin-" + nx.id + "-" + P.rid, text: line, link: `/e/${encodeURIComponent(nx.id)}`, eventId: nx.id }); await mail(ws, nx.data, em, `${R.state === "waitlist" ? "Waitlist" : "You're in"}: ${t}`, `Hi ${first(r.name) || "there"},\n\n${line}\n\nYour invite: ${origin}/e/${encodeURIComponent(nx.id)}\n\nPlans changed? Open it and tap Can't go.\n`, origin); } }
+        S.update("againpledge/" + d.id, { doneAt: now, nextId: nx.id }); const who = first(r.name) || "A guest", t = title(nx.data);
+        const R = await replyFor(ws, S, nx.id, nx.data, r, { origin, hostLine: (st) => (st === "going" ? `${who} is in again for ${t} (Same table next time).` : "") }); S.update("againpledge/" + d.id, { state: R.state }); out.converted++;
+        const em = lc(r.email), line = againLine(R.state, t, fmtDay(nx.data.date)), subj = { order: "Order now", requested: "Asked", waitlist: "Waitlist" }[R.state] || "You're in";
+        if (em && R.state !== "gone" && R.state !== "already") { X.notify(em, { kind: "sametable", key: "againin-" + nx.id + "-" + P.rid, text: line, link: `/e/${encodeURIComponent(nx.id)}`, eventId: nx.id });
+          // the "You're in" or "Asked" email (with how to pay) already went from the reply itself; otherwise this one says where they landed
+          if (!R.confirmEmailed) await mail(ws, nx.data, em, `${subj}: ${t}`, `Hi ${first(r.name) || "there"},\n\n${line}\n\nYour invite: ${origin}/e/${encodeURIComponent(nx.id)}\n${R.state === "order" ? "" : "\nPlans changed? Open it and tap Can't go.\n"}`, origin); } }
     }
     return out;
   }
@@ -319,13 +353,13 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
     res.json({ title: title(P.ev), date: P.ev.date || "", hosts: hostOf(P.ws, P.ev), name: first(P.r.name), first30: T.first30, sizeText: sizeText(T.size),
       next: nx ? { id: nx.id, date: nx.data.date, startTime: nx.data.startTime || "", title: title(nx.data), response: mineNext?.r.response || "" } : null, pledged: !!pl && !pl.doneAt, tapped: !!ag?.tappedAt,
       repeats: !!P.ev.repeat || !!P.ev.seriesId }); });
-  app.post("/api/public/again/:eventId", small, (req, res) => { if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, id = clean(req.params.eventId, 80), P = proof(id, b.rid, b.code);
+  app.post("/api/public/again/:eventId", small, async (req, res) => { if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, id = clean(req.params.eventId, 80), P = proof(id, b.rid, b.code);
     if (!P) return bad(res, "This link isn't working. Open the one from your email.", 403, "not_granted"); if (!["going"].includes(P.r.response)) return bad(res, "This is for guests who came.", 403, "not_granted");
     const now = Date.now(), today = todayAt(P.ev), nx = nextMade(P.S, id, P.ev, today), log = "sametable/" + id + "--" + P.rid, gk = clean(req.get("x-encore-key"), 64);
     try { if (P.S.get(log)) P.S.update(log, { tappedAt: now }); else P.S.set(log, { eventId: id, rid: P.rid, at: now, channel: "page", tappedAt: now }); } catch {}
     const owner = ownerEmail(P.ws), who = first(P.r.name) || "A guest", t = title(P.ev);
-    if (nx) { const R = replyFor(P.S, nx.id, nx.data, P.r, gk); try { P.S.update(log, { state: R.state, nextId: nx.id }); } catch {}
-      if (owner && R.state !== "already") X.notify(owner, { kind: "reply", key: `again-${nx.id}-${P.rid}`, text: `${who} is in again for ${title(nx.data)} (Same table next time).`, link: `/?app=1&open=${encodeURIComponent(nx.id)}#studio`, eventId: nx.id });
+    if (nx) { const t2 = title(nx.data), R = await replyFor(P.ws, P.S, nx.id, nx.data, P.r, { gkey: gk, origin: publicOrigin(req), hostLine: (st) => (st === "going" ? `${who} is in again for ${t2} (Same table next time).` : "") }); try { P.S.update(log, { state: R.state, nextId: nx.id }); } catch {}
+      // the host hears through the reply itself (their bell, and an email for an ask to join), like any guest's reply
       return res.json({ ok: true, state: R.state, next: { id: nx.id, date: nx.data.date, startTime: nx.data.startTime || "", title: title(nx.data) }, rid: R.rid, code: R.code, name: clean(P.r.name, 80) }); }
     P.S.set("againpledge/" + id + "--" + P.rid, { eventId: id, rid: P.rid, at: now }); try { P.S.update(log, { state: "pledged" }); } catch {}
     if (owner) X.notify(owner, { kind: "reply", key: `again-pledge-${id}-${P.rid}`, text: `${who} wants the same table next time (${t}). They're in once you set the next date.`, link: `/?app=1&open=${encodeURIComponent(id)}#studio`, eventId: id });

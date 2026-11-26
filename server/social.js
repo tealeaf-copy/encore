@@ -11,6 +11,7 @@ import { smsConfig, sendSms, useSmsStop } from "./sms.js";
 import { holdsOf, togetherOf, friendTerms } from "./comewith.js"; // "Come with me?": held spots, pairs joined, who came together
 import { eventTz, zonedMs, hourIn } from "./tz.js";
 import { pottoSettings } from "./reminders.js";
+import { newWithHost } from "./tables.js"; // review round 13: the one "New" (first time with this host)
 import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
@@ -528,16 +529,16 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     res.json({ name, emoji: r.emoji || top.emoji, archetype: top, traits: (P.traits || []).slice(0, 3).map((t) => ({ name: t.name, emoji: t.emoji })), fact: clean(r.funFact, 160), attended: n, hosted: P.hosted || 0, kudos: kud, socials, mutual: { count: mutual.length, names: mutual.slice(0, 3) }, signedIn: !!u?.email, take, page: prof?.handle && pp?.ws ? "/@" + prof.handle : "" }); });
   // ---- Potto's read on the room: what the guests share, where they differ, and questions worth asking the whole table ----
   app.get("/api/host/room/:eventId", async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
-    const seen = new Set(), G = [], I0 = X.index(), priorOf = (em) => (em ? (I0.att.get(lc(em)) || []).filter((a) => a.eventId !== id && (I0.events.get(a.eventId)?.e?.date || "9") < today()).length : 0);
+    const seen = new Set(), G = [], I0 = X.index(), NEW = newWithHost(S, id, ev), priorOf = (em) => (em ? (I0.att.get(lc(em)) || []).filter((a) => a.eventId !== id && (I0.events.get(a.eventId)?.e?.date || "9") < today()).length : 0);
     for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !["going", "requested", "maybe"].includes(r.response)) continue; const k = lc(r.email || r.phone || r.name || d.id); if (seen.has(k)) continue; seen.add(k);
       let P = {}; try { P = r.email ? X.eventProfile(lc(r.email)) || {} : {}; } catch {} const prior = priorOf(r.email);
-      G.push({ name: first(r.name) || "A guest", response: r.response, arche: (r.guestType !== "early" && TRAITS[r.guestType]?.name) || (prior >= 2 && P.top?.name) || "New to Pottery Lab", archeKey: (r.guestType !== "early" && TRAITS[r.guestType] && r.guestType) || (prior >= 2 && P.top?.key) || "new", loves: prior ? (P.loves || []).map((l) => l.kind) : [], attended: prior, fact: clean(r.funFact, 140), answers: ansList(r.answers, ev.questions).map((a) => `${clean(a.q, 80)}${a.q ? ": " : ""}${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
+      G.push({ name: first(r.name) || "A guest", response: r.response, arche: (r.guestType !== "early" && TRAITS[r.guestType]?.name) || (prior >= 2 && P.top?.name) || "New to Pottery Lab", archeKey: (r.guestType !== "early" && TRAITS[r.guestType] && r.guestType) || (prior >= 2 && P.top?.key) || "new", loves: prior ? (P.loves || []).map((l) => l.kind) : [], attended: prior, isNew: NEW.has(replyKey(r)), fact: clean(r.funFact, 140), answers: ansList(r.answers, ev.questions).map((a) => `${clean(a.q, 80)}${a.q ? ": " : ""}${clean(a.a, 140)}`), note: clean(r.access, 120) }); }
     if (!G.length) return res.json({ guests: 0, empty: true });
     // what's true without AI
     const count = (arr) => arr.reduce((m, x) => (m[x] = (m[x] || 0) + 1, m), {});
     const arch = Object.entries(count(G.map((g) => g.arche))).sort((a, b) => b[1] - a[1]), lanes = Object.entries(count(G.flatMap((g) => g.loves))).sort((a, b) => b[1] - a[1]);
     const LANE = { move: "moving: runs, hikes, rides", make: "making and tasting things", gather: "long dinners and good talk", discover: "trying new places", run: "running", hike: "hiking", bike: "riding", cook: "cooking and eating together", potluck: "potlucks", games: "game nights", movie: "movie nights", concert: "live music", cafe: "coffee and tea", bake: "baking", picnic: "picnics", book: "books", club: "clubs and meetups" };
-    const firstTimers = G.filter((g) => !g.attended).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g, i, A) => g.fact && A.findIndex((h) => lc(h.fact) === lc(g.fact)) === i);
+    const firstTimers = G.filter((g) => g.isNew).map((g) => g.name), regulars = G.filter((g) => g.attended >= 3).map((g) => g.name), facts = G.filter((g, i, A) => g.fact && A.findIndex((h) => lc(h.fact) === lc(g.fact)) === i);
     const common = [], differ = [], prompts = [], pairs = [];
     if (lanes[0] && lanes[0][1] >= 2 && !(ev.date && ev.date < new Date().toISOString().slice(0, 10)) && G.some((g) => g.attended > 0)) { const lab = LANE[lanes[0][0]]; if (lab) common.push(`${lanes[0][1]} of them love ${lab}.`); }
     if (G.length >= 2 && firstTimers.length === G.length) common.push("Everyone's new. Start with names and one good thing from the week.");

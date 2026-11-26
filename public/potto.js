@@ -201,7 +201,9 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
     ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); el.querySelector("form").requestSubmit(); } });
     el.querySelector("form").onsubmit = (e) => { e.preventDefault(); const q = ta.value.trim(); if (!q && !S.photo) return; ta.value = ""; fit(); ask(q); };
     el.addEventListener("click", (e) => { if (e.target === el) close(); });
-    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (el.querySelector(".pt-menu")) el.querySelector(".pt-menu").remove(); else close(); } if (e.key === "Tab") trap(e); });
+    // on the document, so Esc works even before focus has moved into the sheet
+    const onKey = (e) => { if (!S || S.el !== el) return; if (e.key === "Escape") { e.preventDefault(); if (el.querySelector(".pt-menu")) el.querySelector(".pt-menu").remove(); else close(); } if (e.key === "Tab") trap(e); };
+    document.addEventListener("keydown", onKey, true); el._off = () => document.removeEventListener("keydown", onKey, true);
     el.querySelector('[data-a="new"]').onclick = () => { S.threadId = ""; S.turns = []; S.attach = null; S.photo = null; chips(); view("chat"); ta.focus(); };
     el.querySelector('[data-a="hist"]').onclick = () => view(S.view === "hist" ? "chat" : "hist");
     el.querySelector('[data-a="plus"]').onclick = (e) => plusMenu(e.currentTarget);
@@ -215,7 +217,7 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
     if (o.listen && SR) listen(ta, mic, fit);
   }
   function trap(e) { const f = [...S.el.querySelectorAll("button:not([hidden]),a[href],textarea,[tabindex]:not([tabindex='-1'])")].filter((x) => x.offsetParent !== null); if (!f.length) return; const a = f[0], z = f[f.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } }
-  function close() { if (!S) return; try { S.rec?.stop(); } catch {} S.el.remove(); document.documentElement.style.overflow = ""; const b = S.back; S = null; try { b?.focus?.({ preventScroll: true }); } catch {} }
+  function close() { if (!S) return; try { S.rec?.stop(); } catch {} try { S.el._off?.(); } catch {} S.el.remove(); document.documentElement.style.overflow = ""; const b = S.back; S = null; try { b?.focus?.({ preventScroll: true }); } catch {} }
   function note(t) { const n = S?.el.querySelector(".pt-note"); if (!n) return; n.hidden = !t; n.textContent = t || ""; }
   const body = () => S.el.querySelector(".pt-body");
   function view(v) { S.view = v; S.el.querySelector('[data-a="hist"]').setAttribute("aria-pressed", v === "hist" ? "true" : "false"); if (v === "hist") return drawHistory(); drawChat(); }

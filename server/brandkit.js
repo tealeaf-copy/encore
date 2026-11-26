@@ -57,7 +57,7 @@ const escA = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", 
 export function brandKitHead(h, { script = true, events = null, kit = null } = {}) {
   const k = kit || kitOf(h, events); if (!k) return "";
   const F = BK.fonts(k), json = JSON.stringify(JSON.parse(JSON.stringify(k))).replace(/</g, "\\u003c");
-  return `<link rel="stylesheet" href="${escA(F.href)}"><link rel="stylesheet" href="/brandkit.css" id="bk-css"><style>html{${BK.cssText(k)}}</style>` +
+  return `<meta name="theme-color" content="${escA(BK.derive(k).page)}"><link rel="stylesheet" href="${escA(F.href)}"><link rel="stylesheet" href="/brandkit.css" id="bk-css"><style>html{${BK.cssText(k)}}</style>` +
     (script ? `<script>window.__encoreKit=${json}</script><script src="/brandkit.js"></script>` : "");
 }
 /** The class list for <html> on a server-rendered page. */

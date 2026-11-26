@@ -123,7 +123,7 @@
     el.classList.remove(...[...el.classList].filter((c) => /^kit-/.test(c))); el.classList.add(...classes(k)); if (el === document.documentElement) { css(); el.classList.toggle("kit-saved", !!k.at); } }
   function unpaint(el = document.documentElement) { el.classList.remove(...[...el.classList].filter((c) => /^kit-/.test(c))); for (const n of Object.keys(vars(HOUSE))) el.style.removeProperty(n); }
   // the host's logo above their name on the host page (an uploaded image from the blob store)
-  function decor(k) { const row = document.querySelector("body.store .head .name-row"); if (!row) return; let img = document.querySelector(".head .kit-logo");
+  function decor(k) { const row = document.querySelector(".head .name-row"); if (!row) return; let img = document.querySelector(".head .kit-logo");
     if (!/^\/_blob\/[A-Za-z0-9]{20}$/.test(k?.logo || "")) { img?.remove(); return; } if (!img) { img = document.createElement("img"); img.className = "kit-logo"; img.alt = ""; row.before(img); } if (img.getAttribute("src") !== k.logo) img.src = k.logo; }
   // the owner's own page: a suggested kit, accepted in one tap (only until they save one)
   async function ownerBanner() { if (document.querySelector(".bk-sug")) return; let j; try { const r = await fetch("/api/host/brandkit", { credentials: "same-origin" }); if (!r.ok) return; j = await r.json(); } catch { return; }
@@ -133,7 +133,8 @@
     box.querySelector(".go1").onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const r = await fetch("/api/host/brandkit", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ starter: j.suggest.starter, fromStarter: true }) }); const x = await r.json(); if (!r.ok) throw new Error(x.message || "That didn't save."); saved(x.kit); box.innerHTML = `<span><b>${e(S.label)} is your brand kit.</b> Your page, events and invites wear it now.</span><span class="bk-sug-a"><button type="button" data-brandkit>Change it</button></span>`; } catch (err) { b.disabled = false; box.querySelector("span").textContent = err.message; } };
     (document.querySelector("main") || document.body).prepend(box); }
   /** After a save: the page wears the new kit right away. */
-  function saved(k) { if (!k) return; mineKit = k; if (document.body.classList.contains("store")) use(k); }
+  let savedKit = null;
+  function saved(k) { if (!k) return; mineKit = k; savedKit = k; if (document.body.classList.contains("store")) use(k); }
   let current = null, mineKit = null, last = null;
   /** The page's kit (the host whose page, event or invite this is). Re-dresses the last event look drawn with it. */
   function use(k) { if (!k || !PAIRS[k.pair]) return; current = k;
@@ -161,7 +162,7 @@
   function open(opts = {}) { return new Promise((res) => { const go = () => res(window.EncoreBrandKitEditor?.open(opts)); if (window.EncoreBrandKitEditor) return go(); const s = document.createElement("script"); s.src = "/brandkit-editor.js"; s.onload = go; s.onerror = () => res(null); document.head.appendChild(s); }); }
   document.addEventListener("click", (ev) => { const b = ev.target.closest?.("[data-brandkit]"); if (!b) return; ev.preventDefault(); open({ opener: b, starter: b.dataset.brandkit || "" }); });
   try { if (/[?&]brandkit=1\b/.test(location.search)) setTimeout(() => open({}), 600); } catch {}
-  Object.assign(API, { paint, unpaint, use, ownerBanner, saved, eventFor, after, storeTokens, host, storyStyle, mine, open, loadFonts }); Object.defineProperty(API, "current", { get: () => current, enumerable: true });
+  Object.assign(API, { paint, unpaint, use, ownerBanner, saved, eventFor, after, storeTokens, host, storyStyle, mine, open, loadFonts }); Object.defineProperty(API, "current", { get: () => current, enumerable: true }); Object.defineProperty(API, "savedKit", { get: () => savedKit, enumerable: true });
   root.EncoreBrandKit = API;
   // a page served with its host's kit (the light invite, /x pages): <script>window.__encoreKit=...</script>
   if (window.__encoreKit) use(window.__encoreKit);

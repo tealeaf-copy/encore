@@ -163,5 +163,11 @@ html body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not
   html body .pls-btn.pls-icon{width:44px!important;height:44px!important}
 }
 /* the feed's cards and minis sit on the page: a line, not an offset shadow (polaroids and quotes keep theirs: they are scrapbook art) */
-html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,a.fv-stk.big){box-shadow:none!important}
+html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,.fv-stk,.party,.gp-cta){box-shadow:none!important}
 @media (max-width:860px){html body [data-hwtab]{min-height:44px!important}}
+@media (max-width:860px){
+  html body #view-guest label.chip{display:inline-flex!important;align-items:center}
+  html body :is(.toc a,nav.toc a,footer a,.hl,a.full,#openFull,.party-x,.av-nudge,.city-chip,.loc-chip,#rpForget,.pp a,a.alt,.su-alt a,.signin-alt a){min-height:44px}
+  html body :is(.toc a,nav.toc a,a.hl,a.full,#openFull,.pp a,footer a){display:inline-flex;align-items:center}
+  html body :is(#view-guest .rsvpbig .chip,#view-guest .chips .chip){min-height:44px}
+}

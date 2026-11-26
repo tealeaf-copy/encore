@@ -31,7 +31,7 @@
 .pp-stamps{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:4px 10px;margin:10px 0 4px}
 .pp-stamp{display:grid;justify-items:center;gap:0;text-decoration:none;color:inherit;transform:rotate(var(--r,0deg));mix-blend-mode:multiply}.pp-stamp svg{width:112px;height:112px}
 .pp-stamp small{font:600 12.5px/1.2 "Instrument Sans",system-ui;text-align:center;max-width:120px;color:#3A302A;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.pp-next{display:grid;place-items:center;width:104px;height:104px;margin:4px auto;border:2.5px dashed #B8A891;border-radius:50%;color:#8C7E70;font:600 12px/1.2 "Instrument Sans",system-ui;text-align:center;padding:10px}
+.pp-next{display:grid;place-items:center;width:104px;height:104px;margin:4px auto;border:2.5px dashed #B8A891;border-radius:50%;color:#75685F;font:600 13px/1.2 "Instrument Sans",system-ui;text-align:center;padding:10px}
 .pp-hosts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}.pp-hosts a{display:inline-flex;gap:5px;align-items:center;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:3px 10px;font:600 13px "Instrument Sans",system-ui;text-decoration:none;color:#1F1A17}
 .pp h3{font:600 16px Fredoka,system-ui;margin:12px 0 2px}
 .pp-share{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border:2px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 15px "Instrument Sans",system-ui;cursor:pointer;box-shadow:2px 2px 0 #1F1A17}

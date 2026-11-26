@@ -156,7 +156,7 @@ test("copy and small UI: In again only, CRM fields hidden, speaker sublines, ins
   const rep = read("public/invite-repeat.js"); assert.match(rep, /f\.hidden = true/); assert.match(rep, />Change my details</);
   const shop = read("public/storeshop.js");
   assert.match(shop, /<fieldset class="bf-crm" hidden>/); assert.match(shop, /if \(!j\?\.crm\) return;/);
-  assert.match(shop, /const subOf = /); assert.match(shop, /\.shop \.si-b b\{font:600 16px Fredoka,"Instrument Sans"/); assert.match(shop, /<span class="si-sep" aria-hidden="true">·<\/span><span class="si-sr">, <\/span>/);
+  assert.match(shop, /const subOf = /); assert.match(shop, /\.shop \.si-b b\{font:600 16px\/1\.3 var\(--body/); // item names in the page's body face (UX pass) assert.match(shop, /<span class="si-sep" aria-hidden="true">·<\/span><span class="si-sr">, <\/span>/);
   assert.match(read("public/hosts.html"), /const subOf = /);
   assert.doesNotMatch(read("server/recognition.js"), /No insurance certificate on file/);
   const ins = read("public/inspo.js"); assert.doesNotMatch(ins, /"Coming up" : "Past"/); assert.match(ins, /<span class="pli-kind">Past<\/span>/);

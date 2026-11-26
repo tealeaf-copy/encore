@@ -161,6 +161,13 @@ test("the Invite tab: pick from a list, the capacity meter, waves on schedule, t
   j = await (await post(`/api/plan/${id}/remind`, {}, bo.cookie)).json(); assert.equal(j.reminded, 0); assert.equal(j.tooSoon, 2);
 });
 
+test("add someone new by email straight onto an event's list", async () => {
+  const bo = await host("Bo Tran", "bo-new"); const id = await event(bo, 12);
+  const j = await (await post(`/api/plan/${id}/add`, { emails: "Jess Moon <jess@example.com>" }, bo.cookie)).json(); assert.equal(j.added, 1); assert.equal(j.plan.rows[0].name, "Jess Moon");
+  assert.ok((await getJ("/api/contacts", bo.cookie)).people.some((p) => p.email === "jess@example.com"), "they're in People too");
+  assert.equal((await post(`/api/plan/${id}/add`, { emails: "nope" }, bo.cookie)).status, 400);
+});
+
 test("the public wave opens the event to everyone", async () => {
   const bo = await host("Bo Tran", "bo-pub"); const id = await event(bo, 12, { published: false, discoverable: false, unlisted: true });
   await post(`/api/plan/${id}/add`, { ids: [] }, bo.cookie);

@@ -18,7 +18,7 @@
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
-import { lc, first, h24, cleanChips, matchAll, chipLabel, replyRate, expectedYes, isBrandWs, view, keyFor, idOf, csvCell } from "./people.js";
+import { readImport, lc, first, h24, cleanChips, matchAll, chipLabel, replyRate, expectedYes, isBrandWs, view, keyFor, idOf, csvCell } from "./people.js";
 
 const DAY = 864e5, HOUR = 3600e3;
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, n);
@@ -220,7 +220,11 @@ export function mountInvites(app, { store, small, currentUser, C, X, publicOrigi
   const origin = (req) => { try { return publicOrigin(req) || ""; } catch { return ""; } };
 
   app.get("/api/plan/:id", (req, res) => { const H = host(req, res); if (!H) return; res.json(I.summary(H.ws, H.id, H.role)); });
-  app.post("/api/plan/:id/add", small, (req, res) => { const H = host(req, res, "manage"); if (!H) return; const b = req.body || {}; const r = I.add(H.ws, H.id, { ids: ids(b) || [], chips: Array.isArray(b.chips) ? b.chips : null, listId: String(b.list || ""), wave: /^[A-Za-z0-9_-]{1,20}$/.test(b.wave || "") ? b.wave : "" }); if (r.error) return bad(res, r.error, r.status); res.json({ ok: true, ...r, plan: I.summary(H.ws, H.id, H.role) }); });
+  app.post("/api/plan/:id/add", small, (req, res) => { const H = host(req, res, "manage"); if (!H) return; const b = req.body || {};
+    // someone new, by email, straight onto the list: they join People too
+    if (typeof b.emails === "string" && b.emails.trim()) { const R = readImport(b.emails.slice(0, 20000)); if (!R.rows.length) return bad(res, "That doesn't look like an email.");
+      const ev = I.eventOf(H.ws, H.id); P.importRows(H.ws, R.rows.slice(0, 200), { source: `Added to ${String(ev.pubTitle || ev.name || "an event").slice(0, 40)}` }); const r = I.add(H.ws, H.id, { ids: R.rows.slice(0, 200).map((x) => idOf(x.email)) }); return res.json({ ok: true, ...r, plan: I.summary(H.ws, H.id, H.role) }); }
+    const r = I.add(H.ws, H.id, { ids: ids(b) || [], chips: Array.isArray(b.chips) ? b.chips : null, listId: String(b.list || ""), wave: /^[A-Za-z0-9_-]{1,20}$/.test(b.wave || "") ? b.wave : "" }); if (r.error) return bad(res, r.error, r.status); res.json({ ok: true, ...r, plan: I.summary(H.ws, H.id, H.role) }); });
   app.post("/api/plan/:id/remove", small, (req, res) => { const H = host(req, res, "manage"); if (!H) return; const r = I.remove(H.ws, H.id, ids(req.body) || []); res.json({ ok: true, ...r, plan: I.summary(H.ws, H.id, H.role) }); });
   app.post("/api/plan/:id/waves", small, (req, res) => { const H = host(req, res, "manage"); if (!H) return; const b = req.body || {}; const r = b.reset ? I.setWaves(H.ws, H.id, []) : I.setWaves(H.ws, H.id, b.waves); if (r.error) return bad(res, r.error, r.status); res.json({ ok: true, plan: I.summary(H.ws, H.id, H.role) }); });
   app.post("/api/plan/:id/send", small, async (req, res) => { const H = host(req, res, "manage"); if (!H) return; const b = req.body || {}; const r = await I.send(H.ws, H.id, { ids: ids(b), waveId: String(b.wave || ""), origin: origin(req) });

@@ -12364,12 +12364,6 @@ window.prAiWait=async function(bg){ const job=window.__prAiJob; if(!job||job.don
     prAiStart(t,d,p) }catch(e){ console.warn(e) } return r } }
 // ---- end Potto reads with the model ----
 </script>
-<script>
-// ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
-// invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----
-(function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
-  if(location.pathname==="/g") add("/comewith.js"); if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
-</script>
 <!-- ==================================================================
      Tables (review round 11): the plan up front on /g (first 30 minutes, group size, comfort notes, who's in, last time),
      "I'm in if Sam is", open-table questions and "You're at table 2", the host's Table panel (fields, suggested tables,
@@ -12460,3 +12454,9 @@ window.prAiWait=async function(bg){ const job=window.__prAiJob; if(!job||job.don
 })();
 </script>
 <!-- ==================== end Tables (review round 11) ==================== -->
+<script>
+// ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
+// invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----
+(function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
+  if(location.pathname==="/g") add("/comewith.js"); if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
+</script>

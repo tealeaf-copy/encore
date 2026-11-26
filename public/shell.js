@@ -1,8 +1,11 @@
-// The frame around public pages: an icon rail on the left (hosts: Home, Discover, Feed, My page, Plans, New event, the app's order; brands: Home, Discover, Hosts, Requests, Gifts)
+// The frame around public pages: an icon rail on the left (hosts: Feed, Home, Discover, Chats, Ideas, New event, Plans, Saved, My page; brands: Home, Discover, Hosts, Requests, Gifts)
+// and, on phones, five bottom tabs: Feed, Discover, New, Chats, Me (Me opens Home, Plans, My page and Saved; public/chatnav.js).
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
 // A friend's invite (/g) never shows the brands link: a guest opening a dinner invite isn't shopping for hosts.
 // "Need a hand?" (public/help.js): Potto's help panel for signed-in hosts, on the app and every public page with this shell.
-(function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g") return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
+(function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g" || /^\/chats(\/|$)/.test(location.pathname)) return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
+// Chats in the nav: the unread badge and the Me sheet (public/chatnav.js)
+(function () { try { if (window.__plChatNavLoad) return; window.__plChatNavLoad = 1; const s = document.createElement("script"); s.src = "/chatnav.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Collapsible side navigation: one setting for both the public rail and the app's own sidebar, kept per device.
 (function () {
   if (window.__encoreNavFold) return; window.__encoreNavFold = 1;
@@ -23,8 +26,8 @@
 })();
 (function () {
   if (window.__encoreShell) return; window.__encoreShell = 1;
-  const P = location.pathname, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand", TABS_ONLY = P === "/" && document.body?.dataset?.shell === "tabs"; // the signed-out home keeps its own desktop header and takes only the phone tab bar
-  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
+  const P0 = location.pathname, P = /^\/chats(\/|$)/.test(P0) ? "/chats" : P0, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand", TABS_ONLY = P === "/" && document.body?.dataset?.shell === "tabs"; // the signed-out home keeps its own desktop header and takes only the phone tab bar
+  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
   if (/^\/(teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/gifts\/plan/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {
@@ -42,6 +45,7 @@
     spark: I('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
     heart: I('<path d="M12 20s-7-4.4-8.6-8.9C2.2 7.8 4.3 4.5 7.5 4.5c2 0 3.4 1.1 4.5 2.7 1.1-1.6 2.5-2.7 4.5-2.7 3.2 0 5.3 3.3 4.1 6.6C19 15.6 12 20 12 20z"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
+    chat: I('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17h0A1.5 1.5 0 0 1 4 15.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>'),
   };
   const css = document.createElement("style");
   css.textContent = `
@@ -79,11 +83,13 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const rail = document.createElement("nav"); rail.className = "es-rail"; rail.setAttribute("aria-label", "Pottery Lab");
     const signed = !!me?.verified, brand = signed && W?.personal === false && W?.plan !== "self-hosted" && !W?.handle, host = signed && !W?.regularOnly && !brand, ini = String(me?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "🙂";
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
+    const guestChats = !signed && (() => { try { for (let i = 0; i < localStorage.length; i++) if (/^encore-rsvp-/.test(localStorage.key(i) || "")) return true; } catch {} return false; })();
+    const chatsItem = item("/chats", ICON.chat, "Chats", `<span class="es-n" data-chats-badge hidden></span>`);
     rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (brand ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.people, "Book a host") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
-        : host ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/ideas", ICON.spark, "Ideas") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page")
-        : signed ? item("/discover", ICON.search, "Discover") + item("/ideas", ICON.spark, "Ideas") + item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved")
-        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/ideas", ICON.spark, "Ideas") + item("/feed", ICON.globe, "Feed")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
+        : host ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page")
+        : signed ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved")
+        : item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/ideas", ICON.spark, "Ideas") + item("/feed", ICON.globe, "Feed") + (guestChats ? chatsItem : "")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
       (signed ? `<a href="#" class="es-out">Sign out</a><a href="/settings" class="es-out es-set" style="margin-top:0">Settings</a>` : ""); // app store: Settings (notifications, blocked, delete account)
     setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     if (!TABS_ONLY) { document.body.prepend(rail); document.body.classList.add("es-has-rail"); }
@@ -91,11 +97,15 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");
       // six tabs at 390px: "New event" reads "New" under 400px (its aria-label keeps the full name), and the labels get a little room
       if (!document.getElementById("es-nl")) { const st = document.createElement("style"); st.id = "es-nl"; st.textContent = ".es-tabs .nl-short{display:none}@media (max-width:399px){.es-tabs .nl-full{display:none}.es-tabs .nl-short{display:inline}.es-tabs b{font-size:11.5px;letter-spacing:-.01em}}"; document.head.appendChild(st); }
+      const chatTab = `<a href="/chats"${P === "/chats" ? ' aria-current="page"' : ""}>${ICON.chat}<b>Chats</b><span class="es-tn" data-chats-badge hidden></span></a>`;
+      const meCur = /^\/(plans|saved|ideas)$/.test(P) || (W?.handle && P === "/@" + W.handle), meTab = `<a href="/plans" data-me aria-label="Me: Home, Plans, My page"${meCur ? ' aria-current="page"' : ""}>${ICON.me}<b>Me</b></a>`;
       const tab = (href, icon, label, aria) => { const p = href.split(/[?#]/)[0]; return `<a href="${href}"${aria ? ` aria-label="${aria}"` : ""}${p !== "/" && p === P ? ' aria-current="page"' : ""}>${icon}<b>${label}</b></a>`; };
-      tabs.innerHTML = brand ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/hosts/book", ICON.people, "Book a host") + tab("/requests", ICON.inbox, "Requests") + tab("/gifts", ICON.gift, "Gifts") : host ? tab("/feed", ICON.globe, "Feed") + tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/?app=1&new=1#studio", ICON.plus, '<span class="nl-full">New event</span><span class="nl-short" aria-hidden="true">New</span>', "New event") + tab("/plans", ICON.cal, "Plans") + tab(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page") : ((signed || !BRAND ? "" : tab("/", ICON.home, "Home")) + tab("/discover", ICON.search, "Discover") + (BRAND ? "" : tab("/ideas", ICON.spark, "Ideas")) + (signed || !BRAND ? tab("/feed", ICON.globe, "Feed") : "") +
+      tabs.innerHTML = brand ? tab("/?app=1", ICON.home, "Home") + tab("/discover", ICON.search, "Discover") + tab("/hosts/book", ICON.people, "Book a host") + tab("/requests", ICON.inbox, "Requests") + tab("/gifts", ICON.gift, "Gifts") : host ? tab("/feed", ICON.globe, "Feed") + tab("/discover", ICON.search, "Discover") + tab("/?app=1&new=1#studio", ICON.plus, "New", "New event") + chatTab + meTab : ((signed || !BRAND ? "" : tab("/", ICON.home, "Home")) + (signed ? tab("/feed", ICON.globe, "Feed") + tab("/discover", ICON.search, "Discover") : tab("/discover", ICON.search, "Discover") + (BRAND || guestChats ? "" : tab("/ideas", ICON.spark, "Ideas")) + (!BRAND ? tab("/feed", ICON.globe, "Feed") : "")) +
         (signed ? "" : BRAND ? tab("/hosts", ICON.people, "Hosts") : "") +
-        (signed ? tab("/plans", ICON.cal, "Plans") + tab("/?app=1", ICON.plus, "Host", "Start your page") : tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Sign up"))));
-      document.body.appendChild(tabs); document.body.classList.add("es-has-tabs"); }
+        (signed ? tab("/?app=1", ICON.plus, "Host", "Start your page") + chatTab + meTab : (guestChats ? chatTab : "") + tab("/login", ICON.login, "Sign in") + (BRAND ? tab("/hosts/book", ICON.brief, "For brands") : tab("/signup?mode=friends", ICON.plus, "Sign up"))));
+      document.body.appendChild(tabs); document.body.classList.add("es-has-tabs");
+      tabs.querySelectorAll("[data-me]").forEach((a) => (a.onclick = (e) => { if (!window.PLChatNav) return; e.preventDefault(); window.PLChatNav.me({ host, handle: W?.handle || "", name: me?.name || "" }); })); }
+    try { window.PLChatNav?.poll(); } catch {}
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
       top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1&new=1#studio">New event</a>` : ""}</nav>`;
       const main = document.querySelector("main") || document.body.firstElementChild; (main?.parentElement || document.body).insertBefore(top, main); }

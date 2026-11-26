@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chats · Pottery Lab</title>
+<meta name="description" content="The group chats for the events you're in.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F7F1E8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/chat.css">
+</head><body class="pl-chats">
+<div class="ch-app" id="chApp">
+  <aside class="ch-list" id="chList" aria-label="Chats">
+    <div class="ch-lhead"><h1>Chats</h1>
+      <label class="ch-search"><svg class="ch-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg><span class="ch-sr">Search chats</span><input id="chQ" type="search" placeholder="Search" autocomplete="off" enterkeyhint="search"></label></div>
+    <div class="ch-rows" id="chRows"><div class="ch-skel"></div><div class="ch-skel"></div><div class="ch-skel"></div></div>
+  </aside>
+  <section class="ch-thread" id="chThread" aria-label="Conversation"></section>
+</div>
+<script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/mascot.js"></script>
+<script src="/chat.js"></script>
+<script src="/shell.js" defer></script>
+</body></html>

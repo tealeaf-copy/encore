@@ -1,0 +1,47 @@
+// Chats in the navigation (public/shell.js on public pages, index.html in the app): the unread badge, and the Me sheet
+// that holds Home, Plans, My page and Saved on a phone, so the bottom bar keeps five tabs:
+// Feed, Discover, New, Chats, Me. The badge counts chats with something new (muted ones don't count) and polls
+// only while the tab is visible, every 30 seconds.
+(function () {
+  if (window.PLChatNav) return;
+  const signed = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  function proofs() { const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i), m = /^encore-rsvp-([A-Za-z0-9_-]+)$/.exec(k || ""); if (!m) continue; try { const v = JSON.parse(localStorage.getItem(k)); if (v?.rid && v.code) out.push({ eventId: m[1], rid: v.rid, code: v.code }); } catch {} } } catch {} return out.slice(0, 60); }
+  const has = () => signed() || proofs().length > 0;
+  let n = window.__plChatsUnread || 0;
+  function set(k) { n = +k || 0; document.querySelectorAll("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); b.setAttribute("aria-label", n ? `${n} chat${n === 1 ? "" : "s"} with new messages` : ""); }); }
+  let t = 0, busy = false;
+  async function poll() { clearTimeout(t); set(window.__plChatsUnread ?? n); if (!has()) return; if (!document.hidden && !busy && location.pathname.split("/")[1] !== "chats") { busy = true; try { const r = await fetch("/api/chats/badge", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proofs: proofs() }) }); if (r.ok) set((await r.json()).unread); } catch {} busy = false; } t = setTimeout(poll, 30000); }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) poll(); });
+  const ICON = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const CHAT = ICON('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17h0A1.5 1.5 0 0 1 4 15.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>');
+  // the Me sheet: everything that left the bottom bar
+  function me({ handle = "", host = false, name = "" } = {}) { document.getElementById("plMe")?.remove(); const P = location.pathname;
+    const row = (href, label, sub) => `<a class="plme-r" href="${href}"${(href.split(/[?#]/)[0] === P && P !== "/") || (href.startsWith("/?app") && P === "/" && /app=1/.test(location.search)) ? ' aria-current="page"' : ""}><span><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>`;
+    const s = document.createElement("div"); s.id = "plMe"; s.className = "plme-bg";
+    s.innerHTML = `<div class="plme" role="dialog" aria-modal="true" aria-label="Me"><div class="plme-g" aria-hidden="true"></div>${name ? `<p class="plme-n">${esc(name)}</p>` : ""}
+      ${host ? row("/?app=1", "Home", "Your events and what's next") : ""}${row("/plans", "Plans", "What you're going to")}${host && handle ? row("/@" + encodeURIComponent(handle), "My page", "What guests see") : ""}${row("/saved", "Saved")}${row("/ideas", "Ideas")}${host ? "" : row("/?app=1", "Host something", "Start your page, free")}
+      ${row("/settings", "Settings", "Notifications, blocked people, delete account")}<button type="button" class="plme-out">Sign out</button></div>`;
+    document.body.appendChild(s); const close = () => { s.remove(); document.removeEventListener("keydown", k); }; const k = (e) => { if (e.key === "Escape") close(); }; document.addEventListener("keydown", k);
+    s.onclick = (e) => { if (e.target === s) close(); }; s.querySelector(".plme-out").onclick = async () => { try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; };
+    setTimeout(() => s.querySelector("a,button")?.focus({ preventScroll: true }), 30); }
+  const css = document.createElement("style"); css.textContent = `.plme-bg{position:fixed;inset:0;z-index:9000;background:rgba(31,26,23,.36);display:flex;align-items:flex-end;justify-content:center}
+.plme{width:min(480px,100%);background:#FFFCF7;border-radius:24px 24px 0 0;padding:8px 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font-family:"Instrument Sans",system-ui,sans-serif;color:#1F1A17;box-sizing:border-box}
+.plme-g{width:40px;height:4px;border-radius:2px;background:#E0D5C6;margin:4px auto 8px}.plme-n{margin:4px 8px 8px;font:600 20px "Fredoka","Instrument Sans",system-ui,sans-serif}
+.plme-r{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 8px;border-radius:12px;color:inherit;text-decoration:none}.plme-r span{flex:1}.plme-r b{display:block;font-weight:600;font-size:16px}.plme-r small{display:block;color:#665A51;font-size:13px}.plme-r svg{color:#5A3B2B}.plme-r:hover,.plme-r[aria-current]{background:#F6EFE7}
+.plme-out{display:block;width:100%;min-height:48px;margin-top:6px;border:0;background:none;color:#665A51;font:500 15px "Instrument Sans",system-ui;text-decoration:underline;cursor:pointer}
+[data-chats-badge][hidden]{display:none!important}
+.es-tabs a .es-tn,nav.tabs a .es-tn{position:absolute;top:0;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#C94A30;color:#fff;font:500 12px/18px "JetBrains Mono",ui-monospace,monospace;text-align:center;box-sizing:border-box;border:2px solid #FFFBF5}
+.es-tabs a{position:relative}`; document.head.appendChild(css);
+
+  // the app (index.html) on a phone: Feed, Discover, New, Chats, Me; on a computer the sidebar keeps Home, Plans and My page and gains Chats
+  function app() { if (location.pathname !== "/") return; let tries = 0; const go = () => { const nav = document.querySelector("nav.tabs"); if (!nav || !window.__wsPersonal) { if (++tries < 60) setTimeout(go, 500); return; }
+      if (!document.getElementById("navChats")) { const ref = document.getElementById("navDisc") || nav.querySelector('a[href="/discover"]'); const a = document.createElement("a"); a.id = "navChats"; a.href = "/chats"; a.className = ref?.className || ""; a.style.position = "relative";
+        a.innerHTML = `${CHAT.replace('width="24" height="24"', 'width="22" height="22" class="nav-ic"')}Chats<span class="es-tn" data-chats-badge hidden></span>`; (ref ? ref.after(a) : nav.appendChild(a)); }
+      if (!document.getElementById("navMeTab")) { const a = document.createElement("a"); a.id = "navMeTab"; a.href = "#me"; a.setAttribute("aria-label", "Me: Home, Plans, My page"); a.innerHTML = `${ICON('<circle cx="12" cy="8.5" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>').replace('width="24" height="24"', 'width="22" height="22" class="nav-ic"')}Me`;
+        a.onclick = async (e) => { e.preventDefault(); let h = ""; try { h = (await (await fetch("/api/host/profile", { credentials: "same-origin" })).json())?.handle || ""; } catch {} me({ host: !window.__wsRegularOnly, handle: h }); }; nav.appendChild(a); }
+      if (!document.getElementById("navChatsCss")) { const s = document.createElement("style"); s.id = "navChatsCss"; s.textContent = `#navMeTab{display:none!important}@media (max-width:760px){body.friends-ws nav.tabs>a{display:none!important}body.friends-ws nav.tabs>#navFeed,body.friends-ws nav.tabs>#navDisc,body.friends-ws nav.tabs>a[data-view=studio],body.friends-ws nav.tabs>#navChats,body.friends-ws nav.tabs>#navMeTab{display:flex!important}body.friends-ws nav.tabs>#navFeed{order:1!important}body.friends-ws nav.tabs>#navDisc{order:2!important}body.friends-ws nav.tabs>a[data-view=studio]{order:3!important}body.friends-ws nav.tabs>#navChats{order:4!important}body.friends-ws nav.tabs>#navMeTab{order:5!important}}`; document.head.appendChild(s); }
+      poll(); }; go(); }
+  window.PLChatNav = { set, poll, me, has, CHAT, proofs, get n() { return n; } };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { app(); poll(); }); else { app(); poll(); }
+})();

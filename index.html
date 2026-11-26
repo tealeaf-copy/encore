@@ -12864,7 +12864,10 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     if(HV.lastStep!==+step){ HV.lastStep=+step; const t={6:"guests",4:"invite",1:"overview",7:"overview"}[+step]; if(t&&t!==HV.tab){ HV.tab=t; HV.anim=true } }
     try{ if(d.id) localStorage.setItem("encore.lastEvent",d.id) }catch{}
     try{ if(d.id&&!d.example){ mergeRsvps(d); dedupeGuests(d) } }catch{}
-    const P=people(d), c=hvCounts(d,P), stage=hvStage(d), [st,cls]=hvStatus(d,c,stage), [pl,act]=hvPrimary(d,c,stage);
+    const P=people(d), c=hvCounts(d,P), stage=hvStage(d), [pl,act]=hvPrimary(d,c,stage);
+    // replies arrive a moment after the page: until then say so, rather than "No replies yet" and then a list
+    HV.loading=!!d.id&&!["draft","new"].includes(stage)&&!(typeof allRsvps!=="undefined"&&allRsvps.length)&&performance.now()<5000;
+    const [st,cls]=HV.loading?["Checking replies…","live"]:hvStatus(d,c,stage);
     HV.sig=sigOf(d);
     nav(!!d.id);
     if(stage==="new"){ h.innerHTML=`<div class="hv-start">${typeof pipSVG==="function"?pipSVG("happy",72):""}<h1>What are you hosting?</h1><p class="hv-sub" style="margin:0 0 24px">Tell Potto in a line. You'll check the details, then share.</p><button class="hv-b pri big" type="button" data-hv="create" style="max-width:320px">Start</button></div>`; wire(h,d,P,c,stage); return }
@@ -12885,7 +12888,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   // the tab bar says where you are: Home while managing an event, New only while creating one
   function nav(managing){ try{ if(q("#view-studio")?.hidden) return; qa("nav.tabs a").forEach(a=>{ const v=a.dataset.view; if(v==="studio"){ if(managing) a.removeAttribute("aria-current"); else a.setAttribute("aria-current","page") } else if(v==="programs"){ if(managing) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") } }) }catch{} }
 
-  function overviewPane(d,P,c,stage){ const out=[], pt=hvPotto(d,c,stage,P);
+  function overviewPane(d,P,c,stage){ const out=[], pt=HV.loading?"":hvPotto(d,c,stage,P);
     if(pt) out.push(`<div class="hv-potto">${typeof pipSVG==="function"?pipSVG(c.full||stage==="after"?"happy":"happy",40):""}<p>${E(pt)}</p></div>`);
     const asks=P.filter(p=>p.state==="ask");
     if(asks.length&&stage!=="after") out.push(`<section class="hv-card" aria-labelledby="hvAskH"><div class="hv-ch"><h2 id="hvAskH">${asks.length===1?"1 person asked to join":`${asks.length} people asked to join`}</h2></div>${asks.slice(0,4).map(askRow).join("")}${asks.length>4?`<button class="hv-b q sm" type="button" data-tab="guests" style="margin-top:8px">See all ${asks.length}</button>`:""}</section>`);
@@ -12894,12 +12897,14 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     if(stage==="today"&&c.in) out.push(`<section class="hv-card"><div class="hv-ch"><h2>At the door</h2></div><div class="hv-bar" aria-hidden="true"><i data-w="${Math.round(100*c.here/Math.max(1,c.in))}%"></i></div><p>${c.here?`${c.here} of ${c.in} here.`:`${hvPlural(c.in,"guest")} coming. Tap Check in as they arrive.`}</p></section>`);
     if(stage!=="after") out.push(comingCard(d,P,c,stage));
     if(stage==="after") return out.join("");
+    if(d.published||d.discoverable) out.push(`<section class="hv-card" aria-labelledby="hvLinkH"><div class="hv-ch"><h2 id="hvLinkH">Invite link</h2></div><div class="hv-link">${I.link}<span>${E(link(d).replace(/^https?:\/\//,""))}</span></div><div class="hv-two"><button class="hv-b" type="button" data-hv="copyinv">${I.copy}<span>Copy invite</span></button><button class="hv-b" type="button" data-hv="share">${I.share}<span>More ways</span></button></div></section>`);
     out.push(`<section class="hv-card" aria-labelledby="hvSeeH"><div class="hv-ch"><h2 id="hvSeeH">Who can see and join</h2><button class="hv-b sm" type="button" data-hv="rules">Change</button></div><div class="hv-sent"><p>${E(hvSeeLine(d))}</p><p>${E(hvJoinLine(d))}</p><p class="hv-sub" id="hvGap" hidden></p></div></section>`);
-    if((d.published||d.discoverable)&&stage!=="after") out.push(`<section class="hv-card" aria-labelledby="hvLinkH"><div class="hv-ch"><h2 id="hvLinkH">Invite link</h2></div><div class="hv-link">${I.link}<span>${E(link(d).replace(/^https?:\/\//,""))}</span></div><div class="hv-acts"><button class="hv-b" type="button" data-hv="copyinv">${I.copy}<span>Copy invite</span></button><button class="hv-b" type="button" data-hv="share">${I.share}<span>More ways</span></button></div></section>`);
-    out.push(detailsCard(d));
+    // the details live on the Invite tab ("What guests see"); a draft shows them here too, since checking them is the job
+    if(stage==="draft") out.push(detailsCard(d));
     return out.join("") }
   function askRow(p){ return `<div class="hv-ask" data-rid="${E(p.id)}"><span class="hv-av" style="background:${avc(p.name)}">${ini(p.name)}</span><div><b>${E(p.name)}</b>${p.notes.length?`<small class="hv-sub" style="display:block">${E(p.notes.slice(0,2).join(" · "))}</small>`:""}</div><div class="hv-acts"><button class="hv-b pri sm" type="button" data-ok="${E(p.id)}" data-cap-ok="1">Let in</button><button class="hv-b sm" type="button" data-no="${E(p.id)}">Not this time</button></div></div>` }
   function comingCard(d,P,c,stage){ const ins=P.filter(p=>p.state==="in").sort((a,b)=>a.at-b.at);
+    if(HV.loading) return `<section class="hv-card" aria-busy="true"><div class="hv-ch"><h2>Who's coming</h2></div><p class="hv-empty">Checking replies…</p></section>`;
     if(!ins.length&&!c.maybe&&!c.wait) return `<section class="hv-card" aria-labelledby="hvWhoH"><div class="hv-ch"><h2 id="hvWhoH">Who's coming</h2></div><p class="hv-empty">${stage==="draft"?"Once you share the invite, replies land here.":"Replies land here as they come in. Share the link where your friends already talk."}</p></section>`;
     const bits=[c.cap?`${c.spots} of ${c.cap} spots taken`:hvPlural(c.in,"guest")+" in",c.maybe?`${c.maybe} maybe`:"",c.wait?`${c.wait} on the waitlist`:"",(d.price&&d.price!=="chip"&&c.in)?`${c.paid} of ${c.in} paid`:""].filter(Boolean);
     return `<section class="hv-card" aria-labelledby="hvWhoH"><div class="hv-ch"><h2 id="hvWhoH">Who's coming</h2><button class="hv-b sm" type="button" data-tab="guests">See all</button></div>
@@ -12918,7 +12923,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     if(!F.some(([k])=>k===HV.filter)) HV.filter="all";
     const ORDER=[["ask","Asking to join"],["in",stage==="after"?"Came":"In"],["wait","Waitlist"],["maybe","Maybe"],["invited","Not replied yet"],["no","Can't go"]], paid=!!(d.price&&d.price!=="chip");
     const sec=ORDER.filter(([k])=>HV.filter==="all"||HV.filter===k).map(([k,l])=>{ const L=P.filter(p=>p.state===k).sort((a,b)=>(stage==="today"?(a.here-b.here):0)||a.at-b.at); if(!L.length) return ""; return `<div class="hv-sec"><h3>${l} · ${L.length}</h3>${k==="ask"&&c.full?`<p class="hv-sub" style="margin:0 0 4px">You're full. Letting someone in adds a spot.</p>`:""}${L.map(p=>gRow(d,p,k,stage,paid)).join("")}</div>` }).join("");
-    return `<section class="hv-card"><div class="hv-two" style="margin-bottom:${P.length?12:0}px"><button class="hv-b" type="button" data-hv="message">${I.chat}<span>Message guests</span></button><button class="hv-b" type="button" data-hv="add">${I.plus}<span>Add someone</span></button></div>
+    return `<section class="hv-card"><div class="hv-two" style="margin-bottom:${P.length?12:0}px"><button class="hv-b" type="button" data-hv="message">${I.chat}<span>Message all</span></button><button class="hv-b" type="button" data-hv="add">${I.plus}<span>Add someone</span></button></div>
       ${P.length?`<div class="hv-chips" role="group" aria-label="Show">${F.map(([k,l,n])=>`<button type="button" class="hv-chip" data-filter="${k}" aria-pressed="${HV.filter===k}">${l}${k==="all"?"":` ${n}`}</button>`).join("")}</div>`:""}</section>
       ${P.length?`<section class="hv-card">${sec||`<p class="hv-empty">No one here yet.</p>`}</section>`:`<section class="hv-card"><p class="hv-empty">${(d.published||d.discoverable)?"No replies yet. Share the invite and replies land here, with notes like allergies.":"Share the invite and replies land here, with notes like allergies."}</p></section>`}` }
   function gRow(d,p,k,stage,paid){ const sub=[p.plus?`+${p.plus}`:"",...p.notes,p.walkIn?"Walk-in":"",p.src==="g"&&!p.walkIn?"Added by you":""].filter(Boolean).join(" · ");
@@ -13219,7 +13224,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   // the planner's "Every setting" has a way back
   new MutationObserver(()=>{ if(!window.__hvClassic||q("#hvBackBar")) return; const v=q("#view-studio"); if(!v||v.hidden) return; const b=document.createElement("button"); b.id="hvBackBar"; b.type="button"; b.className="hv-b"; b.style.cssText="display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:0 0 12px;padding:0 16px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;font:600 15px 'Instrument Sans',system-ui;cursor:pointer"; b.textContent="Back to the simple view"; b.onclick=()=>{ window.__hvClassic=false; b.remove(); renderStep() }; v.prepend(b) }).observe(document.documentElement,{childList:true,subtree:true});
   // new replies, payments and check-ins show without a reload (no redraw while a sheet is open or someone types)
-  setInterval(()=>{ try{ const h=q("#hv"); if(!h||h.hidden||q("#view-studio")?.hidden||!want()||q("#hvSheet")||isTyping()) return; if(sigOf(draft)!==HV.sig) hvRender() }catch{} },1500);
+  setInterval(()=>{ try{ const h=q("#hv"); if(!h||h.hidden||q("#view-studio")?.hidden||!want()||q("#hvSheet")||isTyping()) return; if(sigOf(draft)!==HV.sig||(HV.loading&&performance.now()>=5000)) hvRender() }catch{} },1000);
   window.HostEvent={ render:hvRender, openCreate, openDetails, openShare, openRules, openMessage, openPhotos, openTools };
 })();
 </script>

@@ -12370,3 +12370,93 @@ window.prAiWait=async function(bg){ const job=window.__prAiJob; if(!job||job.don
 (function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
   if(location.pathname==="/g") add("/comewith.js"); if(location.pathname==="/g"||location.pathname==="/") add("/hostlike.js") })();
 </script>
+<!-- ==================================================================
+     Tables (review round 11): the plan up front on /g (first 30 minutes, group size, comfort notes, who's in, last time),
+     "I'm in if Sam is", open-table questions and "You're at table 2", the host's Table panel (fields, suggested tables,
+     second-RSVP rate, roster export), the reader for "first 30 min: ..." and a Home link to the host playbook.
+     Server: server/tables.js. Shared with the light invite: public/tables.js, public/tables.css.
+     ================================================================== -->
+<link rel="stylesheet" href="/tables.css"><script src="/tables.js"></script>
+<script>
+(function(){
+  if(typeof window.Tables==="undefined") return;
+  const TB=window.Tables, q=(s,el=document)=>el.querySelector(s), E=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const andL=L=>L.length<=1?L.join(""):L.length===2?`${L[0]} and ${L[1]}`:`${L.slice(0,-1).join(", ")} and ${L[L.length-1]}`;
+
+  // ---- the reader: "first 30 min: we teach Root, then play", "6 to 12 people", "come solo welcome" ----
+  if(typeof quickStart==="function"){ const _qsTb=quickStart; quickStart=function(text){ const before=typeof draft!=="undefined"?draft:null, r=_qsTb.apply(this,arguments);
+    try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d===before||d.example||d.id) return r; const t=String(text||""), o=TB.apply(d,t);
+      // a title that was really the plan ("First 30 min: we teach Root") reads again from what's left
+      const ti=String(d.pubTitle||d.name||""); if(o.strip.length&&(!ti.trim()||o.strip.some(x=>x.toLowerCase().includes(ti.toLowerCase().trim()))||/^first\s*(30|thirty)\b/i.test(ti))&&typeof parseEventText==="function"){
+        let rest=t; for(const x of o.strip) rest=rest.split(x).join(" "); const p=parseEventText(rest.replace(/^[\s,.;:]+/,"")); if(p?.title){ d.pubTitle=p.title; d.name=p.title } } }catch(e){ console.warn(e) } return r } }
+
+  // ---- guests: the plan above the cover, and their own bits under the reply ----
+  async function tbGuest(){ const e=window.__gEv, host=q("#view-guest"); if(!e?.id||!host||host.hidden||!(typeof isCasual==="function"&&isCasual(e))||e.sample||e.example) return;
+    const T=await TB.load(e.id); if(!T||window.__gEv!==e) return; window.__tbT=T;
+    q("#tbPlan",host)?.remove(); const inv=q(".invite",host), html=TB.plan(T), wide=window.matchMedia?.("(min-width: 900px)").matches, top=wide&&q(".invite .in",host);
+    // ahead of the cover: above it on a phone, at the top of the text column beside it on a wide screen
+    if(html&&top) top.insertAdjacentHTML("afterbegin",html); else if(html&&inv) inv.insertAdjacentHTML("beforebegin",html);
+    let box=q("#tbMe",host); if(!box){ box=document.createElement("div"); box.id="tbMe" } const rs=q("#gResp",host)?.closest(".stack"), anchor=rs||q("#gForm",host)||q(".ticket",host)?.closest(".panel")||inv; if(rs) rs.append(box); else anchor?.after(box);
+    const past=e.date&&e.date<localISO();
+    TB.me(box,e.id,T,T.hosts?.[0]||"",{noIf:past||e.stage==="interest",onChange:()=>{ try{ renderGuest() }catch{} }}) }
+  if(typeof renderGuest==="function"){ const _rgTb=renderGuest; renderGuest=async function(){ const r=await _rgTb.apply(this,arguments); try{ await tbGuest() }catch(e){ console.warn(e) } return r } }
+
+  // ---- the host: what guests can expect (Plan), and the Table panel (Guests, After) ----
+  const COMF=[["solo","Come alone friendly"],["beginner","Beginner friendly"],["quiet","Quiet corner"],["leave","Leave anytime"],["nospeech","No speeches"]], NOISE=[["","Not set"],["low","Low noise"],["medium","Some chatter"],["lively","Lively"]];
+  let tbSaveT=null; const tbSave=()=>{ clearTimeout(tbSaveT); tbSaveT=setTimeout(async()=>{ try{ await saveEvent(true); const s=q("#tbSaved"); if(s) s.textContent="Saved "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}).toLowerCase() }catch(e){ console.warn(e) } },600) };
+  function tbEditHTML(d){ const O=d.openTable&&d.openTable.on!==false?d.openTable:null, Q=(O?.questions||[]).concat([{},{},{}]).slice(0,3), cos=(d.cohosts||[]).map(c=>c.name+(c.handle?" @"+c.handle:"")).join(", ");
+    const sum=[d.first30?"First 30 minutes":"",+d.sizeMin||+d.sizeMax?`${d.sizeMin||d.sizeMax} to ${d.sizeMax||d.sizeMin} people`:"",(d.comfort||[]).length?`${d.comfort.length} comfort note${d.comfort.length>1?"s":""}`:"",O?"Open table":"",(d.cohosts||[]).length?"Co-hosts":""].filter(Boolean).join(" · ");
+    return `<details class="panel tb-panel" id="tbEdit"${d.first30?"":" open"}><summary><span><b>What guests can expect</b><small>${E(sum||"First 30 minutes, group size, comfort notes, co-hosts")}</small></span></summary><div class="tb-body">
+      <label class="tb-lab">What we're doing for the first 30 minutes<small>Shown above the cover. Be specific: a demo, a teach, a build.</small><input type="text" id="tbFirst" maxlength="220" value="${E(d.first30||"")}" placeholder="We teach Root, then play"></label>
+      <div class="tb-row"><div class="tb-lab">Expected group size<div class="tb-size"><input type="number" id="tbMin" min="1" max="500" inputmode="numeric" value="${+d.sizeMin||""}" placeholder="6" aria-label="Fewest"><span>to</span><input type="number" id="tbMax" min="1" max="500" inputmode="numeric" value="${+d.sizeMax||""}" placeholder="12" aria-label="Most"><span>people</span></div></div>
+        <label class="tb-lab">Noise<select id="tbNoise">${NOISE.map(([k,l])=>`<option value="${k}"${(d.noise||"")===k?" selected":""}>${l}</option>`).join("")}</select></label></div>
+      <div class="tb-lab">Comfort notes<div class="tb-chips">${COMF.map(([k,l])=>`<label><input type="checkbox" data-comf="${k}"${(d.comfort||[]).includes(k)?" checked":""}><span>${l}</span></label>`).join("")}</div></div>
+      <label class="tb-lab">How it goes<small>One line each, start to end: "7:00 Teach", "7:30 Play", "9:45 Pack up".</small><textarea id="tbAgenda" rows="3" maxlength="700">${E((d.agenda||[]).join("\n"))}</textarea></label>
+      <label class="tb-lab">Co-hosts<small>Names, with a Pottery Lab handle if they have one. They share the credit on the invite and in the directory.</small><input type="text" id="tbCo" maxlength="200" value="${E(cos)}" placeholder="Jo Kim @jokim, Sam"></label>
+      <div class="tb-lab"><div class="tb-chips"><label><input type="checkbox" id="tbOpen"${O?" checked":""}><span>Open table</span></label></div><small>Solo first-timers answer 2 or 3 questions once they're in, and you put them at tables of about <input type="number" id="tbOsize" min="3" max="8" value="${O?.size||4}" aria-label="Table size" style="width:4.2em;display:inline-block;padding:2px 6px"> people.</small></div>
+      <div id="tbQs"${O?"":" hidden"}>${Q.map((x,i)=>`<div class="tb-q" style="margin-bottom:8px"><input type="text" data-q="${i}" maxlength="120" value="${E(x.q||"")}" placeholder="${["What do you like to play?","How competitive are you?","Played Root before?"][i]}" aria-label="Question ${i+1}"><input type="text" data-o="${i}" maxlength="200" value="${E((x.options||[]).join(", "))}" placeholder="${["Strategy, Party games, Co-op","Chill, A little, Very","Never, A few times, Lots"][i]}" aria-label="Choices for question ${i+1}, separated by commas"></div>`).join("")}</div>
+      <div class="tb-chips"><label><input type="checkbox" id="tbRound"${d.hostRoundtable?" checked":""}><span>List it as a host roundtable</span></label></div>
+      <div class="tb-actions"><a class="tb-link" href="/e/${E(d.id||"")}" target="_blank" rel="noopener">See it as a guest</a><a class="tb-link" href="/playbook" target="_blank" rel="noopener">Host playbook</a><span class="tb-saved" id="tbSaved" aria-live="polite"></span></div></div></details>` }
+  function tbReadQs(el,d){ const qs=[0,1,2].map(i=>({q:(q(`[data-q="${i}"]`,el)?.value||"").trim(),options:(q(`[data-o="${i}"]`,el)?.value||"").split(/,/).map(x=>x.trim()).filter(Boolean).slice(0,5)})).filter(x=>x.q&&x.options.length>=2);
+    d.openTable={on:!!q("#tbOpen",el)?.checked,size:Math.max(3,Math.min(8,Math.round(+q("#tbOsize",el)?.value)||4)),questions:qs} }
+  function tbWireEdit(el,d){
+    el.addEventListener("input",ev=>{ const t=ev.target; if(t.id==="tbFirst") d.first30=t.value.trim();
+      else if(t.id==="tbMin"||t.id==="tbMax"){ const n=Math.round(+t.value); d[t.id==="tbMin"?"sizeMin":"sizeMax"]=n>0?Math.min(500,n):null }
+      else if(t.id==="tbAgenda") d.agenda=t.value.split(/\n/).map(x=>x.trim()).filter(Boolean).slice(0,6);
+      else if(t.id==="tbCo") d.cohosts=t.value.split(/,/).map(x=>x.trim()).filter(Boolean).slice(0,4).map(x=>{ const m=/^(.*?)\s*@([A-Za-z0-9_-]{2,30})$/.exec(x); return m?{name:m[1]||m[2],handle:m[2].toLowerCase()}:{name:x} });
+      else if(t.dataset.q!=null||t.dataset.o!=null||t.id==="tbOsize") tbReadQs(el,d); else return; tbSave() });
+    el.addEventListener("change",ev=>{ const t=ev.target; if(t.dataset.comf){ d.comfort=[...el.querySelectorAll("[data-comf]:checked")].map(x=>x.dataset.comf) }
+      else if(t.id==="tbNoise") d.noise=t.value||null; else if(t.id==="tbOpen"){ q("#tbQs",el).hidden=!t.checked; tbReadQs(el,d) }
+      else if(t.id==="tbRound") d.hostRoundtable=t.checked; else return; tbSave() }) }
+
+  async function tbHostPanel(){ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!d?.id||!host||d.example||!isCasual(d)||![6,7].includes(+step)) return;
+    let j=null; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id),{credentials:"same-origin"}); if(!r.ok) return; j=await r.json() }catch{ return } if(draft!==d||![6,7].includes(+step)) return;
+    q("#tbHost")?.remove(); const S=j.secondRsvp||{}, H=S.host||{}, SR=S.series&&S.series.came?S.series:null, pct=x=>x==null?"none yet":x+"%";
+    const stats=`<div class="tb-stats"><div class="tb-stat"><b>${pct(SR?SR.rate:H.rate)}</b><small>Second-RSVP rate${SR?" for this series":""}: ${SR?`${SR.again} of ${SR.came}`:`${H.again||0} of ${H.came||0}`} who came replied I'm in again</small></div>${SR&&H.came?`<div class="tb-stat"><b>${pct(H.rate)}</b><small>Across all your events: ${H.again} of ${H.came}</small></div>`:""}<div class="tb-stat"><b>${j.sameTable.tapped}<span class="tb-ans" style="font-size:.5em">/${j.sameTable.asked}</span></b><small>Tapped "Same table next time?"</small></div></div>`;
+    const L=j.last, last=L?`<div><p class="tb-h">Last time · ${E(typeof fmtDate==="function"?fmtDate(L.date):L.date)}</p><ul class="tb-list"><li><span>Back this time</span><span>${E(andL(L.back.map(n=>n.split(" ")[0])))||"No one yet"}</span></li>${L.notYet.length?`<li><span>Not in yet</span><span>${E(andL(L.notYet.map(n=>n.split(" ")[0])))}</span></li>`:""}</ul></div>`:"";
+    const ifs=(j.ifWith||[]).filter(x=>x.state!=="off"), ifH=ifs.length?`<div><p class="tb-h">In if a friend is</p><ul class="tb-list">${ifs.map(x=>`<li><span>${E(x.guest||"A guest")}</span><span>${x.state==="in"?`in, with ${E(x.name)}`:`waiting on ${E(x.name)}`}</span></li>`).join("")}</ul></div>`:"";
+    const Qs=j.table?.open?.questions||[], ans=a=>Qs.map(x=>a?.[x.id]).filter(Boolean).join(" · ");
+    const tables=j.open?`<div><p class="tb-h">${j.confirmed?"Tables, confirmed":"Suggested tables"} · about ${j.table.open.size} each</p>${j.tables.length?`<div class="tb-tables">${j.tables.map((t,i)=>`<div class="tb-table"><h5>Table ${i+1}</h5><ul>${t.map(g=>`<li><span>${E(g.name)}<br><span class="tb-ans">${E(ans(g.answers))}</span></span><select data-rid="${E(g.rid)}" aria-label="Move ${E(g.name)}">${j.tables.map((_,k)=>`<option value="${k}"${k===i?" selected":""}>${k+1}</option>`).join("")}<option value="${j.tables.length}">New</option></select></li>`).join("")}</ul></div>`).join("")}</div><div class="tb-actions" style="margin-top:10px"><button class="tb-btn" type="button" id="tbConfirm">${j.confirmed?"Update tables":"Confirm tables"}</button><small class="tb-ans">${j.confirmed?"Guests see their table on their invite.":"Guests see their table once you confirm. Nobody is told before."}</small></div>`:`<p class="tb-ans" style="font-size:14px">Tables show here as guests reply I'm in.</p>`}</div>`:"";
+    const el=document.createElement("section"); el.className="panel tb-panel"; el.id="tbHost";
+    el.innerHTML=`<div class="tb-body" style="padding-top:20px"><div><p class="tb-h">Your table</p>${stats}</div>${tables}${last}${ifH}<div><p class="tb-h">The group is yours</p><div class="tb-actions"><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.csv?series=${encodeURIComponent(d.id)}">Roster CSV</a><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.json?series=${encodeURIComponent(d.id)}">JSON</a><a class="tb-link" href="/api/host/roster.csv">Everyone you've hosted</a></div><small class="tb-ans">Names, contacts, dates, and whether each guest is OK with emails, texts and showing their name.</small></div></div>`;
+    const anchor=q("#whoComing",host)||q("#afterParty",host); anchor?anchor.after(el):host.append(el);
+    new MutationObserver(()=>{ if(el.hidden) el.hidden=false }).observe(el,{attributes:true,attributeFilter:["hidden"]}); // the casual step's tidy-up keeps only panels it knows
+    let T=j.tables.map(t=>t.map(g=>g.rid));
+    el.querySelectorAll("select[data-rid]").forEach(s=>s.onchange=()=>{ const rid=s.dataset.rid, to=+s.value; T=T.map(t=>t.filter(x=>x!==rid)); if(to>=T.length) T.push([rid]); else T[to].push(rid); T=T.filter(t=>t.length); s.closest(".tb-table").style.opacity=".7" });
+    const cb=q("#tbConfirm",el); if(cb) cb.onclick=async()=>{ cb.disabled=true; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id)+"/tables",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({tables:T,confirm:true})}); const k=await r.json(); if(!r.ok) throw new Error(k.message||"Couldn't save that."); toast(`Tables confirmed. ${k.told?`${k.told} guest${k.told>1?"s":""} told.`:"Guests see them on their invite."}`); tbHostPanel() }catch(e){ toast(e.message); cb.disabled=false } } }
+  function tbStudio(){ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!d||!host||d.example||!isCasual(d)) return;
+    if(+step===1&&!q("#tbEdit",host)){ const w=document.createElement("div"); w.innerHTML=tbEditHTML(d); const el=w.firstElementChild; const a=q("#qbPanel",host)||q("#hostKit",host); a?a.after(el):host.append(el); tbWireEdit(el,d) }
+    if([6,7].includes(+step)&&!q("#tbHost",host)) tbHostPanel() }
+  if(typeof renderStep==="function"){ const _rsTb=renderStep; renderStep=function(){ const r=_rsTb.apply(this,arguments); [60,900].forEach(t=>setTimeout(()=>{ try{ tbStudio() }catch(e){ console.warn(e) } },t)); return r } }
+
+  // ---- Home: the playbook, and the number that matters ----
+  let tbHomeBusy=false;
+  async function tbHome(){ const v=q("#view-programs"); if(tbHomeBusy||!v||v.hidden||!window.__wsPersonal||q("#tbHome",v)) return; const h=[...v.querySelectorAll("h2,h3")].find(x=>/You're hosting/i.test(x.textContent)); if(!h) return;
+    tbHomeBusy=true; const el=document.createElement("div"); el.id="tbHome"; el.className="tb-home";
+    el.innerHTML=`<p><a href="/playbook">Host playbook</a> <span class="tb-ans" style="font-size:14px">Peer tips on first-timers, no-shows and uneven tables.</span></p><p id="tbHomeN"></p>`;
+    let head=h; while(head.parentElement&&head.parentElement!==v) head=head.parentElement; (head.nextElementSibling||head).after(el); // under the list of what they're hosting
+    try{ const r=await fetch("/api/host/second-rsvp",{credentials:"same-origin"}); if(r.ok){ const j=await r.json(); if(j.came) q("#tbHomeN",el).innerHTML=`<span class="tb-mono">${j.rate}%</span> <span class="tb-ans" style="font-size:14px">came back for a second one (${j.again} of ${j.came})</span>` } }catch{} tbHomeBusy=false }
+  let tbHomeT=null; new MutationObserver(()=>{ if(tbHomeT) return; tbHomeT=setTimeout(()=>{ tbHomeT=null; try{ if(!q("#tbHome")) tbHome() }catch{} },300) }).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+<!-- ==================== end Tables (review round 11) ==================== -->

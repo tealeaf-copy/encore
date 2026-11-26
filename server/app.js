@@ -36,6 +36,7 @@ import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountKudosAsk } from "./kudosask.js";
+import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
@@ -676,6 +677,7 @@ export function createApp({ store, dataDir }) {
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
   // ---- repeats: weekly and monthly events make their next date the morning after, and old links show it (server/repeats.js) ----
   mountRepeats(app, { store, C, X, ownerOnly: (req, res) => ownerOnly(req, res), workspaceOfEvent });
+  mountTables(app, { store, small, C, X, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });

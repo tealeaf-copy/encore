@@ -19,6 +19,7 @@ import { categoryOf as bookCategoryOf, CATEGORIES as BOOK_CATEGORIES } from "./m
 import { perPerson, isFlat, priceText } from "./search.js";
 import { tzOk, tzOfCity, ordersClosed } from "./tz.js";
 import { partyUnit } from "./social.js";
+import { tableOf, comfortLabels } from "./tables.js"; // review round 11: what guests can expect
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
 const PER_HOUR = () => Math.max(1, +process.env.ENCORE_DIRECTORY_PER_HOUR || 600);
@@ -216,10 +217,15 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
       ...(c.preorder ? { preorder: true, items: orderItemsOf(c), order_by: s(c.orderBy, 40) || (/^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : ""),
         order_by_date: /^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : null, orders_open: status === "upcoming" && !ordersClosed({ ...c, tz: tzOk(c.tz) ? c.tz : tzOfCity(`${c.city || ""} ${c.hood || ""} ${H.h.city || ""}`) }) } : {}),
       repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when,
+      ...tableFields(H, c.id), // review round 11: first 30 minutes, group size, comfort notes, open table, co-hosts (server/tables.js)
       host: hostRef(H.h), url: `${base}/e/${encodeURIComponent(c.id)}`, source: "hosted", speaking: null, original_link: "", companies: [], cover: abs(c.coverPhoto), example: !!(c.sample || H.sample),
       // a class that repeats keeps its id, so guests' kudos from earlier sessions belong to the upcoming one too
       reviews: reviewsFor(H, c.id), _start: c.startTime || "", _raw: { price: c.price, free: c.free }, _tz: tzOk(c.tz) ? c.tz : tzOfCity(`${c.city || ""} ${c.hood || ""} ${H.h.city || ""}`) }; };
 
+    // review round 11: what the host said guests can expect, from the event itself (never names of who's in)
+    const tableFields = (H, id) => { const ev = H.ws ? scopeStore(store, H.ws).get("events/" + id)?.data : null, T = tableOf(ev || {});
+      const co = T.cohosts.map((x) => (x.handle && HANDLE.test(x.handle) && hosts.has(x.handle) ? hostRef(hosts.get(x.handle).h) : { handle: "", name: s(x.name, 60), url: "" }));
+      return { first_30: T.first30, group_size_expected: T.size, comfort: T.comfort, comfort_labels: comfortLabels(T), noise: T.noise || null, open_table: !!T.open, ...(co.length ? { cohosts: co } : {}) }; };
     // upcoming: Discover's list, as is
     for (const c of D.events) { const H = hosts.get(c.host?.handle); if (!H || !ID_OK.test(String(c.id)) || c.private || c.unlisted) continue; if ((c.date || "9999") < now) continue; events.push(fromCard(c, H, "upcoming")); }
     // past: what each page shows under "Past events"
@@ -231,7 +237,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
         const { city, area } = splitPlace(x.place), link = /^https:\/\//i.test(x.link || "") ? x.link : "";
         const speaking = speakingOf(x);
         events.push({ id: `sb-${H.rec.handle}-${String(x.id).replace(/[^A-Za-z0-9_-]/g, "")}`, title: s(x.title, 140), status: "past", start: date, time: s(x.time, 40).replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s*·\s*/i, ""), city, area,
-          format: speaking ? talkFormat(x) : formatOf({ format: x.format, title: x.title, about: x.about, place: x.place }), speaking, tags: [], price: null, spots_left: null, ask_to_join: false, repeat: "", sessions: null, ends: "", pass: null, when: "", host: hostRef(H.h), url: `${H.rec.url}#scrapbook`, source: "scrapbook",
+          format: speaking ? talkFormat(x) : formatOf({ format: x.format, title: x.title, about: x.about, place: x.place }), speaking, tags: [], price: null, spots_left: null, ask_to_join: false, repeat: "", sessions: null, ends: "", pass: null, when: "", first_30: "", group_size_expected: null, comfort: [], comfort_labels: [], noise: null, open_table: false, host: hostRef(H.h), url: `${H.rec.url}#scrapbook`, source: "scrapbook",
           original_link: link, companies: cleanLogos(x.logos).map((l) => l.name), cover: abs(x.cover), example: !!H.sample, reviews: EMPTY_REVIEWS(), _start: "" }); } }
 
     // one event listed by two hosts (co-hosted, same original link): show it once, with both hosts; each host's own list still has it
@@ -646,7 +652,14 @@ function openapi(base) {
         preorder: { type: "boolean", description: "A pre-order (set only on one): guests order items for pickup" }, items: { type: "array", items: { type: "object", properties: { name: { type: "string" }, price: { type: "number", description: "Dollars; 0 when the host gave none" } } }, description: "A pre-order's items" }, order_by: { type: "string", description: "When a pre-order's orders close, as the host said it (e.g. Thursday), or empty" },
         host: ref("HostRef"), url: { type: "string", format: "uri", description: "The public invite (/e/:id) or the host page's scrapbook" }, source: { type: "string", enum: ["hosted", "scrapbook"] },
         original_link: { type: "string", description: "The original page for an imported event (Partiful, Luma, Eventbrite, a website)" }, companies: { type: "array", items: { type: "string" } }, cover: { type: "string" }, example: { type: "boolean" }, reviews: ref("Reviews"),
-        speaking: { anyOf: [ref("Speaking"), { type: "null" }], description: "Set on a speaking engagement (talk, keynote, webinar, podcast, panel); null otherwise" } } },
+        speaking: { anyOf: [ref("Speaking"), { type: "null" }], description: "Set on a speaking engagement (talk, keynote, webinar, podcast, panel); null otherwise" },
+        first_30: { type: "string", description: "What happens in the first 30 minutes, in the host's words (e.g. We teach Root, then play); empty when not set" },
+        group_size_expected: { type: ["object", "null"], properties: { min: { type: "integer" }, max: { type: "integer" } }, description: "The group size the host expects, e.g. { min: 6, max: 12 }; null when not set. Not a count of who's going" },
+        comfort: { type: "array", items: { type: "string", enum: ["solo", "beginner", "quiet", "leave", "nospeech"] }, description: "Comfort notes: solo (come alone friendly), beginner (beginner friendly), quiet (a quiet corner), leave (leave anytime), nospeech (no speeches)" },
+        comfort_labels: { type: "array", items: { type: "string" }, description: "The same notes, and the noise level, as guests read them" },
+        noise: { type: ["string", "null"], enum: ["low", "medium", "lively", null], description: "Noise level, when the host set one" },
+        open_table: { type: "boolean", description: "An open table: solo guests answer a few questions when they're in and the host puts them at tables of about 4" },
+        cohosts: { type: "array", items: ref("HostRef"), description: "Other hosts who share the credit (url and handle empty for a co-host without a page)" } } },
       Speaking: { type: "object", description: "A talk, in the host's words. Nothing is filled in for them.", properties: { role: { type: "string", description: "e.g. Speaker, Keynote speaker, Panelist, Moderator, Guest, Host" }, topic: { type: "string" }, organizer: { type: "string", description: "The conference, company or show" },
         audience: { type: ["integer", "null"], description: "Audience size the host typed; null when they didn't" }, recording: { type: "string", description: "https link to the video or episode, or empty" }, slides: { type: "string", description: "https link to the slides, or empty" } } },
       Host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, url: { type: "string" }, city: { type: "string" }, area: { type: "string" }, tagline: { type: "string" }, bio: { type: "string" }, tags: { type: "array", items: { type: "string" } }, emoji: { type: "string" }, avatar: { type: "string" },
@@ -690,6 +703,7 @@ Arguments are the ones each tool lists. query works as q; any other unknown argu
 ## Each event
 
 id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "from $3 each" (a pre-order whose items cost different amounts), "$60 for 2" (a pair or a group books together: the price is for all of them, not a person), "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6"; null when no price is set), spots_left (headcount minus who has replied, or null; for a pre-order, how many items are left to order), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
+What to expect, when the host said: first_30 (what happens in the first 30 minutes, in their words), group_size_expected { min, max } (the size they expect, not who's going), comfort (solo = come alone friendly, beginner, quiet = a quiet corner, leave = leave anytime, nospeech = no speeches), comfort_labels (the same in words, with the noise level), noise (low, medium, lively or null), open_table (solo guests answer a few questions and are put at tables of about 4) and cohosts (hosts who share the credit). Quote first_30 as written. Never present group_size_expected as a headcount.
 A pre-order also has preorder: true, items [{ name, price }] (what the host sells, price in dollars) and order_by (when orders close, as the host said it, e.g. "Thursday", or empty).
 
 ## Formats

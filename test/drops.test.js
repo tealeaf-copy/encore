@@ -111,3 +111,15 @@ test("cover photo: PNG, JPEG or WebP by their bytes, 8 MB at most, the owner's o
   assert.equal(getWorkspace(other.ws).host.theme.cover, "calm"); assert.ok(!(await getJ("/@cy-drops")).text.includes("og:image"));
   assert.equal((await fetch(srv.base + "/api/host/cover", { method: "DELETE", headers: { cookie: host } })).status, 200); assert.equal(getWorkspace(ws).host.theme.coverUrl, "");
 });
+
+test("the host's side: one New flow, labeled fields, the calm cover, Change cover, invite size", async () => {
+  const fs = await import("node:fs"), read = (f) => fs.readFileSync(new URL("../" + f, import.meta.url), "utf8");
+  const d = read("public/drop.js"), idx = read("index.html"), sf = read("public/storefront.js"), inv = read("public/invite.html"), host = read("public/host.html");
+  for (const t of ["What are you making?", "Neighborhood people see", "Exact address, shown after they order", "How many this batch", "Start a new batch", "Clears this week's counts and keeps your items.", "No orders yet.", "How drops work", "Your drop is live", "What guests see"]) assert.ok(d.includes(t), t);
+  assert.match(d, /Add a price for \$\{x\.name\}/); assert.ok(!/—/.test(d), "no em dashes");
+  assert.match(idx, /function openCreate\(seed,direct\)\{ if\(!direct&&!seed&&window\.EncoreDrop\?\.choose\)/);
+  assert.match(idx.slice(idx.lastIndexOf("<script")), /comewith\.js/, "the Come with me loader is the last script");
+  assert.ok(inv.length < 40000, "invite.html stays under 40,000 characters");
+  assert.match(sf, /Change cover/); assert.match(sf, /cover: "calm"/); assert.match(sf, /t\.cover === "drawn"/);
+  assert.match(host, /EncoreDrop\?\.offer\(h, first, d, isOwner\)/);
+});

@@ -42,7 +42,7 @@ import { mountHelp } from "./help.js";
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
-import { withCleanLook } from "./looks.js"; // per-event looks (Make it yours)
+import { withCleanLook, cleanPicks, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -89,7 +89,7 @@ const GUEST_WALL_STATUSES = new Set(["going", "maybe", "hidden", "cancelled"]);
 // (paid, let in, checked in, promoted, the device keys) is the host's or the server's and is never taken from a guest.
 const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, order: 300, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
 const GUEST_FLAGS = ["plusOne", "severe", "showOnWall", "showMe", "smsOk"];
-export const GUEST_RSVP_KEYS = new Set([...Object.keys(GUEST_TEXT), ...GUEST_FLAGS, "party", "guestIndex", "createdAt", "changedAt", "photo", "dates", "answers", "utm", "source"]);
+export const GUEST_RSVP_KEYS = new Set([...Object.keys(GUEST_TEXT), ...GUEST_FLAGS, "party", "guestIndex", "createdAt", "changedAt", "photo", "dates", "answers", "utm", "source", "tiers"]);
 // A guest's whole reply, photo included, fits in this many bytes; real replies are a few hundred.
 export const GUEST_BODY_MAX = 64 * 1024;
 function cleanGuestRsvp(b) {
@@ -99,6 +99,8 @@ function cleanGuestRsvp(b) {
   if (o.contactVia != null && !["email", "sms", "whatsapp"].includes(o.contactVia)) delete o.contactVia;
   for (const k of GUEST_FLAGS) if (b[k] != null) o[k] = !!b[k];
   if (b.party != null) o.party = Math.max(1, Math.min(50, Math.floor(+b.party) || 1)); // seatsOf caps it by the event (6, or a bigger group)
+  // price tiers: how many of each ("2 Adults, 1 Kids"); with no party given, the party is everyone picked
+  if (b.tiers != null) { o.tiers = cleanPicks(b.tiers); const n = o.tiers.reduce((a, p) => a + p.n, 0); if (b.party == null && n) o.party = Math.min(50, n); }
   if (b.guestIndex != null && Number.isFinite(+b.guestIndex)) o.guestIndex = Math.max(-1, Math.min(10000, Math.floor(+b.guestIndex)));
   for (const k of ["createdAt", "changedAt"]) if (b[k] != null && Number.isFinite(+b[k])) o[k] = Math.min(+b[k], Date.now() + 864e5);
   if (typeof b.photo === "string" && ((/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 60000) || /^\/_blob\/[A-Za-z0-9]{20}$/.test(b.photo))) o.photo = b.photo;
@@ -145,6 +147,8 @@ PUBLIC_FIELDS.push("preorder", "orderItems", "prevId", "seriesId");
 PUBLIC_FIELDS.push("orderBy", "orderByDate", "orderDeadline", "headUnit", "unitCount", "groupCount", "stockUnit");
 // ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----
 PUBLIC_FIELDS.push("look");
+// price tiers ("Adults $55 · Kids $35"), cleaned on save by server/looks.js cleanTiers
+PUBLIC_FIELDS.push("priceTiers");
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -1662,8 +1666,8 @@ export function createApp({ store, dataDir }) {
   // door." With neither: "<Host> will send you a way to pay." Free and pay-what-you-like events get nothing.
   function payLines(ev, r, host, link) {
     const p = String(ev?.price || "").trim(); if (!p || p === "chip" || /^(free|\$?0)$/i.test(p)) return [];
-    // review round 11: what this reply owes: the price a person × its spots, or the group price × its groups (dueCents, server/social.js)
-    const cents = dueCents(ev, r); if (!(cents > 0)) return [];
+    // price tiers: the sum of each tier's price × how many; else (review round 11) the price a person × its spots, or the group price × its groups (dueCents, server/social.js)
+    const tt = tierTotal(ev, r), cents = tt > 0 ? Math.round(tt * 100) : dueCents(ev, r); if (!(cents > 0)) return [];
     const amt = "$" + (cents / 100).toFixed(cents % 100 ? 2 : 0), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
     if (url) return ["", `Pay ${amt} here: ${payLink(url, cents, [String(r?.name || "").trim(), titleOf(ev)].filter(Boolean).join(" · "))}`, `Already paid? Open your invite and tap I paid: ${link}`];
     if (ev.ticketNote) return ["", `Pay ${amt} at the door.`];

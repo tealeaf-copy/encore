@@ -4,7 +4,7 @@
 (function () {
   const C = window.EncoreColor;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"]];
+  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"]];
   // title fonts: the title only; the rest of the page stays in the house sans
   const FONTS = {
     clean: { label: "Clean", css: '"Inter", "Instrument Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
@@ -16,12 +16,14 @@
     // a terminal prompt: monospace, with a blinking block cursor after the title (still, for people who prefer less motion)
     mono: { label: "Mono", css: '"IBM Plex Mono", ui-monospace, Menlo, monospace', q: "IBM+Plex+Mono:wght@600;700", w: 700, ls: "-.03em", k: 0.9 },
     pixel: { label: "Pixel", css: '"Silkscreen", ui-monospace, monospace', q: "Silkscreen:wght@400;700", w: 700, ls: "0", k: 0.78 },
+    // a warm slab, like a stamped pantry label
+    slab: { label: "Slab", css: '"Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif', q: "Zilla+Slab:wght@600;700", w: 700, ls: "-.005em", k: 1.04 },
   };
   // eight colours to pick from when there's no flyer (each with two accents that suit it)
   const SWATCHES = [["#A9C3A4", "#3E6B48", "#F2D36B", "Sage"], ["#EFE2C6", "#1F1A17", "#C2553A", "Cream"], ["#C4DDF3", "#1E4E86", "#D94357", "Ice"], ["#6E0F1F", "#F2C46D", "#F4D7C8", "Velvet"],
     ["#F6C9D2", "#B0344F", "#4F7A52", "Blush"], ["#FFE08A", "#C94A30", "#2F7A8A", "Butter"], ["#D3C6F4", "#5A3DA8", "#E26D8E", "Lilac"], ["#4A2E1E", "#D8322E", "#F2C46D", "Night"]];
   const LABELS = ["I'm in", "Join", "Count me in", "Ask to join"]; // older labels off the word list read "I'm in" (server/looks.js cleanLook)
-  const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲"];
+  const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲", "🍂", "🫙", "☕"];
   // one-tap vibes. Flower shop is the host page's Flower shop look (storefront.js LOOKS.florist: petal page, deep green)
   const VIBES = {
     garden: { label: "Garden party", look: { palette: ["#A9C3A4", "#3E6B48", "#F2D36B"], effect: "sparkles", titleFont: "rounded", buttonEmoji: "🌿", buttonLabel: "Count me in" } },
@@ -37,6 +39,8 @@
     terminal: { label: "Terminal", look: { palette: ["#0E1411", "#7CF29A", "#F2B84B"], effect: "scanlines", titleFont: "mono", buttonEmoji: "💻", buttonLabel: "Join" } },
     pixel: { label: "Pixel", look: { palette: ["#F4EED8", "#3A2E5C", "#E0566B"], effect: "pixels", titleFont: "pixel", buttonEmoji: "👾", buttonLabel: "I'm in" } },
     cards: { label: "Card deck", look: { palette: ["#F6EFE4", "#2B2340", "#E26D8E"], effect: "none", titleFont: "rounded", buttonEmoji: "✨", buttonLabel: "I'm in", coverStyle: "deck" } },
+    // a cozy winter pantry: warm ochre plaster, a wall of backlit jars over the page, a hex-tile floor, a slab title and the harvest menu card
+    pantry: { label: "Pantry", look: { palette: ["#D9A55B", "#7A3E12", "#2F5D3A"], effect: "jarwall", titleFont: "slab", buttonEmoji: "🍂", buttonLabel: "I'm in", menuStyle: "harvest" } },
   };
   // the card deck's pastels (the same hand as the swipe deck, public/swipedeck.js)
   const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
@@ -59,6 +63,13 @@
     heartbox: { label: "Heart container", svg: (() => { const rows = ["..XX.XX..", ".XooXooX.", "XowooooOX", "XooooooOX", ".XooooOX.", "..XooOX..", "...XoX...", "....X...."], c = { X: "#1F1A17", o: "#E5533D", O: "#B3321F", w: "#FFFFFF" }; let r = `<rect x="-1" y="2" width="66" height="58" rx="10" fill="#fff"/>`;
       rows.forEach((row, y) => [...row].forEach((ch, x) => { if (c[ch]) r += `<rect x="${x * 7 + 0.5}" y="${y * 7 + 4}" width="7.2" height="7.2" fill="${c[ch]}"/>`; })); return `<g shape-rendering="crispEdges">${r}</g>`; })() },
     cursor: { label: "Cursor", svg: two("M16 6v44l11-10 8 18 8-3.5-8-17.5h15z", "#FFFFFF") },
+    // the Pantry set: a jar of preserves, a pinecone, a maple leaf, a mug of cocoa, a candle and a hex tile
+    jar: { label: "Jar", svg: two("M18 18h28v4c4 2 7 6 7 12v18c0 5-3 8-8 8H19c-5 0-8-3-8-8V34c0-6 3-10 7-12z", "#F2B84B") + `<path fill="#FFFCF5" ${SK} d="M17 8h30v10H17z"/><path fill="none" ${SK} d="M17 13h30"/><path fill="#E07A2A" d="M14 38h36v13c0 4-2 6-6 6H20c-4 0-6-2-6-6z" opacity=".85"/><path fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" d="M19 30v12"/><circle fill="#F6D774" cx="30" cy="47" r="3"/><circle fill="#F6D774" cx="40" cy="51" r="2.5"/>` },
+    pinecone: { label: "Pinecone", svg: two("M32 6c-8 6-17 16-17 29 0 13 8 23 17 23s17-10 17-23C49 22 40 12 32 6z", "#A8693A") + `<path fill="none" ${SK} d="M20 24q12 6 24 0M17 33q15 8 30 0M18 42q14 8 28 0M22 51q10 5 20 0"/><path fill="none" stroke="#E9C29A" stroke-width="3" stroke-linecap="round" d="M23 18q-3 4-4 9"/>` },
+    maple: { label: "Maple leaf", svg: two("M32 4l5 10 8-4-1 11 11-1-6 9 7 4-12 4 3 8-11-3-2 12h-4l-2-12-11 3 3-8-12-4 7-4-6-9 11 1-1-11 8 4z", "#D9622B") + `<path fill="none" ${SK} d="M32 56V20M32 36l9-8M32 36l-9-8M32 46l6-5M32 46l-6-5"/>` },
+    cocoa: { label: "Mug of cocoa", svg: two("M12 24h34v20c0 8-6 14-14 14h-6c-8 0-14-6-14-14z", "#E26D5A") + `<path fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" d="M46 30h4c4 0 6 3 6 6s-2 7-7 7h-3"/><path fill="none" ${SK} d="M46 30h4c4 0 6 3 6 6s-2 7-7 7h-3"/><path fill="#6B3E1C" ${SK} d="M12 24h34v5H12z"/><circle fill="#FFFCF5" ${SK} cx="22" cy="21" r="4.5"/><circle fill="#FFFCF5" ${SK} cx="33" cy="19" r="4.5"/><path fill="none" ${SK} d="M24 13q-3-4 0-8M34 11q-3-4 0-8"/><path fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" d="M18 36v8"/>` },
+    candle: { label: "Candle", svg: two("M20 28h24v28c0 2-2 4-4 4H24c-2 0-4-2-4-4z", "#FBF1DF") + `<path fill="#F2B84B" ${SK} d="M32 6c5 6 7 10 7 14a7 7 0 0 1-14 0c0-4 2-8 7-14z"/><path fill="#FFF3B0" d="M32 13c2 3 3 5 3 7a3 3 0 0 1-6 0c0-2 1-4 3-7z"/><path fill="none" ${SK} d="M32 24v4M20 34q6 3 8 0t8 0 8 0"/><path fill="none" stroke="#E07A2A" stroke-width="3" stroke-linecap="round" d="M26 40v12"/>` },
+    hextile: { label: "Hex tile", svg: two("M32 6l22 13v26L32 58 10 45V19z", "#E9E5DE") + `<path fill="#FFFFFF" ${SK} d="M32 17l12 7v14l-12 7-12-7V24z"/><path fill="none" stroke="#B9B2A6" stroke-width="2.5" stroke-linecap="round" d="M32 6v11M54 19l-10 5M54 45l-10-7M32 58V45M10 45l10-7M10 19l10 5"/>` },
   };
   const stickerSVG = (id) => (STICKERS[id] ? `<svg viewBox="-4 -4 72 72" aria-hidden="true" focusable="false">${STICKERS[id].svg}</svg>` : "");
   const MAX_STICKERS = 6;
@@ -67,7 +78,7 @@
     return `<div class="lk-stk" aria-hidden="true">${st.map((x, i) => `<span class="lk-st" data-i="${i}" style="left:${x.x}%;top:${x.y}%;--s:${x.s};--r:${x.r}deg">${stickerSVG(x.id)}</span>`).join("")}</div>`; }
   const okHex = (h) => /^#[0-9a-f]{6}$/i.test(h || "");
   const lookOf = (e) => (e && e.look && typeof e.look === "object" ? e.look : {});
-  const has = (L) => !!(L && ((L.palette || []).some(okHex) || (L.effect && L.effect !== "none") || L.lights || FONTS[L.titleFont] || L.update?.text || L.coverStyle === "deck" || (L.stickers || []).length));
+  const has = (L) => !!(L && ((L.palette || []).some(okHex) || (L.effect && L.effect !== "none") || L.lights || FONTS[L.titleFont] || L.update?.text || L.coverStyle === "deck" || L.menuStyle === "harvest" || (L.stickers || []).length));
   // a portrait flyer shows whole unless the host picked the banner
   const fitOf = (L) => (L?.coverFit === "poster" || L?.coverFit === "banner" ? L.coverFit : +L?.coverH > +L?.coverW && +L?.coverW > 0 ? "poster" : "banner");
   const fonts = new Set(); const loadFont = (k) => { const F = FONTS[k]; if (!F || fonts.has(k) || typeof document === "undefined") return; fonts.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${F.q}&display=swap`; document.head.appendChild(l); };
@@ -91,6 +102,7 @@
 html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100vh,var(--lk-bot) 100%) var(--lk-bot)!important}html.lk-root body.lk-page.lk-page{background:transparent!important;background-color:transparent!important}
 .lk-on .lk-title{font-family:var(--lk-title)!important;font-weight:var(--lk-tw,700)!important;letter-spacing:var(--lk-tls,-.01em)!important;color:var(--lk-ink)!important;text-wrap:balance}
 .lk-on.lk-up .lk-title{text-transform:uppercase;line-height:.98!important}
+.lk-vibe-pantry .lk-title{color:#3B2414!important;text-shadow:0 1px 0 rgba(255,244,220,.55)}
 .lk-vibe-night .lk-title{color:#FFFDF8!important;text-shadow:0 0 1px #fff,0 0 14px color-mix(in srgb,var(--lk-glow,#D8322E) 85%,transparent),0 0 34px color-mix(in srgb,var(--lk-glow,#D8322E) 55%,transparent)}
 .lk-fxl{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}.lk-fxl.fixed{position:fixed;z-index:-1}.lk-fxl canvas{position:absolute;inset:0;width:100%;height:100%}
 .lk-paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(120% 80% at 50% 0,transparent 55%,rgba(110,80,40,.10));opacity:.55;mix-blend-mode:multiply}
@@ -145,7 +157,16 @@ body.lk-invite.lk-fx-pixels main{padding-top:calc(max(12px,env(safe-area-inset-t
 .lk-fx-lanterns .mc .mc-c{background:transparent!important;border-radius:0;padding:8px 6px;border-bottom:2px dotted rgba(31,26,23,.35);text-align:left;box-shadow:none!important}
 .lk-fx-lanterns .mc .mc-c b{font:700 20px/1.25 Kalam,"Comic Sans MS",cursive;color:#1F1A17!important;letter-spacing:0}.lk-fx-lanterns .mc .mc-c small{font:400 15px/1.2 Kalam,"Comic Sans MS",cursive;color:#5A4E45!important;text-transform:none;letter-spacing:0}
 .lk-fx-lanterns .mc .mc-b{display:none}.lk-fx-lanterns .mc .mc-fin{background:#1F1A17!important;color:#F4EAD3!important;border-radius:6px;text-align:center;margin-top:10px;border:0}.lk-fx-lanterns .mc .mc-fin b{color:#F4EAD3!important}
-.lk-fx-lanterns .mc .mc-note{color:#5A4E45!important}`;
+.lk-fx-lanterns .mc .mc-note{color:#5A4E45!important}
+/* pantry: a wall of backlit jars in wooden cubbies across the top (it fades into the page before any text), a faint hex-tile floor */
+.lk-jw{position:absolute;left:0;right:0;top:0;height:var(--jw-h,200px);z-index:-1;pointer-events:none;overflow:hidden;-webkit-mask:linear-gradient(180deg,#000 0,#000 50%,transparent 85%);mask:linear-gradient(180deg,#000 0,#000 50%,transparent 85%)}
+.lk-jw svg{display:block;width:100%;height:100%}.lk-jw::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 90% at 50% 30%,rgba(255,196,110,.28),transparent 70%);animation:lk-jwglow 7s ease-in-out infinite}
+.lk-jw .pt-glow{animation:lk-jwflick 9s ease-in-out infinite}.lk-jw.inbox{height:var(--jw-h,128px);z-index:0}
+@keyframes lk-jwglow{0%,100%{opacity:.75}50%{opacity:1}}@keyframes lk-jwflick{0%,100%{opacity:1}40%{opacity:.9}55%{opacity:.97}}
+@media (prefers-reduced-motion:reduce){.lk-jw::after,.lk-jw .pt-glow{animation:none}}
+.lk-hex{background-repeat:repeat}
+body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 132px)}
+@media (min-width:700px){body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 176px)}}`;
   // the light invite (public/invite.html, body.lk-invite): its cards, form and buttons in the look's colours, and the flyer
   // beside the invite on wide screens. Kept here so the invite page itself stays small.
   const INVITE_CSS = `body.lk-invite.lk-on main{position:relative;z-index:1}body.lk-invite.lk-on .brand{color:var(--lk-ink)}body.lk-invite.lk-on a{color:inherit}
@@ -199,7 +220,13 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
       if (deck && ea) { ea.classList.add("lk-deck");
         // one chubby drawing in the middle of the card, the event's own kind
         const art = ea.querySelector(".ea-art"); if (art && A) { if (ea.__lkArt == null) ea.__lkArt = art.innerHTML; try { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0], tone = A.toneOf(e || {}, k); art.innerHTML = A.drawing(k, A.SPOT?.[tone] || "#E8452C"); } catch {} } ea.style.setProperty("--lk-deck", DECK[hash(e?.id || e?.name || "") % DECK.length]); const c = document.createElement("span"); c.className = "lk-corner"; c.setAttribute("aria-hidden", "true"); c.textContent = cornerWord(e); ea.appendChild(c); }
-      const st = stickersHTML(L); if (st) { if (getComputedStyle(box).position === "static") box.style.position = "relative"; box.insertAdjacentHTML("beforeend", st); } }); }
+      const st = stickersHTML(L); if (st) { if (getComputedStyle(box).position === "static") box.style.position = "relative"; box.insertAdjacentHTML("beforeend", st); } });
+    menus(root, e); }
+  // the harvest menu: the full invite's menu card (#menuCard, public/menucard.js) redrawn as the cream harvest card, with the price line
+  const priceLine = (e) => { const t = window.EncoreTiers?.line(e); if (t) return t; const p = String(e?.price ?? "").trim(); if (!p || p === "chip" || e?.free === true || /^(free|\$?0)$/i.test(p)) return "";
+    const a = /^\$?\d/.test(p) ? (p.startsWith("$") ? p : "$" + p) : p; return /a person|each|per |at the door/i.test(a) ? a : a + " a person"; };
+  function menus(root, e) { const M = window.MenuCard, want = lookOf(e).menuStyle === "harvest", courses = Array.isArray(e?.courses) ? e.courses : []; if (!M || !courses.length) return;
+    root.querySelectorAll("#menuCard").forEach((box) => { if (want === !!box.querySelector(".mc-hv")) return; box.innerHTML = M.html(want ? { style: "harvest", theme: e.dinnerTheme, courses, price: priceLine(e) } : { theme: e.dinnerTheme, courses }); }); }
   // the velvet glow: an accent close in hue to the page colour (a red on wood, a pink on red), else the page colour lifted
   function glowOf(L) { const p = (L.palette || []).filter(okHex); if (!p.length || !C) return "#C2384A"; const h0 = C.hsl(p[0])[0];
     const near = p.slice(1).find((c) => { const d = Math.abs(C.hsl(c)[0] - h0); return Math.min(d, 360 - d) < 36 && C.hsl(c)[1] > 0.3; }); return near || C.mix(p[0], "#FF8A8A", 0.35); }
@@ -232,6 +259,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     host.prepend(layer);
     if (kind === "paper" || kind === "velvet") { layer.classList.add("lk-" + kind); return () => layer.remove(); }
     if (kind === "lanterns") { layer.remove(); return lanterns(host, { fixed }); }
+    if (kind === "jarwall") { layer.classList.add("lk-hex"); const stop = jarwall(host, layer, { fixed }); return () => { stop(); layer.remove(); }; }
     if (kind === "scanlines") { layer.classList.add("lk-scan"); return () => layer.remove(); }
     if (kind === "pixels") { layer.classList.add("lk-pix"); layer.innerHTML = SPRITES.map((s, i) => `<svg class="s${i + 1}" viewBox="0 0 ${s[0].length} ${s.length}" aria-hidden="true">${pxRects(s)}</svg>`).join(""); return () => layer.remove(); }
     if (!COUNT[kind]) { layer.remove(); return () => {}; }
@@ -290,6 +318,15 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     const w = Math.max(320, Math.min(1600, fixed ? innerWidth : host.clientWidth || 360));
     box.innerHTML = noren(w) + `<span class="lk-ch l">${LANTERN("lkLg" + ++lid)}</span><span class="lk-ch r">${LANTERN("lkLg" + ++lid)}</span>`;
     host.prepend(box); return () => box.remove(); }
+  // pantry: the jar wall (public/pantry.js draws it, loaded the first time a page needs it) and the hex-tile floor on the effect layer
+  let ptWait = null; const needPantry = () => window.EncorePantry ? Promise.resolve(window.EncorePantry) : ptWait || (ptWait = new Promise((ok) => { const t = document.createElement("script"); t.src = "/pantry.js"; t.onload = () => ok(window.EncorePantry || null); t.onerror = () => ok(null); document.head.appendChild(t); }));
+  function jarwall(host, layer, { fixed = true } = {}) { css(); if (typeof document === "undefined") return () => {}; let alive = true;
+    const box = document.createElement("div"); box.className = "lk-jw" + (fixed ? "" : " inbox"); box.setAttribute("aria-hidden", "true");
+    if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
+    host.prepend(box);
+    needPantry().then((P) => { if (!alive || !P) return; const w = Math.max(320, Math.min(1600, fixed ? innerWidth : host.clientWidth || 360)), h = fixed ? (innerWidth < 700 ? 170 : 250) : 128;
+      box.style.setProperty("--jw-h", h + "px"); box.innerHTML = P.jarWall(w, h, P.hash(host.dataset?.lkSeed || location.pathname + location.hash)); const T = P.hexTile(); layer.style.backgroundImage = T.url; layer.style.backgroundSize = T.size; });
+    return () => { alive = false; box.remove(); }; }
   let hand = false; const loadHand = () => { if (hand || typeof document === "undefined") return; hand = true; const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap"; document.head.appendChild(l); };
   // pixel sprites, drawn here (original): a star, a heart and a small clay pot, in the page's own ink and two accents
   const SPRITES = [["...a...", "..aaa..", "aaaaaaa", ".aaaaa.", ".aa.aa.", "a.....a"], [".bb.bb.", "bbbbbbb", "bbbbbbb", ".bbbbb.", "..bbb..", "...b..."], ["..ccc..", ".c...c.", "..ccc..", ".ccccc.", "ccaaacc", ".ccccc.", "..ccc.."]];
@@ -312,8 +349,11 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
   async function fromFile(file) { const u = URL.createObjectURL(file); try { return await readImage(u); } finally { setTimeout(() => URL.revokeObjectURL(u), 2000); } }
 
   // ---------- Surprise me: a combo that suits the event ----------
-  const KINDS = [[/\b(game night|gaming|gamers?|lan party|board ?games?|d&d|dnd|tabletop|ttrpg|arcade|speedrun|retro|pixel|hackathon|hack night|demo night|coding|code|devs?|engineers?|engineering|tech|startup|founders?|ops|sre|meetup|linux|open source)\b/, ["terminal", "pixel"]], [/holiday market|christmas market|craft fair|makers market|winter market/, ["market", "velvet"]], [/holiday|christmas|xmas|winter|snow|hanukkah|new year|benefit|gala|fundrais/, ["winter", "velvet"]], [/sale|market|pop-?up|ceramic|pottery|clay/, ["velvet", "jazz", "garden"]],
-    [/dinner|supper|wine|cocktail|izakaya|sake|bar\b|omakase|tasting|date night/, ["velvet", "night", "garden"]], [/workshop|class|craft|paint|draw|sew|knit|zine|print|stitch/, ["jazz", "garden"]],
+  const KINDS = [[/\b(game night|gaming|gamers?|lan party|board ?games?|d&d|dnd|tabletop|ttrpg|arcade|speedrun|retro|pixel|hackathon|hack night|demo night|coding|code|devs?|engineers?|engineering|tech|startup|founders?|ops|sre|meetup|linux|open source)\b/, ["terminal", "pixel"]], [/holiday market|christmas market|craft fair|makers market|winter market/, ["market", "velvet"]],
+    // potlucks and harvest suppers: the Pantry first (jars, a hex floor, the harvest menu)
+    [/potluck|friendsgiving|thanksgiving|harvest|soup|stew|preserves?|pickl|canning|\bjam\b|cocoa|cider|fondue|pantry/, ["pantry"]],
+    [/holiday|christmas|xmas|winter|snow|hanukkah|new year|benefit|gala|fundrais/, ["winter", "velvet", "pantry"]], [/sale|market|pop-?up|ceramic|pottery|clay/, ["velvet", "jazz", "garden"]],
+    [/dinner|supper|wine|cocktail|izakaya|sake|bar\b|omakase|tasting|date night/, ["velvet", "night", "garden", "pantry"]], [/workshop|class|craft|paint|draw|sew|knit|zine|print|stitch/, ["jazz", "garden"]],
     [/flower|floral|bouquet|garden|picnic|plant|tea\b|matcha|brunch/, ["flower", "garden"]], [/jazz|music|band|gig|show|open mic|poetry|record|vinyl|film|movie/, ["jazz", "night"]],
     [/party|birthday|dance|club|karaoke|night out|drinks/, ["night", "garden"]], [/run|hike|walk|bike|swim|yoga/, ["garden", "winter"]]];
   // what goes with each vibe: a second palette or two in the same family, and effects, fonts and button emoji that suit it.
@@ -329,6 +369,8 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     terminal: { pal: [["#101418", "#F2B84B", "#7CF29A"], ["#14121C", "#9FB7FF", "#F2B84B"]], fx: ["scanlines", "none", "stars"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
     pixel: { pal: [["#E9F1DC", "#24324A", "#E0566B"], ["#F6E7D3", "#2E2442", "#3E9C6E"]], fx: ["pixels", "none", "confetti"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },
     cards: { pal: [["#FBEFF2", "#3A2A55", "#E26D8E"], ["#EEF6F0", "#22433A", "#E0A030"]], fx: ["none", "confetti", "sparkles"], font: ["rounded", "clean", "bold"], em: ["✨", "🎉", "❤️", "🙌"] },
+    // the jar wall stays (it is the look); snow on top now and then, a serif title for a change
+    pantry: { pal: [["#E3B873", "#8A4513", "#3E6B3A"], ["#C98A3E", "#5A2A0E", "#F2D48F"]], fx: ["jarwall"], font: ["slab", "serif"], em: ["🍂", "🫙", "☕", "🕯️"] },
   };
   const FX_FOR = Object.fromEntries(Object.entries(MOODS).map(([k, m]) => [k, m.fx]));
   const pickOf = (L) => L[(Math.random() * L.length) | 0];
@@ -341,5 +383,5 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

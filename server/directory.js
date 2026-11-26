@@ -20,6 +20,7 @@ import { perPerson, isFlat, priceText } from "./search.js";
 import { tzOk, tzOfCity, ordersClosed } from "./tz.js";
 import { partyUnit } from "./social.js";
 import { tableOf, comfortLabels } from "./tables.js"; // review round 11: what guests can expect
+import { cleanTiers, tierLine } from "./looks.js";
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
 const PER_HOUR = () => Math.max(1, +process.env.ENCORE_DIRECTORY_PER_HOUR || 600);
@@ -86,6 +87,8 @@ export function priceOf(c) {
   const p = String(c.price ?? "").trim();
   // a course or a class pass says what it costs in its own words (a pass with no drop-in price too: "$70 for 4 classes")
   if (c.free !== true && p !== "chip") { const sp = srPrice({ ...c, price: /^(free|0|\$0)$/i.test(p) ? "" : c.price, sessions: sessionsOf(c) || 0 }); if (sp) return sp; }
+  // price tiers: "Adults $55 · Kids $35", "Members $10 · Guests $15"
+  { const tl = c.free !== true && p !== "chip" ? tierLine(c) : ""; if (tl) return tl; }
   if (c.free === true || /^(free|0|\$0)$/i.test(p)) return "Free";
   // no price written down isn't "Free": say nothing (null) rather than promise it
   if (!p) return null;
@@ -210,7 +213,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     const fromCard = (c, H, status) => { const cp = splitPlace(c.city), city = cp.area ? s(c.city, 60) : s(cp.city, 60), sr = seriesOf(c);
       return { id: c.id, title: s(c.title, 140), status, start: /^\d{4}-\d{2}-\d{2}$/.test(c.date || "") ? c.date : "", time: [clock(c.startTime), clock(c.endTime)].filter(Boolean).join(" to "),
       city, area: s(c.hood, 60), format: formatOf({ activity: c.activity, title: c.title, tags: c.tags }), tags: (Array.isArray(c.tags) ? c.tags : []).map((t) => s(t, 24)).filter(Boolean).slice(0, 8),
-      price: priceOf(c), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.floor(Math.max(0, Math.round(+c.headcount - (c.preorder ? +c.ordered || 0 : +c.going || 0))) / partyUnit(c)) : null, ask_to_join: !!c.approvalRequired,
+      price: priceOf(c), price_tiers: cleanTiers(c.priceTiers), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.floor(Math.max(0, Math.round(+c.headcount - (c.preorder ? +c.ordered || 0 : +c.going || 0))) / partyUnit(c)) : null, ask_to_join: !!c.approvalRequired,
       // review round 11: what one spot is (a person, a pair or group that books together, an item of a pre-order), in spots_left's units
       spot_unit: c.preorder ? "item" : partyUnit(c) > 1 ? "group" : "person", group_size: Math.floor(+c.groupSize) > 1 ? Math.min(50, Math.floor(+c.groupSize)) : null,
       // review round 11: a pre-order says so, with its items and when orders close (spots_left counts what's left to order)
@@ -237,7 +240,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
         const { city, area } = splitPlace(x.place), link = /^https:\/\//i.test(x.link || "") ? x.link : "";
         const speaking = speakingOf(x);
         events.push({ id: `sb-${H.rec.handle}-${String(x.id).replace(/[^A-Za-z0-9_-]/g, "")}`, title: s(x.title, 140), status: "past", start: date, time: s(x.time, 40).replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s*·\s*/i, ""), city, area,
-          format: speaking ? talkFormat(x) : formatOf({ format: x.format, title: x.title, about: x.about, place: x.place }), speaking, tags: [], price: null, spots_left: null, ask_to_join: false, repeat: "", sessions: null, ends: "", pass: null, when: "", first_30: "", group_size_expected: null, comfort: [], comfort_labels: [], noise: null, open_table: false, host: hostRef(H.h), url: `${H.rec.url}#scrapbook`, source: "scrapbook",
+          format: speaking ? talkFormat(x) : formatOf({ format: x.format, title: x.title, about: x.about, place: x.place }), speaking, tags: [], price: null, price_tiers: [], spots_left: null, ask_to_join: false, repeat: "", sessions: null, ends: "", pass: null, when: "", first_30: "", group_size_expected: null, comfort: [], comfort_labels: [], noise: null, open_table: false, host: hostRef(H.h), url: `${H.rec.url}#scrapbook`, source: "scrapbook",
           original_link: link, companies: cleanLogos(x.logos).map((l) => l.name), cover: abs(x.cover), example: !!H.sample, reviews: EMPTY_REVIEWS(), _start: "" }); } }
 
     // one event listed by two hosts (co-hosted, same original link): show it once, with both hosts; each host's own list still has it
@@ -641,7 +644,8 @@ function openapi(base) {
       Event: { type: "object", required: ["id", "title", "status", "host", "url", "source", "example", "reviews"], properties: {
         id: { type: "string" }, title: { type: "string" }, status: { type: "string", enum: ["upcoming", "past"] }, start: { type: "string", description: "YYYY-MM-DD, or empty when the host hasn't set a date" }, time: { type: "string", description: "e.g. 7pm, or 7pm to 10pm" },
         city: { type: "string", description: "The event's city (never a country on its own)" }, area: { type: "string", description: "Neighborhood. Never a street address. Empty when the event is somewhere the host's neighborhood doesn't apply." }, format: { type: "string" }, tags: { type: "array", items: { type: "string" } },
-        price: { ...nstr, description: "e.g. Free, $20 a person, Pay what you like, $12 each or from $3 each (a pre-order), $60 for 2 (a pair or group books together), $320 for all 8 (a course), $20 a class, or $70 for 4 (a class pass); null when unknown" },
+        price: { ...nstr, description: "e.g. Free, $20 a person, Pay what you like, $12 each or from $3 each (a pre-order), $60 for 2 (a pair or group books together), $320 for all 8 (a course), $20 a class, or $70 for 4 (a class pass), Adults $55 · Kids $35 (price tiers); null when unknown" },
+        price_tiers: { type: "array", maxItems: 4, items: { type: "object", properties: { label: { type: "string", maxLength: 20, description: "e.g. Adults, Kids, Members, Guests" }, price: { type: "number", description: "Dollars" } } }, description: "More than one price: each tier's label and price. Empty for one price." },
         spots_left: { type: ["integer", "null"], description: "The public headcount minus who has replied I'm in (the headcount itself with no replies yet); null with no headcount, when the host hides who's going, or for a past event" },
         repeat: { type: "string", enum: ["", "weekly", "biweekly", "monthly"], description: "How it repeats; empty for a one-off" }, sessions: { type: ["integer", "null"], description: "How many sessions a course has; null if it isn't a course" },
         ends: { type: "string", description: "A course's last session, YYYY-MM-DD; empty otherwise" }, pass: { type: ["object", "null"], properties: { price: { type: "string", description: "e.g. $70" }, count: { type: "integer" } }, description: "A class pass: price for count classes" },
@@ -702,7 +706,7 @@ Arguments are the ones each tool lists. query works as q; any other unknown argu
 
 ## Each event
 
-id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "from $3 each" (a pre-order whose items cost different amounts), "$60 for 2" (a pair or a group books together: the price is for all of them, not a person), "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6"; null when no price is set), spots_left (headcount minus who has replied, or null; for a pre-order, how many items are left to order), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
+id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "from $3 each" (a pre-order whose items cost different amounts), "$60 for 2" (a pair or a group books together: the price is for all of them, not a person), "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6", "Adults $55 · Kids $35" (price tiers); null when no price is set), price_tiers ([{ label, price }] when the event has more than one price, price in dollars; empty otherwise), spots_left (headcount minus who has replied, or null; for a pre-order, how many items are left to order), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
 What to expect, when the host said: first_30 (what happens in the first 30 minutes, in their words), group_size_expected { min, max } (the size they expect, not who's going), comfort (solo = come alone friendly, beginner, quiet = a quiet corner, leave = leave anytime, nospeech = no speeches), comfort_labels (the same in words, with the noise level), noise (low, medium, lively or null), open_table (solo guests answer a few questions and are put at tables of about 4) and cohosts (hosts who share the credit). Quote first_30 as written. Never present group_size_expected as a headcount.
 A pre-order also has preorder: true, items [{ name, price }] (what the host sells, price in dollars) and order_by (when orders close, as the host said it, e.g. "Thursday", or empty).
 

@@ -24,10 +24,10 @@ const URL_OK = (u) => !u || /^https:\/\/[^\s<>"]{3,300}$/i.test(u);
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 // Storefront choices: curated, so every page looks good and stays readable.
 export const STORE = {
-  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30", "#26346F"],
+  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30", "#26346F", "#8A4B0F"],
   fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold", "florist"],
   backgrounds: ["cream", "white", "blush", "sage", "night", "petal"],
-  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning", "noren"],
+  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning", "noren", "pantry"],
   // how the page is laid out (public/storefront.js LAYOUTS): "classic" is the page as it has always been
   layouts: ["classic", "window", "zine", "cards", "menu", "stall"],
   buttons: ["round", "soft", "square"],
@@ -148,7 +148,9 @@ export function makeCommunity(store) {
     // review round 7: what guests should expect to spend when it isn't a paid spot ("About $40 food cost"), and "at the door"
     "costNote", "ticketNote", "groupPrice", "groupSize", "hostName",
     // review round 11: pairs and groups said as such ("6 pairs"), and a pre-order's items and order-by day
-    "headUnit", "unitCount", "groupCount", "orderItems", "orderBy", "orderByDate", "stockUnit"];
+    "headUnit", "unitCount", "groupCount", "orderItems", "orderBy", "orderByDate", "stockUnit",
+    // more than one price ("Adults $55 · Kids $35"); priceLine says it in words
+    "priceTiers"];
   // the host's neighborhood only stands in for an event in the host's own city (an event elsewhere shows its own city)
   const sameCity = (a, b) => { const k = (v) => String(v || "").split(",")[0].trim().toLowerCase(); return !k(a) || k(a) === k(b); };
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
@@ -165,7 +167,7 @@ export function makeCommunity(store) {
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && listed(e) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9")))
       .map(({ id, e }) => { const c = { ...publicCard(id, e, host), ...(upcoming && e.discoverable ? goingOf(ws, id, e) : {}) }; if (e.discoverable) return c;
         // the owner sees their own private events whole (a paid one stays paid, not "Free")
-        if (!owner) for (const k of ["meetPoint", "headcount", "price", "priceLine", "passPrice", "passCount", "groupPrice", "orderItems", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
+        if (!owner) for (const k of ["meetPoint", "headcount", "price", "priceLine", "passPrice", "passCount", "groupPrice", "priceTiers", "orderItems", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
         // strangers get a card, not a way in: no event id that opens the invite or its guest list
         return { ...c, ...(owner ? {} : { id: "p-" + crypto.createHash("sha256").update(ws + "|" + id).digest("hex").slice(0, 16) }), private: true }; });
   }

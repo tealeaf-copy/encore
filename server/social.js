@@ -53,7 +53,8 @@ export function alertMatches(a, ev, evGeo) {
 export const newcomerEmoji = () => "🌱";
 // ---- spots: one count used everywhere (the seat check, the waitlist, previews) ----
 /** The most people one reply can bring: the guest plus the plus-ones the host allows (one by default), at most 6; a group booking ("$120 for the group of 4") holds the whole group, at most 50. */
-export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)), Math.floor(+ev?.groupSize) > 1 ? Math.min(50, Math.floor(+ev.groupSize)) : 0);
+export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)), Array.isArray(ev?.priceTiers) && ev.priceTiers.length ? 6 : 0, // price tiers: a family picks up to 6 (adults and kids)
+   Math.floor(+ev?.groupSize) > 1 ? Math.min(50, Math.floor(+ev.groupSize)) : 0);
 /** How many spots one reply (or host-marked guest) holds: a party of three holds three. */
 export const seatsOf = (r, ev) => { if (r?.pairOf) return 0; /* came with a friend into their pair or group: the friend's reply holds it */ const n = Math.max(1, Math.min(ev ? partyMax(ev) : 6, Math.floor(+r?.party) || (+r?.plusOnes > 0 ? 1 + Math.floor(+r.plusOnes) : r?.plusOne ? 2 : 1)));
   return r?.response != null ? partyRound(n, ev) : n; }; // a reply to a pairs-only class holds the whole pair (host-added rows count as typed)

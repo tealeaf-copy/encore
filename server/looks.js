@@ -1,18 +1,20 @@
 // Per-event looks: the colours, effect, title font and reply button a host picks in "Make it yours".
 // Saved on the event as `look`; every value is checked against these lists (public/looks.js offers the same ones).
 export const LOOK = {
-  effects: ["none", "sparkles", "snow", "confetti", "petals", "paper", "velvet", "stars", "twinkle", "lanterns", "scanlines", "pixels"],
-  titleFonts: ["clean", "bold", "serif", "script", "typewriter", "rounded", "mono", "pixel"],
+  effects: ["none", "sparkles", "snow", "confetti", "petals", "paper", "velvet", "stars", "twinkle", "lanterns", "scanlines", "pixels", "jarwall"],
+  titleFonts: ["clean", "bold", "serif", "script", "typewriter", "rounded", "mono", "pixel", "slab"],
   coverFits: ["banner", "poster"],
   buttonLabels: ["I'm in", "Join", "Count me in", "Ask to join"],
   // review round 11: labels off the word list (docs/brand-kit.md) that older events may still carry read "I'm in"
   oldLabels: { RSVP: "I'm in", "Save my spot": "I'm in" },
-  buttonEmoji: ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲"],
-  vibes: ["garden", "jazz", "winter", "velvet", "flower", "night", "market", "terminal", "pixel", "cards"],
+  buttonEmoji: ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲", "🍂", "🫙", "☕"],
+  vibes: ["garden", "jazz", "winter", "velvet", "flower", "night", "market", "terminal", "pixel", "cards", "pantry"],
   // how a drawn cover sits: the house cover, or a flat pastel playing card with the kind of event in the corner
   coverStyles: ["deck"],
+  // how a menu is drawn on the invites: the house card, or a cream harvest card with a border of leaves, pinecones and berries
+  menuStyles: ["harvest"],
   // stickers a host can put on their cover (public/looks.js STICKERS draws them), at most 6
-  stickers: ["star", "heart", "sparkle", "flower", "lantern", "dumpling", "pot", "note", "d20", "controller", "key", "floppy", "heartbox", "cursor"],
+  stickers: ["star", "heart", "sparkle", "flower", "lantern", "dumpling", "pot", "note", "d20", "controller", "key", "floppy", "heartbox", "cursor", "jar", "pinecone", "maple", "cocoa", "candle", "hextile"],
   maxStickers: 6,
 };
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -37,6 +39,7 @@ export function cleanLook(v) {
   if (LOOK.buttonLabels.includes(v.buttonLabel)) o.buttonLabel = v.buttonLabel; else if (Object.hasOwn(LOOK.oldLabels, String(v.buttonLabel))) o.buttonLabel = LOOK.oldLabels[v.buttonLabel];
   if (LOOK.vibes.includes(v.vibe)) o.vibe = v.vibe;
   if (LOOK.coverStyles.includes(v.coverStyle)) o.coverStyle = v.coverStyle;
+  if (LOOK.menuStyles.includes(v.menuStyle)) o.menuStyle = v.menuStyle;
   if (Array.isArray(v.stickers)) { const st = cleanStickers(v.stickers); if (st.length) o.stickers = st; }
   if (v.lights === true) o.lights = true; // string lights across the top, on top of any effect
   // an "Update" callout: one short line from the host, with when they posted it
@@ -49,8 +52,30 @@ export function cleanLook(v) {
 /** An event write: its look cleaned, and no dotted "look.x" keys around the check. */
 // a price typed as a bare number ("55") reads "$55" everywhere
 export const dollarPrice = (v) => (typeof v === "string" && /^\s*\d{1,5}(\.\d{1,2})?\s*$/.test(v) ? "$" + v.trim() : typeof v === "number" && v > 0 ? "$" + v : v);
+// ---- price tiers: "Adults $55 · Kids $35" (public/tiers.js has the same rules for the pages) ----
+export const TIERS = { max: 4, label: 20 };
+const tierNum = (v) => { const m = String(v ?? "").replace(/,/g, "").match(/(\d{1,6}(?:\.\d{1,2})?)/); const n = typeof v === "number" ? v : m ? +m[1] : 0; return Number.isFinite(n) && n > 0 && n <= 100000 ? Math.round(n * 100) / 100 : 0; };
+const tierLabel = (v) => String(v ?? "").replace(/[\u0000-\u001f\u007f<>$]/g, " ").replace(/\s+/g, " ").trim().slice(0, TIERS.label).trim();
+/** At most 4 tiers, each a label (up to 20 characters, no markup or "$") and a price above zero; repeated labels dropped. */
+export function cleanTiers(L) { if (!Array.isArray(L)) return []; const seen = new Set(), out = [];
+  for (const x of L) { if (!x || typeof x !== "object") continue; const label = tierLabel(x.label), price = tierNum(x.price);
+    if (!label || !price || seen.has(label.toLowerCase())) continue; seen.add(label.toLowerCase()); out.push({ label, price }); if (out.length >= TIERS.max) break; }
+  return out; }
+const money = (n) => { const c = Math.round(+n * 100); return "$" + (c % 100 ? (c / 100).toFixed(2) : String(c / 100)); };
+/** "Adults $55 · Kids $35", or "" for an event with one price. */
+export const tierLine = (e) => cleanTiers(e?.priceTiers).map((t) => `${t.label} ${money(t.price)}`).join(" · ");
+/** A guest's picks: [{ label, n }], at most 4, 0 to 50 of each, zeros and repeats left out. */
+export function cleanPicks(L) { if (!Array.isArray(L)) return []; const out = [];
+  for (const p of L.slice(0, TIERS.max)) { const label = tierLabel(p?.label), n = Math.max(0, Math.min(50, Math.floor(+p?.n || 0)));
+    if (label && n && !out.some((o) => o.label.toLowerCase() === label.toLowerCase())) out.push({ label, n }); }
+  return out; }
+/** What a reply costs on a tiered event: the sum over tiers of the tier's price times how many (0 without tiers or picks). */
+export function tierTotal(ev, r) { const T = cleanTiers(ev?.priceTiers); if (!T.length) return 0; let c = 0;
+  for (const p of cleanPicks(r?.tiers)) { const t = T.find((x) => x.label.toLowerCase() === p.label.toLowerCase()); if (t) c += Math.round(t.price * 100) * p.n; }
+  return c / 100; }
 export function withCleanLook(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  if ("priceTiers" in body) body = { ...body, priceTiers: cleanTiers(body.priceTiers) };
   if ("price" in body && body.price !== "chip") { const d = dollarPrice(body.price); if (d !== body.price) body = { ...body, price: d }; }
   const hasDotted = Object.keys(body).some((k) => k.startsWith("look."));
   if (!("look" in body) && !hasDotted) return body;

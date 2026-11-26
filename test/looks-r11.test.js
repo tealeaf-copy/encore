@@ -1,4 +1,4 @@
-// Round 11 design: the Night out look (readable on a dark page), the Card deck cover, cover stickers kept to an allow-list,
+// Round 11 design: the Night out look (readable on its page), the Card deck cover, cover stickers kept to an allow-list,
 // Surprise me rolls that always save as they are, and host page layouts from a whitelisted field.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -36,15 +36,15 @@ test("cover style, the Lanterns effect and the Card deck vibe are kept; anything
   assert.ok(LK.has({ coverStyle: "deck" }) && LK.has({ stickers: [{ id: "star" }] }), "a deck cover or stickers alone is a look");
 });
 
-test("Night out: every text colour on the dark page passes AA, and so does the menu slip", () => {
+test("Night out: every text colour on its page passes AA (a light page since Dec 2026), and so does the menu slip", () => {
   const { C, LK } = browser(); const [dom, ...acc] = LK.VIBES.night.look.palette, T = C.pageFrom(dom, acc);
-  assert.ok(T.dark, "a dark page");
-  for (const bg of [T.top, T.bot]) { assert.ok(C.contrast(T.ink, bg) >= 4.5, `ink on ${bg}`); assert.ok(C.contrast(T.soft, bg) >= 4.5, `soft text on ${bg}`); assert.ok(C.contrast("#FFFDF8", bg) >= 7, "the glowing title"); }
+  assert.ok(!T.dark, "a light page: the night lives in the lanterns, the cover and the amber accent");
+  for (const bg of [T.top, T.bot]) { assert.ok(C.contrast(T.ink, bg) >= 4.5, `ink on ${bg}`); assert.ok(C.contrast(T.soft, bg) >= 4.5, `soft text on ${bg}`); }
   assert.ok(C.contrast(T.btn, T.onBtn) >= 4.5, "button text"); assert.ok(C.contrast(T.card, T.cardInk) >= 4.5, "card text"); assert.ok(C.worst(T.btn, [T.top, T.bot]) >= 3, "the button stands out");
   // the handwritten menu: ink and grey on paper, the red heading, paper on the ink band
   assert.ok(C.contrast("#1F1A17", "#F4EAD3") >= 7); assert.ok(C.contrast("#5A4E45", "#F4EAD3") >= 4.5); assert.ok(C.contrast("#B3321F", "#F4EAD3") >= 4.5); assert.ok(C.contrast("#F4EAD3", "#1F1A17") >= 7);
-  // every Night out palette Surprise me can roll is dark and readable too
-  for (const p of LK.MOODS.night.pal) { const X = C.pageFrom(p[0], p.slice(1)); assert.ok(X.dark, p[0]); for (const bg of [X.top, X.bot]) assert.ok(C.contrast(X.soft, bg) >= 4.5 && C.contrast(X.ink, bg) >= 4.5); assert.ok(C.contrast(X.btn, X.onBtn) >= 4.5); }
+  // every Night out palette Surprise me can roll is light and readable too
+  for (const p of LK.MOODS.night.pal) { const X = C.pageFrom(p[0], p.slice(1)); assert.ok(!X.dark, p[0]); for (const bg of [X.top, X.bot]) assert.ok(C.contrast(X.soft, bg) >= 4.5 && C.contrast(X.ink, bg) >= 4.5); assert.ok(C.contrast(X.btn, X.onBtn) >= 4.5); }
   // the host page's Night out look: the name on the noren reads, and its accent carries white button text
   assert.ok(C.contrast("#FFF6E6", "#26346F") >= 7); assert.ok(C.contrast("#FFFFFF", "#26346F") >= 4.5);
 });
@@ -84,9 +84,9 @@ test("the swipe deck shows the kind of event only top-left, on drawn cards, neve
 test("Terminal and Pixel: readable text on their pages, and Surprise me offers them for game and tech nights", () => {
   const { C, LK } = browser();
   for (const v of ["terminal", "pixel"]) for (const p of [LK.VIBES[v].look.palette, ...LK.MOODS[v].pal]) { const T = C.pageFrom(p[0], p.slice(1));
-    for (const bg of [T.top, T.bot]) { assert.ok(C.contrast(T.ink, bg) >= 4.5, `${v} ink ${p[0]}`); assert.ok(C.contrast(T.soft, bg) >= 4.5, `${v} soft ${p[0]}`); if (v === "terminal") assert.ok(C.contrast("#A6F5BA", bg) >= 7, "phosphor title"); }
+    for (const bg of [T.top, T.bot]) { assert.ok(C.contrast(T.ink, bg) >= 4.5, `${v} ink ${p[0]}`); assert.ok(C.contrast(T.soft, bg) >= 4.5, `${v} soft ${p[0]}`); }
     assert.ok(C.contrast(T.btn, T.onBtn) >= 4.5, `${v} button ${p[0]}`); }
-  assert.ok(C.pageFrom(LK.VIBES.terminal.look.palette[0]).dark, "Terminal is a dark page"); assert.ok(!C.pageFrom(LK.VIBES.pixel.look.palette[0]).dark, "Pixel is a light one");
+  assert.ok(!C.pageFrom(LK.VIBES.terminal.look.palette[0]).dark, "Terminal is a light page now"); assert.ok(!C.pageFrom(LK.VIBES.pixel.look.palette[0]).dark, "Pixel is a light one");
   for (let i = 0; i < 30; i++) for (const name of ["Hack night", "Retro arcade meetup"]) assert.ok(["terminal", "pixel"].includes(LK.surprise({ name }).vibe), name);
   // review round 12: a board game table gets Card deck or Pixel, never Terminal
   for (let i = 0; i < 30; i++) assert.ok(["cards", "pixel"].includes(LK.surprise({ name: "Board game night" }).vibe));

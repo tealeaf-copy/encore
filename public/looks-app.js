@@ -18,7 +18,7 @@ html body.lk-on #view-guest .in .gk-follow,html body.lk-on #view-guest .in .gk-f
 html body.lk-on #view-guest .in .lk-update,html body.lk-on #view-guest .in .lk-update b,html body.lk-on #view-guest .in .lk-update span{color:var(--pl-ink)!important}html body.lk-on #view-guest .in .lk-update time{color:var(--pl-soft)!important}
 html body.lk-on #view-guest .in a:not(.btn){color:inherit!important}
 html body.lk-on #view-guest.ev2 .invite.gx .in h3.lk-title{font-family:var(--lk-title)!important;font-weight:var(--lk-tw,700)!important;letter-spacing:var(--lk-tls,-.02em)!important;font-size:calc(clamp(40px,5.6vw,72px) * var(--lk-tk,1))!important}
-html body.lk-on.lk-vibe-night #view-guest .in h3.lk-title{color:var(--pl-surface)!important}html body.lk-on.lk-vibe-terminal #view-guest .in h3.lk-title{color:#A6F5BA!important}
+
 html body.lk-on #view-guest :is(.ev2-rs>.stack,#whoGoing,#evFaq){background:#fff!important;color:var(--pl-ink)!important;border-radius:22px!important;padding:20px!important;border:1px solid rgba(0,0,0,.08)!important;box-shadow:0 22px 44px -30px rgba(0,0,0,.5)!important}
 html body.lk-on #view-guest.ev2 #gForm{border-top-color:var(--lk-line)!important}
 html body.lk-on.lk-on #view-guest #gTopCta,html body.lk-on.lk-on #gBar .btn.primary,html body.lk-on.lk-on #view-guest #g-send,html body.lk-on.lk-on #gStick button.go{background:var(--lk-btn)!important;border-color:var(--lk-btn)!important;color:var(--lk-on-btn)!important}
@@ -106,7 +106,7 @@ html body.lk-on.lk-dark #view-guest .hh-av{background:var(--lk-raised)!important
   const PCSS = `.mk{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start;margin:4px 0 14px;text-align:left}
 .mk-l{display:grid;gap:14px;min-width:0}.mk-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.mk-h h3{margin:0 auto 0 0;font-size:20px}
 .mk-row{display:grid;gap:6px;grid-template-columns:minmax(0,1fr)}.mk-row>b{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft)}
-.mk-chips{display:flex;flex-wrap:wrap;gap:6px}.mk button.mk-c{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;border:1px solid var(--pl-line-strong);background:#fff;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--pl-ink)}
+.mk-chips{display:flex;flex-wrap:wrap;gap:6px}.mk button.mk-c{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;border-radius:999px;border:1px solid var(--pl-line-strong);background:#fff;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
 .mk button.mk-c[aria-pressed=true]{border-color:var(--pl-ink);box-shadow:inset 0 0 0 1.5px var(--pl-ink);background:#FFF6E0}.mk button.mk-c:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}.mk button.mk-c:disabled{opacity:.45;cursor:not-allowed}
 .mk-dots{display:inline-flex}.mk-dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid #fff;margin-left:-5px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}.mk-dots i:first-child{margin-left:0}
 .mk button.mk-sw{all:unset;cursor:pointer;width:32px;height:32px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}.mk button.mk-sw[aria-pressed=true]{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--pl-ink)}.mk button.mk-sw:focus-visible{outline:3px solid var(--pl-accent);outline-offset:3px}
@@ -119,13 +119,13 @@ html body.lk-on.lk-dark #view-guest .hh-av{background:var(--lk-raised)!important
 .mk-in .mk-cov.none{aspect-ratio:16/10;border-radius:14px;background:color-mix(in srgb,var(--lk-ink,var(--pl-ink)) 10%,transparent)}
 .mk-in h1{font:700 calc(30px * var(--lk-tk,1))/1.04 var(--sys-display);margin:14px 0 6px}.mk-in p{margin:2px 0;font-size:13px;color:var(--lk-soft,var(--pl-soft))}
 .mk-bar{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px 12px;background:color-mix(in srgb,var(--lk-bot,var(--pl-page)) 92%,transparent);border-top:1px solid var(--lk-line,var(--pl-line))}
-.mk-bar span{display:flex;justify-content:center;align-items:center;min-height:40px;border-radius:999px;background:var(--lk-btn,var(--pl-accent));color:var(--lk-on-btn,#fff);font:600 15px "Instrument Sans",system-ui,sans-serif}
+.mk-bar span{display:flex;justify-content:center;align-items:center;min-height:40px;border-radius:999px;background:var(--lk-btn,var(--pl-accent));color:var(--lk-on-btn,#fff);font:600 15px "IBM Plex Sans",system-ui,sans-serif}
 #mkPanel .mk-pvt{display:none!important}
 @media (max-width:760px){.mk{grid-template-columns:minmax(0,1fr)}.mk-pv{display:none;order:-1;position:static}.mk.pv-on .mk-pv{display:block}#mkPanel .mk-pvt{display:inline-flex!important}.mk-phone{height:480px;max-width:320px;margin:0 auto}}
 .mk-stray{display:flex;flex-wrap:wrap;gap:6px}.mk button.mk-stb{all:unset;cursor:pointer;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--pl-page);box-shadow:inset 0 0 0 1px var(--pl-line);transition:transform .15s}
 .mk button.mk-stb svg{width:32px;height:32px}.mk button.mk-stb:hover{transform:rotate(-6deg) scale(1.08)}.mk button.mk-stb:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}.mk button.mk-stb:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .mk-in .mk-cov.art{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;border:2px solid var(--lk-ink,var(--pl-ink))}.mk-in .mk-cov{position:relative}
-.mk-phone.lk-fx-lanterns .mk-in,.mk-phone.lk-fx-lights .mk-in{padding-top:52px}.mk-phone.lk-fx-jarwall .mk-in{padding-top:88px}.mk-phone.peek{outline:3px dashed var(--pl-accent);outline-offset:4px}.mk-roll{margin:8px 0 0;min-height:20px;text-align:center;font:600 13px "Instrument Sans",system-ui,sans-serif;color:var(--pl-soft)}
+.mk-phone.lk-fx-lanterns .mk-in,.mk-phone.lk-fx-lights .mk-in{padding-top:52px}.mk-phone.lk-fx-jarwall .mk-in{padding-top:88px}.mk-phone.peek{outline:3px dashed var(--pl-accent);outline-offset:4px}.mk-roll{margin:8px 0 0;min-height:20px;text-align:center;font:600 13px "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-soft)}
 .mk-sur.roll{animation:mk-roll .5s ease}@keyframes mk-roll{0%{transform:rotate(0)}30%{transform:rotate(-14deg) scale(1.08)}60%{transform:rotate(10deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.mk-sur.roll{animation:none}}
 #wizBg .wiz:has(#mkPanel){width:min(1000px,96vw)!important;max-width:min(1000px,96vw)!important}

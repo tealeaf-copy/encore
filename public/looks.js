@@ -7,7 +7,7 @@
   const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"]];
   // title fonts: the title only; the rest of the page stays in the house sans
   const FONTS = {
-    clean: { label: "Clean", css: '"Inter", "Instrument Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
+    clean: { label: "Clean", css: '"Inter", "IBM Plex Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
     bold: { label: "Bold", css: '"Archivo Black", "Arial Black", system-ui, sans-serif', q: "Archivo+Black", w: 400, ls: "-.01em", k: 1, up: true },
     serif: { label: "Serif", css: '"DM Serif Display", Georgia, serif', q: "DM+Serif+Display", w: 400, ls: "-.01em", k: 1.08 },
     script: { label: "Script", css: '"Dancing Script", "Brush Script MT", cursive', q: "Dancing+Script:wght@700", w: 700, ls: "0", k: 1.18 },
@@ -20,8 +20,8 @@
     slab: { label: "Slab", css: '"Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif', q: "Zilla+Slab:wght@600;700", w: 700, ls: "-.005em", k: 1.04 },
   };
   // eight colours to pick from when there's no flyer (each with two accents that suit it)
-  const SWATCHES = [["#DCE3D2", "#2F4A35", "#A4533A", "Sage"], ["#EFE7D8", "#1D1B18", "#9A4128", "Bone"], ["#E4E9EC", "#24384C", "#9A4128", "Stone"], ["#3B1519", "#D4AE76", "#EBDCCF", "Oxblood"],
-    ["#F3E8E6", "#3A2A30", "#8C5A55", "Rose"], ["#E8DDC8", "#5C3013", "#3D5A39", "Oat"], ["#1D2A23", "#D2B26C", "#EDE5D3", "Forest"], ["#1E1A17", "#C9A063", "#E8DED0", "Espresso"]];
+  const SWATCHES = [["#DCE3D2", "#2F4A35", "#A4533A", "Sage"], ["#EFE7D8", "#1D1B18", "#9A4128", "Bone"], ["#E4E9EC", "#24384C", "#9A4128", "Stone"], ["#F1E4E1", "#5E2128", "#B08A4E", "Oxblood"],
+    ["#F3E8E6", "#3A2A30", "#8C5A55", "Rose"], ["#E8DDC8", "#5C3013", "#3D5A39", "Oat"], ["#E5EADF", "#24392D", "#A8843A", "Forest"], ["#EEE6D8", "#3B2F25", "#A87A35", "Espresso"]];
   const LABELS = ["I'm in", "Join", "Count me in", "Ask to join"]; // older labels off the word list read "I'm in" (server/looks.js cleanLook)
   const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲", "🍂", "🫙", "☕"];
   // one-tap vibes, curated as whole palettes: page, ink accent and one warm accent designed together (2026 brand pass).
@@ -30,15 +30,15 @@
   // (storefront.js LOOKS.florist: petal page, deep green)
   const VIBES = {
     garden: { label: "Garden party", look: { palette: ["#DCE3D2", "#2F4A35", "#A4533A"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
-    jazz: { label: "Jazz night", look: { palette: ["#1E1A17", "#C9A063", "#E8DED0"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
+    jazz: { label: "Jazz night", look: { palette: ["#EEE6D8", "#3B2F25", "#A87A35"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
     winter: { label: "Winter benefit", look: { palette: ["#E4E9EC", "#24384C", "#9A4128"], effect: "snow", titleFont: "clean", buttonLabel: "I'm in" } },
-    velvet: { label: "Velvet sale", look: { palette: ["#3B1519", "#D4AE76", "#EBDCCF"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
+    velvet: { label: "Velvet sale", look: { palette: ["#F1E4E1", "#5E2128", "#B08A4E"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
     flower: { label: "Flower shop", look: { palette: ["#F4E9EC", "#1F3D30", "#A85A55"], effect: "petals", titleFont: "script", buttonLabel: "I'm in" } },
     // an izakaya after dark: deep slate, paper lanterns and a noren curtain, warm amber on the button
-    night: { label: "Night out", look: { palette: ["#151A24", "#D9A25E", "#B9C2CF"], effect: "lanterns", titleFont: "clean", buttonLabel: "I'm in" } },
-    market: { label: "Holiday market", look: { palette: ["#1D2A23", "#D2B26C", "#EDE5D3"], effect: "twinkle", lights: true, titleFont: "serif", buttonLabel: "I'm in" } },
+    night: { label: "Night out", look: { palette: ["#E7E9EE", "#26304A", "#B5762E"], effect: "lanterns", titleFont: "clean", buttonLabel: "I'm in" } },
+    market: { label: "Holiday market", look: { palette: ["#E5EADF", "#24392D", "#A8843A"], effect: "twinkle", lights: true, titleFont: "serif", buttonLabel: "I'm in" } },
     // for the quiet, nerdy crowd: a calm dark terminal (soft phosphor green, amber accent, faint scanlines) and an 8-bit page in four colours
-    terminal: { label: "Terminal", look: { palette: ["#0F1412", "#8ED1A1", "#D8B36A"], effect: "scanlines", titleFont: "mono", buttonLabel: "I'm in" } },
+    terminal: { label: "Terminal", look: { palette: ["#E9EEE8", "#1F4D33", "#8A6A22"], effect: "scanlines", titleFont: "mono", buttonLabel: "I'm in" } },
     pixel: { label: "Pixel", look: { palette: ["#EEEADC", "#2E2A44", "#B4495B"], effect: "pixels", titleFont: "pixel", buttonLabel: "I'm in" } },
     // a hand of muted cards: the cover is a flat playing card, the kind of event in the corner and the drawing in the middle
     cards: { label: "Card deck", look: { palette: ["#F2EDE4", "#2C2836", "#9A4128"], effect: "none", titleFont: "serif", buttonLabel: "I'm in", coverStyle: "deck" } },
@@ -86,7 +86,15 @@
   const fitOf = (L) => (L?.coverFit === "poster" || L?.coverFit === "banner" ? L.coverFit : +L?.coverH > +L?.coverW && +L?.coverW > 0 ? "poster" : "banner");
   const fonts = new Set(); const loadFont = (k) => { const F = FONTS[k]; if (!F || fonts.has(k) || typeof document === "undefined") return; fonts.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${F.q}&display=swap`; document.head.appendChild(l); };
   // colours for a look: the page gradient, readable ink and soft text, and a button that passes contrast
-  function colors(L) { const p = (L.palette || []).filter(okHex); if (!p.length || !C) return null; return C.pageFrom(p[0], p.slice(1)); }
+  // ---- legacy dark looks (removed Dec 2026: every page is light) ----
+  // Events saved with a dark look keep their data; at read time the palette maps to the light look of the same family and
+  // accent hue. Any other dark page (a flyer, an old custom palette) is made light by color.js pageFrom.
+  const LEGACY_DARK = { jazz: ["#1E1A17", "#1F2A2E", "#24201C", "#1B2226", "#4A2E1E"], velvet: ["#6E0F1F", "#3B1519", "#4B0F24", "#2E1A3A", "#35161C", "#2A1D24"],
+    night: ["#141A3A", "#1B1530", "#0F2230", "#151A24", "#161B26", "#14201F"], market: ["#5A0F1E", "#1F3D30", "#1D2A23", "#1F2B24", "#2C1A1C"], terminal: ["#0E1411", "#101418", "#14121C", "#0F1412", "#14141A"] };
+  const LEGACY = Object.fromEntries(Object.entries(LEGACY_DARK).flatMap(([v, pages]) => pages.map((h) => [h, v])));
+  /** The palette a look draws with: a legacy dark palette becomes its vibe's light palette. */
+  function paletteOf(L) { const p = (L?.palette || []).filter(okHex).map((c) => c.toUpperCase()); const v = LEGACY[p[0]]; return v && VIBES[v] ? VIBES[v].look.palette.slice() : p; }
+  function colors(L) { const p = paletteOf(L); if (!p.length || !C) return null; return C.pageFrom(p[0], p.slice(1)); }
   // the main reply button: the host's emoji and words; Ask to join events always say "Ask to join"
   function buttonText(e, fallback) { const L = lookOf(e), em = EMOJI.includes(L.buttonEmoji) ? L.buttonEmoji + " " : ""; if (e?.approvalRequired) return em + "Ask to join";
     const w = LABELS.includes(L.buttonLabel) && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback || "I'm in"; return em + w; }
@@ -106,13 +114,12 @@ html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100
 .lk-on .lk-title{font-family:var(--lk-title)!important;font-weight:var(--lk-tw,700)!important;letter-spacing:var(--lk-tls,-.01em)!important;color:var(--lk-ink)!important;text-wrap:balance}
 .lk-on.lk-up .lk-title{line-height:1.05!important}
 .lk-vibe-pantry .lk-title{color:#3B2414!important;text-shadow:0 1px 0 rgba(255,244,220,.55)}
-.lk-vibe-night .lk-title{color:#FFFDF8!important}
 .lk-fxl{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}.lk-fxl.fixed{position:fixed;z-index:-1}.lk-fxl canvas{position:absolute;inset:0;width:100%;height:100%}
 .lk-paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(120% 80% at 50% 0,transparent 55%,rgba(110,80,40,.10));opacity:.55;mix-blend-mode:multiply}
 .lk-velvet{background:radial-gradient(150vw 75vh at 50% 0,color-mix(in srgb,var(--lk-glow,#C2384A) 14%,transparent),transparent 70%),radial-gradient(100vw 55vh at 85% 100%,color-mix(in srgb,var(--lk-glow,#C2384A) 8%,transparent),transparent 70%),radial-gradient(130% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45));animation:lk-breathe 9s ease-in-out infinite}
 .lk-update{position:relative;z-index:2;display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:10px 16px 10px 10px;border-radius:18px;background:#FFF3B0;color:#1F1A17;border:2px solid #1F1A17;box-shadow:3px 3px 0 #1F1A17;transform:rotate(-1deg);width:fit-content;max-width:100%;box-sizing:border-box}
-.lk-burst{flex:none;position:relative;width:54px;height:54px;display:grid;place-items:center}.lk-burst svg{position:absolute;inset:0;width:100%;height:100%;fill:#E2573A;stroke:#1F1A17;stroke-width:3;stroke-linejoin:round}.lk-burst b{position:relative;font:800 13px/1 "Instrument Sans",system-ui,sans-serif;color:#fff;transform:rotate(-10deg)}
-.lk-upd-t{display:grid;gap:2px;font:600 16px/1.3 "Instrument Sans",system-ui,sans-serif;min-width:0;text-align:left}.lk-upd-t>b{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.lk-upd-t time{font-weight:500;color:#5E534B;letter-spacing:0;text-transform:none;margin-left:4px}.lk-upd-t>span{overflow-wrap:anywhere}
+.lk-burst{flex:none;position:relative;width:54px;height:54px;display:grid;place-items:center}.lk-burst svg{position:absolute;inset:0;width:100%;height:100%;fill:#E2573A;stroke:#1F1A17;stroke-width:3;stroke-linejoin:round}.lk-burst b{position:relative;font:800 13px/1 "IBM Plex Sans",system-ui,sans-serif;color:#fff;transform:rotate(-10deg)}
+.lk-upd-t{display:grid;gap:2px;font:600 16px/1.3 "IBM Plex Sans",system-ui,sans-serif;min-width:0;text-align:left}.lk-upd-t>b{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.lk-upd-t time{font-weight:500;color:#5E534B;letter-spacing:0;text-transform:none;margin-left:4px}.lk-upd-t>span{overflow-wrap:anywhere}
 .lk-lights{position:absolute;left:0;right:0;top:0;height:56px;pointer-events:none;z-index:1}.lk-lights.fixed{position:fixed;z-index:3}.lk-lights svg{width:100%;height:100%;display:block;overflow:visible}
 .lk-lights .bulb{animation:lk-glow 3.2s ease-in-out infinite}.lk-lights .bulb:nth-child(3n+1){animation-delay:-1.1s}.lk-lights .bulb:nth-child(3n+2){animation-delay:-2.2s}
 @keyframes lk-glow{0%,100%{opacity:.55}50%{opacity:1}}
@@ -122,7 +129,7 @@ html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100
 /* card deck: the drawn cover as a flat pastel playing card, the kind of event in spaced caps top-left, the drawing big in the middle */
 .ea-cover.lk-deck{background:var(--lk-deck,#F6CBD5)!important}.ea-cover.lk-deck .ea-txt{display:none!important}
 .ea-cover.lk-deck .ea-art{inset:17% 7% 6%!important;width:auto!important;height:auto!important;max-width:none!important;justify-content:center!important;align-items:center!important}.ea-cover.lk-deck .ea-art svg{width:100%!important;height:100%!important;max-width:none!important;overflow:visible}.ea-cover.lk-deck .ea-art svg [stroke-width]{stroke-width:6px}
-.lk-corner{position:absolute;left:6%;top:7%;z-index:2;font:700 clamp(11px,4.4cqw,18px)/1 "Instrument Sans",system-ui,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#1F1A17;pointer-events:none;white-space:nowrap}
+.lk-corner{position:absolute;left:6%;top:7%;z-index:2;font:700 clamp(11px,4.4cqw,18px)/1 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#1F1A17;pointer-events:none;white-space:nowrap}
 /* stickers on the cover (shown even where a cover hides its other layers) */
 html body .lk-stk.lk-stk.lk-stk.lk-stk{display:block!important}
 .lk-stk{position:absolute;inset:0;z-index:3;pointer-events:none;container-type:inline-size}.lk-st{position:absolute;width:calc(clamp(34px,17cqw,120px) * var(--s,1));aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(0 4px 6px rgba(31,26,23,.22))}
@@ -139,12 +146,10 @@ html body .lk-stk.lk-stk.lk-stk.lk-stk{display:block!important}
 @media (max-width:600px){.lk-lant:not(.inbox) .lk-ch.l{display:none}.lk-lant:not(.inbox) .lk-ch.r{width:32px;right:10px}}
 @keyframes lk-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @media (prefers-reduced-motion:reduce){.lk-ch{animation:none}}
-/* terminal: faint scanlines over a calm dark page, phosphor title, a block cursor after mono titles */
-.lk-scan{background:repeating-linear-gradient(180deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),radial-gradient(120% 80% at 50% 0,rgba(124,242,154,.08),transparent 60%);opacity:.7}
+/* terminal: faint scanlines over a calm light page, a block cursor after mono titles */
+.lk-scan{background:repeating-linear-gradient(180deg,rgba(27,29,28,.06) 0 1px,transparent 1px 3px);opacity:.7}
 @media (prefers-reduced-motion:reduce){.lk-scan{display:none}}
-.lk-vibe-terminal .ea-cover{background:#131B16!important}.lk-vibe-terminal .ea-art svg{filter:invert(1) hue-rotate(180deg) saturate(.8)}.lk-vibe-terminal .ea-cover .ea-txt{color:#A6F5BA}
 .lk-fxl.fixed.lk-pix::after{display:none}
-.lk-vibe-terminal .lk-title{color:#A6F5BA!important}
 .lk-font-mono .lk-title::after{content:"";display:inline-block;width:.52em;height:.86em;margin-left:.14em;vertical-align:-.06em;background:currentColor;animation:lk-blink 1.1s steps(1) infinite}
 @keyframes lk-blink{50%{opacity:0}}@media (prefers-reduced-motion:reduce){.lk-font-mono .lk-title::after{animation:none}}
 /* pixel: a crenellated pixel border top and bottom, a few original sprites, crisp edges, square covers */
@@ -380,13 +385,13 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
   // Surprise me rolls one of each, so the result is random but never a clash (a snowflake on a garden party, say).
   const MOODS = {
     garden: { pal: [["#E3E6D6", "#344A2E", "#9A4128"], ["#E9E4D6", "#3E5A3A", "#7A5C2E"]], fx: ["none", "petals"], font: ["serif", "clean"], em: ["🌿", "🌷", "🌸", "🙌"] },
-    jazz: { pal: [["#24201C", "#D0A867", "#EDE3D3"], ["#1B2226", "#C79A5A", "#E6E0D4"]], fx: ["none", "paper", "stars"], font: ["serif", "typewriter", "bold"], em: ["🎷", "🎶", "🍷", "🥂"] },
+    jazz: { pal: [["#EFE9DF", "#33291F", "#9C7232"], ["#E6E8E6", "#26312F", "#9A6E36"]], fx: ["none", "paper", "stars"], font: ["serif", "typewriter", "bold"], em: ["🎷", "🎶", "🍷", "🥂"] },
     winter: { pal: [["#E6EAEE", "#2B3E52", "#8E3B24"], ["#ECEBE6", "#2F3F4F", "#5F6B57"]], fx: ["snow", "none"], font: ["clean", "serif"], em: ["❄️", "⛄", "🎁", "🕯️"] },
-    velvet: { pal: [["#35161C", "#D4AE76", "#EBDCCF"], ["#2A1D24", "#C9A27A", "#E6D8CC"]], fx: ["none", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
+    velvet: { pal: [["#F2E7E4", "#5A1F27", "#A9844C"], ["#EEE6EA", "#4A2A3A", "#A07A50"]], fx: ["none", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
     flower: { pal: [["#F3E8E6", "#3A2A30", "#8C5A55"], ["#EEEAE2", "#2F4034", "#A86A5E"]], fx: ["petals", "none"], font: ["script", "serif"], em: ["💐", "🌷", "🌸", "🌿"] },
-    night: { pal: [["#161B26", "#D9A25E", "#C7CDD6"], ["#14201F", "#D2B26C", "#C9D2CC"]], fx: ["lanterns", "stars", "none"], font: ["clean", "bold", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
-    market: { pal: [["#1F2B24", "#D2B26C", "#EDE5D3"], ["#2C1A1C", "#D4AE76", "#EBDCCF"]], fx: ["twinkle", "snow", "none"], font: ["serif", "bold"], em: ["🎄", "🎁", "🍵", "✨"] },
-    terminal: { pal: [["#101418", "#D8B36A", "#8ED1A1"], ["#14141A", "#A9B7D9", "#D8B36A"]], fx: ["scanlines", "none"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
+    night: { pal: [["#E8EAEF", "#252C40", "#B0702A"], ["#E4EAE8", "#1F3532", "#A07A2E"]], fx: ["lanterns", "stars", "none"], font: ["clean", "bold", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
+    market: { pal: [["#E6EBE1", "#26392E", "#A5823A"], ["#F1E6E2", "#572228", "#A9844C"]], fx: ["twinkle", "snow", "none"], font: ["serif", "bold"], em: ["🎄", "🎁", "🍵", "✨"] },
+    terminal: { pal: [["#E8ECEA", "#22423A", "#8A6A22"], ["#E8E9EE", "#29304A", "#4E7A5A"]], fx: ["scanlines", "none"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
     pixel: { pal: [["#EAEEE2", "#26324A", "#B4495B"], ["#F1E9DC", "#2E2442", "#3D6A4C"]], fx: ["pixels", "none"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },
     cards: { pal: [["#F3EEE8", "#33283F", "#9A4128"], ["#EDF0EB", "#22433A", "#9C6F2A"]], fx: ["none", "paper"], font: ["serif", "clean", "bold"], em: ["✨", "🎉", "❤️", "🙌"] },
     // the jar wall stays (it is the look); a serif title for a change
@@ -416,5 +421,5 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { kindVibes, vibeOrder, priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { LEGACY, paletteOf, kindVibes, vibeOrder, priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

@@ -55,10 +55,10 @@ test("the contrast helper picks readable ink and a button that passes", () => {
       assert.ok(C.contrast(T.onBtn, T.btn) >= 4.5, `button text on ${dom} with ${acc}`);
       assert.ok(C.contrast(T.cardInk, T.card) >= 4.5, `card text on ${dom}`);
     } }
-  assert.equal(C.pageFrom("#6E0F1F").dark, true, "a deep red gets a dark page"); assert.equal(C.pageFrom("#C4DDF3").dark, false, "icy blue stays light");
+  assert.equal(C.pageFrom("#6E0F1F").dark, false, "a deep red gets a pale page: every page is light"); assert.ok(C.lum(C.pageFrom("#6E0F1F").top) > 0.6); assert.equal(C.pageFrom("#C4DDF3").dark, false, "icy blue stays light");
   assert.equal(C.inkFor(["#FFFFFF"]) !== "#FFFFFF", true); assert.ok(C.contrast(C.inkFor(["#111111"]), "#111111") >= 4.5);
-  // a contrasting page for a dark flyer is dark too (forest green gets a wine red)
-  const cp = C.contrastPage("#1F4D36"); assert.ok(C.lum(cp) < 0.2); const h = C.hsl(cp)[0]; assert.ok(h > 300 || h < 20, "a red, not another green");
+  // a contrasting page for a dark flyer is a pale opposite hue (forest green gets a pale rose)
+  const cp = C.contrastPage("#1F4D36"); assert.ok(C.lum(cp) > 0.6, "light"); const h = C.hsl(cp)[0]; assert.ok(h > 300 || h < 20, "a red, not another green");
   // the host pages use the same helpers
   const { S } = browser(); assert.ok(S && S.FONTS, "storefront.js still loads beside color.js");
   // every vibe passes the guardrail as well

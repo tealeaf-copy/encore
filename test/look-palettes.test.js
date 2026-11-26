@@ -26,10 +26,19 @@ test("every look palette: each token pair passes AA on a flat page", () => {
   assert.deepEqual(bad, []);
 });
 
-test("every look palette: dark looks are deep with warm light text, light looks sit on calm neutrals", () => {
-  for (const [k, p] of palettes()) { const T = C.pageFrom(p[0], p.slice(1));
-    if (T.dark) { assert.ok(C.lum(T.top) < 0.03, `${k}: a deep page`); assert.ok(C.lum(T.ink) > 0.75, `${k}: light text`); }
-    else assert.ok(chroma(T.top) <= 0.3, `${k}: a calm light page, not candy (${T.top})`); }
+test("every look palette: no dark pages; light looks sit on calm neutrals", () => {
+  for (const [k, p] of palettes()) { const T = C.pageFrom(p[0], p.slice(1)); assert.equal(T.dark, false, k);
+    assert.ok(C.lum(p[0]) >= 0.3, `${k}: the preset itself is light (${p[0]})`); assert.ok(chroma(T.top) <= 0.3, `${k}: a calm light page, not candy (${T.top})`); }
+});
+
+test("legacy dark looks: every old dark page id maps to the light look of its family, and any dark page renders light", () => {
+  const legacy = Object.entries(LK.LEGACY); assert.ok(legacy.length >= 20);
+  for (const [page, vibe] of legacy) { const p = LK.paletteOf({ palette: [page, "#D4AE76", "#EBDCCF"], vibe }); assert.deepEqual(p, LK.VIBES[vibe].look.palette, page);
+    const T = LK.colors({ palette: [page, "#D4AE76"] }); assert.equal(T.dark, false); assert.ok(C.lum(T.top) >= 0.6, `${page} renders light (${T.top})`); }
+  // the old vibe ids still exist and draw light
+  for (const v of ["jazz", "velvet", "night", "market", "terminal"]) { const T = LK.colors(LK.VIBES[v].look); assert.equal(T.dark, false, v); assert.ok(C.lum(T.top) >= 0.6, v); }
+  // an unknown dark palette (an old custom one, a dark flyer) is light too, in its own hue
+  for (const page of ["#123456", "#2B0A0A", "#000000", "#1A1A2E"]) assert.ok(C.lum(C.pageFrom(page).top) >= 0.6, page);
 });
 // colourfulness as max minus min channel (0 grey, 1 pure hue): HSL saturation overstates pale colours
 const chroma = (h) => { const v = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return Math.max(...v) - Math.min(...v); };
@@ -55,7 +64,7 @@ test("buttons: every look's default label is plain I'm in, with no emoji; Surpri
 
 // The full audit: every look a guest can see (each vibe, each Surprise me cousin, each swatch) is checked for the title,
 // the body text, the quiet text, the button label on the button and the link or accent text, at WCAG AA (4.5:1).
-const TITLE = { night: "#FFFDF8", terminal: "#A6F5BA", pantry: "#3B2414" }; // the vibes that colour their title (looks.js)
+const TITLE = { pantry: "#3B2414" }; // the vibes that colour their title (looks.js)
 const allLooks = () => [
   ...Object.entries(LK.VIBES).map(([k, v]) => [k, k, v.look.palette]),
   ...Object.entries(LK.MOODS).flatMap(([k, m]) => m.pal.map((p, i) => [`${k} cousin ${i + 1}`, k, p])),
@@ -81,8 +90,8 @@ test("audit: a host's own flyer colours and Surprise me's contrasting page stay 
     const T = C.pageFrom(page, acc), w = `${f} (${page}) with ${acc.join(" ") || "no accent"}`;
     need(`${w} body`, T.ink, T.top); need(`${w} quiet`, T.soft, T.top); need(`${w} button label`, T.onBtn, T.btn); need(`${w} button edge`, T.btn, T.top, 3);
     need(`${w} link`, T.link, T.top); need(`${w} form`, T.cardInk, T.card);
-    // rich but calm: a deep page is near-black with a hint of its colour, a light page a soft tint, the button never neon
-    if (T.dark) { if (C.lum(T.top) > 0.045 || C.chroma(T.top) > 0.18) bad.push(`${w}: dark page ${T.top} too loud`); }
+    // calm: every page is a light tint, the button never neon
+    if (T.dark) bad.push(`${w}: a dark page`);
     else if (C.chroma(T.top) > 0.2) bad.push(`${w}: light page ${T.top} is candy`);
     if (C.chroma(T.btn) > 0.52) bad.push(`${w}: button ${T.btn} is neon`); }
   assert.deepEqual(bad, []);

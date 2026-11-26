@@ -18,7 +18,7 @@
     const f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }; return hex(f(H / 360 + 1 / 3) * 255, f(H / 360) * 255, f(H / 360 - 1 / 3) * 255); };
   // a page colour that contrasts with a flyer: the opposite hue, dark for a dark flyer (forest green gets wine red), soft for a light one
   // muted, natural tones: no candy pastel or saturated wine, a quiet colour that still reads as the opposite hue
-  const contrastPage = (h) => { const [H, S, L] = hsl(h), dark = lum(h) < 0.2; return fromHsl(H + 180 + (dark ? 18 : 0), Math.max(0.22, Math.min(0.38, S * 0.5)), dark ? Math.min(0.16, Math.max(0.11, L)) : 0.86); };
+  const contrastPage = (h) => { const [H, S] = hsl(h); return fromHsl(H + 180, Math.max(0.22, Math.min(0.38, S * 0.5)), 0.88); };
   // colourfulness (max minus min channel, 0 grey to 1 pure hue) and a colour with it held to a ceiling at the same hue and lightness
   const chroma = (h) => { const v = rgb(h); return (Math.max(...v) - Math.min(...v)) / 255; };
   const tame = (h, max) => { if (chroma(h) <= max) return norm(h); const [H, S, L] = hsl(h); return fromHsl(H, Math.min(S, max / Math.max(0.01, 1 - Math.abs(2 * L - 1))), L); };
@@ -42,7 +42,10 @@
     for (let i = 1; i <= 10; i++) { const c = mix(accent, darkBg ? "#000000" : "#FFFFFF", i * 0.08); if (ok(c)) return c; }
     return darkBg ? "#FFF8EE" : "#1F1A17"; }
   // a page from one colour: a soft vertical gradient, light (most colours) or dark (deep colours), and the ink that reads on it
-  function pageFrom(dom, accents = []) { dom = norm(dom) || "#FFE08A"; const dark = lum(dom) < 0.11 || (lum(dom) < 0.2 && hsl(dom)[1] > 0.45 && lum(dom) < 0.16);
+  // every page is light (Dec 2026: the app is one light look everywhere). A deep colour, from an old dark look or a dark
+  // flyer, becomes a pale page of the same hue; its mood stays in the cover art and the accent, which reads on the page
+  const lightPage = (h) => { let c = tame(mix(h, "#F4F0E6", 0.84), 0.12); for (let i = 0; i < 10 && lum(c) < 0.62; i++) c = mix(c, "#FAF8F3", 0.2); return c; };
+  function pageFrom(dom, accents = []) { dom = norm(dom) || "#FFE08A"; const wasDark = lum(dom) < 0.2; if (wasDark) dom = lightPage(dom); const dark = false;
     // one flat page colour, no gradient or glow (2026 brand): a deep colour as it is (or deepened), a light one as it is (or lifted)
     // the 2026 colour audit: a dark page is deep (luminance at most 0.035) and muted, so a wine or navy flyer gives a rich
     // oxblood or slate rather than a loud maroon; a light page is held to calm, natural tints; the button to a grown-up accent
@@ -78,6 +81,6 @@
     for (const g of rest) { if (out.length >= 3) break; if (out.every((x) => dist(x.c, g.c) > 60)) out.push(g); }
     while (out.length < 3) { const base = hex(...dom.c), l = lum(base); out.push({ c: rgb(mix(base, l > 0.4 ? "#000000" : "#FFFFFF", out.length === 1 ? 0.45 : 0.7)) }); }
     return out.map((g) => hex(...g.c)); }
-  const API = { chroma, tame, fromHsl, contrastPage, isHex, norm, rgb, hex, lum, contrast, mix, hsl, worst, inkFor, softFor, onColor, buttonFor, pageFrom, paletteFromPixels };
+  const API = { lightPage, chroma, tame, fromHsl, contrastPage, isHex, norm, rgb, hex, lum, contrast, mix, hsl, worst, inkFor, softFor, onColor, buttonFor, pageFrom, paletteFromPixels };
   root.EncoreColor = API;
 })(typeof window !== "undefined" ? window : globalThis);

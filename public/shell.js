@@ -45,6 +45,7 @@
     inbox: I('<path d="M3.5 13.5 6 5h12l2.5 8.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19z"/><path d="M3.5 13.5H9a3 3 0 0 0 6 0h5.5"/>'),
     spark: I('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
     heart: I('<path d="M12 20s-7-4.4-8.6-8.9C2.2 7.8 4.3 4.5 7.5 4.5c2 0 3.4 1.1 4.5 2.7 1.1-1.6 2.5-2.7 4.5-2.7 3.2 0 5.3 3.3 4.1 6.6C19 15.6 12 20 12 20z"/>'),
+    about: I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/>'),
     login: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H4"/>'),
     chat: I('<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17h0A1.5 1.5 0 0 1 4 15.5z"/><path d="M8.5 9.5h7M8.5 12.5h4.5"/>'),
   };
@@ -134,3 +135,15 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
 // ---- Home to-dos from the server (public/nudges.js): signed-in hosts on the app's Home, e.g. "Show it on Discover" ----
 (function () { try { if (window.__plNudgesLoad || location.pathname !== "/" || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; window.__plNudgesLoad = 1;
   const s = document.createElement("script"); s.src = "/nudges.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
+
+// ---- "New here?" on the feed: one quiet, dismissible line for first-time signed-out visitors, pointing at /about ----
+(function () { try { if (window.__plAboutNote || !/^\/(feed)?$/.test(location.pathname) || /(?:^|;\s*)encore_in=1/.test(document.cookie)) return; window.__plAboutNote = 1;
+  let seen = false; try { seen = !!localStorage.getItem("pl.aboutNote"); } catch {} if (seen) return;
+  const put = () => { const m = document.querySelector("main"); if (!m || document.getElementById("plAbout")) return;
+    const n = document.createElement("p"); n.id = "plAbout"; n.className = "pl-about";
+    n.innerHTML = `<span>New here? <a href="/about">What is Pottery Lab</a></span><button type="button" aria-label="Dismiss">×</button>`;
+    const st = document.createElement("style"); st.textContent = `.pl-about{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:4px 4px 4px 14px;border:1px solid var(--pl-line);border-radius:var(--pl-r-sm,8px);background:var(--pl-surface);color:var(--pl-soft);font:400 14px/1.4 var(--pl-font-text,system-ui);box-sizing:border-box}.pl-about a{color:var(--pl-accent-text);font-weight:600}.pl-about button{flex:none;min-width:44px;min-height:44px;border:0;background:none;color:var(--pl-soft);font-size:20px;cursor:pointer;border-radius:8px}`;
+    document.head.appendChild(st); (document.getElementById("rail") || m).before(n);
+    const done = () => { try { localStorage.setItem("pl.aboutNote", "1"); } catch {} };
+    n.querySelector("a").addEventListener("click", done); n.querySelector("button").onclick = () => { done(); n.remove(); }; };
+  document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", put) : put(); } catch {} })();

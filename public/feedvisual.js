@@ -214,7 +214,7 @@
     // ideas to try: the ideas library when it loads, with older things from hosts' pages after (More ideas to try)
     const older = (V.ideas || []).map((x) => `<a class="fv-tile" href="${esc(x.page || "/ideas")}"><span class="fv-tile-m">${x.cover ? `<img class="fv-img" src="${esc(x.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async">` : art({ id: x.id, title: x.title, activity: x.title }, { title: "" })}</span><b>${esc(x.title)}</b><small>${esc([x.host?.name, "Example"].filter(Boolean).join(" · "))}</small></a>`).join("");
     const ideasS = section("fv-ideas", head("Ideas <em>to try</em>", "Small formats people loved. Host one your way.") + slot("inspo", row(older, "More ideas to try"), !older));
-    const end = `<footer class="fv-end"><span class="fv-end-p" aria-hidden="true">${potto("sleep", 72)}</span><p>That's the week.</p><p><a href="/discover">See everything on Discover</a>${lbAny ? ` · <a href="/leaderboard">This week's leaderboard</a>` : ""}</p></footer>`;
+    const end = `<footer class="fv-end"><span class="fv-end-p" aria-hidden="true">${potto("sleep", 72)}</span><p>That's the week.</p><p><a href="/discover">See everything on Discover</a>${lbAny ? ` · <a href="/leaderboard">This week's leaderboard</a>` : ""}</p><p><a href="/about">About Pottery Lab</a></p></footer>`;
     return intro + `<div class="fv-wall">${nearS}${peopleS}${recentS}${ideasS}</div>` + end; }
   /** The signed-out feed. V: /api/public/feed. lb: true when there's a leaderboard to link to. */
   const composePublic = (V, { lb = "" } = {}) => compose(V, { lb: !!lb });

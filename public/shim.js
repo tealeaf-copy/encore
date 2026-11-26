@@ -84,6 +84,7 @@ if (!/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-)/.test(location.
         body: JSON.stringify({
           input,
           modelTier: opts.modelTier || "default",
+          ...(typeof opts.purpose === "string" ? { purpose: opts.purpose.slice(0, 32) } : {}), // "event_read": the server rate-limits Potto's reads on their own
           tools: tools.map((t) => ({ name: t.name, description: t.description || "", inputSchema: t.inputSchema || { type: "object", properties: {} } })),
         }),
       });

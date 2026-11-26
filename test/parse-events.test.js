@@ -21,6 +21,8 @@ function load(today = "2026-11-25T10:00:00") {
     cut("// ---------- series: words", "// ---------- series: wiring"),
     cut("{ const _peSr=parseEventText", "{ const _qsSr=quickStart"),
     cut("// ---------- Potto reads: words", "{ const _qsZ=quickStart"),
+    // review round 8: the regex reader's fixes and the model's read (words only; the wiring needs the page)
+    cut("// ---------- Potto reads with the model: words", "// ---------- Potto reads with the model: wiring"),
   ].join("\n");
   vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.seriesPrice=seriesPrice; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap; this.prRel=prRel; this.prSlots=prSlots; this.prItems=prItems;", ctx);
   return ctx;
@@ -197,6 +199,39 @@ const CASES = [
   ["supper club at my place in Crown Heights next Saturday 7:30pm, 10 seats, $45 a person, ask to join, 5 course Oaxacan menu, BYOB", { title: "Supper club: 5-course Oaxacan menu", notes: "5-course Oaxacan menu. BYOB.", price: "$45", headcount: 10, hood: "Crown Heights" }],
   ["supper club Sat 7pm, Hunan home cooking, BYOB", { title: "Supper club: Hunan home cooking", notes: "Hunan home cooking. BYOB." }],
   ["Dumpling supper at my place Sat 7pm, $30 a person, 10 people", { title: "Dumpling supper", notes: undefined }],
+  // review round 8 (no AI): a distance or a count of stops is never spots, a time or a venue; it's kept in the notes
+  ["Trail run Sat 7am, 6-8 miles, meet at the Rose Garden", { title: "Trail run", startTime: "07:00", endTime: undefined, headcount: undefined, meetPoint: "the Rose Garden", notes: "6-8 miles." }],
+  ["Group run Sun 8am, 3 miles easy pace", { startTime: "08:00", headcount: undefined, notes: "3 miles. Easy pace." }],
+  ["Sunrise hike Sat 6am, 6-8 miles, $0, ask to join", { startTime: "06:00", endTime: undefined, headcount: undefined, free: true, approvalRequired: true }],
+  ["Long run 10k Sat 7am at Prospect Park", { title: "Long run", meetPoint: "Prospect Park", notes: "10k." }],
+  ["Bar crawl Fri 8pm, 4 stops", { headcount: undefined, startTime: "20:00", notes: "4 stops." }],
+  ["Thrift crawl Sat 1pm, 5 shops in Bushwick", { headcount: undefined, title: "Thrift crawl" }],
+  ["Run club Sat 7am, 5 mi loop", { venueName: undefined, notes: "5 mi loop." }],
+  // "$X total", "$X for all", "$X for the (whole) course/series", "$X or $Y per class drop-in"
+  ["Pottery course Tuesdays 7pm, $280 total or $50 drop in", { price: "$280", priceUnit: "total", dropIn: 50, headcount: undefined }],
+  ["Watercolor series Mondays 6pm, $200 for the whole course", { price: "$200", priceUnit: "total", dropIn: undefined }],
+  ["Bread class Sat 10am, $150 for the series", { price: "$150", priceUnit: "total", headcount: undefined }],
+  ["Yoga $90 for all or $15 per class drop-in, Thursdays 7am", { price: "$90", priceUnit: "total", dropIn: 15, headcount: undefined, startTime: "07:00" }],
+  ["8 week pottery wheel course, $320 for all 8, 6 spots", { price: "$320", priceUnit: undefined, sessions: 8, headcount: 6 }],
+  // ask to join, in the ways hosts say it
+  ["Supper club Sat 7pm, ask 2 join, 8 seats", { approvalRequired: true, headcount: 8, title: "Supper club" }],
+  ["Dinner party Fri 7pm, request to join", { approvalRequired: true }],
+  ["Dinner Sat 7pm, I'll pick who comes, 10 seats", { approvalRequired: true, headcount: 10 }],
+  ["Tasting Sat 6pm, I choose who comes", { approvalRequired: true }],
+  ["Wine night Fri 8pm, approve guests", { approvalRequired: true }],
+  ["Wine night Fri 8pm, everyone welcome", { approvalRequired: undefined }],
+  // titles: no leading emoji, no price, no filler
+  ["🍝 Pasta night Fri 7pm at my place", { title: "Pasta night", emoji: "🍝" }],
+  ["$25 dumpling night Sat 7pm", { title: "Dumpling night", price: "$25" }],
+  ["Taco night lol Fri 7pm", { title: "Taco night" }],
+  // "at the door" is how they pay, never the venue
+  ["Jazz night Fri 9pm, $10 at the door", { price: "$10", venueName: undefined, meetPoint: undefined, ticketNote: "at the door" }],
+  // the book pick is kept
+  ["Book club Sun 4pm at Cafe Mogador, This month: Piranesi", { notes: "This month: Piranesi.", meetPoint: "Cafe Mogador" }],
+  ["Book club the last Sunday of each month 3pm, this month: The Overstory", { notes: "This month: The Overstory.", repeat: "monthly", date: "2026-11-29" }],
+  // "between 4 and 7pm"
+  ["Bake sale Sat between 4 and 7pm", { title: "Bake sale", startTime: "16:00", endTime: "19:00" }],
+  ["Board games Sat between 2 and 5", { title: "Board games", startTime: "14:00", endTime: "17:00" }],
 ];
 
 for (const [input, want] of CASES) {

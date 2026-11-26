@@ -37,6 +37,7 @@
     // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
     if (+e.groupPrice > 0 && +e.groupSize > 1) return `${amt(e.groupPrice)} for ${+e.groupSize}`;
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
+    if (e.priceUnit === "total" && !(+e.sessions > 1)) return +e.dropIn > 0 ? `${amt(p)} for the course, or ${amt(e.dropIn)} a class` : `${amt(p)} total`; // round 8: "$280 total or $50 drop in"
     return /a person|per person|each/i.test(p) ? p : `${/^\d/.test(p) ? amt(p) : p} a person`; };
   // review round 3 (paid spots): the Pay button carries the amount and a note, the way the full invite and the shop do
   // (payLink in server/shop.js): Venmo gets amount and "Name · Title", PayPal.me and Cash App get the amount, others pass through.

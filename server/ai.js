@@ -264,8 +264,34 @@ export function fakeText(prompt) {
       askYou: "",
     });
   }
+  if (/^POTTO-EVENT-READ\b/.test(p)) return JSON.stringify(fakeEventRead(p));
   if (/Reply with only JSON/i.test(p)) return JSON.stringify({ ok: true });
   return "This is a demo reply from Pottery Lab's offline mode (ENCORE_FAKE_AI=1). No AI was called.";
+}
+// Potto's event read (index.html prAiPrompt) in offline mode: a small, deterministic reading of the host's message, so
+// tests and demos run the page's merge without a key. It only fills what a few plain rules see (an am/pm time, a price
+// and its unit, spots, ask to join, the book pick, a distance); everything else is null, so the page's regex reading stands.
+export const EVENT_READ_KEYS = ["title", "kind", "date", "startTime", "endTime", "repeat", "weekdays", "monthly", "sessions", "repeatUntil", "place", "meetPoint", "hood", "city", "price", "priceUnit", "groupSize", "passPrice", "passCount", "dropIn", "costNote", "free", "payWhatYouLike", "headcount", "approvalRequired", "preorder", "orderItems", "orderDeadline", "stock", "bring", "notes", "description"];
+export function fakeEventRead(prompt) {
+  const s = (String(prompt).match(/<message>\n?([\s\S]*?)\n?<\/message>/) || [])[1] || "";
+  const o = Object.fromEntries(EVENT_READ_KEYS.map((k) => [k, null]));
+  const clock = (h, m, ap) => { h = +h % 12 + (ap.toLowerCase() === "pm" ? 12 : 0); return `${String(h).padStart(2, "0")}:${m || "00"}`; };
+  const rg = s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  const one = s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (rg) { o.startTime = clock(rg[1], rg[2], rg[3] || rg[6]); o.endTime = clock(rg[4], rg[5], rg[6]); } else if (one) o.startTime = clock(one[1], one[2], one[3]);
+  const tot = s.match(/\$\s?(\d{1,5})\s*(?:total|for (?:it )?all\b(?!\s*\d)|for the (?:whole |full )?(?:course|series))/i);
+  const drop = s.match(/\$\s?(\d{1,5})\s*(?:(?:a|per)\s+)?(?:class\s*)?drop[- ]?in/i);
+  const each = s.match(/\$\s?(\d{1,5})(?:\s*(a person|per person|pp|each|a class|per class))?/i);
+  if (tot) { o.price = +tot[1]; o.priceUnit = "total"; if (drop && +drop[1] !== +tot[1]) o.dropIn = +drop[1]; }
+  else if (each && !/food cost|cost\b/i.test(s.slice(each.index, each.index + 30))) { o.price = +each[1]; o.priceUnit = /each/i.test(each[2] || "") ? "each" : /class/i.test(each[2] || "") ? "class" : "person"; }
+  if (/\bfree\b|\$0\b/i.test(s) && !o.price) o.free = true;
+  const hc = s.match(/\b(\d{1,3})\s*(?:spots|seats|people|guests|max)\b/i); if (hc) o.headcount = +hc[1];
+  if (/\b(?:ask|request)\s+(?:to|2)\s+join\b|\bi(?:'ll| will)?\s+(?:pick|choose|approve)\s+who\b|\bapprove guests\b|\binvite[- ]only\b/i.test(s)) o.approvalRequired = true;
+  const notes = [];
+  const bk = s.match(/\bthis month\s*(?::|is)\s*([^,;!?\n]+)/i); if (bk) notes.push(`This month: ${bk[1].trim()}`);
+  const dist = s.match(/\b\d{1,3}(?:\s*-\s*\d{1,3})?\s*(?:miles?|mi|km|k)\b/i); if (dist) notes.push(dist[0]);
+  if (notes.length) o.notes = notes;
+  return o;
 }
 async function fakeLoop({ messages, tools, emit, callTool }) {
   const prompt = lastUserText(messages);

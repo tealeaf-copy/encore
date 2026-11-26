@@ -8706,7 +8706,7 @@ function openWizard(at=1,seed=""){ document.getElementById("wizBg")?.remove(); l
   const err=t=>{ const x=bg.querySelector("#wzErr"); if(x) x.textContent=t };
   bg.addEventListener("input",()=>err("")); bg.addEventListener("change",()=>err(""));
   const val=q=>bg.querySelector(q)?.value?.trim()||"";
-  async function next(){ try{ if(k===1){ const t=val("#wzWhat"); if(t.length<4){ err("Tell me the plan first."); return } if(!(t===seed&&draft?.id&&!draft.example)){ seed=t; quickStart(t); draft.casual=true; draft.discoverable=false; await saveEvent(true) } }
+  async function next(){ try{ if(k===1){ const t=val("#wzWhat"); if(t.length<4){ err("Tell me the plan first."); return } if(!(t===seed&&draft?.id&&!draft.example)){ seed=t; quickStart(t); draft.casual=true; draft.discoverable=false; await saveEvent(true); await window.prAiWait?.(bg) /* round 8: Potto's model read */ } }
       else if(k===2){ const d=draft; d.pubTitle=val("#wzName")||d.pubTitle||d.name; d.name=d.pubTitle; d.date=val("#wzDate"); d.startTime=val("#wzTime"); d.meetPoint=val("#wzWhere"); if(document.getElementById("wzAddr")) d.venueAddr=val("#wzAddr"); if(bg.querySelector("#wzWhy")){ d.why=val("#wzWhy"); d.askQ=val("#wzAsk"); d.houseRules=[...bg.querySelectorAll("#wzRules .on")].map(b=>b.dataset.rule).slice(0,3) } d.city=val("#wzCity")||d.city; if(d.stage!=="interest"&&(!d.date||!d.startTime)){ err("Add a date and time, or let friends pick."); return } if(!d.meetPoint&&!d.city){ err("Add where, even roughly."); return } try{ applyPlace?.(d) }catch{} await saveEvent(true) }
       else if(k===3){ const d=draft; d.headcount=+val("#wzSpots")>0?+val("#wzSpots"):(d.stage==="interest"||d.activity==="pop-up"?0:8); d.approvalRequired=bg.querySelector('input[name=wzWho]:checked')?.value==="approve"; d.audienceWho=val("#wzFor"); const br=val("#wzBring"); if(br) d.bring=br.split(/,\s*/).filter(Boolean); await saveEvent(true) }
       else if(k===4){ await saveEvent(true) }
@@ -11777,4 +11777,273 @@ new MutationObserver(()=>{ try{ const e=window.__gEv, v=document.getElementById(
     r7Going(prev.id).then(G=>{ if(!G.length||box.querySelector("#r7AskBtn")) return; const b=document.createElement("button"); b.type="button"; b.id="r7AskBtn"; b.className="btn sm"; b.textContent=`Ask ${r7Unit(d)} ${G.length} guest${G.length===1?"":"s"}`; b.style.marginTop="8px"; b.onclick=()=>r7Open(d,prev); box.appendChild(b) }) }catch(err){ console.warn(err) } }).observe(document.documentElement,{childList:true,subtree:true});
 }
 // ---- end review round 7 (host panel) ----
+// ==================================================================
+// ---- Potto reads with the model (review round 8) ----
+// Potto turns the host's sentence into a draft with the regex reader (prRead and the older readers above). Round 8:
+// 1. Without AI too, cheap and safe fixes: a distance or a count of stops ("6-8 miles", "5k", "4 stops") is never spots,
+//    a time or a venue; "$280 total", "$200 for the whole course", "$90 for all or $15 per class drop-in"; ask-to-join
+//    phrasings ("ask 2 join", "I'll pick who comes"); no emoji, price or filler in titles; "at the door" is how they
+//    pay, never the venue; "This month: <book>" is kept; "between 4 and 7pm" is 16:00-19:00.
+// 2. When AI is on (claude.ai's sample, or the server with a key or ENCORE_FAKE_AI=1), Potto also asks the model for
+//    the same fields (prAiPrompt), checks each one (prAiClean: real dates, HH:MM, sane numbers, only numbers and places
+//    the host typed) and lays it over the regex reading (prAiMerge). Slow (6s), offline or wrong-looking: the draft is
+//    exactly what the regex reader made. A field the host already changed is never touched (prAiApply).
+// "words" is pure (test/parse-events.test.js, test/ai-read.test.js); "wiring" hooks quickStart and the wizard's step 1.
+// ==================================================================
+// ---------- Potto reads with the model: words ----------
+// a distance, or a count of stops or shops, and the "loop" after it
+const PR8_UNIT=/(?<![$\d.:\/\w])(\d{1,3}(?:\.\d)?)(?:\s*(?:-|–|to)\s*(\d{1,3}(?:\.\d)?))?\s*(?:k|km|kms|kilomet(?:er|re)s?|mi|miles?|stops|shops|laps)\b(?!\s*(?:budget|usd|dollars|\$))(?:\s+(?:loop|route|out and back|out-and-back))?/gi;
+const PR8_UNIT_ONLY=/^\s*\d{1,3}(?:\.\d)?(?:\s*(?:-|–|to)\s*\d{1,3}(?:\.\d)?)?\s*(?:k|km|kms|mi|miles?|stops|shops|laps)\b/i;
+// the host picks who comes
+const PR8_ASK=/\b(?:ask(?:ing)?|request(?:ing)?|apply(?:ing)?)\s+(?:to|2)\s+(?:join|come|attend)\b|\b(?:i|we)(?:['’]ll|\s+will)?\s+(?:pick|choose|approve|select|vet|decide)\s+(?:who|the guests|guests|people|everyone|each)\b|\bapprov(?:e|ing)\s+(?:the\s+)?(?:guests|people|each|everyone|requests|who)\b|\bby approval\b|\binvite[- ]only\b|\bapproval (?:needed|required)\b/i;
+// "$280 total", "$90 for all" (not "for all 8"), "$200 for the whole course", "$150 for the series"
+const PR8_TOTAL=/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:(?:in\s+)?total\b|for\s+(?:it\s+)?all\b(?!\s*\d)|for\s+the\s+(?:whole\s+|full\s+|entire\s+)?(?:course|series|program(?:me)?|term|block|season)\b)/i;
+// "$50 drop in", "$15 per class drop-in", "$15 a class", "drop-in $15"
+const PR8_DROP=/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:(?:a|per|\/)\s*)?(?:(?:class|session|lesson)\s*)?drop[- ]?ins?\b|\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a|per|\/)\s*(?:class|session|lesson)\b|\bdrop[- ]?ins?\s*(?:is|are|:|at|for)?\s*\$\s?(\d{1,5}(?:\.\d{2})?)/i;
+const PR8_EMOJI=/[\p{Extended_Pictographic}\p{Regional_Indicator}\u{1F3FB}-\u{1F3FF}‍️⃣]+/gu;
+// the sentence the readers see: no distances, "between 4 and 7pm" as "4-7pm", no "at the door"
+function pr8Prep(text){ let t=String(text||""), door=false; const units=[];
+  t=t.replace(PR8_UNIT,m=>{ units.push(m.trim()); return " " });
+  t=t.replace(/\bbetween\s+(\d{1,2}(?::\d{2})?)\s*(am|pm)?\s+(?:and|&)\s+(\d{1,2}(?::\d{2})?)\s*(am|pm)?(?![\d:])/gi,(m,a,p1,b,p2)=>`${a}${p1||""}-${b}${p2||""}`);
+  t=t.replace(/\s*\b(?:pay(?:able)?\s+|paid\s+)?at\s+the\s+door\b/gi,()=>{ door=true; return " " });
+  t=t.replace(/\s+([,.;])/g,"$1").replace(/([,;])(?:\s*[,;])+/g,"$1").replace(/^[\s,;]+/,"").replace(/\s{2,}/g," ").trim();
+  return {text:t,units,door} }
+// a title: no emoji, no price, no "at my place", no trailing filler ("lol", "pls", "maybe")
+function pr8Title(s){ let t=String(s||"").replace(PR8_EMOJI," ").replace(/(?:^|\s)\$\s?\d[\d.,]*(?:\s*(?:each|a person|per person|pp|a head|a class|per class|total))?(?=[\s,.!?]|$)/gi," ")
+    .replace(/\s+(?:at|in)\s+(?:my|our)\s+(?:place|apartment|apt|flat|house|home|pad)\b.*$/i,"").replace(/\s{2,}/g," ").trim();
+  for(let k=0;k<4;k++){ const n=t.replace(/[\s,.!?;:–-]+$/,"").replace(/\s+(?:lol|lmao|haha+|pls|plz|please|maybe|i think|probably|tbh|tho|ok|anyone|who'?s in|y'?all|guys)$/i,""); if(n===t) break; t=n }
+  t=t.replace(/^[\s,.!?;:–-]+/,"").trim(); return t?t.replace(/^./,c=>c.toUpperCase()):"" }
+// short details worth keeping: the book pick, the distance, the pace
+function pr8Notes(t,units,old){ const N=[], add=x=>{ x=String(x||"").trim().replace(/[.\s]+$/,"").replace(/\s+(?:lol|lmao|haha+|pls|plz|tho)$/i,""); if(x&&!N.some(y=>y.toLowerCase()===x.toLowerCase())) N.push(x.replace(/^./,c=>c.toUpperCase())) };
+  const bk=t.match(/\bthis month(?:['’]s)?(?:\s+(?:pick|book|read))?\s*(?::|is|-|–|we(?:['’]re| are) reading)\s*([^,;!?\n]+)/i)||t.match(/\bthis month we(?:['’]re| are) reading\s+([^,;!?\n]+)/i);
+  if(bk) add("This month: "+bk[1].trim().replace(/\.$/,""));
+  else { const mp=t.match(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:['’]s)?\s+(?:pick|book|read)\s*(?::|is|-|–)\s*([^,;!?\n]+)/i);
+    if(mp) add(`${mp[1].replace(/^./,c=>c.toUpperCase())} pick: ${mp[2].trim().replace(/\.$/,"")}`);
+    else { const rd=t.match(/\b(?:we(?:['’]re| are)\s+)?reading\s+((?:["“][^"”]+["”])|(?:[A-Z][^,;!?\n]*))/); if(rd) add("Reading: "+rd[1].trim().replace(/\.$/,"")) } }
+  for(const u of units||[]) add(u);
+  for(const c of String(t||"").split(/[,;]|\.\s/).map(x=>x.trim())) if(c.length<=60&&/\b(?:pace|no[- ]drop|all levels|all paces|beginners? welcome|beginner[- ]friendly|dogs? welcome|kids? welcome|newbies welcome)\b/i.test(c)&&!/\$|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(c)) add(c);
+  for(const x of String(old||"").split(/\.\s+|\.$/)) add(x);
+  return N.length?N.join(". ")+".":"" }
+{ const _pr8=prRead; prRead=function(text){ if(!window.__wsPersonal) return _pr8.apply(this,arguments); const raw=String(text||""), P=pr8Prep(raw), o=_pr8.call(this,P.text); try{
+    // "$280 total or $50 drop in": the whole price, and the drop-in on its own
+    const tm=P.text.match(PR8_TOTAL); if(tm&&!o.passPrice){ const tot=+tm[1], dm=P.text.replace(tm[0]," ").match(PR8_DROP), drop=dm?+(dm[1]||dm[2]||dm[3]):0;
+      o.price="$"+tot; o.seatPrice=tot; delete o.groupPrice; delete o.groupSize; delete o.free; if(drop&&drop!==tot) o.dropIn=drop; else delete o.dropIn;
+      if(+o.sessions>1) delete o.priceUnit; else o.priceUnit="total"; if(o.headcount&&[tot,drop].includes(+o.headcount)) delete o.headcount }
+    if(PR8_ASK.test(raw)) o.approvalRequired=true;
+    if(P.door&&o.price&&o.price!=="chip") o.ticketNote="at the door";
+    const em=raw.trim().match(/^[\p{Extended_Pictographic}\p{Regional_Indicator}][\p{Extended_Pictographic}\p{Regional_Indicator}‍️\u{1F3FB}-\u{1F3FF}]*/u); if(em) o.emoji=em[0];
+    if(o.title){ const ti=pr8Title(o.title); if(ti&&/[a-z]{2,}/i.test(ti)) o.title=ti; else delete o.title }
+    const N=pr8Notes(P.text,P.units,o.notes); if(N) o.notes=N;
+    for(const k of ["place","meet","hood"]) if(o[k]&&(PR8_UNIT_ONLY.test(o[k])||/^(?:the\s+)?door$/i.test(o[k]))) delete o[k];
+  }catch(e){ console.warn(e) } return o } }
+// the older readers see the same tidied sentence; a spot count that is really a price or a distance goes
+{ const _pe8=parseEventText; parseEventText=function(t){ if(!window.__wsPersonal) return _pe8.apply(this,arguments); const raw=String(t||""), P=pr8Prep(raw), o=_pe8.call(this,P.text); try{ const p=prRead(raw);
+    for(const k of ["approvalRequired","ticketNote","notes","priceUnit","emoji"]) if(p[k]!=null) o[k]=p[k];
+    if(p.priceUnit==="total"){ o.price=p.price; o.seatPrice=p.seatPrice; if(p.dropIn) o.dropIn=p.dropIn; else delete o.dropIn; delete o.groupPrice; delete o.groupSize }
+    if(o.headcount&&!p.headcount&&[...raw.matchAll(/\$\s?(\d{1,5})/g)].some(m=>+m[1]===+o.headcount)) delete o.headcount;
+    for(const k of ["venueName","meetPoint"]) if(o[k]&&(PR8_UNIT_ONLY.test(o[k])||/^(?:the\s+)?door$/i.test(String(o[k]).trim()))) delete o[k];
+  }catch(e){ console.warn(e) } return o } }
+// "$280 total", "$280 for the course, or $50 a class"
+{ const _sp8=seriesPrice; seriesPrice=function(d){ try{ if(d&&d.priceUnit==="total"&&d.price&&d.price!=="chip"&&!(+d.sessions>1)){ const m=String(d.price).match(/(\d+(?:\.\d{1,2})?)/);
+      if(m){ const course=+d.dropIn>0||/\b(?:course|series|class|lesson|workshop|term)\b/i.test(`${d.pubTitle||d.name||""} ${d.activity||""}`); return `$${m[1]} ${course?"for the course":"total"}${+d.dropIn>0?`, or $${+d.dropIn} a class`:""}` } } }catch{} return _sp8.apply(this,arguments) } }
+
+// --- the model's read ---
+const PR_AI_TIMEOUT=6000;
+const PR_AI_KINDS=["dinner","supper club","potluck","brunch","picnic","party","meetup","run","hike","walk","ride","workshop","class","course","pop-up","pre-order","book club","talk","game night","movie night","other"];
+const PR_AI_DAYS=["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+const PR_AI_KEYS=["title","kind","date","startTime","endTime","repeat","weekdays","monthly","sessions","repeatUntil","place","meetPoint","hood","city","price","priceUnit","groupSize","passPrice","passCount","dropIn","costNote","free","payWhatYouLike","headcount","approvalRequired","preorder","orderItems","orderDeadline","stock","bring","notes","description"];
+const prS=(d,x)=>({type:[x||"string","null"],...(d?{description:d}:{})});
+const PR_AI_SCHEMA={type:"object",additionalProperties:false,required:PR_AI_KEYS,properties:{
+  title:prS("short, sentence case, no emoji, no date/time/place/price"), kind:{enum:[...PR_AI_KINDS,null]},
+  date:prS("YYYY-MM-DD"), startTime:prS("HH:MM 24h"), endTime:prS("HH:MM 24h"), repeat:{enum:["none","weekly","biweekly","monthly",null]},
+  weekdays:{type:["array","null"],items:{enum:PR_AI_DAYS}}, monthly:{type:["object","null"],properties:{nth:{enum:["first","second","third","fourth","last"]},weekday:{enum:PR_AI_DAYS}}},
+  sessions:prS("how many classes in a course","integer"), repeatUntil:prS("YYYY-MM-DD"),
+  place:prS("venue name as typed"), meetPoint:prS(), hood:prS("neighbourhood"), city:prS(),
+  price:prS("number","number"), priceUnit:{enum:["person","class","each","group","total",null]}, groupSize:prS("","integer"), passPrice:prS("","number"), passCount:prS("","integer"), dropIn:prS("one-class price next to a course price","number"),
+  costNote:prS("costs that aren't a ticket"), free:prS("","boolean"), payWhatYouLike:prS("","boolean"), headcount:prS("max people; pairs count twice","integer"), approvalRequired:prS("the host picks who comes","boolean"),
+  preorder:prS("","boolean"), orderItems:{type:["array","null"],items:{type:"object",properties:{name:{type:"string"},price:{type:["number","null"]},max:{type:["integer","null"]}},required:["name"]}},
+  orderDeadline:prS("as typed"), stock:prS("","integer"), bring:{type:["array","null"],items:{type:"string"}}, notes:{type:["array","null"],items:{type:"string"}}, description:prS("1-2 short sentences, host's voice, no new facts")}};
+function prAiPrompt(text,ctx={}){ const today=ctx.today||prISO(prToday()), wd=PR_AI_DAYS[new Date(today+"T12:00:00").getDay()];
+  return `POTTO-EVENT-READ v1
+You read one message from someone hosting a small event (friends, a club, a class, a pop-up) and fill in their event draft.
+Today is ${wd}, ${today}.${ctx.city?` The host lives in ${ctx.city}.`:""}${ctx.tz?` Their timezone is ${ctx.tz}.`:""} Use these only to work out dates; put a city in the answer only if the message names it.
+
+Rules:
+- Only what the message says. Use null for anything not stated. Never invent a place, address, price, number, time, menu or detail.
+- title: the event's own name, sentence case, at most 6 words, no emoji, no date, day, time, place, price or spot count. E.g. "Sunrise hike", "Supper club: Oaxacan menu", "Book club".
+- date: the next date it happens, YYYY-MM-DD, never before today. "Sat" is the coming Saturday. For a monthly rule ("first Sunday of the month") also fill monthly.
+- startTime, endTime: 24h HH:MM. "dinner at 7" is 19:00. "till late" has no endTime. "between 4 and 7pm" is 16:00 to 19:00. Distances ("6-8 miles", "5k") and counts of stops are never times or spots.
+- repeat: weekly for "every Tuesday", "Tuesdays" or a course; biweekly for "every other"; monthly for "first Sunday of the month"; else none. weekdays: every weekday it runs on, lowercase.
+- sessions: how many classes in a course ("8 week course", "6 Wednesdays"). repeatUntil: YYYY-MM-DD only if they say when it ends.
+- place: the venue's name as typed (not "my place", not "the door"). meetPoint: where to meet if they say ("the trailhead", "my stoop"). hood: the neighbourhood. city: only if named.
+- price: the main price as a number. priceUnit: person (the default), class (per class), each (per item), group (for groupSize people), total (the whole course, or the whole thing). passPrice and passCount: "$70 for 4 classes". dropIn: a one-class price next to a course price. costNote: costs that aren't a ticket ("about $40 food cost, you pay as you go", "we split the bill"). free: true only for "free" or "$0". payWhatYouLike: pay what you want, by donation.
+- headcount: the most people who can come ("8 seats", "max 10"; "6 pairs" is 12). Never a group size, a session count, a price or a distance.
+- approvalRequired: true when the host picks who comes ("ask to join", "ask 2 join", "request to join", "I'll pick who comes", "approve guests", "invite only").
+- preorder: true for pre-orders and pickups. orderItems: what they sell, with prices. orderDeadline: when orders close, as typed. stock: how many in all.
+- bring: what guests should bring. notes: short details worth keeping, in the host's words (pace, distance, BYOB, the menu, "This month: <book>", dogs welcome, all levels). description: 1-2 short sentences in the host's voice using only facts in the message, or null.
+
+Reply with only JSON: one object with exactly these keys, matching this JSON schema:
+${JSON.stringify(PR_AI_SCHEMA)}
+
+The host's message:
+<message>
+${String(text||"").replace(/<\/?message>/gi,"").slice(0,800)}
+</message>` }
+// what the host typed: every number (digits and number words), every word
+const PR_AI_NUMW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,dozen:12,fifteen:15,twenty:20,thirty:30};
+function prAiNums(text){ const s=new Set(), t=String(text||"").toLowerCase().replace(/(\d),(\d{3})\b/g,"$1$2"); for(const m of t.matchAll(/\d+(?:\.\d+)?/g)) s.add(+m[0]); for(const [w,n] of Object.entries(PR_AI_NUMW)) if(new RegExp(`\\b${w}\\b`).test(t)) s.add(n); return s }
+const PR_AI_STOP=new Set(["the","and","at","of","on","in","a","an","to","for","by","my","our","with","de","la","st","is","it"]);
+const prAiWords=s=>String(s||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"").replace(/['’]/g,"").split(/[^a-z0-9]+/).filter(Boolean);
+// enough of these words are in the message (share 1 = all of them; "powells" matches "Powell's", "club" matches "bookclub")
+function prAiIn(text,s,share=1){ const T=prAiWords(text), W=prAiWords(s).filter(w=>!PR_AI_STOP.has(w)&&(w.length>=3||/\d/.test(w))); if(!W.length) return false;
+  const hit=W.filter(w=>T.some(x=>x===w||x===w+"s"||x+"s"===w||(x.length>=4&&w.length>=4&&(x.startsWith(w)||w.startsWith(x)||(x.length>=7&&x.endsWith(w)))))).length; return hit/W.length>=share }
+// every number in s was typed (a "7" in "7pm" counts)
+const prAiNumsOk=(nums,s)=>[...String(s||"").replace(/(\d),(\d{3})\b/g,"$1$2").matchAll(/\d+(?:\.\d+)?/g)].every(m=>nums.has(+m[0])||(/:/.test(String(s).slice(m.index-1,m.index))&&+m[0]===0));
+const prAiDate=(v,today)=>{ if(typeof v!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return ""; v=v.trim(); const x=new Date(v+"T12:00:00"); if(isNaN(x)||prISO(x)!==v||v<today) return ""; const max=new Date(today+"T12:00:00"); max.setFullYear(max.getFullYear()+2); return x>max?"":v };
+const prAiTime=v=>{ const m=typeof v==="string"&&v.trim().match(/^(\d{1,2}):(\d{2})$/); return m&&+m[1]<24&&+m[2]<60?`${m[1].padStart(2,"0")}:${m[2]}`:"" };
+const prAiInt=(v,lo,hi)=>{ const n=typeof v==="string"&&/^\d+$/.test(v.trim())?+v:v; return Number.isInteger(n)&&n>=lo&&n<=hi?n:null };
+const prAiMoney=v=>{ const n=typeof v==="string"&&/^\$?\s?\d+(?:\.\d+)?$/.test(v.trim())?+v.replace(/[$\s]/g,""):v; return typeof n==="number"&&Number.isFinite(n)&&n>=0&&n<=10000?Math.round(n*100)/100:null };
+const PR_AI_ACT={class:"class",workshop:"workshop",course:"workshop","pop-up":"pop-up","pre-order":"pop-up"};
+// the model's answer, checked field by field, in prRead's shape. `drop` names what was thrown out.
+function prAiClean(m,text,ctx={}){ const o={}, drop=[]; if(!m||typeof m!=="object"||Array.isArray(m)) return {o,drop:["reply"]};
+  const t=String(text||""), nums=prAiNums(t), today=ctx.today||prISO(prToday()), no=k=>{ if(m[k]!=null&&m[k]!==false&&!(Array.isArray(m[k])&&!m[k].length)) drop.push(k) };
+  const str=(v,max)=>typeof v==="string"&&v.trim()&&v.trim().length<=max?v.trim().replace(/\s+/g," "):"";
+  const unitNums=new Set(pr8Prep(t).units.flatMap(u=>(u.match(/\d+(?:\.\d+)?/g)||[]).map(Number)));
+  // the title: the host's own words, without emoji, a price or a clock
+  { let s=str(m.title,90); if(s) s=pr8Title(s.replace(/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/\s{2,}/g," ")); if(s&&s.length<=60&&/[a-z]{2,}/i.test(s)&&prAiIn(t,s,.5)&&prAiNumsOk(nums,s)) o.title=s; else no("title") }
+  { const k=String(m.kind||"").toLowerCase().trim(); if(PR_AI_KINDS.includes(k)){ o.kind=k; if(PR_AI_ACT[k]) o.activity=PR_AI_ACT[k] } else no("kind") }
+  // weekdays the host typed; a monthly rule's date is worked out here, not taken from the model
+  const typed=new Set((typeof prDays==="function"?prDays(t):[]).map(d=>PR_AI_DAYS[d.wd]));
+  if(Array.isArray(m.weekdays)){ const W=[...new Set(m.weekdays.map(x=>String(x).toLowerCase().trim()).map(x=>PR_AI_DAYS.find(d=>d===x||(x.length>=3&&d.startsWith(x)))).filter(Boolean))]; if(W.length&&W.every(w=>typed.has(w))) o.weekdays=W; else no("weekdays") }
+  if(["none","weekly","biweekly","monthly"].includes(m.repeat)) o.repeat=m.repeat; else no("repeat");
+  const md=prAiDate(m.date,today);
+  if(m.monthly&&typeof m.monthly==="object"){ const n={first:1,second:2,third:3,fourth:4,last:-1}[String(m.monthly.nth||"").toLowerCase()], wd=PR_AI_DAYS.indexOf(String(m.monthly.weekday||"").toLowerCase());
+    if(n&&wd>=0&&typed.has(PR_AI_DAYS[wd])){ const T=new Date(today+"T12:00:00"); let x=prNthDate(T.getFullYear(),T.getMonth(),wd,n); if(!x||prISO(x)<today) x=prNthDate(T.getFullYear(),T.getMonth()+1,wd,n);
+      // a later start the model read ("first Sunday, from January") stays when it's on the same rule
+      if(md){ const y=new Date(md+"T12:00:00"), r=prNthDate(y.getFullYear(),y.getMonth(),wd,n); if(r&&prISO(r)===md) x=y }
+      if(x){ o.date=prISO(x); o.nth=n; o.weekday=PR_AI_DAYS[wd]; o.repeat="monthly"; o.dateBy="rule" } } else no("monthly") }
+  if(!o.date){ if(md){ o.date=md; o.weekday=PR_AI_DAYS[new Date(md+"T12:00:00").getDay()] } else no("date") }
+  { const s=prAiTime(m.startTime), e=prAiTime(m.endTime); if(s){ o.startTime=s; if(e&&e!==s) o.endTime=e; else if(m.endTime!=null) no("endTime") } else { no("startTime"); no("endTime") } }
+  { const n=prAiInt(m.sessions,2,52); if(n&&nums.has(n)&&!unitNums.has(n)){ o.sessions=n; o.course=true } else no("sessions") }
+  { const u=prAiDate(m.repeatUntil,o.date||today); if(u) o.repeatUntil=u; else no("repeatUntil") }
+  // places: only ones in the message, word for word; never "the door" or a distance
+  const placeOk=s=>s&&prAiIn(t,s,1)&&!/^(?:the\s+)?door$/i.test(s)&&!PR8_UNIT_ONLY.test(s);
+  for(const [k,to] of [["place","place"],["meetPoint","meet"],["hood","hood"],["city","city"]]){ const s=str(m[k],60); if(placeOk(s)&&!(k==="place"&&/^(?:my|our|your)\s/i.test(s))) o[to]=s.replace(/^./,c=>c.toUpperCase()); else no(k) }
+  // money: numbers the host typed, in sane ranges
+  const said$=n=>n===0?/\$\s?0(?![\d.])|\bfree\b/i.test(t):nums.has(n);
+  const price=prAiMoney(m.price), unit=["person","class","each","group","total"].includes(m.priceUnit)?m.priceUnit:"person";
+  if(m.payWhatYouLike===true&&/pay[- ]what|pwyw|donation|chip in|sliding|whatever you/i.test(t)) o.price="chip";
+  else if(m.free===true&&!(price>0)&&/\bfree\b|\$\s?0(?![\d.])|no cost|on me|on the house/i.test(t)) o.free=true;
+  else if(price>0&&said$(price)){ o.price="$"+price;
+    if(unit==="group"){ const g=prAiInt(m.groupSize,2,50); if(g&&nums.has(g)){ o.groupPrice=price; o.groupSize=g } else { o.seatPrice=price; no("groupSize") } }
+    else { o.seatPrice=price; if(unit!=="person") o.priceUnit=unit } }
+  else no("price");
+  { const pp=prAiMoney(m.passPrice), pc=prAiInt(m.passCount,2,52); if(pp>0&&pc&&said$(pp)&&nums.has(pc)){ o.passPrice=pp; o.passCount=pc } else { no("passPrice"); no("passCount") } }
+  { const di=prAiMoney(m.dropIn); if(di>0&&said$(di)&&di!==price){ o.dropIn=di; if(o.priceUnit==="class") delete o.priceUnit } else no("dropIn") }
+  if(o.sessions>1&&o.priceUnit==="total") delete o.priceUnit;
+  { const s=str(m.costNote,120); if(s&&prAiNumsOk(nums,s)){ o.costNote=s.replace(/^./,c=>c.toUpperCase()); const n=+((s.match(/\d+(?:\.\d+)?/)||[])[0]); if(n&&o.seatPrice===n&&!o.priceUnit){ delete o.price; delete o.seatPrice } } else no("costNote") }
+  o.money=["price","free","passPrice","dropIn","groupPrice"].some(k=>o[k]!=null);
+  // spots: a number they typed ("6 pairs" is 12), never a distance
+  { const n=prAiInt(m.headcount,1,500); if(n&&!unitNums.has(n)&&(nums.has(n)||(n%2===0&&nums.has(n/2)&&/\b(?:pairs?|couples?)\b/i.test(t)))) o.headcount=n; else no("headcount") }
+  if(m.approvalRequired===true){ if(/\b(?:ask|request|approv|pick|choose|select|vet|screen|apply|application|invite[- ]only|private|curat)/i.test(t)) o.approvalRequired=true; else no("approvalRequired") }
+  if(m.preorder===true){ if(/pre-?order|\border|pick ?up|reserve|claim/i.test(t)) o.preorder=true; else no("preorder") }
+  if(Array.isArray(m.orderItems)){ const I=m.orderItems.slice(0,12).map(x=>{ const name=str(x?.name,40), p=prAiMoney(x?.price), mx=prAiInt(x?.max,1,1000); if(!name||!prAiIn(t,name,.5)) return null;
+      return {name:name.replace(/^./,c=>c.toUpperCase()),...(p!=null&&said$(p)?{price:p}:{}),...(mx&&nums.has(mx)?{max:mx}:{})} }).filter(Boolean); if(I.length) o.items=I; else no("orderItems") }
+  { const s=str(m.orderDeadline,40); if(s&&prAiIn(t,s,.5)) o.orderDeadline=s; else no("orderDeadline") }
+  { const n=prAiInt(m.stock,1,1000); if(n&&nums.has(n)) o.stock=n; else no("stock") }
+  if(Array.isArray(m.bring)){ const B=m.bring.map(x=>str(x,40)).filter(x=>x&&prAiIn(t,x,.5)).slice(0,6).map(x=>x.replace(/^./,c=>c.toUpperCase())); if(B.length) o.bring=B; else no("bring") }
+  // notes and the description: short, and no number, link or address the host didn't type
+  const fair=s=>prAiNumsOk(nums,s)&&!/https?:|www\.|@|\b\d+\s+[A-Z]?[a-z]+\s+(?:st|street|ave|avenue|rd|road|blvd|lane|ln|way|dr|drive)\b/i.test(s.replace(/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi,""))||(/https?:|www\.|@/.test(s)&&t.includes(s));
+  { const L=(Array.isArray(m.notes)?m.notes:typeof m.notes==="string"?m.notes.split(/\.\s+|\.$|\n/):[]).map(x=>str(x,120)).filter(x=>x&&fair(x)&&prAiIn(t,x,.5)).map(x=>x.replace(/[.\s]+$/,"").replace(/^./,c=>c.toUpperCase()));
+    if(L.length) o.noteList=L.slice(0,6); else no("notes") }
+  { const s=str(m.description,280); if(s&&fair(s)&&(s.match(/[.!?](\s|$)/g)||[]).length<=3) o.description=/[.!?]$/.test(s)?s:s+"."; else no("description") }
+  return {o,drop} }
+// the merged reading: the model's checked fields over the regex reading (p), with the safer rules kept
+function prAiMerge(p,model,text,ctx={}){ const P=p||{}, {o:A,drop}=prAiClean(model,text,ctx), M={...P}, from={}, t=String(text||"");
+  const J=v=>JSON.stringify(v===undefined?null:v), put=(k,v)=>{ if(J(M[k])!==J(v)) from[k]="model"; if(v===undefined) delete M[k]; else M[k]=v };
+  for(const k of ["title","sessions","repeatUntil","place","meet","hood","city","costNote","headcount","orderDeadline","stock","bring","description","kind"]) if(A[k]!=null) put(k,A[k]);
+  if(A.sessions){ M.course=true; if(!M.activity) put("activity","workshop") }
+  if(A.activity&&!P.activity) put("activity",A.activity);
+  // times: the model's start and its end together (a "6-8" that was miles goes); "till late" keeps no end
+  if(A.startTime){ put("startTime",A.startTime); put("endTime",A.endTime) } if(P.late) delete M.endTime;
+  // the date: a date the host typed, "today"/"tomorrow", a monthly rule or a weekday question stays the parser's (or is worked
+  // out in code); otherwise the model's, if it's on the weekday they typed
+  const explicit=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t)||PR_MD_RE.test(t)||!!prRel(t);
+  if(A.date&&!P.dayClash&&(A.dateBy==="rule"?!(explicit&&P.date&&!P.nth):!(P.nth||(explicit&&P.date)))){ const typed=P.weekday, ok=!typed||A.weekday===typed||(P.weekdays||[]).includes(A.weekday)||A.dateBy==="rule"; if(ok){ put("date",A.date); if(A.weekday) put("weekday",A.weekday); if(A.nth) put("nth",A.nth) } }
+  // the repeat: "none" only undoes a repeat the words don't say outright
+  if(A.repeat==="none"){ if(M.repeat&&!P.course&&!P.nth&&!/\bevery\b|\bweekly\b|\bmonthly\b|\bbiweekly\b|\bfortnightly\b/i.test(t)) put("repeat",undefined) } else if(A.repeat) put("repeat",A.repeat);
+  if(A.weekdays&&A.weekdays.length>=2) put("weekdays",A.weekdays);
+  // money: the model's price when it read one; a pass, drop-in or group price the model missed stays unless it was that price
+  if(A.money){ const old={...M}; for(const k of ["price","seatPrice","free","priceUnit"]) put(k,A[k]);
+    for(const k of [["passPrice","passCount"],["dropIn"],["groupPrice","groupSize"]]){ const v=A[k[0]]; if(v!=null) k.forEach(x=>put(x,A[x])); else if(A.free||A.price==="chip"||(old[k[0]]!=null&&+old[k[0]]===+A.seatPrice)) k.forEach(x=>put(x,undefined)) }
+    if(M.costNote&&M.seatPrice&&!M.priceUnit&&new RegExp(`\\$\\s?${M.seatPrice}\\b`).test(M.costNote)){ put("price",undefined); put("seatPrice",undefined) } }
+  if(A.approvalRequired) put("approvalRequired",true);
+  if(A.preorder) put("preorder",true); if(A.items) put("items",A.items);
+  // notes: the model's, then the parser's the model didn't say
+  if(A.noteList){ const L=[...A.noteList]; for(const x of String(P.notes||"").split(/\.\s+|\.$/).map(s=>s.trim()).filter(Boolean)) if(!L.some(y=>y.toLowerCase().includes(x.toLowerCase())||x.toLowerCase().includes(y.toLowerCase()))) L.push(x); put("notes",L.join(". ")+".") }
+  return {M,from,drop} }
+// the draft fields a reading sets (where quickStart puts the parser's fields)
+function prAiDraft(x){ x=x||{}; const f={};
+  if(x.title){ f.pubTitle=x.title; f.name=x.title }
+  for(const k of ["date","startTime","repeat","weekdays","sessions","repeatUntil","headcount","dropIn","passPrice","passCount","groupPrice","groupSize","costNote","hood","city","bring","orderDeadline","stock","activity","ticketNote"]) f[k]=x[k];
+  f.endTime=x.startTime?x.endTime:undefined; f.approvalRequired=!!x.approvalRequired; f.preorder=!!x.preorder;
+  f.free=!!x.free; f.price=x.free?"":(x.price||""); f.priceUnit=x.priceUnit;
+  if(x.place){ f.venueName=x.place; f.meetPoint=x.meet||x.place } else if(x.meet) f.meetPoint=x.meet;
+  if(x.preorder){ f.price=""; f.headcount=0; if(x.items) f.orderItems=x.items }
+  const why=[x.description,x.notes].filter(Boolean).join(" ").trim(); if(why) f.why=why.slice(0,400);
+  return f }
+const PR_AI_SNAP=["pubTitle","name","date","startTime","endTime","repeat","weekdays","sessions","repeatUntil","price","free","priceUnit","groupPrice","groupSize","passPrice","passCount","dropIn","costNote","headcount","approvalRequired","preorder","orderItems","venueName","meetPoint","hood","city","why","bring","orderDeadline","stock","activity","ticketNote"];
+const prAiSnap=d=>JSON.parse(JSON.stringify(Object.fromEntries(PR_AI_SNAP.map(k=>[k,d?.[k]===undefined?null:d[k]]))));
+// lay the merged reading (M) on the draft where it differs from the parser's (P). A field the host changed since the
+// snapshot (snap) stays theirs; an activity already chosen stays. Returns the fields it changed.
+function prAiApply(d,M,P,snap){ const a=prAiDraft(M), b=prAiDraft(P), J=v=>JSON.stringify(v===undefined?null:v), out=[]; if(!d) return out;
+  for(const k of new Set([...Object.keys(a),...Object.keys(b)])){ if(J(a[k])===J(b[k])) continue; if(snap&&k in snap&&J(d[k])!==J(snap[k])) continue;
+    if(k==="activity"&&d.activity&&!/^(?:get-together|gathering at my place)$/i.test(d.activity)) continue;
+    if(a[k]===undefined||a[k]===null) delete d[k]; else d[k]=JSON.parse(JSON.stringify(a[k])); out.push(k) }
+  if(out.includes("free")&&d.free){ d.price=""; delete d.seatPrice; delete d.itemPrice }
+  if(out.includes("price")&&d.price){ d.free=false; if(+M.seatPrice>0) d.seatPrice=+M.seatPrice }
+  return out }
+// the model's answer within ms, else null (late, an error, or not an object): the regex reading stands
+function prAiRace(p,ms,onLate){ let tm; return Promise.race([Promise.resolve(p).then(r=>r&&typeof r==="object"&&!Array.isArray(r)?r:null,()=>null),new Promise(res=>{ tm=setTimeout(()=>{ try{ onLate?.() }catch{} res(null) },ms) })]).finally(()=>clearTimeout(tm)) }
+// ---------- Potto reads with the model: wiring ----------
+// AI is on with claude.ai's sample, or the server when it has a key (or runs the offline fake); otherwise nothing changes
+let prAiMode=null;
+async function prAiReady(){ if(typeof sample==="undefined"||!sample?.json) return false; if(!window.ENCORE_SERVER) return true;
+  if(prAiMode==null) prAiMode=fetch("/api/health",{credentials:"same-origin"}).then(r=>r.ok?r.json():{}).then(j=>j?.ai||"").catch(()=>""); const m=await prAiMode; return m==="live"||m==="fake" }
+// Potto, while the model reads (usually under 2s)
+function prAiBusy(on){ try{ let el=document.getElementById("prAiPill"); if(!on){ el?.remove(); return } if(el) return; el=document.createElement("div"); el.id="prAiPill"; el.setAttribute("role","status");
+  el.innerHTML=`${typeof pipSVG==="function"?pipSVG("happy",22):"🐷"}<span>Reading that…</span>`; el.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10001;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--card,#fff);color:var(--ink,#222);box-shadow:0 4px 18px rgba(0,0,0,.18);font-size:14px";
+  document.body.appendChild(el) }catch{} }
+async function prAiAsk(text){ if(!(await prAiReady())) return null; prAiBusy(true); const ctrl=typeof AbortController!=="undefined"?new AbortController():null, t0=Date.now();
+  let tz=""; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||"" }catch{}
+  const ask=sample.json(prAiPrompt(text,{today:localISO(),city:window.__homeCity||"",tz}),{modelTier:"quick",purpose:"event_read",...(ctrl?{signal:ctrl.signal}:{})}).catch(e=>{ console.info("[potto] the model read failed; the regex reading stays:",e?.code||e?.message||e); return null });
+  const r=await prAiRace(ask,PR_AI_TIMEOUT,()=>ctrl?.abort()); window.__prAiMs=Date.now()-t0; return r }
+// the wizard's fields the host hasn't typed in follow the new reading
+function prAiWizRefresh(d,snap){ const bg=document.getElementById("wizBg"); if(!bg) return; const S=snap||{};
+  for(const [id,now,was] of [["wzName",d.pubTitle||d.name,S.pubTitle||S.name],["wzDate",d.date,S.date],["wzTime",d.startTime,S.startTime],["wzWhere",d.meetPoint||d.venueName,S.meetPoint||S.venueName],["wzCity",d.city,S.city],["wzSpots",+d.headcount||"",+S.headcount||""],["wzBring",(d.bring||[]).join?.(", ")||d.bring||"",(S.bring||[]).join?.(", ")||S.bring||""]]){
+    const el=bg.querySelector("#"+id); if(el&&String(el.value)===String(was??"")&&String(now??"")!==String(was??"")) el.value=now??"" }
+  const ap=bg.querySelector(`input[name=wzWho][value=${d.approvalRequired?"approve":"open"}]`); if(ap&&!!S.approvalRequired!==!!d.approvalRequired&&bg.querySelector('input[name=wzWho]:checked')?.value===(S.approvalRequired?"approve":"open")) ap.checked=true }
+function prAiStart(text,d,p){ const snap=prAiSnap(d), job={d,done:false};
+  job.promise=(async()=>{ const m=await prAiAsk(text); if(!m||typeof draft==="undefined"||draft!==d) return [];
+      const {M,from,drop}=prAiMerge(p,m,text,{today:localISO()}); window.__prAiLast={from,drop,ms:window.__prAiMs};
+      const ch=prAiApply(d,M,p,snap); if(!ch.length) return ch; d.readBy="model";
+      for(let i=0;i<40&&!d.id&&draft===d;i++) await new Promise(r=>setTimeout(r,100)); // the first save gives the draft its id
+      if(draft===d&&d.id){ try{ await saveEvent(true) }catch{} }
+      try{ if(location.hash==="#studio"&&!document.getElementById("wizBg")&&typeof renderStep==="function") renderStep() }catch{} prAiWizRefresh(d,snap); return ch })()
+    .catch(e=>{ console.warn(e); return [] }).finally(()=>{ job.done=true; prAiBusy(false) });
+  window.__prAiJob=job; return job }
+// the wizard's Next on step 1 waits for the read (the button says so), so step 2 opens on the model's reading
+window.prAiWait=async function(bg){ const job=window.__prAiJob; if(!job||job.done||typeof draft==="undefined"||job.d!==draft) return; const b=bg?.querySelector?.("#wzNext"), was=b?.textContent;
+  if(b){ b.disabled=true; b.textContent="Reading that…" } try{ await Promise.race([job.promise,new Promise(r=>setTimeout(r,PR_AI_TIMEOUT+1500))]) }finally{ if(b&&b.isConnected){ b.disabled=false; b.textContent=was } } };
+{ const _qs8=quickStart; quickStart=function(text){ const before=typeof draft!=="undefined"?draft:null, r=_qs8.apply(this,arguments);
+  try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d===before||d.example||d.id||!(isCasual(d)||window.__wsPersonal)) return r; const t=String(text||""), p=prRead(t);
+    // round 8 (no AI): what the older wiring above doesn't carry over
+    if(p.approvalRequired) d.approvalRequired=true;
+    if(p.priceUnit==="total"&&d.price){ d.priceUnit="total"; if(p.dropIn) d.dropIn=p.dropIn }
+    if(p.ticketNote&&d.price) d.ticketNote=p.ticketNote;
+    for(const k of ["venueName","meetPoint"]) if(d[k]&&(PR8_UNIT_ONLY.test(String(d[k]))||/^(?:the\s+)?door$/i.test(String(d[k]).trim()))) d[k]="";
+    if(p.emoji&&!d.emoji) d.emoji=p.emoji;
+    // the model's read, laid over this one when it comes back
+    prAiStart(t,d,p) }catch(e){ console.warn(e) } return r } }
+// ---- end Potto reads with the model ----
 </script>

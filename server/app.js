@@ -1713,8 +1713,19 @@ export function createApp({ store, dataDir }) {
     try { const svg = await drawArt(prompt, String(req.body?.accent || "")); if (!svg) return res.status(502).json({ code: "upstream_error", message: "That drawing didn't come out. Try describing it a little differently." }); res.json({ svg, left: 19 - used }); }
     catch (e) { const c = toCapError(e); res.status(c.code === "missing_key" ? 503 : 502).json({ code: c.code || "upstream_error", message: c.message || "Couldn't draw that right now." }); }
   });
+  // Potto's event read (index.html, "Potto reads with the model"): one short call per sentence a host drafts from.
+  // Signed-in hosts only (the /api gate above lets no guest through); ENCORE_AI_READS_PER_HOUR per workspace (default
+  // 120), then a 429 and the page keeps its own regex reading.
+  const aiReadHits = new Map();
+  const aiReadLimited = (req) => { const k = sessionWorkspace(req), now = Date.now(), h = (aiReadHits.get(k) || []).filter((t) => now - t < 3600e3);
+    if (h.length >= +(process.env.ENCORE_AI_READS_PER_HOUR || 120)) { aiReadHits.set(k, h); return true; }
+    h.push(now); aiReadHits.set(k, h); if (aiReadHits.size > 5000) aiReadHits.clear(); return false; };
   app.post("/api/ai", json, async (req, res) => {
     const { input, modelTier, tools: rawTools } = req.body || {};
+    if (req.body?.purpose === "event_read") {
+      if (req.guest) return res.status(401).json({ code: "not_granted", message: "Sign in first." });
+      if (aiReadLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Potto has read a lot of plans this hour. Try again in a bit." });
+    }
     const tools = (Array.isArray(rawTools) ? rawTools : [])
       .filter((t) => t && typeof t.name === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(t.name))
       .map((t) => ({ name: t.name, description: String(t.description || ""), inputSchema: t.inputSchema }));

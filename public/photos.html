@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">
+<title>Add your photos · Pottery Lab</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
+<style>
+/* Photo drops: the page behind "Add your photos from X" (the morning-after email and inbox item, server/photodrop.js).
+   The reply id and code in the link prove it's a guest who was in, the same proof kudos take. */
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#A63A22;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+body{background-image:radial-gradient(rgba(102,90,81,.09) 1px,transparent 1.2px);background-size:9px 9px}
+a{color:var(--ember-d)}main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 48px}
+.top{display:flex;align-items:center;margin:4px 0 12px}.brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
+h1{font:700 clamp(28px,7vw,38px)/1.05 Fredoka,system-ui;margin:8px 0 6px;text-wrap:balance}h1 em{font-style:normal;color:var(--ember)}
+.sub{margin:0 0 16px;color:var(--smoke)}
+.drop{position:relative;background:#fff;border:2.5px solid var(--ink);border-radius:22px;box-shadow:4px 5px 0 var(--ink);padding:18px 16px 16px;display:grid;gap:14px}
+.drop::before{content:"";position:absolute;top:-12px;left:28px;width:84px;height:22px;background:var(--butter);opacity:.9;transform:rotate(-5deg)}
+.pick{display:flex;align-items:center;justify-content:center;gap:10px;min-height:120px;border:2.5px dashed var(--ink);border-radius:18px;background:#FFFCF4;font:600 20px Fredoka,system-ui;color:var(--ink);cursor:pointer;width:100%}
+.pick:hover{background:#FFF4D8}.pick:disabled{opacity:.6;cursor:default}.pick span{font-size:30px}
+label.f{display:grid;gap:5px;font-weight:600}label.f small{font-weight:400;color:var(--smoke)}
+input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:16px;background:#FFFCF7;color:var(--ink)}
+.pick:focus-visible,.btn:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+.note{margin:0;font-size:14px;color:var(--smoke);display:flex;gap:8px;align-items:flex-start}.note b{color:var(--ink)}
+.wall{display:flex;flex-wrap:wrap;gap:16px 12px;justify-content:center;padding:18px 4px 6px}
+.pol{position:relative;width:min(44%,170px);background:#fff;border:2px solid var(--ink);border-radius:5px;padding:7px 7px 26px;box-shadow:3px 4px 0 rgba(31,26,23,.85);transform:rotate(var(--r))}
+.pol img,.pol video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}
+.pol b{position:absolute;left:6px;right:6px;bottom:3px;text-align:center;font:600 18px/1.1 Caveat,cursive;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pol::before{content:"";position:absolute;top:-9px;left:50%;width:54px;height:17px;margin-left:-27px;background:var(--tp,#F2D48F);opacity:.9;transform:rotate(var(--tr,-4deg));z-index:1}
+.pol.err{border-color:#A8341A}.pol.err b{color:#A8341A;font:600 12px "Instrument Sans",system-ui}
+.acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-shadow:2px 3px 0 var(--ink)}
+.btn.primary{background:var(--ember);color:#fff}
+.err-l{color:#A8341A;font-weight:600;margin:0}.err-l:empty{display:none}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style></head><body>
+<main><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C94A30" stroke="#1F1A17" stroke-width="1.6"/></svg>Pottery Lab</a></div>
+<div id="body" aria-live="polite"><p class="sub">Opening…</p></div></main>
+<script src="/momentupload.js" defer></script>
+<script>
+(function () {
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const id = (location.pathname.match(/^\/p\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
+  const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body"), R = [-3, 2.5, -1.5, 2, -2.5, 1.5], TP = ["#F2D48F", "#B9C7A6", "#E9A08F"];
+  const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "");
+  const pol = (inner, cap, i, cls = "") => `<span class="pol ${cls}" style="--r:${R[i % 6]}deg;--tp:${TP[i % 3]};--tr:${i % 2 ? 4 : -5}deg" data-i="${i}">${inner}<b>${esc(cap)}</b></span>`;
+  fetch(`/api/public/photo-drop/${encodeURIComponent(id)}?${proof}`).then(async (r) => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "This link isn't working."); return j; }).then(draw)
+    .catch((e) => { body.innerHTML = `<h1>Hmm.</h1><p class="sub">${esc(e.message)}</p><p><a href="/feed">See what people are hosting</a></p>`; });
+  function draw(j) {
+    if (j.noPhotos) { body.innerHTML = `<h1>${esc(j.title)} was no photos</h1><p class="sub">The host asked for no photos at this one, so there's no photo wall. Thanks for coming!</p>`; return; }
+    if (!j.open) { body.innerHTML = `<h1>Photos open after ${esc(j.title)}</h1><p class="sub">Come back the morning after. See you there!</p>`; return; }
+    body.innerHTML = `<h1>Add your photos from <em>${esc(j.title)}</em></h1>
+      <p class="sub">${esc([day(j.date), j.host?.name ? "hosted by " + j.host.name : ""].filter(Boolean).join(", "))}. ${j.name ? `Thanks for coming, ${esc(j.name)}.` : "Thanks for coming."}</p>
+      <div class="drop"><label class="f" for="cap">A caption <small>Optional. Shows under your photos, without emails or phone numbers.</small><input type="text" id="cap" maxlength="120" placeholder="e.g. the dumpling line"></label>
+        <button type="button" class="pick" id="pick"><span aria-hidden="true">📸</span>Pick photos or a short video</button>
+        <p class="note"><span aria-hidden="true">${j.public ? "🌍" : "🔒"}</span><span>${j.public ? `<b>These go in the feed.</b> ${esc(j.title)} is open on Discover, so your photos show on the event's page and in the Pottery Lab feed, where people can react.` : `<b>Only people who were there see these.</b> ${esc(j.title)} isn't open to everyone, so your photos stay with the host and guests.`}</span></p>
+        <p class="err-l" id="err"></p></div>
+      <div class="wall" id="wall" aria-label="Photos from ${esc(j.title)}"></div>
+      <div class="acts" id="acts" hidden>${j.public ? `<a class="btn primary" href="/feed">See it in the feed</a>` : ""}<a class="btn" href="/g#rsvp-${esc(id)}">Back to the invite</a></div>`;
+    const wall = $("#wall"), pick = $("#pick");
+    // what's already up (guests who were in can see the event's photo wall)
+    fetch(`/api/public/moments/${encodeURIComponent(id)}?${proof}`).then((r) => (r.ok ? r.json() : { moments: [] })).then((m) => { const L = (m.moments || []).slice(0, 8); if (!L.length) return;
+      wall.insertAdjacentHTML("beforeend", L.map((x, i) => pol(x.type === "video" ? (x.poster ? `<img src="${esc(x.poster)}" alt="" loading="lazy">` : `<video src="${esc(x.url)}#t=0.3" muted playsinline preload="metadata"></video>`) : `<img src="${esc(x.url)}" alt="${esc(x.caption || "Photo from " + (x.by || "a guest"))}" loading="lazy">`, x.caption || (x.by ? "from " + x.by : ""), i)).join("")); $("#acts").hidden = false; }).catch(() => {});
+    pick.onclick = () => { if (!window.MomentUpload) return; $("#err").textContent = ""; const caption = $("#cap").value.trim().slice(0, 120); let n0 = wall.children.length;
+      window.MomentUpload.pick({ q: { eventId: id, rid, code, ...(caption ? { caption } : {}) },
+        onStart: (fs, extra) => { pick.disabled = true; fs.forEach((f, i) => { const u = URL.createObjectURL(f), v = /^video\//.test(f.type); wall.insertAdjacentHTML("afterbegin", pol(v ? `<video src="${u}" muted playsinline></video>` : `<img src="${u}" alt="">`, "Adding…", n0 + i, "new")); }); if (extra) $("#err").textContent = `The first ${fs.length} are going up. Add the rest after.`; },
+        onEach: (f, r, err, i) => { const el = wall.querySelector(`[data-i="${n0 + i}"]`); if (!el) return; el.classList.toggle("err", !!err); el.querySelector("b").textContent = err ? err.message : caption || "Added"; },
+        onDone: (n, total) => { pick.disabled = false; pick.innerHTML = `<span aria-hidden="true">📸</span>Add more`; n0 = wall.children.length; $("#acts").hidden = false;
+          if (n < total) $("#err").textContent = n ? `${n} of ${total} added. The others were too big, too long or not a photo.` : "Those didn't add. Photos, or videos up to 15 seconds."; } }); };
+  }
+})();
+</script>
+</body></html>

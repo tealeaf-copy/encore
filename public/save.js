@@ -70,6 +70,11 @@
     // signed out: this browser keeps it, and the account gets it at signup
     let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img), at: Date.now() }); write(L); emit();
     if (!on) { const n = L.length; toast(n === 1 ? `<b>Saved on this phone.</b> Make a free account to keep your saves.` : `<b>${n} saves</b> on this phone. Make a free account to keep your saves.`, { go: "/signup?mode=friends&from=saves", goLabel: "Make an account", ms: 7000 }); } }
+  /** Save without a toast (the swipe deck says it once at the end). Signed in: on the account; else this browser, sent at signup. */
+  async function add(item) { if (!item?.kind || !item?.ref || isSaved(item.kind, item.ref)) return true;
+    if (signedIn()) { await load(); if (server) { const r = await fetch("/api/me/saves", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img) }) }).catch(() => null);
+      if (!r?.ok) return false; server.set(key(item), { ...item, board: "" }); emit(); return true; } }
+    const L = read(); L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img), at: Date.now() }); write(L); emit(); return true; }
   function setCount(item, n) { if (n == null) return; document.querySelectorAll(`[data-pls-count="${CSS_ESC(key(item))}"]`).forEach((el) => (el.textContent = countLine(n))); }
   const CSS_ESC = (s) => (window.CSS?.escape ? window.CSS.escape(s) : String(s).replace(/"/g, '\\"'));
   document.addEventListener("click", (e) => { const b = e.target.closest?.(".pls-btn[data-pls-kind]"); if (!b) return; e.preventDefault(); e.stopPropagation();
@@ -94,5 +99,5 @@
       if (!(j.interests?.length || j.city)) { const w = await fetch("/api/me/interests", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interests: Array.isArray(L.interests) ? L.interests : [], city: String(L.city || "").slice(0, 60) }) }); if (!w.ok) return; }
       localStorage.setItem(mark, "1"); localStorage.removeItem("pl.interests"); } catch {} }
   const ready = load().then(() => { emit(); carryInterests(); return merge(); }).catch(() => {});
-  window.PLSave = { carryInterests, button, isSaved, toggle, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
+  window.PLSave = { carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
 })();

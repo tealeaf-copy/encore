@@ -24,6 +24,11 @@ import { smsConfig, sendSms, smsStopped } from "./sms.js";
 import { localParts } from "./reminders.js";
 import { replyKey } from "./social.js";
 import { qrSvg } from "./qr.js";
+import { makePhotoDrop } from "./photodrop.js"; // photo drops: "Add your photos from X" the morning after
+import { momentsPublic } from "./feedvisual.js";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DAY = 864e5, MORNING = 9, EVENING = 21, AT_SLOT_MS = 10 * 60e3; // review round 8: the at-the-event code changes every 10 minutes
 export const NUDGE = { maxHostSends: 2, spacingDays: 3, followUpDays: 3, followUpLastDay: 7, sheetDays: 14, sendDays: 30, pottoBelow: 0.6 };
@@ -322,5 +327,19 @@ If you didn't ask for this, ignore it and nothing happens.`, fromName: "Pottery 
     const S = scopeStore(store, ws); if (!S.get("followers/" + fid)) return res.status(404).type("text/plain").send("Nothing to confirm.");
     S.update("followers/" + fid, { pending: false, unverified: false, confirmedAt: Date.now() }); res.redirect(302, `/@${encodeURIComponent(C.profileOf(ws)?.handle || "")}?followed=1`); });
 
-  return N;
+  // ---- photo drops (server/photodrop.js): the morning after, "Add your photos from X" by email and in the inbox, on the
+  // same hourly job as the kudos asks. The upload page is /p/<event>?rid=..&code.. (public/photos.html). ----
+  const PD = makePhotoDrop(store, { C, X, canEmail: (e) => X.canEmail(e), guestsOf });
+  app.locals.photoDrops = PD;
+  const PHOTOS_HTML = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "photos.html");
+  app.get(/^\/p\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { res.set("Referrer-Policy", "no-referrer").set("Cache-Control", "private, no-store"); fs.readFile(PHOTOS_HTML, "utf8", (err, html) => (err ? res.status(500).type("text/plain").send("Photos page missing.") : res.type("html").send(html))); });
+  app.get("/api/public/photo-drop/:eventId", (req, res) => { res.set("Cache-Control", "private, no-store"); if (over("pd:" + (req.ip || "?"), 240)) return bad(res, "Slow down.", 429, "rate_limited");
+    const id = clean(req.params.eventId, 80), P = (X.kudosProof || X.rsvpProof)(id, clean(req.query.rid, 80), clean(req.query.code, 40));
+    if (!P || !P.ev || P.r.response !== "going" || P.r.noShow === true) return bad(res, "This link isn't working. Open the one from your email.", 403, "not_granted");
+    const h = C.profileOf(P.ws), today = new Date().toISOString().slice(0, 10), mine = P.S.list("moments").filter((d) => d.data?.eventId === id && (d.data.authorKey === "rid:" + P.rid || (P.r.email && lc(d.data.authorEmail) === lc(P.r.email)))).length;
+    res.json({ title: clean(P.ev.pubTitle || P.ev.name, 120), date: ISO.test(P.ev.date || "") ? P.ev.date : "", hostFirst: hostFirst(P.ws, P.ev), host: h?.handle ? { handle: h.handle, name: clean(h.name, 60) } : null,
+      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, noPhotos: !!P.ev.noPhotos, public: momentsPublic(P.ev), mine }); });
+  // ---- end photo drops ----
+  // the hourly job (server/kudosask.js) runs follow-ups through this object: photo drops ride along, after them
+  return { ...N, runFollowUps: async (o = {}) => { const r = await N.runFollowUps(o); try { r.photoDrops = await PD.run({ origin: o.origin, now: o.now, workspaces: o.workspaces }); } catch (e) { console.warn("[photo drops]", e?.message || e); } return r; } };
 }

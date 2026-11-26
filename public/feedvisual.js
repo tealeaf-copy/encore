@@ -56,10 +56,22 @@
     stories.forEach((s, i) => REG.set("rail:" + i, s)); const order = stories.map((s, i) => [s, i]).sort((a, b) => (unseen(b[0]) - unseen(a[0])) || a[1] - b[1]);
     const add = signedIn ? `<button type="button" class="fv-ring add" id="fvAdd"><span class="fv-ring-c">${mine?.thumb ? `<img src="${esc(mine.thumb)}" alt="" width="64" height="64">` : `<b aria-hidden="true">+</b>`}</span><small>Your story</small></button>` : "";
     if (!stories.length) { el.innerHTML = `<div class="fv-rail">${add}<div class="fv-peek"><span class="fv-peek-p" aria-hidden="true">${potto("wave", 70)}</span><p>No stories yet. Photos from events land here.</p></div></div>`; }
-    else el.innerHTML = `<div class="fv-rail" role="list" aria-label="Stories">${add}${order.map(([s, i]) => `<button type="button" role="listitem" class="fv-ring ${unseen(s) ? "new" : "seen"}" data-fv-story="rail:${i}" aria-label="${esc(s.host.name)}${s.showcase ? ", a page on Pottery Lab" : ""}. ${s.items.length} ${s.items.length === 1 ? "story" : "stories"}${unseen(s) ? ", new" : ""}"><span class="fv-ring-c">${ringThumb(s)}</span>${s.showcase && s.example ? `<i class="fv-ring-tag">Example</i>` : ""}<small>${esc(first(s.host.name).replace(/'s$/, ""))}</small></button>`).join("")}</div>`;
+    else el.innerHTML = `<div class="fv-rail" role="list" aria-label="Stories">${add}${order.map(([s, i]) => `<button type="button" role="listitem" class="fv-ring ${unseen(s) ? "new" : "seen"}" data-fv-story="rail:${i}" aria-label="${esc(s.host.name)}${s.showcase ? ", a page on Pottery Lab" : ""}${s.recap ? ", recap of " + esc(s.recap.title) : ""}. ${s.items.length} ${s.items.length === 1 ? "story" : "stories"}${unseen(s) ? ", new" : ""}"><span class="fv-ring-c">${ringThumb(s)}</span>${s.recap ? `<i class="fv-ring-tag rc">Recap</i>` : s.showcase && s.example ? `<i class="fv-ring-tag">Example</i>` : ""}<small>${esc(first(s.host.name).replace(/'s$/, ""))}</small></button>`).join("")}</div>`;
     el.hidden = false; $("#fvAdd", el) && ($("#fvAdd", el).onclick = () => onAdd?.());
     $$("[data-fv-story]", el).forEach((b) => (b.onclick = () => openStories(order.map(([, i]) => "rail:" + i), order.findIndex(([, i]) => "rail:" + i === b.dataset.fvStory), b))); }
   function refreshRings() { $$("[data-fv-story^='rail:']").forEach((b) => { const s = REG.get(b.dataset.fvStory); if (s && !unseen(s) && b.classList.contains("new")) { b.classList.remove("new"); b.classList.add("seen", "just-seen"); } }); }
+
+  // ---------- recap stories (server/feedvisual.js recapOf): a title card, the photos, a kudos quote, what's next ----------
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  function recapCard(it) { const R = it.recap || {}, T = tintOf({ ...(R.art || {}), look: it.look });
+    const pic = R.cover ? `<span class="fv-rc-pol">${tape(0, "top")}<img src="${esc(R.cover)}" alt="" decoding="async"></span>` : `<span class="fv-rc-pol art">${tape(0, "top")}<span class="fv-rc-art">${art({ ...(R.art || {}), look: it.look }, { title: "" })}</span></span>`;
+    return `<div class="fv-sv-rc" style="${tintStyle(T)}"><div class="fv-rc-in">${sticker("Recap", "new")}${pic}<h2 class="fv-rc-t">${esc(R.title || "")}</h2>
+      ${R.came ? `<p class="fv-rc-came"><b>${esc(R.came)}</b> came</p>` : ""}<p class="fv-rc-sub">${esc([dayOf(R.date, { weekday: "long", month: "short", day: "numeric" }), R.where, R.photos ? plural(R.photos, "photo") : "", R.kudos ? plural(R.kudos, "kudos").replace(/kudoss$/, "kudos") : ""].filter(Boolean).join(" · "))}</p></div></div>`; }
+  function quoteCard(it) { const Q = it.quote || {}; return `<div class="fv-sv-q"><figure class="fv-quote big" style="--n:${NOTE[0]};--r:-2deg"><span class="fv-pin" aria-hidden="true"></span><blockquote>"${esc(Q.text)}"</blockquote><figcaption>${esc(Q.name || "A guest")} ${Q.verifiedLabel ? `<span class="fv-stamp">${esc(Q.verifiedLabel)}</span>` : ""}</figcaption></figure></div>`; }
+  function endCard(it, s) { const N = it.end?.next, h = s.host || {};
+    return `<div class="fv-sv-end"><div class="fv-end-in">${N?.cover ? `<span class="fv-rc-pol sm">${tape(1, "top")}<img src="${esc(N.cover)}" alt="" decoding="async"></span>` : avatar(h, 84)}${N ? `<p class="fv-end-k">Next up</p><h2>${esc(N.title)}</h2><p>${esc(when(N))}</p>` : `<p class="fv-end-k">That's the recap</p><h2>Catch the next one</h2><p>Follow ${esc(first(h.name) || "this host")} to hear first when they post a date.</p>`}</div></div>`; }
+  async function followFrom(b) { if (b.disabled) return; b.disabled = true; try { const r = await fetch("/api/public/follow", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle: b.dataset.fvFollow, via: "recap" }) });
+      if (r.ok) { b.textContent = "Following"; return; } location.href = b.dataset.url || "#"; } catch { location.href = b.dataset.url || "#"; } }
 
   // ---------- the viewer ----------
   function openStories(keys, si = 0, opener = null, k0 = 0) { css(); const sets = keys.map((k) => REG.get(k)).filter(Boolean); if (!sets.length) return; si = Math.max(0, Math.min(si, sets.length - 1));
@@ -76,20 +88,22 @@
       const T = it.type === "art" ? tintOf({ ...it.art, look: it.look }) : null;
       const media = it.type === "video" ? `<video src="${esc(it.url)}" ${it.poster ? `poster="${esc(it.poster)}"` : ""} playsinline ${muted ? "muted" : ""} autoplay preload="auto" aria-label="${esc(it.caption)}"></video>`
         : it.type === "image" ? `<img src="${esc(it.url)}" alt="${esc(it.note || it.caption || "Story photo")}" decoding="async">`
+        : it.type === "recap" ? recapCard(it) : it.type === "quote" ? quoteCard(it) : it.type === "end" ? endCard(it, s)
         : `<div class="fv-sv-art" style="${tintStyle(T)}"><div class="fv-sv-artc">${art({ ...it.art, look: it.look }, { title: it.art?.title || "" })}</div></div>`;
-      el.setAttribute("aria-label", `Stories from ${s.host.name}`);
+      el.setAttribute("aria-label", `Stories from ${s.host.name}`); el.classList.toggle("light", ["recap", "end"].includes(it.type)); // dark words on the pale recap cards
       el.innerHTML = `<div class="fv-sv-in"><div class="fv-sv-bars" aria-hidden="true">${s.items.map((_, i) => `<i><b style="transform:scaleX(${i < k ? 1 : 0})"></b></i>`).join("")}</div>
         <div class="fv-sv-top">${avatar(s.host, 36)}<div><b>${esc(s.host.name)}</b><small>${esc(it.caption || "")}${it.by ? ` · from ${esc(it.by)}` : ""}</small></div>
           ${it.type === "video" ? `<button type="button" class="fv-sv-mute" aria-pressed="${!muted}" aria-label="${muted ? "Unmute" : "Mute"}">${muted ? "🔇" : "🔊"}</button>` : ""}<button type="button" class="fv-sv-pause" aria-pressed="false" aria-label="Pause">❚❚</button><button type="button" class="fv-sv-x" aria-label="Close stories">✕</button></div>
         <div class="fv-sv-stage">${media}</div>
         <button type="button" class="fv-sv-prev" aria-label="Previous story"><span aria-hidden="true">‹</span></button><button type="button" class="fv-sv-next" aria-label="Next story"><span aria-hidden="true">›</span></button>
-        <div class="fv-sv-foot">${it.note ? `<p class="fv-sv-note">${esc(it.note)}</p>` : ""}<a class="fv-sv-cta" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
+        <div class="fv-sv-foot">${it.note ? `<p class="fv-sv-note">${esc(it.note)}</p>` : ""}${it.cta?.follow ? `<button type="button" class="fv-sv-cta" data-fv-follow="${esc(it.cta.follow)}" data-url="${esc(it.cta.url || "#")}">${esc(it.cta.label || "Follow")}</button>` : `<a class="fv-sv-cta${it.type === "end" ? " big" : ""}" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>`}${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
         <p class="fv-sv-sr" aria-live="polite">${esc(`${k + 1} of ${s.items.length}. ${it.caption || ""}`)}</p></div>`;
       const bars = $$(".fv-sv-bars b", el), bar = bars[k];
       $(".fv-sv-x", el).onclick = close; $(".fv-sv-prev", el).onclick = prev; $(".fv-sv-next", el).onclick = next; $(".fv-sv-pause", el).onclick = () => setPaused(!paused);
       const mute = (m) => { muted = m; try { sessionStorage.setItem("fv.unmuted", m ? "0" : "1"); } catch {} if (vid) vid.muted = m; const b = $(".fv-sv-mute", el); if (b) { b.textContent = m ? "🔇" : "🔊"; b.setAttribute("aria-pressed", String(!m)); b.setAttribute("aria-label", m ? "Unmute" : "Mute"); } $(".fv-sv-unmute", el)?.remove(); };
       $(".fv-sv-mute", el) && ($(".fv-sv-mute", el).onclick = () => mute(!muted)); $(".fv-sv-unmute", el) && ($(".fv-sv-unmute", el).onclick = (e) => { e.stopPropagation(); mute(false); });
-      vid = $(".fv-sv-stage video", el); dur = it.type === "video" ? 15000 : 5000;
+      $(".fv-sv-cta[data-fv-follow]", el) && ($(".fv-sv-cta[data-fv-follow]", el).onclick = (ev) => { ev.stopPropagation(); followFrom(ev.currentTarget); });
+      vid = $(".fv-sv-stage video", el); dur = it.type === "video" ? 15000 : it.type === "end" ? 8000 : it.type === "recap" || it.type === "quote" ? 6000 : 5000;
       if (vid) { vid.onloadedmetadata = () => { if (isFinite(vid.duration) && vid.duration > 0) dur = Math.min(15, vid.duration) * 1000; }; vid.onended = () => next(); vid.onerror = () => { dur = 5000; }; vid.play?.().catch(() => { if (!muted) { mute(true); vid.play().catch(() => {}); } }); }
       const tick = (t) => { if (!paused) { elapsed = vid && vid.currentTime > 0 && isFinite(vid.duration) ? vid.currentTime * 1000 : t - t0; const p = Math.min(1, elapsed / dur); bar.style.transform = `scaleX(${p})`; if (p >= 1) return next(); } raf = requestAnimationFrame(tick); };
       raf = requestAnimationFrame(tick); if (paused) setPaused(true); prefetch();
@@ -118,7 +132,7 @@
   const byline = (b) => (b ? `<p class="fv-by">${avatar(b.who, 28)}<span>${b.html}</span></p>` : "");
   // an event coming up: the flyer big (whole when it's a poster, else 4:5), the page tint from its palette
   function flyer(e, { by = null, eager = false } = {}) { const T = tintOf(e), L = e.look || {}, poster = L.coverFit === "poster" && L.coverW && L.coverH, ratio = poster ? `${L.coverW}/${L.coverH}` : e.cover ? "4/5" : "1/1", r = tilt();
-    const media = e.cover ? `<img src="${esc(e.cover)}" alt="${esc("Flyer for " + e.title)}" width="${L.coverW || 800}" height="${L.coverH || 1000}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" style="object-fit:${poster ? "contain" : "cover"}">` : art(e);
+    const media = e.cover ? `<img src="${esc(e.cover)}" alt="${esc("Flyer for " + e.title)}" width="${L.coverW || 800}" height="${L.coverH || 1000}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" style="object-fit:${poster ? "contain" : "cover"}">` : art(e, { title: "" }); /* the heading below has the title: never twice */
     const stk = [e.fresh ? sticker("New", "new") : "", e.spotsLeft != null && e.spotsLeft <= 3 ? sticker(e.spotsLeft ? "Last spots!" : "Full", "hot") : "", e.approvalRequired ? sticker("Ask to join", "ask") : "", e.sample ? sticker("Example", "ex") : ""].filter(Boolean).slice(0, 2).join("");
     return `<article class="fv-card fv-flyer${T.dark ? " dark" : ""}" style="${tintStyle(T)};--r:${r}deg" data-fv-fx="${fx(e)}" ${L.lights ? 'data-fv-lights="1"' : ""}>${fxLayer(fx(e))}${byline(by)}
       <a class="fv-fl-media" href="${esc(e.url)}" style="aspect-ratio:${ratio}" aria-label="${esc(e.title)}: see invite">${media}${tape(r > 0 ? 1 : 0, "top")}<span class="fv-stks">${stk}</span>${saveSpot({ kind: "event", id: e.id, title: e.title, url: e.url, image: e.cover || "" })}</a>
@@ -135,7 +149,8 @@
       : `<div class="fv-pol art" style="--r:-2deg">${tape(0, "tr")}<span class="fv-mb" style="aspect-ratio:1/1">${art(e)}</span><span class="fv-cap">${esc(dayOf(e.date, { month: "short", day: "numeric" }))}</span></div>`;
     const stats = [e.came ? `${e.came} came` : "", e.kudos ? `${e.kudos} kudos` : ""].filter(Boolean).join(" · ");
     const q = e.quote ? `<figure class="fv-quote" style="--n:${NOTE[(e.id || "").length % NOTE.length]}"><span class="fv-pin" aria-hidden="true"></span><blockquote>"${esc(e.quote.text)}"</blockquote><figcaption>${esc(e.quote.name)} <span class="fv-stamp">${esc(e.quote.verifiedLabel)}</span></figcaption></figure>` : "";
-    return `<article class="fv-card fv-dump" style="--r:${r}deg">${saveSpot({ kind: "past", id: e.id, title: e.title, url: e.page || e.url || "", image: P[0]?.poster || (P[0]?.type === "video" ? "" : P[0]?.url) || "" })}${byline(by)}<div class="fv-dump-h"><div><h3>${esc(e.title)}</h3><p class="fv-when">${esc([e.host?.name, dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), where(e)].filter(Boolean).join(" · "))}</p></div>${stats ? `<span class="fv-tally">${esc(stats)}</span>` : ""}</div>
+    const drop = !by && e.newPhotos ? { who: e.host, html: `<b>📸 Photo drop</b> · ${esc(e.newPhotos)} new from guests` } : null; by = by || drop;
+    return `<article class="fv-card fv-dump${drop ? " drop" : ""}" style="--r:${r}deg">${saveSpot({ kind: "past", id: e.id, title: e.title, url: e.page || e.url || "", image: P[0]?.poster || (P[0]?.type === "video" ? "" : P[0]?.url) || "" })}${byline(by)}<div class="fv-dump-h"><div><h3>${esc(e.title)}</h3><p class="fv-when">${esc([e.host?.name, dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), where(e)].filter(Boolean).join(" · "))}</p></div>${stats ? `<span class="fv-tally">${esc(stats)}</span>` : ""}</div>
       <div class="fv-pols${P.length > 2 ? " many" : ""}" tabindex="0" aria-label="Photos from ${esc(e.title)}">${pol}</div>${q}
       <div class="fv-acts">${e.id && !/^s[cx]-/.test(e.id) || /^s[cx]-/.test(e.id || "") ? reacts(e) : ""}<a class="fv-btn" href="${esc(e.page || e.url || "#")}">See page</a></div></article>`; }
   function reacts(e) { const C = e.reacts || {}, M = new Set(e.myReacts || []); return `<div class="fv-reacts" role="group" aria-label="React to ${esc(e.title)}">${["🔥", "😍", "🥟", "🙌"].map((x) => `<button type="button" class="fv-react" data-fv-react="${esc(e.id)}" data-e="${x}" aria-pressed="${M.has(x)}" aria-label="${{ "🔥": "Fire", "😍": "Love it", "🥟": "Yum", "🙌": "Hands up" }[x]}${C[x] ? ", " + C[x] : ""}"><span aria-hidden="true">${x}</span><b>${C[x] || ""}</b></button>`).join("")}</div>`; }
@@ -163,8 +178,11 @@
   const showcasePasts = (S) => S.flatMap((P) => P.past.filter((p) => p.cover || p.photos.length).map((p) => ({ id: p.id, title: p.title, date: p.date, place: p.place, cover: p.cover, photos: p.photos.map((u, i) => ({ id: p.id + i, url: u, type: "image" })), host: P.host, page: P.page, note: p.note, sample: P.example })));
   const showcaseArt = (S) => { const Q = S.map((P) => P.experiences.map((x) => [P, x])), L = []; for (let r = 0; Q.some((q) => q.length) && r < 20; r++) for (const q of Q) if (q.length) L.push(q.shift()); /* round robin: two hosts side by side */
     const pairs = []; for (let i = 0; i + 1 < L.length; i += 2) pairs.push([L[i], L[i + 1]]); return pairs; };
+  const localTown = (V) => { let c = V?.picked?.city || ""; if (!c) try { c = (window.EncorePlace?.get() || {}).city || ""; } catch {} if (!c) try { c = (JSON.parse(localStorage.getItem("pl.interests") || "null") || {}).city || ""; } catch {} return String(c || "").split(",")[0].trim().toLowerCase(); };
   function publicQueues(V, { skip = new Set() } = {}) { const t = new Date().toISOString().slice(0, 10), wk = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-    const up = (V.upcoming || []).filter((e) => !skip.has(e.id)), weekend = up.filter((e) => e.date <= wk), rest = up.filter((e) => !weekend.includes(e));
+    // with a city or hood picked (or set on this device), the weekend strip and the flyers keep to cards there
+    const town = localTown(V), here = (e) => !town || [e.city, e.hood, e.place].some((x) => x && (String(x).toLowerCase().includes(town) || town.includes(String(x).toLowerCase())));
+    const up = (V.upcoming || []).filter((e) => !skip.has(e.id)), weekend = up.filter((e) => e.date <= wk && here(e)), rest = up.filter((e) => !weekend.includes(e) && here(e));
     const big = (rest.length ? rest : weekend).slice(0, 4).sort((a, b) => (!!b.cover - !!a.cover)), past = (V.past || []).filter((e) => !skip.has(e.id));
     const realPast = past.filter((e) => e.photos?.length || e.cover || e.quote).sort((a, b) => (b.photos?.length || 0) + (b.cover ? 1 : 0) - (a.photos?.length || 0) - (a.cover ? 1 : 0)), quiet = past.filter((e) => !realPast.includes(e));
     const scP = showcasePasts(V.showcase || []);
@@ -317,6 +335,8 @@
 .fv-friends{display:flex;align-items:center;margin-top:8px;font-size:13.5px;color:var(--tsoft,var(--fv-smoke))}.fv-friends i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--c);border:2px solid var(--fv-ink);font:700 12px Fredoka,system-ui;font-style:normal;color:#1F1A17;margin-right:-7px}.fv-friends span{margin-left:14px}
 .fv-hostc{flex:none;width:132px;display:grid;justify-items:center;gap:4px;text-align:center;background:#fff;border:2px solid var(--fv-ink);border-radius:18px;padding:12px 8px;box-shadow:3px 3px 0 var(--fv-ink);text-decoration:none;color:var(--fv-ink);transform:rotate(var(--r))}.fv-hostc b{font:600 14.5px/1.2 Fredoka,system-ui}.fv-hostc small{color:var(--fv-smoke);font-size:12px}
 .fv-slot[hidden]{display:none}
+/* the ideas carousel: every card the same 4:5 media and top-aligned, so one tall photo or poster never leaves a gap under the rest */
+.fv-strip.fv-inspo{align-items:flex-start}.fv-inspo .pli-media{--ar:4/5!important;aspect-ratio:4/5!important;max-height:340px}.fv-inspo .pli-media img{width:100%;height:100%;object-fit:cover}
 .fv-artfb{display:grid;place-items:center;height:100%;font-size:48px;background:#FDE6A6}
 .fv-end{display:flex;align-items:center;justify-content:center;gap:6px;margin:18px 0 8px;font-weight:700}.fv-end a{color:var(--fv-ember-d)}.fv-arrow{width:56px;height:32px}
 /* ambient effects: only while on screen, still for reduced motion */
@@ -343,6 +363,21 @@
 .fv-sv-unmute{min-height:40px;border-radius:999px;border:1.5px solid rgba(255,255,255,.6);background:rgba(0,0,0,.35);color:#fff;padding:0 14px;font:600 14px "Instrument Sans",system-ui;cursor:pointer}
 .fv-sv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .fv-sv.paused .fv-sv-bars{opacity:.6}
+/* recap stories: a title card, a sticky-note quote, an ending card */
+.fv-sv.light .fv-sv-top{color:#1F1A17}.fv-sv.light .fv-sv-top button{background:rgba(31,26,23,.1);color:#1F1A17}.fv-sv.light .fv-sv-bars i{background:rgba(31,26,23,.2)}.fv-sv.light .fv-sv-bars b{background:#1F1A17}.fv-rc-pol.sm{width:min(56%,190px);padding-bottom:22px;transform:rotate(3deg);margin-bottom:6px}
+.fv-ring-tag.rc{background:var(--fv-butter);transform:rotate(-8deg);left:-4px;right:auto}
+.fv-sv-rc,.fv-sv-q,.fv-sv-end{position:absolute;inset:0;display:grid;place-items:center;padding:96px 22px 150px;background:var(--tint,#F7F1E8);color:var(--tink,#1F1A17);overflow:hidden}
+.fv-sv-rc::before,.fv-sv-q::before,.fv-sv-end::before{content:"";position:absolute;inset:0;background:radial-gradient(rgba(31,26,23,.1) 1px,transparent 1.3px) 0 0/12px 12px;pointer-events:none}
+.fv-rc-in{position:relative;display:grid;justify-items:center;gap:10px;text-align:center;width:min(100%,380px)}.fv-rc-in>.fv-stk{position:absolute;top:-6px;right:6px;z-index:4;transform:rotate(9deg)}
+.fv-rc-pol{position:relative;display:block;width:min(74%,260px);background:#fff;border:2.5px solid #1F1A17;border-radius:6px;padding:9px 9px 34px;box-shadow:4px 5px 0 #1F1A17;transform:rotate(-3deg)}
+.fv-sv-stage .fv-rc-pol img{display:block;width:100%;height:auto;max-height:none;aspect-ratio:1/1;object-fit:cover;background:var(--fv-linen)}.fv-rc-art{position:relative;display:block;aspect-ratio:1/1;overflow:hidden}
+.fv-rc-t{margin:10px 0 0;font:600 clamp(26px,7vw,36px)/1.05 Fredoka,system-ui;text-wrap:balance}
+.fv-rc-came{margin:0;font:600 30px/1 Caveat,cursive}.fv-rc-came b{font:700 52px/1 Fredoka,system-ui;color:var(--fv-ember);margin-right:4px}
+.fv-rc-sub{margin:0;font-size:14.5px;color:var(--tsoft,#5A4E45)}
+.fv-sv-q{background:#2B211C}.fv-quote.big{width:min(100%,380px);padding:26px 22px 18px}.fv-quote.big blockquote{font-size:34px;line-height:1.12}
+.fv-sv-end{background:var(--fv-butter)}.fv-end-in{position:relative;display:grid;justify-items:center;gap:6px;text-align:center;width:min(100%,360px)}.fv-end-in h2{margin:0;font:600 clamp(26px,7vw,34px)/1.08 Fredoka,system-ui;text-wrap:balance}.fv-end-in p{margin:0;color:#3E352F}.fv-end-k{font:700 13px "Instrument Sans",system-ui!important;letter-spacing:.08em;text-transform:uppercase;margin-top:10px!important}
+.fv-sv-cta.big{min-height:56px;padding:0 30px;font-size:18px;background:var(--fv-ember);color:#fff}button.fv-sv-cta{cursor:pointer}
+
 @media (min-width:700px){.fv-flyer{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:end}.fv-flyer>.fv-by{grid-column:1/-1;margin:0}.fv-flyer .fv-fl-b{padding:0 6px 6px}.fv-flyer .fv-title{font-size:34px}.fv-wall{gap:34px}.fv-card{padding:18px}.fv-flyer{padding:16px 16px 20px}.fv-mini{width:178px}.fv-pols>.fv-pol{width:min(46%,250px)}}
 @media (max-width:420px){.fv-artpair{gap:14px 10px}.fv-art-b{padding:6px 8px 8px}.fv-hero>div{padding-right:0}.fv-hero-p{width:72px;right:2px;bottom:-10px;opacity:.95}.fv-hero-p svg{width:72px}.fv-hero h1{padding-right:56px}}
 @media (prefers-reduced-motion:reduce){.fv-fx i,.fv-lights .bulb,.fv-peek-p svg,.fv-ring.just-seen .fv-ring-c,.fv-react.pop span{animation:none!important}.fv-fx i{top:var(--y)!important}.fv-pol,.fv-art,.fv-mini,.fv-ring-c,.fv-sv-in{transition:none!important}.fv-pol:hover,.fv-art:hover,.fv-mini:hover{transform:rotate(var(--r,0deg))}}
@@ -352,5 +387,9 @@
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   window.FeedVisual = { rail, openStories, composePublic, composeSignedIn, wire, flyer, dump, note, mini, avatar, css, REG, deviceId, publicQuery };
+  // the swipe deck (public/swipedeck.js) on a first visit to /feed, signed in or out; it decides whether to show itself
+  if (location.pathname === "/feed") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
+    const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };
+    if (!done) document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go(); }
 })();
 // ---- end visual feed ----

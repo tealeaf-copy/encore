@@ -85,7 +85,7 @@
 
   // the line under the title, without the title again ("Saturday Run Club: a 5k" reads "A 5k")
   const lineOf = (x) => { const t = String(x.title || "").trim(), l = String(x.line || "").trim(); if (!t || !l) return l; if (l.toLowerCase() === t.toLowerCase()) return "";
-    if (l.toLowerCase().startsWith(t.toLowerCase())) { const r = l.slice(t.length).replace(/^[\s:,.\-–—]+/, ""); return r ? r[0].toUpperCase() + r.slice(1) : ""; } return l; };
+    if (l.toLowerCase().startsWith(t.toLowerCase())) { const r = l.slice(t.length).replace(/^[\s:,.\-\u2013\u2014\u00b7\u2022|]+/, ""); /* "Title · $45 a person" reads "$45 a person", no stray dot */ return r ? r[0].toUpperCase() + r.slice(1) : ""; } return l.replace(/^[\s\u00b7\u2022|]+/, ""); };
   /** One card. opts: { tilt: true } (default) for the scrapbook tilt; { fade: true } to animate in. */
   function card(x, opts = {}) { if (!x?.id) return ""; css(); items.set(x.id, x); const h = hash(x.id), tilt = opts.tilt === false ? 0 : ((h % 7) - 3) * 0.35;
     const tags = (x.tags || []).slice(0, 3).map((t) => intLabel(t)).filter(Boolean);

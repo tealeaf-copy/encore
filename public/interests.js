@@ -121,6 +121,10 @@
     step1(); box.querySelector(".pin-chip")?.focus({ preventScroll: true }); }
 
   /** The first visit to /feed, /events or /discover, signed out: show the picker once. */
-  function maybeAuto() { try { if (signedIn() || localStorage.getItem(SEEN) || local()) return; } catch { return; } if (!/^\/(feed|events|discover)$/.test(location.pathname)) return; setTimeout(() => open({ after: "visit" }), 900); }
-  window.PLInterests = { open, get, save, list, hostCard, eventCard, suggestions, css, maybeAuto };
+  // on /feed the swipe deck (public/swipedeck.js) comes first; its "Pick topics instead" opens this picker
+  function maybeAuto() { try { if (signedIn() || localStorage.getItem(SEEN) || local()) return; if (location.pathname === "/feed" && !localStorage.getItem("pl.deckDone")) return; } catch { return; } if (!/^\/(feed|events|discover)$/.test(location.pathname)) return; setTimeout(() => open({ after: "visit" }), 900); }
+  /** Swipe deck picks train the interests: merge these interest ids (and a city when none is set) and save. */
+  async function train(ids = [], city = "") { const cur = await get(), I = [...new Set([...(cur.interests || []), ...ids.filter((x) => /^[a-z0-9-]{1,30}$/.test(x))])].slice(0, 20);
+    if (!ids.length && (cur.city || !city)) return cur; return save({ interests: I, city: cur.city || city || "" }); }
+  window.PLInterests = { open, get, save, train, list, hostCard, eventCard, suggestions, css, maybeAuto };
 })();

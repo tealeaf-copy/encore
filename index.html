@@ -13065,6 +13065,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   // --- create: What's the plan? ---
   const TPL=[["Supper club","Supper club at my place, Saturday 7pm, 8 seats, $35 a person"],["Hack night","Hack night at the office, Thursday 6:30pm, about 20 people, pizza and lightning demos"],["Game night","Board game night at my place, Friday 7pm, 6 people, bring a snack"],["Potluck","Potluck in the park, Sunday 1pm, everyone brings a dish"],["Run club","Easy 5k run, Saturday 8am, McCarren Park, coffee after"],["Book club","Book club at the café, first Tuesday 7pm, 10 people"]];
   function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } }});
+    // the create canvas (public/canvas.js): a new event is made on the invite itself
+    if(!seed&&window.EventCanvas?.open&&!window.__hvClassic) return window.EventCanvas.open({mode:"new"});
     const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
       <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>Pasting a Discord post or a calendar invite works too.</small></label>
       <div id="hvIdeas" hidden></div>
@@ -13086,7 +13088,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-hvcov2]"); if(!b||!draft) return; window.openCoverSheet?.(draft,()=>{ const r=document.getElementById("hvCovRow"); if(r) r.innerHTML=hvCovRow(draft) }) });
   function hvCovRow(d){ const cov=typeof safeCover==="function"?safeCover(d.coverPhoto):"", art=!cov&&window.EventArt?window.EventArt.cover({...d,title:d.pubTitle||d.name||""},{label:"",title:""}):"";
     return `<span class="hv-covt" style="${cov?`background-image:url('${E(cov)}')`:""}" aria-hidden="true">${art}</span><span class="hv-covtx"><b>Cover photo</b><small>${cov?"Your photo":"A drawn cover. Upload your own if you like."}</small></span><button type="button" class="hv-b" data-hvcov2>${cov?"Change photo":"Add photo"}</button>` }
-  function openDetails(mode){ const d=draft; if(!d) return; const poll=d.stage==="interest"&&!d.date, home=/my place|our place|\bhome\b|apartment|\bflat\b|house|mine/i.test(d.meetPoint||"")||!!String(d.venueAddr||"").trim();
+  // create, edit and "ready to share" all open the canvas (public/canvas.js); this sheet stays as the fallback
+  function openDetails(mode){ const d=draft; if(!d) return; if(window.EventCanvas?.open&&!window.__hvClassic&&!d.drop) return window.EventCanvas.open({mode}); const poll=d.stage==="interest"&&!d.date, home=/my place|our place|\bhome\b|apartment|\bflat\b|house|mine/i.test(d.meetPoint||"")||!!String(d.venueAddr||"").trim();
     const visNow=(d.published||d.discoverable)?(typeof visOf==="function"?visOf(d):"page"):(d.lastVis||"page"), creating=mode!=="edit";
     const look=!!window.EncoreLooksApp;
     const S=sheet({title:mode==="share"?"Ready to share?":creating?"Check the details":"Edit details",sub:mode==="share"?"A last look before it goes out.":creating?"Potto filled these in. Fix anything that's off.":"",label:creating?"Check the details":"Edit details",body:`
@@ -13299,10 +13302,13 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   new MutationObserver(()=>{ if(!window.__hvClassic||q("#hvBackBar")) return; const v=q("#view-studio"); if(!v||v.hidden) return; const b=document.createElement("button"); b.id="hvBackBar"; b.type="button"; b.className="hv-b"; b.style.cssText="display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:0 0 12px;padding:0 16px;border-radius:999px;border:1.5px solid var(--pl-line-strong);background:#fff;font:600 15px 'Instrument Sans',system-ui;cursor:pointer"; b.textContent="Back to the simple view"; b.onclick=()=>{ window.__hvClassic=false; b.remove(); renderStep() }; v.prepend(b) }).observe(document.documentElement,{childList:true,subtree:true});
   // new replies, payments and check-ins show without a reload (no redraw while a sheet is open or someone types)
   setInterval(()=>{ try{ const h=q("#hv"); if(!h||h.hidden||q("#view-studio")?.hidden||!want()||q("#hvSheet")||isTyping()) return; if(sigOf(draft)!==HV.sig||(HV.loading&&performance.now()>=5000)) hvRender() }catch{} },1000);
-  window.HostEvent={ render:hvRender, openCreate, openDetails, openShare, openRules, openMessage, openPhotos, openTools };
+  window.HostEvent={ render:hvRender, openCreate, openDetails, openShare, openRules, openMessage, openPhotos, openTools,
+    // the create canvas (public/canvas.js) reads and swaps the open event; the page CSP has no eval
+    draft:()=>draft, useDraft:d=>{ draft=d; step=1 } };
 })();
 </script>
 <!-- ==================== end host event page ==================== -->
+<script src="/sections.js" defer></script><script src="/canvas.js" defer></script>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----

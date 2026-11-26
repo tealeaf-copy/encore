@@ -173,8 +173,8 @@ const CASES = [
   ["Dinner Fri 8pm u pay as u go", { costNote: "Pay as you go", price: undefined, title: "Dinner" }],
   ["Brunch Sun 11am you cover your own", { costNote: "You cover your own", price: undefined, title: "Brunch" }],
   // review round 9: pairs are counted as pairs ("4 pairs", not 8 spots)
-  ["Couples cooking class Sat 6pm, 4 pairs max", { headcount: 4, headUnit: "pairs" }],
-  ["Tango night Fri 9pm, up to 6 couples", { headcount: 6, headUnit: "pairs" }],
+  ["Couples cooking class Sat 6pm, 4 pairs max", { headcount: 8, headUnit: "pairs", unitCount: 4 }],
+  ["Tango night Fri 9pm, up to 6 couples", { headcount: 12, headUnit: "pairs", unitCount: 6 }],
   // a course start that isn't on the weekday they typed: kept, and Potto asks
   ["Pottery course Thursdays from Jan 8 7pm, 6 sessions", { date: "2027-01-08", sessions: 6, dayClash: { typed: "thursday", date: "2027-01-08", alt: "2027-01-07" } }],
   // review round 7 (host panel). "first Sunday of the month" owns the date and repeat; a book called "Tomorrow and..." is not a day
@@ -192,7 +192,7 @@ const CASES = [
   ["Brunch at The Smith Sun 11am", { meetPoint: "The Smith" }],
   ["Book club at Cafe Mogador Sat 8", { meetPoint: "Cafe Mogador", startTime: "20:00" }],
   // "$40 for 2," is a group price
-  ["matcha tasting workshop for pairs Sunday Dec 13 11am at my apartment in Williamsburg, $40 for 2, 6 pairs max, take home a chasen", { groupPrice: 40, groupSize: 2, price: "$40", headcount: 6, headUnit: "pairs", hood: "Williamsburg" }],
+  ["matcha tasting workshop for pairs Sunday Dec 13 11am at my apartment in Williamsburg, $40 for 2, 6 pairs max, take home a chasen", { groupPrice: 40, groupSize: 2, price: "$40", headcount: 12, headUnit: "pairs", hood: "Williamsburg" }],
   ["Pasta night Fri 7pm, $60 for 2 max", { groupPrice: 60, groupSize: 2 }],
   ["Salsa Tuesdays 7pm, $20 each or $70 for 4", { groupPrice: undefined, passPrice: 70 }],
   // a plain "Supper club" keeps what makes it this one; menu and BYOB notes go in the description

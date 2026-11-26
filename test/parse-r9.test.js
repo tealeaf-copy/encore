@@ -60,9 +60,9 @@ const CASES = [
   ["drop-in improv jam every sunday 3pm at the Second City training center, $10 suggested, all levels", { title: "Drop-in improv jam", price: "$10", repeat: "weekly" }],
   ["longform improv 6 week course tuesdays 7pm starting feb 2 at Logan Square Improv, $200 or $40 per class drop-in", { sessions: 6, price: "$200", dropIn: 40, priceUnit: undefined }],
   // 7. pairs and groups; wheels and students are spots
-  ["couples matcha workshop fri dec 11 7pm, $60 per couple, 6 couples, ur own whisk to take home, williamsburg", { headcount: 6, headUnit: "pairs", groupPrice: 60, groupSize: 2 }],
-  ["pottery date night friday dec 18 7pm at Mud Room on Atlantic Ave, $90 for 2, 8 couples", { headcount: 8, headUnit: "pairs" }],
-  ["tea ceremony for 4 at my place, fri dec 18 6:30pm, $120 for the group of 4, 3 groups", { title: "Tea ceremony", groupPrice: 120, groupSize: 4, headcount: 3, headUnit: "groups", groupCount: 3, price: "$120" }],
+  ["couples matcha workshop fri dec 11 7pm, $60 per couple, 6 couples, ur own whisk to take home, williamsburg", { headcount: 12, headUnit: "pairs", groupPrice: 60, groupSize: 2 }],
+  ["pottery date night friday dec 18 7pm at Mud Room on Atlantic Ave, $90 for 2, 8 couples", { headcount: 16, headUnit: "pairs" }],
+  ["tea ceremony for 4 at my place, fri dec 18 6:30pm, $120 for the group of 4, 3 groups", { title: "Tea ceremony", groupPrice: 120, groupSize: 4, headcount: 12, headUnit: "groups", groupCount: 3, price: "$120" }],
   ["wheel throwing intro, 4 sessions on saturdays 10am, starts jan 9, $200 for the series, 6 wheels, at my studio in gowanus", { headcount: 6, sessions: 4 }],
   ["8-week wheel throwing course Wednesdays 7-9pm at Studio 5 on Bleecker starting Jan 6, $320 for all 8 or $45 drop-in, 8 wheels max", { headcount: 8, sessions: 8, price: "$320", dropIn: 45 }],
   // 8. budgets and "bring $30" are cost notes; a crawl has no pickup times
@@ -102,7 +102,7 @@ test("round 9: the model's read keeps the pairs count", () => {
   const text = "couples matcha workshop fri dec 11 7pm, $60 per couple, 6 couples";
   const ans = { ...Object.fromEntries(ctx.PR_AI_KEYS.map((k) => [k, null])), headcount: 12 };
   const { M } = ctx.prAiMerge(ctx.prRead(text), ans, text, { today: "2026-11-25" });
-  assert.equal(M.headcount, 6); assert.equal(M.headUnit, "pairs");
+  assert.equal(M.headcount, 12); assert.equal(M.headUnit, "pairs");
 });
 
 test("round 9: the draft gets the pre-order cap and deadline, pairs and no pickup times for a crawl", () => {

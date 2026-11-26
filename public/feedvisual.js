@@ -123,7 +123,9 @@
   const ctaOf = (e) => e.cta || { label: "I'm in", url: e.url || "#" };
   const ctaBtn = (c, cls = "fv-btn primary") => (c.follow ? `<button type="button" class="${cls}" data-fv-follow="${esc(c.follow)}" data-url="${esc(c.url || "#")}">${esc(c.label || "Follow")}</button>` : `<a class="${cls}" href="${esc(c.url || "#")}">${esc(c.label)}</a>`);
   const slot = (name, inner = "", hidden = true) => `<div class="fv-slot" data-fv-slot="${name}"${hidden ? " hidden" : ""}>${inner}</div>`;
-  const byline = (b) => (b ? `<p class="fv-by">${avatar(b.who, 24)}<span>${b.html}</span></p>` : "");
+  // app store: report and block (public/safety.js adds a "More" button to anything with data-report)
+  const rep = (o) => ` data-report="${esc(JSON.stringify(o))}"`;
+  const byline = (b) => (b ? `<p class="fv-by"${b.who?.key ? rep({ type: "person", target: "person:" + b.who.key, key: b.who.key, name: b.who.name || "" }) : ""}>${avatar(b.who, 24)}<span>${b.html}</span></p>` : "");
   // secondary actions live behind one quiet "More" button
   const more = (L, label = "") => { L = L.filter(Boolean); return L.length ? `<details class="fv-more"><summary aria-label="More${label ? " for " + esc(label) : ""}"><span aria-hidden="true"></span></summary><div class="fv-menu">${L.join("")}</div></details>` : ""; };
   // one quiet word under an event at most: Example, spots left, or how many are in (friends going wins when it loads)
@@ -154,7 +156,7 @@
     const ph = (p, i) => `<button type="button" class="fv-ph${i ? "" : " lead"}"${i ? "" : ` style="--r:${r}deg"`} data-fv-open="${esc(sk)}" data-k="${i}" aria-label="Open photo ${i + 1} of ${P.length}${p.caption ? ": " + esc(p.caption) : ""}">${i ? "" : tape(0, "top")}${mediaBox(p, { ratio: i ? "1/1" : "4/5" })}${i ? "" : `<span class="fv-cap">${esc(p.caption || (p.by ? "from " + p.by : dayOf(e.date, { month: "short", day: "numeric" })))}</span>`}${i && i === show.length - 1 && extra > 0 ? `<span class="fv-plus" aria-hidden="true">+${extra}</span>` : ""}</button>`;
     const album = show.length ? `<div class="fv-album n${show.length}">${show.map(ph).join("")}</div>` : `<div class="fv-album n1"><span class="fv-ph lead art" style="--r:${r}deg">${tape(0, "top")}<span class="fv-mb" style="aspect-ratio:4/5">${art(e)}</span><span class="fv-cap">${esc(dayOf(e.date, { month: "short", day: "numeric" }))}</span></span></div>`;
     const data = [dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), where(e), e.came ? `${e.came} came` : "", e.kudos ? `${e.kudos} kudos` : "", e.sample ? "Example" : ""].filter(Boolean).join(" · ");
-    const Q = quote || e.quote, q = Q?.text ? `<blockquote class="fv-q"><p>"${esc(Q.text)}"</p><cite>${esc(Q.name || "A guest")}${Q.verifiedLabel ? ` · ${esc(Q.verifiedLabel)}` : ""}</cite></blockquote>` : "";
+    const Q = quote || e.quote, q = Q?.text ? `<blockquote class="fv-q"${rep({ type: "kudos", text: Q.text, name: Q.name || "" })}><p>"${esc(Q.text)}"</p><cite>${esc(Q.name || "A guest")}${Q.verifiedLabel ? ` · ${esc(Q.verifiedLabel)}` : ""}</cite></blockquote>` : "";
     const drop = !by && e.newPhotos ? { who: e.host, html: `<b>${esc(e.host?.name || "A host")}</b> · ${esc(plural(e.newPhotos, "new photo"))} from guests` } : null; by = by || drop || (e.host ? { who: e.host, html: `<b>${esc(e.host.name)}</b>` } : null);
     return `<article class="fv-card fv-scrap${drop ? " drop" : ""}" data-fv-id="${esc(e.id || "")}">${byline(by)}${album}<h3 class="fv-title sm"><a href="${esc((ctaOf(e).follow ? "" : ctaOf(e).url) || e.page || e.url || "#")}">${esc(e.title)}</a></h3><p class="fv-data">${esc(data)}</p>${q}
       <div class="fv-acts">${ctaBtn(ctaOf(e))}${e.id ? reacts(e) : ""}${more([likeBtn(e), (e.sample || /^s[cx]-/.test(e.id || "") ? "" : saveSpot({ kind: "event", id: e.id, ref: e.id, title: e.title, url: e.page || e.url || "", img: P[0]?.poster || (P[0]?.type === "video" ? "" : P[0]?.url) || "" }))], e.title)}</div></article>`; }

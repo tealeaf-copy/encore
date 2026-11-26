@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reports · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--ember:#C94A30}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "Instrument Sans",system-ui,-apple-system,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 80px}h1{font:600 28px/1.15 Fredoka,system-ui,sans-serif;margin:0 0 4px}
+.tabs{display:flex;gap:8px;margin:16px 0}.tabs button{min-height:36px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
+.tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.r{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px;display:grid;gap:6px}
+.r.hid{border-color:#E7C4B8;background:#FBF3EF}.meta{color:var(--smoke);font-size:13px}.t{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.r img{max-width:220px;max-height:220px;border-radius:12px;object-fit:cover}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts button{min-height:36px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
+.acts .hide{background:var(--ember);color:#fff;border-color:var(--ember)}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600;background:#EFE6D8}
+</style>
+</head>
+<body>
+<main>
+  <h1>Reports</h1>
+  <p class="meta">Reply to every report within 24 hours. Hide takes it out of every feed, page and photo wall. Restore puts it back.</p>
+  <div class="tabs" role="group" aria-label="Show"><button type="button" data-s="open" aria-pressed="true">Open</button><button type="button" data-s="hidden" aria-pressed="false">Hidden</button><button type="button" data-s="all" aria-pressed="false">All</button></div>
+  <div id="list"></div>
+</main>
+<script>
+(function () {
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  let status = "open";
+  const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + "m ago" : m < 1440 ? Math.round(m / 60) + "h ago" : Math.round(m / 1440) + "d ago"; };
+  const who = (t) => { if (t.startsWith("person:")) { try { return atob(t.slice(7).replace(/-/g, "+").replace(/_/g, "/")); } catch { return t; } } return t; };
+  async function draw() {
+    const j = await (await fetch("/api/admin/reports?status=" + status, { credentials: "same-origin" })).json(), L = j.reports || [];
+    document.getElementById("list").innerHTML = L.length ? L.map((r) => `<article class="r${r.hidden ? " hid" : ""}" id="r-${esc(r.id)}">
+      <div><b>${esc(j.reasons[r.reason] || r.reason)}</b> on a ${esc(r.type)} <span class="pill">${esc(r.status)}</span>${r.hidden ? ' <span class="pill">hidden</span>' : ""}${r.count > 1 ? ` <span class="pill">${r.count} reports</span>` : ""}</div>
+      <div class="meta">${ago(r.at)} · ${esc(who(r.target))}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a>` : ""}${r.from ? " · from " + esc(r.from) : ""}</div>
+      ${r.target.startsWith("moment:") ? `<img src="${esc(r.target.slice(7))}" alt="Reported photo">` : ""}${r.text ? `<div class="t">${esc(r.text)}</div>` : ""}${r.note ? `<div class="t">Note: ${esc(r.note)}</div>` : ""}
+      <div class="acts">${r.hidden ? `<button type="button" data-a="restore" data-id="${esc(r.id)}">Restore</button>` : `<button type="button" class="hide" data-a="hide" data-id="${esc(r.id)}">Hide</button>`}<button type="button" data-a="dismiss" data-id="${esc(r.id)}">Dismiss</button></div></article>`).join("") : `<p class="meta">Nothing here.</p>`;
+  }
+  document.getElementById("list").onclick = async (e) => { const b = e.target.closest("[data-a]"); if (!b) return; b.disabled = true;
+    await fetch("/api/admin/reports/" + b.dataset.id, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: b.dataset.a }) }); draw(); };
+  document.querySelector(".tabs").onclick = (e) => { const b = e.target.closest("[data-s]"); if (!b) return; status = b.dataset.s; document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); draw(); };
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Community rules · Pottery Lab</title>
+<meta name="description" content="How we keep Pottery Lab kind and safe: the rules, how to report or block someone, and how to reach us.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="/authguard.js"></script>
+<style>
+:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--ember:#C94A30}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#F7F1E8;--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,-apple-system,sans-serif}
+main{max-width:680px;margin:0 auto;padding:max(32px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}
+h1{font:600 40px/1.1 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0 0 8px}
+h2{font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:24px 0 8px}
+p,li{color:var(--ink)}.lead{color:var(--smoke);margin:0 0 24px}
+section{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px}
+section h2{margin-top:0}ul{padding-left:20px;margin:0}li{margin:4px 0}
+form{display:grid;gap:12px}label{font-weight:600;font-size:14px;display:grid;gap:4px}
+input,textarea,select{border:1.5px solid var(--line-strong);border-radius:12px;min-height:48px;padding:10px 12px;font:16px/1.4 inherit;background:var(--card);color:var(--ink);font-weight:400}
+textarea{min-height:120px}
+button{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--ember);color:#fff;cursor:pointer;justify-self:start}
+.msg{color:var(--smoke);font-size:14px;margin:0;min-height:20px}
+a{color:var(--ember)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Community rules</h1>
+  <p class="lead">Pottery Lab is for hosting and going to things with people you like. Keep it kind, keep it real, keep it safe.</p>
+  <section>
+    <h2>The rules</h2>
+    <ul>
+      <li>Be kind. No hate, harassment, threats or bullying, about anyone.</li>
+      <li>No sexual content, and nothing violent or graphic.</li>
+      <li>No spam, scams, or fake events, hosts or kudos.</li>
+      <li>Don't share someone's private info: phone numbers, addresses, emails or photos they didn't agree to.</li>
+      <li>Events are real and safe. Say what guests should know: the place, the cost, who it's for.</li>
+      <li>Kudos and reviews are about events you went to.</li>
+    </ul>
+    <p>We don't allow objectionable content or abusive people. Breaking these rules gets content taken down, and can get an account removed.</p>
+  </section>
+  <section>
+    <h2>Report or block</h2>
+    <ul>
+      <li><b>Report:</b> tap ⋯ on a post, photo, kudos or person, or long press a photo. On a host's page, use "Report this page" at the bottom.</li>
+      <li><b>Block:</b> from the same ⋯, or "Block this host". You stop seeing their posts, photos and events. Undo it in <a href="/settings">Settings</a>.</li>
+      <li>We look at every report within 24 hours. If three people report the same thing, it's hidden right away while we look.</li>
+      <li>The person you report isn't told who reported them.</li>
+    </ul>
+  </section>
+  <section id="contact">
+    <h2>Contact us</h2>
+    <p id="mail">Write to us here, and we reply by email.</p>
+    <form id="f">
+      <label>Your email<input type="email" name="email" autocomplete="email" required></label>
+      <label>What's going on?<textarea name="note" maxlength="1000" required></textarea></label>
+      <label>Link to the page (optional)<input type="url" name="link" placeholder="https://"></label>
+      <button type="submit">Send</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+  </section>
+  <p class="lead">See also our <a href="/privacy">privacy policy</a> and <a href="/terms">terms</a>.</p>
+</main>
+<script>
+(async function () {
+  try { const S = await (await fetch("/api/public/safety")).json(); if (S.email) document.getElementById("mail").innerHTML = `Email <a href="mailto:${S.email.replace(/[<>"&]/g, "")}">${S.email.replace(/[<>"&]/g, "")}</a>, or write to us here.`; } catch {}
+  document.getElementById("f").onsubmit = async (e) => { e.preventDefault(); const f = e.target, msg = document.getElementById("msg");
+    let url = ""; try { const u = new URL(f.link.value); if (u.origin === location.origin) url = u.pathname + u.search; } catch {}
+    const r = await fetch("/api/report", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "other", target: "other:contact", reason: "other", note: f.note.value + (f.link.value && !url ? "\n" + f.link.value : ""), email: f.email.value, url }) });
+    const j = await r.json().catch(() => ({})); msg.textContent = r.ok ? "Thanks. We'll reply by email within a day." : j.message || "That didn't send. Try again."; if (r.ok) f.reset(); };
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/shell.js"></script>
+</body>
+</html>

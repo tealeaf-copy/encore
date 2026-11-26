@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Settings · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="/authguard.js"></script>
+<style>
+:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--ember:#C94A30;--frame:#5A3B2B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#F7F1E8;--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,-apple-system,sans-serif}
+main{max-width:640px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}
+h1{font:600 28px/1.15 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0 0 24px}
+h2{font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0 0 4px}
+section{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px}
+section>p{margin:0 0 12px;color:var(--smoke);font-size:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;border-top:1.5px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row span small{display:block;color:var(--smoke);font-size:13px}
+.sw{appearance:none;width:48px;height:28px;border-radius:999px;background:var(--line-strong);position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw:checked{background:var(--ember)}.sw:checked::after{transform:translateX(20px)}
+.sw:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+.btn{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.btn.go{background:var(--ember);border-color:var(--ember);color:#fff}
+.btn.danger{color:#B04A30;border-color:#B04A30}
+.btn.sm{min-height:36px;padding:0 14px;font-size:14px}
+ul.links{list-style:none;margin:0;padding:0}ul.links li{border-top:1.5px solid var(--line)}ul.links li:first-child{border-top:0}
+ul.links a{display:flex;min-height:48px;align-items:center;color:var(--ink);text-decoration:none}
+ul.links a::after{content:"›";margin-left:auto;color:var(--smoke);font-size:20px}
+#delete{border-color:#E7C4B8}
+.pending{background:#FBEDE8;border:1.5px solid #E7C4B8;border-radius:12px;padding:12px;margin:0 0 12px;color:#1F1A17}
+form.del{display:grid;gap:12px;margin-top:12px}
+form.del label.opt{display:flex;gap:10px;align-items:flex-start;font-size:16px}
+form.del label.opt input{margin-top:4px;width:20px;height:20px;accent-color:var(--ember)}
+form.del label.opt small{display:block;color:var(--smoke);font-size:13px}
+form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12px;min-height:48px;padding:0 12px;font:16px inherit;background:var(--card);color:var(--ink)}
+.what{margin:8px 0 0;padding-left:20px;color:var(--smoke);font-size:14px}
+.msg{font-size:14px;color:var(--smoke);min-height:20px;margin:0}
+.signedout{text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <h1>Settings</h1>
+  <div id="out" class="signedout" hidden>
+    <section><h2>Sign in to change your settings</h2><p>To delete your account, sign in first. Then come back here.</p><a class="btn go" href="/login?next=%2Fsettings%23delete">Sign in</a></section>
+  </div>
+  <div id="in" hidden>
+    <section aria-labelledby="hAcct"><h2 id="hAcct">Your account</h2><p id="who"></p>
+      <div class="row"><span>Sign out on this device</span><button type="button" class="btn sm" id="signOut" data-signout>Sign out</button></div>
+    </section>
+    <section aria-labelledby="hNote"><h2 id="hNote">Notifications</h2><p>Choose what Potto taps you about. Your phone's Focus and Do Not Disturb still apply.</p>
+      <div id="pushRows"></div>
+      <div class="row"><span>Emails<small>Reminders and updates by email</small></span><input type="checkbox" class="sw" id="emails" aria-label="Emails"></div>
+    </section>
+    <section aria-labelledby="hBlock"><h2 id="hBlock">Blocked</h2><p>People and hosts you blocked. You don't see their posts, photos or events.</p><div id="blocks"></div></section>
+    <section aria-labelledby="hHelp"><h2 id="hHelp">Help and safety</h2>
+      <ul class="links"><li><a href="/community">Community rules and reporting</a></li><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms</a></li><li><a href="/community#contact" id="contactLink">Contact us</a></li></ul>
+    </section>
+    <section id="delete" aria-labelledby="hDel"><h2 id="hDel">Delete your account</h2>
+      <div id="pending" class="pending" hidden></div>
+      <div id="delBox"><p>This deletes your account and your page, events, posts, photos, friends and settings. Hosts keep a count of your past replies, without your name or email.</p>
+        <button type="button" class="btn danger" id="delOpen">Delete account</button>
+        <form class="del" id="delForm" hidden>
+          <label class="opt"><input type="radio" name="when" value="later" checked><span>Delete in <b id="days">14</b> days<small>You're signed out now and your things are hidden. Sign in before then to keep your account.</small></span></label>
+          <label class="opt"><input type="radio" name="when" value="now"><span>Delete now<small>Everything goes right away. This can't be undone.</small></span></label>
+          <label for="confirm">Type DELETE to confirm</label><input type="text" id="confirm" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn go" id="delGo">Delete my account</button><button type="button" class="btn" id="delCancel">Keep my account</button></div>
+          <p class="msg" id="delMsg" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </div>
+</main>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const get = async (u) => { const r = await fetch(u, { credentials: "same-origin" }); if (!r.ok) throw Object.assign(new Error("http " + r.status), { status: r.status }); return r.json(); };
+  const send = async (u, body, method = "POST") => { const r = await fetch(u, { method, credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work. Try again."); return j; };
+  let me = null; try { me = await get("/api/me"); } catch {}
+  if (!me?.verified) { $("#out").hidden = false; return; }
+  $("#in").hidden = false; $("#who").textContent = `Signed in as ${me.name || ""}${me.email ? " (" + me.email + ")" : ""}`;
+  $("#signOut").onclick = async () => { try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} try { navigator.serviceWorker?.controller?.postMessage("signed-out"); } catch {} location.href = "/"; };
+  // notifications
+  try { const P = await get("/api/me/push"), rows = $("#pushRows");
+    rows.innerHTML = Object.entries(P.kinds).map(([k, label]) => `<div class="row"><span>${esc(label)}</span><input type="checkbox" class="sw" data-k="${k}" aria-label="${esc(label)}"${P.prefs.on && P.prefs[k] ? " checked" : ""}></div>`).join("") +
+      (P.devices.length ? "" : `<p class="msg" style="margin-top:8px">${window.EncoreNativePush ? `<button type="button" class="btn sm" id="pushAsk">Turn on notifications</button>` : "Push notifications work in the Pottery Lab app."}</p>`);
+    rows.onchange = async (e) => { const k = e.target.dataset.k; if (!k) return; try { await send("/api/me/push/prefs", { on: true, [k]: e.target.checked }); } catch (err) { e.target.checked = !e.target.checked; alert(err.message); } };
+    $("#pushAsk")?.addEventListener("click", () => window.EncoreNativePush.ask());
+  } catch {}
+  try { const E = await get("/api/me/prefs"); $("#emails").checked = E.emails !== false; } catch {}
+  $("#emails").onchange = (e) => send("/api/me/prefs", { emails: e.target.checked }).catch(() => {});
+  // blocked
+  async function drawBlocks() { const B = (await get("/api/me/blocks")).blocks || [], el = $("#blocks");
+    el.innerHTML = B.length ? B.map((b) => `<div class="row"><span>${esc(b.name || (b.target.startsWith("host:") ? "@" + b.target.slice(5) : "Someone"))}<small>${b.target.startsWith("host:") ? "Host" : "Person"}</small></span><button type="button" class="btn sm" data-t="${esc(b.target)}">Unblock</button></div>`).join("") : `<p class="msg">No one. If someone bothers you, open the ⋯ on their post or page.</p>`;
+    el.onclick = async (e) => { const t = e.target.dataset.t; if (!t) return; await fetch("/api/me/blocks?target=" + encodeURIComponent(t), { method: "DELETE", credentials: "same-origin" }); drawBlocks(); }; }
+  drawBlocks().catch(() => {});
+  try { const S = await get("/api/public/safety"); if (S.email) { const a = $("#contactLink"); a.href = "mailto:" + S.email; a.textContent = "Contact us (" + S.email + ")"; } } catch {}
+  // delete
+  async function drawDelete() { const D = await get("/api/me/delete"); $("#days").textContent = D.graceDays;
+    if (!D.graceDays) { document.querySelector('input[value="now"]').checked = true; document.querySelector('input[value="later"]').closest("label").hidden = true; }
+    if (D.pending) { $("#pending").hidden = false; $("#pending").innerHTML = `Your account will be deleted on <b>${esc(new Date(D.deleteAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))}</b>. <button type="button" class="btn sm go" id="keep" style="margin-left:8px">Keep my account</button>`; $("#delBox").hidden = true;
+      $("#keep").onclick = async () => { const j = await send("/api/me/delete/cancel"); $("#pending").textContent = j.message; $("#delBox").hidden = false; }; } }
+  drawDelete().catch(() => {});
+  $("#delOpen").onclick = () => { $("#delForm").hidden = false; $("#delOpen").hidden = true; $("#confirm").focus(); };
+  $("#delCancel").onclick = () => { $("#delForm").hidden = true; $("#delOpen").hidden = false; $("#confirm").value = ""; };
+  $("#delForm").onsubmit = async (e) => { e.preventDefault(); const when = e.target.when.value, msg = $("#delMsg");
+    if ($("#confirm").value.trim().toUpperCase() !== "DELETE") { msg.textContent = "Type DELETE to confirm."; return; }
+    $("#delGo").disabled = true; msg.textContent = "Deleting…";
+    try { const j = await send("/api/me/delete", { confirm: "DELETE", when }); try { navigator.serviceWorker?.controller?.postMessage("signed-out"); } catch {}
+      document.querySelector("main").innerHTML = `<h1>${when === "now" ? "Your account is deleted" : "Your account is set to be deleted"}</h1><section><p style="color:inherit">${esc(j.message)}</p><a class="btn go" href="/">Done</a></section>`;
+    } catch (err) { msg.textContent = err.message; $("#delGo").disabled = false; } };
+  if (location.hash === "#delete") setTimeout(() => $("#delete").scrollIntoView({ block: "start" }), 50);
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/shell.js"></script>
+</body>
+</html>

@@ -9070,7 +9070,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
     const sb=document.getElementById("stepBtn"); if(sb&&isFriendsDraft?.()){ const L=[1,6,4,7], i=L.indexOf(+step); const want=i>=0?`${STEP_NAMES[step]||""} ▾`:sb.textContent; if(sb.textContent!==want) sb.textContent=want }
     // Home: a sign-out link at the bottom on phones
     const home=document.getElementById("view-programs"), so=document.getElementById("signOutM"); if(home&&so&&so.parentElement===home&&home.lastElementChild!==so&&(so.dataset.mv=(+so.dataset.mv||0)+1)<6) home.appendChild(so);
-    if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a>`; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
+    if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a> · <a href="/settings" class="note">Settings</a>`/* app store: Settings, with Delete account */; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
   }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // "Open the plan" links from Your plans and the event page land on that event
 // back from signing in: put the event that couldn't save back on screen and save it

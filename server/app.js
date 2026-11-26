@@ -46,6 +46,7 @@ import { mountSlots } from "./slots.js"; // review round 13: slots on the invite
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
+import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
 import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
@@ -246,7 +247,7 @@ export function createApp({ store, dataDir }) {
   // (the old onrender address, www.) is sent there permanently, same path and query. API calls are left alone so
   // pages already open keep working; localhost and tests are never redirected.
   app.use((req, res, next) => { const canon = String(process.env.ENCORE_CANONICAL_HOST || "").trim().toLowerCase(), host = String(req.hostname || "").toLowerCase();
-    if (!canon || !host || host === canon || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api/")) return next();
+    if (!canon || !host || host === canon || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || !/^(GET|HEAD)$/.test(req.method) || req.path.startsWith("/api/") || req.path.startsWith("/.well-known/")) return next(); // app store: Apple and Google read /.well-known on every host, with no redirect
     res.redirect(301, `https://${canon}${req.originalUrl}`); });
   const CSP_RO = ["default-src 'self'", "script-src 'self' 'unsafe-inline'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' https://fonts.gstatic.com data:", "img-src 'self' data: blob: https:", "media-src 'self' blob: https:", "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com", "frame-ancestors 'self'", "base-uri 'self'", "form-action 'self'", "report-uri /api/csp-report"].join("; ");
   // enforced since every page ran clean under report-only; violations are still reported to /api/csp-report
@@ -269,6 +270,8 @@ export function createApp({ store, dataDir }) {
   // such as "loopback"); otherwise anyone could pick their own IP and dodge the login limit.
   const tp = String(process.env.ENCORE_TRUST_PROXY || "").trim();
   app.set("trust proxy", !tp || /^(0|false|off|no)$/i.test(tp) ? false : /^\d+$/.test(tp) ? Number(tp) : /^true$/i.test(tp) ? true : tp);
+  // ---- app store (server/appstore.js): mounted first so its report/block filter and text check wrap the routes below ----
+  mountAppStore(app, { store, express, small: express.json({ limit: "10kb" }), currentUser, X, sendStatic: (...a) => sendStatic(...a), publicOrigin: (req) => originOf(req), dataDirOf: () => dataDir });
 
   // ---------- public, ungated ----------
   // address search for place fields: OpenStreetMap's Photon (no key), cached; set ENCORE_PLACES_URL to use another Photon-compatible server, or "off"
@@ -566,7 +569,7 @@ export function createApp({ store, dataDir }) {
   async function builtPage() {
     const st = await fsp.stat(PAGE_FILE); if (pageCache && pageCache.mtime === st.mtimeMs) return pageCache;
     if (pageBuilding) return pageBuilding;
-    pageBuilding = (async () => { const html = Buffer.from(process.env.ENCORE_INLINE_APP === "1" ? HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL : splitPage(HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL)), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
+    pageBuilding = (async () => { const html = Buffer.from(process.env.ENCORE_INLINE_APP === "1" ? HEAD + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL : splitPage(pwaHead(HEAD) + (await fsp.readFile(PAGE_FILE, "utf8")) + TAIL)), etag = '"' + crypto.createHash("sha1").update(html).digest("base64url").slice(0, 20) + '"';
       const P = { mtime: st.mtimeMs, html, etag, br: null, gz: zlib.gzipSync(html, { level: 9 }) }; pageCache = P;
       zlib.brotliCompress(html, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: html.length } }, (err, out) => { if (!err && pageCache === P) P.br = out; });
       return P; })().finally(() => { pageBuilding = null; });
@@ -648,6 +651,7 @@ export function createApp({ store, dataDir }) {
   // by content hash, so a page or script is compressed once per version.
   const brCache = new Map();
   function sendText(req, res, body, { type = "html", cache = "private, no-cache" } = {}) {
+    if (type === "html" && !Buffer.isBuffer(body)) body = pwaHead(body, req.path); // app store: manifest, icons, service worker, native bridge
     const buf = Buffer.isBuffer(body) ? body : Buffer.from(String(body)), etag = '"' + crypto.createHash("sha1").update(buf).digest("base64url").slice(0, 20) + '"';
     res.set({ "Cache-Control": cache, ETag: etag, Vary: "Accept-Encoding" }).type(type);
     if (req.headers["if-none-match"] === etag) return res.status(304).end();

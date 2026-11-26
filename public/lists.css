@@ -5,7 +5,7 @@
 .ls-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 20px}
 .ls-head h1{font:600 var(--fs-28-40,28px)/1.1 var(--sys-display,Fredoka,system-ui);letter-spacing:-.01em;margin:0;color:var(--ink,#1F1A17)}
 .ls-head h1 em{font-style:normal;color:var(--sys-ember,#C94A30)}
-.ls-what{margin:8px 0 0;max-width:560px;color:var(--smoke,#665A51);font-size:16px;line-height:1.5}
+.ls-what{margin:8px 0 0;max-width:640px;text-wrap:pretty;color:var(--smoke,#665A51);font-size:16px;line-height:1.5}
 .ls-potto{flex:none;width:64px;height:64px}.ls-potto svg{width:64px;height:64px}
 /* filters: one calm row that scrolls inside itself, plain labels, the active one filled */
 .ls-filters{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-padding:0 16px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}

@@ -87,6 +87,7 @@ export const REACTIONS = ["🔥", "😍", "🥟", "🙌"];
 
 import { togetherOf } from "./comewith.js"; // "Come with me?": "Mia and Jo are in" on a card
 import { hostedCount, countLine, isPublicEvent } from "./hostlike.js"; // "Host one like this": "3 people hosted this after seeing it"
+import { seriesKey } from "./episodes.js"; // one card per series: the next episode coming up, the latest one past
 export function makeFeedVisual(store, { C, X }) {
   // One pass over the index per rebuild: moments, kudos and who came grouped by event (and moments by workspace), and each
   // workspace's host card and sample flag read once, so building a card no longer scans every moment and guest list.
@@ -165,7 +166,11 @@ export function makeFeedVisual(store, { C, X }) {
   function sections({ email = "", device = "", interests = [], city = "" } = {}) {
     const I = X.index(), now = Date.now(), t = today(now), all = [...I.events.values()].filter((x) => hostOf(x.ws, I));
     const P = { interests: cleanInterests(interests), city: lc(clean(city, 60)) }, fit = (x) => fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""} ${x.e.format || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`);
-    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws, I) - sample(b.ws, I)) || fit(b) - fit(a) || String(a.e.date).localeCompare(String(b.e.date))).slice(0, 16).map((x) => card(I, x, { email, device }));
+    // the feed is a short weekly read, not a listing: real events first, the visitor's city before anywhere else, then fit and
+    // date; one card per series (its next episode) and 12 at most
+    const local = (x) => (P.city && lc(`${x.e.city || ""} ${x.e.hood || ""}`).includes(P.city) ? 1 : 0), once = new Set();
+    const oneEach = (x) => { const k = x.ws + "|" + (seriesKey(x.e.pubTitle || x.e.name) || x.id); if (once.has(k)) return false; once.add(k); return true; };
+    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws, I) - sample(b.ws, I)) || local(b) - local(a) || fit(b) - fit(a) || String(a.e.date).localeCompare(String(b.e.date))).filter(oneEach).slice(0, 12).map((x) => card(I, x, { email, device }));
     // a quiet city still has something coming up: Discover's example events, marked as examples, after the real ones
     if (upcoming.length < 6) { try { const have = new Set(upcoming.map((e) => e.id)); for (const d of C.discover().events || []) { if (upcoming.length >= 8) break; if (!d?.id || have.has(d.id) || !d.host?.handle || d.unlisted || (d.date && d.date < t)) continue; have.add(d.id);
       upcoming.push({ id: d.id, title: d.title || d.name || "", date: d.date || "", startTime: d.startTime || "", city: d.city || "", hood: d.hood || "", emoji: d.emoji || "", activity: d.activity || "", approvalRequired: !!d.approvalRequired, past: false, cover: MEDIA_OK(d.coverPhoto) ? d.coverPhoto : "", coverArt: artOf(d), look: {}, host: { handle: d.host.handle, name: d.host.name, emoji: d.host.emoji || "🎉", color: d.host.color || "#E26D8E", avatarArt: d.host.avatarArt || "", avatarUrl: "" }, url: `/g#rsvp-${encodeURIComponent(d.id)}`, page: `/@${d.host.handle}`, going: d.going || 0, sample: !!d.sample, fresh: false, cta: eventCta(d, d.id) }); } } catch {} }
@@ -175,8 +180,10 @@ export function makeFeedVisual(store, { C, X }) {
     const fitC = (c) => fitOf(P, `${c.title} ${c.activity}`, `${c.city} ${c.hood}`);
     // ordered on what's known before a card is built (has photos this viewer may see, example, fit, newest), then only 12 built
     const pastK = pastX.map((x) => ({ x, ph: momentsOf(I, x.id).some((m) => momentSeen(I, m, email)), sm: sample(x.ws, I), fit: fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`), date: x.e.date || "" }));
-    const past = pastK.sort((a, b) => (b.ph - a.ph) || (a.sm - b.sm) || b.fit - a.fit || String(b.date).localeCompare(String(a.date))).slice(0, 12).map((k) => card(I, k.x, { email, device }));
-    if (P.interests.length || P.city) upcoming.sort((a, b) => (!!a.sample - !!b.sample) || fitC(b) - fitC(a) || String(a.date).localeCompare(String(b.date)));
+    once.clear(); // past: the latest episode with photos stands for its series
+    const past = pastK.sort((a, b) => (b.ph - a.ph) || (a.sm - b.sm) || b.fit - a.fit || String(b.date).localeCompare(String(a.date))).filter((k) => oneEach(k.x)).slice(0, 12).map((k) => card(I, k.x, { email, device }));
+    const near = (c) => (P.city && lc(`${c.city} ${c.hood}`).includes(P.city) ? 1 : 0);
+    if (P.interests.length || P.city) upcoming.sort((a, b) => (!!a.sample - !!b.sample) || near(b) - near(a) || fitC(b) - fitC(a) || String(a.date).localeCompare(String(b.date)));
     const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws, I), page: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : "", cta: (x.e.date || "") >= t ? eventCta(x.e, x.id) : afterCta(I, x, t) } }; });
     const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws, I);
       return { id: k.id, text: scrub(k.love).slice(0, 240), name: first(k.name) || "A guest", tags: (k.tags || []).slice(0, 3), verifiedLabel: k.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in", event: { id: x.id, title: x.e.pubTitle || x.e.name || "", host: h, page: h ? `/@${h.handle}` : "" } }; });

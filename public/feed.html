@@ -75,16 +75,38 @@
 .lbm{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #E4D9C8;border-radius:18px;padding:12px 14px;margin:0 0 16px;color:inherit;text-decoration:none}.lbm .e{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#FFF1D2;font-size:22px;border:1.5px solid #1F1A17}.lbm b{display:block;font:600 16px/1.3 Fredoka,system-ui}.lbm small{display:block;color:#665A51;font-size:13px}.lbm.me{background:#F6E7DF;border-color:#E4C4B4}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:420px){.lbc li{grid-template-columns:28px 40px minmax(0,1fr)}.lbc li .lbf{grid-column:3;justify-self:start;margin-top:2px}.lbc .lav{width:40px;height:40px}}
+/* ---- the feed as a quiet weekly edition (public/feedvisual.js): one column, no side rail on the feed itself ---- */
+body.tab-feed .fside,body.pub-feed .fside{display:none!important}
+body.tab-feed .fgrid,body.pub-feed .fgrid{grid-template-columns:minmax(0,960px)!important}
+body:is(.tab-feed,.pub-feed){background-color:#F7F1E8}
+/* tabs: words with a line under the one you're on, not four pills */
+.tabs[hidden]{display:none!important}.tabs{gap:4px;margin:2px 0 8px;border-bottom:1.5px solid #E4D9C8;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{border:0;background:none;border-radius:0;padding:0 12px;min-height:44px;font:500 15px "Instrument Sans",system-ui;color:#665A51;box-shadow:inset 0 -2px 0 transparent}
+.tabs button[aria-selected=true]{background:none;color:#1F1A17;font-weight:600;box-shadow:inset 0 -2px 0 #1F1A17}
+.bell{display:inline-grid;place-items:center;min-width:44px;min-height:44px;padding:0;color:#5A3B2B}.bell svg{width:22px;height:22px}.bell i{top:4px;right:2px}
+/* the composer waits as one quiet line in Your people until you start */
+.composer{box-shadow:none;border:1.5px solid #E4D9C8;border-radius:16px;padding:6px 12px;margin:0;background:#FFFCF7}.composer textarea{min-height:44px;height:44px;font-size:16px}
+.composer:not(.open) .cbar,.composer:not(.open) .clink{display:none}.composer.open{padding:12px 14px}.composer.open textarea{height:auto;min-height:72px}
+.composer .ib{min-height:44px;padding:0 14px}.composer .cbar .btn{min-height:44px}
+/* the city in the opening line: quiet, in mono like the date */
+.fv-kicker .place-chip{display:inline-flex!important;align-items:center;gap:8px;background:none!important;border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;font:inherit;color:inherit;min-height:0!important}
+.fv-kicker .place-chip .pc-pin,.fv-kicker .place-chip .pc-gps,.fv-kicker .place-chip .pc-note{display:none}
+.fv-kicker .place-chip b{font:inherit;color:#1F1A17}.fv-kicker .place-chip button{background:none;border:0;padding:0 2px;min-height:44px;font:500 13px "Instrument Sans",system-ui;letter-spacing:0;text-transform:none;color:#A63A22!important;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.fv-kicker .pc-form{text-transform:none;letter-spacing:0}.fv-kicker .pc-form input{min-height:44px;font-size:16px;width:12em}
+/* a post from a friend: the same scrapbook page as everything else */
+.fv-post .cheers{margin:10px 0 0!important;font-size:13px;font-weight:500;color:#665A51}.fv-post .pdel{min-height:44px;margin:0}
+.fv-btn.cheer.on{background:#FBEBC4;border-color:#E9D29A}
+.fv-empty-line{margin:0;color:#665A51;font-size:14px}.fv-empty-line a,.fv-empty-line button{color:#A63A22;font-weight:600;background:none;border:0;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 </style><link rel="stylesheet" href="/playful.css">
 <script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
-    <nav><button class="bell" id="bell" aria-label="Notifications">🔔<i id="bellN" hidden></i></button><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed" aria-current="page">Feed</a><a class="cta" href="/">Start your page</a></nav></header>
+    <nav><button class="bell" id="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><i id="bellN" hidden></i></button><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed" aria-current="page">Feed</a><a class="cta" href="/">Start your page</a></nav></header>
   <div class="fgrid"><div class="fcol">
   <div class="rail" id="rail" aria-label="Stories"></div>
-  <div class="tabs" role="tablist"><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">Me</button><button data-t="alerts" aria-selected="false">Watching</button><button data-t="friends" aria-selected="false">Friends</button></div>
-  <main id="m"><div class="empty">Loading…</div></main>
+  <div class="tabs" role="tablist" hidden><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">Me</button><button data-t="alerts" aria-selected="false">Watching</button><button data-t="friends" aria-selected="false">Friends</button></div>
+  <main id="m"></main>
   </div><aside class="fside" id="side" aria-label="Suggestions"></aside></div>
 </div>
 <input type="file" id="storyFile" accept="image/*,video/*" hidden>
@@ -95,6 +117,8 @@
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   let F = null, P = null, A = null, tab = ["me", "alerts", "friends"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "feed";
+  // the opening and a card, the size they'll be, before anything arrives
+  if (window.FeedVisual) { window.FeedVisual.css(); $("#m").innerHTML = window.FeedVisual.skeleton(); }
   setTimeout(() => { try { selTab(); } catch {} }, 0);
   const api = async (u, o) => { const r = await fetch(u, o); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "Something went wrong."), { code: j.code }); return j; };
   const post = (u, b) => api(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
@@ -105,7 +129,7 @@
   const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club night" };
   const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
-  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); drawSide(); }
+  async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
   // ---- leaderboards: the weekly card, moments ("Mai is now #2"), your own standing ----
   const lbAv = (h) => `<span class="lav" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 44) : esc(h.emoji || "🎉")}</span>`;
   const lbBadges = (e) => (e.badges || []).filter((b) => b.id === "super" || b.id === "legend").map((b) => `<span class="bdg">${esc(b.emoji)} ${esc(b.id === "legend" ? "Local legend" : b.label)}</span>`).join("") + (e.streak && e.streak.weeks >= 3 ? `<span class="bdg">🔥 ${e.streak.weeks}-week streak</span>` : "");
@@ -124,20 +148,20 @@
     const V = window.FeedVisual, city = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
     const [d, lb] = await Promise.all([api("/api/public/feed" + (V.publicQuery ? V.publicQuery() : "")).catch(() => ({ upcoming: [], past: [], moments: [], kudos: [], showcase: [], stories: [] })), api("/api/public/leaderboard/card?city=" + encodeURIComponent(city)).then((j) => j.card).catch(() => null)]);
     V.rail($("#rail"), d.stories, { signedIn: false });
-    $("#m").innerHTML = V.composePublic(d, { lb: lb ? lbCard(lb, false) : "" }); V.wire($("#m")); wireLb($("#m"));
-    // hosts to follow, beside the wall on wide screens only (phones get the wall)
-    const side = $("#side"); if (side && matchMedia("(min-width: 981px)").matches) api("/api/public/discover").then((dd) => { const Av = window.EncoreAvatars, hav = (h) => h?.avatarArt && Av ? Av.svg(h.avatarArt, h.color || "#E26D8E", 44) : esc(h?.emoji || "🎉");
-      const H = (dd.hosts || []).filter((h, i, all) => h.handle && h.name && (h.tagline || h.bio) && all.findIndex((x) => x.name === h.name) === i).slice(0, 6);
-      side.innerHTML = H.length ? `<div class="pub-side"><b>Hosts to follow</b>${H.map((h) => `<a href="/@${esc(h.handle)}"><span class="pav">${hav({ ...h, avatarArt: h.theme?.avatarArt, color: h.theme?.accent })}</span><span><b>${esc(h.name)}</b><small>${esc(h.city || "")}</small></span></a>`).join("")}<a class="all" href="/discover">See all on Discover →</a></div>` : ""; }).catch(() => {});
+    // the weekly edition; the leaderboard is a quiet link at the end, hosts to follow sit in "Find your people"
+    $("#m").innerHTML = V.composePublic(d, { lb: lb ? "1" : "" }); V.wire($("#m"));
+    const pl = $("#feedPlace"); if (pl && window.EncorePlace) window.EncorePlace.chip(pl, () => drawPublic());
     if (!$("#pubCss")) { const st = document.createElement("style"); st.id = "pubCss"; st.textContent = `.pub-feed .tabs,.pub-feed #bell,.pub-feed .composer{display:none!important}.pav{width:44px;height:44px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#FBE3CF;font-size:22px;flex:none;border:2px solid #1F1A17}.pav svg{width:100%;height:100%}.pub-side{display:grid;gap:10px;background:#fff;border:2.5px solid #1F1A17;border-radius:20px;padding:16px;box-shadow:4px 5px 0 #1F1A17}.pub-side>b{font:600 18px Fredoka,system-ui}.pub-side a{display:flex;gap:10px;align-items:center;color:inherit;text-decoration:none}.pub-side small{display:block;color:#665A51;font-size:13px}.pub-side .all{color:#A8441F;font-weight:700}`; document.head.appendChild(st); } }
   // ---- write a post: words, a photo, a link ----
   let draftPhoto = "";
   function addComposer(m) { if (m.querySelector(".composer")) return; const c = document.createElement("form"); c.className = "composer";
-    c.innerHTML = `<textarea id="pText" maxlength="1000" placeholder="What did you get up to?"></textarea><div class="cprev" id="pPrev" hidden></div><input class="clink" id="pLink" type="url" placeholder="https://…" hidden><div class="cbar"><button type="button" class="ib" id="pPhoto">📷 Photo</button><button type="button" class="ib" id="pAddLink">🔗 Link</button><span class="sp"></span><button class="btn" type="submit" id="pSend">Post</button></div><input type="file" id="pFile" accept="image/*" hidden>`;
-    m.prepend(c);
+    c.innerHTML = `<textarea id="pText" maxlength="1000" rows="1" placeholder="What did you get up to?" aria-label="Write a post for your friends"></textarea><div class="cprev" id="pPrev" hidden></div><input class="clink" id="pLink" type="url" placeholder="https://…" hidden><div class="cbar"><button type="button" class="ib" id="pPhoto">Photo</button><button type="button" class="ib" id="pAddLink">Link</button><span class="sp"></span><button class="btn" type="submit" id="pSend">Post</button></div><input type="file" id="pFile" accept="image/*" hidden>`;
+    // it waits as one line in Your people; it opens when you start, and closes again when it's empty and you move on
+    const at = m.querySelector("#fvComposer"); at ? at.replaceWith(c) : m.prepend(c);
+    c.addEventListener("focusin", () => c.classList.add("open")); c.addEventListener("focusout", () => setTimeout(() => { if (!c.contains(document.activeElement) && !$("#pText").value.trim() && !draftPhoto && !$("#pLink").value.trim()) c.classList.remove("open"); }, 150));
     $("#pPhoto").onclick = () => $("#pFile").click(); $("#pAddLink").onclick = () => { const l = $("#pLink"); l.hidden = !l.hidden; if (!l.hidden) l.focus(); };
-    $("#pFile").onchange = async () => { const f = $("#pFile").files[0]; if (!f) return; if (f.size > 8e6) { toast("That photo is over 8 MB."); return; } $("#pPhoto").textContent = "Uploading…";
-      try { const r = await fetch("/api/me/posts/photo", { method: "POST", headers: { "Content-Type": f.type }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Couldn't upload."); draftPhoto = j.url; const pv = $("#pPrev"); pv.hidden = false; pv.innerHTML = `<img src="${esc(j.url)}" alt=""><button type="button" aria-label="Remove photo">×</button>`; pv.querySelector("button").onclick = () => { draftPhoto = ""; pv.hidden = true; pv.innerHTML = ""; }; } catch (e) { toast(e.message); } $("#pPhoto").textContent = "📷 Photo"; };
+    $("#pFile").onchange = async () => { const f = $("#pFile").files[0]; if (!f) return; if (f.size > 8e6) { toast("That photo is over 8 MB."); return; } $("#pPhoto").textContent = "Uploading…"; c.classList.add("open");
+      try { const r = await fetch("/api/me/posts/photo", { method: "POST", headers: { "Content-Type": f.type }, body: f }); const j = await r.json(); if (!r.ok) throw new Error(j.message || "Couldn't upload."); draftPhoto = j.url; const pv = $("#pPrev"); pv.hidden = false; pv.innerHTML = `<img src="${esc(j.url)}" alt=""><button type="button" aria-label="Remove photo">×</button>`; pv.querySelector("button").onclick = () => { draftPhoto = ""; pv.hidden = true; pv.innerHTML = ""; }; } catch (e) { toast(e.message); } $("#pPhoto").textContent = "Photo"; };
     c.onsubmit = async (ev) => { ev.preventDefault(); const text = $("#pText").value.trim(), link = $("#pLink").value.trim(); if (!text && !link && !draftPhoto) { toast("Write something first."); return; } $("#pSend").disabled = true;
       try { await post("/api/me/posts", { text, link, photo: draftPhoto }); draftPhoto = ""; toast("Posted. Your friends see it in their feed."); await load(); } catch (e) { toast(e.message); } $("#pSend") && ($("#pSend").disabled = false); };
     m.querySelectorAll("[data-cheer]").forEach((b) => (b.onclick = async () => { const [a, id] = b.dataset.cheer.split("|"); b.disabled = true; try { const j = await post(`/api/me/posts/${encodeURIComponent(a)}/${encodeURIComponent(id)}/cheer`); b.textContent = j.cheered ? "🎉 Cheered" : "🎉 Cheer"; b.classList.toggle("on", j.cheered); } catch (e) { toast(e.message); } b.disabled = false; }));
@@ -165,20 +189,20 @@
   function draw() { document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   // ---- visual feed: your people's posts, photos and events media-first, with the public wall around them ----
-  function postCard(it) { const host = (() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })(), r = [-1.5, 1.2, -2][String(it.id).length % 3];
-    return `<article class="fv-card fv-post" style="--r:${r}deg"><p class="fv-by">${window.FeedVisual.avatar(it.who, 28)}<span><b>${nm(it.who)}</b> posted · ${ago(it.at)}</span></p>${it.media ? `<div class="fv-pol wide" style="--r:${-r}deg"><span class="fv-tape top" style="--tp:#F2D48F;--tr:-4deg" aria-hidden="true"></span><span class="fv-mb" style="aspect-ratio:4/5"><img src="${esc(it.media.url)}" alt="${esc(it.text ? it.text.slice(0, 80) : "Photo from " + nm(it.who))}" width="400" height="500" loading="lazy" decoding="async"></span>${it.text ? `<span class="fv-cap">${esc(it.text.split("\n")[0].slice(0, 60))}</span>` : ""}</div>` : ""}
+  // a post from a friend: the same scrapbook page as a past event (an instant photo, the words, one action)
+  function postCard(it) { const host = (() => { try { return new URL(it.link).hostname.replace(/^www\./, ""); } catch { return "Link"; } })();
+    return `<article class="fv-card fv-scrap fv-post"><p class="fv-by">${window.FeedVisual.avatar(it.who, 24)}<span><b>${nm(it.who)}</b> posted · <span class="num">${ago(it.at)}</span></span></p>${it.media ? `<div class="fv-album n1"><span class="fv-ph lead" style="--r:-.8deg"><span class="fv-tape top" style="--tp:#F2D48F;--tr:-4deg" aria-hidden="true"></span><span class="fv-mb" style="aspect-ratio:4/5"><img src="${esc(it.media.url)}" alt="${esc(it.text ? it.text.slice(0, 80) : "Photo from " + nm(it.who))}" width="400" height="500" loading="lazy" decoding="async"></span>${it.text ? `<span class="fv-cap">${esc(it.text.split("\n")[0].slice(0, 60))}</span>` : ""}</span></div>` : ""}
       ${it.text && (!it.media || it.text.length > 60) ? `<p class="ptext">${esc(it.text).replace(/\n/g, "<br>")}</p>` : ""}${it.link ? `<a class="plink" href="${esc(it.link)}" target="_blank" rel="noopener nofollow"><b>${esc(host)}</b><small>${esc(it.link)}</small></a>` : ""}
-      ${(it.cheers || []).length ? `<p class="cheers">🎉 ${esc(it.cheers.length > 2 ? `${it.cheers[0]} + ${it.cheers.length - 1} friends cheered` : `${it.cheers.join(" and ")} cheered`)}</p>` : ""}<div class="fv-acts"><button class="fv-btn cheer ${it.cheered ? "on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}">${it.cheered ? "🎉 Cheered" : "🎉 Cheer"}</button>${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}</div></article>`; }
+      ${(it.cheers || []).length ? `<p class="cheers">${esc(it.cheers.length > 2 ? `${it.cheers[0]} and ${it.cheers.length - 1} friends cheered` : `${it.cheers.join(" and ")} cheered`)}</p>` : ""}<div class="fv-acts"><button class="fv-btn cheer ${it.cheered ? "on" : ""}" data-cheer="${esc(it.author)}|${esc(it.id)}">${it.cheered ? "🎉 Cheered" : "🎉 Cheer"}</button>${it.mine ? `<button class="linkbtn pdel" data-pdel="${esc(it.id)}">Delete</button>` : ""}</div></article>`; }
   function drawFeed(m) { setTimeout(placeChip, 0);
     const here = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
+    // hosts you follow who host elsewhere still show; the public "further out" row covers the rest of the world
     const keep = F.items.filter((it) => it.kind !== "hosting" || !here || (F.following || []).includes(it.who?.handle) || !window.EncorePlace || window.EncorePlace.near(String((it.event || {}).city || ""), here) || window.EncorePlace.near(String((it.event || {}).hood || ""), here));
-    const away = F.items.length - keep.length;
     // friends going, on each event card
     const FG = new Map((F.upcoming || []).map((e) => [e.id, e.friendsGoing || []])); for (const e of [...Object.values(F.events || {}), ...((F.visual || {}).upcoming || [])]) if (FG.get(e.id)?.length) e.friendsGoing = FG.get(e.id);
-    const empty = `<div class="fv-card fv-empty">${C.pipSVG("happy", 60)}<div><h3>Your feed fills up as you go</h3><p class="muted">Posts from friends and hosts you follow land here. Meanwhile, here's what people are hosting.</p><button class="fv-btn" id="goFriends">Add friends</button></div></div>`;
-    m.innerHTML = `<div id="feedPlace" style="margin:0 0 12px"></div>${away ? `<p class="muted" style="margin:-4px 0 12px;font-size:13px">${away} event${away === 1 ? "" : "s"} elsewhere hidden. Change your city to see them.</p>` : ""}` +
-      window.FeedVisual.composeSignedIn({ ...F, items: keep }, { lbRender: { leaderboard: (it) => lbCard(it, true), standing: lbMoment, "you-rank": lbMe }, postRender: postCard, empty });
-    window.FeedVisual.wire(m); wireLb(m);
+    const empty = `<p class="fv-empty-line"><button type="button" id="goFriends">Add friends</button> or follow a host below.</p>`;
+    m.innerHTML = window.FeedVisual.composeSignedIn({ ...F, items: keep }, { postRender: postCard, empty });
+    window.FeedVisual.wire(m);
     $("#goFriends") && ($("#goFriends").onclick = () => { tab = "friends"; selTab(); draw(); }); }
   // ---- my event profile ----
   const QZ = [["host", "How often are you the host?", [["often", "🏡 Most of the time"], ["sometimes", "🔁 Now and then"], ["rarely", "🙋 I'm usually a guest"]]], ["rsvp", "When do you usually reply?", [["first", "🐣 Right away"], ["planner", "📅 After checking my week"], ["last", "🪑 Last minute, if there's a spot"]]], ["room", "At an event, you're the one who…", [["spark", "⚡ Gets everyone going"], ["chill", "🧘 Keeps it easy"], ["helper", "🙌 Helps out"]]], ["bring", "You usually bring…", [["food", "🧺 Something to share"], ["friend", "🔗 A friend"], ["self", "😊 Just me, happy to be there"]]]];

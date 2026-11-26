@@ -67,7 +67,7 @@ There's no Sign in with Google button. You sign in with your email and a passwor
 
 Keywords: account, my account, change email, change password, sign out, log out, my name, settings
 Questions: How do I change my password? | How do I sign out? | How do I change my email?
-You sign in with your email and a password. To change your password, use Forgot your password on the sign-in page. Sign out is in the menu. To change the email on your account, talk to a person and we'll move it for you.
+You sign in with your email and a password. To change your password, use Forgot your password on the sign-in page. On a phone, tap Me in the bottom bar for Plans, My page, Saved, Settings and Sign out. Settings has your profile picture, notifications, blocked people and Delete account. To change the email on your account, talk to a person and we'll move it for you.
 [Forgot your password?](/forgot)
 
 ## What a page is
@@ -94,7 +94,7 @@ Open your page and tap Edit page. In Make it yours you pick a color, font, backg
 
 Keywords: page look, change my page, change look, colors, design, font, background, cover photo, page colors
 Questions: How do I change my page look? | How do I change my page colors?
-On your page, tap Edit page. Change Color, Font, Background, Cover or Buttons and you'll see it right away. Tap Save when it looks right.
+On your page, tap Edit page. Change Color, Font, Background, Cover or Buttons and you'll see it right away. Tap Save when it looks right. For your own fonts and colors on every page and invite, set up your brand kit in Edit page.
 [Open my page](/@{handle})
 
 ## Host page layouts
@@ -397,8 +397,8 @@ Guests' emails and phone numbers are only for you; other guests and the public n
 
 Keywords: delete account, close account, delete my account, delete event, erase, delete everything, delete my data, remove my data
 Questions: How do I delete my account? | How do I delete an event? | Can you delete my data?
-There's no delete button for your account or a whole event yet. Talk to a person and we'll do it for you, your data included. To hide an event now, set it to Link only in Guest rules.
-[Talk to a person](#person)
+Settings > Delete account. Right away, or scheduled with a grace period, so you can change your mind before it goes. It deletes your page, events, posts, photos, friends and settings. To take one event off your page and Discover, set it to Link only in Guest rules. To remove a whole event, talk to a person and we'll do it for you.
+[Open Settings](/settings#delete)
 
 ## Removing guests and past events
 
@@ -406,6 +406,20 @@ Keywords: remove guest, remove past event, take down, unpublish, hide event, kic
 Questions: How do I remove a guest? | How do I remove a past event from my page?
 To remove a guest, open the event's guest list and tap Remove. Past events on your page each have Edit, then Remove. To take an event off your page and Discover, set it to Link only in Guest rules.
 [See guests](#do:guests)
+
+## Photos: covers and your profile picture
+
+Keywords: cover photo, upload photo, change photo, profile picture, profile photo, avatar, my picture, event photo, reposition, crop, my own design, upload my design
+Questions: How do I change my profile picture? | How do I add a cover photo? | Can I upload my own design for the cover?
+Tap Change photo: on your event's cover (in Check the details, or the cover on your event's Invite tab), on your profile picture in Settings or the Me sheet, or on your page. Upload a photo or your own design (PNG, JPEG or WebP), pick one of your recent uploads, or use a template. Drag the photo to choose what shows. Your profile picture is cropped to a circle. Remove photo takes it off.
+[Open Settings](/settings)
+
+## Group chats
+
+Keywords: chat, chats, group chat, message guests, messages, mute chat, leave chat
+Questions: How do group chats work? | How do I message my guests? | How do I mute a chat?
+Every event has a group chat. Guests who are in join it; Maybe and waitlisted guests can read it if you allow it. Open it from Chats in the bottom bar, or Message guests on your event. You can mute a chat, pin a message, and take someone out. Your contact details aren't shared.
+[Open Chats](/chats)
 
 ## Talking to a person
 

@@ -1,6 +1,6 @@
 // "Come with me?" (server/comewith.js). One file for the light invite (/e/<id>, /i/<id>), the full invite (/g) and the
 // feed's cards:
-// 1. After you reply I'm in, "Come with me?" makes a link for one friend (the phone's share sheet, else it's copied).
+// 1. After you reply I'm in, "Invite friends" makes a link for one friend and opens the share sheet (public/sharekit.js).
 //    On an ordinary event their spot is held for 48 hours; on pairs and groups they join yours.
 // 2. The friend's invite opens with "Mia wants you to come to Salsa Sunday" and Mia's face. Reading the link sets a
 //    cookie for that event, so the reply they send is matched to the held spot on the server.
@@ -40,13 +40,17 @@
     const note = (t, err) => { let n = $(".cwm-note", box); if (!n) { n = document.createElement("p"); n.className = "cwm-note"; n.setAttribute("role", "status"); box.appendChild(n); } n.classList.toggle("err", !!err); n.textContent = t; return n; };
     let j; try { const r = await make(); j = await r.json().catch(() => ({})); if (!r.ok) { if (j.code === "reply_first") return { replyFirst: true }; note(j.message || "Didn't work. Try again.", true); return {}; } } catch { note("Didn't work. Check your connection.", true); return {}; }
     const url = location.origin + j.url, name = j.title || title, held = j.held ? " Their spot is held for 48 hours." : j.pair ? " They join your pair." : "";
-    const text = `Come with me to ${name}?`;
+    const text = `Want to come to ${name} with me?`;
+    // the share sheet (public/sharekit.js): link card, flyer and QR, with the hold said once at the top
+    const evId = (j.url.match(/^\/[ei]\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
+    const sheet = () => window.ShareKit.open({ kind: "guest", eventId: evId, url, title: name, text: `${text} ${url}`, hold: j.held ? "We'll hold a spot for a friend for 48 hours." : j.pair ? "Your friend joins your pair." : "" });
+    try { if (!window.ShareKit) await new Promise((ok, no) => { const s = document.createElement("script"); s.src = "/sharekit.js"; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); await sheet(); note("Link made." + held); return { ok: true, url }; } catch {}
     if (navigator.share && matchMedia("(pointer:coarse)").matches) { try { await navigator.share({ title: name, text, url }); note("Sent." + held); return { ok: true }; } catch (e) { if (e?.name === "AbortError") { note("Not sent. Tap again when you're ready.", false); return {}; } } }
     try { await navigator.clipboard.writeText(`${text} ${url}`); note("Link copied. Send it to your friend." + held); }
     catch { note("Copy this link and send it to your friend." + held); const i = document.createElement("input"); i.className = "cwm-copy"; i.readOnly = true; i.value = url; i.setAttribute("aria-label", "Link for your friend"); box.appendChild(i); i.select(); }
     return { ok: true, url };
   }
-  function button(cls = "") { css(); const b = document.createElement("button"); b.type = "button"; b.className = "cwm-btn " + cls; b.innerHTML = `${GLYPH_PAIR}<span>Come with me?</span>`; return b; }
+  function button(cls = "") { css(); const b = document.createElement("button"); b.type = "button"; b.className = "cwm-btn " + cls; b.innerHTML = `${GLYPH_PAIR}<span>Invite friends</span>`; return b; }
   /** From a feed card, signed in: a link from your own reply. Not replied yet: opens the invite, with the button waiting there. */
   async function fromFeed(eventId, title, url, btn) { const box = btn.closest(".fv-acts")?.parentElement || btn.parentElement; btn.disabled = true;
     const r = await send(() => fetch("/api/me/come-with", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId }) }), { title, box });
@@ -77,7 +81,7 @@
     if (!withPill()) { const s = document.createElement("script"); s.src = "/friendsgoing.js"; s.onload = withPill; document.head.appendChild(s); } }
   function placeTg() { if (!tg || document.body.contains(tg)) return; const n = $(".going") || $(".going-n") || $("#view-guest .who-going") || $("#view-guest h1, #view-guest .lk-title"); if (n) n.after(tg); }
   function boot() { const nid = idOf(); if (!nid || nid === id) return; id = nid; hello = null; tg = null; readLink(); together();
-    new MutationObserver(() => { clearTimeout(window.__cwmT); window.__cwmT = setTimeout(() => { placeHello(); placeButton(); placeTg(); }, 150); }).observe(document.body, { childList: true, subtree: true }); placeButton(); }
+    new MutationObserver(() => { if (!window.__cwmT) window.__cwmT = setTimeout(() => { window.__cwmT = 0; placeHello(); placeButton(); placeTg(); }, 150); }) /* a throttle, not a debounce: /g keeps changing, and a debounce never ran there */.observe(document.body, { childList: true, subtree: true }); placeButton(); }
   window.addEventListener("hashchange", boot);
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();
   window.PLComeWith = { fromFeed, button, css, send };

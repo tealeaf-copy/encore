@@ -151,9 +151,9 @@ test("Host one like this: counts hosts who shared a draft made from the event, o
 test("Come with me? and Host one like this: wiring and copy", () => {
   const inv = read("public/invite.html"); assert.ok(inv.length < 40000, "the light invite stays small"); assert.match(inv, /\/comewith\.js/); assert.match(inv, /\^\\\/\[ei\]\\\//);
   const cw = read("public/comewith.js"), hl = read("public/hostlike.js"), fv = read("public/feedvisual.js"), sb = read("public/scrapbook.js"), spa = read("index.html");
-  assert.match(cw, /wants you to come to/); assert.match(cw, /Come with me\?/); assert.match(cw, /navigator\.share/); assert.match(cw, /clipboard\.writeText/); assert.match(cw, /PLFriends/);
+  assert.match(cw, /wants you to come to/); assert.match(cw, /<span>Invite friends<\/span>/); assert.doesNotMatch(cw.replace(/^\/\/.*$/gm, ""), /Come with me\?/, "the button says Invite friends now"); assert.match(cw, /We'll hold a spot for a friend for 48 hours\./); assert.match(cw, /ShareKit\.open/); assert.match(cw, /navigator\.share/); assert.match(cw, /clipboard\.writeText/); assert.match(cw, /PLFriends/);
   assert.match(hl, /Host one like this/); assert.match(hl, /hosted this after seeing it/); assert.match(hl, /\/signup\?mode=friends&from=like/); assert.match(hl, /data-casualidea|dataset\.casualidea/);
-  assert.match(fv, /data-fv-with/); assert.match(fv, /data-pl-like/); assert.match(fv, /data-fv-together/); assert.match(sb, /data-pl-like/);
+  assert.match(fv, /data-fv-with/); assert.match(fv, />Invite friends<\/button>/); assert.match(fv, /data-pl-like/); assert.match(fv, /data-fv-together/); assert.match(sb, /data-pl-like/);
   const tail = spa.slice(spa.lastIndexOf("<script>")); assert.match(tail, /comewith\.js/); assert.match(tail, /hostlike\.js/); assert.ok(tail.length < 900, "a small appended block");
   for (const t of [cw, hl, read("server/comewith.js"), read("server/hostlike.js"), tail]) { assert.doesNotMatch(t, /—/, "no em dashes"); assert.doesNotMatch(t.replace(/\/api\/public\/attendees/g, ""), /per person|attendees|RSVP yes|I.m going|seamless|unlock|curated/i); }
 });

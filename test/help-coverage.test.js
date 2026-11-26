@@ -28,7 +28,7 @@ export const CANON = [
   ["How do pre-orders work?", "The shop and pre-orders", /order-by day/],
   ["How do I set up my shop?", "The shop and pre-orders", /🛍 Shop/],
   ["Why can't people order from a preview page?", "Pages that aren't claimed yet", /hasn't joined/],
-  ["How does Come with me work?", "Come with me", /48 hours/],
+  ["How does Invite friends work?", "Invite friends", /48 hours/],
   ["How does I'm in if a friend is work?", "I'm in if a friend is", /never told/],
   ["How do open tables work?", "Open tables", /tables of about 4/, "#do:guests"],
   ["What is Same table next time?", "Same table next time", /Same table next time\?/],

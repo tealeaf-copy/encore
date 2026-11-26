@@ -100,7 +100,7 @@ export function mountComeWith(app, { store, small, currentUser, X }) {
     const r = d.data || {}, now = Date.now();
     if (!ev || ev.example || ev.cancelled) return bad(res, "That event isn't here any more.", 404, "not_found");
     if (ev.date && ev.date < today()) return bad(res, "This one already happened.", 409, "past");
-    if (r.response !== "going") return bad(res, "Reply I'm in first, then bring a friend.", 409, "reply_first");
+    if (r.response !== "going") return bad(res, "Reply I'm in first, then invite friends.", 409, "reply_first");
     if (limited("ip:" + (req.ip || "?"), +(process.env.ENCORE_CWM_PER_HOUR || 20)) || limited("r:" + d.id, 10, 864e5)) return bad(res, "That's a lot of links. Try again later.", 429, "rate_limited");
     const unit = unitEvent(ev), L = (Array.isArray(r.withHolds) ? r.withHolds : []).filter((h) => h && (h.by || (unit ? true : +h.exp > now)));
     let keep = L;
@@ -119,7 +119,7 @@ export function mountComeWith(app, { store, small, currentUser, X }) {
     const id = String(req.body?.eventId || ""); if (!ID_OK.test(id)) return bad(res, "No such event.", 404, "not_found"); const ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data, em = lc(u.email);
     const d = S.list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data.email) === em).sort((a, b) => (b.data.changedAt || b.data.createdAt || 0) - (a.data.changedAt || a.data.createdAt || 0))[0];
-    if (!d) return bad(res, "Reply I'm in first, then bring a friend.", 409, "reply_first");
+    if (!d) return bad(res, "Reply I'm in first, then invite friends.", 409, "reply_first");
     make(req, res, ws, S, d, ev, id); });
   // the friend's page reads the link: who sent it, and whether a spot is held. It also sets the cookie the reply carries.
   app.get("/api/public/come-with/:eventId/:token", (req, res) => { const id = String(req.params.eventId || ""), tok = String(req.params.token || "");

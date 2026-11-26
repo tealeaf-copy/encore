@@ -7447,8 +7447,9 @@ async function hostInboxHTML(){ let B=[],O=[],P=null; try{ const [b,o,p]=await P
 (function addPageNav(){ const go=()=>{ if(!window.__wsPersonal||window.__wsRegularOnly||document.getElementById("navPage")) return; fetch("/api/host/profile").then(r=>r.ok?r.json():{}).then(j=>{ if(!j.host?.handle||document.getElementById("navPage")) return; const ref=document.getElementById("navFeed")||document.querySelector("nav a[href='#programs']"); const a=document.createElement("a"); a.id="navPage"; a.href="/@"+j.host.handle; a.className=(ref?.className||"")+" nav-me"; a.textContent="My page"; ref?ref.after(a):null; try{ navIcons() }catch{} }).catch(()=>{}) }; let n=0; const t=setInterval(()=>{ if(document.getElementById("navPage")||++n>30){ clearInterval(t); return } if(window.__wsPersonal) go() },2000); setTimeout(go,1800) })();
 // interest and RSVP confirmations: who's in, share with a friend
 { const _rg16=renderGuest; renderGuest=async function(){ const r=await _rg16.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"), M=e&&myRsvp(e.id); if(!e?.id||!host||!isCasual(e)||!M||M.response!=="going"||$("#socialConf")) return r; const t=$(".ticket",host); if(!t) return r; if(e.price&&e.price!=="chip"&&e.ticketUrl&&!M.paid) return r;
-    const box=document.createElement("div"); box.id="socialConf"; box.className="social-conf"; box.innerHTML=`<button class="btn ghost sm" type="button" id="shareIt">Bring a friend</button>`; t.after(box);
-    $("#shareIt").onclick=async()=>{ const url=location.origin+"/g#rsvp-"+e.id, text=`I'm in for ${guestTitle(e)}. Come with me?`; try{ if(navigator.share){ await navigator.share({title:guestTitle(e),text,url}); return } }catch{} copyTxt(`${text} ${url}`,{ok:"Copied. Send it to a friend."}) } }catch(err){ console.warn(err) } return r } }
+    if(location.pathname==="/g") return r; // on the guest's own invite, Invite friends (public/comewith.js) holds a spot and opens the share sheet
+    const box=document.createElement("div"); box.id="socialConf"; box.className="social-conf"; box.innerHTML=`<button class="btn ghost sm" type="button" id="shareIt">Invite friends</button>`; t.after(box);
+    $("#shareIt").onclick=()=>{ const go=()=>window.ShareKit.open({kind:"guest",eventId:e.id,event:e,url:location.origin+"/e/"+e.id,title:guestTitle(e),text:`I'm in for ${guestTitle(e)}. Want to come? ${location.origin}/e/${e.id}`}); if(window.ShareKit) return go(); const sc=document.createElement("script"); sc.src="/sharekit.js"; sc.onload=go; document.head.appendChild(sc) } }catch(err){ console.warn(err) } return r } }
 // copy that fits: nothing about "what you're bringing" when there's nothing to bring
 { const _rg17=renderGuest; renderGuest=async function(){ const r=await _rg17.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e||!host||!isCasual(e)) return r; if(!(e.slots||[]).length) $$(".note",host).forEach(n=>{ if(/and what you're bringing\. Nothing else/.test(n.textContent)) n.textContent=`${hostFirst(e)} sees what you share here, and nothing else.` }) }catch{} return r } }
 
@@ -13134,7 +13135,6 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
       foot:`<button class="hv-b" type="button" id="hvToEv">Go to your event</button><button class="hv-b pri" type="button" id="hvShareGo">${I.share}<span>Share</span></button>`});
     q("#hvToEv",S.bg).onclick=()=>{ S.close(); hvRender(); window.scrollTo({top:0}) };
     q("#hvShareGo",S.bg).onclick=async()=>{ try{ if(d?.id&&typeof trackStep==="function") trackStep("share_clicked",d.id) }catch{}
-      if(navigator.share&&matchMedia("(pointer:coarse)").matches){ try{ await navigator.share({title:d.pubTitle||d.name||"",text:inviteText(d).replace(/\s*https?:\/\/\S+$/,""),url:link(d)}); try{ pipToast("Sent. I'll tell you when someone replies.","happy") }catch{} return }catch(e){ if(e?.name==="AbortError") return } }
       S.close(); openShare(d,false) } }
   // the start time is picked from a list, never a native time field: on iPhone that fills in the clock time when tapped,
   // which is how "4:16am" got onto an event nobody gave a time
@@ -13146,6 +13146,11 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 
   // --- share: one place ---
   function openShare(d,fresh){ try{ if(d?.id&&!d.example&&typeof trackStep==="function") trackStep("share_clicked",d.id) }catch{}
+    /* UX loop: the share sheet (public/sharekit.js): the preview first (link card, flyer, QR), then the ways to send it. Its link
+       card becomes the event's og:image, so Messages and WhatsApp show the same picture */
+    if(!window.__plShareOff&&!d.example){ const go=()=>window.ShareKit.open({ eventId:d.id, event:d, url:link(d), text:inviteText(d), title:d.pubTitle||d.name, host:String(window.__me?.name||d.hostName||"").split(" ")[0], track:t=>{ try{ trackStep?.("share_"+t,d.id) }catch{} },
+        onCard:async(blob,D)=>{ const sig=[D.title,D.when,D.where,D.cover,D.host].join("|"); if(d.ogCardSig===sig&&d.ogCard) return; try{ const r=await fetch("/api/assets",{method:"POST",headers:{"Content-Type":blob.type},body:blob}), j=await r.json(); if(r.ok&&j.url){ d.ogCard=j.url; d.ogCardSig=sig; await saveQ() } }catch{} } });
+      if(window.ShareKit) go(); else { const sc=document.createElement("script"); sc.src="/sharekit.js"; sc.onload=go; document.head.appendChild(sc) } return }
     const L=typeof shareLinks==="function"?shareLinks(d):{whatsapp:"#",sms:"#",messenger:"#"}, SI=typeof SHARE_ICONS==="object"?SHARE_ICONS:{}, SC=typeof SHARE_COPY==="object"?SHARE_COPY:{};
     const apps=[["a",L.whatsapp,SI.chat,"WhatsApp",1],["a",L.sms,SI.sms,"Messages",0],["a",L.messenger,SI.send,"Messenger",1],...["discord","slack","signal"].map(k=>["b",k,SI[k],(SC[k]||[k])[0]])];
     const S=sheet({title:"Share invite",label:"Share your invite",sub:d.approvalRequired?"Guests ask to join. You let them in.":"Guests tap I'm in.",body:`

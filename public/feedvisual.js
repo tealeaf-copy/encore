@@ -156,7 +156,7 @@
         <div class="fv-acts"><a class="fv-btn primary" data-fv-in href="${esc(e.cta?.url || e.url)}">${esc(btnText(e, e.cta?.label || "I'm in"))}</a>${more([withBtn(e), saveSpot({ kind: "event", id: e.id, ref: e.id, title: e.title, url: e.url, image: e.cover || "", img: e.cover || "" })], e.title)}</div></div></article>`; }
   // "Come with me?" (public/comewith.js): signed in, a link for one friend from your own reply; "Mia and Jo are in" once both are
   const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
-  const withBtn = (e) => (signedIn() && e.id && !e.sample && !e.past ? `<button type="button" class="fv-mi fv-cwm" data-fv-with="${esc(e.id)}" data-title="${esc(e.title)}" data-url="${esc(e.url)}">Come with me?</button>` : "");
+  const withBtn = (e) => (signedIn() && e.id && !e.sample && !e.past ? `<button type="button" class="fv-mi fv-cwm" data-fv-with="${esc(e.id)}" data-title="${esc(e.title)}" data-url="${esc(e.url)}">Invite friends</button>` : "");
   const togetherSpot = (e) => ((e.together || []).length ? `<span class="fv-together" data-fv-together="${esc(JSON.stringify(e.together.slice(0, 2)))}" hidden></span>` : "");
   // "Host one like this" (public/hostlike.js) on a real past event, and how many hosted one after seeing it
   const likeBtn = (e) => (e.id && !e.sample && !/^s[cx]-/.test(e.id) ? `<button type="button" class="fv-mi fv-like" data-pl-like="${esc(e.id)}" data-title="${esc(e.title)}">Host one like this</button>${e.hostedLine ? `<small class="fv-mnote">${esc(e.hostedLine)}</small>` : ""}` : "");

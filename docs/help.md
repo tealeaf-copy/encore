@@ -176,14 +176,14 @@ Say it in your plan, like "Tango Fri 9pm, $40 a pair, 6 pairs max". The invite r
 
 Keywords: share, share invite, share sheet, copy invite, invite link, text, whatsapp, instagram, group chat, send invite, messages, messenger
 Questions: How do I share my invite? | How do I send my invite to friends? | Where is the share sheet? | My invite won't copy
-After Share invite, the share sheet opens: tap Copy invite and paste it into a text, group chat or story, or tap WhatsApp, Messages or Messenger. The link shows your title, date and cover when you paste it. Tap Preview to see what guests see. To share again later, open the event and use Copy invite.
+After Share invite, the share sheet opens with three cards you swipe between. The link card: tap it to copy the link, or tap Messages, Instagram, WhatsApp or More. The flyer: save it, or post it to your story. The QR code: save it for a poster or the door. The link shows your title, date and cover when you paste it. Tap Preview to see what guests see. To share again later, open the event and use Copy invite.
 [Open share sheet](#do:share) [Copy invite](#do:copy) [Preview](#do:preview)
 
 ## Discord, Slack and Markdown
 
 Keywords: discord, slack, signal, markdown, copy as markdown, server, channel post, notion
 Questions: How do I share my invite on Discord? | How do I post my invite in Slack? | Can I copy my invite as Markdown?
-In the share sheet, tap Discord, Slack or Signal and the invite is copied in the way that app reads it, bold title included. Paste it in your channel. Copy as Markdown gives you a list with the link for docs and READMEs. The link unfurls with the date and spots left.
+In the share sheet, tap Copy for Discord or Slack under the link card and the invite is copied the way those apps read it, bold title included. Paste it in your channel. For Signal, tap More. Copy as Markdown gives you a list with the link for docs and READMEs. The link unfurls with the date and spots left.
 [Open share sheet](#do:share)
 
 ## Your invite link
@@ -262,11 +262,11 @@ Keywords: i'm in if, in if, if my friend, only if, if sam, maybe if, friend is g
 Questions: How does I'm in if a friend is work? | Can I say I'm in only if my friend goes?
 A guest replies Maybe, then opens I'm in if a friend is and types a friend's name. When someone with that name replies I'm in, the Maybe turns into I'm in, or the waitlist if it's full. The friend is never told.
 
-## Come with me
+## Invite friends
 
-Keywords: come with me, bring a friend, hold a spot, friend's spot, plus one link, together
-Questions: How does Come with me work? | How do I bring a friend? | Can I hold a spot for a friend?
-After you reply I'm in, tap Come with me? to make a link for one friend. On most events their spot is held for 48 hours. On pairs and groups they join yours. Ask to join events still ask: the link holds nothing. Once you're both in, Who's coming says "Mia and Jo are in".
+Keywords: invite friends, come with me, bring a friend, hold a spot, friend's spot, plus one link, together
+Questions: How does Invite friends work? | How do I bring a friend? | Can I hold a spot for a friend?
+After you reply I'm in, tap Invite friends to make a link for one friend. It opens the share sheet: the link, a flyer and a QR code. On most events their spot is held for 48 hours. On pairs and groups they join yours. Ask to join events still ask: the link holds nothing. Once you're both in, Who's coming says "Mia and Jo are in".
 
 ## Open tables
 

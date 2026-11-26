@@ -1,84 +1,62 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script src="/authguard.js"></script>
 <title>Ideas · Pottery Lab</title>
-<meta name="description" content="Photos from real supper clubs, run clubs, workshops and pop-ups, and ideas to host your own. Save the ones you love.">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<meta name="description" content="Supper clubs, run clubs, workshops and pop-ups other hosts run. Pick one and host your own.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
 <style>
-:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8}
-*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif;
-  background-image:radial-gradient(rgba(102,90,81,.07) 1px,transparent 1.2px);background-size:7px 7px}
-a{color:inherit}.wrap{max-width:1240px;margin:0 auto;padding:22px 16px 120px}
-.hero{position:relative;display:grid;gap:6px;margin:4px 0 16px;padding-right:96px}
-.hero h1{font:600 clamp(34px,6vw,54px)/1 Fredoka,system-ui,sans-serif;margin:0;letter-spacing:-.015em}.hero h1 em{font-style:normal;color:var(--ember);position:relative;white-space:nowrap}
-.hero h1 em::after{content:"";position:absolute;left:-4px;right:-4px;bottom:.06em;height:.32em;background:var(--butter);z-index:-1;transform:rotate(-1.5deg);border-radius:3px}
-.hero p{margin:0;color:var(--smoke);max-width:560px}
-.hero .potto{position:absolute;right:0;top:-8px;width:96px;transform:rotate(9deg)}
-.hero .scrawl{font:600 24px/1 Caveat,cursive;color:#A63A22;transform:rotate(-3deg);display:inline-block;margin-top:2px}
-.bar{position:sticky;top:0;z-index:20;margin:0 -16px 14px;padding:10px 16px;background:rgba(247,241,232,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}.chips::-webkit-scrollbar{display:none}
-.chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:2px solid var(--ink);border-radius:999px;background:#fff;font:600 15px Fredoka,"Instrument Sans",system-ui;color:var(--ink);cursor:pointer;white-space:nowrap}
-.chip[aria-pressed=true]{background:var(--ink);color:#fff}.chip.me{background:var(--butter)}.chip.me[aria-pressed=true]{background:var(--ink);color:#fff}
-.chip:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
-.meta{display:flex;justify-content:space-between;gap:10px;align-items:center;color:var(--smoke);font-size:14px;margin:6px 2px 0}
-.meta button{background:none;border:0;font:600 14px "Instrument Sans",system-ui;color:#A63A22;text-decoration:underline;cursor:pointer;min-height:36px}
-.wall{display:flex;gap:18px;align-items:flex-start}.col{flex:1 1 0;min-width:0;display:flex;flex-direction:column}
-.end{text-align:center;margin:28px auto 0;max-width:460px;display:grid;gap:10px;justify-items:center}
-.end b{font:600 22px Fredoka,system-ui}.end a{background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:12px 20px;text-decoration:none;font-weight:600;box-shadow:3px 3px 0 var(--ink)}
-[hidden]{display:none!important}
-.skel{height:260px;border-radius:20px;border:2px dashed #D9CBB6;margin:0 0 18px;background:#FBF6EE}
-.feature{margin:0 0 18px;max-width:420px}
-.nudge{display:flex;gap:12px;align-items:center;background:#FFFDF8;border:2px solid var(--ink);border-radius:16px;padding:12px 16px;margin:0 0 16px}
-.nudge b{font:600 17px Fredoka,system-ui}.nudge p{margin:0;color:var(--smoke);font-size:14px}.nudge button{margin-left:auto;flex:none;background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;min-height:44px;padding:0 16px;font:600 15px "Instrument Sans",system-ui;cursor:pointer}
-@media (max-width:640px){.hero h1{font-size:34px}.hero p{font-size:15px;line-height:1.4}.hero .scrawl{font-size:21px}.nudge{padding:10px 12px}.nudge p{display:none}.nudge b{font-size:16px}.wrap{padding:14px 12px 110px}.bar{margin:0 -12px 12px;padding:8px 12px}.hero{padding-right:74px}.hero .potto{width:72px}.wall{gap:10px}
-  .pli{margin-bottom:12px}.pli-body{padding:8px 10px 10px!important;gap:5px!important}.pli-title{font-size:15.5px!important}.pli-line{font-size:13px!important}.pli-media{margin:8px 8px 0!important}
-  .pli-host{min-height:44px!important;padding:0 12px!important;font-size:13px!important}.pli-acts .pls-btn.pls-icon{width:44px;height:44px;min-height:44px;min-width:44px}.pli-real{font-size:13px!important;min-height:44px!important;display:inline-flex;align-items:center}
-  .pli-tags button{font-size:13px!important;padding:0 10px!important;min-height:44px!important}.pli-cap{font-size:19px!important;padding:6px 10px 0!important}.pli-sticker{font-size:13px!important}.pli:not(.pli-flyer) .pli-sticker{left:-6px!important}
-  .pli-vibe{margin:8px 8px 0!important;font-size:13px!important;flex-wrap:wrap;gap:4px!important}.pli-vibe i{margin-left:0!important}.pli-fly{padding:14px 12px 12px!important}.pli-fly .pli-fb{font-size:13px!important;padding:6px 10px!important}}
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--line:#E4D9C8}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}
+.feature{margin:0 0 32px;max-width:320px}.feature>p{margin:0 0 8px;font-size:13px;color:var(--smoke)}
 </style><script src="/mascot.js"></script><script src="/eventart.js"></script><script src="/color.js"></script><script src="/looks.js"></script></head><body>
-<main class="wrap" id="m">
-  <section class="hero"><span class="potto" id="potto" aria-hidden="true"></span>
-    <h1>Steal an <em>idea</em></h1>
-    <p>Photos from real events, flyers hosts made, and ideas to host your own. Save the ones you love.</p><span class="scrawl">if you love it, you can host it</span></section>
-  <div class="nudge" id="nudge" hidden><div><b>What are you into?</b><p>Pick a few and the wall leads with them.</p></div><button type="button" id="pickBtn">Pick</button></div>
-  <div class="bar"><div class="chips" id="chips" role="group" aria-label="Filter ideas"></div><div class="meta"><span id="count" aria-live="polite"></span><button type="button" id="editMe" hidden>Change what I'm into</button></div></div>
+<main class="ls-wrap" id="m">
+  <section class="ls-head"><div><h1>Ideas to <em>try</em></h1>
+    <p class="ls-what">Formats other hosts run. Tap one to start your own.</p></div><span class="ls-potto" id="potto" aria-hidden="true"></span></section>
+  <div class="ls-bar"><div class="ls-filters" id="chips" role="group" aria-label="Filter ideas"></div>
+    <div class="ls-count"><span id="count" aria-live="polite"></span><button type="button" class="ls-link" id="pickBtn" hidden>Pick what you're into</button><button type="button" class="ls-link" id="editMe" hidden>Change what I'm into</button></div></div>
   <div id="feature"></div>
-  <div class="wall" id="wall" aria-live="polite"></div>
+  <div class="ls-grid compact" id="wall" aria-live="polite"></div>
   <div id="sentinel" style="height:1px"></div>
-  <div class="end" id="end" hidden><b>That's the whole wall, for now.</b><span style="color:var(--smoke)">The best one might be yours.</span><a href="/?app=1&amp;new=1#studio" id="endGo">Host something</a></div>
+  <div class="ls-end" id="end" hidden><span class="ls-potto" id="endP" aria-hidden="true"></span><b>That's every idea, for now.</b><span>The next one might be yours.</span><a class="ls-btn primary" href="/?app=1&amp;new=1#studio" id="endGo">Host something</a></div>
 </main>
 <script src="/save.js"></script><script src="/inspo.js"></script><script src="/interests.js"></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  if (window.Potto) $("#potto").innerHTML = Potto.svg("carry", 96, "");
+  const potto = (pose) => (window.Potto ? Potto.svg(pose, 64, "") : "");
+  $("#potto").innerHTML = potto("carry"); $("#endP").innerHTML = potto("sleep");
   if (!/(?:^|;\s*)encore_in=1/.test(document.cookie)) $("#endGo").href = "/signup?mode=friends&from=ideas";
-  let INT = [], me = { interests: [], city: "" }, tag = new URLSearchParams(location.search).get("tag") || "", cursor = "", busy = false, done = false, cols = [], shown = 0, total = 0, gen = 0;
-  const colCount = () => (innerWidth >= 1180 ? 4 : innerWidth >= 860 ? 3 : 2);
-  function layout() { const n = colCount(), cards = cols.flatMap((c) => [...c.children]).sort((a, b) => +a.dataset.n - +b.dataset.n); const wall = $("#wall"); wall.innerHTML = ""; cols = [];
-    for (let i = 0; i < n; i++) { const c = document.createElement("div"); c.className = "col"; wall.appendChild(c); cols.push(c); } for (const el of cards) place(el); }
-  function place(el) { let best = cols[0]; for (const c of cols) if (c.offsetHeight < best.offsetHeight - 40) best = c; best.appendChild(el); }
+  let INT = [], me = { interests: [], city: "" }, tag = new URLSearchParams(location.search).get("tag") || "", cursor = "", busy = false, done = false, shown = 0, total = 0, gen = 0;
+  const nameOf = (t) => INT.find((i) => i.id === t)?.label || t;
+  // the filters: plain labels in one row; the active one is filled
   function chips() { const mine = me.interests.length;
-    $("#chips").innerHTML = (mine ? `<button class="chip me" data-t="" aria-pressed="${!tag}">For you</button>` : `<button class="chip" data-t="" aria-pressed="${!tag}">Everything</button>`) + INT.map((i) => `<button class="chip" data-t="${esc(i.id)}" aria-pressed="${tag === i.id}">${esc(i.label)}</button>`).join("");
-    $("#chips").querySelectorAll(".chip").forEach((b) => (b.onclick = () => setTag(b.dataset.t)));
-    $("#nudge").hidden = !!mine; $("#editMe").hidden = !mine; }
-  function setTag(t) { tag = t; const u = new URL(location.href); t ? u.searchParams.set("tag", t) : u.searchParams.delete("tag"); history.replaceState(null, "", u); chips(); reset(); scrollTo({ top: Math.min(scrollY, $(".bar").offsetTop), behavior: "smooth" }); }
-  function reset() { gen++; cursor = ""; done = false; shown = 0; cols = []; $("#wall").innerHTML = ""; $("#end").hidden = true; layout(); for (const c of cols) c.innerHTML = `<div class="skel"></div>`; more(); }
+    $("#chips").innerHTML = `<button type="button" class="ls-chip" data-t="" aria-pressed="${!tag}">${mine ? "For you" : "Everything"}</button>` + INT.map((i) => `<button type="button" class="ls-chip" data-t="${esc(i.id)}" aria-pressed="${tag === i.id}">${esc(i.label)}</button>`).join("");
+    $("#chips").querySelectorAll(".ls-chip").forEach((b) => (b.onclick = () => setTag(b.dataset.t)));
+    $("#chips").querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    $("#pickBtn").hidden = !!mine; $("#editMe").hidden = !mine; }
+  function setTag(t) { tag = t; const u = new URL(location.href); t ? u.searchParams.set("tag", t) : u.searchParams.delete("tag"); history.replaceState(null, "", u); chips(); reset(); scrollTo({ top: Math.min(scrollY, $(".ls-bar").offsetTop), behavior: "smooth" }); }
+  const skel = () => Array.from({ length: innerWidth >= 700 ? 4 : 2 }, () => `<div class="ls-skel" aria-hidden="true"></div>`).join("");
+  function reset() { gen++; cursor = ""; done = false; shown = 0; $("#wall").innerHTML = skel(); $("#end").hidden = true; $("#count").textContent = "Loading ideas…"; more(); }
+  // nothing for this filter: say so, and offer one way out
+  function empty() { $("#wall").innerHTML = `<div class="ls-empty"><span class="ls-potto" aria-hidden="true">${potto("think")}</span><b>No ${esc(tag ? nameOf(tag).toLowerCase() : "ideas")} yet.</b><p>${tag ? "Nobody has shared one of these yet. Look through everything, or host the first one." : "Ideas show up here as hosts share them. Check back soon."}</p>${tag ? `<button type="button" class="ls-btn" id="seeAll">See every idea</button>` : ""}</div>`; const b = $("#seeAll"); if (b) b.onclick = () => setTag(""); }
   async function more() { if (busy || done) return; busy = true; const g = gen;
     try { const q = new URLSearchParams({ interests: me.interests.join(","), city: me.city || "", tag, cursor, limit: "18" });
-      const j = await (await fetch("/api/public/inspo?" + q)).json(); if (g !== gen) { busy = false; return more(); } cols.forEach((c) => c.querySelectorAll(".skel").forEach((s) => s.remove()));
-      total = j.total || 0; for (const x of j.data || []) { const t = document.createElement("template"); t.innerHTML = PLInspo.card(x, { fade: true }).trim(); const el = t.content.firstElementChild; el.dataset.n = shown++; place(el); const img = el.querySelector("img"); if (img && !img.complete) img.addEventListener("load", () => {}, { once: true }); }
+      const j = await (await fetch("/api/public/inspo?" + q)).json(); if (g !== gen) { busy = false; return more(); } $("#wall").querySelectorAll(".ls-skel").forEach((s) => s.remove());
+      total = j.total || 0; const frag = document.createDocumentFragment();
+      for (const x of j.data || []) { const t = document.createElement("template"); t.innerHTML = PLInspo.card(x, { fade: true }).trim(); const el = t.content.firstElementChild; if (!el) continue; el.dataset.n = shown++; frag.appendChild(el); }
+      $("#wall").appendChild(frag);
       cursor = j.next_cursor || ""; done = !cursor; $("#end").hidden = !done || !shown;
-      $("#count").textContent = total ? (tag ? `${total} for ${INT.find((i) => i.id === tag)?.label || tag}` : me.interests.length ? `${total} ideas, what you're into first` : `${total} ideas`) : "Nothing here yet. Try another one.";
-    } catch { $("#count").textContent = "Couldn't load ideas. Pull to try again."; } finally { busy = false; }
+      if (!shown) empty();
+      $("#count").textContent = total ? (tag ? `${total} ${total === 1 ? "idea" : "ideas"} for ${nameOf(tag)}` : me.interests.length ? `${total} ideas, what you're into first` : `${total} ideas`) : "";
+    } catch { $("#wall").querySelectorAll(".ls-skel").forEach((s) => s.remove()); $("#count").textContent = "Couldn't load ideas. Refresh to try again."; } finally { busy = false; }
     if (!done && document.getElementById("sentinel").getBoundingClientRect().top < innerHeight + 600) setTimeout(more, 50); }
   let inited = false; new IntersectionObserver((en) => { if (inited && en.some((e) => e.isIntersecting)) more(); }, { rootMargin: "900px 0px" }).observe($("#sentinel"));
-  let rw = innerWidth; addEventListener("resize", () => { if (colCount() !== cols.length) layout(); rw = innerWidth; });
-  document.addEventListener("click", (e) => { const t = e.target.closest?.("[data-pli-tag]"); if (t) { e.preventDefault(); setTag(t.dataset.pliTag); } });
   const pick = () => PLInterests.open({ onClose: async () => { me = await PLInterests.get(); chips(); reset(); } });
   $("#pickBtn").onclick = pick; $("#editMe").onclick = pick;
   // an idea linked straight (/ideas#idea-…): show it first
-  async function feature() { const id = decodeURIComponent(location.hash.slice(1)); if (!/^[A-Za-z0-9_-]{3,120}$/.test(id)) return; const j = await (await fetch("/api/public/inspo/item?id=" + encodeURIComponent(id))).json().catch(() => null); if (j?.data) $("#feature").innerHTML = `<div class="feature">${PLInspo.card(j.data, { tilt: false })}</div>`; }
-  (async () => { const [L, m] = await Promise.all([PLInterests.list(), PLInterests.get()]); INT = L; PLInspo.setInterests(L); me = m; chips(); layout(); feature(); inited = true; reset(); })();
+  async function feature() { const id = decodeURIComponent(location.hash.slice(1)); if (!/^[A-Za-z0-9_-]{3,120}$/.test(id)) return; const j = await (await fetch("/api/public/inspo/item?id=" + encodeURIComponent(id))).json().catch(() => null); if (j?.data) $("#feature").innerHTML = `<div class="feature"><p>The idea you opened</p>${PLInspo.card(j.data)}</div>`; }
+  (async () => { const [L, m] = await Promise.all([PLInterests.list(), PLInterests.get()]); INT = L; PLInspo.setInterests(L); me = m; if (tag && !L.some((i) => i.id === tag)) { tag = ""; const u = new URL(location.href); u.searchParams.delete("tag"); history.replaceState(null, "", u); } chips(); feature(); inited = true; reset(); })();
 })();
 </script>
 <script src="/nav.js"></script><script src="/shell.js"></script>

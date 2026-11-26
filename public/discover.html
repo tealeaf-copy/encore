@@ -5,22 +5,21 @@
 <link rel="stylesheet" href="/community.css">
 <link rel="stylesheet" href="/playful.css">
 <link rel="stylesheet" href="/templates.css">
+<link rel="stylesheet" href="/lists.css">
 <style>
 /* design review: one short intro, one location chip, short cards, every section capped */
 :root{--p-ember:#B04A30;--red:#B04A30}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .intro{padding:14px 0 10px}.intro h1{font-size:var(--fs-28-40,28px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:16px}
-.fbar{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:4px 4px 8px 2px;margin:0 -16px 0 0}.fbar::-webkit-scrollbar{display:none}
-.fbar button{flex:none;min-height:44px;padding:8px 14px!important;font:600 14px "Instrument Sans",system-ui,sans-serif;border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
-.fbar button[aria-pressed=true]{background:var(--ink)!important;color:#fff!important}
-.fbar .loc{background:#FFF1D2!important}.fbar .sep{flex:none;width:1px;height:26px;background:var(--line)}
-.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:16px}
+.fbar{margin-bottom:8px}.fbar .loc{gap:6px;border:1.5px solid var(--line-strong,#D9CCBB)!important;background:var(--card,#FFFCF7)!important;box-shadow:none!important;color:var(--ink)!important;padding:0 14px!important}
+.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,#FFFCF7);border:1.5px solid var(--line);border-radius:16px}
 .locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
 .locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:14px;color:var(--soft)}.locp .note:empty{display:none}
-section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .lede{color:var(--soft);margin:0 0 10px;font-size:14px}
+section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 4px}section .lede{color:var(--soft);margin:0 0 16px;font-size:14px}
+#events,#fyList{margin-top:16px}.ls-grid .why{display:block;color:var(--smoke,#665A51)!important;font-size:13px}
 .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
-.note-box{margin:0 0 12px;padding:12px 14px;border:1px dashed #D9CBB8;border-radius:14px;color:#5A4E45;font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
+.note-box{margin:8px 0 12px;padding:14px 16px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;color:#5A4E45;font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
 .note-box button{background:none;border:0;font:inherit;cursor:pointer;padding:0;text-decoration:underline;min-height:44px}
 .more-btn{margin-top:12px;min-height:44px}
 .far-h{grid-column:1/-1;margin:14px 0 0;font-size:16px}
@@ -33,37 +32,37 @@ section{padding:14px 0 18px}section h2{font-size:20px;margin:0 0 2px}section .le
 /* hosts worth following: one card shape. Fixed slots (avatar, name + tag, place and counts, a one-line "next" strip,
    Follow in the same top-right spot), so every card in a row is the same height and nothing floats. */
 .hlist{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
-.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:14px;background:#fff;border:1.5px solid var(--line,#E4D9C8);border-radius:18px;color:var(--ink,#1F1A17);transition:border-color .15s,transform .15s}
-.hcd:hover{border-color:#1F1A17;transform:translateY(-2px)}
+.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:16px;background:var(--card,#FFFCF7);border:1.5px solid var(--line,#E4D9C8);border-radius:16px;color:var(--ink,#1F1A17);transition:border-color .15s}
+.hcd:hover{border-color:var(--line-strong,#D9CCBB)}
 .hcd:focus-within{border-color:#1F1A17}
-.hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid #1F1A17}
+.hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid var(--line,#E4D9C8)}
 .hcd-av svg,.hcd-av img{width:100%;height:100%;object-fit:cover}
 .hcd-id{grid-area:id;min-width:0}
 .hcd-top{display:flex;align-items:center;gap:6px;min-width:0}
 .hcd-name{font:600 17px/1.25 Fredoka,"Fredoka Fallback","Instrument Sans",system-ui,sans-serif;color:inherit;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hcd-name::after{content:"";position:absolute;inset:0;border-radius:inherit}
 .hcd-name:focus-visible{outline:none}.hcd:has(.hcd-name:focus-visible){outline:3px solid #1F1A17;outline-offset:2px}
-.hcd-ex{flex:none;font:600 13px/1 "Instrument Sans",system-ui,sans-serif;color:#5A4E45;background:#F2D48F;border-radius:999px;padding:4px 8px}
+.hcd-ex{display:none}
 .hcd-sub{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:#665A51;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "Instrument Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid #1F1A17!important;background:#fff!important;color:#1F1A17!important;cursor:pointer;box-shadow:none!important}
-.hcd-f:hover{background:#FFF6DE!important}.hcd-f[aria-pressed=true]{background:#1F1A17!important;color:#fff!important}
+.hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "Instrument Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid var(--line-strong,#D9CCBB)!important;background:var(--card,#FFFCF7)!important;color:#1F1A17!important;cursor:pointer;box-shadow:none!important}
+.hcd-f:hover{border-color:#1F1A17!important}.hcd-f[aria-pressed=true]{background:#1F1A17!important;color:#fff!important}
 .hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
 .hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:12px;background:#F7F1E8;font-size:14px;line-height:1.3;color:#1F1A17;text-decoration:none;min-width:0}
 .hcd-nx b{flex:none;font-weight:600;color:#B04A30}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 a.hcd-nx:hover{background:#EFE6D8}
 .hcd-exs{display:none;font-weight:600;color:#5A4E45}
-@media (max-width:520px){.hcd-ex{display:none}.hcd-exs{display:inline}.hcd-f{min-width:0;padding:0 14px!important}}
+.hcd-exs{display:inline}@media (max-width:520px){.hcd-f{min-width:0;padding:0 14px!important}}
 .hcd-nx.none{color:#665A51;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.hcd{transition:none}.hcd:hover{transform:none}}
 /* the end of the page: one way in for new hosts, the quiz as a quiet line under it */
-.endcards{display:grid;gap:10px;padding-top:12px}
-#hostCard{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:18px 20px;background:#F2D48F!important;border:2px solid #1F1A17!important;border-radius:20px!important;box-shadow:none!important}
-#hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:#3E352F;font-size:14px}#hostCard .btn{min-height:44px;flex:none}
-#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border:1.5px dashed #D9CBB8;border-radius:16px;background:transparent}
+.endcards{display:grid;gap:12px;padding-top:32px}
+#hostCard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:20px;background:var(--card,#FFFCF7)!important;border:1.5px solid var(--line,#E4D9C8)!important;border-radius:16px!important;box-shadow:none!important}
+#hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:#665A51;font-size:14px}#hostCard .btn{min-height:44px;flex:none}
+#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 20px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;background:transparent}
 #quiz:empty{display:none}
 #quiz>span[aria-hidden]{font-size:26px!important;line-height:1}
 #quiz h2{font-size:16px;margin:0}#quiz small{color:#665A51;font-size:13px}#quiz small a{color:#B04A30}
-#quiz .btn{min-height:44px;flex:none;margin-left:auto;background:#fff!important;color:#1F1A17!important;border:1.5px solid #1F1A17!important;box-shadow:none!important}
+#quiz .btn{min-height:44px;flex:none;margin-left:auto;background:var(--card,#FFFCF7)!important;color:#1F1A17!important;border:1.5px solid var(--line-strong,#D9CCBB)!important;box-shadow:none!important}
 @media (max-width:520px){#hostCard .btn,#quiz .btn{width:100%;margin-left:0;display:inline-flex;align-items:center;justify-content:center}}
 #events .tags,#fyList .tags{display:none!important}
 /* until the events arrive, the sections under them wait too, so nothing on screen jumps down when the cards land */
@@ -77,11 +76,11 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
     <nav><a href="/discover" aria-current="page">Discover</a><a href="/hosts">Hosts</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
 
-  <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs, bakes on a stoop.</p></div>
+  <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs and bakes on a stoop, hosted by people near you. Tap one to see it and say you're in.</p></div>
 
-  <div class="fbar" role="group" aria-label="Where and what">
-    <button type="button" class="loc" id="locBtn" aria-label="Change city" aria-expanded="false" aria-controls="locPanel"><i class="gl" style="--g:var(--g-pin)" aria-hidden="true"></i> <span id="locName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
-    <span class="sep" aria-hidden="true"></span>
+  <div class="fbar ls-filters" role="group" aria-label="Where and what">
+    <button type="button" class="loc ls-chip" id="locBtn" aria-label="Change city" aria-expanded="false" aria-controls="locPanel"><i class="gl" style="--g:var(--g-pin)" aria-hidden="true"></i> <span id="locName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
+    <span class="ls-sep" aria-hidden="true"></span>
     <span id="filters" style="display:contents"></span>
   </div>
   <form class="locp" id="locPanel" hidden>
@@ -91,12 +90,12 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
     <p class="note" id="locNote" aria-live="polite"></p>
   </form>
 
-  <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="grid g2" id="fyList"></div></section>
+  <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="ls-grid" id="fyList"></div></section>
 
   <section id="evSec" aria-labelledby="evH"><h2 id="evH">Coming up</h2>
     <div id="evNote"></div>
-    <div class="grid g2" id="events"><div class="empty">Loading…</div></div>
-    <button type="button" class="btn ghost more-btn" id="evMore" hidden></button><style>.more-btn[hidden]{display:none!important}</style></section>
+    <div class="ls-grid" id="events"><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5"></div><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5"></div></div>
+    <button type="button" class="ls-btn more-btn" id="evMore" hidden style="margin-top:24px"></button><style>.more-btn[hidden]{display:none!important}</style></section>
 
   <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><div class="shop-row" id="shops"></div></section>
 
@@ -127,7 +126,17 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   const qMatch = (e) => !QWORDS.length || QWORDS.some((w) => `${e.title || ""} ${e.activity || ""} ${e.host?.name || ""} ${e.city || ""} ${e.hood || ""}`.toLowerCase().includes(w.replace(/s$/, "")));
   const near = (x) => { if (!city) return true; const cf = city.toLowerCase(); return P ? P.near(`${x.city || ""}`, cf) || (!!x.hood && P.near(`${x.hood}`, cf)) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf); };
   const GT = (() => { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const N = { host: "Planners", spark: "Sparks", chill: "Chill Ones", filler: "Last-Minute Yeses", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" }; return g && N[g.top] ? { lane: g.lane, name: N[g.top] } : null; } catch { return null; } })();
-  const card = (e, why) => C.eventCard(e, why, { compact: true });
+  // one calm card, like /events: a 3:2 cover, a quiet status word, the date, the full title, the host, one button
+  const tmOf = (t) => t && /^\d{1,2}:\d{2}$/.test(t) ? new Date("2000-01-01T" + t.padStart(5, "0")).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : t || "";
+  const cap = (t) => { t = String(t || "").trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ""; };
+  const card = (e, why) => { const H = e.host || {}, url = `/g#rsvp-${encodeURIComponent(e.id)}`, free = e.free || !e.price;
+    const st = e.sample ? "Example" : e.approvalRequired ? "Ask to join" : "";
+    const meta = [st ? `<b>${esc(st)}</b>` : "", esc(cap(e.activity)), esc(free ? (e.costNote || "Free") : e.price === "chip" ? "Chip in" : e.price)].filter(Boolean).join(" · ");
+    const cov = e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="" loading="lazy">` : window.EventArt ? window.EventArt.cover(e, { title: "", label: "" }) : "";
+    const save = window.PLSave ? window.PLSave.button({ kind: "event", ref: e.id, title: e.title, img: e.coverPhoto || "" }) : "";
+    return `<article class="ls-card"><div class="ls-media">${cov}</div><div class="ls-body">${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(e.date ? C.fmtDate(e.date) + (e.startTime ? " · " + tmOf(e.startTime) : "") : "Date coming soon")}</p>
+      <a class="ls-title" href="${url}">${esc(e.title)}</a><p class="ls-sub">${H.name ? "by " + esc(H.name) : ""}${e.hood || e.city ? `${H.name ? " · " : ""}${esc(e.hood || e.city)}` : ""}</p>${why ? `<small class="why">${esc(why)}</small>` : ""}
+      <div class="ls-acts"><a class="ls-btn primary" href="${url}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${save}${H.handle ? `<a class="ls-mi" href="/@${encodeURIComponent(H.handle)}">More from ${esc(H.name || "this host")}</a>` : ""}</div></details></div></div></article>`; };
 
   // ---- one location chip: tap to set your city ----
   if (P) $("#locCities").innerHTML = P.CITIES.map((c) => `<option value="${esc(c[0])}">`).join("");
@@ -144,7 +153,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   // ---- what kind of thing: one row of chips ----
   function drawFilters() {
     const lanes = [["all", "Everything"], ["move", "Move"], ["make", "Make & taste"], ["gather", "Gather"], ["discover", "Somewhere new"]];
-    $("#filters").innerHTML = lanes.map(([k, t]) => `<button type="button" aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
+    $("#filters").innerHTML = lanes.map(([k, t]) => `<button type="button" class="ls-chip" aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; evShown = PAGE; farOpen = false; drawFilters(); drawEvents(); });
   }
 
@@ -167,7 +176,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
 
   // ---- events: the chosen city first, an honest note when there's nothing there ----
   const collapse = (L) => { const m = new Map(), out = []; for (const e of L) { const k = `${e.host?.handle || ""}|${String(e.title || "").toLowerCase()}`; if (m.has(k)) { m.get(k).__dates = (m.get(k).__dates || 1) + 1; continue; } const c = { ...e }; m.set(k, c); out.push(c); } return out; };
-  let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `🗓 ${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? "✨ Picked for you" : ""].filter(Boolean).join(" · ");
+  let whyN = 0; const whyOf = (e) => [e.__dates > 1 ? `${e.__dates} dates` : "", GT && GT.lane && C.laneOf(e) === GT.lane && whyN++ < 2 ? "Picked for you" : ""].filter(Boolean).join(" · ");
   const byDate = (a, b) => String(a.date || "9").localeCompare(String(b.date || "9"));
   const LANE_H = { move: "Move", make: "Make & taste", gather: "Gather", discover: "Somewhere new" }; // one name per lane: the chip, this heading and the quiz
   function drawEvents() {
@@ -190,9 +199,9 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
     $("#evNote").innerHTML = note ? `<p class="note-box">${note}</p>` : "";
     const shown = list.slice(0, evShown);
     let html = shown.map((e) => card(e, whyOf(e))).join("");
-    if (!html && !note) html = `<div class="empty">That's everything for now.</div>`;
+    if (!html && !note) html = `<div class="ls-empty"><b>That's everything for now.</b><p>New events show up here as hosts post them.</p></div>`;
     // what's further away stays one tap away instead of doubling the page
-    if (rest.length && shown.length === list.length) html += farOpen ? `<h3 class="far-h">Further away</h3>` + rest.slice(0, 8).map((e) => card(e, "")).join("") : "";
+    if (rest.length && shown.length === list.length) html += farOpen ? `<h3 class="far-h" style="grid-column:1/-1">Further away</h3>` + rest.slice(0, 8).map((e) => card(e, "")).join("") : "";
     $("#events").innerHTML = html;
     const mb = $("#evMore");
     if (shown.length < list.length) { mb.hidden = false; mb.textContent = `Show ${Math.min(PAGE, list.length - shown.length)} more`; mb.onclick = () => { evShown += PAGE; drawEvents(); }; }
@@ -215,7 +224,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
     const subOf = (h, fo) => [[h.hood, h.city].filter(Boolean)[0] || h.city || "", fo ? `${fo} follower${fo === 1 ? "" : "s"}` : "", h.hosted ? `${h.hosted} event${h.hosted === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
     const avOf = (h) => { const ac = h.theme?.accent || h.color || "#E26D8E"; return (h.gallery || [])[0] ? `<img src="${esc(h.gallery[0])}" alt="">` : h.theme?.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.theme.avatarArt, ac, 48) : esc(h.emoji || "🎉"); };
     $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), on = F.includes(h.handle);
-      const nx = n ? `<a class="hcd-nx" href="/g#rsvp-${encodeURIComponent(n.id)}"><b>Next</b><span>${esc([sd(n.date), n.title].filter(Boolean).join(" · "))}</span></a>` : `<span class="hcd-nx none"><span>No date posted yet</span></span>`;
+      const nx = n ? `<a class="hcd-nx" href="/g#rsvp-${encodeURIComponent(n.id)}"><b>Next</b><span>${esc([sd(n.date), n.title].filter(Boolean).join(" · "))}</span></a>` : "";
       return `<article class="hcd" style="--c:${esc(h.theme?.accent || h.color || "#E26D8E")}" data-fo="${Number(h.followers) || 0}"><span class="hcd-av" aria-hidden="true">${avOf(h)}</span><div class="hcd-id"><div class="hcd-top"><a class="hcd-name" href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>${h.sample ? `<span class="hcd-ex">Example</span>` : ""}</div><small class="hcd-sub">${h.sample ? `<span class="hcd-exs">Example · </span>` : ""}<span class="hcd-st">${esc(subOf(h, Number(h.followers) || 0))}</span></small></div><button class="hcd-f" type="button" data-fh="${esc(h.handle)}" aria-pressed="${on}">${on ? "Following" : "Follow"}<span class="sr"> ${esc(h.name)}</span></button>${nx}</article>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
     const byH = new Map(L.map((h) => [h.handle, h]));
     document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (b.getAttribute("aria-pressed") === "true") return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
@@ -240,20 +249,20 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)
   (async () => { if (city) return; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
-  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#introP").hidden = true; $("#hostCard")?.remove();
+  (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#hostCard")?.remove();
     try { const st = await (await fetch("/api/host/discover-status", { credentials: "same-origin" })).json(); if (st && Array.isArray(st.gaps) && Array.isArray(st.waiting)) { MINE = { gaps: st.gaps, waiting: st.waiting, handle: String(st.handle || "") }; } } catch {} if (LOADED) drawEvents(); } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
-  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<span style="font-size:40px" aria-hidden="true">🎲</span><div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
+  { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
   const ready = () => document.body.classList.remove("dc-wait"); setTimeout(ready, 8000);
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); ready();
-    if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="empty">Couldn't load events. Refresh to try again.</div>`; ready(); });
+    if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="ls-empty"><b>Couldn't load events.</b><p>Check your connection, then refresh the page.</p></div>`; ready(); });
 })();
-</script><script src="/nav.js"></script>
+</script><script src="/lists.js"></script><script src="/nav.js"></script>
 <script src="/shell.js"></script>
 <script>
 // took the guest-type quiz already? show the result instead of asking again
 (function () { try { const g = JSON.parse(localStorage.getItem("encore.guestType") || "null"); const q = document.getElementById("quiz"); if (!g || !q) return; const T = { host: ["🏡", "The Planner"], spark: ["⚡", "The Spark"], chill: ["🧘", "The Chill One"], filler: ["🪑", "The Last-Minute Yes"], early: ["🐣", "The Early Bird"], connector: ["🔗", "The Connector"], contributor: ["🧺", "The Contributor"], helper: ["🙌", "The Helper"] }[g.top]; if (!T) return;
-  const fill = () => { q.innerHTML = `<span style="font-size:40px" aria-hidden="true">${T[0]}</span><div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small><a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Only my picks</a>` : ""}`; };
+  const fill = () => { q.innerHTML = `<div style="flex:1;min-width:180px"><small>You're</small><h2>${T[1]}</h2><small><a href="/quiz">Take it again</a></small></div>${g.lane && new URLSearchParams(location.search).get("lane") !== g.lane ? `<a class="btn ghost" href="/discover?lane=${g.lane}">Only my picks</a>` : ""}`; };
   fill(); new MutationObserver(() => { if (!q.querySelector("a[href='/quiz']")) fill(); }).observe(q, { childList: true }); } catch {} })();
 </script>
 </body></html>

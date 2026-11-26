@@ -3,87 +3,48 @@
 <title>Events · Pottery Lab</title>
 <meta name="description" content="Supper clubs, run clubs, workshops and pop-ups that hosts made public, coming up and from their scrapbooks. With what guests said.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
 <style>
-:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#A63A22;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8}
+:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#B04A30;--butter:#F2D48F;--line:#E4D9C8}
 *{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
-a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:26px 16px 70px}
-h1,h2,h3{font-family:Fredoka,"Fredoka Fallback",system-ui,sans-serif;font-weight:600}
-h1{font-size:var(--fs-28-40,30px);line-height:1.08;margin:0 0 8px}.lede{color:var(--smoke);max-width:620px;margin:0 0 18px}
+a{color:inherit}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.bar{display:grid;gap:10px;margin:0 0 14px}
-.search{width:100%;max-width:560px;min-height:48px;padding:12px 14px;border:2px solid var(--ink);border-radius:16px;font:inherit;background:#fff;color:var(--ink)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}
-.seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff}
-.seg button{min-height:44px;border:0;background:none;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
-.chips select{appearance:none;-webkit-appearance:none;min-height:44px;max-width:100%;border:2px solid var(--ink);border-radius:999px;padding:8px 32px 8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer;
-  background:#FFF1D2 url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%231F1A17%27 stroke-width=%272%27 fill=%27none%27/%3E%3C/svg%3E") no-repeat right 12px center}
-.search:focus-visible,.chips select:focus-visible,.seg button:focus-visible,.more:focus-visible,.rv-btn:focus-visible,dialog button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
-.count{color:var(--smoke);font-size:14px;margin:4px 0 12px;min-height:1.5em}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:16px}
-.ev{position:relative;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);border-radius:20px;overflow:hidden;transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
-.ev:nth-child(3n+1){transform:rotate(-.4deg)}.ev:nth-child(3n+2){transform:rotate(.35deg)}
-@media (hover:hover){.ev:hover{transform:translateY(-3px) rotate(0)}}@media (prefers-reduced-motion:reduce){.ev,.ev:hover{transform:none;transition:none}}
-.ev .art{position:relative;height:132px;background:var(--bg,#FFE08A);border-bottom:2px solid var(--ink);display:grid;place-items:center;font-size:44px;overflow:hidden}
-.ev .art img{width:100%;height:100%;object-fit:cover}
-.ev .badge{position:absolute;top:10px;left:10px;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
-.ev .badge.past{background:var(--butter)}
-.ev .bd{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
-.ev .when{font-weight:700;font-size:14px;color:var(--ember-d)}
-.ev .t{font:600 18px/1.25 Fredoka,"Fredoka Fallback",system-ui,sans-serif;text-decoration:none;color:var(--ink);overflow-wrap:anywhere}
-.ev .t::after{content:"";position:absolute;inset:0;border-radius:inherit}.ev .t:focus-visible{outline:none}.ev:has(.t:focus-visible){outline:3px solid var(--ember);outline-offset:3px}
-.ev .by,.ev .q{font-size:14px;color:var(--smoke);overflow-wrap:anywhere}
-.ev .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}.ev .meta span{font-size:13px;background:var(--linen);border-radius:999px;padding:2px 9px}
-.ev .rv{margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px}
-.ev .rv b{font-weight:600}.ev .quote{display:block;margin-top:2px;color:var(--ink);font-size:14px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.rv-btn{position:relative;z-index:1;align-self:flex-start;margin-top:6px;min-height:44px;padding:6px 14px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}
-.rv-btn:hover{background:#FFF6DE}
-.empty{color:var(--smoke);padding:30px 0}
-.tog{min-height:44px;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;color:var(--ink);cursor:pointer}.tog[aria-pressed=true]{background:var(--ink);color:#fff}.tog:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
-.ev .tp{font-size:14px;color:var(--ink);font-weight:600;overflow-wrap:anywhere}.ev .lk{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.ev .lk a{display:inline-flex;align-items:center;min-height:36px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;background:#fff}.ev .lk a:hover{background:#FFF6DE}
-.more{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:20px 0 0;padding:10px 22px;border-radius:999px;border:2px solid var(--ink);background:#fff;color:var(--ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}.more[hidden]{display:none}
-.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--smoke);font-size:14px}.foot a{color:var(--ember-d);font-weight:600}
-.hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
+.hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}
 .hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
 @media (min-width:861px){.hd-top{display:none}}@media (max-width:860px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
-dialog{width:min(560px,calc(100vw - 32px));max-height:min(80vh,720px);border:2px solid var(--ink);border-radius:22px;padding:0;background:var(--paper);color:var(--ink)}
+#more{display:flex;margin:32px auto 0}
+dialog{width:min(560px,calc(100vw - 32px));max-height:min(80vh,720px);border:1.5px solid var(--line);border-radius:24px;padding:0;background:var(--paper);color:var(--ink);box-shadow:var(--shadow-sheet,0 18px 48px -18px rgba(31,26,23,.45))}
 dialog::backdrop{background:rgba(31,26,23,.45)}
-.dl-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 18px 8px}.dl-h h2{margin:0;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
-.dl-h button{flex:none;min-width:44px;min-height:44px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;font-size:20px;cursor:pointer;color:var(--ink)}
-.dl-b{padding:0 18px 18px;overflow:auto}.dl-b .sum{color:var(--smoke);margin:0 0 10px}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.tags span{font-size:13px;background:var(--butter);border-radius:999px;padding:2px 10px}
-.kq{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:10px 12px;margin:0 0 8px}.kq p{margin:0 0 4px;overflow-wrap:anywhere}.kq small{color:var(--smoke)}
-.kq .vf{display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-weight:600;font-size:12px;color:#4F5C42;background:#EEF1E8;border:1px solid #C9D2BC;border-radius:999px;padding:2px 8px;vertical-align:1px}.kq .vf::before{content:"✓";font-weight:700}
+.dl-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 20px 8px}.dl-h h2{margin:0;font-size:20px;line-height:1.25;overflow-wrap:anywhere}
+.dl-h button{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:#FFFCF7;cursor:pointer;color:var(--ink)}
+.dl-b{padding:0 20px 20px;overflow:auto}.dl-b .sum{color:var(--smoke);margin:0 0 16px;font-size:14px}
+.kq{margin:0 0 16px;padding:0 0 0 12px;border-left:2px solid var(--butter)}.kq p{margin:0 0 2px;overflow-wrap:anywhere}.kq small{color:var(--smoke);font-size:13px}
 .dl-go{display:inline-flex;align-items:center;min-height:44px;color:var(--ember-d);font-weight:600}
-</style><script src="/mascot.js"></script></head><body>
-<div class="wrap">
+</style><script src="/mascot.js"></script><script src="/eventart.js"></script></head><body>
+<div class="ls-wrap">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
   <main>
-  <h1>Find an event</h1>
-  <p class="lede">What hosts have coming up, and what they've hosted before.</p>
-  <div class="bar">
-    <label class="sr" for="q">Search events</label><input class="search" id="q" type="search" placeholder="Try “dinner”, “dance class” or a host" autocomplete="off">
-    <div class="chips" role="group" aria-label="Filter events">
-      <div class="seg" role="group" aria-label="When"><button type="button" data-s="upcoming" aria-pressed="true">Coming up</button><button type="button" data-s="past" aria-pressed="false">Past</button><button type="button" data-s="all" aria-pressed="false">All</button></div>
-      <label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select>
-      <label class="sr" for="format">Kind of event</label><select id="format"><option value="">Any kind</option></select>
-      <button type="button" class="tog" id="spk" aria-pressed="false"><i class="gl" style="--g:var(--g-mic)" aria-hidden="true"></i> Speaking</button>
-    </div>
+  <section class="ls-head"><div><h1>Find an event</h1>
+    <p class="ls-what">Dinners, runs and classes hosts made public. Tap one to see the details and save a spot.</p></div></section>
+  <label class="sr" for="q">Search events</label><input class="ls-search" id="q" type="search" placeholder="Try “dinner”, “dance class” or a host" autocomplete="off">
+  <div class="ls-filters" role="group" aria-label="Filter events">
+    <button type="button" class="ls-chip" data-s="upcoming" aria-pressed="true">Coming up</button><button type="button" class="ls-chip" data-s="past" aria-pressed="false">Past</button><button type="button" class="ls-chip" data-s="all" aria-pressed="false">All</button>
+    <span class="ls-sep" aria-hidden="true"></span>
+    <label class="sr" for="city">City</label><select class="ls-chip" id="city"><option value="">Anywhere</option></select>
+    <label class="sr" for="format">Kind of event</label><select class="ls-chip" id="format"><option value="">Any kind</option></select>
+    <button type="button" class="ls-chip" id="spk" aria-pressed="false">Talks</button>
   </div>
-  <p class="count" id="count" aria-live="polite">Loading events…</p>
-  <div class="grid" id="grid"></div>
-  <button type="button" class="more" id="more" hidden>Show more</button>
+  <p class="ls-count" id="count" aria-live="polite">Loading events…</p>
+  <div class="ls-grid" id="grid" style="margin-top:16px"></div>
+  <button type="button" class="ls-btn" id="more" hidden>Show more events</button>
   </main>
-  <p class="foot">Agents and builders: <a href="/api/v1/openapi.json">use the API</a> or <a href="/llms.txt">read llms.txt</a>.</p>
+  <p class="ls-foot">Agents and builders: <a href="/api/v1/openapi.json">use the API</a> or <a href="/llms.txt">read llms.txt</a>.</p>
 </div>
-<dialog id="dlg" aria-labelledby="dlT"><div class="dl-h"><h2 id="dlT"></h2><button type="button" id="dlX" aria-label="Close">×</button></div><div class="dl-b" id="dlB"></div></dialog>
+<dialog id="dlg" aria-labelledby="dlT"><div class="dl-h"><h2 id="dlT"></h2><button type="button" id="dlX" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button></div><div class="dl-b" id="dlB"></div></dialog>
 <script>
 (() => {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const P = new URLSearchParams(location.search), st = { q: P.get("q") || "", city: P.get("city") || "", format: P.get("format") || "", status: ["upcoming", "past", "all"].includes(P.get("status")) ? P.get("status") : "upcoming", type: P.get("type") === "speaking" ? "speaking" : "" };
-  const EM = { dinner: "🍽️", run: "🏃", hike: "🥾", brunch: "🥞", workshop: "🏺", class: "🎓", "pop-up": "🧁", coffee: "☕", picnic: "🧺", "game night": "🎲", "book club": "📚", drinks: "🍷", movement: "🧘", party: "🎉", social: "💃", summit: "🎤", conference: "🎤", panel: "🎙️", meetup: "👋", online: "💻", tour: "🗺️", launch: "🚀", offsite: "🏕️", talk: "🎤", keynote: "🎤", webinar: "💻", podcast: "🎙️", lunch: "🥪", breakfast: "🥐", booth: "🪧", roadshow: "🚐" };
-  const BG = ["#FFE08A", "#FFCAD6", "#C4DEFF", "#DCCBFF", "#E3F1DD", "#FFD9B0"];
-  const tint = (s) => BG[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % BG.length];
   const yr = new Date().getFullYear();
   const day = (d) => { if (!d) return "Date to come"; const x = new Date(d + "T12:00:00"); if (isNaN(x)) return d; const o = { weekday: "short", month: "short", day: "numeric" }; if (x.getFullYear() !== yr) { delete o.weekday; o.year = "numeric"; } return x.toLocaleDateString("en-US", o); };
   const when = (e) => [day(e.start), e.time].filter(Boolean).join(" · ");
@@ -96,21 +57,29 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   const revLine = (r) => r && r.count ? `${r.count} review${r.count === 1 ? "" : "s"}${r.would_go_again_pct != null ? ` · ${r.would_go_again_pct}% would go again` : ""}` : "";
   const src = (u) => /partiful\.com/i.test(u) ? "From Partiful" : /lu\.ma|luma\.com/i.test(u) ? "From Luma" : /eventbrite\./i.test(u) ? "From Eventbrite" : "";
   let cursor = null, hostRev = {}, shown = [];
+  // a drawn cover when the host has no photo (EventArt), never an emoji
+  const cover = (e) => e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy">` : window.EventArt ? EventArt.cover({ id: e.id, title: e.title, activity: e.format || "" }, { title: "", label: "" }) : "";
+  // one quiet status word at most: Past, Full, a few spots left, or Ask to join
+  const statusOf = (e) => e.status === "past" ? "Past" : e.spots_left === 0 ? "Full" : e.spots_left != null && e.spots_left <= 5 ? `${e.spots_left} spot${e.spots_left === 1 ? "" : "s"} left` : e.ask_to_join ? "Ask to join" : "";
   function card(e, seen) {
-    const art = e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy">` : `<span aria-hidden="true">${EM[e.format] || "✨"}</span>`;
-    const place = [e.area, e.city].filter(Boolean).join(", ");
-    const meta = [e.format && e.format !== "other" ? label(e.format) : "", e.status === "upcoming" ? e.price : "", e.status === "upcoming" && e.spots_left != null ? (e.spots_left ? `${e.spots_left} spot${e.spots_left === 1 ? "" : "s"} left` : "Full") : "", e.ask_to_join ? "Ask to join" : "", src(e.original_link)].filter(Boolean);
-    // the event's own reviews; otherwise the host's numbers, once per host in the list (on that host's first card)
+    const place = [e.area, e.city].filter(Boolean).join(", "), st = statusOf(e);
+    const meta = [st ? `<b>${esc(st)}</b>` : "", e.format && e.format !== "other" ? esc(label(e.format)) : "", e.status === "upcoming" && e.price ? esc(e.price) : "", esc(src(e.original_link))].filter(Boolean).join(" · ");
+    // the event's own reviews: one quote and the guest's first name (the card is already about this event); otherwise the
+    // host's numbers, once per host in the list (on that host's first card)
     const R = e.reviews || {}, H = !seen.has(e.host.handle) && hostRev[e.host.handle], q = (R.items || []).find((k) => k.text);
-    const rv = R.count ? `<div class="rv"><b>${esc(revLine(R))}</b>${q ? `<span class="quote">“${esc(q.text.length > 110 ? q.text.slice(0, 107).replace(/\s+\S*$/, "") + "…" : q.text)}” ${esc(q.name)}</span>` : ""}</div><button type="button" class="rv-btn" data-id="${esc(e.id)}">Read reviews</button>`
-      : H && H.count ? `<div class="rv">Host: ${esc(revLine(H))}</div>` : "";
+    const first = (n) => String(n || "").trim().split(/\s+/)[0];
+    const rv = R.count ? (q ? `<blockquote class="ls-quote"><p>“${esc(q.text.length > 110 ? q.text.slice(0, 107).replace(/\s+\S*$/, "") + "…" : q.text)}”</p><cite>${esc(first(q.name))}</cite></blockquote>` : `<p class="ls-sub">${esc(revLine(R))}</p>`)
+      : H && H.count ? `<p class="ls-sub">Host: ${esc(revLine(H))}</p>` : "";
     if (!R.count && H && H.count) seen.add(e.host.handle);
-    // a talk: what it was about, who ran it, and the recording and slides
+    // a talk: what it was about and who ran it; the recording and slides go behind More
     const S = e.speaking, listen = S && (e.format === "podcast" || /spotify\.com|podcasts\.apple\.com/i.test(S.recording || ""));
-    const talk = S ? `${S.topic ? `<span class="tp">${esc(S.topic)}</span>` : ""}${S.organizer || S.role ? `<span class="q">${esc([S.role, S.organizer ? "at " + S.organizer : ""].filter(Boolean).join(" "))}</span>` : ""}${S.recording || S.slides ? `<div class="lk">${S.recording ? `<a href="${esc(S.recording)}" target="_blank" rel="noopener noreferrer">${listen ? "Listen" : "Watch"} ↗</a>` : ""}${S.slides ? `<a href="${esc(S.slides)}" target="_blank" rel="noopener noreferrer">Slides ↗</a>` : ""}</div>` : ""}` : "";
-    return `<article class="ev"><div class="art" style="--bg:${tint(e.format + e.host.handle)}">${art}<span class="badge${e.status === "past" ? " past" : ""}">${e.status === "past" ? "Past" : "Coming up"}</span></div>
-      <div class="bd"><span class="when">${esc(whenLine(e))}</span>${nextLine(e) ? `<span class="q">${esc(nextLine(e))}</span>` : ""}<a class="t" href="${esc(e.url)}">${esc(e.title)}</a><span class="by">by ${esc(e.host.name)}${place ? " · " + esc(place) : ""}</span>
-      ${meta.length ? `<div class="meta">${meta.map((m) => `<span>${esc(m)}</span>`).join("")}</div>` : ""}${talk}${e.companies && e.companies.length ? `<span class="q">With ${esc(e.companies.slice(0, 3).join(", "))}${e.companies.length > 3 ? ` and ${e.companies.length - 3} more` : ""}</span>` : ""}${rv}</div></article>`;
+    const talk = S ? `${S.topic ? `<p class="ls-sub">${esc(S.topic)}</p>` : ""}${S.organizer || S.role ? `<p class="ls-sub">${esc([S.role, S.organizer ? "at " + S.organizer : ""].filter(Boolean).join(" "))}</p>` : ""}` : "";
+    const menu = [R.count ? `<button type="button" class="ls-mi rv-btn" data-id="${esc(e.id)}">Read ${R.count} review${R.count === 1 ? "" : "s"}</button>` : "", S && S.recording ? `<a class="ls-mi" href="${esc(S.recording)}" target="_blank" rel="noopener noreferrer">${listen ? "Listen" : "Watch"} the recording</a>` : "", S && S.slides ? `<a class="ls-mi" href="${esc(S.slides)}" target="_blank" rel="noopener noreferrer">See the slides</a>` : "", `<a class="ls-mi" href="/@${esc(e.host.handle)}">More from ${esc(e.host.name)}</a>`].filter(Boolean);
+    const extra = nextLine(e) || (e.companies && e.companies.length ? `With ${e.companies.slice(0, 3).join(", ")}${e.companies.length > 3 ? ` and ${e.companies.length - 3} more` : ""}` : "");
+    return `<article class="ls-card ev"><div class="ls-media">${cover(e)}</div>
+      <div class="ls-body">${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(whenLine(e))}</p><a class="ls-title" href="${esc(e.url)}">${esc(e.title)}</a><p class="ls-sub">by ${esc(e.host.name)}${place ? " · " + esc(place) : ""}</p>
+      ${extra ? `<p class="ls-sub">${esc(extra)}</p>` : ""}${talk}${rv}
+      <div class="ls-acts"><a class="ls-btn${e.status === "upcoming" ? " primary" : ""}" href="${esc(e.url)}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${menu.join("")}</div></details></div></div></article>`;
   }
   const qs = (extra = {}) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ q: st.q, city: st.city, format: st.format, type: st.type, status: st.status, ...extra })) if (v) u.set(k, v); return u.toString(); };
   async function load(more) {
@@ -119,7 +88,9 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     if (!j) { $("#count").textContent = "Couldn't load events. Refresh to try again."; return; }
     shown = more ? shown.concat(j.data) : j.data; cursor = j.next_cursor;
     { const seen = new Set(); $("#grid").innerHTML = shown.length ? shown.map((e) => card(e, seen)).join("") : ""; }
-    $("#count").textContent = j.total ? `${j.total} event${j.total === 1 ? "" : "s"}` : st.status === "upcoming" ? "Nothing coming up here yet. Try Past, or another city." : "Nothing here yet. Try another search.";
+    $("#count").textContent = j.total ? `${j.total} event${j.total === 1 ? "" : "s"}` : "";
+    if (!j.total) { const up = st.status === "upcoming"; $("#grid").innerHTML = `<div class="ls-empty">${window.Potto ? `<span class="ls-potto" aria-hidden="true">${Potto.svg("think", 64, "")}</span>` : ""}<b>${up ? "Nothing coming up here yet." : "No events match that."}</b><p>${up ? "See what hosts have done before, or look in another city." : "Try fewer words, or another city or kind of event."}</p><button type="button" class="ls-btn" id="emptyGo">${up ? "See past events" : "Clear filters"}</button></div>`;
+      $("#emptyGo").onclick = () => { if (up) { st.status = "all"; } else { st.q = ""; st.city = ""; st.format = ""; st.type = ""; $("#q").value = ""; $("#city").value = ""; $("#format").value = ""; } paint(); load(); }; }
     $("#more").hidden = !cursor;
     history.replaceState(null, "", location.pathname + (qs() && qs() !== "status=upcoming" ? "?" + qs() : ""));
   }
@@ -139,23 +110,24 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     const R = e.reviews;
     $("#dlT").textContent = e.title;
     $("#dlB").innerHTML = `<p class="sum">${esc(whenLine(e))} · by ${esc(e.host.name)}<br>${esc(revLine(R))}</p>
-      ${R.top_tags.length ? `<div class="tags">${R.top_tags.map((t) => `<span>${esc(t.label)} · ${t.count}</span>`).join("")}</div>` : ""}
-      ${R.items.map((k) => `<div class="kq">${k.text ? `<p>“${esc(k.text)}”</p>` : ""}<small>${esc(k.name)}${k.tags.length ? " · " + esc(k.tags.join(", ")) : ""}${k.at ? " · " + esc(day(k.at)) : ""}</small></div>`).join("")}
+      ${R.items.filter((k) => k.text).map((k) => `<blockquote class="kq"><p>“${esc(k.text)}”</p><small>${esc(String(k.name || "").trim().split(/\s+/)[0])}</small></blockquote>`).join("")}
       <a class="dl-go" href="${esc(e.url)}">${e.source === "hosted" ? "Open the event" : "See the host's page"}</a>`;
   }
   $("#q").value = st.q;
-  document.querySelectorAll(".seg button").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.s === st.status)); b.onclick = () => { st.status = b.dataset.s; document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); load(); }; });
+  // the filter row: the active choice is filled, a picked city or kind too
+  const paint = () => { document.querySelectorAll("[data-s]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.s === st.status))); $("#spk").setAttribute("aria-pressed", String(st.type === "speaking")); $("#city").classList.toggle("on", !!st.city); $("#format").classList.toggle("on", !!st.format); };
+  document.querySelectorAll("[data-s]").forEach((b) => { b.onclick = () => { st.status = b.dataset.s; paint(); load(); }; });
   let t; $("#q").oninput = () => { clearTimeout(t); t = setTimeout(() => { st.q = $("#q").value.trim(); load(); }, 250); };
-  $("#city").onchange = () => { st.city = $("#city").value; load(); };
-  $("#format").onchange = () => { st.format = $("#format").value; load(); };
+  $("#city").onchange = () => { st.city = $("#city").value; paint(); load(); };
+  $("#format").onchange = () => { st.format = $("#format").value; paint(); load(); };
   $("#more").onclick = () => load(true);
-  $("#spk").setAttribute("aria-pressed", String(st.type === "speaking"));
-  $("#spk").onclick = () => { st.type = st.type === "speaking" ? "" : "speaking"; $("#spk").setAttribute("aria-pressed", String(!!st.type)); if (st.type && st.status === "upcoming") { st.status = "all"; document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.s === "all"))); } load(); };
-  $("#grid").addEventListener("click", (ev) => { const b = ev.target.closest(".rv-btn"); if (b) reviews(b.dataset.id); });
+  $("#spk").onclick = () => { st.type = st.type === "speaking" ? "" : "speaking"; if (st.type && st.status === "upcoming") st.status = "all"; paint(); load(); };
+  paint();
+  $("#grid").addEventListener("click", (ev) => { const b = ev.target.closest(".rv-btn"); if (b) { b.closest("details")?.removeAttribute("open"); reviews(b.dataset.id); } });
   $("#dlX").onclick = () => $("#dlg").close();
   $("#dlg").addEventListener("click", (ev) => { if (ev.target === $("#dlg")) $("#dlg").close(); });
   Promise.all([facets(), hosts()]).finally(() => load());
 })();
 </script>
-<script src="/nav.js"></script><script src="/shell.js"></script>
+<script src="/lists.js"></script><script src="/nav.js"></script><script src="/shell.js"></script>
 </body></html>

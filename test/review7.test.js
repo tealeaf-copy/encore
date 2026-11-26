@@ -208,7 +208,7 @@ test("Help: the button steps aside for dialogs; guests don't need a host code", 
 
 // ---------- 10 ----------
 test("Polish: ideas say a title once, stickers clear the host's name, the picker, the side card, the digest's day, brand words", async () => {
-  const ins = read("public/inspo.js"); assert.match(ins, /EA\.cover\(e, \{ title: ""/); assert.match(ins, /const lineOf = /); assert.match(ins, /\.pli-flyer \.pli-sticker\{left:auto;right:-8px/);
+  const ins = read("public/inspo.js"); assert.match(ins, /EA\.cover\(e, \{ title: ""/); assert.match(ins, /const lineOf = /); assert.doesNotMatch(ins, /pli-sticker/, "lists pass: no stickers on cards, one quiet status word instead"); assert.match(ins, /const statusOf = /);
   const pin = read("public/interests.js"); assert.match(pin, /\.pin \.pin-x\{position:absolute;z-index:3/); assert.match(pin, /\.pin-main:disabled\{background:#EFE6D8;color:#4A3F37/); assert.ok(!/\.pin-main:disabled\{opacity/.test(pin));
   assert.match(read("public/feed.html"), /\.fside:empty\{display:none!important\}/);
   // the weekend is worked out where the person is: Sunday 8pm in LA is Monday in UTC

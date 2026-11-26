@@ -159,7 +159,7 @@ test("copy and small UI: In again only, CRM fields hidden, speaker sublines, ins
   assert.match(shop, /const subOf = /); assert.match(shop, /\.shop \.si-b b\{font:600 16px\/1\.3 var\(--body/); // item names in the page's body face (UX pass) assert.match(shop, /<span class="si-sep" aria-hidden="true">·<\/span><span class="si-sr">, <\/span>/);
   assert.match(read("public/hosts.html"), /const subOf = /);
   assert.doesNotMatch(read("server/recognition.js"), /No insurance certificate on file/);
-  const ins = read("public/inspo.js"); assert.doesNotMatch(ins, /"Coming up" : "Past"/); assert.match(ins, /<span class="pli-kind">Past<\/span>/);
+  const ins = read("public/inspo.js"); assert.doesNotMatch(ins, /"Coming up" : "Past"/); assert.match(ins, /x\.type === "art" && x\.status !== "upcoming" \? "Past"/);
   assert.match(read("public/plans.html"), /if \(!n && \/\(\?:\^\|;\\s\*\)encore_in=1\/\.test\(document\.cookie\)/);
   assert.match(read("public/requests.html"), /signedIn \? J\("\/api\/collabs"\) : null/);
   assert.match(read("public/help.js"), /window\.EncoreHelp = window\.PLHelp = \{ open, close/);

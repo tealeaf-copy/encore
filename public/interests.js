@@ -103,7 +103,7 @@
     const saved = window.PLSave ? window.PLSave.items().filter((i) => i.kind === "event").map((i) => i.ref) : [];
     const [H, W] = await Promise.all([fetch("/api/public/suggest/hosts?" + q, { credentials: "same-origin" }).then((r) => r.json()).catch(() => ({ hosts: [] })), fetch(`/api/public/suggest/weekend?${q}&saved=${encodeURIComponent(saved.join(","))}`).then((r) => r.json()).catch(() => ({ events: [] }))]);
     const fol = new Set(H.following || []);
-    el.querySelector(".pin-hosts").innerHTML = (H.hosts || []).length ? H.hosts.map((h, i) => hostCard({ ...h, following: fol.has(h.handle) }, i)).join("") : `<div class="pin-empty">No hosts for that yet${city ? " in " + esc(city) : ""}. Be the first: <a href="/ideas">steal an idea</a>.</div>`;
+    el.querySelector(".pin-hosts").innerHTML = (H.hosts || []).length ? H.hosts.map((h, i) => hostCard({ ...h, following: fol.has(h.handle) }, i)).join("") : `<div class="pin-empty">No hosts for that yet${city ? " in " + esc(city) : ""}. Be the first: <a href="/ideas">try an idea</a>.</div>`;
     let evs = W.events || [];
     if (evs.length && signedIn()) { try { const F = (await (await fetch("/api/me/friends-going?ids=" + evs.map((e) => e.id).join(","), { credentials: "same-origin" })).json()).events || {}; evs = evs.map((e) => ({ ...e, friends: F[e.id]?.line || "" })); } catch {} }
     el.querySelector(".pin-evs").innerHTML = evs.length ? evs.map(eventCard).join("") : `<div class="pin-empty">Nothing for that this weekend${city ? " in " + esc(city) : ""} yet. <a href="/events">See everything coming up</a> or <a href="/ideas">get ideas</a>.</div>`;

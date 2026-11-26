@@ -2,44 +2,38 @@
 <script src="/authguard.js"></script>
 <title>Saved · Pottery Lab</title>
 <meta name="robots" content="noindex">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
 <style>
 :root{--paper:#F7F1E8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--butter:#F2D48F;--line:#E4D9C8}
-*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif;background-image:radial-gradient(rgba(102,90,81,.07) 1px,transparent 1.2px);background-size:7px 7px}
-a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:22px 16px 120px}
-h1{font:600 clamp(34px,6vw,50px)/1 Fredoka,system-ui;margin:4px 0 6px}h1 em{font-style:normal;color:var(--ember)}
-h2{font:600 24px Fredoka,system-ui;margin:28px 0 10px}.lede{color:var(--smoke);margin:0 0 16px;max-width:560px}
-.keep{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#FFFDF8;border:2.5px solid var(--ink);border-radius:20px;padding:14px 16px;margin:0 0 20px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-.5deg);position:relative}
-.keep::before{content:"";position:absolute;top:-11px;right:40px;width:70px;height:22px;background:rgba(242,212,143,.92);transform:rotate(5deg)}
-.keep b{font:600 19px Fredoka,system-ui}.keep p{margin:2px 0 0;color:var(--smoke)}.keep a{margin-left:auto;background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:11px 18px;font-weight:600;text-decoration:none;box-shadow:2px 2px 0 var(--ink)}
-.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:22px}
-.board{position:relative;display:block;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;transform:rotate(var(--r,0deg));transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
-@media (hover:hover){.board:hover{transform:rotate(0) translateY(-3px)}}
-.collage{position:relative;aspect-ratio:1/1;background:#EFE6D8;border:2.5px solid var(--ink);border-radius:22px;box-shadow:4px 4px 0 var(--ink);overflow:hidden}
-.collage .t{position:absolute;border:3px solid #fff;outline:1.5px solid var(--ink);border-radius:6px;overflow:hidden;background:#FDE6A6;box-shadow:0 4px 10px -6px rgba(31,26,23,.5)}
-.collage .t img{width:100%;height:100%;object-fit:cover;display:block}.collage .t .ea-cover .ea-txt{display:none}
-.collage .t1{left:6%;top:7%;width:56%;height:56%;transform:rotate(-5deg)}.collage .t2{right:5%;top:10%;width:42%;height:42%;transform:rotate(6deg)}
-.collage .t3{left:12%;bottom:6%;width:40%;height:38%;transform:rotate(4deg)}.collage .t4{right:8%;bottom:8%;width:46%;height:40%;transform:rotate(-3deg)}
-.collage .tape{position:absolute;width:64px;height:20px;background:rgba(242,212,143,.92);z-index:3}
-.collage .empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--smoke);font:600 22px Caveat,cursive;text-align:center;padding:20px}
-.board .nm{font:600 28px/1 Caveat,cursive;margin:12px 4px 0;display:block;transform:rotate(-1.5deg)}.board .ct{color:var(--smoke);font-size:14px;margin:2px 4px 0;display:block}
-.board.new .collage{aspect-ratio:auto;min-height:120px;border-style:dashed;box-shadow:none;background:#FBF6EE;display:grid;place-items:center}.board.new .collage span{font:600 20px Fredoka,system-ui}
-.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:16px}
-.it{position:relative;background:#FFFDF8;border:2px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:3px 3px 0 var(--ink);display:flex;flex-direction:column;transform:rotate(var(--r,0deg))}
-.it .th{position:relative;aspect-ratio:4/3;background:#FDE6A6;border-bottom:2px solid var(--ink)}.it .th img{width:100%;height:100%;object-fit:cover;display:block}.it .th .av{position:absolute;inset:0;display:grid;place-items:center;font-size:54px}.it .th .ea-cover .ea-txt{display:none}.it .th .ea-cover .ea-art{width:86%;height:70%;right:7%}
-.it .bd{padding:10px 12px 12px;display:grid;gap:4px}.it b{font:600 17px/1.15 Fredoka,system-ui}.it small{color:var(--smoke);font-size:13.5px}
-.it .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}.it select{min-height:36px;border:1.5px solid #DCCFBE;border-radius:10px;background:#fff;font:inherit;font-size:14px;max-width:150px}
-.it .kd{position:absolute;top:8px;left:8px;background:#fff;border:1.5px solid var(--ink);border-radius:999px;padding:1px 9px;font:700 12px "Instrument Sans",system-ui;z-index:2}
-.it a.go{font-weight:600;font-size:14px;color:#A63A22}
-.back{background:none;border:0;font:600 15px "Instrument Sans",system-ui;color:#A63A22;cursor:pointer;padding:0;min-height:44px;text-decoration:underline}
-.bh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}.bh h2{margin:0;font:600 36px/1 Caveat,cursive}.bh button.x{margin-left:auto;background:none;border:1.5px solid #C9BBA7;border-radius:999px;padding:6px 12px;cursor:pointer;font:600 13px "Instrument Sans",system-ui;color:var(--smoke)}
-.empty-all{display:grid;gap:10px;justify-items:start;background:#FFFDF8;border:2px dashed #C9BBA7;border-radius:20px;padding:20px}.empty-all a{background:var(--ember);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:10px 18px;font-weight:600;text-decoration:none}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+a{color:inherit}
+h2{font:600 var(--fs-20-28,20px)/1.2 Fredoka,system-ui;margin:32px 0 12px}
+/* signed out: one calm card that says saves live on this phone, and one way to keep them */
+.keep{display:flex;gap:12px 16px;align-items:center;flex-wrap:wrap;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:16px 20px;margin:0 0 24px}
+.keep b{font:600 18px Fredoka,system-ui}.keep p{margin:2px 0 0;color:var(--smoke);font-size:14px}.keep .ls-btn{margin-left:auto}
+@media (max-width:520px){.keep .ls-btn{width:100%;margin-left:0}}
+/* boards: a calm card with four thumbnails in a grid, the board's name and its count */
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:24px 16px}
+@media (max-width:640px){.boards{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}}
+.board{display:flex;flex-direction:column;text-align:left;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:0;overflow:hidden;cursor:pointer;color:inherit;font:inherit;transition:border-color .2s}
+@media (hover:hover){.board:hover{border-color:#D9CCBB}}
+.collage{position:relative;aspect-ratio:3/2;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#EFE6D8;overflow:hidden}
+.collage .t{position:relative;overflow:hidden;background:#EFE6D8}.collage .t:only-child{grid-column:1/-1;grid-row:1/-1}
+.collage .t img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.collage .t .ea-cover .ea-txt{display:none}.collage .t .av{position:absolute;inset:0;display:grid;place-items:center;font-size:28px}
+.collage .empty{grid-column:1/-1;grid-row:1/-1;display:grid;place-items:center;color:var(--smoke);font-size:14px;text-align:center;padding:16px}
+.board .nm{font:600 17px/1.25 Fredoka,system-ui;margin:12px 14px 0;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.board .ct{color:var(--smoke);font-size:13px;margin:2px 14px 14px;display:block}
+.board.new{border-style:dashed;border-color:#D9CCBB;background:transparent;justify-content:center;align-items:center;min-height:120px}.board.new .nm{margin:0;font-size:16px}.board.new .ct{margin:4px 14px 0}
+.items .ls-media .ea-cover .ea-txt{display:none}.items .ls-media .av{position:absolute;inset:0;display:grid;place-items:center;font-size:40px}
+.ls-menu select{width:100%;min-height:44px;border:1.5px solid #D9CCBB;border-radius:12px;background:#fff;font:inherit;font-size:15px;padding:0 10px;margin:4px 0}
+.ls-menu label{display:block;padding:6px 12px 0;font-size:13px;color:var(--smoke)}
+.back{display:inline-flex;align-items:center;background:none;border:0;font:600 15px "Instrument Sans",system-ui;color:#B04A30;cursor:pointer;padding:0;min-height:44px;text-decoration:underline;text-underline-offset:3px}
+.bh{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:8px 0 20px}.bh h2{margin:0;font:600 var(--fs-28-40,28px)/1.1 Fredoka,system-ui}.bh span{color:var(--smoke);font-size:14px}.bh .ls-btn{margin-left:auto}
 .wk{display:grid;gap:10px;max-width:680px}
 #scene{margin:0 0 8px}
-@media (max-width:640px){.wrap{padding:14px 12px 110px}.boards{grid-template-columns:repeat(2,1fr);gap:16px 12px}.board .nm{font-size:23px}.items{grid-template-columns:repeat(2,1fr);gap:10px}.it b{font-size:15px}.it .bd{padding:8px 9px 10px}}
 </style><script src="/mascot.js"></script><script src="/eventart.js"></script></head><body>
-<main class="wrap" id="m">
-  <h1>Your <em>saves</em></h1><p class="lede" id="lede">Everything you hearted, sorted into boards.</p>
+<main class="ls-wrap" id="m">
+  <section class="ls-head"><div><h1>Your <em>saves</em></h1><p class="ls-what" id="lede">Events, ideas and hosts you saved with the heart. Tap a board to see what's in it.</p></div></section>
   <div id="keep"></div>
   <div id="view"></div>
   <section id="weekend" hidden><h2>This weekend near you</h2><div class="wk" id="wk"></div></section>
@@ -56,21 +50,22 @@ h2{font:600 24px Fredoka,system-ui;margin:28px 0 10px}.lede{color:var(--smoke);m
   const thumb = (i) => { const im = safeImg(i.img); if (im) return `<img src="${esc(im)}" alt="" loading="lazy">`; if (i.kind === "host") return `<span class="av">${esc(i.emoji || "🙂")}</span>`;
     return window.EventArt ? EventArt.cover({ id: i.ref, title: i.title, activity: i.art?.activity || "", coverArt: i.art?.kind ? { kind: i.art.kind, ...(i.art.tone ? { tone: i.art.tone } : {}) } : null }) : ""; };
   const KIND = { event: (i) => (i.status === "past" ? "Past event" : "Event"), idea: () => "Idea", host: () => "Host" };
-  function collage(L) { const t = L.slice(0, 4); if (!t.length) return `<div class="collage"><span class="empty">nothing here yet</span></div>`;
-    return `<div class="collage">${t.map((i, k) => `<span class="t t${k + 1}">${thumb(i)}</span>`).join("")}<span class="tape" style="left:${18 + (hash(t[0].ref) % 30)}%;top:4%;transform:rotate(-6deg)"></span></div>`; }
+  function collage(L) { const t = L.slice(0, 4); if (!t.length) return `<div class="collage"><span class="empty">Nothing here yet</span></div>`;
+    return `<div class="collage">${t.map((i, k) => `<span class="t t${k + 1}">${thumb(i)}</span>`).join("")}</div>`; }
   function boardsView() { const all = data.items, loose = all.filter((i) => !i.board);
-    if (!all.length) return `<div class="empty-all"><b style="font:600 20px Fredoka,system-ui">Nothing saved yet</b><span style="color:var(--smoke)">Tap the heart on an event, an idea or a host and it lands here.</span><a href="/ideas">Find ideas</a></div>`;
+    if (!all.length) return `<div class="ls-empty"><b>Nothing saved yet.</b><p>Tap the heart on an event, an idea or a host (it's under More on a card) and it lands here.</p><a class="ls-btn primary" href="/ideas">Look at ideas</a><a class="ls-link" href="/discover">Or find an event</a></div>`;
     const B = [{ id: "", name: "All saves", list: all }, ...data.boards.map((b) => ({ ...b, list: all.filter((i) => i.board === b.id) }))];
-    return `<div class="boards">${B.map((b, k) => `<button type="button" class="board" data-board="${esc(b.id)}" style="--r:${((k * 37) % 5 - 2) * 0.7}deg">${collage(b.list)}<span class="nm">${esc(b.name)}</span><span class="ct">${b.list.length} ${b.list.length === 1 ? "save" : "saves"}</span></button>`).join("")}
-      ${signed ? `<button type="button" class="board new" id="newBoard"><span class="collage"><span>+ New board</span></span><span class="nm">e.g. Birthday ideas</span></button>` : ""}</div>`; }
-  function itemCard(i, k) { const url = safeUrl(i.url) || (i.kind === "idea" ? "/ideas#" + i.ref : i.kind === "event" ? "/e/" + i.ref : "/@" + i.ref);
-    return `<article class="it" style="--r:${((k * 29) % 5 - 2) * 0.5}deg"><span class="kd">${esc((KIND[i.kind] || (() => ""))(i))}${i.example ? " · Example" : ""}</span><a class="th" href="${esc(url)}">${thumb(i)}</a><div class="bd"><b>${esc(i.title || (i.kind === "host" ? "@" + i.ref : "Saved"))}</b>${i.line ? `<small>${esc(i.line)}</small>` : ""}${i.gone ? `<small>This isn't on Pottery Lab any more.</small>` : ""}
-      ${i.saves > 1 ? `<small>${esc(PLSave.countLine(i.saves))}</small>` : ""}<div class="row">${PLSave.button({ kind: i.kind, ref: i.ref, title: i.title, img: i.img }, { icon: true })}
-      ${signed && data.boards.length ? `<select data-move="${esc(i.kind)}:${esc(i.ref)}" aria-label="Board"><option value="">No board</option>${data.boards.map((b) => `<option value="${esc(b.id)}"${b.id === i.board ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select>` : ""}
-      ${i.kind === "idea" ? `<button type="button" class="pli-host" data-host-idea="${esc(i.ref)}" style="min-height:36px;padding:0 12px;border:2px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 13px 'Instrument Sans',system-ui;cursor:pointer">Host this</button>` : `<a class="go" href="${esc(url)}">Open</a>`}</div></div></article>`; }
+    return `<div class="boards">${B.map((b, k) => `<button type="button" class="board" data-board="${esc(b.id)}">${collage(b.list)}<span class="nm">${esc(b.name)}</span><span class="ct">${b.list.length} ${b.list.length === 1 ? "save" : "saves"}</span></button>`).join("")}
+      ${signed ? `<button type="button" class="board new" id="newBoard"><span class="nm">New board</span><span class="ct">e.g. Birthday ideas</span></button>` : ""}</div>`; }
+  function itemCard(i) { const url = safeUrl(i.url) || (i.kind === "idea" ? "/ideas#" + i.ref : i.kind === "event" ? "/e/" + i.ref : "/@" + i.ref), title = i.title || (i.kind === "host" ? "@" + i.ref : "Saved");
+    const meta = [i.example ? "<b>Example</b>" : "", esc((KIND[i.kind] || (() => ""))(i))].filter(Boolean).join(" · ");
+    const move = signed && data.boards.length ? `<label for="mv-${esc(i.ref)}">Board</label><select id="mv-${esc(i.ref)}" data-move="${esc(i.kind)}:${esc(i.ref)}"><option value="">No board</option>${data.boards.map((b) => `<option value="${esc(b.id)}"${b.id === i.board ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select>` : "";
+    const go = i.kind === "idea" ? `<button type="button" class="ls-btn primary" data-host-idea="${esc(i.ref)}">Host this</button>` : `<a class="ls-btn primary" href="${esc(url)}">${i.kind === "host" ? "See their page" : "See the event"}</a>`;
+    return `<article class="ls-card"><div class="ls-media">${thumb(i)}</div><div class="ls-body">${meta ? `<p class="ls-meta">${meta}</p>` : ""}<a class="ls-title" href="${esc(url)}">${esc(title)}</a>${i.line ? `<p class="ls-sub">${esc(i.line)}</p>` : ""}${i.gone ? `<p class="ls-sub">This isn't on Pottery Lab any more.</p>` : ""}
+      <div class="ls-acts">${go}<details class="ls-more"><summary aria-label="More for ${esc(title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${PLSave.button({ kind: i.kind, ref: i.ref, title: i.title, img: i.img })}${move}</div></details></div></div></article>`; }
   function boardView(id) { const b = id ? data.boards.find((x) => x.id === id) : { id: "", name: "All saves" }; if (!b) { open = null; return draw(); } const L = id ? data.items.filter((i) => i.board === id) : data.items;
-    return `<button type="button" class="back" id="back">← All boards</button><div class="bh"><h2>${esc(b.name)}</h2><span style="color:var(--smoke)">${L.length} ${L.length === 1 ? "save" : "saves"}</span>${id ? `<button type="button" class="x" id="dropB">Delete board</button>` : ""}</div>
-      ${L.length ? `<div class="items">${L.map(itemCard).join("")}</div>` : `<div class="empty-all"><span style="color:var(--smoke)">Move saves here with the board menu on each one.</span></div>`}`; }
+    return `<button type="button" class="back" id="back">Back to all boards</button><div class="bh"><h2>${esc(b.name)}</h2><span>${L.length} ${L.length === 1 ? "save" : "saves"}</span>${id ? `<button type="button" class="ls-btn" id="dropB">Delete board</button>` : ""}</div>
+      ${L.length ? `<div class="items ls-grid">${L.map((i) => itemCard(i)).join("")}</div>` : `<div class="ls-empty"><b>This board is empty.</b><p>Open a save in All saves, tap More, and pick this board.</p></div>`}`; }
   function draw() { $("#view").innerHTML = open === null ? boardsView() : boardView(open);
     document.querySelectorAll("[data-board]").forEach((b) => (b.onclick = () => { open = b.dataset.board; location.hash = open ? "board-" + open : "all"; draw(); $("#view").scrollIntoView({ block: "start" }); }));
     $("#back") && ($("#back").onclick = () => { open = null; history.replaceState(null, "", location.pathname); draw(); });
@@ -80,7 +75,7 @@ h2{font:600 24px Fredoka,system-ui;margin:28px 0 10px}.lede{color:var(--smoke);m
     document.querySelectorAll("[data-host-idea]").forEach((b) => (b.onclick = () => { const id = b.dataset.hostIdea; try { localStorage.setItem("pl.hostIdea", JSON.stringify({ id, at: Date.now() })); } catch {} location.href = signed ? "/?app=1&idea=" + encodeURIComponent(id) : "/signup?mode=friends&from=idea&idea=" + encodeURIComponent(id); })); }
   async function load() { if (signed) { const r = await fetch("/api/me/saves", { credentials: "same-origin" }).catch(() => null); if (r?.ok) data = await r.json(); }
     else { const L = PLSave.local(); data = { boards: [], items: L.map((i) => ({ ...i, line: "", status: "" })) };
-      $("#keep").innerHTML = L.length ? `<div class="keep"><div><b>${L.length} ${L.length === 1 ? "save" : "saves"} on this phone</b><p>Make a free account to keep your saves, add boards and get a heads-up before saved events.</p></div><a href="/signup?mode=friends&amp;from=saves">Make a free account</a></div>` : ""; }
+      $("#keep").innerHTML = L.length ? `<div class="keep"><div><b>${L.length} ${L.length === 1 ? "save" : "saves"} on this phone</b><p>Make a free account to keep them, sort them into boards and hear before a saved event.</p></div><a class="ls-btn primary" href="/signup?mode=friends&amp;from=saves">Make a free account</a></div>` : ""; }
     const m = /^#board-([A-Za-z0-9]+)$/.exec(location.hash); if (m && open === null) open = m[1]; draw(); }
   PLSave.on(() => load());
   window.addEventListener("focus", () => { if (signed) load(); });
@@ -92,5 +87,5 @@ h2{font:600 24px Fredoka,system-ui;margin:28px 0 10px}.lede{color:var(--smoke);m
       const W = await (await fetch("/api/public/suggest/weekend?" + q)).json().catch(() => ({ events: [] })); if (W.events?.length) { PLInterests.css(); $("#wk").innerHTML = W.events.map(PLInterests.eventCard).join(""); $("#weekend").hidden = false; if (location.hash === "#weekend") $("#weekend").scrollIntoView(); } } })();
 })();
 </script>
-<script src="/nav.js"></script><script src="/shell.js"></script>
+<script src="/lists.js"></script><script src="/nav.js"></script><script src="/shell.js"></script>
 </body></html>

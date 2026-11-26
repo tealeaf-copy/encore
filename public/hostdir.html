@@ -3,16 +3,17 @@
 <title>Hosts · Pottery Lab</title>
 <meta name="description" content="Run clubs, supper clubs, bakers, artists and the people behind the best small events. Follow one to hear about the next one.">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
 <style>
-:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
+:root{--paper:#F7F1E8;--ink:#1F1A17;--smoke:#6B5F56;--ember:#C94A30;--line:#E4D9C8}
 *{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
 a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:26px 18px 70px}
 h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{color:var(--smoke);max-width:620px;margin:0 0 18px}
 .bar{display:grid;gap:10px;margin:0 0 18px}.search{width:100%;max-width:520px;padding:12px 14px;border:1px solid #DCCFBE;border-radius:14px;font:inherit;background:#fff}
 .chips{display:flex;flex-wrap:wrap;gap:6px}@media (max-width:760px){.bar .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}.bar .chips>*{flex:none}}.chips button,.chips select{white-space:nowrap;min-height:44px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;color:var(--ink)}.chips select{appearance:none;-webkit-appearance:none;padding-right:30px;background:#FFF1D2 url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%231F1A17%27 stroke-width=%272%27 fill=%27none%27/%3E%3C/svg%3E") no-repeat right 12px center}.chips button:focus-visible,.chips select:focus-visible,.search:focus-visible,.more:focus-visible{outline:3px solid var(--ink);outline-offset:2px}.chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px}.chips>*{flex:none}.chips button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .count{color:var(--smoke);font-size:14px;margin:4px 0 12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.h{position:relative;display:grid;grid-template-rows:auto 1fr auto;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;text-decoration:none;transition:transform .25s cubic-bezier(.3,1.4,.5,1),border-radius .45s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:24px 16px}
+.h{position:relative;display:grid;grid-template-rows:auto 1fr auto;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;transition:transform .25s cubic-bezier(.3,1.4,.5,1),border-radius .45s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
 .h .top{position:relative;height:96px;background:var(--bg,#F6EBDD)}@media (max-width:760px){.h .top{height:54px}.h .av{width:52px!important;height:52px!important;bottom:-22px!important}}.h .av{position:absolute;left:16px;bottom:-30px;width:64px;height:64px;border-radius:50%;border:3px solid #fff;background:#fff;display:grid;place-items:center;overflow:hidden;font-size:28px}.h .av svg,.h .av img{width:100%;height:100%;object-fit:cover}
 .h .bd{padding:38px 16px 10px}.h b{display:block;font-size:16px;line-height:1.2}.h .tl{display:block;color:var(--smoke);font-size:14px;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .h .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.h .meta span{font-size:13px;line-height:1.4;background:#F6EFE6;border-radius:999px;padding:2px 8px}.h .meta .ex{background:#FFF1D2;font-weight:700}.h .meta .nx{background:#FFF1D2}
@@ -20,35 +21,35 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
 .h .facts{display:block;color:var(--smoke);font-size:13px;margin-top:6px}
 /* one card shape: name in Fredoka on one line, the line under it always takes two lines, facts on one line, so names, facts and Follow sit at the same height across a row */
 .h b{font:600 18px/1.25 Fredoka,"Fredoka Fallback",system-ui,sans-serif!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.h .tl{min-height:calc(2 * 1.5em)}.h .facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.h .ft{display:flex;gap:8px;align-items:center;padding:0 16px 16px;min-height:16px}.h .ft a{position:relative;z-index:1}
+.h .ft{display:flex;gap:8px;align-items:center;padding:12px 16px 16px;min-height:16px}.h .ft a{position:relative;z-index:1}
 .h .ft .fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 18px;border-radius:999px;font-weight:600;font-size:14px;font-family:inherit;border:1.5px solid var(--ember);color:#A63A22;background:#fff;text-decoration:none}.h .ft .fo:hover{background:#FFF1EC}.h .ft .fo:focus-visible,.h .ft .ig:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .h .ft .ig{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:600;color:#A63A22;text-decoration:underline;text-underline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (hover:hover){.h:hover{transform:translateY(-3px);border-color:#1F1A17}}@media (prefers-reduced-motion:reduce){.h:hover{transform:none}}
+@media (hover:hover){.h:hover{border-color:#D9CCBB}}@media (prefers-reduced-motion:reduce){.h:hover{transform:none}}
 .empty{color:var(--smoke);padding:30px 0}.more{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:18px 0 0;padding:10px 22px;border-radius:999px;border:1.5px solid var(--ink);background:#fff;color:var(--ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}.more[hidden]{display:none}.near-h{grid-column:1/-1;margin:8px 0 -4px;font:700 20px/1.2 Fredoka,system-ui}
 .h .meta .bdg{background:#FFF1D2;font-weight:600}.h .meta .bdg.super{background:#1F1A17;color:#FFE08A}.teams{margin-top:30px;padding:18px;border:1px dashed var(--line);border-radius:16px;color:var(--smoke)}
-.h .why{display:block;margin-top:6px;font-weight:500;font-size:13px;color:#3E5C3A;background:#EEF5EA;border-radius:10px;padding:5px 8px}.thinking{color:#665A51}
+.h .why{display:block;margin-top:6px;font-size:13px;color:var(--smoke)}.h .facts .st{color:var(--ink);font-weight:600}.thinking{color:#665A51}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,system-ui;text-decoration:none;color:var(--ink)}@media (max-width:860px){body.es-has-tabs,body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
 /* Top hosts this month: one strip from the leaderboard, only when a board has 3+ hosts */
 .tops{margin:0 0 20px}.tops .th{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}.tops h2{font:700 20px/1.2 Fredoka,system-ui;margin:0}.tops .th a{color:#A63A22;font-weight:700;font-size:14px;display:inline-flex;align-items:center;min-height:44px}
 .tops .sub{color:var(--smoke);font-size:14px;margin:0 0 8px}.tops ol{list-style:none;margin:0;padding:2px 2px 8px;display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin}
-.tops li{flex:0 0 min(78%,250px);scroll-snap-align:start;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;background:#fff;border:1.5px solid var(--ink);border-radius:18px;padding:12px}
-.tops .rk{position:absolute;top:-8px;left:-6px;min-width:26px;height:26px;border-radius:999px;border:2px solid var(--ink);display:grid;place-items:center;font:700 13px Fredoka,system-ui;background:var(--m,#fff)}
+.tops li{flex:0 0 min(78%,250px);scroll-snap-align:start;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:12px}
+.tops li{grid-template-columns:auto auto minmax(0,1fr)}.tops .rk{font:500 13px var(--sys-mono,ui-monospace,monospace);color:var(--smoke);min-width:14px}
 .tops .ta{width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:#F6EBDD;font-size:24px}.tops .ta svg,.tops .ta img{width:100%;height:100%;object-fit:cover}
 .tops li a{font:600 16px/1.25 Fredoka,system-ui;text-decoration:none;color:inherit;overflow-wrap:anywhere}.tops li a::after{content:"";position:absolute;inset:0;border-radius:inherit}.tops li:has(a:focus-visible){outline:3px solid var(--ink);outline-offset:2px}.tops li a:focus-visible{outline:none}
 .tops li small{display:block;color:var(--smoke);font-size:13px}
 .hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}@media (min-width:861px){.hd-top{display:none}}
 </style><script src="/mascot.js"></script></head><body>
-<div class="wrap">
+<div class="wrap" style="max-width:1120px">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
-  <h1>Find a host</h1>
-  <p class="lede">Bakers, potters, run crews and cooks.</p>
-  <div class="bar"><input class="search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="chips" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select id="city"><option value="">Anywhere</option></select><span id="kinds" style="display:contents"></span></div></div>
+  <section class="ls-head"><div><h1>Find a host</h1>
+    <p class="ls-what">Bakers, potters, run crews and cooks who host small events. Follow one to hear when they post the next.</p></div></section>
+  <div class="bar"><input class="ls-search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="ls-filters" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select class="ls-chip" id="city"><option value="">Anywhere</option></select><span class="ls-sep" aria-hidden="true"></span><span id="kinds" style="display:contents"></span></div></div>
   <section class="tops" id="tops" hidden aria-labelledby="topsT"></section>
-  <p class="count" id="count" style="min-height:1.5em">Loading hosts…</p>
+  <p class="ls-count" id="count" style="margin:0 0 16px">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
-  <button type="button" class="more" id="more" hidden></button>
-  <p class="teams">Booking for a brand? <a href="/hosts/book">Request a date</a>.</p>
+  <button type="button" class="ls-btn" id="more" hidden style="margin-top:24px"></button>
+  <p class="teams" style="border-width:1.5px">Booking for a brand? <a href="/hosts/book">Request a date</a>.</p>
 </div>
 <script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
 <script>
@@ -70,28 +71,25 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
   const activity = (h) => (h.hosted || 0) + (h.upcoming || 0) * 2 + (h.followers || 0);
   const avatar = (h) => { const g = (h.gallery || [])[0], t = h.theme || {}; if (t.avatarUrl) return `<img src="${esc(t.avatarUrl)}" alt="">`; if (t.avatarArt && window.EncoreAvatars) return window.EncoreAvatars.svg(t.avatarArt, t.accent || h.color || "#E26D8E", 64); if (g) return `<img src="${esc(g)}" alt="">`; return esc(h.emoji || "🎉"); };
   const tint = (h) => { const a = (h.theme && h.theme.accent) || h.color || "#E0A030"; return `color-mix(in srgb, ${a} 28%, #FFF8EE)`; };
-  // at most two small pills, and only ones that tell hosts apart ("New host" and "Takes bookings" were on nearly every card)
-  const pills = (h) => { const b = (BADGES[h.handle] || []).filter((x) => !/^m-/.test(x.id) && x.id !== "new")[0], P = [];
-    if (h.sample) P.push(`<span class="ex">Example</span>`);
-    if (b) P.push(`<span class="bdg${b.id === "super" ? " super" : ""}" title="${esc(b.why)}">${b.emoji} ${esc(b.label)}</span>`);
-    if (h.showcase) P.push(`<span>Not on Pottery Lab yet</span>`);
-    return P.slice(0, 2).join(""); };
-  const facts = (h) => [[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : "", h.hosted ? `${h.hosted} ${h.hosted === 1 ? "event" : "events"}` : ""].filter(Boolean).map(esc).join(" · ");
+  // at most one quiet status word, and only one that tells hosts apart ("New host" and "Takes bookings" were on nearly every card)
+  const statusOf = (h) => { const b = (BADGES[h.handle] || []).filter((x) => !/^m-/.test(x.id) && x.id !== "new")[0];
+    return h.sample ? "Example" : h.showcase ? "Not on Pottery Lab yet" : b ? b.label : ""; };
+  const facts = (h) => [statusOf(h) ? `<span class="st">${esc(statusOf(h))}</span>` : "", ...[[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : "", h.hosted ? `${h.hosted} ${h.hosted === 1 ? "event" : "events"}` : ""].filter(Boolean).map(esc)].filter(Boolean).join(" · ");
   // "Next: Sunrise 5K, Sat, Nov 28", the same line Discover's host cards show
   let EVS = []; const nextOf = (h) => { const n = EVS.filter((e) => e.host?.handle === h.handle && e.stage !== "interest" && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0]; if (!n) return ""; const d = new Date(n.date + "T12:00"); return `Next: ${n.title}${isNaN(d) ? "" : ", " + d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}`; };
   const igOf = (h) => ((h.links || []).find((l) => /^https:\/\/(www\.)?instagram\.com\//i.test(l.url || "")) || {}).url || "";
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
-      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `<span class="nx-l" style="display:block;font-weight:600;color:#2B211C;margin:4px 0 2px">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}${pills(h) ? `<span class="meta">${pills(h)}</span>` : ""}</span>
-      <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="fo" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
+      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `<span class="nx-l" style="display:block;font-weight:600;color:#2B211C;margin:4px 0 2px">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}</span>
+      <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ls-btn" href="${esc(igOf(h))}" target="_blank" rel="noopener">See on Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="ls-btn primary" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
   // Top hosts this month (from the leaderboard): the picked city, else the visitor's, else the busiest; only when the board qualifies
   const TOP = new Map(); let topSeq = 0;
   async function drawTop() { const box = $("#tops"); if (!box) return; if (q || kind !== "all") { box.hidden = true; return; } const want = city || mine || "", n = ++topSeq;
     const one = async (c) => { if (!TOP.has(c)) { let r = null; try { r = await (await fetch("/api/v1/leaderboard?period=month&city=" + encodeURIComponent(c))).json(); } catch {} TOP.set(c, r); } return TOP.get(c); };
     let j = await one(want); if (!city && want && !(j && j.data && j.data.qualified)) j = await one("");
     if (n !== topSeq) return; const B = j && j.data; if (!B || !B.qualified || (city && B.city.toLowerCase() !== city.toLowerCase())) { box.hidden = true; return; }
-    const M = ["#FFE08A", "#E4E4EC", "#F3C9A6"], ta = (h) => h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 48) : esc(h.emoji || "🎉");
-    box.innerHTML = `<div class="th"><h2 id="topsT">🏆 Top hosts this month</h2><a href="${esc(new URL(B.url, location.href).pathname + new URL(B.url, location.href).search)}">See the leaderboard</a></div><p class="sub">${esc(B.city)} · the last 30 days, ranked by what guests said</p>
-      <ol>${B.entries.slice(0, 5).map((e) => `<li><span class="rk" style="--m:${M[e.rank - 1] || "#fff"}" aria-label="Number ${e.rank}">${e.rank}</span><span class="ta" aria-hidden="true">${ta(e.host)}</span><span><a href="/@${encodeURIComponent(e.host.handle)}">${esc(e.host.name)}</a><small>${esc(e.why)}</small></span></li>`).join("")}</ol>`;
+    const ta = (h) => h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 48) : esc(h.emoji || "🎉");
+    box.innerHTML = `<div class="th"><h2 id="topsT">Top hosts this month</h2><a href="${esc(new URL(B.url, location.href).pathname + new URL(B.url, location.href).search)}">See the leaderboard</a></div><p class="sub">${esc(B.city)} · the last 30 days, ranked by what guests said</p>
+      <ol>${B.entries.slice(0, 5).map((e) => `<li><span class="rk" aria-label="Number ${e.rank}">${e.rank}</span><span class="ta" aria-hidden="true">${ta(e.host)}</span><span><a href="/@${encodeURIComponent(e.host.handle)}">${esc(e.host.name)}</a><small>${esc(e.why)}</small></span></li>`).join("")}</ol>`;
     box.hidden = false; }
   function draw() { sync(); drawTop();
     const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
@@ -106,12 +104,13 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     if (!(smart && smart.length)) L = [...L.filter((h) => !h.sample), ...L.filter((h) => h.sample)];
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
-    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<p class="empty">No hosts match. Try another city or word.</p>`;
+    $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<div class="ls-empty"><b>No hosts match that yet.</b><p>Try another word or city, or look through every host.</p><button type="button" class="ls-btn" id="allH">Show every host</button></div>`;
+    { const a = $("#allH"); if (a) a.onclick = () => { q = ""; city = ""; kind = "all"; $("#q").value = ""; $("#city").value = ""; $("#city").classList.remove("on"); document.querySelectorAll("#kinds [data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === "all"))); shown = FIRST; draw(); }; }
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = `Show ${Math.min(STEP, left)} more`;
   }
   $("#more").onclick = () => { const first = $("#grid").children.length; shown += STEP; draw(); const next = $("#grid").children[first]; if (next) next.querySelector("a")?.focus({ preventScroll: true }); };
-  function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); shown = FIRST; el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
+  function chips(el, list, cur, set) { el.innerHTML = list.map(([v, l]) => `<button type="button" class="ls-chip" data-v="${esc(v)}" aria-pressed="${v === cur}">${esc(l)}</button>`).join(""); el.onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; set(b.dataset.v); shown = FIRST; el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); draw(); }; }
   let ai = null, aiBusy = false, aiT = 0, aiSeq = 0;
   const askAI = async () => { const asked = q; if (asked.length < 3) { aiBusy = false; draw(); return; } const n = ++aiSeq; aiBusy = true; draw();
     try { const r = await fetch("/api/public/hosts/search?q=" + encodeURIComponent(asked)); const j = await r.json(); if (n !== aiSeq) return; ai = { q: asked, matches: j.matches || [] }; } catch {} if (n === aiSeq) { aiBusy = false; draw(); } };
@@ -129,9 +128,9 @@ h1{font:700 var(--fs-28-40,28px)/1.08 Fredoka,system-ui;margin:0 0 8px}.lede{col
     const sel = $("#city"), cities = Object.entries(C).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c]) => c);
     if (city && !cities.includes(city)) cities.unshift(city);
     sel.innerHTML = `<option value="">Anywhere</option>` + cities.map((c) => `<option value="${esc(c)}"${c === city ? " selected" : ""}>${esc(c)}</option>`).join("");
-    sel.onchange = () => { city = sel.value; shown = FIRST; draw(); };
+    sel.onchange = () => { city = sel.value; sel.classList.toggle("on", !!city); shown = FIRST; draw(); }; sel.classList.toggle("on", !!city);
     draw(); if (q) askAI();
-  }).catch(() => { $("#count").textContent = "Couldn't load hosts. Refresh to try again."; });
+  }).catch(() => { $("#count").textContent = ""; $("#grid").innerHTML = `<div class="ls-empty"><b>Couldn't load hosts.</b><p>Check your connection, then refresh the page.</p></div>`; });
 })();
 </script>
 <script src="/nav.js"></script><script src="/shell.js"></script>

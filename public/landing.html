@@ -2,11 +2,11 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pottery Lab: run more field events with the same team</title>
 <meta name="description" content="Describe a field event in a sentence. Pottery Lab drafts the plan and budget, gets your AEs inviting, and reports the pipeline afterwards.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#120E0C;--bg2:#1A1512;--ink:#F5EEE6;--muted:#A8998D;--dim:#6F6359;--line:#2E2621;--accent:#E07A55;--gold:#E3B67A;--card:#17120F}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-html,body{overflow-x:clip}body{margin:0;font:16px/1.6 "Instrument Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+html,body{overflow-x:clip}body{margin:0;font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
 a{color:inherit}img{max-width:100%;display:block}
 .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
 h1,h2,h3{font-family:"Fraunces",Georgia,serif;margin:0;font-weight:400;letter-spacing:-.03em}
@@ -18,7 +18,7 @@ header .wrap{display:flex;align-items:center;gap:28px;height:64px}
 .logo{display:flex;align-items:center;gap:8px;font:500 1.3rem "Fraunces";text-decoration:none;color:var(--ink)}
 nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--muted);font-size:.95rem}nav.links a:hover{color:var(--ink)}
 .right{margin-left:auto;display:flex;gap:10px;align-items:center}
-.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:10px 20px;font:500 .95rem "Instrument Sans";text-decoration:none;border:1px solid var(--line);color:var(--ink);background:transparent;cursor:pointer;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:10px 20px;font:500 .95rem "IBM Plex Sans";text-decoration:none;border:1px solid var(--line);color:var(--ink);background:transparent;cursor:pointer;white-space:nowrap}
 .pill.light{background:var(--ink);color:#1A1411;border-color:var(--ink)}.pill.light:hover{background:#fff}
 .pill.sm{padding:7px 14px;font-size:.88rem}
 .pill:not(.light):hover{border-color:#4A3E36}
@@ -34,7 +34,7 @@ nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--mut
 @keyframes breathe{50%{transform:scale(1.07);opacity:.85}}@keyframes flick{40%{opacity:.85}55%{opacity:1}70%{opacity:.92}}
 .uses{display:grid;gap:12px;justify-self:end;font-size:1.05rem}
 .strip{position:absolute;left:24px;right:24px;bottom:36px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:center}
-.strip span{font:500 1.15rem "Instrument Sans";color:#8D8077;letter-spacing:-.01em}.strip small{width:100%;color:var(--dim);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.strip span{font:500 1.15rem "IBM Plex Sans";color:#8D8077;letter-spacing:-.01em}.strip small{width:100%;color:var(--dim);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
 
 /* showcase sections */
 .show{padding:120px 0 40px;border-top:1px solid var(--line);position:relative;overflow:hidden}
@@ -54,9 +54,9 @@ nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--mut
 /* demo inside window */
 .dform{display:flex;gap:8px;background:#fff;border:1px solid var(--pl-line);border-radius:12px;padding:6px}
 .dform input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1rem;padding:9px 10px;color:var(--pl-ink);outline:none}
-.dform .btn{flex:none;border:0;border-radius:9px;background:var(--pl-accent-text);color:#fff;font:600 .92rem "Instrument Sans";padding:0 16px;cursor:pointer}
+.dform .btn{flex:none;border:0;border-radius:9px;background:var(--pl-accent-text);color:#fff;font:600 .92rem "IBM Plex Sans";padding:0 16px;cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:5px 11px;font:500 .85rem "Instrument Sans";color:var(--pl-ink);cursor:pointer}
+.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:5px 11px;font:500 .85rem "IBM Plex Sans";color:var(--pl-ink);cursor:pointer}
 .chip[aria-pressed=true]{border-style:solid;border-color:var(--pl-ink);background:var(--pl-ink);color:#fff}
 .plan{margin-top:14px;border-top:1px solid var(--pl-line);padding-top:12px;display:grid;gap:12px}
 .plan .ttl{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.plan .ttl b{font:500 1.15rem "Fraunces"}
@@ -65,7 +65,7 @@ nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--mut
 .ln{display:grid;grid-template-columns:1fr auto;gap:1px 12px;padding:6px 0;border-bottom:1px solid #F1EBE3;font-size:.92rem}.ln small{grid-column:1/-1;color:#9A8D84;font-size:.76rem}.ln b{font-weight:600;font-variant-numeric:tabular-nums}
 .dates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dates div{background:#F4EEE6;border-radius:10px;padding:7px 10px;font-size:.8rem}.dates b{display:block;font-size:.88rem}
 .as{font-size:.68rem;font-weight:600;color:#A27B3C;background:#F6EDDC;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
-.keep{justify-self:start;display:inline-flex;border-radius:999px;background:var(--pl-accent-text);color:#fff;text-decoration:none;font:600 .9rem "Instrument Sans";padding:9px 16px}
+.keep{justify-self:start;display:inline-flex;border-radius:999px;background:var(--pl-accent-text);color:#fff;text-decoration:none;font:600 .9rem "IBM Plex Sans";padding:9px 16px}
 .fade{animation:fade .35s ease}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .duo{display:grid;grid-template-columns:1fr 200px;gap:18px;align-items:center}.duo .phone{border:8px solid #0B0807;border-radius:28px;overflow:hidden}
 
@@ -110,7 +110,7 @@ footer{border-top:1px solid var(--line);padding:48px 0 64px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
 dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!important}dialog::backdrop{background:rgba(0,0,0,.6)}dialog input,dialog textarea{background:#120E0C!important;color:var(--ink);border-color:var(--line)!important}dialog .note{color:var(--muted);font-size:.9rem}
-.btn{display:inline-flex;align-items:center;border-radius:999px;padding:8px 16px;font:500 .92rem "Instrument Sans";border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}.btn.primary{background:var(--ink);color:#1A1411}
+.btn{display:inline-flex;align-items:center;border-radius:999px;padding:8px 16px;font:500 .92rem "IBM Plex Sans";border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}.btn.primary{background:var(--ink);color:#1A1411}
 </style></head>
 <body>
 <header class="top"><div class="wrap">

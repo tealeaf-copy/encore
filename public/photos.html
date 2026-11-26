@@ -3,12 +3,12 @@
 <title>Add your photos · Pottery Lab</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
 <style>
 /* Photo drops: the page behind "Add your photos from X" (the morning-after email and inbox item, server/photodrop.js).
    The reply id and code in the link prove it's a guest who was in, the same proof kudos take. */
-:root{--paper:#F4F0E8;--linen:#ECE6DB;--ink:#1D1B18;--smoke:#5D564E;--ember:#9A4128;--ember-d:#8E3B24;--butter:#E3D7BE;--sage:#5F6B57;--line:#E2DCD1}
-*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+:root{--paper:#EFEBE2;--linen:#E4DFD3;--ink:#1B1D1C;--smoke:#444845;--ember:#29489A;--ember-d:#29489A;--butter:#F3E7A8;--sage:#5F6B57;--line:#CFC8B9}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 body{background-image:radial-gradient(rgba(102,90,81,.09) 1px,transparent 1.2px);background-size:9px 9px}
 a{color:var(--ember-d)}main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 48px}
 .top{display:flex;align-items:center;margin:4px 0 12px}.brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
@@ -19,23 +19,23 @@ h1{font:700 clamp(28px,7vw,38px)/1.05 var(--sys-display);margin:8px 0 6px;text-w
 .pick{display:flex;align-items:center;justify-content:center;gap:10px;min-height:120px;border:2.5px dashed var(--ink);border-radius:18px;background:#FFFCF4;font:600 20px var(--pl-font-text);color:var(--ink);cursor:pointer;width:100%}
 .pick:hover{background:#FFF4D8}.pick:disabled{opacity:.6;cursor:default}.pick span{font-size:30px}
 label.f{display:grid;gap:5px;font-weight:600}label.f small{font-weight:400;color:var(--smoke)}
-input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #CFC6B8;border-radius:14px;font:inherit;font-size:16px;background:#FBF9F5;color:var(--ink)}
+input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #1B1D1C;border-radius:14px;font:inherit;font-size:16px;background:#FAF8F3;color:var(--ink)}
 .pick:focus-visible,.btn:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .note{margin:0;font-size:14px;color:var(--smoke);display:flex;gap:8px;align-items:flex-start}.note b{color:var(--ink)}
 .wall{display:flex;flex-wrap:wrap;gap:16px 12px;justify-content:center;padding:18px 4px 6px}
 .pol{position:relative;width:min(44%,170px);background:#fff;border:2px solid var(--ink);border-radius:5px;padding:7px 7px 26px;box-shadow:3px 4px 0 rgba(31,26,23,.85);transform:rotate(var(--r))}
 .pol img,.pol video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}
 .pol b{position:absolute;left:6px;right:6px;bottom:3px;text-align:center;font:600 18px/1.1 Caveat,cursive;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pol::before{content:"";position:absolute;top:-9px;left:50%;width:54px;height:17px;margin-left:-27px;background:var(--tp,#E3D7BE);opacity:.9;transform:rotate(var(--tr,-4deg));z-index:1}
-.pol.err{border-color:#A8341A}.pol.err b{color:#A8341A;font:600 12px "Instrument Sans",system-ui}
+.pol::before{content:"";position:absolute;top:-9px;left:50%;width:54px;height:17px;margin-left:-27px;background:var(--tp,#F3E7A8);opacity:.9;transform:rotate(var(--tr,-4deg));z-index:1}
+.pol.err{border-color:#A8341A}.pol.err b{color:#A8341A;font:600 12px "IBM Plex Sans",system-ui}
 .acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
-.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-shadow:2px 3px 0 var(--ink)}
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;box-shadow:2px 3px 0 var(--ink)}
 .btn.primary{background:var(--ember);color:#fff}
 .err-l{color:#A8341A;font-weight:600;margin:0}.err-l:empty{display:none}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style></head><body>
-<main><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>Pottery Lab</a></div>
+<main><div class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>Pottery Lab</a></div>
 <div id="body" aria-live="polite"><p class="sub">Opening…</p></div></main>
 <script src="/momentupload.js" defer></script>
 <script>
@@ -43,7 +43,7 @@ input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #CFC6B8;border-
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const id = (location.pathname.match(/^\/p\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
-  const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body"), R = [-3, 2.5, -1.5, 2, -2.5, 1.5], TP = ["#E3D7BE", "#B9C7A6", "#E9A08F"];
+  const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body"), R = [-3, 2.5, -1.5, 2, -2.5, 1.5], TP = ["#F3E7A8", "#B9C7A6", "#E9A08F"];
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "");
   const pol = (inner, cap, i, cls = "") => `<span class="pol ${cls}" style="--r:${R[i % 6]}deg;--tp:${TP[i % 3]};--tr:${i % 2 ? 4 : -5}deg" data-i="${i}">${inner}<b>${esc(cap)}</b></span>`;
   fetch(`/api/public/photo-drop/${encodeURIComponent(id)}?${proof}`).then(async (r) => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "This link isn't working."); return j; }).then(draw)

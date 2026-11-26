@@ -76,7 +76,7 @@ async function fcmToken(c) {
 async function fcmSend(c, dev, msg) {
   try {
     const r = await fetch(`https://fcm.googleapis.com/v1/projects/${c.project}/messages:send`, { method: "POST", headers: { authorization: "Bearer " + (await fcmToken(c)), "content-type": "application/json" }, signal: AbortSignal.timeout(10_000),
-      body: JSON.stringify({ message: { token: dev.token, notification: { title: msg.title, body: msg.body }, data: { link: msg.link || "/feed", kind: msg.kind || "" }, android: { notification: { tag: msg.thread || msg.kind || "pl", color: "#9A4128" } } } }) });
+      body: JSON.stringify({ message: { token: dev.token, notification: { title: msg.title, body: msg.body }, data: { link: msg.link || "/feed", kind: msg.kind || "" }, android: { notification: { tag: msg.thread || msg.kind || "pl", color: "#29489A" } } } }) });
     const j = await r.json().catch(() => ({})), code = j?.error?.details?.find?.((d) => d.errorCode)?.errorCode || j?.error?.status || "";
     return { ok: r.ok, status: r.status, reason: code, gone: r.status === 404 || code === "UNREGISTERED" || (r.status === 400 && code === "INVALID_ARGUMENT") };
   } catch (e) { return { ok: false, error: e.message }; }

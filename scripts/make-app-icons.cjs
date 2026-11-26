@@ -1,4 +1,4 @@
-// App icons and launch screens: Potto's line mark (the logo in public/favicon.svg and the nav) in ink on bone, the
+// App icons and launch screens: the Field Notes mark (a drawn square with a straight-line Potto and blue dot eyes, as in public/favicon.svg and the nav) in ink on linen, the
 // brand colours in docs/brand-kit.md. The full Potto (public/mascot.js) is kept for moments, not for the icon.
 //   public/icons/   web manifest icons (any + maskable, which Android uses for adaptive icons), apple-touch-icon, favicon,
 //                   iOS home-screen launch images (splash-*.png), and the 1024 App Store icon (no transparency)
@@ -6,17 +6,17 @@
 // Re-run after changing the mark or the palette:   node scripts/make-app-icons.cjs
 const { chromium } = require("playwright"), fs = require("fs"), path = require("path");
 const root = path.join(__dirname, "..");
-const BONE = "#F4F0E8", INK = "#1D1B18";
-// the line mark, the same drawing as public/favicon.svg and the nav logo, cropped to its own box
-const MARK = (c) => `<svg viewBox="3 2.6 22 23" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11.3" cy="16.4" r="1.05" fill="${c}"/><circle cx="16.7" cy="16.4" r="1.05" fill="${c}"/><path d="M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+const BONE = "#EFEBE2", INK = "#1B1D1C", BLUE = "#29489A";
+// the mark, the same drawing as public/favicon.svg and the nav logo, cropped to its own box
+const MARK = (c, e = c === INK ? BLUE : c) => `<svg viewBox="0 0 48 48" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="1.5" width="45" height="45" rx="6" fill="none" stroke="${c}" stroke-width="2.5"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4" fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="20.5" cy="26" r="1.9" fill="${e}"/><circle cx="27.5" cy="26" r="1.9" fill="${e}"/></svg>`;
 // iOS launch images: [width, height, device-width, device-height, pixel ratio] in portrait
 const SPLASH = [[1320, 2868, 440, 956, 3], [1290, 2796, 430, 932, 3], [1206, 2622, 402, 874, 3], [1179, 2556, 393, 852, 3], [1170, 2532, 390, 844, 3], [1284, 2778, 428, 926, 3], [1125, 2436, 375, 812, 3], [750, 1334, 375, 667, 2], [1640, 2360, 820, 1180, 2], [2048, 2732, 1024, 1366, 2]];
 const out = (...p) => { const f = path.join(root, ...p); fs.mkdirSync(path.dirname(f), { recursive: true }); return f; };
 
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ deviceScaleFactor: 1 }); const p = await ctx.newPage();
-  await p.setContent(`<!doctype html><html><head><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet"><style>html,body{margin:0;background:transparent}#c{display:grid;place-items:center;overflow:hidden}
-#c svg{display:block}.w{font:400 64px/1 'Instrument Serif',Georgia,serif;letter-spacing:-.01em;margin-top:3vh}</style></head><body><div id="c"></div><span class="w" style="position:absolute;opacity:0">pottery lab</span></body></html>`);
+  await p.setContent(`<!doctype html><html><head><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600&display=swap" rel="stylesheet"><style>html,body{margin:0;background:transparent}#c{display:grid;place-items:center;overflow:hidden}
+#c svg{display:block}.w{font:600 64px/1 'IBM Plex Sans',system-ui,sans-serif;letter-spacing:-.03em;margin-top:3vh}</style></head><body><div id="c"></div><span class="w" style="position:absolute;opacity:0">pottery lab</span></body></html>`);
   await p.evaluate(() => document.fonts.ready);
   // one picture: a w x h box on bg (or transparent), the mark at `scale` of the shorter side, optional word mark under it
   async function shot(file, w, h, { bg = BONE, scale = 0.58, word = false, ink = INK, dy = 0 } = {}) {

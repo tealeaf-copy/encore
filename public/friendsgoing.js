@@ -9,11 +9,11 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   const CSS = `.plf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 12px}
-.plf-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--pl-line);border-radius:999px;padding:4px 14px 4px 4px;font:600 15px "Instrument Sans",system-ui,sans-serif;color:var(--pl-ink)}
+.plf-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--pl-line);border-radius:999px;padding:4px 14px 4px 4px;font:600 15px "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
 .plf-faces{display:inline-flex}.plf-faces span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1.5px solid #fff;background:var(--c,var(--pl-sand));font-size:15px;margin-left:-8px;color:var(--pl-ink);font-weight:700}.plf-faces span:first-child{margin-left:0}
 .plf-pill b{font-weight:700}`;
   const css = () => { if (document.getElementById("plfCss")) return; const s = document.createElement("style"); s.id = "plfCss"; s.textContent = CSS; document.head.appendChild(s); };
-  const TINTS = ["#E3D7BE", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"], tint = (p, i) => TINTS[([...String(p.name || "")].reduce((a, c) => a + c.charCodeAt(0), 0) + i) % TINTS.length];
+  const TINTS = ["#F3E7A8", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"], tint = (p, i) => TINTS[([...String(p.name || "")].reduce((a, c) => a + c.charCodeAt(0), 0) + i) % TINTS.length];
   const face = (p) => (p.emoji && !["🙂", "🎉"].includes(p.emoji) ? p.emoji : (p.name || "?")[0].toUpperCase());
   function html(info) { css(); if (!info?.count) return ""; const P = info.people || [];
     return `<span class="plf-pill" role="note"><span class="plf-faces" aria-hidden="true">${P.slice(0, 3).map((p, i) => `<span style="--c:${tint(p, i)}">${esc(face(p))}</span>`).join("")}</span><span><b>${esc(info.line.split(" ")[0])}</b>${esc(info.line.slice(info.line.indexOf(" ")))}</span></span>`; }

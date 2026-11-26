@@ -1,10 +1,10 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Collab covers · Pottery Lab</title>
 <meta name="description" content="Make a poster for a brand and coffee shop pop-up: both names up top, a big playful title, and a warm café scene. Download it or put it on your guest page.">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=Modak&family=Archivo+Black&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=Modak&family=Archivo+Black&display=swap" rel="stylesheet">
 <style>
 :root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--line:var(--pl-line)}
-*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 a{color:inherit}.wrap{max-width:1100px;margin:0 auto;padding:0 18px 70px}
 header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}.brand{font:700 22px var(--sys-display);text-decoration:none}
 h1,h2{font-family:var(--sys-display);margin:0}h1{font-size:clamp(30px,5.5vw,46px);line-height:1.08;margin:14px 0 8px}h2{font-size:24px;margin:34px 0 12px}
@@ -51,16 +51,16 @@ input,select{padding:10px 12px;border:1px solid var(--pl-line-strong);border-rad
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), Q = new URLSearchParams(location.search), F = $("#f");
-  const ACCENTS = ["#9A4128", "#E0A030", "#2F6B4F", "#3A5BA0", "#B04A7A", "#1D1B18"];
+  const ACCENTS = ["#29489A", "#E0A030", "#2F6B4F", "#3A5BA0", "#B04A7A", "#1B1D1C"];
   const EX = [
     { brand: "Northwind", shop: "Second Pour", title: "Sip n' Ship", line: "Launch week coffee pop-up", look: "lanterns", accent: "#E0A030" },
-    { brand: "Lumen AI", shop: "Phin & Night", title: "Debug & Drip", line: "Free phin coffee for builders", look: "counter", accent: "#9A4128" },
+    { brand: "Lumen AI", shop: "Phin & Night", title: "Debug & Drip", line: "Free phin coffee for builders", look: "counter", accent: "#29489A" },
     { brand: "Fieldwork", shop: "Golden Hour Café", title: "Latte Late", line: "Rooftop customer social", look: "rooftop", accent: "#B04A7A" },
     { brand: "Parcel", shop: "Night Owl Roasters", title: "Cold Brew Commits", line: "Office hours with the eng team", look: "window", accent: "#3A5BA0" },
     { brand: "Brightline", shop: "Corner Phin", title: "Pour Over Pitch", line: "Founder breakfast, 20 seats", look: "counter", accent: "#2F6B4F" },
     { brand: "Quill", shop: "Morning Ritual", title: "Matcha Monday", line: "Writers' coffee club", look: "lanterns", accent: "#2F6B4F" },
     { brand: "Tidepool", shop: "Salt & Crema", title: "Brew n' Build", line: "Hackathon kickoff coffee", look: "window", accent: "#E0A030" },
-    { brand: "Kestrel", shop: "The Daily Grind", title: "Espresso Yourself", line: "Design team pop-up", look: "rooftop", accent: "#9A4128" },
+    { brand: "Kestrel", shop: "The Daily Grind", title: "Espresso Yourself", line: "Design team pop-up", look: "rooftop", accent: "#29489A" },
   ];
   let look = "lanterns", accent = ACCENTS[0], tick = 0;
   ["brand", "shop", "title", "line", "when"].forEach((k) => { if (Q.get(k)) F[k].value = Q.get(k).slice(0, F[k].maxLength); });

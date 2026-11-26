@@ -257,26 +257,26 @@ function clearFailsFor() { for (const L of LIMITS) L.fails.clear?.(); }
 export function loginPage() {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign in · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/playful.css">
 <script>
   // Guest RSVP / survey links carry their target in the hash, which never reaches
   // the server. Send those visitors to the guest copy of the page instead.
   if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
 </script>
 <style>
-  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "Instrument Sans",system-ui,sans-serif;background:#F4F0E8;color:#1D1B18}
-  form{background:#fff;padding:32px 24px;border-radius:24px;border:1.5px solid #E2DCD1;box-shadow:none;width:min(360px,calc(100vw - 32px));box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "IBM Plex Sans",system-ui,sans-serif;background:#EFEBE2;color:#1B1D1C}
+  form{background:#fff;padding:32px 24px;border-radius:24px;border:1.5px solid #CFC8B9;box-shadow:none;width:min(360px,calc(100vw - 32px));box-sizing:border-box}
   .brand{display:flex;align-items:center;gap:8px;font:600 20px "Fraunces",Georgia,serif;margin-bottom:18px}
-  h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#5D564E;font-size:14px}
-  label{display:block;font-size:14px;font-weight:600;color:#1D1B18;margin-bottom:16px}
+  h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#444845;font-size:14px}
+  label{display:block;font-size:14px;font-weight:600;color:#1B1D1C;margin-bottom:16px}
   input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 14px;border-radius:12px;min-height:48px}
-  input{border:1.5px solid #CFC6B8;margin:8px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:none;border-color:#1D1B18;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
-  button{border:0;background:#9A4128;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;border-radius:999px;min-height:52px}button:hover{background:#8E3B24}button:disabled{opacity:.6;cursor:default}
+  input{border:1.5px solid #1B1D1C;margin:8px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:none;border-color:#1B1D1C;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
+  button{border:0;background:#29489A;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;border-radius:999px;min-height:52px}button:hover{background:#29489A}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
-  a{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:2px;padding:0;text-align:center;color:#8E3B24;font-size:14px;text-decoration:none}
+  a{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:2px;padding:0;text-align:center;color:#29489A;font-size:14px;text-decoration:none}
 </style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
-  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#5D564E">Good to see you again.</p>
+  <div class="brand"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#444845">Good to see you again.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company uses single sign-on. Sign in with SSO instead.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many tries. Take a breather and try again later.</p>"); else if (location.search.includes("error")) document.write("<p>That email and password don't match.</p>"); else if (location.search.includes("why=collab")) document.write("<p>Sign in to suggest a collab. Hosts only.</p>")</script>
   ${users().length || signupEnabled() ? `<label>Email<input type="email" name="email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}></label>` : ""}
   <label>${users().some((u) => u.pw) || signupEnabled() ? "Password" : "Team password"}<input type="password" name="password" autocomplete="current-password" autofocus required></label>

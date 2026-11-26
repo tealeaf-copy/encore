@@ -31,16 +31,16 @@
     setTimeout(() => s.querySelector("a,button")?.focus({ preventScroll: true }), 30); }
   const need = (src) => new Promise((ok, no) => { if (src === "/photosheet.js" && window.PhotoSheet) return ok(); if (src === "/avatars.js" && window.EncoreAvatars) return ok(); const t = document.createElement("script"); t.src = src; t.onload = ok; t.onerror = no; document.head.appendChild(t); });
   const css = document.createElement("style"); css.textContent = `.plme-bg{position:fixed;inset:0;z-index:9000;background:rgba(31,26,23,.36);display:flex;align-items:flex-end;justify-content:center}
-.plme{width:min(480px,100%);background:var(--pl-surface);border-radius:24px 24px 0 0;padding:8px 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font-family:"Instrument Sans",system-ui,sans-serif;color:var(--pl-ink);box-sizing:border-box}
+.plme{width:min(480px,100%);background:var(--pl-surface);border-radius:24px 24px 0 0;padding:8px 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink);box-sizing:border-box}
 .plme-g{width:40px;height:4px;border-radius:2px;background:#E0D5C6;margin:4px auto 8px}.plme-n{display:block;font:600 20px/1.2 var(--pl-font-text);overflow-wrap:anywhere}
 .plme-hd{display:flex;align-items:center;gap:12px;margin:4px 8px 8px}.plme-hd[hidden]{display:none}.plme-who{flex:1;min-width:0}
 .plme-face{all:unset;position:relative;flex:none;width:48px;height:48px;border-radius:50%;cursor:pointer}.plme-fi{display:block;width:48px;height:48px;border-radius:50%;background:var(--pl-raised)}
 .plme-cam{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:var(--pl-surface);border:1.5px solid var(--pl-line);display:grid;place-items:center;color:#5A3B2B}
-.plme-pic{all:unset;display:inline-block;min-height:32px;line-height:32px;color:var(--pl-accent-text);font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer}.plme-face:focus-visible,.plme-pic:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px;border-radius:8px}
+.plme-pic{all:unset;display:inline-block;min-height:32px;line-height:32px;color:var(--pl-accent-text);font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.plme-face:focus-visible,.plme-pic:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px;border-radius:8px}
 button.plme-r{width:100%;border:0;background:none;font:inherit;text-align:left;cursor:pointer}.plme-r{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 8px;border-radius:12px;color:inherit;text-decoration:none}.plme-r span{flex:1}.plme-r b{display:block;font-weight:600;font-size:16px}.plme-r small{display:block;color:var(--pl-soft);font-size:13px}.plme-r svg{color:#5A3B2B}.plme-r:hover,.plme-r[aria-current]{background:#F6EFE7}
-.plme-out{display:block;width:100%;min-height:48px;margin-top:6px;border:0;background:none;color:var(--pl-soft);font:500 15px "Instrument Sans",system-ui;text-decoration:underline;cursor:pointer}
+.plme-out{display:block;width:100%;min-height:48px;margin-top:6px;border:0;background:none;color:var(--pl-soft);font:500 15px "IBM Plex Sans",system-ui;text-decoration:underline;cursor:pointer}
 [data-chats-badge][hidden]{display:none!important}
-.es-tabs a .es-tn,nav.tabs a .es-tn{position:absolute;top:0;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--pl-accent);color:#fff;font:500 12px/18px "JetBrains Mono",ui-monospace,monospace;text-align:center;box-sizing:border-box;border:2px solid var(--pl-surface)}
+.es-tabs a .es-tn,nav.tabs a .es-tn{position:absolute;top:0;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--pl-accent);color:#fff;font:500 12px/18px "IBM Plex Mono",ui-monospace,monospace;text-align:center;box-sizing:border-box;border:2px solid var(--pl-surface)}
 .es-tabs a{position:relative}`; document.head.appendChild(css);
 
   // the app (index.html) on a phone: Feed, Discover, New, Chats, Me; on a computer the sidebar keeps Home, Plans and My page and gains Chats

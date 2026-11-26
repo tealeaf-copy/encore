@@ -17,14 +17,14 @@
 .fv-by .sf-more{position:relative;width:28px;height:28px;margin-left:auto;flex:none}
 .sf-bg{position:fixed;inset:0;background:rgba(20,16,14,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10000}
 @media (min-width:640px){.sf-bg{align-items:center}}
-.sf{background:var(--pl-surface);color:var(--pl-ink);width:min(440px,100%);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:90dvh;overflow:auto;border-top:1.5px solid var(--pl-frame)}
+.sf{background:var(--pl-surface);color:var(--pl-ink);width:min(440px,100%);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;max-height:90dvh;overflow:auto;border-top:1.5px solid var(--pl-frame)}
 @media (min-width:640px){.sf{border-radius:24px;border:1.5px solid var(--pl-frame)}}
 .sf h2{font:600 20px/1.2 var(--pl-font-text);margin:0 0 4px}.sf p{margin:0 0 12px;color:var(--pl-soft);font-size:14px}
 .sf .sf-act{display:grid;gap:8px}.sf button{font:600 16px/1 var(--sys-title);min-height:44px;border-radius:999px;border:1.5px solid var(--pl-line-strong);background:#fff;color:var(--pl-ink);cursor:pointer;padding:0 16px;text-align:left}
 .sf button.sf-go{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff;text-align:center}.sf button.sf-x{text-align:center;border:0;background:transparent;color:var(--pl-soft)}
 .sf label{display:flex;gap:10px;align-items:center;min-height:44px;font-size:16px;border-bottom:1.5px solid var(--pl-line)}.sf label:last-of-type{border-bottom:0}.sf input[type=radio]{width:20px;height:20px;accent-color:var(--pl-accent)}
 .sf textarea{width:100%;box-sizing:border-box;border:1.5px solid var(--pl-line-strong);border-radius:12px;padding:10px 12px;font:16px/1.4 inherit;min-height:72px;margin:8px 0 12px}
-.sf-foot{max-width:720px;margin:24px auto 96px;padding:0 16px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font:14px/1.4 "Instrument Sans",system-ui,sans-serif}
+.sf-foot{max-width:720px;margin:24px auto 96px;padding:0 16px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font:14px/1.4 "IBM Plex Sans",system-ui,sans-serif}
 .sf-foot a{color:var(--pl-soft)}
 `; document.head.appendChild(s); }
   const DOTS = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="13" cy="8" r="1.6" fill="currentColor"/></svg>';
@@ -33,7 +33,7 @@
     const prev = document.activeElement, close = () => { bg.remove(); document.removeEventListener("keydown", key); try { prev && prev.focus(); } catch {} }, key = (e) => { if (e.key === "Escape") close(); };
     bg.addEventListener("click", (e) => { if (e.target === bg) close(); }); document.addEventListener("keydown", key); document.body.appendChild(bg); setTimeout(() => bg.querySelector("button,input")?.focus(), 30); return { el: bg.firstChild, close }; }
   async function post(url, body, method = "POST") { const r = await fetch(url, { method, credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work. Try again."); return j; }
-  function toast(t) { const n = document.createElement("div"); n.setAttribute("role", "status"); n.style.cssText = "position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pl-ink);color:#fff;padding:10px 16px;border-radius:999px;font:600 14px/1.3 'Instrument Sans',system-ui,sans-serif;z-index:10001;max-width:calc(100vw - 32px)"; n.textContent = t; document.body.appendChild(n); setTimeout(() => n.remove(), 3200); }
+  function toast(t) { const n = document.createElement("div"); n.setAttribute("role", "status"); n.style.cssText = "position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pl-ink);color:#fff;padding:10px 16px;border-radius:999px;font:600 14px/1.3 'IBM Plex Sans',system-ui,sans-serif;z-index:10001;max-width:calc(100vw - 32px)"; n.textContent = t; document.body.appendChild(n); setTimeout(() => n.remove(), 3200); }
   const what = (t) => ({ post: "post", moment: "photo", kudos: "kudos", review: "review", person: "person", host: "page", event: "event" })[t] || "this";
 
   /** o: { type, target, text, key, handle, name } */

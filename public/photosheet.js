@@ -25,18 +25,18 @@
 
   function css() { if (document.getElementById("phsCss")) return; const s = document.createElement("style"); s.id = "phsCss"; s.textContent = `
 .phs-bg{position:fixed;inset:0;z-index:9500;background:rgba(31,26,23,.4);display:flex;align-items:flex-end;justify-content:center}
-.phs{width:min(560px,100%);max-height:92dvh;overflow:auto;overscroll-behavior:contain;background:#FFFCF7;color:#1F1A17;border:1.5px solid #5A3B2B;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);padding:8px 16px calc(16px + env(safe-area-inset-bottom));box-sizing:border-box;font:16px/1.45 "Instrument Sans",system-ui,-apple-system,sans-serif}
+.phs{width:min(560px,100%);max-height:92dvh;overflow:auto;overscroll-behavior:contain;background:#FFFCF7;color:#1F1A17;border:1.5px solid #5A3B2B;border-bottom:0;border-radius:24px 24px 0 0;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);padding:8px 16px calc(16px + env(safe-area-inset-bottom));box-sizing:border-box;font:16px/1.45 "IBM Plex Sans",system-ui,-apple-system,sans-serif}
 @media (min-width:700px){.phs-bg{align-items:center}.phs{border-radius:24px;border-bottom:1.5px solid #5A3B2B}}
 .phs-g{width:40px;height:4px;border-radius:2px;background:#E0D5C6;margin:4px auto 8px}
-.phs-hd{display:flex;align-items:center;gap:8px;margin:0 0 12px}.phs-hd h2{flex:1;margin:0;font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui,sans-serif}
+.phs-hd{display:flex;align-items:center;gap:8px;margin:0 0 12px}.phs-hd h2{flex:1;margin:0;font:600 20px/1.2 Fredoka,"IBM Plex Sans",system-ui,sans-serif}
 .phs-x{all:unset;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;color:#5A3B2B;cursor:pointer}.phs-x:focus-visible,.phs button:focus-visible,.phs label:focus-within{outline:3px solid #1F1A17;outline-offset:2px}
 .phs-now{position:relative;margin:0 0 16px;border-radius:16px;overflow:hidden;background:#EFE6D8;border:1.5px solid #E4D9C8}
 .phs-now img{display:block;width:100%;height:100%;object-fit:cover}.phs-now.round{width:132px;margin-left:auto;margin-right:auto;border-radius:50%}
 .phs-now .phs-empty{display:grid;place-items:center;height:100%;color:#665A51;font-size:14px;text-align:center;padding:8px}
-.phs-up{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:999px;background:#C94A30;color:#fff;font:600 16px Fredoka,"Instrument Sans",system-ui,sans-serif;cursor:pointer;margin:0 0 4px}
+.phs-up{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:999px;background:#C94A30;color:#fff;font:600 16px Fredoka,"IBM Plex Sans",system-ui,sans-serif;cursor:pointer;margin:0 0 4px}
 .phs-up input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .phs-note{margin:4px 0 16px;color:#665A51;font-size:13px;text-align:center}
-.phs h3{font:600 14px/1.3 "Instrument Sans",system-ui,sans-serif;margin:16px 0 8px;color:#1F1A17}
+.phs h3{font:600 14px/1.3 "IBM Plex Sans",system-ui,sans-serif;margin:16px 0 8px;color:#1F1A17}
 .phs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}.phs-grid.sq{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
 .phs-t{all:unset;box-sizing:border-box;position:relative;display:block;border-radius:12px;overflow:hidden;background:#EFE6D8;border:1.5px solid #E4D9C8;cursor:pointer}
 .phs-t img,.phs-t svg{display:block;width:100%;height:100%;object-fit:cover}.phs-t[aria-pressed=true]{border-color:#1F1A17;box-shadow:0 0 0 2px #1F1A17}
@@ -48,7 +48,7 @@
 .phs-frame.round::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(31,26,23,.55);pointer-events:none}
 .phs-frame:focus-visible{outline:3px solid #C94A30;outline-offset:3px}
 .phs-hint{display:flex;align-items:center;justify-content:center;gap:6px;color:#665A51;font-size:13px;margin:0 0 16px}
-.phs-row{display:flex;gap:8px}.phs-row button{flex:1;min-height:52px;border-radius:999px;font:600 16px Fredoka,"Instrument Sans",system-ui,sans-serif;cursor:pointer}
+.phs-row{display:flex;gap:8px}.phs-row button{flex:1;min-height:52px;border-radius:999px;font:600 16px Fredoka,"IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
 .phs-go{background:#C94A30;color:#fff;border:1px solid #C94A30}.phs-go:disabled{opacity:.6}.phs-back{background:#fff;color:#1F1A17;border:1.5px solid #D9CCBB}
 .phs-msg{min-height:20px;margin:8px 0 0;font-size:13px;color:#B04A30;text-align:center}
 .phs-busy{color:#665A51}

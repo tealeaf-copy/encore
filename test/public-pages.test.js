@@ -36,9 +36,9 @@ test("the public scrapbook speaks to visitors, not as if they were the host", ()
   assert.doesNotMatch(js, /font-style:italic/);
 });
 
-test("brand kit fonts: the display serif for headings, no Fraunces or italic headings on pages we own", () => {
+test("brand fonts: the Field Notes faces, no Fraunces or italic headings on pages we own", () => {
   for (const f of ["public/signup.html", "public/join.html", "public/404.html", "public/home.html", "public/discover.html", "public/collab.js", "public/account.js"]) assert.doesNotMatch(read(f), /Fraunces/, f);
-  assert.match(read("public/signup.html"), /family=Instrument\+Serif/); assert.doesNotMatch(read("public/signup.html"), /Fredoka/);
+  assert.match(read("public/signup.html"), /family=IBM\+Plex\+Sans:wght@400;500;600/); assert.doesNotMatch(read("public/signup.html"), /Instrument/); assert.doesNotMatch(read("public/signup.html"), /Fredoka/);
 });
 
 test("the owner's page: no Follow form for yourself, private plans only for you", () => {

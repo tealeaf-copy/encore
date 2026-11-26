@@ -40,9 +40,10 @@ test("line art: the drawing's spot colour comes from the look's own palette, nev
   for (const c of Object.values(EA.SPOT)) assert.match(looks, new RegExp(`\\[fill="${c}"\\][^{]*\\{fill:var\\(--lk-spot\\)\\}`.replace("[^{]*", "[^{]*")), `the look recolours spot ${c}`);
   assert.match(looks, /setProperty\("--lk-spot", T\.spot \|\| T\.btn\)/);
   for (const [k, p] of palettes()) { const T = C.pageFrom(p[0], p.slice(1)); assert.ok(p.map((x) => x.toUpperCase()).includes(T.spot) || T.spot === T.btn, `${k}: spot ${T.spot} is the look's own`); }
-  // the house art: muted grounds, spots from the clay palette
-  for (const c of Object.values(EA.PASTELS)) assert.ok(chroma(c) <= 0.14, `muted ground ${c}`);
-  for (const c of Object.values(EA.SPOT)) assert.ok(chroma(c) <= 0.45, `muted spot ${c}`);
+  // the house art: muted grounds, spots from the Field Notes palette
+  for (const c of Object.values(EA.PASTELS)) assert.ok(chroma(c) <= 0.18, `muted ground ${c}`);
+  // Field Notes spots: ink blue, moss and tomato (the one warm note on covers), never neon
+  for (const c of Object.values(EA.SPOT)) assert.ok(["#29489A", "#56683F", "#C2431F"].includes(c), `brand spot ${c}`);
 });
 
 test("buttons: every look's default label is plain I'm in, with no emoji; Surprise me never adds one", () => {

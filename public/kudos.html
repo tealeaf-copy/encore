@@ -3,26 +3,26 @@
 <title>Leave kudos · Pottery Lab</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" media="print" id="gfonts"><script>addEventListener("load",()=>{document.getElementById("gfonts").media="all"})</script>
 <style>
 /* One-tap kudos, from the link in the morning-after text or email (/k/<event>?rid=..&code=..). The reply id and code
    prove it's a guest who replied, the same proof POST /api/public/kudos checks. Small on purpose: it opens instantly. */
 :root{--paper:var(--pl-page);--linen:var(--pl-raised);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember-d:var(--pl-accent-text);--butter:var(--pl-sand);--sage:var(--pl-sage);--line:var(--pl-line);--card:#fff}
-*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 a{color:var(--ember-d)}main{max-width:520px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 40px}
 .top{display:flex;align-items:center;margin:4px 0 14px}.brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
 h1{font:700 30px/1.1 var(--sys-display);margin:6px 0 4px}h2{font:600 20px/1.2 var(--pl-font-text);margin:0 0 10px}
 .muted{color:var(--smoke)}.sub{margin:0 0 16px}
 .card{background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:16px;box-shadow:0 0 0 4px #fff,0 12px 28px -20px rgba(31,26,23,.55);display:grid;gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line);background:var(--pl-surface);color:var(--ink);border-radius:999px;min-height:44px;padding:0 14px;font:600 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip{border:1.5px solid var(--line);background:var(--pl-surface);color:var(--ink);border-radius:999px;min-height:44px;padding:0 14px;font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .chip.again{background:var(--butter);border-color:var(--ink);border-width:2px}.chip.again[aria-pressed=true]{background:var(--ink);color:#fff}
 .chip:focus-visible,.go:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 label.f{display:grid;gap:5px;font-weight:600}label.f small{font-weight:400;color:var(--smoke)}
 textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:16px;background:var(--pl-surface);color:var(--ink)}textarea{resize:vertical;min-height:72px}
-.go{background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:52px;padding:0 20px;font:600 17px "Instrument Sans",system-ui,sans-serif;cursor:pointer;width:100%}.go:disabled{opacity:.6}
-.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.go{background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:52px;padding:0 20px;font:600 17px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;width:100%}.go:disabled{opacity:.6}
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
 .btn.on{background:var(--sage);border-color:var(--sage);color:#fff}
 .err{color:#A8341A;font-weight:600;margin:0}.err:empty{display:none}
 .thanks{text-align:center;display:grid;gap:12px;justify-items:center}.thanks .pot{width:56px;height:56px}
@@ -44,7 +44,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid var(-
 /* ---- visual feed: add photos from the night (they become moments on the event's page, the host's scrapbook and the feed) ---- */
 .addph{display:grid;gap:8px;width:100%;justify-items:center;border-top:1.5px dashed var(--line);padding-top:14px}.addph p{margin:0;font-size:14px}
 .phgrid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:6px 0}.phg{position:relative;width:92px;background:#fff;border:2px solid var(--ink);border-radius:5px;padding:5px 5px 18px;box-shadow:2px 3px 0 var(--ink);transform:rotate(var(--r))}
-.phg img,.phg video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}.phg b{position:absolute;left:0;right:0;bottom:1px;text-align:center;font:600 11px "Instrument Sans",system-ui}.phg.err{border-color:#A8341A}.phg.err b{color:#A8341A}
+.phg img,.phg video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}.phg b{position:absolute;left:0;right:0;bottom:1px;text-align:center;font:600 11px "IBM Plex Sans",system-ui}.phg.err{border-color:#A8341A}.phg.err b{color:#A8341A}
 .phg::before{content:"";position:absolute;top:-7px;left:50%;width:40px;height:13px;margin-left:-20px;background:var(--butter);opacity:.9;transform:rotate(-4deg)}
 /* ---- end visual feed ---- */
 /* ---- round 11 UX pass: the app's tokens (public/system.css). Tags are soft tiles (16px corners, so two-line labels
@@ -65,7 +65,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0
 h1{font-weight:600;letter-spacing:-.01em}
 @media (max-width:340px){#tags{grid-template-columns:1fr}}
 </style></head><body>
-<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</a></div>
+<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a></div>
 <div id="body"><p class="muted">Opening…</p></div></main>
 <script src="/momentupload.js" defer></script><!-- visual feed: Add photos -->
 <script>
@@ -75,7 +75,7 @@ h1{font-weight:600;letter-spacing:-.01em}
   const id = (location.pathname.match(/^\/k\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
   const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body");
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
-  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>`;
+  const pot = `<svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>`;
   const sub = (j) => [day(j.date), j.place ? `at ${j.place}` : j.hostFirst ? `with ${j.hostFirst}` : ""].filter(Boolean).join(" · ");
   const stop = (h, p) => { body.innerHTML = `<h1>${esc(h)}</h1><p class="muted">${esc(p)}</p>`; };
   /* ---- kudos nudges: the group kudos link (/k/<event>?g=<token>) and Send after one chip ---- */

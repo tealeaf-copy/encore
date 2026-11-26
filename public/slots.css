@@ -2,7 +2,7 @@
    Markdown and the one-line reply. Calm controls: 1.5px lines, no offset shadows, drawn line glyphs, a mono accent for
    numbers. Colours come from the page (the invite's look, the app, the host page), so dark looks stay readable. */
 .sl-card,.sr-wrap,.sl-panel{--sl-ink:var(--ink,var(--pl-ink));--sl-soft:var(--smoke,var(--muted,var(--pl-soft)));--sl-line:var(--line,var(--pl-line));--sl-field:var(--pl-line-strong);--sl-bg:var(--card,#fff);--sl-acc:var(--ember-d,var(--accent,var(--pl-accent-text)))}
-.sl-mono,.sl-ep{font-family:var(--sys-mono,"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.sl-mono,.sl-ep{font-family:var(--sys-mono,"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .sl-ep{font-size:.62em;font-weight:500;margin-left:.35em;opacity:.72;vertical-align:.12em;white-space:nowrap}
 .sl-card{margin:12px 0;padding:14px 16px;border:1.5px solid var(--sl-line);border-radius:16px;background:var(--sl-bg);color:var(--sl-ink);text-align:left}
 .sl-eyebrow{margin:0 0 4px;font:500 12px/1.3 var(--sys-mono,ui-monospace,Menlo,monospace);letter-spacing:.06em;text-transform:uppercase;color:var(--sl-soft)}

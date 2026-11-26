@@ -4,7 +4,7 @@
 // hops when tapped. Nothing moves for people who ask their device for less motion.
 (function () {
   // drawn soft and chubby: one round pot, a warm brown outline, dot eyes, a little U smile, pink cheeks and a striped glaze band
-  const INK = "#5A3B2B", CLAY = "#DDA88A", CLAY_D = "#C98C6C", GLAZE = "#EBE0CA", STRIPE = "#BF9671", CREAM = "#FBF9F5", SW = 3.6;
+  const INK = "#5A3B2B", CLAY = "#DDA88A", CLAY_D = "#C98C6C", GLAZE = "#EBE0CA", STRIPE = "#BF9671", CREAM = "#FAF8F3", SW = 3.6;
   const BODY_D = "M80 50c0-4-3-6-3-9h46c0 3-3 5-3 9c24 6 41 25 41 52c0 32-27 56-61 56s-61-24-61-56c0-27 17-46 41-52z";
   const body = `<path d="${BODY_D}"/>`;
   const limb = (d, w = 10) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + SW * 2}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${CLAY}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;

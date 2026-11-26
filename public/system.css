@@ -1,8 +1,8 @@
 /* Pottery Lab design system: the last stylesheet on every page (authguard.js moves it to the end of <head>; invite.html and
    the sign-in page link it directly). Brand tokens first (the one block to change or revert, see docs/brand-kit.md "Look"),
    then the older names pages already use, mapped onto them, then the few rules that make every page agree:
-   - type: Instrument Serif for display headings (20px and up), Instrument Sans for titles, names, UI and body,
-     JetBrains Mono for data only. An accent word in a heading (<em>) is clay, never italic. Caveat only for scrapbook
+   - type: IBM Plex Sans for display headings (20px and up), IBM Plex Sans for titles, names, UI and body,
+     IBM Plex Mono for data only. An accent word in a heading (<em>) is clay, never italic. Caveat only for scrapbook
      photo captions. A host's chosen invite title font (.invite[class*=th-] h3, .gxhi) and storefront fonts are the
      host's, not chrome, and are left alone.
    - sizes: 13 / 14 / 16 / 20 / 28 / 40, plus hero display. Nothing under 13px.
@@ -10,48 +10,56 @@
    - one selected-chip style: ink fill, white text.
    - small accent text uses --sys-ember-text (clay text, 6.4:1 on bone). */
 
-/* ==== BRAND TOKENS: "Bone and clay" (Nov 2026). The fonts load here; every colour, face, corner and shadow of the
-   brand is in this block. To go back to the old brand, restore this block and the font URL from the commit before the
-   rebrand. test/brand-tokens.test.js checks each text/background pair here at WCAG AA. ==== */
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
-/* a stand-in shaped like Instrument Serif while it loads, so headings don't change size when it arrives */
-@font-face{font-family:"PL Display Fallback";src:local("Georgia"),local("Times New Roman"),local("Liberation Serif");size-adjust:88%;ascent-override:100%;descent-override:26%;line-gap-override:0%}
+/* ==== BRAND TOKENS: "Field Notes" (Dec 2026): a well-made zine from people who build things. Linen paper, ink lines,
+   one ink-blue accent and a highlighter yellow; IBM Plex Sans for headlines and text, IBM Plex Serif for event titles,
+   IBM Plex Mono for kickers and data only. Every colour, face, corner and line of the brand is in this block (see
+   docs/brand-kit.md). test/brand-tokens.test.js checks each text/background pair here at WCAG AA. ==== */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap");
+/* a stand-in shaped like IBM Plex Sans while it loads, so headings don't change size when it arrives */
+@font-face{font-family:"PL Display Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101%;ascent-override:102%;descent-override:27%;line-gap-override:0%}
 :root{
-  /* type */
-  --pl-font-display:"Instrument Serif","PL Display Fallback",Georgia,serif;
-  --pl-font-text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --pl-font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --pl-display-track:-.015em;--pl-title-track:-.01em;
-  /* colour: a warm bone base, ink text, one clay accent, desaturated status tones */
-  --pl-page:#F4F0E8;        /* bone: the page */
-  --pl-surface:#FBF9F5;     /* cards, fields, sheets */
-  --pl-raised:#ECE6DB;      /* quiet panels, chips, secondary fills */
-  --pl-ink:#1D1B18;         /* text, selected chips */
-  --pl-soft:#4E4841;        /* secondary text: 7:1 on the page, AA on every panel */
-  --pl-muted:#5D564E;       /* meta and placeholders: AA on every surface */
-  --pl-line:#D5CCBD;        /* card lines: a clear edge on the page */
-  --pl-line-strong:#B5AA98; /* field and outlined button lines */
-  --pl-accent:#9A4128;      /* clay: primary fills, accent words */
-  --pl-accent-press:#82361F;
-  --pl-accent-text:#8E3B24; /* clay text on bone and white */
-  --pl-accent-soft:#F1E1D8; /* selected rows, text selection */
-  --pl-accent-rgb:154,65,40;
+  /* type: headlines Plex Sans 600 (40/44), event and card titles Plex Serif 600 (22/28), body Plex Sans 17/27, meta 15/22,
+     kickers and data labels Plex Mono 500 in caps. Mono is never reading text */
+  --pl-font-display:"IBM Plex Sans","PL Display Fallback",system-ui,sans-serif;
+  --pl-font-serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --pl-font-text:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pl-font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pl-display-weight:600;--pl-serif-weight:600;
+  --pl-display-track:-.02em;--pl-title-track:-.01em;--pl-kicker-track:.04em;
+  /* colour: linen paper, ink, one ink-blue accent, a highlighter for marked words; tomato and moss on covers only */
+  --pl-page:#EFEBE2;        /* linen: the page */
+  --pl-surface:#FAF8F3;     /* notebook: cards, fields, sheets */
+  --pl-raised:#E6E1D5;      /* quiet panels, chips, secondary fills */
+  --pl-ink:#1B1D1C;         /* pen: text, card and button lines, selected chips */
+  --pl-soft:#444845;        /* pencil: secondary text, 7.8:1 on the page */
+  --pl-muted:#444845;       /* meta and placeholders: the same pencil, never fainter */
+  --pl-line:#CFC8B9;        /* ruling: hairlines and dashed dividers (non-text) */
+  --pl-line-strong:#1B1D1C; /* fields, outlined buttons and cards: 1.5px ink */
+  --pl-accent:#29489A;      /* ink blue: primary fills, links, kickers */
+  --pl-accent-press:#1F3878;
+  --pl-accent-text:#29489A; /* ink-blue text on linen and notebook */
+  --pl-accent-soft:#E3E8F4; /* selected rows, text selection */
+  --pl-accent-rgb:41,72,154;
   --pl-on-accent:#FFFFFF;
-  --pl-sand:#E3D7BE;        /* highlights and badges (was butter) */
-  --pl-sand-soft:#F0E9DA;
-  --pl-sage:#5F6B57;
-  --pl-frame:#4A3F37;       /* frames next to Potto: a warm dark line */
-  --pl-success:#3D6A4C;--pl-success-soft:#E4ECE3;
-  --pl-warning:#83590F;--pl-warning-soft:#F3EAD6;
-  --pl-danger:#A3321E;--pl-danger-soft:#F5E2DC;
-  --pl-focus:rgba(154,65,40,.28);
-  /* shape: moderate corners, thin lines, almost no shadow */
+  --pl-sand:#F3E7A8;        /* tint: perk strips, status chips (ink text) */
+  --pl-sand-soft:#F7EFCB;
+  --pl-highlight:#F2DD6B;   /* highlighter: the odd marked-up word, badges (ink text) */
+  --pl-tomato:#C2431F;      /* the live dot and covers only */
+  --pl-moss:#56683F;        /* covers and tags */
+  --pl-sage:#56683F;
+  --pl-frame:#1B1D1C;       /* the ink frame around covers */
+  --pl-success:#3E5A2C;--pl-success-soft:#E4E9DA;
+  --pl-warning:#7A5410;--pl-warning-soft:#F7EFCB;
+  --pl-danger:#A2361A;--pl-danger-soft:#F5E1D9;
+  --pl-focus:rgba(41,72,154,.3);
   /* reading: body text never under 16px, at an easy line height; the display face only at --pl-display-min and up */
-  --pl-body-size:16px;--pl-body-lh:1.5;--pl-display-min:24px;
-  --pl-r-btn:10px;--pl-r-sm:8px;--pl-r-md:12px;--pl-r-lg:16px;
-  --pl-bw:1px;
-  --pl-shadow:0 1px 2px rgba(29,27,24,.05);
-  --pl-shadow-float:0 12px 32px -16px rgba(29,27,24,.28);
+  --pl-body-size:17px;--pl-body-lh:1.6;--pl-display-min:24px;
+  /* shape: small, even corners; 1.5px ink lines; dashed rulings; no shadows, edges are drawn */
+  --pl-r-btn:6px;--pl-r-sm:6px;--pl-r-md:6px;--pl-r-lg:6px;
+  --pl-bw:1.5px;
+  --pl-shadow:none;
+  --pl-shadow-float:0 0 0 1.5px #1B1D1C;
+  --pl-rule:1.5px solid #1B1D1C;--pl-rule-dashed:1px dashed #CFC8B9;
 }
 /* ==== end of brand tokens ==== */
 
@@ -61,6 +69,7 @@
   --sys-display:var(--pl-font-display);
   --sys-title:var(--pl-font-text);
   --sys-accent:var(--pl-font-display);
+  --sys-serif:var(--pl-font-serif);
   --sys-hand:"Caveat",cursive;
   /* a quiet monospace accent for data only: step counts, times, dates in fields, counts. Never for prose or headings */
   --sys-mono:var(--pl-font-mono);
@@ -83,7 +92,7 @@
   --shadow:var(--pl-shadow-float);
   --shadow-sheet:var(--pl-shadow-float);
   --field-h:48px;
-  /* Instrument Serif has one weight: headings asking for 600 or 700 get the real face, never a faked bold */
+  /* IBM Plex Sans has one weight: headings asking for 600 or 700 get the real face, never a faked bold */
   font-synthesis-weight:none;
 }
 @media (min-width:861px){:root{--fs-16-20:20px;--fs-20-28:28px;--fs-28-40:40px}}
@@ -121,14 +130,14 @@ html body :is(.g-via button,.ex-chips button,.share-btn,.mc-tpl button,.pa-tabs 
 }
 
 /* primary: ember fill, white text, flat, the same everywhere */
-html body :is(.btn.primary,a.btn.primary,button.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button,.g-bar .btn){background:var(--sys-ember)!important;background-image:none!important;color:#fff!important;border:1px solid var(--sys-ember)!important;box-shadow:none!important;font-weight:600!important}
-@media (hover:hover){html body :is(.btn.primary,a.btn.primary,button.btn.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button):hover{background:var(--sys-ember-press)!important;border-color:var(--sys-ember-press)!important}}
+html body :is(.btn.primary,a.btn.primary,button.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button,.g-bar .btn){background:var(--sys-ember)!important;background-image:none!important;color:var(--pl-on-accent,#fff)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;font-weight:600!important}
+@media (hover:hover){html body :is(.btn.primary,a.btn.primary,button.btn.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button):hover{background:var(--sys-ember-press)!important;border-color:var(--pl-ink)!important}}
 html body :is(.btn.primary,a.go,button.go,form.find button):disabled{opacity:.55}
 /* button text: 16px on md/lg, 14px on sm */
 html body :is(.btn.primary,a.cta.primary,.hd-cta,a.go,button.go,.book-toggle,form.find button,.g-bar .btn){font-size:var(--fs-16)!important}
 html body :is(.btn.sm,a.btn.sm,button.btn.sm){font-size:var(--fs-14)!important}
 /* secondary: outline */
-html body :is(.btn.ghost,.btn.quiet,a.btn.ghost,button.btn.ghost){background:#fff!important;color:var(--sys-ink)!important;border:1px solid var(--sys-line)!important;box-shadow:none!important}
+html body :is(.btn.ghost,.btn.quiet,a.btn.ghost,button.btn.ghost){background:var(--pl-surface)!important;color:var(--sys-ink)!important;border:var(--pl-bw) solid var(--sys-line)!important;box-shadow:none!important}
 /* no offset "sticker" shadows on buttons anywhere */
 html body :is(.btn,.cta,.go,.pill,.sp-btn){box-shadow:none!important}
 
@@ -199,7 +208,7 @@ html body :is(.pp-stat span,.pp small,.lg small,.pli-card small){font-size:13px}
   html body :is(.pls-btn.pls-icon,.cg-send,.home-bell,.pip-mute){min-width:44px;min-height:44px}
 }
 /* the Pottery Lab wordmark is chrome: it keeps the house face on a host page that picked its own fonts */
-html body.store .top a.brand{font-family:var(--pl-font-display)!important;font-weight:400!important;letter-spacing:-.01em}
+html body.store .top a.brand{font-family:var(--pl-font-display)!important;font-weight:var(--pl-display-weight)!important;letter-spacing:-.01em}
 /* phones: the floating help button never sits over the end of a page. Pages with the tab bar already leave room */
 @media (max-width:860px){html body:has(#encoreHelp):not(.es-has-tabs):not(.is-owner){padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
 /* focus on a field: it turns ink with one soft ember ring (brand kit), never a second yellow or ink outline */
@@ -244,9 +253,9 @@ html body :is(a.btn,button.btn,.btn,.cta,.chip,button.primary):is(:hover,:active
 html body :is(.fv-potto,.pb-head>svg.potto,.cg-hi>svg.potto,.cg-box svg.potto,.cos-av.pipav){display:none!important}
 /* the wordmark: Potto's line mark and "pottery lab" in the display serif, ink, one size. It is chrome, so a host's
    kit never restyles it */
-html body :is(a.brand,a.es-brand,.es-rail .es-logo span){font-family:var(--pl-font-display)!important;font-weight:400!important;font-size:25px!important;letter-spacing:-.01em!important;line-height:1!important;color:var(--pl-ink)!important;text-decoration:none}
+html body :is(a.brand,a.es-brand,.es-rail .es-logo span){font-family:var(--pl-font-display)!important;font-weight:var(--pl-display-weight)!important;font-size:25px!important;letter-spacing:-.03em!important;line-height:1!important;color:var(--pl-ink)!important;text-decoration:none}
 html body .es-rail .es-logo span{font-size:28px!important}
-html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:24px;height:24px;flex:none;color:inherit}
+html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:28px;height:28px;flex:none;color:inherit}
 /* covers sit on the page with a hairline, not a thick ink frame and an offset shadow; notes are solid, not dashed */
 html body :is(.gxcover,.cov,.hcover){box-shadow:none!important;border-width:1px!important;border-color:var(--pl-line)!important}
 html body #gExample{border-style:solid!important;border-width:1px!important;border-color:var(--pl-line-strong)!important;background:var(--pl-sand-soft)!important}
@@ -283,3 +292,57 @@ html body #ideaLib.lib-casual .lib-head p.note{margin:4px 0 0;font-size:var(--fs
 html body #view-guest#view-guest label.chip.chip:not([hidden]):has(> input[type=checkbox]){border:0!important;background:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;display:flex!important;align-items:center!important;gap:12px!important;min-height:44px;font-weight:500;align-self:stretch!important;text-align:left}
 html body #view-guest label.chip > input[type=checkbox]{flex:none;margin:0!important;width:22px!important;height:22px!important}
 @media (max-width:860px){html body #helpSide{display:none!important}}
+
+/* ==== Field Notes: the shared frame (docs/brand-kit.md "Look"). Everything reads the tokens above, so a host's kit and a
+   later brand slot in. Pages adopt the magazine patterns through these classes; the older card classes get the frame too ==== */
+/* headlines are the display face at its weight; event and card titles are the serif; kickers are mono caps in ink blue */
+html body :where(h1,h2){font-weight:var(--pl-display-weight);letter-spacing:var(--pl-display-track)}
+html body :is(.pl-kicker,.eyebrow,.fv-kicker){font-family:var(--pl-font-mono)!important;font-weight:500!important;font-size:13px!important;letter-spacing:var(--pl-kicker-track)!important;text-transform:uppercase;color:var(--pl-accent-text)!important}
+html body :is(.pl-title,.fv-title,.ev-poster .ev-title,.ev-poster .ev-t2,.pl-card__title){font-family:var(--sys-serif)!important;font-weight:var(--pl-serif-weight)!important;font-size:22px!important;line-height:28px!important;letter-spacing:var(--pl-title-track)!important}
+mark,.pl-hl{background:var(--pl-highlight);color:var(--pl-ink);padding:0 .15em;border-radius:2px}
+/* cards: notebook paper in a 1.5px ink line, 6px corners, no shadow */
+html body :is(.pl-card,.fv-card.fv-ev,.ev.ev-poster){background:var(--pl-surface)!important;border:var(--pl-bw) solid var(--pl-ink)!important;border-radius:var(--pl-r-md)!important;box-shadow:none!important;overflow:hidden}
+html body .ev.ev-poster:hover{transform:none!important}
+html body :is(.fv-card.fv-ev .fv-media,.ev-poster .ev-art){border-bottom:var(--pl-bw) solid var(--pl-ink)!important}
+/* the event card anatomy: host on the photo, a perk strip in the tint, a place line with a heart, the serif title, meta,
+   a dashed hairline, a status chip and the date, who's in and "I'm in" */
+.pl-card__photo{position:relative;display:block;aspect-ratio:4/3;background:var(--pl-raised);border-bottom:var(--pl-bw) solid var(--pl-ink);overflow:hidden}
+.pl-card__photo img{display:block;width:100%;height:100%;object-fit:cover}
+.pl-card__host{position:absolute;left:12px;top:12px;display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:5px;background:var(--pl-surface);color:var(--pl-ink);border:var(--pl-bw) solid var(--pl-ink);font:600 14px/1.2 var(--pl-font-text)}
+.pl-card__no,.pl-frame__label{position:absolute;right:12px;top:12px;padding:4px 7px;border-radius:3px;background:var(--pl-ink);color:var(--pl-surface);font:500 12px/1.2 var(--pl-font-mono);letter-spacing:.05em;text-transform:uppercase}
+.pl-card__perk{display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--pl-sand);color:var(--pl-ink);border-bottom:var(--pl-bw) solid var(--pl-ink);font:500 14px/1.4 var(--pl-font-text)}
+.pl-card__body{padding:14px 16px 16px}
+.pl-card__place{display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 15px/22px var(--pl-font-text);color:var(--pl-ink)}
+.pl-card__title{margin:6px 0;color:var(--pl-ink)}
+.pl-card__meta{font:400 15px/22px var(--pl-font-text);color:var(--pl-soft)}
+.pl-card__rule,.pl-rule-dashed{border:0;border-top:var(--pl-rule-dashed);margin:12px 0}
+.pl-card__foot{display:flex;align-items:center;gap:10px;font:500 15px/22px var(--pl-font-text);color:var(--pl-ink)}
+.pl-card__foot>.btn:last-child,.pl-card__foot>.pl-btn:last-child{margin-left:auto}
+.pl-card__proof{display:flex;align-items:center;gap:8px;margin-top:12px;font:400 14px/20px var(--pl-font-text);color:var(--pl-soft)}
+/* status chips: mono caps on the tint, a dot for spots and the waitlist */
+.pl-chip{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 13px/1 var(--pl-font-mono);letter-spacing:.03em;text-transform:uppercase}
+.pl-chip i{width:8px;height:8px;border-radius:50%;background:var(--pl-moss);display:block}.pl-chip.is-few i{background:var(--pl-accent)}.pl-chip.is-live i{background:var(--pl-tomato)}
+.pl-chip.is-wait{background:color-mix(in srgb,var(--pl-ink) 7%,var(--pl-surface))}.pl-chip.is-wait i{background:var(--pl-ink)}
+/* covers sit in an ink frame, with an optional mono label in the corner ("No. 48 · Supper club") */
+.pl-frame{position:relative;border:var(--pl-bw) solid var(--pl-frame);border-radius:4px;overflow:hidden}
+/* the weekly edition: a masthead over an ink rule, section heads with a "See all", a pull quote, dashed rulings between rows */
+.pl-masthead{border-top:var(--pl-rule);padding-top:12px;font:500 13px/1.3 var(--pl-font-mono);letter-spacing:var(--pl-kicker-track);text-transform:uppercase;color:var(--pl-accent-text)}
+.pl-sec{border-top:var(--pl-rule);padding-top:12px;margin-top:24px}
+.pl-sec__head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.pl-sec__head h2{margin:6px 0 0;font:var(--pl-display-weight) 28px/1.15 var(--pl-font-display);letter-spacing:var(--pl-display-track)}
+.pl-sec__more{font:600 15px var(--pl-font-text);color:var(--pl-accent-text);text-decoration:none}
+.pl-quote{margin:24px 0;padding:16px 0;border-top:var(--pl-rule-dashed);border-bottom:var(--pl-rule-dashed);font:var(--pl-serif-weight) 22px/30px var(--pl-font-serif);color:var(--pl-ink)}
+.pl-quote cite{display:block;margin-top:8px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:var(--pl-kicker-track);text-transform:uppercase;color:var(--pl-soft)}
+.pl-rows>*+*{border-top:var(--pl-rule-dashed)}
+/* the quiet search row: "Anywhere · Any night" in an ink-lined field, a filter square beside it */
+.pl-search{display:flex;gap:10px}
+.pl-search__field{flex:1;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-sm);background:var(--pl-surface);color:var(--pl-ink);font:500 16px var(--pl-font-text);text-decoration:none}
+.pl-search__field span{color:var(--pl-soft);font-weight:400}
+.pl-search__filter{display:grid;place-items:center;width:48px;height:48px;border:var(--pl-bw) solid var(--pl-ink);border-radius:var(--pl-r-sm);background:var(--pl-surface);color:var(--pl-ink)}
+/* nav links never wrap in the wider face */
+html body .top nav :is(a,button){white-space:nowrap}
+@media (max-width:420px){html body .top{gap:10px}html body .top nav{gap:12px}html body .top nav :is(.btn,.cta){padding-left:12px!important;padding-right:12px!important}}
+/* the tab bar: notebook paper, an ink "+" in a round button for starting something */
+html body .es-tabs{background:var(--pl-surface)!important;border-top:1px solid var(--pl-line)!important;box-shadow:none!important}
+html body .es-tabs a:is([href^="/signup?mode=friends"],[href="/?app=1"],[href^="/?app=1&new=1"])>svg,.pl-tab-plus{width:46px!important;height:46px!important;padding:11px;margin-top:-8px;box-sizing:border-box;border-radius:50%;background:var(--pl-ink);color:var(--pl-surface);stroke:var(--pl-surface)}
+html body .es-tabs a:is([href^="/signup?mode=friends"],[href="/?app=1"],[href^="/?app=1&new=1"])>svg rect{display:none}

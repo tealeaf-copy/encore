@@ -47,8 +47,8 @@
     return `<span class="ch-thumb">${esc(initials(c.title))}</span>`; }
   // own bubbles: the host's accent when white text reads on it (4.5:1), else ember
   function accentFor(hex) { const kit = getComputedStyle(document.documentElement).getPropertyValue("--kit-accent").trim(); const a = /^#[0-9a-f]{6}$/i.test(kit) ? kit : hex;
-    if (!/^#[0-9a-f]{6}$/i.test(a || "")) return "#9A4128"; const L = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-    return 1.05 / (L(a) + 0.05) >= 4.5 ? a : "#9A4128"; }
+    if (!/^#[0-9a-f]{6}$/i.test(a || "")) return "#29489A"; const L = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    return 1.05 / (L(a) + 0.05) >= 4.5 ? a : "#29489A"; }
 
   // ---- routing: /chats and /chats/<event> ----
   const route = { id: (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || "" };

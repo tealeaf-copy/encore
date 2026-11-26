@@ -50,7 +50,7 @@ try { splash = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, "icons", "splash
 const SPLASH_LINKS = splash.map((s) => `<link rel="apple-touch-startup-image" media="(device-width: ${s.dw}px) and (device-height: ${s.dh}px) and (-webkit-device-pixel-ratio: ${s.r}) and (orientation: portrait)" href="${s.src}">`).join("");
 const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test(location.pathname))addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))</script>`;
 // The light invite (/e/, /i/) has a 40,000-character budget: it gets only the essentials.
-const LIGHT = `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#F4F0E8"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
+const LIGHT = `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
 const FULL = LIGHT + `<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Pottery Lab"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">` + SPLASH_LINKS + SW_REG;
 // Report and block (public/safety.js) where people's posts, photos, kudos and host pages show
 const SAFETY_PAGES = /^\/($|feed|@|h\/|x\/|discover|photos|kudos|leaderboard|settings|community|g$)/;

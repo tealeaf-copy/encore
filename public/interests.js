@@ -21,7 +21,7 @@
 
   const CSS = `.pin-bg{position:fixed;inset:0;z-index:8000;background:rgba(31,26,23,.45);display:grid;place-items:center;padding:12px;animation:pinFade .25s ease}
 @keyframes pinFade{from{opacity:0}}
-.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:26px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;
+.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:26px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;
   background-image:radial-gradient(rgba(102,90,81,.08) 1px,transparent 1.2px);background-size:7px 7px;animation:pinUp .4s cubic-bezier(.3,1.4,.5,1)}
 @keyframes pinUp{from{transform:translateY(30px) rotate(-1deg);opacity:0}}
 .pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:var(--pl-accent)}
@@ -32,23 +32,23 @@
 .pin-chip{--r:0deg;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:6px 16px 6px 12px;border:2.5px solid var(--pl-ink);border-radius:999px;background:#fff;font:600 16px var(--sys-title);color:var(--pl-ink);cursor:pointer;transform:rotate(var(--r));box-shadow:2px 3px 0 var(--pl-ink);transition:transform .2s cubic-bezier(.3,1.7,.5,1),background .15s}
 .pin-chip span{font-size:22px;line-height:1}.pin-chip:hover{transform:rotate(0) scale(1.04)}
 .pin-chip[aria-pressed=true]{background:var(--c,var(--pl-sand));transform:rotate(calc(var(--r) * -1)) scale(1.06);box-shadow:3px 4px 0 var(--pl-ink)}
-.pin-chip[aria-pressed=true]::after{content:"✓";margin-left:2px;font:700 14px "Instrument Sans",system-ui}
+.pin-chip[aria-pressed=true]::after{content:"✓";margin-left:2px;font:700 14px "IBM Plex Sans",system-ui}
 .pin-chip:focus-visible,.pin button:focus-visible,.pin input:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
 .pin-city{display:grid;gap:6px;margin:0 0 16px}.pin-city label{font:600 16px var(--sys-title)}
 .pin-city input{min-height:48px;border:2px solid var(--pl-ink);border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
-.pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
+.pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
 .pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,var(--pl-page) 30%);padding:14px 0 4px;margin-top:4px}
-.pin-main{min-height:52px;padding:0 24px;border:2.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 var(--pl-ink)}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
-.pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer;min-height:44px}
-.pin-n{font:600 14px "Instrument Sans",system-ui;color:var(--pl-soft)}
+.pin-main{min-height:52px;padding:0 24px;border:2.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 17px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 var(--pl-ink)}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
+.pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "IBM Plex Sans",system-ui;cursor:pointer;min-height:44px}
+.pin-n{font:600 14px "IBM Plex Sans",system-ui;color:var(--pl-soft)}
 .pin h3{font:600 20px var(--pl-font-text);margin:18px 0 8px}
 .pin-hosts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:12px}
 .pin-host{position:relative;background:#fff;border:2px solid var(--pl-ink);border-radius:18px;padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 var(--pl-ink);transform:rotate(var(--r,0deg))}
 .pin-host .av{width:54px;height:54px;border-radius:50%;border:2px solid var(--pl-ink);display:grid;place-items:center;font-size:26px;background:var(--pl-sand-soft);overflow:hidden}.pin-host .av img{width:100%;height:100%;object-fit:cover}
 .pin-host b{font:600 16px/1.15 var(--sys-title)}.pin-host small{color:var(--pl-soft);font-size:13px;line-height:1.3}
-.pin-host .why{display:inline-block;background:var(--pl-sand);border-radius:6px;padding:1px 7px;font:600 12px "Instrument Sans",system-ui;color:var(--pl-ink);justify-self:start}
-.pin-host .ex{position:absolute;top:8px;right:8px;border:1.5px solid var(--pl-ink);border-radius:999px;padding:1px 8px;font:700 11px "Instrument Sans",system-ui;background:#fff}
-.pin-fol{min-height:40px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px "Instrument Sans",system-ui;cursor:pointer;margin-top:4px}.pin-fol[aria-pressed=true]{background:#fff;color:var(--pl-ink)}
+.pin-host .why{display:inline-block;background:var(--pl-sand);border-radius:6px;padding:1px 7px;font:600 12px "IBM Plex Sans",system-ui;color:var(--pl-ink);justify-self:start}
+.pin-host .ex{position:absolute;top:8px;right:8px;border:1.5px solid var(--pl-ink);border-radius:999px;padding:1px 8px;font:700 11px "IBM Plex Sans",system-ui;background:#fff}
+.pin-fol{min-height:40px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px "IBM Plex Sans",system-ui;cursor:pointer;margin-top:4px}.pin-fol[aria-pressed=true]{background:#fff;color:var(--pl-ink)}
 .pin-host form{display:grid;gap:6px}.pin-host form input{min-height:40px;border:1.5px solid var(--pl-line-strong);border-radius:10px;padding:6px 10px;font:inherit;font-size:16px}
 .pin-evs{display:grid;gap:10px}
 .pin-ev{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--pl-ink);border-radius:16px;padding:8px;text-decoration:none;color:var(--pl-ink);box-shadow:2px 2px 0 var(--pl-ink)}
@@ -62,7 +62,7 @@
 .pin{border:1.5px solid var(--pl-frame);box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
 .pin .pin-x{border:1.5px solid var(--pl-line-strong);box-shadow:none;display:grid;place-items:center;padding:0 0 2px;color:var(--pl-soft)}
 .pin-chips{gap:8px}
-.pin-chip{transform:none;box-shadow:none;border:1.5px solid var(--pl-line-strong);font:600 15px "Instrument Sans",system-ui,sans-serif;min-height:44px;padding:4px 14px 4px 10px;gap:8px}
+.pin-chip{transform:none;box-shadow:none;border:1.5px solid var(--pl-line-strong);font:600 15px "IBM Plex Sans",system-ui,sans-serif;min-height:44px;padding:4px 14px 4px 10px;gap:8px}
 .pin-chip span{font-size:20px}.pin-chip:hover{transform:none;border-color:var(--pl-frame)}
 .pin-chip[aria-pressed=true]{transform:none;box-shadow:inset 0 0 0 1px var(--pl-frame);border-color:var(--pl-frame)}
 .pin-main{border:0;box-shadow:none}
@@ -76,7 +76,7 @@
 @media (max-width:520px){.pin{border-width:1.5px 0 0}.pin-go{margin:8px -16px 0;padding-left:16px;padding-right:16px;bottom:-16px}.pin-chip{min-height:44px;font-size:15px}}
 @media (prefers-reduced-motion:reduce){.pin,.pin-bg,.pin-chip{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("pinCss")) return; const s = document.createElement("style"); s.id = "pinCss"; s.textContent = CSS; document.head.appendChild(s); };
-  const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#E3D7BE" };
+  const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#F3E7A8" };
 
   // ---------- cards (also for the feed) ----------
   function hostCard(h, i = 0) { const r = ((i * 37) % 5 - 2) * 0.6, av = safeImg(h.avatar);
@@ -120,7 +120,7 @@
     const potto = window.Potto ? `<span class="pin-potto" aria-hidden="true">${window.Potto.svg("cheer", 86, "")}</span>` : "";
     const step1 = () => { box.innerHTML = `${potto}<button class="pin-x" type="button" aria-label="Close">×</button>
       <h2 id="pinH">What are you <em>into?</em></h2><p class="pin-sub">${opts.after === "signup" ? "Pick a few. We'll find hosts to follow and things to do." : "Pick a few. We'll show you hosts and events near you. No account needed."}</p>
-      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#E3D7BE"}">${esc(i.label)}</button>`).join("")}</div>
+      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#F3E7A8"}">${esc(i.label)}</button>`).join("")}</div>
       <div class="pin-city"><label for="pinCity">Your city</label><input id="pinCity" autocomplete="address-level2" placeholder="e.g. Brooklyn" value="${esc(city)}" maxlength="60">
         ${cities.length ? `<div class="pin-cities" role="group" aria-label="Cities with events">${cities.map((c) => `<button type="button" data-c="${esc(c)}" aria-pressed="${c.toLowerCase() === city.toLowerCase()}">${esc(c)}</button>`).join("")}</div>` : ""}</div>
       <div class="pin-go"><button class="pin-main" type="button" id="pinGo">Show me</button><button class="pin-skip" type="button" id="pinSkip">Not now</button><span class="pin-n" id="pinN" aria-live="polite"></span></div>`;

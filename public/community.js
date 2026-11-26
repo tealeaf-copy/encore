@@ -34,8 +34,8 @@
   // then the date as the headline, the faces of who's going, and one quiet line.
   const KW = [["taco","🌮"],["dumpling","🥟"],["pizza","🍕"],["sushi","🍣"],["omakase","🍣"],["ramen","🍜"],["brunch","🥞"],["bbq","🍖"],["wine","🍷"],["cocktail","🍸"],["coffee","☕"],["pour-over","☕"],["café","☕"],["hike","🥾"],["run","🏃"],["5k","🏃"],["bike","🚲"],["picnic","🧺"],["board game","🎲"],["game","🎲"],["movie","🎬"],["film","🎬"],["karaoke","🎤"],["book","📚"],["yoga","🧘"],["swim","🏊"],["beach","🏖️"],["cake","🍰"],["bake","🧁"],["cook","🍳"],["dinner","🍽️"],["supper","🍽️"]];
   const titleEmoji = (e) => { const t = `${e.title || ""} ${e.activity || ""}`.toLowerCase(); return (KW.find(([k]) => t.includes(k)) || [])[1] || ""; };
-  const THEME_BG = { picnic: "#FFCAD6", disco: "#DCCBFF", sunny: "#E3D7BE", ocean: "#C4DEFF", linen: "#FFE3B8", candlelight: "#FFD9B0", gallery: "#E3F1DD", midnight: "#DCCBFF", sticker: "#E3D7BE" };
-  const LANE_BG = { move: "#C4DEFF", make: "#FFCAD6", gather: "#E3D7BE", discover: "#DCCBFF" };
+  const THEME_BG = { picnic: "#FFCAD6", disco: "#DCCBFF", sunny: "#F3E7A8", ocean: "#C4DEFF", linen: "#FFE3B8", candlelight: "#FFD9B0", gallery: "#E3F1DD", midnight: "#DCCBFF", sticker: "#F3E7A8" };
+  const LANE_BG = { move: "#C4DEFF", make: "#FFCAD6", gather: "#F3E7A8", discover: "#DCCBFF" };
   // opts.compact: a shorter card for long lists (Discover): a low art band, the date and who's going on one line.
   function eventCard(e, why, opts) {
     const compact = !!(opts && opts.compact);
@@ -47,12 +47,12 @@
     const epN = Number.isInteger(e.episode) && e.episode > 0 ? `<span class="ev-ep" style="font:500 .9em var(--sys-mono,ui-monospace,monospace);margin-left:6px;opacity:.8">#${e.episode}</span>` : ""; // review round 13: the episode in its series
     const drawn = !e.coverPhoto && window.EventArt, art = e.coverPhoto ? `<img class="ev-photo" src="${esc(e.coverPhoto)}" alt="">` : drawn ? window.EventArt.cover(e) : `<span class="ev-em" aria-hidden="true">${esc(em)}</span>`;
     const going = Math.max(0, +e.going || +e.goingCount || 0), faces = (e.faces || []).slice(0, 3);
-    const stack = `<span class="ev-faces"><span class="ev-face host" style="--c:${esc(H.color || "#E26D8E")}">${hostAv}</span>${faces.map((f) => `<span class="ev-face" style="--c:${esc(f.color || "#E3D7BE")}">${f.art ? sketch(f.art, f.color, 40) : esc(f.emoji || "🙂")}</span>`).join("")}${going > faces.length ? `<span class="ev-face more">+${going - faces.length}</span>` : ""}</span>`;
+    const stack = `<span class="ev-faces"><span class="ev-face host" style="--c:${esc(H.color || "#E26D8E")}">${hostAv}</span>${faces.map((f) => `<span class="ev-face" style="--c:${esc(f.color || "#F3E7A8")}">${f.art ? sketch(f.art, f.color, 40) : esc(f.emoji || "🙂")}</span>`).join("")}${going > faces.length ? `<span class="ev-face more">+${going - faces.length}</span>` : ""}</span>`;
     const quiet = [e.sample ? "Example" : "", e.city, free ? (e.costNote || "Free") /* review round 7: "About $40 food cost", not "Free" */ : e.price === "chip" ? "Chip in" : e.price, e.approvalRequired ? "Ask to join" : ""].filter(Boolean).map(esc).join(" · "); const crowdLine = e.crowd ? `<small class="ev-crowd" style="display:block;font-weight:600;color:var(--pl-soft);margin-top:2px">${esc(e.crowd.charAt(0).toUpperCase() + e.crowd.slice(1))}</small>` : "";
-    if (compact) return `<a class="ev ev-poster ev-compact" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#E3D7BE"}">
+    if (compact) return `<a class="ev ev-poster ev-compact" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#F3E7A8"}">
       <span class="ev-art${e.coverPhoto ? " has-photo" : drawn ? " has-photo ea-card" : ""}">${art}${e.coverPhoto || drawn ? "" : `<b class="ev-title">${esc(e.title)}</b>`}${H.name ? `<span class="ev-by"><span class="ev-by-av">${hostAv}</span>${esc(H.name)}</span>` : ""}${e.sample ? `<span class="ev-sample" style="position:absolute;top:8px;left:8px;z-index:2;background:#fff;color:var(--pl-ink);border:1.5px solid var(--pl-ink);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700">Example</span>` : ""}</span>
       <span class="ev-b"><span class="ev-hl"><b class="ev-when">${esc(when)}${epN}</b>${stack}</span>${e.coverPhoto ? `<span class="ev-t2">${esc(e.title)}</span>` : ""}<small class="ev-q">${quiet.replace(/^Example( · )?/, "")}</small>${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;
-    return `<a class="ev ev-poster" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#E3D7BE"}">
+    return `<a class="ev ev-poster" href="/g#rsvp-${encodeURIComponent(e.id)}" style="--bg:${THEME_BG[e.theme] || LANE_BG[laneOf(e)] || "#F3E7A8"}">
       <span class="ev-art${e.coverPhoto ? " has-photo" : drawn ? " has-photo ea-card" : ""}">${art}${e.coverPhoto || drawn ? "" : `<b class="ev-title">${esc(e.title)}</b>`}${H.name ? `<span class="ev-by"><span class="ev-by-av">${hostAv}</span>${esc(H.name)}</span>` : ""}</span>
       <span class="ev-b"><b class="ev-when">${esc(when)}${epN}</b>${e.coverPhoto ? `<span class="ev-t2">${esc(e.title)}</span>` : ""}${stack}${crowdLine}<small class="ev-q">${quiet}</small>${why ? `<small class="why">${esc(why)}</small>` : ""}</span></a>`;
   }

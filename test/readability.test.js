@@ -1,4 +1,4 @@
-// Readability guardrails that hold for any brand: the display face (--pl-font-display, --sys-display, --sys-accent or
+// Readability guardrails that hold for any brand: the display face (in public/ and the app's index.html) (--pl-font-display, --sys-display, --sys-accent or
 // Instrument Serif by name) is never set at a size under 24px in any stylesheet or inline style block. The wordmark is
 // the one exception: system.css draws it at 25px whatever the page asks for.
 import { test } from "node:test";
@@ -9,7 +9,8 @@ import { fileURLToPath } from "node:url";
 
 const PUB = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 const files = []; (function walk(d) { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) { if (!["og", "vendor", "fonts", "img", "icons"].includes(f)) walk(p); } else if (/\.(css|html|js)$/.test(f)) files.push(p); } })(PUB);
-const DISP = /(var\(--(pl-font-display|sys-display|sys-accent)\)|["']?Instrument Serif["']?)/;
+files.push(path.join(PUB, "..", "index.html")); // the app itself
+const DISP = /(var\(--(pl-font-display|sys-display|sys-accent)[,)]|["']?Instrument Serif["']?)/;
 // a size in px: 20px, var(--fs-20), clamp(22px, ...), 1.25rem
 const px = (v) => { v = v.trim(); let m; if ((m = v.match(/^(\d+(?:\.\d+)?)px/))) return +m[1]; if ((m = v.match(/^var\(--fs-(\d+)/))) return +m[1]; if ((m = v.match(/^clamp\(\s*(\d+(?:\.\d+)?)px/))) return +m[1]; if ((m = v.match(/^(\d+(?:\.\d+)?)r?em/))) return m[1] * 16; return null; };
 
@@ -30,12 +31,12 @@ test("the display serif is never used under 24px in any stylesheet", () => {
 
 test("the wordmark is the one small display use, and system.css pins it to 25px", () => {
   const css = fs.readFileSync(path.join(PUB, "system.css"), "utf8");
-  assert.match(css, /:is\(a\.brand,a\.es-brand,\.es-rail \.es-logo span\)\{font-family:var\(--pl-font-display\)!important;font-weight:400!important;font-size:25px!important/);
+  assert.match(css, /:is\(a\.brand,a\.es-brand,\.es-rail \.es-logo span\)\{font-family:var\(--pl-font-display\)!important;font-weight:var\(--pl-display-weight\)!important;font-size:25px!important/);
 });
 
-test("feed cards: the title is the text face at 600 and 20px, date and place on their own lines in strong ink", () => {
+test("feed cards: the title is the serif at 600, 22/28, date and place on their own lines in strong ink", () => {
   const fv = fs.readFileSync(path.join(PUB, "feedvisual.js"), "utf8");
-  assert.match(fv, /\.fv-title\{margin:10px 0 4px;font:600 20px\/1\.2 var\(--pl-font-text\);color:var\(--fv-ink\)/);
+  assert.match(fv, /\.fv-title\{margin:10px 0 4px;font:600 22px\/28px var\(--pl-font-serif\);color:var\(--fv-ink\)/);
   assert.match(fv, /\.fv-data span\{display:block\}\.fv-data\{margin:0;font:500 15px\/1\.45 var\(--pl-font-text\);color:var\(--fv-ink\)/);
   assert.match(fv, /<p class="fv-data">\$\{\[when\(e\), where\(e\)\]\.filter\(Boolean\)\.map\(\(x\) => `<span>\$\{esc\(x\)\}<\/span>`\)\.join\(""\)\}<\/p>/);
 });

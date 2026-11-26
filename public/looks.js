@@ -192,7 +192,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
 /* a dark look: one palette from the look's own tokens. The cover sits in the page's deep tone with the drawing in light
    lines, cards are the raised surface, fields the field tone, secondary buttons outlined. Nothing white, no offset shadows */
 /* the drawing's one spot of colour is the look's accent (docs/brand-kit.md: a drawing never brings a hue of its own) */
-.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn) .ea-art svg :is([fill="#A9864A"],[fill="#A4533A"],[fill="#56707E"],[fill="#677A5E"],[fill="#76687F"],[fill="#AD6743"],[fill="#9A4128"]){fill:var(--lk-spot)}
+.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn) .ea-art svg :is([fill="#29489A"],[fill="#C2431F"],[fill="#56683F"]){fill:var(--lk-spot)}
 .lk-dark :is(.cov,.gxcover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 .lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
 .lk-dark :is(.cov,.gxcover,.em-drawn) .ea-art svg [stroke="#2A2622"],.lk-dark .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover) .ea-art svg [fill="#2A2622"],.lk-dark .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}

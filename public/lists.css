@@ -34,7 +34,7 @@ html body .ls-chip[aria-pressed=true],html body .ls-chip[aria-current]{backgroun
 .ls-body{flex:1;display:flex;flex-direction:column;gap:4px;padding:14px 16px 16px;min-width:0}
 .ls-meta{margin:0;font-size:13px;color:var(--smoke,#665A51);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ls-meta b{color:var(--ink,#1F1A17);font-weight:600}
 .ls-when{font:500 13px var(--sys-mono,ui-monospace,monospace);letter-spacing:-.01em;color:var(--ink,#1F1A17);margin:0}
-.ls-title{margin:0;font:600 18px/1.25 var(--sys-display,Fredoka,system-ui);color:var(--ink,#1F1A17);text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ls-title{margin:0;font:600 20px/1.3 var(--sys-serif,Georgia,serif);color:var(--ink,#1F1A17);text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 a.ls-title::after{content:"";position:absolute;inset:0;border-radius:inherit}a.ls-title:focus-visible{outline:none}.ls-card:has(a.ls-title:focus-visible){outline:3px solid var(--ink,#1F1A17);outline-offset:3px}
 .ls-sub{margin:0;font-size:14px;color:var(--smoke,#665A51);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .ls-quote{margin:8px 0 0;padding:0 0 0 12px;border-left:2px solid var(--butter,#F2D48F);font-size:14px;line-height:1.45}.ls-quote p{margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ls-quote cite{display:block;margin-top:2px;font-style:normal;font-size:13px;color:var(--smoke,#665A51)}
@@ -44,10 +44,10 @@ a.ls-title::after{content:"";position:absolute;inset:0;border-radius:inherit}a.l
 .ls-btn.primary{background:var(--sys-ember,#C94A30);border-color:var(--sys-ember,#C94A30);color:#fff}.ls-btn.primary:hover{background:var(--sys-ember-press,#B04A30);border-color:var(--sys-ember-press,#B04A30)}
 /* empty and end states: say what happened and offer one next step */
 .ls-empty{grid-column:1/-1;display:grid;justify-items:center;gap:8px;text-align:center;padding:40px 16px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;color:var(--smoke,#665A51)}
-.ls-empty b{font:600 20px/1.25 var(--sys-display,Fredoka,system-ui);color:var(--ink,#1F1A17)}.ls-empty p{margin:0;max-width:420px}.ls-empty .ls-btn{margin-top:8px}
+.ls-empty b{font:600 20px/1.25 var(--sys-title,system-ui);color:var(--ink,#1F1A17)}.ls-empty p{margin:0;max-width:420px}.ls-empty .ls-btn{margin-top:8px}
 .ls-end{display:grid;justify-items:center;gap:6px;text-align:center;margin:48px auto 0;padding-top:24px;border-top:1.5px solid var(--line,#E4D9C8);max-width:560px;color:var(--smoke,#665A51)}
-.ls-end b{font:600 20px var(--sys-display,Fredoka,system-ui);color:var(--ink,#1F1A17)}.ls-end .ls-btn{margin-top:10px}
-.ls-sec{margin:32px 0 0}.ls-sec h2{font:600 var(--fs-20-28,20px)/1.2 var(--sys-display,Fredoka,system-ui);margin:0}.ls-sec>.ls-what{margin:4px 0 16px;font-size:14px}
+.ls-end b{font:600 20px var(--sys-title,system-ui);color:var(--ink,#1F1A17)}.ls-end .ls-btn{margin-top:10px}
+.ls-sec{margin:32px 0 0}.ls-sec h2{font:600 var(--fs-20-28,20px)/1.2 var(--sys-title,system-ui);margin:0}.ls-sec>.ls-what{margin:4px 0 16px;font-size:14px}
 [hidden]{display:none!important}
 @media (max-width:860px){.ls-chip{min-height:44px}.ls-wrap{padding:16px 16px 120px}}
 /* More: secondary actions behind one quiet round button (the feed's pattern). A <details class="ls-more"> */

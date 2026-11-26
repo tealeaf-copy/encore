@@ -33,10 +33,10 @@ test("the curated set: 6 to 8 pairings, each a display face and a body face, and
   assert.ok(P.length >= 6 && P.length <= 8, "6 to 8 pairings"); assert.ok(S.length >= 6 && S.length <= 8, "6 to 8 starters");
   for (const [k, p] of P) { assert.ok(p.display && p.body && p.display !== p.body, k + ": two different faces"); assert.match(p.q, /^[A-Za-z0-9+:;@.&=,]+$/, k + ": a Google Fonts query"); }
   for (const need of ["house", "terminal", "arcade", "pantry"]) assert.ok(PAIRS[need], need + " pairing");
-  assert.equal(PAIRS.house.display, "Instrument Serif"); assert.equal(PAIRS.house.body, "Instrument Sans", "the house pair is the current brand");
+  assert.equal(PAIRS.house.display, "IBM Plex Serif"); assert.equal(PAIRS.house.body, "IBM Plex Sans", "the house pair is the current brand (Field Notes)");
   assert.match(PAIRS.terminal.display, /Mono/, "a mono accent for the Terminal crowd"); assert.match(PAIRS.pantry.display, /Slab/, "a slab pair"); assert.equal(PAIRS.arcade.display, "Silkscreen", "a pixel pair");
   for (const [k, s] of S) assert.ok(PAIRS[s.pair] && s.label && s.vibe, k + ": a pairing, a name and a vibe");
-  assert.equal(STARTERS.house.page, "#F4F0E8"); assert.equal(STARTERS.house.accent, "#9A4128", "the house kit is Bone and Clay");
+  assert.equal(STARTERS.house.page, "#EFEBE2"); assert.equal(STARTERS.house.accent, "#29489A", "the house kit is Field Notes");
 });
 
 test("cleaning: unknown keys dropped, values whitelisted, hex normalised, the logo from the blob store, the voice line plain", () => {
@@ -44,7 +44,7 @@ test("cleaning: unknown keys dropped, values whitelisted, hex normalised, the lo
     logo: "https://evil.example/x.png", voice: "Twelve seats — seven courses <b>and</b>\ncake " + "x".repeat(120), evil: "<script>", style: "x" }, null));
   assert.deepEqual(Object.keys(k).sort(), ["accent", "accent2", "at", "corners", "cover", "buttons", "ink", "logo", "page", "pair", "starter", "surface", "v", "voice"].sort());
   assert.equal(k.pair, "house", "an unknown pairing falls back"); assert.equal(k.page, "#FBF6EF"); assert.equal(k.accent, "#E0A030"); assert.equal(k.surface, STARTERS.house.surface, "a bad colour falls back");
-  assert.equal(k.corners, "soft"); assert.equal(k.buttons, "pill"); assert.equal(k.cover, "lineart"); assert.equal(k.logo, "", "only /_blob/ logos");
+  assert.equal(k.corners, "crisp", "the house corners: Field Notes is small and even"); assert.equal(k.buttons, "pill"); assert.equal(k.cover, "lineart"); assert.equal(k.logo, "", "only /_blob/ logos");
   assert.ok(k.voice.length <= 80 && !/[<>\n—]/.test(k.voice) && k.voice.startsWith("Twelve seats, seven courses"), "no markup, newlines or em dashes");
   assert.equal(cleanVoice("Saturdays — cake – coffee"), "Saturdays, cake, coffee");
   assert.equal(plain(cleanKit({ logo: "/_blob/AbCdEfGhIjKlMnOpQrSt" }, null)).logo, "/_blob/AbCdEfGhIjKlMnOpQrSt");
@@ -71,7 +71,7 @@ test("the browser and the server agree: same pairings, starters and variables", 
   assert.deepEqual(Object.keys(K.PAIRS), Object.keys(PAIRS)); assert.deepEqual(plain(K.STARTERS), plain(STARTERS));
   const v = plain(K.vars(STARTERS.supper)); for (const n of ["--kit-display", "--kit-body", "--kit-page", "--kit-surface", "--kit-ink", "--kit-accent", "--kit-btn", "--kit-on-btn", "--kit-r-card", "--kit-r-btn"]) assert.ok(v[n], n);
   assert.match(v["--kit-display"], /Playfair Display/); assert.match(v["--kit-body"], /Lato/);
-  assert.equal(plain(K.vars({ ...STARTERS.supper, corners: "crisp" }))["--kit-r-btn"], "8px"); assert.equal(plain(K.vars(STARTERS.house))["--kit-r-btn"], "12px");
+  assert.equal(plain(K.vars({ ...STARTERS.supper, corners: "crisp" }))["--kit-r-btn"], "8px"); assert.equal(plain(K.vars(STARTERS.house))["--kit-r-btn"], "8px");
 });
 
 test("event looks inherit the kit: fonts from the kit unless the event overrides; no look draws from the kit; older looks keep theirs", () => {
@@ -126,7 +126,7 @@ test("two families at most: every element in the body face, display and titles i
   // small headings read in the body face at 600, never the display face
   assert.match(css, /html\.kit-on body :where\(h3\)[^{]*\{font-family:var\(--kit-body\)!important;font-weight:600!important/, "h3 in the body face");
   // the only families a kit page names are the kit's own two
-  const fams = new Set([...css.matchAll(/font(?:-family)?:[^;}]*/g)].map((m) => m[0]).filter((d) => !/var\(--kit-/.test(d) && /"[A-Z]/.test(d) && !/Instrument Sans|Fredoka/.test(d)));
+  const fams = new Set([...css.matchAll(/font(?:-family)?:[^;}]*/g)].map((m) => m[0]).filter((d) => !/var\(--kit-/.test(d) && /"[A-Z]/.test(d) && !/IBM Plex Sans|Fredoka/.test(d)));
   assert.deepEqual([...fams], [], "no third family hard-coded for kit pages");
   // the Next up card: menu and price in the body face, chips calm, the Example only badge in the token style
   for (const [sel, want] of [[".nu-menu li", /var\(--kit-body\)/], [".nu-price", /var\(--kit-body\)/], [".nu-meta span", /var\(--kit-body\)/], [".ex-off", /var\(--kit-r-btn\)/]]) {
@@ -220,7 +220,14 @@ test("reading guardrails: body text at 16px or more, the body face never a scrip
     const v = BK.vars({ ...BK.starter(k) }); assert.equal(v["--kit-body-min"], "16px"); assert.equal(v["--kit-display-min"], P.thin ? "24px" : "20px", k); }
   for (const f of ["Dancing Script", "Pacifico Script", "Raleway Thin", "Silkscreen", "IBM Plex Mono", "Archivo Black"]) assert.ok(!BK.bodyOk({ body: f }), `${f} is never body text`);
   // a script, thin or display-only body is refused on save: the kit keeps its pairing
-  assert.equal(BK.PAIRS.house.thin, true); assert.equal(BK.PAIRS.florist.thin, true);
+  assert.equal(BK.PAIRS.florist.thin, true, "a thin display face is marked");
   // every starter kit: text, quiet text, button label and accent text at AA; the button edge at 3:1
   for (const k of Object.keys(BK.STARTERS)) for (const c of BK.checks(BK.starter(k))) assert.ok(c.ok, `${k} ${c.label} ${c.ratio}`);
 });
+
+test("pages stay light: a kit can't make a dark page or dark cards, on the server too", () => {
+  for (const page of ["#111111", "#1B1D1C", "#3B1519", "#0F2230", "#26304A"]) { const k = plain(cleanKit({ pair: "house", page, surface: "#222222", ink: "#FFFFFF", accent: "#F2C46D" }, null));
+    assert.ok(BK.derive(k).page && lum(k.page) >= 0.6, `page ${page} is stored light (${k.page})`); assert.ok(lum(k.surface) >= 0.6, `cards light (${k.surface})`);
+    for (const c of BK.checks(k)) assert.ok(c.ok, `${page}: ${c.label} ${c.ratio}`); }
+});
+const lum = (h) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };

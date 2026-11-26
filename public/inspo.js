@@ -15,7 +15,8 @@
   const FONT_CSS = { clean: "'Inter','Instrument Sans',system-ui,sans-serif", bold: "'Archivo Black','Arial Black',system-ui,sans-serif", serif: "'DM Serif Display',Georgia,serif", script: "'Dancing Script','Brush Script MT',cursive", typewriter: "'Courier Prime','Courier New',monospace", rounded: "'Baloo 2',Fredoka,system-ui,sans-serif" };
   const TAPE = ["rgba(242,212,143,.92)", "rgba(251,211,203,.9)", "rgba(205,235,213,.9)", "rgba(226,214,247,.9)"];
 
-  const CSS = `.pli{position:relative;break-inside:avoid;margin:0 0 18px;display:block;color:#1F1A17;font:15px/1.4 "Instrument Sans",system-ui,sans-serif;transform:rotate(var(--tilt,0deg));transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+  const CSS = `.fv-inspo .pli{flex:0 0 min(78vw,260px)!important;width:min(78vw,260px)!important;margin:0 !important}.fv-inspo .pli-vibe{display:none!important}
+.pli{position:relative;break-inside:avoid;margin:0 0 18px;display:block;color:#1F1A17;font:15px/1.4 "Instrument Sans",system-ui,sans-serif;transform:rotate(var(--tilt,0deg));transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
 @media (hover:hover){.pli:hover{transform:rotate(0deg) translateY(-3px)}}
 .pli-card{background:#FFFDF8;border:2px solid #1F1A17;border-radius:20px;overflow:visible;box-shadow:3px 3px 0 #1F1A17}
 .pli-media{position:relative;margin:10px 10px 0;border-radius:12px;overflow:hidden;background:#EFE6D8;border:1.5px solid #1F1A17}

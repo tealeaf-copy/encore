@@ -70,7 +70,7 @@
     let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: item.img || "", at: Date.now() }); write(L); emit();
     if (!on) { const n = L.length; toast(n === 1 ? `<b>Saved on this phone.</b> Make a free account to keep your saves.` : `<b>${n} saves</b> on this phone. Make a free account to keep your saves.`, { go: "/signup?mode=friends&from=saves", goLabel: "Make an account", ms: 7000 }); } }
   function setCount(item, n) { if (n == null) return; document.querySelectorAll(`[data-pls-count="${CSS_ESC(key(item))}"]`).forEach((el) => (el.textContent = countLine(n))); }
-  const CSS_ESC = (s) => (window.CSS?.escape ? CSS.escape(s) : String(s).replace(/"/g, '\\"'));
+  const CSS_ESC = (s) => (window.CSS?.escape ? window.CSS.escape(s) : String(s).replace(/"/g, '\\"'));
   document.addEventListener("click", (e) => { const b = e.target.closest?.(".pls-btn[data-pls-kind]"); if (!b) return; e.preventDefault(); e.stopPropagation();
     b.classList.remove("pls-pop"); void b.offsetWidth; if (!isSaved(b.dataset.plsKind, b.dataset.plsRef)) b.classList.add("pls-pop");
     toggle({ kind: b.dataset.plsKind, ref: b.dataset.plsRef, title: b.dataset.plsTitle || "", img: b.dataset.plsImg || "" }, b); }, true);

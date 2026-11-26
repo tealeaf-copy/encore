@@ -177,7 +177,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     for (const d of scopeStore(store, ws).list("inquiries")) { const r = d.data; if (!r?.at) continue; const hostAt = [...(r.thread || []), ...(r.history || [])].filter((m) => m?.by === "host" && +m.at > r.at).map((m) => +m.at);
       if (hostAt.length) T.push(Math.min(...hostAt) - r.at); }
     if (!T.length) return null; T.sort((a, b) => a - b); const h = T[Math.floor((T.length - 1) / 2)] / 3600e3;
-    return { hours: Math.round(h * 10) / 10, text: h <= 1 ? "within an hour" : h <= 24 ? `within ${Math.ceil(h)} hours` : `within ${Math.ceil(h / 24)} days` }; }
+    return { hours: Math.round(h * 10) / 10, text: h <= 1 ? "within an hour" : h <= 24 ? `within ${Math.ceil(h - 0.01)} hours` : `within ${Math.ceil(h / 24)} days` }; }
   function build(base) {
     const now = today(), hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     const D = C.discover({ all: true });

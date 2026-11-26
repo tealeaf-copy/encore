@@ -45,6 +45,7 @@ import { mountSeries } from "./series.js"; // review round 13: episode numbers a
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
+import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
 import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
@@ -485,6 +486,7 @@ export function createApp({ store, dataDir }) {
   app.get("/work", (req, res) => sendStatic(res, "landing.html", "<p>Page missing.</p>"));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));
   app.get("/plans", (req, res) => sendStatic(res, "plans.html", "<p>Plans page missing.</p>"));
+  app.get(["/chats", "/chats/:eventId"], (req, res) => sendStatic(res, "chats.html", "<p>Chats page missing.</p>")); // group chats (server/chat.js, public/chats.html)
   app.get("/quiz", (req, res) => sendStatic(res, "quiz.html", "<p>Quiz page missing.</p>"));
   app.get("/teams", (req, res) => sendStatic(res, "teams.html", "<p>Teams page missing.</p>"));
   app.get("/gifts", (req, res) => sendStatic(res, "gifts.html", "<p>Gifts page missing.</p>"));
@@ -677,6 +679,7 @@ export function createApp({ store, dataDir }) {
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
+  mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
@@ -1022,7 +1025,7 @@ export function createApp({ store, dataDir }) {
     res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
-  const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
+  const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|chatmembers|chatreports|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
   app.use("/api/db", (req, res, next) => {
     // "system" holds accounts and secrets, "ws" holds other workspaces' data: never reachable through the data API.
     if (/^(system|ws)(\/|$)/.test(String(req.query.path || ""))) return res.status(403).json({ code: "not_granted" });
@@ -1553,6 +1556,7 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest && before) rememberVersion(St, p, before);
     const r = how === "put" ? St.set(p, req.body) : St.update(p, req.body), after = how === "put" ? req.body : r.data;
     afterEventWrite(St, p);
+    if (isEv && !req.guest && before) app.locals.chat?.onEventEdit(req, req.ws, p.split("/")[1], before, after); // "Ada moved it to 7:30pm." in the group chat
     if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
@@ -1772,6 +1776,7 @@ export function createApp({ store, dataDir }) {
     const St = scopeStore(store, ws), eventId = String(after?.eventId || before?.eventId || ""), ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? St.get("events/" + eventId)?.data : null; if (!ev) return {};
     const was = before?.response || "", now = after?.response || "", title = titleOf(ev), owner = getWorkspace(ws)?.ownerEmail || "", who = firstOf(after?.name || before?.name) || "Someone", studio = `/?app=1&open=${encodeURIComponent(eventId)}#studio`;
     if (now === "going" && was !== "going" && after?.withOf) { try { claimHold(St, id, after); } catch {} } // the friend's own reply holds the spot now
+    try { app.locals.chat?.onRsvp(req, ws, id, before, after); } catch {} // guests who are in join the group chat (server/chat.js)
     const promoted = await promoteWaitlist(req, ws, eventId);
     // the second-host loop: a guest who sent another host kudos in the last 30 days says I'm in here (server/social.js)
     if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }
@@ -1786,8 +1791,10 @@ export function createApp({ store, dataDir }) {
     let letIn = null;
     if (!req.guest && after && now === "going" && was && was !== "going" && ["requested", "waitlist", "maybe", "declined", "no"].includes(was)) {
       const to = String(after.email || "").trim(), host = hostFirstOf(ws, ev), when = whenOf(ev), link = replyLink(req, ws, eventId, id); letIn = { emailed: false, texted: false };
-      if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "letin", key: "letin-" + id, text: `🎉 ${host} let you in to ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
-        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n${payLines(ev, after, host, link).map((x) => x + "\n").join("")}\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
+      // the group chat (server/chat.js): they're in it now, and the link opens it on any device
+      const chatLink = `${originOf(req)}/chats/${encodeURIComponent(eventId)}#reply=${encodeURIComponent(id)}.${replyToken(ws, id)}`;
+      if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "letin", key: "letin-" + id, text: `🎉 ${host} let you in to ${title}. Say hi in the group chat.`, link: `/chats/${encodeURIComponent(eventId)}`, eventId });
+        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\nYou're in. Say hi in the group chat: ${chatLink}\n\n${host} let you in to ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n${payLines(ev, after, host, link).map((x) => x + "\n").join("")}\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
       const sms = smsConfig(); if (!letIn.emailed && sms && after.phone && after.smsOk !== false) { try { letIn.texted = !!(await sendSms(sms, { to: after.phone, text: `${host} let you in to ${title}${when ? `, ${when}` : ""}. Details: ${link} Reply STOP to opt out.` })).ok; } catch {} }
     }
     const fin = St.get("rsvps/" + id)?.data, all = St.list("rsvps").filter((d) => d.data?.eventId === eventId);

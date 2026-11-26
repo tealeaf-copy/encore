@@ -70,7 +70,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
 .ev .badge,.ev-badge{font-size:13px!important;padding:2px 8px!important;line-height:16px!important}
 .again{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:0;min-height:44px}
 </style>
-<script src="/authguard.js"></script><script src="/place.js"></script>
+<script src="/calm.js"></script><script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body class="dc-wait">
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</a>
@@ -92,9 +92,10 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
 
   <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="ls-grid" id="fyList"></div></section>
 
+  <section id="plShelves" aria-label="Collections"></section><!-- collections: quiet themed shelves (public/collections.js) -->
   <section id="evSec" aria-labelledby="evH"><h2 id="evH">Coming up</h2>
     <div id="evNote"></div>
-    <div class="ls-grid" id="events"><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5"></div><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5"></div></div>
+    <div class="ls-grid" id="events" data-calm="discover"><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5" data-calm-wait></div><div class="ls-skel" aria-hidden="true" style="aspect-ratio:4/5" data-calm-wait></div></div>
     <button type="button" class="ls-btn more-btn" id="evMore" hidden style="margin-top:24px"></button><style>.more-btn[hidden]{display:none!important}</style></section>
 
   <section id="shopsSec" hidden><h2 id="shopsH">Order from local hosts</h2><div class="shop-row" id="shops"></div></section>
@@ -257,7 +258,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); ready();
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="ls-empty"><b>Couldn't load events.</b><p>Check your connection, then refresh the page.</p></div>`; ready(); });
 })();
-</script><script src="/lists.js"></script><script src="/nav.js"></script>
+</script><script src="/collections.js" defer></script><script src="/lists.js"></script><script src="/nav.js"></script>
 <script src="/shell.js"></script>
 <script>
 // took the guest-type quiz already? show the result instead of asking again

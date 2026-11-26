@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
-<script src="/authguard.js"></script>
+<script src="/calm.js"></script><script src="/authguard.js"></script>
 <style>
 :root{--ink:var(--pl-ink);--smoke:var(--pl-soft);--paper:var(--pl-page);--card:var(--pl-surface);--line:var(--pl-line);--line-strong:var(--pl-line-strong);--ember:var(--pl-accent);--frame:var(--pl-frame)}
 *{box-sizing:border-box}[hidden]{display:none!important}
@@ -47,6 +47,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
 <body>
 <main>
   <h1>Settings</h1>
+  <div id="setWait" data-calm="settings"><i data-calm-wait></i></div>
   <div id="out" class="signedout" hidden>
     <section><h2>Sign in to change your settings</h2><p>To delete your account, sign in first. Then come back here.</p><a class="btn go" href="/login?next=%2Fsettings%23delete">Sign in</a></section>
   </div>
@@ -87,6 +88,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
   const get = async (u) => { const r = await fetch(u, { credentials: "same-origin" }); if (!r.ok) throw Object.assign(new Error("http " + r.status), { status: r.status }); return r.json(); };
   const send = async (u, body, method = "POST") => { const r = await fetch(u, { method, credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work. Try again."); return j; };
   let me = null; try { me = await get("/api/me"); } catch {}
+  document.querySelector("#setWait [data-calm-wait]")?.remove(); // the calm loader (public/calm.js) can go
   if (!me?.verified) { $("#out").hidden = false; return; }
   // profile picture: the shared "Change photo" sheet (public/photosheet.js)
   const drawPic = (m) => { if (window.PhotoSheet && m) { $("#pic").innerHTML = PhotoSheet.face(m.avatar, me?.name, 64); $("#picBtn").textContent = m.avatar.url || m.avatar.art ? "Change photo" : "Add a photo"; } };

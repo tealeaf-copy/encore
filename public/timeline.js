@@ -74,6 +74,8 @@
   };
   const ITIN_LABEL = { arrive: "Arrive", checkin: "Check in", meal: "Meal", workshop: "Workshop", talk: "Talk", activity: "Activity", free: "Free time", travel: "Travel", checkout: "Check out" };
 
+  /** A row opens the peek (public/peek.js) on a plain tap; it stays a link for everything else. */
+  const peekAttr = (it) => (it.eventId ? ` data-peek="${esc(it.eventId)}"` : "");
   /** One row: the time, a node on the line, the title (serif for events), one muted sub-line, a chevron. */
   const calOk = (it) => it.kind !== "todo" && !it.draft && /^\d{4}-\d{2}-\d{2}$/.test(it.date || "");
   const calBtn = (it) => `<button type="button" class="tl-cal" data-addcal="${esc(it.key)}" aria-label="Add ${esc(it.title)} to your calendar" aria-haspopup="menu" aria-expanded="false">${ICON.cal}</button>`;
@@ -84,7 +86,7 @@
     const locked = (it.kind === "going" || it.kind === "waitlist" || it.kind === "saved") && it.in === false && it.place;
     const loc = it.place ? `<span class="tl-loc"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 14.5c-2.9-3.3-4.3-5.7-4.3-7.6a4.3 4.3 0 0 1 8.6 0c0 1.9-1.4 4.3-4.3 7.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="6.9" r="1.5" fill="currentColor"/></svg><span>${esc(it.place)}${locked ? ' · <span class="tl-locked">address when you\'re in</span>' : ""}</span></span>` : "";
     const href = it.draft ? `/?open=${encodeURIComponent(it.eventId)}` : it.href || `/e/${encodeURIComponent(it.eventId)}`;
-    return `<li class="tl-row k-${esc(it.kind)}${past ? " is-past" : ""}${live ? " is-live" : ""}${it.draft ? " is-draft" : ""}${withCal ? " has-cal" : ""}"><a class="tl-a" href="${esc(href)}">`
+    return `<li class="tl-row k-${esc(it.kind)}${past ? " is-past" : ""}${live ? " is-live" : ""}${it.draft ? " is-draft" : ""}${withCal ? " has-cal" : ""}"><a class="tl-a" href="${esc(href)}"${peekAttr(it)}>`
       + `<span class="tl-time">${live ? "Now" : esc(time)}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
       + `<span class="tl-body"><span class="tl-k">${esc(KIND[it.kind] || "")}</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${st}${st && rest ? " · " : ""}${rest}</span>${loc}</span>`
       + `<span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${withCal ? calBtn(it) : ""}</li>`;
@@ -101,7 +103,7 @@
       const rows = d.items.length ? d.items.slice(0, 2).map((x) => itinRowHtml(x)).join("") + (d.items.length > 2 ? `<li class="tl-more"><a href="${esc(href)}">${d.items.length - 2} more that day</a></li>` : "")
         : `<li class="tl-row tl-irow tl-quiet"><div class="tl-a"><span class="tl-time">${d.n === 1 && it.time ? esc(clock(it.time)) : ""}</span><span class="tl-node tl-node-i" aria-hidden="true">${ICON[d.n === 1 ? "arrive" : d.n === days.length ? "checkout" : "free"]}</span><span class="tl-body"><span class="tl-sub">${d.n === 1 ? "First day" : d.n === days.length ? "Last day" : `Day ${d.n}`}</span></span></div></li>`;
       return `<li class="tl-nday${on ? " is-today" : ""}"><span class="tl-ndh">${on ? "<b>Today</b> · " : ""}${esc(L.text)}</span><ol class="tl-list tl-nlist">${rows}</ol></li>`; }).join("");
-    return `<li class="tl-span k-${esc(it.kind)}${past ? " is-past" : ""}${cal ? " has-cal" : ""}"><a class="tl-a tl-spanhead" href="${esc(href)}"><span class="tl-time">${esc(it.allDay ? "" : clock(it.time))}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
+    return `<li class="tl-span k-${esc(it.kind)}${past ? " is-past" : ""}${cal ? " has-cal" : ""}"><a class="tl-a tl-spanhead" href="${esc(href)}"${peekAttr(it)}><span class="tl-time">${esc(it.allDay ? "" : clock(it.time))}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
       + `<span class="tl-body"><span class="tl-k">${esc(rangeText(it.date, it.endDate))} · ${days.length} days</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${it.status ? `<span class="tl-st">${esc(it.status)}</span>` : ""}${[it.place, it.host ? `with ${it.host}` : ""].filter(Boolean).map((x) => " · " + esc(x)).join("")}</span></span><span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${cal ? calBtn(it) : ""}`
       + `<ol class="tl-nest">${nest}</ol></li>`;
   }

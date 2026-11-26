@@ -11,14 +11,20 @@
 // - Itineraries: `itinerary: [{ day, time, kind, title, sub }]` on the event, for multi-day plans (a weekend away, a
 //   summit) and anything the host wants to lay out. The host edits it (POST /api/host/events/:id/itinerary); guests
 //   who are in see it, or everyone with the link when the host makes it public (itineraryPublic).
+// - Peek: tapping a row opens a sheet (public/peek.js) built from GET /api/plans/peek/:id: the cover, the host, when,
+//   where (the row's rule; the street address only for people who are in), the description, who's going (first names
+//   for people who are in, else the faces the invite already shows) and your reply. A reply changes through
+//   POST /api/plans/peek/:id/reply: it finds your reply (the proof this browser holds, or your account's email) and
+//   hands it to the invite's own write (POST /api/public/reply/:id). Paid spots, asks to join and orders stay on the
+//   event page (replyRule).
 // - Calendar: a private webcal feed of your plans (/plans/feed/<token>.ics, built with the .ics code in hooksout.js).
 import crypto from "node:crypto";
 import { scopeStore, allWorkspaceIds, workspaceOfEvent, getWorkspace, getDbUser, DEFAULT_WS } from "./workspaces.js";
-import { seatsTaken, waitlistPos, guestPlace } from "./social.js";
-import { eventTz, zonedMs, tzOk } from "./tz.js";
+import { seatsTaken, waitlistPos, waitlistOf, guestPlace, replyKey } from "./social.js";
+import { eventTz, zonedMs, tzOk, todayIn } from "./tz.js";
 import { localDay } from "./hooks.js";
 import { episodeOf } from "./episodes.js";
-import { vevent, calendar } from "./hooksout.js";
+import { vevent, calendar, publicCopy } from "./hooksout.js";
 import { slotLabel } from "./preorder.js";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/, HHMM = /^\d{2}:\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
@@ -148,10 +154,14 @@ export function guessKind(t) { const s = lc(t);
 export function itineraryFor(ev, { exact = false } = {}) {
   const r = cleanItinerary(ev?.itinerary || [], ev); if (r.error) return [];
   if (exact) return r.items;
+  const scrub = scrubberOf(ev);
+  return r.items.map((x) => ({ ...x, title: scrub(x.title), sub: scrub(x.sub) }));
+}
+/** Swaps the street address, a private meet point and anything shaped like "12 Java St" for the area. Pure. */
+export function scrubberOf(ev) {
   const secret = [ev?.venueAddr, ev?.approvalRequired || !ev?.discoverable ? ev?.meetPoint : "", ev?.venueAddr ? ev?.venueName : ""].map((x) => clean(x, 200)).filter((x) => x && x.length >= 4);
   const area = areaOf(ev) || "the area";
-  const scrub = (s) => { let t = s; for (const x of secret) t = t.split(x).join(area); return t.replace(/\b\d{1,5}\s+[A-Z][\w'.-]*(?:\s+[A-Z][\w'.-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Lane|Ln|Dr|Drive|Pl|Place|Way|Ct)\b\.?(?:,?\s*(?:Apt|Unit|#)\s*\w+)?/g, area); };
-  return r.items.map((x) => ({ ...x, title: scrub(x.title), sub: scrub(x.sub) }));
+  return (s) => { let t = String(s || ""); for (const x of secret) t = t.split(x).join(area); return t.replace(/\b\d{1,5}\s+[A-Z][\w'.-]*(?:\s+[A-Z][\w'.-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Lane|Ln|Dr|Drive|Pl|Place|Way|Ct)\b\.?(?:,?\s*(?:Apt|Unit|#)\s*\w+)?/g, area); };
 }
 /** The itinerary in days: [{ date, n, items }], one per day of the event (empty days too). Pure. */
 export function itineraryDays(ev, items) { if (!ISO.test(ev?.date || "")) return []; const out = [], to = lastDay(ev);
@@ -169,6 +179,39 @@ export function typeChip(ev) {
   if (/workshop|class|lesson/.test(t)) return "Workshop";
   if (/run|hike|walk/.test(t)) return "Outdoors";
   return "Gathering";
+}
+
+// ---------- the peek ----------
+const clock12 = (t) => { const m = /^(\d{2}):(\d{2})$/.exec(t || ""); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}${m[2] === "00" ? "" : ":" + m[2]}${ap}`; };
+/** "Fri, Dec 5 · 7pm"; a trip is "Fri, Dec 5 to Sun, Dec 7". Pure. */
+export function whenLine(ev) { if (!ISO.test(ev?.date || "")) return "Date to come"; if (multiDay(ev)) return `${short(ev.date)} to ${short(lastDay(ev))}`;
+  const t = clock12(ev.startTime); return t ? `${short(ev.date)} · ${t}` : short(ev.date); }
+/** No Maybe on this invite (the host's "No Maybe option"; dinners and summits leave it off unless the host turns it on). Same rule as the invite. Pure. */
+export const noMaybe = (ev) => (ev?.noMaybe != null ? !!ev.noMaybe : ["dinner", "summit"].includes(String(ev?.kind || "")));
+/** A reply's state: going, maybe, no, waitlist, requested, or "" for none. Pure. */
+export const replyState = (r) => { const x = r?.response === "declined" ? "no" : r?.response; return ["going", "maybe", "no", "waitlist", "requested"].includes(x) ? x : ""; };
+/** The three answers the peek offers. */
+export const ANSWERS = [["going", "I'm in"], ["maybe", "Maybe"], ["no", "Can't go"]];
+/**
+ * Can this reply change to `want` right in the peek? { ok } (with `same` when it already is), { page } (a plain line:
+ * finish on the event page, for a paid spot, an ask to join, an order or a reply the invite never keyed), { closed }
+ * (cancelled or over) or { error }. Pure apart from today's date where the event is.
+ */
+export function replyRule(ev, r, want, { host = "the host", today = todayIn(eventTz(ev)) } = {}) {
+  if (!ev || ev.cancelled) return { closed: "This one was cancelled, so replies are closed." };
+  if (ISO.test(lastDay(ev)) && lastDay(ev) < today) return { closed: "This one already happened." };
+  if (!ANSWERS.some(([v]) => v === want)) return { error: "Pick I'm in, Maybe or Can't go." };
+  if (!r) return { page: "Reply on the event page." };
+  const cur = replyState(r); if (cur === want) return { ok: true, same: true };
+  if (want === "maybe" && noMaybe(ev)) return { error: `${host} asked for a yes or no on this one.` };
+  if (!(r._k || (Array.isArray(r._keys) && r._keys.length))) return { page: "Change your reply on the event page." };
+  if (ev.drop || ev.preorder) return { page: want === "going" ? "Pick your order on the event page." : "Change your order on the event page." };
+  if (want === "going" && cur !== "going") {
+    if (ev.approvalRequired && !r.letInAt) return { page: `${host} lets each guest in. Ask to join on the event page.`, ask: true };
+    if (priced(ev) && !ev.ticketNote && !r.paid) return { page: `This one is ${clean(ev.price, 20)}. Pay on the event page to hold your spot.`, pay: true };
+  }
+  if (cur === "going" && r.paid && priced(ev)) return { page: `You paid for this one. Change it on the event page so ${host} can sort it out.`, pay: true };
+  return { ok: true };
 }
 
 // ---------- building the timeline ----------
@@ -247,7 +290,57 @@ export function makePlans({ store, C, X }) {
       host: { name: clean(h.name || ev.hostName, 60), first: hostFirstOf(ws, ev), handle: h.handle || "", avatarArt: h.theme?.avatarArt || "", color: h.theme?.accent || h.color || "" },
       isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length };
   }
-  return { timeline, planOf, replyItems, hostItems };
+  /** Who is looking at one event: its host (their own workspace), or a guest by the proof this browser holds, or by their account's email. */
+  function viewerOf(id, { rid = "", code = "", email = "", ws: myWs = "" } = {}) {
+    const ws = ID.test(id) ? workspaceOfEvent(id) : null, S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data; if (!ev || ev.example) return null;
+    let r = null, mine = "";
+    if (rid) { const P = X.rsvpProof?.(id, String(rid).slice(0, 80), String(code || "").slice(0, 40)); if (P) { r = P.r; mine = P.rid; } }
+    if (!r && email) { const d = S.list("rsvps").filter((x) => x.data?.eventId === id && lc(x.data?.email) === lc(email)).sort((a, b) => (b.data.changedAt || b.data.at || b.data.createdAt || 0) - (a.data.changedAt || a.data.at || a.data.createdAt || 0))[0]; if (d) { r = d.data; mine = d.id; } }
+    return { ws, S, ev, isHost: !!myWs && myWs === ws, r, rid: mine };
+  }
+
+  /**
+   * The peek: what this viewer may see of one event, and what they can do there. Never another guest's contact, never
+   * the street address unless they're in (or host it), first names only for people who are in, and nothing at all for
+   * a draft or link-only event they have no reply to.
+   */
+  function peekOf(id, o = {}) {
+    const V = viewerOf(id, o); if (!V) return null; const { ws, S, ev, isHost, r, rid } = V;
+    if (!isHost && !r && (!(ev.published || ev.discoverable) || ev.cancelled)) return null;
+    const h = profile(ws) || {}, hostFirst = hostFirstOf(ws, ev), all = S.list("rsvps").filter((d) => d.data?.eventId === id), say = guestPlace(ws);
+    const state = r ? replyState(r) : "", inn = isHost || state === "going", today = todayIn(eventTz(ev)), past = ISO.test(lastDay(ev)) && lastDay(ev) < today, sp = spanOf(ev);
+    const going = Math.round(seatsTaken(ev, all)), asking = all.filter((d) => d.data?.response === "requested").length, waiting = waitlistOf(all).length;
+    // who's going: first names (as Who's coming shows them to people who are in), else the faces the invite shows everyone
+    let who = null;
+    if (isHost || !ev.hideGuests) { const seen = new Set(), names = [];
+      if (inn) for (const d of all) { const x = d.data || {}; if (x.response !== "going" || x.pairOf) continue; const k = replyKey(x) || d.id; if (seen.has(k)) continue; seen.add(k);
+        if (x.showMe === false && d.id !== rid) continue; if (names.length < 5) names.push({ name: first(x.name) || "Guest", you: d.id === rid }); }
+      let faces = []; if (!inn) { try { faces = (C.goingOf?.(ws, id, ev)?.faces || []).slice(0, 5).map((f) => ({ art: String(f.art || "").slice(0, 40), color: /^#[0-9a-f]{6}$/i.test(f.color || "") ? f.color : "" })); } catch {} }
+      who = { count: going, names, faces }; }
+    const addr = inn ? clean([...new Set([isHost ? ev.meetPoint : say(ev.meetPoint), isHost ? ev.venueAddr : say(ev.venueAddr)].map((x) => clean(x, 120)).filter(Boolean))].join(", "), 200) : "";
+    const pos = state === "waitlist" ? waitlistPos(all, rid) : 0, scrub = inn ? (x) => x : scrubberOf(ev);
+    const cover = /^\/(_blob|presets)\//.test(ev.coverPhoto || "") || /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : "";
+    const href = multiDay(ev) || ev.itinerary?.length ? `/plans/${encodeURIComponent(id)}` : `/e/${encodeURIComponent(id)}`, draft = isHost && !ev.published && !ev.discoverable;
+    const answers = ANSWERS.filter(([v]) => v !== "maybe" || !noMaybe(ev) || state === "maybe").map(([value, label]) => { const R = replyRule(ev, r, value, { host: hostFirst, today });
+      return { value, label, ...(R.page ? { page: R.page } : {}), ...(R.pay ? { pay: true } : {}), ...(R.ask ? { ask: true } : {}), ...(R.error ? { error: R.error } : {}) }; });
+    const closed = ev.cancelled ? "This one was cancelled." : past ? "This one already happened." : "";
+    return {
+      id, eventId: id, key: "peek:" + id, title: titleOf(ev), href, invite: `/e/${encodeURIComponent(id)}`, when: whenLine(ev), date: ev.date || "", endDate: multiDay(ev) ? lastDay(ev) : "", time: HHMM.test(ev.startTime || "") ? ev.startTime : "",
+      startMs: sp.startMs, endMs: multiDay(ev) ? spanOf({ ...ev, startTime: "" }).endMs : sp.endMs, allDay: multiDay(ev) || sp.allDay, tz: sp.tz, multi: multiDay(ev), chip: typeChip(ev),
+      cover, coverArt: ev.coverArt && typeof ev.coverArt === "object" ? ev.coverArt : null,
+      host: { name: clean(h.name || ev.hostName, 60), first: hostFirst, handle: clean(h.handle, 40), href: h.handle ? `/@${encodeURIComponent(h.handle)}` : "", avatarArt: clean(h.theme?.avatarArt, 120),
+        avatarUrl: /^(\/_blob\/[A-Za-z0-9_-]{6,80}|https:\/\/[^\s"<>()]+)$/.test(h.theme?.avatarUrl || "") ? h.theme.avatarUrl : "", color: /^#[0-9a-f]{6}$/i.test(h.theme?.accent || h.color || "") ? h.theme?.accent || h.color : "" },
+      place: placeOf(ev, { exact: inn, say: isHost ? (x) => x : say }), locked: !inn, address: addr, online: !!ev.online,
+      desc: clean(scrub(publicCopy(ev)), 400), who, role: isHost ? "host" : r ? "guest" : "visitor",
+      reply: isHost ? null : { state, pos, waiting, paid: !!r?.paid, status: r ? statusOf(kindOf(ev, r), ev, r, { pos, hostFirst }) : "", answers, closed, hostFirst },
+      actions: { calendar: ISO.test(ev.date || "") && !draft && !ev.cancelled, invite: state === "going" && !past && !ev.cancelled, chat: inn && !ev.cancelled ? `/chats/${encodeURIComponent(id)}` : "" },
+      manage: isHost ? { href: `/?app=1&open=${encodeURIComponent(id)}#studio`, going, asking, waiting, draft, share: !draft && !ev.cancelled, approve: asking ? "/inbox" : "" } : null,
+    };
+  }
+  /** The timeline rows for this viewer's reply to one event, after it changed (none once it's Can't go). */
+  function itemsOf(id, o = {}) { const V = viewerOf(id, o); if (!V?.r || ["no", ""].includes(replyState(V.r))) return [];
+    return replyItems(V.ws, id, V.ev, V.rid, V.r, todayIn(tzOk(o.tz) ? o.tz : eventTz(V.ev))); }
+  return { timeline, planOf, replyItems, hostItems, viewerOf, peekOf, itemsOf };
 }
 const byTime = (a, b) => a.date.localeCompare(b.date) || (a.allDay === b.allDay ? 0 : a.allDay ? -1 : 1) || (a.startMs || 0) - (b.startMs || 0) || (a.ord || 0) - (b.ord || 0) || a.title.localeCompare(b.title);
 
@@ -272,6 +365,34 @@ export function mountPlans(app, { store, small, currentUser, C, X, sendStatic, p
   app.post("/api/plans/timeline", small, (req, res) => { const u = me(req), b = req.body || {};
     const T = P.timeline({ email: u?.email || "", ws: u?.ws || "", proofs: b.proofs, saved: b.saved, tz: String(b.tz || "").slice(0, 60), past: !!b.past });
     res.set("Cache-Control", "private, no-store").json({ ...T, signedIn: !!u }); });
+
+  // the peek: one event as this viewer may see it, kept for a few seconds (the page asks on touchstart or hover, then on the tap)
+  const peeks = new Map(), PEEK_MS = 10e3;
+  const peekKey = (id, o) => [id, o.rid, o.code, lc(o.email), o.ws].join("|");
+  const bustPeek = (id) => { for (const k of peeks.keys()) if (k.startsWith(id + "|")) peeks.delete(k); };
+  app.get("/api/plans/peek/:id", (req, res) => { const id = String(req.params.id || ""); if (!ID.test(id)) return bad(res, "No such event.", 404, "not_found"); const u = me(req);
+    const o = { rid: String(req.query.rid || "").slice(0, 80), code: String(req.query.code || "").slice(0, 40), email: u?.email || "", ws: u?.ws || "" }, k = peekKey(id, o), hit = peeks.get(k);
+    let p = hit && Date.now() - hit.at < PEEK_MS ? hit.p : undefined;
+    if (p === undefined) { p = P.peekOf(id, o); if (peeks.size > 2000) peeks.clear(); peeks.set(k, { at: Date.now(), p }); }
+    if (!p) return bad(res, "No such event.", 404, "not_found");
+    res.set("Cache-Control", "private, max-age=5").json({ peek: p }); });
+  // change your reply from the peek: your own reply only (a proof that matches, or your account's), through the invite's
+  // own write (POST /api/public/reply/:id: seats, the waitlist, asks to join, the host's bell), then the fresh peek and rows
+  app.post("/api/plans/peek/:id/reply", small, (req, res, next) => { const id = String(req.params.id || ""), u = me(req), b = req.body || {};
+    if (!ID.test(id)) return bad(res, "No such event.", 404, "not_found");
+    const want = { in: "going", going: "going", yes: "going", maybe: "maybe", no: "no", cant: "no", out: "no" }[lc(b.response)], rid = String(b.rid || "").slice(0, 80);
+    const V = P.viewerOf(id, { rid, code: String(b.code || "").slice(0, 40), email: rid ? "" : u?.email || "", ws: u?.ws || "" });
+    if (!V) return bad(res, "No such event.", 404, "not_found");
+    if (rid && !V.r) return bad(res, "No such reply.", 404, "not_found"); // someone else's reply id, or the wrong code: nothing to change
+    if (!V.r) return V.isHost ? bad(res, "You're hosting this one.", 409, "host") : u ? bad(res, "Reply on the event page first.", 409, "needs_page") : bad(res, "Sign in, or open the invite on the phone you replied from.", 401, "unauthenticated");
+    if (!want) return bad(res, "Pick I'm in, Maybe or Can't go.");
+    const R = replyRule(V.ev, V.r, want, { host: first(V.ev.hostName) || first(C.profileOf?.(V.ws)?.name) || "the host" });
+    if (R.error) return bad(res, R.error); if (R.closed) return bad(res, R.closed, 409, "closed");
+    if (R.page) return res.status(409).json({ code: "needs_page", message: R.page, href: `/e/${encodeURIComponent(id)}`, ...(R.pay ? { pay: true } : {}), ...(R.ask ? { ask: true } : {}) });
+    const o = { rid: V.rid, code: String(V.r.code || ""), ws: u?.ws || "", tz: String(b.tz || "").slice(0, 60) }, fresh = () => { bustPeek(id); return { peek: P.peekOf(id, o), items: P.itemsOf(id, o) }; };
+    if (R.same) return res.set("Cache-Control", "private, no-store").json({ ok: true, response: want, ...fresh() });
+    const send = res.json.bind(res); res.set("Cache-Control", "private, no-store"); res.json = (x) => send(res.statusCode >= 400 ? x : { ...x, ...fresh() });
+    req.body = { rid: V.rid, code: o.code, response: want }; req.url = `/api/public/reply/${encodeURIComponent(id)}`; return next(); });
 
   // one plan: the cover and the itinerary (guests who are in, the host, or everyone when the host made it public)
   app.get("/api/public/plan/:id", (req, res) => { const id = String(req.params.id || ""); if (!ID.test(id)) return bad(res, "No such plan.", 404, "not_found"); const u = me(req);

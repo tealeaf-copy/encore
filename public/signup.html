@@ -67,7 +67,7 @@
     document.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set(b.dataset.mode));
     if (q.get("mode") !== "work") set("friends"); else { set("work"); document.getElementById("modes").hidden = false; }
     const cw = document.getElementById("codeWrap"), ci = f.code, ok = document.getElementById("codeOk"), wl = document.getElementById("wl");
-    let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); if (c.length < 8) { ok.textContent = ""; return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That host code doesn't work."; } catch {} }, 250); };
+    let t; const check = () => { clearTimeout(t); const c = ci.value.trim(); const nh = document.getElementById("nocodeHint"), hint = (on) => { if (nh && window.__inviteOnly) nh.hidden = !on; }; if (c.length < 8) { ok.textContent = ""; hint(true); return; } t = setTimeout(async () => { try { const j = await (await fetch("/api/codes/" + encodeURIComponent(c))).json(); ok.className = "ok" + (j.valid ? "" : " bad"); ok.textContent = j.valid ? (j.from ? `✓ Invited by ${j.from}. You'll follow each other.` : "✓ Code works.") : j.message || "That host code doesn't work."; hint(!j.valid); /* a code that works: no "No host code?" under it */ } catch {} }, 250); };
     ci.addEventListener("input", check);
     if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); }
     fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { window.__inviteOnly = true; if (new URLSearchParams(location.search).get("ref")) { const n = document.createElement("p"); n.className = "nocode"; n.textContent = "You came from an event, so you don't need a host code."; cw.before(n); } else { cw.hidden = false; document.getElementById("nocodeHint").hidden = false; } } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
@@ -91,7 +91,10 @@
     const picked = ls("pl.interests"); if (picked && typeof picked.city === "string" && picked.city.trim()) f.city.value = picked.city.trim().slice(0, 60);
     const ref = q.get("ref") || "", mine = /^[A-Za-z0-9_-]{2,80}$/.test(ref) ? ls("encore-rsvp-" + ref) : null;
     if (mine?.rid && mine?.code) fetch("/api/public/reply/" + encodeURIComponent(ref) + "/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rid: mine.rid, code: mine.code }) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
-      if (!j) return; if (j.name && !f.elements.name.value) f.elements.name.value = j.name; if (j.email && !f.email.value) f.email.value = j.email; }).catch(() => {}); })();
+      if (!j) return; if (j.name && !f.elements.name.value) f.elements.name.value = j.name; if (j.email && !f.email.value) f.email.value = j.email; }).catch(() => {});
+    // review round 10: "Your turn?" from an invite: the city is the event's (when nothing better is known yet)
+    if (ref && /^[A-Za-z0-9_-]{2,80}$/.test(ref) && !(picked && picked.city)) fetch("/api/db/doc?path=" + encodeURIComponent("events/" + ref), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+      const c = String(d?.data?.city || "").split(",")[0].trim().slice(0, 60); if (c && f.city && !f.city.value.trim()) f.city.value = c; }).catch(() => {}); })();
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = Object.fromEntries(new FormData(f)), q = new URLSearchParams(location.search);
@@ -111,6 +114,9 @@
       if (r.status === 409) { err.innerHTML = 'You already have an account. <a href="/login" style="color:inherit;font-weight:600">Sign in</a> instead.'; go.disabled = false; return; } // duplicate email: "Sign in" is a link
       if (!r.ok) { err.textContent = j.message || "Couldn't create your page. Try again."; go.disabled = false; return; }
       try { if (body.city && window.EncorePlace) window.EncorePlace.setManual(window.EncorePlace.find(body.city)?.[0] || body.city); } catch {}
+      // review round 10: what they picked before signing up (pl.interests) comes into the new account
+      try { const pk = JSON.parse(localStorage.getItem("pl.interests") || "null"); if (pk && typeof pk === "object" && ((Array.isArray(pk.interests) && pk.interests.length) || pk.city)) {
+        await fetch("/api/me/interests", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ interests: Array.isArray(pk.interests) ? pk.interests : [], city: String(pk.city || body.city || "").slice(0, 60) }) }); localStorage.setItem("pl.interestsCarried", "1"); } } catch {}
       // the club or group name they typed becomes their page's name (and its link), so "Table for Twelve" is what guests see
       { const club = String(body.company || "").trim().slice(0, 60); if (body.mode === "friends" && club && !q.get("regularOf") && !q.get("preset")) { const slug = club.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24).replace(/-+$/, "");
         const save = (extra) => fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ name: club, ...extra }) }).then((r) => r.ok).catch(() => false);

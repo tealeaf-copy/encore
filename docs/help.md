@@ -11,7 +11,7 @@ Go to Start your page, add your name, email, city and a password, then tap Creat
 ## Host codes and invite-only
 
 Keywords: code, host code, invite, invite-only, invite code, need a code, no code, ABCD, guest, your turn
-Hosting is invite-only for now, so you need a host code from a host you know. No code? Tap join the waitlist on the sign-up form. Type your code in the Host code box; it says who invited you when it works. A code that doesn't work may be used up, so ask your host for a fresh one. Been a guest at an event here? Tap Your turn? on that invite. You don't need a code.
+Hosting is invite-only for now, so you need a host code from a host you know. Been a guest at an event here? Tap Your turn? on that invite. You don't need a code. No code? Tap join the waitlist on the sign-up form. Type your code in the Host code box; it says who invited you when it works. A code that doesn't work may be used up, so ask your host for a fresh one.
 [Join the waitlist](/signup#ask)
 
 ## The waitlist

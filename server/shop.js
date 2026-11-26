@@ -4,6 +4,7 @@
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
+import { slotLabel } from "./preorder.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -48,14 +49,15 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     if (s.slots?.length && !s.slots.includes(slot) && !evSlots.includes(slot)) return bad(res, "Pick a pickup time.");
     const S = sold(ws, s.dropId), lines = [];
     // one line per item, whatever the order sent (duplicate lines can't get around the per-order max or the stock)
-    const want = new Map(); for (const l of Array.isArray(b.items) ? b.items : []) { const q = Math.round(+l?.qty || 0); if (!l || typeof l.id !== "string" || q <= 0) continue; want.set(l.id, (want.get(l.id) || 0) + q); }
+    // whole numbers only: 2.6 loaves is a typo, not 3 (review round 10)
+    const want = new Map(); for (const l of Array.isArray(b.items) ? b.items : []) { if (!l || typeof l.id !== "string") continue; const q = +l.qty; if (l.qty != null && l.qty !== "" && !Number.isInteger(q)) return bad(res, "Pick a whole number of each.", 400, "invalid_order"); if (!(q > 0)) continue; want.set(l.id, (want.get(l.id) || 0) + q); }
     for (const [lid, q] of want) { const l = { id: lid, qty: q }; const it = s.items.find((x) => x.id === l?.id); if (!it) continue; if (q > it.max) return bad(res, `Up to ${it.max} ${it.name} per order.`); if (it.stock && (S[it.id] || 0) + q > it.stock) return bad(res, `Only ${Math.max(0, it.stock - (S[it.id] || 0))} ${it.name} left.`, 409, "sold_out"); lines.push({ id: it.id, name: it.name, qty: q, cents: it.cents }); }
     if (!lines.length) return bad(res, "Pick something first.");
-    const total = lines.reduce((a, l) => a + l.qty * l.cents, 0), code = crypto.randomBytes(2).toString("hex").toUpperCase(), o = { code, dropId: s.dropId, name, email, phone, slot, note: clean(b.note, 200), lines, total, status: "new", at: Date.now() };
+    const total = lines.reduce((a, l) => a + l.qty * l.cents, 0), code = crypto.randomBytes(2).toString("hex").toUpperCase(), o = { code, dropId: s.dropId, name, email, phone, slot, note: clean(b.note, 200), lines, total, status: "new", at: Date.now() }; o.slot = slotLabel(slot); // stored and emailed as "10am to 11am"
     const r = scopeStore(store, ws).add("orders", o); const W = getWorkspace(ws);
-    X.notify(W?.ownerEmail, { kind: "order", text: `🛍 ${first(name)} ordered ${lines.map((l) => `${l.qty} × ${l.name}`).join(", ")}${slot ? ` for ${slot}` : ""} (${money(total)})`, link: `/@${h.handle}?orders=1`, eventId: "" });
-    const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (cfg && EMAIL_OK(email) && X.canEmail(email)) sendEmail(cfg, { to: email, subject: `Your order from ${h.name}: #${code}`, text: `Thanks ${first(name)}!\n\n${lines.map((l) => `${l.qty} × ${l.name}`).join("\n")}\nTotal: ${money(total)}\n${slot ? `Pickup: ${slot}${s.where ? ` at ${s.where}` : ""}\n` : ""}${s.payUrl ? `\nPay here: ${s.payUrl}\n` : ""}\nOrder #${code}. Show this at pickup.`, fromName: h.name }).catch(() => {});
-    res.json({ ok: true, id: r.id, code, total: money(total), slot, where: s.address || s.where, payUrl: payLink(s.payUrl, total, `${h.name} order #${code}`) }); });
+    X.notify(W?.ownerEmail, { kind: "order", text: `🛍 ${first(name)} ordered ${lines.map((l) => `${l.qty} × ${l.name}`).join(", ")}${o.slot ? ` for ${o.slot}` : ""} (${money(total)})`, link: `/@${h.handle}?orders=1`, eventId: "" });
+    const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (cfg && EMAIL_OK(email) && X.canEmail(email)) sendEmail(cfg, { to: email, subject: `Your order from ${h.name}: #${code}`, text: `Thanks ${first(name)}!\n\n${lines.map((l) => `${l.qty} × ${l.name}`).join("\n")}\nTotal: ${money(total)}\n${o.slot ? `Pickup: ${o.slot}${s.where ? ` at ${s.where}` : ""}\n` : ""}${s.payUrl ? `\nPay here: ${s.payUrl}\n` : ""}\nOrder #${code}. Show this at pickup.`, fromName: h.name }).catch(() => {});
+    res.json({ ok: true, id: r.id, code, total: money(total), slot: o.slot, where: s.address || s.where, payUrl: payLink(s.payUrl, total, `${h.name} order #${code}`) }); });
   app.get("/api/host/orders", (req, res) => { const u = me(req, res); if (!u) return; const s = C.profileOf(u.ws)?.shop; const L = scopeStore(store, u.ws).list("orders").map((d) => ({ id: d.id, ...d.data })).sort((a, b) => b.at - a.at);
     res.json({ address: s?.address || "", where: s?.where || "", orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId })) }); });
   app.post("/api/host/orders/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "orders/" + clean(req.params.id, 40), o = S.get(p)?.data; if (!o) return bad(res, "No such order.", 404, "not_found");

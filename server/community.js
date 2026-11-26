@@ -158,7 +158,8 @@ export function makeCommunity(store) {
     const listed = (e) => !discoverableOnly || (e.discoverable && (onPage || !e.unlisted)) || (privateToo && isPrivateShared(e));
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && listed(e) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9")))
       .map(({ id, e }) => { const c = { ...publicCard(id, e, host), ...(upcoming && e.discoverable ? goingOf(ws, id, e) : {}) }; if (e.discoverable) return c;
-        for (const k of ["meetPoint", "headcount", "price", "passPrice", "passCount", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
+        // the owner sees their own private events whole (a paid one stays paid, not "Free")
+        if (!owner) for (const k of ["meetPoint", "headcount", "price", "passPrice", "passCount", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
         // strangers get a card, not a way in: no event id that opens the invite or its guest list
         return { ...c, ...(owner ? {} : { id: "p-" + crypto.createHash("sha256").update(ws + "|" + id).digest("hex").slice(0, 16) }), private: true }; });
   }

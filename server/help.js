@@ -75,7 +75,7 @@ const PERSON = { label: "Talk to a person", href: "#person" };
 export function offlineAnswer(message) {
   const s = matchSection(message);
   if (!s) return { answer: "I'm not sure about that one. A person can help.", actions: [PERSON], suggestHuman: true, section: null };
-  const sentences = s.body.split(/(?<=[.!?])\s+/); let answer = ""; for (const x of sentences) { if (answer && (answer + " " + x).length > 320) break; answer = answer ? answer + " " + x : x; if (answer.length > 160) break; }
+  const sentences = s.body.split(/(?<=[.!?])\s+/); let answer = ""; for (const x of sentences) { if (answer && (answer + " " + x).length > 320) break; answer = answer ? answer + " " + x : x; if (answer.length > 200) break; }
   return { answer: noDash(answer), actions: [...s.links.slice(0, 2), PERSON], suggestHuman: /person/i.test(s.title), section: s.title };
 }
 
@@ -259,8 +259,8 @@ button.go{border:0;background:var(--clay);color:#fff;border-radius:999px;padding
     add("Email",t.email,"mailto:"+t.email); add("Phone",t.phone); add("Page",t.handle?"@"+t.handle:"",t.handle?"/@"+t.handle:""); add("Topic",TOP[t.topic]||""); const x=t.context||{};
     add("On",x.page); add("Event",x.eventId?((x.eventTitle||"")+" ("+x.eventId+")"+(x.eventStatus?", "+x.eventStatus:"")):""); add("Page needs",(x.pageMissing||[]).join(", ")); add("Browser",x.browser); add("App",[x.app&&x.app.version,x.app&&x.app.commit].filter(Boolean).join(" ")); add("Screenshot",t.screenshot?"Open":"",t.screenshot||"");
     add("Told team",t.notified?((t.notified.email?"email":"no email")+(t.notified.sms?", "+t.notified.sms+" text"+(t.notified.sms>1?"s":""):"")):""); c.append(dl);
-    if((t.transcript||[]).length){ const d=el("details"); d.append(el("summary",null,"Chat with Potto before this")); for(const m of t.transcript){ const p=el("div","msg"+(m.role==="potto"?" team":"")); p.append(el("small",null,m.role==="potto"?"Potto":"Host")); p.append(document.createTextNode(m.text)); d.append(p) } c.append(d) }
-    for(const m of t.thread||[]){ const p=el("div","msg"+(m.by==="team"?" team":"")); p.append(el("small",null,(m.by==="team"?"Team"+(m.name?" ("+m.name+")":""):(m.name||"Host"))+" · "+when(m.at))); p.append(document.createTextNode(m.text)); c.append(p) }
+    if((t.transcript||[]).length){ const d=el("details"); d.append(el("summary",null,"Chat with Potto before this")); for(const m of t.transcript){ const p=el("div","msg"+(m.role==="potto"?" team":"")); p.append(el("small",null,m.role==="potto"?"Potto":(t.signedIn?"Host":"Visitor"))); p.append(document.createTextNode(m.text)); d.append(p) } c.append(d) }
+    for(const m of t.thread||[]){ const p=el("div","msg"+(m.by==="team"?" team":"")); p.append(el("small",null,(m.by==="team"?"Team"+(m.name?" ("+m.name+")":""):(m.name||(t.signedIn?"Host":"Visitor")))+" · "+when(m.at))); p.append(document.createTextNode(m.text)); c.append(p) }
     const f=el("form"); const lab=el("label","muted","Reply"); const ta=el("textarea"); ta.name="reply"; ta.setAttribute("aria-label","Reply to "+(t.name||t.email)); lab.append(ta);
     const row=el("div","row"); const sel=el("select"); sel.setAttribute("aria-label","Status"); for(const s of ["open","waiting","solved"]){ const o=el("option",null,s[0].toUpperCase()+s.slice(1)); o.value=s; if(s===(t.status==="open"?"waiting":t.status)) o.selected=true; sel.append(o) }
     const go=el("button","go","Send"); go.type="submit"; const note=el("span","muted"); row.append(sel,go,note); f.append(lab,row);

@@ -214,9 +214,12 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   // offers it once: one tap puts it on Discover (and their page), "Not now" never asks about that event again.
   const nudgeable = (e) => !!e && !!e.published && (!e.discoverable || e.unlisted) && !e.cancelled && !e.example && !e.private && !e.friendsOnly && e.discoverNudge !== "off" && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && e.date >= today() && !!(e.city || e.hood || e.place || e.venue);
   app.get("/api/host/nudges", (req, res) => { res.set("Cache-Control", "private, no-store"); const u = viewer(req); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." });
-    if (!C.profileOf(u.ws)?.handle) return res.json({ discover: null });
+    const P = C.profileOf(u.ws); if (!P?.handle) return res.json({ discover: null });
+    // the page must have what Discover needs (a line about you, a face or photo) or Show it on Discover changes nothing anyone sees
+    const gaps = /@demo\.encore$/i.test(getWorkspace(u.ws)?.ownerEmail || "") ? [] : C.pageGaps(P).filter((g) => g !== "a page");
     const S = scopeStore(store, u.ws), L = S.list("events").map((d) => ({ id: d.id, e: d.data })).filter((x) => nudgeable(x.e)).sort((a, b) => (b.e.publishedAt || b.e.updatedAt || 0) - (a.e.publishedAt || a.e.updatedAt || 0));
-    const x = L[0]; res.json({ discover: x ? { eventId: x.id, title: x.e.pubTitle || x.e.name || "Your event", date: x.e.date } : null }); });
+    // unlisted: link only (not on the host's page either); false means it's on their page but kept off Discover
+    const x = L[0]; res.json({ discover: x ? { eventId: x.id, title: x.e.pubTitle || x.e.name || "Your event", date: x.e.date, unlisted: !x.e.discoverable, pageReady: !gaps.length, gaps, handle: P.handle } : null }); });
   app.post("/api/host/nudges/discover", small, (req, res) => { const u = viewer(req); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); const id = clean(req.body?.eventId, 80);
     if (workspaceOfEvent(id) !== u.ws) return bad(res, "No such event.", 404, "not_found"); const S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
     if (req.body?.show === true) { if (!nudgeable(ev)) return bad(res, "This one can't go on Discover from here. Open the event to change who can find it.", 409, "not_allowed"); S.update("events/" + id, { discoverable: true, unlisted: false, discoverNudge: "off", updatedAt: Date.now() }); X.bust(); return res.json({ ok: true, discoverable: true }); }

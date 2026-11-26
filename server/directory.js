@@ -337,7 +337,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
   function findHosts(base, q = {}) {
     const bad = findArgsError(q); if (bad) throw Object.assign(new Error(bad), { status: 400 });
     const verifiedOnly = truthy(q.verified_only), minReviews = Math.max(0, Math.round(+q.min_reviews || 0));
-    const D = data(base), city = s(q.city, 60).toLowerCase(), cat = s(q.category, 40).toLowerCase(), catRe = CATEGORY_WORDS[cat] || null, n = Math.max(0, Math.min(5000, Math.round(+q.group_size || 0))), date = /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "", budget = Math.max(0, +String(q.budget ?? "").replace(/[^\d.]/g, "") || 0), ex = truthy(q.include_examples);
+    const D = data(base), city = s(q.city, 60).toLowerCase(), cat = s(q.category, 40).toLowerCase(), catRe = Object.hasOwn(CATEGORY_WORDS, cat) ? CATEGORY_WORDS[cat] : null, n = Math.max(0, Math.min(5000, Math.round(+q.group_size || 0))), date = /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "", budget = Math.max(0, +String(q.budget ?? "").replace(/[^\d.]/g, "") || 0), ex = truthy(q.include_examples);
     const out = [];
     for (const H of D.hosts.values()) { const h = H.rec; if (!(H.sample ? !!H.h.forHire : h.for_hire)) continue; if (!ex && h.example) continue;
       if (city && !`${h.city} ${h.area}`.toLowerCase().includes(city)) continue;
@@ -383,7 +383,7 @@ const LB_ALIAS = { dining: "supper", dinner: "supper", dinners: "supper", supper
   talk: "talks", speaking: "talks", speakers: "talks", speaker: "talks", keynote: "talks", keynotes: "talks", panel: "talks", panels: "talks",
   meetup: "community", meetups: "community", social: "community", party: "community", parties: "community", everything: "all", any: "all" };
 /** A leaderboard category id for what a caller typed, or "" when it isn't one. */
-export function leaderboardCategory(v) { const k = String(v ?? "").trim().toLowerCase(); return LB_CATS.includes(k) ? k : LB_ALIAS[k] || ""; }
+export function leaderboardCategory(v) { const k = String(v ?? "").trim().toLowerCase(); return LB_CATS.includes(k) ? k : Object.hasOwn(LB_ALIAS, k) ? LB_ALIAS[k] : ""; }
 // ---- find_hosts: what each booking category means in the words hosts use (their services, formats, packages) ----
 export const CATEGORY_WORDS = {
   dining: /\b(dinners?|suppers?|tastings?|chefs?|tables?|omakase|feasts?|supper club)\b/i,
@@ -394,11 +394,25 @@ export const CATEGORY_WORDS = {
 };
 const posNum = (v) => { if (v == null || v === "") return true; const n = typeof v === "number" ? v : +String(v).replace(/[$,\s]/g, ""); return Number.isFinite(n) && n > 0; };
 /** Why these find_hosts arguments can't be used, or "" when they can. */
+/** A real calendar day as YYYY-MM-DD (2026-02-31 isn't one). */
+export const realDate = (v) => { const t = String(v ?? ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return false; const d = new Date(t + "T00:00:00Z"); return !isNaN(d) && d.toISOString().slice(0, 10) === t; };
+const BAD_KEYS = /^(__proto__|constructor|prototype)$/i;
+/** Review round 10: every MCP argument checked against the tool's schema: text is text (not an object), a choice is one
+ *  of its choices, dates are real days, limit is a whole number of 1 or more. "" means not given. */
+export function mcpArgsError(props = {}, args = {}) {
+  for (const [k, v] of Object.entries(args)) { const P = props[k]; if (!P || v == null || v === "") continue;
+    if (P.type === "string") { if (typeof v !== "string" && typeof v !== "number") return `${k} must be text${k === "city" ? ", e.g. \"Brooklyn\"" : ""}.`;
+      const t = String(v).trim(); if (["category", "format", "city", "host", "handle", "type", "status", "period"].includes(k) && BAD_KEYS.test(t)) return `Unknown ${k} "${t.slice(0, 40)}".`;
+      if (P.enum && !P.enum.includes(t.toLowerCase())) return `${k} must be one of: ${P.enum.join(", ")}.`;
+      if (["from", "to", "date"].includes(k) && !realDate(t)) return `${k} must be a date as YYYY-MM-DD, e.g. 2026-03-14.`; }
+    if (P.type === "number") { const n = typeof v === "string" && v.trim() !== "" ? +v : v; if (typeof n !== "number" || !Number.isFinite(n)) return `${k} must be a number.`;
+      if (k === "limit" && !(Number.isInteger(n) && n >= 1)) return "limit must be a whole number from 1 to 100."; } }
+  return ""; }
 export function findArgsError(q = {}) {
   if (!posNum(q.group_size)) return "group_size must be a positive number of people, e.g. 20.";
   if (!posNum(q.budget)) return "budget must be a positive number of dollars, e.g. 2500.";
   if (q.min_reviews != null && q.min_reviews !== "" && !(Number.isFinite(+q.min_reviews) && +q.min_reviews >= 0)) return "min_reviews must be 0 or more.";
-  if (q.date != null && q.date !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(String(q.date))) return "date must be YYYY-MM-DD, e.g. 2026-03-14.";
+  if (q.date != null && q.date !== "" && !realDate(q.date)) return "date must be YYYY-MM-DD, e.g. 2026-03-14.";
   // review round 8: yes/no arguments are yes or no
   for (const k of ["verified_only", "include_examples"]) if (q[k] != null && q[k] !== "" && typeof q[k] !== "boolean" && !/^(true|false|1|0)$/i.test(String(q[k]))) return `${k} must be true or false.`;
   return ""; }
@@ -511,6 +525,7 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
         if ("query" in args && !known.includes("query") && known.includes("q")) { if (args.q == null) args.q = args.query; delete args.query; }
         const extra = Object.keys(args).filter((k) => !known.includes(k));
         if (extra.length) { const k = extra[0], m = closestArg(k, known); return fail(-32602, `${name} has no argument "${k}".${m ? ` Did you mean "${m}"?` : ""} It takes: ${known.join(", ") || "no arguments"}.`); }
+        { const bad = mcpArgsError(PUBLIC_TOOLS.find((t) => t.name === name)?.inputSchema?.properties || {}, args); if (bad) return fail(-32602, bad); }
         if (name === "find_hosts") { const bad = findArgsError(args); if (bad) return fail(-32602, bad); }
         try { return reply(text(fn(args, b))); } catch (e) { return reply({ ...text(String(e.message || e)), isError: true }); } }
       return fail(-32601, `Method not found: ${msg.method}`);

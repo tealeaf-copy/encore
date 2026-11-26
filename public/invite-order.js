@@ -39,18 +39,26 @@ window.InviteOrder = function (e, ws, H, U) {
     if (!email && !phone) { er.textContent = `Add an email or phone so ${first} can tell you it's ready.`; $("#oCt").focus(); return; }
     const total = lines.reduce((a, x) => a + qty[x.id] * (x.cents || 0), 0), text = (lines.length ? lines.map((x) => `${qty[x.id]} × ${x.name}`).join(", ") : free) + (slot ? ` · pickup ${slotLabel(slot)}` : "") + (total ? ` · ${money(total)}` : "");
     const go = $("#oGo"); go.disabled = true;
-    try { let pay = "", code = "", where = "";
+    try { let pay = "", code = "", where = "", rid = "";
       if (shop) { const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "", eventId: eid }) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); pay = j.payUrl || ""; code = j.code || ""; where = j.where || "";
         U.ls.set(`encore.order.${handle}.${code}`, JSON.stringify({ code, total: j.total, slot, at: Date.now(), lines: lines.map((x) => ({ name: x.name, qty: qty[x.id] })) })); }
       else { const rc = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
         const data = { eventId: eid, response: "going", name, email, ...(phone ? { phone, contactVia: "sms" } : { contactVia: "email" }), slot, ...(lines.length ? { orderQty: lines.map((x) => ({ i: x.i, qty: qty[x.id] })) } : { order: free.slice(0, 200) }), code: rc, createdAt: Date.now(), via: "invite-order" };
         const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); const rid = String(j.id || j.doc?.id || "").split("/").pop(); code = rc;
+        if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); rid = String(j.id || j.doc?.id || "").split("/").pop(); code = rc;
         U.ls.set("encore-rsvp-" + eid, JSON.stringify({ rid, code: rc, name, ct: c, gi: -1, response: "going", order: text, wall: false, eventId: eid, data: {} }));
         if (total && /^https:\/\//.test(e.ticketUrl || "")) pay = U.payLinkOf(e.ticketUrl, money(total), [name, e.pubTitle || e.name].filter(Boolean).join(" · ")); }
       form.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(text)}</p>${code && shop ? `<p class="muted" style="margin:0">Order #${esc(code)}. Show this at pickup.</p>` : ""}${where ? `<p class="muted" style="margin:0">📍 ${esc(where)}</p>` : ""}
-        <p class="muted" style="margin:0">${esc(first)} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.</p><div class="btns">${pay ? `<a class="btn pay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}</div></div>`;
+        <p class="muted" style="margin:0">${esc(first)} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.</p><div class="btns">${pay ? `<a class="btn pay" id="oPay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}${pay && rid ? `<button type="button" class="btn" id="oPaid" hidden>I paid</button>` : ""}</div></div>`;
+      // review round 10: after Pay, "I paid" records a claim on their own reply, as on any paid invite. The host still confirms.
+      const oPay = $("#oPay"), oPaid = $("#oPaid");
+      if (oPay && oPaid) { oPay.addEventListener("click", () => { U.ls.set("encore-paytap-" + eid, "1"); oPaid.hidden = false; });
+        oPaid.onclick = async () => { oPaid.disabled = true;
+          try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
+            try { const m0 = JSON.parse(U.ls.get("encore-rsvp-" + eid) || "{}"); U.ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
+            const ps = document.querySelectorAll("#tk p.muted"), p = ps[ps.length - 1]; if (p) p.textContent = `Got it. ${first} will check and confirm.`; oPay.remove(); oPaid.remove(); }
+          catch { oPaid.disabled = false; oPaid.textContent = "Didn't go through. Tap to try again"; } }; }
       document.getElementById("tk")?.scrollIntoView({ behavior: "smooth", block: "center" }); }
     catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "Didn't go through. Check your connection and try again." : err.message; go.disabled = false; } };
 };

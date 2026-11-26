@@ -83,7 +83,7 @@ test("a guest picks how many of each tier; the server keeps the picks, the party
   assert.equal(tierTotal({ priceTiers: [{ label: "Adults", price: 54.95 }, { label: "Kids", price: 34.95 }] }, { tiers: [{ label: "Adults", n: 2 }, { label: "Kids", n: 2 }] }), 179.8, "cents add up");
   // the reply: tiers are a guest field, the party is everyone picked; the pay line uses the sum
   const app = read("server/app.js"); assert.match(app, /"utm", "source", "tiers"\]\)/); assert.match(app, /o\.tiers = cleanPicks\(b\.tiers\); const n = o\.tiers\.reduce\(\(a, p\) => a \+ p\.n, 0\); if \(b\.party == null && n\) o\.party = Math\.min\(50, n\);/);
-  assert.match(app, /const n = tierTotal\(ev, r\) \|\| parseFloat\(p\.replace/);
+  assert.match(app, /const tt = tierTotal\(ev, r\), cents = tt > 0 \? Math\.round\(tt \* 100\) : dueCents\(ev, r\)/);
   // the page sums the same way
   const { T } = browser(); assert.equal(T.total(ev, [{ label: "Adults", n: 2 }, { label: "Kids", n: 1 }]), 145); assert.equal(T.money(145), "$145"); assert.equal(T.money(179.8), "$179.80"); assert.equal(T.people([{ n: 2 }, { n: 1 }]), 3);
   // the light invite: the picker in the form, the picks and party on the reply, Pay says the sum

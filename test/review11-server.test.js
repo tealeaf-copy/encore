@@ -119,7 +119,7 @@ test("5 and 6. pairs book whole (1 becomes 2, partyCut), pay what the party owes
   assert.match(fakeOutbox.slice(e1).find((x) => x.to.includes("ivy.r11s@example.com")).text, /Pay \$45 at the door\./, "$15 × 3");
   const ev = (await getJ("/api/v1/events?host=mo-r11s&limit=100")).j.data.find((e) => e.id === "rsPairs");
   assert.equal(ev.spot_unit, "group"); assert.equal(ev.group_size, 2); assert.equal(ev.spots_left, 5, "12 people is 6 pairs, one booked");
-  assert.match(read("public/invite.html"), /payLinkOf\(pay, dueOf\(e, data\.party\)/); assert.ok(read("public/invite.html").length < 40000);
+  assert.match(read("public/invite.html"), /: dueOf\(e, data\.party\)[\s\S]*payLinkOf\(pay, amtP/); assert.ok(read("public/invite.html").length < 40000);
 });
 
 test("7. vouching needs a proven email, and a link sent before the email changed proves nothing", async () => {

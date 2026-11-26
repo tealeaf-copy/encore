@@ -38,6 +38,15 @@
     if (!N?.discover) { v.insertAdjacentHTML("afterbegin", DONE); return; }
     v.insertAdjacentHTML("afterbegin", card(N.discover)); const el = document.getElementById("plnDiscover");
     el.querySelector("[data-pln-show]").onclick = () => act(true); el.querySelector("[data-pln-no]").onclick = () => act(false); }
+  // "3 people asked about Matcha workshop": people who left their email on the preview page before this host joined (server/interest.js)
+  let ASK = null; const askedSeen = () => { try { return localStorage.getItem("pl.askedSeen") === String(ASK?.total || 0); } catch { return false; } };
+  function paintAsked() { const v = document.getElementById("view-programs"); if (!v || v.hidden || !ASK?.items?.length || askedSeen() || document.getElementById("plnAsked")) return; css();
+    const top = ASK.items[0], more = ASK.items.length > 1 ? ` And ${ASK.items.length - 1} more.` : "";
+    v.insertAdjacentHTML("afterbegin", `<section class="pln" id="plnAsked" aria-label="People who asked"><span class="pln-e" aria-hidden="true">${CHECK}</span><b>${esc(top.line)}</b><p>They asked on your preview page before you joined. ${ASK.told ? "We emailed each of them once with a link." : "We'll email each of them once when it's ready to book."}${esc(more)}</p>
+      <div class="pln-acts">${top.url ? `<a class="pln-go" href="${esc(top.url)}" style="display:inline-flex;align-items:center;text-decoration:none">See it</a>` : ""}<button type="button" class="pln-no" data-pln-ok>Got it</button></div></section>`);
+    document.querySelector("#plnAsked [data-pln-ok]").onclick = () => { try { localStorage.setItem("pl.askedSeen", String(ASK.total)); } catch {} document.getElementById("plnAsked")?.remove(); }; }
+  fetch("/api/host/interest", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.items?.length) return; ASK = j; paintAsked();
+    new MutationObserver(() => { clearTimeout(window.__plnA); window.__plnA = setTimeout(paintAsked, 150); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); }).catch(() => {});
   async function start() { N = await load(); if (!N?.discover) return; paint();
     const mo = new MutationObserver(() => { clearTimeout(window.__plnT); window.__plnT = setTimeout(paint, 120); }); mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] }); }
   window.PLNudges = { load, card, doneCard, paint };

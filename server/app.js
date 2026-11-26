@@ -28,6 +28,7 @@ import { mountScrapbook } from "./scrapbook.js";
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
 import { mountMarket } from "./market.js";
+import { mountInterest } from "./interest.js"; // one page per experience or shop item (/x/...), and "I'm interested" on preview pages
 import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
@@ -682,6 +683,7 @@ export function createApp({ store, dataDir }) {
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });

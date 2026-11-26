@@ -116,10 +116,10 @@ test("Stories endpoint shape, reactions", async () => {
   const r = await get("/api/feed/stories"); assert.equal(r.status, 200); const { stories } = await r.json();
   assert.ok(Array.isArray(stories) && stories.length);
   for (const s of stories) { assert.ok(s.key && s.host?.handle && s.host.name, JSON.stringify(s.host)); assert.equal(typeof s.thumb, "string"); assert.equal(typeof s.latestAt, "number"); assert.ok(s.items.length && s.items.length <= 10);
-    for (const it of s.items) { assert.ok(it.id && ["image", "video", "art"].includes(it.type), JSON.stringify(it)); assert.equal(typeof it.caption, "string"); assert.ok(["See invite", "See page"].includes(it.cta.label)); assert.match(it.cta.url, /^\/(g#rsvp-|@)/); if (it.type !== "art") assert.match(it.url, /^\/(_blob|presets)\//); } }
+    for (const it of s.items) { assert.ok(it.id && ["image", "video", "art"].includes(it.type), JSON.stringify(it)); assert.equal(typeof it.caption, "string"); assert.ok(["I'm in", "Ask to join", "Order", "I'd go", "Book for your team", "I'm interested", "Follow"].includes(it.cta.label), it.cta.label); assert.match(it.cta.url, it.cta.label === "Follow" ? /^\/@/ : /^\/(e|x)\//); if (it.type !== "art") assert.match(it.url, /^\/(_blob|presets)\//); } }
   const mai = stories.find((s) => s.host.handle === "mai-fv"); assert.ok(mai, "Mai has photos this week");
   assert.ok(mai.items.some((i) => i.type === "video" && i.poster), "the video with its poster");
-  assert.ok(mai.items.some((i) => i.cta.label === "See invite" && i.id === "f:fvSoon"), "the upcoming flyer");
+  assert.ok(mai.items.some((i) => i.cta.label === "I'm in" && i.cta.url === "/e/fvSoon" && i.id === "f:fvSoon"), "the upcoming flyer, to its light invite");
   assert.ok(mai.items.findIndex((i) => i.past) < mai.items.findIndex((i) => !i.past) || mai.items.every((i) => i.past), "oldest first");
   // reactions: one of each per device, toggled; past events only
   const a = await (await post("/api/feed/react", { eventId: "fvOpen", emoji: "🔥", device: "dev-abcdefgh" })).json(); assert.equal(a.counts["🔥"], 1); assert.deepEqual(a.mine, ["🔥"]);

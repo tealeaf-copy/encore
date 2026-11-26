@@ -28,25 +28,27 @@
 
   // ---- the shop ----
   // ---- a showcase page (a host who isn't on Pottery Lab yet): everything they offer, as a read-only menu ----
-  // names, prices, what's included and the run of show; no forms, nothing stored; questions go to their Instagram
+  // names, prices, what's included and the run of show. Each thing has "I'm interested": its own page (/x/<handle>/<id>,
+  // server/interest.js) takes a name and email, and we tell them once when they can book. Questions go to their Instagram.
   function showcaseMenu(h) { if (document.getElementById("scMenu")) return; const X = h.experiences || [], G = h.gifts || [], I = (h.shop && h.shop.items) || []; if (!X.length && !G.length && !I.length) return;
     const ig = (h.links || []).find((l) => /instagram\.com/i.test(l.url || ""))?.url || "", nm = String(h.name || "").trim();
     const ask = ig ? `<a class="btn ghost sc-ask" href="${esc(ig)}" target="_blank" rel="noopener">Ask on Instagram</a>` : "";
+    const want = (u, name) => `<a class="btn sc-int" href="${esc(u)}" aria-label="I'm interested in ${esc(name)}">I'm interested</a>`, xu = (id) => `/x/${encodeURIComponent(h.handle)}/${encodeURIComponent(id)}`;
     const priceOf = (p) => priceText(p) || "To be quoted";
     const list = (title, L) => (L || []).length ? `<p class="sc-l"><b>${title}</b></p><ul>${L.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : "";
     const xp = (x) => `<article class="sc-item"><div class="sc-top"><h4>${esc(x.emoji ? x.emoji + " " : "")}${esc(x.name)}</h4><b class="sc-p">${esc(priceOf(x.price))}</b></div>
       <p class="sc-meta">${[x.min > 1 ? `${x.min}–${x.max} guests` : x.max ? `Up to ${x.max} guests` : "", x.length || "", x.travels ? "Comes to you" : ""].filter(Boolean).map(esc).join(" · ")}</p>${subOf(x) ? `<p>${esc(subOf(x))}</p>` : ""}
-      ${list("What's included", x.includes)}${x.allIn ? `<p class="sc-meta">${esc(x.allIn)}</p>` : ""}${(x.runOfShow || []).length ? `<details><summary>Run of show</summary><ol>${x.runOfShow.map((t) => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}${ask}</article>`;
+      ${list("What's included", x.includes)}${x.allIn ? `<p class="sc-meta">${esc(x.allIn)}</p>` : ""}${(x.runOfShow || []).length ? `<details><summary>Run of show</summary><ol>${x.runOfShow.map((t) => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}<p class="sc-acts">${want(xu(x.id), x.name)}${ask}</p></article>`;
     const each = (c) => money(c) + " each";
     const gx = (g) => `<article class="sc-item"><div class="sc-top"><h4>${esc(g.emoji ? g.emoji + " " : "")}${esc(g.name)}</h4><b class="sc-p">${g.cents ? esc(each(g.cents)) : "To be quoted"}</b></div>${subOf(g) ? `<p>${esc(subOf(g))}</p>` : ""}
       ${(g.tiers || []).length && g.cents ? `<p class="sc-meta">${[{ qty: g.minQty || 1, cents: g.cents }, ...g.tiers].map((t) => `${t.qty}+ ${money(t.cents)}`).map(esc).join(" · ")}</p>` : ""}
-      <p class="sc-meta">${[g.minQty ? `Min ${g.minQty}` : "", g.lead ? `${g.lead} to make` : "", g.ships || ""].filter(Boolean).map(esc).join(" · ")}</p>${g.allIn ? `<p class="sc-meta">${esc(g.allIn)}</p>` : ""}${list("Personalize with", g.personalize)}${ask}</article>`;
-    const si = (x) => `<article class="sc-item"><div class="sc-top"><h4>${esc(x.emoji ? x.emoji + " " : "")}${esc(x.name)}</h4><b class="sc-p">${x.cents ? esc(money(x.cents)) : ""}</b></div>${subOf(x) ? `<p>${esc(subOf(x))}</p>` : ""}</article>`;
-    if (!document.getElementById("sc-css")) { const c = document.createElement("style"); c.id = "sc-css"; c.textContent = `.sc-menu{margin:22px 0}.sc-menu h2{font:600 24px Fredoka,system-ui;margin:2px 0 6px}.sc-menu h3{font:600 18px Fredoka,system-ui;margin:18px 0 8px}.sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}.sc-item{border:1px solid var(--line,#E4D9C8);border-radius:16px;background:var(--bg,#FFFBF5);padding:12px 14px;min-width:0}.sc-item h4{font:600 16px Fredoka,system-ui;margin:0}.sc-item p{margin:6px 0;font-size:14px}.sc-item ul,.sc-item ol{margin:4px 0 8px;padding-left:18px;font-size:14px}.sc-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.sc-p{white-space:nowrap;font-size:14px}.sc-meta{color:var(--smoke,#665A51)}.sc-l{margin:8px 0 0!important}.sc-item details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px}.sc-ask{display:inline-flex;align-items:center;min-height:44px;margin-top:6px}`; document.head.appendChild(c); }
+      <p class="sc-meta">${[g.minQty ? `Min ${g.minQty}` : "", g.lead ? `${g.lead} to make` : "", g.ships || ""].filter(Boolean).map(esc).join(" · ")}</p>${g.allIn ? `<p class="sc-meta">${esc(g.allIn)}</p>` : ""}${list("Personalize with", g.personalize)}<p class="sc-acts">${want(xu(g.id), g.name)}${ask}</p></article>`;
+    const si = (x, i) => `<article class="sc-item"><div class="sc-top"><h4>${esc(x.emoji ? x.emoji + " " : "")}${esc(x.name)}</h4><b class="sc-p">${x.cents ? esc(money(x.cents)) : ""}</b></div>${subOf(x) ? `<p>${esc(subOf(x))}</p>` : ""}<p class="sc-acts">${want(`/x/${encodeURIComponent(h.handle)}/shop/${i}`, x.name)}</p></article>`;
+    if (!document.getElementById("sc-css")) { const c = document.createElement("style"); c.id = "sc-css"; c.textContent = `.sc-menu{margin:22px 0}.sc-menu h2{font:600 24px Fredoka,system-ui;margin:2px 0 6px}.sc-menu h3{font:600 18px Fredoka,system-ui;margin:18px 0 8px}.sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}.sc-item{border:1px solid var(--line,#E4D9C8);border-radius:16px;background:var(--bg,#FFFBF5);padding:12px 14px;min-width:0}.sc-item h4{font:600 16px Fredoka,system-ui;margin:0}.sc-item p{margin:6px 0;font-size:14px}.sc-item ul,.sc-item ol{margin:4px 0 8px;padding-left:18px;font-size:14px}.sc-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.sc-p{white-space:nowrap;font-size:14px}.sc-meta{color:var(--smoke,#665A51)}.sc-l{margin:8px 0 0!important}.sc-item details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px}.sc-ask{display:inline-flex;align-items:center;min-height:44px;margin-top:6px}.sc-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0!important}.sc-acts .btn{margin:0}.sc-int{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;text-decoration:none}`; document.head.appendChild(c); }
     const box = document.createElement("section"); box.className = "sc-menu"; box.id = "scMenu";
-    box.innerHTML = `<small class="nu-eyebrow">Requests open once ${esc(nm)} joins</small><h2>What ${esc(nm)} offers</h2><p class="muted" style="margin:0">A menu to look at for now. Nothing here can be requested or ordered on Pottery Lab yet.</p>
+    box.innerHTML = `<small class="nu-eyebrow">Requests open once ${esc(nm)} joins</small><h2>What ${esc(nm)} offers</h2><p class="muted" style="margin:0">${esc(nm)} isn't taking requests on Pottery Lab yet. Tap I'm interested and we'll tell you when you can book.</p>
       ${X.length ? `<h3>For events and teams</h3><div class="sc-grid">${X.map(xp).join("")}</div>` : ""}${G.length ? `<h3>${esc(h.giftNote ? "Gifts" : "Custom gifts")}</h3>${h.giftNote ? `<p class="muted" style="margin:0 0 8px">${esc(h.giftNote)}</p>` : ""}<div class="sc-grid">${G.map(gx).join("")}</div>` : ""}
-      ${I.length ? `<h3>${esc(h.shop.title || "From the shop")}</h3>${h.shop.note ? `<p class="muted" style="margin:0 0 8px">${esc(h.shop.note)}</p>` : ""}<div class="sc-grid">${I.map(si).join("")}</div>` : ""}`;
+      ${I.length ? `<h3>${esc(h.shop.title || "From the shop")}</h3>${h.shop.note ? `<p class="muted" style="margin:0 0 8px">${esc(h.shop.note)}</p>` : ""}<div class="sc-grid">${I.map((x, i) => si(x, i)).join("")}</div>` : ""}`;
     const ex = document.getElementById("extras"); if (ex) ex.prepend(box); else ($("#nextUp") || $(".cols"))?.before(box); }
   async function shop(h, first) { if (h.showcase) { showcaseMenu(h); return; } let s; try { s = (await (await fetch("/api/public/shop/" + encodeURIComponent(h.handle))).json()).shop; } catch { return; } if (!s) return;
     // review round 8: item names in the app's type (never the page theme's serif), and a visible separator before "5 left"
@@ -116,6 +118,7 @@
     const NM = names(h, first); first = NM.first; document.getElementById("hire")?.remove();
     if (!document.getElementById("bk-css")) { const st = document.createElement("style"); st.id = "bk-css"; st.textContent = BOOK_CSS; document.head.appendChild(st); }
     const Q = new URLSearchParams(location.search), today = new Date().toISOString().slice(0, 10), H = String(h.name || first).replace(/\.$/, "");
+    if (Q.get("book") && !Q.get("exp")) Q.set("exp", Q.get("book")); // /@handle?book=<id>: the request form opened for that experience (as ?exp=)
     const opens = (x) => (x?.openDates || []).filter((d) => d >= today), dayTxt = (d, o = {}) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", ...o });
     const isExample = () => !!h.sample || document.body.classList.contains("example-host");
     const fitsN = (x, n) => n >= (x.min || 1) && n <= (x.max || 1e9), defN = (x) => Math.max(x.min || 1, Math.min(x.max || 20, 20));
@@ -380,6 +383,12 @@
     // arrived for a gift: the footer points to more makers, not hosts
     if (location.hash === "#gifts") { const fa = document.querySelector('footer a[href="/hosts"]'); if (fa) { fa.textContent = "Find more makers"; fa.href = "/gifts"; } } }
 
+  // ---- owner: "N people asked about Matcha workshop" (from the preview page, before they joined; server/interest.js) ----
+  async function asked() { if (document.getElementById("plAsked")) return; let j; try { const r = await fetch("/api/host/interest", { credentials: "same-origin" }); if (!r.ok) return; j = await r.json(); } catch { return; } if (!j?.items?.length) return;
+    const sec = document.createElement("section"); sec.id = "plAsked"; sec.className = "pl-asked"; sec.setAttribute("aria-label", "People who asked");
+    sec.innerHTML = `<style>.pl-asked{margin:16px 0;padding:14px 16px;border:1.5px solid var(--line,#E4D9C8);border-radius:16px;background:var(--bg,#FFFBF5)}.pl-asked b{font:600 17px Fredoka,system-ui}.pl-asked ul{margin:6px 0 0;padding:0;list-style:none}.pl-asked li a,.pl-asked li span{display:inline-flex;align-items:center;min-height:44px}.pl-asked p{margin:4px 0 0;font-size:14px;color:var(--smoke,#665A51)}</style>
+      <b>People asked before you joined</b><ul>${j.items.slice(0, 6).map((x) => `<li>${x.url ? `<a href="${esc(x.url)}">${esc(x.line)}</a>` : `<span>${esc(x.line)}</span>`}</li>`).join("")}</ul><p>${j.told ? "We emailed each of them once with a link to it." : "We'll email each of them once when it's ready to book."}</p>`;
+    const at = document.getElementById("book") || document.getElementById("extras") || document.querySelector(".cols"); if (at) at.before(sec); }
   // ---- owner: shop and bookings ----
   async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
@@ -390,7 +399,7 @@
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const st = { shop: JSON.parse(JSON.stringify(mine.shop || { open: false, title: "", note: "", where: "", slots: [], items: [], payUrl: "" })), exps: JSON.parse(JSON.stringify(mine.experiences || [])) };
     let tab = /[?&]orders=1/.test(location.search) ? "orders" : "shop"; // hosts first: the shop (pre-orders, pickup) opens before brand bookings
-    hireCard(); let reqShown = false;
+    hireCard(); asked(); let reqShown = false;
     async function draw() { const s = st.shop;
       pane.innerHTML = `<div class="sp-head"><b>Shop and bookings</b><button type="button" class="sp-x" aria-label="Close">✕</button></div><div class="sp-tabs">${[["shop", "Shop"], ["orders", "Orders"], ["book", "Team bookings"], ["collab", "Collabs"]].map(([k, l]) => `<button type="button" data-t="${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div><div id="spBody"></div>`;
       pane.querySelector(".sp-x").onclick = () => (pane.hidden = true); $$("[data-t]", pane).forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));

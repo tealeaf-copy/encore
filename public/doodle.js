@@ -31,7 +31,7 @@
       <div class="dd-tools">
         <div class="dd-g" role="group" aria-label="Tool"><button type="button" data-tool="pen" aria-pressed="true" title="Brush">✏️</button><button type="button" data-tool="marker" aria-pressed="false" title="Marker">🖍️</button><button type="button" data-tool="erase" aria-pressed="false" title="Eraser">🧽</button><button type="button" data-tool="stamp" aria-pressed="false" title="Stickers">⭐</button></div>
         <div class="dd-g" role="group" aria-label="Brush size">${SIZES.map((z, i) => `<button type="button" data-size="${z}" aria-pressed="${i === 1}" title="Size ${i + 1}"><span class="dd-dot" style="width:${4 + i * 5}px;height:${4 + i * 5}px"></span></button>`).join("")}</div>
-        <div class="dd-g" role="group" aria-label="Colour">${COLORS.map((c, i) => `<button type="button" class="dd-sw" data-color="${c}" aria-pressed="${i === 0}" style="background:${c}" aria-label="Colour ${c}"></button>`).join("")}</div>
+        <div class="dd-g" role="group" aria-label="Color">${COLORS.map((c, i) => `<button type="button" class="dd-sw" data-color="${c}" aria-pressed="${i === 0}" style="background:${c}" aria-label="Color ${c}"></button>`).join("")}</div>
         <div class="dd-g" role="group" aria-label="Paper">${PAPERS.map((c) => `<button type="button" class="dd-sw" data-paper="${c}" style="background:${c}" aria-label="Paper ${c}"></button>`).join("")}<small style="padding:0 4px;color:#6B5F56">paper</small></div>
         <div class="dd-g dd-st" role="group" aria-label="Stickers" hidden>${STAMPS.map((e) => `<button type="button" data-stamp="${e}">${e}</button>`).join("")}${window.Potto ? `<button type="button" data-stamp="potto" title="Potto">${window.Potto.svg("cheer", 30, "Potto")}</button>` : ""}</div>
         <div class="dd-g"><button type="button" data-undo title="Undo">↶ Undo</button><button type="button" data-clear title="Clear">Clear</button></div>
@@ -59,7 +59,7 @@
     const press = (sel, el) => { bg.querySelectorAll(sel).forEach((b) => b.setAttribute("aria-pressed", String(b === el))); };
     bg.addEventListener("click", async (e) => { const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.x != null) { if (dirty && !confirm("Leave without using your drawing?")) return; bg.remove(); return; }
-      if (b.dataset.tool) { tool = b.dataset.tool; press("[data-tool]", b); bg.querySelector(".dd-st").hidden = tool !== "stamp"; hint.textContent = tool === "stamp" ? "Pick a sticker, then tap the drawing to place it. Bigger size = bigger sticker." : tool === "erase" ? "Erasing paints with your paper colour." : "Draw with your finger, mouse or pen."; }
+      if (b.dataset.tool) { tool = b.dataset.tool; press("[data-tool]", b); bg.querySelector(".dd-st").hidden = tool !== "stamp"; hint.textContent = tool === "stamp" ? "Pick a sticker, then tap the drawing to place it. Bigger size = bigger sticker." : tool === "erase" ? "Erasing paints with your paper color." : "Draw with your finger, mouse or pen."; }
       if (b.dataset.size) { size = +b.dataset.size; press("[data-size]", b); }
       if (b.dataset.color) { color = b.dataset.color; press("[data-color]", b); if (tool === "erase" || tool === "stamp") { tool = "pen"; press("[data-tool]", bg.querySelector('[data-tool="pen"]')); bg.querySelector(".dd-st").hidden = true; } }
       if (b.dataset.stamp) { stamp = b.dataset.stamp; press("[data-stamp]", b); }

@@ -118,7 +118,10 @@ export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, 
   app.get("/api/public/kudos-more/:eventId", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited");
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working.", 403, "not_granted");
     const Dir = app.locals.directory; if (!Dir?.similar) return res.json({ events: [] }); const h = C.profileOf(P.ws);
-    try { res.json({ events: Dir.similar(publicOrigin(req), { eventId: P.r.eventId, activity: P.ev.activity || "", title: P.ev.pubTitle || P.ev.name || "", city: P.ev.city || h?.city || "", host: h?.handle || "" }) }); } catch { res.json({ events: [] }); } });
+    // review round 6: the same city first; other places only when nothing like it is coming up there
+    try { const city = String(P.ev.city || h?.city || "").split(",")[0].trim().toLowerCase(), L = Dir.similar(publicOrigin(req), { eventId: P.r.eventId, activity: P.ev.activity || "", title: P.ev.pubTitle || P.ev.name || "", city: P.ev.city || h?.city || "", host: h?.handle || "", limit: 12 });
+      const here = city ? L.filter((e) => `${e.city || ""} ${e.area || ""}`.toLowerCase().includes(city)) : [];
+      res.json({ events: (here.length ? here : L).slice(0, 3) }); } catch { res.json({ events: [] }); } });
 
   // the second-host loop, for the host who got the kudos (owner of the workspace only; counts, never people)
   app.get("/api/admin/loop-stats", (req, res) => { const u = ownerOnly(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json(loopStats(scopeStore(store, u.ws))); });

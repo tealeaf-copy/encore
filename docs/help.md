@@ -125,6 +125,11 @@ Open your event to see who's in, who might come and who can't. Guests can change
 Keywords: reminder, reminders, remind, send reminders, remind guests, day before, texts, emails to guests
 Potto reminds guests who said yes the day before, by email, and by text when they gave a phone and texting is set up. The Remind guests the day before switch on your event is on by default; turn it off for that event if you'd rather not. You get a note in your notifications once they're sent.
 
+## Weekly, monthly and courses
+
+Keywords: weekly, monthly, weekly events, monthly events, repeating events, repeat, repeats, every week, every month, recurring, series, run club, book club, next one, next date, course, sessions, class pass, drop-in, drop in
+Open your event and set Repeats, under More options, to Every week, Every two weeks or Every month. Every month keeps the day, like the first Sunday of each month. The morning after each date, the next one appears with the same title, place, price, spots and look, and guests who open last week's link see the next date and can reply right there. To make each date yourself, turn off Make the next one automatically and use Make the next one; to stop, set a Last date or set Repeats to Just once. Tell Potto "6-week pottery course" or "8 sessions" and it's one event with every date on it, like "6 Wednesdays, Jan 6 to Feb 10"; it ends after the last session, and Run it again starts the next one. Say "$20 a class or $70 for 4 classes" for a pass and guests see "$20 a class, or $70 for 4", with a Pay button for each. "$10 a drop-in" reads "$10 a class". On Home and your page, the dates of one series share a card with "+N more dates".
+
 ## Kudos and reviews
 
 Keywords: kudos, reviews, review, feedback, thank you, rating, after the event
@@ -143,12 +148,12 @@ Talks live in your past events. Tap Bring in past events, then Add a talk, or dr
 ## The shop and pre-orders
 
 Keywords: shop, sell, pre-order, preorder, orders, pickup, cake, merch, products
-On your page, tap Shop and bookings. List what you're selling with a price and how many you can make, and set pickup. People order with a pickup time; you see orders, mark them paid or picked up, and can text everyone when it's ready.
+On your page, tap 🛍 Shop (on a computer it says Shop and bookings). In the Shop tab, list what you're selling with a price and how many you can make, and add pickup times. People order with a pickup time. In the Orders tab you see each order, set it to Paid, Ready or Picked up, and tap Text everyone when it's ready.
 
 ## Brand requests and quotes
 
 Keywords: brand, brands, booking, book, request, quote, company, team event, offsite, corporate
-Brands can request you from your page. Requests show under Shop and bookings, Requests. Tap Send quote with your price and terms; the brand accepts from their own page. Potto reminds you if a request has no quote after 4 hours.
+Brands can request you from your page. Requests show when you tap 🛍 Shop on your page, under Team bookings. Tap Send quote with your price and terms; the brand accepts from their own page. Potto reminds you if a request has no quote after 4 hours.
 
 ## Brand onboarding
 

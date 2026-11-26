@@ -21,7 +21,7 @@ import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
 import { mountScrapbook } from "./scrapbook.js";
 import { mountGiftPlan } from "./giftplan.js";
-import { mountShop } from "./shop.js";
+import { mountShop, payLink } from "./shop.js";
 import { mountMarket } from "./market.js";
 import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
@@ -31,6 +31,7 @@ import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountKudosAsk } from "./kudosask.js";
+import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { withCleanLook } from "./looks.js"; // per-event looks (Make it yours)
@@ -641,6 +642,9 @@ export function createApp({ store, dataDir }) {
   mountLeaderboard(app, { store, C, X, sendStatic });
   // kudos asked of every guest the morning after, the one-tap kudos page (/k/<event>) and the second-host loop count
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
+  // ---- repeats: weekly and monthly events make their next date the morning after, and old links show it (server/repeats.js) ----
+  mountRepeats(app, { store, C, X, ownerOnly: (req, res) => ownerOnly(req, res), workspaceOfEvent });
+  // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
@@ -1559,6 +1563,19 @@ export function createApp({ store, dataDir }) {
     const tz = /^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)+$/.test(ev.tz || "") ? `&ctz=${encodeURIComponent(ev.tz)}` : "";
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titleOf(ev))}&dates=${dates}${tz}&location=${encodeURIComponent(where || "")}&details=${encodeURIComponent(details || "")}`;
   }
+  // ---- paid events: the "You're in" and let-in emails say how to pay (review round 6) ----
+  // With a price and a pay link: "Pay $45 here: <link with the amount and a note>" (payLink in server/shop.js, the same
+  // as the invite's Pay button) and "Already paid? Open your invite and tap I paid: <link>". At the door: "Pay $45 at the
+  // door." With neither: "<Host> will send you a way to pay." Free and pay-what-you-like events get nothing.
+  function payLines(ev, r, host, link) {
+    const p = String(ev?.price || "").trim(); if (!p || p === "chip" || /^(free|\$?0)$/i.test(p)) return [];
+    const n = parseFloat(p.replace(/[^\d.]/g, "")); if (!(n > 0)) return [];
+    const cents = Math.round(n * 100), amt = "$" + (cents / 100).toFixed(cents % 100 ? 2 : 0), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
+    if (url) return ["", `Pay ${amt} here: ${payLink(url, cents, [String(r?.name || "").trim(), titleOf(ev)].filter(Boolean).join(" · "))}`, `Already paid? Open your invite and tap I paid: ${link}`];
+    if (ev.ticketNote) return ["", `Pay ${amt} at the door.`];
+    return ["", `${host === "Your host" ? "Your host" : host} will send you a way to pay.`];
+  }
+  // ---- end paid events ----
   /** A guest's own reply, confirmed by email: "You're in" for I'm in on an open event, "Asked" for Ask to join on an event
    * where the host lets each guest in. Once per reply, only to the email on it, only when email is set up and the address
    * hasn't opted out. The place is only what the guest's own invite already shows (never an address it hides). */
@@ -1575,6 +1592,7 @@ export function createApp({ store, dataDir }) {
     if (where) lines.push(`Where: ${where}${pe.addrHidden ? (kind === "in" ? " (the exact address is on your invite)" : " (the exact address comes once you're in)") : ""}`);
     lines.push("", `Your invite, to see or change your reply: ${link}`);
     if (cal) lines.push(`Add to calendar: ${cal}`);
+    if (kind === "in") lines.push(...payLines(ev, r, host, link)); // paid events: how to pay
     if (handle && !ev.hideHostFollow) lines.push(`Follow ${host === "Your host" ? "your host" : host}: ${origin}/@${encodeURIComponent(handle)}`);
     if (kind === "in") lines.push("", "Plans changed? Open your invite and tap Can't go, so someone else can have the spot.");
     const m = await mailWs(ws, { list: "guest", origin, to, subject: `${kind === "in" ? "You're in" : "Asked"}: ${title}`, text: lines.join("\n") + "\n", eventId: r.eventId, kind: "confirm", fromName: host === "Your host" ? "" : host });
@@ -1599,7 +1617,7 @@ export function createApp({ store, dataDir }) {
     if (!req.guest && after && now === "going" && was && was !== "going" && ["requested", "waitlist", "maybe", "declined", "no"].includes(was)) {
       const to = String(after.email || "").trim(), host = hostFirstOf(ws, ev), when = whenOf(ev), link = replyLink(req, ws, eventId, id); letIn = { emailed: false, texted: false };
       if (EMAIL_OK(to)) { X.notify(to.toLowerCase(), { kind: "letin", key: "letin-" + id, text: `🎉 ${host} let you in to ${title}.`, link: `/g#rsvp-${eventId}`, eventId });
-        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
+        if (X.canEmail(to)) { try { letIn.emailed = !!(await mailWs(ws, { list: "guest", origin: originOf(req), to, subject: `You're in: ${title}`, text: `Hi ${firstOf(after.name) || "there"},\n\n${host} let you in. You're in for ${title}${when ? ` (${when})` : ""}.\n\nYour invite, with the address and details: ${link}\n${payLines(ev, after, host, link).map((x) => x + "\n").join("")}\nPlans changed? Open it and tap Can't go, so someone else can have the spot.\n`, eventId, kind: "letin", fromName: host })).ok; } catch {} } }
       const sms = smsConfig(); if (!letIn.emailed && sms && after.phone && after.smsOk !== false) { try { letIn.texted = !!(await sendSms(sms, { to: after.phone, text: `${host} let you in to ${title}${when ? `, ${when}` : ""}. Details: ${link} Reply STOP to opt out.` })).ok; } catch {} }
     }
     const fin = St.get("rsvps/" + id)?.data, all = St.list("rsvps").filter((d) => d.data?.eventId === eventId);

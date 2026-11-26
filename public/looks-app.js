@@ -112,7 +112,7 @@ html body.lk-on #view-guest .gxcover.typed{background:color-mix(in srgb,var(--lk
         if (b.dataset.fit) return set({ coverFit: b.dataset.fit });
         if (b.id === "mkRm") { d.coverPhoto = ""; const n = { ...L }; delete n.coverW; delete n.coverH; delete n.coverFit; d.look = n; return commit("Flyer removed."); }
         if (b.dataset.col === "none") return set({ palette: undefined });
-        if (b.dataset.col === "flyer" || b.dataset.col === "contrast") { const fp = await flyerPalette(u); if (!fp?.length) return tst("Couldn't read colours from that flyer."); return set({ palette: b.dataset.col === "flyer" ? fp : [C.contrastPage(fp[0]), ...fp.slice(1)] }); }
+        if (b.dataset.col === "flyer" || b.dataset.col === "contrast") { const fp = await flyerPalette(u); if (!fp?.length) return tst("Couldn't read colors from that flyer."); return set({ palette: b.dataset.col === "flyer" ? fp : [C.contrastPage(fp[0]), ...fp.slice(1)] }); }
         if (b.dataset.sw) { const s = LK.SWATCHES.find((x) => x[0] === b.dataset.sw); return set({ palette: s.slice(0, 3) }); }
         if (b.dataset.fx) return set({ effect: b.dataset.fx === "none" ? undefined : b.dataset.fx });
         if (b.dataset.lights) return set({ lights: L.lights ? undefined : true });
@@ -124,7 +124,7 @@ html body.lk-on #view-guest .gxcover.typed{background:color-mix(in srgb,var(--lk
       const upd = box.querySelector("#mkUpd"); if (upd) upd.onkeydown = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); box.querySelector("#mkUpdGo").click(); } };
       const f = box.querySelector("#mkFile"); if (f) f.onchange = async () => { const file = f.files[0]; if (!file) return; const lab = f.closest("label"); lab.firstChild.nodeValue = "Uploading…";
         try { const [url, info] = await Promise.all([appUpload(file), LK.fromFile(file)]); d.coverPhoto = url; d.coverArt = null; flyerPal.set(url, info.palette);
-          const L = { ...LK.lookOf(d), coverW: info.w, coverH: info.h, coverFit: info.h > info.w ? "poster" : "banner" }; if (info.palette.length) { L.palette = info.palette; delete L.vibe; } d.look = L; commit("Flyer added. The page picks up its colours."); }
+          const L = { ...LK.lookOf(d), coverW: info.w, coverH: info.h, coverFit: info.h > info.w ? "poster" : "banner" }; if (info.palette.length) { L.palette = info.palette; delete L.vibe; } d.look = L; commit("Flyer added. The page picks up its colors."); }
         catch (err) { tst(err.message || "Upload didn't work. Try again."); lab.firstChild.nodeValue = "Upload flyer"; } }; }
     wire(); if (LK.safeSrc(d.coverPhoto)) flyerPalette(LK.safeSrc(d.coverPhoto)).then((p) => { if (p && box.isConnected) { box.innerHTML = panelHTML(d); preview(box, d); wire(); } }); }
 

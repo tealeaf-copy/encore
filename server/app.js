@@ -15,6 +15,7 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
+import { PREVIEW_LABEL } from "./previews.js";
 import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, partyMax, dueCents } from "./social.js";
 import { ordersClosed, tzOk, todayIn, eventTz } from "./tz.js";
 // review round 11: an event keeps a valid IANA time zone only (from its tz field, else the x-encore-tz header the browser may send on create)
@@ -514,7 +515,8 @@ export function createApp({ store, dataDir }) {
     try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Pottery Lab`; const blobOk = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || ""), pageImg = [h.theme?.coverUrl, h.theme?.avatarUrl, (h.gallery || [])[0]].find(blobOk) || ""; // the share preview: the page cover, else the profile picture
         const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
         html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}">${pageImg ? `<meta property="og:image" content="${e(originOf(req) + pageImg)}">` : ""}<meta name="twitter:card" content="${h.theme?.coverUrl ? "summary_large_image" : "summary"}">`); }
-      else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
+      if (h && !ws && !h.example) html = html.replace("</head><body>", `<style>.pv-note{margin:0;padding:10px 16px;background:#F2D48F;color:#1F1A17;font:600 14px/1.3 "Instrument Sans",system-ui,sans-serif;text-align:center}</style></head><body><p class="pv-note" role="note" data-preview>${PREVIEW_LABEL}</p>`);
+      else if (!h) { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   // the old measurement-method page described the event-team product; off while the site is about hosts
   app.get("/method", (req, res) => res.redirect(302, "/about"));
@@ -1654,6 +1656,9 @@ export function createApp({ store, dataDir }) {
     // review round 13: on a tiered event the party is what was picked ("2 Adults, 1 Kids" is 3), only tiers the event has
     // count, and more than one reply may hold is an error rather than a quiet cut (what they pay follows the same picks)
     { const TT = cleanTiers(ev.priceTiers); if (TT.length && out.tiers != null) {
+      // a tier the event doesn't have ("Seniors") would hold a spot with no amount: say which ones there are instead
+      const unknown = cleanPicks(out.tiers).filter((p) => p.n > 0 && !TT.some((x) => x.label.toLowerCase() === p.label.toLowerCase()));
+      if (unknown.length) { const names = TT.map((x) => x.label); return { body: out, prior, error: `Pick one of: ${names.join(", ")}`, status: 400, code: "invalid_tier" }; }
       const P = cleanPicks(out.tiers).map((p) => { const t = TT.find((x) => x.label.toLowerCase() === p.label.toLowerCase()); return t ? { label: t.label, n: p.n } : null; }).filter(Boolean), n = P.reduce((a, p) => a + p.n, 0), max = partyMax(ev);
       if (n > max) return { body: out, prior, error: `Pick up to ${max}.`, status: 400, code: "invalid_party" };
       out.tiers = P; if (n) out.party = Math.min(max, n); else delete out.tiers; } }

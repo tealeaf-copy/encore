@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { DEFAULT_WS, getWorkspace } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { isAdmin } from "./metrics.js";
+import { PREVIEW_LABEL } from "./previews.js";
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -167,7 +168,7 @@ h1{font:600 clamp(26px,7vw,34px)/1.15 Fredoka,system-ui;margin:4px 0 6px}.meta{m
 .go:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .err{color:#A3402B;font-weight:600;margin:8px 0 0;min-height:0}.err:empty{display:none}.fine{font-size:13px;color:var(--smoke);margin:10px 0 0}.fine a{color:#8A3A1E}
 .done h2{font:600 22px Fredoka,system-ui;margin:0 0 4px}.about h3{font:600 17px Fredoka,system-ui;margin:16px 0 4px}.about ul,.about ol{margin:0;padding-left:20px}.about p{margin:0 0 8px}
-.foot{margin-top:24px;font-size:14px;color:var(--smoke)}.foot a{color:#8A3A1E;display:inline-flex;min-height:44px;align-items:center}${EA_CSS}</style></head><body>
+.foot{margin-top:24px;font-size:14px;color:var(--smoke)}.foot a{color:#8A3A1E;display:inline-flex;min-height:44px;align-items:center}${EA_CSS}.pv-note{margin:0;padding:10px 16px;background:#F2D48F;color:#1F1A17;font:600 14px/1.3 "Instrument Sans",system-ui,sans-serif;text-align:center}</style></head><body>${T.preview && !T.P?.example ? `<p class="pv-note" role="note" data-preview>${e(PREVIEW_LABEL)}</p>` : ""}
 <main><div class="top"><a class="brand" href="/">Pottery Lab</a>${T.preview ? `<small style="color:var(--smoke)">Preview page</small>` : ""}</div>
 <div class="hero">${artOf(it)}</div>
 <p class="host">${avatar}<span><b style="color:var(--ink)">${e(nm)}</b>${where ? ` · ${e(where)}` : ""}</span></p>

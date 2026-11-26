@@ -14,8 +14,15 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { randomId } from "./db.js";
 import { DEFAULT_WS, getWorkspace, scopeStore } from "./workspaces.js";
-import { sniffType } from "./feedvisual.js";
 
+/** What the first bytes say the file is: JPEG, PNG, WebP or GIF, else "". */
+export function sniffType(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < 4) return "";
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf.length >= 12 && buf.toString("latin1", 0, 4) === "RIFF" && buf.toString("latin1", 8, 12) === "WEBP") return "image/webp";
+  if (buf.toString("latin1", 0, 4) === "GIF8") return "image/gif";
+  return ""; }
 export const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 export const PHOTO_FOR = ["cover", "page", "avatar"];
 export const PHOTO_MAX = { cover: 10 * 1048576, page: 10 * 1048576, avatar: 5 * 1048576 };
@@ -49,7 +56,8 @@ export const foreignBlob = (ws, url) => BLOB.test(String(url || "")) && !!ASSETS
 
 /** Strip a cover photo that isn't the workspace's own upload from an event write (the old one stays). */
 export function guardEventPhotos(body, ws, before) {
-  if (!body || typeof body !== "object") return body;
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  if (!("coverPhoto" in body || "coverSource" in body || "coverFocus" in body)) return body;
   const out = { ...body };
   if ("coverPhoto" in out && out.coverPhoto !== (before?.coverPhoto || "") && foreignBlob(ws, out.coverPhoto)) { if (before?.coverPhoto) out.coverPhoto = before.coverPhoto; else delete out.coverPhoto; }
   if ("coverSource" in out && out.coverSource !== (before?.coverSource || "") && foreignBlob(ws, out.coverSource)) delete out.coverSource;

@@ -49,8 +49,11 @@ test("CTA per story type: events go to /e with the right word, past events to th
   assert.deepEqual(F.upcoming.find((c) => c.id === "ctaPre").cta, { label: "Order", url: "/e/ctaPre" }, "a pre-order (three upcoming per ring, so its card)");
   assert.deepEqual(it("f:ctaIdea").cta, { label: "I'd go", url: "/e/ctaIdea" });
   for (const i of items) { assert.notEqual(i.cta.label, "See page"); assert.notEqual(i.cta.label, "See invite"); if (i.cta.label !== "Follow") assert.doesNotMatch(i.cta.url, /^\/@/, JSON.stringify(i)); }
-  // prepared (preview) pages fill a quiet feed: every item is "I'm interested", on that thing's own page
-  const sc = F.stories.filter((s) => s.showcase); assert.ok(sc.length, "preview rings");
+  // prepared (preview) pages stay out by default (owner decision); one with consent (ENCORE_FEED_PREVIEWS) fills a quiet
+  // feed, and every item is "I'm interested", on that thing's own page
+  assert.ok(!F.stories.some((s) => s.showcase && !s.example), "no preview rings by default");
+  process.env.ENCORE_FEED_PREVIEWS = "tram"; let F2; try { F2 = await (await get("/api/public/feed?consent=1")).json(); } finally { delete process.env.ENCORE_FEED_PREVIEWS; }
+  const sc = F2.stories.filter((s) => s.showcase); assert.ok(sc.length, "preview rings");
   for (const s of sc) for (const i of s.items) { assert.equal(i.cta.label, "I'm interested"); assert.match(i.cta.url, /^\/x\/[a-z0-9-]+\/(x\d|g\d|any|shop\/\d)/); }
   const tram = sc.find((s) => s.host.handle === "tram"); assert.ok(tram?.items.some((i) => i.cta.url === "/x/tram/x0"), "Tram's matcha workshop");
   // feed cards carry the same buttons

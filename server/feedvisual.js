@@ -12,6 +12,7 @@
 // - Kudos quotes on public cards come from open events only, with emails and phone numbers scrubbed.
 // Showcase (prepared) pages fill the signed-out feed with their covers and illustrated art, so it never looks empty.
 import crypto from "node:crypto";
+import { previewListed } from "./previews.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -146,7 +147,7 @@ export function makeFeedVisual(store, { C, X }) {
       ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
         const T = togetherOf(scopeStore(store, x.ws).list("rsvps"), e, x.id); return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
-      fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY, cta: past ? afterCta(I, x) : eventCta(e, x.id) };
+      fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY, cta: email && lc(x.owner || "") === email ? { label: "Manage", url: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, own: true } /* the host's own event: not I'm in */ : past ? afterCta(I, x) : eventCta(e, x.id) };
   }
   // ---------- prepared pages ----------
   let SC = null;
@@ -160,6 +161,8 @@ export function makeFeedVisual(store, { C, X }) {
       const firstUrl = exps[0]?.url || ((P.gifts || [])[0] ? `/x/${P.handle}/${encodeURIComponent(P.gifts[0].id || "g0")}` : (P.shop?.items || []).length ? `/x/${P.handle}/shop/0` : `/x/${P.handle}/any`);
       list.push({ host, tagline: clean(P.tagline, 160), city: clean(P.city, 60), hood: clean(P.hood, 60), example: !!P.example, past, experiences: exps, page: `/@${P.handle}`, cta: { label: "I'm interested", url: firstUrl } }); } } catch {}
     SC = { at: Date.now(), list }; return list; }
+  // the ones allowed into the feed, stories and deck (made-up examples, and ENCORE_FEED_PREVIEWS)
+  const listedShowcases = () => showcases().filter((S) => previewListed(S.host.handle, S));
 
   // how well a card fits what a visitor picked (pl.interests: interest ids and a city): interests count most, then the city
   const fitOf = (P, text, place) => { let n = 0; if (P.interests.length) { const T = interestsOf(text, ""); n += P.interests.filter((i) => T.includes(i)).length * 3; } if (P.city && lc(place).includes(P.city)) n += 2; return n; };
@@ -183,14 +186,14 @@ export function makeFeedVisual(store, { C, X }) {
     const pastK = pastX.map((x) => ({ x, ph: momentsOf(I, x.id).some((m) => momentSeen(I, m, email)), sm: sample(x.ws, I), fit: fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`), date: x.e.date || "" }));
     once.clear(); // past: the latest episode with photos stands for its series
     const past = pastK.sort((a, b) => (b.ph - a.ph) || (a.sm - b.sm) || b.fit - a.fit || String(b.date).localeCompare(String(a.date))).filter((k) => oneEach(k.x)).slice(0, 12).map((k) => card(I, k.x, { email, device }));
-    const near = (c) => (P.city && lc(`${c.city} ${c.hood}`).includes(P.city) ? 1 : 0);
+    const near = (c) => (P.city && nearTo(P.city, c) ? 1 : 0);
     if (P.interests.length || P.city) upcoming.sort((a, b) => (!!a.sample - !!b.sample) || near(b) - near(a) || fitC(b) - fitC(a) || String(a.date).localeCompare(String(b.date)));
     const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws, I), page: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : "", cta: (x.e.date || "") >= t ? eventCta(x.e, x.id) : afterCta(I, x, t) } }; });
     const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws, I);
       return { id: k.id, text: scrub(k.love).slice(0, 240), name: first(k.name) || "A guest", tags: (k.tags || []).slice(0, 3), verifiedLabel: k.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in", event: { id: x.id, title: x.e.pubTitle || x.e.name || "", host: h, page: h ? `/@${h.handle}` : "" } }; });
     // prepared pages: what they did in the last two weeks stays with the real content; older things become ideas to try
     const isFresh = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && Date.parse(d) >= fresh, ideas = [];
-    const showcase = showcases().map((S) => { for (const p of S.past) if (!isFresh(p.date) && (p.cover || p.photos.length)) ideas.push({ id: p.id, title: p.title, note: p.note, cover: p.cover || p.photos[0] || "", host: S.host, page: S.page, cta: S.cta, city: S.city, example: true, fit: fitOf(P, `${p.title} ${p.note}`, `${S.city} ${S.hood}`) });
+    const showcase = listedShowcases().map((S) => { for (const p of S.past) if (!isFresh(p.date) && (p.cover || p.photos.length)) ideas.push({ id: p.id, title: p.title, note: p.note, cover: p.cover || p.photos[0] || "", host: S.host, page: S.page, cta: S.cta, city: S.city, example: true, fit: fitOf(P, `${p.title} ${p.note}`, `${S.city} ${S.hood}`) });
         return { ...S, past: S.past.filter((p) => isFresh(p.date)), fit: fitOf(P, `${S.tagline} ${S.experiences.map((x) => `${x.title} ${x.category} ${x.desc}`).join(" ")}`, `${S.city} ${S.hood}`) }; })
       .sort((a, b) => b.fit - a.fit).map(({ fit, ...S }) => S);
     ideas.sort((a, b) => b.fit - a.fit);
@@ -259,7 +262,7 @@ export function makeFeedVisual(store, { C, X }) {
       delete s.recaps; delete s._ws; return s; }).filter((s) => s.items.length)
       .sort((a, b) => (F.has(b.host.handle) - F.has(a.host.handle)) || (!!b.recap - !!a.recap) || (!!a.sample - !!b.sample) || b.latestAt - a.latestAt).slice(0, 20);
     // a quiet week still has something to tap: prepared pages, with their covers and illustrated art
-    if (L.filter((s) => !s.sample).length < 6) for (const P of showcases()) { if (L.length >= 12) break; const items = [];
+    if (L.filter((s) => !s.sample).length < 6) for (const P of listedShowcases()) { if (L.length >= 12) break; const items = [];
       for (const p of P.past) items.push(p.cover ? { id: "s:" + p.id, type: "image", url: p.cover, thumb: p.cover, caption: [p.title, p.place].filter(Boolean).join(" · "), at: 0, past: true, cta: P.cta } : { id: "s:" + p.id, type: "art", url: "", thumb: "", art: { title: p.title, activity: p.title, id: p.id }, caption: [p.title, p.place].filter(Boolean).join(" · "), at: 0, past: true, cta: P.cta });
       for (const x of P.experiences) items.push({ id: "s:" + x.id, type: "art", url: "", thumb: "", art: { title: x.title, activity: `${x.title} ${x.category}`, id: x.id }, caption: x.title + (x.price ? " · " + x.price : ""), note: x.desc, at: 0, past: false, cta: { label: "I'm interested", url: x.url } });
       // a real photo on the ring when the page has one anywhere (covers or scrapbook photos), else the drawing
@@ -267,21 +270,25 @@ export function makeFeedVisual(store, { C, X }) {
       if (items.length) L.push({ key: "s:" + P.host.handle, host: P.host, items: items.slice(0, 6), latestAt: 0, thumb: pic, showcase: true, ...(P.example ? { example: true } : {}) }); }
     return L;
   }
+  // near the visitor: the event's neighborhood, its city, or (when it has no city) its host's home city ("Greenpoint" events of a Brooklyn host)
+  const hostCity = (e) => { const ws = e.host?.handle && C?.wsOfHandle?.(e.host.handle); return (ws && C.profileOf(ws)?.city) || ""; };
+  const nearTo = (C0, e) => !!C0 && [e.city, e.hood, e.city ? "" : hostCity(e)].map((v) => lc(v || "")).filter((v) => v.length >= 2).some((v) => v.includes(C0) || (v.length >= 4 && C0.includes(v)));
   // ---------- the swipe deck: a first visit to /feed, one card at a time ----------
   // Real upcoming events in the visitor's city first, then ideas to try (the /ideas library) and photos from hosts'
   // pages, then events elsewhere. Every card says what it is (Example, Idea) and carries the interest ids it trains.
   function deck({ city = "", interests = [], email = "", ideas = [], limit = 12 } = {}) {
-    const V = sections({ email, interests, city }), C0 = lc(clean(city, 60)), here = (e) => !!C0 && lc(`${e.city || ""} ${e.hood || ""}`).includes(C0), wk = today(Date.now() + 7 * DAY);
+    const V = sections({ email, interests, city }), C0 = lc(clean(city, 60)), here = (e) => nearTo(C0, e), wk = today(Date.now() + 7 * DAY);
     const tagsOf = (text, fmt = "") => interestsOf(text, fmt).slice(0, 4);
     const ev = (e) => ({ key: "e:" + e.id, kind: "event", ref: e.id, title: e.title, when: e.date, startTime: e.startTime || "", where: e.hood || e.city || "", city: e.city || "", price: e.free ? "Free" : e.price || "", img: e.cover || "", art: { id: e.id, title: e.title, activity: e.activity || "", coverArt: e.coverArt || null }, look: e.look || {}, host: e.host, url: e.url, going: e.going || 0, approvalRequired: !!e.approvalRequired,
       badge: e.sample ? "Example" : e.date <= wk ? "This week" : "", example: !!e.sample, tags: tagsOf(`${e.title} ${e.activity || ""}`), local: here(e) });
     const up = (V.upcoming || []).filter((e) => e.id && !e.past), real = up.filter((e) => !e.sample);
     const lead = (C0 ? real.filter(here) : real).map(ev), later = [...(C0 ? real.filter((e) => !here(e)) : []), ...up.filter((e) => e.sample)].map(ev);
     const idea = (x) => ({ key: "i:" + x.id, kind: "idea", ref: x.id, title: x.title, line: x.line || "", img: "", art: { id: x.id, title: x.title, activity: x.title, coverArt: x.art ? { kind: x.art, tone: x.tone } : null }, look: {}, url: "/ideas#" + x.id, badge: "Idea", tags: (x.interests || []).slice(0, 4) });
-    const pic = (P, p) => ({ key: "p:" + p.id, kind: "host", ref: P.host.handle, title: p.title, line: p.note || "", img: p.cover || p.photos[0] || "", art: { id: p.id, title: p.title, activity: p.title }, look: {}, host: P.host, url: P.cta?.url || P.page, where: P.city || "", badge: P.example ? "Example" : "From a host's page", example: !!P.example, tags: tagsOf(`${p.title} ${p.note || ""}`) });
+    const pic = (P, p) => ({ key: "p:" + p.id, kind: "host", ref: P.host.handle, title: p.title, line: p.note || "", img: p.cover || p.photos[0] || "", art: { id: p.id, title: p.title, activity: p.title }, look: {}, host: P.host, url: P.cta?.url || P.page, where: P.city || "", badge: P.example ? "Example" : "Preview", example: !!P.example, tags: tagsOf(`${p.title} ${p.note || ""}`) });
     const I0 = cleanInterests(interests), ideaL = (Array.isArray(ideas) ? ideas : []).filter((x) => x?.id && x.title).map((x, i) => ({ x, i, s: I0.length && (x.interests || []).some((k) => I0.includes(k)) ? 1 : 0 }))
       .sort((a, b) => b.s - a.s || (parseInt(hashKey(a.x.id + today()).slice(0, 6), 16) - parseInt(hashKey(b.x.id + today()).slice(0, 6), 16))).map(({ x }) => idea(x)); // a steady daily shuffle
-    const pics = showcases().flatMap((P) => P.past.filter((p) => p.cover || p.photos.length).slice(0, 2).map((p) => pic(P, p)));
+    // launch review: no old photos from preview pages ("7.26 1st pop up"): real upcoming events lead, then ideas
+    const pics = [];
     // ideas and photos side by side, so after the real events the deck alternates a photo and an illustrated idea
     const mid = []; for (let i = 0; i < Math.max(ideaL.length, pics.length) && mid.length < limit; i++) { if (pics[i]) mid.push(pics[i]); if (ideaL[i]) mid.push(ideaL[i]); }
     const out = [], seenK = new Set(); for (const c of [...lead, ...mid, ...later]) { if (out.length >= limit || seenK.has(c.key)) continue; seenK.add(c.key); out.push(c); }
@@ -304,7 +311,7 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   // Signed out, the answer is the same for everyone who picked the same things, so it's kept for a minute (or until
   // something it shows changes); only "my reactions" are per device, and those are filled in per request.
   const outCache = new Map(), OUT_MS = 60_000;
-  const cachedOut = (key, make) => { const now = Date.now(), c = outCache.get(key); if (c && c.gen === V.gen() && now - c.at < OUT_MS) return c.v;
+  const cachedOut = (key0, make) => { const key = key0 + "|" + (process.env.ENCORE_FEED_PREVIEWS || "") /* the consented previews change what shows */, now = Date.now(), c = outCache.get(key); if (c && c.gen === V.gen() && now - c.at < OUT_MS) return c.v;
     const v = make(), gen = V.gen(); /* after: what building it wrote itself (kudos labels saved back) changes nothing shown */ if (outCache.size > 500) outCache.clear(); outCache.set(key, { gen, at: now, v }); return v; };
   app.get("/api/public/feed", (req, res) => { if (limited(req, Math.max(60, +process.env.ENCORE_FEED_PER_IP_HOUR || 1200))) return bad(res, "Slow down.", 429, "rate_limited");
     const u = viewer(req); res.set("Cache-Control", u ? "private, no-store" : "public, max-age=60");

@@ -1,5 +1,5 @@
 // The swipe deck: a first visit to /feed, before the feed itself. One full-screen card at a time: real upcoming events
-// in the visitor's city first, then ideas to try and photos from hosts' pages (GET /api/public/deck). "I'm in" saves
+// in the visitor's city first, then ideas to try and photos from hosts' pages (GET /api/public/deck). "Save" saves
 // the card (public/save.js: on the account, or in this browser and sent at signup) and trains the interests
 // (public/interests.js); "Pass" skips. Touch swipe, the two buttons, or the arrow keys. After 5 cards: "Your 3 picks are
 // saved. Make a free account to keep them." Signed in, it closes straight into the feed. "Pick topics instead" opens
@@ -36,7 +36,7 @@
   // owner feedback: only the top-left word, and only on drawn cards (no upside-down copy, no "Host" on photo cards)
   function cardHTML(c, i) { const ph = !!safeImg(c.img), bg = ph ? tint(c) : DECK[i % DECK.length], d = ph && dark(bg), cw = ph || c.kind === "host" ? "" : esc(corner(c));
     return `<article class="sd-card${d ? " dark" : ""}" data-i="${i}" style="--bg:${bg}" aria-label="${esc(c.title)}">
-      ${cw ? `<span class="sd-corner" aria-hidden="true">${cw}</span>` : ""}<div class="sd-media${safeImg(c.img) ? " ph" : " art"}">${media(c)}<span class="sd-stamp yes" aria-hidden="true">I'm in</span><span class="sd-stamp no" aria-hidden="true">Pass</span>${c.badge ? `<span class="sd-badge${c.example ? " ex" : ""}">${esc(c.badge)}</span>` : ""}</div>
+      ${cw ? `<span class="sd-corner" aria-hidden="true">${cw}</span>` : ""}<div class="sd-media${safeImg(c.img) ? " ph" : " art"}">${media(c)}<span class="sd-stamp yes" aria-hidden="true">Save</span><span class="sd-stamp no" aria-hidden="true">Pass</span>${c.badge ? `<span class="sd-badge${c.example ? " ex" : ""}">${esc(c.badge)}</span>` : ""}</div>
       <div class="sd-body"><p class="sd-host">${hostLine(c)}</p><h3>${esc(c.title)}</h3>${meta(c) ? `<p class="sd-meta">${esc(meta(c))}</p>` : ""}${c.line && c.kind !== "event" ? `<p class="sd-line">${esc(c.line)}</p>` : c.going ? `<p class="sd-line">${esc(c.going)} in so far</p>` : ""}</div></article>`; }
 
   const CSS = `.sd{position:fixed;inset:0;z-index:2147482990;background:#F7F1E8;color:#1F1A17;font:16px/1.45 "Instrument Sans",system-ui,sans-serif;display:flex;justify-content:center;overflow:hidden;animation:sdIn .3s ease}
@@ -106,10 +106,10 @@
     add("/save.js"); const total = Math.min(SWIPES, cards.length), picks = [], tags = new Set(); let i = 0, busy = false;
     const el = document.createElement("div"); el.className = "sd"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "sdH");
     const local = D.city && D.local ? D.city : "";
-    el.innerHTML = `<div class="sd-in"><header class="sd-top"><div><h2 id="sdH">Would you <em>go?</em></h2><p>${local ? `Coming up in ${esc(local)}, then ideas. ` : ""}Swipe right for I'm in, left to pass.</p></div><button type="button" class="sd-x" aria-label="Close and see the feed">${XG}</button></header>
+    el.innerHTML = `<div class="sd-in"><header class="sd-top"><div><h2 id="sdH">Would you <em>go?</em></h2><p>${local ? `Coming up in ${esc(local)}, then ideas. ` : ""}Swipe right to save, left to pass.</p></div><button type="button" class="sd-x" aria-label="Close and see the feed">${XG}</button></header>
       <div class="sd-dots" aria-hidden="true">${Array.from({ length: total }, () => "<i></i>").join("")}</div>
       <div class="sd-stack">${cards.map(cardHTML).join("")}</div>
-      <div class="sd-acts"><button type="button" class="sd-btn sd-no" aria-label="Pass">${XG}</button><button type="button" class="sd-btn sd-yes">${HEART}I'm in</button></div>
+      <div class="sd-acts"><button type="button" class="sd-btn sd-no" aria-label="Pass">${XG}</button><button type="button" class="sd-btn sd-yes">${HEART}Save</button></div>
       <p class="sd-foot"><button type="button" class="sd-link" id="sdTopics">Pick topics instead</button><span class="sd-keys">or use ← and →</span></p>
       <p class="sd-sr" aria-live="polite" id="sdLive"></p></div>`;
     document.body.appendChild(el); const prevOverflow = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -135,7 +135,7 @@
       document.addEventListener("keydown", function esc2(e) { if (!document.contains(el)) return document.removeEventListener("keydown", esc2, true); if (e.key === "Escape") { e.preventDefault(); close(); document.removeEventListener("keydown", esc2, true); } }, true); }
     function decide(yes) { if (busy || i >= total) return; busy = true; const c = cards[i], card = C[i];
       if (yes) { picks.push({ c, n: i }); (c.tags || []).forEach((t) => tags.add(t)); add("/save.js").then(() => window.PLSave?.add?.({ kind: c.kind, ref: c.ref, title: c.title, img: safeImg(c.img) })).catch(() => {}); }
-      live.textContent = yes ? `I'm in: ${c.title}. Saved.` : `Passed: ${c.title}.`;
+      live.textContent = yes ? `Saved: ${c.title}.` : `Passed: ${c.title}.`;
       const out = () => { i++; busy = false; if (i >= total) return finish("done"); lay(); };
       if (RM()) return out(); card.classList.remove("drag"); card.style.transition = "transform .34s ease-in,opacity .34s"; card.style.transform = `translateX(${yes ? 130 : -130}%) rotate(${yes ? 18 : -18}deg)`; card.style.opacity = "0"; setTimeout(out, 300); }
     // drag the top card: past a third of its width (or a quick flick) decides, else it springs back

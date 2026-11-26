@@ -25,6 +25,7 @@ before(async () => { srv = await startServer(); });
 after(async () => { await srv.close(); });
 test("The search endpoint answers in plain language and only with real hosts", async () => {
   const j = await (await fetch(srv.base + "/api/public/hosts/search?q=" + encodeURIComponent("something sweet with pandan for our office"))).json();
-  assert.ok(j.matches.length >= 1); assert.equal(j.matches[0].handle, "atbo"); assert.ok(j.matches[0].why);
+  // owner decision: preview pages (atbo and the rest) aren't returned as hosts
+  assert.ok(!j.matches.some((m) => ["atbo", "tram", "ken", "le-phin", "anhdraws"].includes(m.handle)), "no previews"); for (const m of j.matches) assert.ok(m.why);
   const short = await (await fetch(srv.base + "/api/public/hosts/search?q=a")).json(); assert.deepEqual(short.matches, []);
 });

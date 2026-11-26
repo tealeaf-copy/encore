@@ -157,7 +157,8 @@ test("New pages: copy rules (no em dashes, no 'per person' or 'attendees') and t
   for (const f of ["../public/swipedeck.js", "../public/photos.html", "../server/photodrop.js"]) { const t = fs.readFileSync(new URL(f, import.meta.url), "utf8");
     assert.doesNotMatch(t, /—/, f + ": no em dashes"); if (!f.includes("server")) assert.doesNotMatch(t, /per person|attendees|seamless|unlock|curated|taped in/i, f); }
   const deck = fs.readFileSync(new URL("../public/swipedeck.js", import.meta.url), "utf8");
-  for (const k of ["Pick topics instead", "I'm in", "Make a free account to keep them.", "pl.deckDone", "ArrowRight", "ArrowLeft", "pointerdown", "/api/public/deck", "PLSave?.add", "PLInterests.train"]) assert.ok(deck.includes(k), k);
+  for (const k of ["Pick topics instead", "Swipe right to save", "Make a free account to keep them.", "pl.deckDone", "ArrowRight", "ArrowLeft", "pointerdown", "/api/public/deck", "PLSave?.add", "PLInterests.train"]) assert.ok(deck.includes(k), k);
+  assert.doesNotMatch(deck, /I'm in/, "the deck button is Save, not a reply (launch review)");
   assert.match(deck, /Your \$\{n\} \$\{n === 1 \? "pick is" : "picks are"\} saved\./);
   const ints = fs.readFileSync(new URL("../public/interests.js", import.meta.url), "utf8"); assert.match(ints, /\(location\.pathname === "\/feed" \|\| location\.pathname === "\/"\) && !localStorage\.getItem\("pl\.deckDone"\)/, "the old picker waits for the deck on the feed (/ and /feed)");
 });

@@ -73,6 +73,8 @@ export function publicHost(h) { if (!h) return h; const o = { ...h }; for (const
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
 
   // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
+export { PREVIEW_LABEL, feedPreviews, previewListed } from "./previews.js";
+import { previewListed } from "./previews.js";
 export function showcasePast(L) { const s = (v, n) => String(v ?? "").replace(/[<>\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
     return (Array.isArray(L) ? L : []).slice(0, 60).map((x, i) => { let link = ""; try { const u = new URL(String(x?.link || "")); if (u.protocol === "https:") link = u.href; } catch {}
       const host = link ? new URL(link).hostname : "", source = /partiful/i.test(host) ? "Partiful" : /lu\.ma|luma\.com/i.test(host) ? "Luma" : /eventbrite/i.test(host) ? "Eventbrite" : link ? "Web" : "";
@@ -233,7 +235,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
       // Unfinished pages still work by link; they just aren't featured until they're ready.
       const ready = !pageGaps(h).length;
       if (ready || sample) hosts.push({ ...publicHost(h), followers: n, upcoming: up.length, hosted: past, ...(sample ? { sample: true } : {}) }); if (ready || sample) events.push(...up.filter((c) => !c.unlisted)); }
-    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle)) hosts.push({ ...publicHost(P), scrapbook: undefined, scrapSections: undefined, showcase: true, ...(P.example ? { sample: true } : {}), followers: 0, upcoming: 0, hosted: 0 });
+    for (const [handle, P] of showcaseAll()) if (!wsOfHandle(handle) && previewListed(handle, P)) hosts.push({ ...publicHost(P), scrapbook: undefined, scrapSections: undefined, showcase: true, ...(P.example ? { sample: true } : {}), followers: 0, upcoming: 0, hosted: 0 });
     hosts.sort((a, b) => (!!a.sample - !!b.sample) || (b.followers + b.hosted * 2 + b.upcoming) - (a.followers + a.hosted * 2 + a.upcoming));
     // one card per host name (people who signed up twice, or test accounts that share a name)
     { const seen = new Set(); for (let i = 0; i < hosts.length; i++) { const k = `${String(hosts[i].name || hosts[i].handle || "").trim().toLowerCase()}|${String(hosts[i].city || "").trim().toLowerCase()}`; if (k && seen.has(k) && !hosts[i].upcoming) { hosts.splice(i, 1); i--; } else seen.add(k); } }

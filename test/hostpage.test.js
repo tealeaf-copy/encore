@@ -58,7 +58,7 @@ test("Portraits keep a chosen skin tone and hair colour; anything else is refuse
 test("Real hosts who haven't signed up yet show as read-only showcase pages until they claim them", async () => {
   const page = await (await fetch(srv.base + "/api/public/host/atbo")).json();
   assert.equal(page.host.showcase, true); assert.equal(page.host.name, "Atelier Bò"); assert.match(page.host.claim, /preset=atelier-bo/);
-  const disc = await (await fetch(srv.base + "/api/public/discover")).json(); assert.ok(disc.hosts.some((h) => h.handle === "atbo" && h.showcase));
+  const disc = await (await fetch(srv.base + "/api/public/discover")).json(); assert.ok(!disc.hosts.some((h) => h.handle === "atbo"), "previews stay off Discover (owner decision)");
 });
 
 test("Guests can change what they're bringing, but not take an item someone else has", async () => {

@@ -55,7 +55,8 @@ test("Public feed: what a visitor picked comes first, old prepared things become
   // prepared pages: nothing older than 14 days on the wall; older things are labelled ideas below it
   const cut = Date.now() - 14 * 864e5;
   for (const P of runFirst.showcase) for (const p of P.past) assert.ok(p.date && Date.parse(p.date) >= cut, `${p.title} (${p.date}) is old`);
-  assert.ok(runFirst.ideas.length > 0, "old prepared events show as ideas"); for (const x of runFirst.ideas) { assert.equal(x.example, true); assert.ok(x.title && x.page); }
+  // owner decision: preview pages stay out of the feed, so only made-up examples can turn into ideas here
+  for (const x of runFirst.ideas) { assert.equal(x.example, true); assert.ok(x.title && x.page); }
   // the browser sends what was picked
   const fv = read("public/feedvisual.js"), feed = read("public/feed.html");
   assert.match(fv, /localStorage\.getItem\("pl\.interests"\)/); assert.match(fv, /More ideas to try/); assert.match(feed, /V\.publicQuery\(\)/); assert.match(feed, /pl:interests-saved/);

@@ -27,12 +27,12 @@
 .pls-btn.pls-pop svg{animation:plsPop .45s cubic-bezier(.3,1.8,.5,1)}@keyframes plsPop{0%{transform:scale(1)}35%{transform:scale(1.3)}100%{transform:scale(1)}}
 .pls-btn:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
 .pls-toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;width:min(92vw,420px);background:#FFFDF8;border:1.5px solid #E4D9C8;border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:12px 14px;display:flex;gap:10px;align-items:center;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;color:#1F1A17;animation:plsIn .35s cubic-bezier(.3,1.5,.5,1)}
-.pls-toast b{font-family:Fredoka,"Instrument Sans",system-ui,sans-serif;font-weight:600}.pls-toast .pls-go{margin-left:auto;flex:none;background:#C94A30;color:#fff;border:1px solid #C94A30;border-radius:999px;padding:8px 12px;font:600 14px "Instrument Sans",system-ui;text-decoration:none;white-space:nowrap}
+.pls-toast b{font-family:var(--sys-display);font-weight:600}.pls-toast .pls-go{margin-left:auto;flex:none;background:#C94A30;color:#fff;border:1px solid #C94A30;border-radius:999px;padding:8px 12px;font:600 14px "Instrument Sans",system-ui;text-decoration:none;white-space:nowrap}
 .pls-toast .pls-x{flex:none;background:none;border:0;font-size:20px;line-height:1;cursor:pointer;color:#665A51;min-width:32px;min-height:32px}
 @keyframes plsIn{from{transform:translateX(-50%) translateY(20px);opacity:0}}
 @media (min-width:861px){.pls-toast{bottom:28px}}
 .pls-menu{position:fixed;z-index:9001;width:240px;background:#FFFDF8;border:1.5px solid #E4D9C8;border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:8px;display:grid;gap:4px;font:500 15px "Instrument Sans",system-ui}
-.pls-menu b{font:600 15px Fredoka,system-ui;padding:4px 8px}.pls-menu button{text-align:left;background:none;border:0;border-radius:10px;padding:9px 10px;font:inherit;color:#1F1A17;cursor:pointer;min-height:40px}.pls-menu button:hover,.pls-menu button[aria-current]{background:#FFF1D2}
+.pls-menu b{font:600 15px var(--sys-title);padding:4px 8px}.pls-menu button{text-align:left;background:none;border:0;border-radius:10px;padding:9px 10px;font:inherit;color:#1F1A17;cursor:pointer;min-height:40px}.pls-menu button:hover,.pls-menu button[aria-current]{background:#FFF1D2}
 .pls-menu form{display:flex;gap:6px;padding:4px}.pls-menu input{flex:1;min-width:0;border:1.5px solid #DCCFBE;border-radius:10px;padding:8px;font:inherit;font-size:16px}.pls-menu form button{background:#1F1A17;color:#fff;text-align:center;padding:8px 10px}
 @media (prefers-reduced-motion:reduce){.pls-btn,.pls-btn svg,.pls-toast{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("plsCss")) return; const s = document.createElement("style"); s.id = "plsCss"; s.textContent = CSS; document.head.appendChild(s); };

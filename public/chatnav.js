@@ -32,7 +32,7 @@
   const need = (src) => new Promise((ok, no) => { if (src === "/photosheet.js" && window.PhotoSheet) return ok(); if (src === "/avatars.js" && window.EncoreAvatars) return ok(); const t = document.createElement("script"); t.src = src; t.onload = ok; t.onerror = no; document.head.appendChild(t); });
   const css = document.createElement("style"); css.textContent = `.plme-bg{position:fixed;inset:0;z-index:9000;background:rgba(31,26,23,.36);display:flex;align-items:flex-end;justify-content:center}
 .plme{width:min(480px,100%);background:#FFFCF7;border-radius:24px 24px 0 0;padding:8px 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font-family:"Instrument Sans",system-ui,sans-serif;color:#1F1A17;box-sizing:border-box}
-.plme-g{width:40px;height:4px;border-radius:2px;background:#E0D5C6;margin:4px auto 8px}.plme-n{display:block;font:600 20px/1.2 "Fredoka","Instrument Sans",system-ui,sans-serif;overflow-wrap:anywhere}
+.plme-g{width:40px;height:4px;border-radius:2px;background:#E0D5C6;margin:4px auto 8px}.plme-n{display:block;font:600 20px/1.2 var(--sys-display);overflow-wrap:anywhere}
 .plme-hd{display:flex;align-items:center;gap:12px;margin:4px 8px 8px}.plme-hd[hidden]{display:none}.plme-who{flex:1;min-width:0}
 .plme-face{all:unset;position:relative;flex:none;width:48px;height:48px;border-radius:50%;cursor:pointer}.plme-fi{display:block;width:48px;height:48px;border-radius:50%;background:#EFE6D8}
 .plme-cam{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#FFFCF7;border:1.5px solid #E4D9C8;display:grid;place-items:center;color:#5A3B2B}

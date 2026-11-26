@@ -1,9 +1,9 @@
 /* Group chats (/chats, /chats/<event>): the inbox and the thread. Quiet controls, so people's words and photos lead.
    Tokens from public/system.css and docs/brand-kit.md: 1.5px lines, corners 12/16/24/pill, one soft shadow for things
-   that float, Fredoka for names and headings, Instrument Sans for text, mono only for times and counts.
+   that float, the display face for headings, Instrument Sans for names and text, mono only for times and counts.
    Own bubbles take the host's accent when it reads well on white (chat.js checks), else ember. */
 :root{--ch-accent:#C94A30;--ch-on-accent:#fff;--ch-ink:#1F1A17;--ch-smoke:#665A51;--ch-paper:#F7F1E8;--ch-card:#FFFCF7;--ch-line:#E4D9C8;--ch-line-strong:#D9CCBB;--ch-frame:#5A3B2B;--ch-other:#F1EAE0;--ch-tint:#F6E7DF;
-  --ch-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--ch-display:"Fredoka","Fredoka Fallback","Instrument Sans",system-ui,sans-serif;--ch-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --ch-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--ch-display:var(--sys-display);--ch-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
   --ch-h:100dvh;--ch-top:0px}
 html,body{margin:0;background:var(--ch-paper);color:var(--ch-ink);font-family:var(--ch-sans)}
 body.pl-chats{overscroll-behavior:none}

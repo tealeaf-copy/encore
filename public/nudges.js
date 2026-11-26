@@ -5,7 +5,7 @@
   if (window.__plNudges) return; window.__plNudges = 1;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const CSS = `.pln{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin:0 0 16px;padding:14px 16px;background:#FFFDF8;border:1.5px solid #E4D9C8;border-radius:16px;color:#1F1A17;font:15px/1.4 "Instrument Sans",system-ui,sans-serif}
-.pln .pln-e{grid-row:span 2;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#FFF1D2;color:#5A3B2B}.pln .pln-e svg{width:20px;height:20px}.pln b{font:600 17px/1.2 Fredoka,"Instrument Sans",system-ui,sans-serif}.pln p{margin:0;color:#5E534B}
+.pln .pln-e{grid-row:span 2;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#FFF1D2;color:#5A3B2B}.pln .pln-e svg{width:20px;height:20px}.pln b{font:600 17px/1.2 var(--sys-title)}.pln p{margin:0;color:#5E534B}
 .pln .pln-acts{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pln .pln-go{min-height:44px;padding:0 18px;border:1px solid #C94A30;border-radius:999px;background:#C94A30;color:#fff;font:600 15px "Instrument Sans",system-ui;cursor:pointer}.pln .pln-go:disabled{background:#EFE6D8;color:#4A3F37;box-shadow:none}
 .pln .pln-no{min-height:44px;background:none;border:0;color:#5E534B;text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer}

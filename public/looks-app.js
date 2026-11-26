@@ -117,7 +117,7 @@ html body.lk-on.lk-dark #view-guest .hh-av{background:var(--lk-raised)!important
 .mk-scr{position:absolute;inset:0;overflow:auto;scrollbar-width:none}.mk-in{position:relative;z-index:1;padding:14px 14px 80px;color:var(--lk-ink,#1F1A17)}
 .mk-in .lk-update{transform:scale(.86) rotate(-1deg);transform-origin:left top;margin-bottom:4px}.mk-in .mk-cov img{display:block;width:100%;height:auto;border-radius:14px}.mk-in .mk-cov.banner img{aspect-ratio:16/10;object-fit:cover}
 .mk-in .mk-cov.none{aspect-ratio:16/10;border-radius:14px;background:color-mix(in srgb,var(--lk-ink,#1F1A17) 10%,transparent)}
-.mk-in h1{font:700 calc(30px * var(--lk-tk,1))/1.04 Fredoka,system-ui;margin:14px 0 6px}.mk-in p{margin:2px 0;font-size:13px;color:var(--lk-soft,#5E534B)}
+.mk-in h1{font:700 calc(30px * var(--lk-tk,1))/1.04 var(--sys-display);margin:14px 0 6px}.mk-in p{margin:2px 0;font-size:13px;color:var(--lk-soft,#5E534B)}
 .mk-bar{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px 12px;background:color-mix(in srgb,var(--lk-bot,#FFF8EE) 92%,transparent);border-top:1px solid var(--lk-line,#E4D9C8)}
 .mk-bar span{display:flex;justify-content:center;align-items:center;min-height:40px;border-radius:999px;background:var(--lk-btn,#C94A30);color:var(--lk-on-btn,#fff);font:600 15px "Instrument Sans",system-ui,sans-serif}
 #mkPanel .mk-pvt{display:none!important}

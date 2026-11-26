@@ -444,13 +444,13 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
 
 // The team inbox page. Served only to admins, so it isn't a file under public/.
 const ADMIN_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Help inbox · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#1F1A17;--soft:#665A51;--line:#E4D9C8;--bg:#F7F1E8;--clay:#C94A30}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Instrument Sans",system-ui,sans-serif}
-main{max-width:920px;margin:0 auto;padding:24px 16px 60px}h1{font:600 28px Fredoka,system-ui;margin:0 0 4px}.sub{color:var(--soft);margin:0 0 16px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}.stat{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}.stat b{display:block;font:600 28px Fredoka,system-ui}.stat span{color:var(--soft);font-size:13px}
-.gaps{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 16px}.gaps h2{font:600 16px Fredoka,system-ui;margin:0 0 6px}.gaps ul{margin:0;padding-left:18px;font-size:14px}
+main{max-width:920px;margin:0 auto;padding:24px 16px 60px}h1{font:600 28px 'Instrument Serif',Georgia,serif;margin:0 0 4px}.sub{color:var(--soft);margin:0 0 16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}.stat{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}.stat b{display:block;font:600 28px 'Instrument Serif',Georgia,serif}.stat span{color:var(--soft);font-size:13px}
+.gaps{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 16px}.gaps h2{font:600 16px 'Instrument Sans',system-ui,sans-serif;margin:0 0 6px}.gaps ul{margin:0;padding-left:18px;font-size:14px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.tabs button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;min-height:44px}.tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .t{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}.t:target{outline:3px solid #F2D48F}
 .top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.top b{font-size:16px}.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:#FDE7DF;color:#8E3A25}.pill.waiting{background:#FFF1C9;color:#6B4E00}.pill.solved{background:#E3F2E6;color:#245C33}

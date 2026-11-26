@@ -58,7 +58,7 @@
 .es-rail .es-n{position:absolute;top:2px;right:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E2463A;color:#fff;font:700 13px/18px "Instrument Sans",system-ui;text-align:center}
 .es-rail a[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:54px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#1F1A17;color:#fff;font:600 13px "Instrument Sans",system-ui;padding:5px 9px;border-radius:8px;pointer-events:none}
 .es-top{display:flex;justify-content:space-between;align-items:center;max-width:1120px;margin:0 auto;padding:16px 20px 0}
-.es-top .es-brand{display:flex;gap:8px;align-items:center;font:700 20px Fredoka,"Instrument Sans",system-ui;color:#1F1A17;text-decoration:none}
+.es-top .es-brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);color:#1F1A17;text-decoration:none}
 .es-top nav{display:flex;gap:16px;align-items:center;font:500 16px "Instrument Sans",system-ui}.es-top nav a{color:#5E534B;text-decoration:none}
 .es-top nav a.cta{background:#fff;color:#1F1A17;padding:8px 14px;border-radius:999px;border:1px solid #E4D9C8;font-weight:600}
 @media (min-width:861px){body.es-has-rail .es-top .es-brand{visibility:hidden}body.es-has-rail header.top{display:none}body.es-has-rail .es-top nav{display:none}}
@@ -67,7 +67,7 @@
 .es-rail a{width:auto!important;height:44px!important;display:flex!important;align-items:center;gap:12px;padding:10px 12px;border-radius:10px!important;color:#6B5F56!important;font:600 16px "Instrument Sans",system-ui,sans-serif;text-decoration:none}
 .es-rail a svg{flex:none;width:22px;height:22px}
 .es-rail a:hover{background:#F6EFE8!important;color:#2B211C!important}.es-rail a[aria-current]{background:#F6E7DF!important;color:#8E3A25!important}
-.es-rail .es-logo{height:auto!important;padding:0 8px!important;margin-bottom:18px!important;font:600 28px Fredoka,"Instrument Sans",system-ui,sans-serif!important;color:#2B211C!important;gap:8px}.es-rail .es-logo:hover{background:none!important}
+.es-rail .es-logo{height:auto!important;padding:0 8px!important;margin-bottom:18px!important;font:600 28px var(--sys-display)!important;color:#2B211C!important;gap:8px}.es-rail .es-logo:hover{background:none!important}
 .es-rail a[data-tip]:hover::after{display:none!important}.es-rail .es-n{position:static!important;margin-left:auto}
 .es-rail .es-out{height:auto!important;justify-content:center;font:400 14px "Instrument Sans",system-ui!important;text-decoration:underline!important;margin-top:12px;padding:6px!important}
 @media (max-width:860px){.es-rail{display:none}}

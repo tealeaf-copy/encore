@@ -18,8 +18,8 @@
   const face = (p, size = 40) => `<span class="cwm-face" style="--c:${esc(p.color && /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : tint(p.name))};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px" aria-hidden="true">${esc(p.emoji || String(p.name || "?").slice(0, 1).toUpperCase())}</span>`;
   const until = (t) => { const d = new Date(t); if (isNaN(d)) return ""; const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), h = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()); return `${day} · ${h}`; };
   const CSS = `.cwm-hello{max-width:620px;display:flex;gap:12px;align-items:center;background:#FFF8EE;border:1.5px solid #E4D9C8;border-radius:18px;padding:12px 14px;margin:10px 0 14px;color:#1F1A17;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;position:relative}
-.cwm-hello p{margin:0}.cwm-hello b{font:600 17px/1.25 Fredoka,system-ui,sans-serif}.cwm-hello small{display:block;color:#665A51;font-size:13.5px;margin-top:2px}
-.cwm-face{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:50%;border:2px solid #1F1A17;background:var(--c,#F2D48F);color:#1F1A17;font-weight:700;font-family:Fredoka,system-ui,sans-serif}
+.cwm-hello p{margin:0}.cwm-hello b{font:600 17px/1.25 var(--sys-title)}.cwm-hello small{display:block;color:#665A51;font-size:13.5px;margin-top:2px}
+.cwm-face{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:50%;border:2px solid #1F1A17;background:var(--c,#F2D48F);color:#1F1A17;font-weight:700;font-family:var(--sys-display)}
 .cwm-faces{display:inline-flex}.cwm-faces .cwm-face+.cwm-face{margin-left:-12px}
 .cwm-box{display:grid;gap:6px;margin:12px 0 4px;justify-items:start}
 .cwm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:1.5px solid #1F1A17;border-radius:999px;background:#F2D48F;color:#1F1A17;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}

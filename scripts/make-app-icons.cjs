@@ -13,7 +13,7 @@ const out = (...p) => { const f = path.join(root, ...p); fs.mkdirSync(path.dirna
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ deviceScaleFactor: 1 }); const p = await ctx.newPage();
   await p.setContent(`<!doctype html><html><head><style>html,body{margin:0;background:transparent}#c{display:grid;place-items:center;overflow:hidden}
-#c svg{display:block}.w{font:600 64px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;color:#1F1A17;letter-spacing:-.01em;margin-top:2vh}</style></head><body><div id="c"></div><script>${mascot}</script></body></html>`);
+#c svg{display:block}.w{font:600 64px/1 'Instrument Serif',Georgia,serif;color:#1F1A17;letter-spacing:-.01em;margin-top:2vh}</style></head><body><div id="c"></div><script>${mascot}</script></body></html>`);
   // one picture: a w x h box on bg (or transparent), Potto at `scale` of the shorter side, optional word mark under him
   async function shot(file, w, h, { bg = BUTTER, scale = 0.74, word = false, pose = "wave", dy = 0.03 } = {}) {
     await p.setViewportSize({ width: w, height: h });

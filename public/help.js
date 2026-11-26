@@ -90,7 +90,7 @@
 .eh-scrim{position:fixed;inset:0;z-index:2147483000;background:rgba(31,26,23,.36);cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;animation:ehFade .18s ease-out}
 .eh-panel{position:fixed;z-index:2147483001;right:16px;bottom:16px;width:min(400px,calc(100vw - 32px));height:640px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:#FFFCF7;color:#1F1A17;border:1.5px solid #5A3B2B;border-radius:24px;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;overflow:hidden;overflow:clip;overscroll-behavior:contain;animation:ehPop .18s ease-out}
 .eh-grab{display:none}
-.eh-head{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;border-bottom:1.5px solid #E4D9C8;flex:none}.eh-head h2{margin:0;font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui;outline:none}.eh-head small{display:block;color:#665A51;font-size:13px;line-height:1.35;margin-top:2px}
+.eh-head{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;border-bottom:1.5px solid #E4D9C8;flex:none}.eh-head h2{margin:0;font:600 20px/1.2 var(--sys-display);outline:none}.eh-head small{display:block;color:#665A51;font-size:13px;line-height:1.35;margin-top:2px}
 .eh-head .eh-face{flex:none;width:40px;height:40px;display:grid;place-items:center}.eh-head .eh-face svg{width:40px;height:40px}
 .eh-x{margin-left:auto;flex:none;align-self:flex-start;border:0;background:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:50%;cursor:pointer;color:#5A3B2B}.eh-x:hover{background:#F6EFE8;color:#1F1A17}
 .eh-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 16px;display:grid;gap:12px;align-content:start}
@@ -107,11 +107,11 @@
 .eh-go{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#C94A30;color:#fff;font:700 16px "Instrument Sans",system-ui;cursor:pointer}.eh-go:disabled{opacity:.6;cursor:default}
 .eh-foot{padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex:none}.eh-human{flex:1;min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 16px "Instrument Sans",system-ui;cursor:pointer}.eh-human:hover{background:#FFF1C9}
 .eh-clear{border:0;background:none;color:#665A51;font:600 13px "Instrument Sans",system-ui;text-decoration:underline;cursor:pointer;min-height:44px;padding:0 4px;justify-self:start}
-.eh-tk{border:1.5px solid #E4D9C8;border-radius:16px;background:#fff;padding:12px;display:grid;gap:8px}.eh-tk-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.eh-tk-h b{font:600 16px Fredoka,"Instrument Sans",system-ui}
+.eh-tk{border:1.5px solid #E4D9C8;border-radius:16px;background:#fff;padding:12px;display:grid;gap:8px}.eh-tk-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.eh-tk-h b{font:600 16px var(--sys-title)}
 .eh-tk .eh-m{max-width:100%}.eh-tk form{display:flex;gap:8px}.eh-tk input{flex:1;min-width:0;min-height:44px;border:1.5px solid #D9CCBB;border-radius:12px;padding:6px 12px;font:16px "Instrument Sans",system-ui;background:#fff}
 .eh-pill{font-size:13px;font-weight:700;border-radius:999px;padding:1px 8px;background:#FDE7DF;color:#8E3A25}.eh-pill.waiting{background:#FFF1C9;color:#6B4E00}.eh-pill.solved{background:#E3F2E6;color:#245C33}.eh-new{font-size:13px;font-weight:700;color:#C94A30}
 .eh-earlier summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}.eh-earlier .eh-tk{margin-top:8px}
-.eh-form{display:grid;gap:16px}.eh-form h3{margin:0;font:600 20px Fredoka,"Instrument Sans",system-ui;outline:none}.eh-form label{display:block;font-weight:600;font-size:14px}.eh-form label>input,.eh-form label>textarea,.eh-form label>select{display:block;margin-top:4px}
+.eh-form{display:grid;gap:16px}.eh-form h3{margin:0;font:600 20px var(--sys-display);outline:none}.eh-form label{display:block;font-weight:600;font-size:14px}.eh-form label>input,.eh-form label>textarea,.eh-form label>select{display:block;margin-top:4px}
 .eh-form textarea,.eh-form input:not([type=file]):not([type=checkbox]),.eh-form select{width:100%;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px 12px;font:16px "Instrument Sans",system-ui;background:#fff;color:#1F1A17}.eh-form textarea{min-height:96px;resize:vertical}
 .eh-more summary{cursor:pointer;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;color:#A9462E}
 .eh-sla{margin:-8px 0 0;color:#245C33;font-size:14px;font-weight:600}

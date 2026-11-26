@@ -1,9 +1,9 @@
 :root{--bg:#FBF6EF;--card:#fff;--ink:#2B211C;--soft:#75685F;--line:#EEE4D8;--brand:#C2553A;--brand2:#A9462E;--pink:#FBE3E8;--ok:#2F7A4F}
 *{box-sizing:border-box}html,body{overflow-x:clip}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
-a{color:inherit}h1,h2,h3{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif;font-weight:600;letter-spacing:-.01em;margin:0}
+a{color:inherit}h1,h2,h3{font-family:var(--sys-display);font-weight:600;letter-spacing:-.01em;margin:0}
 .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
-.top{display:flex;align-items:center;justify-content:space-between;padding:16px 0}.top .brand{display:flex;gap:8px;align-items:center;font:600 20px "Fredoka","Instrument Sans",system-ui,sans-serif;text-decoration:none}
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 0}.top .brand{display:flex;gap:8px;align-items:center;font:600 20px var(--sys-display);text-decoration:none}
 .top{gap:12px}@media (max-width:420px){.top nav{gap:10px;font-size:13px}.top nav a.cta{padding:7px 11px;white-space:nowrap}.top nav a[href="/login"]{display:none}.top nav a{white-space:nowrap}.top nav a[href="/discover"]{display:none}.top nav{gap:10px}}.top nav{display:flex;gap:14px;align-items:center;font-size:14px}.top nav a{text-decoration:none;color:var(--soft)}.top nav a.cta{color:#fff;background:var(--brand);padding:8px 14px;border-radius:999px}
 .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:10px 16px;font:600 14px "Instrument Sans",system-ui,sans-serif;background:var(--brand);color:#fff;cursor:pointer;text-decoration:none}.btn:hover{background:var(--brand2)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn.ghost:hover{background:var(--card)}
@@ -35,11 +35,11 @@ footer{padding:40px 0;color:var(--soft);font-size:13px;text-align:center}
 .ev-poster .ev-art{position:relative;display:grid;place-items:center;align-content:center;gap:4px;aspect-ratio:16/10;padding:14px 16px 42px;background:var(--bg);border-bottom:2px solid #1F1A17;text-align:center;overflow:hidden}
 .ev-poster .ev-art.has-photo{padding:0}.ev-poster .ev-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ev-poster .ev-em{font-size:54px;line-height:1}
-.ev-poster .ev-title{font:700 20px/1.1 Fredoka,"Instrument Sans",system-ui;max-width:95%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ev-poster .ev-title{font:700 20px/1.1 var(--sys-display);max-width:95%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ev-poster .ev-by{position:absolute;left:10px;bottom:8px;display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;background:#fff;border:1.5px solid #1F1A17;font:600 13px "Instrument Sans",system-ui;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ev-poster .ev-by-av{width:22px;height:22px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:13px;background:#fff;flex:none}.ev-poster .ev-by-av svg,.ev-poster .ev-by-av img{width:100%;height:100%;object-fit:cover}
 .ev-poster .ev-b{padding:14px 16px 16px;gap:8px;display:flex;flex-direction:column}
-.ev-poster .ev-when{font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui!important;white-space:normal!important}
+.ev-poster .ev-when{font:600 20px/1.2 var(--sys-display)!important;white-space:normal!important}
 .ev-poster .ev-t2{font-weight:600}
 .ev-poster .ev-faces{display:flex;padding-left:6px}
 .ev-poster .ev-face{width:40px;height:40px;margin-left:-8px;border-radius:50%;border:2px solid #fff;outline:1.5px solid #1F1A17;background:color-mix(in srgb,var(--c,#FFE08A) 35%,#fff);display:grid;place-items:center;overflow:hidden;font-size:20px}

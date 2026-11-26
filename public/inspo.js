@@ -25,7 +25,7 @@
 .pli-body{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px 14px;min-width:0}
 .pli-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .pli-meta{margin:0;font-size:13px;line-height:1.4;color:#665A51;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pli-meta b{font-weight:600;color:#1F1A17}
-.pli-title{font:600 17px/1.25 Fredoka,"Fredoka Fallback","Instrument Sans",system-ui,sans-serif;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-wrap:pretty}
+.pli-title{font:600 17px/1.25 var(--sys-title);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-wrap:pretty}
 .pli-line{color:#665A51;font-size:14px;line-height:1.4;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pli-by{display:flex;gap:4px;min-width:0;font-size:13px;color:#665A51;margin:0;white-space:nowrap}.pli-by a{min-width:0;overflow:hidden;text-overflow:ellipsis;color:#1F1A17;font-weight:600;text-decoration:none;padding:13px 0;margin:-13px 0}.pli-by a:hover{text-decoration:underline}
 .pli-acts{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:10px}

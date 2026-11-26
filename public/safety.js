@@ -18,8 +18,8 @@
 @media (min-width:640px){.sf-bg{align-items:center}}
 .sf{background:#FFFCF7;color:#1F1A17;width:min(440px,100%);border-radius:24px 24px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:90dvh;overflow:auto;border-top:1.5px solid #5A3B2B}
 @media (min-width:640px){.sf{border-radius:24px;border:1.5px solid #5A3B2B}}
-.sf h2{font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0 0 4px}.sf p{margin:0 0 12px;color:#665A51;font-size:14px}
-.sf .sf-act{display:grid;gap:8px}.sf button{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;cursor:pointer;padding:0 16px;text-align:left}
+.sf h2{font:600 20px/1.2 var(--sys-display);margin:0 0 4px}.sf p{margin:0 0 12px;color:#665A51;font-size:14px}
+.sf .sf-act{display:grid;gap:8px}.sf button{font:600 16px/1 var(--sys-title);min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;cursor:pointer;padding:0 16px;text-align:left}
 .sf button.sf-go{background:#C94A30;border-color:#C94A30;color:#fff;text-align:center}.sf button.sf-x{text-align:center;border:0;background:transparent;color:#665A51}
 .sf label{display:flex;gap:10px;align-items:center;min-height:44px;font-size:16px;border-bottom:1.5px solid #E4D9C8}.sf label:last-of-type{border-bottom:0}.sf input[type=radio]{width:20px;height:20px;accent-color:#C94A30}
 .sf textarea{width:100%;box-sizing:border-box;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px 12px;font:16px/1.4 inherit;min-height:72px;margin:8px 0 12px}

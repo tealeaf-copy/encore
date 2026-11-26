@@ -11,7 +11,7 @@
 @media (min-width:861px){.bk-bg{align-items:center;padding:24px}}
 .bk-sheet{--ink:#1F1A17;--smoke:#665A51;--line:#E4D9C8;--ls:#D9CCBB;background:#FFFCF7;color:#1F1A17;font:400 16px/1.45 "Instrument Sans",system-ui,-apple-system,sans-serif;width:min(1040px,100%);max-height:100dvh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;border-radius:24px 24px 0 0;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);border:1.5px solid #5A3B2B;overflow:hidden;box-sizing:border-box}
 @media (min-width:861px){.bk-sheet{height:min(860px,calc(100dvh - 48px));border-radius:24px}}
-.bk-sheet *{box-sizing:border-box}.bk-sheet h2,.bk-sheet h3{font-family:"Fredoka","Instrument Sans",system-ui,sans-serif;font-weight:600;margin:0}
+.bk-sheet *{box-sizing:border-box}.bk-sheet h2,.bk-sheet h3{font-family:var(--sys-display);font-weight:600;margin:0}
 .bk-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 12px;border-bottom:1.5px solid var(--line)}.bk-hd h2{font-size:20px}.bk-hd p{margin:2px 0 0;font-size:14px;color:var(--smoke)}
 .bk-x{width:44px;height:44px;border-radius:999px;border:1.5px solid var(--ls);background:#fff;color:#5A3B2B;display:grid;place-items:center;cursor:pointer;flex:none}
 .bk-body{overflow:auto;display:grid;grid-template-columns:minmax(0,1fr);align-content:start}
@@ -36,7 +36,7 @@
 .bk-logo{width:56px;height:56px;border-radius:12px;border:1.5px solid var(--line);background:#fff;object-fit:contain;padding:4px}
 .bk-ft{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1.5px solid var(--line);background:#FFFCF7}.bk-ft .msg{font-size:13px;color:var(--smoke)}.bk-ft .r{display:flex;gap:8px}
 .bk-sheet :is(button,input,a,summary):focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
-.bk-more>summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer;font:600 16px "Fredoka","Instrument Sans",system-ui,sans-serif;list-style:none}.bk-more>summary::-webkit-details-marker{display:none}.bk-more>summary::after{content:"";width:8px;height:8px;border-right:2px solid #5A3B2B;border-bottom:2px solid #5A3B2B;transform:rotate(45deg);margin-left:4px}.bk-more[open]>summary::after{transform:rotate(-135deg)}
+.bk-more>summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer;font:600 16px var(--sys-title);list-style:none}.bk-more>summary::-webkit-details-marker{display:none}.bk-more>summary::after{content:"";width:8px;height:8px;border-right:2px solid #5A3B2B;border-bottom:2px solid #5A3B2B;transform:rotate(45deg);margin-left:4px}.bk-more[open]>summary::after{transform:rotate(-135deg)}
 .bk-more>div{display:grid;gap:20px;margin-top:12px}
 /* ---- the preview: everything below reads only --kit-* ---- */
 .bk-pvw{padding:16px;background:#F3EEE6;display:grid;gap:14px;align-content:start}.bk-pvw>b{font:600 13px "Instrument Sans",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#665A51}

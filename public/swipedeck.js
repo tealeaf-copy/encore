@@ -44,7 +44,7 @@
 @keyframes sdIn{from{opacity:0}}
 .sd-in{position:relative;width:min(100%,460px);height:100%;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom))}
 .sd-top{display:flex;align-items:flex-start;gap:10px}.sd-top>div{flex:1;min-width:0}
-.sd-top h2{margin:2px 0 0;font:600 clamp(26px,7vw,32px)/1.05 Fredoka,system-ui}.sd-top h2 em{font-style:normal;color:#C94A30}.sd-top p{margin:4px 0 0;color:#665A51;font-size:14.5px}
+.sd-top h2{margin:2px 0 0;font:600 clamp(26px,7vw,32px)/1.05 var(--sys-display)}.sd-top h2 em{font-style:normal;color:#C94A30}.sd-top p{margin:4px 0 0;color:#665A51;font-size:14.5px}
 .sd-x{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid #D9CCBB;background:#fff;display:grid;place-items:center;padding:0;cursor:pointer;color:#5A3B2B}.sd-x svg{width:18px;height:18px}
 .sd-dots{display:flex;gap:6px;margin:12px 0 4px}.sd-dots i{flex:1;height:6px;border-radius:6px;background:#E4D9C8;border:0;transition:background .25s}.sd-dots i.on{background:#C94A30}.sd-dots i.cur{background:#F2D48F}
 .sd-stack{position:relative;flex:1;min-height:0;margin:10px 6px 30px}
@@ -57,13 +57,13 @@
 .sd-media.art .ea-art{inset:0 2% 2%!important;width:auto!important;height:auto!important;max-width:none!important;justify-content:center!important;align-items:center!important}.sd-media.art .ea-art svg{width:100%!important;height:100%!important;max-width:none!important;overflow:visible}.sd-media.art .ea-art svg [stroke-width]{stroke-width:6px}
 .sd-fb{position:absolute;inset:0;display:grid;place-items:center;font-size:64px}
 .sd-badge{position:absolute;right:10px;top:12px;z-index:3;font:700 13px/1 "Instrument Sans",system-ui;padding:7px 11px;border-radius:999px;background:#F2D48F;border:0}.sd-badge.ex{background:#fff;color:#5A4E45}
-.sd-stamp{position:absolute;top:22px;z-index:4;font:700 30px/1 Fredoka,system-ui;letter-spacing:.02em;padding:6px 14px;border:4px solid currentColor;border-radius:12px;background:rgba(255,255,255,.88);opacity:0;pointer-events:none}
+.sd-stamp{position:absolute;top:22px;z-index:4;font:700 30px/1 var(--sys-display);letter-spacing:.02em;padding:6px 14px;border:4px solid currentColor;border-radius:12px;background:rgba(255,255,255,.88);opacity:0;pointer-events:none}
 .sd-stamp.yes{right:16px;color:#3E6B34;transform:rotate(12deg)}.sd-stamp.no{left:16px;color:#A63A22;transform:rotate(-12deg)}
 .sd-body{flex:none;padding:12px 16px 16px;color:#1F1A17}.sd-card.dark .sd-body{color:#FFF8EE}.sd-card.dark .sd-meta,.sd-card.dark .sd-line,.sd-card.dark .sd-host{color:rgba(255,248,238,.85)}
 .sd-host{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;color:#5A4E45}.sd-host b{font-weight:700}
 .sd-av{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(31,26,23,.18);overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,#fff);font-size:15px}.sd-av img,.sd-av svg{width:100%;height:100%;object-fit:cover}
 .sd-idea{font-size:20px}
-.sd-body h3{margin:6px 0 2px;font:600 clamp(24px,6.6vw,30px)/1.08 Fredoka,system-ui;text-wrap:balance;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sd-body h3{margin:6px 0 2px;font:600 clamp(24px,6.6vw,30px)/1.08 var(--sys-display);text-wrap:balance;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sd-meta{margin:0;font-size:15px;color:#5A4E45;font-weight:600}.sd-line{margin:4px 0 0;font-size:14.5px;color:#5A4E45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sd-acts{display:flex;justify-content:center;align-items:center;gap:18px;padding:6px 0 4px}
 .sd-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border-radius:999px;border:1.5px solid #D9CCBB;font:600 17px "Instrument Sans",system-ui;cursor:pointer;transition:background .12s;color:#1F1A17;background:#fff}
@@ -78,7 +78,7 @@
 .sd-fan span:nth-child(1){left:6px;transform:rotate(-9deg)}.sd-fan span:nth-child(2){left:58px;top:0;transform:rotate(3deg);z-index:2}.sd-fan span:nth-child(3){left:112px;transform:rotate(11deg)}
 .sd-fan .m{position:relative;display:block;aspect-ratio:1/1;overflow:hidden;background:var(--bg,#FDE6A6)}.sd-fan .m img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sd-fan .m .ea-txt{display:none}
 .sd-fan span::before{content:"";position:absolute;top:-10px;left:50%;width:50px;height:16px;margin-left:-25px;background:#F2D48F;opacity:.92;transform:rotate(-5deg);z-index:2}
-.sd-end h2{margin:0;font:600 clamp(28px,8vw,38px)/1.05 Fredoka,system-ui;text-wrap:balance}.sd-end p{margin:0;color:#665A51;max-width:32ch}
+.sd-end h2{margin:0;font:600 clamp(28px,8vw,38px)/1.05 var(--sys-display);text-wrap:balance}.sd-end p{margin:0;color:#665A51;max-width:32ch}
 .sd-go{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 28px;border-radius:999px;border:1px solid #C94A30;background:#C94A30;color:#fff;font:600 17px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer}.sd-go.ghost{background:#fff;color:#1F1A17;border:1.5px solid #D9CCBB}
 .sd-end-acts{display:grid;gap:10px;justify-items:center;margin-top:6px}
 .sd-potto{width:70px}.sd-potto svg{width:70px;height:auto}

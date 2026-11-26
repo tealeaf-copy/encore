@@ -35,6 +35,8 @@ import { complete, aiMode, parseJsonLoose } from "./ai.js";
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { scopeStore, getWorkspace, DEFAULT_WS } from "./workspaces.js";
+import { IDEAS } from "./hooks.js";
+import { pickIdeas } from "./ideasnudge.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GUIDE_FILE = path.join(ROOT, "docs", "help.md");
@@ -171,7 +173,9 @@ const PERSON = { label: "Talk to a person", href: "#person" };
 const NOT_SURE = "I'm not sure about that one, and I'd rather not guess. A person can help, and they'll see this chat.";
 /** The no-AI answer: the best section, its one-tap actions, related sections, and a person when it isn't a strong match. */
 export function offlineAnswer(message, sections = loadGuide().sections) {
-  const R = matchSections(message, sections), top = R[0];
+  // "what should I host?" is mostly stop words to the matcher; said any common way, it's the ideas answer
+  const stuck = /\bwhat (?:should|could|can|do) (?:i|we) host\b|\bwhat to host\b|\bideas? (?:for|to) host\b|\b(?:i'?m|feeling) stuck\b|\bneed (?:an? )?ideas?\b/i.test(String(message || "")) && sections.find((x) => x.title === "What to host");
+  const R = stuck ? [{ s: stuck, score: 20, coverage: 1, mass: 10 }, ...matchSections(message, sections).filter((x) => x.s !== stuck)] : matchSections(message, sections), top = R[0];
   if (!answers(top)) return { answer: NOT_SURE, actions: [PERSON], suggestHuman: true, section: null, confidence: "none", related: [] };
   const s = top.s, sentences = s.body.split(/(?<=[.!?])\s+/); let answer = "";
   for (const x of sentences) { if (answer && (answer + " " + x).length > 560) break; answer = answer ? answer + " " + x : x; }
@@ -179,6 +183,9 @@ export function offlineAnswer(message, sections = loadGuide().sections) {
   const related = R.slice(1, 4).filter((x) => x.score >= Math.max(3, top.score * 0.6)).slice(0, 2).map((x) => ({ title: x.s.title, q: x.s.questions[0] || x.s.title }));
   // a person is always one tap away in the sheet's footer; in the answer itself only when Potto isn't sure it fits
   const person = /person/i.test(s.title);
+  // "what should I host?": three ideas from the ideas library, each one tap from a prefilled draft
+  if (s.title === "What to host") { const L = pickIdeas(IDEAS, { n: 3 }); answer += " " + L.map((x) => `${x.title}: ${x.line}`).join(" ");
+    return { answer: noDash(answer), actions: [...L.map((x) => ({ label: `Host ${x.title.toLowerCase()}`, href: `/?app=1&idea=${encodeURIComponent(x.id)}` })), ...s.links.slice(0, 1)].slice(0, 4), suggestHuman: false, section: s.title, confidence: "high", related, ideas: L }; }
   return { answer: noDash(answer), actions: [...s.links.slice(0, 3), ...(person || confidence === "high" ? [] : [PERSON])].slice(0, 4), suggestHuman: person || confidence !== "high", section: s.title, confidence, related };
 }
 

@@ -414,6 +414,13 @@ Questions: How do I change my profile picture? | How do I add a cover photo? | C
 Tap Change photo: on your event's cover (in Check the details, or the cover on your event's Invite tab), on your profile picture in Settings or the Me sheet, or on your page. Upload a photo or your own design (PNG, JPEG or WebP), pick one of your recent uploads, or use a template. Drag the photo to choose what shows. Your profile picture is cropped to a circle. Remove photo takes it off.
 [Open Settings](/settings)
 
+## What to host
+
+Keywords: what should I host, what to host, ideas, idea, stuck, not sure what to host, inspiration, need an idea, what can I host
+Questions: Any ideas for an event? | I'm stuck on ideas | Ideas for a first event?
+Not sure what to host? Start small: something you'd do anyway, with a few friends. Here are ideas to try. Tap one to start a draft with it filled in.
+[More ideas](/ideas)
+
 ## Group chats
 
 Keywords: chat, chats, group chat, message guests, messages, mute chat, leave chat

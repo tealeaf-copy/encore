@@ -1,5 +1,5 @@
 <title>Pottery Lab</title>
-<script src="/eventart.js"></script><script src="/photosheet.js" defer></script><script src="/spots.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/questions.js"></script>
+<script src="/eventart.js"></script><script src="/photosheet.js" defer></script><script src="/ideasnudge.js" defer></script><script src="/spots.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/questions.js"></script>
 <!-- per-event looks: colours, flyer, effects, title font and reply button (Make it yours) --><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/looks.js"></script><script src="/looks-app.js" defer></script><script src="/momentupload.js" defer></script><!-- visual feed: Add photos in After -->
 <script>
 // Instant invite preview: the full app is large, so a guest link first fetches just this event (a few hundred bytes)
@@ -12899,7 +12899,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const first=s=>String(s||"").trim().split(/\s+/)[0]||"";
   const HV={tab:"overview",filter:"all",lastStep:0,sig:"",anim:true};
   const want=()=>{ try{ return !window.__hvClassic&&!isGuestRoute()&&!!draft&&!draft.example&&(isCasual(draft)||!!window.__wsPersonal) }catch{ return false } };
-  const saveQ=async()=>{ try{ return await saveEvent(true) }catch(e){ console.warn(e); return false } };
+  const saveQ=async()=>{ window.__hvSaveErr=""; try{ return await saveEvent(true) }catch(e){ console.warn(e); window.__hvSaveErr=String(e?.message||""); return false } };
   const placeLine=d=>String(d.meetPoint||d.venueName||"").trim()||d.city||"";
   const whenLine=d=>{ if(d.drop&&(d.always||!d.date)) return ["Always available",(d.slots||[]).length?"pick up "+d.slots.join(", "):""].filter(Boolean).join(", "); if(d.stage==="interest"&&!d.date) return (d.dateOptions||[]).length?`Date to pick: ${(d.dateOptions||[]).map(fmtDate).join(", ")}`:"Date to pick"; return [d.date?fmtDate(d.date):"No date yet",d.startTime?clock12(d.startTime):""].filter(Boolean).join(" · ") };
   const link=d=>typeof inviteLink==="function"?inviteLink(d):location.origin+"/e/"+encodeURIComponent(d.id||"");
@@ -12965,7 +12965,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     return `<section class="hv-card"><div class="hv-ch"><h2>Pick the date</h2></div><p class="hv-sub" style="margin-bottom:8px">${R.length?`${hvPlural(R.length,"friend")} voted. Lock in a date and everyone who voted hears it's on.`:"Friends vote on the invite. Lock in a date when enough can come."}</p><div class="hv-dl">${O.map(([o,n],i)=>`<div><span class="k">${n?hvPlural(n,"vote"):"No votes"}</span><span class="v">${E(fmtDate(o))}</span><button class="hv-b sm${i===0&&n?" pri":""}" type="button" data-lock="${E(o)}">Lock in</button></div>`).join("")||`<p class="hv-empty">No dates yet. Add some in Edit.</p>`}</div></section>` }
   function afterCard(d,P,c){ const came=P.filter(p=>p.state==="in"&&(p.here||!P.some(x=>x.here)));
     return `<section class="hv-card" aria-labelledby="hvAftH"><div class="hv-ch"><h2 id="hvAftH">How it went</h2></div><p id="hvAftLine">${came.length?`${hvPlural(came.length,"guest")} came.`:"No one was marked as in."}</p><div id="hvKudos"></div>
-      <div class="hv-acts" style="margin-top:12px"><button class="hv-b" type="button" data-hv="thanks">${I.chat}<span>Say thanks</span></button><button class="hv-b" type="button" data-hv="addphotos">${I.camera}<span>Add your photos</span></button><button class="hv-b" type="button" data-hv="again">${I.repeat}<span>Host it again</span></button></div></section>` }
+      <div class="hv-acts" style="margin-top:12px"><button class="hv-b" type="button" data-hv="thanks">${I.chat}<span>Say thanks</span></button><button class="hv-b" type="button" data-hv="addphotos">${I.camera}<span>Add your photos</span></button><button class="hv-b" type="button" data-hv="again">${I.repeat}<span>Host it again</span></button></div></section>
+      <section class="hv-card" aria-labelledby="hvNextH"><div class="hv-ch"><h2 id="hvNextH">What's next?</h2></div><p class="hv-sub">Run it again, or try one of these.</p><div id="hvNextIdeas"></div></section>` }
 
   function guestsPane(d,P,c,stage){ const F=[["all","All",P.length],["in","In",c.in],["ask","Asking",c.ask],["wait","Waitlist",c.wait],["maybe","Maybe",c.maybe],["no","Can't go",c.no],["invited","Not replied",c.invited]].filter(([k,,n])=>k==="all"||n);
     if(!F.some(([k])=>k===HV.filter)) HV.filter="all";
@@ -13003,7 +13004,8 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
       try{ if(k==="r"){ await db.doc("rsvps/"+id).update({checkedInAt:on?Date.now():0}); const R=allRsvps.find(x=>x.id===id); if(R) R.checkedInAt=on?Date.now():0 } else { const g=d.guests[+id]; if(g){ g.status=on?"Attended":"Going"; await saveQ() } } if(on&&navigator.vibrate) navigator.vibrate(15) }catch(e){ toast("Couldn't save that. Check your connection.") } hvRender() });
     qa("[data-lock]",h).forEach(b=>b.onclick=()=>lockDate(d,b.dataset.lock,b));
     if(q("#hvGap",h)&&d.discoverable&&!d.unlisted&&typeof discoverGaps==="function") discoverGaps().then(j=>{ const el=q("#hvGap"); if(!el||!j||!(j.gaps||[]).length) return; el.hidden=false; el.innerHTML=`Not on Discover yet. Your page needs ${E(p1And(j.gaps))}. <a href="${j.gaps.includes("a page")?"/?app=1":`/@${encodeURIComponent(j.handle||"")}?customize=1`}" style="color:#B04A30;font-weight:600">Finish your page</a>` }).catch(()=>{});
-    if(stage==="after"&&q("#hvKudos",h)) kudos(d) }
+    if(stage==="after"&&q("#hvKudos",h)) kudos(d)
+    if(stage==="after"&&q("#hvNextIdeas",h)) window.PLIdeas?.list(q("#hvNextIdeas",h),{n:3,bare:true}) }
   async function kudos(d){ try{ const r=await fetch("/api/host/kudos/"+encodeURIComponent(d.id)); if(!r.ok) return; const K=await r.json(), el=q("#hvKudos"); if(!el||draft!==d) return; const L=(K.kudos||[]).filter(k=>k.love);
       let ph=0; try{ const j=await (await fetch("/api/public/moments/"+encodeURIComponent(d.id))).json(); ph=(j?.moments||[]).filter(m=>!m.hidden).length }catch{}
       const line=q("#hvAftLine"); if(line&&((K.kudos||[]).length||ph)) line.textContent+=" "+[(K.kudos||[]).length?hvPlural(K.kudos.length,"kudos note")+".":"",ph?hvPlural(ph,"photo")+" so far.":""].filter(Boolean).join(" ");
@@ -13057,9 +13059,13 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } }});
     const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
       <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>A Discord message, Markdown or an .ics file works too.</small></label>
-      <div><p class="sect" style="margin:0 0 8px">Or start from one of these</p><div class="tpl">${TPL.map(([n],i)=>`<button type="button" data-tpl="${i}">${E(n)}</button>`).join("")}</div></div><p class="err" id="hvErr" role="alert"></p>`,
+      <div id="hvIdeas" hidden></div>
+      <div id="hvTpl"><p class="sect" style="margin:0 0 8px">Or start from one of these</p><div class="tpl">${TPL.map(([n],i)=>`<button type="button" data-tpl="${i}">${E(n)}</button>`).join("")}</div></div><p class="err" id="hvErr" role="alert"></p>`,
       foot:`<button class="hv-b pri" type="button" id="hvNext">Next</button>`});
-    const ta=q("#hvWhat",S.bg); qa("[data-tpl]",S.bg).forEach(b=>b.onclick=()=>{ ta.value=TPL[+b.dataset.tpl][1]; ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length) });
+    const ta=q("#hvWhat",S.bg);
+    // "Ideas to try" (public/ideasnudge.js): 3 or 4 one-tap ideas, local and seasonal; a tap fills the box
+    window.PLIdeas?.row(q("#hvIdeas",S.bg),{input:ta}).then(L=>{ if(L&&L.length){ const t=q("#hvTpl",S.bg); if(t) t.hidden=true } });
+    qa("[data-tpl]",S.bg).forEach(b=>b.onclick=()=>{ ta.value=TPL[+b.dataset.tpl][1]; ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length) });
     const ics=q("textarea",S.bg); ics.addEventListener("dragover",e=>e.preventDefault()); ics.addEventListener("drop",e=>{ const f=e.dataTransfer?.files?.[0]; if(f&&/\.ics$/i.test(f.name||"")){ e.preventDefault(); f.text().then(t=>{ ta.value=t }) } });
     ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); q("#hvNext",S.bg).click() } });
     q("#hvNext",S.bg).onclick=async()=>{ const t=ta.value.trim(), b=q("#hvNext",S.bg); if(t.length<4){ q("#hvErr",S.bg).textContent="Tell me the plan first."; ta.focus(); return }
@@ -13112,7 +13118,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     q("#hvLater",B)&&(q("#hvLater",B).onclick=async()=>{ apply(); await saveQ(); S.close(); toast("Saved. Only you can see it."); hvRender() });
     q("#hvSave",B).onclick=async()=>{ const b=q("#hvSave",B); if(!check()) return; apply(); b.disabled=true;
       if(!creating){ const ok=await saveQ(); b.disabled=false; if(ok===false){ err("Couldn't save. Try again."); return } S.close(); toast((d.published||d.discoverable)?"Saved. Guests see the change right away.":"Saved."); hvRender(); return }
-      const vis=d.lastVis||"page"; d.published=true; d.discoverable=vis!=="link"; d.unlisted=vis!=="discover"; const ok=await saveQ(); b.disabled=false; if(ok===false){ d.published=false; d.discoverable=false; err("Couldn't share it. Try again."); return }
+      const vis=d.lastVis||"page"; d.published=true; d.discoverable=vis!=="link"; d.unlisted=vis!=="discover"; const ok=await saveQ(); b.disabled=false; if(ok===false){ d.published=false; d.discoverable=false; err(/confirm your email/i.test(window.__hvSaveErr||"")?window.__hvSaveErr:"Couldn't share it. Try again."); return }
       try{ sessionStorage.removeItem(WIZ_KEY) }catch{} S.close(); HV.tab="overview"; step=1; HV.lastStep=1; if(location.hash!=="#studio") location.hash="#studio"; hvRender(); openLive(d); try{ pipSound?.("oink"); burst?.() }catch{} } }
   // the moment it goes live: one calm screen. The invite as guests see it, one Share button, and the way to the event.
   function openLive(d){ const cov=typeof safeCover==="function"?safeCover(d.coverPhoto):"", em=(typeof titleEmoji==="function"&&titleEmoji(d))||"";

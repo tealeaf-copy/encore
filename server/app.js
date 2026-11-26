@@ -26,7 +26,8 @@ import { smsConfig, sendSms } from "./sms.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
 import { mountScrapbook } from "./scrapbook.js";
-import { mountPhotos, guardEventPhotos } from "./photos.js"; // the "Change photo" sheet: event covers, page covers, profile pictures
+import { mountPhotos, guardEventPhotos } from "./photos.js";
+import { makeVerify, verifyRequired, emailVerified, founderGate } from "./verify.js"; // email verification, founder-code limits // the "Change photo" sheet: event covers, page covers, profile pictures
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
 import { mountDrops, dropOrderError, soldOf } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
@@ -50,7 +51,8 @@ import { mountSlots } from "./slots.js"; // review round 13: slots on the invite
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
-import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
+import { mountHooks, IDEAS } from "./hooks.js";
+import { mountIdeasNudge } from "./ideasnudge.js"; // "Ideas to try" where people feel stuck; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
 import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
 import { mountBrandKit, brandKitHead } from "./brandkit.js"; // a host's brand kit: one look for their page, events and invites
@@ -61,7 +63,7 @@ import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVIC
 import { runReminders } from "./reminders.js";
 import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from "./metrics.js";
 import { mountMcp } from "./mcp.js";
-import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
+import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
@@ -271,7 +273,7 @@ export function createApp({ store, dataDir }) {
   C.setBlobWs((u) => { const id = String(u || "").replace(/^\/_blob\//, ""); if (!/^[A-Za-z0-9]{20}$/.test(id)) return null; try { return JSON.parse(fs.readFileSync(path.join(assetsDir, id + ".json"), "utf8")).ws || null; } catch { return null; } });
   fs.mkdirSync(assetsDir, { recursive: true });
   const runs = new Map(); // runId -> { pending: Map<toolUseId, resolve> }
-  useAuthStore(store);
+  useAuthStore(store); app.use(upgradeSession); // old cookies with the email in them become opaque v2 sessions
   useMetricsStore(store);
   useUnsubStore(store);
 
@@ -349,6 +351,14 @@ export function createApp({ store, dataDir }) {
         if (isEx(ws)) return res.status(403).json({ code: "example", message: "This is an example page, so it can't take requests. Make your own page to try it." }); } catch {}
       next(); }); }
   const pwOk = (p) => typeof p === "string" && p.length >= 10 && p.length <= 200;
+  // ---- email verification (server/verify.js) ----
+  const VF = makeVerify({ store, publicOrigin: (req) => originOf(req) });
+  app.get("/verify", (req, res) => { const email = VF.confirm(String(req.query.t || "")); res.set("Cache-Control", "no-store").redirect(302, email ? "/feed?verified=1" : "/settings?verify=expired"); });
+  app.post("/api/me/verify", small, async (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." });
+    if (emailVerified(u.email)) return res.json({ ok: true, verified: true });
+    const k = "vr:" + lc(u.email), n = (verifyHits.get(k) || 0) + 1; verifyHits.set(k, n); if (n > 5) return res.status(429).json({ code: "rate_limited", message: "We've sent a few already. Check your spam folder." });
+    await VF.send(req, u.email, u.name); res.json({ ok: true, sent: true, message: `Sent. Check ${u.email}.` }); });
+  const verifyHits = new Map(); setInterval(() => verifyHits.clear(), 3600_000).unref?.();
   app.post("/api/signup", small, (req, res) => {
     if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
     if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
@@ -365,7 +375,9 @@ export function createApp({ store, dataDir }) {
     // event's host: no host code needed, even when hosting is invite-only.
     const vouch = guestVouch(ref, email);
     if ((needCode && !regular && !vouch) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
-    const W = createWorkspace({ company, ownerEmail: email, personal, ref });
+    // a shared founder code stays reusable, but a few uses per IP and per day, each one logged (launch review)
+    const fg = codeCheck?.founder ? founderGate(store, req) : null; if (fg && !fg.ok) return res.status(429).json({ code: "rate_limited", message: fg.message });
+    const W = createWorkspace({ company, ownerEmail: email, personal, ref }); fg?.log(email);
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (vouch) { try { const by = getWorkspace(vouch.ws), instead = needCode && !codeCheck?.ok;
       updateWorkspace(W.id, { vouchedBy: { ws: vouch.ws, eventId: vouch.eventId, via: vouch.via, at: Date.now(), ...(instead ? { insteadOfCode: true } : {}) } });
@@ -379,7 +391,8 @@ export function createApp({ store, dataDir }) {
     else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }
     // Word of mouth: count who came to Pottery Lab from a guest page, on the event's own workspace.
     if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Pottery Lab from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
-    putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now() });
+    putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now(), emailVerified: !verifyRequired() });
+    if (verifyRequired()) VF.send(req, email, name).catch(() => {}); // a link to confirm the email; sharing an invite waits for it
     scopeStore(store, W.id).add("audit", { eventId: "", what: `${company} workspace created`, kind: "team", who: name, email, verified: true, at: Date.now() });
     startSession(req, res, email, W.id);
     track("signup", { ws: W.id, ref: ref || undefined, code: !!codeCheck?.ok });
@@ -699,6 +712,7 @@ export function createApp({ store, dataDir }) {
   mountGiftPlan(app, { store, small, discoverHosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get(["/gifts/plan", "/gifts/plan/:id"], (req, res) => sendStatic(res, "giftplan.html", "<p>Gift planner missing.</p>"));
   const SB = mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
+  mountIdeasNudge(app, { store, currentUser, IDEAS }); // GET /api/public/ideas/try (server/ideasnudge.js)
   const PH = mountPhotos(app, { store, assetsDir, currentUser, C, small, raw: express.raw({ type: () => true, limit: "11mb" }) }); app.locals.photos = PH; // server/photos.js
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
@@ -1035,7 +1049,7 @@ export function createApp({ store, dataDir }) {
     const workspace = { id: ws, company: W?.company || "", plan: W?.plan || "self-hosted", trial: T.trial, trialEnded: T.trialEnded, daysLeft: T.daysLeft };
     // review round 8: crm is true only for a team workspace with a CRM connected (the brand request form's CRM fields)
     const crm = !!u && W?.plan !== "friends" && (listConnections(ws).some((c) => c.connected && ["hubspot", "salesforce", "attio"].includes(c.provider)) || !!(process.env.HUBSPOT_TOKEN || process.env.SF_ACCESS_TOKEN));
-    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
+    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, emailVerified: emailVerified(u.email), ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
   const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|chatmembers|chatreports|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
@@ -1568,6 +1582,8 @@ export function createApp({ store, dataDir }) {
     req.body = guardGuestReply(req, p, req.body);
     if (isEv && req.body && typeof req.body === "object" && "series" in req.body && typeof req.body.series !== "boolean") { const { series, ...rest } = req.body; req.body = series === "yes" || series === "true" ? { ...rest, series: true } : series === "no" || series === "false" ? { ...rest, series: false } : { ...rest, series: null }; } // review round 14: "Is this a series?" is true, false or null (unset) (server/episodes.js)
     if (isEv && !req.guest) req.body = guardEventPhotos(req.body, req.ws, before); // only your own uploads go on your event
+    if (isEv && !req.guest && verifyRequired() && req.body && (req.body.published === true || req.body.discoverable === true) && !(before?.published || before?.discoverable)) { const u = currentUser(req);
+      if (u && !emailVerified(u.email)) return res.status(403).json({ code: "verify_email", message: `Confirm your email first: tap the link we sent to ${u.email}. Your draft is saved.` }); }
     if (isEv) { req.body = withTz(withCleanLook(req.body), req, !before); if (how === "put" && before?.tz && req.body && typeof req.body === "object" && !("tz" in req.body)) req.body = { ...req.body, tz: before.tz }; } // per-event looks: allow-listed values only; a real time zone, kept
     // the host letting someone in is remembered, so a later change of mind doesn't need asking again
     if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };

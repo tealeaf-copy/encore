@@ -40,6 +40,8 @@ import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
+import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, small moves, warmth, Circles, Potto's nudges, /start, /path (server/hostloop.js)
+import { mountExperiments } from "./experiments.js"; // deterministic A/B tests and /admin/experiments (server/experiments.js)
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
 import { mountKudosAsk } from "./kudosask.js";
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
@@ -751,6 +753,8 @@ export function createApp({ store, dataDir }) {
   mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect: GUEST_REDIRECT, publicOrigin: (req) => originOf(req) });
   // host leaderboards: /leaderboard, its feed card and moments, and the host page chip (the API is in the directory's /api/v1)
   mountLeaderboard(app, { store, C, X, sendStatic });
+  mountExperiments(app, { store, currentUser });
+  mountHostLoop(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   // kudos asked of every guest the morning after, the one-tap kudos page (/k/<event>) and the second-host loop count
   mountKudosAsk(app, { store, small, C, X, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) });
   // ---- repeats: weekly and monthly events make their next date the morning after, and old links show it (server/repeats.js) ----

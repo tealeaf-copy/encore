@@ -78,6 +78,8 @@ setTimeout(() => app.locals.social?.runJobs().catch(() => {}), 60e3).unref?.();
 // saved-event reminders and the weekend digest (server/hooks.js). Hourly.
 const hookJobs = setInterval(() => app.locals.hooks?.runJobs().catch((e) => console.warn("[hooks]", e.message)), 3600e3); hookJobs.unref?.();
 setTimeout(() => app.locals.hooks?.runJobs().catch(() => {}), 90e3).unref?.();
+// Potto's nudges at each host's own rhythm, and Circles settling at the end of a period (server/hostloop.js). Hourly.
+const loopJobs = setInterval(() => app.locals.hostloop?.runJobs().catch((e) => console.warn("[hostloop]", e.message)), 3600e3); loopJobs.unref?.();
 function shutdown() {
   pmTask?.stop?.();
   server.close(() => { store.close(); process.exit(0); });

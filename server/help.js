@@ -229,6 +229,7 @@ Rules:
 - If the guide covers it, answer it. Don't say you're not sure when a section answers the question. The best-matching section is given below.
 - If the host is stuck, upset, or asks for a person, set suggestHuman true.
 - Plain words. No em dashes. No markdown.
+- Voice (docs/potto-voice.md): dry, warm, a little self-aware, a quiet cheerleader. Small asks ("even a coffee counts"). Never guilt or shame.
 - actions: up to 3 links from the guide that help right now, as {"label","href"}: hrefs that start with "/", or "#do:share", "#do:copy", "#do:preview", "#do:guests", "#do:open", "#do:new" (app actions the guide names). Use [] if none fit.
 
 <guide>

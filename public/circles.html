@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Circles · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<script src="/authguard.js"></script>
+<style>
+/* /circles: opt-in hosting circles (server/hostloop.js). About ten hosts of a similar size and city, ranked on effort.
+   The top three move up a table; nobody moves down. Off until a host joins. Brand tokens only (public/system.css). */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text);-webkit-font-smoothing:antialiased}
+main{max-width:640px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}
+.back{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-soft);text-decoration:none;font-size:15px}
+.eyebrow{display:block;font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:8px 0}
+h1{font:400 34px/1.08 var(--pl-font-display);letter-spacing:-.015em;margin:0 0 8px;text-wrap:balance}
+main h2{font:500 12px/1.3 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:0 0 10px}
+.lede{color:var(--pl-soft);margin:0 0 18px}
+.box{background:var(--pl-surface);border:1px solid var(--pl-line-strong);border-radius:6px;padding:16px;margin:0 0 16px}
+ul.facts{list-style:none;margin:0;padding:0}ul.facts li{padding:10px 0;border-top:1px dashed var(--pl-line-strong);display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px}ul.facts li:first-child{border-top:0}
+ul.facts b{font:500 12px var(--pl-font-mono);color:var(--pl-soft);padding-top:2px}
+.opts{display:flex;gap:8px;margin:6px 0 14px}.opt{flex:1;min-height:44px;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);font:600 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
+.opt[aria-pressed="true"]{background:var(--pl-ink);color:var(--pl-surface);border-color:var(--pl-ink)}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;min-height:52px;padding:0 16px;border-radius:6px;border:1px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px var(--pl-font-text);text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}.plain{background:none;border:0;color:var(--pl-soft);font:500 15px var(--pl-font-text);min-height:44px;cursor:pointer;width:100%}
+.board{list-style:none;margin:0;padding:0}
+.board li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:56px;border-top:1px dashed var(--pl-line-strong)}.board li:first-child{border-top:0}
+.board .pl{font:500 14px var(--pl-font-mono);color:var(--pl-soft);text-align:center}.board .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.board .nm small{display:block;font:400 13px var(--pl-font-mono);color:var(--pl-soft)}
+.board .st{font:500 11px var(--pl-font-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--pl-line-strong);border-radius:6px;padding:3px 6px;color:var(--pl-soft);white-space:nowrap}
+.board .st.up{border-color:var(--pl-ink);color:var(--pl-ink);background:var(--pl-highlight,var(--pl-sand))}
+.board li.you{background:var(--pl-page);margin:0 -16px;padding:0 16px}
+.meta{font:400 13px var(--pl-font-mono);color:var(--pl-soft);margin:0 0 12px}
+.rule{font-size:14px;color:var(--pl-soft);margin:12px 0 0}
+</style>
+</head><body data-shell="tabs">
+<main>
+  <a class="back" href="/?app=1">‹ Home</a>
+  <span class="eyebrow">Circles · opt in</span>
+  <h1 id="h1">A small circle of hosts like you.</h1>
+  <div id="out" hidden><p class="lede">Circles are for hosts. Sign in to see yours.</p><a class="btn pri" href="/login?next=%2Fcircles">Sign in</a></div>
+  <div id="join" hidden>
+    <p class="lede" id="intro"></p>
+    <section class="box" aria-labelledby="hHow"><h2 id="hHow">How it works</h2><ul class="facts">
+      <li><b>01</b><span>About ten hosts near your size, in your city when there are enough.</span></li>
+      <li><b>02</b><span>Ranked on effort: events held, guests welcomed, would-go-again and small moves. Not followers.</span></li>
+      <li><b>03</b><span>The top three move up a table at the end of the period. Everyone else stays. Nobody moves down.</span></li>
+      <li><b>04</b><span>Only your circle sees the board. It's never on your page. Leave any time.</span></li></ul></section>
+    <section class="box" aria-labelledby="hCad"><h2 id="hCad">How often</h2><div class="opts" role="group" aria-label="How often"><button type="button" class="opt" data-c="month" aria-pressed="true">Monthly</button><button type="button" class="opt" data-c="week" aria-pressed="false">Weekly</button></div>
+      <button type="button" class="btn pri" id="go">Join a circle</button><button type="button" class="plain" onclick="location.href='/?app=1'">Not now</button></section>
+  </div>
+  <div id="in" hidden>
+    <p class="lede" id="tierLine"></p>
+    <section class="box" aria-labelledby="hBoard"><h2 id="hBoard">Your circle</h2><p class="meta" id="meta"></p><ul class="board" id="board"></ul><p class="rule" id="rule"></p></section>
+    <button type="button" class="plain" id="leave">Leave the circle</button>
+  </div>
+</main>
+<script src="/mascot.js"></script><script src="/hostloop.js"></script>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"), fx = window.HostLoop?.fx || {}, A = window.HostLoop.api;
+  let j; try { j = await A.get("/api/me/hostloop/circle"); } catch (e) { $("#out").hidden = false; return; }
+  let cad = "month";
+  $("#intro").textContent = j.intro;
+  document.querySelectorAll(".opt").forEach((b) => b.onclick = () => { cad = b.dataset.c; document.querySelectorAll(".opt").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); fx.haptic?.("light"); });
+  function draw(c) {
+    if (!c) { $("#join").hidden = false; $("#in").hidden = true; $("#h1").textContent = "A small circle of hosts like you."; return; }
+    $("#join").hidden = true; $("#in").hidden = false; $("#h1").textContent = c.tier;
+    $("#tierLine").textContent = `You're at the ${c.tier.toLowerCase()}. ${c.cadence === "week" ? "This week" : "This month"} ends in ${c.daysLeft} ${c.daysLeft === 1 ? "day" : "days"}.`;
+    $("#meta").textContent = [`${c.size} ${c.size === 1 ? "host" : "hosts"}`, c.city || "Nearby", c.cadence === "week" ? "Weekly" : "Monthly"].join(" · ");
+    $("#board").innerHTML = c.board.map((x) => `<li class="${x.you ? "you" : ""}"><span class="pl">${x.place}</span><span class="nm">${esc(x.you ? "You" : x.name)}<small>${x.points} warmth · ${x.events} ${x.events === 1 ? "event" : "events"}</small></span><span class="st${x.standing === "Moving up" ? " up" : ""}">${esc(x.standing)}</span></li>`).join("") + (c.size < 4 ? `<li><span></span><span class="nm" style="font-weight:400;color:var(--pl-soft);white-space:normal">Your circle fills as more hosts join.</span><span></span></li>` : "");
+    $("#rule").textContent = c.rule;
+  }
+  draw(j.circle);
+  $("#go").onclick = async () => { $("#go").disabled = true; try { const r = await A.post("/api/me/hostloop/circle", { on: true, cadence: cad }); fx.stamp?.("Joined"); draw(r.circle); } catch (e) { alert(e.message); } $("#go").disabled = false; };
+  $("#leave").onclick = async () => { if (!confirm("Leave your circle? You keep your table if you come back.")) return; await A.post("/api/me/hostloop/circle", { on: false }); fx.toast?.("You've left. Your table is kept for you."); draw(null); };
+})();
+</script>
+<script src="/shell.js"></script>
+</body></html>

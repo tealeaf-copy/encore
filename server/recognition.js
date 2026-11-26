@@ -77,6 +77,7 @@ export function makeRecognition({ C, X }) {
     for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !h.name) continue; let S; try { S = X.hostStrengths(ws); } catch { continue; }
       const W = getWorkspace(ws), example = isExampleEmail(W?.ownerEmail), clients = (h.gigs || []).filter((g) => g.client && !isPlaceholderBrand(g.client)).length, bookings = +(X.bookingsOf?.(ws) || 0);
       const r = example ? { badges: [], next: [], streak: { weeks: 0, months: 0 }, events: (S.dates || []).length, last: "", isNew: false, isSuper: false } : badgesFor({ dates: S.dates || [], upcoming: upcomingOf(ws), rhythm: rhythmOf([...(S.dates || []), ...upcomingOf(ws)], upcomingEv(ws).map((e) => e.repeat)), guests: S.guests, returning: S.returning, kudos: S.kudosCount, createdAt: W?.createdAt || 0, bookings, clients });
+      if (X.hostloop && !X.hostloop.streakPublic(ws)) { r.badges = (r.badges || []).filter((b) => b.id !== "streak"); r.streak = { ...(r.streak || {}), weeks: 0, months: 0, hidden: true }; } // a streak shows only when the host chose to show it (server/hostloop.js)
       const recent = (S.dates || []).filter((d) => d <= today() && (Date.parse(today()) - Date.parse(d)) / DAY <= 90).length;
       out.push({ ws, handle: h.handle, city: String(h.city || "").trim(), recent, guests: S.guests, returning: S.returning, example, ...r }); }
     // Local Legend (Strava): the most active real host in each city over the last 90 days, only where there's a field to beat (BADGE_RULES)

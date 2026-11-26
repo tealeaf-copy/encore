@@ -1,0 +1,190 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plan a dinner · Pottery Lab</title>
+<meta name="description" content="Plan a dinner in a minute. No account until you want to save it and send the link.">
+<meta property="og:title" content="Plan a dinner on Pottery Lab"><meta property="og:description" content="Four people and a night. That's an event.">
+<script src="/authguard.js"></script>
+<style>
+/* /start: the first win. A visitor plans a dinner before signing up; the draft lives on this phone until they save it.
+   Brand tokens only (public/system.css). Copy: docs/potto-voice.md. */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text);-webkit-font-smoothing:antialiased}
+main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
+.top{display:flex;justify-content:space-between;align-items:center;min-height:52px}
+.brand{display:flex;gap:8px;align-items:center;text-decoration:none;color:inherit;font-weight:600}
+.top a.in{color:var(--pl-soft);text-decoration:none;font-size:15px}
+.eyebrow{display:block;font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:16px 0 8px}
+h1{font:400 34px/1.08 var(--pl-font-display);letter-spacing:-.015em;margin:0 0 6px;text-wrap:balance}
+.lede{margin:0 0 18px;color:var(--pl-soft)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 14px var(--pl-font-text);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--pl-ink);color:var(--pl-surface);border-color:var(--pl-ink)}
+/* the canvas: the invite as it will look, drawn as you type */
+.card{background:var(--pl-surface);border:1px solid var(--pl-ink);border-radius:6px;padding:18px 16px 16px;position:relative;overflow:hidden}
+.card .ruled{border-top:1px dashed var(--pl-line-strong);margin:12px 0}
+.card .k{font:500 11px/1.3 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft)}
+.card .t{font:400 30px/1.1 var(--pl-font-display);margin:6px 0 0;word-break:break-word}
+.card .meta{font:400 14px/1.5 var(--pl-font-mono);color:var(--pl-ink)}
+.seats{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.seats i{width:14px;height:14px;border:1.5px solid var(--pl-ink);border-radius:50%;display:block}
+.card .note{margin:8px 0 0;font-size:15px;color:var(--pl-soft)}
+.card .stampbox{position:absolute;right:14px;top:14px}
+form{display:grid;gap:14px;margin:18px 0 0}
+label{display:grid;gap:6px;font-weight:600;font-size:15px}label small{font-weight:400;color:var(--pl-soft)}
+input,textarea{width:100%;min-height:48px;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px var(--pl-font-text);padding:10px 12px}
+textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px solid var(--pl-accent);outline-offset:1px;border-color:var(--pl-accent)}
+.two{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}
+.step{display:flex;align-items:center;gap:0;border:1px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);width:max-content}
+.step button{width:48px;height:48px;border:0;background:none;font:500 22px var(--pl-font-mono);color:var(--pl-ink);cursor:pointer}.step output{min-width:40px;text-align:center;font:500 18px var(--pl-font-mono)}
+.saved{font:400 13px var(--pl-font-mono);color:var(--pl-soft);display:flex;align-items:center;gap:6px;min-height:20px}
+.go{position:sticky;bottom:0;padding:12px 0 calc(8px + env(safe-area-inset-bottom));background:var(--pl-page);border-top:1px dashed var(--pl-line-strong);margin-top:18px}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:6px;border:1px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px var(--pl-font-text);text-decoration:none;cursor:pointer;padding:0 16px;text-align:center}
+.btn.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.btn:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}.btn[disabled]{opacity:.6}
+.fine{font-size:13px;color:var(--pl-soft);text-align:center;margin:8px 0 0}
+/* the save prompt */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--pl-page);border:1px solid var(--pl-ink);border-radius:6px 6px 0 0;width:100%;max-width:560px;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+@media (min-width:600px){.sheet-bg{align-items:center}.sheet{border-radius:6px}}
+.sheet h2{font:400 28px/1.12 var(--pl-font-display);margin:6px 0 8px}.sheet p{margin:0 0 14px;color:var(--pl-soft)}
+.sheet .row{display:flex;gap:12px;align-items:flex-start}.sheet .stack{display:grid;gap:10px;margin-top:6px}
+.sheet .plain{background:none;border:0;color:var(--pl-soft);font:500 15px var(--pl-font-text);min-height:44px;cursor:pointer;width:100%}
+/* out in the world */
+.done h1{margin-top:12px}.linkbox{display:flex;gap:8px;margin:14px 0}.linkbox input{font:14px var(--pl-font-mono)}
+.list{list-style:none;margin:16px 0 0;padding:0;border-top:1px dashed var(--pl-line-strong)}.list li{padding:12px 0;border-bottom:1px dashed var(--pl-line-strong);display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.list b{font:500 12px var(--pl-font-mono);color:var(--pl-soft);min-width:22px;padding-top:2px}
+.msg{color:var(--pl-danger);font-size:14px;min-height:20px;margin:6px 0 0}
+</style>
+</head><body>
+<main>
+  <header class="top"><a class="brand" href="/about" aria-label="Pottery Lab"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>pottery lab</a><a class="in" id="signIn" href="/login?next=%2Fstart%3Fsave%3D1">Sign in</a></header>
+
+  <div id="plan">
+    <span class="eyebrow" id="eyebrow">Plan a dinner</span>
+    <h1 id="h1">Plan a dinner. It takes a minute.</h1>
+    <p class="lede" id="lede">No account yet. Your plan stays on this phone until you want to send it.</p>
+    <div class="chips" id="chips" role="group" aria-label="Start from"></div>
+
+    <article class="card" id="card" aria-live="polite" aria-label="Your invite, as guests will see it">
+      <span class="k" id="cKind">Dinner</span>
+      <p class="t" id="cTitle">Dinner for 4</p>
+      <div class="ruled"></div>
+      <div class="meta" id="cWhen"></div><div class="meta" id="cWhere"></div>
+      <div class="seats" id="cSeats" aria-hidden="true"></div>
+      <p class="note" id="cNote" hidden></p>
+      <span class="stampbox" id="stampBox"></span>
+    </article>
+
+    <form id="f" autocomplete="off" novalidate>
+      <label>What is it<input name="title" maxlength="80" placeholder="Dinner for 4"></label>
+      <div class="two"><label>When<input name="date" type="date"></label><label>Time<input name="time" type="time" step="900"></label></div>
+      <label>Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
+      <div><span style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Seats</span><div class="step"><button type="button" id="less" aria-label="One fewer seat">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more seat">+</button></div></div>
+      <label>A line for guests <small>Optional</small><textarea name="note" maxlength="280" placeholder="I'm making dumplings. Bring something to drink."></textarea></label>
+      <p class="saved" id="saved" aria-live="polite"></p>
+    </form>
+    <div class="go"><button type="button" class="btn pri" id="save">Save your dinner and get a link to send</button><p class="fine" id="fine">Free. Guests reply without an account.</p></div>
+  </div>
+
+  <div id="done" class="done" hidden>
+    <div id="doneStamp" style="margin-top:20px"></div>
+    <h1 id="doneH">Your first one is out in the world.</h1>
+    <p class="lede" id="doneLine">Now the only job is to show up. I'll keep the list.</p>
+    <div class="linkbox"><input id="link" readonly aria-label="Your invite link"><button type="button" class="btn pri" id="copy" style="width:auto;min-width:96px">Copy</button></div>
+    <button type="button" class="btn" id="share" hidden>Send it</button>
+    <ul class="list" id="next"><li><b>01</b><span>Send the link to three people. Group chat is fine.</span></li><li><b>02</b><span>When they reply, you'll see it here and in your bell.</span></li><li><b>03</b><span>The day before, I'll remind you to send a reminder. That's it.</span></li></ul>
+    <div style="display:grid;gap:10px;margin-top:18px"><a class="btn" id="openApp" href="/?app=1">Open it in Pottery Lab</a></div>
+  </div>
+  <p class="msg" id="err" role="alert"></p>
+</main>
+<script src="/mascot.js"></script><script src="/hostloop.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s), q = new URLSearchParams(location.search), KEY = "pl.startDraft", F = $("#f"), fx = window.HostLoop?.fx || {};
+  const ls = { get: (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
+  const iso = (d) => d.toISOString().slice(0, 10), friday = () => { const d = new Date(); d.setDate(d.getDate() + (((5 - d.getDay() + 7) % 7) || 7)); return iso(d); }, plus = (s, n) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return iso(d); };
+  // templates: the Host path's nodes and Potto's small-move ideas all start here
+  const T = {
+    dinner4: { chip: "Dinner for 4", title: "Dinner for 4", kind: "Dinner", seats: 4, noun: "dinner" },
+    coffee: { chip: "Coffee for two", title: "Coffee, just us", kind: "Coffee", seats: 2, time: "10:00", noun: "coffee", note: "Small and easy. My treat." },
+    game: { chip: "Game night", title: "Game night", kind: "Game night", seats: 6, time: "19:30", noun: "game night", note: "Bring a game you'd teach in five minutes." },
+    run: { chip: "Run club", title: "Saturday 5k, coffee after", kind: "Run", seats: 10, time: "08:00", noun: "run", note: "Every pace. We wait at the end." },
+    table8: { chip: "A table of 8", title: "A table of 8", kind: "Dinner", seats: 8, noun: "dinner" },
+    regular: { chip: "A regular night", title: "First Fridays supper", kind: "Supper club", seats: 8, noun: "supper", note: "Same night every month. Come to one, come to all." },
+    ticketed: { chip: "Ticketed", title: "Supper club, seven courses", kind: "Supper club", seats: 12, noun: "supper", note: "$45 covers food. Bring your own bottle." },
+    series: { chip: "A series", title: "Hack night #1", kind: "Hack night", seats: 20, time: "18:30", noun: "hack night", note: "Bring a laptop. Ship something small." },
+    soldout: { chip: "Small and full", title: "Dumpling night", kind: "Dinner", seats: 6, noun: "dinner", note: "Six seats. Waitlist after that." },
+    weekend: { chip: "A weekend away", title: "A weekend upstate", kind: "Trip", seats: 8, time: "10:00", days: 2, noun: "weekend", note: "One house, eight people, no schedule." },
+    summit: { chip: "A summit", title: "A small summit", kind: "Summit", seats: 80, time: "09:30", noun: "summit", note: "Five talks, long breaks, good coffee." },
+    feeler: { chip: "A feeler", title: "Would you come to a dumpling night?", kind: "Feeler", seats: 6, noun: "feeler", note: "Thinking about it for later this month. Reply if you'd come." },
+    again: { chip: "Same crew", title: "Same crew, new month", kind: "Dinner", seats: 6, noun: "dinner" },
+  };
+  const CHIPS = ["dinner4", "coffee", "game", "run", "table8"];
+  let t = T[q.get("t")] ? q.get("t") : "dinner4", d = ls.get(KEY), variant = "plan", signed = false;
+  const fresh = (k) => { const x = T[k]; return { t: k, title: x.title, kind: x.kind, seats: x.seats, date: friday(), time: x.time || "19:00", place: "", note: x.note || "", ...(x.days ? { endDate: plus(friday(), x.days) } : {}), at: Date.now() }; };
+  if (!d || (q.get("t") && d.t !== t && !q.get("save"))) d = fresh(t); else t = T[d.t] ? d.t : t;
+  // anonymous id for the copy experiment (server/experiments.js): random, this browser only, never tied to a person
+  let anon = ""; try { anon = localStorage.getItem("pl.anon") || ""; if (!/^[A-Za-z0-9_-]{6,80}$/.test(anon)) { anon = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("pl.anon", anon); } } catch {}
+  const COPY = { plan: (n) => ({ eyebrow: `Plan a ${n}`, h1: `Plan a ${n}. It takes a minute.`, save: `Save your ${n} and get a link to send` }), start: (n) => ({ eyebrow: "Start small", h1: "Four people and a night. That's an event.", save: "Save it and get your link" }) };
+  const copy = () => { const c = (COPY[variant] || COPY.plan)(T[t].noun); $("#eyebrow").textContent = c.eyebrow; $("#h1").textContent = c.h1; $("#save").textContent = c.save; document.title = c.eyebrow + " · Pottery Lab"; };
+  fetch("/api/public/xp/first-win-copy?u=" + encodeURIComponent(anon), { credentials: "same-origin" }).then((r) => r.json()).then((j) => { if (j.variant) { variant = j.variant; copy(); } }).catch(() => {});
+
+  const fmtWhen = () => { const s = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "Pick a night"; const [h, m] = String(d.time || "19:00").split(":").map(Number);
+    return s + (d.endDate ? " to " + new Date(d.endDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", day: "numeric" }) : "") + " · " + ((h % 12) || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? "am" : "pm"); };
+  function draw() {
+    $("#cKind").textContent = d.kind || "Dinner"; $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || "Somewhere you like";
+    $("#cSeats").innerHTML = Array.from({ length: Math.min(24, d.seats) }, () => "<i></i>").join("") + (d.seats > 24 ? `<span class="meta">+${d.seats - 24}</span>` : "");
+    $("#cNote").hidden = !d.note; $("#cNote").textContent = d.note || ""; $("#seatsOut").textContent = d.seats;
+    document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.t === t)));
+  }
+  let savedT; const keep = () => { d.at = Date.now(); ls.set(KEY, d); clearTimeout(savedT); savedT = setTimeout(() => { $("#saved").innerHTML = (fx.check ? fx.check() : "") + " Saved on this phone"; }, 250); };
+  const fill = () => { F.title.value = d.title || ""; F.date.value = d.date || ""; F.time.value = d.time || ""; F.place.value = d.place || ""; F.note.value = d.note || ""; };
+  $("#chips").innerHTML = [...new Set([t, ...CHIPS])].map((k) => `<button type="button" class="chip" data-t="${k}" aria-pressed="false">${T[k].chip}</button>`).join("");
+  $("#chips").onclick = (e) => { const b = e.target.closest(".chip"); if (!b) return; const keepPlace = d.place; t = b.dataset.t; d = { ...fresh(t), place: keepPlace }; fill(); draw(); keep(); copy(); fx.haptic?.("light"); };
+  F.addEventListener("input", () => { d.title = F.title.value; d.date = F.date.value; d.time = F.time.value; d.place = F.place.value; d.note = F.note.value; if (d.endDate && d.date && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); draw(); keep(); });
+  const seat = (n) => { const was = d.seats; d.seats = Math.max(2, Math.min(200, d.seats + n)); if (d.seats !== was) { fx.tick ? fx.tick($("#seatsOut"), d.seats, 180) : 0; fx.haptic?.("light"); fx.sound?.("tap"); } draw(); keep(); };
+  $("#less").onclick = () => seat(-1); $("#more").onclick = () => seat(1);
+  fill(); draw(); copy(); if (ls.get(KEY)) $("#saved").textContent = "Saved on this phone";
+  // a "same crew" draft from a past event (signed in): its name
+  if (q.get("from") && /^[A-Za-z0-9_-]{2,80}$/.test(q.get("from"))) fetch("/api/db/doc?path=" + encodeURIComponent("events/" + q.get("from")), { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { const n = j?.data?.pubTitle || j?.data?.name; if (n && t === "again" && d.title === T.again.title) { d.title = n; d.seats = +j.data.headcount || d.seats; d.place = j.data.venueName || j.data.hood || d.place; fill(); draw(); keep(); } }).catch(() => {});
+
+  // ---- saving: signed out gets the save prompt; signed in (or back from sign-up) saves and sends ----
+  fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json()).then((m) => { signed = !!m?.verified; if (signed) { $("#signIn").hidden = true; $("#lede").textContent = "Fill in what you know. Change anything later."; if (q.get("save") === "1" && ls.get(KEY)) save(); } }).catch(() => {});
+  function prompt() {
+    const bg = document.createElement("div"); bg.className = "sheet-bg"; const n = T[t].noun;
+    bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="spH"><div class="row">${window.Potto ? Potto.svg("carry", 64, "Potto") : ""}<div><h2 id="spH">Save your ${n} and get a link to send</h2><p>A free account keeps it safe. Everything you typed comes with you.</p></div></div>
+      <div class="stack"><a class="btn pri" href="/signup?mode=friends&next=start">Create my account</a><a class="btn" href="/login?next=%2Fstart%3Fsave%3D1">I already have one</a><button type="button" class="plain" id="spNo">Not yet. Keep it on this phone</button></div></div>`;
+    document.body.appendChild(bg); const close = () => bg.remove(); bg.querySelector("#spNo").onclick = () => { close(); $("#saved").innerHTML = (fx.check ? fx.check() : "") + " Kept on this phone. It'll be here."; }; bg.onclick = (e) => { if (e.target === bg) close(); };
+    bg.querySelector(".btn.pri").focus();
+  }
+  async function save() {
+    const b = $("#save"); b.disabled = true; $("#err").textContent = ""; b.textContent = "Saving…";
+    try {
+      const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })();
+      const r = await fetch("/api/me/hostloop/draft", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ draft: d, u: anon, tz }) }); const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "Couldn't save it. Try again.");
+      const put = (body) => fetch("/api/db/doc?path=" + encodeURIComponent("events/" + j.id), { method: "PUT", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      let p = await put({ ...j.event, published: true }), out = true;
+      if (p.status === 403) { const e = await p.json().catch(() => ({})); if (e.code === "verify_email") { p = await put(j.event); out = false; } }
+      if (!p.ok) throw new Error("Couldn't save it. Try again.");
+      ls.del(KEY); try { localStorage.setItem("pl.startSaved", j.id); } catch {}
+      let S = null; try { S = await (await fetch("/api/me/hostloop", { credentials: "same-origin" })).json(); } catch {}
+      done(j.id, out, S?.celebrate);
+    } catch (e) { $("#err").textContent = e.message || "Couldn't save it. Try again."; b.disabled = false; copy(); }
+  }
+  function done(id, out, cel) {
+    $("#plan").hidden = true; $("#done").hidden = false; history.replaceState(null, "", "/start?saved=" + encodeURIComponent(id)); window.scrollTo(0, 0);
+    const link = location.origin + "/e/" + id; $("#link").value = link; $("#openApp").href = "/?app=1&open=" + encodeURIComponent(id) + "#studio";
+    if (!out) { $("#doneH").textContent = "Saved. One tap and it's out."; $("#doneLine").textContent = "Tap the link we just emailed you to confirm it's you. This page sends it out by itself when you do. Your dinner is safe in your account."; $("#copy").disabled = true; $("#link").value = "Ready after you confirm your email"; if (fx.stamp) fx.stamp("Saved", $("#doneStamp"));
+      // this page sends it by itself once the email is confirmed (in this tab or another)
+      const wait = setInterval(async () => { try { const m = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (!m?.emailVerified) return; clearInterval(wait);
+        const p = await fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ published: true }) }); if (!p.ok) return;
+        let S = null; try { S = await (await fetch("/api/me/hostloop", { credentials: "same-origin" })).json(); } catch {} $("#doneStamp").innerHTML = ""; $("#copy").disabled = false; done(id, true, S?.celebrate); } catch {} }, 4000);
+      return; }
+    if (cel && cel.id === "first") { $("#doneH").textContent = cel.title; $("#doneLine").textContent = cel.line; fx.confetti?.(); } else { $("#doneH").textContent = "It's out in the world."; $("#doneLine").textContent = "Send the link. I'll keep the list."; }
+    if (fx.stamp) fx.stamp("Out", $("#doneStamp"));
+    if (navigator.share) { $("#share").hidden = false; $("#share").onclick = () => navigator.share({ title: d.title, text: `${d.title}, ${fmtWhen()}. Are you in?`, url: link }).catch(() => {}); }
+  }
+  $("#copy").onclick = async () => { try { await navigator.clipboard.writeText($("#link").value); } catch { $("#link").select(); document.execCommand?.("copy"); } $("#copy").innerHTML = (fx.check ? fx.check() : "") + " Copied"; fx.haptic?.("light"); fx.sound?.("done"); };
+  $("#save").onclick = () => { if (!d.title || !d.title.trim()) { d.title = T[t].title; fill(); } if (signed) save(); else prompt(); };
+})();
+</script>
+</body></html>

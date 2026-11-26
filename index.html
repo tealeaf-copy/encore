@@ -13310,6 +13310,12 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 <!-- ==================== end host event page ==================== -->
 <script src="/sections.js" defer></script><script src="/canvas.js" defer></script>
 <script>
+// ---- the host loop (public/hostloop.js, server/hostloop.js): host Home's card with the streak, today's small move,
+// warmth and Circles, and the once-only milestone celebration ----
+(function(){ if(location.pathname!=="/"||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };
+  if(!window.Potto) add("/mascot.js"); add("/hostloop.js") })();
+</script>
+<script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----
 (function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) };

@@ -434,6 +434,48 @@ Questions: Any ideas for an event? | I'm stuck on ideas | Ideas for a first even
 Not sure what to host? Start small: something you'd do anyway, with a few friends. Here are ideas to try. Tap one to start a draft with it filled in.
 [More ideas](/ideas)
 
+## Streaks, rest passes and repair
+
+Keywords: streak, streaks, rest pass, rest month, repair, lost my streak, streak ended, weekly streak, monthly streak, show my streak
+Questions: How do streaks work? | What is a rest pass? | How do I repair my streak? | Can I count my streak weekly? | Who can see my streak?
+Your streak counts the months in a row you hosted something, any size. Weekly clubs can count weeks instead in Settings, under Hosting. Your first event earns a rest pass, then one every 3 hosted months (or 4 hosted weeks), and you can hold 2. A quiet month uses one by itself. With no pass left, the streak pauses: host anything within 14 days, even a coffee, and it's back. Only you see your streak unless you turn on Show my streak on my page.
+[Open Settings](/settings#hosting)
+
+## Small moves and warmth points
+
+Keywords: small move, today's small move, warmth, warmth points, monthly goal, goal ring, points
+Questions: What is today's small move? | What are warmth points? | How do I change my monthly goal?
+Today's small move on Home is one thing that takes a minute or two: send a reminder, thank your guests, post a photo, answer a reply, share a feeler, invite one new person or set the next date. Tap Done when it's done. Warmth points count hosting effort: 10 for each event held, 2 for each guest welcomed, 3 for each would go again, and 1 for each small move (up to 20 a month). Pick a monthly goal of 15, 30 or 60 in Settings.
+[See your Host path](/path)
+
+## Circles
+
+Keywords: circles, circle, league, leagues, ranking, move up, table, kitchen table, leave circle
+Questions: What are Circles? | How do I join a circle? | How do I leave my circle? | Can I be moved down?
+Circles are off unless you join. Join from Home, or open Circles. You're grouped with about 10 hosts near your size, in your city when there are enough, and ranked on effort (events held, guests welcomed, would go again, small moves), not followers. At the end of each month (or week), the top three move up a table. Everyone else stays. Nobody is moved down, and only your circle sees the board. Leave any time from the same page.
+[Open Circles](/circles)
+
+## The Host path
+
+Keywords: host path, path, milestones, guide, guides, template, summit, weekend away, sold out, ticketed, series
+Questions: What is the Host path? | How do I plan a summit? | How do I plan a weekend away?
+The Host path goes from Dinner for 4 to A table of 8, A regular night, Your first ticketed event, A series, A sold-out night, and A weekend away or A summit. Each step has a short guide and a Start from this button that opens a draft with it filled in.
+[Open the Host path](/path)
+
+## Notes from Potto
+
+Keywords: notifications from potto, nudges, reminders from potto, too many notifications, quiet hours, stop potto
+Questions: Why did Potto message me? | How do I get fewer notes? | What are quiet hours?
+Potto sends at most 2 notes a week, at the time you usually plan, and never in quiet hours (9pm to 9am unless you change it). There are four kinds: before an event, after an event, streak heads-ups, and a nudge when it's been a while. Turn any of them off in Settings, under Hosting.
+[Open Settings](/settings#hosting)
+
+## Planning before you sign up
+
+Keywords: plan a dinner, no account, before signing up, save my dinner, draft
+Questions: Can I plan without an account? | Where did my dinner draft go?
+Tap Plan a dinner. You can fill everything in without an account; it stays on that phone. When you tap Save your dinner and get a link to send, make a free account (or sign in) and the same dinner is saved to it.
+[Plan a dinner](/start)
+
 ## Group chats
 
 Keywords: chat, chats, group chat, message guests, messages, mute chat, leave chat

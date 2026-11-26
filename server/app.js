@@ -25,6 +25,7 @@ import { smsConfig, sendSms } from "./sms.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
 import { mountScrapbook } from "./scrapbook.js";
+import { mountPhotos, guardEventPhotos } from "./photos.js"; // the "Change photo" sheet: event covers, page covers, profile pictures
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
 import { mountDrops, dropOrderError, soldOf } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
@@ -695,6 +696,7 @@ export function createApp({ store, dataDir }) {
   mountGiftPlan(app, { store, small, discoverHosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
   app.get(["/gifts/plan", "/gifts/plan/:id"], (req, res) => sendStatic(res, "giftplan.html", "<p>Gift planner missing.</p>"));
   const SB = mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
+  const PH = mountPhotos(app, { store, assetsDir, currentUser, C, small, raw: express.raw({ type: () => true, limit: "11mb" }) }); app.locals.photos = PH; // server/photos.js
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X }); // before /x pages: old shop links open the drop
@@ -1562,6 +1564,7 @@ export function createApp({ store, dataDir }) {
     const p = String(req.query.path || ""), St = S(req), before = St.get(p)?.data || null, isEv = /^events\/[^/]+$/.test(p), isR = /^rsvps\/[A-Za-z0-9_-]+$/.test(p);
     req.body = guardGuestReply(req, p, req.body);
     if (isEv && req.body && typeof req.body === "object" && "series" in req.body && typeof req.body.series !== "boolean") { const { series, ...rest } = req.body; req.body = series === "yes" || series === "true" ? { ...rest, series: true } : series === "no" || series === "false" ? { ...rest, series: false } : { ...rest, series: null }; } // review round 14: "Is this a series?" is true, false or null (unset) (server/episodes.js)
+    if (isEv && !req.guest) req.body = guardEventPhotos(req.body, req.ws, before); // only your own uploads go on your event
     if (isEv) { req.body = withTz(withCleanLook(req.body), req, !before); if (how === "put" && before?.tz && req.body && typeof req.body === "object" && !("tz" in req.body)) req.body = { ...req.body, tz: before.tz }; } // per-event looks: allow-listed values only; a real time zone, kept
     // the host letting someone in is remembered, so a later change of mind doesn't need asking again
     if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };

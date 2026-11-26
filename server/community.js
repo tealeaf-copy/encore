@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanShop } from "./shop.js";
+import { cleanFocus, guardTheme } from "./photos.js";
 import { registerSearch } from "./search.js";
 import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser, putDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
@@ -48,7 +49,11 @@ const POS_OK = (v) => /^\d{1,3}% \d{1,3}%$/.test(v || "") && v.split(" ").every(
 export function cleanTheme(t = {}, cur = {}, coverOk = () => true) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
   const cu = t.coverUrl ?? cur.coverUrl ?? "", coverUrl = BLOB_OK(cu) && (!cu || cu === cur.coverUrl || /^\/presets\//.test(cu) || coverOk(cu)) ? cu : cur.coverUrl || "";
   const coverPos = coverUrl ? (POS_OK(t.coverPos) ? t.coverPos : coverUrl === cur.coverUrl && POS_OK(cur.coverPos) ? cur.coverPos : "50% 50%") : "";
-  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), layout: pick("layout", STORE.layouts), coverUrl, coverPos, avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), layout: pick("layout", STORE.layouts), coverUrl, coverPos, avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "",
+    // the "Change photo" sheet (server/photos.js): the original each crop came from, and where the person dragged it to
+    avatarSource: BLOB_OK(t.avatarSource ?? cur.avatarSource) ? t.avatarSource ?? cur.avatarSource ?? "" : "", avatarFocus: focusOf(t.avatarFocus !== undefined ? t.avatarFocus : cur.avatarFocus),
+    coverSource: BLOB_OK(t.coverSource ?? cur.coverSource) ? t.coverSource ?? cur.coverSource ?? "" : "", coverFocus: focusOf(t.coverFocus !== undefined ? t.coverFocus : cur.coverFocus) }; }
+const focusOf = (f) => (f && typeof f === "object" ? cleanFocus(f) : null);
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
 // Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
 function cleanGifts(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 16),
@@ -374,7 +379,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     res.json({ ok: true, emailed, link, code: free.code }); });
   // Host page: the owner edits it; anyone can read it.
   app.get("/api/host/profile", (req, res) => { const u = me(req, res); if (!u) return; res.json({ host: C.profileOf(u.ws), followers: C.followersOf(u.ws).length }); });
-  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Add a host code to set up your page." }); const r = C.setProfile(u.ws, req.body || {}); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
+  app.post("/api/host/profile", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; if (getWorkspace(u.ws)?.regularOnly) return res.status(403).json({ code: "invite_required", message: "Add a host code to set up your page." }); const body = req.body || {}; if (body.theme) body.theme = guardTheme(body.theme, u.ws); const r = C.setProfile(u.ws, body); if (r.error) return res.status(400).json({ code: "invalid", message: r.error }); res.json({ ok: true, host: r.host, url: `${publicOrigin(req)}/h/${r.host.handle}` }); });
   app.get("/api/host/followers", (req, res) => { const u = me(req, res); if (!u) return; const F = C.followersOf(u.ws); res.json({ count: F.length, followers: F.slice(0, 500).map((f) => ({ name: f.name, email: f.email, via: f.via, tastes: f.tastes, at: f.at })) }); });
   app.get("/api/public/host/:handle/proof", (req, res) => { const ws = C.wsOfHandle(req.params.handle); if (!ws) return res.status(404).json({ code: "not_found", message: "No host by that name." }); const R = C.resonance(ws); try { const H = X?.hostStrengths(ws); if (H && H.guests) { R.guests = H.guests; R.returning = Math.round((100 * (H.returning || 0)) / H.guests); } } catch {} res.json(R); });
   app.get("/api/public/gifts", (req, res) => { if (limited(req, 60)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); const q = req.query || {}; res.json({ results: C.giftMakers({ city: clean(q.city, 60), qty: +q.qty || 0, budget: +q.budget || 0, occasion: clean(q.occasion, 20) }) }); });

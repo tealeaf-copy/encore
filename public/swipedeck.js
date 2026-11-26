@@ -1,5 +1,5 @@
 // The swipe deck: a first visit to /feed, before the feed itself. One full-screen card at a time: real upcoming events
-// in the visitor's city first, then ideas to steal and photos from hosts' pages (GET /api/public/deck). "I'm in" saves
+// in the visitor's city first, then ideas to try and photos from hosts' pages (GET /api/public/deck). "I'm in" saves
 // the card (public/save.js: on the account, or in this browser and sent at signup) and trains the interests
 // (public/interests.js); "Pass" skips. Touch swipe, the two buttons, or the arrow keys. After 5 cards: "Your 3 picks are
 // saved. Make a free account to keep them." Signed in, it closes straight into the feed. "Pick topics instead" opens
@@ -27,7 +27,7 @@
   function avatar(h) { if (!h) return ""; const u = /^\/(?:_blob\/[A-Za-z0-9]{20}|presets\/[a-z0-9-]+\.(?:svg|jpg|png))$/.test(h.avatarUrl || "") ? h.avatarUrl : "";
     const inner = u ? `<img src="${esc(u)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.color || "#E26D8E", 30) : esc(h.emoji || "🙂"); return `<span class="sd-av" style="--c:${esc(h.color || "#E26D8E")}" aria-hidden="true">${inner}</span>`; }
   const meta = (c) => [c.kind === "event" ? [dayOf(c.when), t12(c.startTime)].filter(Boolean).join(" · ") : "", c.where, c.price].filter(Boolean).join(" · ");
-  const hostLine = (c) => (c.kind === "event" && c.host ? `${avatar(c.host)}<span><b>${esc(c.host.name)}</b> is hosting</span>` : c.kind === "host" && c.host ? `${avatar(c.host)}<span>From <b>${esc(c.host.name)}</b></span>` : c.kind === "idea" ? `<span class="sd-idea" aria-hidden="true">💡</span><span>An idea to steal</span>` : "");
+  const hostLine = (c) => (c.kind === "event" && c.host ? `${avatar(c.host)}<span><b>${esc(c.host.name)}</b> is hosting</span>` : c.kind === "host" && c.host ? `${avatar(c.host)}<span>From <b>${esc(c.host.name)}</b></span>` : c.kind === "idea" ? `<span class="sd-idea" aria-hidden="true">💡</span><span>An idea to try</span>` : "");
   // playing-card deck: flat pastels in turn, the event's kind in the corners (top-left, and upside down bottom-right)
   const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
   function corner(c) { const A = window.EventArt; let w = "";

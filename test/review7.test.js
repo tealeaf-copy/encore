@@ -58,7 +58,7 @@ test("Public feed: what a visitor picked comes first, old prepared things become
   assert.ok(runFirst.ideas.length > 0, "old prepared events show as ideas"); for (const x of runFirst.ideas) { assert.equal(x.example, true); assert.ok(x.title && x.page); }
   // the browser sends what was picked
   const fv = read("public/feedvisual.js"), feed = read("public/feed.html");
-  assert.match(fv, /localStorage\.getItem\("pl\.interests"\)/); assert.match(fv, /More ideas to steal/); assert.match(feed, /V\.publicQuery\(\)/); assert.match(feed, /pl:interests-saved/);
+  assert.match(fv, /localStorage\.getItem\("pl\.interests"\)/); assert.match(fv, /More ideas to try/); assert.match(feed, /V\.publicQuery\(\)/); assert.match(feed, /pl:interests-saved/);
 });
 
 test("Your scene: hosts must really do what you picked, the same city first", async () => {

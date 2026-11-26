@@ -140,7 +140,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     $("#dlT").textContent = e.title;
     $("#dlB").innerHTML = `<p class="sum">${esc(whenLine(e))} · by ${esc(e.host.name)}<br>${esc(revLine(R))}</p>
       ${R.top_tags.length ? `<div class="tags">${R.top_tags.map((t) => `<span>${esc(t.label)} · ${t.count}</span>`).join("")}</div>` : ""}
-      ${R.items.map((k) => `<div class="kq">${k.text ? `<p>“${esc(k.text)}”</p>` : ""}<small>${esc(k.name)}${k.tags.length ? " · " + esc(k.tags.join(", ")) : ""}${k.at ? " · " + esc(day(k.at)) : ""}</small>${k.verified_label ? `<span class="vf">${esc(k.verified_label)}</span>` : ""}</div>`).join("")}
+      ${R.items.map((k) => `<div class="kq">${k.text ? `<p>“${esc(k.text)}”</p>` : ""}<small>${esc(k.name)}${k.tags.length ? " · " + esc(k.tags.join(", ")) : ""}${k.at ? " · " + esc(day(k.at)) : ""}</small></div>`).join("")}
       <a class="dl-go" href="${esc(e.url)}">${e.source === "hosted" ? "Open the event" : "See the host's page"}</a>`;
   }
   $("#q").value = st.q;

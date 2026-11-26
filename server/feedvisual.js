@@ -188,7 +188,7 @@ export function makeFeedVisual(store, { C, X }) {
     const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws, I), page: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : "", cta: (x.e.date || "") >= t ? eventCta(x.e, x.id) : afterCta(I, x, t) } }; });
     const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws, I);
       return { id: k.id, text: scrub(k.love).slice(0, 240), name: first(k.name) || "A guest", tags: (k.tags || []).slice(0, 3), verifiedLabel: k.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in", event: { id: x.id, title: x.e.pubTitle || x.e.name || "", host: h, page: h ? `/@${h.handle}` : "" } }; });
-    // prepared pages: what they did in the last two weeks stays with the real content; older things become ideas to steal
+    // prepared pages: what they did in the last two weeks stays with the real content; older things become ideas to try
     const isFresh = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && Date.parse(d) >= fresh, ideas = [];
     const showcase = showcases().map((S) => { for (const p of S.past) if (!isFresh(p.date) && (p.cover || p.photos.length)) ideas.push({ id: p.id, title: p.title, note: p.note, cover: p.cover || p.photos[0] || "", host: S.host, page: S.page, cta: S.cta, city: S.city, example: true, fit: fitOf(P, `${p.title} ${p.note}`, `${S.city} ${S.hood}`) });
         return { ...S, past: S.past.filter((p) => isFresh(p.date)), fit: fitOf(P, `${S.tagline} ${S.experiences.map((x) => `${x.title} ${x.category} ${x.desc}`).join(" ")}`, `${S.city} ${S.hood}`) }; })
@@ -268,7 +268,7 @@ export function makeFeedVisual(store, { C, X }) {
     return L;
   }
   // ---------- the swipe deck: a first visit to /feed, one card at a time ----------
-  // Real upcoming events in the visitor's city first, then ideas to steal (the /ideas library) and photos from hosts'
+  // Real upcoming events in the visitor's city first, then ideas to try (the /ideas library) and photos from hosts'
   // pages, then events elsewhere. Every card says what it is (Example, Idea) and carries the interest ids it trains.
   function deck({ city = "", interests = [], email = "", ideas = [], limit = 12 } = {}) {
     const V = sections({ email, interests, city }), C0 = lc(clean(city, 60)), here = (e) => !!C0 && lc(`${e.city || ""} ${e.hood || ""}`).includes(C0), wk = today(Date.now() + 7 * DAY);

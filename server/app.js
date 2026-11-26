@@ -48,6 +48,7 @@ import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft 
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
 import { withCleanLook, cleanPicks, cleanTiers, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
+import { mountBrandKit, brandKitHead } from "./brandkit.js"; // a host's brand kit: one look for their page, events and invites
 import { buildEstimateScript } from "./estimate.js";
 import { configureSso, getSso, removeSso, publicSso, redirectUriFor, ssoForEmail, startSso, readState, finishSso, ensureSsoMember } from "./sso.js";
 import { runPm } from "./pm.js";
@@ -612,7 +613,7 @@ export function createApp({ store, dataDir }) {
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
 <meta property="og:type" content="website"><meta property="og:title" content="${e(req.cwOg || title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
-<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}`;
+<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}${(() => { try { return brandKitHead(h, { kit: C.kitOf(ws) }); } catch { return ""; } })()}`;
     const page = invitePage();
     if (!page) return res.redirect(302, to);
     // compressed (brotli when the phone takes it, else gzip): the invite is most of what a guest downloads before replying
@@ -677,6 +678,7 @@ export function createApp({ store, dataDir }) {
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
+  mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
   mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });

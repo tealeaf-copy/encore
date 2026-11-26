@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { scopeStore, getWorkspace, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { cleanLook } from "./looks.js";
+import { kitJson } from "./brandkit.js"; // a host's brand kit, for story cards
 import { interestsOf, cleanInterests } from "./hooks.js";
 
 const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
@@ -108,8 +109,8 @@ export function makeFeedVisual(store, { C, X }) {
   const sample = (ws, I = X.index()) => memo(G(I).sample, ws, () => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""));
   const hostOf = (ws, I = X.index()) => memo(G(I).host, ws, () => hostOf0(ws));
   function hostOf0(ws) { const h = C.profileOf(ws); if (!h?.handle) return null;
-    return { handle: h.handle, name: h.name || h.handle, emoji: h.emoji || "🎉", color: h.theme?.accent || h.color || "#E26D8E", avatarArt: h.theme?.avatarArt || "", avatarUrl: MEDIA_OK(h.theme?.avatarUrl) || /^\/presets\/[a-z0-9-]+\.svg$/.test(h.theme?.avatarUrl || "") ? h.theme.avatarUrl : "" }; }
-  const lookOf = (e) => { const L = cleanLook(e?.look) || {}; const o = {}; for (const k of ["palette", "coverFit", "coverW", "coverH", "effect", "titleFont", "buttonEmoji", "buttonLabel", "lights", "vibe"]) if (L[k] != null) o[k] = L[k]; return o; };
+    return { handle: h.handle, name: h.name || h.handle, emoji: h.emoji || "🎉", color: h.theme?.accent || h.color || "#E26D8E", kit: C.kitOf ? C.kitOf(ws) : kitJson(h) /* brand kit: story cards take its face and accent */, avatarArt: h.theme?.avatarArt || "", avatarUrl: MEDIA_OK(h.theme?.avatarUrl) || /^\/presets\/[a-z0-9-]+\.svg$/.test(h.theme?.avatarUrl || "") ? h.theme.avatarUrl : "" }; }
+  const lookOf = (e) => { const L = cleanLook(e?.look) || {}; const o = {}; for (const k of ["palette", "coverFit", "coverW", "coverH", "effect", "titleFont", "buttonEmoji", "buttonLabel", "lights", "vibe", "kit", "ownFont"]) if (L[k] != null) o[k] = L[k]; return o; };
   const artOf = (e) => { const a = e?.coverArt; if (!a || typeof a !== "object") return null; const o = {}; if (typeof a.kind === "string") o.kind = a.kind.slice(0, 40); if (typeof a.tone === "string") o.tone = a.tone.slice(0, 20); if (typeof a.label === "string") o.label = clean(a.label, 40); if (typeof a.svg === "string" && /^<svg /.test(a.svg) && a.svg.length < 40000) o.svg = a.svg; return o; };
   const momentOut = (m) => ({ id: m.id, url: m.url, type: m.type, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), ...(m.w && m.h ? { w: m.w, h: m.h } : {}), caption: String(m.caption || "").replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), by: first(m.authorName) || "", at: m.at || 0 });
   // ---------- what a card or story's button does: the most direct place to act, never a generic host page ----------

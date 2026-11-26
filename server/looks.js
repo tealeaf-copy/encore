@@ -42,6 +42,10 @@ export function cleanLook(v) {
   if (LOOK.menuStyles.includes(v.menuStyle)) o.menuStyle = v.menuStyle;
   if (Array.isArray(v.stickers)) { const st = cleanStickers(v.stickers); if (st.length) o.stickers = st; }
   if (v.lights === true) o.lights = true; // string lights across the top, on top of any effect
+  // brand kits (server/brandkit.js): a look saved since kits carries kit: 1, and its title font only wins over the
+  // host's kit when the host picked it for this event (ownFont). Looks from before kits keep their font.
+  if (v.kit === 1) o.kit = 1;
+  if (v.ownFont === true && o.titleFont) o.ownFont = true;
   // an "Update" callout: one short line from the host, with when they posted it
   if (v.update && typeof v.update === "object") { const text = String(v.update.text ?? "").replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
     const at = Number.isInteger(v.update.at) && v.update.at > 1.5e12 && v.update.at <= Date.now() + 864e5 ? v.update.at : Date.now(); if (text) o.update = { text, at }; }

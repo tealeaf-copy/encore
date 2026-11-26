@@ -73,9 +73,12 @@ test("public cards carry the cost note and at-the-door", async () => {
 });
 
 test("the kudos page: Would go again first, the place not 'at Marcus's', the follow remembered, the series' next date", async () => {
-  assert.ok((await put("r7run1", { kind: "social", casual: true, name: "Weekly run club", date: day(-1), repeat: "weekly", published: true, meetPoint: "Prospect Park", startTime: "18:30", hostName: "Priya Shah" })).ok);
+  // reply while it's coming up, then it happens (replies to a past date are closed)
+  const R7 = { kind: "social", casual: true, name: "Weekly run club", repeat: "weekly", published: true, meetPoint: "Prospect Park", startTime: "18:30", hostName: "Priya Shah" };
+  assert.ok((await put("r7run1", { ...R7, date: day(2) })).ok);
   const doc = await guestDoc("r7run1");
   const r = await post("/api/db/collection?path=rsvps", { eventId: "r7run1", response: "going", name: "Cleo", email: "cleo.r7@example.com", code: "CL123", createdAt: Date.now() }, { "x-encore-guest": "1", "x-encore-key": "r7-key-cleo", "x-encore-workspace": doc.workspace });
+  assert.ok((await put("r7run1", { ...R7, date: day(-1) })).ok);
   const rid = String((await r.json()).id).split("/").pop(), q = `?rid=${rid}&code=CL123`;
   let j = await (await fetch(srv.base + "/api/public/kudos-page/r7run1" + q)).json();
   assert.equal(j.order[0], "again"); assert.equal(j.place, "Prospect Park"); assert.equal(j.following, false);

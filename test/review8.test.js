@@ -108,9 +108,10 @@ test("kudos chips fit the event: food only for food, pace and route for runs, le
   assert.deepEqual(ids({ name: "Wheel throwing course" }).slice(0, 3), ["again", "learned", "teacher"]);
   assert.equal(ids({ name: "Supper club" })[1], "food"); assert.equal(kudosKindOf({ name: "Game night" }), "other"); assert.ok(!ids({ name: "Game night" }).includes("food"));
   // the kudos page gets the run's chips
-  assert.ok((await put("r8run", { kind: "social", casual: true, name: "Weekly run club", activity: "run", date: day(-1), published: true })).ok);
+  assert.ok((await put("r8run", { kind: "social", casual: true, name: "Weekly run club", activity: "run", date: day(2), published: true })).ok);
   const r = await reply({ eventId: "r8party", name: "Fay", email: "fay.r8@example.com" }); assert.equal(r.status, 200);
   const rr = await reply({ eventId: "r8run", name: "Gus", email: "gus.r8@example.com", code: "GUS12" }); const rid = String((await rr.json()).id).split("/").pop();
+  assert.ok((await put("r8run", { kind: "social", casual: true, name: "Weekly run club", activity: "run", date: day(-1), published: true })).ok); // then it happens
   const j = await (await fetch(srv.base + `/api/public/kudos-page/r8run?rid=${rid}&code=GUS12`)).json();
   assert.deepEqual(j.order.slice(0, 3), ["again", "pace", "route"]); assert.ok(!j.tags.some((t) => t.k === "food"));
   // a run's tag is accepted and stored by its id

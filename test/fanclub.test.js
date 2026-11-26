@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
+import { getDbUser, putDbUser } from "../server/workspaces.js";
 import { defaultClubName, stripPaid, isNativeReq, POST_PER_HOUR, JOIN_PER_HOUR } from "../server/fanclub.js";
 
 let srv;
@@ -121,8 +122,9 @@ test("host posts reach members only; reports hide them; the feed carries them fo
   // a heart from the feed's Cheer button
   let h = await (await post(`/api/me/posts/club.bo-posts/${p.id}/cheer`, {}, mem.cookie)).json(); assert.equal(h.cheered, true);
   assert.equal((await post(`/api/me/posts/club.bo-posts/${p.id}/cheer`, {}, out.cookie)).status, 403);
-  // three reports hide it for everyone
-  for (const who of [mem, out, await person("Rae Kim")]) assert.equal((await post("/api/report", { type: "post", target: m.posts[0].report, reason: "spam" }, who.cookie)).status, 200);
+  // three reports from established accounts hide it for everyone (server/verify.js trustedReporter)
+  const rae = await person("Rae Kim"); for (const w of [mem, out, rae]) putDbUser({ ...getDbUser(w.email), createdAt: Date.now() - 30 * 864e5, emailVerified: true });
+  for (const who of [mem, out, rae]) assert.equal((await post("/api/report", { type: "post", target: m.posts[0].report, reason: "spam" }, who.cookie)).status, 200);
   assert.equal((await getJ("/api/public/club/bo-posts", mem.cookie)).posts.length, 0);
 });
 

@@ -379,6 +379,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
   const KIND_VIBES = [[/\b(hack ?nights?|hackathon|build night|demo night|code night|dev night|coding|terminal|devs?|engineers?|engineering|sre|linux|open source)\b/, ["terminal", "pixel"]],
     [/\b(lan( party)?|video ?games?|gaming|gamers?|speedrun|gdq|arcade|retro|esports|watch ?party)\b/, ["pixel", "terminal"]],
     [/\b(board ?games?|games? night|tabletop|d&d|dnd|ttrpg|mahjong|card games?|trivia)\b/, ["cards", "pixel"]],
+    [/\b(potluck|friendsgiving|thanksgiving|soup|harvest|pantry|preserves?)\b/, ["pantry"]], // cozy food: always the Pantry
     [/\b(supper|dinner|potluck|omakase|tasting|izakaya|feast|cooking|brunch|pantry|harvest)\b/, ["night", "pantry", "velvet"]],
     [/\b(book club|paper club|reading group)\b/, ["jazz", "cards"]]];
   function kindVibes(e) { const main = `${e?.activity || ""} ${e?.pubTitle || ""} ${e?.name || ""}`.toLowerCase(), rest = `${e?.concept || ""}`.toLowerCase();

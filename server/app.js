@@ -610,7 +610,7 @@ export function createApp({ store, dataDir }) {
   // public/invite.html, read again only when the file changes
   let inviteCache = null;
   function invitePage() { const f = path.join(PUBLIC_DIR, "invite.html");
-    try { const m = fs.statSync(f).mtimeMs; if (!inviteCache || inviteCache.m !== m) inviteCache = { m, html: fs.readFileSync(f, "utf8") }; return inviteCache.html; } catch { return ""; } }
+    try { const m = fs.statSync(f).mtimeMs; if (!inviteCache || inviteCache.m !== m) inviteCache = { m, html: fs.readFileSync(f, "utf8").replace(/^[ \t]+/gm, "") }; /* leading indentation off: a smaller page on a phone */ return inviteCache.html; } catch { return ""; } }
   // A no-login demo: the page without the shim runs on its built-in sample data and saves nothing here.
   app.get("/demo", async (req, res, next) => {
     try {

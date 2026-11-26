@@ -2,7 +2,8 @@
 // Each workspace connects its own sending service (Resend, Postmark or SendGrid) in Setup; the key is stored
 // encrypted with its other connections. The default workspace can use ENCORE_EMAIL_SERVICE / ENCORE_EMAIL_KEY /
 // ENCORE_EMAIL_FROM instead. ENCORE_FAKE_EMAIL=1 records messages without sending them (demos and tests).
-import { connectionTokens } from "./workspaces.js";
+import { connectionTokens, getWorkspace } from "./workspaces.js";
+import { emailBrand, emailHtml } from "./brandkit.js"; // guest emails wear the host's accent and logo
 import { createHmac, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 // ---------- unsubscribe (guest and follower mail) ----------
@@ -54,7 +55,9 @@ const clean = (s, n) => String(s ?? "").replace(/[\r\n]+/g, " ").trim().slice(0,
 /** Send one plain-text message. Returns { ok, id } or { ok:false, error }. Never throws.
  * list: "guest" for mail to guests and followers: skipped for unsubscribed addresses, and sent with a List-Unsubscribe
  * header and an unsubscribe footer (origin: the public address for the link, else ENCORE_PUBLIC_URL). */
-export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin }) {
+// brandWs: the workspace of the host a guest email is from. The email then also goes as simple HTML with the host's
+// accent and logo (server/brandkit.js); the plain text stays the same.
+export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName, list, origin, brandWs }) {
   if (!cfg) return { ok: false, error: "Email isn't set up for this workspace." };
   let rcpt = [].concat(to || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
   const copy = list === "guest" ? [] : [].concat(cc || []).map((x) => String(x).trim()).filter((x) => EMAIL_RE.test(x));
@@ -62,7 +65,7 @@ export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName,
   let headers = null, footer = "";
   if (list === "guest") {
     rcpt = rcpt.filter((x) => !isUnsubscribed(x)); if (!rcpt.length) return { ok: false, code: "unsubscribed", error: "They unsubscribed from these emails." };
-    if (rcpt.length > 1) { const rs = []; for (const x of rcpt) rs.push(await sendEmail(cfg, { to: x, subject, text, replyTo, fromName, list, origin })); return rs.find((r) => r.ok) || rs[0]; }
+    if (rcpt.length > 1) { const rs = []; for (const x of rcpt) rs.push(await sendEmail(cfg, { to: x, subject, text, replyTo, fromName, list, origin, brandWs })); return rs.find((r) => r.ok) || rs[0]; }
     const link = unsubLink(rcpt[0], origin);
     headers = { "List-Unsubscribe": `<${link}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
     footer = `\n\n--\nDon't want these emails? Unsubscribe: ${link}\n`;
@@ -70,17 +73,18 @@ export async function sendEmail(cfg, { to, cc, subject, text, replyTo, fromName,
   const subj = clean(subject, 200) || "(no subject)", body = String(text || "").slice(0, 20000 - footer.length) + footer;
   const name = clean(fromName || cfg.fromName, 80).replace(/[<>"]/g, ""), from = name ? `${name} <${cfg.from}>` : cfg.from;
   const reply = replyTo && EMAIL_RE.test(replyTo) ? replyTo : null;
-  if (cfg.service === "fake") { const id = "fake-" + (fakeOutbox.length + 1); fakeOutbox.push({ id, from, to: rcpt, cc: copy, subject: subj, text: body, replyTo: reply, ...(headers ? { headers } : {}) }); return { ok: true, id }; }
+  let html = ""; if (brandWs) { try { const b = emailBrand(getWorkspace(brandWs)?.host); if (b) html = emailHtml(body, b, origin); } catch {} }
+  if (cfg.service === "fake") { const id = "fake-" + (fakeOutbox.length + 1); fakeOutbox.push({ id, from, to: rcpt, cc: copy, subject: subj, text: body, replyTo: reply, ...(headers ? { headers } : {}), ...(html ? { html } : {}) }); return { ok: true, id }; }
   let url, init;
   if (cfg.service === "resend") {
     url = "https://api.resend.com/emails";
-    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: rcpt, ...(copy.length ? { cc: copy } : {}), subject: subj, text: body, ...(reply ? { reply_to: reply } : {}), ...(headers ? { headers } : {}) }) };
+    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: rcpt, ...(copy.length ? { cc: copy } : {}), subject: subj, text: body, ...(html ? { html } : {}), ...(reply ? { reply_to: reply } : {}), ...(headers ? { headers } : {}) }) };
   } else if (cfg.service === "postmark") {
     url = "https://api.postmarkapp.com/email";
-    init = { headers: { "X-Postmark-Server-Token": cfg.key, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ From: from, To: rcpt.join(","), ...(copy.length ? { Cc: copy.join(",") } : {}), Subject: subj, TextBody: body, ...(reply ? { ReplyTo: reply } : {}), ...(headers ? { Headers: Object.entries(headers).map(([Name, Value]) => ({ Name, Value })) } : {}), MessageStream: "outbound" }) };
+    init = { headers: { "X-Postmark-Server-Token": cfg.key, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ From: from, To: rcpt.join(","), ...(copy.length ? { Cc: copy.join(",") } : {}), Subject: subj, TextBody: body, ...(html ? { HtmlBody: html } : {}), ...(reply ? { ReplyTo: reply } : {}), ...(headers ? { Headers: Object.entries(headers).map(([Name, Value]) => ({ Name, Value })) } : {}), MessageStream: "outbound" }) };
   } else if (cfg.service === "sendgrid") {
     url = "https://api.sendgrid.com/v3/mail/send";
-    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ personalizations: [{ to: rcpt.map((email) => ({ email })), ...(copy.length ? { cc: copy.map((email) => ({ email })) } : {}) }], from: name ? { email: cfg.from, name } : { email: cfg.from }, ...(reply ? { reply_to: { email: reply } } : {}), subject: subj, content: [{ type: "text/plain", value: body }], ...(headers ? { headers } : {}) }) };
+    init = { headers: { Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ personalizations: [{ to: rcpt.map((email) => ({ email })), ...(copy.length ? { cc: copy.map((email) => ({ email })) } : {}) }], from: name ? { email: cfg.from, name } : { email: cfg.from }, ...(reply ? { reply_to: { email: reply } } : {}), subject: subj, content: [{ type: "text/plain", value: body }, ...(html ? [{ type: "text/html", value: html }] : [])], ...(headers ? { headers } : {}) }) };
   } else return { ok: false, error: "Unknown email service." };
   try {
     const r = await fetch(url, { method: "POST", ...init, signal: AbortSignal.timeout(15_000) });

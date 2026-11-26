@@ -48,6 +48,7 @@ import { mountHelp } from "./help.js";
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
+import { mountPlans } from "./plans.js"; // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
@@ -755,6 +756,7 @@ export function createApp({ store, dataDir }) {
   mountTables(app, { store, small, C, X, currentUser, serverReply: (...a) => serverReply(...a), ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
   mountSeries(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: episodes and the changelog (server/series.js)
   mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
+  mountPlans(app, { store, small, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)

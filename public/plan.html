@@ -1,0 +1,94 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plan · Pottery Lab</title>
+<meta name="description" content="The plan, day by day.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/community.css"><link rel="stylesheet" href="/playful.css"><link rel="stylesheet" href="/timeline.css">
+<style>
+.pl-plan{max-width:680px;margin:0 auto;padding-bottom:48px}
+.pp-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
+.pp-chipst{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 14px var(--pl-font-text)}
+.pp-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.pp-acts a,.pp-acts button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}
+.pp-acts .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.pp-acts svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pp-h2{display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 0;padding-bottom:6px;border-bottom:var(--pl-rule,1.5px solid var(--pl-ink));font:600 18px/1.3 var(--pl-font-text)}
+.pp-h2 small{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
+.pp-lock{margin:16px 0;padding:18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
+.pp-lock p{margin:0 0 12px;font:400 16px/1.45 var(--pl-font-text)}
+.pp-miss{padding:40px 0;text-align:center;color:var(--pl-soft)}
+/* the host's editor: one row per part of the plan */
+.it-ed{margin:18px 0 0;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface);display:grid;gap:12px}
+.it-ed h3{margin:0;font:600 16px var(--pl-font-text)}
+.it-ed p.hint{margin:-6px 0 0;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.it-row{display:grid;grid-template-columns:1fr 92px;gap:8px;padding:10px 0;border-top:var(--pl-rule-dashed,1px dashed var(--pl-line))}
+.it-row label{display:grid;gap:4px;font:500 13px var(--pl-font-text);color:var(--pl-soft)}
+.it-row .wide{grid-column:1/-1}
+.it-row input,.it-row select{min-height:44px;padding:0 10px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-sm);background:var(--pl-page);font:400 16px var(--pl-font-text);color:var(--pl-ink);width:100%;box-sizing:border-box}
+.it-row .rm{grid-column:1/-1;justify-self:start;min-height:36px;border:0;background:none;color:var(--pl-soft);text-decoration:underline;cursor:pointer;font:400 14px var(--pl-font-text);padding:0}
+.it-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.it-bar button{min-height:44px;padding:0 16px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-page);font:500 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
+.it-bar .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.it-pub{display:flex;align-items:center;gap:8px;min-height:44px;font:400 15px var(--pl-font-text)}.it-pub input{width:20px;height:20px}
+.it-msg{font:400 14px var(--pl-font-text);color:var(--pl-success)}.it-msg.bad{color:var(--pl-danger)}
+@media (min-width:640px){.it-row{grid-template-columns:150px 92px 150px 1fr}.it-row .wide{grid-column:auto}.it-row .sub{grid-column:1/-1}}
+</style>
+</head><body>
+<div class="wrap"><main class="pl-plan" id="m" aria-live="polite"><p class="pp-miss">Getting the plan</p></main></div>
+<script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
+<script>
+// A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day.
+// Guests who are in see it, or everyone when the host makes it public; the host lays it out here.
+(async function () { const T = window.PLTimeline, esc = T.esc, m = document.getElementById("m"), id = (location.pathname.match(/^\/plans\/([A-Za-z0-9_-]{2,80})$/) || [])[1];
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })(), today = T.localDay(Date.now(), tz);
+  let proof = null; try { proof = JSON.parse(localStorage.getItem("encore-rsvp-" + id) || "null"); } catch {}
+  const q = proof?.rid && proof?.code ? `?rid=${encodeURIComponent(proof.rid)}&code=${encodeURIComponent(proof.code)}` : "";
+  let P = null; try { const r = await fetch(`/api/public/plan/${encodeURIComponent(id || "")}${q}`, { credentials: "same-origin" }); if (r.ok) P = (await r.json()).plan; } catch {}
+  if (!P) { m.innerHTML = `<p class="pp-miss">We couldn't find this plan. <a href="/plans">Back to your plans</a></p>`; return; }
+  document.title = P.title + " · Pottery Lab";
+  const A = window.EncoreAvatars, av = P.host.avatarArt && A ? A.svg(P.host.avatarArt, P.host.color, 40) : "";
+  let art = ""; try { if (!P.cover && window.EventArt?.cover) { window.EventArt.ensureCss?.(); art = window.EventArt.cover({ title: P.title, coverArt: P.coverArt, date: P.date }, { title: "", label: "" }) || ""; } } catch {}
+  const G = T.ICON;
+  function draw() {
+    const locked = P.locked ? `<div class="pp-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
+    const empty = !P.locked && !P.days.some((d) => d.items.length);
+    m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
+      + (P.status ? `<div class="pp-status"><span class="pp-chipst">${esc(P.status)}</span></div>` : "")
+      + `<div class="pp-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}</div>`
+      + `<h2 class="pp-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
+      + (locked || (empty && !P.isHost ? `<div class="pp-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : T.itineraryHtml(P.days, { today })))
+      + (P.editable ? editorHtml() : "");
+    m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
+    const more = m.querySelector(".pc-more"); if (more) more.onclick = (e) => { e.stopPropagation(); let mn = m.querySelector(".pc-menu"); if (mn) { mn.remove(); more.setAttribute("aria-expanded", "false"); return; }
+      mn = document.createElement("div"); mn.className = "pc-menu"; mn.setAttribute("role", "menu");
+      mn.innerHTML = `<a role="menuitem" href="/e/${encodeURIComponent(P.id)}">Open the invite</a>${P.date ? `<a role="menuitem" href="${esc(window.PLAddCal?.ics(P) || "#")}">Add to calendar (.ics)</a>` : ""}<button type="button" role="menuitem" data-copy>Copy link</button>${P.isHost ? `<a role="menuitem" href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}`;
+      m.querySelector(".pc").style.position = "relative"; m.querySelector(".pc").appendChild(mn); more.setAttribute("aria-expanded", "true");
+      mn.querySelector("[data-copy]").onclick = async (ev) => { try { await navigator.clipboard.writeText(location.origin + "/e/" + P.id); ev.target.textContent = "Copied"; } catch {} }; };
+    if (P.editable) wireEditor();
+  }
+  // ---- the host lays out the plan ----
+  let rows = P.days.flatMap((d) => d.items.map((x) => ({ ...x })));
+  const KINDS = Object.entries(T.ITIN_LABEL);
+  const dayOpts = (sel) => P.days.map((d) => `<option value="${d.date}"${d.date === sel ? " selected" : ""}>${P.days.length > 1 ? `Day ${d.n} · ` : ""}${esc(T.dayLabel(d.date, "").text)}</option>`).join("");
+  const rowHtml = (x, i) => `<div class="it-row" data-i="${i}"><label>Day<select data-f="day">${dayOpts(x.day)}</select></label><label>Time<input data-f="time" value="${esc(x.time ? T.clock(x.time) : "")}" placeholder="4pm" inputmode="text"></label>
+    <label>Kind<select data-f="kind">${KINDS.map(([k, l]) => `<option value="${k}"${k === x.kind ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label><label class="wide">What<input data-f="title" value="${esc(x.title)}" placeholder="Check in" maxlength="80"></label>
+    <label class="wide sub">One line under it<input data-f="sub" value="${esc(x.sub || "")}" placeholder="Keys at the front desk after 4pm" maxlength="100"></label><button type="button" class="rm" data-rm="${i}">Remove</button></div>`;
+  const editorHtml = () => `<section class="it-ed" aria-label="Lay out the plan"><h3>Lay out the plan</h3><p class="hint">Arrive, check in, dinner, a workshop, checkout. Guests who are in see it here and on the invite.</p>
+    <div id="itRows">${rows.map(rowHtml).join("")}</div>
+    <div class="it-bar"><button type="button" id="itAdd">+ Add to the plan</button></div>
+    <label class="it-pub"><input type="checkbox" id="itPub"${P.public ? " checked" : ""}> Anyone with the link can see the plan</label>
+    <div class="it-bar"><button type="button" class="pri" id="itSave">Save the plan</button><span class="it-msg" id="itMsg" role="status"></span></div></section>`;
+  function read() { m.querySelectorAll(".it-row").forEach((r) => { const x = rows[+r.dataset.i]; if (!x) return; r.querySelectorAll("[data-f]").forEach((f) => { x[f.dataset.f] = f.value; }); }); }
+  function wireEditor() {
+    m.querySelector("#itAdd").onclick = () => { read(); const last = rows[rows.length - 1]; rows.push({ day: last?.day || P.date, time: "", kind: "activity", title: "", sub: "" }); draw(); m.querySelectorAll('.it-row [data-f="title"]')[rows.length - 1]?.focus(); };
+    m.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { read(); rows.splice(+b.dataset.rm, 1); draw(); });
+    m.querySelector("#itSave").onclick = async () => { read(); const msg = m.querySelector("#itMsg"); msg.className = "it-msg"; msg.textContent = "Saving";
+      try { const r = await fetch(`/api/host/events/${encodeURIComponent(P.id)}/itinerary`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itinerary: rows, public: m.querySelector("#itPub").checked }) }); const j = await r.json();
+        if (!r.ok) { msg.className = "it-msg bad"; msg.textContent = j.message || "That didn't save. Try again."; return; }
+        P.public = j.public; rows = j.itinerary.map((x) => ({ ...x })); P.days = P.days.map((d) => ({ ...d, items: j.itinerary.filter((x) => x.day === d.date) })); draw(); const m2 = m.querySelector("#itMsg"); if (m2) m2.textContent = "Saved. Guests who are in can see it."; }
+      catch { msg.className = "it-msg bad"; msg.textContent = "That didn't save. Check your connection."; } };
+  }
+  draw();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

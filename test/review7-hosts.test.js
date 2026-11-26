@@ -61,7 +61,7 @@ test("the full invite and the host: cost note, drop-in pay, at the door, Follow 
   assert.match(app, /Follow \$\{esc\(\/\* review round 7/);
   assert.match(app, /Ask \$\{r7Unit\(d\)\} \$\{G\.length\} guest/);
   assert.match(app, /body:has\(#gStick:not\(\.off\)\) #view-guest\{padding-bottom:96px\}/, "the sticky bar never covers Copy link");
-  assert.match(read("public/plans.html"), /Paid\? \$\{hostOf\(cards\[x\.id\]\)\} will confirm/);
+  assert.match(read("server/plans.js"), /Paid\? \$\{host\} will confirm/); // Plans: the timeline row says it (server/plans.js statusOf)
   assert.match(read("public/storefront.js"), /e\.costNote \? `<b class="nu-price nu-cost"/);
   assert.match(read("public/community.js"), /free \? \(e\.costNote \|\| "Free"\)/);
 });

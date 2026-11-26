@@ -3,27 +3,54 @@
 <meta name="description" content="What you're hosting, going to and waiting on.">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
+<link rel="stylesheet" href="/timeline.css">
 <style>
-.plans{display:grid;gap:12px;margin:18px 0 32px}
-.plan{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:14px 16px;background:var(--card);color:var(--ink);text-decoration:none}
-.plan .ic{width:52px;height:52px;border-radius:16px;flex:none;display:grid;place-items:center;font-size:24px;background:var(--pink);overflow:hidden}
+.plans{display:grid;gap:12px;margin:14px 0 28px}
+.plan{display:flex;gap:14px;align-items:center;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md);padding:12px 14px;background:var(--pl-surface);color:var(--pl-ink);text-decoration:none}
+.plan .ic{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:20px;background:var(--pl-raised);overflow:hidden}
 .plan .ic svg,.plan .ic img{width:100%;height:100%;object-fit:cover}
-.plan b{display:block;font-size:16px}.plan small{color:var(--soft);font-size:14px}
-.pill{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#F3EFE8}.pill.in{background:#EAF3EC;color:#2F7A4F}
-.empty{border:1px dashed var(--line);border-radius:18px;padding:22px;color:var(--soft)}
-h2.sub{font-size:20px;margin-top:22px}
+.plan b{display:block;font-size:16px}.plan small{color:var(--pl-soft);font-size:14px}
+.pill{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:4px;font-size:13px;font-weight:500;background:var(--pl-sand);color:var(--pl-ink)}
+h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;border-bottom:var(--pl-rule-dashed,1px dashed var(--pl-line))}
+/* Plans: a compact header, Timeline or Calendar, the timeline left and a mini calendar right on wide screens */
+.pp{max-width:1040px}
+.pp-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 16px;margin:18px 0 6px}
+.pp-kick{margin:0 0 4px;font:500 12px/1 var(--pl-font-mono);text-transform:uppercase;letter-spacing:var(--pl-kicker-track,.06em);color:var(--pl-accent-text)}
+.pp-head h1{margin:0;font:var(--pl-display-weight,600) 32px/1.1 var(--pl-font-display);letter-spacing:var(--pl-display-track,-.02em)}
+.pp-seg{display:inline-flex;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);padding:2px;background:var(--pl-surface)}
+.pp-seg button{min-height:40px;padding:0 16px;border:0;border-radius:4px;background:none;font:500 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
+.pp-seg button[aria-selected=true]{background:var(--pl-ink);color:var(--pl-surface)}
+.pp-seg button:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.pp-sum{margin:6px 0 10px;font:400 15px/1.45 var(--pl-font-text);color:var(--pl-soft)}.pp-sum b{color:var(--pl-ink);font-weight:500}
+.pp-sync{margin:0 0 12px}
+.pp-grid{display:grid;gap:24px}
+.pp-aside{display:none}
+@media (min-width:900px){.pp-grid{grid-template-columns:minmax(0,1fr) 272px;align-items:start}.pp-aside{display:grid;gap:14px;position:sticky;top:16px}.pp-grid.is-cal .pp-aside{display:none}.pp-grid.is-cal{grid-template-columns:minmax(0,1fr)}.pp-head h1{font-size:40px}}
+.pp-load{padding:24px 0;color:var(--pl-soft)}
+.pp-empty{margin:18px 0;padding:22px 18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
+.pp-empty p{margin:0 0 14px;font:var(--pl-serif-weight,600) 20px/1.35 var(--pl-font-serif,var(--pl-font-display))}
+.pp-sugg{display:flex;flex-wrap:wrap;gap:8px}
+.pp-sugg a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);background:var(--pl-page);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none}
+.pp-sugg a:first-child{background:var(--pl-ink);border-color:var(--pl-ink);color:var(--pl-surface)}
+.pp-foot{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin:18px 0 0;padding-top:12px;border-top:var(--pl-rule-dashed,1px dashed var(--pl-line))}
+.pp-foot a{color:var(--pl-accent-text);font:500 15px var(--pl-font-text);min-height:44px;display:inline-flex;align-items:center}
+.pp-dayh{margin:18px 0 0;font:600 17px/1.3 var(--pl-font-text)}
+.pp-dayh small{display:block;font:400 14px var(--pl-font-text);color:var(--pl-soft);margin-top:2px}
+.pp-calwrap{display:grid;gap:16px}#ppDay .tl-dh{display:none}
+@media (min-width:900px){.pp-calwrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
 </style><link rel="stylesheet" href="/playful.css">
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/discover">pottery lab</a>
     <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
-  <main>
-    <h1 style="font-size:clamp(32px,6vw,48px);margin-top:18px">Your plans</h1>
-    <div id="scene" hidden style="margin:14px 0 6px"></div>
-    <div id="hostSec" hidden><h2 class="sub">You're hosting</h2><div class="plans" id="host"></div></div>
-    <div id="doneSec" hidden><h2 class="sub">Done and dusted</h2><div class="plans" id="hostDone"></div></div>
-    <h2 class="sub">You're going</h2><div class="plans" id="ev"></div>
-    <p style="margin:18px 0 0" id="reqLink" hidden><a href="/requests" style="font-weight:600">Your requests to hosts</a></p>
+  <main class="pp">
+    <header class="pp-head"><div><p class="pp-kick" id="ppKick"></p><h1 id="ppH">Your plans</h1></div>
+      <div class="pp-seg" role="tablist" aria-label="How to see your plans" id="ppSeg"><button type="button" role="tab" data-view="timeline" aria-selected="true" aria-controls="ppMain">Timeline</button><button type="button" role="tab" data-view="calendar" aria-selected="false" aria-controls="ppMain">Calendar</button></div></header>
+    <p class="pp-sum" id="ppSum" hidden></p>
+    <div class="pp-sync" id="ppSync"></div>
+    <div class="pp-grid" id="ppGrid"><section id="ppMain" role="tabpanel" aria-live="polite"><p class="pp-load">Getting your plans</p></section><aside class="pp-aside" id="ppAside" aria-label="This month"></aside></div>
+    <div class="pp-foot" id="ppFoot"><a id="ppPast" href="/plans?past=1">Past plans</a><a href="/requests" id="reqLink" hidden>Your requests to hosts</a></div>
+    <div id="scene" hidden style="margin:22px 0 6px"></div>
     <h2 class="sub" id="ordH" hidden>Orders</h2><div class="plans" id="ord"></div>
     <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">We'll fill these in next time.</span></summary>
       <form id="rpForm"><label>Your name<input name="name" autocomplete="name"></label><label>Email or phone<input name="contact" autocomplete="email"></label>
@@ -34,32 +61,55 @@ h2.sub{font-size:20px;margin-top:22px}
   </main>
 </div>
 <script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
-<script src="/avatars.js"></script>
+<script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
 <script>
-(async function () { const C = window.EncoreCommunity, esc = C.esc, A = window.EncoreAvatars;
-  const R = [], O = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); try { if (k.startsWith("encore-rsvp-")) { const v = JSON.parse(localStorage.getItem(k)); if (v && v.response !== "no") R.push({ id: k.slice(12), ...v }); } else if (k.startsWith("encore.order.")) { const v = JSON.parse(localStorage.getItem(k)); if (v) O.push({ handle: k.slice(13).split(".")[0], ...v }); } } catch {} } } catch {}
-  try { const j = await (await fetch("/api/me/plans")).json(); for (const p of j.plans || []) { if (p.response === "no" || R.some((x) => x.id === p.id)) continue; R.push({ id: p.id, rid: p.rid, code: p.code, response: p.response, interest: p.interest }); try { localStorage.setItem("encore-rsvp-" + p.id, JSON.stringify({ rid: p.rid, code: p.code, response: p.response, interest: p.interest })); } catch {} } } catch {}
-  let cards = {}; if (R.length) { try { cards = (await (await fetch("/api/public/cards?ids=" + encodeURIComponent(R.map((x) => x.id).slice(0, 20).join(",")))).json()).cards || {}; } catch {} }
-  await Promise.all(R.map(async (x) => { if (!x.rid || !x.code) return; try { const j = await (await fetch(`/api/public/rsvp-status/${encodeURIComponent(x.id)}?rid=${encodeURIComponent(x.rid)}&code=${encodeURIComponent(x.code)}`)).json(); if (j.response) x.response = j.response; x.paid = !!j.paid; x.paidClaim = !!j.paidClaim || !!x.paidClaim; } catch {} }));
-  const today = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date()), when = (c) => [c.date ? new Date(c.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "", c.startTime ? ((m) => m ? `${(+m[1]) % 12 || 12}${m[2] === "00" ? "" : ":" + m[2]}${+m[1] < 12 ? "am" : "pm"}` : "")(String(c.startTime).match(/^(\d{1,2}):(\d{2})/)) : "", c.hood || c.city || ""].filter(Boolean).join(" · ");
-  // one emoji per event, the same as Home and the invite
-  const emOf = (c) => { const x = window.eventEmoji ? window.eventEmoji({ title: c.title, activity: c.activity }) : "🎉"; return x !== "🎉" ? x : c.emoji || "🎉"; };
-  // review round 7: after "I paid" the host confirms ("Paid? Marcus will confirm"), never "pay $320 to finish"
-  const hostOf = (c) => String(c?.hostName || c?.host?.name || "Your host").trim().split(/\s+/)[0].replace(/['’]s$/i, "") || "Your host";
-  const lab = (x) => x.response === "maybe" && x.interest === "in" ? "You're in ✓ · waiting on the date" : x.response === "going" ? (x.paid ? "You're in ✓ · paid" : (cards[x.id]?.price && cards[x.id].price !== "chip" ? (x.paidClaim ? `Paid? ${hostOf(cards[x.id])} will confirm` : cards[x.id].ticketNote ? `You're in ✓ · pay ${cards[x.id].price} at the door` : `Almost in · pay ${cards[x.id].price} to finish`) : "You're in ✓")) : x.response === "requested" ? "Asked ✓ · waiting on the host" : x.response === "waitlist" ? "On the waitlist" : x.response === "maybe" ? "Maybe" : "Saved";
+// Plans (server/plans.js, public/timeline.js): your upcoming things by day, or as a month. The replies this browser
+// holds go with the request, so it works signed out too; signed in, your account's replies and your own events join.
+(async function () { const T = window.PLTimeline, esc = T.esc, $ = (id) => document.getElementById(id);
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })(), past = new URLSearchParams(location.search).get("past") === "1";
+  const signed = /(?:^|;\s*)encore_in=1/.test(document.cookie), store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  const R = [], O = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); try { if (k.startsWith("encore-rsvp-")) { const v = JSON.parse(localStorage.getItem(k)); if (v && v.rid && v.code && v.response !== "no") R.push({ id: k.slice(12), rid: v.rid, code: v.code }); } else if (k.startsWith("encore.order.")) { const v = JSON.parse(localStorage.getItem(k)); if (v) O.push({ handle: k.slice(13).split(".")[0], ...v }); } } catch {} } } catch {}
+  let saved = []; try { saved = (JSON.parse(store.get("pl.saves") || "[]") || []).filter((x) => x && x.kind === "event").map((x) => x.ref); } catch {}
+  let D = { items: [], undated: [], today: T.localDay(Date.now(), tz), now: Date.now(), signedIn: signed };
+  try { const r = await fetch("/api/plans/timeline", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ proofs: R.slice(0, 80), saved: saved.slice(0, 100), tz, past }) }); if (r.ok) D = await r.json(); } catch {}
+  const today = () => T.localDay(Date.now(), tz), all = () => D.items || [], byKey = (k) => [...all(), ...(D.undated || [])].find((i) => i.key === k);
+  $("ppKick").textContent = past ? "History" : T.dayLabel(today(), today()).text;
+  if (past) { $("ppH").textContent = "Past plans"; $("ppSeg").hidden = true; $("ppPast").textContent = "Back to what's coming up"; $("ppPast").href = "/plans"; document.title = "Past plans · Pottery Lab"; }
+  else if ((D.items || []).length || (D.undated || []).length) window.PLAddCal?.sync($("ppSync"), { signedIn: !!D.signedIn }); // nothing to sync yet: no box
 
-  // what you're hosting (signed in): your own upcoming events, straight to the plan
-  try { const r = await fetch("/api/db/collection?path=events"); if (r.ok) { const j = await r.json(); const L = (Array.isArray(j) ? j : j.docs || j.items || []).map((d) => ({ id: d.id, ...(d.data || d) })).filter((e) => e && e.id && !e.example && !e.parentId && ((e.date && e.date >= new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)) || (!e.date && e.stage === "interest"))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    const card = (e) => `<a class="plan" href="/#studio" data-open="${esc(e.id)}"><span class="ic">${esc(window.eventEmoji ? window.eventEmoji(e) : "🎉")}</span><span><b>${esc(e.pubTitle || e.name || "Your event")}</b><small>${esc(when(e))}</small><small style="display:block;color:var(--brand2,var(--pl-accent));font-weight:600">${e.date && e.date < today ? "See how it went" : e.stage === "interest" ? "Feeler · see the votes" : e.published ? "See plan" : "Draft"}</small></span></a>`;
-    const up = L.filter((e) => !(e.date && e.date < today)), done = L.filter((e) => e.date && e.date < today).reverse();
-    if (up.length) { document.getElementById("hostSec").hidden = false; document.getElementById("host").innerHTML = up.slice(0, 8).map(card).join(""); }
-    if (done.length) { document.getElementById("doneSec").hidden = false; document.getElementById("hostDone").innerHTML = done.slice(0, 8).map(card).join(""); }
-    { document.querySelectorAll("#host [data-open], #hostDone [data-open]").forEach((a) => a.onclick = () => { try { localStorage.setItem("encore-open", JSON.stringify(a.dataset.open)); } catch {} }); } } } catch {}
-  // the last two weeks stay here, so you can send kudos and add photos
-  { const past = R.map((x) => ({ x, c: cards[x.id] || {} })).filter(({ x, c }) => c.date && c.date < today && c.date >= new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10) && x.response === "going");
-    if (past.length) { const sec = document.createElement("div"); sec.innerHTML = `<h2 class="sub">Recently</h2><div class="plans">${past.map(({ x, c }) => `<a class="plan" href="/g#rsvp-${encodeURIComponent(x.id)}"><span class="ic">${esc(emOf(c))}</span><span><b>${esc(c.title || "An event")}</b><small>${esc(when(c))}</small><small style="display:block;margin-top:4px;color:var(--pl-accent);font-weight:600">Send kudos · Add photos</small></span></a>`).join("")}</div>`; document.getElementById("ev").parentElement.insertBefore(sec, document.getElementById("ord").previousElementSibling); } }
-  const ev = R.map((x) => ({ x, c: cards[x.id] || {} })).filter(({ c }) => !c.date || c.date >= today).sort((a, b) => String(a.c.date || "9").localeCompare(String(b.c.date || "9")));
-  document.getElementById("ev").innerHTML = ev.length ? ev.map(({ x, c }) => `<a class="plan" href="/g#rsvp-${encodeURIComponent(x.id)}"><span class="ic">${c.host?.cover ? `<img src="${esc(c.host.cover)}" alt="">` : c.host?.avatarArt && A ? A.svg(c.host.avatarArt, c.host.color, 52) : esc(emOf(c))}</span><span><b>${esc(c.title || "An event")}</b><small>${esc(when(c))}${c.host?.name ? ` · with ${esc(c.host.name)}` : ""}</small><br><span class="pill ${x.response === "going" ? "in" : ""}">${esc(lab(x))}</span></span></a>`).join("") : `<div class="empty">Nothing on yet. <a href="/discover">Find something this week</a></div>`;
+  // the line under the title: how full the week is, and what's next
+  const main = all().filter((i) => i.kind !== "todo");
+  if (!past && main.length) { const wk = T.addDays(today(), 6), n = main.filter((i) => i.date <= wk).length, nx = main.find((i) => (i.endMs || 0) > Date.now()) || main[0], L = T.dayLabel(nx.date, today());
+    const when = (L.kicker || L.text) + (nx.time && !nx.allDay ? " at " + T.clock(nx.time) : "");
+    $("ppSum").innerHTML = `${n ? `<b>${n} this week</b> · ` : ""}Next: <b>${esc(nx.title)}</b>, ${esc(when)}`; $("ppSum").hidden = false; }
+
+  const empty = () => `<div class="pp-empty"><p>Nothing planned yet. A quiet week can be a good one.</p><div class="pp-sugg"><a href="/events?q=this%20weekend">Something this weekend?</a><a href="/discover">See what's on near you</a><a href="/?app=1&new=1#studio">Host something small</a></div></div>`;
+  const undated = () => (D.undated || []).length ? `<section class="tl-day"><h3 class="tl-dh"><span class="tl-dk">Soon</span>Date to come</h3><ol class="tl-list">${D.undated.map((it) => T.rowHtml({ ...it, time: "", allDay: false }, { dim: false })).join("")}</ol></section>` : "";
+
+  let view = past ? "timeline" : (location.hash === "#calendar" ? "calendar" : store.get("pl.plansView") === "calendar" ? "calendar" : "timeline"), ym = today().slice(0, 7), sel = today();
+  const dayList = (d) => { const L = T.itemsOn(all(), d), lab = T.dayLabel(d, today()), n = L.filter((i) => i.kind !== "todo").length;
+    return `<h2 class="pp-dayh">${esc(lab.kicker ? lab.kicker + " · " + lab.text : lab.text)}<small>${n ? `${n} planned` : "Nothing planned"}</small></h2>${L.length ? T.timelineHtml(L.map((i) => ({ ...i, date: d })), { now: Date.now(), today: today(), tz, nowMarker: d === today(), cal: true }) : `<div class="pp-empty" style="margin-top:10px"><p style="font-size:17px;margin:0 0 10px">A free day.</p><div class="pp-sugg"><a href="/events?q=${encodeURIComponent(d === today() ? "tonight" : "this weekend")}">${d === today() ? "Anything tonight?" : "Something this weekend?"}</a></div></div>`}`; };
+  function draw() {
+    const grid = $("ppGrid"), M = $("ppMain"), A = $("ppAside"); grid.classList.toggle("is-cal", view === "calendar");
+    document.querySelectorAll("#ppSeg [data-view]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === view)));
+    if (view === "calendar") { M.innerHTML = `<div class="pp-calwrap"><div>${T.calendarHtml(ym, T.calendarDots(all(), ym), { today: today(), selected: sel })}${T.legendHtml()}</div><div id="ppDay">${dayList(sel)}</div></div>`; wireCal(M); A.innerHTML = ""; return; }
+    M.innerHTML = all().length || (D.undated || []).length ? T.timelineHtml(all(), { now: Date.now(), today: today(), tz, nowMarker: !past, cal: !past }) + undated() : past ? `<div class="pp-empty"><p>Nothing here yet. Your past plans will show up here.</p></div>` : empty();
+    if (!past) { A.innerHTML = T.calendarHtml(ym, T.calendarDots(all(), ym), { today: today(), selected: "", mini: true }) + T.legendHtml(); wireCal(A, true); }
+  }
+  function wireCal(root, mini) { root.querySelectorAll("[data-shift]").forEach((b) => b.onclick = () => { ym = T.shiftMonth(ym, +b.dataset.shift); draw(); });
+    root.querySelectorAll("[data-day]").forEach((b) => b.onclick = () => { const d = b.dataset.day;
+      if (mini) { const s = document.querySelector(`#ppMain .tl-day[data-date="${d}"]`); if (s) { s.scrollIntoView({ behavior: "smooth", block: "start" }); return; } }
+      sel = d; if (d.slice(0, 7) !== ym) ym = d.slice(0, 7); view = "calendar"; draw(); if (!mini) document.getElementById("ppDay")?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }); }
+  // Add to calendar on a row: Apple, Google, Outlook or a file (public/addcal.js)
+  $("ppMain").addEventListener("click", (e) => { const b = e.target.closest("[data-addcal]"); if (!b) return; e.preventDefault(); const it = byKey(b.dataset.addcal); if (it) window.PLAddCal?.open(b, it); });
+  document.querySelectorAll("#ppSeg [data-view]").forEach((b) => b.onclick = () => { view = b.dataset.view; store.set("pl.plansView", view); if (view === "calendar") ym = sel.slice(0, 7); draw(); });
+  // a quiet month: open the calendar on the month of the next plan
+  { const f = main[0]; if (f && f.date.slice(0, 7) > ym && f.date > T.addDays(today(), 20)) { ym = f.date.slice(0, 7); sel = f.date; } }
+  draw();
+  // the Now marker and dimming keep up while the page is open
+  setInterval(() => { if (!document.hidden && view === "timeline") draw(); }, 5 * 60e3);
+  $("ppPast").hidden = !past && !D.pastCount && !D.signedIn;
+
   O.sort((a, b) => (b.at || 0) - (a.at || 0));
   document.getElementById("ord").innerHTML = O.length ? O.map((o) => `<a class="plan" href="/@${encodeURIComponent(o.handle)}#shop"><span class="ic">🍰</span><span><b>${esc(o.items || "Order")}${o.host ? ` from ${esc(o.host)}` : ""}</b><small>Order ${esc(String(o.code || "").replace(/^#/, "#"))}${o.total ? ` · ${esc(o.total)}${o.payUrl ? " · pay before pickup" : " · pay at pickup"}` : ""}</small><br><small>${o.slot ? `Pickup ${esc(o.slot)}` : "Pickup details on the host's page"}${o.where ? ` · ${esc(o.where)}` : ""}</small><br><span class="pill">Show <b style="display:inline;font-size:15px;letter-spacing:.06em">#${esc(String(o.code || "").replace(/^#/, ""))}</b> at pickup</span></span></a>`).join("") : ""; document.getElementById("ordH").hidden = !O.length;
   try { const me = await fetch("/api/me"); if (me.ok) document.querySelectorAll('header.top a.cta[href^="/signup"]').forEach((a) => (a.hidden = true)); } catch {}
@@ -72,7 +122,7 @@ h2.sub{font-size:20px;margin-top:22px}
   if (!L.length) return; const d = await (await fetch("/api/public/discover")).json().catch(() => ({})); const H = new Map((d.hosts || []).map((h) => [h.handle, h])); const E = d.events || [];
   const sec = document.createElement("section"); sec.innerHTML = `<h2 class="sub">Hosts you follow</h2><div class="plans">${L.slice(0, 12).map((h) => { const x = H.get(h) || { handle: h, name: "@" + h }; const nx = E.filter((e) => e.host?.handle === h && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
     const esc = (t) => String(t || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); return `<a class="plan" href="/@${esc(h)}"><span class="ic">${esc(x.emoji && x.emoji !== "🎉" ? x.emoji : (x.name || "?").trim()[0].toUpperCase())}</span><span><b>${esc(x.name)}</b><small style="display:block">${nx ? `Next: ${esc(nx.title)}` : "Nothing scheduled yet"}</small></span></a>`; }).join("")}</div>`;
-  const main = document.querySelector("main") || document.body; main.appendChild(sec); } catch {} })();
+  const main = document.querySelector("main") || document.body; main.insertBefore(sec, document.getElementById("rpCard")); } catch {} })();
 </script>
 <script src="/save.js"></script><script src="/passport.js"></script><script>/* "Your scene" (public/passport.js): shows after a first reply or first kudos */ window.PLPassport && PLPassport.mount(document.getElementById("scene"));</script>
 <script src="/nav.js"></script>

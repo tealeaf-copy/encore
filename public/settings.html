@@ -64,6 +64,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     </section>
     <section aria-labelledby="hFind"><h2 id="hFind">Finding you</h2><p>Off unless you turn it on. When it's on, friends who check their contacts on Find people can see you're here. We compare scrambled emails and phone numbers and keep nothing they send.</p>
       <div class="row"><span>Let people find me by email or phone<small>Your email and the phone on your account</small></span><input type="checkbox" class="sw" id="findable" aria-label="Let people find me by email or phone"></div></section>
+    <section aria-labelledby="hCal" id="calendar"><h2 id="hCal">Your calendar</h2><p>Your plans as a calendar link. Reset it if you shared it by mistake.</p><div id="calSync"></div><script src="/addcal.js"></script><script>window.PLAddCal && PLAddCal.sync(document.getElementById("calSync"), { settings: true });</script></section>
     <section aria-labelledby="hBlock"><h2 id="hBlock">Blocked</h2><p>People and hosts you blocked. You don't see their posts, photos or events.</p><div id="blocks"></div></section>
     <section aria-labelledby="hHelp"><h2 id="hHelp">Help and safety</h2>
       <ul class="links"><li id="helpRow" hidden><a href="#" data-help-open>Ask Potto, or reach a person</a></li><li><a href="/community">Community rules and reporting</a></li><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms</a></li><li><a href="/community#contact" id="contactLink">Contact us</a></li></ul>

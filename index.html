@@ -11934,22 +11934,22 @@ function prAiClean(m,text,ctx={}){ const o={}, drop=[]; if(!m||typeof m!=="objec
   // weekdays the host typed; a monthly rule's date is worked out here, not taken from the model
   const typed=new Set((typeof prDays==="function"?prDays(t):[]).map(d=>PR_AI_DAYS[d.wd]));
   if(Array.isArray(m.weekdays)){ const W=[...new Set(m.weekdays.map(x=>String(x).toLowerCase().trim()).map(x=>PR_AI_DAYS.find(d=>d===x||(x.length>=3&&d.startsWith(x)))).filter(Boolean))]; if(W.length&&W.every(w=>typed.has(w))) o.weekdays=W; else no("weekdays") }
-  if(["none","weekly","biweekly","monthly"].includes(m.repeat)) o.repeat=m.repeat; else no("repeat");
+  if(m.repeat==="none") o.repeat="none"; else if(["weekly","biweekly","monthly"].includes(m.repeat)&&/\bevery\b|weekly|biweekly|fortnight|monthly|of (?:the|each|every) month|\bcourse\b|\bseries\b|\b\d+\s*-?\s*weeks?\b|\b(?:mon|tues|wednes|thurs|fri|satur|sun)days\b/i.test(t)) o.repeat=m.repeat; else no("repeat");
   const md=prAiDate(m.date,today);
   if(m.monthly&&typeof m.monthly==="object"){ const n={first:1,second:2,third:3,fourth:4,last:-1}[String(m.monthly.nth||"").toLowerCase()], wd=PR_AI_DAYS.indexOf(String(m.monthly.weekday||"").toLowerCase());
-    if(n&&wd>=0&&typed.has(PR_AI_DAYS[wd])){ const T=new Date(today+"T12:00:00"); let x=prNthDate(T.getFullYear(),T.getMonth(),wd,n); if(!x||prISO(x)<today) x=prNthDate(T.getFullYear(),T.getMonth()+1,wd,n);
+    if(n&&wd>=0&&typed.has(PR_AI_DAYS[wd])&&/\b(?:first|second|third|fourth|last|1st|2nd|3rd|4th)\b/i.test(t)&&/\bmonth/i.test(t)){ const T=new Date(today+"T12:00:00"); let x=prNthDate(T.getFullYear(),T.getMonth(),wd,n); if(!x||prISO(x)<today) x=prNthDate(T.getFullYear(),T.getMonth()+1,wd,n);
       // a later start the model read ("first Sunday, from January") stays when it's on the same rule
       if(md){ const y=new Date(md+"T12:00:00"), r=prNthDate(y.getFullYear(),y.getMonth(),wd,n); if(r&&prISO(r)===md) x=y }
       if(x){ o.date=prISO(x); o.nth=n; o.weekday=PR_AI_DAYS[wd]; o.repeat="monthly"; o.dateBy="rule" } } else no("monthly") }
   if(!o.date){ if(md){ o.date=md; o.weekday=PR_AI_DAYS[new Date(md+"T12:00:00").getDay()] } else no("date") }
-  { const s=prAiTime(m.startTime), e=prAiTime(m.endTime); if(s){ o.startTime=s; if(e&&e!==s) o.endTime=e; else if(m.endTime!=null) no("endTime") } else { no("startTime"); no("endTime") } }
+  { const s=prAiTime(m.startTime), e=prAiTime(m.endTime); if(s){ o.startTime=s; const eh=e?+e.split(":")[0]:0, typedEnd=e&&(nums.has(eh)||nums.has(eh>12?eh-12:eh)||nums.has(eh===0?12:eh))&&/(?:\d\s*(?:am|pm)?\s*(?:-|–|to|and|till|til|until)\s*\d)|\b(?:till|til|until|to)\s+\d/i.test(t); if(e&&e!==s&&typedEnd) o.endTime=e; else if(m.endTime!=null) no("endTime") } else { no("startTime"); no("endTime") } }
   { const n=prAiInt(m.sessions,2,52); if(n&&nums.has(n)&&!unitNums.has(n)){ o.sessions=n; o.course=true } else no("sessions") }
   { const u=prAiDate(m.repeatUntil,o.date||today); if(u) o.repeatUntil=u; else no("repeatUntil") }
   // places: only ones in the message, word for word; never "the door" or a distance
   const placeOk=s=>s&&prAiIn(t,s,1)&&!/^(?:the\s+)?door$/i.test(s)&&!PR8_UNIT_ONLY.test(s);
   for(const [k,to] of [["place","place"],["meetPoint","meet"],["hood","hood"],["city","city"]]){ const s=str(m[k],60); if(placeOk(s)&&!(k==="place"&&/^(?:my|our|your)\s/i.test(s))) o[to]=s.replace(/^./,c=>c.toUpperCase()); else no(k) }
   // money: numbers the host typed, in sane ranges
-  const said$=n=>n===0?/\$\s?0(?![\d.])|\bfree\b/i.test(t):nums.has(n);
+  const said$=n=>{ if(n===0) return /\$\s?0(?![\d.])|\bfree\b/i.test(t); if(!nums.has(n)) return false; if(/\bfree\b/i.test(t)&&!/\$/.test(t)) return false; const N=String(n).replace(".","\\."); return new RegExp("\\$\\s?"+N+"(?![\\d])|(?:^|[^\\d.])"+N+"\\s*(?:dollars?|usd|bucks|each|a person|per person|pp|a head|a class|per class|a pop|for|total|drop)","i").test(t) };
   const price=prAiMoney(m.price), unit=["person","class","each","group","total"].includes(m.priceUnit)?m.priceUnit:"person";
   if(m.payWhatYouLike===true&&/pay[- ]what|pwyw|donation|chip in|sliding|whatever you/i.test(t)) o.price="chip";
   else if(m.free===true&&!(price>0)&&/\bfree\b|\$\s?0(?![\d.])|no cost|on me|on the house/i.test(t)) o.free=true;
@@ -11975,7 +11975,7 @@ function prAiClean(m,text,ctx={}){ const o={}, drop=[]; if(!m||typeof m!=="objec
   const fair=s=>prAiNumsOk(nums,s)&&!/https?:|www\.|@|\b\d+\s+[A-Z]?[a-z]+\s+(?:st|street|ave|avenue|rd|road|blvd|lane|ln|way|dr|drive)\b/i.test(s.replace(/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi,""))||(/https?:|www\.|@/.test(s)&&t.includes(s));
   { const L=(Array.isArray(m.notes)?m.notes:typeof m.notes==="string"?m.notes.split(/\.\s+|\.$|\n/):[]).map(x=>str(x,120)).filter(x=>x&&fair(x)&&prAiIn(t,x,.5)).map(x=>x.replace(/[.\s]+$/,"").replace(/^./,c=>c.toUpperCase()));
     if(L.length) o.noteList=L.slice(0,6); else no("notes") }
-  { const s=str(m.description,280); if(s&&fair(s)&&(s.match(/[.!?](\s|$)/g)||[]).length<=3) o.description=/[.!?]$/.test(s)?s:s+"."; else no("description") }
+  { const s=str(m.description,280), promise=/\b(refund|guarantee|included|includes|pottery lab|certified|insured|free)\w*/gi, extra=(s.match(promise)||[]).some(w=>!new RegExp("\\b"+w.replace(/[^a-z ]/gi,"")+"","i").test(t)); if(s&&fair(s)&&!extra&&prAiIn(t,s,.6)&&(s.match(/[.!?](\s|$)/g)||[]).length<=3) o.description=/[.!?]$/.test(s)?s:s+"."; else no("description") }
   return {o,drop} }
 // the merged reading: the model's checked fields over the regex reading (p), with the safer rules kept
 function prAiMerge(p,model,text,ctx={}){ const P=p||{}, {o:A,drop}=prAiClean(model,text,ctx), M={...P}, from={}, t=String(text||"");

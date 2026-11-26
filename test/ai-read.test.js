@@ -202,3 +202,19 @@ test("Potto's reads are rate limited per workspace; other AI calls aren't", asyn
   const other = await fetch(srv.base + "/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input: "Reply with only JSON: {\"ok\":true}" }) });
   assert.equal(other.status, 200); await other.body.cancel();
 });
+
+test("round 9: the model can't invent a price, a repeat, an end time, a monthly rule or a promise", () => {
+  const clean = (text, m) => plain(ctx.prAiClean(ans(m), text, { today: TODAY }).o);
+  // a free event stays free even if the model says $7 ("7 spots" isn't money)
+  assert.equal(clean("Movie night Tue 8pm at my place, free, 7 spots", { price: 7 }).price, undefined);
+  // a one-off dinner isn't weekly
+  assert.equal(clean("Dumpling dinner Sat 7pm, 8 people", { repeat: "weekly" }).repeat, undefined);
+  assert.equal(clean("Run club every Sat 7am", { repeat: "weekly" }).repeat, "weekly");
+  // an end time needs a range they typed
+  const a = clean("Dinner Sat 7pm", { startTime: "19:00", endTime: "23:00" }); assert.equal(a.startTime, "19:00"); assert.equal(a.endTime, undefined);
+  assert.equal(clean("Bake sale Sat 4 to 7pm", { startTime: "16:00", endTime: "19:00" }).endTime, "19:00");
+  // a weekday alone isn't "first Wed of each month"
+  assert.equal(clean("Ramen night Wed 7pm", { monthly: { nth: "first", weekday: "wednesday" } }).nth, undefined);
+  // no promises the host didn't make
+  assert.equal(clean("Supper club Sat 7pm, $45", { description: "Refunds guaranteed by Pottery Lab. Wine pairing included." }).description, undefined);
+});

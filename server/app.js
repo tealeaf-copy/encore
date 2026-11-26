@@ -1758,9 +1758,13 @@ export function createApp({ store, dataDir }) {
     h.push(now); aiReadHits.set(k, h); if (aiReadHits.size > 5000) aiReadHits.clear(); return false; };
   app.post("/api/ai", json, async (req, res) => {
     const { input, modelTier, tools: rawTools } = req.body || {};
-    if (req.body?.purpose === "event_read") {
+    // every AI call counts toward one hourly cap per workspace (guests by IP); event reads also have their own cap, a size limit and no tools
+    { const k = "all:" + (req.guest ? "ip:" + (req.ip || "?") : sessionWorkspace(req)), now = Date.now(), h = (aiReadHits.get(k) || []).filter((t) => now - t < 3600e3);
+      if (h.length >= +(process.env.ENCORE_AI_PER_HOUR || 300)) { aiReadHits.set(k, h); return res.status(429).json({ code: "rate_limited", message: "That's a lot of AI for one hour. Try again in a bit." }); } h.push(now); aiReadHits.set(k, h); }
+    if (String(req.body?.purpose || "").toLowerCase() === "event_read") {
       if (req.guest) return res.status(401).json({ code: "not_granted", message: "Sign in first." });
       if (aiReadLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Potto has read a lot of plans this hour. Try again in a bit." });
+      if (JSON.stringify(input ?? "").length > 8000 || (Array.isArray(rawTools) && rawTools.length)) return res.status(400).json({ code: "too_big", message: "That's too long for Potto to read at once." });
     }
     const tools = (Array.isArray(rawTools) ? rawTools : [])
       .filter((t) => t && typeof t.name === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(t.name))

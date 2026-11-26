@@ -27,7 +27,8 @@ window.InviteOrder = function (e, ws, H, U) {
     const cap = Math.min(x.max || 20, x.left == null ? 99 : x.left); qty[x.id] = Math.max(0, Math.min(cap, (qty[x.id] || 0) + +b.dataset.d)); draw(); });
   // the shop's items when the host's shop is open; else what the host typed ("country loaf $12, focaccia $9")
   (handle ? fetch("/api/public/shop/" + encodeURIComponent(handle)).then((r) => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null)).then((j) => {
-    shop = j?.shop && (j.shop.items || []).length ? j.shop : null;
+    // the event's own items win; the host's shop is used only when the event lists none
+    shop = !(e.orderItems || []).length && j?.shop && (j.shop.items || []).length ? j.shop : null;
     items = shop ? shop.items.map((x) => ({ id: x.id, name: x.name, cents: x.cents, max: x.max, left: x.left })) : (Array.isArray(e.orderItems) ? e.orderItems : []).slice(0, 8).map((x, i) => ({ id: "i" + i, i, name: String(x.name || "").slice(0, 60), cents: Math.round((+x.price || 0) * 100), max: 20, left: null })).filter((x) => x.name);
     draw(); });
   form.onsubmit = async (ev) => { ev.preventDefault(); const er = $("#oEr"); er.textContent = "";
@@ -39,7 +40,7 @@ window.InviteOrder = function (e, ws, H, U) {
     const total = lines.reduce((a, x) => a + qty[x.id] * (x.cents || 0), 0), text = (lines.length ? lines.map((x) => `${qty[x.id]} × ${x.name}`).join(", ") : free) + (slot ? ` · pickup ${slotLabel(slot)}` : "") + (total ? ` · ${money(total)}` : "");
     const go = $("#oGo"); go.disabled = true;
     try { let pay = "", code = "", where = "";
-      if (shop) { const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "" }) }); const j = await r.json().catch(() => ({}));
+      if (shop) { const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "", eventId: eid }) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); pay = j.payUrl || ""; code = j.code || ""; where = j.where || "";
         U.ls.set(`encore.order.${handle}.${code}`, JSON.stringify({ code, total: j.total, slot, at: Date.now(), lines: lines.map((x) => ({ name: x.name, qty: qty[x.id] })) })); }
       else { const rc = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");

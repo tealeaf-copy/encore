@@ -273,7 +273,9 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
     res.json({ title: clean(G.ev.pubTitle || G.ev.name, 120), date: ISO.test(G.ev.date || "") ? G.ev.date : "", hostFirst: hostFirst(G.ws, G.ev), host: h?.handle ? { name: clean(h.name, 60) } : null, open: !G.ev.date || G.ev.date <= today, here: N.atLive(G.ev) /* review round 8 */ }); });
   app.post("/api/public/kudos-group/:eventId", small, (req, res) => { res.set("Cache-Control", "private, no-store");
     const id = clean(req.params.eventId, 80), perIp = Number(process.env.ENCORE_KUDOS_GROUP_PER_IP || 10), perEvent = Number(process.env.ENCORE_KUDOS_GROUP_PER_EVENT || 60);
-    if (over("gi:" + (req.ip || "?"), perIp) || over("ge:" + id, perEvent)) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
+    // round 9: at the event (a code on the host's phone), only wrong codes count against the venue's shared wifi
+    const atTry = req.body?.at != null && req.body.at !== "";
+    if (atTry ? over("gat:" + id, 400) : (over("gi:" + (req.ip || "?"), perIp) || over("ge:" + id, perEvent))) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
     const G = N.groupEvent(id, clean(req.body?.g, 60)); if (!G || isDemo(G.ws)) return bad(res, "This link isn't working. Ask your host for a new one.", 403, "not_granted");
     const contact = clean(req.body?.contact, 200); if (!contact) return bad(res, "Add the email or phone you replied with.");
     // per contact too, so one guest's email can't be tried from many places
@@ -281,6 +283,7 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
     // ---- review round 8: at the event, the code on the host's phone instead of the email round trip. The code is checked
     // before the contact, so a wrong code gets the same answer whether or not that email or phone replied. ----
     if (req.body?.at != null && req.body.at !== "") { const t0a = Date.now(), okAt = N.atOk(G, clean(req.body.at, 12)), ga = okAt ? N.matchGuest(G.S, id, contact) : null;
+      if (!okAt && over("ga:" + (req.ip || "?") + ":" + id, Number(process.env.ENCORE_KUDOS_AT_WRONG || 8))) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
       const reply = () => { if (!okAt) return bad(res, "That code didn't match. Type the 4 digits on your host's phone.", 400, "at_code");
         if (!ga) return bad(res, NO_MATCH, 404, "no_match");
         res.json({ ok: true, next: `/k/${encodeURIComponent(id)}?rid=${encodeURIComponent(ga.rid)}&code=${encodeURIComponent(N.gkCode(G.ws, id, ga.rid, G.s.nonce))}` }); };

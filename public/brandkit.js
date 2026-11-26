@@ -11,7 +11,7 @@
   // ---- the pairings: a display face and a body face that work together ----
   // dw: display weight, dls: display letter spacing, dk: display size factor (wide or small faces are scaled to sit right)
   const PAIRS = {
-    house: { label: "Pottery Lab", note: "Round and friendly", display: "Fredoka", body: "Instrument Sans", dfb: '"Fredoka Fallback", system-ui, sans-serif', bfb: "system-ui, -apple-system, sans-serif", dw: 600, dls: "-.01em", dk: 1, q: "Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700" },
+    house: { label: "Pottery Lab", note: "A quiet serif and a clean sans", display: "Instrument Serif", body: "Instrument Sans", dfb: '"PL Display Fallback", Georgia, serif', bfb: "system-ui, -apple-system, sans-serif", dw: 400, dls: "-.015em", dk: 1.08, q: "Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700" },
     supper: { label: "Supper club", note: "A classic serif", display: "Playfair Display", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "-.005em", dk: 1, q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
     florist: { label: "Flower shop", note: "Soft and elegant", display: "Cormorant Garamond", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "0", dk: 1.1, q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700" },
     pantry: { label: "Pantry", note: "A warm slab", display: "Zilla Slab", body: "Work Sans", dfb: 'Rockwell, "Roboto Slab", Georgia, serif', bfb: "system-ui, sans-serif", dw: 700, dls: "-.005em", dk: 1.04, q: "Zilla+Slab:wght@600;700&family=Work+Sans:wght@400;500;600" },
@@ -22,7 +22,7 @@
   };
   // ---- starter kits, named by vibe ----
   const STARTERS = {
-    house: { label: "Pottery Lab", vibe: "Warm and round", pair: "house", page: "#F7F1E8", surface: "#FFFCF7", ink: "#1F1A17", accent: "#C94A30", accent2: "#F2D48F", corners: "soft", buttons: "pill", cover: "lineart" },
+    house: { label: "Pottery Lab", vibe: "Calm and crafted", pair: "house", page: "#F4F0E8", surface: "#FBF9F5", ink: "#1D1B18", accent: "#9A4128", accent2: "#E3D7BE", corners: "soft", buttons: "pill", cover: "lineart" },
     supper: { label: "Supper club", vibe: "Candlelit and calm", pair: "supper", page: "#FBF6EF", surface: "#FFFFFF", ink: "#2B211C", accent: "#8E2F2B", accent2: "#E0A030", corners: "crisp", buttons: "pill", cover: "photo" },
     florist: { label: "Flower shop", vibe: "Soft petals", pair: "florist", page: "#F4E9EC", surface: "#FFFFFF", ink: "#17251D", accent: "#1F3D30", accent2: "#E98973", corners: "soft", buttons: "pill", cover: "lineart" },
     pantry: { label: "Pantry", vibe: "Cozy and homemade", pair: "pantry", page: "#F6EBD9", surface: "#FFFBF2", ink: "#2B1D12", accent: "#8A4B0F", accent2: "#2F5D3A", corners: "soft", buttons: "pill", cover: "lineart" },
@@ -34,7 +34,7 @@
   const ENUMS = { corners: ["soft", "crisp"], buttons: ["pill", "outline"], cover: ["photo", "lineart", "deck"] };
   const HOUSE = STARTERS.house;
   // ---- the host page's older theme, read as a kit, so nothing jumps (server/community.js STORE, public/storefront.js) ----
-  // the "classic" font has always drawn as the house Fredoka (playful.css pl-house-font); "handmade" joins the house pair
+  // the "classic" font has always drawn as the house display face (playful.css pl-house-font); "handmade" joins the house pair
   const FROM_FONT = { classic: "house", playful: "house", handmade: "house", editorial: "supper", florist: "florist", modern: "studio", bold: "market" };
   const BGS = { cream: ["#FBF6EF", "#FFFFFF", "#2B211C"], white: ["#FFFFFF", "#FAF8F5", "#1F1A17"], blush: ["#FFF1F3", "#FFFFFF", "#2B1D21"], sage: ["#F1F6F1", "#FFFFFF", "#1E2A22"], petal: ["#F4E9EC", "#FFFFFF", "#17251D"] };
   const THEME_DEFAULT = { accent: "#E26D8E", font: "classic", bg: "cream", buttons: "round" };
@@ -53,7 +53,10 @@
   function themeOf(h, events) { const T = h?.theme || {}; if (["accent", "font", "bg", "cover", "layout"].some((k) => T[k] && T[k] !== THEME_DEF[k])) return T;
     const e = (events || []).find((x) => x?.look?.vibe && EVENT_THEMES[x.look.vibe]); return e ? { ...T, ...EVENT_THEMES[e.look.vibe] } : T; }
   /** The kit to draw for a host: the one they saved, else the one their page already draws (its theme, or its latest event's look). */
-  function kitOf(h, events) { if (!h) return null; return h.brandKit && PAIRS[h.brandKit.pair] ? h.brandKit : h.kit && PAIRS[h.kit.pair] ? h.kit : fromTheme(themeOf(h, events)); }
+  function kitOf(h, events) { if (!h) return null; return upgrade(h.brandKit && PAIRS[h.brandKit.pair] ? h.brandKit : h.kit && PAIRS[h.kit.pair] ? h.kit : fromTheme(themeOf(h, events))); }
+  // a kit saved with the 2025 house colours (cream, ember, warm ink) wears the 2026 house colours, so it moves with the brand
+  const OLD_HOUSE = { page: "#F7F1E8", surface: "#FFFCF7", ink: "#1F1A17", accent: "#C94A30", accent2: "#F2D48F" };
+  function upgrade(k) { if (!k || k.pair !== "house" || norm(k.page) !== OLD_HOUSE.page || norm(k.accent) !== OLD_HOUSE.accent) return k; const o = { ...k }; for (const f of ["page", "surface", "ink", "accent", "accent2"]) if (!o[f] || norm(o[f]) === OLD_HOUSE[f]) o[f] = HOUSE[f]; return o; }
   const isHouse = (k) => !k || (k.pair === "house" && norm(k.page) === HOUSE.page && norm(k.accent) === HOUSE.accent && norm(k.ink) === HOUSE.ink && (k.corners || "soft") === "soft" && (k.buttons || "pill") === "pill" && (k.cover || "lineart") !== "deck" && !k.logo);
 
   // ---- colours that pass AA ----
@@ -63,8 +66,8 @@
   function textOn(c, bgs, ink) { const C = CC(); if (!C) return c; c = norm(c) || ink; for (let i = 0; i <= 12; i++) { const x = C.mix(c, ink, i * 0.08); if (C.worst(x, bgs) >= 4.5) return x; } return ink; }
   function derive(k) { k = k && PAIRS[k.pair] ? k : { ...pick(HOUSE), starter: "house" }; const C = CC();
     const page = lightOf(k.page, HOUSE.page), surface = lightOf(k.surface || (C ? C.mix(page, "#FFFFFF", 0.6) : "#FFFFFF"), "#FFFFFF"), bgs = [page, surface];
-    if (!C) return { page, surface, ink: norm(k.ink) || "#1F1A17", soft: "#665A51", line: "#E4D9C8", lineStrong: "#D9CCBB", accent: norm(k.accent) || HOUSE.accent, accentText: "#B04A30", accent2: norm(k.accent2) || HOUSE.accent2, btn: norm(k.accent) || HOUSE.accent, onBtn: "#FFFFFF", tint: surface };
-    const ink0 = norm(k.ink) || "#1F1A17", ink = C.worst(ink0, bgs) >= 4.5 ? ink0 : C.inkFor(bgs, ink0), soft = C.softFor(ink, bgs);
+    if (!C) return { page, surface, ink: norm(k.ink) || "#1D1B18", soft: "#5D564E", line: "#E2DCD1", lineStrong: "#CFC6B8", accent: norm(k.accent) || HOUSE.accent, accentText: "#8E3B24", accent2: norm(k.accent2) || HOUSE.accent2, btn: norm(k.accent) || HOUSE.accent, onBtn: "#FFFFFF", tint: surface };
+    const ink0 = norm(k.ink) || "#1D1B18", ink = C.worst(ink0, bgs) >= 4.5 ? ink0 : C.inkFor(bgs, ink0), soft = C.softFor(ink, bgs);
     const accent = norm(k.accent) || HOUSE.accent, btn = C.buttonFor(accent, bgs), onBtn = C.onColor(btn), accentText = textOn(accent, bgs, ink);
     const accent2 = norm(k.accent2) || C.mix(accent, page, 0.55);
     return { page, surface, ink, soft, line: C.mix(page, ink, 0.12), lineStrong: C.mix(page, ink, 0.2), accent, accentText, accent2, btn, onBtn, tint: C.mix(surface, accent, 0.08) }; }
@@ -81,7 +84,7 @@
     return { "--kit-display": F.display, "--kit-body": F.body, "--kit-dw": String(F.dw), "--kit-dls": F.dls, "--kit-dk": String(F.dk),
       "--kit-page": T.page, "--kit-surface": T.surface, "--kit-ink": T.ink, "--kit-soft": T.soft, "--kit-line": T.line, "--kit-line-strong": T.lineStrong,
       "--kit-accent": T.accent, "--kit-accent-text": T.accentText, "--kit-accent2": T.accent2, "--kit-btn": T.btn, "--kit-on-btn": T.onBtn, "--kit-tint": T.tint,
-      "--kit-r-card": soft ? "16px" : "6px", "--kit-r-sheet": soft ? "24px" : "10px", "--kit-r-btn": soft ? "999px" : "8px", "--kit-r-chip": soft ? "999px" : "6px", "--kit-r-field": soft ? "12px" : "6px" }; }
+      "--kit-r-card": soft ? "16px" : "6px", "--kit-r-sheet": soft ? "24px" : "10px", "--kit-r-btn": soft ? "12px" : "8px", "--kit-r-chip": soft ? "999px" : "6px", "--kit-r-field": soft ? "12px" : "6px" }; }
   const cssText = (k) => Object.entries(vars(k)).map(([n, v]) => `${n}:${String(v).replace(/[;{}<>]/g, "")}`).join(";");
   /** The classes a page wears for a kit (on <html>). */
   const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
@@ -155,7 +158,9 @@
   /** For /x pages and anything else that knows its host: dress the page. */
   function host(h) { const k = kitOf(h); if (k) use(k); return k; }
   /** For story cards (public/feedvisual.js): the kit's display face and accent, as a style string; the card's own colours stay. */
-  function storyStyle(h) { const k = h && (h.kit || h.brandKit) ? kitOf(h) : null; if (!k) return ""; loadFonts(k); css(); const F = fonts(k), T = derive(k); return `--kit-display:${F.display.replace(/"/g, "'")};--kit-dw:${F.dw};--kit-accent:${T.accent};--kit-accent-text:${T.accentText}`; }
+  // Shared surfaces (feed, Discover, stories, the swipe deck, search, lists, the chats inbox) are the platform's frame:
+  // a host brings only the cover, the title, their face and a subtle accent (a thin line or a dot). Never the font.
+  function storyStyle(h) { const k = h && (h.kit || h.brandKit) ? kitOf(h) : null; if (!k) return ""; const T = derive(k); return `--kit-accent:${T.accent};--kit-accent-text:${T.accentText}`; }
   // the signed-in host's own kit, for previews in the app (Make it yours)
   function mine() { if (mineKit || mine.p) return mine.p || Promise.resolve(mineKit); if (!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return Promise.resolve(null);
     return (mine.p = fetch("/api/host/brandkit", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { mineKit = j?.kit || null; return mineKit; }).catch(() => null)); }

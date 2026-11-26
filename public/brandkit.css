@@ -6,11 +6,14 @@
 
 /* ---- tokens, pointed at the kit ---- */
 html.kit-on{
-  --sys-display:var(--kit-display);--sys-sans:var(--kit-body);--sys-mono:var(--kit-body);--sys-accent:var(--kit-display);--sys-hand:var(--kit-body);
+  --sys-display:var(--kit-display);--sys-title:var(--kit-body);--sys-sans:var(--kit-body);--sys-mono:var(--kit-body);--sys-accent:var(--kit-display);--sys-hand:var(--kit-body);
   --sys-ink:var(--kit-ink);--sys-ember:var(--kit-btn);--sys-ember-press:color-mix(in srgb,var(--kit-btn) 86%,#000);--sys-ember-text:var(--kit-accent-text);--p-ember:var(--kit-btn);
   --ink:var(--kit-ink);--smoke:var(--kit-soft);--paper:var(--kit-page);--card:var(--kit-surface);--line:var(--kit-line);--line-strong:var(--kit-line-strong);
   --r-sm:var(--kit-r-field);--r-md:var(--kit-r-card);--r-lg:var(--kit-r-sheet);--btn-radius:var(--kit-r-btn);
   --chip-on-bg:var(--kit-ink);--chip-on-ink:var(--kit-surface);
+  /* the brand tokens (system.css) follow the kit too, so anything that reads them sits in the host's palette */
+  --pl-ink:var(--kit-ink);--pl-soft:var(--kit-soft);--pl-muted:var(--kit-soft);--pl-page:var(--kit-page);--pl-surface:var(--kit-surface);--pl-line:var(--kit-line);--pl-line-strong:var(--kit-line-strong);
+  --pl-accent:var(--kit-btn);--pl-accent-press:color-mix(in srgb,var(--kit-btn) 86%,#000);--pl-accent-text:var(--kit-accent-text);
   /* the type scale, by role (13 / 14 / 16 / 20 / 28 / 40) */
   --kit-fs-display:calc(28px * var(--kit-dk,1));--kit-fs-title:calc(20px * var(--kit-dk,1));--kit-fs-body:16px;--kit-fs-meta:14px;--kit-fs-small:13px;--kit-fs-price:20px;
 }
@@ -81,16 +84,16 @@ html.kit-on body.store :is(.tags i,.ev-p,.perk,.trust-line span,.gigs span,.stor
 .kit-logo{display:block;height:44px;width:auto;max-width:200px;object-fit:contain;margin:0 0 8px}
 
 /* ---- story cards in the feed (public/feedvisual.js): the kit's face and accent, nothing else ---- */
-.kit-story[style*="--kit-display"] .fv-title:not([data-fv-font]){font-family:var(--kit-display)!important;font-weight:var(--kit-dw,700)!important}
-.kit-story[style*="--kit-accent"] .fv-host b{color:var(--kit-accent-text)}
+/* shared surfaces are the platform's frame: a host's card on the feed keeps our type, and shows their accent as one small dot */
+.kit-story[style*="--kit-accent"] .fv-host b::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--kit-accent);margin-right:6px;vertical-align:2px}
 
 /* ---- owner banner: a suggested kit, accepted in one tap ---- */
-.bk-sug{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;max-width:960px;margin:14px auto;padding:14px 16px;border-radius:16px;background:#FFFCF7;border:1.5px solid #E4D9C8;font:400 15px/1.4 "Instrument Sans",system-ui,sans-serif;color:#1F1A17}
+.bk-sug{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;max-width:960px;margin:14px auto;padding:14px 16px;border-radius:16px;background:var(--pl-surface);border:1.5px solid var(--pl-line);font:400 15px/1.4 "Instrument Sans",system-ui,sans-serif;color:var(--pl-ink)}
 .bk-sug b{font-weight:600}.bk-sug .bk-sug-a{display:flex;gap:8px;flex-wrap:wrap}
-.bk-sug button{min-height:44px;padding:0 16px;border-radius:999px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17}
-.bk-sug button.go1{background:#C94A30;border-color:#C94A30;color:#fff}
-.bk-sug button:focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
-.bk-entry{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:#FFF8EE;border:1.5px solid #E4D9C8}
-.bk-entry small{display:block;color:#665A51;font-size:13px}.bk-entry button{min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid #1F1A17;background:#1F1A17;color:#fff;font:600 13px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
+.bk-sug button{min-height:44px;padding:0 16px;border-radius:999px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1.5px solid var(--pl-line-strong);background:#fff;color:var(--pl-ink)}
+.bk-sug button.go1{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff}
+.bk-sug button:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
+.bk-entry{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--pl-page);border:1.5px solid var(--pl-line)}
+.bk-entry small{display:block;color:var(--pl-soft);font-size:13px}.bk-entry button{min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--pl-ink);background:var(--pl-ink);color:#fff;font:600 13px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
 /* with a saved kit, the older colour, font and background swatches in the page editor are the kit's job */
 html.kit-saved .store-pane :is(.sws.fonts,.sws.accents,.sws.bgs),html.kit-saved .store-pane h4:has(+ :is(.sws.fonts,.sws.accents,.sws.bgs)){display:none}

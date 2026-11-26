@@ -33,10 +33,10 @@ test("the curated set: 6 to 8 pairings, each a display face and a body face, and
   assert.ok(P.length >= 6 && P.length <= 8, "6 to 8 pairings"); assert.ok(S.length >= 6 && S.length <= 8, "6 to 8 starters");
   for (const [k, p] of P) { assert.ok(p.display && p.body && p.display !== p.body, k + ": two different faces"); assert.match(p.q, /^[A-Za-z0-9+:;@.&=,]+$/, k + ": a Google Fonts query"); }
   for (const need of ["house", "terminal", "arcade", "pantry"]) assert.ok(PAIRS[need], need + " pairing");
-  assert.equal(PAIRS.house.display, "Fredoka"); assert.equal(PAIRS.house.body, "Instrument Sans", "the house pair is the current brand");
+  assert.equal(PAIRS.house.display, "Instrument Serif"); assert.equal(PAIRS.house.body, "Instrument Sans", "the house pair is the current brand");
   assert.match(PAIRS.terminal.display, /Mono/, "a mono accent for the Terminal crowd"); assert.match(PAIRS.pantry.display, /Slab/, "a slab pair"); assert.equal(PAIRS.arcade.display, "Silkscreen", "a pixel pair");
   for (const [k, s] of S) assert.ok(PAIRS[s.pair] && s.label && s.vibe, k + ": a pairing, a name and a vibe");
-  assert.equal(STARTERS.house.page, "#F7F1E8"); assert.equal(STARTERS.house.accent, "#C94A30", "the house kit is Paper and Ember");
+  assert.equal(STARTERS.house.page, "#F4F0E8"); assert.equal(STARTERS.house.accent, "#9A4128", "the house kit is Bone and Clay");
 });
 
 test("cleaning: unknown keys dropped, values whitelisted, hex normalised, the logo from the blob store, the voice line plain", () => {
@@ -71,7 +71,7 @@ test("the browser and the server agree: same pairings, starters and variables", 
   assert.deepEqual(Object.keys(K.PAIRS), Object.keys(PAIRS)); assert.deepEqual(plain(K.STARTERS), plain(STARTERS));
   const v = plain(K.vars(STARTERS.supper)); for (const n of ["--kit-display", "--kit-body", "--kit-page", "--kit-surface", "--kit-ink", "--kit-accent", "--kit-btn", "--kit-on-btn", "--kit-r-card", "--kit-r-btn"]) assert.ok(v[n], n);
   assert.match(v["--kit-display"], /Playfair Display/); assert.match(v["--kit-body"], /Lato/);
-  assert.equal(plain(K.vars({ ...STARTERS.supper, corners: "crisp" }))["--kit-r-btn"], "8px"); assert.equal(plain(K.vars(STARTERS.house))["--kit-r-btn"], "999px");
+  assert.equal(plain(K.vars({ ...STARTERS.supper, corners: "crisp" }))["--kit-r-btn"], "8px"); assert.equal(plain(K.vars(STARTERS.house))["--kit-r-btn"], "12px");
 });
 
 test("event looks inherit the kit: fonts from the kit unless the event overrides; no look draws from the kit; older looks keep theirs", () => {
@@ -100,7 +100,7 @@ test("migration: an existing host's kit comes from their page theme and font, so
   assert.equal(bo.pair, "supper", "editorial is the serif pair (Playfair Display + Lato)"); assert.equal(bo.accent, "#E0A030"); assert.equal(bo.corners, "crisp"); assert.equal(bo.from, "theme");
   const fl = plain(kitOf({ theme: { accent: "#1F3D30", font: "florist", bg: "petal" } })); assert.equal(fl.pair, "florist"); assert.equal(fl.page, "#F4E9EC");
   assert.equal(plain(kitOf({ theme: { font: "modern", bg: "white", accent: "#3E9C6E" } })).pair, "studio");
-  assert.equal(plain(kitOf({ theme: { font: "classic", bg: "sage", accent: "#3E9C6E" } })).pair, "house", "classic has always drawn as Fredoka");
+  assert.equal(plain(kitOf({ theme: { font: "classic", bg: "sage", accent: "#3E9C6E" } })).pair, "house", "classic has always drawn as the house face");
   // an untouched page wears its latest event's look (as public/storefront.js does), so its kit matches
   assert.equal(plain(kitOf({ theme: {} }, [{ look: { vibe: "terminal" } }])).pair, "studio");
   assert.equal(plain(kitOf({ theme: { font: "editorial" } }, [{ look: { vibe: "terminal" } }])).pair, "supper", "a page that picked a theme keeps it");

@@ -10,8 +10,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#F7F1E8",
-  "theme_color": "#F7F1E8",
+  "background_color": "#F4F0E8",
+  "theme_color": "#F4F0E8",
   "categories": ["social", "lifestyle", "entertainment", "events"],
   "prefer_related_applications": false,
   "icons": [

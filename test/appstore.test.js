@@ -58,7 +58,7 @@ test("the web manifest is valid: name, standalone, brand colors, every icon exis
   const r = await get("/manifest.webmanifest"); assert.equal(r.status, 200); assert.match(r.headers.get("content-type"), /manifest\+json/);
   const M = await r.json();
   assert.equal(M.name, "Pottery Lab"); assert.equal(M.display, "standalone"); assert.equal(M.scope, "/"); assert.match(M.start_url, /^\//);
-  const paper = /--paper:(#[0-9A-F]{6})/i.exec(read("public/system.css"))[1]; assert.equal(M.theme_color.toLowerCase(), paper.toLowerCase()); assert.equal(M.background_color.toLowerCase(), paper.toLowerCase());
+  const paper = /--pl-page:(#[0-9A-F]{6})/i.exec(read("public/system.css"))[1]; assert.equal(M.theme_color.toLowerCase(), paper.toLowerCase()); assert.equal(M.background_color.toLowerCase(), paper.toLowerCase());
   for (const i of M.icons) { const [w, h] = pngSize(path.join("public", i.src)); assert.equal(`${w}x${h}`, i.sizes, i.src); }
   for (const s of ["192x192", "512x512"]) { assert.ok(M.icons.some((i) => i.sizes === s && i.purpose === "any"), s); assert.ok(M.icons.some((i) => i.sizes === s && i.purpose === "maskable"), "maskable " + s); }
   const [w, , colorType] = pngSize("public/icons/icon-1024.png"); assert.equal(w, 1024); assert.notEqual(colorType, 6, "the App Store icon has no alpha channel");

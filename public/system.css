@@ -1,44 +1,88 @@
 /* Pottery Lab design system: the last stylesheet on every page (authguard.js moves it to the end of <head>; invite.html and
-   the sign-in page link it directly). Tokens first, then the few rules that make every page agree:
-   - type: Fredoka for display headings, Instrument Sans for UI and body. an accent word in a heading (<em>) is
-     ember, never italic. Caveat only for scrapbook / polaroid captions. A host's chosen invite title font
-     (.invite[class*=th-] h3, .gxhi) and storefront fonts are the host's, not chrome, and are left alone.
+   the sign-in page link it directly). Brand tokens first (the one block to change or revert, see docs/brand-kit.md "Look"),
+   then the older names pages already use, mapped onto them, then the few rules that make every page agree:
+   - type: Instrument Serif for display headings (20px and up), Instrument Sans for titles, names, UI and body,
+     JetBrains Mono for data only. An accent word in a heading (<em>) is clay, never italic. Caveat only for scrapbook
+     photo captions. A host's chosen invite title font (.invite[class*=th-] h3, .gxhi) and storefront fonts are the
+     host's, not chrome, and are left alone.
    - sizes: 13 / 14 / 16 / 20 / 28 / 40, plus hero display. Nothing under 13px.
-   - buttons: sm 36 / md 44 / lg 52 (sm becomes 44 on phones), one corner (pill), primary = ember fill, flat.
+   - buttons: sm 36 / md 44 / lg 52 (sm becomes 44 on phones), one corner (10px), primary = clay fill, flat.
    - one selected-chip style: ink fill, white text.
-   - small red text uses --sys-ember-text (#B04A30, 5:1 on cream). */
-@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
-/* a stand-in shaped like Fredoka while it loads, so headings don't change size (and push the page down) when it arrives */
-@font-face{font-family:"Fredoka Fallback";src:local("Arial Bold"),local("Arial-BoldMT"),local("Liberation Sans Bold"),local("Helvetica Bold");font-weight:600 900;size-adjust:94.5%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
-@font-face{font-family:"Fredoka Fallback";src:local("Arial"),local("ArialMT"),local("Liberation Sans"),local("Helvetica");font-weight:100 599;size-adjust:100%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
+   - small accent text uses --sys-ember-text (clay text, 6.4:1 on bone). */
+
+/* ==== BRAND TOKENS: "Bone and clay" (Nov 2026). The fonts load here; every colour, face, corner and shadow of the
+   brand is in this block. To go back to the old brand, restore this block and the font URL from the commit before the
+   rebrand. test/brand-tokens.test.js checks each text/background pair here at WCAG AA. ==== */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+/* a stand-in shaped like Instrument Serif while it loads, so headings don't change size when it arrives */
+@font-face{font-family:"PL Display Fallback";src:local("Georgia"),local("Times New Roman"),local("Liberation Serif");size-adjust:88%;ascent-override:100%;descent-override:26%;line-gap-override:0%}
 :root{
-  --sys-sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --sys-display:"Fredoka","Fredoka Fallback","Instrument Sans",system-ui,sans-serif;
-  --sys-accent:"Fraunces",Georgia,serif;
+  /* type */
+  --pl-font-display:"Instrument Serif","PL Display Fallback",Georgia,serif;
+  --pl-font-text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pl-font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pl-display-track:-.015em;--pl-title-track:-.01em;
+  /* colour: a warm bone base, ink text, one clay accent, desaturated status tones */
+  --pl-page:#F4F0E8;        /* bone: the page */
+  --pl-surface:#FBF9F5;     /* cards, fields, sheets */
+  --pl-raised:#ECE6DB;      /* quiet panels, chips, secondary fills */
+  --pl-ink:#1D1B18;         /* text, selected chips */
+  --pl-soft:#5D564E;        /* secondary text */
+  --pl-muted:#6E665D;       /* meta and placeholders, still AA */
+  --pl-line:#E2DCD1;        /* card lines */
+  --pl-line-strong:#CFC6B8; /* field and outlined button lines */
+  --pl-accent:#9A4128;      /* clay: primary fills, accent words */
+  --pl-accent-press:#82361F;
+  --pl-accent-text:#8E3B24; /* clay text on bone and white */
+  --pl-accent-soft:#F1E1D8; /* selected rows, text selection */
+  --pl-accent-rgb:154,65,40;
+  --pl-on-accent:#FFFFFF;
+  --pl-sand:#E3D7BE;        /* highlights and badges (was butter) */
+  --pl-sand-soft:#F0E9DA;
+  --pl-sage:#5F6B57;
+  --pl-frame:#4A3F37;       /* frames next to Potto: a warm dark line */
+  --pl-success:#3D6A4C;--pl-success-soft:#E4ECE3;
+  --pl-warning:#83590F;--pl-warning-soft:#F3EAD6;
+  --pl-danger:#A3321E;--pl-danger-soft:#F5E2DC;
+  --pl-focus:rgba(154,65,40,.28);
+  /* shape: moderate corners, thin lines, almost no shadow */
+  --pl-r-btn:10px;--pl-r-sm:8px;--pl-r-md:12px;--pl-r-lg:16px;
+  --pl-bw:1px;
+  --pl-shadow:0 1px 2px rgba(29,27,24,.05);
+  --pl-shadow-float:0 12px 32px -16px rgba(29,27,24,.28);
+}
+/* ==== end of brand tokens ==== */
+
+:root{
+  /* the type roles pages use: display for headings 20px and up, title for names, buttons and small titles */
+  --sys-sans:var(--pl-font-text);
+  --sys-display:var(--pl-font-display);
+  --sys-title:var(--pl-font-text);
+  --sys-accent:var(--pl-font-display);
   --sys-hand:"Caveat",cursive;
   /* a quiet monospace accent for data only: step counts, times, dates in fields, counts. Never for prose or headings */
-  --sys-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sys-mono:var(--pl-font-mono);
   --fs-13:13px;--fs-14:14px;--fs-16:16px;--fs-20:20px;--fs-28:28px;--fs-40:40px;
-  --sys-ink:#1F1A17;--sys-paper:#FFF8EE;--sys-line:#D9CCBB;
-  --sys-ember:#C94A30;--sys-ember-press:#B04A30;--sys-ember-text:#B04A30;
-  --btn-sm:36px;--btn-md:44px;--btn-lg:52px;--btn-radius:999px;
-  --chip-on-bg:#1F1A17;--chip-on-ink:#FFFFFF;
+  --sys-ink:var(--pl-ink);--sys-paper:var(--pl-page);--sys-line:var(--pl-line-strong);
+  --sys-ember:var(--pl-accent);--sys-ember-press:var(--pl-accent-press);--sys-ember-text:var(--pl-accent-text);
+  --btn-sm:36px;--btn-md:44px;--btn-lg:52px;--btn-radius:var(--pl-r-btn);
+  --chip-on-bg:var(--pl-ink);--chip-on-ink:#FFFFFF;
   /* older page tokens follow the system */
-  --p-ember:#C94A30;
+  --p-ember:var(--pl-accent);
   /* headings that used to be fluid clamp()s step instead: phone value, then desktop value from 861px */
   --fs-16-20:16px;--fs-20-28:20px;--fs-28-40:28px;
-  /* round 11 UX pass: the small set every page builds on. spacing 4/8/12/16/24/32; three corners (sm fields and
-     small cards, md cards, lg sheets) plus the pill for buttons and chips; one border weight; one soft shadow for
-     things that float (sheets, menus), none on things that sit (cards use a line). Frames next to Potto use his
-     warm brown line, not black ink. */
+  /* spacing 4/8/12/16/24/32; three corners (sm fields and small cards, md cards, lg sheets) plus the button corner;
+     one border weight; one soft shadow for things that float (sheets, menus), none on things that sit (cards use a line) */
   --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
-  --r-sm:12px;--r-md:16px;--r-lg:24px;--r-pill:999px;
-  --bw:1.5px;
-  --ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--linen:#EFE6D8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--butter:#F2D48F;--sage:#6F7F5E;
-  --ui-frame:#5A3B2B;
-  --shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);
-  --shadow-sheet:0 18px 48px -18px rgba(31,26,23,.45);
+  --r-sm:var(--pl-r-sm);--r-md:var(--pl-r-md);--r-lg:var(--pl-r-lg);--r-pill:999px;
+  --bw:var(--pl-bw);
+  --ink:var(--pl-ink);--smoke:var(--pl-soft);--paper:var(--pl-page);--linen:var(--pl-raised);--card:var(--pl-surface);--line:var(--pl-line);--line-strong:var(--pl-line-strong);--butter:var(--pl-sand);--sage:var(--pl-sage);
+  --ui-frame:var(--pl-frame);
+  --shadow:var(--pl-shadow-float);
+  --shadow-sheet:var(--pl-shadow-float);
   --field-h:48px;
+  /* Instrument Serif has one weight: headings asking for 600 or 700 get the real face, never a faked bold */
+  font-synthesis-weight:none;
 }
 @media (min-width:861px){:root{--fs-16-20:20px;--fs-20-28:28px;--fs-28-40:40px}}
 
@@ -103,7 +147,7 @@ html :is(body,#view-guest) :is(.invite.th-candlelight,.invite.th-midnight) .chip
 }
 
 /* ---- a11y floor for every page: a visible focus ring where a page set none, and calm motion when asked ---- */
-:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
 /* brand kit: no italics for emphasis; an accent word in a heading changes colour, not style */
 :is(h1,h2,h3) em{font-style:normal}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
@@ -125,7 +169,7 @@ html body input:is([type=date],[type=time],[type=datetime-local],[type=month])::
   html body label:has(> input.is-empty + .dt-ph){position:relative}
   html body input.is-empty + .dt-ph{display:block}
 }
-.dt-ph{display:none;position:absolute;left:15px;bottom:0;height:var(--field-h,48px);line-height:var(--field-h,48px);color:#9A8D82;font-weight:400;font-size:16px;pointer-events:none}
+.dt-ph{display:none;position:absolute;left:15px;bottom:0;height:var(--field-h,48px);line-height:var(--field-h,48px);color:var(--pl-muted);font-weight:400;font-size:16px;pointer-events:none}
 /* data in mono: dates and times in fields, and any element a page marks .num */
 html body input:is([type=date],[type=time],[type=number]),html body .num{font-family:var(--sys-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 /* help text inside a bold label reads as help, not as a second label */
@@ -140,7 +184,7 @@ html body :is(.toast,#pipToast){margin-bottom:env(safe-area-inset-bottom,0px)}
 /* ---- no offset "sticker" shadows on controls, or on cards that sit on the page (they get a line). The thick line and
    the offset stay on art: invite covers, scrapbook photos, the landing page's drawings ---- */
 html body :is(.fv-ring-c,.hl-btn,.sb-add,.pp-share,.pli-host,.pli-fb,.pli-sticker,.pls-btn,.fv-btn,.ib,.bell,.pin-chip,.tog,.fv-react,.rp-save){box-shadow:none!important}
-html body :is(.nudge,.pli-card,.pp-stat,article.fc,article.prog){box-shadow:none!important;border:1.5px solid var(--line,#E4D9C8)!important}
+html body :is(.nudge,.pli-card,.pp-stat,article.fc,article.prog){box-shadow:none!important;border:1.5px solid var(--line,var(--pl-line))!important}
 /* ---- nothing under 13px: tags, stamps and badges that had their own smaller sizes ---- */
 html body :is(.ex-tag,.vf,.badge,.fv-ring-tag,.fv-stamp,.fv-stk,.pli-sticker,.pli-fb,.pp-k,.req-tag,.fc-draft,.lg-c,.tb-mono,p.eyebrow,.es-tabs b,.home-bell i,#bellN){font-size:13px!important}
 html body :is(.pp-stat span,.pp small,.lg small,.pli-card small){font-size:13px}
@@ -177,4 +221,19 @@ html body :is(article.fc small,article.fc .chip,.lg-more,article.prog small){fon
 html body :is(article.fc small,article.prog small,.prog-k){font-size:13px!important}
 @media (max-width:860px){html body :is(header a:not([class]),header nav a:not([class]),.pg-cap a,.top>a:not([class]),.brand-foot a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
 @media (max-width:860px){html body :is(.fv-end a,.fside h3 a){padding-top:14px;padding-bottom:14px;margin-top:-14px;margin-bottom:-14px}}
-html body .pub-side{box-shadow:none!important;border:1.5px solid var(--line,#E4D9C8)!important}
+html body .pub-side{box-shadow:none!important;border:1.5px solid var(--line,var(--pl-line))!important}
+
+/* ---- the 2026 brand: calm, grown-up chrome (docs/brand-kit.md "Look"). The scrapbook touches (tape, tilt, Caveat)
+   stay on photo moments; routine UI is flat, thin-lined and still ---- */
+html body::after{background-image:none!important;opacity:0!important}
+::selection{background:var(--pl-accent-soft);color:var(--pl-ink)}
+h1,h2{letter-spacing:var(--pl-display-track)}
+/* buttons and their labels are the text face, never the display serif; one moderate corner instead of the pill */
+html body :is(button,.btn,a.btn,.cta,a.cta,.hd-cta,a.go,.book-toggle,.sp-btn,.more-btn){font-family:var(--sys-title)!important;letter-spacing:0}
+html body :is(.btn,a.btn,button.btn,.cta,a.cta,.hd-cta,a.go,button.go,.book-toggle,.sp-btn,.more-btn,.hl-btn,.pls-btn:not(.pls-icon),.fv-btn,.sb-add,.pp-share,.rp-save){border-radius:var(--btn-radius)!important}
+/* no squish, tilt or lift on controls */
+html body :is(a.btn,button.btn,.btn,.cta,.chip,button.primary):is(:hover,:active){transform:none!important}
+:focus-visible{outline-color:var(--pl-ink)}
+/* Potto is a signature, not a fixture: he stays in empty states, the help panel, milestones and the offline and 404
+   pages, and leaves routine headers and list rows */
+html body :is(.fv-potto,.pb-head>svg.potto,.cg-hi>svg.potto,.cg-box svg.potto,.cos-av.pipav){display:none!important}

@@ -31,8 +31,8 @@ textarea.ip-in{min-height:120px;padding:10px 12px;resize:vertical}
 .ip-lab{display:grid;gap:6px;font-size:14px;font-weight:600;color:var(--pl-soft)}
 
 /* the capacity meter */
-.ip-meter .ip-line{font:400 20px/1.25 var(--sys-display);letter-spacing:var(--pl-display-track,-.01em);margin:0}
-.ip-meter .ip-line b{font-weight:400;color:var(--pl-ink)}
+.ip-meter .ip-line{font:600 19px/1.3 var(--sys-title);letter-spacing:0;margin:0}
+.ip-meter .ip-line b{font-weight:600;color:var(--pl-ink)}
 .ip-bar{position:relative;display:flex;gap:2px;height:10px;border-radius:5px;background:var(--pl-raised);overflow:hidden;margin:12px 0 8px}
 .ip-bar i{display:block;height:100%}.ip-bar i:first-child{border-radius:4px 0 0 4px}
 .ip-bar .in{background:var(--pl-accent)}.ip-bar .exp{background:rgba(var(--pl-accent-rgb),.32)}.ip-bar .over{background:var(--pl-warning)}

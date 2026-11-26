@@ -497,7 +497,12 @@ ${R.length ? `<h4>Requests</h4>${R.map((r) => `<div class="breq ${r.status || "r
   // ---- share: make the page easy to find ----
   function share(h) { const head = document.querySelector(".head > div"); if (!head || document.getElementById("shareBtn")) return; const b = document.createElement("button"); b.id = "shareBtn"; b.type = "button"; b.className = "share-btn"; b.textContent = "Share";
     b.onclick = async () => { const url = `${location.origin}/@${h.handle}`; try { if (navigator.share) { await navigator.share({ title: h.name, text: h.tagline || h.bio || "", url }); return; } } catch {} navigator.clipboard?.writeText(url); b.textContent = "Link copied."; setTimeout(() => (b.textContent = "Share"), 1800); };
-    (document.getElementById("storeLinks") || head).appendChild(b); }
+    (document.getElementById("storeLinks") || head).appendChild(b);
+    // Save to list: keeps this host on one of your lists (public/savelist.js, through save.js so the toast shows)
+    const L = document.createElement("button"); L.type = "button"; L.className = "share-btn"; L.id = "saveListBtn"; L.textContent = "Save to list";
+    L.dataset.plSavelist = JSON.stringify({ kind: "host", ref: h.handle, title: h.name || h.handle });
+    L.onclick = (e) => { if (window.PLSaveList || window.PLSave) return; e.preventDefault(); const t = document.createElement("script"); t.src = "/save.js"; t.onload = () => window.PLSave?.toList?.(JSON.parse(L.dataset.plSavelist), L); document.head.appendChild(t); };
+    b.after(L); }
 
   window.EncoreShop = { shop, gifts, experiences, owner, share, priceText };
 })();

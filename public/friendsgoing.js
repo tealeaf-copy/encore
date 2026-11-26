@@ -25,7 +25,7 @@
     const anchor = location.pathname === "/g" ? document.querySelector("#view-guest h1") : document.querySelector("main .facts"); if (!anchor) return;
     title = (document.querySelector("#view-guest h1, main h1")?.textContent || "").trim().slice(0, 140);
     const row = document.createElement("div"); row.className = "plf"; row.dataset.e = id;
-    row.innerHTML = (info?.[id] ? html(info[id]) : "") + (window.PLSave ? window.PLSave.button({ kind: "event", ref: id, title }, info?.[id] ? { icon: true } : { label: "Save" }) : "");
+    row.innerHTML = (info?.[id] ? html(info[id]) : "") + (window.PLSave ? window.PLSave.button({ kind: "event", ref: id, title }, info?.[id] ? { icon: true } : { label: "Save" }) + (window.PLSave.listButton?.({ kind: "event", ref: id, title }, info?.[id] ? { icon: true } : {}) || "") : "");
     if (!row.innerHTML) return; anchor.after(row); }
   async function boot() { const id = idOf(); if (!id) return; css();
     if (!window.PLSave && !document.querySelector('script[src="/save.js"],script[src^="/save.js?"]')) { const s = document.createElement("script"); s.src = "/save.js"; s.onload = () => { document.querySelectorAll(".plf").forEach((x) => x.remove()); place(); }; document.head.appendChild(s); }

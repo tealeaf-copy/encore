@@ -22,7 +22,7 @@
   // ---------- look ----------
   const CSS = `.pls-btn{--pls-fill:#fff;position:relative;display:inline-flex;align-items:center;gap:6px;min-height:40px;min-width:40px;padding:0 12px 0 10px;border:1.5px solid var(--pl-line-strong);border-radius:999px;background:#fff;color:var(--pl-ink);font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;transition:background .18s,border-color .18s}
 .pls-btn:hover{border-color:var(--pl-ink)}.pls-btn:active{background:#FFF6E6}
-.pls-btn svg{width:22px;height:22px;flex:none;overflow:visible}.pls-btn svg path{fill:var(--pls-fill);stroke:var(--pl-ink);stroke-width:1.75;stroke-linejoin:round;transition:fill .2s}
+.pls-btn svg{width:22px;height:22px;flex:none;overflow:visible}.pls-list svg path{fill:none!important;stroke:currentColor!important}.pls-btn svg path{fill:var(--pls-fill);stroke:var(--pl-ink);stroke-width:1.75;stroke-linejoin:round;transition:fill .2s}
 .pls-btn[aria-pressed=true]{--pls-fill:var(--pl-accent);background:var(--pl-sand-soft)}.pls-btn.pls-icon{padding:0;width:44px;height:44px;justify-content:center}.pls-btn.pls-icon .pls-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .pls-btn.pls-pop svg{animation:plsPop .45s cubic-bezier(.3,1.8,.5,1)}@keyframes plsPop{0%{transform:scale(1)}35%{transform:scale(1.3)}100%{transform:scale(1)}}
 .pls-btn:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
@@ -82,6 +82,16 @@
     b.classList.remove("pls-pop"); void b.offsetWidth; if (!isSaved(b.dataset.plsKind, b.dataset.plsRef)) b.classList.add("pls-pop");
     toggle({ kind: b.dataset.plsKind, ref: b.dataset.plsRef, title: b.dataset.plsTitle || "", img: b.dataset.plsImg || "" }, b); }, true);
 
+  // "Save to list" anywhere: an element with data-pl-savelist='{"kind":..,"ref":..,"title":..}' opens the sheet. savelist.js
+  // handles its own clicks once loaded; until then this loads it on the first tap.
+  const LIST = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6.5h11M4 12h11M4 17.5h7M18.5 14v7M15 17.5h7"/></svg>`;
+  /** The Save to list button. opts: { icon: true } for a round icon only; { label } to change the words. */
+  function listButton(item, opts = {}) { css(); if (!item?.kind || !item?.ref) return "";
+    const data = esc(JSON.stringify({ kind: item.kind, ref: item.ref, title: String(item.title || "").slice(0, 140), img: imgOk(item.img) }));
+    return `<button type="button" class="pls-btn pls-list${opts.icon ? " pls-icon" : ""}" data-pl-savelist="${data}" aria-label="Save to list${item.title ? ": " + esc(item.title) : ""}">${LIST}<span class="pls-t">${esc(opts.label || "Save to list")}</span></button>`; }
+  document.addEventListener("click", (e) => { if (window.PLSaveList) return; const b = e.target.closest?.("[data-pl-savelist]"); if (!b) return; e.preventDefault(); e.stopPropagation();
+    let item = null; try { item = JSON.parse(b.dataset.plSavelist); } catch { return; } toList(item, b); }, true);
+
   /** Signed in with saves from before: send them to the account, once. */
   async function merge() { const L = read(); if (!L.length || !signedIn()) return 0;
     const r = await fetch("/api/me/saves", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ merge: L }) }).catch(() => null); if (!r?.ok) return 0;
@@ -100,5 +110,5 @@
       if (!(j.interests?.length || j.city)) { const w = await fetch("/api/me/interests", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interests: Array.isArray(L.interests) ? L.interests : [], city: String(L.city || "").slice(0, 60) }) }); if (!w.ok) return; }
       localStorage.setItem(mark, "1"); localStorage.removeItem("pl.interests"); } catch {} }
   const ready = load().then(() => { emit(); carryInterests(); return merge(); }).catch(() => {});
-  window.PLSave = { toList, carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
+  window.PLSave = { toList, listButton, carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
 })();

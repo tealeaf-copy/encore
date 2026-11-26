@@ -112,6 +112,8 @@ test("Potto's nudges go through the bell at the host's rhythm, at most 2 a week,
   if (at > Date.now()) { await L.runJobs(at - 3600e3); assert.equal(bell().length, 0, "not before their usual time"); }
   // run at their usual time: the comeback nudge reaches the bell (and so a push) once
   await L.runJobs(at + 60e3); assert.equal(bell().length, 1); assert.match(bell()[0].text, /Same crew, new month\?/); assert.match(bell()[0].link, /^\/start\?t=again/);
+  assert.equal(bell()[0].actor?.name, "Potto", "through the Inbox's notify(), from Potto"); assert.equal(bell()[0].type, "note");
+  const IN = (await getJ("/api/me/inbox", cookie)).j; assert.ok(JSON.stringify(IN).includes("Same crew, new month?"), "the nudge shows in the Inbox list");
   await L.runJobs(at + 2 * 3600e3); assert.equal(bell().length, 1, "never the same nudge twice");
   const d = L.get(ws); d.sent = [{ key: "a", type: "prep", at: at }, { key: "b", type: "thanks", at: at }]; srv.store.set("system/hostloop-" + ws, d);
   await post("/api/me/hostloop/prefs", { notif: { comeback: false } }, cookie);

@@ -229,6 +229,20 @@ export function contactFor(r, side, people = {}) {
 }
 
 /** Double-blind reviews: what a viewer may read. side is "brand", "host" or "public". */
+/** The account at a glance, from the brand's own requests (already viewed for the brand): what's booked and spent this
+ * year, who came, which hosts and who on the team booked. Pure, for /teams/bookings. */
+export function rollupOf(L = [], today = isoDay()) {
+  const yr = today.slice(0, 4), booked = L.filter((r) => ["booked", "done"].includes(r.status)), thisYear = booked.filter((r) => !r.date || String(r.date).startsWith(yr));
+  const hosts = new Map(), people = new Map();
+  for (const r of booked) { const h = r.host?.handle || r.host?.name || ""; if (h) hosts.set(h, { name: r.host?.name || h, handle: r.host?.handle || "", n: (hosts.get(h)?.n || 0) + 1 });
+    const who = String(r.contactName || "").trim(); if (who) people.set(who, (people.get(who) || 0) + 1); }
+  const upcoming = booked.filter((r) => r.status === "booked" && (!r.date || r.date >= today)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  return { events: thisYear.length, spentCents: thisYear.reduce((a, r) => a + (+r.price?.totalCents || 0), 0), guests: booked.filter((r) => r.status === "done").reduce((a, r) => a + (+r.headcount || 0), 0),
+    upcoming: upcoming.length, next: upcoming[0] ? { id: upcoming[0].id, date: upcoming[0].date || "", pkgName: upcoming[0].pkgName || "", host: upcoming[0].host?.name || "" } : null,
+    open: L.filter((r) => ["question", "requested", "countered", "accepted", "approval"].includes(r.status)).length,
+    hosts: [...hosts.values()].sort((a, b) => b.n - a.n).slice(0, 5), bookers: [...people.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n).slice(0, 5), year: yr };
+}
+
 export const REVIEW_WINDOW_DAYS = 14;
 export function reviewsFor(r, side, now = Date.now()) {
   const R = r?.reviews || {}, both = !!(R.brand && R.host), ended = r?.date && now - Date.parse(r.date + "T23:59:59Z") > REVIEW_WINDOW_DAYS * DAY, open = both || ended;
@@ -495,7 +509,8 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     push(r, "brand", "asked a question"); reqSet(r); tell(ownerEmailOf(F.ws), `${r.company} has a question about ${F.p.name}.`, "/host/teams#inbox");
     res.json({ ok: true, id: r.id, url: `/teams/bookings/${r.id}` }); });
   app.get("/api/bb/requests", (req, res) => { const u = need(req, res); if (!u) return; const L = reqs().filter((r) => r.brandWs === u.ws).sort((a, b) => b.updatedAt - a.updatedAt);
-    res.set("Cache-Control", "private, no-store").json({ requests: L.map((r) => view(r, "brand")), rules: rulesOf(u.ws), approver: (rulesOf(u.ws).approvers || []).includes(lc(u.email)) || L.some((r) => r.status === "approval" && (r.approval?.approvers || []).includes(lc(u.email))) }); });
+    const V = L.map((r) => view(r, "brand"));
+    res.set("Cache-Control", "private, no-store").json({ requests: V, rollup: rollupOf(V), rules: rulesOf(u.ws), approver: (rulesOf(u.ws).approvers || []).includes(lc(u.email)) || L.some((r) => r.status === "approval" && (r.approval?.approvers || []).includes(lc(u.email))) }); });
   app.get("/api/bb/requests/:id", (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !(brandSide(u, r) || hostSide(u, r))) return bad(res, "Not found.", 404, "not_found");
     res.set("Cache-Control", "private, no-store").json({ request: view(r, brandSide(u, r) ? "brand" : "host"), side: brandSide(u, r) ? "brand" : "host", approver: brandSide(u, r) && [...(rulesOf(u.ws).approvers || []), ...(r.approval?.approvers || [])].includes(lc(u.email)) }); });
 

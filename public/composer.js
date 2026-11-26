@@ -51,6 +51,7 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
 .pc-tools{display:flex;align-items:center;gap:2px;padding:8px 12px;border-top:1px solid var(--pl-line)}
 .pc-tool{display:inline-grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:none;color:var(--pl-soft);cursor:pointer}.pc-tool:hover,.pc-tool[aria-pressed=true]{color:var(--pl-ink);background:var(--pl-raised)}
 .pc-post{margin-left:auto;min-height:44px;padding:0 22px;border:0;border-radius:999px;background:var(--pl-accent);color:var(--pl-on-accent,#fff);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}.pc-post:disabled{opacity:.45;cursor:default}
+.pc-reuse{display:grid;border-top:1px solid var(--pl-line);background:var(--pl-page);padding:0 12px 12px}.pc-reuse a{display:flex;gap:12px;align-items:center;min-height:52px;padding:8px 4px;color:var(--pl-ink);text-decoration:none;border-bottom:1px dashed var(--pl-line)}.pc-reuse a:last-child{border-bottom:0}.pc-reuse a:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}.pc-reuse b{display:block;font-weight:600;font-size:15px}.pc-reuse small{display:block;color:var(--pl-soft);font-size:14px;line-height:1.35}.pc-reuse svg{flex:none;color:var(--pl-accent-text,var(--pl-accent))}
 .pc-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 12px 14px;border-top:1px solid var(--pl-line);background:var(--pl-page)}
 .pc-tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 12px;border:1px solid var(--pl-line);border-radius:14px;background:var(--pl-surface);color:var(--pl-ink);text-decoration:none;text-align:left;font:600 14px/1.25 var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}
 .pc-tile svg{flex:none;color:var(--pl-accent-text)}.pc-tile:hover{border-color:var(--pl-line-strong)}.pc-tile:only-child{grid-column:1/-1}
@@ -116,7 +117,8 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
         <button type="button" class="pc-tool" data-poll aria-label="Ask who's in" aria-pressed="false">${I.ask}</button>
         <button type="button" class="pc-post" data-post disabled>Post</button>
         <input type="file" accept="image/*" hidden data-file><input type="file" accept="image/*" capture="environment" hidden data-camfile></div>
-      ${T.length ? `<div class="pc-tiles" data-tiles>${T.map(tile).join("")}</div>` : ""}`);
+      ${T.length ? `<div class="pc-tiles" data-tiles>${T.map(tile).join("")}</div>` : ""}
+      ${T.includes("event") ? `<nav class="pc-reuse" aria-label="Start from something"><a href="/library/host" data-reuse="library">${I.event}<span><b>Host library</b><small>Your templates, past events, menus and guest lists</small></span></a><a href="/ideas" data-reuse="ideas">${I.ask}<span><b>Ideas to host</b><small>Formats that work, ready to make your own</small></span></a></nav>` : ""}`);
     const q = (s) => sc.querySelector(s), ta = q("#pcText"), msg = (t) => (q("[data-msg]").textContent = t || "");
     const paint = () => { ta.value = st.text; q("[data-aud]").textContent = st.club ? `For ${O.club?.name || "your fan club"} members` : "Your friends see this";
       q("[data-url]").hidden = !st.link && q("[data-link]").getAttribute("aria-pressed") !== "true"; q("[data-url]").value = st.link;

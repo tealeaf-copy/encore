@@ -25,6 +25,8 @@ import { badgesFor } from "./recognition.js";
 import { tzOk, tzOfCity } from "./tz.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { expose, convert, assign } from "./experiments.js";
+import { notify as inboxNotify } from "./inbox.js";
+import { GUIDES } from "./guides.js";
 
 const DAY = 864e5, ISO = /^\d{4}-\d{2}-\d{2}$/, TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -165,7 +167,9 @@ export const MILESTONES = [
 export const nextCelebration = (stats, seen = []) => MILESTONES.find((m) => m.test(stats) && !seen.includes(m.id)) || null;
 
 // ---------- the host path ----------
-// Each node links to a guide. When a guides module lands (server/guides.js, /guides/<id>), point guideHref at it.
+// Each node links to its guide (server/guides.js, /guides/<id>) when there is one, else to its own notes on /path.
+const GUIDE_OF = { dinner4: "first-supper", table8: "first-supper", ticketed: "first-supper", regular: "game-night", series: "grow-regulars", soldout: "grow-regulars" };
+export const guideHrefOf = (id) => (GUIDES.some((g) => g.id === GUIDE_OF[id]) ? `/guides/${GUIDE_OF[id]}` : `/path#guide-${id}`);
 export const PATH = [
   { id: "dinner4", title: "Dinner for 4", test: (f) => f.hosted >= 1, steps: ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."] },
   { id: "table8", title: "A table of 8", test: (f) => f.maxGuests >= 8, steps: ["Invite ten; eight will say yes.", "Seat people next to someone new.", "Send a reminder the day before."] },
@@ -177,7 +181,7 @@ export const PATH = [
   { id: "summit", title: "A summit", test: (f) => f.maxGuests >= 60, steps: ["Start with five speakers you know.", "A host for every room.", "Leave the hallway time long."] },
 ];
 export function pathOf(f) { let nextSet = false; return PATH.map((n) => { const done = !!n.test(f), next = !done && !nextSet; if (next) nextSet = true;
-  return { id: n.id, title: n.title, state: done ? "done" : next ? "next" : "later", steps: n.steps, template: `/start?t=${n.id}`, guideHref: `/path#guide-${n.id}` }; }); }
+  return { id: n.id, title: n.title, state: done ? "done" : next ? "next" : "later", steps: n.steps, template: `/start?t=${n.id}`, guideHref: guideHrefOf(n.id) }; }); }
 
 /** Badges: everything recognition.js earns, plus the ones the loop adds. Pure. */
 export function loopBadges(base, f, s) {
@@ -401,10 +405,10 @@ export function makeHostLoop(store, { C, X, push = () => null, origin = () => pr
     const ctx = { tz: f.tz, rhythm: usualRhythm(f.createdTimes, f.tz), upcoming: f.upcoming, last: f.last, streak: f.hosted ? s : null, headsUpDays: hv, cadence: d.cadence, quiet: d.quiet };
     return { cands: planNudges(ctx, now), d, f };
   }
-  /** The bell (and so a push) first; email only when they have no phone set up. Swap for inbox.notify() when it lands. */
+  /** The Inbox (and so the bell and a push) first, through inbox.notify(); email only when they have no phone set up. */
   async function deliver(ws, n) {
     const W = getWorkspace(ws), em = lc(W?.ownerEmail); if (!em) return false;
-    let belled = false; try { belled = X?.notify?.(em, { kind: "nudge", text: n.body, link: n.link, key: "hl-" + n.key }) !== false; } catch {}
+    let belled = false; try { belled = inboxNotify(X, em, { kind: "nudge", type: "note", key: "hl-" + n.key, title: n.title || "Potto", text: n.body, link: n.link, actor: { name: "Potto" } }) !== false; } catch {}
     let phone = false; try { phone = !!push()?.devicesOf?.(em)?.length; } catch {}
     if (!phone && X?.canEmail?.(em) !== false) { const cfg = emailConfig(DEFAULT_WS, true); if (cfg) { try { await sendEmail(cfg, { to: em, subject: n.body.length > 60 ? n.body.slice(0, 57).replace(/\s+\S*$/, "") + "…" : n.body, text: `${n.body}\n\n${(origin() || "") + n.link}\n\nPotto, from Pottery Lab. Turn these off in Settings: ${(origin() || "")}/settings`, origin: origin() }); } catch {} } }
     return belled;

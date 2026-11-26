@@ -320,8 +320,9 @@
     const Sh = sheet({ title: "Where", body: `
       <label class="cv-f">Place<input id="cvWhere" value="${esc(W.meetPoint || W.venueName || "")}" placeholder="My place, a park, a café" maxlength="120" autocomplete="off"></label>
       <label class="cv-f">Exact address <small>Only guests who are in see it.</small><input id="cvAddr" value="${esc(W.venueAddr || "")}" placeholder="12 Elm St, apt 4B" autocomplete="street-address" maxlength="160"></label>
-      <label class="cv-f">City<input id="cvCity" value="${esc(W.city || "")}" autocomplete="address-level2" maxlength="60"></label>`, foot: done() });
-    Sh.$("[data-done]").onclick = () => { W.meetPoint = Sh.$("#cvWhere").value.trim(); W.venueAddr = Sh.$("#cvAddr").value.trim(); W.city = Sh.$("#cvCity").value.trim(); try { app("applyPlace")?.(W); } catch {} Sh.close(); changed(true); pulse("#cvPlace", "place"); }; }
+      <label class="cv-f">City<input id="cvCity" value="${esc(W.city || "")}" autocomplete="address-level2" maxlength="60"></label>` + sw("cvPub", W.placePublic === true, "This is a public spot", "A park, a café or a bar. The map shows the exact pin. Leave it off for a home."), foot: done() });
+    let pub = W.placePublic === true; wireSw(Sh, "cvPub", (v) => { pub = v; });
+    Sh.$("[data-done]").onclick = () => { W.meetPoint = Sh.$("#cvWhere").value.trim(); W.venueAddr = Sh.$("#cvAddr").value.trim(); W.city = Sh.$("#cvCity").value.trim(); if (pub) W.placePublic = true; else delete W.placePublic; try { app("applyPlace")?.(W); } catch {} Sh.close(); changed(true); pulse("#cvPlace", "place"); }; }
 
   function cohostSheet() { const W = S.W; W.cohosts = Array.isArray(W.cohosts) ? W.cohosts : [];
     const list = () => W.cohosts.map((c, i) => `<div class="cv-li"><span>${esc(c.name || "@" + c.handle)}${c.name && c.handle ? ` <small>@${esc(c.handle)}</small>` : ""}</span><button type="button" class="cv-rm" data-cr="${i}" aria-label="Remove ${esc(c.name || c.handle)}">${I.x}</button></div>`).join("");

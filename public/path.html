@@ -53,17 +53,18 @@ ol.path::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;border
 <script>
 (async function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";"), fx = window.HostLoop?.fx || {};
+  const GUIDE = { dinner4: "first-supper", table8: "first-supper", ticketed: "first-supper", regular: "game-night", series: "grow-regulars", soldout: "grow-regulars" }; // GUIDE_OF in server/hostloop.js
   // the same nodes as PATH in server/hostloop.js, for people who aren't signed in
   const BASE = [["dinner4", "Dinner for 4", ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."]], ["table8", "A table of 8", ["Invite ten; eight will say yes.", "Seat people next to someone new.", "Send a reminder the day before."]],
     ["regular", "A regular night", ["Same day, same time, every month.", "Say the next date out loud at the end.", "Let a regular bring a friend."]], ["ticketed", "Your first ticketed event", ["Price to cover costs, then a little.", "Say what the money pays for.", "Keep a few spots for people you know."]],
     ["series", "A series", ["Give it a name people can say.", "Number the episodes.", "Your regulars hear first."]], ["soldout", "A sold-out night", ["Fewer seats than you think.", "Turn on the waitlist.", "Tell the waitlist first next time."]],
     ["weekend", "A weekend away", ["Book the place before the people.", "Share a rough plan, not a schedule.", "Collect money early."]], ["summit", "A summit", ["Start with five speakers you know.", "A host for every room.", "Leave the hallway time long."]]]
-    .map(([id, title, steps], i) => ({ id, title, steps, state: i ? "later" : "next", template: "/start?t=" + id }));
+    .map(([id, title, steps], i) => ({ id, title, steps, state: i ? "later" : "next", template: "/start?t=" + id, guideHref: GUIDE[id] ? "/guides/" + GUIDE[id] : "" }));
   let S = null; try { S = await HostLoop.api.get("/api/me/hostloop?peek=1"); if (S.off) S = null; } catch {}
   const nodes = S?.path || BASE, check = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   $("#path").innerHTML = nodes.map((n) => `<li class="node ${n.state}" id="guide-${esc(n.id)}"><span class="dot">${n.state === "done" ? check : ""}</span>
     <button type="button" class="head" aria-expanded="${n.state === "next"}" aria-controls="g-${esc(n.id)}"><span class="title">${esc(n.title)}</span><span class="tag">${n.state === "done" ? "Done" : n.state === "next" ? "Next" : "Later"}</span></button>
-    <div class="guide" id="g-${esc(n.id)}"${n.state === "next" ? "" : " hidden"}><ol>${n.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><a class="btn${n.state === "next" ? " pri" : ""}" href="${esc(n.template)}">Start from this</a></div></li>`).join("");
+    <div class="guide" id="g-${esc(n.id)}"${n.state === "next" ? "" : " hidden"}><ol>${n.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><a class="btn${n.state === "next" ? " pri" : ""}" href="${esc(n.template)}">Start from this</a>${/^\/guides\/[a-z0-9-]+$/.test(n.guideHref || "") ? ` <a class="btn" href="${esc(n.guideHref)}">Read the guide</a>` : ""}</div></li>`).join("");
   $("#path").onclick = (e) => { const b = e.target.closest("button.head"); if (!b) return; const g = document.getElementById(b.getAttribute("aria-controls")), open = g.hidden; g.hidden = !open; b.setAttribute("aria-expanded", String(open)); fx.haptic?.("light"); };
   if (location.hash.startsWith("#guide-")) { const el = document.querySelector(location.hash); if (el) { el.querySelector(".guide").hidden = false; setTimeout(() => el.scrollIntoView({ block: "center" }), 60); } }
   if (!S) { $("#lede").innerHTML = `Every step has a short guide and a template. <a href="/start" style="color:var(--pl-accent-text);font-weight:600">Plan a dinner</a> to start, no account needed.`; return; }

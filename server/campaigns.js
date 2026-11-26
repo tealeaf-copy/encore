@@ -20,7 +20,9 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { getWorkspace, getDbUser, membersOf, scopeStore, DEFAULT_WS } from "./workspaces.js";
+import { getWorkspace, getDbUser, membersOf, scopeStore, DEFAULT_WS, claimEvent } from "./workspaces.js";
+import { eventTz } from "./tz.js";
+import { idOf as personId, keyFor } from "./people.js";
 import { statusOf, approxArea, money } from "./brandbook.js";
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { K } from "./insights.js";
@@ -85,6 +87,18 @@ export function cleanGuest(g = {}, { source = "manual", now = Date.now() } = {})
   return { id: rid(5), token: rid(12), event: clean(g.event, 24), name: clean(g.name, 100), email: EMAIL_RE.test(email) ? email : "", company: clean(g.company, 100), title: clean(g.title || g.role, 100),
     source, consent, status: "added", invitedAt: 0, repliedAt: 0, checkedIn: false, checkedAt: 0, again: null, said: "", quoteOk: false, followUp: "none", addedAt: now };
 }
+// ---- run of show (review 16): the team's own plan for the night, in the event's local time ----
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const addMin = (hm, m) => { const [h, mi] = hm.split(":").map(Number), t = (((h * 60 + mi + m) % 1440) + 1440) % 1440; return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+/** A first draft from the start time: arrive, welcome, the main part, wrap. */
+export function defaultRunOfShow(start = "19:00") { const s = HM.test(start) ? start : "19:00";
+  return [{ at: addMin(s, -60), what: "Team arrives, checks the room and the guest list" }, { at: addMin(s, -15), what: "Doors open, name tags out" }, { at: s, what: "Welcome from the team, then over to the host" },
+    { at: addMin(s, 30), what: "The main part" }, { at: addMin(s, 150), what: "Thanks and a quick word on what's next" }, { at: addMin(s, 180), what: "Wrap" }]; }
+export function cleanRunOfShow(items) { return (Array.isArray(items) ? items : []).map((x) => ({ at: HM.test(String(x?.at || "")) ? x.at : "", what: clean(x?.what, 140) })).filter((x) => x.what).slice(0, 30)
+  .sort((a, b) => (a.at || "99").localeCompare(b.at || "99")); }
+/** A reply on the event's own invite page, read back onto the campaign's guest (the campaign keeps its own words). */
+export function statusFromRsvp(r) { if (!r) return ""; return r.response === "going" ? "yes" : ["no", "declined"].includes(r.response) ? "no" : r.response === "waitlist" ? "waitlist" : r.response === "requested" ? "asked" : ""; }
+
 /** A small CSV reader: quoted fields, commas and new lines inside quotes, a header row naming the columns. */
 export function parseCsv(text) {
   const rows = [], s = String(text || "").replace(/^﻿/, ""); let row = [], cur = "", q = false;
@@ -184,7 +198,9 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
     return { id: c.id, title: c.title, goal: c.goal, audience: c.audience, cities: c.cities, budgetCents: c.budgetCents, start: c.start, end: c.end, kpis: c.kpis, status: c.status, role, memberRole: c.memberRole, owner: c.ownerEmail,
       can: Object.fromEntries(Object.keys(CAN).map((k) => [k, can(role, k)])), bookings: R.map(reqCard), shortlists: (c.shortlists || []).map((id) => { const sl = store.get("system/bbsl-" + id)?.data; return sl && sl.ws === c.ws ? { id: sl.id, title: sl.title, n: (sl.items || []).length, votes: Object.values(sl.votes || {}).reduce((a, v) => a + Object.keys(v).length, 0) } : null; }).filter(Boolean),
       costs: c.costs || [], guests: can(role, "view") ? (c.guests || []).map(guestView) : [], team: teamList(c), joinUrl: `/cg/${c.id}/join`, reportUrl: c.reportKey && can(role, "share") ? `/teams/campaigns/${c.id}/report?k=${c.reportKey}` : "", joinOpen: c.joinOpen !== false,
-      ...rollup(c, R), goals: c.kpis || {}, createdAt: c.createdAt, updatedAt: c.updatedAt }; }
+      ...rollup(c, R), goals: c.kpis || {}, createdAt: c.createdAt, updatedAt: c.updatedAt,
+      guestEvents: Object.fromEntries(Object.entries(c.guestEvents || {}).map(([k, eid]) => { const e = scopeStore(store, c.ws).get("events/" + eid)?.data || {}; return [k, { id: eid, board: `/contacts/event/${eid}`, invite: `/e/${eid}`, tz: e.tz || "", startTime: e.startTime || "" }]; })),
+      ros: Object.fromEntries(R.map((r) => [r.id, c.ros?.[r.id]?.length ? c.ros[r.id] : defaultRunOfShow((c.guestEvents?.[r.id] && scopeStore(store, c.ws).get("events/" + c.guestEvents[r.id])?.data?.startTime) || "19:00")])) }; }
   const brief = (c, role) => { const R = reqsOf(c), B = budgetOf(c, R), today = isoDay(), next = R.filter((r) => r.date && r.date >= today && !["cancelled", "declined"].includes(statusOf(r))).sort((a, b) => a.date.localeCompare(b.date))[0];
     return { id: c.id, title: c.title, goal: c.goal, cities: c.cities, start: c.start, end: c.end, status: c.status, role, events: R.filter((r) => !["cancelled", "declined"].includes(statusOf(r))).length, budget: { budgetCents: B.budgetCents, committedCents: B.committedCents, spentCents: B.spentCents, remainingCents: B.remainingCents, pendingCents: B.pendingCents, over: B.over, usedPct: B.usedPct },
       next: next ? { name: next.pkgName, date: next.date, host: hostName(next) } : null, guests: (c.guests || []).length, attended: (c.guests || []).filter((g) => g.checkedIn).length, updatedAt: c.updatedAt }; };
@@ -214,7 +230,7 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
   app.post("/api/campaigns", small, (req, res) => { const u = brandMe(req, res); if (!u) return; if (limited("cc:" + u.ws, 60)) return bad(res, "That's a lot of campaigns at once. Try again later.", 429, "rate_limited");
     const c = { kind: "camp", id: rid(6), ws: u.ws, ownerEmail: lc(u.email), ...cleanPlan(req.body || {}), team: {}, bookings: [], shortlists: [], costs: [], guests: [], createdAt: Date.now() };
     cSet(c); res.json({ ok: true, id: c.id, url: `/teams/campaigns/${c.id}`, campaign: full(c, roleIn(u, c)) }); });
-  app.get("/api/campaigns/:id", (req, res) => { const L = load(req, res, "view"); if (!L) return; res.set("Cache-Control", "private, no-store").json({ campaign: full(L.c, L.role) }); });
+  app.get("/api/campaigns/:id", (req, res) => { const L = load(req, res, "view"); if (!L) return; try { syncBack(L.c); } catch (e) { console.warn("[campaigns] sync", e.message); } res.set("Cache-Control", "private, no-store").json({ campaign: full(L.c, L.role) }); });
   app.patch("/api/campaigns/:id", small, (req, res) => { const L = load(req, res, "plan"); if (!L) return; const b = req.body || {}; if (b.memberRole && !can(L.role, "roles")) return bad(res, "Only an owner can change who does what.", 403, "not_granted");
     Object.assign(L.c, cleanPlan(b, L.c)); cSet(L.c); res.json({ campaign: full(L.c, L.role) }); });
   app.delete("/api/campaigns/:id", (req, res) => { const L = load(req, res, "delete"); if (!L) return; store.delete("system/camp-" + L.c.id); res.json({ ok: true }); });
@@ -253,10 +269,70 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
       L.c.costs = [...(L.c.costs || []), { id: rid(4), label, cents, paid: !!b.paid, event: clean(b.event, 24) }].slice(0, 60); }
     cSet(L.c); res.json({ campaign: full(L.c, L.role) }); });
 
+  // ---- one guest list (review 16) ----
+  // A booking the host accepted gets a brand-side invite page, events/cg<booking id> in the brand's workspace, so
+  // campaign guests live in People and in that event's invite plan: smart lists, waves, the status board, reminders
+  // for people who haven't replied, add to calendar, the waitlist and the door. c.guests stays exactly as it was and is
+  // kept in step both ways, so the campaign's own reply links, Measure, the report and the CRM export read the same.
+  // Consent: People only gets "in" for a guest who agreed to hear from this brand; the plan never emails anyone else.
+  const P0 = () => app.locals.people || null, I0 = () => app.locals.invites || null;
+  const geId = (r) => "cg" + String(r.id).slice(0, 24);
+  function guestEvent(c, r, { make = false } = {}) {
+    if (!r || r.brandWs !== c.ws) return ""; const S = scopeStore(store, c.ws), id = c.guestEvents?.[r.id] || geId(r);
+    if (S.get("events/" + id)?.data) return id; if (!make || !["accepted", "booked", "done"].includes(statusOf(r))) return "";
+    const st = scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, h = C.profileOf?.(r.hostWs) || {}, pkg = (st.packages || []).find((x) => x.id === r.pkgId) || {};
+    const city = st.city || h.city || "", A = approxArea(st.area, city), W = getWorkspace(c.ws) || {}, company = W.company || "Our team";
+    if (!claimEvent(id, c.ws)) return "";
+    S.set("events/" + id, { id, kind: "social", casual: true, name: r.pkgName, pubTitle: r.pkgName, date: r.date || "", startTime: HMOK(r.time) ? r.time : pkg.time === "daytime" ? "12:00" : "19:00",
+      city: A.city || city, hood: A.area || "", tz: eventTz({ city: A.city || city, hood: st.area }) || "", headcount: +r.headcount || 0, autoRemind: true, approvalRequired: false, published: true, discoverable: false, unlisted: true, lastVis: "link",
+      forCompany: company, hostName: company, why: `${company} is hosting ${r.pkgName} with ${h.name || "a local host"}, for about ${r.headcount || "a small group of"} people.`, bookingId: r.id, campaignId: c.id, createdAt: Date.now() });
+    c.guestEvents = { ...(c.guestEvents || {}), [r.id]: id }; return id; }
+  const HMOK = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(t || ""));
+  /** Campaign guests into People (with their consent) and onto the event's plan. */
+  function toPlan(c, eventId, guests) { const P = P0(), I = I0(); if (!P || !I || !eventId) return 0; const rows = guests.filter((g) => g.email).map((g) => ({ email: g.email, name: g.name, company: g.company, title: g.title, optin: g.consent?.share ? "in" : "", tags: [campTag(c)] }));
+    if (!rows.length) return 0; try { P.importRows(c.ws, rows, { source: "Campaign: " + clean(c.title, 40) }); const ids = rows.map((x) => idOfKey(x.email)); return I.add(c.ws, eventId, { ids }).added || 0; } catch (e) { console.warn("[campaigns] plan", e.message); return 0; } }
+  const idOfKey = (email) => personId(keyFor(email));
+  // a People tag that fits (30 characters), cut at a word
+  const campTag = (c) => { const t = clean(c.title, 200); return t.length <= 30 ? t : t.slice(0, 30).replace(/\s+\S*$/, "").trim() || t.slice(0, 30); };
+  /** The campaign's own record (sent, replied through its link, checked in by the team) onto the event's plan and
+   * replies, so the status board, the seat count and reminders see what the campaign already knows. A guest's own
+   * reply on the invite page is never overwritten. */
+  function mirror(c, reqId) { const eid = c.guestEvents?.[reqId]; if (!eid) return; const S = scopeStore(store, c.ws), plDoc = S.get("invplans/" + eid)?.data; if (!plDoc) return;
+    const R = new Map(S.list("rsvps").filter((d) => d.data?.eventId === eid && d.data?.email).map((d) => [lc(d.data.email), d])); let planChanged = false;
+    for (const g of (c.guests || []).filter((x) => x.event === reqId && x.email)) { const pid = idOfKey(g.email), e = plDoc.people?.[pid];
+      if (e && !e.invitedAt && ["invited", "yes", "no", "waitlist"].includes(g.status)) { e.invitedAt = g.invitedAt || Date.now(); e.ch = e.ch || "campaign"; planChanged = true; }
+      const want = g.status === "yes" || g.checkedIn ? "going" : g.status === "no" ? "no" : "", d = R.get(g.email);
+      if (!want) continue;
+      if (!d) S.add("rsvps", { eventId: eid, name: g.name, email: g.email, response: want, via: "campaign", code: "C" + rid(4).toUpperCase(), createdAt: g.repliedAt || Date.now(), ...(g.checkedIn ? { checkedInAt: g.checkedAt || Date.now() } : {}) });
+      else if (d.data.via === "campaign" && (d.data.response !== want || (!!g.checkedIn !== !!d.data.checkedInAt))) { const nx = { ...d.data, response: want }; if (g.checkedIn) nx.checkedInAt = d.data.checkedInAt || g.checkedAt || Date.now(); else delete nx.checkedInAt; S.set("rsvps/" + d.id, nx); }
+      else if (g.checkedIn && !d.data.checkedInAt) S.set("rsvps/" + d.id, { ...d.data, checkedInAt: g.checkedAt || Date.now() }); }
+    if (planChanged) S.set("invplans/" + eid, { ...plDoc, updatedAt: Date.now() }); }
+  /** Replies, the waitlist and check-ins on the event's own page, read back onto the campaign's guests. */
+  function syncBack(c) { let changed = false; const S = scopeStore(store, c.ws);
+    for (const [reqId, eid] of Object.entries(c.guestEvents || {})) { const R = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === eid && r.email), by = new Map(R.map((r) => [lc(r.email), r]));
+      const pl = S.get("invplans/" + eid)?.data?.people || {};
+      for (const g of (c.guests || []).filter((x) => x.event === reqId && x.email)) { const r = by.get(g.email), st = statusFromRsvp(r);
+        if (st && st !== g.status && !(g.status === "yes" && st === "asked")) { g.status = st; g.repliedAt = g.repliedAt || r.createdAt || Date.now(); changed = true; }
+        if (r?.checkedInAt && !g.checkedIn) { g.checkedIn = true; g.checkedAt = r.checkedInAt; changed = true; }
+        if (!st && g.status === "added" && pl[idOfKey(g.email)]?.invitedAt) { g.status = "invited"; g.invitedAt = pl[idOfKey(g.email)].invitedAt; changed = true; } } }
+    if (changed) cSet(c); return changed; }
+  app.post("/api/campaigns/:id/events/:rid/plan", small, (req, res) => { const L = load(req, res, "guests"); if (!L) return; const r = reqGet(req.params.rid);
+    if (!r || !(L.c.bookings || []).includes(r.id)) return bad(res, "That booking isn't on this campaign.", 404, "not_found");
+    const eid = guestEvent(L.c, r, { make: true }); if (!eid) return bad(res, "Once the host accepts, this event gets its own guest list and invite page.", 409, "not_yet");
+    const added = toPlan(L.c, eid, (L.c.guests || []).filter((g) => g.event === r.id && g.status !== "asked")); try { mirror(L.c, r.id); } catch (e) { console.warn("[campaigns] mirror", e.message); } cSet(L.c);
+    res.json({ ok: true, eventId: eid, added, board: `/contacts/event/${eid}`, invite: `/e/${eid}`, campaign: full(L.c, L.role) }); });
+  // nudge the people who were invited and haven't replied (the plan's own reminder: one a day, two per person)
+  app.post("/api/campaigns/:id/events/:rid/remind", small, async (req, res) => { const L = load(req, res, "guests"); if (!L) return; const eid = L.c.guestEvents?.[String(req.params.rid)];
+    if (!eid || !I0()) return bad(res, "Open this event's guest list first.", 409, "not_yet"); const out = await I0().remind(L.c.ws, eid, { origin: publicOrigin(req) }); if (out.error) return bad(res, out.error, out.status || 400);
+    res.json({ ok: true, ...out }); });
+  app.post("/api/campaigns/:id/ros", small, (req, res) => { const L = load(req, res, "plan"); if (!L) return; const ev = clean(req.body?.event, 24); if (!(L.c.bookings || []).includes(ev)) return bad(res, "That booking isn't on this campaign.", 404, "not_found");
+    L.c.ros = { ...(L.c.ros || {}), [ev]: cleanRunOfShow(req.body?.items) }; cSet(L.c); res.json({ ok: true, campaign: full(L.c, L.role) }); });
+
   // ---- invite: guests per event, CSV in, invites out ----
-  const addGuests = (c, list, source, event) => { const have = new Set((c.guests || []).filter((g) => g.email).map((g) => g.event + "|" + g.email)); let added = 0, skipped = 0;
+  const addGuests = (c, list, source, event) => { const have = new Set((c.guests || []).filter((g) => g.email).map((g) => g.event + "|" + g.email)); let added = 0, skipped = 0; const fresh = [];
     for (const raw of list) { const g = cleanGuest({ ...raw, event: raw.event || event || "" }, { source }); if (!g.name && !g.email) { skipped++; continue; } if (g.event && !(c.bookings || []).includes(g.event)) g.event = "";
-      if (g.email && have.has(g.event + "|" + g.email)) { skipped++; continue; } if ((c.guests || []).length >= 3000) { skipped++; continue; } have.add(g.event + "|" + g.email); c.guests = [...(c.guests || []), g]; added++; }
+      if (g.email && have.has(g.event + "|" + g.email)) { skipped++; continue; } if ((c.guests || []).length >= 3000) { skipped++; continue; } have.add(g.event + "|" + g.email); c.guests = [...(c.guests || []), g]; added++; fresh.push(g); }
+    for (const [reqId, eid] of Object.entries(c.guestEvents || {})) toPlan(c, eid, fresh.filter((g) => g.event === reqId));
     return { added, skipped }; };
   app.post("/api/campaigns/:id/guests", small, (req, res) => { const L = load(req, res, "guests"); if (!L) return; const b = req.body || {};
     const r = addGuests(L.c, Array.isArray(b.guests) ? b.guests.slice(0, 500) : [b], "manual", clean(b.event, 24)); cSet(L.c); res.json({ ...r, campaign: full(L.c, L.role) }); });
@@ -269,17 +345,23 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
     if (b.followUp && ["none", "sent", "meeting"].includes(b.followUp)) g.followUp = b.followUp;
     if (b.event != null) g.event = (L.c.bookings || []).includes(b.event) ? b.event : "";
     if (b.status && ["added", "invited", "yes", "no"].includes(b.status)) { g.status = b.status; if (b.status === "invited" && !g.invitedAt) g.invitedAt = Date.now(); }
-    cSet(L.c); res.json({ guest: guestView(g), campaign: full(L.c, L.role) }); });
+    try { if (g.event) mirror(L.c, g.event); } catch {} cSet(L.c); res.json({ guest: guestView(g), campaign: full(L.c, L.role) }); });
   app.delete("/api/campaigns/:id/guests/:gid", (req, res) => { const L = load(req, res, "guests"); if (!L) return; L.c.guests = (L.c.guests || []).filter((x) => x.id !== req.params.gid); cSet(L.c); res.json({ campaign: full(L.c, L.role) }); });
   app.post("/api/campaigns/:id/invites", small, async (req, res) => { const L = load(req, res, "guests"); if (!L) return; if (limited("ci:" + L.c.id, 30)) return bad(res, "That's a lot of sends. Try again in an hour.", 429, "rate_limited");
     const ev = clean(req.body?.event, 24), base = publicOrigin(req), company = L.u.W.company || "Our team";
-    const to = (L.c.guests || []).filter((g) => (!ev || g.event === ev) && g.event && g.status === "added");
+    let to = (L.c.guests || []).filter((g) => (!ev || g.event === ev) && g.event && g.status === "added"), planned = 0;
+    // review 16: guests who agreed to hear from the brand get the event's own invite through its plan (People, waves,
+    // reminders, add to calendar); everyone else still gets the campaign's reply link, which asks for that consent
+    for (const reqId of [...new Set(to.map((g) => g.event))]) { const eid = guestEvent(L.c, reqGet(reqId), { make: true }); if (!eid || !I0()) continue; const mine = to.filter((g) => g.event === reqId && g.consent?.share && g.email);
+      if (!mine.length) continue; toPlan(L.c, eid, mine); const out = await I0().send(L.c.ws, eid, { ids: mine.map((g) => idOfKey(g.email)), origin: base }).catch(() => ({}));
+      const pl = scopeStore(store, L.c.ws).get("invplans/" + eid)?.data?.people || {}; for (const g of mine) if (pl[idOfKey(g.email)]?.invitedAt) { g.status = "invited"; g.invitedAt = pl[idOfKey(g.email)].invitedAt; planned++; } }
+    to = to.filter((g) => g.status === "added");
     const cfg = emailConfig(L.c.ws, false) || emailConfig(DEFAULT_WS, true); let sent = 0; const links = [];
     for (const g of to) { const R = reqGet(g.event), link = `${base}/cg/${L.c.id}/r/${g.token}`; links.push({ id: g.id, name: first(g.name), link });
       if (cfg && g.email) { const when = R?.date ? new Date(R.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "soon";
         try { const out = await sendEmail(cfg, { to: g.email, subject: `${company} would love you at ${R?.pkgName || "a small event"}`, text: `Hi ${first(g.name) || "there"},\n\n${company} is hosting ${R?.pkgName || "a small event"} with ${R ? hostName(R) : "a local host"} on ${when}, for about ${R?.headcount || "a small group of"} people. We'd love you there.\n\nReply here: ${link}\n\nIt takes a tap. You choose whether to share your details with ${company}.`, fromName: company, list: "guest" }); if (out?.ok !== false) sent++; } catch {} }
       g.status = "invited"; g.invitedAt = Date.now(); }
-    cSet(L.c); res.json({ invited: to.length, emailed: sent, links, campaign: full(L.c, L.role) }); });
+    try { for (const k of new Set(to.map((g) => g.event))) mirror(L.c, k); } catch {} cSet(L.c); res.json({ invited: to.length + planned, emailed: sent + planned, viaPlan: planned, links, campaign: full(L.c, L.role) }); });
 
   // ---- measure ----
   app.get("/api/campaigns/:id/export.csv", (req, res) => { const L = load(req, res, "export"); if (!L) return;
@@ -325,7 +407,7 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
     if (b.again != null) g.again = b.again === true ? true : b.again === false ? false : null;
     if (b.said != null) g.said = clean(b.said, 600);
     if (b.quoteOk != null) g.quoteOk = b.quoteOk === true;
-    cSet(c); res.json({ ok: true, status: g.status, consent: !!g.consent?.share }); });
+    try { if (g.event) mirror(c, g.event); } catch {} cSet(c); res.json({ ok: true, status: g.status, consent: !!g.consent?.share }); });
 
   return { results, rollupOf: (id) => { const c = cGet(id); return c ? rollup(c, reqsOf(c)) : null; } };
 }

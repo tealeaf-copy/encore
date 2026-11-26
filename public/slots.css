@@ -68,3 +68,20 @@ body.lk-on .sl-card form{border:0!important;box-shadow:none!important;background
 .sl-ep{color:inherit!important;-webkit-text-fill-color:currentColor}
 /* UX loop: "Ask me about" waits behind one quiet line until someone wants it */
 .sl-askd{margin:8px 0 0}.sl-askd>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px;color:inherit;list-style:none}.sl-askd>summary::-webkit-details-marker{display:none}.sl-askd>summary::before{content:"+";display:inline-grid;place-items:center;width:20px;margin-right:6px;font-weight:600}.sl-askd[open]>summary::before{content:"\2212"}
+/* ---- the reply form (the light invite's #f and the full invite's #gForm): hidden means hidden, one checkbox, one
+   disclosure, a quiet remember line and a Send button in the brand accent ---- */
+:is(#f,#gForm) input[type=checkbox]{-webkit-appearance:none!important;appearance:none!important;width:22px!important;height:22px!important;min-width:22px;margin:0!important;padding:0!important;flex:none;display:inline-grid!important;place-content:center;border:1.5px solid var(--pl-line-strong,#CFC6B8)!important;border-radius:6px!important;background:#fff!important;cursor:pointer;vertical-align:middle;box-shadow:none!important}
+:is(#f,#gForm) input[type=checkbox]::before{content:"";width:11px;height:6px;border:solid transparent;border-width:0 0 2px 2px;transform:translateY(-1.5px) rotate(-45deg);box-sizing:border-box}
+:is(#f,#gForm) input[type=checkbox]:checked{background:var(--pl-ink,#1D1B18)!important;border-color:var(--pl-ink,#1D1B18)!important}
+:is(#f,#gForm) input[type=checkbox]:checked::before{border-color:#fff}
+:is(#f,#gForm) input[type=checkbox]:focus-visible{outline:2px solid var(--pl-accent,#9A4128)!important;outline-offset:2px}
+:is(#f,#gForm) .sl-check{display:flex!important;gap:12px;align-items:flex-start;margin:4px 0;padding:0!important;background:none!important;border:0!important;font-size:15px;line-height:22px;cursor:pointer;color:inherit}
+:is(#f,#gForm) .sl-check input{margin-top:0!important}
+:is(#f,#gForm) .pl-rem{font-size:13px!important;color:var(--pl-soft,#5D564E)!important;justify-content:center;margin:4px 0 0}
+:is(#f,#gForm) .pl-rem input{width:18px!important;height:18px!important;min-width:18px;border-radius:5px!important}:is(#f,#gForm) .pl-rem input::before{width:9px;height:5px}
+.pl-more{margin:4px 0 0;border-top:1px solid var(--pl-line,#E2DCD1);border-bottom:1px solid var(--pl-line,#E2DCD1)}
+.pl-more>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:15px;color:inherit;list-style:none}.pl-more>summary::-webkit-details-marker{display:none}
+.pl-more>summary::after{content:"+";font-size:20px;font-weight:400;color:var(--pl-soft,#5D564E)}.pl-more[open]>summary::after{content:"\2212"}
+.pl-more-in{display:grid;gap:14px;padding:0 0 16px}.pl-more-in>*{margin:0!important}
+:is(#f #send,#gForm #g-send){background:var(--kit-btn,var(--pl-accent,#9A4128))!important;color:var(--kit-on-btn,#fff)!important;border-color:transparent!important}
+html body :is(#f,#gForm) [hidden][hidden]{display:none!important}

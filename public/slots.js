@@ -6,7 +6,7 @@
 (function () {
   if (window.Slots) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const $ = (s, el = document) => el.querySelector(s);
+  const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const add = (src) => { if (document.querySelector(`script[src="${src}"]`)) return; const t = document.createElement("script"); t.src = src; t.defer = true; document.head.appendChild(t); };
   const css = () => { if (!document.querySelector('link[href="/slots.css"]')) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/slots.css"; document.head.appendChild(l); } };
   const ls = { get: (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -56,8 +56,27 @@
     return /hack|demo|build|maker|code|coding/.test(t) ? "What you're building" : /game|board|lan\b|smash|bracket|watch party|tournament|poker|chess|d&d|dnd|trivia/.test(t) ? "Favorite game, what you're learning"
       : /dinner|supper|potluck|brunch|lunch|food|cook|bake|bread|meal|tasting|wine|picnic|bbq|feast/.test(t) ? "Favorite dish, a recent trip" : "Something you're into, a recent trip"; };
   function quietFormHTML(id, e) { const P = ls.get(pendKey(id)) || {};
-    return `<div class="sl-quietform" id="slQuietForm"><label class="sl-check"><input type="checkbox" id="slSolo"${P.solo ? " checked" : ""}><span>Coming solo<small>We'll say how many others are, never who.</small></span></label>
-      <details class="sl-askd"${P.askMe ? " open" : ""}><summary>Add an "Ask me about" line</summary><label class="sl-lab" style="margin:8px 0 0;font-weight:500">Ask me about <small>Optional. Only guests who are in see it.</small><input id="slAsk" maxlength="60" autocomplete="off" placeholder="${esc(askHint(e))}" value="${esc(P.askMe || "")}"></label></details></div>`; }
+    // the one "Add a little more (optional)" disclosure under the reply form; on /g, tidyForm moves the form's other optional bits into it
+    return `<details class="sl-quietform pl-more" id="slQuietForm"${P.solo || P.askMe ? " open" : ""}><summary>Add a little more (optional)</summary><div class="pl-more-in"><label class="sl-check"><input type="checkbox" id="slSolo"${P.solo ? " checked" : ""}><span>Coming solo<small>We'll say how many others are, never who.</small></span></label>
+      <label class="sl-lab" style="margin:8px 0 0;font-weight:500">Ask me about <small>Only guests who are in see it.</small><input id="slAsk" maxlength="60" autocomplete="off" placeholder="${esc(askHint(e))}" value="${esc(P.askMe || "")}"></label></div></details>`; }
+  // The reply form, kept short: name, how to reach you, the reply, and food only if there's food. Everything else waits in
+  // the one disclosure; one name toggle, next to the name; the severe-allergy box only under a food answer; "Save my
+  // details on this phone" a quiet line under Send. Runs on every redraw and moves nothing that is already in place.
+  function tidyForm() { const more = $("#slQuietForm .pl-more-in");
+    const f = $("#f"); if (f && more) { const at = $("#qs", f) || $("#send", f); const box = more.parentElement; if (at && box.nextElementSibling !== at) at.before(box); }
+    const g = $("#gForm"); if (!g) return; const send = $("#g-send", g), btns = send?.closest(".btns");
+    if (more) { $$("details.g-more, details.g-fun", g).forEach((d) => { [...d.children].forEach((c) => { if (c.tagName !== "SUMMARY" && !c.contains($("#g-showme", g))) more.appendChild(c); }); if (!d.querySelector("input,textarea,select")) d.remove(); });
+      if (btns && more.parentElement.nextElementSibling !== btns) btns.before(more.parentElement); }
+    // one name toggle: "Show my name on Who's coming", next to the name; the older "other guests" box follows it
+    const sm = $("#g-showme", g), wall = $("#g-wall", g), nameRow = $("#g-name", g)?.closest(".row") || $("#g-name", g)?.closest("label");
+    if (sm && nameRow) { const l = sm.closest("label"); l.className = "sl-check pl-name"; if (!l.dataset.t) { l.dataset.t = 1; l.lastChild.nodeValue = ""; l.insertAdjacentHTML("beforeend", "<span>Show my name on Who's coming</span>"); }
+      if (nameRow.nextElementSibling !== l) nameRow.after(l);
+      if (wall) { wall.checked = sm.checked; if (!sm.dataset.w) { sm.dataset.w = 1; sm.addEventListener("change", () => (wall.checked = sm.checked)); } } }
+    // the severe-allergy box sits right under the food answer, and only once something is typed there
+    const dt = $("#g-diet", g), sv = $("#g-severe", g)?.closest("label"), dl = dt?.closest("label");
+    if (dt && sv && dl && !dl.hidden) { if (dl.nextElementSibling !== sv) dl.after(sv); sv.className = "sl-check pl-sev"; sv.hidden = !dt.value.trim(); if (!dt.dataset.sv) { dt.dataset.sv = 1; const u = () => (sv.hidden = !dt.value.trim()); dt.addEventListener("input", u); dt.addEventListener("change", u); } }
+    // "Save my details on this phone": a quiet line under Send
+    const rem = $("#gRemember", g)?.closest("label"); if (rem && btns) { rem.hidden = false; rem.className = "sl-check pl-rem"; if (btns.nextElementSibling !== rem) btns.after(rem); } }
   async function syncQuiet(id) { const M = mineOf(id), P = ls.get(pendKey(id)); if (!M || !P || P.synced === M.rid + "|" + (P.solo ? 1 : 0) + "|" + (P.askMe || "")) return null;
     const r = await post(`/api/public/quiet/${encodeURIComponent(id)}`, { rid: M.rid, code: M.code, solo: !!P.solo, askMe: P.askMe || "" }); if (r.ok) ls.set(pendKey(id), { ...P, askMe: r.j.askMe, synced: M.rid + "|" + (r.j.solo ? 1 : 0) + "|" + (r.j.askMe || "") }); return r.ok ? r.j : null; }
   function wireQuiet(el, id, after) { const save = () => { ls.set(pendKey(id), { ...(ls.get(pendKey(id)) || {}), solo: !!$("#slSolo", el)?.checked, askMe: ($("#slAsk", el)?.value || "").trim().slice(0, 60), synced: "" }); };
@@ -107,7 +126,7 @@
     if (location.pathname === "/g") { const e = window.__gEv, host = $("#view-guest"); if (!e?.id || !host || host.hidden || e.example || e.sample) return null;
       const resp = $("#gResp", host), em = $("#g-email", host), after = em?.closest(".row") || em?.closest("label") || resp; return { id: e.id, e, form: after && !$("#slQuietForm", host) ? after : null, anchor: $("#gForm", host) || $(".invite", host), place: () => $("#tbMe", host) || $("#gForm", host) || $(".ticket", host)?.closest(".panel") || $(".invite", host) }; }
     return null; }
-  function schedule() { if (T) return; T = setTimeout(() => { T = 0; const c = ctxOf(); if (c) run(c).catch((err) => console.warn("[slots]", err)); }, 160); }
+  function schedule() { if (T) return; T = setTimeout(() => { T = 0; try { tidyForm(); } catch (err) { console.warn("[slots]", err); } const c = ctxOf(); if (c) run(c).catch((err) => console.warn("[slots]", err)); }, 160); }
 
   // ---------- the host's panel in the studio ----------
   function hostPanel(d, { save }) {

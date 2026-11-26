@@ -30,13 +30,13 @@
 .pli-title{font:600 18px/1.15 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0;overflow-wrap:anywhere}
 .pli-line{color:#665A51;font-size:14px;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pli-by{font-size:14px;margin:0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pli-by a{color:#1F1A17;font-weight:600;text-decoration:none;border-bottom:2px solid #F2D48F}.pli-by a:hover{border-color:#C94A30}
-.pli-tags{display:flex;gap:5px;flex-wrap:wrap}.pli-tags button{border:1.5px solid #1F1A17;background:#fff;border-radius:999px;padding:2px 9px;font:600 12.5px "Instrument Sans",system-ui;color:#1F1A17;cursor:pointer;min-height:28px}.pli-tags button:hover{background:#FFF1D2}
+.pli-tags{display:flex;gap:5px;flex-wrap:wrap}.pli-tags button{border:1.5px solid #D9CCBB;background:#fff;border-radius:999px;padding:0 12px;font:600 13px var(--sys-sans,system-ui);color:#1F1A17;cursor:pointer;min-height:36px}@media (max-width:860px){.pli-tags button{min-height:44px}}.pli-tags button:hover{background:#FFF1D2}
 .pli-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .pli-host{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:2px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 14px "Instrument Sans",system-ui;cursor:pointer;box-shadow:2px 2px 0 #1F1A17;text-decoration:none}
 .pli-host:hover{background:#A63A22}.pli-real{font-weight:600;font-size:14px;color:#A63A22;text-decoration:underline;text-underline-offset:3px;min-height:40px;display:inline-flex;align-items:center}
 .pli-count{font-size:13px;color:#665A51;margin:0}.pli-count:empty{display:none}
-.pli-ex{position:absolute;top:10px;right:10px;z-index:3;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:2px 9px;font:700 12px "Instrument Sans",system-ui;letter-spacing:.02em;transform:rotate(4deg)}
-.pli-kind{position:absolute;left:10px;bottom:10px;z-index:3;background:#1F1A17;color:#fff;border-radius:999px;padding:3px 10px;font:600 12px "Instrument Sans",system-ui}
+.pli-ex{position:absolute;top:10px;right:10px;z-index:3;background:#fff;border:1.5px solid #1F1A17;border-radius:999px;padding:2px 9px;font:700 13px var(--sys-sans,system-ui);letter-spacing:.02em;transform:rotate(4deg)}
+.pli-kind{position:absolute;left:10px;bottom:10px;z-index:3;background:#1F1A17;color:#fff;border-radius:999px;padding:3px 10px;font:600 13px var(--sys-sans,system-ui)}
 .pli-fly{position:relative;aspect-ratio:3/4;background:linear-gradient(180deg,var(--f0) 0,var(--f0b) 100%);color:var(--f1);display:flex;flex-direction:column;justify-content:space-between;padding:18px 16px 16px;overflow:hidden}
 .pli-fly .pli-ft{font-family:var(--ff,Fredoka);font-weight:var(--fw,700);font-size:clamp(22px,2.4vw + 8px,32px);line-height:1.02;letter-spacing:-.01em;margin:0;text-wrap:balance;position:relative;z-index:1}
 .pli-fly.up .pli-ft{text-transform:uppercase}
@@ -95,7 +95,7 @@
     return `<article class="pli pli-${esc(x.type)}${opts.fade ? " pli-fade" : ""}" style="--tilt:${tilt}deg" data-pli="${esc(x.id)}">${sticker}<div class="pli-card">${media(x)}
       <div class="pli-body">${x.type === "photo" ? "" : `<h3 class="pli-title${x.type === "flyer" ? " pli-sr" : ""}">${esc(x.title)}</h3>`}${lineOf(x) ? `<p class="pli-line">${esc(lineOf(x))}</p>` : ""}
         ${x.host?.handle ? `<p class="pli-by">by <a href="${esc(safeUrl(x.host.url) || "/@" + x.host.handle)}">${esc(x.host.name)}</a></p>` : ""}
-        ${tags.length ? `<div class="pli-tags">${tags.map((t) => `<button type="button" data-pli-tag="${esc(t.id)}">${esc(t.emoji)} ${esc(t.label)}</button>`).join("")}</div>` : ""}
+        ${tags.length ? `<div class="pli-tags">${tags.map((t) => `<button type="button" data-pli-tag="${esc(t.id)}">${esc(t.label)}</button>`).join("")}</div>` : ""}
         <div class="pli-acts">${save}<button type="button" class="pli-host" data-pli-host="${esc(x.id)}">Host this</button>${real}</div>
         <p class="pli-count" data-pls-count="${esc(x.save.kind + ":" + x.save.ref)}">${esc(window.PLSave ? window.PLSave.countLine(x.saves || 0) : "")}</p>${hostedKey(x) ? `<p class="pli-count pli-hosted" data-pl-hosted="${esc(hostedKey(x))}" hidden></p>` : ""}</div></div></article>`; }
   // "3 people hosted this after seeing it" (public/hostlike.js fills it in): an idea, or the real event a card came from

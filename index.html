@@ -6877,7 +6877,7 @@ function drawCrew(){ const host=$("#stepHost")||$("#view-studio"); if(!host||$("
 // ---------- guest page: follow the host, pickup windows, allergens ----------
 { const _rg2=renderGuest; renderGuest=async function(){ const r=await _rg2.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e||!host) return r;
     if(/giveaway/.test(e.activity||"")){ const l=$("#g-slot",host)?.closest("label"); if(l&&l.firstChild?.nodeType===3) l.firstChild.textContent="Pickup time"; const o=$("#g-slot option[value='']",host); if(o) o.textContent="Pick a time" }
-    if((e.allergens||[]).length&&!host.querySelector(".gk-allerg")){ const gk=host.querySelector(".gk"); const d=document.createElement("div"); d.className="gk-row gk-allerg"; d.innerHTML=`<span>⚠️</span><div><b>Contains</b><p>${e.allergens.map(esc).join(", ")}</p></div>`; (gk||host.querySelector(".invite .in")||host).appendChild(d) }
+    if((e.allergens||[]).length&&!host.querySelector(".gk-allerg")){ const gk=host.querySelector(".gk"); const d=document.createElement("div"); d.className="gk-row gk-allerg"; d.innerHTML=`<span class="gk-ic" style="--g:var(--g-alert)">⚠️</span><div><b>Contains</b><p>${e.allergens.map(esc).join(", ")}</p></div>`; (gk||host.querySelector(".invite .in")||host).appendChild(d) }
     if(!host.querySelector(".gk-follow")&&e.id) fetch("/api/public/event-host/"+encodeURIComponent(e.id)).then(x=>x.json()).then(j=>{ if(!j?.host||host.querySelector(".gk-follow")) return; const h=j.host, first=j.person||String(h.name||h.handle).split(/[\s']/)[0]; window.__gHostName=window.__gHostName||j.person||first; const box=document.createElement("div"); box.className="gk-follow";
       box.innerHTML=`<span class="gk-av" style="--c:${esc(h.color||"#E26D8E")}">${esc(h.emoji||"🎉")}</span><div>${document.getElementById("hostHello")?"":`<b>Hosted by <a href="/@${esc(h.handle)}">${esc(first)}</a></b>`}<small>Hear about the next one.</small><form class="row" id="gf"><input id="gf-email" type="email" placeholder="Email" required value="${esc($("#g-email",host)?.value||"")}"><button class="btn sm" type="submit">Follow ${esc(first)}</button></form>${h.supportUrl||h.fanclubUrl?`<small>${h.fanclubUrl?`<a href="${esc(h.fanclubUrl)}" target="_blank" rel="noopener nofollow">Become a supporter</a>`:""}${h.supportUrl&&h.fanclubUrl?" · ":""}${h.supportUrl?`<a href="${esc(h.supportUrl)}" target="_blank" rel="noopener nofollow">Tip ${esc(first)}</a>`:""}</small>`:""}</div>`;
       const grow=host.querySelector(".gk-grow"); grow?grow.before(box):host.appendChild(box);
@@ -8978,14 +8978,14 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; document.queryS
 #view-guest.ev2 .gxfacts > span small::before{font-size:20px}
 #view-guest.ev2 .gxfacts > span b{display:block;margin:0!important;padding:0!important}
 #view-guest.ev2 .gxfacts > span[data-k=Where].dup{display:none!important}
-#view-guest.ev2 .in .gk .gk-row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:baseline;font-size:20px}
+#view-guest.ev2 .in .gk .gk-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:center;font-size:16px}
 #view-guest.ev2 .in .gk .gk-row small,#view-guest.ev2 .in .gk .gk-row .eyebrow{display:none}
 #view-guest.ev2 #gForm{background:transparent!important;border:0!important;border-top:1px solid #E4D9C8!important;box-shadow:none!important;border-radius:0!important;padding:32px 0 0!important}
 .ev2-rsvp .pill button{text-transform:none!important}
 #view-guest.ev2 .gxfacts > span[data-k=When]{grid-template-columns:minmax(0,1fr)!important;margin-bottom:6px!important}
 #view-guest.ev2 .gxfacts > span[data-k=When] small{display:none!important}
 #view-guest.ev2 .gxfacts > span[data-k=When] b{font:600 var(--fs-28-40,28px)/1.15 Fredoka,"Instrument Sans",system-ui!important;letter-spacing:-.01em}
-#view-guest.ev2 .ev2-when-time{display:block;margin:4px 0 0!important;font:400 var(--fs-20-28,20px)/1.2 "Instrument Sans",system-ui!important;color:#6B5F56!important}
+#view-guest.ev2 .ev2-when-time{display:block;margin:4px 0 0!important;font:400 16px/1.3 var(--sys-sans)!important;color:#6B5F56!important}
 #view-guest.ev2 .ev2-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 #view-guest.ev2 .ev2-acts .btn{background:#fff!important;color:#1F1A17!important;border:1px solid #D9CCBB!important;box-shadow:none!important;border-radius:999px!important;min-height:44px;padding:0 18px!important;font-weight:600;display:inline-flex;gap:8px;align-items:center}
 #view-guest.ev2 .ev2-acts .btn.ev2-ic{width:44px;height:44px;padding:0!important;justify-content:center}
@@ -9001,14 +9001,14 @@ html body .ev2-chat > .gk-grow{max-width:none!important;width:100%;box-sizing:bo
 .ev2-more .em-art{aspect-ratio:4/3!important;font-size:56px!important}
 .gc-pins{display:flex;flex-direction:column;gap:6px;margin:8px 0}.gc-pin{padding:10px 12px;border-radius:12px;background:#FFF1C9;border:1.5px solid #1F1A17;font-size:14px}.gc-pin b{display:block;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#B04A30;margin-bottom:2px}
 .ev2 .in > .eyebrow{display:inline-block}
-.ev2 .in h3{display:block!important;font:700 clamp(40px,5.6vw,72px)/1.02 Fredoka,"Instrument Sans",system-ui;letter-spacing:-.02em;margin:10px 0 18px}
+.ev2 .in h3{display:block!important;font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:8px 0 16px;text-wrap:balance}
 .ev2 .gxfacts{display:flex!important;flex-direction:column;gap:12px;margin:0 0 14px}
 .ev2 .gxfacts span{display:flex;gap:12px;align-items:baseline}
 .ev2 .gxfacts small{flex:none;width:22px;font-size:0}.ev2 .gxfacts small::before{content:"";display:inline-block;width:20px;height:20px;background:var(--lk-soft,#5A3B2B);-webkit-mask:var(--g,var(--g-cal)) center/contain no-repeat;mask:var(--g,var(--g-cal)) center/contain no-repeat}
 .ev2 .gxfacts span[data-k=When] small{--g:var(--g-cal)}.ev2 .gxfacts span[data-k=Where] small{--g:var(--g-pin)}.ev2 .gxfacts span[data-k=Size] small{--g:var(--g-people)}.ev2 .gxfacts span[data-k=Price] small{--g:var(--g-tag)}
-.ev2 .gxfacts span[data-k=When] b{font:600 var(--fs-20-28,20px)/1.2 Fredoka,"Instrument Sans",system-ui}
-.ev2 .gxfacts span:not([data-k=When]) b{font-size:20px;font-weight:600}
-.ev2 .ev2-when-time{display:block;font:500 20px "Instrument Sans",system-ui;color:#6B5F56;margin-top:2px}
+.ev2 .gxfacts span[data-k=When] b{font:600 20px/1.25 var(--sys-display)}
+.ev2 .gxfacts span:not([data-k=When]) b{font-size:16px;font-weight:600}
+.ev2 .ev2-when-time{display:block;font:500 16px var(--sys-sans);color:#6B5F56;margin-top:2px}
 .ev2 .in .gk{margin:4px 0 12px}.ev2 .in .btns{margin:6px 0 18px}
 .ev2 .in > p:not(.note){font-size:20px;line-height:1.55;max-width:560px}
 .ev2 .in .gk-follow{margin:4px 0 18px;padding:14px;border-radius:18px}
@@ -9141,7 +9141,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
 #view-guest.ev2 .invite.gx{padding-bottom:0!important;margin-bottom:0!important;min-height:0!important}
 #view-guest.ev2 #gForm{padding-top:24px!important}
 #view-guest.ev2 .gk .gk-row > div > b{display:none}
-#view-guest.ev2 .gk .gk-row p{margin:0;font-size:20px;font-weight:600}
+#view-guest.ev2 .gk .gk-row p{margin:0;font-size:16px;font-weight:600}
 /* one card style for every section */
 #view-guest.ev2 #whoGoing,#view-guest.ev2 #evFaq,#view-guest.ev2 #gForm > .ev2-rs,#view-guest.ev2 .in .gk-follow,html body .ev2-chat > #gchat,html body .ev2-chat > .gk-grow,html body .ev2-chat > section.ev2-more{background:#fff!important;border:2px solid #1F1A17!important;border-radius:20px!important;box-shadow:5px 5px 0 #1F1A17!important;padding:22px!important;margin:0!important}
 #view-guest.ev2 #whoGoing h4,#view-guest.ev2 #evFaq h4,.ev2-more h4{font:700 20px/1.2 Fredoka,"Instrument Sans",system-ui;margin:0 0 12px}

@@ -244,15 +244,15 @@ export function loginPage() {
 </script>
 <style>
   body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "Instrument Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
-  form{background:#fff;padding:30px;border-radius:18px;border:1px solid #E9E1D6;box-shadow:0 1px 2px rgba(43,33,28,.05),0 18px 40px -24px rgba(43,33,28,.3);width:min(360px,calc(100vw - 32px));box-sizing:border-box}
+  form{background:#fff;padding:32px 24px;border-radius:24px;border:1.5px solid #E4D9C8;box-shadow:none;width:min(360px,calc(100vw - 32px));box-sizing:border-box}
   .brand{display:flex;align-items:center;gap:8px;font:600 20px "Fraunces",Georgia,serif;margin-bottom:18px}
   h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
-  label{display:block;font-size:13px;font-weight:600;color:#2B211C;margin-bottom:12px}
-  input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 12px;border-radius:12px}
-  input{border:1px solid #E9E1D6;margin:6px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:2px solid #E8C3B5;outline-offset:1px}
-  button{border:0;background:#C2553A;color:#fff;font-weight:600;cursor:pointer;margin-top:6px}button:hover{background:#A9462E}button:disabled{opacity:.6;cursor:default}
+  label{display:block;font-size:14px;font-weight:600;color:#2B211C;margin-bottom:16px}
+  input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 14px;border-radius:12px;min-height:48px}
+  input{border:1.5px solid #D9CCBB;margin:8px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:none;border-color:#1F1A17;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
+  button{border:0;background:#C94A30;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;border-radius:999px;min-height:52px}button:hover{background:#B04A30}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
-  a{display:block;margin-top:14px;text-align:center;color:#A9462E;font-size:13px;text-decoration:none}
+  a{display:block;margin-top:2px;padding:14px 0;text-align:center;color:#B04A30;font-size:14px;text-decoration:none}
 </style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
   <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#6F6259">Good to see you again.</p>

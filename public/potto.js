@@ -247,7 +247,7 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
             try { await api(a.url, a.body || {}, a.method || "POST"); a.sent = true; box.querySelector("p")?.remove(); btns.innerHTML = `<span class="pt-done">${esc(a.done || "Done.")}</span>`; }
             catch (err) { e.target.disabled = false; btns.insertAdjacentHTML("afterend", `<p style="color:var(--pl-danger);margin:8px 0 0;font-weight:500">${esc(err.message)}</p>`); } }; }; });
       row.querySelector('[data-a="person"]')?.addEventListener("click", person); }); }
-  function person() { close(); const go = () => { try { window.EncoreHelp?.person ? window.EncoreHelp.person() : (location.href = "/settings#help"); } catch {} };
+  function person() { close(); const go = () => { try { window.EncoreHelp?.person ? window.EncoreHelp.person() : (location.href = "/settings#hHelp"); } catch {} };
     if (window.EncoreHelp) return go(); const s = document.createElement("script"); s.src = "/help.js"; s.onload = () => setTimeout(go, 50); document.head.appendChild(s); }
   async function drawHistory() { const b = body(); b.innerHTML = `<p class="pt-cap">Your chats with Potto</p><span class="pt-dots"><i></i><i></i><i></i></span>`;
     let L = []; try { L = (await api("/api/potto/threads")).threads; } catch {}
@@ -296,7 +296,10 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
   // ---------- where the dock goes ----------
   // the host's Home in the app (index.html "#view-programs"); the Inbox page mounts its own (public/inbox.html)
   function homeDock() { if (P !== "/" || !signed()) return; const v = document.getElementById("view-programs"); const on = !!v && !v.hidden && getComputedStyle(v).display !== "none" && !document.getElementById("view-guest")?.offsetParent;
-    const d = document.getElementById("ptDock"); if (on && !d) dock({ searchLabel: "Search Discover", compose: { href: "/?app=1&new=1#studio", label: "New event" } }); else if (!on && d && d.dataset.home !== "0") { d.remove(); document.body.classList.remove("pt-has-dock"); } }
+    const d = document.getElementById("ptDock"); if (on && !d) { const n = dock({ searchLabel: "Search Discover", compose: { href: "/?app=1&new=1#studio", label: "New event" } });
+      // sit just above the app's own tab bar when it shows, else near the bottom edge
+      const t = [...document.querySelectorAll("nav.tabs,.es-tabs")].find((x) => x.offsetParent && x.getBoundingClientRect().bottom >= innerHeight - 2), h = t ? Math.round(t.getBoundingClientRect().height) : 0;
+      n.style.bottom = h ? `${h + 8}px` : "calc(16px + env(safe-area-inset-bottom))"; } else if (!on && d && d.dataset.home !== "0") { d.remove(); document.body.classList.remove("pt-has-dock"); } }
   if (P === "/") { let t = 0; new MutationObserver(() => { clearTimeout(t); t = setTimeout(homeDock, 120); }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "style", "class"] }); }
 
   window.PLPotto = { open, close, dock, setBadge, poll, get unread() { return unread; }, FACE };

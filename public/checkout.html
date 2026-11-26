@@ -70,7 +70,7 @@
       $("#back").onclick = () => { step = 2; draw(); };
       $("#send")?.addEventListener("click", async (e) => { const btn = e.currentTarget; S.company = $("#co").value.trim(); S.taxId = $("#tx").value.trim(); if (!S.company) { $("#co").focus(); return ($("#err").textContent = "Add your company name for the invoice."); }
         btn.disabled = true; btn.textContent = "Sending…";
-        try { const r = await api("/api/bb/requests", { handle, pkg: pkgId, headcount: S.people, ...(S.mode === "exact" ? { date: S.date } : { flex: S.flex }), diets: S.diets, dietNotes: S.dietNotes, access: S.access, occasion: S.occasion, notes: S.notes, company: S.company });
+        try { const r = await api("/api/bb/requests", { handle, pkg: pkgId, headcount: S.people, ...(S.mode === "exact" ? { date: S.date } : { flex: S.flex }), diets: S.diets, dietNotes: S.dietNotes, access: S.access, occasion: S.occasion, notes: S.notes, company: S.company, ...(new URLSearchParams(location.search).get("campaign") ? { campaign: new URLSearchParams(location.search).get("campaign") } : {}) });
           if (S.taxId) await api(`/api/bb/requests/${r.id}/billing`, { company: S.company, taxId: S.taxId });
           const p = await api(`/api/bb/requests/${r.id}/pay`, {}); if (p.redirect) { location.href = p.redirect; return; } req = p.request; draw(); }
         catch (er) { btn.disabled = false; btn.textContent = "Try again"; $("#err").textContent = er.message; } });

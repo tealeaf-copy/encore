@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Home · Pottery Lab</title><meta name="description" content="Your team's campaigns, upcoming events, budget and what resonates with your buyers, in one calm page.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"></head>
+<body class="bb ti"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $ } = BB; BB.top("home");
+  const main = $("#main"), day = (d, o = {}) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC", ...o }) : "");
+  const STATUS = { approval: "Waiting on your team", requested: "Sent to the host", countered: "The host suggested a change", accepted: "Accepted, deposit due", booked: "Booked", done: "Done" };
+  const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
+  (async () => { let d; try { d = await api("/api/teams/home"); } catch (e) {
+      if (e.status === 401) { main.innerHTML = `<section class="bb-xhead"><h1>Sign in to your team</h1><a class="bb-btn primary lg" href="/login?next=/teams/home">Sign in</a></section>`; return; }
+      if (e.code === "not_brand") { location.replace("/?app=1"); return; } main.innerHTML = `<p>${esc(e.message)}</p>`; return; }
+    const M = d.money, R = d.results, Z = d.resonates;
+    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">${esc(d.company)}</p><h1>${esc(hello())}${d.name ? `, <em>${esc(d.name)}</em>` : ""}</h1><p class="ti-sub">Your campaigns, what's coming up and what your buyers would love.</p></div>
+        <div class="acts"><a class="bb-btn quiet" href="/teams/campaigns?new=1">${icon("plus")}New campaign</a><a class="bb-btn primary lg" href="/teams/discover">${icon("people")}Book a host</a></div></header>
+      <div class="ti-tiles" style="--n:4"><div class="ti-tile"><span>Active campaigns</span><b>${d.active.length}</b><small>${d.campaigns} in all</small></div><div class="ti-tile"><span>Coming up</span><b>${d.upcoming.length}</b><small>${d.upcoming[0] ? `next ${esc(day(d.upcoming[0].date))}` : "nothing booked yet"}</small></div>
+        <div class="ti-tile"><span>Budget left</span><b>${M.budgetCents ? money(M.remainingCents) : "-"}</b><small>${M.budgetCents ? `${money(M.committedCents)} committed of ${money(M.budgetCents)}` : "set one in a campaign"}</small></div><div class="ti-tile"><span>Guests who came</span><b>${R.attended}</b><small>${R.againPct != null ? `${R.againPct}% would go again` : R.showPct != null ? `${R.showPct}% of yeses came` : "across your events"}</small></div></div>
+      <div class="ti-grid two" style="margin-top:16px"><div>
+        <section class="ti-sec" style="padding-top:8px"><h2>Active campaigns</h2>${d.active.length ? `<div class="ti-camps" style="grid-template-columns:1fr">${d.active.map((c) => { const B = c.budget, tot = Math.max(B.budgetCents, B.committedCents + B.pendingCents, 1);
+          return `<a class="ti-camp" href="/teams/campaigns/${c.id}"><span class="ti-st ${c.status}">${c.status === "planning" ? "Planning" : "Running"}</span><h3>${esc(c.title)}</h3><p class="meta">${esc(c.cities.join(", "))} · ${c.events} ${c.events === 1 ? "event" : "events"} · ${c.attended} came${c.next ? ` · next: ${esc(c.next.name)}, ${esc(day(c.next.date))}` : ""}</p>
+            ${B.budgetCents ? `<div class="ti-meter${B.over ? " over" : ""}" aria-hidden="true"><i style="width:${Math.round((B.committedCents / tot) * 100)}%"></i><i class="p" style="left:${Math.round((B.committedCents / tot) * 100)}%;width:${Math.round((B.pendingCents / tot) * 100)}%"></i></div><p class="meta">${money(B.committedCents)} committed of ${money(B.budgetCents)} · ${money(B.spentCents)} spent</p>` : ""}</a>`; }).join("")}</div>`
+          : `<div class="ti-empty"><h3>Start your first campaign</h3><p>Group a few events behind one goal. We'll suggest experiences and hosts that fit your buyers.</p><p><a class="bb-btn primary" href="/teams/campaigns?new=1">New campaign</a></p></div>`}</section>
+        <section class="ti-sec"><h2>Coming up</h2>${d.upcoming.length ? d.upcoming.map((r) => `<div class="ti-ev"><div><h3><a href="${r.campaign ? `/teams/campaigns/${r.campaign.id}/run` : r.url}">${esc(r.name)}</a></h3><p class="meta">${esc(day(r.date))} · ${esc(r.host)}${r.area ? ", " + esc(r.area) : ""}${r.campaign ? ` · ${esc(r.campaign.title)}` : ""}</p></div><div class="r">${r.campaign && r.invited ? `${r.yes} in<small>of ${r.invited} invited</small>` : `<small>${r.campaign ? "No invites yet" : esc(STATUS[r.status] || r.status)}</small>`}</div></div>`).join("") : `<p class="ti-sub">Nothing booked yet. <a href="/teams/discover">Find a host</a>.</p>`}</section></div>
+      <div>
+        <section class="ti-card"><p class="ti-k">What resonates</p>${Z && Z.kinds.length ? `<h2>${Z.audience.tags.length ? `For ${esc(Z.audience.tags.slice(0, 2).join(" and ").toLowerCase())}` : "What people love"}${Z.city ? ` in ${esc(Z.city)}` : ""}</h2>
+          <ol class="ti-fit" style="margin-top:8px">${Z.kinds.map((k) => `<li><span class="ti-score">${k.score}</span><div><h3>${esc(k.label)}</h3><ul class="ti-why"><li>${esc(k.why[0] || "")}</li>${k.againPct != null ? `<li>${k.againPct}% would go again</li>` : ""}</ul></div><span></span></li>`).join("")}</ol>
+          <p style="margin:8px 0 0"><a class="bb-btn quiet block" href="/teams/insights">See all insights</a></p>` : `<h2>Tell us who your buyers are</h2><p class="ti-sub">We'll show which experiences and hosts fit them.</p><p><a class="bb-btn quiet block" href="/teams/insights">Open Insights</a></p>`}</section>
+        ${d.waiting.length ? `<section class="ti-card" style="margin-top:16px"><p class="ti-k">Needs you</p>${d.waiting.map((w) => `<div class="ti-ev"><div><h3><a href="${w.url}">${esc(w.name)}</a></h3><p class="meta">${esc(STATUS[w.status] || w.status)}</p></div></div>`).join("")}</section>` : ""}
+        <section class="ti-card quiet" style="margin-top:16px"><p class="ti-k">Also here</p><ul class="bb-facts" style="margin:0">
+          <li>${icon("save")}<a href="/teams/list">Shortlists your team voted on</a></li><li>${icon("cal")}<a href="/teams/bookings">Bookings, approvals and invoices</a></li><li>${icon("shield")}<a href="/teams/trusted">How a host earns Trusted</a></li>
+          <li>${icon("inbox")}<a href="/requests">Earlier requests to hosts</a></li><li>${icon("star")}<a href="/gifts">Gifts</a></li><li>${icon("doc")}<a href="/?app=1&classic=1">Brand profile and older programs</a></li></ul></section>
+      </div></div>`;
+  })();
+})();
+</script></body></html>

@@ -73,3 +73,14 @@ app (`web_only`). Payouts to hosts by Stripe Connect aren't set up yet; the host
 
 `POST /api/bb/host/verify/id` puts a host in a manual review queue at `/admin/hosts` (ENCORE_ADMIN_EMAILS only).
 TODO(id-provider): send hosts to an ID check provider and take its webhook as the decision.
+
+## Brand Home, Insights and Campaigns
+
+`public/teams-intel.css` adds the pieces for `/teams/home`, `/teams/insights`, `/teams/campaigns` and the printable
+report, on top of the ones above: stat tiles (`.ti-tiles`, `.ti-tile`), bars (`.ti-bars`), the trends table
+(`.ti-table`), ranked fit rows with a score (`.ti-fit`, `.ti-score`), the tag input (`.ti-tags`), the budget meter
+(`.ti-meter`, committed solid, waiting hatched), campaign cards (`.ti-camp`), KPI rows (`.ti-kpis`), the guest list
+(`.ti-guests`) and the day-of check-in list (`.ti-people`, `.ti-check`). The Run view reuses the plans timeline
+(`public/timeline.css`). Every number a brand sees about guests follows the Insights rules in `server/insights.js`
+(10+ people and 3+ events behind a cell, people in bands, opt in, no identities); the explainer is
+`/teams/insights/how`. Tests: `test/insights.test.js`, `test/campaigns.test.js`.

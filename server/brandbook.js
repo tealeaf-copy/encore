@@ -467,18 +467,19 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const today = isoDay(); if (date && date < today) return bad(res, "That date has passed.");
     const W = getWorkspace(u.ws), company = clean(b.company || (W?.plan !== "friends" ? W?.company : ""), 120); if (!company) return bad(res, "Add your company name.");
     const price = priceFor(p, n), terms = cancellationTerms(s.policy, p.depositPct), st = statsOf(ws), rules = rulesOf(u.ws);
-    const approvalPending = needsApproval(rules, price.totalCents, u.email);
+    const cg = b.campaign && X.campaignGate ? X.campaignGate(u, String(b.campaign), price.totalCents) : null; if (cg && !cg.ok) return bad(res, cg.message, 403, "not_granted"); // a campaign's roles and budget (server/campaigns.js)
+    const approvalPending = needsApproval(rules, price.totalCents, u.email) || !!cg?.approval;
     const open = !date || availabilityFor(p, date.slice(0, 7), { taken: takenFor(ws, p.id), today }).days.find((d) => d.date === date)?.state === "open";
     const I = instantEligible({ trusted: st.trusted, pkg: p, date, headcount: n, today, approvalPending, open });
     const r = { kind: "bbreq", id: rid(8), hostWs: ws, handle: h.handle, pkgId: p.id, pkgName: p.name, brandWs: u.ws, brandEmail: lc(u.email), brandPhone: clean(b.phone, 30), contactName: clean(u.name || getDbUser(u.email)?.name || "", 80), company,
       date, flex, headcount: n, diets: (Array.isArray(b.diets) ? b.diets : []).filter((d) => DIETS.includes(d)), dietNotes: clean(b.dietNotes, 300), access: (Array.isArray(b.access) ? b.access : []).filter((d) => ACCESS.includes(d)), occasion: clean(b.occasion, 120), notes: scrubContact(cleanText(b.notes, 1200)),
       price, terms, venue: { kind: p.venue, address: p.venue === "host" ? s.address || "" : "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
-      status: approvalPending ? "approval" : "requested", approval: approvalPending ? { state: "pending", approvers: rules.approvers, rule: rules.approval === "always" ? "Every booking" : `Over ${money0(rules.overCents)}` } : null,
+      status: approvalPending ? "approval" : "requested", approval: approvalPending ? (cg?.approval && !needsApproval(rules, price.totalCents, u.email) ? { state: "pending", approvers: cg.approval.approvers, rule: cg.approval.rule } : { state: "pending", approvers: [...new Set([...(rules.approvers || []), ...(cg?.approval?.approvers || [])])], rule: rules.approval === "always" ? "Every booking" : `Over ${money0(rules.overCents)}` }) : null, ...(cg ? { campaignId: cg.id } : {}),
       instantWanted: I.ok || (!!p.instant && st.trusted && approvalPending && I.why === "Your team approves this first."), messages: [], history: [], reviews: {}, billing: { company }, createdAt: Date.now(), sentAt: approvalPending ? 0 : Date.now() };
     push(r, "brand", approvalPending ? "asked the team to approve" : "sent the request");
     if (I.ok) instantBook(r);
-    reqSet(r);
-    if (approvalPending) for (const a of rules.approvers) tell(a, `${first(r.contactName) || "A teammate"} wants to book ${p.name} for ${n} (${money0(price.totalCents)}). It needs your OK.`, `/teams/bookings/${r.id}`);
+    reqSet(r); if (cg) X.campaignAttach?.(cg.id, r.id);
+    if (approvalPending) for (const a of r.approval.approvers) tell(a, `${first(r.contactName) || "A teammate"} wants to book ${p.name} for ${n} (${money0(price.totalCents)}). It needs your OK.`, `/teams/bookings/${r.id}`);
     else tell(ownerEmailOf(ws), r.instant ? `${company} booked ${p.name} for ${n} with Instant book.` : `${company} asked to book ${p.name} for ${n}. Reply within a day.`, `/host/teams#inbox`);
     res.json({ ok: true, id: r.id, status: r.status, instant: !!r.instant, instantWhy: I.why, url: `/teams/bookings/${r.id}`, request: view(r, "brand") }); });
   function instantBook(r) { r.status = "accepted"; r.instant = true; r.respondedAt = Date.now(); r.sentAt ||= Date.now(); push(r, "host", "Instant book: accepted"); }
@@ -494,14 +495,14 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     push(r, "brand", "asked a question"); reqSet(r); tell(ownerEmailOf(F.ws), `${r.company} has a question about ${F.p.name}.`, "/host/teams#inbox");
     res.json({ ok: true, id: r.id, url: `/teams/bookings/${r.id}` }); });
   app.get("/api/bb/requests", (req, res) => { const u = need(req, res); if (!u) return; const L = reqs().filter((r) => r.brandWs === u.ws).sort((a, b) => b.updatedAt - a.updatedAt);
-    res.set("Cache-Control", "private, no-store").json({ requests: L.map((r) => view(r, "brand")), rules: rulesOf(u.ws), approver: (rulesOf(u.ws).approvers || []).includes(lc(u.email)) }); });
+    res.set("Cache-Control", "private, no-store").json({ requests: L.map((r) => view(r, "brand")), rules: rulesOf(u.ws), approver: (rulesOf(u.ws).approvers || []).includes(lc(u.email)) || L.some((r) => r.status === "approval" && (r.approval?.approvers || []).includes(lc(u.email))) }); });
   app.get("/api/bb/requests/:id", (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !(brandSide(u, r) || hostSide(u, r))) return bad(res, "Not found.", 404, "not_found");
-    res.set("Cache-Control", "private, no-store").json({ request: view(r, brandSide(u, r) ? "brand" : "host"), side: brandSide(u, r) ? "brand" : "host", approver: brandSide(u, r) && (rulesOf(u.ws).approvers || []).includes(lc(u.email)) }); });
+    res.set("Cache-Control", "private, no-store").json({ request: view(r, brandSide(u, r) ? "brand" : "host"), side: brandSide(u, r) ? "brand" : "host", approver: brandSide(u, r) && [...(rulesOf(u.ws).approvers || []), ...(r.approval?.approvers || [])].includes(lc(u.email)) }); });
 
   // a brand approver lets it through (or not)
   app.post("/api/bb/requests/:id/approve", small, (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !brandSide(u, r)) return bad(res, "Not found.", 404, "not_found");
     if (r.status !== "approval") return bad(res, "This one doesn't need approval now.", 409, "conflict");
-    if (!(rulesOf(u.ws).approvers || []).includes(lc(u.email))) return bad(res, "Only an approver on your team can approve this.", 403, "not_granted");
+    if (![...(rulesOf(u.ws).approvers || []), ...(r.approval?.approvers || [])].includes(lc(u.email))) return bad(res, "Only an approver on your team can approve this.", 403, "not_granted");
     if (req.body?.ok === false) { r.status = "cancelled"; r.cancelledBy = "brand"; r.cancelledAt = Date.now(); r.approval = { ...r.approval, state: "no", by: lc(u.email), at: Date.now() }; push(r, "brand", "team said not this time"); releaseDeposit(r); reqSet(r); return res.json({ request: view(r, "brand") }); }
     r.approval = { ...r.approval, state: "yes", by: lc(u.email), at: Date.now() }; r.status = "requested"; r.sentAt = Date.now(); push(r, "brand", "approved by the team");
     const F = findPkg(r.handle, r.pkgId); if (F && r.instantWanted) { const I = instantEligible({ trusted: statsOf(F.ws).trusted, pkg: F.p, date: r.date, headcount: r.headcount, open: availabilityFor(F.p, (r.date || "").slice(0, 7), { taken: takenFor(F.ws, F.p.id) }).days.find((d) => d.date === r.date)?.state === "open" }); if (I.ok) { instantBook(r); if (r.deposit.state === "held") chargeDeposit(r); } }

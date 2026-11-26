@@ -70,6 +70,9 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     </section>
     <section aria-labelledby="hFind"><h2 id="hFind">Finding you</h2><p>Off unless you turn it on. When it's on, friends who check their contacts on Find people can see you're here. We compare scrambled emails and phone numbers and keep nothing they send.</p>
       <div class="row"><span>Let people find me by email or phone<small>Your email and the phone on your account</small></span><input type="checkbox" class="sw" id="findable" aria-label="Let people find me by email or phone"></div></section>
+    <section aria-labelledby="hIns" id="insights"><h2 id="hIns">Brand insights</h2><p>Brands on Pottery Lab can see what kinds of events people love, as totals only: "supper clubs in Brooklyn, 40+ people, 88% would go again". Your activity is left out unless you turn this off. If you do, your replies, kudos and interests can count toward those totals, always mixed with at least 9 other people and 3 events, never with your name, email or anything that points to you. Brands can't download it. <a href="/teams/insights/how">How insights work</a></p>
+      <div class="row"><span>Don't include my activity in brand insights<small>On by default. Turn it off to help hosts get booked by brands.</small></span><input type="checkbox" class="sw" id="insOut" aria-label="Don't include my activity in brand insights" checked></div>
+      <div id="insWork" hidden><p style="margin:12px 0 6px">What you do, if you'd like it to count too (up to 4). It's only ever used in totals.</p><div id="insChips" style="display:flex;flex-wrap:wrap;gap:8px"></div></div></section>
     <section aria-labelledby="hCal" id="calendar"><h2 id="hCal">Your calendar</h2><p>Your plans as a calendar link. Reset it if you shared it by mistake.</p><div id="calSync"></div><script src="/addcal.js"></script><script>window.PLAddCal && PLAddCal.sync(document.getElementById("calSync"), { settings: true });</script></section>
     <section aria-labelledby="hBlock"><h2 id="hBlock">Blocked</h2><p>People and hosts you blocked. You don't see their posts, photos or events.</p><div id="blocks"></div></section>
     <section aria-labelledby="hHelp"><h2 id="hHelp">Help and safety</h2>
@@ -117,6 +120,10 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
   // Find people: let people find me by email or phone (server/findpeople.js), off by default
   try { const FD = await get("/api/me/findable"); $("#findable").checked = FD.on === true; } catch {}
   $("#findable").onchange = (e) => send("/api/me/findable", { on: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; });
+  try { const IN = await get("/api/me/insights"); const out = $("#insOut"), wk = $("#insWork"), chips = $("#insChips"); let work = IN.work || [];
+    const drawW = () => { chips.innerHTML = (IN.options || []).map(([k, l]) => `<button type="button" class="btn sm" aria-pressed="${work.includes(k)}" data-w="${k}" style="${work.includes(k) ? "background:var(--ink);color:#fff" : ""}">${l}</button>`).join(""); chips.querySelectorAll("[data-w]").forEach((b) => (b.onclick = () => { const k = b.dataset.w; work = work.includes(k) ? work.filter((x) => x !== k) : [...work, k].slice(0, 4); send("/api/me/insights", { work }).catch(() => {}); drawW(); })); };
+    out.checked = IN.include !== true; wk.hidden = out.checked; drawW();
+    out.onchange = (e) => { wk.hidden = e.target.checked; send("/api/me/insights", { include: !e.target.checked }).catch(() => { e.target.checked = !e.target.checked; wk.hidden = e.target.checked; }); }; } catch {}
   // blocked
   async function drawBlocks() { const B = (await get("/api/me/blocks")).blocks || [], el = $("#blocks");
     el.innerHTML = B.length ? B.map((b) => `<div class="row"><span>${esc(b.name || (b.target.startsWith("host:") ? "@" + b.target.slice(5) : "Someone"))}<small>${b.target.startsWith("host:") ? "Host" : "Person"}</small></span><button type="button" class="btn sm" data-t="${esc(b.target)}">Unblock</button></div>`).join("") : `<p class="msg">No one. If someone bothers you, open the ⋯ on their post or page.</p>`;

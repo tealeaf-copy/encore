@@ -1,4 +1,4 @@
-// One header for every public page. Hosts: Home, Discover, New event, Plans, My page, Feed (the app's order, so tabs never move). Brands: Home, Discover, Hosts, Requests, Gifts.
+// One header for every public page. Hosts: Home, Discover, New event, Plans, My page, Feed (the app's order, so tabs never move). Brands: Home, Discover hosts, Campaigns, Insights, Bookings (Requests and Gifts are linked from the brand Home).
 // Signed out: Feed (the app's default view) first, then Discover, Ideas, Hosts, For brands, Sign in, Start your page. On phones the links scroll instead of getting cut off.
 (function () {
   if (window.__encoreNav) return; window.__encoreNav = 1;
@@ -14,7 +14,7 @@
     if (!me?.verified) return draw(document.body?.dataset?.audience === "brand" ? [["/discover", "Discover"], ["/hosts", "Hosts"], ["/gifts", "Gifts"], ["/login", "Sign in"], ["/hosts/book", "Request a date", 1]] : [["/feed", "Feed"], ["/discover", "Discover"], ["/ideas", "Ideas"], ["/hosts", "Hosts"], ["/about", "About"], ...(/^\/(g$|e\/)/.test(here) ? [] : [["/hosts/book", "For brands"]]), ["/login", "Sign in"], ["/signup?mode=friends", "Start your page", 1]]);
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json().catch(() => ({}));
     if (W?.regularOnly) return draw([["/discover", "Discover"], ["/feed", "Feed"], ["/plans", "Plans"], ["/?app=1", "Start your page", 1]]);
-    if (W?.personal === false && W?.plan !== "self-hosted" && !W?.handle) return draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/hosts/book", "Book a host"], ["/requests", "Requests"], ["/gifts", "Gifts"]]);
+    if (W?.personal === false && W?.plan !== "self-hosted" && !W?.handle) return draw([["/teams/home", "Home"], ["/teams/discover", "Discover hosts"], ["/teams/campaigns", "Campaigns"], ["/teams/insights", "Insights"], ["/teams/bookings", "Bookings"]]);
     draw([["/?app=1", "Home"], ["/discover", "Discover"], ["/?app=1&new=1#studio", "New event", 1], ["/plans", "Plans"], ...(W?.handle ? [["/@" + W.handle, "My page"]] : []), ["/feed", "Feed"]]);
   } catch {} };
   run(); window.addEventListener("encore:signedin", run);

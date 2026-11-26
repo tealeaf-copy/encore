@@ -166,7 +166,7 @@
   window.Slots = { lineupHTML, quietHTML, hostPanel, askHint, quietFormHTML, run: schedule, markdownOf, ctx: ctxOf, draw: (c) => run(c) };
   if (typeof document === "undefined") return;
   if (/^\/[ei]\/[A-Za-z0-9_-]{2,80}$/.test(location.pathname) || location.pathname === "/g") {
-    css(); add("/plain.js"); add("/series.js");
+    css(); add("/plain.js"); add("/series.js"); if (location.pathname !== "/g") add("/replybar.js");
     // the light invite keeps its event to itself: read the public copy once for Copy as Markdown
     if (location.pathname !== "/g") { const id = location.pathname.split("/")[2]; fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)).then((j) => { window.__slEv = j?.data || null; sig = ""; schedule(); }).catch(() => {}); }
     new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true }); schedule();

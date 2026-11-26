@@ -87,7 +87,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
     const item = (href, icon, label, extra = "") => { const p = href.split(/[?#]/)[0]; const cur = (p !== "/" && p === P) ? ' aria-current="page"' : ""; return `<a href="${href}" aria-label="${label}"${cur}>${icon}<span>${label}</span>${extra}</a>`; };
     const guestChats = !signed && (() => { try { for (let i = 0; i < localStorage.length; i++) if (/^encore-rsvp-/.test(localStorage.key(i) || "")) return true; } catch {} return false; })();
     const chatsItem = item("/chats", ICON.chat, "Chats", `<span class="es-n" data-chats-badge hidden></span>`);
-    rail.innerHTML = `<a class="es-logo" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
+    rail.innerHTML = `<a class="es-logo kit-off" href="${signed ? "/?app=1" : "/"}" aria-label="Pottery Lab home">${logo}<span>pottery lab</span></a>` +
       (brand ? item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + item("/hosts/book", ICON.people, "Book a host") + item("/requests", ICON.inbox, "Requests") + item("/gifts", ICON.gift, "Gifts")
         : host ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/?app=1", ICON.home, "Home") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page")
         : signed ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/plans", ICON.cal, "Plans") + item("/saved", ICON.heart, "Saved")
@@ -109,7 +109,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
       tabs.querySelectorAll("[data-me]").forEach((a) => (a.onclick = (e) => { if (!window.PLChatNav) return; e.preventDefault(); window.PLChatNav.me({ host, handle: W?.handle || "", name: me?.name || "" }); })); }
     try { window.PLChatNav?.poll(); } catch {}
     if (isG && !document.querySelector(".es-top")) { const top = document.createElement("header"); top.className = "es-top";
-      top.innerHTML = `<a class="es-brand" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1&new=1#studio">New event</a>` : ""}</nav>`;
+      top.innerHTML = `<a class="es-brand kit-off" href="${signed ? "/?app=1" : "/"}">${logo}pottery lab</a><nav><a href="/discover">Discover</a>${signed ? `<a href="/plans">Plans</a>` : `<a href="/login">Sign in</a>`}${host ? `<a class="cta" href="/?app=1&new=1#studio">New event</a>` : ""}</nav>`;
       const main = document.querySelector("main") || document.body.firstElementChild; (main?.parentElement || document.body).insertBefore(top, main); }
   }
   // Draw the nav at once: signed-out visitors need no request; signed-in people get last time's nav straight away,

@@ -33,6 +33,21 @@
   const tintStyle = (T) => `--tint:${T.bg};--tink:${T.ink};--tsoft:${T.soft};--tacc:${T.acc}`;
   function btnText(e, fallback = "I'm in") { const L = e.look || {}, em = L.buttonEmoji ? L.buttonEmoji + " " : ""; if (e.approvalRequired) return em + "Ask to join"; return em + (L.buttonLabel && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback); }
   function art(e, opts = {}) { const A = window.EventArt; if (!A) return `<div class="fv-artfb">${esc(e.emoji || "🎉")}</div>`; return A.cover({ ...e, name: e.title, pubTitle: e.title, coverArt: e.coverArt || undefined }, { ...(opts.title != null ? { title: opts.title } : {}) }); }
+  // The platform frame (docs/brand-kit.md): on shared surfaces a host brings a cover, a title, a face and one accent.
+  // A cover shows only when it can carry the card: there, wider than 600px, and not near-black, blown out or flat.
+  // Anything else gets our drawn cover. The 4:5 crop is fixed; a saved focal point (look.coverPos, "x% y%") steers it.
+  const EVS = new Map();
+  const coverOK = (e) => !!e.cover && !(e.look?.coverW && e.look.coverW < 600);
+  const coverPos = (L) => (/^\d{1,3}% \d{1,3}%$/.test(L?.coverPos || "") ? L.coverPos : "50% 50%");
+  function coverFails(img) { if (img.naturalWidth && img.naturalWidth < 600) return true;
+    try { const c = document.createElement("canvas"); c.width = 24; c.height = 30; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, 24, 30); const d = x.getImageData(0, 0, 24, 30).data;
+      let n = 0, sum = 0, sq = 0; for (let k = 0; k < d.length; k += 4) { const l = (0.2126 * d[k] + 0.7152 * d[k + 1] + 0.0722 * d[k + 2]) / 255; sum += l; sq += l * l; n++; }
+      const mean = sum / n, sd = Math.sqrt(Math.max(0, sq / n - mean * mean)); return mean < 0.05 || mean > 0.97 || sd < 0.03; } catch { return false; } } // a cross-origin photo can't be read: keep it
+  function checkCover(img) { if (!img.matches?.("img[data-fv-q]") || img.dataset.fvQd) return; img.dataset.fvQd = "1"; if (!coverFails(img)) return;
+    const box = img.parentElement, e = EVS.get(box?.closest("[data-fv-id]")?.dataset.fvId || ""); if (box && e) { box.innerHTML = art(e, { title: "" }); box.closest(".fv-card")?.classList.remove("poster"); } }
+  document.addEventListener("load", (ev) => checkCover(ev.target), true);
+  document.addEventListener("error", (ev) => { const t = ev.target; if (t?.matches?.("img[data-fv-q]")) { t.dataset.fvQd = ""; t.removeAttribute("src"); const box = t.parentElement, e = EVS.get(box?.closest("[data-fv-id]")?.dataset.fvId || ""); if (box && e) box.innerHTML = art(e, { title: "" }); } }, true);
+  window.__fvFrame = { coverOK, coverFails }; // for tests
   const potto = (pose, size) => (window.Potto ? window.Potto.svg(pose, size, "") : "");
   const tape = (i, cls = "") => `<span class="fv-tape ${cls}" style="--tp:${TAPE[i % TAPE.length]};--tr:${i % 2 ? 4 : -5}deg" aria-hidden="true"></span>`;
   const sticker = (txt, cls = "") => `<span class="fv-stk ${cls}">${esc(txt)}</span>`;
@@ -131,8 +146,8 @@
   // one quiet word under an event at most: Example, spots left, or how many are in (friends going wins when it loads)
   const statusOf = (e) => (e.sample ? "Example" : e.spotsLeft != null && e.spotsLeft <= 3 ? (e.spotsLeft ? `${e.spotsLeft} spot${e.spotsLeft === 1 ? "" : "s"} left` : "Full") : e.going >= 3 ? `${e.going} are in` : "");
   // an event coming up: the flyer or cover big at 4:5 (a poster sits whole on linen), then who, what, when, one button
-  function flyer(e, { by = null, eager = false } = {}) { const L = e.look || {}, poster = L.coverFit === "poster" && L.coverW && L.coverH, st = statusOf(e);
-    const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="${L.coverW || 800}" height="${L.coverH || 1000}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" style="object-fit:${poster ? "contain" : "cover"}">` : art(e, { title: "" }); /* the heading below has the title: never twice */
+  function flyer(e, { by = null, eager = false } = {}) { const L = e.look || {}, poster = false, st = statusOf(e); if (e.id) EVS.set(String(e.id), e); /* the frame: always the 4:5 crop, never a letterboxed poster */
+    const media = coverOK(e) ? `<img class="fv-img" data-fv-q src="${esc(e.cover)}" alt="" width="800" height="1000" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" style="object-fit:cover;object-position:${coverPos(L)}">` : art(e, { title: "" }); /* the heading below has the title: never twice */
     return `<article class="fv-card fv-ev kit-story${poster ? " poster" : ""}" data-fv-id="${esc(e.id || "")}" style="${window.EncoreBrandKit?.storyStyle(e.host) || ""}">
       <a class="fv-media" href="${esc(e.cta?.url || e.url)}" tabindex="-1" aria-hidden="true">${media}</a>
       <div class="fv-body"><p class="fv-host">${avatar(e.host, 24)}<span><b>${esc(e.host?.name || "A host")}</b>${by?.note ? ` · ${esc(by.note)}` : ""}</span></p>
@@ -146,8 +161,8 @@
   // "Host one like this" (public/hostlike.js) on a real past event, and how many hosted one after seeing it
   const likeBtn = (e) => (e.id && !e.sample && !/^s[cx]-/.test(e.id) ? `<button type="button" class="fv-mi fv-like" data-pl-like="${esc(e.id)}" data-title="${esc(e.title)}">Host one like this</button>${e.hostedLine ? `<small class="fv-mnote">${esc(e.hostedLine)}</small>` : ""}` : "");
   // a tile for a row: a small 4:5 picture, a title, one line
-  function mini(e, { cityToo = false } = {}) { const cap = [short(e), cityToo ? e.city || where(e) : where(e), e.sample ? "Example" : ""].filter(Boolean).join(" · ");
-    return `<a class="fv-tile" href="${esc(e.cta?.url || e.url)}" data-fv-id="${esc(e.id || "")}"><span class="fv-tile-m">${e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async">` : art(e, { title: "" })}</span><b>${esc(e.title)}</b><small>${esc(cap)}</small></a>`; }
+  function mini(e, { cityToo = false } = {}) { if (e.id) EVS.set(String(e.id), e); const cap = [short(e), cityToo ? e.city || where(e) : where(e), e.sample ? "Example" : ""].filter(Boolean).join(" · ");
+    return `<a class="fv-tile" href="${esc(e.cta?.url || e.url)}" data-fv-id="${esc(e.id || "")}"><span class="fv-tile-m">${coverOK(e) ? `<img class="fv-img" data-fv-q src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async" style="object-position:${coverPos(e.look)}">` : art(e, { title: "" })}</span><b>${esc(e.title)}</b><small>${esc(cap)}</small></a>`; }
   // a past event as a scrapbook page: one big instant photo with tape, two smaller ones, who came, one kudos quote
   function dump(e, { by = null, key = "", photos = null, quote = null } = {}) { const P = (photos || e.photos || []).slice(0, 8);
     if (e.cover && !P.some((p) => p.url === e.cover)) P.unshift({ id: "cover", url: e.cover, type: "image", caption: "" });

@@ -41,6 +41,10 @@ html.kit-on body.store :is(.card,.ev,.kq,.bx,.si,.sub,.your-order){border-radius
 html.kit-on body.store :is(.next-up,.shop)::before{height:3px;background:var(--kit-accent)}
 html.kit-on body.store .store-tag{color:var(--kit-soft);font-size:var(--kit-fs-body)}
 
+/* ---- covers drawn in line art take the kit's colours (the host page, and an event with no look of its own) ---- */
+html.kit-on:not(.kit-house):is(.kit-look,:has(body.store)) .ea-cover:not(.ea-custom):not(.lk-deck){--ea-bg:color-mix(in srgb,var(--kit-accent) 16%,var(--kit-surface))!important}
+html.kit-on:not(.kit-house).kit-cover-deck:is(.kit-look,:has(body.store)) .ea-cover:not(.ea-custom):not(.lk-deck){--ea-bg:var(--kit-accent2)!important}
+
 /* ---- the Next up card: kit roles throughout ---- */
 html.kit-on body .next-up .nu-eyebrow{font:600 var(--kit-fs-small)/1.2 var(--kit-body)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--kit-accent-text)}
 html.kit-on body .next-up .nu-title{font-size:var(--kit-fs-display)!important;line-height:1.08;margin:8px 0 4px;color:var(--kit-ink);text-wrap:balance}

@@ -84,7 +84,7 @@
       "--kit-r-card": soft ? "16px" : "6px", "--kit-r-sheet": soft ? "24px" : "10px", "--kit-r-btn": soft ? "999px" : "8px", "--kit-r-chip": soft ? "999px" : "6px", "--kit-r-field": soft ? "12px" : "6px" }; }
   const cssText = (k) => Object.entries(vars(k)).map(([n, v]) => `${n}:${String(v).replace(/[;{}<>]/g, "")}`).join(";");
   /** The classes a page wears for a kit (on <html>). */
-  const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house")];
+  const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
 
   // ---- event looks inherit the kit ----
   const HEX = /^#[0-9a-f]{6}$/i;
@@ -144,7 +144,7 @@
   function eventFor(e, el, o) { if (!e || typeof e !== "object") return e; const page = el === document.body;
     if (page) { last = [el, e, o]; if (!Object.keys(e).length) { if (current) unpaint(); return e; } if (current) { paint(current); decor(current); } } /* {} is the app leaving the guest view */
     const k = page ? current : mineKit || current; if (!k) return e;
-    const L0 = e.look && typeof e.look === "object" ? e.look : {}, L = lookFor(L0, k); return L === L0 ? e : { ...e, look: L }; }
+    const L0 = e.look && typeof e.look === "object" ? e.look : {}, L = lookFor(L0, k); if (page) document.documentElement.classList.toggle("kit-look", !hasLook(L0) && L !== L0); /* drawn covers take the kit's colours */ return L === L0 ? e : { ...e, look: L }; }
   // ... and after: a title with no font of its own takes the kit's display face; an event's own font leads the page's headings
   function after(el, e) { const k = el === document.body ? current : mineKit || current; if (!k || !el?.classList) return; const L = e?.look || {};
     if (el.classList.contains("lk-on") && !ownFont(L)) { const F = fonts(k); el.style.setProperty("--lk-title", "var(--kit-display)"); el.style.setProperty("--lk-tw", String(F.dw)); el.style.setProperty("--lk-tls", F.dls); el.style.setProperty("--lk-tk", String(F.dk)); el.classList.remove("lk-up"); }

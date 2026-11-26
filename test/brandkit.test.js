@@ -136,7 +136,7 @@ test("the kit is set once per page: host page, /g, the light invite, story cards
   assert.match(pub("host.html"), /<script src="\/brandkit\.js"><\/script><script src="\/storefront\.js">/);
   assert.match(pub("storefront.js"), /BK\.storeTokens\(\)/, "the storefront's variables point at the kit");
   assert.match(pub("looks.js"), /BK\.eventFor\(e, el/); assert.match(pub("looks.js"), /BK\.after\(el, e\)/);
-  assert.match(pub("feedvisual.js"), /EncoreBrandKit\?\.storyStyle\(e\.host\)/, "story cards: face and accent only");
+  assert.match(pub("feedvisual.js"), /EncoreBrandKit\?\.storyStyle\(e\.host\)/, "story cards: face and accent only"); assert.match(pub("invite.html"), /BK\?\.use\(h\.kit\)/, "the light invite wears its host's kit");
   const idx = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8"); assert.match(idx, /<script src="\/brandkit\.js"><\/script>/); assert.match(idx, /EncoreBrandKit\?\.use\(j\.host\.kit\)/);
   assert.ok(pub("invite.html").length < 40000, "the light invite stays under its cap");
   const head = brandKitHead({ theme: { font: "editorial", accent: "#E0A030" } });
@@ -156,7 +156,7 @@ test("the API: a host reads, is suggested and saves a kit; it's on their page, e
   assert.equal(j.kit.accent, "#2F5FD0"); assert.equal(j.kit.pair, "terminal"); assert.equal(j.kit.voice, "Ship one small thing, every other Thursday"); assert.equal(j.kit.evil, undefined);
   const pubHost = await (await fetch(srv.base + "/api/public/host/kai-builds")).json(); assert.equal(pubHost.host.kit.pair, "terminal"); assert.equal(pubHost.host.tagline, "Ship one small thing, every other Thursday");
   const eh = await (await fetch(srv.base + "/api/public/event-host/bkhack")).json(); assert.equal(eh.host.kit.pair, "terminal", "event pages get the kit");
-  const inv = await (await fetch(srv.base + "/e/bkhack")).text(); assert.match(inv, /IBM\+Plex\+Mono/); assert.match(inv, /window\.__encoreKit=\{"v":1,"pair":"terminal"/); assert.match(inv, /<script src="\/brandkit\.js"><\/script>/);
+  const inv = await (await fetch(srv.base + "/e/bkhack")).text(); assert.match(inv, /<script src="\/brandkit\.js"><\/script>/); assert.ok(inv.length < 40000, "the light invite stays small with a kit: " + inv.length);
   // other profile saves keep the kit
   await post("/api/host/profile", { bio: "Bring a laptop." }, c); assert.equal((await (await fetch(srv.base + "/api/host/brandkit", { headers: { cookie: c } })).json()).kit.pair, "terminal");
   // logos: an image this workspace uploaded, not svg, not someone else's, not a made-up id

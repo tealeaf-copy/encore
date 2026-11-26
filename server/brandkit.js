@@ -54,10 +54,16 @@ const escA = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", 
 /** For server-rendered pages that show one host (the light invite, /x/<handle>/... pages): put this in <head>.
  *  It loads the kit's two fonts, sets the --kit-* variables on <html> before anything paints, and hands the kit to
  *  public/brandkit.js (which maps it into the design tokens through public/brandkit.css). */
-export function brandKitHead(h, { script = true, events = null, kit = null } = {}) {
+export function brandKitHead(h, { script = true, events = null, kit = null, compact = false } = {}) {
   const k = kit || kitOf(h, events); if (!k) return "";
-  const F = BK.fonts(k), json = JSON.stringify(JSON.parse(JSON.stringify(k))).replace(/</g, "\\u003c");
-  return `<meta name="theme-color" content="${escA(BK.derive(k).page)}"><link rel="stylesheet" href="${escA(F.href)}"><link rel="stylesheet" href="/brandkit.css" id="bk-css"><style>html{${BK.cssText(k)}}</style>` +
+  // compact (the light invite, which stays under 40,000 characters): nothing for the house kit, which the page already
+  // wears, and no inline variables, since public/brandkit.js sets them from the kit before the body draws
+  if (compact && BK.isHouse(k)) return "";
+  const F = BK.fonts(k), keep = ["pair", "page", "surface", "ink", "accent", "accent2", "corners", "buttons", "cover", "logo"];
+  // compact: public/brandkit.js loads the two fonts and brandkit.css itself, from <head>, before the body draws
+  if (compact) return `<meta name="theme-color" content="${escA(BK.derive(k).page)}"><script>window.__encoreKit=${JSON.stringify(Object.fromEntries(keep.filter((x) => k[x]).map((x) => [x, k[x]]))).replace(/</g, "\\u003c")}</script><script src="/brandkit.js"></script>`;
+  const json = JSON.stringify(Object.fromEntries(keep.filter((x) => k[x] != null && k[x] !== "").map((x) => [x, k[x]]))).replace(/</g, "\u003c");
+  return `<meta name="theme-color" content="${escA(BK.derive(k).page)}"><link rel="stylesheet" href="${escA(F.href)}"><link rel="stylesheet" href="/brandkit.css" id="bk-css">` + (compact ? "" : `<style>html{${BK.cssText(k)}}</style>`) +
     (script ? `<script>window.__encoreKit=${json}</script><script src="/brandkit.js"></script>` : "");
 }
 /** The class list for <html> on a server-rendered page. */

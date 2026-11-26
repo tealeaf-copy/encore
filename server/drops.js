@@ -121,6 +121,7 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
     const r = cleanDrop(req.body || {}); if (r.error) return bad(res, r.error);
     const id = newId(); if (!claimEvent(id, u.ws)) return bad(res, "Try that again.", 409, "conflict");
     S.set("events/" + id, { id, ...dropEvent(r.drop, h) });
+    try { req.app?.locals?.fanclub?.onPublish?.(req, u.ws, id); } catch {} // members first, then followers (server/fanclub.js)
     res.json({ ok: true, id, path: `/e/${encodeURIComponent(id)}`, url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, drop: dropOf(id, S.get("events/" + id).data) }); });
 
   app.post("/api/host/drops/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u), id = clean(req.params.id, 80), cur = S.get("events/" + id)?.data; if (!cur?.drop) return bad(res, "No such drop.", 404, "not_found");

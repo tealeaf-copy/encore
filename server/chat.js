@@ -87,12 +87,14 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
   /** Who is asking about this event's chat: the host (signed in to its workspace), a co-host, or a guest by reply. */
   function resolve(req, eventId, q = {}) {
     if (!ID.test(String(eventId || ""))) return null;
-    const ws = workspaceOfEvent(eventId); if (!ws || ws === DEFAULT_WS) return null;
-    const S = scopeStore(store, ws), ev = S.get("events/" + eventId)?.data; if (!ev || ev.example) return null;
+    const V = String(eventId).startsWith("club-") ? app.locals.fanclub?.chatEvent?.(eventId) : null; // a fan club's chat has no event behind it (server/fanclub.js)
+    const ws = V ? V.ws : workspaceOfEvent(eventId); if (!ws || ws === DEFAULT_WS) return null;
+    const S = scopeStore(store, ws), ev = V ? V.ev : S.get("events/" + eventId)?.data; if (!ev || ev.example) return null;
     let u = null; try { u = currentUser(req); } catch {} if (u && (u.ws === DEFAULT_WS || !u.email)) u = null;
     const base = { ws, S, ev, eventId };
     if (u && u.ws === ws) return { ...base, role: "host", mk: "u:" + lc(u.email), name: first(u.name) || hostName(ws), email: lc(u.email), u };
     if (u && cohostEmails(ev).includes(lc(u.email))) return { ...base, role: "cohost", mk: "u:" + lc(u.email), name: first(u.name) || "Co-host", email: lc(u.email), u };
+    if (V) return u && app.locals.fanclub.isMember(ws, u.email) ? { ...base, role: "guest", rid: "", r: { response: "going", name: u.name, email: lc(u.email) }, mk: "u:" + lc(u.email), name: first(u.name) || "Member", email: lc(u.email), u } : { ...base, role: null, u };
     let rid = "", r = null; const qr = String(q.rid || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80);
     if (qr) { const d = S.get("rsvps/" + qr)?.data; if (d && d.eventId === eventId) { const codeOk = q.code && String(d.code || "") === String(q.code);
         let tOk = false; if (!codeOk && q.t && replyToken) { const want = replyToken(ws, qr), got = String(q.t); tOk = want.length === got.length && crypto.timingSafeEqual(Buffer.from(want), Buffer.from(got)); }
@@ -110,6 +112,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
     const out = [], seen = new Set(), add = (m) => { if (seen.has(m.mk)) return; seen.add(m.mk); out.push(m); };
     const o = ownerOf(ws); if (o) add({ mk: "u:" + o, name: hostName(ws), role: "host", email: o, avatar: hostAvatar(ws) });
     for (const e of cohostEmails(ev)) add({ mk: "u:" + e, name: first(getDbUser(e)?.name) || "Co-host", role: "cohost", email: e });
+    if (ev?.clubChat) for (const m of app.locals.fanclub?.chatMembers?.(ws) || []) { const mk = "u:" + lc(m.email); add({ mk, name: first(m.name) || "Member", role: "guest", email: lc(m.email), write: true, state: stateOf(S, eventId, mk) }); }
     for (const d of S.list("rsvps")) { const r = d.data; if (!r || r.eventId !== eventId) continue; const mk = "r:" + d.id, st = stateOf(S, eventId, mk), a = accessOf({ role: "guest", rsvp: r, ev, state: st });
       if (a.read) add({ mk, name: first(r.name) || "Guest", role: "guest", email: lc(r.email), write: a.write, state: st, rsvp: r }); }
     return out;
@@ -141,7 +144,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
     const cover = MEDIA_OK(ev.coverPhoto) ? ev.coverPhoto : "";
     const readAt = A.state?.readAt || 0;
     return { event: { id: eventId, title: ev.pubTitle || ev.name || "Event", date: ev.date || "", startTime: ev.startTime || "", when: whenLine(ev), cover, art: { name: ev.pubTitle || ev.name || "", activity: ev.activity || "", coverArt: ev.coverArt && typeof ev.coverArt === "object" ? { kind: String(ev.coverArt.kind || "").slice(0, 40), tone: String(ev.coverArt.tone || "").slice(0, 20) } : null },
-        inCount: inCount(S, eventId, ev), host: hostName(ws), url: `/g#rsvp-${encodeURIComponent(eventId)}`, cancelled: !!ev.cancelled, past: !!ev.date && ev.date < new Date(now - 864e5).toISOString().slice(0, 10), accent: accentOf(ws) },
+        inCount: inCount(S, eventId, ev), host: hostName(ws), url: ev.clubUrl || `/g#rsvp-${encodeURIComponent(eventId)}`, ...(ev.clubChat ? { club: true } : {}), cancelled: !!ev.cancelled, past: !!ev.date && ev.date < new Date(now - 864e5).toISOString().slice(0, 10), accent: accentOf(ws) },
       me: { who: W.mk ? pub(W.mk) : "", name: W.name || "", role: W.role, canWrite: !!A.write && !ev.cancelled, canPin: hostish(W), readOnly: A.write ? "" : WHY(hostName(ws))[A.why] || "", muted: !!A.state?.muted, ...(hostish(W) ? { maybeRead: !!ev.chatMaybeRead } : {}) },
       members: M.map((m) => ({ who: pub(m.mk), name: m.name, role: m.role, tint: tint(m.mk), ...(m.avatar ? { avatar: m.avatar } : {}), ...(hostish(W) && m.role === "guest" ? { canRemove: true } : {}), ...(m.write === false ? { readOnly: true } : {}) })),
       messages: since ? msgs.filter((m) => m.at > since) : msgs, pins, typing: typingNames, seen, unreadFrom: readAt, reactions: REACTIONS };
@@ -251,6 +254,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
     let u = null; try { u = currentUser(req); } catch {} if (u && (u.ws === DEFAULT_WS || !u.email)) u = null;
     const ids = new Map(); // eventId -> proof
     if (u) { for (const d of scopeStore(store, u.ws).list("events")) { const e = d.data; if (!e || e.example || e.sample || !(e.published || e.discoverable || e.date)) continue; ids.set(d.id, {}); }
+      try { for (const id of app.locals.fanclub?.chatIdsFor?.(u.email) || []) ids.set(id, {}); } catch {} // fan club chats (server/fanclub.js)
       try { const I = X.index(); for (const a of I.att.get(lc(u.email)) || []) ids.set(a.eventId, {}); for (const x of I.events.values()) if (cohostEmails(x.e).includes(lc(u.email))) ids.set(x.id, {});
       } catch {} }
     for (const p of (Array.isArray(proofs) ? proofs : []).slice(0, 60)) { const id = String(p?.eventId || ""); if (ID.test(id) && !ids.get(id)?.rid) ids.set(id, { rid: String(p.rid || ""), code: String(p.code || "") }); }

@@ -50,6 +50,7 @@ import { mountSeries } from "./series.js"; // review round 13: episode numbers a
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
+import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js";
 import { mountIdeasNudge } from "./ideasnudge.js"; // "Ideas to try" where people feel stuck; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
@@ -630,11 +631,11 @@ export function createApp({ store, dataDir }) {
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
     if (!ev) { res.status(404); return sendStatic(res, "404.html", "<p>This invite isn't here.</p>"); } // a cut-off or deleted link: a real not-found page, not a blank invite
     if (ev.example) return res.redirect(302, to);
-    const U = (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
-    const h = C.profileOf(ws), title = (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
+    const U = app.locals.fanclub?.visibility?.(ws, id) === "members" ? null : (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
+    const h = C.profileOf(ws), clubOnly = app.locals.fanclub?.visibility?.(ws, id) === "members", title = clubOnly ? `A members-only event${h?.name ? ` from ${h.name}` : ""}` : (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
       desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
-      img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
+      img = clubOnly ? ogCardFor(ev, base) : /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
     // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
@@ -700,6 +701,7 @@ export function createApp({ store, dataDir }) {
   app.use(express.static(PUBLIC_DIR, { index: false }));
 
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
+  mountFanclub(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // before community: it reads the host page answer and guards follow and pledge
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
@@ -1369,7 +1371,8 @@ export function createApp({ store, dataDir }) {
       if (view === "plan" && !signedOk(req.ws, "plan", doc.id, req.get("x-encore-token"))) return res.status(403).json({ code: "not_granted", message: "This plan link isn't valid. Ask the event owner for a new one." });
       const invited = invitedGuest(req, doc.id, doc.data);
       const nom = view === "nominate" ? nominatingAe(req, doc.id, doc.data) : null;
-      data = publicEvent(data, view);
+      const fcR = app.locals.fanclub?.readGate?.(req, req.ws, doc.id); if (fcR?.deny) return res.status(403).json(fcR.deny); // members-only events (server/fanclub.js)
+      data = publicEvent(data, view); if (fcR?.extra) Object.assign(data, fcR.extra);
       // guests read "Mina's place", never the host's own "my place"
       if (doc.data.casual && view !== "plan") { try { const hn = String(getDbUser(getWorkspace(req.ws)?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0]; const fix = (x) => (typeof x === "string" ? x.replace(/\b(my|our) (place|apartment|flat|house|home|stoop|porch|backyard|yard|garden|rooftop|kitchen|studio|driveway)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)) : x); for (const k of ["meetPoint", "venueName", "name", "pubTitle"]) if (data[k]) data[k] = fix(data[k]); } catch {} }
       // Get-togethers: which bring-list items or pickup windows are already taken (no names), so guests don't double up.
@@ -1502,6 +1505,8 @@ export function createApp({ store, dataDir }) {
       // Ticketed dinners can open to followers first: everyone else waits until the window closes.
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws0 = workspaceOfEvent(String(b.eventId)), ev0 = ws0 && scopeStore(store, ws0).get("events/" + String(b.eventId))?.data;
         if (ev0 && earlyAccessBlocks(ev0, C.followersOf(ws0).some((f) => f.email === String(b.email || "").trim().toLowerCase()))) { res.status(403).json({ code: "early_access", message: `Followers get first dibs until ${new Date(ev0.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Follow the host with this email to book now, or come back then.` }); return false; } }
+      // fan clubs (server/fanclub.js): members-only events and the members-first window
+      if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws1 = workspaceOfEvent(String(b.eventId)), fc = ws1 && app.locals.fanclub?.rsvpGate(ws1, String(b.eventId), [b.email, currentUser(req)?.email]); if (fc) { res.status(403).json(fc); return false; } }
       // answers to the host's own questions: a few short values, plain text only
       if (Array.isArray(b.answers) && b.answers.every((x) => x && typeof x === "object" && "a" in x)) { b.answers = b.answers.slice(0, 15).map((x) => ({ q: String(x.q ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 140), a: String(x.a ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500) })).filter((x) => x.a); }
       else if (b.answers != null) { const A = {}; if (b.answers && typeof b.answers === "object") for (const [k, v] of Object.entries(b.answers).slice(0, 15)) { if (!/^[a-z0-9]{1,12}$/i.test(k)) continue; const one = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500); A[k] = Array.isArray(v) ? v.slice(0, 10).map(one).filter(Boolean) : typeof v === "number" ? Math.max(-1e6, Math.min(1e6, v)) : one(v); } b.answers = A; }
@@ -1591,7 +1596,8 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest && before) rememberVersion(St, p, before);
     const r = how === "put" ? St.set(p, req.body) : St.update(p, req.body), after = how === "put" ? req.body : r.data;
     afterEventWrite(St, p);
-    if (isEv && !req.guest && before) app.locals.chat?.onEventEdit(req, req.ws, p.split("/")[1], before, after); // "Ada moved it to 7:30pm." in the group chat
+    if (isEv && !req.guest && before) app.locals.chat?.onEventEdit(req, req.ws, p.split("/")[1], before, after);
+    if (isEv && !req.guest) app.locals.fanclub?.onEventWrite(req, req.ws, p.split("/")[1], before, after); // a new event tells members and followers (server/fanclub.js) // "Ada moved it to 7:30pm." in the group chat
     if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });

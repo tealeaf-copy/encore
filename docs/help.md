@@ -371,7 +371,20 @@ Discover lists hosts and the events they chose to show there. Your events show o
 
 Keywords: follow, following, followers, unfollow, hear first
 Questions: How do I follow a host? | Who follows me?
-On a host's page, tap Follow. It takes a free account, made right there, and you hear first when they host next. Your own followers are under Your followers in Potto's panel on any of your events.
+On a host's page, tap Follow. It takes a free account, made right there, and you hear first when they host next. The bell next to Following turns those notices on or off; tap Following to unfollow. Hosts you follow are on your Me sheet. Who follows you is private: only you see the list, everyone else sees a count. Your own followers are under Your followers in Potto's panel on any of your events.
+
+## Fan clubs
+
+Keywords: fan club, regulars, members, join a club, members only, early access, first dibs, host updates, member badge, leave a club
+Questions: What is a fan club? | How do I start a fan club? | How do I join a fan club? | What do members get?
+A fan club is for a host's regulars. Hosts turn it on from the Fan club tab on their page: pick a name (it starts as "Your name's Regulars"), a one-line pitch and a few perks. Members get first dibs on new events and drops (24 hours before everyone else unless the host picks another window), events set to Fan club only, a members' group chat, and short updates from the host. Joining is free: tap Join on the host's page. Leave anytime from the same tab, and turn off a club's notices there or from the link in any club email. Your member badge shows on your own page only if you turn it on. Hosts see members by first name, who comes most, and can export the list as CSV or remove someone.
+[Find a host](/hosts)
+
+## Free at launch
+
+Keywords: is it free, free at launch, cost, membership fee, paid plan, in-app purchase, app store, supporter tiers, pledge
+Questions: Is Pottery Lab free? | Do fan clubs cost money? | Why can't I pledge in the app?
+Pottery Lab is free at launch: following, fan clubs and members-only events cost nothing, and there's no paid plan or in-app purchase. The older supporter tiers, pledges and tip links are web only. App Store rules on paying creators mean the iPhone and Android apps never show them, so open the host's page in a browser to chip in.
 
 ## Finding an invite you got
 

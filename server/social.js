@@ -394,6 +394,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, author: Buffer.from(a).toString("base64url"), who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", cheers: cheerNames(p.cheers), cheered: (p.cheers || []).includes(em), ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
     // leaderboards (server/leaderboard.js): one "This week in <city>" card, moments from hosts you follow, your own standing
     let lb = []; try { lb = app.locals.leaderboardFeed?.(u, F) || []; } catch {}
+    try { lb.push(...(app.locals.fanclub?.feedItems?.(u.email) || [])); } catch {} // fan club updates for members (server/fanclub.js)
     F.items = [...posts, ...lb, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
     // ---- visual feed (server/feedvisual.js): a card for each event in the feed, stories, and the public sections ----
     try { const V = app.locals.feedVisual; if (V) { const I = X.index(), E = {}; for (const it of F.items) { const id = it.event?.id; if (id && !E[id] && I.events.get(id)) E[id] = V.card(I, I.events.get(id), { email: em }); } F.events = E; F.visual = V.sections({ email: em }); F.storiesV = V.stories({ email: em, following: F.following || [] }); } } catch (err) { console.warn("feed visual", err?.message); }

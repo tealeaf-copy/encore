@@ -26,7 +26,7 @@
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
   const NUDGED = "encore.help.nudged", SEEN = "encore.help.seen", LOG = "encore.help.chat";
   const LINE = "Stuck? I can help, or get you a person.";
-  const VASE = '<svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const VASE = '<svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>';
   // drawn line glyphs in Potto's brown (docs/brand-kit.md, UI tokens), never emoji on buttons
   const G = (d, s = 20) => `<svg viewBox="0 0 20 20" width="${s}" height="${s}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const X_ICON = G('<path d="M5 5l10 10M15 5L5 15"/>', 20), BACK = G('<path d="M12 4.5 6.5 10l5.5 5.5"/>', 18);

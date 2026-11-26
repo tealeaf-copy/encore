@@ -65,7 +65,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0
 h1{font-weight:600;letter-spacing:-.01em}
 @media (max-width:340px){#tags{grid-template-columns:1fr}}
 </style></head><body>
-<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
+<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</a></div>
 <div id="body"><p class="muted">Opening…</p></div></main>
 <script src="/momentupload.js" defer></script><!-- visual feed: Add photos -->
 <script>
@@ -75,7 +75,7 @@ h1{font-weight:600;letter-spacing:-.01em}
   const id = (location.pathname.match(/^\/k\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
   const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body");
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
-  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><circle cx="11.6" cy="19.6" r="1" fill="#1D1B18"/><circle cx="16.4" cy="19.6" r="1" fill="#1D1B18"/></svg>`;
+  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>`;
   const sub = (j) => [day(j.date), j.place ? `at ${j.place}` : j.hostFirst ? `with ${j.hostFirst}` : ""].filter(Boolean).join(" · ");
   const stop = (h, p) => { body.innerHTML = `<h1>${esc(h)}</h1><p class="muted">${esc(p)}</p>`; };
   /* ---- kudos nudges: the group kudos link (/k/<event>?g=<token>) and Send after one chip ---- */

@@ -194,7 +194,7 @@ html body :is(.pp-stat span,.pp small,.lg small,.pli-card small){font-size:13px}
   html body :is(.pls-btn.pls-icon,.cg-send,.home-bell,.pip-mute){min-width:44px;min-height:44px}
 }
 /* the Pottery Lab wordmark is chrome: it keeps the house face on a host page that picked its own fonts */
-html body.store .top a.brand{font-family:var(--sys-display)!important;font-weight:600!important;letter-spacing:-.01em}
+html body.store .top a.brand{font-family:var(--pl-font-display)!important;font-weight:400!important;letter-spacing:-.01em}
 /* phones: the floating help button never sits over the end of a page. Pages with the tab bar already leave room */
 @media (max-width:860px){html body:has(#encoreHelp):not(.es-has-tabs):not(.is-owner){padding-bottom:calc(88px + env(safe-area-inset-bottom))}}
 /* focus on a field: it turns ink with one soft ember ring (brand kit), never a second yellow or ink outline */
@@ -230,10 +230,18 @@ html body::after{background-image:none!important;opacity:0!important}
 h1,h2{letter-spacing:var(--pl-display-track)}
 /* buttons and their labels are the text face, never the display serif; one moderate corner instead of the pill */
 html body :is(button,.btn,a.btn,.cta,a.cta,.hd-cta,a.go,.book-toggle,.sp-btn,.more-btn){font-family:var(--sys-title)!important;letter-spacing:0}
-html body :is(.btn,a.btn,button.btn,.cta,a.cta,.hd-cta,a.go,button.go,.book-toggle,.sp-btn,.more-btn,.hl-btn,.pls-btn:not(.pls-icon),.fv-btn,.sb-add,.pp-share,.rp-save){border-radius:var(--btn-radius)!important}
+html body :is(.btn,a.btn,button.btn,.cta,a.cta,.hd-cta,a.go,button.go,.book-toggle,.sp-btn,.more-btn,.hl-btn,.pls-btn:not(.pls-icon),.fv-btn,.sb-add,.pp-share,.rp-save,.hv-b,:is(a,button)[class*="-btn"]:not([class*=icon],[class*=ico],[class*=x])){border-radius:var(--btn-radius)!important}
 /* no squish, tilt or lift on controls */
 html body :is(a.btn,button.btn,.btn,.cta,.chip,button.primary):is(:hover,:active){transform:none!important}
 :focus-visible{outline-color:var(--pl-ink)}
 /* Potto is a signature, not a fixture: he stays in empty states, the help panel, milestones and the offline and 404
    pages, and leaves routine headers and list rows */
 html body :is(.fv-potto,.pb-head>svg.potto,.cg-hi>svg.potto,.cg-box svg.potto,.cos-av.pipav){display:none!important}
+/* the wordmark: Potto's line mark and "pottery lab" in the display serif, ink, one size. It is chrome, so a host's
+   kit never restyles it */
+html body :is(a.brand,a.es-brand,.es-rail .es-logo span){font-family:var(--pl-font-display)!important;font-weight:400!important;font-size:25px!important;letter-spacing:-.01em!important;line-height:1!important;color:var(--pl-ink)!important;text-decoration:none}
+html body .es-rail .es-logo span{font-size:28px!important}
+html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:24px;height:24px;flex:none;color:var(--pl-ink)}
+/* covers sit on the page with a hairline, not a thick ink frame and an offset shadow; notes are solid, not dashed */
+html body :is(.gxcover,.cov,.hcover){box-shadow:none!important;border-width:1px!important;border-color:var(--pl-line)!important}
+html body #gExample{border-style:solid!important;border-width:1px!important;border-color:var(--pl-line-strong)!important;background:var(--pl-sand-soft)!important}

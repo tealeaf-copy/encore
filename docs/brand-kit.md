@@ -30,10 +30,10 @@ Always tell it in this order. Brands never lead.
 
 ## Voice
 
-Warm, plain and a little playful. Like a friend who has hosted a lot of dinners.
+Warm, plain and grown-up. Like a friend who has hosted a lot of dinners and doesn't need to shout about it.
 
 - **Plain words, short sentences.** Lead with what the person gets or does.
-- **Playful, but quiet.** One light touch per screen. Not a joke in every line.
+- **A light touch, rarely.** At most one per screen. No exclamation marks, no cutesy phrasing, no jokes in every line.
 - **Buttons are verbs**, 1 to 3 words: "Start your page", "Share invite", "I'm in".
 - **Headings** are 2 to 6 words. At most one sentence under a heading.
 - **Say what it does.** "Potto sends the reminders", not "planning made magical".
@@ -42,11 +42,7 @@ Warm, plain and a little playful. Like a friend who has hosted a lot of dinners.
 
 ### Potto
 
-Potto is a small clay pot and the host's helper.
-
-- Speaks rarely: at most once per screen.
-- Speaks in first person, one short line: "I'll send the reminders."
-- Never invents facts about a host, guest or brand.
+Potto is a small clay pot and the host's helper. He speaks rarely (at most once per screen), in first person, one short line ("I'll send the reminders."), and never invents facts about a host, guest or brand. Where he appears is under "Look", below.
 
 ## Words
 
@@ -97,46 +93,100 @@ Use these word for word.
 
 ## Look
 
-### Colors
-
-| Name | Hex | Use |
-|---|---|---|
-| Paper | #F7F1E8 | page background |
-| Linen | #EFE6D8 | quiet panels |
-| Ink | #1F1A17 | text, outlines |
-| Smoke | #665A51 | secondary text |
-| Ember | #C94A30 | primary buttons, accent words |
-| Butter | #F2D48F | highlights, tape, badges |
-| Sage | #6F7F5E | calm accents |
-| Night | #15110E | dark sections (brands) |
-| Line | #E4D9C8 | borders |
+The 2026 brand is **Bone and clay**: calm, crafted and grown-up. Think of a well-set table, not a party flyer. Warm neutrals, ink text, one clay accent, an editorial serif for headings and a clean sans for everything else. Every value lives in one block at the top of `public/system.css` (`--pl-*`), and `test/brand-tokens.test.js` checks the text pairs at AA.
 
 ### Type
 
-- **Fredoka** (600): headings, names, buttons.
-- **Instrument Sans** (400 to 600): body text and labels.
-- **Caveat** (600): handwritten captions on scrapbook photos only.
-- No italics for emphasis. Accent words change color (Ember) instead.
+| Role | Face | Use |
+|---|---|---|
+| Display | **Instrument Serif** (400, one weight) | Headings 20px and up, event titles, the wordmark. Tracking -0.015em. Never bold: the page sets `font-synthesis-weight:none`. |
+| Text | **Instrument Sans** (400 to 700) | Body, labels, names, buttons, chips, small titles under 20px (`--sys-title`). |
+| Mono | **JetBrains Mono** (400, 500) | Data only: dates, times, counts, step numbers, small eyebrows. Never prose or headings. |
+| Hand | Caveat (600) | Captions on scrapbook photos only. Never in routine UI. |
+
+- Tokens: `--pl-font-display`, `--pl-font-text`, `--pl-font-mono`; pages read them as `--sys-display`, `--sys-title`, `--sys-sans`, `--sys-mono`. Never write a family name in a page.
+- **Scale:** 13 / 14 / 16 / 20 / 28 / 40, plus a hero display (44 to 80). Labels 14 semibold, help text 13, field text 16 (iOS zooms below that).
+- No italics for emphasis. An accent word in a heading (`<em>`) changes colour to clay instead.
+- Buttons are always the text face, never the serif.
+
+### Colors
+
+| Token | Name | Hex | Use |
+|---|---|---|---|
+| `--pl-page` | Bone | #F4F0E8 | page background |
+| `--pl-surface` | Paper | #FBF9F5 | cards, fields, sheets |
+| `--pl-raised` | Stone | #ECE6DB | quiet panels, chips, secondary fills |
+| `--pl-ink` | Ink | #1D1B18 | text, selected chips |
+| `--pl-soft` | Soft ink | #5D564E | secondary text |
+| `--pl-muted` | Muted | #6E665D | meta, placeholders (still AA) |
+| `--pl-line` | Line | #E2DCD1 | card lines |
+| `--pl-line-strong` | Strong line | #CFC6B8 | fields, outlined buttons |
+| `--pl-accent` | Clay | #9A4128 | primary buttons, focus, accent words |
+| `--pl-accent-press` | Clay, pressed | #82361F | hover and pressed |
+| `--pl-accent-text` | Clay text | #8E3B24 | links and accent text |
+| `--pl-accent-soft` | Clay tint | #F1E1D8 | selected rows, text selection |
+| `--pl-sand` / `--pl-sand-soft` | Sand | #E3D7BE / #F0E9DA | highlights and badges (was butter) |
+| `--pl-sage` | Sage | #5F6B57 | calm accents |
+| `--pl-success` | Moss | #3D6A4C | done, confirmed |
+| `--pl-warning` | Ochre | #83590F | needs a look |
+| `--pl-danger` | Brick | #A3321E | errors, destructive actions |
+| `--pl-focus` | | clay at 28% | the one focus ring |
+
+Contrast: ink, soft and muted read at 4.5:1 or more on bone, paper and stone; clay text reads 6:1 on bone; white on clay is 7.5:1; clay stands 3:1 from the page as a button edge. One accent per screen. No gradients, glows or candy pastels in chrome.
 
 ### Shapes and feel
 
-- Hand-made and warm: thick ink outlines (2 to 2.5px), rounded corners (16 to 22px), slight tilts on cards, a fine paper grain.
-- Scrapbook photos look like instant photos with a strip of butter tape on top.
-- Flat colors, no gradients except soft page-cover washes.
+- **Corners:** 8 (fields, small tiles), 12 (cards), 16 (sheets and big cards), 10 for buttons. Chips and avatars stay round. Few full pills.
+- **Lines:** 1px. Line for cards, strong line for fields and outlined buttons. Ink for a selected field.
+- **Shadow:** almost none. One soft shadow for things that float (sheets, menus). Cards that sit on the page get a line. No offset "sticker" shadows anywhere.
+- **Still:** no tilt, squish or lift on controls; no paper grain. The scrapbook touches (tape, a tilt, Caveat) belong to photo moments only.
+- **Focus:** the field turns ink with one soft clay ring. One ring, never two.
+- **Icons:** drawn line glyphs (1.75px stroke) in the text colour. No emoji as UI: not on buttons, tabs or labels. Emoji are fine as content (a reaction, a host's own emoji).
+- **Steps:** "Step 2 of 5 · Details" over a slim segmented bar, never numbered circles.
+- **Phones:** sheets come up from the bottom, sized with `dvh`, padded for the notch and the home indicator. Footer buttons sit in their own bar.
+
+### Wordmark
+
+- **The mark** is Potto as a single line drawing: the pot's rim and body in one stroke, two dots and a small smile, in `currentColor` (ink on light, bone on dark). It is the favicon, the app icon (ink on bone, `scripts/make-app-icons.cjs`) and the nav logo.
+- **The word** is "pottery lab", lowercase, in Instrument Serif at 25px in the nav (28px in the side rail), tracking -0.01em, ink. The mark sits to its left at 24px with an 8px gap.
+- It is chrome: a host's kit never restyles it. Don't recolour it clay, set it in another face, add the old filled clay pot, or put it on a busy photo.
+
+### Potto
+
+Potto is a signature, not a fixture.
+
+- **Use the full character** for moments: empty states, the help panel, milestones (a first event, a recap), the offline and 404 pages, the end of the About page.
+- **Don't use him** in routine headers, list rows, cards, avatars next to every message, or as a floating button. Use the line mark there, or nothing.
+- His colours: a warm brown outline (#5A3B2B), clay body (#DDA88A), an oat glaze band. Never neon, never on a gradient.
+- He speaks at most once per screen, in first person, and never invents facts.
+
+### Illustrations
+
+The line-art covers (`public/eventart.js`) are editorial spot illustrations: a 3px warm-ink stroke, a muted natural ground (oat, clay tint, stone blue, sage, mist) and one spot colour from the clay palette. Fewer objects is better. No saturated purples, mints or primaries.
 
 ### UI tokens
 
-The thick line and the tilts belong to illustrations, Potto, scrapbook photos and invite covers. Controls stay quiet, so the art can be loud. The tokens live in `public/system.css`.
+Spacing is 4, 8, 12, 16, 24, 32. Fields are 16 apart; a section break is 24. Buttons are 36 / 44 / 52 tall (44 minimum on phones). The tokens live in `public/system.css`; the older names pages use (`--ink`, `--paper`, `--sys-*`, `--fv-*`) point at the `--pl-*` tokens.
 
-- **Spacing:** 4, 8, 12, 16, 24, 32. Fields are 16 apart; a section break is 24.
-- **Corners:** 12 (fields, small tiles), 16 (cards), 24 (sheets and big cards), pill (buttons and chips). Nothing else.
-- **Lines:** 1.5px. Line (#E4D9C8) for cards, a slightly darker #D9CCBB for fields and outlined buttons. Ink for a selected field. Frames next to Potto (sheets, the help panel) use his warm brown, #5A3B2B.
-- **Shadow:** one soft shadow for things that float (sheets, menus, the help button). Cards that sit on the page get a line, not a shadow. No offset "sticker" shadows on buttons, chips or fields.
-- **Type:** 13 / 14 / 16 / 20 / 28 / 40. Labels 14 semibold, help text 13 regular, field text 16 (iOS zooms on anything smaller).
-- **Focus:** the field turns ink with a soft ember ring. One ring, never two.
-- **Icons:** drawn line glyphs in Potto's brown (1.75px stroke) for UI: share, bell, pin, close. Emoji are fine as content (a host's emoji, a kudos tag), not as button icons.
-- **Steps:** "Step 2 of 5 · Details" over a slim segmented bar, never numbered circles.
-- **Phones:** sheets come up from the bottom, sized with `dvh`, padded for the notch and the home indicator. Footer buttons sit in their own bar, never over the last field.
+### Do and don't
+
+| Do | Don't |
+|---|---|
+| Serif headings, sans everything else | Rounded or bubbly display faces |
+| One clay accent per screen | Ember, butter and pink together |
+| A line around a card | Offset sticker shadows, tape, tilts in routine UI |
+| Potto in an empty state | Potto in every header |
+| The line mark as the logo | The filled clay pot or the full Potto as the app icon |
+| Plain "I'm in" | "🎉 I'm in" as the default label |
+
+## Platform frame vs host content
+
+The platform owns the frame; the host owns the content inside it.
+
+- **Shared surfaces** (the feed, Discover, stories, the swipe deck, search, lists, the chats inbox) always use Pottery Lab type, card chrome, spacing and buttons. From the host they show only the cover photo (a fixed 4:5 crop at their saved focal point), the title (which we set, below the image), their avatar or logo, and at most a subtle accent: one small dot or a thin line. Never the host's fonts. `EncoreBrandKit.storyStyle()` returns the accent only.
+- **Quality fallback:** on a shared surface, a cover that is missing, under 600px wide, or fails a simple brightness and contrast check is replaced by our drawn cover in the platform style.
+- **Host-owned surfaces** (`/@handle`, `/e`, `/g`, `/i`, `/x` pages, drops) wear the host's kit, but only through tokens inside our components and grid.
+- The brand kit editor shows "Preview in feed": the host's card between two plain sample cards, so they see how it sits in the frame.
 
 ## Examples
 
@@ -158,7 +208,7 @@ The thick line and the tilts belong to illustrations, Potto, scrapbook photos an
 Each host can have their own kit (`server/brandkit.js`, `public/brandkit.js`, `public/brandkit.css`). It sits on top of the UI tokens above: a page sets `--kit-*` once on `<html>`, and `brandkit.css` points the tokens at them.
 
 - **A kit is:** one font pairing (a display face and a body face), a palette (page, cards, text, accent, an optional second accent), corners (soft or crisp), buttons (filled pill or outlined), covers (photo, line art or card deck), an optional logo and a voice line.
-- **Pairings:** Pottery Lab (Fredoka + Instrument Sans, the house kit), Supper club, Flower shop, Pantry (slab), Studio, Market day, Terminal (mono headings), Arcade (pixel headings).
+- **Pairings:** Pottery Lab (Instrument Serif + Instrument Sans, the house kit), Supper club, Flower shop, Pantry (slab), Studio, Market day, Terminal (mono headings), Arcade (pixel headings).
 - **Two families per page, always.** Display and titles use the display face. Body, meta, chips, list items and prices use the body face. Prices use tabular figures.
 - **Colors pass AA.** Text and quiet text read at 4.5:1 on the page and cards, buttons stand out at 3:1 and carry 4.5:1 text, and accent text reads at 4.5:1. The page stays light; dark moods belong to an event's look.
 - **Events inherit the kit.** An event's title font is its own only when the host picks one for that event; "Use my brand" puts the kit's back. Looks from before kits keep their font.

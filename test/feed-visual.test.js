@@ -83,8 +83,8 @@ test("Public feed only includes public media; Ask to join and link-only moments 
   const ask = F.past.find((p) => p.id === "fvAsk"); assert.ok(ask && ask.photos.length === 0, "an Ask to join card shows no guest photos");
   // the upcoming card carries its look (poster fit, palette) for the flyer
   const soon = F.upcoming.find((e) => e.id === "fvSoon"); assert.ok(soon); assert.equal(soon.look.coverFit, "poster"); assert.deepEqual(soon.look.palette, ["#C4DDF3", "#1E4E86", "#D94357"]); assert.equal(soon.url, "/g#rsvp-fvSoon");
-  // showcase pages fill it out, with their shipped covers
-  assert.ok(F.showcase.length >= 3); assert.ok(F.showcase.some((p) => p.past.some((x) => /^\/presets\/.+\.jpg$/.test(x.cover))));
+  // showcase pages fill it out, with their shipped covers: recent ones on the wall, older ones as ideas below it (review 7)
+  assert.ok(F.showcase.length >= 3); assert.ok([...F.showcase.flatMap((p) => p.past), ...F.ideas].some((x) => /^\/presets\/.+\.jpg$/.test(x.cover)));
   // the host page shows open events' photos only, until the host allows the link-only ones
   const page = async () => (await (await get("/api/public/host/mai-fv")).json()).past;
   let P = await page(); assert.ok(P.find((e) => e.id === "fvOpen")?.photos?.length); assert.ok(!P.find((e) => e.title === "Link supper")?.photos?.length);

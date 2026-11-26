@@ -11,6 +11,7 @@
   const read = () => { try { const L = JSON.parse(localStorage.getItem(LS) || "[]"); return Array.isArray(L) ? L : []; } catch { return []; } };
   const write = (L) => { try { localStorage.setItem(LS, JSON.stringify(L.slice(0, 200))); } catch {} };
   const key = (x) => `${x.kind}:${x.ref}`;
+  const imgOk = (u) => (/^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9][a-z0-9_-]{0,70}\.(?:jpg|jpeg|png|webp|svg)$/i.test(u || "") ? u : ""); // our uploads and presets only
   let server = null, boards = [], loading = null; const subs = new Set();
   const emit = () => { for (const f of subs) { try { f(); } catch {} } paintAll(); };
   async function load(force) { if (!signedIn()) { server = null; return null; } if (server && !force) return server; if (loading && !force) return loading;
@@ -67,7 +68,7 @@
         if (!on) { const t = toast(`Saved. <button type="button" class="pls-board" style="background:none;border:0;padding:0;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:#A63A22">Add to a board</button>`, { go: "/saved", goLabel: "Your saves", ms: 5000 }); t.querySelector(".pls-board").onclick = () => { t.remove(); boardMenu(btn || t, item); }; }
         return; } }
     // signed out: this browser keeps it, and the account gets it at signup
-    let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: item.img || "", at: Date.now() }); write(L); emit();
+    let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img), at: Date.now() }); write(L); emit();
     if (!on) { const n = L.length; toast(n === 1 ? `<b>Saved on this phone.</b> Make a free account to keep your saves.` : `<b>${n} saves</b> on this phone. Make a free account to keep your saves.`, { go: "/signup?mode=friends&from=saves", goLabel: "Make an account", ms: 7000 }); } }
   function setCount(item, n) { if (n == null) return; document.querySelectorAll(`[data-pls-count="${CSS_ESC(key(item))}"]`).forEach((el) => (el.textContent = countLine(n))); }
   const CSS_ESC = (s) => (window.CSS?.escape ? window.CSS.escape(s) : String(s).replace(/"/g, '\\"'));

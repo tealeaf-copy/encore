@@ -17,9 +17,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { scopeStore, getWorkspace, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { cleanLook } from "./looks.js";
+import { interestsOf, cleanInterests } from "./hooks.js";
 
 const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
 const DAY = 864e5;
+export const SHOWCASE_FRESH_DAYS = 14; // prepared and example pages' past events older than this leave "What people are hosting"
 const lc = (s) => String(s || "").trim().toLowerCase();
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -40,6 +42,21 @@ export function momentMaxBytes(kind) {
   const asset = Number(process.env.ASSET_MAX_MB || 15) || 15, video = Number(process.env.MOMENT_VIDEO_MAX_MB || asset) || asset;
   return Math.floor((kind === "video" ? Math.min(asset, video) : asset) * 1024 * 1024);
 }
+/** What the file's first bytes say it is (JPEG FFD8FF, PNG 89504E47, WebP RIFF....WEBP, GIF8, MP4/MOV ftyp at 4,
+ * WebM/Matroska 1A45DFA3), or "" when they say nothing we take. The type a browser sends is only a claim. */
+export function sniffType(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < 4) return "";
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf.length >= 12 && buf.toString("latin1", 0, 4) === "RIFF" && buf.toString("latin1", 8, 12) === "WEBP") return "image/webp";
+  if (buf.toString("latin1", 0, 4) === "GIF8") return "image/gif";
+  if (buf.length >= 12 && buf.toString("latin1", 4, 8) === "ftyp") return buf.toString("latin1", 8, 12) === "qt  " ? "video/quicktime" : "video/mp4";
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return "video/webm";
+  return ""; }
+/** The type to store an upload under: its bytes' own type when they're the same kind (a photo, a video) as the claim. */
+export const sniffedAs = (claimed, buf) => { const t = sniffType(buf); return t && momentKind(t) === momentKind(claimed) ? t : ""; };
+// a video whose length the file doesn't say: only this small (a short clip), else we ask for one from the camera
+export const unreadVideoMaxBytes = () => Math.floor((Number(process.env.MOMENT_UNREAD_VIDEO_MB || 4) || 4) * 1024 * 1024);
 /** Seconds in an MP4/MOV (from its mvhd box) or a WebM (its Duration element), or 0 when the file doesn't say. */
 export function videoSeconds(buf) {
   try {
@@ -107,19 +124,32 @@ export function makeFeedVisual(store, { C, X }) {
       list.push({ host, tagline: clean(P.tagline, 160), city: clean(P.city, 60), hood: clean(P.hood, 60), example: !!P.example, past, experiences: exps, page: `/@${P.handle}` }); } } catch {}
     SC = { at: Date.now(), list }; return list; }
 
-  /** Everything for the feed's visual sections, for one viewer (email "" when signed out). */
-  function sections({ email = "", device = "" } = {}) {
+  // how well a card fits what a visitor picked (pl.interests: interest ids and a city): interests count most, then the city
+  const fitOf = (P, text, place) => { let n = 0; if (P.interests.length) { const T = interestsOf(text, ""); n += P.interests.filter((i) => T.includes(i)).length * 3; } if (P.city && lc(place).includes(P.city)) n += 2; return n; };
+  /** Everything for the feed's visual sections, for one viewer (email "" when signed out). interests and city order it. */
+  function sections({ email = "", device = "", interests = [], city = "" } = {}) {
     const I = X.index(), now = Date.now(), t = today(now), all = [...I.events.values()].filter((x) => C.profileOf(x.ws)?.handle);
-    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws) - sample(b.ws)) || String(a.e.date).localeCompare(String(b.e.date))).slice(0, 16).map((x) => card(I, x, { email, device }));
+    const P = { interests: cleanInterests(interests), city: lc(clean(city, 60)) }, fit = (x) => fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""} ${x.e.format || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`);
+    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws) - sample(b.ws)) || fit(b) - fit(a) || String(a.e.date).localeCompare(String(b.e.date))).slice(0, 16).map((x) => card(I, x, { email, device }));
     // a quiet city still has something coming up: Discover's example events, marked as examples, after the real ones
     if (upcoming.length < 6) { try { const have = new Set(upcoming.map((e) => e.id)); for (const d of C.discover().events || []) { if (upcoming.length >= 8) break; if (!d?.id || have.has(d.id) || !d.host?.handle || d.unlisted || (d.date && d.date < t)) continue; have.add(d.id);
       upcoming.push({ id: d.id, title: d.title || d.name || "", date: d.date || "", startTime: d.startTime || "", city: d.city || "", hood: d.hood || "", emoji: d.emoji || "", activity: d.activity || "", approvalRequired: !!d.approvalRequired, past: false, cover: MEDIA_OK(d.coverPhoto) ? d.coverPhoto : "", coverArt: artOf(d), look: {}, host: { handle: d.host.handle, name: d.host.name, emoji: d.host.emoji || "🎉", color: d.host.color || "#E26D8E", avatarArt: d.host.avatarArt || "", avatarUrl: "" }, url: `/g#rsvp-${encodeURIComponent(d.id)}`, page: `/@${d.host.handle}`, going: d.going || 0, sample: !!d.sample, fresh: false }); } } catch {} }
-    const pastX = all.filter((x) => x.e.date && x.e.date < t && Date.parse(x.e.date) > now - 120 * DAY && (cardPublic(x.e) || wasThere(I, x.id, email)) && !x.e.cancelled);
-    const past = pastX.map((x) => card(I, x, { email, device })).sort((a, b) => (!!b.photos.length - !!a.photos.length) || (!!a.sample - !!b.sample) || String(b.date).localeCompare(String(a.date))).slice(0, 12);
+    // example (sample) events stay only while they're recent: an old example isn't what people are hosting
+    const fresh = now - SHOWCASE_FRESH_DAYS * DAY;
+    const pastX = all.filter((x) => x.e.date && x.e.date < t && Date.parse(x.e.date) > now - 120 * DAY && (cardPublic(x.e) || wasThere(I, x.id, email)) && !x.e.cancelled && !(sample(x.ws) && Date.parse(x.e.date) < fresh));
+    const fitC = (c) => fitOf(P, `${c.title} ${c.activity}`, `${c.city} ${c.hood}`);
+    const past = pastX.map((x) => card(I, x, { email, device })).sort((a, b) => (!!b.photos.length - !!a.photos.length) || (!!a.sample - !!b.sample) || fitC(b) - fitC(a) || String(b.date).localeCompare(String(a.date))).slice(0, 12);
+    if (P.interests.length || P.city) upcoming.sort((a, b) => (!!a.sample - !!b.sample) || fitC(b) - fitC(a) || String(a.date).localeCompare(String(b.date)));
     const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws), page: hostOf(x.ws) ? `/@${hostOf(x.ws).handle}` : "" } }; });
     const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws);
       return { id: k.id, text: scrub(k.love).slice(0, 240), name: first(k.name) || "A guest", tags: (k.tags || []).slice(0, 3), verifiedLabel: k.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in", event: { id: x.id, title: x.e.pubTitle || x.e.name || "", host: h, page: h ? `/@${h.handle}` : "" } }; });
-    return { upcoming, past, moments, kudos, showcase: showcases() };
+    // prepared pages: what they did in the last two weeks stays with the real content; older things become ideas to steal
+    const isFresh = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && Date.parse(d) >= fresh, ideas = [];
+    const showcase = showcases().map((S) => { for (const p of S.past) if (!isFresh(p.date) && (p.cover || p.photos.length)) ideas.push({ id: p.id, title: p.title, note: p.note, cover: p.cover || p.photos[0] || "", host: S.host, page: S.page, city: S.city, example: true, fit: fitOf(P, `${p.title} ${p.note}`, `${S.city} ${S.hood}`) });
+        return { ...S, past: S.past.filter((p) => isFresh(p.date)), fit: fitOf(P, `${S.tagline} ${S.experiences.map((x) => `${x.title} ${x.category} ${x.desc}`).join(" ")}`, `${S.city} ${S.hood}`) }; })
+      .sort((a, b) => b.fit - a.fit).map(({ fit, ...S }) => S);
+    ideas.sort((a, b) => b.fit - a.fit);
+    return { upcoming, past, moments, kudos, showcase, ideas: ideas.slice(0, 8).map(({ fit, ...x }) => x), picked: { interests: P.interests, city: P.city ? clean(city, 60) : "" } };
   }
   /** Stories: one circle per host with photos, videos or flyers from the last 14 days, newest first. */
   function stories({ email = "", following = [] } = {}) {
@@ -148,12 +178,14 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   app.locals.feedVisual = V;
   const hits = new Map(); const limited = (req, n) => { const k = (req.ip || "?") + req.path.split("/").slice(0, 4).join("/"), now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
+  const ipDay = new Map(), REACTS_PER_IP = () => Math.max(1, +process.env.ENCORE_REACTS_PER_IP || 10);
+  const overIpDay = (req, id) => { const k = `${req.ip || "?"}|${id}|${today()}`, n = (ipDay.get(k) || 0) + 1; if (ipDay.size > 50000) ipDay.clear(); ipDay.set(k, n); return n > REACTS_PER_IP(); };
   const viewer = (req) => { const u = currentUser(req); return u && u.ws !== DEFAULT_WS && u.email ? u : null; };
   const followingOf = (email) => { try { return email ? [...new Set([...X.index().events.values()].map((v) => v.ws))].filter((w) => C.followersOf(w).some((f) => lc(f.email) === lc(email))).map((w) => C.profileOf(w)?.handle).filter(Boolean) : []; } catch { return []; } };
   const device = (req) => (/^[A-Za-z0-9_-]{8,40}$/.test(String(req.query.device || req.body?.device || "")) ? "dev:" + String(req.query.device || req.body.device) : "");
   // the signed-out feed: public content only (and no cookies needed, so it can be cached for a minute)
   app.get("/api/public/feed", (req, res) => { const u = viewer(req); res.set("Cache-Control", u ? "private, no-store" : "public, max-age=60");
-    const email = u ? lc(u.email) : ""; res.json({ ...V.sections({ email, device: device(req) }), stories: V.stories({ email, following: followingOf(email) }) }); });
+    const email = u ? lc(u.email) : ""; res.json({ ...V.sections({ email, device: device(req), interests: String(req.query.interests || "").slice(0, 400), city: String(req.query.city || "") }), stories: V.stories({ email, following: followingOf(email) }) }); });
   // stories on their own (the rail can refresh without the whole feed)
   app.get("/api/feed/stories", (req, res) => { const u = viewer(req), email = u ? lc(u.email) : ""; res.set("Cache-Control", "private, no-store"); res.json({ stories: V.stories({ email, following: followingOf(email) }) }); });
   // what an upload may be, for the browser's own check before it sends anything
@@ -165,6 +197,8 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
     let ok = /^s[cx]-[a-z0-9-]{1,40}-\d{1,2}$/.test(id) && V.showcases().some((P) => [...P.past, ...P.experiences].some((x) => x.id === id));
     if (!ok) { const I = X.index(), x = I.events.get(id); ok = !!x && x.e.date && x.e.date < today() && ((!!x.e.discoverable && !x.e.unlisted && !x.e.cancelled) || V.wasThere(I, id, u ? lc(u.email) : "")); }
     if (!ok) return bad(res, "No such event.", 404, "not_found");
+    // signed out, a device id is easy to make up: one IP gets REACTS_PER_IP taps on one event a day
+    if (!u && overIpDay(req, id)) return bad(res, "That's a lot of reactions. Sign in to keep going.", 429, "rate_limited");
     res.json({ ok: true, ...V.react(id, who, emoji) }); });
   // ---- moments the host looks after: see every one (hidden too), hide or show one, show link-only moments on the page ----
   const hostEvent = (req, res) => { const u = viewer(req); if (!u) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } const id = clean(req.params.eventId, 80);
@@ -175,6 +209,18 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   app.post("/api/host/moments/:eventId/settings", small, (req, res) => { const H = hostEvent(req, res); if (!H) return; H.S.update("events/" + H.id, { momentsOnPage: req.body?.onPage === true }); X.bust(); res.json({ ok: true, momentsOnPage: req.body?.onPage === true }); });
   app.post("/api/host/moments/:eventId/:momentId/hide", small, (req, res) => { const H = hostEvent(req, res); if (!H) return; const mid = String(req.params.momentId || "").replace(/[^A-Za-z0-9_-]/g, ""), d = H.S.get("moments/" + mid)?.data;
     if (!d || d.eventId !== H.id) return bad(res, "No such photo.", 404, "not_found"); const hidden = req.body?.hidden !== false; H.S.update("moments/" + mid, { hidden, hiddenAt: hidden ? Date.now() : null }); X.bust(); res.json({ ok: true, hidden }); });
+  // ---- Home to-dos from the server (public/nudges.js): "Show it on Discover" after a host shares a Link only event ----
+  // New hosts' events start Link only, so they never fill the feed. Once one is shared (published), the host's Home
+  // offers it once: one tap puts it on Discover (and their page), "Not now" never asks about that event again.
+  const nudgeable = (e) => !!e && !!e.published && !e.discoverable && !e.cancelled && !e.example && !e.casual && e.discoverNudge !== "off" && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && e.date >= today() && !!(e.city || e.hood || e.place || e.venue);
+  app.get("/api/host/nudges", (req, res) => { res.set("Cache-Control", "private, no-store"); const u = viewer(req); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." });
+    if (!C.profileOf(u.ws)?.handle) return res.json({ discover: null });
+    const S = scopeStore(store, u.ws), L = S.list("events").map((d) => ({ id: d.id, e: d.data })).filter((x) => nudgeable(x.e)).sort((a, b) => (b.e.publishedAt || b.e.updatedAt || 0) - (a.e.publishedAt || a.e.updatedAt || 0));
+    const x = L[0]; res.json({ discover: x ? { eventId: x.id, title: x.e.pubTitle || x.e.name || "Your event", date: x.e.date } : null }); });
+  app.post("/api/host/nudges/discover", small, (req, res) => { const u = viewer(req); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); const id = clean(req.body?.eventId, 80);
+    if (workspaceOfEvent(id) !== u.ws) return bad(res, "No such event.", 404, "not_found"); const S = scopeStore(store, u.ws), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");
+    if (req.body?.show === true) { if (!nudgeable(ev)) return bad(res, "This one can't go on Discover from here. Open the event to change who can find it.", 409, "not_allowed"); S.update("events/" + id, { discoverable: true, unlisted: false, discoverNudge: "off", updatedAt: Date.now() }); X.bust(); return res.json({ ok: true, discoverable: true }); }
+    S.update("events/" + id, { discoverNudge: "off" }); res.json({ ok: true, discoverable: !!ev.discoverable }); });
   return V;
 }
 // ---- end visual feed ----

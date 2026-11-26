@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { buildIdeas } from "./ideas.js";
+import { tzOfCity } from "./tz.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.resolve(here, "..", "public");
@@ -37,6 +38,8 @@ const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 const niceDate = (d) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return ""; const x = new Date(d + "T12:00:00Z"); return `${WEEKDAY[x.getUTCDay()].slice(0, 3)}, ${MON[x.getUTCMonth()]} ${x.getUTCDate()}`; };
 const ID_OK = /^[A-Za-z0-9_-]{1,120}$/, HANDLE = /^[a-z0-9][a-z0-9-]{1,29}$/, IDEA_OK = /^idea-[a-z0-9-]{1,60}$/;
 const IMG_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[A-Za-z0-9_.-]{1,80}$/.test(u || "") || /^https:\/\/[^\s"'<>()]{1,400}$/.test(u || "");
+// a save's picture is one of ours (an upload or a preset), never an outside address someone typed in
+export const SAVE_IMG_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9][a-z0-9_-]{0,70}\.(?:jpg|jpeg|png|webp|svg)$/i.test(u || "");
 
 export const INTERESTS = (() => { try { return JSON.parse(fs.readFileSync(path.join(PUBLIC, "interests.json"), "utf8")).interests || []; } catch { return []; } })();
 const INTEREST_IDS = new Set(INTERESTS.map((i) => i.id));
@@ -49,9 +52,13 @@ const reWord = new Map(); const wordRe = (w) => { if (!reWord.has(w)) reWord.set
 export function interestsOf(text, format = "") { const t = String(text || "").toLowerCase(), f = lc(format);
   return INTERESTS.filter((i) => (f && (i.formats || []).includes(f)) || (i.words || []).some((w) => wordRe(w).test(t))).map((i) => i.id); }
 export const cleanInterests = (L) => [...new Set((Array.isArray(L) ? L : String(L || "").split(",")).map((x) => lc(x)).filter((x) => INTEREST_IDS.has(x)))].slice(0, 20);
-const FORMAT_LABEL = { dinner: "Supper club", run: "Run club", hike: "Hike", workshop: "Workshop", class: "Class", "pop-up": "Pop-up", coffee: "Coffee", picnic: "Picnic", "game night": "Game night", "book club": "Book club", drinks: "Drinks", movement: "Movement", party: "Party", brunch: "Brunch", meetup: "Meetup", summit: "Summit", conference: "Conference", panel: "Panel", online: "Online", tour: "Tour", launch: "Launch", offsite: "Offsite", talk: "Talk", keynote: "Keynote", podcast: "Podcast", webinar: "Webinar" };
-/** This weekend, as dates: Friday to Sunday (from today when it's already the weekend). */
-export function weekendOf(now = Date.now()) { const t = iso(now), d = dow(t); if (d === 6) return { from: t, to: addDays(t, 1) }; if (d === 0) return { from: t, to: t }; const fri = addDays(t, 5 - d); return { from: d === 5 ? t : fri, to: addDays(fri, 2) }; }
+const FORMAT_LABEL = { dinner: "Supper club", run: "Run club", hike: "Hike", workshop: "Workshop", class: "Class", "pop-up": "Pop-up", coffee: "Coffee", picnic: "Picnic", "game night": "Game night", "book club": "Book club", drinks: "Drinks", movement: "Movement", party: "Party", brunch: "Brunch", meetup: "Event", summit: "Summit", conference: "Conference", panel: "Panel", online: "Online", tour: "Tour", launch: "Launch", offsite: "Offsite", talk: "Talk", keynote: "Keynote", podcast: "Podcast", webinar: "Webinar" };
+// the day it is in a place: an IANA zone, else ENCORE_TZ, else UTC
+const zoneOk = (tz) => { if (!tz) return false; try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
+export const zoneOf = (city = "") => { const z = tzOfCity(city); return z || (zoneOk(process.env.ENCORE_TZ) ? process.env.ENCORE_TZ : "UTC"); };
+export const localDay = (now = Date.now(), tz = "") => new Intl.DateTimeFormat("en-CA", { timeZone: zoneOk(tz) ? tz : zoneOk(process.env.ENCORE_TZ) ? process.env.ENCORE_TZ : "UTC", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
+/** This weekend, as dates: Friday to Sunday (from today when it's already the weekend), in a time zone (default ENCORE_TZ). */
+export function weekendOf(now = Date.now(), tz = "") { const t = localDay(now, tz), d = dow(t); if (d === 6) return { from: t, to: addDays(t, 1) }; if (d === 0) return { from: t, to: t }; const fri = addDays(t, 5 - d); return { from: d === 5 ? t : fri, to: addDays(fri, 2) }; }
 
 export function makeHooks({ store, C, X, Dir, SB }) {
   const sys = (k) => store.get("system/" + k)?.data;
@@ -73,7 +80,7 @@ export function makeHooks({ store, C, X, Dir, SB }) {
   /** One save from what a client sent: kind, ref, an optional board and a small snapshot (title, image) for its own collage. */
   function cleanSave(x, boards) { const kind = lc(x?.kind), ref = String(x?.ref || "").trim(); if (!refOk(kind, ref)) return null;
     const board = boards.some((b) => b.id === x?.board) ? x.board : "";
-    return { kind, ref, board, title: clean(x?.title, 140), img: IMG_OK(x?.img) ? x.img : "", at: Math.min(Number.isFinite(+x?.at) && +x.at > 0 ? +x.at : Date.now(), Date.now()) }; }
+    return { kind, ref, board, title: clean(x?.title, 140), img: SAVE_IMG_OK(x?.img) ? x.img : "", at: Math.min(Number.isFinite(+x?.at) && +x.at > 0 ? +x.at : Date.now(), Date.now()) }; }
   function addSave(email, x) { const S = savesRaw(email), s = cleanSave(x, S.boards); if (!s) return null; const cur = S.items.find((i) => i.kind === s.kind && i.ref === s.ref);
     if (cur) { if (x.board !== undefined) cur.board = s.board; if (s.title && !cur.title) cur.title = s.title; if (s.img && !cur.img) cur.img = s.img; } else S.items.unshift(s);
     writeSaves(email, S); return { saved: cur || s, isNew: !cur }; }
@@ -142,12 +149,15 @@ export function makeHooks({ store, C, X, Dir, SB }) {
   function suggestHosts(base, { interests = [], city = "", limit = 6, exclude = [] } = {}) {
     const I = cleanInterests(interests), K = catalog(base), ex = new Set(exclude), up = new Map();
     for (const { e } of K.events.values()) if (e.status === "upcoming") { const L = up.get(e.host.handle) || []; L.push(e); up.set(e.host.handle, L); }
-    const scored = [...K.hosts.values()].filter((h) => !ex.has(h.handle)).map((h) => { const tags = interestsOf(`${(h.tags || []).join(" ")} ${h.tagline} ${(h.formats || []).join(" ")}`, ""); for (const f of h.formats || []) for (const t of interestsOf("", f)) if (!tags.includes(t)) tags.push(t);
+    // a match is what the host actually does (their events' formats and titles, their services and packages), never just
+    // a word in a tagline or being in the same city: a B2B host isn't a supper club because they once said "dinner"
+    const scored = [...K.hosts.values()].filter((h) => !ex.has(h.handle)).map((h) => { const does = (() => { try { return Dir.hostText(base, h.handle) || ""; } catch { return ""; } })();
+      const tags = interestsOf(`${(h.tags || []).join(" ")} ${does}`, ""); for (const f of h.formats || []) for (const t of interestsOf("", f)) if (!tags.includes(t)) tags.push(t);
       const hit = I.filter((t) => tags.includes(t)), inCity = cityHit(h, city), example = !!(h.example || h.prepared);
-      const s = hit.length * 3 + (inCity ? 2 : 0) + (h.upcoming_count ? 1 : 0) + Math.min(1, (h.reviews?.count || 0) / 5) + (h.past_count ? 0.3 : 0);
+      const s = hit.length * 3 + (inCity ? 4 : 0) + (h.upcoming_count ? 1 : 0) + Math.min(1, (h.reviews?.count || 0) / 5) + (h.past_count ? 0.3 : 0);
       const next = (up.get(h.handle) || [])[0];
-      return { h, s, hit, inCity, example, tags, next }; }).filter((x) => x.hit.length || x.inCity || !I.length);
-    const real = scored.filter((x) => !x.example).sort((a, b) => b.s - a.s), demo = scored.filter((x) => x.example && (x.hit.length || x.inCity)).sort((a, b) => b.s - a.s);
+      return { h, s, hit, inCity, example, tags, next }; }).filter((x) => (I.length ? x.hit.length > 0 : true) && (I.length || !city || x.inCity || !x.example));
+    const real = scored.filter((x) => !x.example).sort((a, b) => b.s - a.s), demo = scored.filter((x) => x.example && (I.length ? x.hit.length : x.inCity)).sort((a, b) => b.s - a.s);
     const lim = Math.max(3, Math.min(6, +limit || 6)), pick = real.slice(0, lim); if (pick.length < 3) pick.push(...demo.slice(0, 3 - pick.length));
     return pick.map(({ h, hit, inCity, example, tags, next }) => ({ handle: h.handle, name: h.name, url: rel(base, h.url), city: h.city, area: h.area, tagline: h.tagline, emoji: h.emoji, avatar: rel(base, h.avatar), example,
       why: [...hit.map((t) => INTERESTS.find((i) => i.id === t)?.label), inCity ? h.area || h.city : ""].filter(Boolean).slice(0, 2).join(" · "), tags: tags.slice(0, 4), upcoming: h.upcoming_count, past: h.past_count,
@@ -156,7 +166,7 @@ export function makeHooks({ store, C, X, Dir, SB }) {
     host: { handle: e.host.handle, name: e.host.name, url: rel(base, e.host.url) }, url: rel(base, e.url), cover: rel(base, e.cover), tags: interestsOf(`${e.title} ${(e.tags || []).join(" ")}`, e.format), example: !!e.example, saves: countOf("event", e.id) }; }
   /** Upcoming public events this weekend (Fri to Sun) for these interests and this city. Real hosts only. */
   function weekend(base, { interests = [], city = "", saved = [], now = Date.now(), limit = 8 } = {}) {
-    const I = cleanInterests(interests), W = weekendOf(now), want = new Set(saved);
+    const I = cleanInterests(interests), W = weekendOf(now, zoneOf(city)), want = new Set(saved);
     const L = Dir.filterEvents(base, { status: "upcoming", from: W.from, to: W.to }).filter((e) => !e.example && !e._dup).map((e) => { const tags = interestsOf(`${e.title} ${(e.tags || []).join(" ")}`, e.format);
       const fit = (!I.length || tags.some((t) => I.includes(t))) && (!city || cityHit(e, city)); return { e, fit, saved: want.has(e.id) }; }).filter((x) => x.fit || x.saved);
     return { from: W.from, to: W.to, events: L.slice(0, limit).map((x) => ({ ...evCard(base, x.e), saved: x.saved })) }; }
@@ -202,10 +212,10 @@ export function makeHooks({ store, C, X, Dir, SB }) {
         const day = WEEKDAY[dow(e.start)], spots = e.spots_left != null ? ` Spots left: ${e.spots_left}.` : "", text = `Your saved event is ${day}: ${e.title}.${spots}`;
         X.notify(v.email, { kind: "saved", key: "plsave-" + i.ref + "-" + e.start, text, link: rel(base, e.url), eventId: i.ref }); out.reminders++;
         if (cfg && X.canEmail(v.email)) sendEmail(cfg, { list: "guest", origin: base, to: v.email, subject: `Your saved event is ${day}`, text: `${e.title}, ${niceDate(e.start)}${e.time ? " at " + e.time.split(" to ")[0] : ""}${e.area || e.city ? `, ${e.area || e.city}` : ""}.${spots}\n\nAre you in? ${link(rel(base, e.url))}\n\nYou saved this on Pottery Lab. See your saves: ${link("/saved")}` }).catch(() => {}); } }
-    // the weekend digest: Thursday or Friday, once per weekend, only when something matches
-    const d = dow(today);
-    if (d === 4 || d === 5) { const W = weekendOf(now), people = new Set([...store.list("system").map((x) => x.data).filter((v) => v?.kind === "plint" && v.email).map((v) => lc(v.email)), ...savers().map((v) => lc(v.email))]);
-      for (const em of people) { if (!isUser(em)) continue; const k = `digest|${em}|${W.from}`; if (done(k)) continue; const D = digest(base, em, now); if (!D.events.length) { out.skipped++; continue; } mark(k);
+    // the weekend digest: Thursday or Friday where the person is (their city's time zone, else ENCORE_TZ), once per
+    // weekend, only when something matches
+    { const people = new Set([...store.list("system").map((x) => x.data).filter((v) => v?.kind === "plint" && v.email).map((v) => lc(v.email)), ...savers().map((v) => lc(v.email))]);
+      for (const em of people) { if (!isUser(em)) continue; const tz = zoneOf(interestsOfUser(em).city), d = dow(localDay(now, tz)); if (d !== 4 && d !== 5) continue; const W = weekendOf(now, tz), k = `digest|${em}|${W.from}`; if (done(k)) continue; const D = digest(base, em, now); if (!D.events.length) { out.skipped++; continue; } mark(k);
         const names = D.events.map((e) => e.title), text = `This weekend near you: ${names.slice(0, 2).join(", ")}${names.length > 2 ? ` and ${names.length - 2} more` : ""}`;
         X.notify(em, { kind: "digest", key: "digest-" + W.from, text, link: D.events.length === 1 ? D.events[0].url : "/saved#weekend" }); out.digests++;
         if (cfg && X.canEmail(em)) sendEmail(cfg, { list: "guest", origin: base, to: em, subject: "This weekend near you", text: `Picked from what you're into${interestsOfUser(em).city ? ` in ${interestsOfUser(em).city}` : ""}:\n\n${D.events.map((e) => `${e.saved ? "♥ " : ""}${e.title}\n${[e.when, e.area || e.city, e.price].filter(Boolean).join(" · ")}${e.spots_left != null ? ` · ${e.spots_left} spots left` : ""}\n${link(e.url)}`).join("\n\n")}\n\nChange what you're into: ${link("/ideas")}` }).catch(() => {}); } }
@@ -225,6 +235,13 @@ export function mountHooks(app, { store, currentUser, publicOrigin, C, X, SB, se
   const list = (v) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
 
   app.get("/ideas", (req, res) => sendStatic(res, "ideas.html", "<p>Ideas page missing.</p>"));
+  // /signup?ref=<event>: the name and email a guest gave in their reply, for the reply proof this device holds (its id and
+  // code, from the invite). Nothing without the matching proof; POST so the code stays out of URLs and logs.
+  app.post("/api/public/reply/:eventId/me", json, (req, res) => { if (limited(req, "replyme", 30)) return slow(res); res.set("Cache-Control", "private, no-store");
+    const eventId = String(req.params.eventId || "").slice(0, 80), rid = String(req.body?.rid || "").slice(0, 80), code = String(req.body?.code || "").slice(0, 80);
+    const P = /^[A-Za-z0-9_-]{1,80}$/.test(eventId) && rid && code ? X.rsvpProof?.(eventId, rid, code) : null;
+    if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
+    res.json({ name: clean(P.r.name, 80), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(P.r.email || "").trim()) ? String(P.r.email).trim().slice(0, 200) : "" }); });
   app.get("/saved", (req, res) => sendStatic(res, "saved.html", "<p>Saved page missing.</p>"));
   // ---- public reads ----
   app.get("/api/public/inspo", (req, res) => { if (limited(req, "read", 1200)) return slow(res); res.set("Cache-Control", "public, max-age=30");

@@ -8,7 +8,7 @@ import { scopeStore, getWorkspace, allWorkspaceIds, workspaceOfEvent, DEFAULT_WS
 import { emailConfig, sendEmail } from "./email.js";
 import { track } from "./metrics.js";
 import { smsConfig, sendSms, useSmsStop } from "./sms.js";
-import { momentKind, momentMaxBytes, videoSeconds, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
+import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
@@ -363,7 +363,8 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.delete("/api/me/posts/:id", (req, res) => { const u = me(req, res); if (!u) return; const em = lc(u.email); store.set("system/" + postsKey(em), { kind: "posts", list: postsOf(em).filter((p) => p.id !== req.params.id) }); res.json({ ok: true }); });
   app.post("/api/me/posts/photo", raw, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!/^image\/(jpeg|png|webp|gif)$/.test(ct)) return bad(res, "Photos only (JPEG, PNG, WebP, GIF).", 415, "unsupported_type"); const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");
-    const meta = await X.saveBlob(body, ct, u.ws); res.json({ url: meta.url }); });
+    const real = sniffedAs(ct, body); if (!real) return bad(res, "That file isn't a photo we can show. Try a JPEG, PNG, WebP or GIF.", 415, "unsupported_type");
+    const meta = await X.saveBlob(body, real, u.ws); res.json({ url: meta.url }); });
   // the right-hand column: hosts to follow, people you may know, your past group chats
   app.get("/api/me/sidebar", (req, res) => { const u = me(req, res); if (!u) return; const em = lc(u.email), I = X.index(), F = new Set(X.friendsOf(em).map((f) => lc(f.email)));
     const followed = new Set(); try { for (const ws of allWorkspaceIds()) if ((C.followersOf?.(ws) || []).some((f) => lc(f.email) === em)) followed.add(ws); } catch {}
@@ -663,11 +664,13 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if (A.guest && (A.ev?.date || "9") > new Date().toISOString().slice(0, 10)) return bad(res, "Photos open once it's happened.", 400, "not_yet");
     const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length) return bad(res, "Empty upload.");
     const max = momentMaxBytes(kind); if (body.length > max) return bad(res, `${kind === "video" ? "Videos" : "Photos"} can be up to ${Math.round((max / 1048576) * 10) / 10} MB.`, 413, "too_large");
+    const real = sniffedAs(ct, body); if (!real) return bad(res, kind === "video" ? "That file isn't a video we can play. Try an MP4, MOV or WebM." : "That file isn't a photo we can show. Try a JPEG, PNG, WebP or GIF.", 415, "unsupported_type");
     const secs = kind === "video" ? videoSeconds(body) : 0, said = +req.query.duration || 0; if (secs > MOMENT_MAX_SECONDS + 0.6 || said > MOMENT_MAX_SECONDS + 0.6) return bad(res, `Videos can be up to ${MOMENT_MAX_SECONDS} seconds. Trim it and try again.`, 400, "too_long");
+    if (kind === "video" && !secs && body.length > unreadVideoMaxBytes()) return bad(res, "We couldn't read this video's length. Try an MP4 from your camera.", 400, "unknown_length");
     const S = scopeStore(store, A.ws); if (S.list("moments").filter((d) => d.data?.eventId === id && lc(d.data.authorEmail || "") === A.email && (A.email || d.data.authorKey === A.key)).length >= MOMENTS_PER_PERSON) return bad(res, "That's a lot of photos. Pick your favourites.", 429, "too_many");
-    const meta = await X.saveBlob(body, ct, A.ws); { const I = X.index(), evT = I.events.get(id)?.e; for (const [em, L] of I.att) if (em !== A.email && L.some((a) => a.eventId === id)) X.notify(em, { kind: "photos", key: `ph-${id}-${new Date().toISOString().slice(0, 13)}`, text: `📸 New photos from ${evT?.pubTitle || evT?.name || "your event"}${A.name ? `, from ${first(A.name)}` : ""}`, link: `/g#rsvp-${id}`, eventId: id }); }
+    const meta = await X.saveBlob(body, real, A.ws); { const I = X.index(), evT = I.events.get(id)?.e; for (const [em, L] of I.att) if (em !== A.email && L.some((a) => a.eventId === id)) X.notify(em, { kind: "photos", key: `ph-${id}-${new Date().toISOString().slice(0, 13)}`, text: `📸 New photos from ${evT?.pubTitle || evT?.name || "your event"}${A.name ? `, from ${first(A.name)}` : ""}`, link: `/g#rsvp-${id}`, eventId: id }); }
     const w = Math.floor(+req.query.w || 0), h = Math.floor(+req.query.h || 0), size = w > 0 && h > 0 && w <= 20000 && h <= 20000 ? { w, h } : {};
-    const doc = S.add("moments", { eventId: id, authorEmail: A.email, authorName: A.name, authorKey: A.key, url: meta.url, type: kind, caption: clean(req.query.caption, 200).replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), ...size, ...(secs ? { seconds: Math.round(secs * 10) / 10 } : {}), at: Date.now() }); X.bust();
+    const doc = S.add("moments", { eventId: id, authorEmail: A.email, authorName: A.name, authorKey: A.key, url: meta.url, type: kind, contentType: real, caption: clean(req.query.caption, 200).replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "…").replace(/\(?(?:\+?\d[\s().-]*){7,}\d/g, "…"), ...size, ...(secs ? { seconds: Math.round(secs * 10) / 10 } : {}), at: Date.now() }); X.bust();
     res.json({ ok: true, id: doc.id, url: meta.url, type: kind }); });
   // a video's poster frame (a still the browser grabbed from it), from whoever added the video
   app.post("/api/moments/:momentId/poster", raw, async (req, res) => { if (limited(req, 40)) return bad(res, "Slow down.", 429, "rate_limited"); const id = clean(req.query.eventId, 80), ct = String(req.get("content-type") || "").split(";")[0].trim().toLowerCase();
@@ -676,6 +679,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const S = scopeStore(store, A.ws), mid = String(req.params.momentId || "").replace(/[^A-Za-z0-9_-]/g, ""), m = S.get("moments/" + mid)?.data;
     if (!m || m.eventId !== id || m.type !== "video" || !(A.host || m.authorKey === A.key || (A.email && lc(m.authorEmail) === A.email))) return bad(res, "No such video.", 404, "not_found");
     const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0); if (!body.length || body.length > 2 * 1048576) return bad(res, "The poster can be up to 2 MB.", 413, "too_large");
-    const meta = await X.saveBlob(body, ct, A.ws); S.update("moments/" + mid, { poster: meta.url }); X.bust(); res.json({ ok: true, poster: meta.url }); });
+    const pt = sniffedAs(ct, body); if (!["image/jpeg", "image/png", "image/webp"].includes(pt)) return bad(res, "The poster is a JPEG, PNG or WebP.", 415, "unsupported_type");
+    const meta = await X.saveBlob(body, pt, A.ws); S.update("moments/" + mid, { poster: meta.url }); X.bust(); res.json({ ok: true, poster: meta.url }); });
   // ---- end visual feed ----
 }

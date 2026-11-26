@@ -51,6 +51,7 @@
 #rail{display:block;overflow:visible;padding:0;margin:0 -4px}.fv-post .ptext{margin:10px 2px 0}.fv-post .plink{margin-top:10px}.fv-post .fv-pol.wide{margin:6px 4px 2px}.fv-btn.cheer.on{background:#FFF1C9}.fv-empty{display:flex;gap:14px;align-items:center;margin-bottom:22px}.fv-empty h3{margin:0 0 4px}.fv-empty p{margin:0 0 10px}
 @media (max-width:980px){.fside .pub-side{display:none}}
 @media (max-width:980px){body:not(.tab-feed) .fside{display:none}}body.pub-feed aside.fside{display:flex}
+/* nothing to suggest: no empty card and no empty column */.fside:empty{display:none!important}.fgrid:has(>.fside:empty){grid-template-columns:minmax(0,640px)}
 /* a post about an event: who did what on top, then the event itself as one block with a title you can read */
 .post-h small b{font-weight:600;color:#3E352F}
 .pev{display:block;margin:0 0 10px;padding:12px 14px;border-radius:14px;background:#F7F1E8;color:inherit;text-decoration:none}a.pev:hover{background:#EFE6D8}
@@ -101,7 +102,7 @@
   const av = (p) => `<a class="av" style="--c:${esc(p?.color || "#E26D8E")}" ${p?.handle ? `href="/h/${esc(p.handle)}"` : ""}>${esc(p?.emoji || "🙂")}</a>`;
   const nm = (p) => esc(p?.name || "Someone"), fn = (p) => esc(String(p?.name || "Someone").split(" ")[0]);
   const toast = (t) => { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2B211C;color:#fff;padding:10px 16px;border-radius:14px;z-index:40;max-width:90vw;font-size:14px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3200); };
-  const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club meetup" };
+  const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club night" };
   const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
   async function load() { try { F = await api("/api/me/feed"); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } drawRail(); drawBell(); draw(); drawSide(); }
@@ -117,9 +118,11 @@
   const wireLb = (root) => $$("[data-lbf]", root).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/public/follow", { handle: b.dataset.lbf, via: "leaderboard" }); b.textContent = "Following"; } catch (e) { b.disabled = false; toast(e.message); } }));
   // ---- signed out: the public feed of open events and hosts, with a nudge to sign in for posts from people you follow ----
   // ---- visual feed: signed out, the same scrapbook wall from public content only (open events, showcase pages, public photos) ----
+  // picks made in "What are you into?" reorder the signed-out wall straight away
+  window.addEventListener("pl:interests-saved", () => { if (document.body.classList.contains("pub-feed")) drawPublic(); });
   async function drawPublic() { document.body.classList.add("pub-feed"); for (const sel of [".tabs", "#bell"]) { const el = $(sel); if (el) el.hidden = true; }
     const V = window.FeedVisual, city = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
-    const [d, lb] = await Promise.all([api("/api/public/feed").catch(() => ({ upcoming: [], past: [], moments: [], kudos: [], showcase: [], stories: [] })), api("/api/public/leaderboard/card?city=" + encodeURIComponent(city)).then((j) => j.card).catch(() => null)]);
+    const [d, lb] = await Promise.all([api("/api/public/feed" + (V.publicQuery ? V.publicQuery() : "")).catch(() => ({ upcoming: [], past: [], moments: [], kudos: [], showcase: [], stories: [] })), api("/api/public/leaderboard/card?city=" + encodeURIComponent(city)).then((j) => j.card).catch(() => null)]);
     V.rail($("#rail"), d.stories, { signedIn: false });
     $("#m").innerHTML = V.composePublic(d, { lb: lb ? lbCard(lb, false) : "" }); V.wire($("#m")); wireLb($("#m"));
     // hosts to follow, beside the wall on wide screens only (phones get the wall)

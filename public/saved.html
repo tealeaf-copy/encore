@@ -50,7 +50,7 @@ h2{font:600 24px Fredoka,system-ui;margin:28px 0 10px}.lede{color:var(--smoke);m
 (function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const signed = /(?:^|;\s*)encore_in=1/.test(document.cookie), hash = (s) => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
-  const safeImg = (u) => (/^\/_blob\/[A-Za-z0-9]{6,40}$/.test(u || "") || /^\/presets\/[A-Za-z0-9_.-]{1,80}$/.test(u || "") || /^https:\/\/[^\s"'<>()]+$/.test(u || "") ? u : "");
+  const safeImg = (u) => (/^\/_blob\/[A-Za-z0-9]{6,40}$/.test(u || "") || /^\/presets\/[A-Za-z0-9_.-]{1,80}$/.test(u || "") ? u : "");
   const safeUrl = (u) => (/^\/[A-Za-z0-9@_\-./#?=&%]*$/.test(u || "") && !/^\/\//.test(u) ? u : "");
   let data = { items: [], boards: [] }, open = null;
   const thumb = (i) => { const im = safeImg(i.img); if (im) return `<img src="${esc(im)}" alt="" loading="lazy">`; if (i.kind === "host") return `<span class="av">${esc(i.emoji || "🙂")}</span>`;

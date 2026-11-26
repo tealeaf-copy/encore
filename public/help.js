@@ -50,6 +50,7 @@
   // ---------- styles ----------
   const css = document.createElement("style"); css.id = "ehCss";
   css.textContent = `
+.eh-away{display:none!important}
 .eh-btn{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px 8px 10px;border-radius:999px;border:2px solid #1F1A17;background:#FFFCF7;color:#1F1A17;font:700 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;box-shadow:3px 3px 0 #1F1A17;transition:transform .15s}
 :host{all:initial}*{box-sizing:border-box}button,input,select,textarea{font:inherit;color:inherit;margin:0;width:auto}a{color:inherit}svg{display:block;flex:none}
 .eh-btn:hover{transform:translateY(-1px)}:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
@@ -96,7 +97,9 @@
 </section>`;
   // onboarding forms end at the bottom of the screen: leave room to scroll their last button clear of ours
   if (ONB) { const pad = document.createElement("style"); pad.textContent = "body{padding-bottom:calc(var(--eh-bottom,16px) + 64px)!important}"; document.head.appendChild(pad); }
-  const mount = () => { document.body.appendChild(host); place(); setInterval(place, 1500); window.addEventListener("resize", place); start(); };
+  const mount = () => { document.body.appendChild(host); place(); setInterval(place, 1500); window.addEventListener("resize", place); start();
+    // dialogs open and close between ticks: look again soon after the page changes
+    let t = 0; new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = 0; place(); }, 120); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] }); };
   const $ = (s) => root.querySelector(s);
   const btn = () => $(".eh-btn"), panel = () => $(".eh-panel"), nudge = () => $(".eh-nudge");
 
@@ -115,8 +118,13 @@
       if (!r.width || !r.height || cs.visibility === "hidden" || cs.display === "none") continue; if (r.right > W - 150 && r.bottom > H * 0.5 && r.top < H) top = Math.min(top, r.top); } } catch {}
     return H - top;
   }
+  // a dialog, sheet or wizard of the page's own is open: the button steps aside (it would sit on step chips and titles)
+  const shown = (e) => { if (!e || host.contains(e) || e.hidden) return false; const cs = getComputedStyle(e); if (cs.display === "none" || cs.visibility === "hidden") return false; const r = e.getBoundingClientRect(); return r.width > 40 && r.height > 40; };
+  const modalOpen = () => { try { if (document.querySelector("#wizBg .wiz, #wizBg[data-wizard]") && shown(document.querySelector("#wizBg"))) return true;
+    for (const e of document.querySelectorAll('[role=dialog], [aria-modal=true], dialog[open], .store-pane, .sheet, .pin-bg, .fv-sv')) if (shown(e)) return true; } catch {} return false; };
   function place() {
-    try { const b = btn(); if (!b) return; const h = obstacleHeight(), dock = h > innerHeight * 0.45 - 8;
+    try { const b = btn(); if (!b) return; const away = panel().hidden && modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
+      const h = obstacleHeight(), dock = h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);
       const bottom = dock ? 16 : Math.round(h ? h + 12 : 16); document.documentElement.style.setProperty("--eh-bottom", bottom + "px");
     } catch {}

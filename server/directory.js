@@ -16,7 +16,8 @@ import { scopeStore, getWorkspace, allWorkspaceIds } from "./workspaces.js";
 import { KUDOS_TAGS, VERIFIED_LABEL, withVerified } from "./social.js";
 import { guessFormat, cleanLogos, isTalk, TALK_FORMATS, httpsLink, audienceOf } from "./scrapbook.js";
 import { categoryOf as bookCategoryOf, CATEGORIES as BOOK_CATEGORIES } from "./market.js";
-import { perPerson, isFlat } from "./search.js";
+import { perPerson, isFlat, priceText } from "./search.js";
+import { tzOk, tzOfCity } from "./tz.js";
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
 const PER_HOUR = () => Math.max(1, +process.env.ENCORE_DIRECTORY_PER_HOUR || 600);
@@ -143,12 +144,7 @@ export const queryWords = (q) => [...new Set(toks(s(q, 120)).filter((w) => !STOP
 // They become from/to (in the event city's time zone when we know it, else ENCORE_TZ) and drop out of the words.
 // A weekend is Friday to Sunday; "next weekend" is the one after this one; "this week" runs to Sunday.
 const DATE_RE = /\b(tonight|today|tomorrow|this\s+weekend|next\s+weekend|this\s+week)\b/i;
-const CITY_TZ = [[/new york|brooklyn|queens|manhattan|bronx|staten island|jersey city|hoboken|boston|philadelphia|washington|miami|atlanta|toronto|montreal|detroit/i, "America/New_York"],
-  [/chicago|austin|houston|dallas|san antonio|minneapolis|nashville|new orleans/i, "America/Chicago"], [/phoenix|tucson/i, "America/Phoenix"], [/denver|boulder|salt lake/i, "America/Denver"],
-  [/san francisco|oakland|berkeley|san jose|palo alto|los angeles|santa monica|san diego|seattle|portland|vancouver|napa|sacramento/i, "America/Los_Angeles"],
-  [/london/i, "Europe/London"], [/sydney/i, "Australia/Sydney"], [/melbourne/i, "Australia/Melbourne"]];
-const tzOk = (tz) => { if (!tz) return false; try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
-export const tzOfCity = (place) => { const t = String(place || ""); return CITY_TZ.find(([re]) => re.test(t))?.[1] || ""; };
+export { tzOfCity }; // (server/tz.js)
 /** The date phrase in a query and the query without it. */
 export function datePhrase(q) { const m = String(q || "").match(DATE_RE); return m ? { phrase: m[1].toLowerCase().replace(/\s+/g, " "), rest: String(q).replace(DATE_RE, " ").replace(/\s+/g, " ").trim() } : { phrase: "", rest: String(q || "") }; }
 /** from/to (YYYY-MM-DD) for a date phrase, in a time zone ("" = ENCORE_TZ, else the server's). */
@@ -244,7 +240,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
       const RI = H.ws && !H.sample ? respondsIn(H.ws) : null; H.rec.responds_in = RI?.text || null; H.rec.responds_in_hours = RI?.hours ?? null;
       H.rec.leaderboard = ranks.get(handle) || null;
       H.rec.speaking_topics = [...new Set(L.filter((e) => e.speaking?.topic).map((e) => e.speaking.topic))].slice(0, 8);
-      H.packages = X0.map((x) => ({ id: s(x.id, 40), name: s(x.name, 80), price: s(x.price, 60), min: Math.max(1, +x.min || 1), max: +x.max || null, category: bookCategoryOf(x), per_person: perPerson(x.price) || null, flat: isFlat(x.price), _x: x }));
+      H.packages = X0.map((x) => ({ id: s(x.id, 40), name: s(x.name, 80), price: s(priceText(x.price), 60), min: Math.max(1, +x.min || 1), max: +x.max || null, category: bookCategoryOf(x), per_person: perPerson(priceText(x.price)) || null, flat: isFlat(priceText(x.price)), _x: x }));
       const R = reviewsFor(H, null); H.rec.reviews = { count: R.count, would_go_again_pct: R.would_go_again_pct, top_tags: R.top_tags }; H.reviewItems = R.items;
       if (H.ws && !H.kudosOff) for (const k of (kudosOf.get(H.ws) || []).filter((k) => k.love || (k.tags || []).length)) { const ev = titles.get(k.eventId);
         reviews.push({ ...reviewItem(k), event: ev && ev.host.handle === handle ? { id: ev.id, title: ev.title, url: ev.url } : null, host: hostRef(H.h), example: !!H.sample, _at: k.at || 0 }); } }
@@ -336,13 +332,20 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
   // category: a booking category (food, dining, movement, workshop, drinks, culture), or any word their formats, tags
   // or packages use. A host with no priced package still shows (after those with one), with "quoted on request".
   function findHosts(base, q = {}) {
-    const D = data(base), city = s(q.city, 60).toLowerCase(), cat = s(q.category, 40).toLowerCase(), n = Math.max(0, Math.min(5000, Math.round(+q.group_size || 0))), date = /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "", budget = Math.max(0, +String(q.budget ?? "").replace(/[^\d.]/g, "") || 0), ex = truthy(q.include_examples);
+    const bad = findArgsError(q); if (bad) throw Object.assign(new Error(bad), { status: 400 });
+    const verifiedOnly = truthy(q.verified_only), minReviews = Math.max(0, Math.round(+q.min_reviews || 0));
+    const D = data(base), city = s(q.city, 60).toLowerCase(), cat = s(q.category, 40).toLowerCase(), catRe = CATEGORY_WORDS[cat] || null, n = Math.max(0, Math.min(5000, Math.round(+q.group_size || 0))), date = /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "", budget = Math.max(0, +String(q.budget ?? "").replace(/[^\d.]/g, "") || 0), ex = truthy(q.include_examples);
     const out = [];
     for (const H of D.hosts.values()) { const h = H.rec; if (!(H.sample ? !!H.h.forHire : h.for_hire)) continue; if (!ex && h.example) continue;
       if (city && !`${h.city} ${h.area}`.toLowerCase().includes(city)) continue;
+      const verified = (H.reviewItems || []).filter((r) => r.verified).length;
+      if (verifiedOnly && !verified) continue; if (minReviews && (h.reviews?.count || 0) < minReviews) continue;
       const blob = [...h.formats, ...h.tags, h.tagline, H.h.services || "", ...H.packages.map((p) => `${p.name} ${p.category}`)].join(" ").toLowerCase();
-      let P = H.packages.filter((p) => !cat || p.category === cat || `${p.name} ${p._x.desc || ""}`.toLowerCase().includes(cat));
-      if (cat && !P.length && !blob.includes(cat)) continue;
+      // a category is its booking category or the words people use for it ("dining" is dinners, suppers, tastings, chef's tables)
+      // the words are matched against what they offer (formats, services, packages), not a tagline
+      const fits = (t) => !cat || t.includes(cat) || (catRe ? catRe.test(t) : false), offers = [...h.formats, H.h.services || "", ...H.packages.map((p) => `${p.name} ${p._x.desc || ""}`)].join(" ").toLowerCase();
+      let P = H.packages.filter((p) => !cat || p.category === cat || fits(`${p.name} ${p._x.desc || ""}`.toLowerCase()));
+      if (cat && !P.length && !blob.includes(cat) && !fits(offers)) continue;
       const why = [], pk = P.map((p) => { const fits = !n ? null : n >= p.min && (!p.max || n <= p.max); const est = p.per_person ? (p.flat ? p.per_person : n ? p.per_person * n : null) : null;
         let open = null; try { const O = H.ws ? C.openDatesOf(H.ws, p._x) : []; open = date ? (O.length ? O.includes(date) : null) : null; } catch {}
         return { id: p.id, name: p.name, price: p.price || "Quoted on request", min: p.min, max: p.max, category: p.category, estimate: est, fits_group: fits, within_budget: budget && est != null ? est <= budget : null, date_open: open }; });
@@ -353,13 +356,44 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
       if (date && best.some((p) => p.date_open)) why.push(`Open on ${date}`);
       if (h.leaderboard) why.push(h.leaderboard.text); if (h.responds_in) why.push(`Usually replies ${h.responds_in}`); if (h.reviews.count) why.push(`${h.reviews.count} reviews`);
       const score = (best.length ? 10 : 0) + best.filter((p) => p.fits_group).length * 2 + best.filter((p) => p.within_budget).length * 2 + best.filter((p) => p.date_open).length * 3 + (h.leaderboard ? 6 - Math.min(5, h.leaderboard.rank) : 0) + Math.min(5, h.reviews.count / 2) + (h.responds_in_hours != null && h.responds_in_hours <= 24 ? 1 : 0);
-      out.push({ score, host: h, packages: best, quoted_on_request: !H.packages.length, why: why.slice(0, 4) }); }
+      if (verified) why.push(`${verified} verified ${verified === 1 ? "review" : "reviews"}`);
+      out.push({ score, host: h, packages: best, quoted_on_request: !H.packages.length, verified_reviews: verified, why: why.slice(0, 4) }); }
     out.sort((a, b) => b.score - a.score || a.host.name.localeCompare(b.host.name));
     const lim = limitOf(q.limit, 10);
-    return { data: out.slice(0, lim).map(({ score, ...x }) => x), total: out.length, query: { city: s(q.city, 60), category: cat, group_size: n || null, date: date || null, budget: budget || null },
+    return { data: out.slice(0, lim).map(({ score, ...x }) => x), total: out.length, query: { city: s(q.city, 60), category: cat, group_size: n || null, date: date || null, budget: budget || null, verified_only: verifiedOnly, min_reviews: minReviews || null },
       book_url: `${base}/hosts/book${city ? `?city=${encodeURIComponent(s(q.city, 60))}` : ""}` }; }
-  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar, findHosts };
+  /** What a host actually does, as text: the formats and titles of their events, their services and packages (not the tagline). */
+  function hostText(base, handle) { const D = data(base), H = D.hosts.get(String(handle || "").toLowerCase()); if (!H) return "";
+    const ev = D.events.filter((e) => e.host.handle === H.rec.handle && !e._dup).slice(0, 40).map((e) => `${e.format} ${e.title} ${(e.tags || []).join(" ")}`);
+    return [...H.rec.formats, ...ev, H.h.services || "", ...(H.packages || []).map((p) => `${p.name} ${p.category} ${p._x?.desc || ""}`), ...(H.h.experiences || []).map((x) => `${x?.name || ""} ${x?.category || ""}`)].join(" ").slice(0, 8000); }
+  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar, findHosts, hostText };
 }
+
+// ---- find_hosts: what each booking category means in the words hosts use (their services, formats, packages) ----
+export const CATEGORY_WORDS = {
+  dining: /\b(dinners?|suppers?|tastings?|chefs?|tables?|omakase|feasts?|supper club)\b/i,
+  movement: /\b(runs?|running|hikes?|hiking|yoga|dance|dancing|class(es)?|pilates|walks?|bike|cycling)\b/i,
+  workshop: /\b(workshops?|class(es)?|pottery|ceramics?|crafts?|clay|wheel|masterclass)\b/i,
+  drinks: /\b(coffee|caf[eé]|wine|cocktails?|matcha|tea|spritz|natural wine|happy hour)\b/i,
+  food: /\b(pop-?ups?|bakes?|baking|bakery|cater(ing|s|ed)?|pastr(y|ies)|bread|desserts?)\b/i,
+};
+const posNum = (v) => { if (v == null || v === "") return true; const n = typeof v === "number" ? v : +String(v).replace(/[$,\s]/g, ""); return Number.isFinite(n) && n > 0; };
+/** Why these find_hosts arguments can't be used, or "" when they can. */
+export function findArgsError(q = {}) {
+  if (!posNum(q.group_size)) return "group_size must be a positive number of people, e.g. 20.";
+  if (!posNum(q.budget)) return "budget must be a positive number of dollars, e.g. 2500.";
+  if (q.min_reviews != null && q.min_reviews !== "" && !(Number.isFinite(+q.min_reviews) && +q.min_reviews >= 0)) return "min_reviews must be 0 or more.";
+  if (q.date != null && q.date !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(String(q.date))) return "date must be YYYY-MM-DD, e.g. 2026-03-14.";
+  return ""; }
+// common names for arguments, so an unknown one can be pointed at the right one
+const ARG_ALIASES = { query: "q", search: "q", text: "q", keywords: "q", keyword: "q", people: "group_size", guests: "group_size", headcount: "group_size", size: "group_size", group: "group_size", attendees: "group_size", party_size: "group_size",
+  location: "city", place: "city", where: "city", near: "city", kind: "category", type: "category", format: "category", max_budget: "budget", price: "budget", total_budget: "budget", when: "date", day: "date",
+  verified: "verified_only", only_verified: "verified_only", reviews: "min_reviews", min_review_count: "min_reviews", examples: "include_examples", event: "event_id", id: "id", handle: "handle", host_handle: "handle" };
+const editDist = (a, b) => { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
+/** The argument a tool takes that an unknown one most likely meant, or "". */
+export function closestArg(name, known) { const k = String(name || "").toLowerCase(), a = ARG_ALIASES[k]; if (a && known.includes(a)) return a;
+  let best = "", bd = 99; for (const x of known) { const dd = editDist(k, x); if (dd < bd) { bd = dd; best = x; } } return bd <= Math.max(2, Math.floor(k.length / 3)) ? best : ""; }
 
 // ---- the public MCP server's tools (read-only) ----
 const str = (description, extra = {}) => ({ type: "string", description, ...extra });
@@ -380,7 +414,8 @@ export const PUBLIC_TOOLS = [
   { name: "get_event", description: "One event from the directory by id, with all its reviews.", inputSchema: { type: "object", properties: { id: str("Event id from search_events") }, required: ["id"] }, annotations: { readOnlyHint: true } },
   { name: "find_hosts", description: "Hosts open to paid work (for_hire) for a brand or team event: by city, kind of event, group size, and optionally a date and a total budget. Each result has the host record (group_size, responds_in, leaderboard, speaking_topics, reviews), the packages that fit with an estimate (price a person x group size, or the flat price), and why it fits. Hosts with no priced package show with quoted_on_request: true. Returns { data, total, query, book_url }.",
     inputSchema: { type: "object", properties: { city: str("City or neighborhood, e.g. Brooklyn"), category: str("food, dining, movement, workshop, drinks or culture, or any word their packages and formats use (e.g. pottery, run, talk)"), group_size: { type: "number", description: "How many people" },
-      date: str("YYYY-MM-DD. Hosts who list open dates must have this one; hosts who don't list dates say on request"), budget: { type: "number", description: "Total budget in dollars" }, include_examples: { type: "boolean", description: "Also return example hosts (off by default)" }, limit: { type: "number", description: "Up to 100 (default 10)" } } }, annotations: { readOnlyHint: true } },
+      date: str("YYYY-MM-DD. Hosts who list open dates must have this one; hosts who don't list dates say on request"), budget: { type: "number", description: "Total budget in dollars" },
+      verified_only: { type: "boolean", description: "Only hosts with at least one verified review (a guest who came, or replied I'm in)" }, min_reviews: { type: "number", description: "Only hosts with at least this many reviews" }, include_examples: { type: "boolean", description: "Also return example hosts (off by default)" }, limit: { type: "number", description: "Up to 100 (default 10)" } } }, annotations: { readOnlyHint: true } },
   { name: "list_hosts", description: "Hosts with a public page: name, city, what they host, event counts, a review summary, whether they're open to paid work (for_hire), group_size, responds_in, their best leaderboard rank and speaking_topics.", inputSchema: { type: "object", properties: { q: str("Words to match"), city: str("City or neighborhood"), limit: { type: "number", description: "Up to 100 (default 50)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
   { name: "get_host", description: "One host's public profile, their events in the directory and recent reviews.", inputSchema: { type: "object", properties: { handle: str("The host's handle, e.g. atbo") }, required: ["handle"] }, annotations: { readOnlyHint: true } },
   { name: "list_formats", description: "Event counts by format and by city, for building filters.", inputSchema: { type: "object", properties: { status: str("upcoming, past or all (default)", { enum: ["upcoming", "past", "all"] }) } }, annotations: { readOnlyHint: true } },
@@ -410,7 +445,7 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
   app.get("/api/v1/events.csv", api, (req, res) => res.type("text/csv; charset=utf-8").set("Content-Disposition", 'inline; filename="pottery-lab-events.csv"').send(Dir.csv(base(req), req.query)));
   app.get("/api/v1/events/:id", api, (req, res) => { const e = Dir.getEvent(base(req), req.params.id); return e ? res.json({ data: e }) : notFound(res, "event"); });
   app.get("/api/v1/hosts", api, (req, res) => res.json(Dir.listHosts(base(req), req.query)));
-  app.get("/api/v1/hosts/find", api, (req, res) => res.json(Dir.findHosts(base(req), req.query)));
+  app.get("/api/v1/hosts/find", api, (req, res) => { const bad = findArgsError(req.query); if (bad) return res.status(400).json({ code: "invalid", message: bad }); res.json(Dir.findHosts(base(req), req.query)); });
   app.get("/api/v1/hosts/:handle", api, (req, res) => { const h = Dir.getHost(base(req), req.params.handle); return h ? res.json({ data: h }) : res.status(404).json({ code: "not_found", message: "No host by that name." }); });
   app.get("/api/v1/formats", api, (req, res) => res.json(Dir.formats(base(req), req.query)));
   app.get("/api/v1/reviews", api, (req, res) => res.json(Dir.listReviews(base(req), req.query)));
@@ -446,8 +481,14 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
         instructions: "Pottery Lab's public events directory, read-only. Start with search_events or list_formats. Places are a neighborhood or city only; exact addresses go to guests who are in. Reviews are guests' kudos; there are no star ratings. Don't invent events, prices or reviews." });
       if (msg.method === "ping") return reply({});
       if (msg.method === "tools/list") return reply({ tools: PUBLIC_TOOLS });
-      if (msg.method === "tools/call") { const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args = msg.params?.arguments && typeof msg.params.arguments === "object" ? msg.params.arguments : {};
+      if (msg.method === "tools/call") { const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args0 = msg.params?.arguments && typeof msg.params.arguments === "object" && !Array.isArray(msg.params.arguments) ? msg.params.arguments : {};
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
+        // arguments the tool doesn't take: query is q; anything else is an error that names the one it likely meant
+        const known = Object.keys(PUBLIC_TOOLS.find((t) => t.name === name)?.inputSchema?.properties || {}), args = { ...args0 };
+        if ("query" in args && !known.includes("query") && known.includes("q")) { if (args.q == null) args.q = args.query; delete args.query; }
+        const extra = Object.keys(args).filter((k) => !known.includes(k));
+        if (extra.length) { const k = extra[0], m = closestArg(k, known); return fail(-32602, `${name} has no argument "${k}".${m ? ` Did you mean "${m}"?` : ""} It takes: ${known.join(", ") || "no arguments"}.`); }
+        if (name === "find_hosts") { const bad = findArgsError(args); if (bad) return fail(-32602, bad); }
         try { return reply(text(fn(args, b))); } catch (e) { return reply({ ...text(String(e.message || e)), isError: true }); } }
       return fail(-32601, `Method not found: ${msg.method}`);
     } catch (e) { return fail(-32603, String(e.message || e)); }
@@ -492,7 +533,7 @@ function openapi(base) {
       "/api/v1/events.csv": { get: { operationId: "eventsCsv", summary: "Events as CSV (same filters, up to 5000 rows)", parameters: filters, responses: { 200: { description: "CSV with a header row", content: { "text/csv": { schema: { type: "string" } } } } } } },
       "/api/v1/events/{id}": { get: { operationId: "getEvent", summary: "One event, with all its reviews", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { ...ok({ type: "object", properties: { data: ref("Event") } }), ...nf } } },
       "/api/v1/hosts": { get: { operationId: "listHosts", summary: "Hosts with a public page", parameters: [q("q", "Words to match"), q("city", "City or neighborhood"), q("include_examples", "Also include example hosts", { type: "boolean" }), ...page], responses: ok(list("Host")) } },
-      "/api/v1/hosts/find": { get: { operationId: "findHosts", summary: "Hosts open to paid work for a city, kind of event, group size, date and budget (the find_hosts MCP tool)", parameters: [q("city", "City or neighborhood"), q("category", "food, dining, movement, workshop, drinks, culture, or any word their packages and formats use"), q("group_size", "How many people", { type: "integer", minimum: 1 }), q("date", "YYYY-MM-DD", { type: "string", format: "date" }), q("budget", "Total budget in dollars", { type: "number" }), q("include_examples", "Also include example hosts", { type: "boolean" }), q("limit", "At most 100", { type: "integer", default: 10 })],
+      "/api/v1/hosts/find": { get: { operationId: "findHosts", summary: "Hosts open to paid work for a city, kind of event, group size, date and budget (the find_hosts MCP tool)", parameters: [q("city", "City or neighborhood"), q("category", "food, dining, movement, workshop, drinks, culture, or any word their packages and formats use"), q("group_size", "How many people", { type: "integer", minimum: 1 }), q("date", "YYYY-MM-DD", { type: "string", format: "date" }), q("budget", "Total budget in dollars", { type: "number", exclusiveMinimum: 0 }), q("verified_only", "Only hosts with at least one verified review", { type: "boolean" }), q("min_reviews", "Only hosts with at least this many reviews", { type: "integer", minimum: 0 }), q("include_examples", "Also include example hosts", { type: "boolean" }), q("limit", "At most 100", { type: "integer", default: 10 })],
         responses: ok({ type: "object", properties: { data: { type: "array", items: { type: "object", properties: { host: ref("Host"), packages: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, price: { type: "string" }, min: { type: "integer" }, max: { type: ["integer", "null"] }, category: { type: "string" }, estimate: { type: ["number", "null"], description: "Price a person x group size, or the flat price; null with no price" }, fits_group: { type: ["boolean", "null"] }, within_budget: { type: ["boolean", "null"] }, date_open: { type: ["boolean", "null"], description: "null when the host doesn't list open dates" } } } }, quoted_on_request: { type: "boolean" }, why: { type: "array", items: { type: "string" } } } } }, total: { type: "integer" }, query: { type: "object" }, book_url: { type: "string" } } }) } },
       "/api/v1/hosts/{handle}": { get: { operationId: "getHost", summary: "One host, their events and recent reviews", parameters: [{ name: "handle", in: "path", required: true, schema: { type: "string" } }], responses: { ...ok({ type: "object", properties: { data: { allOf: [ref("Host"), { type: "object", properties: { events: { type: "array", items: ref("Event") }, reviews: ref("Reviews") } }] } } }), ...nf } } },
       "/api/v1/formats": { get: { operationId: "listFormats", summary: "Counts by format and city, for filters", parameters: [q("status", "Which events", { type: "string", enum: ["upcoming", "past", "all"], default: "all" })],
@@ -566,7 +607,7 @@ People browse it at ${base}/events. Agents and scripts can read the same data be
 - ${base}/api/v1/events/{id} : one event, with all its reviews.
 - ${base}/api/v1/events.csv : the same filters as a spreadsheet (with when, repeat, sessions, pass_price and pass_count columns).
 - ${base}/api/v1/hosts : hosts with a public page (q, city). ${base}/api/v1/hosts/{handle} : one host, their events and reviews. Each host has for_hire, group_size { min, max }, responds_in (typical first reply to a brand request, or null), leaderboard (their best current board, or null) and speaking_topics.
-- ${base}/api/v1/hosts/find : hosts open to paid work (city, category, group_size, date, budget), with the packages that fit and an estimate. Hosts with no priced package come after, quoted on request.
+- ${base}/api/v1/hosts/find : hosts open to paid work (city, category, group_size, date, budget, verified_only, min_reviews), with the packages that fit and an estimate. Hosts with no priced package come after, quoted on request. category is food, dining, movement, workshop, drinks or culture (matched against what hosts list: dining is dinners, suppers, tastings, chefs and tables) or any word. verified_only=true keeps hosts with at least one verified review; min_reviews=N keeps hosts with N or more. group_size and budget are positive numbers; anything else is a 400.
 - ${base}/api/v1/formats : counts by format and city.
 - ${base}/api/v1/reviews : guests' reviews (host, event, q, limit, cursor).
 - ${base}/api/v1/leaderboard : host leaderboards (city, category: all, supper, movement, workshop, popup, talks, community; period: month or all). ${base}/api/v1/leaderboard/rules : how they're scored.
@@ -579,6 +620,7 @@ JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with n
 
 A public MCP server, no auth: ${base}/mcp/public (streamable HTTP, JSON responses).
 Tools: search_events, get_event, list_hosts, find_hosts, get_host, list_formats, get_reviews, get_leaderboard.
+Arguments are the ones each tool lists. query works as q; any other unknown argument is a JSON-RPC error (-32602) that names the one you likely meant. find_hosts takes verified_only and min_reviews too.
 
 ## Each event
 

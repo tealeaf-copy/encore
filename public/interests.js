@@ -26,8 +26,8 @@
 @keyframes pinUp{from{transform:translateY(30px) rotate(-1deg);opacity:0}}
 .pin h2{font:600 clamp(28px,6vw,38px)/1.02 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:#C94A30}
 .pin .pin-sub{color:#665A51;margin:0 0 14px;max-width:420px}
-.pin .pin-x{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:2px solid #1F1A17;background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 #1F1A17}
-.pin .pin-potto{position:absolute;top:-6px;right:58px;width:86px;transform:rotate(8deg);pointer-events:none}
+.pin .pin-x{position:absolute;z-index:3;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:2px solid #1F1A17;background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 #1F1A17}
+.pin .pin-potto{position:absolute;z-index:1;top:-6px;right:70px;width:86px;transform:rotate(8deg);pointer-events:none}
 .pin-chips{display:flex;flex-wrap:wrap;gap:10px 8px;margin:6px 0 16px}
 .pin-chip{--r:0deg;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:6px 16px 6px 12px;border:2.5px solid #1F1A17;border-radius:999px;background:#fff;font:600 16px Fredoka,"Instrument Sans",system-ui,sans-serif;color:#1F1A17;cursor:pointer;transform:rotate(var(--r));box-shadow:2px 3px 0 #1F1A17;transition:transform .2s cubic-bezier(.3,1.7,.5,1),background .15s}
 .pin-chip span{font-size:22px;line-height:1}.pin-chip:hover{transform:rotate(0) scale(1.04)}
@@ -38,7 +38,7 @@
 .pin-city input{min-height:48px;border:2px solid #1F1A17;border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
 .pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid #1F1A17;background:#FFFDF8;border-radius:999px;padding:4px 12px;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:#1F1A17;color:#fff}
 .pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,#F7F1E8 30%);padding:14px 0 4px;margin-top:4px}
-.pin-main{min-height:52px;padding:0 24px;border:2.5px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 #1F1A17}.pin-main:disabled{opacity:.55;cursor:default}
+.pin-main{min-height:52px;padding:0 24px;border:2.5px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 #1F1A17}.pin-main:disabled{background:#EFE6D8;color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
 .pin-skip{background:none;border:0;color:#665A51;text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer;min-height:44px}
 .pin-n{font:600 14px "Instrument Sans",system-ui;color:#665A51}
 .pin h3{font:600 20px Fredoka,system-ui;margin:18px 0 8px}
@@ -55,8 +55,8 @@
 .pin-ev .th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid #1F1A17;background:#FDE6A6}.pin-ev .th img{width:100%;height:100%;object-fit:cover}.pin-ev .th .ea-cover .ea-txt{display:none}
 .pin-ev b{font:600 16px/1.15 Fredoka,system-ui;display:block}.pin-ev small{color:#665A51;font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
 .pin-empty{background:#FFFDF8;border:2px dashed #C9BBA7;border-radius:16px;padding:14px;color:#665A51}
-@media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:70px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
-@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:24px 24px 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:62px;right:56px;top:0}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
+@media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
+@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:24px 24px 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
 @media (prefers-reduced-motion:reduce){.pin,.pin-bg,.pin-chip{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("pinCss")) return; const s = document.createElement("style"); s.id = "pinCss"; s.textContent = CSS; document.head.appendChild(s); };
   const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#FDE6A6" };

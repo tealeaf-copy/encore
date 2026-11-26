@@ -119,3 +119,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
   const add = (src, cb) => { if (document.querySelector(`script[src="${src}"]`)) return cb && cb(); const s = document.createElement("script"); s.src = src; s.defer = true; if (cb) s.onload = cb; document.head.appendChild(s); };
   add("/save.js"); if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; let seen = false; try { seen = !!(localStorage.getItem("pl.interestsSeen") || localStorage.getItem("pl.interests")); } catch {} if (seen) return;
   add("/interests.js", () => window.PLInterests?.maybeAuto()); } catch {} })();
+
+// ---- Home to-dos from the server (public/nudges.js): signed-in hosts on the app's Home, e.g. "Show it on Discover" ----
+(function () { try { if (window.__plNudgesLoad || location.pathname !== "/" || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; window.__plNudgesLoad = 1;
+  const s = document.createElement("script"); s.src = "/nudges.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();

@@ -120,6 +120,8 @@ export function mountRecognition(app, { C, X }) {
 // Trust: one source of truth for the numbers and proof a brand sees about a host, on every page.
 // Every number comes with its n; under MIN_N we show counts ("5 of 6 guests came back"), never a percentage.
 export const MIN_N = 10;
+// below this, a count (guests, guests who came back, events) stays off brand screens
+export const WEAK_MIN = 3;
 export const isExampleEmail = (e) => /@demo\.encore$/i.test(String(e || ""));
 // names that are obviously placeholders: never rendered as a testimonial author or a client
 const PLACEHOLDER_PERSON = /^(sample|test|example|demo|placeholder|lorem|ipsum|dummy|fake|your|first\s+last|full\s+name|name|jane\s+doe|john\s+doe|john\s+smith|jane\s+smith|guest\s+name|customer\s+name|client\s+name|person|someone|xxx+|tbd|n\/?a)\b|\b(person|doe|placeholder|ipsum)$/i;
@@ -166,12 +168,13 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
     : h.insured ? { onFile: false, url: "", expires, expired, insured: true, text: "Says they're insured. Certificate on request" }
     : { onFile: false, url: "", expires, expired, insured: false, text: "No insurance certificate on file" };
   // what IS real, short lines in order of weight; nothing invented
+  // "1 guest hosted", "1 of 2 guests came back", "2 events hosted" read as weak to a brand: those wait for n >= WEAK_MIN
   const lines = [];
   if (done.length) lines.push({ k: "bookings", text: plural(done.length, "brand booking", "brand bookings") });
-  if (guests) lines.push({ k: "guests", text: `${plural(guests, "guest", "guests")} hosted` });
-  if (returned) lines.push({ k: "returned", text: returned.text });
+  if (guests >= WEAK_MIN) lines.push({ k: "guests", text: `${plural(guests, "guest", "guests")} hosted` });
+  if (returned && guests >= WEAK_MIN) lines.push({ k: "returned", text: returned.text });
   if (again) lines.push({ k: "again", text: again.text });
-  if (events) lines.push({ k: "events", text: `${plural(events, "event", "events")} hosted` });
+  if (events >= WEAK_MIN) lines.push({ k: "events", text: `${plural(events, "event", "events")} hosted` });
   if (pastSb.length) lines.push({ k: "scrapbook", text: `${plural(pastSb.length, "past event", "past events")} in their scrapbook` });
   if (kudos) lines.push({ k: "kudos", text: `${kudos} kudos from guests` });
   const isNewHere = !example && !guests && !done.length && !events;

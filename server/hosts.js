@@ -7,7 +7,7 @@ import { emailConfig, sendEmail } from "./email.js";
 import { lanesOf } from "./social.js";
 import { getDbUser } from "./workspaces.js";
 import { trustFrom, isExampleEmail } from "./recognition.js";
-import { goalFit, placeFit, metroOf, METRO_NAMES, perPerson, isFlat, TEAM_GOALS, AUDIENCE_WORD } from "./search.js";
+import { goalFit, placeFit, metroOf, METRO_NAMES, perPerson, isFlat, priceText, TEAM_GOALS, AUDIENCE_WORD } from "./search.js";
 import { categoryOf } from "./market.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
@@ -188,8 +188,10 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     requests.sort((a, b) => b.weight - a.weight);
     return { list: keep, aliases, requests: requests.filter((x) => !keep.some((k) => !k.example && sameHost({ name: k.h.name, city: k.h.city, hood: k.h.hood, person: k.person }, { name: x.h.name, city: x.h.city, hood: x.h.hood, person: x.person }))) }; }
   X.bookable = bookable;
-  const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: x.price || "", perHead: perPerson(x.price), flat: isFlat(x.price), instant: !!x.instant, length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
+  const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: priceText(x.price), perHead: perPerson(priceText(x.price)), flat: isFlat(priceText(x.price)), instant: !!x.instant, length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
   const cardOfHost = ({ ws, h, T, person }, options) => ({ handle: h.handle, name: h.name, person, city: h.city || "", hood: h.hood || "", accent: h.theme?.accent || h.color || "", avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", emoji: h.emoji || "", tagline: h.tagline || "", respondsIn: h.respondsIn || "", terms: h.terms || "", invoices: !!h.invoices, gallery: (h.gallery || []).slice(0, 6), example: T.example, trust: lite(T), options });
+  /** "Run club activations, group runs for 10 to 60. Weekdays." -> "Run club activations": the first clause, at most 60 chars. */
+  const headlineOf = (s) => { let t = String(s || "").split(/[.;,:\n–—!?]|\s-\s|\(/)[0].replace(/\s+/g, " ").trim(); if (t.length > 60) t = t.slice(0, 60).replace(/\s+\S*$/, ""); return t ? t[0].toUpperCase() + t.slice(1) : ""; };
   app.get("/api/public/hosts/book", (req, res) => { const cat = lc(req.query.category), city = clean(req.query.city, 60), people = Math.max(0, Math.min(5000, +req.query.people || 0)); const { list, aliases, requests } = bookable(), real = [], examples = [];
     for (const x of list) { if (city && placeFit(city, x.h) === "away") continue;
       const opts = x.h.experiences.filter((e) => !e.service || !cat).map((e) => optionOf(x.ws, e)).filter((o) => (!cat || o.category === cat) && (!people || (people >= (o.min || 1) * 0.7 && people <= (o.max || 9999) * 1.2)));
@@ -197,7 +199,8 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
     // after every host with a priced package: hosts who take brand work on request (no price shown, quoted per request)
     for (const x of requests) { if (city && placeFit(city, x.h) === "away") continue; const services = clean(x.h.services, 400), category = categoryOf({ name: services, desc: x.h.tagline || "" }) || "";
       if (cat && category !== cat) continue;
-      real.push({ ...cardOfHost(x, [{ id: "", name: "Request a date", desc: services, emoji: x.h.emoji || "", photo: "", includes: [], min: 0, max: 0, price: "Quoted on request", perHead: 0, flat: false, instant: false, length: "", category, travels: false, request: true, openDates: [] }]), request: true, services }); }
+      // the card's headline is what they do (their services, first clause); "Request a date" is only the button
+      real.push({ ...cardOfHost(x, [{ id: "", name: headlineOf(services) || clean(x.h.tagline, 60) || "Brand events", desc: services, emoji: x.h.emoji || "", photo: "", includes: [], min: 0, max: 0, price: "Quoted on request", perHead: 0, flat: false, instant: false, length: "", category, travels: false, request: true, openDates: [] }]), request: true, services }); }
     res.json({ hosts: real, examples, aliases, total: real.length }); });
 
   // ---- /teams: the goal decides what wins; stays in the city; real hosts only as matches ----

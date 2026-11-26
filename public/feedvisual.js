@@ -180,7 +180,9 @@
     Q.slotA = [slot("inspo")]; Q.slotB = [slot("hosts")]; Q.strip = Q.weekend.length ? [strip("This weekend", Q.weekend)] : [];
     const blocks = interleave(Q, ["dump", "bento", "strip", "flyer", "dump", "slotA", "kudos", "flyer", "dump", "lb", "art", "slotB", "dump", "flyer", "art", "dump"]);
     if (firstArt) blocks.splice(Math.min(3, blocks.length), 0, firstArt);
-    return hero + `<div class="fv-wall">${run(blocks)}</div>` + `<p class="fv-end">${D.arrow}<a href="/discover">See everything on Discover</a></p>`; }
+    // older things from prepared pages: below the real content, as ideas (never as what people are hosting now)
+    const older = (V.ideas || []).length ? `<section class="fv-sec fv-older">${head("More ideas to steal", { sub: "From hosts' pages. Examples, not dates.", doodle: "star" })}<div class="fv-strip" tabindex="0" aria-label="More ideas to steal">${V.ideas.map((x, i) => `<a class="fv-mini" href="${esc(x.page || "/ideas")}" style="--r:${TILT[(i + 2) % TILT.length] / 1.5}deg"><span class="fv-mini-m">${x.cover ? `<img src="${esc(x.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async">` : art({ id: x.id, title: x.title, activity: x.title }, { title: "" })}</span><b>${esc(x.title)}</b><small>${esc([x.host?.name, x.city].filter(Boolean).join(" · "))}</small>${sticker("Example", "ex sm")}</a>`).join("")}</div></section>` : "";
+    return hero + `<div class="fv-wall">${run(blocks)}</div>` + older + `<p class="fv-end">${D.arrow}<a href="/discover">See everything on Discover</a></p>`; }
   /** The signed-in feed: your people's items first (media-first), then the public sections around them. */
   function composeSignedIn(F, { lbRender = {}, postRender = null, empty = "" } = {}) { css(); nTilt = 0; const E = F.events || {}, seenEv = new Set(), out = []; let lbN = 0;
     const by = (who, verb) => ({ who, html: `<b>${esc(who?.name || "Someone")}</b> ${esc(verb)}` });
@@ -203,8 +205,13 @@
     if (!IO && "IntersectionObserver" in window) IO = new IntersectionObserver((L) => L.forEach((x) => { x.target.classList.toggle("fv-live", x.isIntersecting); if (x.isIntersecting) { const f = x.target.querySelector("[data-fv-font]"); if (f) loadFont(f.dataset.fvFont); if (x.target.dataset.fvLights === "1" && !x.target.querySelector(".fv-lights")) x.target.insertAdjacentHTML("afterbegin", lightsSvg()); } }), { rootMargin: "120px" });
     $$(".fv-card,.fv-mini", root).forEach((c) => { if (IO) IO.observe(c); else { c.classList.add("fv-live"); const f = c.querySelector("[data-fv-font]"); if (f) loadFont(f.dataset.fvFont); } });
     $$("[data-fv-open]", root).forEach((b) => (b.onclick = () => openStories([b.dataset.fvOpen], 0, b, +b.dataset.k || 0)));
-    $$("[data-fv-react]", root).forEach((b) => (b.onclick = async () => { const on = b.getAttribute("aria-pressed") !== "true", n = $("b", b); b.setAttribute("aria-pressed", String(on)); n.textContent = Math.max(0, (+n.textContent || 0) + (on ? 1 : -1)) || ""; if (on && !RM()) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
-      try { const r = await fetch("/api/feed/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: b.dataset.fvReact, emoji: b.dataset.e, device: deviceId }) }); const j = await r.json(); if (r.ok) $$(`[data-fv-react="${CSS.escape(b.dataset.fvReact)}"]`, root).forEach((x) => { x.querySelector("b").textContent = j.counts[x.dataset.e] || ""; x.setAttribute("aria-pressed", String((j.mine || []).includes(x.dataset.e))); }); } catch {} }));
+    const RL = { "🔥": "Fire", "😍": "Love it", "🥟": "Yum", "🙌": "Hands up" }, rLabel = (x, n) => `${RL[x] || "React"}${n ? ", " + n : ""}`;
+    $$("[data-fv-react]", root).forEach((b) => (b.onclick = async () => { const on = b.getAttribute("aria-pressed") !== "true", n = $("b", b), was = { pressed: b.getAttribute("aria-pressed"), count: n.textContent, label: b.getAttribute("aria-label") };
+      const undo = () => { b.setAttribute("aria-pressed", was.pressed); n.textContent = was.count; b.setAttribute("aria-label", was.label); b.classList.remove("pop"); };
+      b.setAttribute("aria-pressed", String(on)); n.textContent = Math.max(0, (+n.textContent || 0) + (on ? 1 : -1)) || ""; b.setAttribute("aria-label", rLabel(b.dataset.e, +n.textContent || 0)); if (on && !RM()) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+      try { const r = await fetch("/api/feed/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: b.dataset.fvReact, emoji: b.dataset.e, device: deviceId }) }); const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.counts) { undo(); return; } // the server said no (too many, signed out): put it back as it was
+        $$(`[data-fv-react="${CSS.escape(b.dataset.fvReact)}"]`, root).forEach((x) => { const c = j.counts[x.dataset.e] || 0; x.querySelector("b").textContent = c || ""; x.setAttribute("aria-pressed", String((j.mine || []).includes(x.dataset.e))); x.setAttribute("aria-label", rLabel(x.dataset.e, c)); }); } catch { undo(); } }));
     slots(root);
     $$("[data-fv-in]", root).forEach((a) => (a.onclick = (ev) => { if (RM() || ev.metaKey || ev.ctrlKey) return; ev.preventDefault(); confetti(a); setTimeout(() => (location.href = a.href), 520); })); }
   // fill the slots once their renderers exist (window.PLSave, window.PLInspo, the suggest endpoint); until then they stay hidden
@@ -340,6 +347,10 @@
 @media (max-width:420px){.fv-artpair{gap:14px 10px}.fv-art-b{padding:6px 8px 8px}.fv-hero>div{padding-right:0}.fv-hero-p{width:72px;right:2px;bottom:-10px;opacity:.95}.fv-hero-p svg{width:72px}.fv-hero h1{padding-right:56px}}
 @media (prefers-reduced-motion:reduce){.fv-fx i,.fv-lights .bulb,.fv-peek-p svg,.fv-ring.just-seen .fv-ring-c,.fv-react.pop span{animation:none!important}.fv-fx i{top:var(--y)!important}.fv-pol,.fv-art,.fv-mini,.fv-ring-c,.fv-sv-in{transition:none!important}.fv-pol:hover,.fv-art:hover,.fv-mini:hover{transform:rotate(var(--r,0deg))}}
 `;
-  window.FeedVisual = { rail, openStories, composePublic, composeSignedIn, wire, flyer, dump, note, mini, avatar, css, REG, deviceId };
+  /** "?interests=…&city=…" from what this visitor picked (pl.interests), for /api/public/feed, or "". */
+  function publicQuery() { let v = null; try { v = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch {} if (!v || typeof v !== "object") return "";
+    const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
+    if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
+  window.FeedVisual = { rail, openStories, composePublic, composeSignedIn, wire, flyer, dump, note, mini, avatar, css, REG, deviceId, publicQuery };
 })();
 // ---- end visual feed ----

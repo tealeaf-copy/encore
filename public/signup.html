@@ -22,6 +22,7 @@
   .err a,.sub a{display:inline;margin:0;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
   #cityGps{width:auto!important;min-height:44px;border-radius:999px!important;padding:0 16px!important;font-weight:600!important;border:1.5px solid #1F1A17!important}
 
+.idea{display:flex;gap:8px;align-items:center;margin:-6px 0 16px;padding:10px 12px;background:#FFF1D2;border:1.5px solid #1F1A17;border-radius:14px;font:600 15px/1.3 Fredoka,"Instrument Sans",system-ui,sans-serif;color:#1F1A17}
 .nocode{display:block;margin-top:4px;color:#6B5F56;font-size:13px;font-weight:400}.nocode a{color:#C4532F;font-weight:600}.nocode a,.consent a{display:inline!important;margin:0!important}</style><script src="/authguard.js"></script><script src="/place.js"></script>
 <link rel="stylesheet" href="/playful.css">
 <script src="/placesearch.js"></script>
@@ -29,6 +30,7 @@
 <form id="f" novalidate><div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div>
   <h1 id="h">Start your page</h1>
   <p class="sub" id="sub">Free to host friends.</p>
+  <p class="idea" id="ideaWait" hidden></p>
   <div class="modes" id="modes" hidden role="tablist" aria-label="What are you hosting?"><button type="button" role="tab" data-mode="work" aria-selected="false">For a brand</button><button type="button" role="tab" data-mode="friends" aria-selected="true">For friends</button></div>
   <p class="err" id="err" role="alert"></p>
   <label id="codeWrap" hidden><span>Host code</span><input name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false"><small id="codeOk" class="ok"></small><small class="nocode" id="nocodeHint" hidden>No host code? Ask a host you know, or <a href="#wl" onclick="document.getElementById('f').hidden=true;document.getElementById('wl').hidden=false;return false">join the waitlist</a>.</small></label>
@@ -81,6 +83,15 @@
   const f = document.getElementById("f"), err = document.getElementById("err"), go = document.getElementById("go");
   try { const P = window.EncorePlace; if (P) { document.getElementById("suCities").innerHTML = P.CITIES.map((c) => `<option value="${c[0]}">`).join(""); const cur = P.get(); if (cur?.city) f.city.value = cur.city; else P.resolve({ prompt: false }).then((p) => { if (p.city && !f.city.value) f.city.value = p.city; });
     window.EncorePlaces?.attach(f.city, { citiesOnly: true }); document.getElementById("cityGps").onclick = async () => { const b = document.getElementById("cityGps"); b.textContent = "Finding you…"; const p = await P.resolve({ prompt: true }); b.textContent = "📍 Use my location"; if (p.city) f.city.value = p.city; else err.textContent = "Couldn't get your location. Type your city instead."; }; } } catch {}
+  // what this browser already knows: the idea they picked to host (pl.hostIdea), the city they picked (pl.interests),
+  // and with ?ref=<event>, the name and email from their reply on this device (only with that reply's proof)
+  (function () { const ls = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, q = new URLSearchParams(location.search);
+    const idea = ls("pl.hostIdea"), box = document.getElementById("ideaWait"), say = (t) => { const s = String(t || "").replace(/\s+/g, " ").trim().slice(0, 80); if (!s) return; box.textContent = `Your ${s} is waiting`; box.insertAdjacentHTML("afterbegin", '<span aria-hidden="true">✨</span>'); box.hidden = false; };
+    if (idea && typeof idea === "object" && (!idea.at || Date.now() - idea.at < 30 * 864e5)) { if (idea.title) say(idea.title); else if (/^[A-Za-z0-9_-]{3,120}$/.test(idea.id || "")) fetch("/api/public/inspo/item?id=" + encodeURIComponent(idea.id)).then((r) => (r.ok ? r.json() : null)).then((j) => say(j?.data?.title)).catch(() => {}); }
+    const picked = ls("pl.interests"); if (picked && typeof picked.city === "string" && picked.city.trim()) f.city.value = picked.city.trim().slice(0, 60);
+    const ref = q.get("ref") || "", mine = /^[A-Za-z0-9_-]{2,80}$/.test(ref) ? ls("encore-rsvp-" + ref) : null;
+    if (mine?.rid && mine?.code) fetch("/api/public/reply/" + encodeURIComponent(ref) + "/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rid: mine.rid, code: mine.code }) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (!j) return; if (j.name && !f.elements.name.value) f.elements.name.value = j.name; if (j.email && !f.email.value) f.email.value = j.email; }).catch(() => {}); })();
   f.addEventListener("submit", async (e) => {
     e.preventDefault(); err.textContent = "";
     const body = Object.fromEntries(new FormData(f)), q = new URLSearchParams(location.search);

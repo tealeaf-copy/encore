@@ -94,6 +94,17 @@ export function placeFit(ask, h) { const a = placeOf(ask), hc = String(h.city ||
   const hp = [placeOf(hc), placeOf(hh), hc, hh].filter(Boolean); if (hp.some((x) => x === a || x.includes(a) || (a.length > 3 && a.includes(x) && x.length > 3))) return "here";
   const ma = metroOf(a); if (ma >= 0 && (ma === metroOf(hc) || ma === metroOf(hh) || (h.alsoIn || []).some((x) => metroOf(x) === ma))) { const generic = ["new york", "nyc", "san francisco", "sf", "bay area", "sf bay area", "los angeles", "la"].includes(a); return generic ? "here" : "metro"; }
   return "away"; }
+/** A package's price as brands read it (docs/brand-kit.md): "$40 a person", "$1,200 flat", "From $120 a person". A bare
+ * "95" is $95 a person; "40/person", "pp", "per head" read "a person". "" when there's no price (quote on request).
+ * The same rules as priceText in public/storeshop.js. */
+export const priceText = (p) => { let s = String(p ?? "").replace(/\s+/g, " ").trim(); if (!s || /^(quote|quoted|to be quoted|on request)/i.test(s)) return "";
+  s = s.replace(/\s*(?:\/\s*(?:person|head|pp|guest)|per\s+(?:person|head|guest)|\bpp\b|a head|each person)\.?(?=\s|$|,)/gi, " a person").replace(/\s+/g, " ").trim();
+  const bare = s.match(/^(from |about |around |starting at )?\$?\s*(\d{1,3}(?:,\d{3})+|\d+)(\.\d{1,2})?( a person| flat| total| each| per event| per day)?$/i);
+  if (bare) { const n = +bare[2].replace(/,/g, ""), d = bare[3] && !/^\.0+$/.test(bare[3]) ? bare[3] : ""; return `${bare[1] ? bare[1][0].toUpperCase() + bare[1].slice(1) : ""}$${n.toLocaleString("en-US")}${d}${bare[4] || " a person"}`; }
+  if (!/\d/.test(s)) return s;
+  s = s.replace(/\$\s*(\d{4,})(?!\d|,)/g, (m, n) => "$" + (+n).toLocaleString("en-US"));
+  if (/\$\d/.test(s) && !/a person|flat|total|each|per (event|day|booking|group|session|team)|for (up to )?\d/i.test(s)) s += " a person";
+  return s; };
 export const perPerson = (price) => { const m = String(price || "").replace(/,/g, "").match(/\$\s?(\d+(?:\.\d+)?)/); return m ? +m[1] : 0; };
 export const isFlat = (price) => /\bflat\b|per (event|day|booking)|total/i.test(String(price || ""));
 

@@ -220,7 +220,8 @@ body.nomap{overflow:auto}
   const visible = () => K.sortEvents(K.filterEvents(all(), S.f, ctx()), S.you); // nearest once we know where you are, else soonest
   function drawHead(L) { const city = S.data?.city || "your city";
     $("#shTitle").innerHTML = S.f.mine ? `<em>Your map</em>: ${L.length} ${L.length === 1 ? "spot" : "spots"}` : L.length ? `${L.length} ${L.length === 1 ? "thing" : "things"} on near <em>${esc(city)}</em>` : `Nothing on near ${esc(city)}`;
-    $("#shSub").textContent = S.nomap ? "Grouped by neighbourhood" : S.you ? "Distances from you" : "Distances from the map centre"; }
+    const hoods = new Set(L.map((e) => e.hood).filter(Boolean)).size;
+    $("#shSub").textContent = S.f.mine && L.length ? `${hoods} ${hoods === 1 ? "neighbourhood" : "neighbourhoods"} so far` : S.nomap ? "Grouped by neighbourhood" : S.you ? "Distances from you" : "Distances from the map centre"; }
   function drawCats() { $("#cats").innerHTML = K.CATS.map((c) => `<button type="button" class="cat" data-cat="${c.id}" aria-pressed="${S.f.cat === c.id}">${PIN.cat(c.id, 18)}<span>${c.label}</span></button>`).join(""); }
   function drawList() { const L = visible(); drawHead(L);
     const note = S.nomap ? `<p class="quiet"><span>The map didn't load, so here's everything by neighbourhood.</span><button type="button" id="retry">Try the map</button></p>` : "";

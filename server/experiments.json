@@ -1,0 +1,17 @@
+{
+  "first-win-copy": {
+    "about": "The words on the pre-signup start page and its save button.",
+    "goal": "draft_saved",
+    "variants": { "plan": 50, "start": 50 }
+  },
+  "streak-headsup-timing": {
+    "about": "How many days before a hosting period ends Potto sends the streak heads-up (monthly cadence; weekly is always 2).",
+    "goal": "hosted_in_time",
+    "variants": { "seven": 50, "four": 50 }
+  },
+  "small-move-order": {
+    "about": "Which small move shows first on host Home: the one that fits the host's moment, or the quickest one.",
+    "goal": "move_done",
+    "variants": { "context": 50, "quickest": 50 }
+  }
+}

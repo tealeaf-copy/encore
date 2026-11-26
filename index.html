@@ -11120,7 +11120,7 @@ if(typeof renderGuest==="function"){ const _rgRR3=renderGuest; renderGuest=async
     let tapped=false; try{ tapped=!!localStorage.getItem("encore-paytap-"+e.id) }catch{}
     const b=document.createElement("button"); b.type="button"; b.id="gIPaid"; b.className="btn ghost"; b.textContent="I paid"; b.hidden=!tapped; b.style.marginLeft="8px"; a.after(b);
     a.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} b.hidden=false });
-    b.onclick=async()=>{ b.disabled=true; try{ await db.doc("rsvps/"+M.rid).update({paidClaim:true,changedAt:Date.now()}); M.paidClaim=true; try{ localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify(M)) }catch{} pb.dataset.claimed=1; claimed() }catch(err){ b.disabled=false; b.textContent="Didn't go through. Tap to try again" } } }catch(err){ console.warn(err) } return r } }
+    b.onclick=async()=>{ b.disabled=true; try{ await (async()=>{ /* round 8: send it as the guest, with the event's workspace (the light invite does the same) */ let ws=window.__encoreWs||""; if(!ws){ const d=await (await fetch("/api/db/doc?path="+encodeURIComponent("events/"+e.id),{headers:{"x-encore-guest":"1"}})).json(); ws=d?.workspace||""; } let k=""; try{ k=localStorage.getItem("encore.gkey")||"" }catch{} const r=await fetch("/api/db/doc?path="+encodeURIComponent("rsvps/"+M.rid),{method:"PATCH",headers:{"Content-Type":"application/json","x-encore-guest":"1","x-encore-key":k,...(ws?{"x-encore-workspace":ws}:{})},body:JSON.stringify({paidClaim:true,changedAt:Date.now()})}); if(!r.ok) throw new Error("paid "+r.status) })(); M.paidClaim=true; try{ localStorage.setItem("encore-rsvp-"+e.id,JSON.stringify(M)) }catch{} pb.dataset.claimed=1; claimed() }catch(err){ b.disabled=false; b.textContent="Didn't go through. Tap to try again" } } }catch(err){ console.warn(err) } return r } }
 
 // ==================================================================
 // Potto reads the sentence: one last pass after every earlier parseEventText and quickStart wrapper, so the day,
@@ -11703,7 +11703,7 @@ async function fvMoments(){ const d=draft, el=document.getElementById("afterPart
   if((q.get("welcome")||window.__welcome)&&!pend) setTimeout(async()=>{ try{ const r=await fetch("/api/me/interests",{credentials:"same-origin"}); if(!r.ok) return; const j=await r.json(); if(j.interests?.length||j.city) return;
     let loc=null; try{ loc=JSON.parse(localStorage.getItem("pl.interests")||"null") }catch{}
     if(loc&&(loc.interests?.length||loc.city)){ await fetch("/api/me/interests",{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(loc)}); return }
-    load("/mascot.js"); load("/interests.js",()=>window.PLInterests?.open({after:"signup"})) }catch{} },2600);
+    /* round 8: no picker over a new host's Home; "What are you into?" waits for the Feed or Ideas */ }catch{} },2600);
 }catch(err){ console.warn(err) } })();
 // ---------- end hooks for new people ----------
 // ==================================================================

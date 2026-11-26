@@ -167,9 +167,9 @@ test("10. suggested tables start each table with someone who's been before; one 
   assert.match(html, /annotateWho=async function/); assert.match(html, /<option value="\$\{j\.tables\.length\}">New table<\/option>/, "the move-to option isn't a second New");
 });
 
-test("11 and 12. no raw research error; host stats say one thing once and No asks yet", () => {
+test("11 and 12. no raw research error; host stats say one thing once, and no zero headline before anyone is asked", () => {
   assert.doesNotMatch(html, /Research failed/); assert.match(html, /Potto's research is off on this server\./);
-  assert.match(html, /SR0&&!\(SR0\.came===H\.came&&SR0\.again===H\.again\)/); assert.match(html, /No asks yet/);
+  assert.match(html, /SR0&&!\(SR0\.came===H\.came&&SR0\.again===H\.again\)/); assert.doesNotMatch(html, /No asks yet/); assert.match(html, /Who comes back shows here/); // event flow redesign: no "No asks yet" headline
 });
 
 test("minor: /api/v1/events rejects filters it doesn't have; Host one like this is 404 for a private event; the pantry floor fades", async () => {

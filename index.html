@@ -8821,7 +8821,7 @@ function gEditable(el,{label,fields,id}){ if(!el||el.dataset.ge) return; el.data
 // broken or deleted event links don't spin forever
 (()=>{ try{ if(!/^#(rsvp|survey)-/.test(location.hash)) return; setTimeout(()=>{ const v=document.querySelector("#view-guest"); if(window.__gEv?.id||!v) return; if(/Loading/.test(v.textContent)) v.innerHTML=`<div class="panel" style="max-width:520px;margin:40px auto;text-align:center"><h2>This invite went missing</h2><p class="note">The link may be cut off. Ask your host to resend it.</p><p><a class="btn" href="/discover">See what's on</a></p></div>` },4000) }catch{} })();
 // approving past the number of spots asks first, and adds a spot if the host says yes
-document.addEventListener("click",async e=>{ const b=e.target.closest?.("[data-wcok],[data-ok]"); if(!b||!draft?.id||b.dataset.capOk) return; const going=(allRsvps||[]).filter(r=>r.eventId===draft.id&&r.response==="going").length+(draft.guests||[]).filter(g=>/^(Going|Attended)$/.test(g.status||"")).length, cap=+draft.headcount||0; if(!cap||going<cap) return; e.stopImmediatePropagation(); e.preventDefault(); if(confirm(`That makes ${going+1} for ${cap} spots. Add a spot and let them in?`)){ draft.headcount=going+1; try{ await saveEvent(true) }catch{} b.dataset.capOk=1; b.click(); setTimeout(()=>delete b.dataset.capOk,500) } },true);
+document.addEventListener("click",async e=>{ const b=e.target.closest?.("[data-wcok],[data-ok]"); if(!b||!draft?.id||b.dataset.capOk) return; /* each person once: replies are merged into the guest list, so adding both counted them twice */ const going=typeof regCount==="function"?regCount(draft):(allRsvps||[]).filter(r=>r.eventId===draft.id&&r.response==="going").length, cap=+draft.headcount||0; if(!cap||going<cap) return; e.stopImmediatePropagation(); e.preventDefault(); if(confirm(`That makes ${going+1} for ${cap} spots. Add a spot and let them in?`)){ draft.headcount=going+1; try{ await saveEvent(true) }catch{} b.dataset.capOk=1; b.click(); setTimeout(()=>delete b.dataset.capOk,500) } },true);
 // one "Who's going" on the guest page; no calendar button until you're actually going
 new MutationObserver(()=>{ try{ const v=document.querySelector("#view-guest"); if(!v) return; v.querySelectorAll("h3,h4").forEach(h=>{ if(/^Who's (going|coming)/.test(h.textContent.trim())&&!h.closest("#whoGoing")){ const sec=h.closest("section,.panel,.card,div"); if(sec&&sec!==v&&!sec.contains(v.querySelector("#whoGoing"))) sec.hidden=true } }); const e=window.__gEv, M=e&&myRsvp(e.id); if(e&&(e.stage==="interest"||(M&&M.response!=="going"))) v.querySelectorAll("a,button").forEach(a=>{ if(/^(Add to calendar|Google Calendar)$/.test(a.textContent.trim())) a.hidden=true }) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 
@@ -9401,13 +9401,12 @@ const SHARE_ICONS={
   signal:'<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.4a6.6 6.6 0 0 1 0 13.2c-1.2 0-2.3-.3-3.3-.9l-3.1.9.9-3a6.6 6.6 0 0 1 5.5-10.2z"/></svg>',
   md:'<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="4.6" width="14.8" height="10.8" rx="2"/><path d="M5.4 12.4V7.6l2 2.4 2-2.4v4.8M13 7.6v4.6M11.3 10.6l1.7 1.8 1.7-1.8"/></svg>',
   story:'<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="4"/><circle cx="10" cy="10" r="3.2"/><path d="M14 6h.01" stroke-width="2.4"/></svg>' };
-// the invite as each app likes it: Discord reads **bold**, Slack reads *bold*, Signal and texts read plain words
+// the invite as each app likes it: Discord reads **bold**, Slack reads *bold*, Signal and texts read plain words (no Markdown copy: the owner found it unnecessary)
 function shareFormats(d){ const url=typeof inviteLink==="function"&&d?.id?inviteLink(d):shareLinks(d).url, t=d.pubTitle||d.name||"", when=d.date?fmtDate(d.date)+(d.startTime?` · ${clock12(d.startTime)}`:""):"", where=(typeof sharePlace==="function"?sharePlace(d):"")||d.city||"", price=typeof priceTxt==="function"?priceTxt(d):"", ask=d.approvalRequired?"Ask to join":"Are you in?", line=[when,where,price].filter(Boolean).join(" · ");
-  return { discord:`**${t}**\n${line?line+"\n":""}${ask} ${url}`, slack:`*${t}*\n${line?line+"\n":""}${ask} ${url}`, signal:typeof inviteText==="function"?inviteText(d):`${t}${line?", "+line:""}. ${ask} ${url}`,
-    md:`**[${t.replace(/[[\]]/g,"")}](${url})**\n\n${when?`- When: ${when}\n`:""}${where?`- Where: ${where}\n`:""}${price?`- Price: ${price}\n`:""}\n[${ask}](${url})` } }
-const SHARE_COPY={discord:["Discord","Copied for Discord. Paste it in your channel."],slack:["Slack","Copied for Slack. Paste it in your channel."],signal:["Signal","Copied for Signal. Paste it in your chat."],md:["Copy as Markdown","Copied as Markdown."]};
+  return { discord:`**${t}**\n${line?line+"\n":""}${ask} ${url}`, slack:`*${t}*\n${line?line+"\n":""}${ask} ${url}`, signal:typeof inviteText==="function"?inviteText(d):`${t}${line?", "+line:""}. ${ask} ${url}` } }
+const SHARE_COPY={discord:["Discord","Copied for Discord. Paste it in your channel."],slack:["Slack","Copied for Slack. Paste it in your channel."],signal:["Signal","Copied for Signal. Paste it in your chat."]};
 document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-sharefmt]"); if(!b) return; const d=(typeof draft!=="undefined"&&draft)||null; if(!d) return; const k=b.dataset.sharefmt; copyTxt(shareFormats(d)[k],{ok:SHARE_COPY[k]?.[1]||"Copied."}) });
-function shareRowHTML(d){ const L=shareLinks(d); return `<div class="share-row"><a class="btn sm" href="${esc(L.whatsapp)}" target="_blank" rel="noopener">${SHARE_ICONS.chat}<span>WhatsApp</span></a><a class="btn sm" href="${esc(L.sms)}">${SHARE_ICONS.sms}<span>Messages</span></a><a class="btn sm" href="${esc(L.messenger)}" target="_blank" rel="noopener">${SHARE_ICONS.send}<span>Messenger</span></a>${["discord","slack","signal","md"].map(k=>`<button type="button" class="btn sm" data-sharefmt="${k}">${SHARE_ICONS[k]}<span>${SHARE_COPY[k][0]}</span></button>`).join("")}</div>` }
+function shareRowHTML(d){ const L=shareLinks(d); return `<div class="share-row"><a class="btn sm" href="${esc(L.whatsapp)}" target="_blank" rel="noopener">${SHARE_ICONS.chat}<span>WhatsApp</span></a><a class="btn sm" href="${esc(L.sms)}">${SHARE_ICONS.sms}<span>Messages</span></a><a class="btn sm" href="${esc(L.messenger)}" target="_blank" rel="noopener">${SHARE_ICONS.send}<span>Messenger</span></a>${["discord","slack","signal"].map(k=>`<button type="button" class="btn sm" data-sharefmt="${k}">${SHARE_ICONS[k]}<span>${SHARE_COPY[k][0]}</span></button>`).join("")}</div>` }
 { const s=document.createElement("style"); s.textContent=`.share-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.share-row .btn{display:inline-flex;align-items:center;gap:6px}.share-row .btn svg{flex:none}.share-row [data-sharefmt=md]{grid-column:1/-1;justify-content:center}html body .ig-btn.ig-row{display:flex!important;width:100%;justify-content:center;margin:0 0 10px!important}.txi textarea{width:100%;min-height:70px}.txi .note{margin:6px 0 0}`; document.head.appendChild(s) }
 document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-copyinv]"); if(!b) return; copyTxt(shareLinks(draft).url,{ok:"Link copied."}) });
 // the share sheet after publishing: one tap to WhatsApp, Messages or Messenger
@@ -10263,7 +10262,7 @@ function openDoor(d){ document.getElementById("doorMode")?.remove(); let q="";
   const close=()=>{ box.remove(); try{ renderStep() }catch{} };
   const draw=()=>{ const L=rows(), n=L.filter(x=>x.in).length, Y=L.filter(x=>!/walk-in/.test(x.sub)), yIn=Y.filter(x=>x.in).length, wN=L.length-Y.length, shown=L.filter(x=>!q||x.name.toLowerCase().includes(q)||(q.replace(/\s/g,"").length>=3&&String(x.code||"").toLowerCase().startsWith(q.replace(/\s/g,""))));
     box.innerHTML=`<div class="dm-w"><div class="dm-h"><div><small class="eyebrow">Check-in</small><h2>${esc(d.pubTitle||d.name||"Your event")}</h2></div><button type="button" class="btn ghost sm" id="dmX">Close</button></div>
-      <div class="dm-stats" aria-live="polite"><span>✅ ${yIn} of ${Y.length} here</span>${wN?`<span>👋 ${wN} walk-in${wN>1?"s":""}</span>`:""}</div>
+      <div class="dm-stats" aria-live="polite"><span>${yIn} of ${Y.length} here</span>${wN?`<span>${wN} walk-in${wN>1?"s":""}</span>`:""}</div>
       <input id="dmQ" placeholder="Find a name or door code" value="${esc(q)}" autocomplete="off" aria-label="Find a name">
       <div class="dm-list">${shown.map(x=>`<button type="button" class="dm-g ${x.in?"in":""}" data-k="${x.kind}" data-id="${esc(x.kind==="r"?x.id:x.i)}" aria-pressed="${x.in}"><span><b>${esc(x.name)}</b>${x.sub?`<small>${esc(x.sub)}</small>`:""}</span><span class="ck">${x.in?"✓":""}</span></button>`).join("")||`<p class="note">${L.length?"No one by that name. Add them as a walk-in.":"No guests yet. Add a walk-in."}</p>`}</div>
       <form class="dm-walk" id="dmWalk"><input id="dmName" placeholder="Walk-in's name" autocomplete="off" aria-label="Walk-in's name"><button class="btn primary sm">Add walk-in</button></form></div>`;
@@ -12118,6 +12117,8 @@ const prAiInt=(v,lo,hi)=>{ const n=typeof v==="string"&&/^\d+$/.test(v.trim())?+
 const prAiMoney=v=>{ const n=typeof v==="string"&&/^\$?\s?\d+(?:\.\d+)?$/.test(v.trim())?+v.replace(/[$\s]/g,""):v; return typeof n==="number"&&Number.isFinite(n)&&n>=0&&n<=10000?Math.round(n*100)/100:null };
 const PR_AI_ACT={class:"class",workshop:"workshop",course:"workshop","pop-up":"pop-up","pre-order":"pop-up"};
 // the model's answer, checked field by field, in prRead's shape. `drop` names what was thrown out.
+const PR_AI_WHEN=/\d|\b(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b|\b(?:today|tonight|tomorrow|tmrw|weekend|week|month|christmas|xmas|thanksgiving|friendsgiving|halloween|new year'?s?|easter|diwali|eid|lunar new year|valentine'?s?)\b/i;
+const PR_AI_CLOCK=/\d|\b(?:noon|midday|midnight)\b/i;
 function prAiClean(m,text,ctx={}){ const o={}, drop=[]; if(!m||typeof m!=="object"||Array.isArray(m)) return {o,drop:["reply"]};
   const t=String(text||""), nums=prAiNums(t), today=ctx.today||prISO(prToday()), no=k=>{ if(m[k]!=null&&m[k]!==false&&!(Array.isArray(m[k])&&!m[k].length)) drop.push(k) };
   const str=(v,max)=>typeof v==="string"&&v.trim()&&v.trim().length<=max?v.trim().replace(/\s+/g," "):"";
@@ -12129,14 +12130,17 @@ function prAiClean(m,text,ctx={}){ const o={}, drop=[]; if(!m||typeof m!=="objec
   const typed=new Set((typeof prDays==="function"?prDays(t):[]).map(d=>PR_AI_DAYS[d.wd]));
   if(Array.isArray(m.weekdays)){ const W=[...new Set(m.weekdays.map(x=>String(x).toLowerCase().trim()).map(x=>PR_AI_DAYS.find(d=>d===x||(x.length>=3&&d.startsWith(x)))).filter(Boolean))]; if(W.length&&W.every(w=>typed.has(w))) o.weekdays=W; else no("weekdays") }
   if(m.repeat==="none") o.repeat="none"; else if(["weekly","biweekly","monthly"].includes(m.repeat)&&/\bevery\b|weekly|biweekly|fortnight|monthly|of (?:the|each|every) month|\bcourse\b|\bseries\b|\b\d+\s*-?\s*weeks?\b|\b(?:mon|tues|wednes|thurs|fri|satur|sun)days\b/i.test(t)) o.repeat=m.repeat; else no("repeat");
-  const md=prAiDate(m.date,today);
+  // event flow redesign (owner: "Fri 27 Nov · 4:16am", nobody typed that): a date or a clock time only when the host's own
+  // words have one. The model fills a blank with today and the time right now; that is never the host's plan.
+  const saidWhen=PR_AI_WHEN.test(t), saidClock=PR_AI_CLOCK.test(t);
+  const md=saidWhen?prAiDate(m.date,today):null;
   if(m.monthly&&typeof m.monthly==="object"){ const n={first:1,second:2,third:3,fourth:4,last:-1}[String(m.monthly.nth||"").toLowerCase()], wd=PR_AI_DAYS.indexOf(String(m.monthly.weekday||"").toLowerCase());
     if(n&&wd>=0&&typed.has(PR_AI_DAYS[wd])&&/\b(?:first|second|third|fourth|last|1st|2nd|3rd|4th)\b/i.test(t)&&/\bmonth/i.test(t)){ const T=new Date(today+"T12:00:00"); let x=prNthDate(T.getFullYear(),T.getMonth(),wd,n); if(!x||prISO(x)<today) x=prNthDate(T.getFullYear(),T.getMonth()+1,wd,n);
       // a later start the model read ("first Sunday, from January") stays when it's on the same rule
       if(md){ const y=new Date(md+"T12:00:00"), r=prNthDate(y.getFullYear(),y.getMonth(),wd,n); if(r&&prISO(r)===md) x=y }
       if(x){ o.date=prISO(x); o.nth=n; o.weekday=PR_AI_DAYS[wd]; o.repeat="monthly"; o.dateBy="rule" } } else no("monthly") }
   if(!o.date){ if(md){ o.date=md; o.weekday=PR_AI_DAYS[new Date(md+"T12:00:00").getDay()] } else no("date") }
-  { const s=prAiTime(m.startTime), e=prAiTime(m.endTime); if(s){ o.startTime=s; const eh=e?+e.split(":")[0]:0, typedEnd=e&&(nums.has(eh)||nums.has(eh>12?eh-12:eh)||nums.has(eh===0?12:eh))&&/(?:\d\s*(?:am|pm)?\s*(?:-|–|to|and|till|til|until)\s*\d)|\b(?:till|til|until|to)\s+\d/i.test(t); if(e&&e!==s&&typedEnd) o.endTime=e; else if(m.endTime!=null) no("endTime") } else { no("startTime"); no("endTime") } }
+  { const s=saidClock?prAiTime(m.startTime):"", e=saidClock?prAiTime(m.endTime):""; if(s){ o.startTime=s; const eh=e?+e.split(":")[0]:0, typedEnd=e&&(nums.has(eh)||nums.has(eh>12?eh-12:eh)||nums.has(eh===0?12:eh))&&/(?:\d\s*(?:am|pm)?\s*(?:-|–|to|and|till|til|until)\s*\d)|\b(?:till|til|until|to)\s+\d/i.test(t); if(e&&e!==s&&typedEnd) o.endTime=e; else if(m.endTime!=null) no("endTime") } else { no("startTime"); no("endTime") } }
   { const n=prAiInt(m.sessions,2,52); if(n&&nums.has(n)&&!unitNums.has(n)){ o.sessions=n; o.course=true } else no("sessions") }
   { const u=prAiDate(m.repeatUntil,o.date||today); if(u) o.repeatUntil=u; else no("repeatUntil") }
   // places: only ones in the message, word for word; never "the door" or a distance
@@ -12504,23 +12508,25 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
       else if(t.id==="tbNoise") d.noise=t.value||null; else if(t.id==="tbOpen"){ q("#tbQs",el).hidden=!t.checked; tbReadQs(el,d) }
       else if(t.id==="tbRound") d.hostRoundtable=t.checked; else return; tbSave() }) }
 
-  async function tbHostPanel(){ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!d?.id||!host||d.example||!isCasual(d)||![6,7].includes(+step)) return;
-    let j=null; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id),{credentials:"same-origin"}); if(!r.ok) return; j=await r.json() }catch{ return } if(draft!==d||![6,7].includes(+step)) return;
-    q("#tbHost")?.remove(); const S=j.secondRsvp||{}, H=S.host||{}, SR0=S.series&&S.series.came?S.series:null, pct=x=>x==null?"none yet":x+"%";
+  // host event page (More tools > Tables for solo guests): drawn into the sheet it's given, on any tab
+  async function tbHostPanel(into){ const d=typeof draft!=="undefined"?draft:null, host=into||q("#stepHost"), here=()=>into?into.isConnected:[6,7].includes(+step); if(!d?.id||!host||d.example||!isCasual(d)||!here()) return;
+    let j=null; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id),{credentials:"same-origin"}); if(!r.ok) return; j=await r.json() }catch{ return } if(draft!==d||!here()) return;
+    q("#tbHost")?.remove(); const S=j.secondRsvp||{}, H=S.host||{}, SR0=S.series&&S.series.came?S.series:null, pct=x=>x+"%";
     // review round 13: one card when the series is everything they've hosted (the same numbers twice say nothing), and no "0/0"
     const SR=SR0&&!(SR0.came===H.came&&SR0.again===H.again)?SR0:null, ST=j.sameTable||{};
-    const stats=`<div class="tb-stats"><div class="tb-stat"><b>${pct(SR?SR.rate:H.rate)}</b><small>Second-RSVP rate${SR?" for this series":""}: ${SR?`${SR.again} of ${SR.came}`:`${H.again||0} of ${H.came||0}`} who came replied I'm in again</small></div>${SR&&H.came?`<div class="tb-stat"><b>${pct(H.rate)}</b><small>Across all your events: ${H.again} of ${H.came}</small></div>`:""}<div class="tb-stat">${ST.asked?`<b>${ST.tapped}<span class="tb-ans" style="font-size:.5em">/${ST.asked}</span></b><small>Tapped "Same table next time?"</small>`:`<b class="tb-none">No asks yet</b><small>"Same table next time?" goes to guests the day after</small>`}</div></div>`;
+    // event flow redesign: plain words, and no zeros or "none yet" as a headline. A number shows only once there is one.
+    const C=SR||H, stats=(C.came||ST.asked)?`<div class="tb-stats">${C.came?`<div class="tb-stat"><b>${pct(C.rate)}</b><small>came back for another${SR?" in this series":""} (${C.again} of ${C.came})</small></div>`:""}${SR&&H.came?`<div class="tb-stat"><b>${pct(H.rate)}</b><small>across all your events (${H.again} of ${H.came})</small></div>`:""}${ST.asked?`<div class="tb-stat"><b>${ST.tapped} of ${ST.asked}</b><small>tapped "Same table next time?"</small></div>`:""}</div>`:`<p class="tb-ans" style="font-size:14px">The day after, guests get "Same table next time?". Who comes back shows here.</p>`;
     const L=j.last, last=L?`<div><p class="tb-h">Last time · ${E(typeof fmtDate==="function"?fmtDate(L.date):L.date)}</p><ul class="tb-list"><li><span>Back this time</span><span>${E(andL(L.back.map(n=>n.split(" ")[0])))||"No one yet"}</span></li>${L.notYet.length?`<li><span>Not in yet</span><span>${E(andL(L.notYet.map(n=>n.split(" ")[0])))}</span></li>`:""}</ul></div>`:"";
     const ifs=(j.ifWith||[]).filter(x=>x.state!=="off"), ifH=ifs.length?`<div><p class="tb-h">In if a friend is</p><ul class="tb-list">${ifs.map(x=>`<li><span>${E(x.guest||"A guest")}</span><span>${x.state==="in"?`in, with ${E(x.name)}`:`waiting on ${E(x.name)}`}</span></li>`).join("")}</ul></div>`:"";
     const Qs=j.table?.open?.questions||[], ans=a=>Qs.map(x=>a?.[x.id]).filter(Boolean).join(" · ");
     const tables=j.open?`<div><p class="tb-h">${j.confirmed?"Tables, confirmed":"Suggested tables"} · about ${j.table.open.size} each</p>${j.tables.length?`<div class="tb-tables">${j.tables.map((t,i)=>`<div class="tb-table"><h5>Table ${i+1}</h5><ul>${t.map(g=>`<li><span>${E(g.name)}${g.new?` <span class="tb-new">New</span>`:""}<br><span class="tb-ans">${E(ans(g.answers))}</span></span><select data-rid="${E(g.rid)}" aria-label="Move ${E(g.name)}">${j.tables.map((_,k)=>`<option value="${k}"${k===i?" selected":""}>${k+1}</option>`).join("")}<option value="${j.tables.length}">New table</option></select></li>`).join("")}</ul></div>`).join("")}</div><div class="tb-actions" style="margin-top:10px"><button class="tb-btn" type="button" id="tbConfirm">${j.confirmed?"Update tables":"Confirm tables"}</button><small class="tb-ans">${j.confirmed?"Guests see their table on their invite.":"Guests see their table once you confirm. Nobody is told before."}</small></div>`:`<p class="tb-ans" style="font-size:14px">Tables show here as guests reply I'm in.</p>`}</div>`:"";
     const el=document.createElement("section"); el.className="panel tb-panel"; el.id="tbHost";
-    el.innerHTML=`<div class="tb-body" style="padding-top:20px"><div><p class="tb-h">Your table</p>${stats}</div>${tables}${last}${ifH}<div><p class="tb-h">The group is yours</p><div class="tb-actions"><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.csv?series=${encodeURIComponent(d.id)}">Roster CSV</a><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.json?series=${encodeURIComponent(d.id)}">JSON</a><a class="tb-link" href="/api/host/roster.csv">Everyone you've hosted</a></div><small class="tb-ans">Names, contacts, dates, and whether each guest is OK with emails, texts and showing their name.</small></div></div>`;
-    const anchor=q("#whoComing",host)||q("#afterParty",host); anchor?anchor.after(el):host.append(el);
+    el.innerHTML=`<div class="tb-body" style="padding-top:20px"><div><p class="tb-h">Coming back</p>${stats}</div>${tables}${last}${ifH}<div><p class="tb-h">Guest list file</p><div class="tb-actions"><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.csv?series=${encodeURIComponent(d.id)}">Download CSV</a><a class="tb-btn ghost" style="display:inline-flex;align-items:center;text-decoration:none" href="/api/host/roster.json?series=${encodeURIComponent(d.id)}">JSON</a><a class="tb-link" href="/api/host/roster.csv">Everyone you've hosted</a></div><small class="tb-ans">Names, contacts, dates, and whether each guest is OK with emails, texts and showing their name.</small></div></div>`;
+    if(into) into.replaceChildren(el); else { const anchor=q("#whoComing",host)||q("#afterParty",host); anchor?anchor.after(el):host.append(el) }
     new MutationObserver(()=>{ if(el.hidden) el.hidden=false }).observe(el,{attributes:true,attributeFilter:["hidden"]}); // the casual step's tidy-up keeps only panels it knows
     let T=j.tables.map(t=>t.map(g=>g.rid));
     el.querySelectorAll("select[data-rid]").forEach(s=>s.onchange=()=>{ const rid=s.dataset.rid, to=+s.value; T=T.map(t=>t.filter(x=>x!==rid)); if(to>=T.length) T.push([rid]); else T[to].push(rid); T=T.filter(t=>t.length); s.closest(".tb-table").style.opacity=".7" });
-    const cb=q("#tbConfirm",el); if(cb) cb.onclick=async()=>{ cb.disabled=true; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id)+"/tables",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({tables:T,confirm:true})}); const k=await r.json(); if(!r.ok) throw new Error(k.message||"Couldn't save that."); toast(`Tables confirmed. ${k.told?`${k.told} guest${k.told>1?"s":""} told.`:"Guests see them on their invite."}`); tbHostPanel() }catch(e){ toast(e.message); cb.disabled=false } } }
+    const cb=q("#tbConfirm",el); if(cb) cb.onclick=async()=>{ cb.disabled=true; try{ const r=await fetch("/api/host/table/"+encodeURIComponent(d.id)+"/tables",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({tables:T,confirm:true})}); const k=await r.json(); if(!r.ok) throw new Error(k.message||"Couldn't save that."); toast(`Tables confirmed. ${k.told?`${k.told} guest${k.told>1?"s":""} told.`:"Guests see them on their invite."}`); tbHostPanel(into) }catch(e){ toast(e.message); cb.disabled=false } } }
   // review round 13: one "New" (first time with this host, from /api/host/table) on the Guests step's Who's coming, the same
   // one the tables panel and Your crowd use; it replaces the Pottery Lab-wide "New to Pottery Lab" badge there
   if(typeof annotateWho==="function"){ let tbWhoFor=""; annotateWho=async function(){ try{ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!d?.id||!host||+step!==6) return;
@@ -12529,6 +12535,7 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
       const byRid=new Map(P.map(p=>[p.rid,p])), byFirst=new Map(); P.forEach(p=>{ const k=String(p.name||"").trim().split(/\s+/)[0].toLowerCase(), o=byFirst.get(k); byFirst.set(k,o===undefined||(o&&o.new===p.new)?p:null) }); // two people with one first name: only when both are new (or both not)
       rows.forEach(row=>{ row.querySelectorAll(".wc-type").forEach(x=>x.remove()); const nm=(row.querySelector("b")?.textContent||row.textContent).trim().split(/\s+/)[0].toLowerCase(), p=byRid.get(row.dataset.rid||"")||byFirst.get(nm); if(!p?.new) return;
         const s=document.createElement("small"); s.className="wc-type tb-new"; s.textContent="New"; s.title="First time with you"; (row.querySelector("b")||row.firstElementChild||row).after(s) }) }catch(e){ console.warn(e) } } }
+  window.TablesStudio={ editHTML:tbEditHTML, wireEdit:tbWireEdit, hostPanel:tbHostPanel };
   function tbStudio(){ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!d||!host||d.example||!isCasual(d)) return;
     if(+step===1&&!q("#tbEdit",host)){ const w=document.createElement("div"); w.innerHTML=tbEditHTML(d); const el=w.firstElementChild; const a=q("#qbPanel",host)||q("#hostKit",host); a?a.after(el):host.append(el); tbWireEdit(el,d) }
     if([6,7].includes(+step)&&!q("#tbHost",host)) tbHostPanel() }
@@ -12584,6 +12591,639 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
 })();
 </script>
 <!-- ==================== end review round 13 ==================== -->
+<!-- ==================================================================
+     The host's event page and the create flow (event flow redesign, owner feedback: "creating a new event is still
+     super confusing"). One authoritative renderer for friends events, in place of the old planner's steps:
+     - create: "What's the plan?" (a text box or a template), then ONE review sheet ("Check the details", also Edit
+       details), then the share sheet. openWizard(1..5) and shareSheet() land here for friends hosts.
+     - the event page: a light header (title, when and where, status in plain words), ONE ember button that changes with
+       the stage (Share invite, Review asks, Message guests, Check in, Ask for photos), and three tabs: Overview, Guests,
+       Invite. Settings live in sheets; rare tools in More tools.
+     - the old planner still renders work events, and friends hosts can open it from More tools > Every setting.
+     The old step wrappers above don't run for friends events: renderStep() stops here (hvRender) before them.
+     ================================================================== -->
+<style id="hvCss">
+#hv{--hv-ink:#1F1A17;--hv-smoke:#665A51;--hv-line:#E4D9C8;--hv-line2:#D9CCBB;--hv-card:#FFFCF7;--hv-linen:#EFE6D8;--hv-ember:#C94A30;--hv-ember-t:#B04A30;--hv-butter:#F2D48F;--hv-sage:#6F7F5E;--hv-brown:#5A3B2B;
+  max-width:720px;margin:0 auto;padding:8px 0 96px;color:var(--hv-ink);font:16px/1.45 "Instrument Sans",system-ui,-apple-system,sans-serif;min-width:0}
+#hv *{box-sizing:border-box}
+#view-studio:has(> #hv:not([hidden])) > :not(#hv){display:none!important}
+/* the floating help and Potto buttons sat on the host's buttons: here they step aside, and "Need a hand?" opens help */
+body:has(#view-studio:not([hidden]) > #hv:not([hidden])) :is(#coBtn,.cobtn){display:none!important}
+body:has(#view-studio:not([hidden]) > #hv:not([hidden])) .rail{display:none!important}
+body:not(.hv-help):has(#view-studio:not([hidden]) > #hv:not([hidden])) #encoreHelp{display:none!important}
+#hv .hv-link svg{flex:none;width:18px;height:18px;color:#5A3B2B}
+#hv .hv-back{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 4px 0 0;color:var(--hv-smoke);font:600 14px "Instrument Sans",system-ui;text-decoration:none;background:none;border:0;cursor:pointer}
+#hv .hv-back svg{width:18px;height:18px}
+#hv h1.hv-title{font:600 28px/1.15 Fredoka,"Fredoka Fallback",system-ui;margin:4px 0 6px;letter-spacing:-.01em;overflow-wrap:anywhere}
+#hv .hv-when{margin:0;color:var(--hv-smoke);font-size:16px;overflow-wrap:anywhere}
+#hv .hv-status{display:inline-flex;align-items:center;gap:8px;margin:12px 0 0;padding:6px 12px;border-radius:999px;background:var(--hv-linen);font:600 14px "Instrument Sans",system-ui;max-width:100%}
+#hv .hv-status i{flex:none;width:8px;height:8px;border-radius:50%;background:#A99C90}
+#hv .hv-status.live i{background:var(--hv-sage)}#hv .hv-status.now i{background:var(--hv-ember)}
+#hv .hv-status span{min-width:0;overflow-wrap:anywhere}
+#hv .hv-cta{display:grid;gap:8px;margin:16px 0 0}
+#hv .hv-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#hv .hv-row3 .hv-b{padding:0 8px;gap:6px}
+#hv button,#hv a.hv-b{font-family:inherit}
+#hv .hv-b,.hv-sheet .hv-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--hv-line2,#D9CCBB);background:#fff;color:#1F1A17;font:600 15px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer;white-space:nowrap;min-width:0;max-width:100%;box-shadow:none;transition:transform .12s ease,background .15s ease}
+#hv .hv-b span,.hv-sheet .hv-b span{overflow:hidden;text-overflow:ellipsis}
+#hv .hv-b:active,.hv-sheet .hv-b:active{transform:scale(.98)}
+#hv .hv-b svg,.hv-sheet .hv-b svg{flex:none;width:18px;height:18px}
+#hv .hv-b.pri,.hv-sheet .hv-b.pri{background:#C94A30;border-color:#C94A30;color:#fff}
+#hv .hv-b.big{min-height:52px;font-size:16px;width:100%}
+#hv .hv-b.sm,.hv-sheet .hv-b.sm{min-height:36px;padding:0 12px;font-size:14px}
+#hv .hv-b.q,.hv-sheet .hv-b.q{border-color:transparent;background:var(--hv-linen,#EFE6D8)}
+#hv .hv-b:disabled,.hv-sheet .hv-b:disabled{opacity:.55;cursor:default}
+#hv .hv-b:focus-visible,.hv-sheet .hv-b:focus-visible,#hv .hv-tab:focus-visible,#hv .hv-chip:focus-visible{outline:3px solid rgba(201,74,48,.45);outline-offset:2px}
+#hv .hv-tabs{display:flex;gap:4px;margin:24px 0 16px;border-bottom:1.5px solid var(--hv-line)}
+#hv .hv-tab{flex:1 1 0;min-width:0;min-height:48px;padding:0 4px;border:0;background:none;color:var(--hv-smoke);font:600 15px "Instrument Sans",system-ui;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+#hv .hv-tab[aria-selected=true]{color:var(--hv-ink);border-bottom-color:var(--hv-ink)}
+#hv .hv-tab small{font:500 13px "Instrument Sans",system-ui;color:var(--hv-smoke);margin-left:4px}
+#hv .hv-pane{display:grid;gap:16px}
+#hv .hv-pane.in > *{animation:hvIn .32s ease both}
+#hv .hv-pane.in > *:nth-child(2){animation-delay:.04s}#hv .hv-pane.in > *:nth-child(3){animation-delay:.08s}#hv .hv-pane.in > *:nth-child(4){animation-delay:.12s}#hv .hv-pane.in > *:nth-child(n+5){animation-delay:.16s}
+@keyframes hvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#hv .hv-card{background:var(--hv-card);border:1.5px solid var(--hv-line);border-radius:16px;padding:16px;min-width:0}
+#hv .hv-card h2,#hv .hv-card h3{font:600 20px/1.2 Fredoka,"Fredoka Fallback",system-ui;margin:0}
+#hv .hv-ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 8px}
+#hv .hv-ch .hv-b{flex:none}
+#hv .hv-card p{margin:0}
+#hv .hv-sub{color:var(--hv-smoke);font-size:14px}
+#hv .hv-potto{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:16px;background:#FFF4D9;border:1.5px solid #F0DFB4}
+#hv .hv-potto svg{flex:none;animation:hvBob 2.6s ease-in-out 1}
+#hv .hv-potto p{margin:0;font-weight:500}
+@keyframes hvBob{0%,100%{transform:none}30%{transform:translateY(-3px) rotate(-4deg)}60%{transform:translateY(0) rotate(2deg)}}
+#hv .hv-bar{height:8px;border-radius:999px;background:var(--hv-linen);overflow:hidden;margin:12px 0 8px}
+#hv .hv-bar i{display:block;height:100%;border-radius:999px;background:var(--hv-sage);width:0;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+#hv .hv-faces{display:flex;align-items:center;margin:4px 0 0}
+#hv .hv-av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:600 15px Fredoka,system-ui;color:#1F1A17;border:2px solid var(--hv-card)}
+#hv .hv-faces .hv-av{margin-left:-8px}#hv .hv-faces .hv-av:first-child{margin-left:0}
+#hv .hv-faces .hv-more{margin-left:8px;color:var(--hv-smoke);font-size:14px}
+#hv .hv-sent{display:grid;gap:4px}
+#hv .hv-link{display:flex;align-items:center;gap:8px;margin:8px 0 12px;padding:0 12px;min-height:44px;border-radius:12px;background:var(--hv-linen);font:500 14px "JetBrains Mono",ui-monospace,monospace;color:var(--hv-ink);min-width:0}
+#hv .hv-link span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hv .hv-acts{display:flex;flex-wrap:wrap;gap:8px}
+#hv .hv-acts .hv-b{flex:1 1 auto}
+#hv .hv-dl{display:grid;gap:0;margin:0}
+#hv .hv-dl > button,#hv .hv-dl > div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:48px;padding:8px 0;border:0;border-top:1px solid var(--hv-line);background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+#hv .hv-dl > :first-child{border-top:0}
+#hv .hv-dl dt,#hv .hv-dl .k{color:var(--hv-smoke);font-size:14px}
+#hv .hv-dl .v{min-width:0;overflow-wrap:anywhere}
+#hv .hv-dl .v.empty{color:var(--hv-smoke)}
+#hv .hv-dl svg{width:18px;height:18px;color:#A99C90}
+#hv .hv-ask{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--hv-line)}
+#hv .hv-ask:first-of-type{border-top:0}
+#hv .hv-ask .hv-acts{grid-column:2}
+#hv .hv-ask.done{opacity:0;transform:translateX(12px);transition:.3s}
+#hv .hv-chips{display:flex;flex-wrap:wrap;gap:8px}
+#hv .hv-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--hv-line2);background:#fff;font:600 14px "Instrument Sans",system-ui;color:var(--hv-ink);cursor:pointer}
+#hv .hv-chip[aria-pressed=true]{background:#1F1A17;border-color:#1F1A17;color:#fff}
+#hv .hv-sec h3{font:600 14px "Instrument Sans",system-ui;color:var(--hv-smoke);margin:8px 0 4px;text-transform:none}
+#hv .hv-g{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--hv-line)}
+#hv .hv-g:first-of-type{border-top:0}
+#hv .hv-g b{display:block;font-weight:600;overflow-wrap:anywhere}
+#hv .hv-g small{display:block;color:var(--hv-smoke);font-size:13px;overflow-wrap:anywhere}
+#hv .hv-g .hv-acts{justify-content:flex-end;flex-wrap:nowrap}
+#hv .hv-g .hv-acts .hv-b{flex:none}
+#hv .hv-pill{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 10px;border-radius:999px;font:600 13px "Instrument Sans",system-ui;background:var(--hv-linen);color:var(--hv-ink);white-space:nowrap}
+#hv .hv-pill.ok{background:#E3EBD9;color:#3E4C30}#hv .hv-pill.warn{background:#FCE6D9;color:#8A3A22}
+#hv .hv-pill svg{width:14px;height:14px}
+#hv .hv-empty{color:var(--hv-smoke);margin:0}
+#hv .hv-tools{display:grid;gap:0}
+#hv .hv-foot{display:flex;justify-content:center;gap:16px;margin:8px 0 0}
+#hv .hv-foot button{min-height:44px;border:0;background:none;color:var(--hv-smoke);font:600 14px "Instrument Sans",system-ui;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#hv .hv-quote{margin:8px 0 0;padding:12px 14px;border-radius:12px;background:var(--hv-linen)}
+#hv .hv-quote small{display:block;color:var(--hv-smoke);margin-top:4px}
+#hv .hv-preview{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:center}
+#hv .hv-preview .cov{width:88px;height:88px;border-radius:12px;background:#F2D48F center/cover no-repeat;display:grid;place-items:center;font-size:40px}
+#hv .hv-start{text-align:center;padding:32px 16px}
+#hv .hv-start h1{font:600 28px/1.2 Fredoka,system-ui;margin:12px 0 8px}
+@media (max-width:420px){#hv .hv-g{grid-template-columns:auto minmax(0,1fr)}#hv .hv-g .hv-acts{grid-column:2;justify-content:flex-start}#hv .hv-dl > button,#hv .hv-dl > div{grid-template-columns:80px minmax(0,1fr) auto}}
+@media (max-width:360px){#hv .hv-row3 .hv-b svg{display:none}#hv .hv-tab{font-size:14px}#hv h1.hv-title{font-size:24px}}
+@media (min-width:861px){#hv{padding-top:16px}#hv h1.hv-title{font-size:40px}#hv .hv-cta{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);align-items:center}#hv .hv-b.big{width:auto}}
+/* sheets: up from the bottom on a phone, centred on a desktop */
+.hv-bg{position:fixed;inset:0;z-index:9800;background:rgba(31,26,23,.42);display:flex;align-items:flex-end;justify-content:center;animation:hvFade .18s ease both}
+@keyframes hvFade{from{opacity:0}to{opacity:1}}
+.hv-sheet{--hv-line:#E4D9C8;--hv-line2:#D9CCBB;--hv-linen:#EFE6D8;width:100%;max-width:560px;max-height:min(92dvh,860px);display:flex;flex-direction:column;background:#FFFCF7;color:#1F1A17;border-radius:24px 24px 0 0;border:1.5px solid #5A3B2B;border-bottom:0;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;animation:hvUp .26s cubic-bezier(.2,.8,.2,1) both}
+@keyframes hvUp{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.hv-sheet *{box-sizing:border-box}
+.hv-sheet .hv-sh{display:flex;align-items:flex-start;gap:12px;padding:16px 16px 8px 20px}
+.hv-sheet .hv-sh h2{flex:1;min-width:0;margin:6px 0 0;font:600 20px/1.25 Fredoka,"Fredoka Fallback",system-ui}
+.hv-sheet .hv-sh p{margin:4px 0 0;color:#665A51;font-size:14px}
+.hv-sheet .hv-x{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:#EFE6D8;display:grid;place-items:center;cursor:pointer;color:#1F1A17}
+.hv-sheet .hv-sb{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding:8px 20px 20px;display:grid;gap:16px;align-content:start}
+.hv-sheet .hv-sf{flex:none;display:flex;gap:8px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1.5px solid #E4D9C8;background:#FFFCF7;border-radius:0}
+.hv-sheet .hv-sf .hv-b{flex:1 1 0}
+.hv-sheet .hv-sf .hv-b.pri{flex:1.6 1 0}
+.hv-sheet label.f,.hv-sheet .f{display:grid;gap:6px;font:600 14px "Instrument Sans",system-ui;min-width:0;margin:0}
+.hv-sheet .f small,.hv-sheet .hint{font:400 13px "Instrument Sans",system-ui;color:#665A51}
+.hv-sheet :is(input:not([type=radio]):not([type=checkbox]),select,textarea){width:100%;min-height:48px;padding:10px 12px;border:1.5px solid #D9CCBB;border-radius:12px;background:#fff;color:#1F1A17;font:400 16px "Instrument Sans",system-ui;box-shadow:none;margin:0}
+.hv-sheet textarea{min-height:96px;resize:vertical;line-height:1.45}
+.hv-sheet :is(input,select,textarea):focus{outline:none;border-color:#1F1A17;box-shadow:0 0 0 3px rgba(201,74,48,.18)}
+.hv-sheet .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:340px){.hv-sheet .two{grid-template-columns:minmax(0,1fr)}}
+.hv-sheet fieldset{border:0;padding:0;margin:0;display:grid;gap:8px;min-width:0}
+.hv-sheet legend{font:600 14px "Instrument Sans",system-ui;margin:0 0 8px;padding:0}
+.hv-sheet .opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;align-items:start;padding:12px 14px;border:1.5px solid #E4D9C8;border-radius:12px;background:#fff;cursor:pointer;font-weight:400}
+.hv-sheet .opt:has(input:checked){border-color:#1F1A17;box-shadow:0 0 0 1px #1F1A17 inset}
+.hv-sheet .opt input{margin:3px 0 0;width:20px;height:20px;accent-color:#C94A30;grid-row:span 2}
+.hv-sheet .opt b{font-weight:600}
+.hv-sheet .opt small{color:#665A51;font-size:13px}
+.hv-sheet .sw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;min-height:48px;font-weight:400}
+.hv-sheet .sw input{width:22px;height:22px;accent-color:#C94A30}
+.hv-sheet .sw small{display:block;color:#665A51;font-size:13px}
+.hv-sheet details.more{border-top:1.5px solid #E4D9C8;padding-top:4px}
+.hv-sheet details.more > summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:48px;font:600 15px "Instrument Sans",system-ui;cursor:pointer}
+.hv-sheet details.more > summary::-webkit-details-marker{display:none}
+.hv-sheet details.more > summary small{font-weight:400;color:#665A51;font-size:13px;margin-left:8px;text-align:right}
+.hv-sheet details.more[open] > summary svg{transform:rotate(180deg)}
+.hv-sheet details.more > div{display:grid;gap:16px;padding:4px 0 8px}
+.hv-sheet .linkbtn2{justify-self:start;min-height:44px;border:0;background:none;padding:0;color:#B04A30;font:600 14px "Instrument Sans",system-ui;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hv-sheet .err{color:#B04A30;font-weight:600;margin:0;font-size:14px}
+.hv-sheet .err:empty{display:none}
+.hv-sheet .tpl{display:flex;flex-wrap:wrap;gap:8px}
+.hv-sheet .tpl button{min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;font:600 14px "Instrument Sans",system-ui;color:#1F1A17;cursor:pointer}
+.hv-sheet .tpl button:hover{border-color:#1F1A17}
+.hv-sheet .potto{display:flex;align-items:center;gap:12px}
+.hv-sheet .potto p{margin:0}
+.hv-sheet .apps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.hv-sheet .apps > *{display:grid;justify-items:center;gap:4px;min-height:64px;padding:10px 4px 8px;border:1.5px solid #E4D9C8;border-radius:12px;background:#fff;color:#1F1A17;text-decoration:none;font:600 13px "Instrument Sans",system-ui;cursor:pointer;text-align:center}
+.hv-sheet .apps svg{width:22px;height:22px;color:#5A3B2B}
+@media (max-width:340px){.hv-sheet .apps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hv-sheet .linkbox{display:flex;align-items:center;min-height:48px;padding:0 12px;border-radius:12px;background:#EFE6D8;font:500 14px "JetBrains Mono",ui-monospace,monospace;min-width:0}
+.hv-sheet .linkbox span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hv-sheet .row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;align-items:center;padding:12px 0;border-top:1px solid #E4D9C8}
+.hv-sheet .row:first-child{border-top:0}
+.hv-sheet .row b{display:block;overflow-wrap:anywhere}.hv-sheet .row small{display:block;color:#665A51;font-size:13px}
+.hv-sheet .row .acts{grid-column:2;display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.hv-sheet .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:600 15px Fredoka,system-ui;background:#F2D48F}
+.hv-sheet .tool{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:64px;padding:10px 0;border:0;border-top:1px solid #E4D9C8;background:none;text-align:left;color:#1F1A17;font:inherit;cursor:pointer}
+.hv-sheet .tool:first-child{border-top:0}
+.hv-sheet .tool .ic{width:40px;height:40px;border-radius:12px;background:#EFE6D8;display:grid;place-items:center;color:#5A3B2B}
+.hv-sheet .tool .ic svg{width:20px;height:20px}
+.hv-sheet .tool b{display:block;font-weight:600}.hv-sheet .tool small{display:block;color:#665A51;font-size:13px}
+.hv-sheet .tool > svg{width:18px;height:18px;color:#A99C90}
+.hv-sheet .live-card{border-radius:20px;overflow:hidden;background:#fff;border:1.5px solid #E4D9C8;animation:hvPop .5s cubic-bezier(.2,1.3,.4,1) .1s both}
+@keyframes hvPop{from{transform:scale(.94) rotate(-1deg);opacity:0}to{transform:none;opacity:1}}
+.hv-sheet .live-cov{height:140px;background:#F2D48F center/cover no-repeat;display:grid;place-items:center;font-size:56px}
+.hv-sheet .live-in{display:grid;gap:6px;padding:16px}
+.hv-sheet .live-in b{font:600 24px/1.15 Fredoka,"Fredoka Fallback",system-ui;overflow-wrap:anywhere}
+.hv-sheet .live-in span{color:#665A51}
+.hv-sheet .live-in .live-btn{justify-self:start;margin-top:6px;padding:8px 18px;border-radius:999px;background:#C94A30;color:#fff;font:600 15px "Instrument Sans",system-ui}
+.hv-sheet .live-in small{font:500 13px "JetBrains Mono",ui-monospace,monospace;color:#665A51;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hv-sheet .sect{font:600 13px "Instrument Sans",system-ui;color:#665A51;margin:8px 0 -8px;letter-spacing:.02em}
+.hv-sheet .note{color:#665A51;font-size:14px;margin:0}
+.hv-sheet :is(.tb-panel,.sl-panel){border:0!important;box-shadow:none!important;background:none!important;padding:0!important;margin:0!important}
+.hv-sheet .sl-panel > summary,.hv-sheet .tb-panel > summary{display:none}
+.hv-sheet #slMd{display:none!important} /* owner: no "Copy as Markdown" */
+.hv-sheet :is(.tb-h,.sl-h){font:600 14px "Instrument Sans",system-ui!important;text-transform:none!important;letter-spacing:0!important;color:#665A51!important}
+.hv-sheet .tb-stat b{font:600 20px Fredoka,system-ui!important}
+#hv .hv-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media (max-width:340px){#hv .hv-two{grid-template-columns:minmax(0,1fr)}}
+@media (min-width:640px){.hv-bg{align-items:center;padding:24px}.hv-sheet{border-radius:24px;border-bottom:1.5px solid #5A3B2B}.hv-sheet .hv-sf{border-radius:0 0 24px 24px}}
+@media (prefers-reduced-motion:reduce){#hv *,.hv-bg,.hv-sheet{animation:none!important;transition:none!important}}
+</style>
+<script>
+// ---------- the pure bits (test/event-flow.test.js runs these straight out of this block) ----------
+// the stage an event is in, for the host: new, draft, poll (friends pick the date), live, today, after
+function hvStage(d,today){ if(!d||!d.id) return "new"; const t=today||localISO(); if(evOver(d)) return "after"; if(d.date&&d.date===t) return "today"; if(!(d.published||d.discoverable)) return "draft"; if(d.stage==="interest"&&!d.date) return "poll"; return "live" }
+// everyone who replied or is on the host's list, one row each: rsvps first (they carry the actions), then names the host added
+function hvPeople(d,R){ const mine=(R||[]).filter(r=>r.eventId===d.id&&(r.name||r.email)), seen=new Set(), P=[];
+  const st=r=>({going:"in",requested:"ask",waitlist:"wait",maybe:"maybe",no:"no",declined:"no"})[r.response]||"maybe";
+  for(const r of mine){ [String(r.email||"").trim().toLowerCase(),String(r.name||"").trim().toLowerCase()].filter(Boolean).forEach(k=>seen.add(k));
+    const ans=(Array.isArray(r.answers)?r.answers:[]).map(a=>a&&a.a).filter(Boolean);
+    P.push({src:"r",id:r.id,name:String(r.name||r.email||"Guest").trim(),email:r.email||"",phone:r.phone||"",state:st(r),plus:+r.plusOnes||(r.plusOne?1:0),paid:!!r.paid,here:!!r.checkedInAt,at:r.changedAt||r.createdAt||0,
+      notes:[r.dietary,r.access,r.note,...ans].map(x=>String(x||"").trim()).filter(Boolean)}) }
+  (d.guests||[]).forEach((g,i)=>{ const em=String(g.email||"").trim().toLowerCase(), nm=String(g.name||"").trim().toLowerCase(); if(!nm||(em&&seen.has(em))||seen.has(nm)) return; seen.add(nm); if(em) seen.add(em);
+    const s=String(g.status||""), state=/Attended|Going/.test(s)?"in":/Waitlist/.test(s)?"wait":/Requested/.test(s)?"ask":/Maybe/.test(s)?"maybe":/Declined/.test(s)?"no":"invited";
+    if(/^RSVP page$|^Referred by/.test(g.source||"")&&state!=="in") return;
+    P.push({src:"g",i,name:String(g.name).trim(),email:g.email||"",phone:g.phone||"",state,plus:g.plusOne?1:0,paid:!!g.paid,here:/Attended/.test(s),walkIn:g.source==="Walk-in",at:g.addedAt||0,notes:[g.dietary].filter(Boolean)}) });
+  return P }
+function hvCounts(d,P){ const c={in:0,ask:0,wait:0,maybe:0,no:0,invited:0,spots:0,here:0,paid:0}; for(const p of P){ c[p.state]=(c[p.state]||0)+1; if(p.state==="in"){ c.spots+=1+(+p.plus||0); if(p.here) c.here++; if(p.paid) c.paid++ } } c.cap=+d.headcount||0; c.left=c.cap?Math.max(0,c.cap-c.spots):null; c.full=!!c.cap&&c.spots>=c.cap; return c }
+const hvPlural=(n,one,many)=>`${n} ${n===1?one:(many||one+"s")}`;
+// the status line under the title, in plain words
+function hvStatus(d,c,stage){ if(stage==="new") return ["Not started",""]; if(stage==="draft") return ["Draft. Only you can see it.",""];
+  if(stage==="poll") return [c.in+c.maybe?`Friends are picking a date. ${hvPlural(c.in+c.maybe,"reply","replies")} so far.`:"Friends are picking a date.","live"];
+  if(stage==="today") return [c.in?`Today. ${c.here} of ${c.in} here.`:"Today.","now"];
+  if(stage==="after") return [c.in?`Done. ${c.here||c.in} came.`:"Done.",""];
+  if(!c.in&&!c.ask&&!c.maybe) return ["Shared. No replies yet.","live"];
+  const bits=[`${c.in} in`]; if(c.full) bits.push("full"); else if(c.left!=null) bits.push(hvPlural(c.left,"spot")+" left"); if(c.ask) bits.push(`${c.ask} asking`); if(c.wait) bits.push(`${c.wait} waiting`);
+  return [bits.join(" · "),"live"] }
+// the one ember button: [label, action]
+function hvPrimary(d,c,stage){ if(stage==="new") return ["Start","create"];
+  if(stage==="after") return ["Ask for photos","photos"]; if(stage==="today") return ["Check in","door"];
+  if(stage==="draft") return (!d.date&&d.stage!=="interest")||(!d.startTime&&d.stage!=="interest")||!(String(d.meetPoint||d.venueName||d.venueAddr||"").trim()||d.city)?["Add the details","edit"]:["Share invite","publish"];
+  if(c.ask) return [c.ask===1?"Review 1 ask":`Review ${c.ask} asks`,"asks"];
+  if(c.in) return ["Message guests","message"]; return ["Share invite","share"] }
+// who can see it and who can join, as two sentences
+function hvSeeLine(d){ if(!(d.published||d.discoverable)) return "Only you can see it until you share the invite.";
+  return !d.discoverable?"Only people with the link can see it.":d.unlisted?"It's on your page, so your followers can see it.":"It's on your page and on Discover, so new people nearby can find it." }
+function hvJoinLine(d){ const p=+d.plusOnes||0; return [d.approvalRequired?"Guests ask to join, and you let each one in.":"Guests tap I'm in.",p?`Each can bring up to ${p}.`:"",d.hideGuests?"The guest list is private.":""].filter(Boolean).join(" ") }
+// one short line from Potto, only at moments that matter
+function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it when you're ready.";
+  if(stage==="today") return c.in?"It's today. Tap Check in as people arrive.":"It's today. Share the link one more time?";
+  if(stage==="after") return dayDiff(d.date)>=-7?"That's a wrap. Ask for photos while the night is fresh.":"";
+  if(stage==="poll") return "";
+  if(c.full) return c.wait?"Full house. I'll offer spots to the waitlist if anyone drops out.":"Full house. I'll start a waitlist if more people ask.";
+  if(c.in===1){ const f=P.find(p=>p.state==="in"); return `${String(f?.name||"Someone").split(" ")[0]} is in. The first yes is the hardest one.` }
+  if(!c.in&&!c.ask) return "I'll tell you the moment someone replies.";
+  return d.autoRemind!==false?"I'll send the reminders the day before.":"" }
+// ---------- end pure bits ----------
+
+(function(){
+  if(typeof renderStep!=="function") return;
+  const q=(s,el=document)=>el.querySelector(s), qa=(s,el=document)=>[...el.querySelectorAll(s)], E=s=>esc(s);
+  const G='viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  const I={ back:`<svg ${G}><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>`, chev:`<svg ${G}><path d="m7.5 4.5 5.5 5.5-5.5 5.5"/></svg>`, down:`<svg ${G} width="18" height="18"><path d="m5 7.5 5 5 5-5"/></svg>`,
+    x:`<svg ${G} width="18" height="18"><path d="M5 5l10 10M15 5 5 15"/></svg>`, edit:`<svg ${G}><path d="M13.5 3.5l3 3L7 16H4v-3z"/></svg>`, eye:`<svg ${G}><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/></svg>`,
+    more:`<svg ${G}><path d="M4.5 10h.01M10 10h.01M15.5 10h.01" stroke-width="2.6"/></svg>`, share:`<svg ${G}><path d="M10 13V3M6.5 6.5 10 3l3.5 3.5"/><path d="M5 10v6h10v-6"/></svg>`,
+    copy:`<svg ${G}><rect x="7" y="7" width="9.5" height="9.5" rx="2"/><path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13H7"/></svg>`,
+    check:`<svg ${G}><path d="M4.5 10.5 8 14l7.5-8"/></svg>`, people:`<svg ${G}><circle cx="7.5" cy="7" r="2.8"/><path d="M2.5 16c.8-2.8 2.7-4.2 5-4.2s4.2 1.4 5 4.2"/><circle cx="14" cy="7.5" r="2.2"/><path d="M13.5 11.8c1.9 0 3.3 1.1 4 3.4"/></svg>`,
+    chat:`<svg ${G}><path d="M10 3.2c3.9 0 7 2.7 7 6.1s-3.1 6.1-7 6.1c-.9 0-1.8-.1-2.6-.4L4 16.4l.9-3.1C3.7 12.2 3 10.8 3 9.3c0-3.4 3.1-6.1 7-6.1z"/></svg>`,
+    camera:`<svg ${G}><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2l1.3-2h4.4l1.3 2h2A1.5 1.5 0 0 1 17 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"/><circle cx="10" cy="10.8" r="2.8"/></svg>`,
+    door:`<svg ${G}><path d="M5 17V3.5h8V17M3 17h14"/><path d="M10.5 10.5h.01" stroke-width="2.4"/></svg>`, table:`<svg ${G}><ellipse cx="10" cy="8" rx="7" ry="3"/><path d="M5 10.3V16M15 10.3V16"/></svg>`,
+    list:`<svg ${G}><path d="M7 5h10M7 10h10M7 15h10M3.5 5h.01M3.5 10h.01M3.5 15h.01" /></svg>`, repeat:`<svg ${G}><path d="M4 9V7.5A2.5 2.5 0 0 1 6.5 5H16l-2.5-2.5M16 11v1.5a2.5 2.5 0 0 1-2.5 2.5H4l2.5 2.5"/></svg>`,
+    plus:`<svg ${G}><path d="M10 4v12M4 10h12"/></svg>`, dl:`<svg ${G}><path d="M10 3v10M6.5 9.5 10 13l3.5-3.5M4 16.5h12"/></svg>`, music:`<svg ${G}><path d="M7.5 15V4.5l9-1.5v10.5"/><circle cx="5.5" cy="15" r="2"/><circle cx="14.5" cy="13.5" r="2"/></svg>`,
+    sms:`<svg ${G}><rect x="5.5" y="2.5" width="9" height="15" rx="2.2"/><path d="M8.8 14.6h2.4"/></svg>`, help:`<svg ${G}><circle cx="10" cy="10" r="7"/><path d="M8 8a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5M10 14h.01"/></svg>`,
+    slots:`<svg ${G}><rect x="3" y="3.5" width="14" height="13" rx="2"/><path d="M3 8h14M7.5 3.5v13"/></svg>`, cog:`<svg ${G}><path d="M4 6h8M15 6h1M4 14h1M8 14h8"/><circle cx="13.5" cy="6" r="1.6"/><circle cx="6.5" cy="14" r="1.6"/></svg>`,
+    plan:`<svg ${G}><path d="M5 3.5h10v13H5z"/><path d="M8 7.5h4M8 10.5h4M8 13.5h2"/></svg>`, mail:`<svg ${G}><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="m3 5.5 7 5 7-5"/></svg>`,
+    link:`<svg ${G}><path d="M8.5 11.5a3 3 0 0 0 4.2 0l2.6-2.6a3 3 0 0 0-4.2-4.2l-.8.8M11.5 8.5a3 3 0 0 0-4.2 0l-2.6 2.6a3 3 0 0 0 4.2 4.2l.8-.8"/></svg>`, trash:`<svg ${G}><path d="M4 6h12M8 6V4h4v2M5.5 6l.8 10h7.4l.8-10"/></svg>` };
+  const AV=["#F2D48F","#C9DDC0","#F4C7B8","#D9D2F0","#BFE0E6","#F7D9A8"], avc=s=>AV[[...String(s||"?")].reduce((a,ch)=>a+ch.charCodeAt(0),0)%AV.length], ini=s=>E(String(s||"?").trim().slice(0,1).toUpperCase()||"?");
+  const first=s=>String(s||"").trim().split(/\s+/)[0]||"";
+  const HV={tab:"overview",filter:"all",lastStep:0,sig:"",anim:true};
+  const want=()=>{ try{ return !window.__hvClassic&&!isGuestRoute()&&!!draft&&!draft.example&&(isCasual(draft)||!!window.__wsPersonal) }catch{ return false } };
+  const saveQ=async()=>{ try{ return await saveEvent(true) }catch(e){ console.warn(e); return false } };
+  const placeLine=d=>String(d.meetPoint||d.venueName||"").trim()||d.city||"";
+  const whenLine=d=>{ if(d.stage==="interest"&&!d.date) return (d.dateOptions||[]).length?`Date to pick: ${(d.dateOptions||[]).map(fmtDate).join(", ")}`:"Date to pick"; return [d.date?fmtDate(d.date):"No date yet",d.startTime?clock12(d.startTime):""].filter(Boolean).join(" · ") };
+  const link=d=>typeof inviteLink==="function"?inviteLink(d):location.origin+"/e/"+encodeURIComponent(d.id||"");
+  const people=d=>hvPeople(d,typeof allRsvps!=="undefined"?allRsvps:[]);
+
+  // ================= the page =================
+  function host(){ const v=q("#view-studio"); if(!v) return null; let h=q("#hv",v); if(!h){ h=document.createElement("div"); h.id="hv"; v.prepend(h) } return h }
+  function hvRender(){ const h=host(); if(!h) return; const d=draft;
+    // the step other screens ask for (shareSheet's "See guests" sets 6, Potto sets 7) picks the tab
+    if(HV.lastStep!==+step){ HV.lastStep=+step; const t={6:"guests",4:"invite",1:"overview",7:"overview"}[+step]; if(t&&t!==HV.tab){ HV.tab=t; HV.anim=true } }
+    try{ if(d.id) localStorage.setItem("encore.lastEvent",d.id) }catch{}
+    try{ if(d.id&&!d.example){ mergeRsvps(d); dedupeGuests(d) } }catch{}
+    const P=people(d), c=hvCounts(d,P), stage=hvStage(d), [st,cls]=hvStatus(d,c,stage), [pl,act]=hvPrimary(d,c,stage);
+    HV.sig=sigOf(d);
+    nav(!!d.id);
+    if(stage==="new"){ h.innerHTML=`<div class="hv-start">${typeof pipSVG==="function"?pipSVG("happy",72):""}<h1>What are you hosting?</h1><p class="hv-sub" style="margin:0 0 24px">Tell Potto in a line. You'll check the details, then share.</p><button class="hv-b pri big" type="button" data-hv="create" style="max-width:320px">Start</button></div>`; wire(h,d,P,c,stage); return }
+    const tabs=[["overview","Overview",""],["guests","Guests",c.in?String(c.in):""],["invite","Invite",""]];
+    h.innerHTML=`<button class="hv-back" type="button" data-hv="home">${I.back}<span>Your events</span></button>
+      <h1 class="hv-title">${E(d.pubTitle||d.name||"Untitled event")}</h1>
+      <p class="hv-when">${E([whenLine(d),placeLine(d)].filter(Boolean).join(" · "))}</p>
+      <p class="hv-status ${cls}" role="status"><i></i><span>${E(st)}</span></p>
+      <div class="hv-cta"><button class="hv-b pri big" type="button" data-hv="${act}" id="hvGo">${E(pl)}</button>
+        <div class="hv-row3"><button class="hv-b q" type="button" data-hv="edit">${I.edit}<span class="hv-lab">Edit</span></button><a class="hv-b q" href="${E(link(d))}" target="_blank" rel="noopener" data-hv="preview">${I.eye}<span class="hv-lab">Preview</span></a><button class="hv-b q" type="button" data-hv="tools" aria-haspopup="dialog">${I.more}<span class="hv-lab">More</span></button></div></div>
+      <div class="hv-tabs" role="tablist" aria-label="Event">${tabs.map(([k,l,n])=>`<button class="hv-tab" role="tab" type="button" data-tab="${k}" aria-selected="${HV.tab===k}">${l}${n?`<small>${E(n)}</small>`:""}</button>`).join("")}</div>
+      <div class="hv-pane${HV.anim?" in":""}" role="tabpanel">${HV.tab==="guests"?guestsPane(d,P,c,stage):HV.tab==="invite"?invitePane(d,c,stage):overviewPane(d,P,c,stage)}</div>
+      <div class="hv-foot"><button type="button" data-hv="help">Need a hand?</button></div>`;
+    HV.anim=false; wire(h,d,P,c,stage);
+    requestAnimationFrame(()=>qa(".hv-bar i",h).forEach(b=>b.style.width=b.dataset.w));
+    milestones(d,c,stage) }
+  function sigOf(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id); return [d.id,d.updatedAt,(d.guests||[]).length,R.map(r=>r.id+r.response+(r.paid?1:0)+(r.checkedInAt?1:0)).join()].join("|") }
+  // the tab bar says where you are: Home while managing an event, New only while creating one
+  function nav(managing){ try{ if(q("#view-studio")?.hidden) return; qa("nav.tabs a").forEach(a=>{ const v=a.dataset.view; if(v==="studio"){ if(managing) a.removeAttribute("aria-current"); else a.setAttribute("aria-current","page") } else if(v==="programs"){ if(managing) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current") } }) }catch{} }
+
+  function overviewPane(d,P,c,stage){ const out=[], pt=hvPotto(d,c,stage,P);
+    if(pt) out.push(`<div class="hv-potto">${typeof pipSVG==="function"?pipSVG(c.full||stage==="after"?"happy":"happy",40):""}<p>${E(pt)}</p></div>`);
+    const asks=P.filter(p=>p.state==="ask");
+    if(asks.length&&stage!=="after") out.push(`<section class="hv-card" aria-labelledby="hvAskH"><div class="hv-ch"><h2 id="hvAskH">${asks.length===1?"1 person asked to join":`${asks.length} people asked to join`}</h2></div>${asks.slice(0,4).map(askRow).join("")}${asks.length>4?`<button class="hv-b q sm" type="button" data-tab="guests" style="margin-top:8px">See all ${asks.length}</button>`:""}</section>`);
+    if(stage==="poll") out.push(pollCard(d,P));
+    if(stage==="after") out.push(afterCard(d,P,c));
+    if(stage==="today"&&c.in) out.push(`<section class="hv-card"><div class="hv-ch"><h2>At the door</h2></div><div class="hv-bar" aria-hidden="true"><i data-w="${Math.round(100*c.here/Math.max(1,c.in))}%"></i></div><p>${c.here?`${c.here} of ${c.in} here.`:`${hvPlural(c.in,"guest")} coming. Tap Check in as they arrive.`}</p></section>`);
+    if(stage!=="after") out.push(comingCard(d,P,c,stage));
+    if(stage==="after") return out.join("");
+    out.push(`<section class="hv-card" aria-labelledby="hvSeeH"><div class="hv-ch"><h2 id="hvSeeH">Who can see and join</h2><button class="hv-b sm" type="button" data-hv="rules">Change</button></div><div class="hv-sent"><p>${E(hvSeeLine(d))}</p><p>${E(hvJoinLine(d))}</p><p class="hv-sub" id="hvGap" hidden></p></div></section>`);
+    if((d.published||d.discoverable)&&stage!=="after") out.push(`<section class="hv-card" aria-labelledby="hvLinkH"><div class="hv-ch"><h2 id="hvLinkH">Invite link</h2></div><div class="hv-link">${I.link}<span>${E(link(d).replace(/^https?:\/\//,""))}</span></div><div class="hv-acts"><button class="hv-b" type="button" data-hv="copyinv">${I.copy}<span>Copy invite</span></button><button class="hv-b" type="button" data-hv="share">${I.share}<span>More ways</span></button></div></section>`);
+    out.push(detailsCard(d));
+    return out.join("") }
+  function askRow(p){ return `<div class="hv-ask" data-rid="${E(p.id)}"><span class="hv-av" style="background:${avc(p.name)}">${ini(p.name)}</span><div><b>${E(p.name)}</b>${p.notes.length?`<small class="hv-sub" style="display:block">${E(p.notes.slice(0,2).join(" · "))}</small>`:""}</div><div class="hv-acts"><button class="hv-b pri sm" type="button" data-ok="${E(p.id)}" data-cap-ok="1">Let in</button><button class="hv-b sm" type="button" data-no="${E(p.id)}">Not this time</button></div></div>` }
+  function comingCard(d,P,c,stage){ const ins=P.filter(p=>p.state==="in").sort((a,b)=>a.at-b.at);
+    if(!ins.length&&!c.maybe&&!c.wait) return `<section class="hv-card" aria-labelledby="hvWhoH"><div class="hv-ch"><h2 id="hvWhoH">Who's coming</h2></div><p class="hv-empty">${stage==="draft"?"Once you share the invite, replies land here.":"Replies land here as they come in. Share the link where your friends already talk."}</p></section>`;
+    const bits=[c.cap?`${c.spots} of ${c.cap} spots taken`:hvPlural(c.in,"guest")+" in",c.maybe?`${c.maybe} maybe`:"",c.wait?`${c.wait} on the waitlist`:"",(d.price&&d.price!=="chip"&&c.in)?`${c.paid} of ${c.in} paid`:""].filter(Boolean);
+    return `<section class="hv-card" aria-labelledby="hvWhoH"><div class="hv-ch"><h2 id="hvWhoH">Who's coming</h2><button class="hv-b sm" type="button" data-tab="guests">See all</button></div>
+      ${ins.length?`<div class="hv-faces" aria-hidden="true">${ins.slice(0,7).map(p=>`<span class="hv-av" style="background:${avc(p.name)}" title="${E(p.name)}">${ini(p.name)}</span>`).join("")}${ins.length>7?`<span class="hv-more">+${ins.length-7}</span>`:""}</div>`:""}
+      ${c.cap?`<div class="hv-bar" aria-hidden="true"><i data-w="${Math.min(100,Math.round(100*c.spots/c.cap))}%"></i></div>`:""}<p>${E(bits.join(" · "))}</p></section>` }
+  function detailsCard(d){ const rows=[["When",whenLine(d)],["Where",placeLine(d)],...(d.venueAddr&&d.venueAddr!==placeLine(d)?[["Address",`${d.venueAddr}. Only guests who are in see it.`]]:[]),["Spots",+d.headcount?spotsText(d):"No limit"],["Price",(typeof priceTxt==="function"&&priceTxt(d))||"Free"]];
+    const br=Array.isArray(d.bring)?d.bring.join(", "):(d.bring||""); if(br) rows.push(["Bring",br]);
+    return `<section class="hv-card" aria-labelledby="hvDetH"><div class="hv-ch"><h2 id="hvDetH">Details</h2><button class="hv-b sm" type="button" data-hv="edit">Edit</button></div><div class="hv-dl">${rows.map(([k,v])=>`<button type="button" data-hv="edit"><span class="k">${k}</span><span class="v${v?"":" empty"}">${E(v||"Add")}</span>${I.chev}</button>`).join("")}</div></section>` }
+  function pollCard(d,P){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id&&r.interest&&r.interest!=="no"), O=(d.dateOptions||[]).map(o=>[o,R.filter(r=>(r.dates||[]).includes(o)).length]).sort((a,b)=>b[1]-a[1]);
+    return `<section class="hv-card"><div class="hv-ch"><h2>Pick the date</h2></div><p class="hv-sub" style="margin-bottom:8px">${R.length?`${hvPlural(R.length,"friend")} voted. Lock in a date and everyone who voted hears it's on.`:"Friends vote on the invite. Lock in a date when enough can come."}</p><div class="hv-dl">${O.map(([o,n],i)=>`<div><span class="k">${n?hvPlural(n,"vote"):"No votes"}</span><span class="v">${E(fmtDate(o))}</span><button class="hv-b sm${i===0&&n?" pri":""}" type="button" data-lock="${E(o)}">Lock in</button></div>`).join("")||`<p class="hv-empty">No dates yet. Add some in Edit.</p>`}</div></section>` }
+  function afterCard(d,P,c){ const came=P.filter(p=>p.state==="in"&&(p.here||!P.some(x=>x.here)));
+    return `<section class="hv-card" aria-labelledby="hvAftH"><div class="hv-ch"><h2 id="hvAftH">How it went</h2></div><p id="hvAftLine">${came.length?`${hvPlural(came.length,"guest")} came.`:"No one was marked as in."}</p><div id="hvKudos"></div>
+      <div class="hv-acts" style="margin-top:12px"><button class="hv-b" type="button" data-hv="thanks">${I.chat}<span>Say thanks</span></button><button class="hv-b" type="button" data-hv="addphotos">${I.camera}<span>Add your photos</span></button><button class="hv-b" type="button" data-hv="again">${I.repeat}<span>Host it again</span></button></div></section>` }
+
+  function guestsPane(d,P,c,stage){ const F=[["all","All",P.length],["in","In",c.in],["ask","Asking",c.ask],["wait","Waitlist",c.wait],["maybe","Maybe",c.maybe],["no","Can't go",c.no],["invited","Not replied",c.invited]].filter(([k,,n])=>k==="all"||n);
+    if(!F.some(([k])=>k===HV.filter)) HV.filter="all";
+    const ORDER=[["ask","Asking to join"],["in",stage==="after"?"Came":"In"],["wait","Waitlist"],["maybe","Maybe"],["invited","Not replied yet"],["no","Can't go"]], paid=!!(d.price&&d.price!=="chip");
+    const sec=ORDER.filter(([k])=>HV.filter==="all"||HV.filter===k).map(([k,l])=>{ const L=P.filter(p=>p.state===k).sort((a,b)=>(stage==="today"?(a.here-b.here):0)||a.at-b.at); if(!L.length) return ""; return `<div class="hv-sec"><h3>${l} · ${L.length}</h3>${k==="ask"&&c.full?`<p class="hv-sub" style="margin:0 0 4px">You're full. Letting someone in adds a spot.</p>`:""}${L.map(p=>gRow(d,p,k,stage,paid)).join("")}</div>` }).join("");
+    return `<section class="hv-card"><div class="hv-two" style="margin-bottom:${P.length?12:0}px"><button class="hv-b" type="button" data-hv="message">${I.chat}<span>Message guests</span></button><button class="hv-b" type="button" data-hv="add">${I.plus}<span>Add someone</span></button></div>
+      ${P.length?`<div class="hv-chips" role="group" aria-label="Show">${F.map(([k,l,n])=>`<button type="button" class="hv-chip" data-filter="${k}" aria-pressed="${HV.filter===k}">${l}${k==="all"?"":` ${n}`}</button>`).join("")}</div>`:""}</section>
+      ${P.length?`<section class="hv-card">${sec||`<p class="hv-empty">No one here yet.</p>`}</section>`:`<section class="hv-card"><p class="hv-empty">${(d.published||d.discoverable)?"No replies yet. Share the invite and replies land here, with notes like allergies.":"Share the invite and replies land here, with notes like allergies."}</p></section>`}` }
+  function gRow(d,p,k,stage,paid){ const sub=[p.plus?`+${p.plus}`:"",...p.notes,p.walkIn?"Walk-in":"",p.src==="g"&&!p.walkIn?"Added by you":""].filter(Boolean).join(" · ");
+    let acts="";
+    if(k==="ask") acts=`<button class="hv-b pri sm" type="button" data-ok="${E(p.id)}" data-cap-ok="1">Let in</button><button class="hv-b sm" type="button" data-no="${E(p.id)}">Not this time</button>`;
+    else if(k==="wait"&&p.src==="r") acts=`<button class="hv-b sm" type="button" data-ok="${E(p.id)}" data-cap-ok="1">Let in</button>`;
+    else if(k==="in"&&(stage==="today"||stage==="after"&&p.here)) acts=`<button class="hv-b sm${p.here?" q":""}" type="button" data-here="${E(p.src)}:${E(p.src==="r"?p.id:p.i)}" aria-pressed="${p.here}">${p.here?`${I.check}<span>Here</span>`:"Check in"}</button>`;
+    else if(k==="in"&&paid&&p.src==="r") acts=`<button class="hv-b sm${p.paid?" q":""}" type="button" data-paid="${E(p.id)}" aria-pressed="${p.paid}">${p.paid?`${I.check}<span>Paid</span>`:"Mark paid"}</button>`;
+    return `<div class="hv-g"><span class="hv-av" style="background:${avc(p.name)}">${ini(p.name)}</span><div><b>${E(p.name)}</b>${sub?`<small>${E(sub)}</small>`:""}</div>${acts?`<div class="hv-acts">${acts}</div>`:""}</div>` }
+
+  function invitePane(d,c,stage){ const cov=typeof safeCover==="function"?safeCover(d.coverPhoto):"", em=(typeof titleEmoji==="function"&&titleEmoji(d))||"";
+    const rows=[["Name",d.pubTitle||d.name],["When",whenLine(d)],["Where",placeLine(d)],["Address",d.venueAddr?`${d.venueAddr}. Only guests who are in see it.`:""],["Spots",+d.headcount?spotsText(d):"No limit"],["Price",(typeof priceTxt==="function"&&priceTxt(d))||"Free"],["Bring",Array.isArray(d.bring)?d.bring.join(", "):(d.bring||"")],["Question",d.askQ||""],["About",d.why||""]];
+    const extra=[["Playlist",d.playlistUrl?"Added":"","playlist"],["Dress code",d.dress||"","dress"]];
+    return `<section class="hv-card"><div class="hv-preview"><span class="cov" style="${cov?`background-image:url('${E(cov)}')`:""}" aria-hidden="true">${cov?"":E(em)}</span><div><b style="font:600 20px/1.2 Fredoka,system-ui;display:block;overflow-wrap:anywhere">${E(d.pubTitle||d.name||"")}</b><p class="hv-sub">${E(whenLine(d))}</p></div></div>
+        <div class="hv-acts" style="margin-top:12px"><a class="hv-b" href="${E(link(d))}" target="_blank" rel="noopener">${I.eye}<span>See it as a guest</span></a>${(d.published||d.discoverable)?`<button class="hv-b" type="button" data-hv="share">${I.share}<span>Share</span></button>`:""}</div></section>
+      <section class="hv-card"><div class="hv-ch"><h2>The look</h2><button class="hv-b sm" type="button" data-hv="look">Change</button></div><p class="hv-sub">Colors, a flyer or photo, and the title font. Guests see it on the invite.</p></section>
+      <section class="hv-card"><div class="hv-ch"><h2>What guests see</h2><button class="hv-b sm" type="button" data-hv="edit">Edit</button></div><div class="hv-dl">${rows.map(([k,v])=>`<button type="button" data-hv="edit"><span class="k">${k}</span><span class="v${v?"":" empty"}">${E(v||"Add")}</span>${I.chev}</button>`).join("")}${extra.map(([k,v,a])=>`<button type="button" data-addon="${a}"><span class="k">${k}</span><span class="v${v?"":" empty"}">${E(v||"Add")}</span>${I.chev}</button>`).join("")}</div></section>` }
+
+  // ================= wiring =================
+  function wire(h,d,P,c,stage){
+    qa("[data-tab]",h).forEach(b=>b.onclick=()=>{ HV.tab=b.dataset.tab; HV.anim=true; step={overview:1,guests:6,invite:4}[HV.tab]; HV.lastStep=step; hvRender(); q(".hv-tabs",h)?.scrollIntoView({block:"nearest"}) });
+    qa("[data-filter]",h).forEach(b=>b.onclick=()=>{ HV.filter=b.dataset.filter; hvRender() });
+    qa("[data-hv]",h).forEach(b=>{ if(b.dataset.hv==="preview") return; b.onclick=e=>{ e.preventDefault(); act(b.dataset.hv,d,b) } });
+    qa("[data-addon]",h).forEach(b=>b.onclick=()=>addonSheet(b.dataset.addon));
+    qa("[data-ok],[data-no]",h).forEach(b=>b.onclick=()=>decide(b));
+    qa("[data-paid]",h).forEach(b=>b.onclick=async()=>{ const id=b.dataset.paid, on=b.getAttribute("aria-pressed")!=="true"; b.disabled=true; try{ await db.doc("rsvps/"+id).update({paid:on,paidAt:on?Date.now():null}); const R=allRsvps.find(x=>x.id===id); if(R) R.paid=on }catch(e){ toast(e.message||"Couldn't update.") } hvRender() });
+    qa("[data-here]",h).forEach(b=>b.onclick=async()=>{ const [k,id]=b.dataset.here.split(":"), on=b.getAttribute("aria-pressed")!=="true"; b.disabled=true;
+      try{ if(k==="r"){ await db.doc("rsvps/"+id).update({checkedInAt:on?Date.now():0}); const R=allRsvps.find(x=>x.id===id); if(R) R.checkedInAt=on?Date.now():0 } else { const g=d.guests[+id]; if(g){ g.status=on?"Attended":"Going"; await saveQ() } } if(on&&navigator.vibrate) navigator.vibrate(15) }catch(e){ toast("Couldn't save that. Check your connection.") } hvRender() });
+    qa("[data-lock]",h).forEach(b=>b.onclick=()=>lockDate(d,b.dataset.lock,b));
+    if(q("#hvGap",h)&&d.discoverable&&!d.unlisted&&typeof discoverGaps==="function") discoverGaps().then(j=>{ const el=q("#hvGap"); if(!el||!j||!(j.gaps||[]).length) return; el.hidden=false; el.innerHTML=`Not on Discover yet. Your page needs ${E(p1And(j.gaps))}. <a href="${j.gaps.includes("a page")?"/?app=1":`/@${encodeURIComponent(j.handle||"")}?customize=1`}" style="color:#B04A30;font-weight:600">Finish your page</a>` }).catch(()=>{});
+    if(stage==="after"&&q("#hvKudos",h)) kudos(d) }
+  async function kudos(d){ try{ const r=await fetch("/api/host/kudos/"+encodeURIComponent(d.id)); if(!r.ok) return; const K=await r.json(), el=q("#hvKudos"); if(!el||draft!==d) return; const L=(K.kudos||[]).filter(k=>k.love);
+      let ph=0; try{ const j=await (await fetch("/api/public/moments/"+encodeURIComponent(d.id))).json(); ph=(j?.moments||[]).filter(m=>!m.hidden).length }catch{}
+      const line=q("#hvAftLine"); if(line&&((K.kudos||[]).length||ph)) line.textContent+=" "+[(K.kudos||[]).length?hvPlural(K.kudos.length,"kudos note")+".":"",ph?hvPlural(ph,"photo")+" so far.":""].filter(Boolean).join(" ");
+      el.innerHTML=L.slice(0,3).map(k=>`<blockquote class="hv-quote">"${E(k.love)}"<small>${E(first(k.name)||"A guest")}</small></blockquote>`).join("") }catch{} }
+  // letting someone in past the spots asks first, in a sheet (not the browser's confirm box), and adds the spot
+  async function decide(b,sure){ const id=b.dataset.ok||b.dataset.no, ok=!!b.dataset.ok, row=b.closest(".hv-ask,.hv-g"), d=draft;
+    if(ok&&!sure){ const P=people(d), c=hvCounts(d,P), p=P.find(x=>x.id===id); if(c.cap&&c.spots+1+(+p?.plus||0)>c.cap){
+      const S=sheet({title:"You're full",sub:`${hvPlural(c.spots,"spot")} of ${c.cap} are taken. Letting ${E(first(p?.name)||"them")} in adds a spot.`,body:`<p class="note">Everyone who's in keeps their spot. You can change the number of spots any time in Edit.</p>`,
+        foot:`<button class="hv-b" type="button" id="hvCancel">Not now</button><button class="hv-b pri" type="button" id="hvSave">Add a spot and let in</button>`});
+      q("#hvCancel",S.bg).onclick=S.close; q("#hvSave",S.bg).onclick=async()=>{ S.close(); d.headcount=c.spots+1+(+p?.plus||0); await saveQ(); decide(b,true) }; return } }
+    qa("button",row||b.parentElement).forEach(x=>x.disabled=true);
+    try{ await db.doc("rsvps/"+id).update({response:ok?"going":"no",decidedAt:Date.now()}); const R=(allRsvps||[]).find(x=>x.id===id); if(R) R.response=ok?"going":"no"; try{ if(ok) pipSound?.("oink") }catch{}
+      if(row){ row.classList.add("done") } try{ pipToast(ok?letInMsg(R?.name,draft):declineMsg(R?.name),"happy") }catch{ toast(ok?"Let in.":"Done.") } setTimeout(hvRender,row?300:0) }catch(e){ toast(e.message||"Couldn't update."); qa("button",row||b.parentElement).forEach(x=>x.disabled=false) } }
+  async function lockDate(d,o,b){ b.disabled=true; d.date=o; d.stage=""; await saveQ(); let j=null; try{ j=await jpost("/api/host/its-on",{eventId:d.id}) }catch{} try{ burst?.() }catch{} toast(j?.told?`It's on for ${fmtDate(o)}. ${hvPlural(j.told,"person")} told.`:`It's on for ${fmtDate(o)}.`); hvRender() }
+  function act(a,d,b){ switch(a){
+    case "home": location.hash="#programs"; return;
+    case "create": openCreate(""); return;
+    case "edit": openDetails("edit"); return;
+    case "publish": openDetails("share"); return;
+    case "share": openShare(d,false); return;
+    case "copyinv": copyTxt(inviteText(d),{ok:"Invite copied. Paste it in your group chat."}); return;
+    case "asks": HV.tab="guests"; HV.filter="ask"; HV.anim=true; step=6; HV.lastStep=6; hvRender(); return;
+    case "message": if(typeof window.openChat==="function"&&d.id){ try{ window.openChat(d.id); return }catch(e){ console.warn(e) } } openMessage(d); return; // the group chat, when it's there
+    case "door": if(typeof openDoor==="function") openDoor(d); return;
+    case "photos": openPhotos(d); return;
+    case "rules": openRules(d); return;
+    case "tools": openTools(d); return;
+    case "add": openAdd(d); return;
+    case "look": openLook(d); return;
+    case "help": openHelp(); return;
+    case "thanks": { const hp=typeof __hostProfile!=="undefined"&&__hostProfile?.handle; copyTxt(`Thanks for coming to ${guestTitle(d)}${typeof actOf==="function"?" "+actOf(d).emoji:""}\nYour photos and a few words go here: ${link(d)}${hp?`\nThe next one: ${location.origin}/@${hp}`:""}`,{ok:"Copied. Paste it in the group chat."}); try{ localStorage.setItem("encore.thanked."+d.id,"1") }catch{} return }
+    case "addphotos": if(window.MomentUpload) window.MomentUpload.pick({q:{eventId:d.id},onDone:(n)=>{ if(n){ try{ pipToast(`${hvPlural(n,"photo")} added. Guests will see them.`,"happy") }catch{} hvRender() } },onEach:(f,r,e)=>{ if(e) toast(e.message) }}); return;
+    case "again": hostAgain(d); return;
+  } }
+
+  // help (public/help.js) is hidden on this page until asked for; it hides again when its panel closes
+  function openHelp(){ if(!window.EncoreHelp?.open){ toast("Help is still loading. Try again in a moment."); return } document.body.classList.add("hv-help"); try{ window.EncoreHelp.open(true) }catch{}
+    const t=setInterval(()=>{ const p=document.getElementById("encoreHelp")?.shadowRoot?.querySelector(".eh-panel"); if(!p||p.hidden){ document.body.classList.remove("hv-help"); clearInterval(t) } },600) }
+  // ================= sheets =================
+  function sheet({title,sub,body,foot,label,wide}){ document.getElementById("hvSheet")?.remove(); const bg=document.createElement("div"); bg.className="hv-bg"; bg.id="hvSheet";
+    bg.innerHTML=`<div class="hv-sheet" role="dialog" aria-modal="true" aria-label="${E(label||title)}"${wide?' style="max-width:760px"':""}><div class="hv-sh"><div style="flex:1;min-width:0"><h2>${title}</h2>${sub?`<p>${sub}</p>`:""}</div><button class="hv-x" type="button" aria-label="Close">${I.x}</button></div><div class="hv-sb">${body}</div>${foot?`<div class="hv-sf">${foot}</div>`:""}</div>`;
+    document.body.appendChild(bg); const prev=document.activeElement;
+    const close=()=>{ bg.remove(); document.removeEventListener("keydown",key); try{ prev?.focus?.() }catch{} }, key=e=>{ if(e.key==="Escape"&&bg.isConnected){ e.preventDefault(); close() } };
+    document.addEventListener("keydown",key); q(".hv-x",bg).onclick=close; bg.addEventListener("mousedown",e=>{ if(e.target===bg) close() });
+    setTimeout(()=>{ const f=q(".hv-sb :is(textarea,input:not([type=radio]):not([type=checkbox]):not([type=date]):not([type=time]))",bg); if(f&&matchMedia("(pointer:fine)").matches) f.focus(); else q(".hv-x",bg)?.focus() },60);
+    return {bg,close,el:q(".hv-sheet",bg)} }
+
+  // --- create: What's the plan? ---
+  const TPL=[["Supper club","Supper club at my place, Saturday 7pm, 8 seats, $35 a person"],["Hack night","Hack night at the office, Thursday 6:30pm, about 20 people, pizza and lightning demos"],["Game night","Board game night at my place, Friday 7pm, 6 people, bring a snack"],["Potluck","Potluck in the park, Sunday 1pm, everyone brings a dish"],["Run club","Easy 5k run, Saturday 8am, McCarren Park, coffee after"],["Book club","Book club at the café, first Tuesday 7pm, 10 people"]];
+  function openCreate(seed){ const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
+      <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>A Discord message, Markdown or an .ics file works too.</small></label>
+      <div><p class="sect" style="margin:0 0 8px">Or start from one of these</p><div class="tpl">${TPL.map(([n],i)=>`<button type="button" data-tpl="${i}">${E(n)}</button>`).join("")}</div></div><p class="err" id="hvErr" role="alert"></p>`,
+      foot:`<button class="hv-b pri" type="button" id="hvNext">Next</button>`});
+    const ta=q("#hvWhat",S.bg); qa("[data-tpl]",S.bg).forEach(b=>b.onclick=()=>{ ta.value=TPL[+b.dataset.tpl][1]; ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length) });
+    const ics=q("textarea",S.bg); ics.addEventListener("dragover",e=>e.preventDefault()); ics.addEventListener("drop",e=>{ const f=e.dataTransfer?.files?.[0]; if(f&&/\.ics$/i.test(f.name||"")){ e.preventDefault(); f.text().then(t=>{ ta.value=t }) } });
+    ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){ e.preventDefault(); q("#hvNext",S.bg).click() } });
+    q("#hvNext",S.bg).onclick=async()=>{ const t=ta.value.trim(), b=q("#hvNext",S.bg); if(t.length<4){ q("#hvErr",S.bg).textContent="Tell me the plan first."; ta.focus(); return }
+      b.disabled=true; b.textContent="Reading that…"; window.__wizBusy=1; window.__hvQuiet=Date.now()+2500;
+      try{ quickStart(t); draft.casual=true; draft.discoverable=false; draft.published=false; await saveQ(); await window.prAiWait?.(null) }catch(e){ console.warn(e) }
+      setTimeout(()=>{ window.__wizBusy=0 },800); S.close(); if(location.hash!=="#studio") location.hash="#studio"; step=1; HV.tab="overview"; try{ renderStep() }catch{} openDetails("create") };
+  }
+  // --- one review sheet: create (Share invite), share (the draft is ready), edit (Save) ---
+  function openDetails(mode){ const d=draft; if(!d) return; const poll=d.stage==="interest"&&!d.date, home=/my place|our place|\bhome\b|apartment|\bflat\b|house|mine/i.test(d.meetPoint||"")||!!String(d.venueAddr||"").trim();
+    const visNow=(d.published||d.discoverable)?(typeof visOf==="function"?visOf(d):"page"):(d.lastVis||"page"), creating=mode!=="edit";
+    const look=!!window.EncoreLooksApp;
+    const S=sheet({title:mode==="share"?"Ready to share?":creating?"Check the details":"Edit details",sub:mode==="share"?"A last look before it goes out.":creating?"Potto filled these in. Fix anything that's off.":"",label:creating?"Check the details":"Edit details",body:`
+      <label class="f">Event name<input id="hvName" value="${E(d.pubTitle||d.name||"")}" maxlength="90" autocomplete="off"></label>
+      <div id="hvWhenBox">${poll?`<div class="f"><span>Dates friends can pick</span><div class="two">${[0,1,2].map(i=>`<input type="date" data-opt="${i}" value="${E((d.dateOptions||[])[i]||"")}" aria-label="Date option ${i+1}">`).join("")}</div><button type="button" class="linkbtn2" id="hvKnow">I know the date</button></div>`
+        :`<div class="two"><label class="f">Date<input id="hvDate" type="date" value="${E(d.date||"")}"></label><label class="f">Start time${timeSel(d.startTime)}</label></div>${creating&&!d.startTime?`<p class="hint" id="hvNoTime" style="margin:8px 0 0">You didn't say a time, so pick one. <button type="button" class="linkbtn2" id="hvT7" style="min-height:32px">Use 7pm</button></p>`:""}${creating?`<div><button type="button" class="linkbtn2" id="hvPoll">Not sure? Let friends vote on a date</button></div>`:""}`}</div>
+      <label class="f">Where<input id="hvWhere" value="${E(d.meetPoint||d.venueName||"")}" placeholder="Your place, a park, a café…" autocomplete="off"></label>
+      <label class="f" id="hvAddrL"${home?"":" hidden"}>Exact address<small>Only guests who are in see it.</small><input id="hvAddr" value="${E(d.venueAddr||"")}" placeholder="12 Elm St, apt 4B" autocomplete="street-address"></label>
+      <div class="two"><label class="f">City<input id="hvCity" value="${E(d.city||"")}" autocomplete="address-level2"></label><label class="f">Spots<input id="hvSpots" type="number" min="1" inputmode="numeric" value="${E(+d.headcount||"")}" placeholder="No limit"></label></div>
+      ${creating?`<details class="more" id="hvWho"><summary><span>Who can see and join</span><small id="hvWhoSum">${E(whoSummary(d.approvalRequired,visNow))}</small>${I.down}</summary><div><fieldset><legend>Who can join?</legend>${[["open","Anyone with the link","They tap I'm in."],["approve","I let each guest in","They ask to join. You let them in."]].map(([v,t,s])=>`<label class="opt"><input type="radio" name="hvJoin" value="${v}" ${(v==="approve")===!!d.approvalRequired?"checked":""}><b>${t}</b><small>${s}</small></label>`).join("")}</fieldset>
+      <fieldset><legend>Who can see it?</legend>${VIS.map(([v,t,s])=>`<label class="opt"><input type="radio" name="hvVis" value="${v}" ${visNow===v?"checked":""}><b>${t}</b><small>${s}</small></label>`).join("")}</fieldset><p class="hint">Change it any time from your event.</p></div></details>`:""}
+      <details class="more"${creating?"":" open"}><summary><span>More options</span><small>${E(moreSummary(d))}</small>${I.down}</summary><div>
+        <div class="two"><label class="f">Price<input id="hvPrice" value="${E(d.price&&d.price!=="chip"?d.price:"")}" placeholder="Free" inputmode="decimal"></label><label class="f">Payment link<input id="hvPay" type="url" inputmode="url" value="${E(d.ticketUrl||"")}" placeholder="venmo.com/you"></label></div>
+        <label class="f">What to bring<input id="hvBring" value="${E(Array.isArray(d.bring)?d.bring.join(", "):(d.bring||""))}" placeholder="A drink to share"></label>
+        <label class="f">A question for guests<small>Asked when they reply. Allergies, a song request, anything.</small><input id="hvAskQ" value="${E(d.askQ||"")}" placeholder="Anything you don't eat?"></label>
+        <label class="f">A line about it<textarea id="hvWhy" rows="2" placeholder="Slow dinner, good wine, new friends">${E(d.why||"")}</textarea></label>
+        ${look?`<div><p class="sect" style="margin:0 0 8px">The look</p><div id="hvLook"><button type="button" class="hv-b sm" id="hvLookGo">Pick a look</button></div></div>`:""}
+      </div></details><p class="err" id="hvErr" role="alert"></p>`,
+      foot:creating?`<button class="hv-b" type="button" id="hvLater">Save draft</button><button class="hv-b pri" type="button" id="hvSave">Share invite</button>`:`<button class="hv-b" type="button" id="hvCancel">Cancel</button><button class="hv-b pri" type="button" id="hvSave">Save</button>`});
+    const B=S.bg, v=s=>q(s,B)?.value?.trim()??"", err=t=>{ q("#hvErr",B).textContent=t };
+    B.addEventListener("input",()=>err("")); B.addEventListener("change",e=>{ if(e.target.name==="hvJoin"||e.target.name==="hvVis"){ const s=q("#hvWhoSum",B); if(s) s.textContent=whoSummary(q('input[name=hvJoin]:checked',B)?.value==="approve",q('input[name=hvVis]:checked',B)?.value) } }); q("#hvWhere",B).addEventListener("input",e=>{ if(/my place|our place|\bhome\b|apartment|\bflat\b|house|mine/i.test(e.target.value)) q("#hvAddrL",B).hidden=false });
+    q("#hvCancel",B)&&(q("#hvCancel",B).onclick=S.close);
+    q("#hvT7",B)&&(q("#hvT7",B).onclick=()=>{ q("#hvTime",B).value="19:00"; q("#hvNoTime",B)?.remove() }); B.addEventListener("change",e=>{ if(e.target.id==="hvTime"&&e.target.value) q("#hvNoTime",B)?.remove() });
+    q("#hvPoll",B)&&(q("#hvPoll",B).onclick=()=>{ q("#hvWhenBox",B).innerHTML=`<div class="f"><span>Dates friends can pick</span><div class="two">${[0,1,2].map(i=>`<input type="date" data-opt="${i}" aria-label="Date option ${i+1}">`).join("")}</div><small>They vote on the invite. You lock in the winner.</small></div>`; q('[data-opt="0"]',B).focus() });
+    q("#hvKnow",B)&&(q("#hvKnow",B).onclick=()=>{ q("#hvWhenBox",B).innerHTML=`<div class="two"><label class="f">Date<input id="hvDate" type="date"></label><label class="f">Start time${timeSel(d.startTime)}</label></div>` });
+    q("#hvLookGo",B)&&(q("#hvLookGo",B).onclick=()=>{ const box=q("#hvLook",B); try{ window.EncoreLooksApp.mount(box,d,()=>saveQ()) }catch(e){ console.warn(e); box.textContent="The look picker didn't load. Try again in a moment." } });
+    const apply=()=>{ d.pubTitle=v("#hvName")||d.pubTitle||d.name; d.name=d.pubTitle;
+      const opts=qa("[data-opt]",B).map(x=>x.value).filter(Boolean);
+      if(qa("[data-opt]",B).length){ d.stage="interest"; d.dateOptions=[...new Set(opts)].sort(); d.date="" } else { d.date=v("#hvDate"); d.startTime=v("#hvTime"); if(d.stage==="interest"&&d.date) d.stage="" }
+      d.meetPoint=v("#hvWhere"); if(!q("#hvAddrL",B).hidden) d.venueAddr=v("#hvAddr"); d.city=v("#hvCity")||d.city; const sp=+v("#hvSpots"); d.headcount=sp>0?Math.round(sp):0;
+      const pr=v("#hvPrice"); d.price=pr&&!/^(free|0|\$0)$/i.test(pr)?pr:""; d.ticketUrl=v("#hvPay")?(/^https?:\/\//i.test(v("#hvPay"))?v("#hvPay"):"https://"+v("#hvPay")):"";
+      const br=v("#hvBring"); d.bring=br?br.split(/,\s*/).filter(Boolean):[]; d.askQ=v("#hvAskQ"); d.why=v("#hvWhy");
+      if(creating){ d.approvalRequired=q('input[name=hvJoin]:checked',B)?.value==="approve"; d.lastVis=q('input[name=hvVis]:checked',B)?.value||"page" } try{ applyPlace?.(d) }catch{} };
+    const check=()=>{ if(qa("[data-opt]",B).length){ if(!qa("[data-opt]",B).some(x=>x.value)){ err("Add at least one date friends can pick."); return false } } else if(!v("#hvDate")||!v("#hvTime")){ err("Add a date and a start time, or let friends vote."); (v("#hvDate")?q("#hvTime",B):q("#hvDate",B))?.focus(); return false }
+      if(!v("#hvWhere")&&!v("#hvCity")){ err("Add where, even roughly."); q("#hvWhere",B).focus(); return false } return true };
+    q("#hvLater",B)&&(q("#hvLater",B).onclick=async()=>{ apply(); await saveQ(); S.close(); toast("Saved. Only you can see it."); hvRender() });
+    q("#hvSave",B).onclick=async()=>{ const b=q("#hvSave",B); if(!check()) return; apply(); b.disabled=true;
+      if(!creating){ const ok=await saveQ(); b.disabled=false; if(ok===false){ err("Couldn't save. Try again."); return } S.close(); toast((d.published||d.discoverable)?"Saved. Guests see the change right away.":"Saved."); hvRender(); return }
+      const vis=d.lastVis||"page"; d.published=true; d.discoverable=vis!=="link"; d.unlisted=vis!=="discover"; const ok=await saveQ(); b.disabled=false; if(ok===false){ d.published=false; d.discoverable=false; err("Couldn't share it. Try again."); return }
+      try{ sessionStorage.removeItem(WIZ_KEY) }catch{} S.close(); HV.tab="overview"; step=1; HV.lastStep=1; if(location.hash!=="#studio") location.hash="#studio"; hvRender(); openLive(d); try{ pipSound?.("oink"); burst?.() }catch{} } }
+  // the moment it goes live: one calm screen. The invite as guests see it, one Share button, and the way to the event.
+  function openLive(d){ const cov=typeof safeCover==="function"?safeCover(d.coverPhoto):"", em=(typeof titleEmoji==="function"&&titleEmoji(d))||"";
+    const S=sheet({title:"It's live",label:"It's live",sub:"Send it to your friends. Replies show up on your event.",body:`
+      <div class="live-card"><div class="live-cov" style="${cov?`background-image:url('${E(cov)}')`:""}" aria-hidden="true">${cov?"":E(em)}</div><div class="live-in"><b>${E(d.pubTitle||d.name||"")}</b><span>${E([whenLine(d),placeLine(d)].filter(Boolean).join(" · "))}</span><span class="live-btn">${d.approvalRequired?"Ask to join":"I'm in"}</span><small>${E(link(d).replace(/^https?:\/\//,""))}</small></div></div>`,
+      foot:`<button class="hv-b" type="button" id="hvToEv">Go to your event</button><button class="hv-b pri" type="button" id="hvShareGo">${I.share}<span>Share</span></button>`});
+    q("#hvToEv",S.bg).onclick=()=>{ S.close(); hvRender(); window.scrollTo({top:0}) };
+    q("#hvShareGo",S.bg).onclick=async()=>{ try{ if(d?.id&&typeof trackStep==="function") trackStep("share_clicked",d.id) }catch{}
+      if(navigator.share&&matchMedia("(pointer:coarse)").matches){ try{ await navigator.share({title:d.pubTitle||d.name||"",text:inviteText(d).replace(/\s*https?:\/\/\S+$/,""),url:link(d)}); try{ pipToast("Sent. I'll tell you when someone replies.","happy") }catch{} return }catch(e){ if(e?.name==="AbortError") return } }
+      S.close(); openShare(d,false) } }
+  // the start time is picked from a list, never a native time field: on iPhone that fills in the clock time when tapped,
+  // which is how "4:16am" got onto an event nobody gave a time
+  function timeSel(cur){ const T=[]; for(let i=0;i<48;i++){ const m=(i*30+6*60)%1440; T.push(`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`) } if(cur&&!T.includes(cur)) T.unshift(cur);
+    return `<select id="hvTime"><option value="">Pick a time</option>${T.map(t=>`<option value="${t}"${t===cur?" selected":""}>${E(clock12(t))}</option>`).join("")}</select>` }
+  const VIS=[["link","Link only","Only people you send it to."],["page","On your page","Your followers see it too."],["discover","Your page and Discover","New people nearby can find it too."]];
+  function whoSummary(appr,vis){ return `${appr?"You let each guest in":"Anyone with the link"} · ${({link:"link only",page:"on your page",discover:"on Discover"})[vis]||"on your page"}` }
+  function moreSummary(d){ return [d.price&&d.price!=="chip"?priceTxt(d):"",(Array.isArray(d.bring)?d.bring.length:d.bring)?"bring":"",d.askQ?"a question":""].filter(Boolean).join(", ")||"Price, what to bring, a question, the look" }
+
+  // --- share: one place ---
+  function openShare(d,fresh){ try{ if(d?.id&&!d.example&&typeof trackStep==="function") trackStep("share_clicked",d.id) }catch{}
+    const L=typeof shareLinks==="function"?shareLinks(d):{whatsapp:"#",sms:"#",messenger:"#"}, SI=typeof SHARE_ICONS==="object"?SHARE_ICONS:{}, SC=typeof SHARE_COPY==="object"?SHARE_COPY:{};
+    const apps=[["a",L.whatsapp,SI.chat,"WhatsApp",1],["a",L.sms,SI.sms,"Messages",0],["a",L.messenger,SI.send,"Messenger",1],...["discord","slack","signal"].map(k=>["b",k,SI[k],(SC[k]||[k])[0]])];
+    const S=sheet({title:"Share invite",label:"Share your invite",sub:d.approvalRequired?"Guests ask to join. You let them in.":"Guests tap I'm in.",body:`
+      <div class="linkbox"><span>${E(link(d).replace(/^https?:\/\//,""))}</span></div>
+      <div class="apps">${apps.map(([t,x,ic,l,blank])=>t==="a"?`<a href="${E(x)}"${blank?' target="_blank" rel="noopener"':""}>${ic||""}<span>${E(l)}</span></a>`:`<button type="button" data-sharefmt="${x}">${ic||""}<span>${E(l)}</span></button>`).join("")}</div>
+      <p class="note" id="hvGap2" hidden></p>
+      <div id="hvFirst"></div>`,
+      foot:`<a class="hv-b" href="${E(link(d))}" target="_blank" rel="noopener">Preview</a><button class="hv-b pri" type="button" id="hvCopy">${I.copy}<span>Copy invite</span></button>`});
+    q("#hvCopy",S.bg).onclick=()=>copyTxt(inviteText(d),{ok:"Invite copied. Paste it in your group chat."});
+    if(d.discoverable&&!d.unlisted&&typeof discoverGaps==="function") discoverGaps(true).then(j=>{ const el=q("#hvGap2",S.bg); if(!el||!j||!(j.gaps||[]).length) return; el.hidden=false; el.innerHTML=`Not on Discover yet. Your page needs ${E(p1And(j.gaps))}. <a href="${j.gaps.includes("a page")?"/?app=1":`/@${encodeURIComponent(j.handle||"")}?customize=1`}" style="color:#B04A30;font-weight:600">Finish your page</a>` }).catch(()=>{});
+    if(d.date&&d.date<localISO()) return;
+    fetch(`/api/host/first-yes?eventId=${encodeURIComponent(d.id)}`).then(r=>r.ok?r.json():null).then(j=>{ const L2=(j?.people||[]).slice(0,5), box=q("#hvFirst",S.bg); if(!box||!L2.length) return;
+      const msg=p=>`Hey ${first(p.name)}! ${inviteText(d)} You're one of the first people I'm asking.`;
+      box.innerHTML=`<p class="sect" style="margin:0 0 8px">Ask these friends first</p><p class="note" style="margin:0 0 4px">${L2.some(p=>p.early)?"They were in early last time. A first yes gets the rest moving.":"A first yes gets the rest moving."}</p>${L2.map((p,i)=>`<div class="row"><span class="av" style="background:${avc(p.name)}">${ini(p.name)}</span><div><b>${E(p.name)}</b>${p.why?`<small>${E(p.why)}</small>`:""}</div><div class="acts">${p.phone?`<a class="hv-b sm" href="sms:${E(p.phone)}?&body=${encodeURIComponent(msg(p))}">${I.sms}<span>Text</span></a>`:""}${p.email?`<a class="hv-b sm" href="mailto:${E(p.email)}?subject=${encodeURIComponent(d.pubTitle||d.name||"You're invited")}&body=${encodeURIComponent(msg(p))}">${I.mail}<span>Email</span></a>`:""}<button class="hv-b sm" type="button" data-fy="${i}">${I.copy}<span>Copy</span></button></div></div>`).join("")}`;
+      qa("[data-fy]",box).forEach(b=>b.onclick=()=>copyTxt(msg(L2[+b.dataset.fy]),{ok:"Copied. Send it to them."})) }).catch(()=>{}) }
+  // the old share sheet, for friends events, is this one
+  if(typeof shareSheet==="function"){ const _ssHv=shareSheet; shareSheet=function(d){ if(want()&&d&&isCasual(d)){ document.getElementById("wizBg")?.remove(); return openLive(d) } return _ssHv.apply(this,arguments) } }
+
+  // --- who can see and join ---
+  function openRules(d){ const shared=!!(d.published||d.discoverable), v=shared?visOf(d):(d.lastVis||"page");
+    const S=sheet({title:"Who can see and join",body:`
+      <fieldset><legend>Who can see it?</legend>${VIS.map(([k,t,s])=>`<label class="opt"><input type="radio" name="hvVis" value="${k}" ${v===k?"checked":""}><b>${t}</b><small>${s}</small></label>`).join("")}${shared?"":`<p class="note">This takes effect when you share the invite.</p>`}</fieldset>
+      <fieldset><legend>Who can join?</legend>${[["open","Anyone who can see it","They tap I'm in."],["approve","I let each guest in","They ask to join. You let them in."]].map(([k,t,s])=>`<label class="opt"><input type="radio" name="hvJoin" value="${k}" ${(k==="approve")===!!d.approvalRequired?"checked":""}><b>${t}</b><small>${s}</small></label>`).join("")}</fieldset>
+      <label class="f">Plus-ones<small>How many friends each guest can bring.</small><select id="hvPlus">${[[0,"None"],[1,"Up to 1"],[2,"Up to 2"],[3,"Up to 3"],[5,"Up to 5"]].map(([n,l])=>`<option value="${n}" ${Math.min(+d.plusOnes||0,5)===n||(n===5&&(+d.plusOnes||0)>=5)?"selected":""}>${l}</option>`).join("")}</select></label>
+      <label class="sw"><span>Guests can see who's coming<small>Each guest chooses if their name shows.</small></span><input type="checkbox" id="hvShow" ${d.hideGuests?"":"checked"}></label>
+      <label class="sw"><span>Offer a Maybe<small>Off means guests pick I'm in or Can't go.</small></span><input type="checkbox" id="hvMaybe" ${noMaybeOf(d)?"":"checked"}></label>
+      <label class="sw"><span>Waitlist when it's full<small>I offer open spots in order.</small></span><input type="checkbox" id="hvWait" ${d.autoWait!==false?"checked":""}></label>`,
+      foot:`<button class="hv-b" type="button" id="hvCancel">Cancel</button><button class="hv-b pri" type="button" id="hvSave">Save</button>`});
+    const B=S.bg; q("#hvCancel",B).onclick=S.close;
+    q("#hvSave",B).onclick=async()=>{ const nv=q('input[name=hvVis]:checked',B)?.value||"page"; if(shared){ d.discoverable=nv!=="link"; d.unlisted=nv!=="discover" } else d.lastVis=nv;
+      d.approvalRequired=q('input[name=hvJoin]:checked',B)?.value==="approve"; d.plusOnes=+q("#hvPlus",B).value; d.hideGuests=!q("#hvShow",B).checked; d.noMaybe=!q("#hvMaybe",B).checked; d.autoWait=q("#hvWait",B).checked;
+      await saveQ(); S.close(); toast(shared?"Saved. Guests see the change right away.":"Saved."); hvRender() } }
+
+  // --- message guests ---
+  function openMessage(d){ const P=people(d), ins=P.filter(p=>p.state==="in"), mails=ins.map(p=>p.email).filter(x=>/@/.test(x)), when=[d.date?fmtDate(d.date):"",d.startTime?clock12(d.startTime):""].filter(Boolean).join(" at ");
+    const T=[["See you soon",`See you ${when||"soon"}! ${d.venueAddr?"The address is on the invite.":""}`.trim()],["Running late","Running about 15 minutes behind. Come a little later, no rush."],["What to bring",`Quick one: ${Array.isArray(d.bring)&&d.bring.length?`please bring ${d.bring.join(", ")}.`:"bring something to share if you like."}`],["Spot open",`A spot just opened up for ${d.pubTitle||d.name}. Know someone? Send them the invite: ${link(d)}`]];
+    const S=sheet({title:"Message guests",sub:ins.length?`To the ${hvPlural(ins.length,"guest")} who ${ins.length===1?"is":"are"} in. They see it on the invite.`:"No one is in yet. Messages show on the invite for guests who join.",body:`
+      <div class="tpl">${T.map(([n],i)=>`<button type="button" data-t="${i}">${E(n)}</button>`).join("")}</div>
+      <label class="f"><span>Message</span><textarea id="hvMsg" rows="4" maxlength="600" placeholder="Write a quick note"></textarea></label>
+      <label class="sw" id="hvSmsL" hidden><span>Also text it<small>To guests who gave a phone number.</small></span><input type="checkbox" id="hvSms"></label>
+      <div class="hv-acts" style="display:flex;flex-wrap:wrap;gap:8px">${mails.length?`<a class="hv-b sm" id="hvMail" href="#">${I.mail}<span>Email instead</span></a>`:""}<button class="hv-b sm" type="button" id="hvMcopy">${I.copy}<span>Copy</span></button></div>
+      <p class="err" id="hvErr" role="alert"></p>`,
+      foot:`<button class="hv-b pri" type="button" id="hvSend" ${ins.length?"":"disabled"}>Send to guests</button>`});
+    const B=S.bg, ta=q("#hvMsg",B); qa("[data-t]",B).forEach(b=>b.onclick=()=>{ ta.value=T[+b.dataset.t][1]; ta.focus(); upd() });
+    const upd=()=>{ const m=q("#hvMail",B); if(m) m.href=`mailto:?bcc=${encodeURIComponent(mails.join(","))}&subject=${encodeURIComponent(d.pubTitle||d.name||"")}&body=${encodeURIComponent(ta.value)}` }; ta.addEventListener("input",upd); upd();
+    fetch("/api/host/chat/"+encodeURIComponent(d.id)).then(r=>r.ok?r.json():null).then(j=>{ if(j?.sms&&(j.phones||[]).length){ const l=q("#hvSmsL",B); if(l) l.hidden=false } }).catch(()=>{});
+    q("#hvMcopy",B).onclick=()=>copyTxt(ta.value||"",{ok:"Copied."});
+    q("#hvSend",B).onclick=async()=>{ const t=ta.value.trim(), b=q("#hvSend",B); if(!t){ q("#hvErr",B).textContent="Write a message first."; ta.focus(); return } b.disabled=true; b.textContent="Sending…";
+      const send=async anyway=>{ const r=await fetch("/api/host/chat/"+encodeURIComponent(d.id),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,pinned:true,sms:!!q("#hvSms",B)?.checked,anyway:!!anyway})}); const j=await r.json().catch(()=>({})); return [r,j] };
+      try{ let [r,j]=await send(); if(r.status===409&&j.code==="quiet_hours"){ if(confirm(j.message)) [r,j]=await send(true); else { b.disabled=false; b.textContent="Send to guests"; return } } if(!r.ok) throw new Error(j.message||"Couldn't send.");
+        S.close(); try{ pipToast(j.texted?`Sent. Texted ${hvPlural(j.texted,"guest")} too.`:"Sent. Guests see it on the invite.","happy") }catch{ toast("Sent.") } }catch(e){ q("#hvErr",B).textContent=e.message; b.disabled=false; b.textContent="Send to guests" } } }
+
+  // --- ask for photos ---
+  async function openPhotos(d){ let K=null; try{ K=typeof knLoad==="function"?await knLoad(d.id,true):null }catch{}
+    const L=K?.group?.link||link(d), mails=people(d).filter(p=>p.state==="in").map(p=>p.email).filter(x=>/@/.test(x));
+    const msg0=`Thank you for coming to ${guestTitle(d)}! Add your photos from the night, and a few words if you like: ${L}`;
+    const P=K?.progress, sub=P&&P.guests&&P.kudos?`${P.kudos} of ${P.guests} guests left kudos so far.`:"Guests add photos and a few words. They land on the invite and in your scrapbook.";
+    const S=sheet({title:"Ask for photos",sub,body:`
+      <label class="f"><span>Message</span><textarea id="hvPm" rows="4">${E(msg0)}</textarea><small>For the group chat. Edit it if you like.</small></label>
+      <div class="apps"><a id="hvPwa" target="_blank" rel="noopener">${(typeof SHARE_ICONS==="object"&&SHARE_ICONS.chat)||""}<span>WhatsApp</span></a><a id="hvPsms">${(typeof SHARE_ICONS==="object"&&SHARE_ICONS.sms)||""}<span>Messages</span></a>${mails.length?`<a id="hvPmail">${I.mail}<span>Email</span></a>`:""}<button type="button" id="hvPme">${I.camera}<span>Add yours</span></button></div>
+      ${typeof knOpen==="function"?`<button type="button" class="linkbtn2" id="hvPone">Nudge guests one by one</button>`:""}`,
+      foot:`<button class="hv-b pri" type="button" id="hvPcopy">${I.copy}<span>Copy message</span></button>`});
+    const B=S.bg, ta=q("#hvPm",B), upd=()=>{ const t=ta.value; q("#hvPwa",B).href=`https://wa.me/?text=${encodeURIComponent(t)}`; q("#hvPsms",B).href=`sms:?&body=${encodeURIComponent(t)}`; const m=q("#hvPmail",B); if(m) m.href=`mailto:?bcc=${encodeURIComponent(mails.join(","))}&subject=${encodeURIComponent("Photos from "+guestTitle(d))}&body=${encodeURIComponent(t)}` };
+    ta.addEventListener("input",upd); upd();
+    q("#hvPcopy",B).onclick=()=>copyTxt(ta.value,{ok:"Copied. Paste it in the group chat."});
+    q("#hvPme",B).onclick=()=>act("addphotos",d);
+    q("#hvPone",B)&&(q("#hvPone",B).onclick=()=>{ S.close(); knOpen(d) }) }
+
+  // --- add someone ---
+  function openAdd(d){ const S=sheet({title:"Add someone",sub:"For people who said yes in person or by text. Nothing is sent to them.",body:`
+      <label class="f">Name<input id="hvAn" autocomplete="off"></label><label class="f">Email or phone<small>Optional. For reminders and the address.</small><input id="hvAc" autocomplete="off"></label>
+      <fieldset><legend>They're</legend>${[["Going","In"],["Invited","Invited, not replied yet"]].map(([k,l],i)=>`<label class="opt"><input type="radio" name="hvAs" value="${k}" ${i?"":"checked"}><b>${l}</b></label>`).join("")}</fieldset>
+      <details class="more"><summary><span>Paste a list</span><small>One person per line</small>${I.down}</summary><div><label class="f"><span class="vh" style="position:absolute;left:-9999px">List</span><textarea id="hvAl" rows="4" placeholder="Sam Lee, sam@example.com"></textarea></label></div></details><p class="err" id="hvErr" role="alert"></p>`,
+      foot:`<button class="hv-b" type="button" id="hvCancel">Cancel</button><button class="hv-b pri" type="button" id="hvSave">Add</button>`});
+    const B=S.bg; q("#hvCancel",B).onclick=S.close;
+    q("#hvSave",B).onclick=async()=>{ const nm=q("#hvAn",B).value.trim().replace(/[<>]/g,"").slice(0,80), ct=q("#hvAc",B).value.trim(), st=q('input[name=hvAs]:checked',B)?.value||"Going", list=q("#hvAl",B).value.trim(); d.guests=d.guests||[]; let n=0;
+      const have=new Set(d.guests.map(g=>String(g.email||g.phone||g.name||"").toLowerCase()));
+      if(nm){ const g={name:nm,status:st,source:"Added by host",addedAt:Date.now()}; if(/@/.test(ct)) g.email=ct; else if(ct) g.phone=ct; d.guests.push(g); n++ }
+      if(list&&typeof parseGuestList==="function"){ let add=[]; try{ add=parseGuestList(list) }catch{} for(const g of add){ const k=String(g.email||g.phone||g.name).toLowerCase(); if(have.has(k)) continue; have.add(k); d.guests.push({name:g.name,email:g.email,phone:g.phone,status:st,source:"Imported",addedAt:Date.now()}); n++ } }
+      if(!n){ q("#hvErr",B).textContent="Add a name first."; return } await saveQ(); S.close(); toast(n===1?`${first(nm)||"They"} ${st==="Going"?"is in":"is on your list"}.`:`Added ${n} people.`); HV.tab="guests"; hvRender() } }
+
+  // --- the look ---
+  function openLook(d){ const S=sheet({title:"The look",sub:"Guests see it on the invite. Changes save as you go.",wide:true,body:`<div id="hvLookBox"></div>`,foot:`<a class="hv-b" href="${E(link(d))}" target="_blank" rel="noopener">${I.eye}<span>See it as a guest</span></a><button class="hv-b pri" type="button" id="hvDone">Done</button>`});
+    q("#hvDone",S.bg).onclick=()=>{ S.close(); hvRender() };
+    const box=q("#hvLookBox",S.bg); if(window.EncoreLooksApp) try{ window.EncoreLooksApp.mount(box,d,()=>saveQ()) }catch(e){ console.warn(e) }
+    else if(typeof coverFieldHTML==="function"){ box.innerHTML=coverFieldHTML(d); try{ wireCoverField(box,d) }catch{} } }
+
+  // --- playlist and dress code ---
+  function addonSheet(kind){ const d=draft, isP=kind==="playlist";
+    const S=sheet({title:isP?"Playlist":"Dress code",sub:isP?"A link guests can open from the invite.":"One line. Guests see it on the invite.",body:`<label class="f">${isP?"Playlist link":"Dress code"}<input id="hvAo" ${isP?'type="url" inputmode="url" placeholder="https://open.spotify.com/…"':'maxlength="80" placeholder="Cosy, something green, come as you are"'} value="${E((isP?d.playlistUrl:d.dress)||"")}"></label><p class="err" id="hvErr" role="alert"></p>`,
+      foot:`<button class="hv-b" type="button" id="hvCancel">Cancel</button><button class="hv-b pri" type="button" id="hvSave">Save</button>`});
+    const B=S.bg; q("#hvCancel",B).onclick=S.close;
+    q("#hvSave",B).onclick=async()=>{ const v=q("#hvAo",B).value.trim(); if(isP){ if(v&&!/^https:\/\//i.test(v)){ q("#hvErr",B).textContent="Links start with https://"; return } d.playlistUrl=v } else d.dress=v.slice(0,80); await saveQ(); S.close(); toast(v?"Added to your invite.":"Removed."); hvRender() } }
+
+  // --- more tools ---
+  function openTools(d){ const T=[
+      ["plan",I.plan,"Plan for the night","The first 30 minutes, how it goes, co-hosts and comfort notes."],
+      ["door",I.door,"Check-in at the door","Tap names as people arrive. Add walk-ins."],
+      ["tables",I.table,"Tables for solo guests","People coming alone answer a few questions. You get suggested tables."],
+      ["slots",I.slots,"Slots and channels","A demo queue, a game poll or a bracket. Posts to Discord or Slack."],
+      ["text",I.sms,"Text the invite","Send it to phone numbers. They reply by text."],
+      ["repeat",I.repeat,"Repeat it",d.repeat?`Repeats ${({weekly:"every week",biweekly:"every two weeks",monthly:"every month"})[d.repeat]||d.repeat}.`:"Every week, two weeks or month."],
+      ["again",I.copy,"Host it again","A copy with a new date. Guests start fresh."],
+      ["list",I.dl,"Guest list file","Names, contacts and replies as a spreadsheet."],
+      ["help",I.help,"Need a hand?","Ask Potto, or talk to a person."],
+      ["classic",I.cog,"Every setting","The full planner, with every option."]];
+    const S=sheet({title:"More tools",body:`<div>${T.map(([k,ic,t,s])=>`<button type="button" class="tool" data-tool="${k}"><span class="ic">${ic}</span><span><b>${t}</b><small>${s}</small></span>${I.chev}</button>`).join("")}</div>`});
+    qa("[data-tool]",S.bg).forEach(b=>b.onclick=()=>{ const k=b.dataset.tool; S.close(); tool(k,d) }) }
+  function tool(k,d){
+    if(k==="door"){ if(typeof openDoor==="function") openDoor(d); return }
+    if(k==="help"){ openHelp(); return }
+    if(k==="again"){ hostAgain(d); return }
+    if(k==="classic"){ window.__hvClassic=true; const h=q("#hv"); if(h) h.hidden=true; step=1; try{ renderStep() }catch{} toast("This is the full planner. Back to the simple view any time from the top."); return }
+    if(k==="list"){ const S=sheet({title:"Guest list file",sub:"Names, contacts, replies, and whether each guest is OK with emails and texts.",body:`<div class="hv-acts" style="display:grid;gap:8px"><a class="hv-b" href="/api/host/roster.csv?series=${encodeURIComponent(d.id)}">${I.dl}<span>This event (CSV)</span></a><a class="hv-b" href="/api/host/roster.json?series=${encodeURIComponent(d.id)}">${I.dl}<span>This event (JSON)</span></a><a class="hv-b" href="/api/host/roster.csv">${I.dl}<span>Everyone you've hosted (CSV)</span></a></div>`}); return }
+    if(k==="repeat"){ const S=sheet({title:"Repeat it",sub:"I'll draft the next one for you to check before anything is sent.",body:`<fieldset>${[["","Just once"],["weekly","Every week"],["biweekly","Every two weeks"],["monthly","Every month"]].map(([v,l])=>`<label class="opt"><input type="radio" name="hvRep" value="${v}" ${(d.repeat||"")===v?"checked":""}><b>${l}</b></label>`).join("")}</fieldset>`,foot:`<button class="hv-b pri" type="button" id="hvSave">Save</button>`});
+      q("#hvSave",S.bg).onclick=async()=>{ d.repeat=q('input[name=hvRep]:checked',S.bg)?.value||""; await saveQ(); S.close(); toast(d.repeat?"Saved. It repeats.":"Saved. Just once."); hvRender() }; return }
+    if(k==="text"){ const S=sheet({title:"Text the invite",sub:"They reply YES, MAYBE or NO. I add them to your list.",body:`<label class="f">Phone numbers<small>One per line.</small><textarea id="hvPh" rows="4" placeholder="+1 555 010 2030"></textarea></label><p class="err" id="hvErr" role="alert"></p>`,foot:`<button class="hv-b pri" type="button" id="hvSave">Text the invite</button>`});
+      q("#hvSave",S.bg).onclick=async()=>{ const phones=q("#hvPh",S.bg).value; if(!phones.trim()){ q("#hvErr",S.bg).textContent="Add a phone number first."; return } if(!(d.published||d.discoverable)){ q("#hvErr",S.bg).textContent="Share the invite first, then text it."; return }
+        try{ const r=await fetch("/api/host/text-invites",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:d.id,phones})}); const j=await r.json(); if(!r.ok) throw new Error(j.message||"Couldn't send.");
+          if(j.texting) toast(`Texted ${j.sent} of ${j.total}. Replies show up in Guests.`); else { try{ await navigator.clipboard.writeText(j.text) }catch{} toast("Texting isn't on yet, so the invite is copied. Paste it into your messages.") } S.close() }catch(e){ q("#hvErr",S.bg).textContent=e.message } }; return }
+    if(k==="plan"){ const TS=window.TablesStudio; if(!TS){ toast("That isn't ready yet. Try again in a moment."); return } const S=sheet({title:"Plan for the night",sub:"Guests see it on the invite. Changes save as you go.",body:`<div id="hvPlanBox">${TS.editHTML(d)}</div>`,foot:`<button class="hv-b pri" type="button" id="hvDone">Done</button>`});
+      const el=q("#hvPlanBox > details",S.bg); if(el){ el.open=true; TS.wireEdit(el,d) } q("#hvDone",S.bg).onclick=()=>{ S.close(); hvRender() }; return }
+    if(k==="tables"){ const TS=window.TablesStudio; if(!TS){ toast("That isn't ready yet. Try again in a moment."); return } const S=sheet({title:"Tables for solo guests",sub:"Turn on Open table in Plan for the night. Suggested tables show here as people reply.",body:`<div id="hvTbBox"><p class="note">Loading…</p></div>`}); TS.hostPanel(q("#hvTbBox",S.bg)); return }
+    if(k==="slots"){ if(!window.Slots){ toast("That isn't ready yet. Try again in a moment."); return } const S=sheet({title:"Slots and channels",sub:"Changes save as you go.",body:`<div id="hvSlBox"></div>`,foot:`<button class="hv-b pri" type="button" id="hvDone">Done</button>`});
+      let t=0; const el=window.Slots.hostPanel(d,{save:()=>{ clearTimeout(t); t=setTimeout(()=>saveQ(),700) }}); el.open=true; q("#hvSlBox",S.bg).append(el); q("#hvDone",S.bg).onclick=()=>{ S.close(); hvRender() }; return } }
+  function hostAgain(d){ if(typeof cloneForReuse!=="function") return; const base=s=>String(s||"").replace(/ \((copy|[A-Z][a-z]{2} \d{1,2})\)$/,"");
+    draft=hydrate(cloneForReuse(d,{name:base(d.name||"Event"),...(d.pubTitle?{pubTitle:base(d.pubTitle)}:{})})); draft.guests=[]; draft.casual=true; draft.published=false; draft.discoverable=false; draft.date=(typeof nextRealDate==="function"&&d.repeat&&nextRealDate(d))||""; step=1; HV.tab="overview";
+    saveQ().then(()=>{ hvRender(); openDetails("create"); toast("A fresh copy. Pick the new date.") }) }
+
+  // ================= milestones: Potto and a little confetti, once each =================
+  function milestones(d,c,stage){ try{ const k=(m)=>"hv-ms-"+m+"-"+d.id, once=m=>{ if(sessionStorage.getItem(k(m))||localStorage.getItem(k(m))) return false; localStorage.setItem(k(m),"1"); return true };
+      if(c.full&&stage==="live"&&once("full")){ burst?.(); pipSound?.("squeal") }
+      else if(c.in===1&&stage==="live"&&once("first")){ burst?.() } }catch{} }
+
+  // ================= hooks =================
+  // renderStep: friends events draw here and stop; work events (and Every setting) go on to the old planner
+  const _rsHv=renderStep; renderStep=function(){ const h=q("#hv");
+    if(!want()){ if(h) h.hidden=true; return _rsHv.apply(this,arguments) }
+    if(h) h.hidden=false; try{ hvRender() }catch(e){ console.warn("[event page]",e); window.__hvClassic=true; if(h) h.hidden=true; return _rsHv.apply(this,arguments) } };
+  // Potto's "Honest take" toast after a new draft would sit on top of the review sheet: the sheet says it instead
+  if(typeof pipToast==="function"){ const _ptHv=pipToast; pipToast=function(){ if((window.__hvQuiet||0)>Date.now()&&want()) return; return _ptHv.apply(this,arguments) }; window.pipToast=pipToast }
+  // the create flow: openWizard(1) asks what the plan is; 2 to 5 open the review sheet (5 is "ready to share")
+  if(typeof openWizard==="function"){ const _owHv=openWizard; openWizard=function(at=1,seed=""){ if(window.__hvClassic||!(window.__wsPersonal||isCasual(draft))) return _owHv.apply(this,arguments); document.getElementById("wizBg")?.remove(); window.__hvQuiet=Date.now()+1500;
+      try{ sessionStorage.removeItem(WIZ_KEY) }catch{} if(+at<=1||!draft||draft.example) return openCreate(seed); return openDetails(+at>=5?"share":(draft.published||draft.discoverable)?"edit":"create") }; window.openWizard=openWizard }
+  // the planner's "Every setting" has a way back
+  new MutationObserver(()=>{ if(!window.__hvClassic||q("#hvBackBar")) return; const v=q("#view-studio"); if(!v||v.hidden) return; const b=document.createElement("button"); b.id="hvBackBar"; b.type="button"; b.className="hv-b"; b.style.cssText="display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:0 0 12px;padding:0 16px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;font:600 15px 'Instrument Sans',system-ui;cursor:pointer"; b.textContent="Back to the simple view"; b.onclick=()=>{ window.__hvClassic=false; b.remove(); renderStep() }; v.prepend(b) }).observe(document.documentElement,{childList:true,subtree:true});
+  // new replies, payments and check-ins show without a reload (no redraw while a sheet is open or someone types)
+  setInterval(()=>{ try{ const h=q("#hv"); if(!h||h.hidden||q("#view-studio")?.hidden||!want()||q("#hvSheet")||isTyping()) return; if(sigOf(draft)!==HV.sig) hvRender() }catch{} },1500);
+  window.HostEvent={ render:hvRender, openCreate, openDetails, openShare, openRules, openMessage, openPhotos, openTools };
+})();
+</script>
+<!-- ==================== end host event page ==================== -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----

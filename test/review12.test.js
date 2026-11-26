@@ -64,15 +64,16 @@ test("quiet controls: no offset sticker shadows or tilts on buttons, chips and b
   assert.ok(!read("public/looks-app.js").includes("🎲 Surprise me"));
 });
 
-test("share sheet: Discord and Slack get Markdown, Signal plain words, Copy as Markdown, and the story on its own row", () => {
+test("share sheet: Discord and Slack get Markdown, Signal plain words, no Copy as Markdown, and the story on its own row", () => {
   const code = html.match(/\/\/ the invite as each app likes it[\s\S]*?\nconst SHARE_COPY=[^\n]*/)[0];
   const ctx = { fmtDate: (d) => "Sat, Dec 6", clock12: () => "2pm", sharePlace: (d) => d.meetPoint, priceTxt: (d) => (d.price ? d.price + " a person" : ""), inviteLink: (d) => "https://x.test/e/" + d.id, inviteText: (d) => `${d.pubTitle}, Sat, Dec 6. Are you in? https://x.test/e/${d.id}`, shareLinks: () => ({ url: "" }) };
   vm.runInNewContext(code + ";this.F=shareFormats;this.C=SHARE_COPY", ctx);
   const F = ctx.F({ id: "ev1", pubTitle: "Open table board games", date: "2026-12-06", startTime: "14:00", meetPoint: "Brooklyn Strategist", price: "$5" });
   assert.equal(F.discord, "**Open table board games**\nSat, Dec 6 · 2pm · Brooklyn Strategist · $5 a person\nAre you in? https://x.test/e/ev1");
   assert.equal(F.slack, "*Open table board games*\nSat, Dec 6 · 2pm · Brooklyn Strategist · $5 a person\nAre you in? https://x.test/e/ev1");
-  assert.ok(!/\*/.test(F.signal)); assert.match(F.md, /^\*\*\[Open table board games\]\(https:\/\/x\.test\/e\/ev1\)\*\*\n\n- When: Sat, Dec 6 · 2pm\n- Where: Brooklyn Strategist\n- Price: \$5 a person\n/);
-  assert.deepEqual(Object.keys(ctx.C), ["discord", "slack", "signal", "md"]); assert.equal(ctx.C.md[0], "Copy as Markdown");
+  assert.ok(!/\*/.test(F.signal));
+  // event flow redesign: the owner found "Copy as Markdown" unnecessary, so the share sheet has Discord, Slack and Signal
+  assert.equal(F.md, undefined); assert.deepEqual(Object.keys(ctx.C), ["discord", "slack", "signal"]);
   assert.match(html, /b\.className="btn sm ig-btn ig-row"; b\.innerHTML=`\$\{SHARE_ICONS\.story\}<span>Instagram story<\/span>`/); assert.match(html, /row\.after\(b\) \} \}/);
 });
 

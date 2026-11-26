@@ -218,3 +218,17 @@ test("round 9: the model can't invent a price, a repeat, an end time, a monthly 
   // no promises the host didn't make
   assert.equal(clean("Supper club Sat 7pm, $45", { description: "Refunds guaranteed by Pottery Lab. Wine pairing included." }).description, undefined);
 });
+
+test("event flow redesign: no invented time or date. \"Dumpling\" never becomes today at 4:16am", () => {
+  // the owner's draft read "Fri 27 Nov · 4:16am" and nobody typed that: the model filled the blanks with right now
+  const m = merge("Dumpling", ans({ title: "Dumpling", date: TODAY, startTime: "04:16" }));
+  assert.equal(m.M.startTime, undefined, "no time typed, no time"); assert.equal(m.M.date, undefined, "no day typed, no date");
+  assert.ok(m.drop.includes("startTime") && m.drop.includes("date"));
+  assert.equal(merge("Dumpling night", ans({ startTime: "19:00" })).M.startTime, undefined, "a guessed dinner time isn't the host's");
+  // what the host did type still reads
+  const k = merge("Dumpling night Saturday 7pm", ans({ title: "Dumpling night", date: "2026-11-28", startTime: "19:00" }));
+  assert.equal(k.M.startTime, "19:00"); assert.equal(k.M.date, "2026-11-28");
+  assert.equal(merge("Picnic tomorrow at noon", ans({ date: "2026-11-26", startTime: "12:00" })).M.startTime, "12:00");
+  // and the review sheet picks the time from a list (a native time field on iPhone fills in the clock time when tapped)
+  assert.match(html, /<select id="hvTime"><option value="">Pick a time<\/option>/);
+});

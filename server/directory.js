@@ -15,6 +15,8 @@
 import { scopeStore, getWorkspace, allWorkspaceIds } from "./workspaces.js";
 import { KUDOS_TAGS, VERIFIED_LABEL, withVerified } from "./social.js";
 import { guessFormat, cleanLogos, isTalk, TALK_FORMATS, httpsLink, audienceOf } from "./scrapbook.js";
+import { categoryOf as bookCategoryOf, CATEGORIES as BOOK_CATEGORIES } from "./market.js";
+import { perPerson, isFlat } from "./search.js";
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
 const PER_HOUR = () => Math.max(1, +process.env.ENCORE_DIRECTORY_PER_HOUR || 600);
@@ -30,16 +32,20 @@ const ID_OK = /^[A-Za-z0-9_-]{1,120}$/, HANDLE = /^[a-z0-9][a-z0-9-]{1,29}$/;
 const FORMAT_WORDS = [["run", /\b(run|runs|running|5k|10k|jog|marathon)\b/], ["hike", /\b(hike|hiking|trail)\b/], ["dinner", /\b(dinner|supper|omakase|potluck)\b/], ["brunch", /\b(brunch|breakfast)\b/],
   ["workshop", /\b(workshop|masterclass|hands-on|wheel|throwing)\b/], ["class", /\b(class|classes|lessons?)\b/], ["pop-up", /\bpop[- ]?ups?\b|bake sale/], ["coffee", /\b(coffee|matcha|cafe|café)\b/], ["picnic", /\bpicnic\b/],
   ["game night", /game night|board game|trivia/], ["book club", /book club/], ["drinks", /happy hour|\bdrinks\b|\bwine\b|cocktail/], ["movement", /\b(movement|stretch)\b/],
-  ["party", /\b(party|celebration|disco)\b/], ["summit", /\bsummit\b/], ["conference", /\bconference\b/], ["panel", /\bpanel\b|fireside/], ["meetup", /meetup|meet-up/], ["online", /\b(webinar|virtual|online|zoom)\b/],
+  ["party", /\b(party|parties|celebration|disco)\b/], ["social", /\b(social|socials|mixer|mixers)\b/], ["summit", /\bsummit\b/], ["conference", /\bconference\b/], ["panel", /\bpanel\b|fireside/], ["meetup", /meetup|meet-up/], ["online", /\b(webinar|virtual|online|zoom)\b/],
   ["tour", /\btour\b/], ["launch", /\blaunch\b/], ["offsite", /offsite|retreat/]];
 // a class: dance, salsa, bachata, improv, yoga, pilates, a language or music lessons. Not a workshop (one-off, hands-on).
 // A language or an instrument only counts with a class word ("Spanish class", "guitar lessons"; not "French bistro night").
 const CLASS_RE = /\b(dance|dancing|salsa|bachata|tango|swing dance|ballet|hip[- ]hop|zumba|improv|yoga|pilates|barre)\b/, LESSON_RE = /\b(language|spanish|french|italian|japanese|mandarin|korean|german|music|guitar|piano|violin|singing|voice|drum|drums)\b/, CLASSY = /\b(class|classes|lessons?|course|exchange|conversation)\b/;
 const CLASS_WORDS = { test: (t) => CLASS_RE.test(t) || (LESSON_RE.test(t) && CLASSY.test(t)) };
+const SOCIAL_RE = /\b(social|socials|mixer|mixers|party|parties)\b/;
 export function formatOf({ activity = "", title = "", tags = [], format = "", about = "", place = "" } = {}) {
   if (format) return s(format, 24).toLowerCase();
   // a course or class the app filed under "workshop" (or "movement") is a class when its words say so
   { const a = String(activity).toLowerCase(), byAct = FORMAT_WORDS.find(([, re]) => a && re.test(a))?.[0] || "";
+    // ...but a dance social, party or mixer is a night out, not a class ("Bachata social"), unless it says class too
+    const said = `${title} ${(tags || []).join(" ")}`.toLowerCase();
+    if ((!byAct || ["workshop", "class", "movement", "party", "social"].includes(byAct)) && SOCIAL_RE.test(said) && !CLASSY.test(said)) return /\bpart(y|ies)\b/.test(said) ? "party" : "social";
     if ((!byAct || ["workshop", "class", "movement"].includes(byAct)) && CLASS_WORDS.test(`${activity} ${title} ${(tags || []).join(" ")}`.toLowerCase())) return "class"; }
   for (const t of [String(activity).toLowerCase(), `${activity} ${title} ${(tags || []).join(" ")}`.toLowerCase()]) for (const [f, re] of FORMAT_WORDS) if (t && re.test(t)) return f;
   return guessFormat({ title, about, place }) || "other";
@@ -52,13 +58,15 @@ const SR_DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
 const srDate = (v) => { const x = new Date(String(v || "") + "T12:00:00"); return isNaN(x) ? null : x; }, srMD = (x) => `${SR_MON[x.getMonth()]} ${x.getDate()}`;
 const srNth = (x) => { const n = Math.ceil(x.getDate() / 7), last = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 7, 12).getMonth() !== x.getMonth() && n >= 4; return last ? -1 : n; };
 const srRep = (e) => e.repeat || (+e.sessions > 1 ? "weekly" : "");
-const srEvery = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const day = SR_DAY[x.getDay()].slice(0, 3); if (r === "monthly") { const k = srNth(x), w = k < 0 ? "Last" : ["First", "Second", "Third", "Fourth"][k - 1]; return `${w} ${day} of each month`; } return r === "biweekly" ? `Every other ${day}` : r === "weekly" ? `Every ${day}` : ""; };
+const srDays = (e) => [...new Set((Array.isArray(e.weekdays) ? e.weekdays : []).map((w) => SR_DAY.findIndex((d) => d.toLowerCase() === String(w).toLowerCase())).filter((i) => i >= 0))];
+const srEvery = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const day = SR_DAY[x.getDay()].slice(0, 3); if (r === "weekly" && srDays(e).length > 1) return `Every ${srDays(e).map((i) => SR_DAY[i].slice(0, 3)).join(" and ")}`; if (r === "monthly") { const k = srNth(x), w = k < 0 ? "Last" : ["First", "Second", "Third", "Fourth"][k - 1]; return `${w} ${day} of each month`; } return r === "biweekly" ? `Every other ${day}` : r === "weekly" ? `Every ${day}` : ""; };
 const srLast = (e) => { const x = srDate(e.date), n = +e.sessions || 0; if (!x || n < 2) return null; const y = new Date(x); y.setDate(y.getDate() + (n - 1) * (e.repeat === "biweekly" ? 14 : 7)); return y; };
 const srSpan = (e) => { const x = srDate(e.date), y = srLast(e); return x && y ? `${+e.sessions} ${SR_DAY[x.getDay()]}s, ${srMD(x)} to ${srMD(y)}` : ""; };
 const srWhen = (e) => { const head = srSpan(e) || srEvery(e); if (!head) return ""; const st = clockOr(e.startTime), en = st && e.endTime !== e.startTime ? clockOr(e.endTime) : ""; return [head, st && (en ? `${st} to ${en}` : st)].filter(Boolean).join(" · "); };
 const srAmt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : ""; };
 const srPrice = (e) => { const p = e.price && e.price !== "chip" ? srAmt(e.price) : "", n = +e.sessions || 0, pp = +e.passPrice || 0, pc = +e.passCount || 0;
-  if (n > 1 && p) return `${p} for all ${n}`; if (pp && pc > 1) return p ? `${p} a class, or ${srAmt(pp)} for ${pc}` : `${srAmt(pp)} for ${pc} classes`; return ""; };
+  // a pass and sessions together: the pass is the bundle ("$20 a class, or $100 for all 6"), never "$20 for all 6" beside it
+  if (pp && pc > 1) { const of = n > 1 && pc === n ? `all ${n}` : ""; return p ? `${p} a class, or ${srAmt(pp)} for ${of || pc}` : `${srAmt(pp)} for ${of || pc + " classes"}`; } if (p && e.priceUnit === "class") return `${p} a class`; if (n > 1 && p) return +e.dropIn > 0 ? `${p} for all ${n}, or ${srAmt(e.dropIn)} a class` : `${p} for all ${n}`; return ""; };
 // invite.html's clock: "7pm", "7:30am"; "" for anything that isn't HH:MM
 const clockOr = (t) => (/^\d{2}:\d{2}$/.test(t || "") ? clock(t) : "");
 const ymd = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
@@ -74,12 +82,14 @@ export function priceOf(c) {
   const p = String(c.price ?? "").trim();
   // a course or a class pass says what it costs in its own words (a pass with no drop-in price too: "$70 for 4 classes")
   if (c.free !== true && p !== "chip") { const sp = srPrice({ ...c, price: /^(free|0|\$0)$/i.test(p) ? "" : c.price, sessions: sessionsOf(c) || 0 }); if (sp) return sp; }
-  if (c.free === true || !p || /^(free|0|\$0)$/i.test(p)) return "Free";
+  if (c.free === true || /^(free|0|\$0)$/i.test(p)) return "Free";
+  // no price written down isn't "Free": say nothing (null) rather than promise it
+  if (!p) return null;
   if (p === "chip") return "Pay what you like";
   // a pre-order or a pop-up priced by the item
   if ((c.preorder || /^(each|item)$/i.test(String(c.priceUnit || ""))) && /^\$?\d/.test(p) && !/a person|per |at the door/i.test(p)) return /\beach\b/i.test(p) ? s(p.startsWith("$") ? p : "$" + p, 40) : `${srAmt(p)} each`;
   if (/^\$?\d/.test(p)) { const amt = p.startsWith("$") ? p : "$" + p; return /a person|each|per |at the door/i.test(amt) ? s(amt, 40) : `${s(amt, 30)} a person`; }
-  return /^quoted$/i.test(p) ? "" : s(p, 40);
+  return /^quoted$/i.test(p) ? null : s(p, 40) || null;
 }
 // "Chelsea, New York" -> area Chelsea, city New York; "Napa Valley, CA" -> city "Napa Valley, CA"
 // A country on its own is never a city: "Sydney, Australia" -> city Sydney; "USA" -> nothing.
@@ -129,14 +139,45 @@ const SYN = { dance: ["dance", "dancing", "salsa", "bachata", "tango", "swing", 
 const stem = (w) => (w.length > 4 && /ies$/.test(w) ? w.slice(0, -3) + "y" : w.length > 4 && /(ches|shes|sses|xes)$/.test(w) ? w.slice(0, -2) : w.length > 3 && /[^s]s$/.test(w) ? w.slice(0, -1) : w);
 const toks = (t) => String(t || "").toLowerCase().split(/[^a-z0-9\u00c0-\u024f]+/).filter(Boolean);
 export const queryWords = (q) => [...new Set(toks(s(q, 120)).filter((w) => !STOP.has(w)).map(stem))].slice(0, 12);
+// ---- dates in the words: "tonight", "tomorrow", "this weekend", "next weekend", "this week" ----
+// They become from/to (in the event city's time zone when we know it, else ENCORE_TZ) and drop out of the words.
+// A weekend is Friday to Sunday; "next weekend" is the one after this one; "this week" runs to Sunday.
+const DATE_RE = /\b(tonight|today|tomorrow|this\s+weekend|next\s+weekend|this\s+week)\b/i;
+const CITY_TZ = [[/new york|brooklyn|queens|manhattan|bronx|staten island|jersey city|hoboken|boston|philadelphia|washington|miami|atlanta|toronto|montreal|detroit/i, "America/New_York"],
+  [/chicago|austin|houston|dallas|san antonio|minneapolis|nashville|new orleans/i, "America/Chicago"], [/phoenix|tucson/i, "America/Phoenix"], [/denver|boulder|salt lake/i, "America/Denver"],
+  [/san francisco|oakland|berkeley|san jose|palo alto|los angeles|santa monica|san diego|seattle|portland|vancouver|napa|sacramento/i, "America/Los_Angeles"],
+  [/london/i, "Europe/London"], [/sydney/i, "Australia/Sydney"], [/melbourne/i, "Australia/Melbourne"]];
+const tzOk = (tz) => { if (!tz) return false; try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
+export const tzOfCity = (place) => { const t = String(place || ""); return CITY_TZ.find(([re]) => re.test(t))?.[1] || ""; };
+/** The date phrase in a query and the query without it. */
+export function datePhrase(q) { const m = String(q || "").match(DATE_RE); return m ? { phrase: m[1].toLowerCase().replace(/\s+/g, " "), rest: String(q).replace(DATE_RE, " ").replace(/\s+/g, " ").trim() } : { phrase: "", rest: String(q || "") }; }
+/** from/to (YYYY-MM-DD) for a date phrase, in a time zone ("" = ENCORE_TZ, else the server's). */
+export function dateRange(phrase, tz = "", now = Date.now()) {
+  const zone = tzOk(tz) ? tz : tzOk(process.env.ENCORE_TZ) ? process.env.ENCORE_TZ : undefined;
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
+  const d0 = Date.parse(day + "T12:00:00Z"), dow = new Date(d0).getUTCDay(), add = (n) => new Date(d0 + n * 864e5).toISOString().slice(0, 10);
+  const fri = dow === 0 ? -2 : dow === 6 ? -1 : 5 - dow; // this weekend's Friday (today or before, once it has started)
+  switch (phrase) {
+    case "tonight": case "today": return { from: day, to: day };
+    case "tomorrow": return { from: add(1), to: add(1) };
+    case "this week": return { from: day, to: add((7 - dow) % 7) };
+    case "this weekend": return { from: add(Math.max(0, fri)), to: add(fri + 2) };
+    case "next weekend": return { from: add(fri + 7), to: add(fri + 9) };
+    default: return null; } }
 function matchScore(e, words) {
   const F = [[3, [e.title]], [2, [...e.tags, e.format, e.host.name, e.host.handle, e.area]], [1, [e.city, ...e.companies, e.speaking?.topic || "", e.speaking?.organizer || ""]]].map(([w, L]) => [w, toks(L.join(" "))]);
   const hit = words.map((q) => { const alts = SYN[q] || [q]; let best = 0; for (const [wt, T] of F) if (wt > best && T.some((t) => alts.some((a) => t.startsWith(a)))) best = wt; return best; });
   return { n: hit.filter(Boolean).length, hit }; }
 // ---- end search ----
 
-export function makeDirectory({ store, C, SB }) {
+export function makeDirectory({ store, C, SB, LB = () => null }) {
   let cache = null;
+  // typical first reply to a brand request: the median time to the host's first message, quote or answer
+  function respondsIn(ws) { const T = [];
+    for (const d of scopeStore(store, ws).list("inquiries")) { const r = d.data; if (!r?.at) continue; const hostAt = [...(r.thread || []), ...(r.history || [])].filter((m) => m?.by === "host" && +m.at > r.at).map((m) => +m.at);
+      if (hostAt.length) T.push(Math.min(...hostAt) - r.at); }
+    if (!T.length) return null; T.sort((a, b) => a - b); const h = T[Math.floor((T.length - 1) / 2)] / 3600e3;
+    return { hours: Math.round(h * 10) / 10, text: h <= 1 ? "within an hour" : h <= 24 ? `within ${Math.ceil(h)} hours` : `within ${Math.ceil(h / 24)} days` }; }
   function build(base) {
     const now = today(), hideDemo = process.env.ENCORE_HIDE_DEMO === "1";
     const D = C.discover({ all: true });
@@ -168,7 +209,7 @@ export function makeDirectory({ store, C, SB }) {
       repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when,
       host: hostRef(H.h), url: `${base}/e/${encodeURIComponent(c.id)}`, source: "hosted", speaking: null, original_link: "", companies: [], cover: abs(c.coverPhoto), example: !!(c.sample || H.sample),
       // a class that repeats keeps its id, so guests' kudos from earlier sessions belong to the upcoming one too
-      reviews: reviewsFor(H, c.id), _start: c.startTime || "", _raw: { price: c.price, free: c.free } }; };
+      reviews: reviewsFor(H, c.id), _start: c.startTime || "", _raw: { price: c.price, free: c.free }, _tz: tzOk(c.tz) ? c.tz : tzOfCity(`${c.city || ""} ${c.hood || ""} ${H.h.city || ""}`) }; };
 
     // upcoming: Discover's list, as is
     for (const c of D.events) { const H = hosts.get(c.host?.handle); if (!H || !ID_OK.test(String(c.id)) || c.private || c.unlisted) continue; if ((c.date || "9999") < now) continue; events.push(fromCard(c, H, "upcoming")); }
@@ -190,11 +231,20 @@ export function makeDirectory({ store, C, SB }) {
     // per-host numbers and reviews
     const byHost = new Map(); for (const e of events) { if (!byHost.has(e.host.handle)) byHost.set(e.host.handle, []); byHost.get(e.host.handle).push(e); }
     const listed = new Set(D.hosts.map((h) => h.handle)), titles = new Map(events.map((e) => [e.id, e]));
+    let ranks = new Map(); try { ranks = LB()?.bestRanks?.() || new Map(); } catch {}
     const reviews = [];
     for (const [handle, H] of hosts) { const L = byHost.get(handle) || [];
-      if (!L.length && !listed.has(handle)) { hosts.delete(handle); continue; }
+      if (!L.length && !listed.has(handle) && !(H.h.forHire && !H.sample && !H.showcase)) { hosts.delete(handle); continue; } // hosts open to paid work stay findable (find_hosts)
       H.rec.upcoming_count = L.filter((e) => e.status === "upcoming").length; H.rec.past_count = L.filter((e) => e.status === "past").length;
       H.rec.formats = [...new Set(L.map((e) => e.format).filter((f) => f && f !== "other"))].slice(0, 8);
+      // for brands and agents: open to paid work, group size, how fast they reply, best board, talk topics
+      const X0 = (H.h.experiences || []).filter((x) => x && x.name), mins = X0.map((x) => Math.max(1, +x.min || 1)), maxs = X0.map((x) => +x.max || 0).filter((n) => n > 0);
+      H.rec.for_hire = !H.sample && !H.showcase && !!H.h.forHire;
+      H.rec.group_size = X0.length ? { min: Math.min(...mins), max: maxs.length ? Math.max(...maxs) : null } : null;
+      const RI = H.ws && !H.sample ? respondsIn(H.ws) : null; H.rec.responds_in = RI?.text || null; H.rec.responds_in_hours = RI?.hours ?? null;
+      H.rec.leaderboard = ranks.get(handle) || null;
+      H.rec.speaking_topics = [...new Set(L.filter((e) => e.speaking?.topic).map((e) => e.speaking.topic))].slice(0, 8);
+      H.packages = X0.map((x) => ({ id: s(x.id, 40), name: s(x.name, 80), price: s(x.price, 60), min: Math.max(1, +x.min || 1), max: +x.max || null, category: bookCategoryOf(x), per_person: perPerson(x.price) || null, flat: isFlat(x.price), _x: x }));
       const R = reviewsFor(H, null); H.rec.reviews = { count: R.count, would_go_again_pct: R.would_go_again_pct, top_tags: R.top_tags }; H.reviewItems = R.items;
       if (H.ws && !H.kudosOff) for (const k of (kudosOf.get(H.ws) || []).filter((k) => k.love || (k.tags || []).length)) { const ev = titles.get(k.eventId);
         reviews.push({ ...reviewItem(k), event: ev && ev.host.handle === handle ? { id: ev.id, title: ev.title, url: ev.url } : null, host: hostRef(H.h), example: !!H.sample, _at: k.at || 0 }); } }
@@ -204,17 +254,24 @@ export function makeDirectory({ store, C, SB }) {
   const data = (base) => { if (!cache || cache.base !== base || Date.now() - cache.at > TTL()) cache = { ...build(base), base }; return cache; };
 
   // ---- queries ----
-  const strip = (e, { items = 10 } = {}) => { const { _start, _dup, _raw, ...o } = e; return { ...o, reviews: { ...e.reviews, items: items == null ? e.reviews.items : e.reviews.items.slice(0, items) } }; };
+  const strip = (e, { items = 10 } = {}) => { const { _start, _dup, _raw, _tz, ...o } = e; return { ...o, reviews: { ...e.reviews, items: items == null ? e.reviews.items : e.reviews.items.slice(0, items) } }; };
   const truthy = (v) => /^(1|true|yes)$/i.test(String(v ?? ""));
   const encodeCursor = (n) => Buffer.from("o:" + n).toString("base64url");
   const decodeCursor = (c) => { try { const m = Buffer.from(String(c || ""), "base64url").toString().match(/^o:(\d{1,7})$/); return m ? +m[1] : 0; } catch { return 0; } };
   const limitOf = (v, d = 20) => Math.max(1, Math.min(MAX_LIMIT, Math.round(+v || d)));
   function filterEvents(base, q = {}) {
-    const D = data(base), status = ["upcoming", "past", "all"].includes(q.status) ? q.status : "upcoming", words = queryWords(q.q);
-    const city = s(q.city, 60).toLowerCase(), format = s(q.format, 24).toLowerCase(), type = s(q.type, 24).toLowerCase(), host = s(q.host, 30).toLowerCase().replace(/^@/, ""), ex = truthy(q.include_examples);
-    const from = /^\d{4}-\d{2}-\d{2}$/.test(q.from || "") ? q.from : "", to = /^\d{4}-\d{2}-\d{2}$/.test(q.to || "") ? q.to : "";
+    const D = data(base), format = s(q.format, 24).toLowerCase(), type = s(q.type, 24).toLowerCase();
+    // talks are mostly in the past (scrapbooks), so a speaking search looks at all of them unless it says otherwise
+    const talky = type === "speaking" || format === "talk" || format === "speaking" || TALK_FORMATS.includes(format);
+    const status = ["upcoming", "past", "all"].includes(q.status) ? q.status : talky ? "all" : "upcoming";
+    const DP = datePhrase(s(q.q, 120)), words = queryWords(DP.rest);
+    const city = s(q.city, 60).toLowerCase(), host = s(q.host, 30).toLowerCase().replace(/^@/, ""), ex = truthy(q.include_examples);
+    const from0 = /^\d{4}-\d{2}-\d{2}$/.test(q.from || "") ? q.from : "", to0 = /^\d{4}-\d{2}-\d{2}$/.test(q.to || "") ? q.to : "";
+    // "this weekend" in the words: each event's own dates, in its city's time zone (explicit from/to win)
+    const byTz = new Map(), rangeOf = (e) => { if (!DP.phrase || from0 || to0) return { from: from0, to: to0 }; const tz = e._tz || ""; if (!byTz.has(tz)) byTz.set(tz, dateRange(DP.phrase, tz) || { from: "", to: "" }); return byTz.get(tz); };
+    const inRange = (e) => { const { from, to } = rangeOf(e); return (!from || (e.start && e.start >= from)) && (!to || (e.start && e.start <= to)); };
     const L = D.events.filter((e) => (!e._dup || host) && (status === "all" || e.status === status) && (ex || !e.example) && (!city || `${e.city} ${e.area}`.toLowerCase().includes(city)) && (!format || (format === "talk" || format === "speaking" ? !!e.speaking : e.format === format)) && (type !== "speaking" || !!e.speaking) && (!host || e.host.handle === host)
-      && (!from || (e.start && e.start >= from)) && (!to || (e.start && e.start <= to))
+      && inRange(e)
     );
     const up = L.filter((e) => e.status === "upcoming").sort((a, b) => String(a.start || "9").localeCompare(String(b.start || "9")) || a._start.localeCompare(b._start));
     const past = L.filter((e) => e.status === "past").sort((a, b) => String(b.start || "0").localeCompare(String(a.start || "0")));
@@ -258,7 +315,7 @@ export function makeDirectory({ store, C, SB }) {
     const amt = chip ? 0 : +(String(raw.price ?? "").match(/(\d+(?:\.\d{1,2})?)/)?.[1] || 0), offer = (price, name) => ({ "@type": "Offer", price, priceCurrency: "USD", url: e.url, ...(name ? { name } : {}) });
     const sched = x && !isNaN(x) ? { "@type": "Schedule", startDate: e.start, ...(e.ends ? { endDate: e.ends } : {}), repeatFrequency: e.repeat === "monthly" ? "P1M" : e.repeat === "biweekly" ? "P2W" : "P1W", ...(e.sessions ? { repeatCount: e.sessions } : {}),
       byDay: "https://schema.org/" + DAYS[x.getDay()], ...(e.repeat === "monthly" ? { byMonthWeek: srNth(x) } : {}), ...(hhmm ? { startTime: hhmm } : {}) } : null;
-    const offers = e.sessions ? (amt ? [offer(amt, `All ${e.sessions} sessions`)] : []) : [...(amt ? [offer(amt, "One class")] : []), ...(e.pass ? [offer(+e.pass.price.slice(1), `${e.pass.count}-class pass`)] : [])];
+    const offers = e.sessions && !e.pass ? (amt ? [offer(amt, `All ${e.sessions} sessions`)] : []) : [...(amt ? [offer(amt, "One class")] : []), ...(e.pass ? [offer(+e.pass.price.slice(1), `${e.pass.count}-class pass`)] : [])];
     return { ...(sched ? { eventSchedule: sched } : {}), ...(e.ends ? { endDate: e.ends } : {}), ...(e.price === "Free" ? { isAccessibleForFree: true } : {}), ...(offers.length ? { offers: offers.length === 1 ? offers[0] : offers } : e.price === "Free" ? { offers: offer(0) } : {}) }; }
   function jsonLd(base) { return filterEvents(base, { status: "upcoming" }).slice(0, 100).map((e) => { const m = String(e._start).match(/^(\d{1,2}):(\d{2})$/), amt = String(e.price || "").match(/^\$(\d+(?:\.\d{1,2})?) (?:a person|each)$/), hhmm = m ? `${m[1].padStart(2, "0")}:${m[2]}` : "";
     return { "@context": "https://schema.org", "@type": "Event", name: e.title, startDate: e.start ? e.start + (hhmm ? "T" + hhmm : "") : undefined, eventStatus: "https://schema.org/EventScheduled", eventAttendanceMode: e.format === "online" ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
@@ -275,27 +332,56 @@ export function makeDirectory({ store, C, SB }) {
     return L.map((e) => ({ e, n: score(e) })).filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || String(a.e.start).localeCompare(String(b.e.start))).slice(0, limit)
       .map(({ e }) => ({ id: e.id, title: e.title, start: e.start, time: e.time, city: e.city, area: e.area, format: e.format, price: e.price, host: e.host, url: e.url, cover: e.cover })); }
   // ---- end "More like this" ----
-  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar };
+  // ---- find_hosts: hosts open to paid work for a city, kind of event, group size, date and budget ----
+  // category: a booking category (food, dining, movement, workshop, drinks, culture), or any word their formats, tags
+  // or packages use. A host with no priced package still shows (after those with one), with "quoted on request".
+  function findHosts(base, q = {}) {
+    const D = data(base), city = s(q.city, 60).toLowerCase(), cat = s(q.category, 40).toLowerCase(), n = Math.max(0, Math.min(5000, Math.round(+q.group_size || 0))), date = /^\d{4}-\d{2}-\d{2}$/.test(q.date || "") ? q.date : "", budget = Math.max(0, +String(q.budget ?? "").replace(/[^\d.]/g, "") || 0), ex = truthy(q.include_examples);
+    const out = [];
+    for (const H of D.hosts.values()) { const h = H.rec; if (!(H.sample ? !!H.h.forHire : h.for_hire)) continue; if (!ex && h.example) continue;
+      if (city && !`${h.city} ${h.area}`.toLowerCase().includes(city)) continue;
+      const blob = [...h.formats, ...h.tags, h.tagline, H.h.services || "", ...H.packages.map((p) => `${p.name} ${p.category}`)].join(" ").toLowerCase();
+      let P = H.packages.filter((p) => !cat || p.category === cat || `${p.name} ${p._x.desc || ""}`.toLowerCase().includes(cat));
+      if (cat && !P.length && !blob.includes(cat)) continue;
+      const why = [], pk = P.map((p) => { const fits = !n ? null : n >= p.min && (!p.max || n <= p.max); const est = p.per_person ? (p.flat ? p.per_person : n ? p.per_person * n : null) : null;
+        let open = null; try { const O = H.ws ? C.openDatesOf(H.ws, p._x) : []; open = date ? (O.length ? O.includes(date) : null) : null; } catch {}
+        return { id: p.id, name: p.name, price: p.price || "Quoted on request", min: p.min, max: p.max, category: p.category, estimate: est, fits_group: fits, within_budget: budget && est != null ? est <= budget : null, date_open: open }; });
+      const best = pk.filter((p) => p.fits_group !== false && p.within_budget !== false && p.date_open !== false);
+      if (P.length && !best.length) continue; // every package they have is too small, too big, over budget or booked that day
+      if (n && h.group_size && best.length) why.push(`Takes groups of ${h.group_size.min}${h.group_size.max ? `–${h.group_size.max}` : "+"}`);
+      if (budget && best.some((p) => p.within_budget)) why.push("Fits the budget");
+      if (date && best.some((p) => p.date_open)) why.push(`Open on ${date}`);
+      if (h.leaderboard) why.push(h.leaderboard.text); if (h.responds_in) why.push(`Usually replies ${h.responds_in}`); if (h.reviews.count) why.push(`${h.reviews.count} reviews`);
+      const score = (best.length ? 10 : 0) + best.filter((p) => p.fits_group).length * 2 + best.filter((p) => p.within_budget).length * 2 + best.filter((p) => p.date_open).length * 3 + (h.leaderboard ? 6 - Math.min(5, h.leaderboard.rank) : 0) + Math.min(5, h.reviews.count / 2) + (h.responds_in_hours != null && h.responds_in_hours <= 24 ? 1 : 0);
+      out.push({ score, host: h, packages: best, quoted_on_request: !H.packages.length, why: why.slice(0, 4) }); }
+    out.sort((a, b) => b.score - a.score || a.host.name.localeCompare(b.host.name));
+    const lim = limitOf(q.limit, 10);
+    return { data: out.slice(0, lim).map(({ score, ...x }) => x), total: out.length, query: { city: s(q.city, 60), category: cat, group_size: n || null, date: date || null, budget: budget || null },
+      book_url: `${base}/hosts/book${city ? `?city=${encodeURIComponent(s(q.city, 60))}` : ""}` }; }
+  return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar, findHosts };
 }
 
 // ---- the public MCP server's tools (read-only) ----
 const str = (description, extra = {}) => ({ type: "string", description, ...extra });
 // formats the directory files events under (a host's scrapbook can add its own, so this is a list of examples, not a closed set)
-export const FORMATS = ["dinner", "brunch", "run", "hike", "class", "workshop", "pop-up", "coffee", "picnic", "game night", "book club", "drinks", "movement", "party", "meetup", "summit", "conference", "online", "tour", "launch", "offsite", "talk", "keynote", "webinar", "podcast", "panel"];
-const EVENT_FILTERS = { q: str("Words to look for, any of them: events matching more of the words come first (title counts most, then tags, format, host and neighborhood). Filler words like the, this, weekend, near, me drop out. e.g. pottery class, dance, supper Brooklyn"), city: str("City or neighborhood, e.g. Brooklyn"),
+export const FORMATS = ["dinner", "brunch", "run", "hike", "class", "workshop", "pop-up", "coffee", "picnic", "game night", "book club", "drinks", "movement", "party", "social", "meetup", "summit", "conference", "online", "tour", "launch", "offsite", "talk", "keynote", "webinar", "podcast", "panel"];
+const EVENT_FILTERS = { q: str("Words to look for, any of them: events matching more of the words come first (title counts most, then tags, format, host and neighborhood). Filler words like the, near, me drop out. Date words in q become dates and drop out of the words: tonight and today (that day), tomorrow, this week (to Sunday), this weekend (Friday to Sunday), next weekend (the one after), in the event city's time zone. from and to, when you pass them, win. e.g. pottery class, dance this weekend, supper Brooklyn tomorrow"), city: str("City or neighborhood, e.g. Brooklyn"),
   format: str("One format. class = a class or course people sign up for (dance, salsa, bachata, improv, yoga, pilates, a language, music lessons); workshop = a hands-on one-off (pottery, the wheel, a masterclass). Others: dinner, brunch, run, hike, pop-up, coffee, picnic, drinks, party, meetup, summit, conference, online. talk matches every speaking engagement (talk, keynote, webinar, podcast, panel).", { examples: FORMATS }),
   type: str("speaking: only speaking engagements (talks, keynotes, webinars, podcasts, panels, workshops the host taught)", { enum: ["speaking"] }),
   status: str("upcoming (default), past or all", { enum: ["upcoming", "past", "all"] }), from: str("Earliest date, YYYY-MM-DD"), to: str("Latest date, YYYY-MM-DD"), host: str("A host's handle, e.g. atbo"),
   include_examples: { type: "boolean", description: "Also return sample events from example hosts (off by default)" }, limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") };
 const OBJ = { type: "object" }, PAGE_OUT = (extra = {}) => ({ type: "object", properties: { data: { type: "array", items: OBJ }, next_cursor: { type: ["string", "null"] }, total: { type: "integer" }, ...extra }, required: ["data", "next_cursor", "total"] });
 const OUT = { search_events: PAGE_OUT(), get_event: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, when: { type: "string" }, price: { type: ["string", "null"] }, reviews: OBJ }, required: ["id", "title"] },
-  list_hosts: PAGE_OUT(), get_host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, events: { type: "array", items: OBJ }, reviews: OBJ }, required: ["handle", "name"] },
+  list_hosts: PAGE_OUT(), find_hosts: { type: "object", properties: { data: { type: "array", items: OBJ }, total: { type: "integer" }, query: OBJ, book_url: { type: "string" } }, required: ["data", "total"] }, get_host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, events: { type: "array", items: OBJ }, reviews: OBJ }, required: ["handle", "name"] },
   list_formats: { type: "object", properties: { total: { type: "integer" }, types: OBJ, formats: { type: "array", items: OBJ }, cities: { type: "array", items: OBJ }, by_format_and_city: { type: "array", items: OBJ } }, required: ["total", "formats", "cities"] },
   get_reviews: PAGE_OUT({ top_tags: { type: "array", items: OBJ } }) };
 export const PUBLIC_TOOLS = [
-  { name: "search_events", description: "Search the Pottery Lab events directory: upcoming events hosts made public and past events from their scrapbooks, including speaking engagements (talks, keynotes, webinars, podcasts, panels) with a speaking object { role, topic, organizer, audience, recording, slides }. Use format talk or type speaking for those. Returns { data, next_cursor, total }.", inputSchema: { type: "object", properties: EVENT_FILTERS }, annotations: { readOnlyHint: true } },
+  { name: "search_events", description: "Search the Pottery Lab events directory: upcoming events hosts made public and past events from their scrapbooks, including speaking engagements (talks, keynotes, webinars, podcasts, panels) with a speaking object { role, topic, organizer, audience, recording, slides }. Use format talk or type speaking for those; a speaking search looks at past and upcoming (status all) unless you pass status. Date words in q become dates and drop out of the words: tonight and today (that day), tomorrow, this week (to Sunday), this weekend (Friday to Sunday), next weekend (the one after), in the event city's time zone. from and to, when you pass them, win. price is null when the host didn't set one (Free only when they said so). Returns { data, next_cursor, total }.", inputSchema: { type: "object", properties: EVENT_FILTERS }, annotations: { readOnlyHint: true } },
   { name: "get_event", description: "One event from the directory by id, with all its reviews.", inputSchema: { type: "object", properties: { id: str("Event id from search_events") }, required: ["id"] }, annotations: { readOnlyHint: true } },
-  { name: "list_hosts", description: "Hosts with a public page: name, city, what they host, event counts and a review summary.", inputSchema: { type: "object", properties: { q: str("Words to match"), city: str("City or neighborhood"), limit: { type: "number", description: "Up to 100 (default 50)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
+  { name: "find_hosts", description: "Hosts open to paid work (for_hire) for a brand or team event: by city, kind of event, group size, and optionally a date and a total budget. Each result has the host record (group_size, responds_in, leaderboard, speaking_topics, reviews), the packages that fit with an estimate (price a person x group size, or the flat price), and why it fits. Hosts with no priced package show with quoted_on_request: true. Returns { data, total, query, book_url }.",
+    inputSchema: { type: "object", properties: { city: str("City or neighborhood, e.g. Brooklyn"), category: str("food, dining, movement, workshop, drinks or culture, or any word their packages and formats use (e.g. pottery, run, talk)"), group_size: { type: "number", description: "How many people" },
+      date: str("YYYY-MM-DD. Hosts who list open dates must have this one; hosts who don't list dates say on request"), budget: { type: "number", description: "Total budget in dollars" }, include_examples: { type: "boolean", description: "Also return example hosts (off by default)" }, limit: { type: "number", description: "Up to 100 (default 10)" } } }, annotations: { readOnlyHint: true } },
+  { name: "list_hosts", description: "Hosts with a public page: name, city, what they host, event counts, a review summary, whether they're open to paid work (for_hire), group_size, responds_in, their best leaderboard rank and speaking_topics.", inputSchema: { type: "object", properties: { q: str("Words to match"), city: str("City or neighborhood"), limit: { type: "number", description: "Up to 100 (default 50)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
   { name: "get_host", description: "One host's public profile, their events in the directory and recent reviews.", inputSchema: { type: "object", properties: { handle: str("The host's handle, e.g. atbo") }, required: ["handle"] }, annotations: { readOnlyHint: true } },
   { name: "list_formats", description: "Event counts by format and by city, for building filters.", inputSchema: { type: "object", properties: { status: str("upcoming, past or all (default)", { enum: ["upcoming", "past", "all"] }) } }, annotations: { readOnlyHint: true } },
   { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, how we know they were a guest (verified: guest_list = came, on the guest list; rsvp = replied I'm in; null = neither), plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
@@ -307,7 +393,7 @@ PUBLIC_TOOLS.push({ outputSchema: { type: "object", properties: { qualified: { t
 // ---- end leaderboard ----
 
 export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText, guestRedirect = "", publicOrigin }) {
-  const Dir = makeDirectory({ store, C, SB });
+  const Dir = makeDirectory({ store, C, SB, LB: () => app.locals.leaderboard });
   app.locals.directory = Dir;
   const base = (req) => String(publicOrigin(req) || "").replace(/\/+$/, "");
   // per IP, per hour, like the other public routes
@@ -324,6 +410,7 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
   app.get("/api/v1/events.csv", api, (req, res) => res.type("text/csv; charset=utf-8").set("Content-Disposition", 'inline; filename="pottery-lab-events.csv"').send(Dir.csv(base(req), req.query)));
   app.get("/api/v1/events/:id", api, (req, res) => { const e = Dir.getEvent(base(req), req.params.id); return e ? res.json({ data: e }) : notFound(res, "event"); });
   app.get("/api/v1/hosts", api, (req, res) => res.json(Dir.listHosts(base(req), req.query)));
+  app.get("/api/v1/hosts/find", api, (req, res) => res.json(Dir.findHosts(base(req), req.query)));
   app.get("/api/v1/hosts/:handle", api, (req, res) => { const h = Dir.getHost(base(req), req.params.handle); return h ? res.json({ data: h }) : res.status(404).json({ code: "not_found", message: "No host by that name." }); });
   app.get("/api/v1/formats", api, (req, res) => res.json(Dir.formats(base(req), req.query)));
   app.get("/api/v1/reviews", api, (req, res) => res.json(Dir.listReviews(base(req), req.query)));
@@ -344,6 +431,7 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
     list_hosts: (a, b) => Dir.listHosts(b, a),
     get_host: (a, b) => { const h = Dir.getHost(b, a.handle); if (!h) throw new Error("No host by that handle. Use list_hosts to find one."); return h; },
     list_formats: (a, b) => Dir.formats(b, a),
+    find_hosts: (a, b) => Dir.findHosts(b, a),
     get_reviews: (a, b) => { if (!a.event_id && !a.host) throw new Error("Pass event_id or host."); return Dir.listReviews(b, { ...a, event: a.event_id }); },
   };
   // ---- leaderboard (host awards work) ----
@@ -385,9 +473,9 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
 // ---- docs: OpenAPI and llms.txt ----
 function openapi(base) {
   const q = (name, description, schema = { type: "string" }) => ({ name, in: "query", required: false, description, schema });
-  const filters = [q("q", "Any of these words, best matches first (more words matched, then title, tags, format, host, neighborhood). Filler words (the, this, weekend, near, me…) drop out."), q("city", "City or neighborhood (contains, any case)"),
+  const filters = [q("q", "Any of these words, best matches first (more words matched, then title, tags, format, host, neighborhood). Filler words (the, near, me…) drop out. Date words in q become dates and drop out of the words: tonight and today (that day), tomorrow, this week (to Sunday), this weekend (Friday to Sunday), next weekend (the one after), in the event city's time zone. from and to, when you pass them, win."), q("city", "City or neighborhood (contains, any case)"),
     q("format", "class (dance, salsa, bachata, improv, yoga, pilates, language, music lessons; courses and drop-ins), workshop (a hands-on one-off), dinner, run, pop-up, coffee, hike, party, summit, talk, keynote, webinar, podcast, panel… talk matches every speaking engagement", { type: "string", examples: FORMATS }),
-    q("type", "speaking: only speaking engagements", { type: "string", enum: ["speaking"] }), q("status", "Which events", { type: "string", enum: ["upcoming", "past", "all"], default: "upcoming" }), q("from", "Earliest date, YYYY-MM-DD", { type: "string", format: "date" }), q("to", "Latest date, YYYY-MM-DD", { type: "string", format: "date" }),
+    q("type", "speaking: only speaking engagements", { type: "string", enum: ["speaking"] }), q("status", "Which events. Default upcoming; all for a speaking search (type=speaking or a talk format)", { type: "string", enum: ["upcoming", "past", "all"], default: "upcoming" }), q("from", "Earliest date, YYYY-MM-DD", { type: "string", format: "date" }), q("to", "Latest date, YYYY-MM-DD", { type: "string", format: "date" }),
     q("host", "A host's handle"), q("include_examples", "Also include sample events from example hosts", { type: "boolean", default: false })];
   const page = [q("limit", "Page size, at most 100", { type: "integer", minimum: 1, maximum: 100, default: 20 }), q("cursor", "next_cursor from the previous page")];
   const ref = (n) => ({ $ref: "#/components/schemas/" + n });
@@ -404,6 +492,8 @@ function openapi(base) {
       "/api/v1/events.csv": { get: { operationId: "eventsCsv", summary: "Events as CSV (same filters, up to 5000 rows)", parameters: filters, responses: { 200: { description: "CSV with a header row", content: { "text/csv": { schema: { type: "string" } } } } } } },
       "/api/v1/events/{id}": { get: { operationId: "getEvent", summary: "One event, with all its reviews", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], responses: { ...ok({ type: "object", properties: { data: ref("Event") } }), ...nf } } },
       "/api/v1/hosts": { get: { operationId: "listHosts", summary: "Hosts with a public page", parameters: [q("q", "Words to match"), q("city", "City or neighborhood"), q("include_examples", "Also include example hosts", { type: "boolean" }), ...page], responses: ok(list("Host")) } },
+      "/api/v1/hosts/find": { get: { operationId: "findHosts", summary: "Hosts open to paid work for a city, kind of event, group size, date and budget (the find_hosts MCP tool)", parameters: [q("city", "City or neighborhood"), q("category", "food, dining, movement, workshop, drinks, culture, or any word their packages and formats use"), q("group_size", "How many people", { type: "integer", minimum: 1 }), q("date", "YYYY-MM-DD", { type: "string", format: "date" }), q("budget", "Total budget in dollars", { type: "number" }), q("include_examples", "Also include example hosts", { type: "boolean" }), q("limit", "At most 100", { type: "integer", default: 10 })],
+        responses: ok({ type: "object", properties: { data: { type: "array", items: { type: "object", properties: { host: ref("Host"), packages: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, price: { type: "string" }, min: { type: "integer" }, max: { type: ["integer", "null"] }, category: { type: "string" }, estimate: { type: ["number", "null"], description: "Price a person x group size, or the flat price; null with no price" }, fits_group: { type: ["boolean", "null"] }, within_budget: { type: ["boolean", "null"] }, date_open: { type: ["boolean", "null"], description: "null when the host doesn't list open dates" } } } }, quoted_on_request: { type: "boolean" }, why: { type: "array", items: { type: "string" } } } } }, total: { type: "integer" }, query: { type: "object" }, book_url: { type: "string" } } }) } },
       "/api/v1/hosts/{handle}": { get: { operationId: "getHost", summary: "One host, their events and recent reviews", parameters: [{ name: "handle", in: "path", required: true, schema: { type: "string" } }], responses: { ...ok({ type: "object", properties: { data: { allOf: [ref("Host"), { type: "object", properties: { events: { type: "array", items: ref("Event") }, reviews: ref("Reviews") } }] } } }), ...nf } } },
       "/api/v1/formats": { get: { operationId: "listFormats", summary: "Counts by format and city, for filters", parameters: [q("status", "Which events", { type: "string", enum: ["upcoming", "past", "all"], default: "all" })],
         responses: ok({ type: "object", properties: { total: { type: "integer" }, types: { type: "object", properties: { speaking: { type: "integer", description: "How many are speaking engagements" } } }, formats: { type: "array", items: { type: "object", properties: { format: { type: "string" }, count: { type: "integer" } } } }, cities: { type: "array", items: { type: "object", properties: { city: { type: "string" }, count: { type: "integer" } } } }, by_format_and_city: { type: "array", items: { type: "object", properties: { format: { type: "string" }, city: { type: "string" }, count: { type: "integer" } } } } } }) } },
@@ -455,7 +545,11 @@ function openapi(base) {
       Speaking: { type: "object", description: "A talk, in the host's words. Nothing is filled in for them.", properties: { role: { type: "string", description: "e.g. Speaker, Keynote speaker, Panelist, Moderator, Guest, Host" }, topic: { type: "string" }, organizer: { type: "string", description: "The conference, company or show" },
         audience: { type: ["integer", "null"], description: "Audience size the host typed; null when they didn't" }, recording: { type: "string", description: "https link to the video or episode, or empty" }, slides: { type: "string", description: "https link to the slides, or empty" } } },
       Host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, url: { type: "string" }, city: { type: "string" }, area: { type: "string" }, tagline: { type: "string" }, bio: { type: "string" }, tags: { type: "array", items: { type: "string" } }, emoji: { type: "string" }, avatar: { type: "string" },
-        prepared: { type: "boolean" }, example: { type: "boolean" }, upcoming_count: { type: "integer" }, past_count: { type: "integer" }, formats: { type: "array", items: { type: "string" } }, reviews: ref("Reviews") } },
+        prepared: { type: "boolean" }, example: { type: "boolean" }, upcoming_count: { type: "integer" }, past_count: { type: "integer" }, formats: { type: "array", items: { type: "string" } }, reviews: ref("Reviews"),
+        for_hire: { type: "boolean", description: "Open to paid work from brands" }, group_size: { type: ["object", "null"], properties: { min: { type: "integer" }, max: { type: ["integer", "null"] } }, description: "Smallest and largest group across their packages; null with none" },
+        responds_in: { type: ["string", "null"], description: "Typical first reply to a brand request, e.g. within 3 hours; null until they've answered one" }, responds_in_hours: { type: ["number", "null"] },
+        leaderboard: { type: ["object", "null"], properties: { rank: { type: "integer" }, city: { type: "string" }, category: { type: "string" }, period: { type: "string", enum: ["month", "all"] }, place: { type: "string" }, text: { type: "string" }, url: { type: "string" } }, description: "Their best current board (this month first, else all time); null when they aren't on one" },
+        speaking_topics: { type: "array", items: { type: "string" }, description: "Topics of talks they've given, in their words" } } },
     } } };
 }
 
@@ -468,10 +562,11 @@ People browse it at ${base}/events. Agents and scripts can read the same data be
 
 ## API
 
-- ${base}/api/v1/events : search events. Filters: q (any of the words; events matching more of them come first; filler words like "this weekend" or "near me" drop out), city, format (format=talk matches every speaking engagement), type (type=speaking), status (upcoming, past, all; default upcoming), from, to (YYYY-MM-DD), host (a handle), include_examples, limit (up to 100), cursor. Returns { data, next_cursor, total }.
+- ${base}/api/v1/events : search events. Filters: q (any of the words; events matching more of them come first; filler words like "near me" drop out; tonight, today, tomorrow, this week, this weekend and next weekend become dates in the event city's time zone and drop out of the words), city, format (format=talk matches every speaking engagement), type (type=speaking), status (upcoming, past, all; default upcoming, and all for a speaking search), from, to (YYYY-MM-DD; they win over date words), host (a handle), include_examples, limit (up to 100), cursor. Returns { data, next_cursor, total }.
 - ${base}/api/v1/events/{id} : one event, with all its reviews.
 - ${base}/api/v1/events.csv : the same filters as a spreadsheet (with when, repeat, sessions, pass_price and pass_count columns).
-- ${base}/api/v1/hosts : hosts with a public page (q, city). ${base}/api/v1/hosts/{handle} : one host, their events and reviews.
+- ${base}/api/v1/hosts : hosts with a public page (q, city). ${base}/api/v1/hosts/{handle} : one host, their events and reviews. Each host has for_hire, group_size { min, max }, responds_in (typical first reply to a brand request, or null), leaderboard (their best current board, or null) and speaking_topics.
+- ${base}/api/v1/hosts/find : hosts open to paid work (city, category, group_size, date, budget), with the packages that fit and an estimate. Hosts with no priced package come after, quoted on request.
 - ${base}/api/v1/formats : counts by format and city.
 - ${base}/api/v1/reviews : guests' reviews (host, event, q, limit, cursor).
 - ${base}/api/v1/leaderboard : host leaderboards (city, category: all, supper, movement, workshop, popup, talks, community; period: month or all). ${base}/api/v1/leaderboard/rules : how they're scored.
@@ -483,15 +578,15 @@ JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with n
 ## MCP
 
 A public MCP server, no auth: ${base}/mcp/public (streamable HTTP, JSON responses).
-Tools: search_events, get_event, list_hosts, get_host, list_formats, get_reviews, get_leaderboard.
+Tools: search_events, get_event, list_hosts, find_hosts, get_host, list_formats, get_reviews, get_leaderboard.
 
 ## Each event
 
-id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free", "$20 a person", "Pay what you like", "$12 each", "$320 for all 8", "$20 a class, or $70 for 4"), spots_left (headcount minus who has replied, or null), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
+id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6"; null when no price is set), spots_left (headcount minus who has replied, or null), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
 
 ## Formats
 
-class is a class or course people sign up for: dance, salsa, bachata, improv, yoga, pilates, a language, music lessons. workshop is a hands-on one-off, like a pottery or wheel night. Filter with format=class or format=workshop; /api/v1/formats has the counts.
+class is a class or course people sign up for: dance, salsa, bachata, improv, yoga, pilates, a language, music lessons. workshop is a hands-on one-off, like a pottery or wheel night. social is a dance social or mixer and party is a party: a "Bachata social" is social, not class. Filter with format=class or format=workshop; /api/v1/formats has the counts.
 
 ## Classes and courses
 

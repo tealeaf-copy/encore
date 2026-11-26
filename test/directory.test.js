@@ -163,7 +163,7 @@ test("Public MCP: initialize, tools/list, tools/call search_events and get_revie
   assert.equal(init.result.serverInfo.name, "pottery-lab-directory");
   assert.deepEqual((await mcp({ jsonrpc: "2.0", id: 2, method: "ping" })).result, {});
   const tools = (await mcp({ jsonrpc: "2.0", id: 3, method: "tools/list" })).result.tools.map((t) => t.name);
-  assert.deepEqual(tools, ["search_events", "get_event", "list_hosts", "get_host", "list_formats", "get_reviews", "get_leaderboard"]);
+  assert.deepEqual(tools, ["search_events", "get_event", "find_hosts", "list_hosts", "get_host", "list_formats", "get_reviews", "get_leaderboard"]);
   const s = await mcp({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "search_events", arguments: { q: "dumpling" } } });
   const out = JSON.parse(s.result.content[0].text); assert.equal(out.total, 1); assert.equal(out.data[0].id, "dirOpen1");
   const rv = JSON.parse((await mcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "get_reviews", arguments: { event_id: "dirPast1" } } })).result.content[0].text);

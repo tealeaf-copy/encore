@@ -98,23 +98,42 @@ test("Group kudos link: the email or phone you replied with opens kudos; anythin
   assert.equal((await getJ(`/api/public/kudos-group/nzGroup?g=WRONG${g.slice(5)}`)).status, 403);
   assert.equal((await getJ(`/api/public/kudos-group/nzProg?g=${g}`)).status, 403, "one event's token doesn't open another");
   const page = await fetch(srv.base + `/k/nzGroup?g=${g}`); assert.equal(page.status, 200); assert.equal(page.headers.get("referrer-policy"), "no-referrer");
-  // no match: one message for a stranger, a no-show, a Maybe and a near miss
-  for (const contact of ["nobody@example.com", "cy.g@guest.example.com", "di.g@guest.example.com", "ana.g@guest.example.co", "4155550499"]) {
-    const r = await group("nzGroup", contact, g); assert.equal(r.status, 404, contact); const j = await r.json();
-    assert.equal(j.message, "We couldn't find that reply. Use the email or phone you replied with."); assert.ok(!j.rid); assert.equal(j.code, "not_found"); }
+  // match or not, the same answer: a stranger, a no-show, a Maybe, a near miss and a real guest all read the same,
+  // and none of them gets a code back (email and texting are set up here, so the link goes to the guest instead)
+  const answers = [];
+  for (const contact of ["nobody@example.com", "cy.g@guest.example.com", "di.g@guest.example.com", "ana.g@guest.example.co", "4155550499", "  ANA.G@guest.example.com ", "+1 415-555-0402"]) {
+    const t0 = Date.now(), r = await group("nzGroup", contact, g); answers.push({ status: r.status, keys: Object.keys(await r.json()).sort().join(","), ms: Date.now() - t0 }); }
+  for (const x of answers) { assert.equal(x.status, 200); assert.equal(x.keys, "message,ok,sent"); assert.ok(x.ms >= 300, "the same pace either way"); }
+  assert.equal((await (await group("nzGroup", "nobody2@example.com", g)).json()).message, "Thanks. If that's the email or phone you replied with, your kudos link is on its way there.");
   assert.equal((await group("nzGroup", "", g)).status, 400);
   assert.equal((await group("nzGroup", "ana.g@guest.example.com", "bad")).status, 403, "a bad token never matches");
-  // a match: email (any case) and phone (any format)
-  const m1 = await (await group("nzGroup", "  ANA.G@guest.example.com ", g)).json(); assert.equal(m1.rid, ana); assert.match(m1.code, /^gk_[A-Za-z0-9]{24}$/);
+  // the matched guests got their kudos link by email (any case) and by text (any format)
+  await new Promise((ok) => setTimeout(ok, 50));
+  const mail = fakeOutbox.filter((m) => [m.to].flat().includes("ana.g@guest.example.com") && /kudos link/.test(m.subject)).pop(), txt = fakeTexts.filter((t) => t.to === "+14155550402").pop();
+  assert.ok(mail && txt, "sent to the email and the phone that replied " + JSON.stringify([fakeOutbox.slice(-4).map((m) => [m.to, m.subject]), fakeTexts.slice(-3)])); assert.ok(!fakeOutbox.some((m) => /nobody@example\.com|cy\.g@/.test([m.to].flat().join(" ")) && /kudos link/.test(m.subject)), "nothing to a miss or a no-show");
+  const linkOf = (t) => new URL(t.match(/https?:\/\/\S+\/k\/\S+/)[0]).searchParams, L1 = linkOf(mail.text), L2 = linkOf(txt.text);
+  const m1 = { rid: L1.get("rid"), code: L1.get("code") }, m2 = { rid: L2.get("rid"), code: L2.get("code") };
+  assert.equal(m1.rid, ana); assert.match(m1.code, /^gk_[A-Za-z0-9]{24}$/); assert.equal(m2.rid, R.gBo);
   assert.notEqual(m1.code, S().get("rsvps/" + ana).data.code, "never the reply's own code");
-  const m2 = await (await group("nzGroup", "+1 415-555-0402", g)).json(); assert.equal(m2.rid, R.gBo);
+  // the kudos page doesn't say whose reply it is before they send
+  assert.equal((await getJ(`/api/public/kudos-page/nzGroup?rid=${m1.rid}&code=${m1.code}`)).j.name, "");
   // the kudos-only code opens the kudos page and Send, then shows as sent
   const kp = await getJ(`/api/public/kudos-page/nzGroup?rid=${m1.rid}&code=${m1.code}`); assert.equal(kp.status, 200); assert.equal(kp.j.sent, false);
   assert.equal((await post("/api/public/kudos", { eventId: "nzGroup", rid: m1.rid, code: m1.code, tags: ["food", "again"], via: "ask" })).status, 200);
   assert.equal((await getJ(`/api/public/kudos-page/nzGroup?rid=${m1.rid}&code=${m1.code}`)).j.sent, true);
   assert.equal((await sheet("nzGroup")).progress.kudos, 1);
   // ...and Follow, but nothing else the reply's own code opens
-  assert.equal((await post("/api/public/follow", { handle: "rae-nudge", eventId: "nzGroup", rid: m1.rid, code: m1.code, via: "kudos" })).status, 200);
+  const fo = await post("/api/public/follow", { handle: "rae-nudge", eventId: "nzGroup", rid: m1.rid, code: m1.code, via: "kudos" }); assert.equal(fo.status, 200);
+  // a follow through the group link waits for the email confirmation: not confirmed, not counted yet
+  const fj = await fo.json(); assert.equal(fj.confirmed, false); assert.equal(fj.pending, true);
+  const conf = fakeOutbox.filter((m) => [m.to].flat().includes("ana.g@guest.example.com") && /^Confirm: follow/.test(m.subject)).pop(); assert.ok(conf, "a confirmation email");
+  const before = (await getJ("/api/public/host/rae-nudge")).j.followers;
+  const cr = await fetch(conf.text.match(/https?:\/\/\S+follow-confirm\S+/)[0].replace(/^https?:\/\/[^/]+/, srv.base), { redirect: "manual" }); assert.equal(cr.status, 302);
+  assert.equal((await getJ("/api/public/host/rae-nudge")).j.followers, before + 1, "counted once confirmed");
+  // kudos through the group link are "rsvp" at most, even for a guest the host marked as there
+  S().update("rsvps/" + ana, { checkedInAt: Date.now() });
+  assert.equal(S().get("kudos/" + ana).data.verified, "rsvp", JSON.stringify(S().get("kudos/" + ana)));
+  const hk = (await getJ("/api/host/kudos/nzGroup", host)).j, rv = (hk.kudos || hk).find?.((x) => x.rid === ana); assert.equal(rv?.verified, "rsvp", "worked out again on read, still rsvp");
   assert.equal((await getJ(`/api/public/reply/nzGroup?rid=${m1.rid}&code=${m1.code}`)).status, 404, "not the reply");
   assert.equal((await getJ(`/api/public/chat/nzGroup?rid=${m1.rid}&code=${m1.code}`)).status, 403, "not the chat");
   assert.equal((await getJ(`/api/public/address/nzGroup?rid=${m1.rid}&code=${m1.code}`)).j.ok, false, "not the address");
@@ -124,12 +143,21 @@ test("Group kudos link: the email or phone you replied with opens kudos; anythin
   assert.equal((await getJ(`/api/public/kudos-group/nzGroup?g=${g}`)).status, 403);
   assert.equal((await getJ(`/api/public/kudos-page/nzGroup?rid=${m2.rid}&code=${m2.code}`)).status, 403);
   assert.equal((await group("nzGroup", "4155550402", g2)).status, 200);
+  // with no email or texting set up, a match goes on to the kudos page (same message), a miss doesn't
+  for (const k of ["ENCORE_FAKE_EMAIL", "ENCORE_FAKE_SMS"]) delete process.env[k];
+  try { const hit = await (await group("nzGroup", "4155550402", g2)).json(), miss = await (await group("nzGroup", "4155550411", g2)).json();
+    assert.equal(hit.message, miss.message); assert.match(hit.next, /^\/k\/nzGroup\?rid=/); assert.equal(miss.next, undefined); }
+  finally { process.env.ENCORE_FAKE_EMAIL = "1"; process.env.ENCORE_FAKE_SMS = "1"; }
+  // per contact: the same email from anywhere is capped
+  process.env.ENCORE_KUDOS_GROUP_PER_CONTACT = "2";
+  try { for (let i = 0; i < 2; i++) assert.equal((await group("nzGroup", "cap@example.com", g2)).status, 200); assert.equal((await group("nzGroup", "CAP@example.com", g2)).status, 429); }
+  finally { delete process.env.ENCORE_KUDOS_GROUP_PER_CONTACT; }
 });
 
 test("Group kudos link: rate limited per event and per IP", async () => {
   const g = tokenOf(await sheet("nzRate"));
   process.env.ENCORE_KUDOS_GROUP_PER_EVENT = "3";
-  for (let i = 0; i < 3; i++) assert.equal((await group("nzRate", `x${i}@example.com`, g)).status, 404);
+  for (let i = 0; i < 3; i++) assert.equal((await group("nzRate", `x${i}@example.com`, g)).status, 200);
   const r = await group("nzRate", "x9@example.com", g); assert.equal(r.status, 429); assert.equal((await r.json()).code, "rate_limited");
   // per IP: a different event, but this IP is over its limit
   process.env.ENCORE_KUDOS_GROUP_PER_EVENT = "1000"; process.env.ENCORE_KUDOS_GROUP_PER_IP = "1";

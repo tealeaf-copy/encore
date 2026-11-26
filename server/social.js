@@ -89,6 +89,8 @@ export const KUDOS_TAGS = [["again", "🔁", "Would go again"], ["food", "🍜",
 export const VERIFIED_LABEL = { guest_list: "Came, on the guest list", rsvp: "Replied I'm in" };
 export function kudosVerified(S, k) {
   if (!k || !S) return null;
+  // kudos left through the group link (typed an email or phone) are "rsvp" at most, never "guest_list"
+  if (k.viaGroup) { const v = kudosVerified(S, { ...k, viaGroup: false }); return v === "guest_list" ? "rsvp" : v; }
   const r = k.rid ? S.get("rsvps/" + String(k.rid).replace(/[^A-Za-z0-9_-]/g, ""))?.data : null, ev = k.eventId ? S.get("events/" + k.eventId)?.data || {} : {};
   const key = replyKey(r || k), row = key ? (ev.guests || []).find((g) => replyKey(g) === key) : null, onList = /Attended/.test(row?.status || "");
   if (!r) return onList ? "guest_list" : "rsvp";
@@ -418,7 +420,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     if ((P.ev?.date || "9") > today()) return bad(res, "Kudos open once it's happened.");
     const tags = (Array.isArray(b.tags) ? b.tags : []).filter((t) => KUDOS_TAGS.some((k) => k[0] === t)).slice(0, 8), love = clean(b.love, 500), improve = clean(b.improve, 500); if (!tags.length && !love && !improve && !["better", "same", "less"].includes(b.compare)) return bad(res, "Tap one of the chips or write a line first.");
     if (!tags.length && !love) return bad(res, "Pick at least one thing you liked.");
-    const priorK = P.S.get("kudos/" + P.rid)?.data, freshK = !(priorK && ((priorK.tags || []).length || priorK.love)); P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, verified: kudosVerified(P.S, { eventId: P.r.eventId, rid: P.rid }), via: b.via === "ask" ? "ask" : "page", ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
+    const priorK = P.S.get("kudos/" + P.rid)?.data, freshK = !(priorK && ((priorK.tags || []).length || priorK.love)); P.S.set("kudos/" + P.rid, { eventId: P.r.eventId, rid: P.rid, name: P.r.name || "", email: lc(P.r.email), tags, love, improve, verified: kudosVerified(P.S, { eventId: P.r.eventId, rid: P.rid, viaGroup: !!P.viaGroup }), ...(P.viaGroup ? { viaGroup: true } : {}), via: b.via === "ask" ? "ask" : "page", ...(["better", "same", "less"].includes(b.compare) ? { compare: b.compare } : {}), ...(P.S.get("kudos/" + P.rid)?.data?.tipped ? { tipped: true, tip: P.S.get("kudos/" + P.rid).data.tip } : {}), at: Date.now() }); X.bust();
     if (freshK) track("kudos_received", { ws: P.ws, eventId: P.r.eventId });
     const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "kudos-in", text: `💌 ${first(P.r.name) || "A guest"} sent kudos for ${P.ev?.pubTitle || P.ev?.name}${love ? `: "${love.slice(0, 80)}"` : ""}`, link: `/?app=1&open=${encodeURIComponent(P.r.eventId)}#studio`, eventId: P.r.eventId });
     const h = C.profileOf(P.ws); res.json({ ok: true, host: h?.handle ? { handle: h.handle, name: h.name } : null }); });

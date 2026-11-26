@@ -120,9 +120,20 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
       default: return [...p.slice(1), "#F2C46D", "#E26D8E", "#5B7FD6", "#3E9C6E"].slice(0, 5); } }
 
   // ---------- ambient effects: CSS for paper and velvet, a small canvas for the rest ----------
-  // at most ~30 particles, ~30 frames a second, paused when the tab is hidden or the layer is off screen,
-  // and a still frame for people who prefer less motion
+  // at most 30 particles (fewer on a small screen: the count follows the viewport's area), 30 frames a second, paused
+  // when the tab is hidden or the layer is off screen, and a still frame for people who prefer less motion.
+  // Soft glows are drawn once into a small sprite and stamped with drawImage: no shadowBlur per particle per frame.
   const COUNT = { snow: 30, confetti: 26, petals: 16, sparkles: 22, stars: 30, twinkle: 24 };
+  const FPS = 30, AREA = 1280 * 800;
+  /** How many particles for a viewport: the full count at 1280x800 or bigger, scaled down by area, never under 8 or over 30. */
+  const countFor = (kind, w, h) => Math.max(Math.min(8, COUNT[kind] || 0), Math.min(30, COUNT[kind] || 0, Math.round((COUNT[kind] || 0) * Math.min(1, (w * h) / AREA))));
+  // a blurred dot or four-point star, drawn once per colour at about the size it's drawn at (B css px radius), then stamped
+  const SPR = new Map();
+  function sprite(shape, color, glow, blur, dpr, B) { const key = shape + "|" + color + "|" + glow + "|" + blur + "|" + dpr + "|" + B; let c = SPR.get(key); if (c) return c;
+    const pad = Math.ceil(blur * 2) + 2, n = Math.ceil((B + pad) * 2 * dpr); c = document.createElement("canvas"); c.width = c.height = n; const x = c.getContext("2d"); if (!x) return null;
+    x.scale(dpr, dpr); const m = B + pad; x.fillStyle = color; x.shadowColor = glow; x.shadowBlur = blur * dpr; x.beginPath();
+    if (shape === "star") { x.moveTo(m, m - B); x.quadraticCurveTo(m, m, m + B, m); x.quadraticCurveTo(m, m, m, m + B); x.quadraticCurveTo(m, m, m - B, m); x.quadraticCurveTo(m, m, m, m - B); } else x.arc(m, m, B, 0, 7);
+    x.fill(); c.__m = m; c.__b = B; if (SPR.size > 60) SPR.clear(); SPR.set(key, c); return c; }
   function effect(host, kind, { fixed = true, dark = false, colors = ["#fff"] } = {}) { css(); if (typeof document === "undefined") return () => {};
     const layer = document.createElement("div"); layer.className = "lk-fxl" + (fixed ? " fixed" : ""); layer.setAttribute("aria-hidden", "true");
     if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
@@ -130,7 +141,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (kind === "paper" || kind === "velvet") { layer.classList.add("lk-" + kind); return () => layer.remove(); }
     if (!COUNT[kind]) { layer.remove(); return () => {}; }
     const cv = document.createElement("canvas"); layer.appendChild(cv); const g = cv.getContext("2d"); if (!g) return () => layer.remove();
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches, phone = matchMedia("(pointer: coarse)").matches || innerWidth < 700, dpr = Math.min(phone ? 1.5 : 2, window.devicePixelRatio || 1);
     let W = 0, H = 0, P = [], raf = 0, last = 0, seen = true, alive = true, t = 0;
     const rnd = (a, b) => a + Math.random() * (b - a), pick = (L) => L[(Math.random() * L.length) | 0];
     const size = () => { const r = fixed ? { width: innerWidth, height: innerHeight } : layer.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height); cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); };
@@ -142,23 +153,27 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
       if (kind === "stars") Object.assign(p, { y: rnd(0, H * 0.85), r: rnd(0.7, 1.8), vy: 0, tw: rnd(0.01, 0.035) });
       if (kind === "twinkle") Object.assign(p, { y: rnd(0, H), r: rnd(1.6, 3.2), vy: 0, tw: rnd(0.004, 0.012) });
       return p; };
-    const star4 = (x, y, r) => { g.beginPath(); g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r, y); g.quadraticCurveTo(x, y, x, y + r); g.quadraticCurveTo(x, y, x - r, y); g.quadraticCurveTo(x, y, x, y - r); g.fill(); };
+    // stamp a sprite centred on x, y at radius r
+    const stamp = (S, x, y, r) => { if (!S) return; const k = r / S.__b, m = S.__m * k; g.drawImage(S, x - m, y - m, m * 2, m * 2); };
+    const snowS = (c) => sprite("dot", c, "rgba(30,60,110,.25)", 3, dpr, 2.6), sparkS = (c) => sprite("star", c, dark ? c : "rgba(40,50,30,.35)", dark ? 8 : 5, dpr, 7), glowS = (c) => sprite("dot", c, c, 10, dpr, 2.4);
     const draw = (k) => { g.clearRect(0, 0, W, H);
       for (const p of P) { p.a += (p.vr || p.tw || 0.01) * k; p.y += p.vy * k;
-        if (kind === "snow") { p.x += Math.sin(p.a + t * 0.01) * 0.3 * p.sw * k; g.globalAlpha = p.al; g.fillStyle = p.c; g.shadowColor = "rgba(30,60,110,.25)"; g.shadowBlur = 3; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.shadowBlur = 0; }
+        if (kind === "snow") { p.x += Math.sin(p.a + t * 0.01) * 0.3 * p.sw * k; g.globalAlpha = p.al; stamp(snowS(p.c), p.x, p.y, p.r); }
         else if (kind === "confetti") { p.x += Math.sin(p.a * 2) * 0.5 * p.sw * k; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.scale(1, Math.cos(p.a * 3)); g.globalAlpha = 0.9; g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); }
         else if (kind === "petals") { p.x += Math.sin(p.a * 6 + t * 0.02) * 0.6 * p.sw * k; g.save(); g.translate(p.x, p.y); g.rotate(p.a * 4 + Math.sin(t * 0.02 + p.s * 9) * 0.6); g.globalAlpha = 0.85; g.fillStyle = p.c; g.beginPath(); g.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, 7); g.fill(); g.globalAlpha = 0.25; g.fillStyle = "#B0344F"; g.beginPath(); g.ellipse(-p.r * 0.35, 0, p.r * 0.35, p.r * 0.12, 0, 0, 7); g.fill(); g.restore(); }
-        else if (kind === "sparkles") { const al = 0.25 + 0.75 * Math.abs(Math.sin(p.a)); g.globalAlpha = al; g.fillStyle = p.c; g.shadowColor = dark ? p.c : "rgba(40,50,30,.35)"; g.shadowBlur = dark ? 8 : 5; star4(p.x, p.y, p.r * (0.6 + 0.4 * al)); g.shadowBlur = 0; }
-        else if (kind === "twinkle") { const al = Math.max(0, Math.sin(p.a)) ** 3; g.globalAlpha = 0.12 + 0.88 * al; g.fillStyle = p.c; g.shadowColor = p.c; g.shadowBlur = 10 * al; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); g.shadowBlur = 0; }
+        else if (kind === "sparkles") { const al = 0.25 + 0.75 * Math.abs(Math.sin(p.a)); g.globalAlpha = al; stamp(sparkS(p.c), p.x, p.y, p.r * (0.6 + 0.4 * al)); }
+        else if (kind === "twinkle") { const al = Math.max(0, Math.sin(p.a)) ** 3; g.globalAlpha = 0.12 + 0.88 * al; stamp(glowS(p.c), p.x, p.y, p.r); }
         else if (kind === "stars") { g.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(p.a)); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); }
         if (p.y > H + 20 || p.y < -30) Object.assign(p, make(false), kind === "sparkles" ? { y: H + 10 } : {}); if (p.x < -20) p.x = W + 10; if (p.x > W + 20) p.x = -10; }
       g.globalAlpha = 1; };
-    const loop = (now) => { raf = 0; if (!alive || document.hidden || !seen) return; const dt = now - (last || now); if (dt >= 32 || !last) { const k = Math.min(3, (dt || 16) / 16.7); t += k; last = now; draw(k); } raf = requestAnimationFrame(loop); };
+    // 30 frames a second at most (a frame is skipped until 1/30 s has passed, with a little slack for 60 Hz timing)
+    const loop = (now) => { raf = 0; if (!alive || document.hidden || !seen) return; const dt = now - (last || now); if (dt >= 1000 / FPS - 3 || !last) { const k = Math.min(3, (dt || 16) / 16.7); t += k; last = now; draw(k); } raf = requestAnimationFrame(loop); };
     const go = () => { if (!raf && alive && !still) { last = 0; raf = requestAnimationFrame(loop); } };
-    size(); for (let i = 0; i < Math.min(30, COUNT[kind]); i++) P.push(make(true)); draw(0); go();
+    size(); for (let i = 0, n = countFor(kind, W, H); i < n; i++) P.push(make(true)); draw(0); go();
     const onVis = () => (document.hidden ? (cancelAnimationFrame(raf), (raf = 0)) : go()); document.addEventListener("visibilitychange", onVis);
-    let rt = 0; const onRs = () => { clearTimeout(rt); rt = setTimeout(() => { size(); if (still) draw(0); }, 150); }; addEventListener("resize", onRs);
-    let io = null; if (!fixed && "IntersectionObserver" in window) { io = new IntersectionObserver(([x]) => { seen = x.isIntersecting; if (seen) go(); }); io.observe(layer); }
+    let rt = 0; const onRs = () => { clearTimeout(rt); rt = setTimeout(() => { size(); const n = countFor(kind, W, H); while (P.length > n) P.pop(); while (P.length < n) P.push(make(true)); if (still) draw(0); }, 150); }; addEventListener("resize", onRs);
+    // off screen (the layer, or for a fixed layer the part of the page it decorates): stop drawing until it's back
+    let io = null; if ("IntersectionObserver" in window) { io = new IntersectionObserver(([x]) => { seen = x.isIntersecting; if (seen) go(); }); io.observe(fixed ? host : layer); }
     return () => { alive = false; cancelAnimationFrame(raf); document.removeEventListener("visibilitychange", onVis); removeEventListener("resize", onRs); io?.disconnect(); layer.remove(); }; }
 
   // string lights: a scalloped wire of small bulbs across the top that glow gently (CSS only, so it costs nothing to run)
@@ -191,5 +206,5 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { lights, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { countFor, lights, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

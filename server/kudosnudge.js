@@ -48,6 +48,8 @@ export const groupMessage = (title, link) => `Thank you for coming to ${title}! 
 export const sendLine = (host, title, link) => `${host || "Your host"} would love to hear how ${title} was. 10 seconds: ${link}`;
 export const followUpLine = (host, title, link) => (host ? `One last ask: how was ${title}? Kudos for ${host} take 10 seconds: ${link}` : `One last ask: how was ${title}? Kudos take 10 seconds: ${link}`);
 export const NO_MATCH = "We couldn't find that reply. Use the email or phone you replied with.";
+// the group link's one answer, match or not: it never says whether that email or phone replied (review round 6)
+export const GROUP_SENT = "Thanks. If that's the email or phone you replied with, your kudos link is on its way there.";
 
 /** Every guest who was in, one per person (their newest reply), with whether they left kudos. Walk-ins count; no-shows don't. */
 export function guestsOf(S, eventId) {
@@ -225,7 +227,7 @@ export function makeKudosNudge(store, { C, canEmail = () => true, hostFirst = ()
   function setFollowUp(ws, eventId, on) { const S = scopeStore(store, ws); if (!S.get("events/" + eventId)) return null; const s = ensure(S, eventId); S.set(cfgKey(eventId), { ...s, followUp: !!on }); return { on: !!on }; }
   function rotate(ws, eventId) { const S = scopeStore(store, ws); if (!S.get("events/" + eventId)) return null; const s = ensure(S, eventId); S.set(cfgKey(eventId), { ...s, nonce: crypto.randomBytes(8).toString("hex"), rotatedAt: Date.now() }); return true; }
 
-  return { sheet, sendForMe, markNudged, runFollowUps, setFollowUp, rotate, groupEvent, kudosProof, matchGuest, gkCode, groupToken, ensure, progressOf, guestsOf };
+  return { sheet, sendForMe, markNudged, runFollowUps, setFollowUp, rotate, groupEvent, kudosProof, matchGuest, gkCode, groupToken, ensure, progressOf, guestsOf, personalLink, sign: (m) => hmac("fc:" + m, 24) };
 }
 
 export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrigin, hostFirst }) {
@@ -257,8 +259,40 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
     if (over("gi:" + (req.ip || "?"), perIp) || over("ge:" + id, perEvent)) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
     const G = N.groupEvent(id, clean(req.body?.g, 60)); if (!G || isDemo(G.ws)) return bad(res, "This link isn't working. Ask your host for a new one.", 403, "not_granted");
     const contact = clean(req.body?.contact, 200); if (!contact) return bad(res, "Add the email or phone you replied with.");
-    const g = N.matchGuest(G.S, id, contact); if (!g) return bad(res, NO_MATCH, 404, "not_found");
-    res.json({ ok: true, rid: g.rid, code: N.gkCode(G.ws, id, g.rid, G.s.nonce) }); });
+    // per contact too, so one guest's email can't be tried from many places
+    const ck = contact.includes("@") ? lc(contact) : digits(contact); if (over("gc:" + id + ":" + ck, Number(process.env.ENCORE_KUDOS_GROUP_PER_CONTACT || 5))) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
+    // Match or not, the same answer, at the same pace. On a match the kudos link goes to that email or phone when we can
+    // send there (the safe way); with no email or texting set up, the page goes on with a kudos-only code instead.
+    const t0 = Date.now(), g = N.matchGuest(G.S, id, contact), code = g ? N.gkCode(G.ws, id, g.rid, G.s.nonce) : N.gkCode(G.ws, id, "none:" + ck, G.s.nonce);
+    const byEmail = contact.includes("@"), cfg = byEmail ? emailConfig(G.ws, false) || emailConfig(DEFAULT_WS, true) : smsConfig(), canSend = !!cfg;
+    let next = null;
+    if (g && canSend) { const link = N.personalLink(publicOrigin(req), id, g.rid, code), title = clean(G.ev.pubTitle || G.ev.name, 120), who = hostFirst(G.ws, G.ev);
+      const p = byEmail ? sendEmail(cfg, { list: "guest", origin: publicOrigin(req), to: lc(g.r.email), subject: `Your kudos link for ${title}`, text: `${sendLine(who, title, link)}
+
+You asked for this on the group link. If that wasn't you, ignore it.`, fromName: who || "Pottery Lab" })
+        : sendSms(cfg, { to: g.r.phone, text: sendLine(who, title, link) });
+      p.catch(() => {}); }
+    else if (g) next = `/k/${encodeURIComponent(id)}?rid=${encodeURIComponent(g.rid)}&code=${encodeURIComponent(code)}`;
+    const wait = Math.max(0, 350 - (Date.now() - t0)); setTimeout(() => res.json({ ok: true, message: GROUP_SENT, sent: canSend, ...(next ? { next } : {}) }), wait); });
+
+  // ---- a follow from the group link's kudos-only code: pending until confirmed by email, else counted as unverified ----
+  X.groupFollow = async ({ ws, email, name, eventId, origin }) => { const S = scopeStore(store, ws), h = C.profileOf(ws) || {}, before = C.followersOf(ws).find((f) => f.email === lc(email));
+    if (before && !before.pending) return { ok: true, followers: C.followersOf(ws).length, confirmed: !before.unverified, unverified: !!before.unverified };
+    C.follow(ws, { email, name, via: "kudos-group" }); const k = S.list("followers").find((d) => d.data?.email === lc(email)); const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true);
+    if (cfg && k) { S.update("followers/" + k.id, { pending: true, unverified: false });
+      const link = `${origin}/api/public/follow-confirm?h=${encodeURIComponent(h.handle || "")}&f=${encodeURIComponent(k.id)}&t=${N.sign(ws + ":" + k.id)}`;
+      sendEmail(cfg, { list: "guest", origin, to: lc(email), subject: `Confirm: follow ${h.name || "your host"} on Pottery Lab`, text: `Hi ${first(name) || "there"},
+
+Tap to confirm you want to hear first about ${h.name || "this host"}'s next events: ${link}
+
+If you didn't ask for this, ignore it and nothing happens.`, fromName: "Pottery Lab" }).catch(() => {});
+      return { ok: true, followers: C.followersOf(ws).length, confirmed: false, pending: true, emailed: true }; }
+    if (k) S.update("followers/" + k.id, { unverified: true, pending: false });
+    return { ok: true, followers: C.followersOf(ws).length, confirmed: false, unverified: true }; };
+  app.get("/api/public/follow-confirm", (req, res) => { const ws = C.wsOfHandle(lc(req.query.h)), fid = clean(req.query.f, 40).replace(/[^A-Za-z0-9]/g, "");
+    if (!ws || !fid || !eq(N.sign(ws + ":" + fid), clean(req.query.t, 40))) return res.status(403).type("text/plain").send("This link isn't working.");
+    const S = scopeStore(store, ws); if (!S.get("followers/" + fid)) return res.status(404).type("text/plain").send("Nothing to confirm.");
+    S.update("followers/" + fid, { pending: false, unverified: false, confirmedAt: Date.now() }); res.redirect(302, `/@${encodeURIComponent(C.profileOf(ws)?.handle || "")}?followed=1`); });
 
   return N;
 }

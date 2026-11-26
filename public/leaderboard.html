@@ -70,6 +70,8 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
   const CATS = [["all", "All"], ["supper", "🍽️ Supper clubs"], ["movement", "🏃 Runs and hikes"], ["workshop", "🏺 Workshops"], ["popup", "🧁 Pop-ups"], ["talks", "🎤 Talks"], ["community", "☕ Community"]];
   const P = new URLSearchParams(location.search);
   const st = { city: P.get("city") || "", category: CATS.some(([k]) => k === P.get("category")) ? P.get("category") : "all", period: P.get("period") === "all" ? "all" : "month" };
+  // the period counts as picked only when the link or a tap says so; otherwise an empty month falls back to All time
+  let picked = P.get("period") === "all" || P.get("period") === "month", fell = false, cities = [];
   let boards = [], mine = ""; try { mine = localStorage.getItem("encore.city") || ""; } catch {}
   const BG = ["#FFE08A", "#FFCAD6", "#C4DEFF", "#DCCBFF", "#E3F1DD", "#FFD9B0"], tint = (s) => BG[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % BG.length];
   const av = (h) => `<span class="av" style="--bg:${tint(h.handle)}" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 68) : esc(h.emoji || "🎉")}</span>`;
@@ -79,28 +81,34 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
   const since = () => (st.period === "month" ? "since the 30 days before" : "since a month ago");
   const mv = (m) => !m ? "" : m.direction === "up" ? `<span class="mv up" aria-label="Up ${m.by} ${since()}">▲ ${m.by}</span>` : m.direction === "down" ? `<span class="mv down" aria-label="Down ${m.by} ${since()}">▼ ${m.by}</span>` : m.direction === "new" ? `<span class="mv new">New</span>` : "";
   const pts = (n) => `${n}<small>${n === 1 ? "point" : "points"}</small>`;
-  const sync = () => { const u = new URLSearchParams(); if (st.city) u.set("city", st.city); if (st.category !== "all") u.set("category", st.category); if (st.period !== "month") u.set("period", st.period); history.replaceState(null, "", "/leaderboard" + (u.toString() ? "?" + u : "")); };
+  const sync = () => { const u = new URLSearchParams(); if (st.city) u.set("city", st.city); if (st.category !== "all") u.set("category", st.category); if (picked && st.period !== "month") u.set("period", st.period); history.replaceState(null, "", "/leaderboard" + (u.toString() ? "?" + u : "")); };
   function drawCats() { const here = boards.filter((b) => b.city.toLowerCase() === st.city.toLowerCase() && b.period === st.period).map((b) => b.category);
     $("#cats").innerHTML = CATS.filter(([k]) => k === "all" || k === st.category || here.includes(k)).map(([k, l]) => `<button type="button" data-c="${k}" aria-pressed="${k === st.category}">${esc(l)}</button>`).join(""); }
-  function drawCities() { const C = [...new Set(boards.map((b) => b.city))]; if (st.city && !C.some((c) => c.toLowerCase() === st.city.toLowerCase())) C.unshift(st.city);
+  function drawCities() { const C = [...new Set([...cities.map((c) => c.city), ...boards.map((b) => b.city)])]; if (st.city && !C.some((c) => c.toLowerCase() === st.city.toLowerCase())) C.unshift(st.city);
     $("#city").innerHTML = C.length ? C.map((c) => `<option value="${esc(c)}"${c.toLowerCase() === st.city.toLowerCase() ? " selected" : ""}>${esc(c)}</option>`).join("") : `<option value="">No cities yet</option>`; }
   async function load() { sync(); document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === st.period)));
-    let j; try { j = await (await fetch(`/api/v1/leaderboard?${new URLSearchParams({ city: st.city, category: st.category, period: st.period })}`)).json(); } catch { $("#board").innerHTML = `<p class="empty">Couldn't load the leaderboard. Refresh to try again.</p>`; return; }
-    boards = j.boards || []; const B = j.data || {}; if (!st.city && B.city) { st.city = B.city; sync(); }
+    let j; try { j = await (await fetch(`/api/v1/leaderboard?${new URLSearchParams({ city: st.city, category: st.category, ...(picked ? { period: st.period } : {}) })}`)).json(); } catch { $("#board").innerHTML = `<p class="empty">Couldn't load the leaderboard. Refresh to try again.</p>`; return; }
+    boards = j.boards || []; cities = j.cities || []; const B = j.data || {}; if (!st.city && B.city) { st.city = B.city; sync(); }
+    fell = B.fell_back === "all"; if (B.period) st.period = B.period; document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === st.period)));
     drawCities(); drawCats();
-    if (!B.qualified) { $("#board").innerHTML = `<div class="empty"><b>Not enough hosts here yet</b>A board shows once ${B.min_hosts || 3} hosts in ${esc(st.city || "a city")} have hosted ${st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].replace(/^\S+\s/, "").toLowerCase())}${st.period === "month" ? " in the last 30 days" : ""}. <a href="/events">Find an event</a> or <a href="/signup?mode=friends">host one</a>.</div>`; return; }
+    if (!B.qualified) { const what = st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].replace(/^\S+\s/, "").toLowerCase()), Rz = B.rising || [];
+      // cold start: no ranks or scores yet, just who's been hosting here lately, and an open door for the next host
+      $("#board").innerHTML = Rz.length ? `<div class="bh"><div><h2>Rising in ${esc(st.city)}</h2><p>Hosts who've hosted here lately. A board with ranks starts once ${B.min_hosts || 3} hosts have hosted ${what}.</p></div></div>
+        <ul class="list rising" aria-label="Rising in ${esc(st.city)}">${Rz.map((h) => `<li class="row">${av(h)}<span><a class="nm" href="${esc(h.url)}">${esc(h.name)}</a><span class="why">Hosted recently</span></span><a class="fo" href="${esc(h.url)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a></li>`).join("")}</ul>
+        <p class="empty" style="margin-top:14px"><b>Host in ${esc(st.city)}?</b>Host one event and you're on this list. <a href="/signup?mode=friends">Start hosting</a> or <a href="/events">find an event</a>.</p>`
+        : `<div class="empty"><b>Be one of the first hosts in ${esc(st.city || "your city")}</b>A board shows once ${B.min_hosts || 3} hosts here have hosted ${what}. <a href="/signup?mode=friends">Host one</a> or <a href="/events">find an event</a>.</div>`; return; }
     const E = B.entries, top = E.slice(0, 3), rest = E.slice(3), per = B.period === "month" ? "The last 30 days" : "All time";
     const follow = (e) => `<a class="fo" href="${esc(e.host.url)}#follow">Follow<span class="sr"> ${esc(e.host.name)}</span></a>`;
-    $("#board").innerHTML = `<div class="bh"><div><h2>${esc(B.title)}</h2><p>${per} · ${B.hosts_on_board} ${B.hosts_on_board === 1 ? "host" : "hosts"}</p></div><a href="#how">How it's ranked</a></div>
+    $("#board").innerHTML = `${fell ? `<p class="fb-note" style="margin:0 0 10px;color:var(--smoke,#665A51)">Not enough hosts this month yet, so this is All time.</p>` : ""}<div class="bh"><div><h2>${esc(B.title)}</h2><p>${per} · ${B.hosts_on_board} ${B.hosts_on_board === 1 ? "host" : "hosts"}</p></div><a href="#how">How it's ranked</a></div>
       <ol class="podium" aria-label="Top 3">${top.map((e) => `<li class="r${e.rank}" style="--o:${[2, 1, 3][e.rank - 1]};--m:${["var(--gold)", "var(--silver)", "var(--bronze)"][e.rank - 1]}"><span class="medal" aria-label="Number ${e.rank}">${e.rank}</span>${av(e.host)}<a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a><span class="sc">${pts(e.score)}</span><span class="why">${esc(e.why)}</span>${badges(e)}${e.movement && e.movement.direction !== "new" ? mv(e.movement) : ""}<span style="flex:1"></span>${follow(e)}</li>`).join("")}</ol>
       ${rest.length ? `<ol class="list" start="4" aria-label="Everyone else">${rest.map((e) => `<li class="row"><span class="rk">${e.rank}</span>${av(e.host)}<span><a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a> ${mv(e.movement)}<span class="why">${esc(e.why)}</span>${badges(e)}</span><span class="sc">${pts(e.score)}</span></li>`).join("")}</ol>` : ""}`;
   }
   $("#city").onchange = (e) => { st.city = e.target.value; st.category = "all"; load(); };
-  document.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => { st.period = b.dataset.p; load(); }));
+  document.querySelectorAll(".seg button").forEach((b) => (b.onclick = () => { st.period = b.dataset.p; picked = true; load(); }));
   $("#cats").onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; st.category = b.dataset.c; load(); };
   fetch("/api/v1/leaderboard/rules").then((r) => r.json()).then((R) => { $("#howL").innerHTML = (R.text || []).map((t) => `<li>${esc(t)}</li>`).join(""); $("#howF").textContent = R.formula || ""; }).catch(() => {});
   // no city in the link: the visitor's city when it has a board, else the busiest one
-  (async () => { if (!st.city && mine) { try { const j = await (await fetch("/api/v1/leaderboard?city=" + encodeURIComponent(mine))).json(); if (j.data?.qualified) st.city = j.data.city; } catch {} } load(); })();
+  (async () => { if (!st.city && mine) { try { const j = await (await fetch("/api/v1/leaderboard?city=" + encodeURIComponent(mine))).json(); if (j.data?.qualified || (j.cities || []).some((c) => c.city.toLowerCase() === mine.toLowerCase())) st.city = j.data?.city || mine; } catch {} } load(); })();
 })();
 </script>
 <script src="/nav.js"></script><script src="/shell.js"></script>

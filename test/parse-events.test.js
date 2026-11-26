@@ -22,7 +22,7 @@ function load(today = "2026-11-25T10:00:00") {
     cut("{ const _peSr=parseEventText", "{ const _qsSr=quickStart"),
     cut("// ---------- Potto reads: words", "{ const _qsZ=quickStart"),
   ].join("\n");
-  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap;", ctx);
+  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.seriesPrice=seriesPrice; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap;", ctx);
   return ctx;
 }
 
@@ -134,6 +134,47 @@ const CASES = [
   ["Hike Sat 9 to noon", { startTime: "09:00", endTime: "12:00", title: "Hike" }],
   ["Bake sale pop-up Sat 10am to noon, $5 each", { startTime: "10:00", endTime: "12:00", title: "Bake sale pop-up" }],
   ["Market Sat 10-noon", { startTime: "10:00", endTime: "12:00" }],
+  // review round 6: "$20 each or $70 for 4" is a price and a pass (or a group price), never 4 spots
+  ["Salsa Tuesdays 7pm, $20 each or $70 for 4", { price: "$20", passPrice: 70, passCount: 4, headcount: undefined, repeat: "weekly", priceUnit: "class" }],
+  ["Cookie box pop-up Sat 10am, $20 each or $70 for 4", { price: "$20", groupPrice: 70, groupSize: 4, headcount: undefined, passPrice: undefined, priceUnit: "each" }],
+  // a number glued to a name is part of the name
+  ["Bachata 101 class Thu 8pm", { title: "Bachata 101 class", headcount: undefined, label: "class" }],
+  ["Salsa 2 class Thu 8pm", { headcount: undefined }],
+  ["Bachata 101 class Thu 8pm, 12 spots", { headcount: 12 }],
+  ["Dinner for 8 Sat 7pm", { headcount: 8 }],
+  // an open end: out of the title, and no end time
+  ["Salsa social Fri 9pm-late", { title: "Salsa social", startTime: "21:00", endTime: undefined }],
+  ["Karaoke Sat 9pm till late", { title: "Karaoke", startTime: "21:00", endTime: undefined }],
+  ["Dance party Sat 10pm until late", { title: "Dance party", endTime: undefined }],
+  // two weekdays: weekly on both, the series dated from the first
+  ["Spanish class Mondays and Wednesdays 7pm, $15", { weekdays: ["monday", "wednesday"], weekday: "monday", date: "2026-11-30", repeat: "weekly", title: "Spanish class", startTime: "19:00" }],
+  ["Yoga every Tue & Thu 7am", { weekdays: ["tuesday", "thursday"], repeat: "weekly", title: "Yoga" }],
+  ["Hike Sat 7am", { weekdays: undefined }],
+  // a group price written as "group of 5"
+  ["Pasta class group of 5 for $40 Sat 6pm", { groupPrice: 40, groupSize: 5, title: "Pasta class", headcount: undefined }],
+  ["Cooking class $40 for a group of 5 Sat 6pm", { groupPrice: 40, groupSize: 5, title: "Cooking class" }],
+  // multi-word places keep every word
+  ["Run club at Beacon station Sat 8am", { meetPoint: "Beacon station", title: "Run club" }],
+  ["Picnic at Dolores park Sun 1pm", { meetPoint: "Dolores park", title: "Picnic" }],
+  // host panel round 6. A course price with a drop-in: the course price is the price, the drop-in its own field
+  ["Pottery course $320 for all 8 or $45 drop in, Thursdays 7pm", { price: "$320", dropIn: 45, sessions: 8, priceUnit: undefined }],
+  // places typed in lowercase come out of the title, in title case
+  ["Salsa drop-in at studio 5 on bleecker Tue 8pm", { title: "Salsa drop-in", venueName: "Studio 5 on Bleecker", meetPoint: "Studio 5 on Bleecker", startTime: "20:00" }],
+  ["Book club at powells coffee corner Sun 4pm", { title: "Book club", venueName: "Powells Coffee Corner" }],
+  ["Matcha workshop in silver lake Sat 2pm", { title: "Matcha workshop", hood: "Silver Lake" }],
+  ["Weekly run club from zilker park Sat 7am", { title: "Weekly run club", meetPoint: "Zilker Park", repeat: "weekly" }],
+  ["Sunrise hike rattlesnake ledge sun meet at the trailhead", { title: "Sunrise hike", venueName: "Rattlesnake Ledge", meetPoint: "the trailhead", weekday: "sunday" }],
+  ["Supper club 4 strangers Fri 7pm", { title: "Supper club for strangers", headcount: undefined }],
+  ["Picnic in the park Sat 1pm", { title: "Picnic", hood: undefined }],
+  // a cost note is not a price
+  ["Potluck Sat 6pm ~$40 food cost", { costNote: "About $40 food cost", price: undefined, title: "Potluck" }],
+  ["Dinner Fri 8pm u pay as u go", { costNote: "Pay as you go", price: undefined, title: "Dinner" }],
+  ["Brunch Sun 11am you cover your own", { costNote: "You cover your own", price: undefined, title: "Brunch" }],
+  // pairs are two people each
+  ["Couples cooking class Sat 6pm, 4 pairs max", { headcount: 8 }],
+  ["Tango night Fri 9pm, up to 6 couples", { headcount: 12 }],
+  // a course start that isn't on the weekday they typed: kept, and Potto asks
+  ["Pottery course Thursdays from Jan 8 7pm, 6 sessions", { date: "2027-01-08", sessions: 6, dayClash: { typed: "thursday", date: "2027-01-08", alt: "2027-01-07" } }],
 ];
 
 for (const [input, want] of CASES) {
@@ -167,6 +208,22 @@ test("Potto's weekday question names both dates", () => {
   const w = c.prClashSay(c.parseEventText("Thursday Jan 8 dinner 7pm").dayClash);
   assert.equal(w.text, "Jan 8 is a Friday. Keep Fri, Jan 8, or Thu, Jan 7?");
   assert.equal(w.keep, "Keep Fri, Jan 8"); assert.equal(w.alt, "Thu, Jan 7");
+});
+
+test("two weekdays read back as one rule: Every Mon and Wed, and the calendar repeats on both", () => {
+  const o = c.parseEventText("Spanish class Mondays and Wednesdays 7pm, $15");
+  assert.equal(c.seriesEvery({ date: o.date, repeat: o.repeat, weekdays: o.weekdays }, true), "Every Mon and Wed");
+  assert.equal(c.seriesEvery({ date: o.date, repeat: o.repeat }, true), "Every Mon");
+});
+
+test("price words: \$20 each, or \$70 for 4", () => {
+  assert.equal(c.prPrice({ price: "$20", priceUnit: "each", groupPrice: 70, groupSize: 4 }), "$20 each, or $70 for 4");
+});
+
+test("a course with a drop-in reads both; a price per class is never for all N", () => {
+  const o = c.parseEventText("Pottery course $320 for all 8 or $45 drop in, Thursdays 7pm");
+  assert.equal(c.seriesPrice({ price: o.price, sessions: o.sessions, dropIn: o.dropIn }), "$320 for all 8, or $45 a class");
+  assert.equal(c.seriesPrice({ price: "$45", sessions: 8, priceUnit: "class" }), "$45 a class");
 });
 
 test("price words: each, a group, a class", () => {

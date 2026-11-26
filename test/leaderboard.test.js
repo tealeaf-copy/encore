@@ -138,3 +138,24 @@ test("Feed: one leaderboard card, only when the board qualifies; a moment once p
   const qv = await host("qv.lb@example.com", "qv-lb", "Queens Viewer", { city: "Queens" });
   assert.equal((await get("/api/me/feed", qv)).items.filter((i) => i.kind === "leaderboard").length, 0);
 });
+
+// ---- review round 6: cold start ----
+test("Cold start: every city with a host is in the picker; under 3 hosts a Rising list with no ranks or scores", async () => {
+  const j = await get("/api/v1/leaderboard?city=Queens");
+  assert.equal(j.data.qualified, false); assert.ok(j.cities.some((c) => c.city === "Queens" && c.hosts >= 2), JSON.stringify(j.cities));
+  const R = j.data.rising.map((h) => h.handle); assert.ok(R.includes("q1-lb") && R.includes("q2-lb"), JSON.stringify(R));
+  for (const h of j.data.rising) { assert.equal(h.rank, undefined); assert.equal(h.score, undefined); assert.equal(h.why, undefined); assert.match(h.url, /\/@q[12]-lb$/); }
+});
+
+test("Cold start: when this month doesn't qualify, All time does (unless the period was asked for)", async () => {
+  const old = day(-45);
+  for (const [k, n] of [["a1", "Austin One"], ["a2", "Austin Two"], ["a3", "Austin Three"]]) { const c = await host(`${k}.lb@example.com`, k + "-lb", n, { city: "Austin" }); await event(c, "lbAus" + k, { city: "Austin", date: old, guests: [`${k}g@guest.example.com`, `${k}h@guest.example.com`] }); }
+  fresh();
+  const j = await get("/api/v1/leaderboard?city=Austin");
+  assert.equal(j.data.qualified, true); assert.equal(j.data.period, "all"); assert.equal(j.data.fell_back, "all"); assert.equal(j.data.entries.length, 3);
+  const m = await get("/api/v1/leaderboard?city=Austin&period=month");
+  assert.equal(m.data.qualified, false); assert.equal(m.data.fell_back, null); assert.equal(m.data.rising.length, 3, "hosted in the last 90 days: rising, with no ranks");
+  // the directory's host record carries the best current board (all time here)
+  const r = await fetch(srv.base + "/api/v1/hosts/a1-lb"); if (r.ok) { const d = (await r.json()).data; assert.equal(d.leaderboard?.period, "all"); assert.match(d.leaderboard.text, /all time$/); }
+  const page = await (await fetch(srv.base + "/leaderboard")).text(); assert.match(page, /Rising in/); assert.match(page, /Not enough hosts this month yet, so this is All time/);
+});

@@ -117,7 +117,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
         $("#fol").innerHTML = `<form id="ff"><input type="email" id="fe" required autocomplete="email" placeholder="Your email" aria-label="Your email"><button class="btn" type="submit">Follow</button></form><p class="err" id="fErr">${email ? esc(x.message || "") : ""}</p>`;
         $("#ff").onsubmit = (ev) => { ev.preventDefault(); follow(j, $("#fe").value.trim()); }; return; }
       if (!r.ok) throw new Error(x.message || "That didn't work. Try again.");
-      $("#fol").innerHTML = `<span class="btn on" role="status">Following ${esc(j.hostFirst || j.host.name)}</span>`;
+      $("#fol").innerHTML = x.pending ? `<p class="muted" role="status" style="margin:0">Check your email to confirm you're following ${esc(j.hostFirst || j.host.name)}.</p>` : `<span class="btn on" role="status">Following ${esc(j.hostFirst || j.host.name)}</span>`;
     } catch (e) { if (b) { b.disabled = false; } const p = document.createElement("p"); p.className = "err"; p.textContent = e.message; $("#fol")?.appendChild(p); }
   }
   /* ---- kudos nudges ----
@@ -136,7 +136,9 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
         b.disabled = true; $("#gErr").textContent = "";
         try { const r = await fetch(`/api/public/kudos-group/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ g, contact }) });
           const x = await r.json().catch(() => ({})); if (!r.ok) throw new Error(x.message || "That didn't work. Try again.");
-          location.replace(`/k/${encodeURIComponent(id)}?rid=${encodeURIComponent(x.rid)}&code=${encodeURIComponent(x.code)}`);
+          // the server answers the same way whether or not it found the reply; it sends the link there, or hands the page on
+          if (x.next && /^\/k\//.test(x.next)) return location.replace(x.next);
+          f.innerHTML = `<p role="status" style="margin:0">${esc(x.message || "Thanks. If that's the email or phone you replied with, your kudos link is on its way there.")}</p>`;
         } catch (e) { $("#gErr").textContent = e.message; b.disabled = false; } };
     }).catch(() => stop("Couldn't load this", "Check your connection and try again."));
   }

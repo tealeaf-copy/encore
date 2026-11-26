@@ -7396,10 +7396,12 @@ ACT["pop-up"]={emoji:"🛍",bring:["Cash or a card"],ros:[["0:00","Table and sig
 // Home: booking requests and orders waiting, and a link to your page
 async function hostInboxHTML(){ let B=[],O=[],P=null; try{ const [b,o,p]=await Promise.all([fetch("/api/host/bookings").then(r=>r.ok?r.json():{}),fetch("/api/host/orders").then(r=>r.ok?r.json():{}),fetch("/api/host/profile").then(r=>r.ok?r.json():{})]); B=b.bookings||[]; O=(o.orders||[]).filter(x=>x.current); P=p.host }catch{} if(!P?.handle) return "";
   const req=B.filter(x=>(x.status||"requested")==="requested"&&x.kind==="booking"), quoted=B.filter(x=>x.status==="quoted"), booked=B.filter(x=>x.status==="booked"), newO=O.filter(x=>x.status==="new");
-  const rows=[...req.map(x=>`<a class="hi-row new" href="/@${esc(P.handle)}?bookings=1"><span>💼</span><div><b>${esc(x.company||x.name||"A brand")} requested ${x.when?esc(x.when):"a date"}</b><small>${esc(x.experience?.name||"")}${x.people?` · ${x.people} people`:""} · reply with a quote</small></div><em>Reply</em></a>`),...booked.slice(0,2).map(x=>`<a class="hi-row" href="/@${esc(P.handle)}?bookings=1"><span>🎉</span><div><b>Booked: ${esc(x.company||x.name)}</b><small>${esc(x.experience?.name||"")}${x.when?` · ${esc(x.when)}`:""}</small></div></a>`),...(newO.length?[`<a class="hi-row new" href="/@${esc(P.handle)}?orders=1"><span>🛍</span><div><b>${newO.length} new order${newO.length===1?"":"s"}</b><small>${esc(O.length)} this batch</small></div><em>See</em></a>`]:[])];
+  // Potto to-do: open to brand work with nothing priced, so brands only see "Quoted on request"
+  const pkgTodo=P.forHire&&!(P.experiences||[]).length?[`<a class="hi-row new pottoPkg" href="/@${esc(P.handle)}?bookings=1&list=1"><span>🏷️</span><div><b>Add one package so brands see a price</b><small>You're open to brand work. Right now brands see "Quoted on request". One priced package puts you higher on the list.</small></div><em>Add</em></a>`]:[];
+  const rows=[...pkgTodo,...req.map(x=>`<a class="hi-row new" href="/@${esc(P.handle)}?bookings=1"><span>💼</span><div><b>${esc(x.company||x.name||"A brand")} requested ${x.when?esc(x.when):"a date"}</b><small>${esc(x.experience?.name||"")}${x.people?` · ${x.people} people`:""} · reply with a quote</small></div><em>Reply</em></a>`),...booked.slice(0,2).map(x=>`<a class="hi-row" href="/@${esc(P.handle)}?bookings=1"><span>🎉</span><div><b>Booked: ${esc(x.company||x.name)}</b><small>${esc(x.experience?.name||"")}${x.when?` · ${esc(x.when)}`:""}</small></div></a>`),...(newO.length?[`<a class="hi-row new" href="/@${esc(P.handle)}?orders=1"><span>🛍</span><div><b>${newO.length} new order${newO.length===1?"":"s"}</b><small>${esc(O.length)} this batch</small></div><em>See</em></a>`]:[])];
   return `<section class="host-inbox"><div class="hi-head"><div><small class="eyebrow">Your page</small><h3>${esc(P.name||"@"+P.handle)}</h3></div><a class="btn ghost sm" href="/@${esc(P.handle)}">Open my page</a></div>${rows.length?rows.join(""):`<p class="note">Bookings from companies and shop orders show up here.${quoted.length?` ${quoted.length} quote${quoted.length===1?"":"s"} waiting on a reply.`:""}</p>`}</section>` }
 { const _rp2=renderPrograms; renderPrograms=function(){ const r=_rp2.apply(this,arguments); try{ if(window.__wsPersonal){ const el=$("#view-programs"); hostInboxHTML().then(h=>{ if(!h||!el) return; $("#hostInbox")?.remove(); const w=document.createElement("div"); w.id="hostInbox"; w.innerHTML=h; (el.querySelector(".canvas-head")||el.firstElementChild)?.before(w) }) } }catch(e){ console.warn(e) } return r } }
-(function addPageNav(){ const go=()=>{ if(!window.__wsPersonal||window.__wsRegularOnly||document.getElementById("navPage")) return; fetch("/api/host/profile").then(r=>r.ok?r.json():{}).then(j=>{ if(!j.host?.handle||document.getElementById("navPage")) return; const ref=document.getElementById("navFeed")||document.querySelector("nav a[href='#programs']"); const a=document.createElement("a"); a.id="navPage"; a.href="/@"+j.host.handle; a.className=ref?.className||""; a.textContent="My page"; ref?ref.after(a):null }).catch(()=>{}) }; let n=0; const t=setInterval(()=>{ if(document.getElementById("navPage")||++n>30){ clearInterval(t); return } if(window.__wsPersonal) go() },2000); setTimeout(go,1800) })();
+(function addPageNav(){ const go=()=>{ if(!window.__wsPersonal||window.__wsRegularOnly||document.getElementById("navPage")) return; fetch("/api/host/profile").then(r=>r.ok?r.json():{}).then(j=>{ if(!j.host?.handle||document.getElementById("navPage")) return; const ref=document.getElementById("navFeed")||document.querySelector("nav a[href='#programs']"); const a=document.createElement("a"); a.id="navPage"; a.href="/@"+j.host.handle; a.className=(ref?.className||"")+" nav-me"; a.textContent="My page"; ref?ref.after(a):null; try{ navIcons() }catch{} }).catch(()=>{}) }; let n=0; const t=setInterval(()=>{ if(document.getElementById("navPage")||++n>30){ clearInterval(t); return } if(window.__wsPersonal) go() },2000); setTimeout(go,1800) })();
 // interest and RSVP confirmations: who's in, share with a friend
 { const _rg16=renderGuest; renderGuest=async function(){ const r=await _rg16.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"), M=e&&myRsvp(e.id); if(!e?.id||!host||!isCasual(e)||!M||M.response!=="going"||$("#socialConf")) return r; const t=$(".ticket",host); if(!t) return r; if(e.price&&e.price!=="chip"&&e.ticketUrl&&!M.paid) return r;
     const box=document.createElement("div"); box.id="socialConf"; box.className="social-conf"; box.innerHTML=`<button class="btn ghost sm" type="button" id="shareIt">Bring a friend</button>`; t.after(box);
@@ -8616,7 +8618,7 @@ new MutationObserver(()=>{ try{ if(!draft?.unlisted) return; document.querySelec
 // a new member's invite codes, on Home
 { const _dph2=drawPipHome; drawPipHome=async function(){ const r=await _dph2.apply(this,arguments); return r } }
 let invitesBusy=false;
-async function drawInvites(){ if(invitesBusy) return; invitesBusy=true; try{ const v=document.querySelector("#view-programs"); if(!v||document.getElementById("myInvites")) return; const j=await (await fetch("/api/codes")).json(); if(!j?.codes?.length) return; if(!(await (window.__ioP||Promise.resolve(true)))) return; if(!(typeof allEvents!=="undefined"&&allEvents.some(e=>!e.example&&!e.sample&&(e.published||e.discoverable)))) return; if(document.getElementById("myInvites")) return; if(j.earned){ try{ pipToast(`You hosted. ${j.earned} more host codes for friends.`,"happy") }catch{} } const left=j.codes.filter(c=>!c.used); const box=document.createElement("section"); box.id="myInvites"; box.className="panel my-inv"; box.innerHTML=`<h3>${left.length} host code${left.length===1?"":"s"} to give away</h3><p class="note">For friends you'd love to see host. Guests never need one.</p><details class="inv-more"><summary class="linkbtn" style="cursor:pointer">Show codes</summary><ul class="inv-list">${j.codes.map(c=>`<li><code>${esc(c.code)}</code>${c.used?`<span class="note">Used${c.usedBy?` by ${esc(c.usedBy)}`:""}</span>`:`<button type="button" class="btn sm" data-invlink="${esc(c.link)}">Copy link</button>`}</li>`).join("")}</ul></details>`; v.appendChild(box); box.querySelectorAll("[data-invlink]").forEach(b=>b.onclick=()=>{ copyTxt(b.dataset.invlink); toast("Copied. Each link works once.") }) }catch{} finally{ invitesBusy=false } }
+async function drawInvites(){ if(invitesBusy) return; invitesBusy=true; try{ const v=document.querySelector("#view-programs"); if(!v||document.getElementById("myInvites")) return; const j=await (await fetch("/api/codes")).json(); if(!j?.codes?.length) return; if(!(await (window.__ioP||Promise.resolve(true)))) return; if(!(typeof allEvents!=="undefined"&&allEvents.some(e=>!e.example&&!e.sample&&(e.published||e.discoverable)))) return; if(document.getElementById("myInvites")) return; const left=j.codes.filter(c=>!c.used); const box=document.createElement("section"); box.id="myInvites"; box.className="panel my-inv"; box.innerHTML=`<h3>${left.length} host code${left.length===1?"":"s"} to give away</h3>${j.earned?`<p class="note inv-earned" role="status"><b>You hosted.</b> ${+j.earned} more host codes for friends.</p>`:""}<p class="note">For friends you'd love to see host. Guests never need one.</p><details class="inv-more"><summary class="linkbtn" style="cursor:pointer">Show codes</summary><ul class="inv-list">${j.codes.map(c=>`<li><code>${esc(c.code)}</code>${c.used?`<span class="note">Used${c.usedBy?` by ${esc(c.usedBy)}`:""}</span>`:`<button type="button" class="btn sm" data-invlink="${esc(c.link)}">Copy link</button>`}</li>`).join("")}</ul></details>`; v.appendChild(box); box.querySelectorAll("[data-invlink]").forEach(b=>b.onclick=()=>{ copyTxt(b.dataset.invlink); toast("Copied. Each link works once.") }) }catch{} finally{ invitesBusy=false } }
 { const _rp6=renderPrograms; renderPrograms=function(){ const r=_rp6.apply(this,arguments); setTimeout(drawInvites,600); return r } }
 
 // ==================================================================
@@ -9647,7 +9649,11 @@ const NAV_ICONS=(()=>{ const I=d=>`<svg class="nav-ic" viewBox="0 0 24 24" width
 { const s=document.createElement("style"); s.textContent=`body.friends-ws nav.tabs a .nav-ic{flex:none;margin-right:12px;vertical-align:-5px}body.friends-ws nav.tabs a{display:flex;align-items:center}@media (max-width:760px){body.friends-ws nav.tabs a[href="/hosts"]{display:none!important}}`; document.head.appendChild(s) }
 function navIcons(){ try{ if(!window.__wsPersonal) return; document.querySelectorAll("nav.tabs a").forEach(a=>{ if(a.querySelector(".nav-ic")) return; const t=a.textContent.trim(), v=a.dataset.view||"", h=a.getAttribute("href")||"";
     const ic=v==="programs"||t==="Home"?NAV_ICONS.home:t==="Discover"||/\/discover/.test(h)?NAV_ICONS.search:t==="Hosts"||/^\/hosts$/.test(h)?NAV_ICONS.people:t==="Feed"||/\/feed/.test(h)?NAV_ICONS.globe:t==="My page"||/\/@/.test(h)?NAV_ICONS.me:t==="Plans"||/\/plans/.test(h)?NAV_ICONS.cal:v==="studio"||t==="Events"?NAV_ICONS.plus:""; if(ic) a.insertAdjacentHTML("afterbegin",ic) }) }catch{} }
-new MutationObserver(()=>{ clearTimeout(window.__niT); window.__niT=setTimeout(navIcons,80) }).observe(document.documentElement,{childList:true,subtree:true});
+new MutationObserver(()=>{ if(window.__niT) return; window.__niT=setTimeout(()=>{ window.__niT=0; navIcons(); navShort() },80) }).observe(document.documentElement,{childList:true,subtree:true});
+// six tabs on a 390px phone: "New event" shows as "New" under 400px (the link keeps its full name for screen readers)
+function navShort(){ try{ document.querySelectorAll('nav.tabs a[data-view="studio"]').forEach(a=>{ if(a.querySelector(".nl-full")) return; const t=[...a.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()==="New event"); if(!t) return;
+    const s=document.createElement("span"); s.innerHTML=`<span class="nl-full">New event</span><span class="nl-short" aria-hidden="true">New</span>`; t.replaceWith(s); a.setAttribute("aria-label","New event") }) }catch{} }
+{ const s=document.createElement("style"); s.textContent=`.nl-short{display:none}@media (max-width:399px){nav.tabs a .nl-full{display:none}nav.tabs a .nl-short{display:inline}body.friends-ws nav.tabs a{font-size:12px!important;letter-spacing:-.01em}}`; document.head.appendChild(s) }
 // business-only pages send casual hosts home
 function casualRoute(){ try{ if(!window.__wsPersonal) return; const h=location.hash.replace("#",""); if(["inspire","canvas","impact","insights","conferences"].includes(h)){ history.replaceState(null,"","#programs"); try{ route() }catch{ location.hash="programs" } } }catch{} }
 window.addEventListener("hashchange",casualRoute); setTimeout(casualRoute,300); setTimeout(casualRoute,1500);
@@ -10155,12 +10161,19 @@ function guestRows(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filte
   return out }
 function parseGuestList(text){ const rows=[]; const cells=line=>{ const out=[]; let cur="", q=false; for(let i=0;i<line.length;i++){ const ch=line[i]; if(q){ if(ch==='"'&&line[i+1]==='"'){ cur+='"'; i++ } else if(ch==='"') q=false; else cur+=ch } else if(ch==='"') q=true; else if(ch===","||ch==="\t"||ch===";"){ out.push(cur.trim()); cur="" } else cur+=ch } out.push(cur.trim()); return out };
   const lines=String(text||"").split(/\r?\n/).map(l=>l.trim()).filter(Boolean); if(!lines.length) return rows;
-  const head=cells(lines[0]).map(h=>h.toLowerCase()), hasHead=head.some(h=>/^(name|full name|first name|guest|email|e-mail|phone)/.test(h));
+  // line 1 is a header only when its cells are header words ("Name", "Email", "First name", "Phone number"), never a guest
+  const head=cells(lines[0]).map(h=>h.toLowerCase().replace(/[*:]+$/,"").trim()), HW=/^(?:(?:guest|full|first|last|given|family|sur)\s*name|name|first|last|surname|guest|e-?mail(?:\s*address)?|phone(?:\s*number)?|mobile|cell|tel|status|rsvp|response|approval)$/;
+  const hasHead=head.some(h=>HW.test(h))&&!head.some(h=>/@|\d{4,}/.test(h));
   const col=re=>head.findIndex(h=>re.test(h)), iName=col(/^(name|full name|guest name|guest)$/), iFirst=col(/^first/), iLast=col(/^last/), iEmail=col(/mail/), iPhone=col(/phone|mobile|cell/), iStatus=col(/status|rsvp|response|approval/);
   for(const line of hasHead?lines.slice(1):lines){ const c=cells(line); let name="", email="", phone="", status="";
     // a row can be shorter than the header (a missing phone at the end): every read falls back to ""
-    if(hasHead){ const at=i=>i>=0?String(c[i]??""):""; name=iName>=0?at(iName):[at(iFirst),at(iLast)].join(" ").trim(); email=at(iEmail); phone=at(iPhone); status=at(iStatus) }
-    else for(const t of c){ if(!email&&/@/.test(t)) email=t; else if(!phone&&/^[+\d][\d\s().-]{6,}$/.test(t)) phone=t; else if(!name&&t) name=t }
+    if(hasHead){ const at=i=>i>=0?String(c[i]??""):""; name=iName>=0?at(iName):[at(iFirst),at(iLast)].join(" ").trim(); email=at(iEmail); phone=at(iPhone); status=at(iStatus);
+      const ang=email.match(/^(.*?)<\s*([^<>\s]+@[^<>\s]+)\s*>/); if(ang){ email=ang[2]; if(!name) name=ang[1].replace(/["']/g,"").trim() } }
+    else for(let t of c){ // a cell can hold several: "Ana Diaz <ana@x.com>", "+1 (415) 555-0102 Cy", "bo@x.com"
+      const ang=t.match(/<\s*([^<>\s]+@[^<>\s]+)\s*>/); if(ang){ if(!email) email=ang[1]; t=t.replace(ang[0]," ") }
+      const em=t.match(/[^\s<>(),;"']+@[^\s<>(),;"']+\.[^\s<>(),;"']+/); if(em){ if(!email) email=em[0]; t=t.replace(em[0]," ") }
+      const ph=t.match(/(?:^|\s)(\+?\(?\d[\d\s().-]{5,}\d)(?=\s|$)/); if(ph&&ph[1].replace(/\D/g,"").length>=7){ if(!phone) phone=ph[1]; t=t.replace(ph[1]," ") }
+      t=t.replace(/^["'\s,;:-]+|["'\s,;:-]+$/g,"").replace(/\s{2,}/g," "); if(!name&&t) name=t }
     email=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)?email.toLowerCase():""; name=name.replace(/[<>]/g,"").slice(0,80); phone=phone.replace(/[^\d+]/g,"").slice(0,20);
     if(!name&&!email&&!phone) continue; rows.push({name:name||email.split("@")[0]||phone,email,phone,status:/going|yes|approved|registered|confirmed|attending/i.test(status)?"Going":/maybe/i.test(status)?"Maybe":""}) }
   return rows }
@@ -10997,6 +11010,8 @@ const srMD=x=>`${SR_MON[x.getMonth()]} ${x.getDate()}`;
 function srNth(x){ const nth=Math.ceil(x.getDate()/7), last=new Date(x.getFullYear(),x.getMonth(),x.getDate()+7,12).getMonth()!==x.getMonth()&&nth>=4; return last?-1:nth }
 // "every Tuesday", "every other Tuesday", "the first Tuesday of each month"; short: "Every Tue", "Every other Tue", "First Tue of each month"
 function seriesEvery(d,short){ const x=srDate(d?.date), r=d?.repeat||(+d?.sessions>1?"weekly":""); if(!x||!r) return ""; const day=short?SR_DAY[x.getDay()].slice(0,3):SR_DAY[x.getDay()];
+  // weekly on two days ("Mondays and Wednesdays"): "Every Mon and Wed"
+  const W=srWeekdays(d); if(W.length>1&&r==="weekly"){ const s=`every ${W.map(i=>SR_DAY[i].slice(0,3)).join(" and ")}`; return short?s[0].toUpperCase()+s.slice(1):s }
   if(r==="monthly"){ const k=srNth(x), w=k<0?"last":SR_NTH[k-1]; return short?`${w[0].toUpperCase()+w.slice(1)} ${day} of each month`:`the ${w} ${day} of each month` }
   const s=r==="biweekly"?`every other ${day}`:r==="weekly"?`every ${day}`:""; return short&&s?s[0].toUpperCase()+s.slice(1):s }
 // the dates of a course: "6 Wednesdays, Jan 6 to Feb 10"
@@ -11004,12 +11019,17 @@ function seriesLast(d){ const x=srDate(d?.date), n=+d?.sessions||0; if(!x||n<2) 
 function seriesSpan(d){ const x=srDate(d?.date), y=seriesLast(d); if(!x||!y) return ""; return `${d.sessions} ${SR_DAY[x.getDay()]}s, ${srMD(x)} to ${srMD(y)}` }
 // money words for a series: "$180 for all 6", "$20 a class, or $70 for 4"; "" when there's nothing series-shaped to say
 function seriesPrice(d){ const amt=v=>{ const m=String(v??"").match(/(\d+(?:\.\d{1,2})?)/); return m?"$"+m[1]:"" }, p=d?.price&&d.price!=="chip"?amt(d.price):"", n=+d?.sessions||0, pp=+d?.passPrice||0, pc=+d?.passCount||0;
-  if(n>1&&p) return `${p} for all ${n}`;
-  if(pp&&pc>1) return p?`${p} a class, or ${amt(pp)} for ${pc}`:`${amt(pp)} for ${pc} classes`;
+  // a pass and sessions together: the pass is the bundle ("$20 a class, or $100 for all 6")
+  if(pp&&pc>1){ const of=n>1&&pc===n?`all ${n}`:""; return p?`${p} a class, or ${amt(pp)} for ${of||pc}`:`${amt(pp)} for ${of||pc+" classes"}` }
+  // a price per class is "$X a class", never "for all N"; a course with a drop-in says both
+  if(p&&d.priceUnit==="class") return `${p} a class`;
+  if(n>1&&p) return +d.dropIn>0?`${p} for all ${n}, or ${amt(d.dropIn)} a class`:`${p} for all ${n}`;
   return "" }
 // the calendar repeat: RRULE:FREQ=WEEKLY, with COUNT for a course
-function seriesRRule(d){ const x=srDate(d?.date), r=d?.repeat||(+d?.sessions>1?"weekly":""); if(!x||!r) return ""; const BY=["SU","MO","TU","WE","TH","FR","SA"][x.getDay()];
-  const f=r==="monthly"?`FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}`:r==="biweekly"?"FREQ=WEEKLY;INTERVAL=2":r==="weekly"?"FREQ=WEEKLY":""; if(!f) return ""; return "RRULE:"+f+(+d.sessions>1?`;COUNT=${+d.sessions}`:"") }
+// the days of a class that repeats on more than one weekday (d.weekdays: ["monday","wednesday"]), as day numbers
+function srWeekdays(d){ const W=Array.isArray(d?.weekdays)?d.weekdays.map(w=>SR_DAY.findIndex(x=>x.toLowerCase()===String(w).toLowerCase())).filter(i=>i>=0):[]; return [...new Set(W)].slice(0,7) }
+function seriesRRule(d){ const x=srDate(d?.date), r=d?.repeat||(+d?.sessions>1?"weekly":""); if(!x||!r) return ""; const BY=r==="weekly"&&srWeekdays(d).length>1?srWeekdays(d).map(i=>["SU","MO","TU","WE","TH","FR","SA"][i]).join(","):["SU","MO","TU","WE","TH","FR","SA"][x.getDay()];
+  const f=r==="monthly"?`FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}`:r==="biweekly"?"FREQ=WEEKLY;INTERVAL=2":r==="weekly"?"FREQ=WEEKLY"+(BY.includes(",")?";BYDAY="+BY:""):""; if(!f) return ""; return "RRULE:"+f+(+d.sessions>1?`;COUNT=${+d.sessions}`:"") }
 // an .ics body gets the repeat line after its start and end
 function seriesIcs(body,d){ const rr=seriesRRule(d); if(!rr||/\r?\nRRULE:/.test(body)) return body; return String(body).replace(/(\r?\n)(SUMMARY:)/,`$1${rr}$1$2`) }
 // ---------- series: wiring ----------
@@ -11125,7 +11145,7 @@ function prNthDate(y,mo,wd,n){ y+=Math.floor(mo/12); mo=((mo%12)+12)%12; const f
 function prDays(t){ const out=[], re=new RegExp(`\\b(?:(on|this|next|every(?: other)?)\\s+)?(${PR_DAYS_RE})(s)?\\b\\.?`,"gi"); let m;
   while((m=re.exec(t))){ const w=m[2].toLowerCase(), full=PR_DAY.includes(w); let wd=full?PR_DAY.indexOf(w):PR_SHORT[w];
     if(!full){ const before=t.slice(Math.max(0,m.index-4),m.index), after=t.slice(m.index+m[0].length);
-      const ok=!!m[1]||/^[A-Z]/.test(m[2])||new RegExp(`^\\s*(?:\\d|,|$|at\\s+\\d|(?:${PR_MON_RE})\\b|(?:morning|night|evening|afternoon)s?\\b)`,"i").test(after);
+      const ok=!!m[1]||/^[A-Z]/.test(m[2])||new RegExp(`^\\s*(?:\\d|,|$|at\\s+\\d|meet\\b|(?:${PR_MON_RE})\\b|(?:morning|night|evening|afternoon)s?\\b)`,"i").test(after);
       if(!ok||/\bthe\s$/i.test(before)) continue }
     out.push({wd,pre:(m[1]||"").toLowerCase(),plural:!!m[3]&&w!=="weds",index:m.index,text:m[0]}) }
   return out }
@@ -11169,11 +11189,16 @@ function prTimes(t){ const s=t.replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\
   const h24=s.match(/(?<![$\d.:\/])\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(h24) return {startTime:prBare(h24[1],h24[2],s)};
   const b=s.match(prBareRe()); if(b){ const a=prBare(b[1],b[2],s); if(a) return {startTime:a} }
   return {} }
+// "9pm-late", "9pm till late", "until late": an open end. Out of the title, and no end time.
+const PR_LATE=/\s*(?:-|–|\u2014|\bto|\btill|\btil|\buntil|'til)\s*late\b/i;
+// a number glued to a name ("Bachata 101 class", "Salsa 2") is part of the name, never the headcount
+function prGlued(t,n){ const re=new RegExp(`\\b([A-Za-z][\\w'’]*)\\s+${+n}\\b(?!\\s*(?:-|\\s)?(?:${PR_NOT_TIME.slice(3,-1)}|max\\b))`,"g"); let m;
+  while((m=re.exec(String(t||"")))){ if(!/^(?:for|of|max|up|to|about|around|serves|feeds|party|table|group|cap|capped|limit|only|just|me|us|we)$/i.test(m[1])) return true } return false }
 // filler before the plan: "umm", "maybe", "thinking maybe", "hosting a", "free"
 const PR_FILL=/^(?:(?:umm*|um+|uh+|hmm+|ok(?:ay)?|so|well|hey)\b[,.!]*\s*|(?:i'?m\s+|i am\s+|we'?re\s+)?thinking(?:\s+(?:of|about|maybe))*\s+|(?:maybe|perhaps|probably)\b[,]?\s+|(?:i'?m\s+|we'?re\s+)?hosting\s+|free\s+(?=\S))/i;
 const PR_SPLIT=new RegExp(`[;!?]|\\.\\s|,|\\s+[-–\\u2014]\\s+|\\s+(?:for|with|at|in|on)\\s+(?:\\d|about|around|my|our|mine|home|the\\s|a\\s|an\\s)|\\s+\\$|\\s+\\d+\\s*(?:people|guests|friends|ppl|spots|seats|places|sandwiches|cakes)\\b|\\s+pay[- ]what\\b|\\s+(?:pwyw|by donation)\\b`,"i");
 // one clause of the title without the day, time, date and repeat
-function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
+function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].replace(new RegExp(PR_LATE.source,"gi")," ").replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
   const lead=t.match(new RegExp(`^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\\s+(\\S+)$`,"i"));
   if(!lead){ const nth=prNth(t); if(nth) t=t.replace(nth.text," ");
     t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(new RegExp(prRangeRe().source,"gi")," ")
@@ -11185,17 +11210,21 @@ function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].r
       .replace(new RegExp(`\\b\\d{1,2}\\s+(?:${PR_DAY.join("|")})s\\b`,"gi")," ").replace(/\b\d{1,2}\s+(?:weekly\s+)?sessions\b/gi," ");
     for(const d of prDays(t).reverse()) t=t.slice(0,d.index)+" "+t.slice(d.index+d.text.length);
     t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:\/])\b\d{1,2}:\d{2}\b/g," ").replace(/\b(?:noon|tonight|today|tomorrow|tmrw|tmw|this weekend|this evening)\b/gi," ")
-      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
+      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|&|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
   return t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim() }
 // the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
 // characters, cut at a list or word boundary so "sourdough loaves and cardamom buns" isn't cut mid-list. When the
 // first clause is only the schedule ("6 Wednesdays from Jan 6, Bachata fundamentals"), the next clause is the name.
-function prTitle(text){ let t=String(text||"").trim(); for(let k=0;k<6;k++){ const n=t.replace(PR_FILL,""); if(n===t) break; t=n }
+function prTitle(text){ let t=prCost(String(text||"")).rest.trim(); for(const re of prWhere(t).cut) t=t.replace(re," ");
+  t=t.replace(/\s+meet(?:ing)?\b(?:\s+(?:up\s+)?(?:at|by|outside|in front of)\b)?[\s\S]*$/i,"").replace(/\b4\s+(strangers|beginners|newbies|singles|everyone|newcomers)\b/i,"for $1");
+  t=t.replace(new RegExp(PR_LATE.source,"gi")," ").replace(/\b(?:groups?\s+of\s+\d{1,2}\s+(?:for|is|at)\s+\$\s?\d[\d.,]*|\$\s?\d[\d.,]*\s+(?:for|per)\s+(?:a\s+)?groups?\s+of\s+\d{1,2})\b/gi," ").replace(/\s{2,}/g," ").trim(); for(let k=0;k<6;k++){ const n=t.replace(PR_FILL,""); if(n===t) break; t=n }
   t=t.replace(/^(?:please\s+)?(?:let'?s\s+|i(?:'m| am)\s+(?:hosting|running|planning|doing|throwing)\s+|(?:plan|host|throw|organi[sz]e|set up)\s+|(?:run|make)\s+(?=(?:a|an|my|our)\s))/i,"").replace(/^(?:a|an|my|our)\s+/i,"").replace(/^public\s+/i,"");
   for(let k=0;k<6;k++){ const n=t.replace(PR_FILL,"").replace(/^(?:a|an|my|our)\s+/i,""); if(n===t) break; t=n }
   const parts=t.split(PR_SPLIT); t="";
   for(const p of parts.slice(0,4)){ const c=prTitleClause(p||""); if(/[a-z]{3,}/i.test(c)&&!/^(?:pickup|bring|from|every|starting|at|on|and|free|drop[- ]?in)\b/i.test(c)){ t=c; break } }
   if(t.length>60){ const c=t.slice(0,61), cut=Math.max(c.lastIndexOf(", "),c.lastIndexOf(" and "),c.lastIndexOf(" & "),c.lastIndexOf(": ")); t=(cut>=20?c.slice(0,cut):c.replace(/\s+\S*$/,"")).replace(/[\s,:&-]+$/,"") }
+  // a lowercase short day left at the end ("... ledge sun") goes; "in the sun" stays
+  t=t.replace(new RegExp(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); t=prTrail(t).title;
   return t?t.replace(/^./,c=>c.toUpperCase()):"" }
 // a class you teach (dance, yoga, improv, a language, music lessons) is a "class"; a make-a-thing session stays a "workshop"
 const PR_CLASS=/\b(?:dance|dancing|salsa|bachata|tango|kizomba|zumba|ballet|hip[- ]?hop|swing dance|improv|yoga|pilates|barre)\b/i, PR_LESSON=/\b(?:class|classes|lessons?|course|fundamentals|basics|for beginners|beginners?|drop[- ]?in|series|workshop)\b/i,
@@ -11205,19 +11234,55 @@ const prIsClass=t=>!PR_CRAFT.test(t)&&((PR_CLASS.test(t)&&(PR_LESSON.test(t)||!/
 // the place: a named meeting point after "at" ("at Grand Army Plaza", "meet at the Fountain") or a neighbourhood with a
 // hyphen after "in" ("in Bed-Stuy", "in Hell's Kitchen" stays with the older city reader). Days, months and "my place" are not places.
 const PR_PLACE_WORD="[A-Z][\\w'’.]*(?:-[A-Za-z][\\w'’.]*)*";
+// a lowercase place word after a name belongs to it: "Beacon station", "Dolores park", "Carroll st"
+const PR_PLACE_NOUN="station|stn|park|square|plaza|library|gardens?|beach|pier|hall|market|cafe|café|bar|studio|center|centre|church|museum|bridge|terminal|field|track|trailhead|lake|reservoir|green|commons|street|st|avenue|ave|road|rd|stop|entrance|gate|steps|fountain";
 function prPlace(text){ const t=String(text||""), skip=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|noon|midnight|tonight|today|tomorrow|i|we|my|our)$`,"i");
-  const re=new RegExp(`\\b(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|of|on|&))*)`,"g"); let m;
+  const re=new RegExp(`\\b(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN}))?)`,"g"); let m;
   while((m=re.exec(t))){ const words=m[2].split(/\s+/); while(words.length&&(skip.test(words[words.length-1].replace(/[.,]$/,""))||/^(?:of|on|&)$/i.test(words[words.length-1]))) words.pop();
     if(!words.length||skip.test(words[0].replace(/^the$/i,""))||(words[0].toLowerCase()==="the"&&words.length<2)) continue;
     const place=words.join(" ").replace(/[.,]+$/,""); if(place.length<3) continue;
     if(m[1]==="at") return {place};
     if(/-/.test(place)) return {place,hood:place} }
   return {} }
+// a cost note, not a paid spot: "~$40 food cost", "u pay as u go", "you cover your own", "split the bill"
+const PR_COST=[[/~\s?\$\s?(\d{1,5}(?:\.\d{2})?)(?:\s*(?:food|ingredients?|grocer(?:y|ies)|supplies|materials?|gas)?\s*(?:costs?|each|a person|pp)?)?/i,m=>`About $${m[1]}${/cost/i.test(m[0])?" "+m[0].replace(/^~\s?\$\s?[\d.]+\s*/,"").trim():""}`],
+  [/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:food|ingredients?|grocer(?:y|ies)|supplies|materials?|gas)\s*costs?\b/i,m=>m[0].trim()],
+  [/\b(?:u|you)\s+pay\s+as\s+(?:u|you)\s+go\b|\bpay[- ]as[- ](?:u|you)[- ]go\b/i,()=>"Pay as you go"],
+  [/\b(?:u|you)(?:'ll)?\s+cover\s+(?:your|ur|yr)\s+own\b(?:\s+(?:food|drinks|tab|bill|meal|ticket))?/i,()=>"You cover your own"],
+  [/\bsplit(?:ting)?\s+the\s+(?:bill|check|cost)\b|\bgo(?:ing)?\s+dutch\b/i,()=>"We split the bill"]];
+function prCost(text){ let t=String(text||""); const notes=[]; for(const [re,f] of PR_COST){ const m=t.match(re); if(m){ notes.push(f(m)); t=t.replace(m[0]," ") } } return {note:notes.join(". "),rest:notes.length?t.replace(/\s{2,}/g," ").replace(/\s+([,.])/g,"$1").trim():t} }
+// a place typed in lowercase: "at studio 5 on bleecker", "from zilker park", "in silver lake", "meet at the trailhead".
+// The words run until a day, a time, a date, "meet", "for" or a comma. Place names come back in title case.
+const PR_STOP_W=new RegExp(`^(?:(?:${PR_DAYS_RE})s?|(?:${PR_MON_RE})|meet|meeting|for|with|every|this|next|tonight|today|tomorrow|tmrw|starting|beginning|from|pickup|till|until|bring|then|and|or|at|in|noon|midnight|weekly|monthly|daily|free|pay|starts?|\\$.*|~.*)$`,"i");
+function prGrab(rest){ const W=String(rest||"").split(/\s+/), out=[];
+  for(let i=0;i<W.length&&out.length<6;i++){ const raw=W[i], w=raw.replace(/[,;.!?()]+$/,""); if(!w||PR_STOP_W.test(w)) break;
+    if(/^\d/.test(w)&&!/^\d{1,3}$/.test(w)) break; const nx=(W[i+1]||"").replace(/[,;.!?()]+$/,"");
+    if(/^\d{1,3}$/.test(w)&&(!out.length||!nx||PR_STOP_W.test(nx)||/^(?:am|pm)$/i.test(nx))) break;
+    out.push(w); if(/[,;.!?)]$/.test(raw)) break }
+  while(out.length&&/^(?:on|of|the|&|and|by|a)$/i.test(out[out.length-1])) out.pop(); return out }
+const prCase=W=>W.map((w,i)=>i&&/^(?:on|of|the|and|&|by|de|la|du|at)$/i.test(w)?w.toLowerCase():w.replace(/^[a-z]/,c=>c.toUpperCase())).join(" ");
+const prEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function prWhere(text){ const t=String(text||""), o={}, cut=[];
+  const mt=t.match(/\bmeet(?:ing)?\s+(?:up\s+)?(?:at|by|outside|in front of)\s+(.+)$/i); if(mt){ const W=prGrab(mt[1]); if(W.length) o.meet=W.join(" ") }
+  const re=/\b(at|from|in)\s+/gi; let m;
+  while((m=re.exec(t))){ if(/\bmeet(?:ing)?\s+(?:up\s+)?$/i.test(t.slice(0,m.index))) continue; const W=prGrab(t.slice(m.index+m[0].length)); if(!W.length) continue;
+    const kw=m[1].toLowerCase(), f=W[0].toLowerCase(); if(/^(?:my|our|mine|home|a|an|your|his|her|their|person|advance|total|all|work|least|most|once)$/.test(f)) continue;
+    // a capitalised "at The Smith" / "in Bed-Stuy" stays with the older readers (prPlace, the city reader)
+    if(kw!=="from"&&/^[A-Z]/.test(W[0])) continue; if(kw==="in"&&f==="the") continue;
+    const name=prCase(W); if(kw==="at"){ if(!o.place) o.place=name } else if(kw==="from"){ if(!o.meet) o.meet=name } else if(!o.hood) o.hood=name;
+    cut.push(new RegExp(`\\s*\\b${kw}\\s+${W.map(prEsc).join("\\s+")}\\b`,"i")) }
+  return {...o,cut} }
+// "Sunrise hike rattlesnake ledge": lowercase words after the activity are where it is
+function prTrail(title){ const m=String(title||"").match(/^(.*?\b(?:hike|hiking|run|walk|ride|swim|paddle|climb|picnic|trek|ramble|bike ride))\s+([a-z][a-z'’-]*(?:\s+[a-z][a-z'’-]*){1,3})$/);
+  if(!m||/\b(?:club|night|party|class|group|crew|social|series|session|meetup|together|morning|evening|loop|day|and|with|for|the|a|to|of|time|date|after|before)\b/.test(m[2])) return {title}; return {title:m[1],place:prCase(m[2].split(/\s+/))} }
 // a pop-up (a bake sale, a market stall) sells until it sells out: no spot cap unless the host gave a number
 const prPopupNoCap=t=>/pop-?up|bake sale|market stall|\bstall\b|food cart/i.test(String(t||""))&&!/\b\d+\s*(?:spots|seats|people|guests|places|ppl|friends|max|sandwiches|banh mi|bánh mì|cakes|cookies|pastries|loaves|boxes|jars|bouquets)\b|\b(?:max|up to)\s+\d/i.test(String(t||""));
 // everything Potto reads from one sentence. Only what the host said is set.
-function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prToday(), o={};
+function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowerCase(), today=prToday(), o={}; if(C0.note) o.costNote=C0.note;
   const nth=prNth(t), dt=prDate(t,today), days=prDays(nth?t.replace(nth.text," "):t), day=nth?{wd:nth.wd,pre:"",plural:false}:days[0];
+  // "Mondays and Wednesdays", "Tue & Thu": weekly on both. The series repeats on the first; weekdays keeps them all.
+  { const two=new RegExp(`\\b(?:every\\s+)?(${PR_DAYS_RE})(s)?\\.?\\s*(?:and|&|\\+|,)\\s*(${PR_DAYS_RE})(s)?\\b`,"i").exec(nth?"":t);
+    if(two&&(two[2]||two[4]||/every/i.test(two[0]))){ const W=[two[1],two[3]].map(w=>{ w=w.toLowerCase(); return PR_DAY.includes(w)?PR_DAY.indexOf(w):PR_SHORT[w] }); if(W.every(x=>x!=null)&&W[0]!==W[1]) o.weekdays=W.map(x=>PR_DAY[x]) } }
   // the course: "8 week pottery wheel course", "6-week improv course", "8 sessions", "6 Wednesdays", "$320 for all 8"
   const sp=(typeof seriesParse==="function"?seriesParse(t):{})||{};
   const wk=t.match(/\b(\d{1,2})[- ]?weeks?\b(?:[- ]long)?[\s-]+(?:[a-z'’]+[\s-]+){0,3}?(?:course|series|class(?:es)?|workshop|program|programme|intensive|bootcamp|lessons?)\b(?![- ]?(?:pass|card|pack))/i);
@@ -11228,8 +11293,8 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
   if(prIsClass(t)){ o.label="class"; o.activity="class" }
   // the weekday and the date. A date that isn't on the weekday they typed stays as typed, and Potto asks (dayClash).
   if(day) o.weekday=PR_DAY[day.wd];
-  if(dt){ let x=dt.date; if(o.course&&day&&x.getDay()!==day.wd){ x=new Date(x); while(x.getDay()!==day.wd) x.setDate(x.getDate()+1) }
-    else if(day&&!nth&&!day.plural&&day.pre!=="every"&&x.getDay()!==day.wd){ o.dayClash={typed:PR_DAY[day.wd],date:prISO(x),alt:prISO(prNear(x,day.wd,today))}; o.weekday=PR_DAY[x.getDay()] }
+  if(dt){ let x=dt.date; // a date that isn't on the weekday they typed (a course's start too): keep it, and Potto asks
+    if(day&&!nth&&(o.course||(!day.plural&&day.pre!=="every"))&&x.getDay()!==day.wd){ o.dayClash={typed:PR_DAY[day.wd],date:prISO(x),alt:prISO(prNear(x,day.wd,today))}; o.weekday=PR_DAY[x.getDay()] }
     o.date=prISO(x) }
   else if(nth){ let x=prNthDate(today.getFullYear(),today.getMonth(),nth.wd,nth.n); if(!x||x<today) x=prNthDate(today.getFullYear(),today.getMonth()+1,nth.wd,nth.n)||new Date(today.getFullYear(),today.getMonth()+1,1,12); o.date=prISO(x); o.nth=nth.n }
   else if(/\b(tonight|today|this evening)\b/.test(lo)) o.date=prISO(today);
@@ -11243,6 +11308,9 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
   else if(/\bevery (?:week|day)\b|\bweekly\b/.test(lo)||days.some(d=>d.pre==="every")) o.repeat="weekly";
   else if(/\bmonthly\b|\bevery month\b/.test(lo)) o.repeat="monthly";
   else if(day&&day.plural&&!dt&&day.pre!=="this"&&day.pre!=="next") o.repeat="weekly";
+  if(o.weekdays&&!o.repeat) o.repeat="weekly";
+  // an open end ("9pm-late", "till late"): no end time
+  if(PR_LATE.test(t)){ o.late=true; delete o.endTime }
   if(/\bpre-?orders?\b/i.test(t)) o.preorder=true;
   // money: "$20 a class", "$10 drop-in", "$320 for all 8", "$30 a person", "$12 each", "$180"; the pass "$70 for 4";
   // "$40 for 2 people" (a group price); "$0" and "free"; "pay what you want" (chip)
@@ -11250,7 +11318,9 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
   const paid=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?!\s*k\b|\d)/gi)].map(m=>m[1]).filter(v=>+v>0);
   const freeWord=/(?:^|[^-\w])free\b(?!\s*(?:-|time|parking|wi-?fi|refills?|range)\b)/i.test(t.replace(/\b(?:gluten|dairy|nut|sugar|alcohol|booze|meat|carb|caffeine|smoke|scent|fragrance|stress|hands|cruelty|kid|pet|child|tax|fee|duty|rent|feel)[- ]free\b/gi," "));
   const grp=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|per)\s+(?:a\s+|the\s+)?(?:(\d)\s*(?:people|persons|ppl|guests|of you|of us|adults)\b|(two|three|four|five|six)(?:\s+(?:people|persons|ppl|guests|of you|of us|adults))?\b|(couples?|pair)\b)/i);
-  const gN=grp?(grp[2]?+grp[2]:grp[3]?{two:2,three:3,four:4,five:5,six:6}[grp[3].toLowerCase()]:2):0;
+  let gN=grp?(grp[2]?+grp[2]:grp[3]?{two:2,three:3,four:4,five:5,six:6}[grp[3].toLowerCase()]:2):0;
+  // "group of 5 for $40", "$40 for a group of 5"
+  const gOf=t.match(/\bgroups?\s+of\s+(\d{1,2})\s+(?:for|is|at)\s+\$\s?(\d{1,5}(?:\.\d{2})?)|\$\s?(\d{1,5}(?:\.\d{2})?)\s+(?:for|per)\s+(?:a\s+)?groups?\s+of\s+(\d{1,2})\b/i);
   if(pwyw) o.price="chip";
   else if(!paid.length&&(freeWord||/\$\s?0(?:\.00)?(?![.\d])/.test(t))) o.free=true;
   else { const per=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a|per|\/)\s*(?:class|session|lesson|drop[- ]?in|visit)\b|\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:a\s+)?drop[- ]?in\b|\bdrop[- ]?ins?\s*(?:is|are|:|at|for)?\s*\$\s?(\d{1,5}(?:\.\d{2})?)/i);
@@ -11258,21 +11328,35 @@ function prRead(text){ const t=String(text||""), lo=t.toLowerCase(), today=prTod
     if(sp.passPrice){ o.passPrice=sp.passPrice; o.passCount=sp.passCount }
     else if(per){ const bare=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:a\s+)?(\d{1,2})\b(?!\s*(?:-|\s)?(?:people|persons?|guests|spots|seats|ppl|friends|of us))/gi)].find(m=>!/for\s+(?:all|the)\s/i.test(m[0])); if(bare&&+bare[2]>=2){ o.passPrice=+bare[1]; o.passCount=+bare[2] } }
     if(grp&&gN>=2&&gN<=6){ o.groupPrice=+grp[1]; o.groupSize=gN }
-    const amt=per?(per[1]||per[2]||per[3]):all?all[1]:each?each[1]:o.groupPrice?grp[1]:(paid.find(v=>+v!==+o.passPrice)||"");
-    if(amt&&+amt>0&&!(+amt>=1000)){ o.price="$"+amt; if(!(o.groupPrice&&!per)) o.seatPrice=+amt }
-    if(o.price&&per&&!o.passPrice) o.priceUnit="class";
+    if(gOf){ const sz=+(gOf[1]||gOf[4]), gp=+(gOf[2]||gOf[3]); if(sz>=2&&sz<=50&&gp>0){ o.groupPrice=gp; o.groupSize=sz } }
+    // "$20 each or $70 for 4": $20 each, and $70 for 4 is the class pass (a series) or a group price (a one-off). Never 4 spots.
+    if(!o.passPrice&&!o.groupPrice&&!per){ const eo=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:each|a person|per person|pp\b|a head)\s*(?:,|or|\/)\s*(?:or\s+)?\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:a\s+)?(\d{1,2})\b(?!\s*(?:-|\s)?(?:people|persons?|guests|spots|seats|ppl|friends|of us|weeks?))/i);
+      if(eo&&+eo[3]>=2){ if(o.repeat||o.label==="class"||o.sessions){ o.passPrice=+eo[2]; o.passCount=+eo[3]; o.eachPass=true } else { o.groupPrice=+eo[2]; o.groupSize=+eo[3]; o.eachGroup=true } } }
+    // "$320 for all 8 or $45 drop in": the course price, and the drop-in in its own field
+    const perAmt=per?(per[1]||per[2]||per[3]):""; if(all&&perAmt&&+perAmt!==+all[1]) o.dropIn=+perAmt;
+    const amt=o.dropIn?all[1]:perAmt?perAmt:all?all[1]:each?each[1]:o.groupPrice?String(o.groupPrice):(paid.find(v=>+v!==+o.passPrice)||"");
+    if(amt&&+amt>0&&!(+amt>=1000)){ o.price="$"+amt; if(!(o.groupPrice&&!per&&!o.eachGroup)) o.seatPrice=+amt }
+    if(o.price&&o.eachPass) o.priceUnit="class";
+    else if(o.price&&o.eachGroup) o.priceUnit="each";
+    else if(o.price&&per&&!o.passPrice&&!o.dropIn) o.priceUnit="class";
     else if(o.price&&!o.groupPrice&&!o.sessions&&!o.passPrice&&(o.preorder||/pop-?up|bake sale|\bbak(?:e|ed|ing)\b|loaves|cookies|cakes|buns|pastries|croissants|boxes|sandwiches|jars|bouquets/i.test(t))&&!/a person|per person|\bpp\b|a head|a seat|a ticket/i.test(t)) o.priceUnit="each" }
   // spots: "16 spots", "10 seats", "10 people". A course's session count, a pass count or a group price's "2 people" is never the headcount.
-  const tH=grp&&o.groupPrice?t.replace(grp[0]," "):t;
+  const tH=(grp&&o.groupPrice?t.replace(grp[0]," "):t).replace(gOf?gOf[0]:"\u0000"," ");
   const hc=tH.match(/\b(\d{1,4})\s*(?:spots|seats|people|guests|places|persons|ppl|friends|max)\b|\b(?:max|up to)\s+(\d{1,4})\b(?!\s*(?:am|pm|weeks?|sessions?|classes))/i);
   if(hc) o.headcount=+(hc[1]||hc[2]);
+  // "4 pairs max", "up to 6 couples": that many pairs, so twice the people
+  const prs=t.match(/\b(\d{1,3})\s*(?:pairs|couples)\b(?:\s*max)?|\b(?:max|up to)\s+(\d{1,3})\s*(?:pairs|couples)\b/i); if(prs){ o.headcount=2*+(prs[1]||prs[2]); o.pairs=+(prs[1]||prs[2]) }
   const title=prTitle(t); if(title) o.title=title;
   const pl=prPlace(t); if(pl.place) o.place=pl.place; if(pl.hood) o.hood=pl.hood;
+  const wh=prWhere(t); if(wh.place&&!o.place) o.place=wh.place; if(wh.hood&&!o.hood) o.hood=wh.hood; if(wh.meet) o.meet=wh.meet;
+  // "Sunrise hike rattlesnake ledge": the trail words after the activity are the place
+  if(!o.place){ let s=t; for(const re of wh.cut) s=s.replace(re," "); s=s.replace(/\s+meet(?:ing)?\b[\s\S]*$/i,"").split(PR_SPLIT)[0].trim().replace(new RegExp(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); const tr=prTrail(s); if(tr.place) o.place=tr.place }
   return o }
 // money words for one price: "$12 each", "$40 for 2", "$10 a class"; "" when the plain "a person" fits
 function prPrice(d){ const amt=v=>{ const m=String(v??"").match(/(\d+(?:\.\d{1,2})?)/); return m?"$"+m[1]:"" };
-  if(+d?.groupPrice>0&&+d?.groupSize>1) return `${amt(d.groupPrice)} for ${+d.groupSize}`;
-  const p=d?.price&&d.price!=="chip"?amt(d.price):""; if(!p) return "";
+  const p=d?.price&&d.price!=="chip"?amt(d.price):"";
+  if(+d?.groupPrice>0&&+d?.groupSize>1) return p&&+String(d.price).replace(/[^\d.]/g,"")!==+d.groupPrice?`${p} each, or ${amt(d.groupPrice)} for ${+d.groupSize}`:`${amt(d.groupPrice)} for ${+d.groupSize}`;
+  if(!p) return "";
   return d.priceUnit==="each"?`${p} each`:d.priceUnit==="class"?`${p} a class`:"" }
 // ---------- Potto answers: questions never make an event ----------
 // a question (ends with "?", or starts like one) gets an answer; "find/show me..." still goes to Discover
@@ -11299,16 +11383,21 @@ function prMatchEvent(q,events,today){ const L=(events||[]).filter(e=>e&&!e.exam
 // ---------- Potto reads: wiring ----------
 { const _peZ=parseEventText; parseEventText=function(t){ const o=_peZ.apply(this,arguments); try{ const p=prRead(t);
     // what the host said wins over the earlier guesses
-    for(const k of ["weekday","date","startTime","endTime","repeat","sessions","course","price","seatPrice","passPrice","passCount","preorder","title","nth","dayClash","priceUnit","groupPrice","groupSize"]) if(p[k]!=null) o[k]=p[k];
+    for(const k of ["weekday","weekdays","date","startTime","endTime","repeat","sessions","course","price","seatPrice","passPrice","passCount","dropIn","costNote","preorder","title","nth","dayClash","priceUnit","groupPrice","groupSize"]) if(p[k]!=null) o[k]=p[k];
+    if(p.dropIn&&o.priceUnit==="class") delete o.priceUnit;
+    // a cost note isn't a price
+    if(p.costNote&&!p.price){ delete o.price; delete o.seatPrice; delete o.itemPrice; delete o.priceUnit }
+    if(p.late) delete o.endTime;
     if(p.label==="class"&&(o.casual||window.__wsPersonal)){ o.label="class"; o.activity="class" }
     else if(p.course&&(o.casual||!o.label||/^(get-together|gathering at my place)$/i.test(o.label||""))){ o.label="workshop"; o.activity="workshop" }
     // free and pay-what-you-like: no price, no seat price
     if(p.free){ o.free=true; delete o.price; delete o.seatPrice; delete o.itemPrice }
     if(p.price==="chip"){ delete o.seatPrice; delete o.itemPrice }
     if(p.headcount) o.headcount=p.headcount;
-    else if(o.headcount&&[p.sessions,p.passCount,p.groupSize].includes(+o.headcount)) delete o.headcount;
+    else if(o.headcount&&([p.sessions,p.passCount,p.groupSize].includes(+o.headcount)||prGlued(t,o.headcount))) delete o.headcount;
     if(p.date&&o.month) delete o.month;
-    if(p.place){ o.meetPoint=p.place; if(p.hood) o.hood=p.hood; if(o.city&&(p.place===o.city||p.place.startsWith(o.city+"-")||p.place.startsWith(o.city+" "))) delete o.city }
+    if(p.place){ o.meetPoint=p.place; o.venueName=p.place; if(p.hood) o.hood=p.hood; if(o.city&&(p.place===o.city||p.place.startsWith(o.city+"-")||p.place.startsWith(o.city+" "))) delete o.city }
+    if(p.meet) o.meetPoint=p.meet; if(p.hood&&!o.hood) o.hood=p.hood;
   }catch(e){ console.warn(e) } return o } }
 { const _qsZ=quickStart; quickStart=function(text){ const r=_qsZ.apply(this,arguments); try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d.example||!(isCasual(d)||window.__wsPersonal)) return r;
     const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=/\b(tonight|today|tomorrow|tmrw|tmw|tmr|this evening)\b/i.test(t), typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
@@ -11317,20 +11406,26 @@ function prMatchEvent(q,events,today){ const L=(events||[]).filter(e=>e&&!e.exam
     if(p.date&&!feeler&&(rel?!d.date:(!typedDate||!d.date||p.sessions||p.dayClash))) d.date=p.date;
     // "Sunday Dec 7th" when Dec 7 is a Monday: keep the date they typed, and Potto asks which they meant
     if(p.dayClash&&!feeler) d.dayClash=p.dayClash; else delete d.dayClash;
-    if(p.startTime){ d.startTime=p.startTime; if(p.endTime) d.endTime=p.endTime; else if(d.endTime&&d.endTime<=p.startTime) delete d.endTime }
+    if(p.startTime){ d.startTime=p.startTime; if(p.endTime) d.endTime=p.endTime; else if(p.late||(d.endTime&&d.endTime<=p.startTime)) delete d.endTime }
     if(p.repeat) d.repeat=p.repeat;
+    if(p.weekdays) d.weekdays=p.weekdays; else delete d.weekdays;
     if(p.sessions){ d.sessions=p.sessions; if(!d.activity||/^(get-together|gathering at my place|pop-up)$/i.test(d.activity)) d.activity="workshop" }
     if(p.price){ d.price=p.price; d.free=false; if(p.price==="chip"){ delete d.seatPrice; delete d.itemPrice } }
     if(p.free){ d.free=true; d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit }
     if(p.priceUnit) d.priceUnit=p.priceUnit; else if(p.price) delete d.priceUnit;
     if(p.groupPrice){ d.groupPrice=p.groupPrice; d.groupSize=p.groupSize } else if(p.price||p.free){ delete d.groupPrice; delete d.groupSize }
     if(p.passPrice){ d.passPrice=p.passPrice; d.passCount=p.passCount }
-    if(p.headcount) d.headcount=p.headcount; else if(+d.headcount&&[p.sessions,p.passCount,p.groupSize].includes(+d.headcount)) d.headcount=0;
+    if(p.dropIn){ d.dropIn=p.dropIn; delete d.priceUnit } else delete d.dropIn;
+    if(p.costNote){ d.costNote=p.costNote; if(!p.price){ d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit } } else delete d.costNote;
+    if(p.headcount) d.headcount=p.headcount; else if(+d.headcount&&([p.sessions,p.passCount,p.groupSize].includes(+d.headcount)||prGlued(t,d.headcount))) d.headcount=0;
     // a class you teach gets the class plan (warm-up, the lesson, practice, wrap), not the make-a-thing workshop
     if(p.label==="class"&&d.activity!=="class"){ d.activity="class"; try{ if(typeof starterProduce==="function"){ const P=starterProduce(d); d.produce={...(d.produce||{}),runOfShow:P.runOfShow,tasks:P.tasks} } }catch{} }
     if(p.preorder) d.preorder=true;
     if(p.place&&!/^(my|our)\b/i.test(d.meetPoint||"")&&(!d.meetPoint||d.meetPoint===d.city||p.place.startsWith(d.meetPoint)||d.meetPoint.startsWith(p.place+" "))){ const old=d.meetPoint; d.meetPoint=p.place; if(!d.venueName||d.venueName===old) d.venueName=p.place }
     if(p.hood) d.hood=p.hood; if(p.place&&d.city&&p.place.startsWith(d.city+"-")) d.city="";
+    if(p.place) d.venueName=p.place; if(p.meet&&!/^(my|our)\b/i.test(d.meetPoint||"")) d.meetPoint=p.meet;
+    // a pre-order sells from the shop: no reply price or spot cap (the shop gets those)
+    if(p.preorder){ d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit; d.headcount=0 }
     if(d.activity==="pop-up"&&!p.headcount&&prPopupNoCap(t)) d.headcount=0;
     try{ if(typeof renderStep==="function"&&location.hash==="#studio") renderStep() }catch{}
   }catch(e){ console.warn(e) } return r } }
@@ -11402,7 +11497,9 @@ function prAnswer(t){ const S=cgState(), a=prAsk(t), today=localISO(), mine=(typ
 // "Sunday Dec 7th" when Dec 7 is a Monday: Potto asks, with a button for each date
 { const _cdQ=cgDrafted; cgDrafted=function(name){ const r=_cdQ.apply(this,arguments); try{ const d=draft, c=d?.dayClash; if(c?.date&&c.alt){ const w=prClashSay(c), S=cgState(); S.msgs.push({who:"enc",mood:"think",text:w.text,chips:[[w.keep,`prdate:${c.date}|${d.id||""}`],[w.alt,`prdate:${c.alt}|${d.id||""}`]]}); cgSave(S); try{ drawConcierge?.() }catch{} } }catch(e){ console.warn(e) } return r } }
 // the same question where the host is looking: the details step and the event header
-new MutationObserver(()=>{ try{ const d=typeof draft!=="undefined"?draft:null, c=d?.dayClash; if(!c?.date||d.date!==c.date){ return } if(document.getElementById("prClash")) return; const di=document.getElementById("wzDate"), hero=document.getElementById("heroHost"), anchor=di?(di.closest(".wiz-row")||di.closest("label")):hero; if(!anchor) return;
+new MutationObserver(()=>{ try{ const d=typeof draft!=="undefined"?draft:null, c=d?.dayClash; if(!c?.date||d.date!==c.date){ return } const di=document.getElementById("wzDate"), hero=document.getElementById("heroHost"), anchor=di?(di.closest(".wiz-row")||di.closest("label")):hero; if(!anchor) return;
+  // the wizard's date field wins: an earlier prompt (on the page behind the wizard) moves next to it, so it's never hidden behind the wizard
+  const had=document.getElementById("prClash"); if(had){ if(di&&had.nextElementSibling!==anchor){ document.querySelectorAll("#prClash").forEach((x,i)=>{ if(i) x.remove() }); anchor.before(had) } return }
   const w=prClashSay(c), b=document.createElement("div"); b.id="prClash"; b.className="pr-clash"; b.setAttribute("role","status"); b.innerHTML=`<p>${esc(w.text)}</p><div class="btns"><button type="button" class="btn sm" data-prdate="${esc(c.date)}">${esc(w.keep)}</button><button type="button" class="btn sm" data-prdate="${esc(c.alt)}">${esc(w.alt)}</button></div>`;
   b.querySelectorAll("[data-prdate]").forEach(x=>x.onclick=()=>{ cgChip(`prdate:${x.dataset.prdate}|${d.id||""}`); const inp=document.getElementById("wzDate"); if(inp) inp.value=x.dataset.prdate });
   di?anchor.before(b):anchor.after(b) }catch{} }).observe(document.documentElement,{childList:true,subtree:true});

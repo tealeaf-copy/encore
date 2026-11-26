@@ -172,8 +172,11 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
   app.get("/api/public/hosts/trust", (req, res) => { const out = {}; for (const hd of String(req.query.handles || "").split(",").map((x) => lc(x)).filter(Boolean).slice(0, 60)) { const ws = C.wsOfHandle(hd); if (ws && C.profileOf(ws)) out[hd] = lite(trustOf(ws)); } res.json({ hosts: out }); });
 
   // ---- every bookable host once, with their options inside; examples in their own list ----
-  function bookable() { const L = [];
-    for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !(h.experiences || []).length) continue; if (exampleWs(ws) && process.env.ENCORE_HIDE_DEMO === "1") continue;
+  function bookable() { const L = [], requests = [];
+    for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle) continue;
+      // real hosts open to brand work who wrote what they do but haven't priced a package yet: "Request a date" cards
+      if (!(h.experiences || []).length) { if (h.forHire && !exampleWs(ws) && String(h.services || "").trim().length >= 3 && String(h.name || "").trim().length >= 3 && lc(h.name) !== h.handle) { const T = trustOf(ws); requests.push({ ws, h, T, person: personWs(ws), example: false, weight: T.kudos * 2 + T.guests + T.events * 2 }); } continue; }
+      if (exampleWs(ws) && process.env.ENCORE_HIDE_DEMO === "1") continue;
       // only hosts who said they're open to paid work (the same rule /api/public/book enforces), the moment they say so
       if (!h.forHire && !exampleWs(ws)) continue;
       // finished listings only: a real name and options that say what they are (no half-made test pages)
@@ -182,14 +185,19 @@ function mountTrust(app, { store, small, me, bad, limited, C, X }) {
       const T = trustOf(ws); L.push({ ws, h: { ...h, experiences: exps }, T, person: personWs(ws), example: T.example, weight: T.bookings * 5 + T.kudos * 2 + T.guests + T.events * 2 + T.scrapbook + (T.insurance.onFile ? 2 : 0) + (h.experiences || []).length * 0.1 }); }
     L.sort((a, b) => b.weight - a.weight); const keep = [], aliases = {};
     for (const x of L) { const twin = keep.find((k) => k.example === x.example && sameHost({ name: k.h.name, city: k.h.city, hood: k.h.hood, person: k.person }, { name: x.h.name, city: x.h.city, hood: x.h.hood, person: x.person })); if (twin) aliases[x.h.handle] = twin.h.handle; else keep.push(x); }
-    return { list: keep, aliases }; }
+    requests.sort((a, b) => b.weight - a.weight);
+    return { list: keep, aliases, requests: requests.filter((x) => !keep.some((k) => !k.example && sameHost({ name: k.h.name, city: k.h.city, hood: k.h.hood, person: k.person }, { name: x.h.name, city: x.h.city, hood: x.h.hood, person: x.person }))) }; }
   X.bookable = bookable;
   const optionOf = (ws, x) => ({ id: x.id, name: x.name, desc: x.desc || "", emoji: x.emoji || "", photo: x.photo || "", includes: x.includes || [], min: x.min, max: x.max, price: x.price || "", perHead: perPerson(x.price), flat: isFlat(x.price), instant: !!x.instant, length: x.length || "", category: categoryOf(x), travels: !!x.travels, seated: x.seated || 0, standing: x.standing || 0, hybrid: x.hybrid || "", openDates: C.openDatesOf(ws, x) });
   const cardOfHost = ({ ws, h, T, person }, options) => ({ handle: h.handle, name: h.name, person, city: h.city || "", hood: h.hood || "", accent: h.theme?.accent || h.color || "", avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", emoji: h.emoji || "", tagline: h.tagline || "", respondsIn: h.respondsIn || "", terms: h.terms || "", invoices: !!h.invoices, gallery: (h.gallery || []).slice(0, 6), example: T.example, trust: lite(T), options });
-  app.get("/api/public/hosts/book", (req, res) => { const cat = lc(req.query.category), city = clean(req.query.city, 60), people = Math.max(0, Math.min(5000, +req.query.people || 0)); const { list, aliases } = bookable(), real = [], examples = [];
+  app.get("/api/public/hosts/book", (req, res) => { const cat = lc(req.query.category), city = clean(req.query.city, 60), people = Math.max(0, Math.min(5000, +req.query.people || 0)); const { list, aliases, requests } = bookable(), real = [], examples = [];
     for (const x of list) { if (city && placeFit(city, x.h) === "away") continue;
       const opts = x.h.experiences.filter((e) => !e.service || !cat).map((e) => optionOf(x.ws, e)).filter((o) => (!cat || o.category === cat) && (!people || (people >= (o.min || 1) * 0.7 && people <= (o.max || 9999) * 1.2)));
       if (!opts.length) continue; (x.example ? examples : real).push(cardOfHost(x, opts)); }
+    // after every host with a priced package: hosts who take brand work on request (no price shown, quoted per request)
+    for (const x of requests) { if (city && placeFit(city, x.h) === "away") continue; const services = clean(x.h.services, 400), category = categoryOf({ name: services, desc: x.h.tagline || "" }) || "";
+      if (cat && category !== cat) continue;
+      real.push({ ...cardOfHost(x, [{ id: "", name: "Request a date", desc: services, emoji: x.h.emoji || "", photo: "", includes: [], min: 0, max: 0, price: "Quoted on request", perHead: 0, flat: false, instant: false, length: "", category, travels: false, request: true, openDates: [] }]), request: true, services }); }
     res.json({ hosts: real, examples, aliases, total: real.length }); });
 
   // ---- /teams: the goal decides what wins; stays in the city; real hosts only as matches ----

@@ -113,7 +113,7 @@ export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, 
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working. Open the one from your text or email.", 403, "not_granted");
     const h = C.profileOf(P.ws), K = P.S.get("kudos/" + P.rid)?.data, today = new Date().toISOString().slice(0, 10);
     res.json({ title: clean(P.ev.pubTitle || P.ev.name, 120), date: ISO.test(P.ev.date || "") ? P.ev.date : "", hostFirst: hostFirst(C, P.ws, P.ev), host: h?.handle ? { handle: h.handle, name: clean(h.name, 60) } : null,
-      name: first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: KUDOS_TAGS.filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })), again: { k: "again", label: "Would go again" },
+      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: KUDOS_TAGS.filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })), again: { k: "again", label: "Would go again" },
       canFollow: !!(h?.handle && P.r.email) }); });
   app.get("/api/public/kudos-more/:eventId", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited");
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working.", 403, "not_granted");

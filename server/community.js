@@ -12,6 +12,7 @@ import { track } from "./metrics.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { seatsOf } from "./social.js";
 import { cleanScrapSections, scrubAddress, cleanLogos, httpsLink, audienceOf } from "./scrapbook.js";
+import { dollarPrice } from "./looks.js";
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 10;
@@ -130,7 +131,8 @@ export function makeCommunity(store) {
     updateWorkspace(ws, { host }); return { host };
   }
   // ---- followers (the fan club) ----
-  function followersOf(ws) { return scopeStore(store, ws).list("followers").map((d) => d.data); }
+  // a follow from the group kudos link waits for its email confirmation (pending) and doesn't count until then
+  function followersOf(ws) { return scopeStore(store, ws).list("followers").map((d) => d.data).filter((f) => f && !f.pending); }
   function follow(ws, { email, name, via = "page", tastes = [], phone = "" }) {
     const S = scopeStore(store, ws), key = crypto.createHash("sha256").update(String(email || "tel:" + String(phone).replace(/[^\d+]/g, "")).toLowerCase()).digest("hex").slice(0, 24), path = "followers/" + key, cur = S.get(path)?.data;
     S.set(path, { email: String(email).toLowerCase(), name: clean(name, 80) || cur?.name || "", via: cur?.via || via, tastes: [...new Set([...(cur?.tastes || []), ...tastes.map((t) => clean(t, 24))])].slice(0, 10), phone: clean(phone, 24) || cur?.phone || "", ...(cur?.confirmedAt ? { confirmedAt: cur.confirmedAt } : {}), at: cur?.at || Date.now(), updatedAt: Date.now() });
@@ -139,7 +141,7 @@ export function makeCommunity(store) {
   // ---- public events and discover ----
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted",
     // series (a class that repeats, a course, a class pass), a pre-order priced by the item, and whether the host hides who is going
-    "repeat", "sessions", "passPrice", "passCount", "preorder", "hideGuests"];
+    "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests"];
   // the host's neighborhood only stands in for an event in the host's own city (an event elsewhere shows its own city)
   const sameCity = (a, b) => { const k = (v) => String(v || "").split(",")[0].trim().toLowerCase(); return !k(a) || k(a) === k(b); };
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
@@ -387,6 +389,9 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
     // from the one-tap kudos page (/k/<event>): the guest's reply proves who they are, so its email is enough (never sent back to the page)
     const proof = !clean(b.email, 200) && b.rid && b.code && b.eventId ? (X?.kudosProof || X?.rsvpProof)?.(clean(b.eventId, 80), b.rid, b.code) : null; // kudos nudges: the group link's kudos-only code follows too
     if (proof && !b.name) b.name = proof.r.name || "";
+    // the group link proves less than a personal link: that follow is pending or unverified (server/kudosnudge.js)
+    if (proof?.viaGroup && !(acct && acct.ws !== DEFAULT_WS) && X?.groupFollow) { const em = clean(proof.r.email, 200).toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return res.status(401).json({ code: "email_required", message: "Add your email to follow." });
+      return res.json(await X.groupFollow({ ws, email: em, name: b.name, eventId: clean(b.eventId, 80), origin: publicOrigin(req) })); }
     const signedIn = acct && acct.ws !== DEFAULT_WS, given = (clean(b.email, 200) || (proof?.r?.email ? clean(proof.r.email, 200) : "")).toLowerCase();
     if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) return res.status(401).json({ code: "email_required", message: given ? "That email doesn't look right." : "Add your email to follow." });
     const email = signedIn ? clean(acct.email, 200).toLowerCase() : given; b.name = b.name || (signedIn ? acct.name : "");

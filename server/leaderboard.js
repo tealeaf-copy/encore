@@ -39,7 +39,7 @@ export const CATEGORIES = [
   { id: "workshop", label: "Workshops", noun: "workshops", formats: ["workshop", "class"] },
   { id: "popup", label: "Pop-ups", noun: "pop-ups", formats: ["pop-up", "launch"] },
   { id: "talks", label: "Talks", noun: "talks", formats: ["summit", "conference", "panel", "online", "talk", "keynote", "webinar", "podcast"] },
-  { id: "community", label: "Community", noun: "community events", formats: ["meetup", "coffee", "game night", "book club", "party", "tour", "offsite"] },
+  { id: "community", label: "Community", noun: "community events", formats: ["meetup", "coffee", "game night", "book club", "party", "social", "tour", "offsite"] },
 ];
 const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
 const CAT_OF_FORMAT = {}; for (const c of CATEGORIES) for (const f of c.formats || []) CAT_OF_FORMAT[f] = c.id;
@@ -141,21 +141,41 @@ export function makeLeaderboard({ store, C, X }) {
   // ---- reading boards ----
   const qualified = (period = "month") => [...data().boards.values()].filter((b) => b.qualified && b.period === period);
   function defaultCity() { const L = qualified("month").filter((b) => b.category === "all"), A = L.length ? L : qualified("all").filter((b) => b.category === "all");
-    return A.sort((a, b) => b.hosts_on_board - a.hosts_on_board || b._list.reduce((s, x) => s + x.s.raw, 0) - a._list.reduce((s, x) => s + x.s.raw, 0))[0]?.city || ""; }
+    return A.sort((a, b) => b.hosts_on_board - a.hosts_on_board || b._list.reduce((s, x) => s + x.s.raw, 0) - a._list.reduce((s, x) => s + x.s.raw, 0))[0]?.city || cities()[0]?.city || ""; }
+  /** Every city with at least one host who could be ranked (cold start: the picker lists them all). */
+  function cities() { const m = new Map(); for (const H of data().hosts) { const c = m.get(H.cityKey) || { city: H.city, hosts: 0, spell: {} }; c.hosts++; c.spell[H.city] = (c.spell[H.city] || 0) + 1; m.set(H.cityKey, c); }
+    return [...m.values()].map((c) => ({ city: Object.entries(c.spell).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0], hosts: c.hosts })).sort((a, b) => b.hosts - a.hosts || a.city.localeCompare(b.city)); }
+  /** Below the threshold: hosts in the city who hosted in the last 90 days, newest first. Names only, no ranks or scores. */
+  function rising(city) { const ck = cityKey(city), since = isoDay(Date.now() - 90 * DAY);
+    return data().hosts.filter((H) => H.cityKey === ck).map((H) => ({ H, last: H.evs.map((e) => e.date).filter((d) => d > since).sort().pop() || "" })).filter((x) => x.last)
+      .sort((a, b) => b.last.localeCompare(a.last) || a.H.name.localeCompare(b.H.name)).slice(0, 12)
+      .map(({ H }) => ({ handle: H.handle, name: H.name, url: `/@${H.handle}`, city: H.city, emoji: H.emoji, avatarArt: H.avatarArt, avatarUrl: H.avatarUrl, accent: H.accent })); }
+  /** Each host's best current board: the best rank this month, else all time, on a board that qualifies. */
+  function bestRanks() { const out = new Map();
+    for (const per of ["month", "all"]) for (const b of qualified(per)) for (const e of b.entries) { const cur = out.get(e.host.handle);
+      if (cur && (cur.period === "month" && per === "all" || cur.rank < e.rank || (cur.rank === e.rank && cur.category !== "all"))) continue;
+      out.set(e.host.handle, { rank: e.rank, city: b.city, category: b.category, category_label: b.category_label, period: per, place: b.place, text: `#${e.rank} in ${b.place} ${per === "month" ? "this month" : "all time"}`, url: b.url }); }
+    return out; }
   function find({ city = "", category = "all", period = "month" } = {}) {
     const cat = CAT[lc(category)] ? lc(category) : "all", per = PERIODS[lc(period)] ? lc(period) : "month", ck = cityKey(city) || cityKey(defaultCity());
     return data().boards.get(`${ck}|${cat}|${per}`) || null; }
   const pubEntry = (e, base = "") => { const { _ws, _raw, _events, ...o } = e; return { ...o, host: { ...o.host, url: base + o.host.url } }; };
   /** The public shape: a board (entries only when it qualifies) and the list of boards that qualify, for pickers. */
   function board(q = {}, base = "") {
-    const cat = CAT[lc(q.category)] ? lc(q.category) : "all", per = PERIODS[lc(q.period)] ? lc(q.period) : "month", b = find({ city: q.city, category: cat, period: per });
-    const city = b?.city || clean(q.city, 60) || "";
+    const cat = CAT[lc(q.category)] ? lc(q.category) : "all", asked = PERIODS[lc(q.period)] ? lc(q.period) : "";
+    let per = asked || "month", b = find({ city: q.city, category: cat, period: per }), fellBack = null;
+    // this month doesn't qualify yet: All time, when it does (unless the caller asked for a period and no fallback)
+    if (per === "month" && !b?.qualified && (!asked || /^(1|true|yes)$/i.test(String(q.fallback ?? "")))) { const a = find({ city: q.city, category: cat, period: "all" }); if (a?.qualified) { b = a; per = "all"; fellBack = "all"; } }
+    const city = b?.city || clean(q.city, 60) || defaultCity() || "";
     const out = b ? { city: b.city, category: b.category, category_label: b.category_label, period: b.period, period_label: b.period_label, from: b.from, to: b.to, title: b.category === "all" ? `Top hosts in ${b.city}` : `Top ${b.category_label.toLowerCase()} in ${b.city}`,
       qualified: b.qualified, min_hosts: RULES.minHosts, hosts_on_board: b.qualified ? b.hosts_on_board : null, url: base + b.url, entries: b.qualified ? b.entries.slice(0, 50).map((e) => pubEntry(e, base)) : [],
       note: b.qualified ? "" : `A board shows once ${RULES.minHosts} hosts are on it.` }
       : { city, category: cat, category_label: CAT[cat].label, period: per, period_label: PERIODS[per].label, from: null, to: isoDay(Date.now()), title: "", qualified: false, min_hosts: RULES.minHosts, hosts_on_board: null, url: "", entries: [], note: `A board shows once ${RULES.minHosts} hosts are on it.` };
     const boards = [...data().boards.values()].filter((x) => x.qualified).map((x) => ({ city: x.city, category: x.category, category_label: x.category_label, period: x.period, hosts: x.hosts_on_board }));
-    return { data: out, boards, rules_url: base + "/api/v1/leaderboard/rules" };
+    out.fell_back = fellBack;
+    // under the threshold: who's been hosting there lately, so the page isn't empty (no ranks, no scores)
+    if (!out.qualified) out.rising = rising(city).map((h) => ({ ...h, url: base + h.url }));
+    return { data: out, boards, cities: cities(), rules_url: base + "/api/v1/leaderboard/rules" };
   }
   /** Where a host ranks in the top 10 on a board that qualifies, this month: best first. */
   function ranksOf(handle) { const hd = lc(handle).replace(/^@/, ""), out = [];
@@ -225,7 +245,7 @@ export function makeLeaderboard({ store, C, X }) {
         out.push({ kind: "you-rank", at: Math.min(now, weekStart(now) + 9 * 3600e3 + 1), rank: R0.rank, text: could ? `You're #${R0.rank} in ${R0.place}. One more event this month could put you in the top 3.` : `You're #${R0.rank} in ${R0.place} this month.`, next: could ? "" : next?.text || "", link: R0.url }); } }
     return out;
   }
-  return { data, reset, board, find, ranksOf, defaultCity, observe, momentsOf, feedItems, publicCard, rules: () => RULES };
+  return { data, reset, board, find, ranksOf, bestRanks, cities, rising, defaultCity, observe, momentsOf, feedItems, publicCard, rules: () => RULES };
 }
 
 export function mountLeaderboard(app, { store, C, X, sendStatic }) {

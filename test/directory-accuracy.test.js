@@ -8,7 +8,7 @@ import vm from "node:vm";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
 import { scopeStore } from "../server/workspaces.js";
-import { seriesOf, priceOf, splitPlace, queryWords, formatOf, PUBLIC_TOOLS } from "../server/directory.js";
+import { seriesOf, priceOf, splitPlace, queryWords, formatOf, PUBLIC_TOOLS, dateRange } from "../server/directory.js";
 
 let srv;
 const J = { "Content-Type": "application/json" };
@@ -167,7 +167,10 @@ test("search: any of the words, best first, filler words dropped", async () => {
   assert.ok(!dance.includes("accAustin"));
   const pc = (await get("/api/v1/events?q=pottery+class&host=rio-acc")).data.map((e) => e.id);
   assert.equal(pc[0], "accWheel", "the pottery event comes first"); assert.ok(pc.includes("accCourse"), "classes match on one word");
-  assert.ok((await get("/api/v1/events?q=dance+this+weekend&host=rio-acc")).total >= 2, "this weekend drops out");
+  // "this weekend" leaves the words and becomes this weekend's dates (Friday to Sunday), in Brooklyn's time zone
+  { const W = dateRange("this weekend", "America/New_York"), L = (await get("/api/v1/events?q=dance+this+weekend&host=rio-acc")).data;
+    assert.ok(L.every((e) => e.start >= W.from && e.start <= W.to), JSON.stringify(L.map((e) => e.start)));
+    const all = (await get("/api/v1/events?q=dance&host=rio-acc")).data.filter((e) => e.start >= W.from && e.start <= W.to); assert.equal(L.length, all.length); }
   assert.deepEqual((await get("/api/v1/events?q=tacos+austin&host=rio-acc")).data.map((e) => e.id)[0], "accAustin");
   // the MCP tool searches the same way
   const r = await (await post("/mcp/public", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "search_events", arguments: { q: "dance", host: "rio-acc" } } })).json();

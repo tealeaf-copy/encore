@@ -81,7 +81,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
 (() => {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const P = new URLSearchParams(location.search), st = { q: P.get("q") || "", city: P.get("city") || "", format: P.get("format") || "", status: ["upcoming", "past", "all"].includes(P.get("status")) ? P.get("status") : "upcoming", type: P.get("type") === "speaking" ? "speaking" : "" };
-  const EM = { dinner: "🍽️", run: "🏃", hike: "🥾", brunch: "🥞", workshop: "🏺", class: "🎓", "pop-up": "🧁", coffee: "☕", picnic: "🧺", "game night": "🎲", "book club": "📚", drinks: "🍷", movement: "🧘", party: "🎉", summit: "🎤", conference: "🎤", panel: "🎙️", meetup: "👋", online: "💻", tour: "🗺️", launch: "🚀", offsite: "🏕️", talk: "🎤", keynote: "🎤", webinar: "💻", podcast: "🎙️", lunch: "🥪", breakfast: "🥐", booth: "🪧", roadshow: "🚐" };
+  const EM = { dinner: "🍽️", run: "🏃", hike: "🥾", brunch: "🥞", workshop: "🏺", class: "🎓", "pop-up": "🧁", coffee: "☕", picnic: "🧺", "game night": "🎲", "book club": "📚", drinks: "🍷", movement: "🧘", party: "🎉", social: "💃", summit: "🎤", conference: "🎤", panel: "🎙️", meetup: "👋", online: "💻", tour: "🗺️", launch: "🚀", offsite: "🏕️", talk: "🎤", keynote: "🎤", webinar: "💻", podcast: "🎙️", lunch: "🥪", breakfast: "🥐", booth: "🪧", roadshow: "🚐" };
   const BG = ["#FFE08A", "#FFCAD6", "#C4DEFF", "#DCCBFF", "#E3F1DD", "#FFD9B0"];
   const tint = (s) => BG[[...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % BG.length];
   const yr = new Date().getFullYear();
@@ -90,7 +90,9 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   // a class that repeats or a course: "Every Tue · 7pm", "8 Wednesdays, Jan 6 to Feb 24 · 7pm"; a repeating class also says when the next one is
   const whenLine = (e) => e.when && e.status === "upcoming" ? e.when : when(e);
   const nextLine = (e) => e.when && e.status === "upcoming" && !e.sessions && e.start ? `Next one ${day(e.start)}` : "";
-  const label = (f) => f === "other" ? "Other" : f.charAt(0).toUpperCase() + f.slice(1);
+  // brand kit words: no "Meetup" (community events)
+  const LABEL = { other: "Other", meetup: "Community", "pop-up": "Pop-up", "game night": "Game night", "book club": "Book club" };
+  const label = (f) => LABEL[f] || f.charAt(0).toUpperCase() + f.slice(1);
   const revLine = (r) => r && r.count ? `${r.count} review${r.count === 1 ? "" : "s"}${r.would_go_again_pct != null ? ` · ${r.would_go_again_pct}% would go again` : ""}` : "";
   const src = (u) => /partiful\.com/i.test(u) ? "From Partiful" : /lu\.ma|luma\.com/i.test(u) ? "From Luma" : /eventbrite\./i.test(u) ? "From Eventbrite" : "";
   let cursor = null, hostRev = {}, shown = [];

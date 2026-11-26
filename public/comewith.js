@@ -69,7 +69,7 @@
   function placeButton() { if (busy || !id) return; const M = mine(id); if (!M) return; let at = null, gview = false;
     const tk = $("#tk"); if (tk && /You're in|Ordered/.test($("h2", tk)?.textContent || "")) at = tk;
     const gt = $("#view-guest .ticket"); if (!at && gt && /You're in/.test($(".eyebrow", gt)?.textContent || "")) { at = gt; gview = true; }
-    if (!at || (gview ? at.nextElementSibling?.classList.contains("cwm-box") : $(".cwm-box", at))) return;
+    if (!at || (gview ? $("#view-guest .cwm-box") : $(".cwm-box", at))) return; // one button per page: on /g other scripts add rows after the ticket, so "the next sibling" was not a safe check (three buttons stacked up)
     if (ss.get("plw-" + id) && !tg) { tgAsked = ""; setTimeout(together, 400); } // came through a link: show "Mia and Jo are in" straight away
     const box = document.createElement("div"); box.className = "cwm-box"; const b = button(ss.get("cwm-want-" + id) ? "pulse" : ""); box.appendChild(b);
     if (gview) at.after(box); else { const bt = $(".btns", at), h = $("h2", at); if (bt) bt.before(box); else (h?.nextElementSibling?.matches?.("p") ? h.nextElementSibling : h)?.after(box); } // review round 12: the door code stays right under "Show this at the door"

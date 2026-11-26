@@ -159,5 +159,5 @@ test("New pages: copy rules (no em dashes, no 'per person' or 'attendees') and t
   const deck = fs.readFileSync(new URL("../public/swipedeck.js", import.meta.url), "utf8");
   for (const k of ["Pick topics instead", "I'm in", "Make a free account to keep them.", "pl.deckDone", "ArrowRight", "ArrowLeft", "pointerdown", "/api/public/deck", "PLSave?.add", "PLInterests.train"]) assert.ok(deck.includes(k), k);
   assert.match(deck, /Your \$\{n\} \$\{n === 1 \? "pick is" : "picks are"\} saved\./);
-  const ints = fs.readFileSync(new URL("../public/interests.js", import.meta.url), "utf8"); assert.match(ints, /location\.pathname === "\/feed" && !localStorage\.getItem\("pl\.deckDone"\)/, "the old picker waits for the deck on /feed");
+  const ints = fs.readFileSync(new URL("../public/interests.js", import.meta.url), "utf8"); assert.match(ints, /\(location\.pathname === "\/feed" \|\| location\.pathname === "\/"\) && !localStorage\.getItem\("pl\.deckDone"\)/, "the old picker waits for the deck on the feed (/ and /feed)");
 });

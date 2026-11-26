@@ -502,9 +502,9 @@ export function createApp({ store, dataDir }) {
       else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   // the old measurement-method page described the event-team product; off while the site is about hosts
-  app.get("/method", (req, res) => res.redirect(302, "/"));
+  app.get("/method", (req, res) => res.redirect(302, "/about"));
   // pricing is being reworked for hosts and brands; until then the old page (event-team plans) is off
-  app.get("/pricing", (req, res) => res.redirect(302, "/"));
+  app.get("/pricing", (req, res) => res.redirect(302, "/about"));
   // The homepage demo runs the app's own planner, read from the current index.html.
   let estimateJs = null, estimateAt = 0;
   app.get("/estimate.js", async (req, res) => {
@@ -624,7 +624,13 @@ export function createApp({ store, dataDir }) {
       res.set("Cache-Control", "no-store").type("html").send(HEAD.replace('<script src="/shim.js"></script>', "") + file + TAIL);
     } catch (err) { next(err); }
   });
-  app.get("/", (req, res, next) => (isAuthed(req) ? (getWorkspace(sessionWorkspace(req))?.regularOnly && !req.query.app ? res.redirect(302, "/plans") : sendPage(req, res, next)) : signupEnabled() ? sendStatic(res, "home.html", loginPage()) : res.type("html").send(loginPage())));
+  // The feed leads: opening Pottery Lab lands on /feed (signed in) or shows the feed itself (signed out). The app's Home is
+  // /?app=1, any other query (?welcome, ?new, ...) still opens the app, and brand workspaces keep their own Home.
+  const brandWs = (W) => !!W && W.personal === false && W.plan !== "self-hosted" && !W.handle;
+  app.get("/", (req, res, next) => { const bare = !Object.keys(req.query || {}).length;
+    if (isAuthed(req)) { const W = getWorkspace(sessionWorkspace(req)); return bare && !brandWs(W) ? res.redirect(302, "/feed") : sendPage(req, res, next); }
+    return signupEnabled() ? (bare ? sendStatic(res, "feed.html", "<p>Feed page missing.</p>") : sendStatic(res, "home.html", loginPage())) : res.type("html").send(loginPage()); });
+  app.get("/about", (req, res) => (signupEnabled() ? sendStatic(res, "home.html", loginPage()) : res.redirect(302, "/login"))); // what Pottery Lab is: the landing page
   app.get("/_blob/:id", async (req, res, next) => {
     const id = req.params.id;
     if (!/^[A-Za-z0-9]{20}$/.test(id)) return res.status(404).end();

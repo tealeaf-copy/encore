@@ -403,7 +403,7 @@
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   window.FeedVisual = { rail, openStories, composePublic, composeSignedIn, wire, flyer, dump, note, mini, avatar, css, REG, deviceId, publicQuery };
   // the swipe deck (public/swipedeck.js) on a first visit to /feed, signed in or out; it decides whether to show itself
-  if (location.pathname === "/feed") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
+  if (location.pathname === "/feed" || location.pathname === "/") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
     const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };
     if (!done) document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go(); }
 })();

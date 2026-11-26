@@ -96,8 +96,8 @@ test("password gate and guest exemptions", async () => {
   } finally { delete process.env.APP_PASSWORD; }
 });
 
-test("GET / wraps index.html with the shim", async () => {
-  const html = await (await fetch(srv.base + "/")).text();
+test("GET /?app=1 wraps index.html with the shim", async () => {
+  const html = await (await fetch(srv.base + "/?app=1")).text();
   assert.ok(html.startsWith('<!doctype html><html lang="en"><head><meta charset="utf-8">'));
   assert.match(html, /<script src="\/shim.js"><\/script><script src="\/avatars.js"><\/script><script src="\/account.js"><\/script><\/head><body><title>/);
   assert.ok(html.endsWith("</body></html>"));

@@ -200,7 +200,7 @@ test("after the trial, writes get 402 and reads still work; upgrade records a re
   assert.equal(w2.writable, true);
 });
 
-test("signed-out visitors get the landing page; /signup and /login; guest links still redirect", async () => {
+test("signed-out visitors get the feed at / and the landing page at /about; /signup and /login; guest links still redirect", async () => {
   const home = await (await get("/")).text();
   assert.match(home, /location\.replace\("\/g" \+ location\.search \+ location\.hash\)/, "guest-link redirect added");
   const su = await (await get("/signup")).text();
@@ -208,7 +208,11 @@ test("signed-out visitors get the landing page; /signup and /login; guest links 
   assert.match(su, /location\.replace\("\/g"/);
   assert.match(await (await get("/login")).text(), /href="\/signup"/);
   assert.match(await (await get("/join")).text(), /\/api\/join/);
-  assert.match(await (await get("/", A.cookie)).text(), /shim\.js/, "signed in: the app");
+  // the feed leads: signed out, / is the feed; the landing page lives at /about; signed in, / goes to /feed and /?app=1 is the app
+  assert.match(home, /feedvisual\.js|id="feed"|class="feed/, "signed out: / is the feed");
+  assert.match(await (await get("/about")).text(), /location\.replace\("\/g"/, "the landing page at /about");
+  const sr = await fetch(srv.base + "/", { headers: { cookie: A.cookie }, redirect: "manual" }); assert.equal(sr.status, 302); assert.equal(sr.headers.get("location"), "/feed");
+  assert.match(await (await get("/?app=1", A.cookie)).text(), /shim\.js/, "signed in: the app at /?app=1");
   delete process.env.ENCORE_SIGNUP; process.env.APP_PASSWORD = "team-pass";
   assert.match(await (await get("/")).text(), /<form method="post" action="\/api\/login">/);
   assert.equal((await fetch(srv.base + "/signup", { redirect: "manual" })).status, 302);

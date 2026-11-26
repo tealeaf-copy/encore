@@ -154,7 +154,7 @@
     return { decide, finish }; }
 
   /** The first visit to /feed: signed out with no picks yet, or signed in with none on the account. */
-  async function maybeAuto() { if (ls.get(DONE) || location.pathname !== "/feed") return;
+  async function maybeAuto() { if (ls.get(DONE) || (location.pathname !== "/feed" && location.pathname !== "/")) return;
     if (!signedIn()) { if (ls.get("pl.interestsSeen") || ls.get("pl.interests")) return; return setTimeout(() => open(), 500); }
     try { const r = await fetch("/api/me/interests", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json(); if (j.interests?.length || j.city) { ls.set(DONE, "1"); return; } } catch { return; }
     setTimeout(() => open(), 500); }

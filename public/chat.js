@@ -94,7 +94,11 @@
     if (openFor !== route.id) { openFor = route.id; pinned = true; T = null; V = ""; pending = []; replyTo = null; firstPaint = true; unreadFrom = 0; const c = (B?.chats || []).find((x) => x.id === route.id);
       box.innerHTML = `${header(c, true)}<div class="ch-body"><div class="ch-scroll"><div class="ch-msgs"><div class="ch-skel" style="width:60%"></div><div class="ch-skel" style="width:45%;align-self:flex-end"></div></div></div></div>`; wireHeader(); }
     delay = 3000; idle = 0; await poll(true); }
-  async function poll(force) { clearTimeout(timer); if (!route.id || loading) return; if (document.hidden && !force) return schedule(); loading = true; const id = route.id;
+  async function poll(force) { clearTimeout(timer); if (!route.id || loading) return; if (document.hidden && !force) return schedule();
+    // signed out with no reply on this phone: there's nothing to ask the server, so say how to get in (no failed request)
+    if (!T && !qOf(route.id) && !/(?:^|;\s*)encore_in=1/.test(document.cookie)) { const id = route.id, c = (B?.chats || []).find((x) => x.id === id);
+      return stateView("Not in the chat yet", "Reply to the invite, or sign in, and the chat opens here.", c, `<a class="ch-btn primary" href="/g#rsvp-${encodeURIComponent(id)}">Open the invite</a><a href="/login?next=${encodeURIComponent("/chats/" + id)}" style="color:#B04A30;font-weight:600">Sign in</a>`); }
+    loading = true; const id = route.id;
     try { const read = !document.hidden && atBottom() ? "&read=1" : ""; const j = await api(`/api/chats/${encodeURIComponent(id)}?${qOf(id)}${read}${V && !force ? `&v=${V}` : ""}`); if (id !== route.id) return;
       if (j.proof) { ls.set("encore-rsvp-" + id, JSON.stringify(j.proof)); linkProof = null; }
       if (j.same) { idle++; patchLive(j); } else { idle = 0; const fresh = !T; T = j; V = j.v; if (fresh) unreadFrom = j.unreadFrom || 0; paint(); if (read && B) { const c = B.chats.find((x) => x.id === id); if (c && c.unread) { c.unread = 0; paintRows(); badge(); } } }

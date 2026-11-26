@@ -15,7 +15,7 @@ const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? proces
 const WIDTH = +arg("--width", 390), ONLY = arg("--only", ""), SHOW_APIS = process.argv.includes("--apis");
 let pw; try { pw = await import("playwright"); } catch { const g = createRequire(import.meta.url)(path.join(process.execPath, "../../lib/node_modules/playwright")); pw = g; }
 
-Object.assign(process.env, { ENCORE_SIGNUP: "1", SESSION_SECRET: process.env.SESSION_SECRET || "crawl-secret-0123456789abcdef", ENCORE_FAKE_EMAIL: "1", ENCORE_FAKE_SMS: "1", ENCORE_FAKE_PUSH: "1", ENCORE_FAKE_AI: "1", ENCORE_ADMIN_EMAILS: "admin@example.com", ENCORE_SIGNUP_PER_HOUR: "500" });
+Object.assign(process.env, { ENCORE_SIGNUP: "1", SESSION_SECRET: process.env.SESSION_SECRET || "crawl-secret-0123456789abcdef", ENCORE_FAKE_EMAIL: "1", ENCORE_FAKE_SMS: "1", ENCORE_FAKE_PUSH: "1", ENCORE_FAKE_AI: "1", ENCORE_ADMIN_EMAILS: "admin@example.com", ENCORE_SIGNUP_PER_HOUR: "500", ENCORE_VERIFY_EMAIL: "0" });
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "encore-crawl-")), store = openStore(path.join(dir, "crawl.db"));
 const app = createApp({ store, dataDir: dir }), server = await new Promise((r) => { const s = app.listen(0, "127.0.0.1", () => r(s)); });
 const base = `http://127.0.0.1:${server.address().port}`;

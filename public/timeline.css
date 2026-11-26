@@ -1,5 +1,5 @@
 /* The plans timeline, the month grid and a plan's cover (public/timeline.js). Brand tokens only (public/system.css). */
-.tl,.cal,.pc,.pp{--tl-tc:52px;--tl-nd:28px;--tl-gap:12px;--tl-x:calc(var(--tl-tc) + var(--tl-gap) + var(--tl-nd) / 2);
+.tl,.cal,.pc,.pv{--tl-tc:52px;--tl-nd:28px;--tl-gap:12px;--tl-x:calc(var(--tl-tc) + var(--tl-gap) + var(--tl-nd) / 2);
   --tl-serif:var(--pl-font-serif,var(--pl-font-display));--tl-mono:var(--pl-font-mono);--tl-r:var(--pl-r-md,6px);
   --tl-tint:var(--pl-sand);--tl-rule:var(--pl-rule-dashed,1px dashed var(--pl-line));--tl-hair:var(--pl-line)}
 .tl{display:grid;gap:4px}

@@ -5,17 +5,17 @@
 <link rel="stylesheet" href="/community.css"><link rel="stylesheet" href="/playful.css"><link rel="stylesheet" href="/timeline.css">
 <style>
 .pl-plan{max-width:680px;margin:0 auto;padding-bottom:48px}
-.pp-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
-.pp-chipst{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 14px var(--pl-font-text)}
-.pp-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
-.pp-acts a,.pp-acts button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}
-.pp-acts .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
-.pp-acts svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.pp-h2{display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 0;padding-bottom:6px;border-bottom:var(--pl-rule,1.5px solid var(--pl-ink));font:600 18px/1.3 var(--pl-font-text)}
-.pp-h2 small{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
-.pp-lock{margin:16px 0;padding:18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
-.pp-lock p{margin:0 0 12px;font:400 16px/1.45 var(--pl-font-text)}
-.pp-miss{padding:40px 0;text-align:center;color:var(--pl-soft)}
+.pv-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
+.pv-chipst{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 14px var(--pl-font-text)}
+.pv-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.pv-acts a,.pv-acts button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}
+.pv-acts .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.pv-acts svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pv-h2{display:flex;justify-content:space-between;align-items:baseline;margin:26px 0 0;padding-bottom:6px;border-bottom:var(--pl-rule,1.5px solid var(--pl-ink));font:600 18px/1.3 var(--pl-font-text)}
+.pv-h2 small{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
+.pv-lock{margin:16px 0;padding:18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
+.pv-lock p{margin:0 0 12px;font:400 16px/1.45 var(--pl-font-text)}
+.pv-miss{padding:40px 0;text-align:center;color:var(--pl-soft)}
 /* the host's editor: one row per part of the plan */
 .it-ed{margin:18px 0 0;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface);display:grid;gap:12px}
 .it-ed h3{margin:0;font:600 16px var(--pl-font-text)}
@@ -33,7 +33,7 @@
 @media (min-width:640px){.it-row{grid-template-columns:150px 92px 150px 1fr}.it-row .wide{grid-column:auto}.it-row .sub{grid-column:1/-1}}
 </style>
 </head><body>
-<div class="wrap"><main class="pl-plan" id="m" aria-live="polite"><p class="pp-miss">Getting the plan</p></main></div>
+<div class="wrap"><main class="pl-plan" id="m" aria-live="polite"><p class="pv-miss">Getting the plan</p></main></div>
 <script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
 <script>
 // A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day.
@@ -43,19 +43,19 @@
   let proof = null; try { proof = JSON.parse(localStorage.getItem("encore-rsvp-" + id) || "null"); } catch {}
   const q = proof?.rid && proof?.code ? `?rid=${encodeURIComponent(proof.rid)}&code=${encodeURIComponent(proof.code)}` : "";
   let P = null; try { const r = await fetch(`/api/public/plan/${encodeURIComponent(id || "")}${q}`, { credentials: "same-origin" }); if (r.ok) P = (await r.json()).plan; } catch {}
-  if (!P) { m.innerHTML = `<p class="pp-miss">We couldn't find this plan. <a href="/plans">Back to your plans</a></p>`; return; }
+  if (!P) { m.innerHTML = `<p class="pv-miss">We couldn't find this plan. <a href="/plans">Back to your plans</a></p>`; return; }
   document.title = P.title + " · Pottery Lab";
   const A = window.EncoreAvatars, av = P.host.avatarArt && A ? A.svg(P.host.avatarArt, P.host.color, 40) : "";
   let art = ""; try { if (!P.cover && window.EventArt?.cover) { window.EventArt.ensureCss?.(); art = window.EventArt.cover({ title: P.title, coverArt: P.coverArt, date: P.date }, { title: "", label: "" }) || ""; } } catch {}
   const G = T.ICON;
   function draw() {
-    const locked = P.locked ? `<div class="pp-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
+    const locked = P.locked ? `<div class="pv-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
     const empty = !P.locked && !P.days.some((d) => d.items.length);
     m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
-      + (P.status ? `<div class="pp-status"><span class="pp-chipst">${esc(P.status)}</span></div>` : "")
-      + `<div class="pp-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}</div>`
-      + `<h2 class="pp-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
-      + (locked || (empty && !P.isHost ? `<div class="pp-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : T.itineraryHtml(P.days, { today })))
+      + (P.status ? `<div class="pv-status"><span class="pv-chipst">${esc(P.status)}</span></div>` : "")
+      + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}</div>`
+      + `<h2 class="pv-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
+      + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : T.itineraryHtml(P.days, { today })))
       + (P.editable ? editorHtml() : "");
     m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
     const more = m.querySelector(".pc-more"); if (more) more.onclick = (e) => { e.stopPropagation(); let mn = m.querySelector(".pc-menu"); if (mn) { mn.remove(); more.setAttribute("aria-expanded", "false"); return; }

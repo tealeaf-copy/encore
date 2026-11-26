@@ -6,10 +6,9 @@
 <link rel="stylesheet" href="/invite.css"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandkit.css" id="bk-css"><script src="/calm.js"></script></head><body>
 <script>if(/[?&]share=1/.test(location.search)){const s=document.createElement("script");s.src="/sharekit.js";s.onload=()=>window.ShareKit.open({eventId:location.pathname.split("/")[2]});document.head.appendChild(s)}</script><main id="m" aria-live="polite" data-calm="invite"><div class="top"><a class="brand kit-off" href="/"><svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a></div><p class="muted">Opening your invite…</p></main>
 <footer class="legal"><a href="/about">About Pottery Lab</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></footer>
-<script src="/eventart.js"></script><script src="/spots.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/looks.js"></script><script src="/tiers.js"></script><script src="/questions.js" defer></script><script src="/friendsgoing.js" defer></script><script src="/tables.js" defer></script><script src="/comewith.js" defer></script><script src="/slots.js" defer></script><script src="/sections.js" defer></script>
+<script src="/eventart.js"></script><script src="/spots.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/looks.js"></script><script src="/tiers.js"></script><script src="/questions.js" defer></script><script src="/friendsgoing.js" defer></script><script src="/sections.js" defer></script><script src="/timeline.js" defer></script><script src="/planhook.js" defer></script><script src="/tables.js" defer></script><script src="/comewith.js" defer></script><script src="/slots.js" defer></script>
 <script>
 (function () {
-  // repeats (review round 6): `id` moves to the next date when this link's date has passed (see load below)
   let id = (location.pathname.match(/^\/[ei]\/([A-Za-z0-9_-]{2,80})/) || [])[1], pastOf = null;
   const go = () => { try { sessionStorage.setItem("encore-full-" + id, "1"); } catch {} location.replace("/g#rsvp-" + encodeURIComponent(id || "")); }, $ =(s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -17,13 +16,11 @@
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
   let mine = null; try { mine = JSON.parse(ls.get("encore-rsvp-" + id) || "null"); } catch {}
   const gkey = () => { let k = ls.get("encore.gkey"); if (!k) { k = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""); ls.set("encore.gkey", k); } return k; };
-  // the emailed link to their own reply (#reply=<rid>.<signature>): this browser can now see and change it
   const rl = /^#reply=([A-Za-z0-9_-]{1,80})\.([A-Za-z0-9_-]{8,128})$/.exec(location.hash || "");
   const claimed = !rl ? Promise.resolve() : fetch("/api/public/reply/claim", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-key": gkey() }, body: JSON.stringify({ eventId: id, rid: rl[1], t: rl[2] }) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
     if (j?.ok && j.code) { mine = { rid: j.rid, code: j.code, name: j.name || "", gi: -1, response: j.response, wall: false, eventId: id, data: {} }; ls.set("encore-rsvp-" + id, JSON.stringify(mine)); }
     try { history.replaceState(null, "", location.pathname + location.search); } catch {} }).catch(() => {});
   const today = new Date().toISOString().slice(0, 10), ltd = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date());
-  // food on the table, the full invite's rule (FOODY in index.html): the activity, name or idea, or a menu
   const gl = (d) => `<svg class="ic" viewBox="0 0 20 20" aria-hidden="true"><path d="${d}"/></svg>`, G = { pin: gl("M10 17.5c-3.6-4.2-5.4-7.2-5.4-9.6a5.4 5.4 0 0 1 10.8 0c0 2.4-1.8 5.4-5.4 9.6zM10 9.9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"), bag: gl("M4.5 7h11l-1 9.5h-9zM7.5 7V5.5a2.5 2.5 0 0 1 5 0V7"), people: gl("M7.3 9a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2zM2.6 16.2c.4-3 2.2-4.7 4.7-4.7s4.3 1.7 4.7 4.7M13.4 9.2a2.2 2.2 0 1 0 0-4.4M14 11.6c2 .2 3.3 1.7 3.6 4.4"), tag: gl("M3.2 10.4V3.6a.6.6 0 0 1 .6-.6h6.8l6.2 6.2a1 1 0 0 1 0 1.4l-5.8 5.8a1 1 0 0 1-1.4 0zM7 7.4h.01"), cal: gl("M4 5.2h12a.8.8 0 0 1 .8.8v10a.8.8 0 0 1-.8.8H4a.8.8 0 0 1-.8-.8V6a.8.8 0 0 1 .8-.8zM3.2 9h13.6M7 3.2v3.6M13 3.2v3.6") };
   const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i;
   // food only when it's the point (index.html FOODY)
@@ -39,7 +36,6 @@
   const paidOf = (e) => !!((e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim())) || (e.price !== "chip" && e.free !== true && gpOf(e)));
   const TI = window.EncoreTiers, tierAmt = (e, P) => (TI && TI.total(e, P) ? TI.money(TI.total(e, P)) : e.price); // price tiers (tiers.js): "Adults $55 · Kids $35", the sum to pay
   const priceText = (e) => { if (TI && TI.line(e)) return TI.line(e); const p = String(e.price).trim(), amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : p; };
-    // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
     if (gpOf(e)) return +e.groupSize === 2 && e.headUnit === "pairs" ? `${amt(e.groupPrice)} a pair` : `${amt(e.groupPrice)} for ${+e.groupSize}`;
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
     if (e.priceUnit === "total" && !(+e.sessions > 1)) return +e.dropIn > 0 ? `${amt(p)} for the course, or ${amt(e.dropIn)} a class` : `${amt(p)} total`; // round 8: "$280 total or $50 drop in"
@@ -54,7 +50,6 @@
     if ((m = u.match(/^https:\/\/(?:www\.)?paypal\.me\/([A-Za-z0-9_-]+)\/?$/i))) return `https://paypal.me/${m[1]}/${amt}`;
     if ((m = u.match(/^https:\/\/cash\.app\/\$([A-Za-z0-9_-]+)\/?$/i))) return `https://cash.app/$${m[1]}/${amt}`;
     return u; };
-  // review round 3 (paid spots): a paid event with no way to pay yet needs a way to reach the guest
   const payless = (e) => paidOf(e) && !e.ticketNote && !httpsUrl(e.ticketUrl); // not "at the door" either
   const bringOf = (e) => (Array.isArray(e.bring) ? e.bring : e.bring ? [e.bring] : []).map((x) => String(x || "").trim()).filter((x) => x && !/^yourself$/i.test(x)).slice(0, 12);
   // ---------- series: a class that repeats, a multi-week course, a class pass (index.html's seriesEvery/seriesSpan/seriesPrice/seriesRRule) ----------
@@ -63,7 +58,6 @@
   const srNth = (x) => { const n = Math.ceil(x.getDate() / 7), last = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 7, 12).getMonth() !== x.getMonth() && n >= 4; return last ? -1 : n; };
   const srRep = (e) => e.repeat || (+e.sessions > 1 ? "weekly" : "");
   // "Every Tue", "Every other Tue", "First Tue of each month"
-  // weekly on more than one day ("Mondays and Wednesdays"): e.weekdays, e.g. ["monday", "wednesday"]
   const srDays = (e) => [...new Set((Array.isArray(e.weekdays) ? e.weekdays : []).map((w) => SR_DAY.findIndex((d) => d.toLowerCase() === String(w).toLowerCase())).filter((i) => i >= 0))];
   const srEvery = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const day = SR_DAY[x.getDay()].slice(0, 3); if (r === "weekly" && srDays(e).length > 1) return `Every ${srDays(e).map((i) => SR_DAY[i].slice(0, 3)).join(" and ")}`; if (r === "monthly") { const k = srNth(x), w = k < 0 ? "Last" : ["First", "Second", "Third", "Fourth"][k - 1]; return `${w} ${day} of each month`; } return r === "biweekly" ? `Every other ${day}` : r === "weekly" ? `Every ${day}` : ""; };
   // "6 Wednesdays, Jan 6 to Feb 10"
@@ -79,7 +73,6 @@
   // ---------- end series helpers ----------
   const load = () => Promise.all([fetch("/api/db/doc?path=" + encodeURIComponent("events/" + id), { headers: { "x-encore-guest": "1" } }).then((r) => (r.ok ? r.json() : null)), fetch("/api/public/event-host/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch("/api/public/attendees/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     mine?.rid && mine.code ? (() => { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`, j = (r) => (r.ok ? r.json() : null);
-      // where their reply stands (and their place on the waitlist); older servers only have rsvp-status
       return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
     .then(async ([doc, H, A, st]) => { const e = doc?.data, ws = doc?.workspace;
       // ---- repeats: a past date shows the next date's form ----
@@ -94,9 +87,7 @@
       // a returning pre-order guest sees their order
       else if (e.preorder && mine?.order && st && st.response === "going") more("/invite-order.js", () => window.InviteOrder?.ticket?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }, { ...mine, paid: !!st.paid, paidClaim: !!st.paidClaim || !!mine.paidClaim }, document.getElementById("tk"))); })
     .catch(go);
-  // the create canvas's live guest preview (/e/_preview): this page, fed the host's draft (public/invite-preview.js)
   if (id === "_preview") setTimeout(() => more("/invite-preview.js", () => window.InvitePreview?.(render))); else claimed.then(load);
-  // repeats: the past date's note, kudos and photos (public/invite-repeat.js, loaded only when needed)
   const more = (src, cb) => { const s = document.createElement("script"); s.src = src; s.onload = cb; document.head.appendChild(s); };
   function repeatBits(e, courseNext) { let last = null; try { last = JSON.parse(ls.get("encore-rsvp-" + (pastOf?.id || e.prevId || "")) || "null"); } catch {}
     const again = !mine && last?.response === "going" && last.name ? last : null; if (!courseNext && !pastOf && !again) return; more("/invite-repeat.js", () => window.InviteRepeat?.(e, courseNext, pastOf, when, { again, prevId: pastOf?.id || e.prevId, ls })); }
@@ -148,7 +139,6 @@
     // the host's own questions, one at a time (questions.js arrives a moment later)
     const answers = {}; let Qf = null; const Q = (e.questions || []).filter((q) => q && q.q);
     const startQ = () => { if (Q.length && window.Questions && !Qf) Qf = window.Questions.flow($("#qs"), e, answers, {}); }; startQ(); $("#f").addEventListener("change", (ev) => { if (ev.target.name !== "r") return; const no = ev.target.value === "no"; for (const s of ["#qs", "#dtL", "#rdL", "#payNote", "#ptTiers"]) if ($(s)) $(s).hidden = no; $("#send").textContent = btn(ev.target.value);
-      // review round 3 (paid spots): "Can't go" needs no way to pay, so the contact is optional again
       if (!ask && payless(e)) { const hh = $("#ctH"); hh.textContent = no ? `Optional. For reminders from ${first}.` : `So ${first} can send you a way to pay.`; hh.style.color = ""; hh.removeAttribute("role"); $("#ct").required = !no; $("#ct").removeAttribute("aria-invalid"); } }); if (Q.length && !window.Questions) addEventListener("load", startQ);
     $("#f").onsubmit = async (ev) => { ev.preventDefault(); const er = $("#er"); er.textContent = "";
       const name = $("#nm").value.trim().replace(/[<>]/g, "").slice(0, 80); if (!name) { er.textContent = `Add your name so ${first} knows it's you.`; $("#nm").focus(); return; }
@@ -197,7 +187,6 @@
         const tk = $("#tk"); tk.innerHTML = `<h2>You're out</h2><p class="muted" style="margin:0">Thanks for telling ${who}.</p><div class="btns"><a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">Change reply</a></div>`;
         if (yes && $(".going-n")) { const n = $(".going-n"), k = Math.max(0, (parseInt(n.textContent, 10) || 1) - 1); if (k) n.textContent = `${k} in`; else document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); } }
       catch { out.disabled = false; out.textContent = "Didn't go through. Tap to try again"; } };
-    // the host still confirms. This device remembers the tap, so coming back shows "I paid" straight away.
     const payBtn = $("#payBtn"), iPaid = $("#iPaid");
     const payPass = $("#payPass"), payDrop = $("#payDrop");
     if (payBtn && iPaid) { [payBtn, payPass, payDrop].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));
@@ -213,5 +202,4 @@
   }
 })();
 </script>
-<script src="/timeline.js" defer></script><script src="/planhook.js" defer></script>
 </body></html>

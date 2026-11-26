@@ -13,43 +13,43 @@
 .pill{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:4px;font-size:13px;font-weight:500;background:var(--pl-sand);color:var(--pl-ink)}
 h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;border-bottom:var(--pl-rule-dashed,1px dashed var(--pl-line))}
 /* Plans: a compact header, Timeline or Calendar, the timeline left and a mini calendar right on wide screens */
-.pp{max-width:1040px}
-.pp-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 16px;margin:18px 0 6px}
-.pp-kick{margin:0 0 4px;font:500 12px/1 var(--pl-font-mono);text-transform:uppercase;letter-spacing:var(--pl-kicker-track,.06em);color:var(--pl-accent-text)}
-.pp-head h1{margin:0;font:var(--pl-display-weight,600) 32px/1.1 var(--pl-font-display);letter-spacing:var(--pl-display-track,-.02em)}
-.pp-seg{display:inline-flex;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);padding:2px;background:var(--pl-surface)}
-.pp-seg button{min-height:40px;padding:0 16px;border:0;border-radius:4px;background:none;font:500 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
-.pp-seg button[aria-selected=true]{background:var(--pl-ink);color:var(--pl-surface)}
-.pp-seg button:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
-.pp-sum{margin:6px 0 10px;font:400 15px/1.45 var(--pl-font-text);color:var(--pl-soft)}.pp-sum b{color:var(--pl-ink);font-weight:500}
-.pp-sync{margin:0 0 12px}
-.pp-grid{display:grid;gap:24px}
-.pp-aside{display:none}
-@media (min-width:900px){.pp-grid{grid-template-columns:minmax(0,1fr) 272px;align-items:start}.pp-aside{display:grid;gap:14px;position:sticky;top:16px}.pp-grid.is-cal .pp-aside{display:none}.pp-grid.is-cal{grid-template-columns:minmax(0,1fr)}.pp-head h1{font-size:40px}}
-.pp-load{padding:24px 0;color:var(--pl-soft)}
-.pp-empty{margin:18px 0;padding:22px 18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
-.pp-empty p{margin:0 0 14px;font:var(--pl-serif-weight,600) 20px/1.35 var(--pl-font-serif,var(--pl-font-display))}
-.pp-sugg{display:flex;flex-wrap:wrap;gap:8px}
-.pp-sugg a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);background:var(--pl-page);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none}
-.pp-sugg a:first-child{background:var(--pl-ink);border-color:var(--pl-ink);color:var(--pl-surface)}
-.pp-foot{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin:18px 0 0;padding-top:12px;border-top:var(--pl-rule-dashed,1px dashed var(--pl-line))}
-.pp-foot a{color:var(--pl-accent-text);font:500 15px var(--pl-font-text);min-height:44px;display:inline-flex;align-items:center}
-.pp-dayh{margin:18px 0 0;font:600 17px/1.3 var(--pl-font-text)}
-.pp-dayh small{display:block;font:400 14px var(--pl-font-text);color:var(--pl-soft);margin-top:2px}
-.pp-calwrap{display:grid;gap:16px}#ppDay .tl-dh{display:none}
-@media (min-width:900px){.pp-calwrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.pv{max-width:1040px}
+.pv-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 16px;margin:18px 0 6px}
+.pv-kick{margin:0 0 4px;font:500 12px/1 var(--pl-font-mono);text-transform:uppercase;letter-spacing:var(--pl-kicker-track,.06em);color:var(--pl-accent-text)}
+.pv-head h1{margin:0;font:var(--pl-display-weight,600) 32px/1.1 var(--pl-font-display);letter-spacing:var(--pl-display-track,-.02em)}
+.pv-seg{display:inline-flex;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);padding:2px;background:var(--pl-surface)}
+.pv-seg button{min-height:40px;padding:0 16px;border:0;border-radius:4px;background:none;font:500 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
+.pv-seg button[aria-selected=true]{background:var(--pl-ink);color:var(--pl-surface)}
+.pv-seg button:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.pv-sum{margin:6px 0 10px;font:400 15px/1.45 var(--pl-font-text);color:var(--pl-soft)}.pv-sum b{color:var(--pl-ink);font-weight:500}
+.pv-sync{margin:0 0 12px}
+.pv-grid{display:grid;gap:24px}
+.pv-aside{display:none}
+@media (min-width:900px){.pv-grid{grid-template-columns:minmax(0,1fr) 272px;align-items:start}.pv-aside{display:grid;gap:14px;position:sticky;top:16px}.pv-grid.is-cal .pv-aside{display:none}.pv-grid.is-cal{grid-template-columns:minmax(0,1fr)}.pv-head h1{font-size:40px}}
+.pv-load{padding:24px 0;color:var(--pl-soft)}
+.pv-empty{margin:18px 0;padding:22px 18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
+.pv-empty p{margin:0 0 14px;font:var(--pl-serif-weight,600) 20px/1.35 var(--pl-font-serif,var(--pl-font-display))}
+.pv-sugg{display:flex;flex-wrap:wrap;gap:8px}
+.pv-sugg a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-btn);background:var(--pl-page);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none}
+.pv-sugg a:first-child{background:var(--pl-ink);border-color:var(--pl-ink);color:var(--pl-surface)}
+.pv-foot{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin:18px 0 0;padding-top:12px;border-top:var(--pl-rule-dashed,1px dashed var(--pl-line))}
+.pv-foot a{color:var(--pl-accent-text);font:500 15px var(--pl-font-text);min-height:44px;display:inline-flex;align-items:center}
+.pv-dayh{margin:18px 0 0;font:600 17px/1.3 var(--pl-font-text)}
+.pv-dayh small{display:block;font:400 14px var(--pl-font-text);color:var(--pl-soft);margin-top:2px}
+.pv-calwrap{display:grid;gap:16px}#ppDay .tl-dh{display:none}
+@media (min-width:900px){.pv-calwrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
 </style><link rel="stylesheet" href="/playful.css">
 </head><body>
 <div class="wrap">
   <header class="top"><a class="brand" href="/discover">pottery lab</a>
     <nav><a href="/discover">Discover</a><a href="/plans" aria-current="page">Plans</a><a href="/requests">Requests</a><a href="/feed">Feed</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
-  <main class="pp">
-    <header class="pp-head"><div><p class="pp-kick" id="ppKick"></p><h1 id="ppH">Your plans</h1></div>
-      <div class="pp-seg" role="tablist" aria-label="How to see your plans" id="ppSeg"><button type="button" role="tab" data-view="timeline" aria-selected="true" aria-controls="ppMain">Timeline</button><button type="button" role="tab" data-view="calendar" aria-selected="false" aria-controls="ppMain">Calendar</button></div></header>
-    <p class="pp-sum" id="ppSum" hidden></p>
-    <div class="pp-sync" id="ppSync"></div>
-    <div class="pp-grid" id="ppGrid"><section id="ppMain" role="tabpanel" aria-live="polite"><p class="pp-load">Getting your plans</p></section><aside class="pp-aside" id="ppAside" aria-label="This month"></aside></div>
-    <div class="pp-foot" id="ppFoot"><a id="ppPast" href="/plans?past=1">Past plans</a><a href="/requests" id="reqLink" hidden>Your requests to hosts</a></div>
+  <main class="pv">
+    <header class="pv-head"><div><p class="pv-kick" id="ppKick"></p><h1 id="ppH">Your plans</h1></div>
+      <div class="pv-seg" role="tablist" aria-label="How to see your plans" id="ppSeg"><button type="button" role="tab" data-view="timeline" aria-selected="true" aria-controls="ppMain">Timeline</button><button type="button" role="tab" data-view="calendar" aria-selected="false" aria-controls="ppMain">Calendar</button></div></header>
+    <p class="pv-sum" id="ppSum" hidden></p>
+    <div class="pv-sync" id="ppSync"></div>
+    <div class="pv-grid" id="ppGrid"><section id="ppMain" role="tabpanel" aria-live="polite"><p class="pv-load">Getting your plans</p></section><aside class="pv-aside" id="ppAside" aria-label="This month"></aside></div>
+    <div class="pv-foot" id="ppFoot"><a id="ppPast" href="/plans?past=1">Past plans</a><a href="/requests" id="reqLink" hidden>Your requests to hosts</a></div>
     <div id="scene" hidden style="margin:22px 0 6px"></div>
     <h2 class="sub" id="ordH" hidden>Orders</h2><div class="plans" id="ord"></div>
     <details class="rp-card" id="rpCard"><summary><h2 id="rpH">Your details</h2><span class="rp-sub">We'll fill these in next time.</span></summary>
@@ -83,17 +83,17 @@ h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;
     const when = (L.kicker || L.text) + (nx.time && !nx.allDay ? " at " + T.clock(nx.time) : "");
     $("ppSum").innerHTML = `${n ? `<b>${n} this week</b> · ` : ""}Next: <b>${esc(nx.title)}</b>, ${esc(when)}`; $("ppSum").hidden = false; }
 
-  const empty = () => `<div class="pp-empty"><p>Nothing planned yet. A quiet week can be a good one.</p><div class="pp-sugg"><a href="/events?q=this%20weekend">Something this weekend?</a><a href="/discover">See what's on near you</a><a href="/?app=1&new=1#studio">Host something small</a></div></div>`;
+  const empty = () => `<div class="pv-empty"><p>Nothing planned yet. A quiet week can be a good one.</p><div class="pv-sugg"><a href="/events?q=this%20weekend">Something this weekend?</a><a href="/discover">See what's on near you</a><a href="/?app=1&new=1#studio">Host something small</a></div></div>`;
   const undated = () => (D.undated || []).length ? `<section class="tl-day"><h3 class="tl-dh"><span class="tl-dk">Soon</span>Date to come</h3><ol class="tl-list">${D.undated.map((it) => T.rowHtml({ ...it, time: "", allDay: false }, { dim: false })).join("")}</ol></section>` : "";
 
   let view = past ? "timeline" : (location.hash === "#calendar" ? "calendar" : store.get("pl.plansView") === "calendar" ? "calendar" : "timeline"), ym = today().slice(0, 7), sel = today();
   const dayList = (d) => { const L = T.itemsOn(all(), d), lab = T.dayLabel(d, today()), n = L.filter((i) => i.kind !== "todo").length;
-    return `<h2 class="pp-dayh">${esc(lab.kicker ? lab.kicker + " · " + lab.text : lab.text)}<small>${n ? `${n} planned` : "Nothing planned"}</small></h2>${L.length ? T.timelineHtml(L.map((i) => ({ ...i, date: d })), { now: Date.now(), today: today(), tz, nowMarker: d === today(), cal: true }) : `<div class="pp-empty" style="margin-top:10px"><p style="font-size:17px;margin:0 0 10px">A free day.</p><div class="pp-sugg"><a href="/events?q=${encodeURIComponent(d === today() ? "tonight" : "this weekend")}">${d === today() ? "Anything tonight?" : "Something this weekend?"}</a></div></div>`}`; };
+    return `<h2 class="pv-dayh">${esc(lab.kicker ? lab.kicker + " · " + lab.text : lab.text)}<small>${n ? `${n} planned` : "Nothing planned"}</small></h2>${L.length ? T.timelineHtml(L.map((i) => ({ ...i, date: d })), { now: Date.now(), today: today(), tz, nowMarker: d === today(), cal: true }) : `<div class="pv-empty" style="margin-top:10px"><p style="font-size:17px;margin:0 0 10px">A free day.</p><div class="pv-sugg"><a href="/events?q=${encodeURIComponent(d === today() ? "tonight" : "this weekend")}">${d === today() ? "Anything tonight?" : "Something this weekend?"}</a></div></div>`}`; };
   function draw() {
     const grid = $("ppGrid"), M = $("ppMain"), A = $("ppAside"); grid.classList.toggle("is-cal", view === "calendar");
     document.querySelectorAll("#ppSeg [data-view]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === view)));
-    if (view === "calendar") { M.innerHTML = `<div class="pp-calwrap"><div>${T.calendarHtml(ym, T.calendarDots(all(), ym), { today: today(), selected: sel })}${T.legendHtml()}</div><div id="ppDay">${dayList(sel)}</div></div>`; wireCal(M); A.innerHTML = ""; return; }
-    M.innerHTML = all().length || (D.undated || []).length ? T.timelineHtml(all(), { now: Date.now(), today: today(), tz, nowMarker: !past, cal: !past }) + undated() : past ? `<div class="pp-empty"><p>Nothing here yet. Your past plans will show up here.</p></div>` : empty();
+    if (view === "calendar") { M.innerHTML = `<div class="pv-calwrap"><div>${T.calendarHtml(ym, T.calendarDots(all(), ym), { today: today(), selected: sel })}${T.legendHtml()}</div><div id="ppDay">${dayList(sel)}</div></div>`; wireCal(M); A.innerHTML = ""; return; }
+    M.innerHTML = all().length || (D.undated || []).length ? T.timelineHtml(all(), { now: Date.now(), today: today(), tz, nowMarker: !past, cal: !past }) + undated() : past ? `<div class="pv-empty"><p>Nothing here yet. Your past plans will show up here.</p></div>` : empty();
     if (!past) { A.innerHTML = T.calendarHtml(ym, T.calendarDots(all(), ym), { today: today(), selected: "", mini: true }) + T.legendHtml(); wireCal(A, true); }
   }
   function wireCal(root, mini) { root.querySelectorAll("[data-shift]").forEach((b) => b.onclick = () => { ym = T.shiftMonth(ym, +b.dataset.shift); draw(); });

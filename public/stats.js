@@ -34,14 +34,14 @@
     return `<section class="pls-card${o.compact ? " compact" : ""}" aria-label="${esc(o.title || "Stats")}">${o.title ? `<h2 class="pls-h">${esc(o.title)}</h2>` : ""}<ul class="pls-grid">${list.map((s) => tile(s, o)).join("")}</ul></section>`; }
   const CSS = `
 .pls-card{background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:var(--pl-r-lg);padding:18px 16px 16px;color:var(--pl-ink);font-family:var(--sys-sans)}
-.pls-h{margin:0 0 12px;font:400 20px/1.2 var(--sys-display);letter-spacing:-.015em}
+.pls-h{margin:0 0 12px;font:400 20px/1.2 var(--sys-title);letter-spacing:-.015em}
 .pls-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .pls-t{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:start;padding:12px;border-radius:var(--pl-r-md);background:var(--pl-page);min-width:0}
 .pls-t.wide{grid-column:1/-1}
 .pls-i{width:36px;height:36px;border-radius:50%;background:var(--pl-raised);display:grid;place-items:center;color:var(--pl-frame)}
 .pls-b{display:grid;gap:1px;min-width:0}
 .pls-n{font:400 28px/1 var(--sys-display);letter-spacing:-.015em;margin-top:2px}
-.pls-v{font:400 19px/1.25 var(--sys-display);letter-spacing:-.01em;overflow-wrap:anywhere;margin-top:4px}
+.pls-v{font:400 19px/1.25 var(--sys-title);letter-spacing:-.01em;overflow-wrap:anywhere;margin-top:4px}
 .pls-l{font-size:13px;line-height:1.3;color:var(--pl-soft)}
 .pls-b small{font-size:13px;color:var(--pl-muted);line-height:1.35;overflow-wrap:anywhere}
 .pls-sw{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-height:36px;margin-top:2px;font-size:13px;color:var(--pl-soft);cursor:pointer}

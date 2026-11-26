@@ -35,7 +35,7 @@ test("sharekit.js: a clean global, three formats with their own actions, plain c
   assert.match(s, /c\.width = 1080; c\.height = 1920/, "the flyer is 1080x1920"); assert.match(s, /c\.width = 1200; c\.height = 630/, "the link card is 1200x630");
   assert.match(s, /ecl: "H"/, "high error correction under the mark"); assert.match(s, /navigator\.share/); assert.match(s, /ArrowRight/); assert.match(s, /scroll-snap-type:x mandatory/);
   // the mark in the middle of the QR is Potto's line mark, the favicon's own path
-  const mark = /const MARK = "([^"]+)"/.exec(s)[1]; assert.ok(read("public/favicon.svg").includes(mark.split("M11.1")[1].slice(0, 30)));
+  const mark = /const MARK = "([^"]+)"/.exec(s)[1]; assert.ok(read("public/favicon.svg").includes(mark));
   assert.doesNotMatch(s, /—/, "no em dashes"); assert.doesNotMatch(s, /localStorage/, "nothing stored");
 });
 

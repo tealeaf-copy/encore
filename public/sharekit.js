@@ -48,9 +48,9 @@
     ig: G('<rect x="4.5" y="4.5" width="15" height="15" rx="4.5"/><circle cx="12" cy="12" r="3.4"/><path d="M16.6 7.4h.01"/>'), story: G('<circle cx="12" cy="12" r="7.5" stroke-dasharray="3.2 2.4"/><path d="M12 9v6M9 12h6"/>'),
     more: G('<path d="M12 4.5v10M8 8l4-3.5L16 8M5.5 12.5v6h13v-6"/>'), save: G('<path d="M12 4.5v10M8 11l4 3.5 4-3.5M5.5 18.5h13"/>'), x: G('<path d="M6 6l12 12M18 6L6 18"/>', 22), prev: G('<path d="M14.5 6 8.5 12l6 6"/>', 20), next: G('<path d="m9.5 6 6 6-6 6"/>', 20) };
   // Potto's line mark (public/favicon.svg): the pot's rim and body in one stroke, two dots and a small smile
-  const MARK = "M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2", SMILE = "M12.7 19.2c.8.55 1.8.55 2.6 0";
-  function lineMark(g, x, y, s, color) { g.save(); g.translate(x, y); g.scale(s / 28, s / 28); g.strokeStyle = g.fillStyle = color; g.lineCap = g.lineJoin = "round";
-    g.lineWidth = 1.6; g.stroke(new Path2D(MARK)); g.lineWidth = 1.4; g.stroke(new Path2D(SMILE)); for (const cx of [11.3, 16.7]) { g.beginPath(); g.arc(cx, 16.4, 1.05, 0, Math.PI * 2); g.fill(); } g.restore(); }
+  const MARK = "M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"; // the Field Notes Potto (public/favicon.svg), drawn in a 48 box
+  function lineMark(g, x, y, s, color) { g.save(); g.translate(x, y); g.scale(s / 48, s / 48); g.strokeStyle = g.fillStyle = color; g.lineCap = g.lineJoin = "round";
+    g.lineWidth = 2.75; g.stroke(new Path2D(MARK)); for (const cx of [20.5, 27.5]) { g.beginPath(); g.arc(cx, 26, 1.9, 0, Math.PI * 2); g.fill(); } g.restore(); }
   // the wordmark: the line mark and "pottery lab" in the house serif, ink. It is chrome, so a host's kit never restyles it
   function wordmark(g, x, y, size, t) { lineMark(g, x, y - size * 0.92, size * 1.05, t.mark); g.fillStyle = t.mark; g.font = `400 ${size}px ${t.house}`; g.textBaseline = "alphabetic"; g.fillText("pottery lab", x + size * 1.32, y); }
 

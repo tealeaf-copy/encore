@@ -50,7 +50,7 @@
 .plc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:min(46vh,360px);padding:32px 16px;box-sizing:border-box;color:var(--pl-ink,#1D1B18);text-align:center;opacity:0;transition:opacity ${FADE}ms ease}
 .plc.on{opacity:1}
 .plc-art{display:block;color:var(--pl-ink,#1D1B18);overflow:visible}
-.plc-line{margin:0;font:400 20px/1.3 var(--sys-display,var(--pl-font-display,Georgia,serif));letter-spacing:-.015em;color:var(--pl-soft,#5D564E);max-width:28ch}
+.plc-line{margin:0;font:400 20px/1.3 var(--sys-title,var(--pl-font-text,Georgia,serif));letter-spacing:-.015em;color:var(--pl-soft,#5D564E);max-width:28ch}
 .plc .plc-glaze{animation:plc-turn 2.8s linear infinite}
 .plc .plc-wheel{animation:plc-wheel 2.8s linear infinite}
 .plc .plc-d{transform-box:fill-box;transform-origin:center;animation:plc-rise 2.1s ease-in-out infinite}

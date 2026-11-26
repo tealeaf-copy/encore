@@ -14,7 +14,7 @@ h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;
 .stack{display:grid;gap:16px}
 /* How was it? one soft card per recent night out, at most three */
 .how{display:grid;gap:4px;padding:16px;border:1px solid var(--pl-line-strong);border-radius:var(--pl-r-lg);background:var(--pl-surface)}
-.how small{font:600 13px var(--sys-sans);color:var(--pl-accent-text)}.how b{font:400 20px/1.25 var(--sys-display);letter-spacing:-.01em}.how p{margin:0;color:var(--pl-soft);font-size:14px}
+.how small{font:600 13px var(--sys-sans);color:var(--pl-accent-text)}.how b{font:400 20px/1.25 var(--sys-title);letter-spacing:-.01em}.how p{margin:0;color:var(--pl-soft);font-size:14px}
 .how .acts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:8px}
 .go{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:var(--pl-r-btn);background:var(--pl-accent);color:var(--pl-on-accent)!important;font:600 15px var(--sys-sans);text-decoration:none;border:1px solid var(--pl-accent)}
 .go:hover{background:var(--pl-accent-press)}
@@ -22,7 +22,7 @@ h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;
 .q.clay{color:var(--pl-accent-text);font-weight:600}
 /* nothing yet: Potto, one line, one way forward */
 .empty{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:18px 16px;background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:var(--pl-r-lg)}
-.empty b{display:block;font:400 20px/1.25 var(--sys-display);letter-spacing:-.01em}.empty p{margin:4px 0 6px;color:var(--pl-soft);font-size:14px}
+.empty b{display:block;font:400 20px/1.25 var(--sys-title);letter-spacing:-.01em}.empty p{margin:4px 0 6px;color:var(--pl-soft);font-size:14px}
 .empty .potto{width:72px;height:72px}
 /* on your page: what shows */
 .pub{padding:16px;border:1px dashed var(--pl-line-strong);border-radius:var(--pl-r-lg)}
@@ -44,7 +44,7 @@ h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;
   const get = async (u) => { const r = await fetch(u, { credentials: "same-origin" }); if (!r.ok) throw Object.assign(new Error(String(r.status)), { status: r.status }); return r.json(); };
   let D; try { D = await get("/api/me/stats"); } catch (e) {
     $("#lede").textContent = "";
-    el.innerHTML = e.status === 401 ? `<div class="out"><b style="font:400 20px var(--sys-display)">Sign in to see your stats</b><p>Events you've gone to, hosts you follow, the places you've explored. Only you see them.</p><a class="go" href="/login?next=%2Fme">Sign in</a></div>`
+    el.innerHTML = e.status === 401 ? `<div class="out"><b style="font:400 20px var(--sys-title)">Sign in to see your stats</b><p>Events you've gone to, hosts you follow, the places you've explored. Only you see them.</p><a class="go" href="/login?next=%2Fme">Sign in</a></div>`
       : `<div class="out"><p>Couldn't load your stats. Check your connection, then try again.</p></div>`; return; }
   let CI = []; try { CI = (await get("/api/me/checkins")).checkins || []; } catch {}
   let show = D.show || [], edit = false;

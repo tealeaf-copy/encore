@@ -159,11 +159,11 @@ html body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not
 @media (max-width:860px){
   html body :is(.sl-check,#view-guest label.chip,.tb-card>summary,.sl-btn,.hcd-nx,.pls-btn,.pc-edit,.pc-gps,.fv-tabs button,.feed-tabs button,.tabs button,#locBtn,.ib,a.sr-sub){min-height:44px!important}
   html body .sl-btn{display:inline-flex;align-items:center}html body :is(.pc-edit,.pc-gps){display:inline-flex;align-items:center}
-  html body :is(.host a,a.hl,.empty a,.fv-row a,.fv-list a,.pg-cap a){padding-top:12px;padding-bottom:12px;margin-top:-12px;margin-bottom:-12px}
+  html body :is(.host a,a.hl,.empty a,.fv-row a,.fv-list a,.pg-cap a,.pli-by a,figcaption a){padding-top:12px;padding-bottom:12px;margin-top:-12px;margin-bottom:-12px}
   html body .pls-btn.pls-icon{width:44px!important;height:44px!important}
 }
 /* the feed's cards and minis sit on the page: a line, not an offset shadow (polaroids and quotes keep theirs: they are scrapbook art) */
-html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,.fv-stk,.party,.gp-cta){box-shadow:none!important}
+html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,.fv-stk,.fv-hostc,.party,.gp-cta){box-shadow:none!important}
 @media (max-width:860px){html body [data-hwtab]{min-height:44px!important}}
 @media (max-width:860px){
   html body #view-guest label.chip{display:inline-flex!important;align-items:center}
@@ -171,3 +171,5 @@ html body :is(.fv-hero,.fv-card,.fv-mini,.fv-fl-media,.fv-stk,.party,.gp-cta){bo
   html body :is(.toc a,nav.toc a,a.hl,a.full,#openFull,.pp a,footer a){display:inline-flex;align-items:center}
   html body :is(#view-guest .rsvpbig .chip,#view-guest .chips .chip){min-height:44px}
 }
+@media (max-width:860px){html body :is(.pin-cities button,.pli-host,.pli-real,.rp-save,.sc-ig a,.sc-note a){min-height:44px!important}html body .pli-real{display:inline-flex!important;align-items:center}}
+html body :is(article.fc small,article.fc .chip,.lg-more,article.prog small){font-size:13px!important}

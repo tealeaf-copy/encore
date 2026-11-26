@@ -27,9 +27,9 @@
   const lum = (hex) => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return 1; const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   // the event's colours: its flyer's palette, else a pastel from its illustrated cover
   function tintOf(e) { const p = (e.look?.palette || []).filter((c) => /^#[0-9a-f]{6}$/i.test(c)); const A = window.EventArt;
-    const bg = p[0] || (A ? A.PASTELS[A.toneOf({ ...e, title: e.title }, A.kindOf({ ...e, name: e.title }))] : "#FDE6A6") || "#FDE6A6", dark = lum(bg) < 0.32;
+    const bg = p[0] || (A ? A.PASTELS[A.toneOf({ ...e, title: e.title }, A.kindOf({ ...e, name: e.title }))] : "#FDE6A6") || "#FDE6A6", dark = lum(bg) < 0.179; /* white wins below this luminance; above it ink does */
     const acc = p.find((c, i) => i && Math.abs(lum(c) - lum(bg)) > 0.25) || (dark ? "#F2D48F" : "#C94A30");
-    return { bg, ink: dark ? "#FFF8EE" : "#1F1A17", soft: dark ? "#FFF8EE" : "#5A4E45", acc, dark }; }
+    return { bg, ink: dark ? "#FFF8EE" : "#1F1A17", soft: dark ? "#FFF8EE" : lum(bg) < 0.45 ? "#1F1A17" : "#5A4E45", acc, dark }; } /* a mid-tone tint keeps soft text at full ink so it stays at 4.5:1 */
   const tintStyle = (T) => `--tint:${T.bg};--tink:${T.ink};--tsoft:${T.soft};--tacc:${T.acc}`;
   function btnText(e, fallback = "I'm in") { const L = e.look || {}, em = L.buttonEmoji ? L.buttonEmoji + " " : ""; if (e.approvalRequired) return em + "Ask to join"; return em + (L.buttonLabel && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback); }
   function art(e, opts = {}) { const A = window.EventArt; if (!A) return `<div class="fv-artfb">${esc(e.emoji || "🎉")}</div>`; return A.cover({ ...e, name: e.title, pubTitle: e.title, coverArt: e.coverArt || undefined }, { ...(opts.title != null ? { title: opts.title } : {}) }); }

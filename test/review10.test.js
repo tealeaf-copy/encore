@@ -78,7 +78,7 @@ test("share note: a pre-order keeps Guests order for pickup; others say the word
   assert.match(app, /if\(n&&d&&!d\.approvalRequired&&!d\.preorder&&LK\)\{[^}]*n\.textContent=`Guests tap \$\{d\.rsvpWords\?\.yes\|\|"I'm in"\}\.`/);
   assert.doesNotMatch(app, /LK\.buttonText\(d,d\.rsvpWords\?\.yes\|\|"I'm in"\), word=/);
   assert.match(app, /const fc=ta\.closest\("label"\)\?\.firstChild; if\(fc\?\.nodeType===3\)/, "drawHostKit: no null firstChild");
-  assert.match(read("public/invite-order.js"), /id="oPaid" hidden>I paid<\/button>/);
+  assert.match(read("public/invite-order.js"), /id="oPaid"\$\{tapped \? "" : " hidden"\}>I paid<\/button>/);
   assert.match(read("public/invite-order.js"), /paidClaim: true/);
 });
 

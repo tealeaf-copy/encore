@@ -4,7 +4,9 @@ export const LOOK = {
   effects: ["none", "sparkles", "snow", "confetti", "petals", "paper", "velvet", "stars", "twinkle"],
   titleFonts: ["clean", "bold", "serif", "script", "typewriter", "rounded"],
   coverFits: ["banner", "poster"],
-  buttonLabels: ["I'm in", "Join", "RSVP", "Count me in", "Save my spot", "Ask to join"],
+  buttonLabels: ["I'm in", "Join", "Count me in", "Ask to join"],
+  // review round 11: labels off the word list (docs/brand-kit.md) that older events may still carry read "I'm in"
+  oldLabels: { RSVP: "I'm in", "Save my spot": "I'm in" },
   buttonEmoji: ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️"],
   vibes: ["garden", "jazz", "winter", "velvet", "flower", "night", "market"],
 };
@@ -20,7 +22,7 @@ export function cleanLook(v) {
   if (LOOK.effects.includes(v.effect)) o.effect = v.effect;
   if (LOOK.titleFonts.includes(v.titleFont)) o.titleFont = v.titleFont;
   if (LOOK.buttonEmoji.includes(v.buttonEmoji)) o.buttonEmoji = v.buttonEmoji;
-  if (LOOK.buttonLabels.includes(v.buttonLabel)) o.buttonLabel = v.buttonLabel;
+  if (LOOK.buttonLabels.includes(v.buttonLabel)) o.buttonLabel = v.buttonLabel; else if (Object.hasOwn(LOOK.oldLabels, String(v.buttonLabel))) o.buttonLabel = LOOK.oldLabels[v.buttonLabel];
   if (LOOK.vibes.includes(v.vibe)) o.vibe = v.vibe;
   if (v.lights === true) o.lights = true; // string lights across the top, on top of any effect
   // an "Update" callout: one short line from the host, with when they posted it

@@ -17,8 +17,9 @@ const plain = (v) => JSON.parse(JSON.stringify(v)); // values from the vm, compa
 test("sanitizing: bad hex and unknown values are dropped, good ones kept", () => {
   const o = cleanLook({ palette: ["#a9c3a4", "red", "#12345", "#1F1A17;", "#C94A30", "#FFFFFF"], effect: "lava", titleFont: "Comic Sans", buttonEmoji: "💣", buttonLabel: "Buy now", vibe: "rave", coverFit: "stretch", extra: "<script>", lights: "yes" });
   assert.deepEqual(o, { palette: ["#A9C3A4", "#C94A30", "#FFFFFF"] }, "only hex colours survive, upper-cased, three at most");
+  // review round 11: "Save my spot" is off the word list; an older event that has it reads "I'm in"
   const k = cleanLook({ palette: ["#6E0F1F"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "Save my spot", vibe: "velvet", lights: true, coverFit: "banner", coverW: 800, coverH: 1200 });
-  assert.deepEqual(k, { palette: ["#6E0F1F"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "Save my spot", vibe: "velvet", lights: true, coverW: 800, coverH: 1200, coverFit: "banner" });
+  assert.deepEqual(k, { palette: ["#6E0F1F"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "I'm in", vibe: "velvet", lights: true, coverW: 800, coverH: 1200, coverFit: "banner" });
   assert.equal(cleanLook("snow"), null); assert.equal(cleanLook([1, 2]), null);
   // the update callout: one short plain line, with a time
   const u = cleanLook({ update: { text: "Moved to <b>The Progress</b>\nthis year " + "x".repeat(100), at: "soon" } });

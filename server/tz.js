@@ -6,3 +6,11 @@ const CITY_TZ = [[/new york|brooklyn|queens|manhattan|bronx|staten island|jersey
   [/london/i, "Europe/London"], [/sydney/i, "Australia/Sydney"], [/melbourne/i, "Australia/Melbourne"]];
 export const tzOk = (tz) => { if (!tz) return false; try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return true; } catch { return false; } };
 export const tzOfCity = (place) => { const t = String(place || ""); return CITY_TZ.find(([re]) => re.test(t))?.[1] || ""; };
+/** Today's date (YYYY-MM-DD) where the event is: its own time zone, else the city's, else the server's. */
+export const todayIn = (tz, now = Date.now()) => {
+  const z = tzOk(tz) ? tz : "";
+  if (!z) { const d = new Date(now); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  return new Intl.DateTimeFormat("en-CA", { timeZone: z, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
+};
+/** A pre-order whose order-by date has passed where the event is. */
+export const ordersClosed = (ev, now = Date.now()) => !!ev?.preorder && /^\d{4}-\d{2}-\d{2}$/.test(String(ev.orderByDate || "")) && todayIn(ev.tz || tzOfCity(ev.city), now) > ev.orderByDate;

@@ -17,7 +17,7 @@
   // eight colours to pick from when there's no flyer (each with two accents that suit it)
   const SWATCHES = [["#A9C3A4", "#3E6B48", "#F2D36B", "Sage"], ["#EFE2C6", "#1F1A17", "#C2553A", "Cream"], ["#C4DDF3", "#1E4E86", "#D94357", "Ice"], ["#6E0F1F", "#F2C46D", "#F4D7C8", "Velvet"],
     ["#F6C9D2", "#B0344F", "#4F7A52", "Blush"], ["#FFE08A", "#C94A30", "#2F7A8A", "Butter"], ["#D3C6F4", "#5A3DA8", "#E26D8E", "Lilac"], ["#4A2E1E", "#D8322E", "#F2C46D", "Night"]];
-  const LABELS = ["I'm in", "Join", "RSVP", "Count me in", "Save my spot", "Ask to join"];
+  const LABELS = ["I'm in", "Join", "Count me in", "Ask to join"]; // older labels off the word list read "I'm in" (server/looks.js cleanLook)
   const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️"];
   // one-tap vibes. Flower shop is the host page's Flower shop look (storefront.js LOOKS.florist: petal page, deep green)
   const VIBES = {

@@ -10,9 +10,10 @@ import { scopeStore, getWorkspace, updateWorkspace, allWorkspaceIds, workspaceOf
 import { emailConfig, sendEmail } from "./email.js";
 import { track } from "./metrics.js";
 import { smsConfig, sendSms } from "./sms.js";
-import { seatsOf } from "./social.js";
+import { seatsOf, heldOf } from "./social.js";
 import { cleanScrapSections, scrubAddress, cleanLogos, httpsLink, audienceOf } from "./scrapbook.js";
 import { dollarPrice } from "./looks.js";
+import { priceOf } from "./directory.js"; // review round 11: cards carry the price line the directory uses ("$320 for all 8", "$40 for 2")
 
 export const inviteOnly = () => process.env.ENCORE_INVITE_ONLY === "1";
 export const CODES_PER_MEMBER = 10;
@@ -143,11 +144,14 @@ export function makeCommunity(store) {
     // series (a class that repeats, a course, a class pass), a pre-order priced by the item, and whether the host hides who is going
     "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests",
     // review round 7: what guests should expect to spend when it isn't a paid spot ("About $40 food cost"), and "at the door"
-    "costNote", "ticketNote", "groupPrice", "groupSize", "hostName"];
+    "costNote", "ticketNote", "groupPrice", "groupSize", "hostName",
+    // review round 11: pairs and groups said as such ("6 pairs"), and a pre-order's items and order-by day
+    "headUnit", "unitCount", "groupCount", "orderItems", "orderBy", "orderByDate", "stockUnit"];
   // the host's neighborhood only stands in for an event in the host's own city (an event elsewhere shows its own city)
   const sameCity = (a, b) => { const k = (v) => String(v || "").split(",")[0].trim().toLowerCase(); return !k(a) || k(a) === k(b); };
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in
-    if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood && sameCity(e.city, host.city)) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; return { id, ...o, title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
+    if (o.meetPoint && (e.approvalRequired || !e.discoverable)) delete o.meetPoint; if (!o.city && host?.city) o.city = host.city; if (!o.hood && host?.hood && sameCity(e.city, host.city)) o.hood = host.hood; if (!o.emoji && host?.emoji) o.emoji = host.emoji; const priceLine = (() => { try { return priceOf(e) || ""; } catch { return ""; } })();
+    return { id, ...o, ...(priceLine ? { priceLine } : {}), title: e.pubTitle || e.name, host: host ? { handle: host.handle, name: host.name, emoji: host.emoji, color: host.theme?.accent || host.color, avatarArt: host.theme?.avatarArt || "", cover: (host.gallery || [])[0] || "" } : null }; }
   // onPage: the host's own page shows every event they published there; "unlisted" only keeps it off Discover.
   // privateToo: link-only events that were shared (published). Past ones belong in the scrapbook (title, date, cover,
   // photos and kudos; never the place or who came); upcoming ones are only ever shown to the host themselves.
@@ -159,20 +163,20 @@ export function makeCommunity(store) {
     return scopeStore(store, ws).list("events").map((d) => ({ id: d.id, e: d.data })).filter(({ e }) => e && !e.example && listed(e) && (upcoming ? (e.date || "9999") >= today : !!e.date && e.date < today && e.stage !== "interest")).sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9")))
       .map(({ id, e }) => { const c = { ...publicCard(id, e, host), ...(upcoming && e.discoverable ? goingOf(ws, id, e) : {}) }; if (e.discoverable) return c;
         // the owner sees their own private events whole (a paid one stays paid, not "Free")
-        if (!owner) for (const k of ["meetPoint", "headcount", "price", "passPrice", "passCount", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
+        if (!owner) for (const k of ["meetPoint", "headcount", "price", "priceLine", "passPrice", "passCount", "groupPrice", "orderItems", "audienceWho", "earlyUntil", "approvalRequired"]) delete c[k];
         // strangers get a card, not a way in: no event id that opens the invite or its guest list
         return { ...c, ...(owner ? {} : { id: "p-" + crypto.createHash("sha256").update(ws + "|" + id).digest("hex").slice(0, 16) }), private: true }; });
   }
   // who's going, for event previews: a count and up to three sketch faces (never names)
   const ARTS = ["florist", "curls", "bob", "chef", "runner", "barista", "baker", "glasses", "hiker"], TINTS = ["#E26D8E", "#E0A030", "#5B7FD6", "#3E9C6E", "#8C62C9"];
 const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler: "Last-Minute Yes", connector: "Connector", contributor: "Contributor", helper: "Helper", regular: "Regular", cheerleader: "Cheerleader" };
-  function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0;
-      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n += seatsOf(r, e);
+  function goingOf(ws, id, e) { try { if (e.hideGuests) return {}; const seen = new Set(), faces = []; let n = 0, ordered = 0;
+      for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId !== id || !(r.response === "going" || (e.stage === "interest" && r.interest === "in"))) continue; const k = String(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id).toLowerCase(); if (seen.has(k)) continue; seen.add(k); n += seatsOf(r, e); ordered += e.preorder ? heldOf(r, e) : 0;
         if (r.showMe !== false && faces.length < 3) { const h = [...k].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); faces.push({ art: ARTS[h % ARTS.length], color: TINTS[(h >> 4) % TINTS.length] }); } }
       // the crowd in one line: the two most common guest types (from the quiz), never names
       const T = {}; for (const d of scopeStore(store, ws).list("rsvps")) { const r = d.data || {}; if (r.eventId === id && r.response === "going" && TYPE_NAMES[r.guestType]) T[r.guestType] = (T[r.guestType] || 0) + 1; }
       const crowd = Object.entries(T).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, c]) => (c === 1 ? `a ${TYPE_NAMES[k]}` : `${c} ${TYPE_NAMES[k]}s`));
-      return n ? { going: n, faces, ...(crowd.length ? { crowd: crowd.join(" and ") + " going" } : {}) } : {}; } catch { return {}; } }
+      return n ? { going: n, faces, ...(crowd.length ? { crowd: crowd.join(" and ") + " going" } : {}), ...(e.preorder ? { ordered } : {}) } : {}; } catch { return {}; } }
   const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
   let showcaseCache = null;
   function showcaseAll() { if (showcaseCache) return showcaseCache; const out = new Map();

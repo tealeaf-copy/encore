@@ -31,14 +31,14 @@ const CASES = [
   ["🏃‍♀️ saturday morning 5k, weekly, 8am at lady bird lake boardwalk, all levels, free", { title: "Saturday morning 5k", repeat: "weekly", free: true }],
   // 2. pre-orders: the cap, the order deadline, the items
   ["holiday cookie boxes!! order by dec 15, pickup dec 20 between 11 and 2 at my place in bed-stuy, $35/box, 30 boxes", { title: "Holiday cookie boxes", date: "2026-12-20", startTime: "11:00", endTime: "14:00", preorder: true, headcount: 30, orderBy: "Dec 15", orderByDate: "2026-12-15", items: [{ name: "Cookie box", price: 35 }] }],
-  ["sourdough pre-orders for pickup Saturday Dec 12 10am-1pm at my stoop in Park Slope, country loaf $12, focaccia $9, max 20 loaves, order by Thursday", { date: "2026-12-12", headcount: 20, orderBy: "Thursday", orderByDate: "2026-11-26", items: [{ name: "Country loaf", price: 12 }, { name: "Focaccia", price: 9 }] }],
+  ["sourdough pre-orders for pickup Saturday Dec 12 10am-1pm at my stoop in Park Slope, country loaf $12, focaccia $9, max 20 loaves, order by Thursday", { date: "2026-12-12", headcount: 20, orderBy: "Thursday", orderByDate: "2026-12-10", items: [{ name: "Country loaf", price: 12 }, { name: "Focaccia", price: 9 }] }],
   ["croissant saturday — plain $4.50, almond $5.50, pain au chocolat $5 — pickup 9-11am dec 12 at Café Kestrel, limit 60", { preorder: true, headcount: 60, date: "2026-12-12", startTime: "09:00", endTime: "11:00", venueName: "Café Kestrel", items: [{ name: "Plain", price: 4.5 }, { name: "Almond", price: 5.5 }, { name: "Pain au chocolat", price: 5 }] }],
   ["king cake preorder jan 6, $40 whole or $25 half, pickup 4-7pm at my house in mid city, 25 cakes", { preorder: true, headcount: 25, items: [{ name: "Whole king cake", price: 40 }, { name: "Half king cake", price: 25 }] }],
   ["🍪 cookie box pre-orders, pickup Dec 19 noon to 3pm at Sunny's Cafe in Red Hook, box of 12 $30, 40 boxes max", { headcount: 40, items: [{ name: "Box of 12", price: 30 }] }],
   ["pie preorders for thanksgiving week: apple $28 pecan $32, pick up wed 12/23 between 4 and 7pm at Bakeshop on 5th Ave", { title: "Pie preorders for thanksgiving week", date: "2026-12-23", startTime: "16:00", items: [{ name: "Apple", price: 28 }, { name: "Pecan", price: 32 }] }],
   ["babka drop: chocolate or cinnamon, $18 each, 2 for $32, pickup sunday dec 13 10am-12pm prospect lefferts", { preorder: true, date: "2026-12-13", hood: "Prospect Lefferts", items: [{ name: "Babka", price: 18 }, { name: "2 babka", price: 32 }] }],
   ["birthday cake orders open for december, 8 inch $65, 6 inch $45, pickup by appointment at my kitchen in astoria", { title: "Birthday cake orders", preorder: true, headcount: undefined, items: [{ name: "8 inch", price: 65 }, { name: "6 inch", price: 45 }] }],
-  ["focaccia friday!! preorder by wed, pickup fri dec 11 5-7pm at my apartment in park slope, $14 a slab, only 15", { date: "2026-12-11", orderBy: "Wednesday", headcount: 15, items: [{ name: "Focaccia slab", price: 14 }] }],
+  ["focaccia friday!! preorder by wed, pickup fri dec 11 5-7pm at my apartment in park slope, $14 a slab, only 15", { date: "2026-12-11", orderBy: "Wednesday", orderByDate: "2026-12-09", headcount: 15, items: [{ name: "Focaccia slab", price: 14 }] }],
   ["bagel drop this saturday 8am-10am, pick up at my stoop in fort greene, everything bagels $3 or dozen $30, preorder only", { items: [{ name: "Everything bagels", price: 3 }, { name: "Dozen", price: 30 }] }],
   // not a pre-order
   ["chef's table for 6 at my place thurs dec 17 7:30, 7 courses, $95pp, wine pairing +$30, approve only", { preorder: undefined, price: "$95", headcount: 6 }],
@@ -82,12 +82,28 @@ const CASES = [
   ["kintsugi repair night thurs dec 10 7pm, bring a broken mug, $65 materials included, 10 seats, my studio greenpoint", { venueName: undefined }],
   ["Hike Sat 7am, dogs welcome, all levels", { venueName: undefined, meetPoint: undefined }],
   ["new years day hike jan 1 10am, Griffith Park, meet at the Greek Theatre lot, 5mi, mimosas after (bring cups)", { meetPoint: "the Greek Theatre lot" }],
+  // review round 11: a place's number stays with it; teams and tables book like groups; a club keeps its distance
+  ["wheel class thurs 7pm at Studio 5, $40, 6 spots", { venueName: "Studio 5", headcount: 6 }],
+  ["oyster night fri 7pm at Pier 17, $50", { venueName: "Pier 17", title: "Oyster night" }],
+  ["trivia night $100 per team of 8, 5 teams, thurs dec 10 8pm at Pete's Tavern", { title: "Trivia night", groupPrice: 100, groupSize: 8, headcount: 40, headUnit: "groups", groupCount: 5, price: "$100" }],
+  ["supper club sat dec 12 7pm, 4 tables of 4, $200 per table", { title: "Supper club", groupPrice: 200, groupSize: 4, headcount: 16, headUnit: "groups", groupCount: 4 }],
+  ["Run club 5k every saturday 8am at McCarren Park", { title: "Run club 5k", repeat: "weekly" }],
+  // ages aren't a time, a cap or a course length; 40+ isn't a cap
+  ["improv for kids 8-12 saturdays 10am at the Y", { title: "Improv for kids 8-12", startTime: "10:00", endTime: undefined, sessions: undefined }],
+  ["Hip hop for 40+ beginners thursdays 7pm, $20", { headcount: undefined, startTime: "19:00" }],
+  // the other dates of a short series aren't the title; "then dance til 11" is the end
+  ["bachata bootcamp 3 saturdays jan 9 16 23 2pm $90", { title: "Bachata bootcamp", sessions: 3, date: "2027-01-09" }],
+  ["salsa lesson 8-8:45 then dance til 11 fri dec 11 at Copa", { startTime: "20:00", endTime: "23:00" }],
+  // never a meeting point after "then" or "beers at"; a book isn't the place, a neighborhood is the hood
+  ["hike sat 8am at Bear Mountain, then meet at Joe's Diner for pancakes", { venueName: "Bear Mountain", meetPoint: "Bear Mountain" }],
+  ["trivia thurs 8pm then beers at Sweet Afton", { venueName: undefined, meetPoint: undefined }],
+  ["book club sun 3pm, we're reading The Overstory, Clinton Hill", { venueName: undefined, hood: "Clinton Hill" }],
 ];
 for (const [input, want] of CASES) {
   test(`round 9 reads: ${input}`, () => {
     const o = plain(ctx.parseEventText(input)), p = plain(ctx.prRead(input));
     for (const [k, v] of Object.entries(want)) {
-      const got = ["items", "orderBy", "orderByDate", "noSlots", "repeatUntil", "groupCount"].includes(k) ? p[k] : o[k];
+      const got = ["items", "orderBy", "orderByDate", "noSlots", "repeatUntil"].includes(k) ? p[k] : o[k];
       assert.deepEqual(got, v, `${k} for "${input}": got ${JSON.stringify(got)}`);
     }
   });

@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="/invite.css"><link rel="stylesheet" href="/system.css"></head><body>
 <main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div><p class="muted">Opening your invite…</p></main>
 <footer class="legal"><a href="/">Pottery Lab</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></footer>
-<script src="/eventart.js"></script><script src="/color.js"></script><script src="/looks.js"></script><script src="/questions.js" defer></script><script src="/friendsgoing.js" defer></script>
+<script src="/eventart.js"></script><script src="/spots.js"></script><script src="/color.js"></script><script src="/looks.js"></script><script src="/questions.js" defer></script><script src="/friendsgoing.js" defer></script>
 <script>
 (function () {
   // repeats (review round 6): `id` moves to the next date when this link's date has passed (see load below)
@@ -85,7 +85,9 @@
       // asked for, and paid spots on an Ask to join event (they pay after the host lets them in). When unsure, hand off.
       if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
-      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when })); })
+      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
+      // review round 11: coming back to a pre-order shows the order (items, pickup, total, Pay, I paid), not "You're in"
+      else if (e.preorder && mine?.order && st && st.response === "going") more("/invite-order.js", () => window.InviteOrder?.ticket?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }, { ...mine, paid: !!st.paid, paidClaim: !!st.paidClaim || !!mine.paidClaim }, document.getElementById("tk"))); })
     .catch(go);
   claimed.then(load);
   // repeats: the past date's note, kudos and photos (public/invite-repeat.js, loaded only when needed)
@@ -105,12 +107,14 @@
     const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji ? esc(h.emoji) : `<span class="ini">${esc(String(h.name || "?").trim().charAt(0).toUpperCase())}</span>`);
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
-    const full = left === 0 && !ask, spotsLine = (n) => `👥 ${n === 0 ? "Full · waitlist open" : n === A.seats ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`}`;
+    // review round 11: "6 pairs" / "3 pairs left" for pairs and groups (public/spots.js), else "12 spots" / "4 spots left"
+    const SP = window.EncoreSpots, spotsOf = (n) => (SP ? SP.spotsText(e, n) : n == null ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`), orderBy = SP ? SP.orderByText(e) : "";
+    const full = left === 0 && !ask, spotsLine = (n) => `👥 ${n === 0 ? "Full · waitlist open" : n === A.seats ? spotsOf(null) : spotsOf(n)}`;
     // the main button says what it sends: "I'm in" or "Send"
     const btn = (v) => ask ? (LK0 ? LK0.buttonText(e) : "Ask to join") : full && v === "going" ? "Join waitlist" : e.qStyle?.button || (v === "going" ? (LK0 ? LK0.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in") : "Send"); // per-event looks: the host's words and emoji for the going choice
     const routeLink = route ? ` · <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a>` : "";
     $("#m").innerHTML = $("#m .top").outerHTML + `${LK ? LK.updateHTML(e) : ""}${coverBox}<h1 class="lk-title">${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : e.costNote ? `<div class="muted" id="cost">💵 ${esc(e.costNote)}${/as you go|own|split/i.test(e.costNote) ? "" : " · you pay as you go"}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${spotsLine(left)}</div>` : ""}</div>
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : e.costNote ? `<div class="muted" id="cost">💵 ${esc(e.costNote)}${/as you go|own|split/i.test(e.costNote) ? "" : " · you pay as you go"}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${esc(spotsLine(left))}</div>` : ""}${orderBy ? `<div class="muted" id="orderBy">🗓️ ${esc(orderBy)}</div>` : ""}</div>
       ${h.name ? `<div class="host"><span class="av">${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${bring.length ? `<div class="kit"><span aria-hidden="true">🎒</span><div><b>Bring</b><p>${bring.map(esc).join(" · ")}</p></div></div>` : ""}
@@ -132,7 +136,7 @@
     if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
-    if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place, paidOk: !!back.paid, claimed: !!back.paidClaim }); }
+    if (back) { $("#f").hidden = true; return done(e, h, { response: back.response, name: back.name || "", email: "" }, back.rid, back.code, { ...ctx, back: true, place: back.place, paidOk: !!back.paid, claimed: !!back.paidClaim, order: back.order || "" }); }
     const stick = document.createElement("div"); stick.className = "stick"; stick.innerHTML = `<a href="#f">${ask ? esc(LK ? LK.buttonText(e) : "Ask to join") : full ? "Join waitlist" : esc(LK ? LK.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in")}</a>`; // per-event looks: the host's emoji and words document.body.appendChild(stick); stick.hidden = true;
     { const target = $("#f .resp") || $("#f"); if (target && "IntersectionObserver" in window) { let seen = false; new IntersectionObserver(([en]) => { if (en.isIntersecting) seen = true; const below = en.boundingClientRect.top > innerHeight; stick.hidden = en.isIntersecting || (!below && seen) || !!document.getElementById("tk"); }).observe(target); } }
     // the host's own questions, one at a time (questions.js arrives a moment later)
@@ -149,7 +153,7 @@
       if (!ask && payless(e) && resp !== "no" && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so ${first} can send you a way to pay.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
       const code = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
       const ride = resp === "no" ? "" : $("#rd")?.value || "";
-      const data = { eventId: e.id || id, response: ask && resp !== "no" ? "requested" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
+      const data = { eventId: e.id || id, response: ask && resp !== "no" ? "requested" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), ...(Math.floor(+e.groupSize) > 1 && resp !== "no" ? { party: Math.min(50, Math.floor(+e.groupSize)) } : {}), code, createdAt: Date.now(), via: "invite-lite" }; // a group booking holds the whole pair or group
       $("#send").disabled = true;
       try { const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't send. Try again.");
@@ -163,14 +167,14 @@
   async function done(e, h, data, rid, code, S = {}) {
     document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); if (data.response === "no") document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); const yes = data.response === "going", wait = data.response === "waitlist", asked = data.response === "requested", paid = paidOf(e), eid = e.id || id, who = esc(S.first || "your host");
     // count yourself in: the spots and "N in" lines move with your own yes (a returning guest is already counted)
-    if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots")) $("#spots").textContent = S.spotsLine(S.left - 1); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
+    if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots")) $("#spots").textContent = S.spotsLine(Math.max(0, S.left - (+data.party || 1))); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
     const d = e.date ? e.date.replace(/-/g, "") : "", hm = (x) => x.replace(":", "") + "00", t = HHMM.test(e.startTime || "") ? hm(e.startTime) : "";
     // the calendar end: the host's end time (next day when it ends after midnight), else three hours after the start, like the full invite
     const endT = t ? (HHMM.test(e.endTime || "") && e.endTime !== e.startTime ? hm(e.endTime) : String((+t.slice(0, 2) + 3) % 24).padStart(2, "0") + t.slice(2)) : "";
     const dEnd = t && endT < t ? (() => { const x = new Date(e.date + "T12:00:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); })() : d;
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
-    const doorCode = yes && !paid && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl);
-    const place = +S.place || 0, head = yes ? "You're in" : asked ? "Asked" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
+    const doorCode = yes && !paid && !e.preorder && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl); // review round 11: a pre-order shows its order, never a door code
+    const place = +S.place || 0, head = yes ? (e.preorder && (data.order || S.order) ? "Ordered" : "You're in") : asked ? "Asked" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
     const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid && S.paidOk ? "Paid. Your spot is yours." : yes && paid && S.claimed ? `You said you paid. ${who} will confirm.` : yes && paid && e.ticketNote && !pay ? "Pay at the door. See you there." : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
     const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${head}</h2>${line ? `<p class="muted" style="margin:0">${line}</p>` : ""}
       ${doorCode ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>

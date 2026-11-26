@@ -107,7 +107,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
   <main id="m" style="min-height:calc(100vh - 60px)"><div class="cover" aria-hidden="true"></div><p class="empty" style="margin-top:24px">Loading…</p></main>
 </div>
 <footer>Made with Pottery Lab · <a href="/hosts">Find more hosts</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
-<script src="/eventart.js"></script><script src="/community.js"></script>
+<script src="/eventart.js"></script><script src="/spots.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
 <script src="/collab.js"></script>
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
@@ -273,7 +273,7 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
     fetch("/api/db/collection?path=events", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { docs: [] })).then((j) => { const today = new Date().toISOString().slice(0, 10), shown = new Set((d.upcoming || []).map((x) => x.id));
       const P = (j.docs || []).filter((x) => x.data && !x.data.example && !x.data.sample && !shown.has(x.id) && x.data.date && x.data.date >= today && (x.data.name || x.data.pubTitle)).sort((a, b) => String(a.data.date).localeCompare(String(b.data.date))).slice(0, 6); if (!P.length) return;
       const grid = document.querySelector(".grid.s-coming"); if (!grid) return; grid.querySelectorAll(".empty").forEach((x) => x.remove()); document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = false; x.style.display = ""; });
-      grid.insertAdjacentHTML("beforeend", P.map(({ id, data: e }) => `<div class="priv-ev">${C.eventCard({ id, title: e.pubTitle || e.name, name: e.name, date: e.date, startTime: e.startTime, activity: e.activity, emoji: e.emoji, hood: e.hood, city: e.city, casual: e.casual, coverPhoto: e.coverPhoto, price: e.price, free: e.free, costNote: e.costNote, groupPrice: e.groupPrice, groupSize: e.groupSize, priceUnit: e.priceUnit, host: null }).replace(/href="[^"]*"/, `href="/?app=1&amp;open=${encodeURIComponent(id)}#studio"`)}<p class="priv-tag">🔒 Only you see this. ${!e.published && !e.discoverable ? "Draft" : e.discoverable ? "Not on your page yet" : "Link only"}.</p></div>`).join("")); }).catch(() => {}); }
+      grid.insertAdjacentHTML("beforeend", P.map(({ id, data: e }) => `<div class="priv-ev">${C.eventCard({ id, title: e.pubTitle || e.name, name: e.name, date: e.date, startTime: e.startTime, activity: e.activity, emoji: e.emoji, hood: e.hood, city: e.city, casual: e.casual, coverPhoto: e.coverPhoto, price: e.price, free: e.free, costNote: e.costNote, groupPrice: e.groupPrice, groupSize: e.groupSize, priceUnit: e.priceUnit, host: null }).replace(/href="[^"]*"/, `href="/?app=1&amp;open=${encodeURIComponent(id)}#studio"`)}<p class="priv-tag">🔒 Only you see this. ${!e.published && !e.discoverable ? "Draft" : e.discoverable ? "Not on your page yet" : "It's link only"}.</p></div>`).join("")); }).catch(() => {}); }
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
   if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You're following ${esc(short)}</b></div>`;
   ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff), signedIn = /(?:^|;\s*)encore_in=1/.test(document.cookie);

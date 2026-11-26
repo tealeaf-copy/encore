@@ -23,7 +23,7 @@
   // after Show it on Discover: on Discover now, or (the page isn't ready) what the page still needs, as the share step says it
   function doneCard(d) { const gaps = (d.gaps || []).length ? d.gaps : ["a line about you", "a face or photo"];
     return d.pageReady !== false ? `<section class="pln" id="plnDiscover" role="status"><span class="pln-e" aria-hidden="true">🎉</span><b>It's on Discover</b><p>${esc(d.title)} is on Discover and your page now.</p></section>`
-      : `<section class="pln" id="plnDiscover" role="status"><span class="pln-e" aria-hidden="true">📍</span><b>Almost on Discover</b><p>Add ${esc(p1And(gaps))} so it shows on Discover.</p><div class="pln-acts"><a class="pln-go" href="${finishUrl(d)}" style="display:inline-flex;align-items:center;text-decoration:none">Finish your page</a></div></section>`; }
+      : `<section class="pln" id="plnDiscover" role="status"><span class="pln-e" aria-hidden="true">📍</span><b>Almost on Discover</b><p>It's on your page now. Add ${esc(p1And(gaps))} so it shows on Discover too.</p><div class="pln-acts"><a class="pln-go" href="${finishUrl(d)}" style="display:inline-flex;align-items:center;text-decoration:none">Finish your page</a></div></section>`; }
   let DONE = null;
   async function act(show) { const el = document.getElementById("plnDiscover"), d = N?.discover; if (!el || !d) return; const go = el.querySelector("[data-pln-show]"); go.disabled = true;
     try { const r = await fetch("/api/host/nudges/discover", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: d.eventId, show }) }); const j = await r.json().catch(() => ({}));

@@ -10,7 +10,8 @@ window.InviteOrder = function (e, ws, H, U) {
   const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0), slotLabel = window.InviteOrder.slotLabel, slots = (e.slots || []).filter(Boolean).slice(0, 8);
   const css = document.createElement("style"); css.textContent = `.ord h2{margin:18px 0 8px}.ord .it{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,#EADFCF)}.ord .it span{flex:1}.ord .it small{display:block;color:var(--muted,#6b5d52)}.ord .st{display:flex;align-items:center;gap:6px}.ord .st button{width:44px;height:44px;border-radius:999px;border:1.5px solid var(--ink,#1F1A17);background:#fff;font:700 20px system-ui;cursor:pointer;color:var(--ink,#1F1A17)}.ord .st b{min-width:22px;text-align:center}.ord .sl{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}.ord .sl label{border:1.5px solid var(--line,#DCCFBE);border-radius:999px;padding:9px 14px;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px}.ord .sl label:has(input:checked){border-color:var(--ink,#1F1A17);background:#FFE08A}.ord .tot{font-weight:700;margin:10px 0 4px}`; document.head.appendChild(css);
   const form = document.createElement("form"); form.id = "ord"; form.className = "ord"; form.noValidate = true;
-  form.innerHTML = `<h2 class="ask">Order for pickup</h2><div id="ordItems"><p class="muted">Opening the menu…</p></div>
+  const orderBy = window.EncoreSpots ? window.EncoreSpots.orderByText(e) : ""; // review round 11: "Order by Thu"
+  form.innerHTML = `<h2 class="ask">Order for pickup</h2>${orderBy ? `<p class="muted" id="ordBy" style="margin:0 0 8px">${esc(orderBy)}</p>` : ""}<div id="ordItems"><p class="muted">Opening the menu…</p></div>
     ${slots.length ? `<fieldset style="border:0;padding:0;margin:12px 0 0"><legend style="font-weight:600">Pickup time</legend><div class="sl">${slots.map((x, i) => `<label><input type="radio" name="slot" value="${esc(x)}"${i ? "" : " checked"}> ${esc(slotLabel(x))}</label>`).join("")}</div></fieldset>` : ""}
     <p class="tot" id="ordTot"></p>
     <label class="f">Your name<input type="text" id="oNm" autocomplete="name" maxlength="80" required></label>
@@ -47,20 +48,33 @@ window.InviteOrder = function (e, ws, H, U) {
         const data = { eventId: eid, response: "going", name, email, ...(phone ? { phone, contactVia: "sms" } : { contactVia: "email" }), slot, ...(lines.length ? { orderQty: lines.map((x) => ({ i: x.i, qty: qty[x.id] })) } : { order: free.slice(0, 200) }), code: rc, createdAt: Date.now(), via: "invite-order" };
         const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); rid = String(j.id || j.doc?.id || "").split("/").pop(); code = rc;
-        U.ls.set("encore-rsvp-" + eid, JSON.stringify({ rid, code: rc, name, ct: c, gi: -1, response: "going", order: text, wall: false, eventId: eid, data: {} }));
+        U.ls.set("encore-rsvp-" + eid, JSON.stringify({ rid, code: rc, name, ct: c, gi: -1, response: "going", order: text, total, slot, wall: false, eventId: eid, data: {} }));
         if (total && /^https:\/\//.test(e.ticketUrl || "")) pay = U.payLinkOf(e.ticketUrl, money(total), [name, e.pubTitle || e.name].filter(Boolean).join(" · ")); }
-      form.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(text)}</p>${code && shop ? `<p class="muted" style="margin:0">Order #${esc(code)}. Show this at pickup.</p>` : ""}${where ? `<p class="muted" style="margin:0">📍 ${esc(where)}</p>` : ""}
-        <p class="muted" style="margin:0">${esc(first)} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.</p><div class="btns">${pay ? `<a class="btn pay" id="oPay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}${pay && rid ? `<button type="button" class="btn" id="oPaid" hidden>I paid</button>` : ""}</div></div>`;
-      // review round 10: after Pay, "I paid" records a claim on their own reply, as on any paid invite. The host still confirms.
-      const oPay = $("#oPay"), oPaid = $("#oPaid");
-      if (oPay && oPaid) { oPay.addEventListener("click", () => { U.ls.set("encore-paytap-" + eid, "1"); oPaid.hidden = false; });
-        oPaid.onclick = async () => { oPaid.disabled = true;
-          try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
-            try { const m0 = JSON.parse(U.ls.get("encore-rsvp-" + eid) || "{}"); U.ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
-            const ps = document.querySelectorAll("#tk p.muted"), p = ps[ps.length - 1]; if (p) p.textContent = `Got it. ${first} will check and confirm.`; oPay.remove(); oPaid.remove(); }
-          catch { oPaid.disabled = false; oPaid.textContent = "Didn't go through. Tap to try again"; } }; }
+      window.InviteOrder.ticket(e, ws, H, U, { rid, order: text, total, pay, name, code, shop: !!shop, where }, form);
       document.getElementById("tk")?.scrollIntoView({ behavior: "smooth", block: "center" }); }
     catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "Didn't go through. Check your connection and try again." : err.message; go.disabled = false; } };
+};
+// review round 11: the "Ordered" ticket: right after ordering, and when the guest comes back to the invite later (a reload
+// shows their order, the total and Pay, never "You're in" with a door code). M: { rid, order, total (cents), pay, name, code,
+// shop, where, paid, paidClaim }; el is replaced.
+window.InviteOrder.ticket = function (e, ws, H, U, M, el) {
+  const $ = (s) => document.querySelector(s), esc = U.esc, eid = e.id || (location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
+  const first = String(e.hostName || "").trim().split(/\s+/)[0] || H?.person || "your host", money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
+  const total = +M.total > 0 ? +M.total : (() => { const m = String(M.order || "").match(/·\s*\$(\d+(?:\.\d{1,2})?)\s*$/); return m ? Math.round(+m[1] * 100) : 0; })();
+  const pay = M.pay || (total && /^https:\/\//.test(e.ticketUrl || "") && U.payLinkOf ? U.payLinkOf(e.ticketUrl, money(total), [M.name, e.pubTitle || e.name].filter(Boolean).join(" · ")) : "");
+  const tapped = (() => { try { return !!U.ls.get("encore-paytap-" + eid); } catch { return false; } })(), rid = M.rid || "";
+  const status = M.paid ? "Paid. See you at pickup." : M.paidClaim ? `Got it. ${first} will check and confirm.` : `${first} has it${pay ? "" : e.ticketNote ? ". Pay at pickup" : ""}.`;
+  if (!el) return;
+  el.outerHTML = `<div class="ticket" id="tk"><h2>Ordered</h2><p class="muted" style="margin:0">${esc(M.order || "")}</p>${M.code && M.shop ? `<p class="muted" style="margin:0">Order #${esc(M.code)}. Show this at pickup.</p>` : ""}${M.where ? `<p class="muted" style="margin:0">📍 ${esc(M.where)}</p>` : ""}
+    <p class="muted" style="margin:0">${esc(status)}</p><div class="btns">${pay && !M.paid && !M.paidClaim ? `<a class="btn pay" id="oPay" href="${esc(pay)}" target="_blank" rel="noopener">Pay ${esc(money(total))}</a>` : ""}${pay && rid && !M.paid && !M.paidClaim ? `<button type="button" class="btn" id="oPaid"${tapped ? "" : " hidden"}>I paid</button>` : ""}</div></div>`;
+  // review round 10: after Pay, "I paid" records a claim on their own reply, as on any paid invite. The host still confirms.
+  const oPay = $("#oPay"), oPaid = $("#oPaid");
+  if (oPay && oPaid) { oPay.addEventListener("click", () => { U.ls.set("encore-paytap-" + eid, "1"); oPaid.hidden = false; });
+    oPaid.onclick = async () => { oPaid.disabled = true;
+      try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
+        try { const m0 = JSON.parse(U.ls.get("encore-rsvp-" + eid) || "{}"); U.ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
+        const ps = document.querySelectorAll("#tk p.muted"), p = ps[ps.length - 1]; if (p) p.textContent = `Got it. ${first} will check and confirm.`; oPay.remove(); oPaid.remove(); }
+      catch { oPaid.disabled = false; oPaid.textContent = "Didn't go through. Tap to try again"; } }; }
 };
 // review round 8: pickup windows read "10am to 11am" (the same rule as server/preorder.js slotLabel)
 window.InviteOrder.slotLabel = function (slot) {

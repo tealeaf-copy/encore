@@ -84,11 +84,15 @@
   async function counts(keys) { if (!keys.length) return {}; const j = await (await fetch("/api/public/saves/counts?keys=" + encodeURIComponent(keys.slice(0, 100).join(",")))).json().catch(() => ({})); return j.counts || {}; }
   // review round 10: picks made before signup (pl.interests, kept in this browser) come into the account on its first load,
   // when the account has none yet (signup does this too; this covers any other way in)
-  async function carryInterests() { if (!signedIn()) return; let L = null; try { if (localStorage.getItem("pl.interestsCarried")) return; L = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch { return; }
+  // review round 11: the "carried" mark is per account (another account signing in on this browser still gets its picks),
+  // and the picks are cleared once they're in the account
+  async function carryInterests() { if (!signedIn()) return; let L = null; try { L = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch { return; }
     if (!L || typeof L !== "object" || !((Array.isArray(L.interests) && L.interests.length) || L.city)) return;
-    try { const r = await fetch("/api/me/interests", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json();
+    try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json().catch(() => ({})), em = String(me?.email || "").trim().toLowerCase(); if (!em) return;
+      const mark = "pl.interestsCarried:" + em; if (localStorage.getItem(mark)) return;
+      const r = await fetch("/api/me/interests", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json();
       if (!(j.interests?.length || j.city)) { const w = await fetch("/api/me/interests", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interests: Array.isArray(L.interests) ? L.interests : [], city: String(L.city || "").slice(0, 60) }) }); if (!w.ok) return; }
-      localStorage.setItem("pl.interestsCarried", "1"); } catch {} }
+      localStorage.setItem(mark, "1"); localStorage.removeItem("pl.interests"); } catch {} }
   const ready = load().then(() => { emit(); carryInterests(); return merge(); }).catch(() => {});
   window.PLSave = { carryInterests, button, isSaved, toggle, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
 })();

@@ -64,6 +64,7 @@ const srEvery = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) r
 const srLast = (e) => { const x = srDate(e.date), n = +e.sessions || 0; if (!x || n < 2) return null; const y = new Date(x); y.setDate(y.getDate() + (n - 1) * (e.repeat === "biweekly" ? 14 : 7)); return y; };
 const srSpan = (e) => { const x = srDate(e.date), y = srLast(e); return x && y ? `${+e.sessions} ${SR_DAY[x.getDay()]}s, ${srMD(x)} to ${srMD(y)}` : ""; };
 const srWhen = (e) => { const head = srSpan(e) || srEvery(e); if (!head) return ""; const st = clockOr(e.startTime), en = st && e.endTime !== e.startTime ? clockOr(e.endTime) : ""; return [head, st && (en ? `${st} to ${en}` : st)].filter(Boolean).join(" · "); };
+const dol = (n) => "$" + (n % 1 ? n.toFixed(2) : String(n));
 const srAmt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : ""; };
 const srPrice = (e) => { const p = e.price && e.price !== "chip" ? srAmt(e.price) : "", n = +e.sessions || 0, pp = +e.passPrice || 0, pc = +e.passCount || 0;
   // a pass and sessions together: the pass is the bundle ("$20 a class, or $100 for all 6"), never "$20 for all 6" beside it
@@ -87,11 +88,17 @@ export function priceOf(c) {
   // no price written down isn't "Free": say nothing (null) rather than promise it
   if (!p) return null;
   if (p === "chip") return "Pay what you like";
+  // review round 11: a pair or a group books together ("$60 for 2", "$120 for 4"), never "a person"
+  { const gp = +c.groupPrice, gs = Math.floor(+c.groupSize); if (gp > 0 && gs > 1) return `${dol(gp)} for ${gs}`; }
+  // review round 11: a pre-order with the host's items: the cheapest ("$3 each", or "from $3 each" when prices differ)
+  if (c.preorder) { const P = orderItemsOf(c).map((x) => x.price).filter((x) => x > 0); if (P.length) { const lo = Math.min(...P); return `${new Set(P).size > 1 ? "from " : ""}${dol(lo)} each`; } }
   // a pre-order or a pop-up priced by the item
   if ((c.preorder || /^(each|item)$/i.test(String(c.priceUnit || ""))) && /^\$?\d/.test(p) && !/a person|per |at the door/i.test(p)) return /\beach\b/i.test(p) ? s(p.startsWith("$") ? p : "$" + p, 40) : `${srAmt(p)} each`;
   if (/^\$?\d/.test(p)) { const amt = p.startsWith("$") ? p : "$" + p; return /a person|each|per |at the door/i.test(amt) ? s(amt, 40) : `${s(amt, 30)} a person`; }
   return /^quoted$/i.test(p) ? null : s(p, 40) || null;
 }
+/** A pre-order's items as the directory lists them: [{ name, price }] (price in dollars, 0 when the host gave none). */
+export const orderItemsOf = (c) => (Array.isArray(c?.orderItems) ? c.orderItems : []).slice(0, 12).map((x) => ({ name: s(x?.name, 60), price: Math.round((+String(x?.price ?? "").replace(/[^\d.]/g, "") || 0) * 100) / 100 })).filter((x) => x.name);
 // "Chelsea, New York" -> area Chelsea, city New York; "Napa Valley, CA" -> city "Napa Valley, CA"
 // A country on its own is never a city: "Sydney, Australia" -> city Sydney; "USA" -> nothing.
 const COUNTRY = /^(australia|usa|us|u\.s\.a?\.?|united states(?: of america)?|canada|uk|u\.k\.|united kingdom|great britain|england|new zealand)$/i;
@@ -201,7 +208,9 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     const fromCard = (c, H, status) => { const cp = splitPlace(c.city), city = cp.area ? s(c.city, 60) : s(cp.city, 60), sr = seriesOf(c);
       return { id: c.id, title: s(c.title, 140), status, start: /^\d{4}-\d{2}-\d{2}$/.test(c.date || "") ? c.date : "", time: [clock(c.startTime), clock(c.endTime)].filter(Boolean).join(" to "),
       city, area: s(c.hood, 60), format: formatOf({ activity: c.activity, title: c.title, tags: c.tags }), tags: (Array.isArray(c.tags) ? c.tags : []).map((t) => s(t, 24)).filter(Boolean).slice(0, 8),
-      price: priceOf(c), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.max(0, Math.round(+c.headcount - (+c.going || 0))) : null, ask_to_join: !!c.approvalRequired,
+      price: priceOf(c), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.max(0, Math.round(+c.headcount - (c.preorder ? +c.ordered || 0 : +c.going || 0))) : null, ask_to_join: !!c.approvalRequired,
+      // review round 11: a pre-order says so, with its items and when orders close (spots_left counts what's left to order)
+      ...(c.preorder ? { preorder: true, items: orderItemsOf(c), order_by: s(c.orderBy, 40) || (/^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : "") } : {}),
       repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when,
       host: hostRef(H.h), url: `${base}/e/${encodeURIComponent(c.id)}`, source: "hosted", speaking: null, original_link: "", companies: [], cover: abs(c.coverPhoto), example: !!(c.sample || H.sample),
       // a class that repeats keeps its id, so guests' kudos from earlier sessions belong to the upcoming one too
@@ -405,7 +414,8 @@ export function mcpArgsError(props = {}, args = {}) {
       const t = String(v).trim(); if (["category", "format", "city", "host", "handle", "type", "status", "period"].includes(k) && BAD_KEYS.test(t)) return `Unknown ${k} "${t.slice(0, 40)}".`;
       if (P.enum && !P.enum.includes(t.toLowerCase())) return `${k} must be one of: ${P.enum.join(", ")}.`;
       if (["from", "to", "date"].includes(k) && !realDate(t)) return `${k} must be a date as YYYY-MM-DD, e.g. 2026-03-14.`; }
-    if (P.type === "number") { const n = typeof v === "string" && v.trim() !== "" ? +v : v; if (typeof n !== "number" || !Number.isFinite(n)) return `${k} must be a number.`;
+    if (P.type === "boolean" && typeof v !== "boolean" && !/^(true|false|1|0)$/i.test(String(v))) return `${k} must be true or false.`;
+    if (P.type === "number") { const n = typeof v === "string" && v.trim() !== "" ? +v.replace(/[$,\s]/g, "") : v; if (typeof n !== "number" || !Number.isFinite(n)) return `${k} must be a number.`;
       if (k === "limit" && !(Number.isInteger(n) && n >= 1)) return "limit must be a whole number from 1 to 100."; } }
   return ""; }
 export function findArgsError(q = {}) {
@@ -472,17 +482,20 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
     res.set("Cache-Control", "public, max-age=60"); next(); };
   const notFound = (res, what) => res.status(404).json({ code: "not_found", message: `No ${what} by that id.` });
   app.options(/^\/api\/v1\//, api);
-  app.get("/api/v1/events", api, (req, res) => res.json(Dir.searchEvents(base(req), req.query)));
-  app.get("/api/v1/events.csv", api, (req, res) => res.type("text/csv; charset=utf-8").set("Content-Disposition", 'inline; filename="pottery-lab-events.csv"').send(Dir.csv(base(req), req.query)));
+  // review round 11: each route checks its query against the matching MCP tool's schema (the same messages as MCP's -32602)
+  const v1Check = (tool) => (req, res, next) => { const q = { ...req.query }; if (tool === "get_leaderboard" && q.category != null && q.category !== "" && typeof q.category === "string") { const c = leaderboardCategory(q.category); if (!c) return res.status(400).json({ code: "invalid", message: `Unknown category "${q.category.slice(0, 40)}". Use one of: ${LB_CATS.join(", ")}.` }); q.category = c; }
+    const bad = mcpArgsError(PUBLIC_TOOLS.find((t) => t.name === tool)?.inputSchema?.properties || {}, q); if (bad) return res.status(400).json({ code: "invalid", message: bad }); next(); };
+  app.get("/api/v1/events", api, v1Check("search_events"), (req, res) => res.json(Dir.searchEvents(base(req), req.query)));
+  app.get("/api/v1/events.csv", api, v1Check("search_events"), (req, res) => res.type("text/csv; charset=utf-8").set("Content-Disposition", 'inline; filename="pottery-lab-events.csv"').send(Dir.csv(base(req), req.query)));
   app.get("/api/v1/events/:id", api, (req, res) => { const e = Dir.getEvent(base(req), req.params.id); return e ? res.json({ data: e }) : notFound(res, "event"); });
-  app.get("/api/v1/hosts", api, (req, res) => res.json(Dir.listHosts(base(req), req.query)));
-  app.get("/api/v1/hosts/find", api, (req, res) => { const bad = findArgsError(req.query); if (bad) return res.status(400).json({ code: "invalid", message: bad }); res.json(Dir.findHosts(base(req), req.query)); });
+  app.get("/api/v1/hosts", api, v1Check("list_hosts"), (req, res) => res.json(Dir.listHosts(base(req), req.query)));
+  app.get("/api/v1/hosts/find", api, v1Check("find_hosts"), (req, res) => { const bad = findArgsError(req.query); if (bad) return res.status(400).json({ code: "invalid", message: bad }); res.json(Dir.findHosts(base(req), req.query)); });
   app.get("/api/v1/hosts/:handle", api, (req, res) => { const h = Dir.getHost(base(req), req.params.handle); return h ? res.json({ data: h }) : res.status(404).json({ code: "not_found", message: "No host by that name." }); });
-  app.get("/api/v1/formats", api, (req, res) => res.json(Dir.formats(base(req), req.query)));
-  app.get("/api/v1/reviews", api, (req, res) => res.json(Dir.listReviews(base(req), req.query)));
+  app.get("/api/v1/formats", api, v1Check("list_formats"), (req, res) => res.json(Dir.formats(base(req), req.query)));
+  app.get("/api/v1/reviews", api, v1Check("get_reviews"), (req, res) => res.json(Dir.listReviews(base(req), req.query)));
   // ---- leaderboard (host awards work): read from app.locals.leaderboard (server/leaderboard.js) ----
   const lb = () => app.locals.leaderboard;
-  app.get("/api/v1/leaderboard", api, (req, res) => (lb() ? res.json(lb().board(req.query, base(req))) : res.status(404).json({ code: "not_found", message: "No leaderboard here." })));
+  app.get("/api/v1/leaderboard", api, v1Check("get_leaderboard"), (req, res) => (lb() ? res.json(lb().board(req.query, base(req))) : res.status(404).json({ code: "not_found", message: "No leaderboard here." })));
   app.get("/api/v1/leaderboard/rules", api, (req, res) => (lb() ? res.json(lb().rules()) : res.status(404).json({ code: "not_found", message: "No leaderboard here." })));
   // ---- end leaderboard ----
   app.get("/api/v1/openapi.json", api, (req, res) => res.json(openapi(base(req))));
@@ -613,11 +626,12 @@ function openapi(base) {
       Event: { type: "object", required: ["id", "title", "status", "host", "url", "source", "example", "reviews"], properties: {
         id: { type: "string" }, title: { type: "string" }, status: { type: "string", enum: ["upcoming", "past"] }, start: { type: "string", description: "YYYY-MM-DD, or empty when the host hasn't set a date" }, time: { type: "string", description: "e.g. 7pm, or 7pm to 10pm" },
         city: { type: "string", description: "The event's city (never a country on its own)" }, area: { type: "string", description: "Neighborhood. Never a street address. Empty when the event is somewhere the host's neighborhood doesn't apply." }, format: { type: "string" }, tags: { type: "array", items: { type: "string" } },
-        price: { ...nstr, description: "e.g. Free, $20 a person, Pay what you like, $12 each (a pre-order), $320 for all 8 (a course), $20 a class, or $70 for 4 (a class pass); null when unknown" },
+        price: { ...nstr, description: "e.g. Free, $20 a person, Pay what you like, $12 each or from $3 each (a pre-order), $60 for 2 (a pair or group books together), $320 for all 8 (a course), $20 a class, or $70 for 4 (a class pass); null when unknown" },
         spots_left: { type: ["integer", "null"], description: "The public headcount minus who has replied I'm in (the headcount itself with no replies yet); null with no headcount, when the host hides who's going, or for a past event" },
         repeat: { type: "string", enum: ["", "weekly", "biweekly", "monthly"], description: "How it repeats; empty for a one-off" }, sessions: { type: ["integer", "null"], description: "How many sessions a course has; null if it isn't a course" },
         ends: { type: "string", description: "A course's last session, YYYY-MM-DD; empty otherwise" }, pass: { type: ["object", "null"], properties: { price: { type: "string", description: "e.g. $70" }, count: { type: "integer" } }, description: "A class pass: price for count classes" },
         when: { type: "string", description: "The series in words, e.g. 8 Wednesdays, Jan 6 to Feb 24 · 7pm; Every Tue · 7pm; First Sun of each month. Empty for a one-off" }, ask_to_join: { type: "boolean", description: "The host lets guests in" },
+        preorder: { type: "boolean", description: "A pre-order (set only on one): guests order items for pickup" }, items: { type: "array", items: { type: "object", properties: { name: { type: "string" }, price: { type: "number", description: "Dollars; 0 when the host gave none" } } }, description: "A pre-order's items" }, order_by: { type: "string", description: "When a pre-order's orders close, as the host said it (e.g. Thursday), or empty" },
         host: ref("HostRef"), url: { type: "string", format: "uri", description: "The public invite (/e/:id) or the host page's scrapbook" }, source: { type: "string", enum: ["hosted", "scrapbook"] },
         original_link: { type: "string", description: "The original page for an imported event (Partiful, Luma, Eventbrite, a website)" }, companies: { type: "array", items: { type: "string" } }, cover: { type: "string" }, example: { type: "boolean" }, reviews: ref("Reviews"),
         speaking: { anyOf: [ref("Speaking"), { type: "null" }], description: "Set on a speaking engagement (talk, keynote, webinar, podcast, panel); null otherwise" } } },
@@ -653,6 +667,7 @@ People browse it at ${base}/events. Agents and scripts can read the same data be
 - ${base}/api/v1/openapi.json : OpenAPI 3.1 for all of the above.
 
 JSON, CORS open, cached for 60 seconds, rate limited per IP. Page through with next_cursor until it's null.
+Each route checks its filters the way the matching MCP tool does (text is text, a choice is one of its choices, dates are real YYYY-MM-DD days, limit is a whole number, yes/no is true or false). A bad one is a 400 with { "code": "invalid", "message" } that says what to send.
 
 ## MCP
 
@@ -662,7 +677,8 @@ Arguments are the ones each tool lists. query works as q; any other unknown argu
 
 ## Each event
 
-id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6"; null when no price is set), spots_left (headcount minus who has replied, or null), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
+id, title, status (upcoming or past), start (YYYY-MM-DD; for a class that repeats, the next one), time, city, area (neighborhood), format, tags, price ("Free" only when the host said so, "$20 a person", "Pay what you like", "$12 each", "from $3 each" (a pre-order whose items cost different amounts), "$60 for 2" (a pair or a group books together: the price is for all of them, not a person), "$320 for all 8", "$20 a class, or $70 for 4", "$20 a class, or $100 for all 6"; null when no price is set), spots_left (headcount minus who has replied, or null; for a pre-order, how many items are left to order), repeat (weekly, biweekly, monthly or empty), sessions (a course's length, or null), ends (a course's last date), pass ({ price, count } or null), when ("8 Wednesdays, Jan 6 to Feb 24 · 7pm", "Every Tue · 7pm", "First Sun of each month"; empty for a one-off), host { handle, name, url }, url (the public invite or the host's page), source (hosted or scrapbook), original_link (Partiful, Luma, Eventbrite), companies, cover, example, reviews { count, would_go_again_pct, top_tags, items }, speaking. Each review item: name, text, tags, at, verified, verified_label.
+A pre-order also has preorder: true, items [{ name, price }] (what the host sells, price in dollars) and order_by (when orders close, as the host said it, e.g. "Thursday", or empty).
 
 ## Formats
 

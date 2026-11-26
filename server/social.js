@@ -49,10 +49,12 @@ export function alertMatches(a, ev, evGeo) {
 
 export const newcomerEmoji = () => "🌱";
 // ---- spots: one count used everywhere (the seat check, the waitlist, previews) ----
-/** The most people one reply can bring: the guest plus the plus-ones the host allows (one by default), at most 6. */
-export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)));
+/** The most people one reply can bring: the guest plus the plus-ones the host allows (one by default), at most 6; a group booking ("$120 for the group of 4") holds the whole group, at most 50. */
+export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)), Math.floor(+ev?.groupSize) > 1 ? Math.min(50, Math.floor(+ev.groupSize)) : 0);
 /** How many spots one reply (or host-marked guest) holds: a party of three holds three. */
 export const seatsOf = (r, ev) => Math.max(1, Math.min(ev ? partyMax(ev) : 6, Math.floor(+r?.party) || (+r?.plusOnes > 0 ? 1 + Math.floor(+r.plusOnes) : r?.plusOne ? 2 : 1)));
+/** What one reply holds against the cap: on a pre-order, the items ordered (2 loaves hold 2); otherwise its spots. */
+export const heldOf = (r, ev) => { if (ev?.preorder && Array.isArray(r?.orderLines) && r.orderLines.length) return r.orderLines.reduce((a, x) => a + Math.max(0, Math.floor(+x?.qty) || 0), 0); return seatsOf(r, ev); };
 export const replyKey = (x) => lc(x?.email || x?.name || (x?.phone ? "tel:" + String(x.phone).replace(/[^\d+]/g, "") : ""));
 /** Spots held at an event: host-marked guests plus the latest reply from each person, counted once each.
  *  skip: a reply id to leave out (the reply being changed); skipKey: that person's email or name. */
@@ -60,7 +62,7 @@ export function seatsTaken(ev, docs, { skip = null, skipKey = "" } = {}) {
   const G = ev?.guests || [], held = new Map(), attended = new Set(G.filter((g) => g.status === "Attended").map(replyKey).filter(Boolean));
   for (const g of G) if (g.status === "Going" || g.status === "Attended") { const k = replyKey(g); if (k) held.set(k, seatsOf(g, ev)); }
   for (const d of docs) { if (d.id === skip) continue; const r = d.data || {}, k = replyKey(r) || "id:" + d.id;
-    if (r.response === "going") held.set(k, seatsOf(r, ev)); else if (["no", "waitlist", "declined"].includes(r.response) && !attended.has(k)) held.delete(k); }
+    if (r.response === "going") held.set(k, heldOf(r, ev)); else if (["no", "waitlist", "declined"].includes(r.response) && !attended.has(k)) held.delete(k); }
   if (skipKey) held.delete(lc(skipKey));
   return [...held.values()].reduce((a, b) => a + b, 0);
 }

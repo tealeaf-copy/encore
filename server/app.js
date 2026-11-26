@@ -15,7 +15,8 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
-import { makeSocial, mountSocial, seatsOf, seatsTaken, waitlistOf, waitlistPos } from "./social.js";
+import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos } from "./social.js";
+import { ordersClosed } from "./tz.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
@@ -90,7 +91,7 @@ function cleanGuestRsvp(b) {
   if (o.phone != null) o.phone = o.phone.replace(/[^\d+ ()-]/g, "");
   if (o.contactVia != null && !["email", "sms", "whatsapp"].includes(o.contactVia)) delete o.contactVia;
   for (const k of GUEST_FLAGS) if (b[k] != null) o[k] = !!b[k];
-  if (b.party != null) o.party = Math.max(1, Math.min(6, Math.floor(+b.party) || 1));
+  if (b.party != null) o.party = Math.max(1, Math.min(50, Math.floor(+b.party) || 1)); // seatsOf caps it by the event (6, or a bigger group)
   if (b.guestIndex != null && Number.isFinite(+b.guestIndex)) o.guestIndex = Math.max(-1, Math.min(10000, Math.floor(+b.guestIndex)));
   for (const k of ["createdAt", "changedAt"]) if (b[k] != null && Number.isFinite(+b[k])) o[k] = Math.min(+b[k], Date.now() + 864e5);
   if (typeof b.photo === "string" && ((/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(b.photo) && b.photo.length <= 60000) || /^\/_blob\/[A-Za-z0-9]{20}$/.test(b.photo))) o.photo = b.photo;
@@ -133,6 +134,8 @@ PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
 // review round 7: a pre-order's items ("Country loaf $12") for the order form, and the date before this one of a repeat
 // (so the light invite can say "You were in last week. In again?")
 PUBLIC_FIELDS.push("preorder", "orderItems", "prevId", "seriesId");
+// review round 11: when orders close ("Order by Thu"), and pairs and groups counted as such ("6 pairs", "3 groups")
+PUBLIC_FIELDS.push("orderBy", "orderByDate", "orderDeadline", "headUnit", "unitCount", "groupCount", "stockUnit");
 // ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----
 PUBLIC_FIELDS.push("look");
 export function eventMoney(e) {
@@ -1362,6 +1365,9 @@ export function createApp({ store, dataDir }) {
       { const pth = String(req.query.path || ""), cur0 = /^rsvps\/[A-Za-z0-9_-]+$/.test(pth) ? S(req).get(pth)?.data : null, eid0 = String(b.eventId || cur0?.eventId || "");
         const evO = /^[A-Za-z0-9_-]{1,80}$/.test(eid0) ? (S(req).get("events/" + eid0)?.data || null) : null;
         delete b.order;
+        // review round 11: past the order-by date (where the event is), new orders and changes are closed; Can't go still works
+        if (evO && ordersClosed(evO) && String(b.response || "").toLowerCase() !== "no" && (raw0.orderQty != null || raw0.order != null || String(b.response || "").toLowerCase() === "going")) {
+          res.status(409).json({ code: "orders_closed", message: evO.orderBy ? `Orders closed. The last day to order was ${evO.orderBy}.` : "Orders closed." }); return false; }
         if (evO?.preorder && (raw0.orderQty != null || raw0.order != null)) { const O = buildOrder(evO, { orderQty: raw0.orderQty, order: raw0.order, slot: b.slot });
           if (O.error) { res.status(400).json({ code: "invalid_order", message: O.error }); return false; }
           if (O.order) { b.order = O.order; if (O.orderLines) { b.orderLines = O.orderLines; b.orderTotal = O.orderTotal; } } }
@@ -1428,8 +1434,9 @@ export function createApp({ store, dataDir }) {
   // on the waitlist, and an event where the host lets people in keeps it as "asked" until the host does.
   function guardGuestReply(req, path, body) {
     if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body) return body;
-    if (body.response !== "going" && body.party == null && body.plusOne == null) return body;
+    if (body.response !== "going" && body.party == null && body.plusOne == null && body.orderLines == null) return body;
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
+    if (pol.error) throw httpError(409, "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
     return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}) };
   }
@@ -1523,6 +1530,12 @@ export function createApp({ store, dataDir }) {
     if (out.party != null || out.plusOne != null) out.party = seatsOf(out, ev);
     // ask-to-join: a guest's yes is a request until the host lets them in (once let in, they can change their mind back)
     if (req.guest && ev.approvalRequired && out.response === "going" && pr.response !== "going" && !pr.letInAt) out.response = "requested";
+    // a pre-order's cap counts what's ordered (max 20 loaves), and a full one says how many are left instead of a waitlist
+    if (ev.preorder && req.guest && out.response === "going" && +ev.headcount > 0 && Array.isArray(out.orderLines) && out.orderLines.length) {
+      const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = heldOf(out, ev);
+      if (taken + mine > cap) { const left = Math.max(0, cap - taken); return { body: out, prior, error: left ? `Only ${left} left. Pick fewer.` : "Sold out. Nothing left to order.", left }; }
+      return { body: out, prior };
+    }
     if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready) {
       const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = seatsOf(out, ev);
       if (pr.response === "going") { const room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = room; out.partyCut = true; } } // already in: keeps their spots
@@ -1566,7 +1579,7 @@ export function createApp({ store, dataDir }) {
     for (let i = 0; i < 100; i++) {
       const all = St.list("rsvps").filter((d) => d.data?.eventId === eventId), free = +ev.headcount - seatsTaken(ev, all); if (free <= 0) break;
       // ask-to-join events: only people the host already let in move up on their own; the host decides the rest
-      const next = waitlistOf(all).find((d) => seatsOf(d.data, ev) <= free && (!ev.approvalRequired || d.data.letInAt)); if (!next) break;
+      const next = waitlistOf(all).find((d) => heldOf(d.data, ev) <= free && (!ev.approvalRequired || d.data.letInAt)); if (!next) break;
       St.set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() }); done.push(next);
     }
     const title = titleOf(ev), when = whenOf(ev), owner = getWorkspace(ws)?.ownerEmail || "";
@@ -1680,7 +1693,7 @@ export function createApp({ store, dataDir }) {
         if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
         if (evG.date && evG.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." });
         if (rsvpLimited(req, eidG)) return res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); }
-      const pol = rsvpPolicy(req, body); body = pol.body;
+      const pol = rsvpPolicy(req, body); if (pol.error) return res.status(409).json({ code: "sold_out", message: pol.error, left: pol.left }); body = pol.body;
       // the same email from another device can't overwrite someone's reply: only a device that sent it or opened the emailed
       // link (its guest key), a verified personal invite, or the host can change it. Anyone else gets the link sent to that email.
       if (pol.prior && req.guest) { const sameDevice = keyOk(pol.prior.data, guestKey(req)), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});

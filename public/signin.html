@@ -1,0 +1,340 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sign in · Pottery Lab</title>
+<meta name="description" content="Sign in to Pottery Lab, or join with an invite.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/system.css">
+<style>
+  /* One calm sign-in screen for /login and /signup (server/signin.js). Mobile first: one column, 16px gutters,
+     48px+ tap targets. Brand tokens from public/system.css. */
+  html,body{background:var(--pl-page)}
+  body{margin:0;min-height:100vh;min-height:100dvh;color:var(--pl-ink);font:16px/1.45 var(--sys-sans);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:0 16px calc(32px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+  main{width:100%;max-width:400px;padding-top:max(48px,calc(env(safe-area-inset-top,0px) + 32px))}
+  @media (min-height:760px){main{padding-top:8vh}}
+  .mark{display:inline-flex;align-items:center;gap:8px;color:var(--pl-ink);text-decoration:none;font:400 22px/1 var(--sys-display);letter-spacing:var(--pl-title-track);margin:0 0 32px;min-height:44px}
+  .mark svg{width:26px;height:26px}
+  h1{font:400 34px/1.1 var(--sys-display);letter-spacing:var(--pl-display-track);margin:0 0 8px}
+  .sub{margin:0 0 28px;color:var(--pl-soft);font-size:17px}
+  [hidden]{display:none!important}
+  .stack{display:grid;gap:12px}
+  /* provider buttons: full-width outline pills, the icon at the left edge, the label centered */
+  html body .prov{position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;padding:0 52px;box-sizing:border-box;border:1px solid var(--pl-ink)!important;border-radius:999px;background:#fff!important;color:var(--pl-ink)!important;
+    font:500 17px/1.2 -apple-system,BlinkMacSystemFont,var(--sys-title)!important;letter-spacing:0;cursor:pointer;text-decoration:none;box-shadow:none!important;-webkit-tap-highlight-color:transparent}
+  html body .prov svg{position:absolute;left:20px;top:50%;transform:translateY(-50%);width:20px;height:20px}
+  /* Sign in with Apple, "white with outline": black logo, black title, black outline (Apple's button rules) */
+  html body .prov.apple{border-color:#000!important;color:#000!important}
+  html body .prov.apple svg{width:18px;height:22px;left:21px}
+  @media (hover:hover){html body .prov:hover{background:var(--pl-surface)!important}}
+  html body .prov:active{background:var(--pl-raised)!important}
+  html body .prov[aria-busy=true]{opacity:.6;pointer-events:none}
+  :is(a,button,input):focus-visible{outline:2px solid var(--pl-accent)!important;outline-offset:3px!important}
+  /* fields and the main action */
+  label{display:block;font:600 14px/1.3 var(--sys-title);margin:0 0 6px}
+  html body input.field{display:block;width:100%;box-sizing:border-box;min-height:52px;border:1px solid var(--pl-line-strong);border-radius:12px;background:#fff;padding:0 16px;font:400 17px var(--sys-sans);color:var(--pl-ink)}
+  html body input.field::placeholder{color:var(--pl-muted);opacity:1}
+  html body input.field:focus{outline:none!important;border-color:var(--pl-ink)!important;box-shadow:0 0 0 3px var(--pl-focus)!important}
+  html body input.code{font:500 24px/1 var(--sys-mono);letter-spacing:.32em;text-align:center;padding:0 0 0 .32em}
+  html body input.invite{text-transform:uppercase;letter-spacing:.08em;font-family:var(--sys-mono)}
+  html body input.invite::placeholder{text-transform:none;letter-spacing:0;font-family:var(--sys-sans)}
+  html body .go{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:0;border-radius:999px;background:var(--pl-accent);color:var(--pl-on-accent);font:600 17px var(--sys-title);cursor:pointer;margin-top:16px}
+  @media (hover:hover){html body .go:hover{background:var(--pl-accent-press)}}
+  html body .go:disabled{opacity:.6;cursor:default}
+  /* quiet links */
+  .links{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:20px}
+  .lnk{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 8px;color:var(--pl-accent-text);font:500 15px var(--sys-title);text-decoration:none;background:none;border:0;cursor:pointer}
+  .lnk.small{font-size:14px;color:var(--pl-soft)}
+  .lnk b{font-weight:600;color:var(--pl-accent-text);margin-left:4px}
+  .switch{color:var(--pl-soft)}
+  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-8px 0 16px -8px;padding:0 8px;background:none;border:0;color:var(--pl-soft);font:500 15px var(--sys-title);cursor:pointer}
+  .terms{margin:28px 0 0;text-align:center;color:var(--pl-muted);font-size:13px;line-height:1.5}
+  .terms a{color:var(--pl-soft);text-decoration:underline;text-underline-offset:2px}
+  /* notes */
+  .note{margin:0 0 20px;padding:14px 16px;border-radius:12px;background:var(--pl-sand-soft);color:var(--pl-ink);font-size:15px;line-height:1.45}
+  .note a,.note button{color:var(--pl-accent-text);font-weight:600;text-decoration:underline;text-underline-offset:2px;background:none;border:0;padding:0;font:inherit;cursor:pointer}
+  .err{margin:10px 0 0;color:var(--pl-danger);font-size:14px}.err:empty{display:none}
+  .chip{display:inline-flex;align-items:center;gap:8px;margin:-12px 0 24px;padding:8px 14px;border-radius:999px;background:var(--pl-success-soft);color:var(--pl-success);font:600 14px var(--sys-title)}
+  .chip svg{width:16px;height:16px}
+  .hint{margin:12px 0 0;color:var(--pl-soft);font-size:14px}
+  .row2{display:flex;justify-content:center;flex-wrap:wrap;gap:0 8px;margin-top:12px}
+  .done{text-align:left}
+  .who{font-weight:600;color:var(--pl-ink);word-break:break-all}
+</style>
+</head>
+<body>
+<main id="main">
+  <a class="mark" href="/" aria-label="Pottery Lab home"><svg viewBox="0 0 28 28" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1"/><circle cx="16.7" cy="16.4" r="1"/></svg>pottery lab</a>
+
+  <!-- 1. the invite code, for a new person when hosting is invite-only -->
+  <section data-step="code" hidden aria-labelledby="hCode">
+    <h1 id="hCode">Got an invite?</h1>
+    <p class="sub">Enter the code from the host who invited you.</p>
+    <p class="note" id="noInvite" hidden></p>
+    <form id="codeForm" novalidate>
+      <label for="codeIn">Invite code</label>
+      <input class="field invite" id="codeIn" name="code" placeholder="e.g. OINK-OINK" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required>
+      <p class="err" id="codeErr" role="alert"></p>
+      <button class="go" type="submit" id="codeGo">Continue</button>
+    </form>
+    <div class="links">
+      <button type="button" class="lnk" data-goto="waitlist">No code? Join the waitlist</button>
+      <a class="lnk switch" href="/login">Have an account?<b>Sign in</b></a>
+    </div>
+  </section>
+
+  <!-- 2. the sign-in buttons -->
+  <section data-step="buttons" hidden aria-labelledby="hMain">
+    <h1 id="hMain">Small events, your people.</h1>
+    <p class="sub" id="mainSub">Sign in or join with an invite.</p>
+    <p class="chip" id="held" hidden><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg><span id="heldTxt">Invite accepted</span></p>
+    <p class="note" id="btnNote" hidden role="status"></p>
+    <div class="stack">
+      <button type="button" class="prov apple" data-p="apple" hidden><svg viewBox="0 0 17 21" aria-hidden="true" fill="currentColor"><path d="M14.1 11.1c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9C3.6 5.3 2 6.3 1 7.9c-1.9 3.3-.5 8.2 1.4 10.9.9 1.3 2 2.8 3.4 2.8 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.7 1-1.5 1.5-3 1.5-3.1-.1 0-2.8-1.1-2.9-4.3zM11.5 3.4C12.2 2.5 12.7 1.3 12.6.1c-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.1 1.1.1 2.3-.6 3-1.4z"/></svg>Continue with Apple</button>
+      <button type="button" class="prov" data-p="google" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continue with Google</button>
+      <button type="button" class="prov" data-p="passkey" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7.5" r="3.5"/><path d="M2.5 20.5c0-3.7 2.9-6.3 6.5-6.3 1.4 0 2.6.4 3.6 1"/><circle cx="18" cy="12.5" r="2.6"/><path d="M18 15.1v6.2m0-2.4h2.2"/></svg>Continue with a passkey</button>
+      <button type="button" class="prov" data-p="email" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/></svg>Continue with email</button>
+    </div>
+    <p class="err" id="btnErr" role="alert"></p>
+    <div class="links">
+      <button type="button" class="lnk small" id="pwLink" data-goto="password" hidden>Use a password instead</button>
+      <a class="lnk switch" id="toJoin" href="/signup" hidden>New here?<b>Join with an invite</b></a>
+      <a class="lnk switch" id="toSignIn" href="/login" hidden>Have an account?<b>Sign in</b></a>
+    </div>
+  </section>
+
+  <!-- 3. email: the address, then the 6-digit code -->
+  <section data-step="email" hidden aria-labelledby="hEmail">
+    <button type="button" class="back" data-goto="buttons"><span aria-hidden="true">&larr;</span> Back</button>
+    <h1 id="hEmail">Continue with email</h1>
+    <p class="sub">We'll send you a 6-digit code. No password needed.</p>
+    <form id="emailForm" novalidate>
+      <label for="emailIn">Email</label>
+      <input class="field" id="emailIn" type="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+      <p class="err" id="emailErr" role="alert"></p>
+      <button class="go" type="submit" id="emailGo">Send code</button>
+    </form>
+  </section>
+  <section data-step="otp" hidden aria-labelledby="hOtp">
+    <button type="button" class="back" data-goto="email"><span aria-hidden="true">&larr;</span> Use a different email</button>
+    <h1 id="hOtp">Check your email</h1>
+    <p class="sub">Enter the code we sent to <span class="who" id="otpTo"></span>. It works for 10 minutes.</p>
+    <form id="otpForm" novalidate>
+      <label for="otpIn">6-digit code</label>
+      <input class="field code" id="otpIn" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
+      <p class="err" id="otpErr" role="alert"></p>
+      <button class="go" type="submit" id="otpGo">Continue</button>
+    </form>
+    <p class="hint">Or tap the link in the email.</p>
+    <div class="row2"><button type="button" class="lnk small" id="resend">Send a new code</button></div>
+  </section>
+
+  <!-- 4. a name, when the sign-in didn't bring one -->
+  <section data-step="name" hidden aria-labelledby="hName">
+    <h1 id="hName">Nice to meet you</h1>
+    <p class="sub">What should we call you? Hosts and guests see this name.</p>
+    <form id="nameForm" novalidate>
+      <label for="nameIn">Your name</label>
+      <input class="field" id="nameIn" name="name" placeholder="e.g. Dana Park" autocomplete="name" maxlength="80" required>
+      <p class="err" id="nameErr" role="alert"></p>
+      <button class="go" type="submit" id="nameGo">Join Pottery Lab</button>
+    </form>
+    <p class="hint" id="nameAs" hidden></p>
+  </section>
+
+  <!-- 5. a password, for accounts that have one -->
+  <section data-step="password" hidden aria-labelledby="hPw">
+    <button type="button" class="back" data-goto="buttons"><span aria-hidden="true">&larr;</span> Back</button>
+    <h1 id="hPw">Sign in with a password</h1>
+    <p class="sub">For accounts that have one.</p>
+    <p class="note" id="pwNote" hidden role="alert"></p>
+    <form method="post" action="/api/login" id="pwForm">
+      <input type="hidden" name="next" id="nextIn">
+      <label for="pwEmail">Email</label>
+      <input class="field" id="pwEmail" type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required>
+      <label for="pwIn" style="margin-top:16px">Password</label>
+      <input class="field" id="pwIn" type="password" name="password" autocomplete="current-password" required>
+      <button class="go" type="submit">Sign in</button>
+    </form>
+    <div class="links">
+      <a class="lnk small" href="/forgot">Forgot your password?</a>
+      <a class="lnk small" href="/sso/start">Sign in with SSO</a>
+    </div>
+  </section>
+
+  <!-- 6. the waitlist -->
+  <section data-step="waitlist" hidden aria-labelledby="hWl">
+    <button type="button" class="back" data-goto="code"><span aria-hidden="true">&larr;</span> I have a code</button>
+    <div id="wlAsk">
+      <h1 id="hWl">Join the waitlist</h1>
+      <p class="sub">Pottery Lab is invite-only for now. Leave your email and we'll write when there's room.</p>
+      <form id="wlForm" novalidate>
+        <label for="wlIn">Email</label>
+        <input class="field" id="wlIn" type="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+        <p class="err" id="wlErr" role="alert"></p>
+        <button class="go" type="submit" id="wlGo">Join the waitlist</button>
+      </form>
+    </div>
+    <div id="wlDone" class="done" hidden>
+      <h1 tabindex="-1" id="hWlDone">You're on the list</h1>
+      <p class="sub">We'll email <span class="who" id="wlTo"></span> when there's room. A friend who hosts can also send you a code any time.</p>
+    </div>
+  </section>
+
+  <!-- 7. the magic link: one tap, so a mail scanner opening the link doesn't use it up -->
+  <section data-step="link" hidden aria-labelledby="hLink">
+    <h1 id="hLink">One more tap</h1>
+    <p class="sub">Continue to Pottery Lab from this device.</p>
+    <button class="go" type="button" id="linkGo">Continue</button>
+    <p class="err" id="linkErr" role="alert"></p>
+  </section>
+
+  <p class="terms" id="terms">By continuing, you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id), q = new URLSearchParams(location.search);
+  const joinMode = location.pathname.startsWith("/signup"), next = (() => { const n = q.get("next") || ""; return n.charAt(0) === "/" && n.charAt(1) !== "/" ? n : ""; })();
+  let cfg = { providers: {}, held: null }, email = "";
+  try { if (next) $("nextIn").value = next; } catch (e) {}
+
+  function show(step) {
+    document.querySelectorAll("[data-step]").forEach((s) => { s.hidden = s.dataset.step !== step; });
+    $("terms").hidden = step === "password" || step === "link" || step === "waitlist";
+    const t = document.querySelector('[data-step="' + step + '"] input:not([type=hidden])');
+    if (t && step !== "buttons" && matchMedia("(hover:hover)").matches) setTimeout(() => t.focus(), 30);
+    document.title = ({ code: "Join · Pottery Lab", waitlist: "Waitlist · Pottery Lab", name: "Your name · Pottery Lab" })[step] || "Sign in · Pottery Lab";
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-goto]"); if (b) { e.preventDefault(); show(b.dataset.goto); } });
+
+  const post = async (url, body) => { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body || {}) }); let j = {}; try { j = await r.json(); } catch (e) {} return { r, j }; };
+  const offline = "Can't reach Pottery Lab. Check your connection.";
+  // what a sign-in answers: go in, add a name, or (a new person without an invite) back to the code step
+  function after(j, errEl) {
+    if (j.ok && j.redirect) { location.href = j.redirect; return true; }
+    if (j.need === "name") { loadPending(); show("name"); return true; }
+    if (j.need === "invite") { inviteNeeded(j.message); return true; }
+    if (j.sso) { location.href = j.sso; return true; }
+    if (errEl) errEl.textContent = j.message || "That didn't work. Try again.";
+    return false;
+  }
+  function inviteNeeded(msg) {
+    const n = $("noInvite"); n.innerHTML = ""; n.append(document.createTextNode((msg || "You'll need an invite to join for now. Ask a friend who hosts, or join the waitlist.").replace(/join the waitlist\.?$/, "")));
+    if (/join the waitlist\.?$/.test(msg || "join the waitlist.")) { const a = document.createElement("button"); a.type = "button"; a.textContent = "join the waitlist"; a.dataset.goto = "waitlist"; n.append(a, document.createTextNode(".")); }
+    n.hidden = false; $("codeIn").value = ""; show("code");
+  }
+
+  // ---- the buttons ----
+  function setup() {
+    const P = cfg.providers || {}, pk = !!(window.PublicKeyCredential && navigator.credentials);
+    const on = { apple: P.apple, google: P.google, passkey: P.passkey && pk && !joinMode, email: P.email };
+    document.querySelectorAll(".prov").forEach((b) => { b.hidden = !on[b.dataset.p]; });
+    $("pwLink").hidden = joinMode; $("toJoin").hidden = joinMode || !cfg.signup; $("toSignIn").hidden = !joinMode;
+    if (cfg.held && joinMode) { $("held").hidden = false; $("heldTxt").textContent = cfg.held.from ? "Invite from " + cfg.held.from : cfg.held.vouch ? "Invited from an event" : "Invite accepted"; $("mainSub").textContent = "Pick how you'd like to join."; }
+    if (!Object.values(on).some(Boolean)) { $("btnNote").textContent = "Sign in with your password for now."; $("btnNote").hidden = false; }
+  }
+  const native = () => window.EncoreNative || null;
+  async function social(p, btn) {
+    $("btnErr").textContent = ""; btn.setAttribute("aria-busy", "true");
+    const N = native();
+    try {
+      if (N && N.signIn) { const j = await N.signIn(p, { next }); if (j) { if (!after(j, $("btnErr"))) btn.removeAttribute("aria-busy"); return; } }
+      const path = "/auth/" + p + "/start" + (next ? "?next=" + encodeURIComponent(next) : "");
+      if (N && N.openAuth) { const c = await post("/api/auth/carry"); await N.openAuth(path + (next ? "&" : "?") + "native=1&carry=" + encodeURIComponent(c.j.t || "")); btn.removeAttribute("aria-busy"); return; }
+      location.href = path;
+    } catch (e) { btn.removeAttribute("aria-busy"); if (!/cancel/i.test(String(e && e.message || e))) $("btnErr").textContent = "That didn't work. Try again, or pick another way."; }
+  }
+  const b64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  const u64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  async function passkey(btn) {
+    $("btnErr").textContent = ""; btn.setAttribute("aria-busy", "true");
+    try {
+      const o = await post("/api/auth/passkey/options"); if (!o.r.ok) throw new Error(o.j.message || "x");
+      const opts = o.j, cred = await navigator.credentials.get({ publicKey: { challenge: b64(opts.challenge), rpId: opts.rpId, timeout: opts.timeout, userVerification: opts.userVerification, allowCredentials: [] } });
+      const resp = { id: cred.id, rawId: u64(cred.rawId), type: cred.type, clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}, authenticatorAttachment: cred.authenticatorAttachment || undefined,
+        response: { clientDataJSON: u64(cred.response.clientDataJSON), authenticatorData: u64(cred.response.authenticatorData), signature: u64(cred.response.signature), userHandle: cred.response.userHandle ? u64(cred.response.userHandle) : undefined } };
+      const v = await post("/api/auth/passkey/verify", { response: resp, next });
+      if (!after(v.j, $("btnErr"))) btn.removeAttribute("aria-busy");
+    } catch (e) { btn.removeAttribute("aria-busy"); if (e && e.name !== "NotAllowedError" && e.name !== "AbortError") $("btnErr").textContent = e.message && e.message.length > 3 ? e.message : "That passkey didn't work here. Try another way."; }
+  }
+  document.querySelectorAll(".prov").forEach((b) => b.addEventListener("click", () => { const p = b.dataset.p; if (p === "email") show("email"); else if (p === "passkey") passkey(b); else social(p, b); }));
+
+  // ---- invite code ----
+  async function sendCode(code, auto) {
+    const err = $("codeErr"), go = $("codeGo"); err.textContent = ""; go.disabled = true;
+    try { const { r, j } = await post("/api/auth/join", { code, ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" });
+      go.disabled = false;
+      if (!r.ok) { err.textContent = r.status === 429 ? "Too many tries. Take a breather and try again later." : j.message || "That code doesn't work. Check it with the host who sent it."; if (auto) show("code"); return; }
+      cfg.held = { code: true, from: j.from || "" }; $("noInvite").hidden = true; setup(); show("buttons");
+    } catch (e) { go.disabled = false; err.textContent = offline; show("code"); }
+  }
+  $("codeForm").addEventListener("submit", (e) => { e.preventDefault(); const c = $("codeIn").value.trim(); if (!c) { $("codeErr").textContent = "Add your invite code."; $("codeIn").focus(); return; } sendCode(c); });
+
+  // ---- email code ----
+  async function startEmail() {
+    const err = $("emailErr"), go = $("emailGo"); err.textContent = "";
+    email = $("emailIn").value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = "That email doesn't look right."; $("emailIn").focus(); return false; }
+    go.disabled = true;
+    try { const { r, j } = await post("/api/auth/email/start", { email, next }); go.disabled = false;
+      if (!r.ok) { err.textContent = j.message || "Couldn't send a code. Try again."; return false; }
+      $("otpTo").textContent = email; $("otpIn").value = ""; $("otpErr").textContent = ""; show("otp"); return true;
+    } catch (e) { go.disabled = false; err.textContent = offline; return false; }
+  }
+  $("emailForm").addEventListener("submit", (e) => { e.preventDefault(); startEmail(); });
+  $("resend").addEventListener("click", async () => { const b = $("resend"); b.disabled = true; const { r, j } = await post("/api/auth/email/start", { email, next }).catch(() => ({ r: { ok: false }, j: {} })); b.disabled = false; $("otpErr").textContent = r.ok ? "" : j.message || offline; if (r.ok) { b.textContent = "Sent. Check your inbox."; setTimeout(() => { b.textContent = "Send a new code"; }, 4000); } });
+  async function verifyOtp() {
+    const err = $("otpErr"), go = $("otpGo"), code = $("otpIn").value.replace(/\D/g, ""); err.textContent = "";
+    if (code.length !== 6) { err.textContent = "Enter all 6 digits."; $("otpIn").focus(); return; }
+    go.disabled = true;
+    try { const { j } = await post("/api/auth/email/verify", { email, code }); go.disabled = false; if (!after(j, err)) { if (j.code === "too_many" || j.code === "expired") $("otpIn").value = ""; } }
+    catch (e) { go.disabled = false; err.textContent = offline; }
+  }
+  $("otpForm").addEventListener("submit", (e) => { e.preventDefault(); verifyOtp(); });
+  $("otpIn").addEventListener("input", () => { const v = $("otpIn").value.replace(/\D/g, "").slice(0, 6); $("otpIn").value = v; if (v.length === 6) verifyOtp(); });
+
+  // ---- name ----
+  async function loadPending() { try { const j = await (await fetch("/api/auth/pending", { credentials: "same-origin" })).json(); if (j.pending && j.email) { $("nameAs").textContent = "Joining as " + j.email; $("nameAs").hidden = false; } } catch (e) {} }
+  $("nameForm").addEventListener("submit", async (e) => { e.preventDefault(); const err = $("nameErr"), go = $("nameGo"), name = $("nameIn").value.trim(); err.textContent = "";
+    if (!name) { err.textContent = "Add your name."; $("nameIn").focus(); return; }
+    go.disabled = true; try { const { j } = await post("/api/auth/finish", { name }); go.disabled = false; after(j, err); } catch (x) { go.disabled = false; err.textContent = offline; } });
+
+  // ---- waitlist ----
+  $("wlForm").addEventListener("submit", async (e) => { e.preventDefault(); const err = $("wlErr"), go = $("wlGo"), em = $("wlIn").value.trim(); err.textContent = "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = "That email doesn't look right."; $("wlIn").focus(); return; }
+    go.disabled = true; try { const { r, j } = await post("/api/waitlist", { email: em, via: "signin" }); go.disabled = false;
+      if (!r.ok) { err.textContent = j.message || "Couldn't add you. Try again."; return; }
+      $("wlTo").textContent = em; $("wlAsk").hidden = true; $("wlDone").hidden = false; document.querySelector('[data-step="waitlist"] .back').hidden = true; $("hWlDone").focus();
+    } catch (x) { go.disabled = false; err.textContent = offline; } });
+
+  // ---- magic link ----
+  $("linkGo").addEventListener("click", async () => { const go = $("linkGo"), err = $("linkErr"); go.disabled = true; err.textContent = "";
+    try { const { j } = await post("/api/auth/email/link", { t: q.get("t") || "" }); go.disabled = false; if (!after(j, err) && j.code === "expired") { err.innerHTML = ""; err.append(document.createTextNode("This link has expired. ")); const a = document.createElement("a"); a.href = "/login"; a.textContent = "Get a new code"; err.append(a); } }
+    catch (x) { go.disabled = false; err.textContent = offline; } });
+
+  // ---- where to start ----
+  const PW_ERR = { 1: "That email and password don't match.", 2: "That email and password don't match.", 3: "Too many tries. Take a breather and try again later.", 4: "Your company uses single sign-on. Sign in with SSO instead.", sso: "Single sign-on didn't work. Try again, or ask your admin." };
+  const OAUTH_ERR = { expired: "That took too long, or started in another browser. Try again.", failed: "That sign-in didn't work. Try again, or pick another way.", no_email: "We couldn't confirm an email with that sign-in. Try another way.", no_account: "We couldn't find an account for that. Try another way." };
+  try { const v = sessionStorage.getItem("encore.loginEmail"); if (v) { $("pwEmail").value = v; $("emailIn").value = v; } $("pwForm").addEventListener("submit", () => { try { sessionStorage.setItem("encore.loginEmail", $("pwEmail").value); } catch (x) {} }); } catch (e) {}
+  async function start() {
+    try { cfg = await (await fetch("/api/auth/config", { credentials: "same-origin" })).json(); } catch (e) {}
+    setup();
+    if (location.pathname === "/auth/email") return show("link");
+    const err = q.get("error");
+    if (err === "oauth") { $("btnNote").textContent = OAUTH_ERR[q.get("why")] || OAUTH_ERR.failed; $("btnNote").hidden = false; return show("buttons"); }
+    if (err) { $("pwNote").textContent = PW_ERR[err] || PW_ERR[1]; $("pwNote").hidden = false; return show("password"); }
+    if (q.get("why") === "collab") { $("btnNote").textContent = "Sign in to suggest a collab. Hosts only."; $("btnNote").hidden = false; }
+    if (q.get("step") === "name") { loadPending(); return show("name"); }
+    if (q.get("why") === "invite") return inviteNeeded();
+    if (!joinMode) return show("buttons");
+    // joining: a code in the link (/join?code=…) is checked at once; an event (?ref=) or a host page (?regularOf=) vouches instead
+    const code = (q.get("code") || "").trim();
+    if (code) { $("codeIn").value = code.toUpperCase(); show("code"); return sendCode(code, true); }
+    if (q.get("ref") || q.get("regularOf") || q.get("template") || q.get("plan")) { const { r, j } = await post("/api/auth/join", { ref: q.get("ref") || "", regularOf: q.get("regularOf") || "", template: q.get("template") || "", plan: q.get("plan") || "" }).catch(() => ({ r: { ok: false }, j: {} }));
+      if (r.ok && (q.get("ref") || q.get("regularOf"))) { cfg.held = { vouch: true }; setup(); return show("buttons"); } }
+    if (cfg.inviteOnly && !(cfg.held && (cfg.held.code || cfg.held.vouch))) return show("code");
+    show("buttons");
+  }
+  start();
+})();
+</script><script src="/help.js" defer></script>
+</body></html>

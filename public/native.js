@@ -87,7 +87,9 @@
 
   // ---- links into the app, and taps on a push ----
   const App = plugin("App");
-  const go = (url) => { try { const u = new URL(url, location.href); const ours = u.origin === location.origin || /(^|\.)potterylab\.(ai|com|app)$/.test(u.hostname); if (!ours) return; const to = u.pathname + u.search + u.hash; if (to !== location.pathname + location.search + location.hash) location.assign(to); } catch {} };
+  const go = (url) => { try { const u = new URL(url, location.href);
+      // a sign-in finished in the browser sheet: close it and sign in here (server/signin.js, potterylab://auth/app?t=...)
+      if (!/^https?:$/.test(u.protocol) && (u.host + u.pathname).replace(/^\/+/, "") === "auth/app") { try { plugin("Browser")?.close(); } catch {} location.assign("/auth/app" + u.search); return; } const ours = u.origin === location.origin || /(^|\.)potterylab\.(ai|com|app)$/.test(u.hostname); if (!ours) return; const to = u.pathname + u.search + u.hash; if (to !== location.pathname + location.search + location.hash) location.assign(to); } catch {} };
   if (App) {
     App.addListener("appUrlOpen", (e) => go(e.url));
     App.addListener("backButton", (e) => { if (e.canGoBack) history.back(); else App.exitApp?.(); }); // Android
@@ -123,6 +125,31 @@
     window.EncoreNativePush = { ask: () => registerPush({ ask: true }) };
   }
 
+  // ---- sign in: the phone's own Sign in with Apple and Google sheets, else the web flow in a browser sheet ----
+  // Plugins (mobile/README.md, "Sign in"): @capacitor-community/apple-sign-in ("SignInWithApple") for Apple on iOS, and
+  // @capgo/capacitor-social-login ("SocialLogin") for Google (and Apple, when the first isn't there). Each is optional:
+  // without it, signIn() answers null and the page opens the web flow with openAuth().
+  const Social = plugin("SocialLogin"), AppleSI = plugin("SignInWithApple");
+  let socialReady = null;
+  const socialInit = (n) => { if (!Social || !has("SocialLogin")) return Promise.resolve(false); if (!socialReady) socialReady = Social.initialize({ ...(n.google ? { google: { webClientId: n.google.webClientId, iOSServerClientId: n.google.webClientId, mode: "online" } } : {}), ...(n.apple && platform === "ios" ? { apple: {} } : {}) }).then(() => true, (e) => { log("social init", e); return false; }); return socialReady; };
+  async function signIn(provider, { next = "" } = {}) {
+    const n = (await (await fetch("/api/auth/config", { credentials: "same-origin" })).json()).native || {};
+    if (!n[provider]) return null;
+    const { nonce } = await (await fetch("/api/auth/nonce", { credentials: "same-origin" })).json(); let body = null;
+    if (provider === "apple" && platform === "ios" && AppleSI && has("SignInWithApple")) {
+      const x = (await AppleSI.authorize({ clientId: "", redirectURI: location.origin + "/auth/apple/callback", scopes: "email name", state: nonce, nonce })).response || {};
+      body = { idToken: x.identityToken, authorizationCode: x.authorizationCode, givenName: x.givenName, familyName: x.familyName };
+    } else if ((provider === "google" || platform === "ios") && await socialInit(n)) {
+      const x = (await Social.login({ provider, options: { scopes: provider === "google" ? ["email", "profile"] : ["email", "name"], nonce } })).result || {};
+      body = { idToken: x.idToken || x.identityToken, authorizationCode: x.authorizationCode, givenName: x.profile && x.profile.givenName, familyName: x.profile && x.profile.familyName };
+    }
+    if (!body || !body.idToken) return null;
+    const r = await fetch("/api/auth/" + provider + "/native", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, nonce, next }) });
+    haptic("light"); return r.json();
+  }
+  // Google won't sign in inside an app's web view: open the web flow in a browser sheet; it comes back on potterylab://
+  async function openAuth(path) { const B = plugin("Browser"); if (B) return B.open({ url: new URL(path, location.href).href, presentationStyle: "popover" }); location.href = path; }
+
   // ---- haptics ----
   const Haptics = plugin("Haptics");
   function haptic(kind) { if (!Haptics) return; try { if (kind === "success") Haptics.notification({ type: "SUCCESS" }); else Haptics.impact({ style: kind === "medium" ? "MEDIUM" : "LIGHT" }); } catch {} }
@@ -140,5 +167,5 @@
   const Contacts = plugin("Contacts");
   const contacts = Contacts ? async () => { const p = await Contacts.requestPermissions(); if (p && p.contacts && p.contacts !== "granted") throw new Error("Pottery Lab can't see your contacts. You can allow it in Settings.");
     const r = await Contacts.getContacts({ projection: { emails: true, phones: true } }); return ((r && r.contacts) || []).map((c) => ({ emails: (c.emails || []).map((e) => e.address).filter(Boolean), phones: (c.phones || []).map((t) => t.number).filter(Boolean) })); } : undefined;
-  window.EncoreNative = { platform, share: (d) => navigator.share(d), haptic, go, contacts };
+  window.EncoreNative = { platform, share: (d) => navigator.share(d), haptic, go, contacts, signIn, openAuth };
 })();

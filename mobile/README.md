@@ -153,10 +153,54 @@ Run it on your iPhone (plug it in, pick it as the run target, Cmd+R). Check, in 
 | `ENCORE_DELETE_GRACE_DAYS` | days before a "delete later" account goes | 14 (0 turns the choice off) |
 | `ENCORE_ADMIN_EMAILS` | who sees `/moderation` and gets report emails | none |
 | `ENCORE_SAFETY_EMAIL` (or `ENCORE_SUPPORT_EMAIL`) | the contact shown on `/community` and Settings | none |
+| `ENCORE_APPLE_SERVICES_ID`, `ENCORE_APPLE_KEY_ID`, `ENCORE_APPLE_PRIVATE_KEY` | Sign in with Apple (with the Team ID above) | Apple button hidden |
+| `ENCORE_GOOGLE_CLIENT_ID`, `ENCORE_GOOGLE_CLIENT_SECRET` (or `GOOGLE_CLIENT_ID/SECRET`) | Sign in with Google | Google button hidden |
+| `ENCORE_GOOGLE_IOS_CLIENT_ID`, `ENCORE_GOOGLE_ANDROID_CLIENT_ID` | the native Google sheet's client IDs | web flow only |
+| `ENCORE_APP_SCHEME` | the URL scheme a browser-sheet sign-in returns on | `potterylab` |
 
-Sign in with Apple isn't built: the app has no Google, Facebook or other social sign-in (only email and password, and
-company single sign-on for work teams, which guideline 4.8 exempts). If a social sign-in is ever added, Sign in with Apple
-has to ship with it.
+Sign-in keys (Apple, Google) are in `docs/sign-in-setup.md`.
+
+---
+
+## Sign in
+
+The sign-in screen (`/login`, `/signup`, `public/signin.html`) offers Apple, Google, a passkey and an email code, plus a
+password for older accounts. Sign in with Apple ships with Google, as guideline 4.8 asks. Owner steps and the exact
+redirect URLs are in `docs/sign-in-setup.md`.
+
+In the app, `public/native.js` uses the phone's own sheets when their plugins are installed, and the web flow when not:
+
+| Provider | Plugin (optional) | Without it |
+|---|---|---|
+| Apple (iOS) | `@capacitor-community/apple-sign-in` (registers as `SignInWithApple`) | `@capgo/capacitor-social-login` if present, else the web flow in a browser sheet |
+| Google | `@capgo/capacitor-social-login` (registers as `SocialLogin`) | the web flow in a browser sheet (Google refuses sign-in inside a web view) |
+| Passkeys | none: WKWebView supports WebAuthn for the associated domain (`webcredentials:` in `App.entitlements`) | |
+| Email code | none | |
+
+To add them (on the Mac, then `npm run sync`):
+
+```bash
+cd mobile
+npm install @capacitor-community/apple-sign-in@^7 @capgo/capacitor-social-login@^7
+npx cap sync
+```
+
+- **Xcode:** + Capability, **Sign in with Apple** (already in `native-config/ios/App.entitlements`).
+- **Google on iOS:** make an **iOS** OAuth client in Google Cloud (bundle ID `com.potterylab.app`), set
+  `ENCORE_GOOGLE_IOS_CLIENT_ID` on Render, and add its **reversed client ID** (`com.googleusercontent.apps.<id>`) as a
+  second URL scheme next to `potterylab` in `Info.plist` (`native-config/ios/Info.plist.additions.xml`).
+- **Google on Android (later):** make an **Android** OAuth client (package and SHA-1) and set `ENCORE_GOOGLE_ANDROID_CLIENT_ID`.
+
+How each path ends:
+- **Native sheet:** the plugin returns an id_token; the page posts it to `/api/auth/apple/native` or
+  `/api/auth/google/native` with a one-time nonce from `/api/auth/nonce`. The server checks the signature against Apple's
+  or Google's keys, the audience (the bundle ID, or the iOS/Android client ID) and the nonce.
+- **Browser sheet:** the page asks `/api/auth/carry` for a one-time token (the sheet doesn't share the app's cookies, so the
+  invite code rides along on it), then opens `/auth/<provider>/start?native=1&carry=…` with `@capacitor/browser`. The
+  callback answers with `potterylab://auth/app?t=…` (the `CFBundleURLSchemes` entry in `Info.plist`; change it with
+  `ENCORE_APP_SCHEME`). `native.js` closes the sheet and opens `/auth/app?t=…` in the app, which signs in there. The token
+  works once, for 2 minutes.
+- **Universal links:** the AASA lists `/auth/app` and `/auth/email`, so the magic link in a sign-in email opens the app.
 
 ---
 

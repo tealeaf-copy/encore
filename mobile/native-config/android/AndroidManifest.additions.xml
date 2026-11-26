@@ -13,6 +13,8 @@
     <data android:pathPrefix="/@" />
     <data android:path="/g" />
     <data android:path="/feed" />
+    <data android:path="/auth/app" />
+    <data android:path="/auth/email" />
 </intent-filter>
 
 <!-- and, inside <manifest> (outside <application>): -->

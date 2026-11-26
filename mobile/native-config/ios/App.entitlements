@@ -13,5 +13,11 @@
 		<string>applinks:www.potterylab.ai</string>
 		<string>webcredentials:potterylab.ai</string>
 	</array>
+	<!-- Sign in with Apple (Xcode: + Capability, Sign in with Apple). webcredentials above also lets passkeys made on
+	     potterylab.ai work inside the app. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

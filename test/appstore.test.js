@@ -39,7 +39,7 @@ test("apple-app-site-association lists the app paths for the team and bundle ids
   const j = await r.json(), d = j.applinks.details[0];
   assert.deepEqual(d.appIDs, ["TEAMID0000.com.potterylab.app"], "placeholder until ENCORE_APPLE_TEAM_ID is set");
   for (const p of ["/e/*", "/i/*", "/g", "/@*", "/x/*", "/feed"]) assert.ok(d.components.some((c) => c["/"] === p), p);
-  assert.deepEqual(APP_PATHS, ["/e/*", "/i/*", "/g", "/@*", "/x/*", "/feed"]);
+  assert.deepEqual(APP_PATHS, ["/e/*", "/i/*", "/g", "/@*", "/x/*", "/feed", "/auth/app", "/auth/email"]);
   const A = aasa({ ENCORE_APPLE_TEAM_ID: "ABCDE12345", ENCORE_IOS_BUNDLE_ID: "ai.potterylab.ios" });
   assert.deepEqual(A.applinks.details[0].appIDs, ["ABCDE12345.ai.potterylab.ios"]); assert.deepEqual(A.webcredentials.apps, ["ABCDE12345.ai.potterylab.ios"]); assert.deepEqual(A.appclips.apps, ["ABCDE12345.ai.potterylab.ios.Clip"]);
 });

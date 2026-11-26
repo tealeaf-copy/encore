@@ -41,6 +41,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
 .what{margin:8px 0 0;padding-left:20px;color:var(--smoke);font-size:14px}
 .msg{font-size:14px;color:var(--smoke);min-height:20px;margin:0}
 .signedout{text-align:center}
+#signin .btn.sm{min-height:44px;flex:none}#signin .msg:not(:empty){margin-top:8px}
 .pic-row{justify-content:flex-start;gap:16px;border-top:0}.pic{flex:none;display:block;width:64px;height:64px}.pic-row .btn{margin-left:auto}
 </style>
 </head>
@@ -57,6 +58,11 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     </section>
     <section aria-labelledby="hAcct"><h2 id="hAcct">Your account</h2><p id="who"></p>
       <div class="row"><span>Sign out on this device</span><button type="button" class="btn sm" id="signOut" data-signout>Sign out</button></div>
+    </section>
+    <section id="signin" aria-labelledby="hSign" hidden><h2 id="hSign">Sign-in methods</h2><p>How you sign in. A passkey uses Face ID, Touch ID or your screen lock: no code, no password.</p>
+      <div id="methods"></div>
+      <div class="row" id="pkRow"><span>New passkey<small id="pkWhere">On this device or in your password manager</small></span><button type="button" class="btn sm" id="pkAdd" aria-label="Add a passkey">Add</button></div>
+      <p class="msg" id="pkMsg" role="status"></p>
     </section>
     <section aria-labelledby="hNote"><h2 id="hNote">Notifications</h2><p>Choose what Potto taps you about. Your phone's Focus and Do Not Disturb still apply.</p>
       <div id="pushRows"></div>
@@ -84,7 +90,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     </section>
   </div>
 </main>
-<script src="/avatars.js"></script><script src="/photosheet.js"></script><script src="/mascot.js"></script><script src="/hostloop.js" defer></script>
+<script src="/passkeys.js" defer></script><script src="/avatars.js"></script><script src="/photosheet.js"></script><script src="/mascot.js"></script><script src="/hostloop.js" defer></script>
 <script>
 (async function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

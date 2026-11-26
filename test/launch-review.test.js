@@ -57,7 +57,8 @@ test("/privacy and /terms serve 200, say they're drafts in a hidden comment, sho
 test("footers link the policies, and sign-up and both reply forms carry the consent line", async () => {
   for (const f of ["public/home.html", "public/host.html", "public/invite.html", "public/landing.html", "public/discover.html"]) { const h = read(f); assert.match(h, /href="\/privacy"/, f); assert.match(h, /href="\/terms"/, f); }
   const su = await (await fetch(srv.base + "/signup")).text();
-  assert.match(su, /By creating a page you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\./);
+  assert.match(su, /By continuing, you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\./, "the sign-in screen");
+  assert.match(read("public/signup.html"), /By creating a page you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\./, "the longer form (brands, storefronts)");
   const lite = await (await fetch(srv.base + "/e/lrOpen")).text();
   const consent = /By replying you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\. If you add a phone, you'll get event texts; reply STOP to stop\./;
   assert.match(lite, consent, "the light invite");

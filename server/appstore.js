@@ -24,7 +24,7 @@ export function appIds(env = process.env) {
 }
 
 // Paths the app opens itself when someone taps a link to them (everything else stays in Safari).
-export const APP_PATHS = ["/e/*", "/i/*", "/g", "/@*", "/x/*", "/feed"];
+export const APP_PATHS = ["/e/*", "/i/*", "/g", "/@*", "/x/*", "/feed", "/auth/app", "/auth/email"]; // sign-in links (server/signin.js): the email link and a hand-off open in the app
 
 /** apple-app-site-association: universal links, shared web credentials (password autofill), App Clip. */
 export function aasa(env = process.env) {

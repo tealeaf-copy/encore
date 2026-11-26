@@ -204,7 +204,7 @@ test("signed-out visitors get the feed at / and the landing page at /about; /sig
   const home = await (await get("/")).text();
   assert.match(home, /location\.replace\("\/g" \+ location\.search \+ location\.hash\)/, "guest-link redirect added");
   const su = await (await get("/signup")).text();
-  assert.match(su, /\/api\/signup/);
+  assert.match(su, /\/api\/auth\/join/, "one sign-in screen: the invite code, then the buttons");
   assert.match(su, /location\.replace\("\/g"/);
   assert.match(await (await get("/login")).text(), /href="\/signup"/);
   assert.match(await (await get("/join")).text(), /\/api\/join/);

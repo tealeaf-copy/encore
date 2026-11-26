@@ -38,6 +38,7 @@ import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
+import { mountSignin } from "./signin.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, small moves, warmth, Circles, Potto's nudges, /start, /path (server/hostloop.js)
@@ -331,7 +332,9 @@ export function createApp({ store, dataDir }) {
   app.get("/login", (req, res, next) => { const n = signedInAs(req); if (n) return res.type("html").send(signedInPage(n, "/login")); next(); });
   app.get("/signup", (req, res, next) => { const n = signedInAs(req); if (n) return res.type("html").send(signedInPage(n, "/signup" + (req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : ""))); next(); });
   // ---- end review round 8 signed in ----
-  app.get("/login", (req, res) => (isAuthed(req) && !req.query.switch ? res.redirect(302, String(req.query.next || "").startsWith("/") && !String(req.query.next).startsWith("//") ? String(req.query.next) : "/?app=1") : res.type("html").send(loginPage()))); // already signed in: go where you were headed
+  // ---- sign in and join without a password: Apple, Google, a passkey, an email code (server/signin.js, public/signin.html) ----
+  const SI = mountSignin(app, { store, createAccount: (...a) => createAccount(...a), needInvite: () => inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== ""), checkCode: (c) => C.checkCode(c), publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a) });
+  app.get("/login", (req, res) => (isAuthed(req) && !req.query.switch ? res.redirect(302, String(req.query.next || "").startsWith("/") && !String(req.query.next).startsWith("//") ? String(req.query.next) : "/?app=1") : signupEnabled() ? SI.page(req, res) : res.type("html").send(loginPage()))); // already signed in: go where you were headed
   // ---- forgot password: always the same answer, so nobody learns which emails have accounts ----
   const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
   app.post("/api/password/forgot", express.json({ limit: "4kb" }), async (req, res) => { const email = String(req.body?.email || "").trim().toLowerCase();
@@ -379,24 +382,29 @@ export function createApp({ store, dataDir }) {
     const k = "vr:" + lc(u.email), n = (verifyHits.get(k) || 0) + 1; verifyHits.set(k, n); if (n > 5) return res.status(429).json({ code: "rate_limited", message: "We've sent a few already. Check your spam folder." });
     await VF.send(req, u.email, u.name); res.json({ ok: true, sent: true, message: `Sent. Check ${u.email}.` }); });
   const verifyHits = new Map(); setInterval(() => verifyHits.clear(), 3600_000).unref?.();
-  app.post("/api/signup", small, (req, res) => {
-    if (!signupEnabled()) return res.status(404).json({ code: "not_found", message: "Sign-up is off on this server." });
-    if (signupLimited(req)) return res.status(429).json({ code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
-    const b = req.body || {}, name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || (b.mode !== "work" && !String(b.company || "").trim());
+  // One way to make an account, for the password form (/api/signup) and the passwordless sign-in (server/signin.js):
+  // the same per-IP limit, invite code check, founder-code gate, vouch and logging. password: null for an account
+  // that signs in with Apple, Google, a passkey or an email code; verified: the email is already proven.
+  // Returns { error: { status, body } } or { W, email, redirect }.
+  function createAccount(req, b, { password = null, verified = false, via = "password" } = {}) {
+    const fail = (status, body) => ({ error: { status, body } });
+    if (!signupEnabled()) return fail(404, { code: "not_found", message: "Sign-up is off on this server." });
+    if (signupLimited(req)) return fail(429, { code: "rate_limited", message: "Too many sign-ups from here. Try again later." });
+    b = b || {}; const name = String(b.name || "").trim().slice(0, 120), email = String(b.email || "").trim().toLowerCase(), personal = b.mode === "friends" || (b.mode !== "work" && !String(b.company || "").trim());
     const company = String(b.company || "").trim().slice(0, 120) || `${name.split(/\s+/)[0]}'s ${personal ? "events" : "team"}`, ref = /^[A-Za-z0-9_-]{1,80}$/.test(String(b.ref || "")) ? String(b.ref) : "";
-    if (!name) return res.status(400).json({ code: "invalid", message: "Add your name." });
-    if (!EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "That email doesn't look right." });
-    if (!pwOk(b.password)) return res.status(400).json({ code: "invalid", message: "Password needs 10+ characters." });
-    if (emailTaken(email)) return res.status(409).json({ code: "conflict", message: "You already have an account. Sign in instead." });
+    if (!name) return fail(400, { code: "invalid", message: "Add your name." });
+    if (!EMAIL_OK(email)) return fail(400, { code: "invalid", message: "That email doesn't look right." });
+    if (password != null && !pwOk(password)) return fail(400, { code: "invalid", message: "Password needs 10+ characters." });
+    if (emailTaken(email)) return fail(409, { code: "conflict", message: "You already have an account. Sign in instead." });
     // Invite-only: everyone after the first member needs a code from someone already here.
     const code = String(b.code || "").trim().toUpperCase().slice(0, 20), needCode = inviteOnly() && (allWorkspaceIds().length > 1 || String(process.env.ENCORE_FOUNDER_CODES || "").trim() !== "");
     let codeCheck = null; const regHandle = String(b.regularOf || "").trim().slice(0, 60), regWs = regHandle && !code ? C.wsOfHandle(regHandle) : null, regular = !!(regWs && personal);
     // A guest of the event they came from (an I'm in reply with this email, or kudos they sent) is vouched for by that
     // event's host: no host code needed, even when hosting is invite-only.
     const vouch = guestVouch(ref, email);
-    if ((needCode && !regular && !vouch) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return res.status(403).json({ code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
+    if ((needCode && !regular && !vouch) || code) { codeCheck = C.checkCode(code); if ((needCode || code) && !codeCheck.ok) return fail(403, { code: "invite_required", message: code ? codeCheck.message : "Hosting is invite-only for now. Ask a host for a host code, or join the waitlist." }); }
     // a shared founder code stays reusable, but a few uses per IP and per day, each one logged (launch review)
-    const fg = codeCheck?.founder ? founderGate(store, req) : null; if (fg && !fg.ok) return res.status(429).json({ code: "rate_limited", message: fg.message });
+    const fg = codeCheck?.founder ? founderGate(store, req) : null; if (fg && !fg.ok) return fail(429, { code: "rate_limited", message: fg.message });
     const W = createWorkspace({ company, ownerEmail: email, personal, ref }); fg?.log(email);
     if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
     if (vouch) { try { const by = getWorkspace(vouch.ws), instead = needCode && !codeCheck?.ok;
@@ -411,11 +419,10 @@ export function createApp({ store, dataDir }) {
     else { try { startResearch(W.id, { company, website: String(b.website || "").trim().slice(0, 200), by: email }); } catch (e) { console.warn("[brand] start failed", e?.message); } }
     // Word of mouth: count who came to Pottery Lab from a guest page, on the event's own workspace.
     if (ref) { const host = workspaceOfEvent(ref); if (host) { try { scopeStore(store, host).add("audit", { eventId: ref, what: `${name.split(/\s+/)[0]} started hosting with Pottery Lab from this event's page`, kind: "growth", at: Date.now() }); } catch {} } }
-    putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, pw: hashPassword(b.password), createdAt: Date.now(), emailVerified: !verifyRequired() });
-    if (verifyRequired()) VF.send(req, email, name).catch(() => {}); // a link to confirm the email; sharing an invite waits for it
+    putDbUser({ kind: "user", ws: W.id, name, email, roles: ["Event lead"], owner: true, ...(password != null ? { pw: hashPassword(password) } : { signin: via }), createdAt: Date.now(), emailVerified: verified || !verifyRequired(), ...(verified ? { verifiedAt: Date.now() } : {}) });
+    if (verifyRequired() && !verified) VF.send(req, email, name).catch(() => {}); // a link to confirm the email; sharing an invite waits for it
     scopeStore(store, W.id).add("audit", { eventId: "", what: `${company} workspace created`, kind: "team", who: name, email, verified: true, at: Date.now() });
-    startSession(req, res, email, W.id);
-    track("signup", { ws: W.id, ref: ref || undefined, code: !!codeCheck?.ok });
+    track("signup", { ws: W.id, ref: ref || undefined, code: !!codeCheck?.ok, ...(via !== "password" ? { via } : {}) });
     if (vouch) track("guest_became_host", { ws: W.id, ref: vouch.eventId, via: vouch.via });
     // ?template=…&plan=… from the landing page ride along to the app's welcome screen.
     const q = new URLSearchParams({ welcome: "1" });
@@ -423,7 +430,12 @@ export function createApp({ store, dataDir }) {
     if (q.get("plan") && PLANS.includes(q.get("plan"))) updateWorkspace(W.id, { interestedIn: q.get("plan") });
     // Everyone but a brand team lands on the feed first; a template or plan from the landing page still opens the app's welcome
     const toFeed = personal && !q.get("template") && !q.get("plan");
-    res.json({ ok: true, workspace: { id: W.id, company: W.company, plan: W.plan, trialEndsAt: W.trialEndsAt }, redirect: toFeed ? "/feed?welcome=1" : "/?" + q.toString() });
+    return { W, email, redirect: toFeed ? "/feed?welcome=1" : "/?" + q.toString() };
+  }
+  app.post("/api/signup", small, (req, res) => {
+    const r = createAccount(req, req.body, { password: req.body?.password ?? "" }); if (r.error) return res.status(r.error.status).json(r.error.body);
+    startSession(req, res, r.email, r.W.id);
+    res.json({ ok: true, workspace: { id: r.W.id, company: r.W.company, plan: r.W.plan, trialEndsAt: r.W.trialEndsAt }, redirect: r.redirect });
   });
   /** Did this email reply I'm in to the event `ref`, or send it kudos? Then that event's host vouches for them.
    * review round 11: only for an address the guest proved is theirs (they opened the link we emailed to it, which stamps
@@ -524,7 +536,8 @@ export function createApp({ store, dataDir }) {
     html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + GUEST_REDIRECT) : GUEST_REDIRECT + html;
     sendText(res.req, res, html);
   };
-  app.get("/signup", (req, res) => (signupEnabled() ? sendStatic(res, "signup.html", loginPage()) : res.redirect(302, "/login")));
+  // the one sign-in screen; a brand's free trial (?mode=work) and prepared storefronts (?preset=) keep the longer form
+  app.get("/signup", (req, res) => (!signupEnabled() ? res.redirect(302, "/login") : req.query.mode === "work" || req.query.preset ? sendStatic(res, "signup.html", loginPage()) : SI.page(req, res)));
   app.get("/join", (req, res) => (req.query.code && !req.query.token ? res.redirect(302, "/signup?code=" + encodeURIComponent(String(req.query.code).slice(0, 20))) : sendStatic(res, "join.html", loginPage())));
   app.get("/work", (req, res) => sendStatic(res, "landing.html", "<p>Page missing.</p>"));
   app.get("/discover", (req, res) => sendStatic(res, "discover.html", "<p>Discover page missing.</p>"));

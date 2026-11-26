@@ -8,6 +8,7 @@
 // - your workspace, when you're its only member: events, guest lists, your page, scrapbook, shop, settings, and every
 //   file uploaded to it (photos, covers). A team workspace with other people stays theirs; the next person becomes owner.
 // - your account record, so every session you have stops working on the next request
+// - your sign-in methods: Apple and Google identities, passkeys, and the Apple token, revoked with Apple (server/signin.js)
 // - your posts, friends, bell, saves, boards, push devices, blocks, settings (system docs that carry your email)
 // - on other hosts' events: photos you added are deleted with their files; your replies and kudos stay as numbers for
 //   the host ("Former guest", no email, phone, answers or notes); you leave their followers
@@ -19,6 +20,7 @@ import crypto from "node:crypto";
 import { DEFAULT_WS, getDbUser, putDbUser, getWorkspace, updateWorkspace, membersOf, deleteWorkspace, scopeStore } from "./workspaces.js";
 import { logoutHandler } from "./auth.js";
 import { keyOf } from "./safety.js";
+import { removeSignIns } from "./signin.js";
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 export const GRACE_DAYS = () => Math.max(0, Number(process.env.ENCORE_DELETE_GRACE_DAYS ?? 14));
@@ -49,6 +51,8 @@ function scrubEmail(v, em, depth = 0) {
 export async function deleteAccountNow(store, email, { assetsDir, X = null, push = null, safety = null } = {}) {
   const em = lc(email), u = getDbUser(em); if (!u) return { ok: false, error: "No such account." };
   const out = { workspace: false, docs: 0, anonymized: 0, files: 0, scrubbed: 0 };
+  // 0. sign-in methods: Apple, Google and email identities and passkeys go, and the Apple token is revoked first
+  try { const s = await removeSignIns(store, em); out.identities = s.identities; out.passkeys = s.passkeys; out.appleRevoked = s.revoked; } catch (e) { console.warn("[account] sign-ins", e?.message); }
   // 1. the workspace: theirs alone, or handed on
   const ws = u.ws, others = ws && ws !== DEFAULT_WS ? membersOf(ws).filter((m) => lc(m.email) !== em) : [];
   if (ws && ws !== DEFAULT_WS && !others.length) { out.files += await removeBlobs(assetsDir, { ws }); out.docs += deleteWorkspace(ws); out.workspace = true; }

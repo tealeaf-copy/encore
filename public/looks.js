@@ -372,10 +372,22 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     // the jar wall stays (it is the look); snow on top now and then, a serif title for a change
     pantry: { pal: [["#E3B873", "#8A4513", "#3E6B3A"], ["#C98A3E", "#5A2A0E", "#F2D48F"]], fx: ["jarwall"], font: ["slab", "serif"], em: ["🍂", "🫙", "☕", "🕯️"] },
   };
+  // ---------- review round 12: taste defaults by the event's kind ----------
+  // The vibes in the order that suits the event (Terminal first for a hack night, Card deck or Pixel for games, Night out
+  // or Pantry for food), and Surprise me's pool. What the host named the event is read before the rest of their words,
+  // so "supper club for ops folks" is food, and a board game table never rolls Terminal.
+  const KIND_VIBES = [[/\b(hack ?nights?|hackathon|build night|demo night|code night|dev night|coding|terminal|devs?|engineers?|engineering|sre|linux|open source)\b/, ["terminal", "pixel"]],
+    [/\b(lan( party)?|video ?games?|gaming|gamers?|speedrun|gdq|arcade|retro|esports|watch ?party)\b/, ["pixel", "terminal"]],
+    [/\b(board ?games?|games? night|tabletop|d&d|dnd|ttrpg|mahjong|card games?|trivia)\b/, ["cards", "pixel"]],
+    [/\b(supper|dinner|potluck|omakase|tasting|izakaya|feast|cooking|brunch|pantry|harvest)\b/, ["night", "pantry", "velvet"]],
+    [/\b(book club|paper club|reading group)\b/, ["jazz", "cards"]]];
+  function kindVibes(e) { const main = `${e?.activity || ""} ${e?.pubTitle || ""} ${e?.name || ""}`.toLowerCase(), rest = `${e?.concept || ""}`.toLowerCase();
+    const hit = KIND_VIBES.find(([re]) => re.test(main)) || KIND_VIBES.find(([re]) => re.test(rest)); return hit ? hit[1].filter((k) => VIBES[k]) : null; }
+  function vibeOrder(e) { const first = kindVibes(e) || []; return [...first, ...Object.keys(VIBES).filter((k) => !first.includes(k))]; }
   const FX_FOR = Object.fromEntries(Object.entries(MOODS).map(([k, m]) => [k, m.fx]));
   const pickOf = (L) => L[(Math.random() * L.length) | 0];
   function surprise(e, { keepPalette = null, avoid = "" } = {}) { const txt = `${e?.activity || ""} ${e?.name || ""} ${e?.pubTitle || ""} ${e?.concept || ""} ${e?.kind || ""}`.toLowerCase();
-    const opts = (KINDS.find(([re]) => re.test(txt)) || [null, Object.keys(VIBES)])[1], pool = opts.length > 1 ? opts.filter((v) => v !== avoid) : opts, v = pickOf(pool), base = VIBES[v].look, M = MOODS[v];
+    const opts = kindVibes(e) || (KINDS.find(([re]) => re.test(txt)) || [null, Object.keys(VIBES)])[1], pool = opts.length > 1 ? opts.filter((v) => v !== avoid) : opts, v = pickOf(pool), base = VIBES[v].look, M = MOODS[v];
     // the vibe's own palette most of the time, else one of its cousins; then an effect, a title font and an emoji from what suits it
     const L = { ...base, vibe: v, palette: Math.random() < 0.55 ? base.palette : pickOf(M.pal), effect: Math.random() < 0.5 ? base.effect : pickOf(M.fx), titleFont: Math.random() < 0.5 ? base.titleFont : pickOf(M.font), buttonEmoji: Math.random() < 0.5 ? base.buttonEmoji : pickOf(M.em) };
     if (!base.coverStyle) delete L.coverStyle;
@@ -383,5 +395,5 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { kindVibes, vibeOrder, priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

@@ -54,7 +54,7 @@ test("2. order-by: public on the invite, Order by Thu shown, and 409 Orders clos
   assert.equal(S.orderByText({ preorder: true, orderBy: "Thursday" }), "Order by Thu");
   assert.equal(S.orderByText({ orderBy: "Thursday" }), "", "only pre-orders");
   assert.match(read("index.html"), /gx-orderby"><small>Orders<\/small><b>\$\{esc\(orderByText\(e\)\)\}/);
-  assert.match(read("public/invite.html"), /id="orderBy">🗓️ \$\{esc\(orderBy\)\}/); assert.match(read("public/invite-order.js"), /id="ordBy"/);
+  assert.match(read("public/invite.html"), /id="orderBy">\$\{G\.cal\}\$\{esc\(orderBy\)\}/); assert.match(read("public/invite-order.js"), /id="ordBy"/);
   // 11:30pm Dec 10 in New York is still Dec 10 there (Dec 11 in UTC)
   const late = Date.parse("2026-12-11T04:30:00Z");
   assert.equal(todayIn("America/New_York", late), "2026-12-10"); assert.equal(ordersClosed({ preorder: true, orderByDate: "2026-12-10", tz: "America/New_York" }, late), false);

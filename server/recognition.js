@@ -2,7 +2,7 @@
 //  - Strava: streaks (show up week after week), Local Legend (most active in your area lately), milestones.
 //  - Substack: a "rising" list and bestseller-style badges that reward regular publishing and a loyal audience.
 // Everything is earned from real activity (events that happened, guests who came back, kudos) and never from money.
-import { allWorkspaceIds, getWorkspace } from "./workspaces.js";
+import { allWorkspaceIds, getWorkspace, getDbUser } from "./workspaces.js";
 
 const DAY = 864e5, CACHE_MS = 5 * 60e3;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -33,14 +33,20 @@ export const SUPER = { events: 5, guests: 15, returningShare: 0.3, kudos: 5, act
 
 /** The badges a host has earned, from their activity. */
 // `upcoming`: dates of the host's events still to come (review round 7: one that's on the calendar is not "host your first")
-export function badgesFor({ dates = [], upcoming = [], guests = 0, returning = 0, kudos = 0, createdAt = 0, bookings = 0, clients = 0 }, now = today()) {
+/** A host's rhythm (review round 12): a monthly event (or events about a month apart) counts streaks in months, else weeks. */
+export function rhythmOf(dates = [], repeats = []) { if (repeats.includes("monthly")) return "month"; if (repeats.some((r) => r === "weekly" || r === "biweekly")) return "week";
+  const D = [...new Set(dates.filter(Boolean))].sort(); if (D.length < 2) return "week"; const gaps = D.slice(1).map((d, i) => (Date.parse(d) - Date.parse(D[i])) / DAY).sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)] >= 21 ? "month" : "week"; }
+export function badgesFor({ dates = [], upcoming = [], guests = 0, returning = 0, kudos = 0, createdAt = 0, bookings = 0, clients = 0, rhythm = "" }, now = today()) {
   const past = dates.filter((d) => d && d <= now), last = past[past.length - 1] || "", first = past[0] || "", B = [];
   const wk = streakOf(past, now, "week"), mo = streakOf(past, now, "month"), daysSince = (d) => (d ? (Date.parse(now) - Date.parse(d)) / DAY : Infinity);
   // "New host": hosted at least once, recently started, and nothing yet that says otherwise (a brand booking, past clients, 10+ guests)
   const isNew = past.length >= 1 && past.length <= 5 && guests < BADGE_RULES.newMaxGuests && !bookings && !clients && ((createdAt && Date.now() - createdAt < 60 * DAY) || daysSince(first) < 45);
   const isSuper = past.length >= SUPER.events && guests >= SUPER.guests && (returning / Math.max(1, guests) >= SUPER.returningShare || kudos >= SUPER.kudos) && daysSince(last) <= SUPER.activeDays;
   if (isSuper) B.push({ id: "super", emoji: "⭐", label: "Super host", why: `${past.length} events, ${guests} guests, and guests keep coming back` });
-  if (wk >= 3) B.push({ id: "streak", emoji: "🔥", label: `${wk}-week streak`, n: wk, unit: "week", why: `Hosted something ${wk} weeks in a row` });
+  const R = rhythm || rhythmOf([...dates, ...upcoming]);
+  if (R === "month" && mo >= 3) B.push({ id: "streak", emoji: "🔥", label: `${mo} months in a row`, n: mo, unit: "month", why: `Hosted something ${mo} months in a row` });
+  else if (wk >= 3) B.push({ id: "streak", emoji: "🔥", label: `${wk}-week streak`, n: wk, unit: "week", why: `Hosted something ${wk} weeks in a row` });
   else if (mo >= 3) B.push({ id: "streak", emoji: "🔥", label: `${mo} months in a row`, n: mo, unit: "month", why: `Hosted something ${mo} months in a row` });
   if (isNew) B.push({ id: "new", emoji: "🌱", label: "New host", why: "Just started hosting on Pottery Lab" });
   const ev = MILESTONES.events.find((m) => past.length >= m), gu = MILESTONES.guests.find((m) => guests >= m);
@@ -48,26 +54,29 @@ export function badgesFor({ dates = [], upcoming = [], guests = 0, returning = 0
   if (gu) B.push({ id: "m-guests", emoji: "🙌", label: `${gu}+ guests`, n: gu, why: `${guests} different people have come` });
   // what's next, for the host's own eyes (Strava goals): keep the streak alive, the next badge, the next milestone
   const next = [], cur = weekOf(now), hostedThisWeek = past.some((d) => weekOf(d) === cur), upcomingThisWeek = [...dates, ...upcoming].some((d) => d > now && weekOf(d) === cur);
-  if (wk >= 2 && !hostedThisWeek) next.push({ id: "streak", emoji: "🔥", text: upcomingThisWeek ? `Your next one keeps your streak going: ${wk + 1} weeks in a row.` : `Host something by Sunday to make it ${wk + 1} weeks in a row.` });
+  const curM = monthOf(now), hostedThisMonth = past.some((d) => monthOf(d) === curM), upcomingThisMonth = [...dates, ...upcoming].some((d) => d > now && monthOf(d) === curM);
+  if (R === "month") { if (mo >= 2 && !hostedThisMonth) next.push({ id: "streak", emoji: "🔥", text: upcomingThisMonth ? `Your next one keeps your streak going: ${mo + 1} months in a row.` : `Host something this month to make it ${mo + 1} months in a row.` }); }
+  else if (wk >= 2 && !hostedThisWeek) next.push({ id: "streak", emoji: "🔥", text: upcomingThisWeek ? `Your next one keeps your streak going: ${wk + 1} weeks in a row.` : `Host something by Sunday to make it ${wk + 1} weeks in a row.` });
   if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "event" : "events"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
     if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("an event in the next few weeks");
     if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
   const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); const soon = upcoming.filter((d) => d && d > now).sort()[0];
   if (!past.length) next.push(soon ? { id: "first", emoji: "🌱", text: `Your first one is on ${new Date(soon + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}. It starts your streak.` } : { id: "first", emoji: "🌱", text: "Host your first event to start a streak." });
   else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} events.` });
-  return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
+  return { badges: B, next, streak: { weeks: wk, months: mo, unit: R }, rhythm: R, events: past.length, last, isNew: !!isNew, isSuper };
 }
 
 export function makeRecognition({ C, X }) {
   let cache = null;
   // the host's events still to come that they've shared or put on their page (published or listed)
-  const upcomingOf = (ws) => { try { return (C.eventsOf?.(ws, { upcoming: true, discoverableOnly: true, onPage: true, privateToo: true, owner: true }) || []).filter((e) => e.date && e.date > today() && e.stage !== "interest" && !e.example).map((e) => e.date); } catch { return []; } };
+  const upcomingEv = (ws) => { try { return (C.eventsOf?.(ws, { upcoming: true, discoverableOnly: true, onPage: true, privateToo: true, owner: true }) || []).filter((e) => e.date && e.date > today() && e.stage !== "interest" && !e.example); } catch { return []; } };
+  const upcomingOf = (ws) => upcomingEv(ws).map((e) => e.date);
   function all() {
     if (cache && Date.now() - cache.at < CACHE_MS) return cache.data;
     const out = [];
     for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !h.name) continue; let S; try { S = X.hostStrengths(ws); } catch { continue; }
       const W = getWorkspace(ws), example = isExampleEmail(W?.ownerEmail), clients = (h.gigs || []).filter((g) => g.client && !isPlaceholderBrand(g.client)).length, bookings = +(X.bookingsOf?.(ws) || 0);
-      const r = example ? { badges: [], next: [], streak: { weeks: 0, months: 0 }, events: (S.dates || []).length, last: "", isNew: false, isSuper: false } : badgesFor({ dates: S.dates || [], upcoming: upcomingOf(ws), guests: S.guests, returning: S.returning, kudos: S.kudosCount, createdAt: W?.createdAt || 0, bookings, clients });
+      const r = example ? { badges: [], next: [], streak: { weeks: 0, months: 0 }, events: (S.dates || []).length, last: "", isNew: false, isSuper: false } : badgesFor({ dates: S.dates || [], upcoming: upcomingOf(ws), rhythm: rhythmOf([...(S.dates || []), ...upcomingOf(ws)], upcomingEv(ws).map((e) => e.repeat)), guests: S.guests, returning: S.returning, kudos: S.kudosCount, createdAt: W?.createdAt || 0, bookings, clients });
       const recent = (S.dates || []).filter((d) => d <= today() && (Date.parse(today()) - Date.parse(d)) / DAY <= 90).length;
       out.push({ ws, handle: h.handle, city: String(h.city || "").trim(), recent, guests: S.guests, returning: S.returning, example, ...r }); }
     // Local Legend (Strava): the most active real host in each city over the last 90 days, only where there's a field to beat (BADGE_RULES)
@@ -94,6 +103,8 @@ export function makeRecognition({ C, X }) {
 
 /** Longest run of consecutive weeks with an event, within the given dates. */
 export function longestWeeks(dates) { const W = [...new Set(dates.map(weekOf))].sort((a, b) => a - b); let best = 0, run = 0, prev = null; for (const w of W) { run = prev != null && w === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = w; } return best; }
+/** Longest run of consecutive months with an event (review round 12: a monthly host's streak). */
+export function longestMonths(dates) { const M = [...new Set(dates.map(monthOf))].sort((a, b) => a - b); let best = 0, run = 0, prev = null; for (const m of M) { run = prev != null && m === prev + 1 ? run + 1 : 1; best = Math.max(best, run); prev = m; } return best; }
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /** A host's year (Strava year-in-review style): only what happened, nothing estimated. */
@@ -113,7 +124,9 @@ export function mountRecognition(app, { C, X }) {
   app.get("/api/public/host/:handle/recap", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()), h = ws && C.profileOf(ws); if (!h) return res.status(404).json({ code: "not_found", message: "No host by that name." });
     const year = /^20\d\d$/.test(String(req.query.year || "")) ? +req.query.year : new Date().getFullYear(); let S; try { S = X.hostStrengths(ws, { year }); } catch { S = {}; }
     let all = []; try { all = X.hostStrengths(ws).dates || []; } catch {} const years = [...new Set(all.map((d) => +d.slice(0, 4)))].sort();
-    const me = R.of(h.handle); res.json({ years, host: { handle: h.handle, name: h.name, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...recapOf(S, year) }); });
+    const me = R.of(h.handle), W0 = getWorkspace(ws), person = String(getDbUser(W0?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0] || "";
+    const rec = recapOf(S, year), rh = me?.rhythm || rhythmOf(all); if (rh === "month") { rec.longestStreak = longestMonths(S.dates || []); rec.streakUnit = "month"; } else rec.streakUnit = "week";
+    res.json({ years, host: { handle: h.handle, name: h.name, person, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...rec }); });
   app.get("/api/public/hosts/showcase", (req, res) => res.json(R.showcase()));
   app.get("/api/public/badge-rules", (req, res) => res.json(BADGE_RULES));
   app.get("/api/public/host/:handle/badges", (req, res) => { const ws0 = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (ws0 && /@demo\.encore$/i.test(getWorkspace(ws0)?.ownerEmail || "")) return res.json({ badges: [], streak: { weeks: 0, months: 0 }, events: 0, example: true }); const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, next: x.next, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });

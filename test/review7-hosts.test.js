@@ -45,7 +45,7 @@ test("the light invite: pre-orders get the order form, cost notes, at the door, 
   assert.match(order, /\/api\/public\/order\//, "the shop's order endpoint when the shop is open");
   assert.match(order, /orderQty: lines\.map/, "else a reply with the items and quantities (review round 8)");
   assert.match(order, /data-d="-1"/); assert.match(order, /name="slot"/); assert.match(order, />Order</);
-  assert.match(html, /e\.costNote \? `<div class="muted" id="cost">💵/);
+  assert.match(html, /e\.costNote \? `<div class="muted" id="cost">\$\{G\.tag\}/);
   assert.match(html, /e\.ticketNote \? "Pay at the door\." : `You'll pay/);
   assert.match(html, /Pay \$\$\{esc\(\+e\.dropIn\)\} for one class/);
   assert.match(html, /e\.date === ltd \? "Today"/);

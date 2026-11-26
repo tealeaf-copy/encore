@@ -25,8 +25,12 @@
     try { history.replaceState(null, "", location.pathname + location.search); } catch {} }).catch(() => {});
   const today = new Date().toISOString().slice(0, 10), ltd = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date());
   // food on the table, the full invite's rule (FOODY in index.html): the activity, name or idea, or a menu
+  // round 12: the meta lines wear drawn line glyphs (pin, people, price tag, calendar), like the app's buttons
+  const gl = (d) => `<svg class="ic" viewBox="0 0 20 20" aria-hidden="true"><path d="${d}"/></svg>`, G = { pin: gl("M10 17.5c-3.6-4.2-5.4-7.2-5.4-9.6a5.4 5.4 0 0 1 10.8 0c0 2.4-1.8 5.4-5.4 9.6zM10 9.9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"), people: gl("M7.3 9a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2zM2.6 16.2c.4-3 2.2-4.7 4.7-4.7s4.3 1.7 4.7 4.7M13.4 9.2a2.2 2.2 0 1 0 0-4.4M14 11.6c2 .2 3.3 1.7 3.6 4.4"), tag: gl("M3.2 10.4V3.6a.6.6 0 0 1 .6-.6h6.8l6.2 6.2a1 1 0 0 1 0 1.4l-5.8 5.8a1 1 0 0 1-1.4 0zM7 7.4h.01"), cal: gl("M4 5.2h12a.8.8 0 0 1 .8.8v10a.8.8 0 0 1-.8.8H4a.8.8 0 0 1-.8-.8V6a.8.8 0 0 1 .8-.8zM3.2 9h13.6M7 3.2v3.6M13 3.2v3.6") };
   const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i;
-  const foodyOf = (e) => FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.concept || ""}`) || !!(e.menu && (e.menu.courses || e.menu.items || []).length);
+  // round 12: food is the point only when it's what the event is; "snacks potluck" at a watch party is a side mention (index.html FOODY)
+  const MAINNF = /hack ?night|hackathon|build night|watch party|viewing party|\blan\b|game night|board games?|book club|paper club|reading group/i;
+  const foodyOf = (e) => FOODY.test(`${e.activity || ""} ${e.name || ""}`) || (FOODY.test(e.concept || "") && !MAINNF.test(`${e.activity || ""} ${e.name || ""} ${e.concept || ""}`)) || !!(e.menu && (e.menu.courses || e.menu.items || []).length);
   const HHMM = /^\d{2}:\d{2}$/, httpsUrl = (u) => /^https:\/\/[^\s"'<>]+$/.test(String(u || "").trim()) ? String(u).trim() : "";
   // "7pm", "7:30am"
   const clock = (t) => HHMM.test(t || "") ? new Date("2000-01-01T" + t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
@@ -108,18 +112,18 @@
     const coverBox = flyer ? `<div class="cov${LK.fitOf(look) === "poster" ? " poster" : ""}">${LK.coverHTML(e)}</div>` : `<div class="cov">${cover}</div>`;
     // ---- end per-event looks ----
     const where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
-    const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji ? esc(h.emoji) : `<span class="ini">${esc(String(h.name || "?").trim().charAt(0).toUpperCase())}</span>`);
+    const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji && h.emoji !== "🎉" ? esc(h.emoji) : `<span class="ini">${esc(String(first || h.name || "?").trim().charAt(0).toUpperCase())}</span>`), avTint = !h.avatarUrl && !(h.emoji && h.emoji !== "🎉") ? ` style="background:${["#F2D48F", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#CFE3F7"][[...String(h.name || "")].reduce((a, c) => a + c.charCodeAt(0), 0) % 5]};border-color:transparent"` : "";
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
     // review round 11: "6 pairs" / "3 pairs left" for pairs and groups (public/spots.js), else "12 spots" / "4 spots left"
     const SP = window.EncoreSpots, spotsOf = (n) => (SP ? SP.spotsText(e, n) : n == null ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`), orderBy = SP ? SP.orderByText(e) : "";
-    const full = left === 0 && !ask, spotsLine = (n) => `👥 ${n === 0 ? "Full · waitlist open" : n === A.seats ? spotsOf(null) : spotsOf(n)}`;
+    const full = left === 0 && !ask, spotsLine = (n) => (n === 0 ? "Full · waitlist open" : n === A.seats ? spotsOf(null) : spotsOf(n));
     // the main button says what it sends: "I'm in" or "Send"
     const btn = (v) => ask ? (LK0 ? LK0.buttonText(e) : "Ask to join") : full && v === "going" ? "Join waitlist" : e.qStyle?.button || (v === "going" ? (LK0 ? LK0.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in") : "Send"); // per-event looks: the host's words and emoji for the going choice
     const routeLink = route ? ` · <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a>` : "";
     $("#m").innerHTML = $("#m .top").outerHTML + `${LK ? LK.updateHTML(e) : ""}${coverBox}<h1 class="lk-title">${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : e.costNote ? `<div class="muted" id="cost">💵 ${esc(e.costNote)}${/as you go|own|split/i.test(e.costNote) ? "" : " · you pay as you go"}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${esc(spotsLine(left))}</div>` : ""}${orderBy ? `<div class="muted" id="orderBy">🗓️ ${esc(orderBy)}</div>` : ""}</div>
-      ${h.name ? `<div class="host"><span class="av">${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">${G.pin}${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">${G.pin}<a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">${G.tag}<span>${esc(priceText(e))}</span></div>` : e.costNote ? `<div class="muted" id="cost">${G.tag}${esc(e.costNote)}${/as you go|own|split/i.test(e.costNote) ? "" : " · you pay as you go"}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${G.people}<span>${esc(spotsLine(left))}</span></div>` : ""}${orderBy ? `<div class="muted" id="orderBy">${G.cal}${esc(orderBy)}</div>` : ""}</div>
+      ${h.name ? `<div class="host"><span class="av"${avTint}>${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${bring.length ? `<div class="kit"><span aria-hidden="true">🎒</span><div><b>Bring</b><p>${bring.map(esc).join(" · ")}</p></div></div>` : ""}
       ${A.count ? `<p class="going-n" style="margin:14px 0 4px;font-weight:600">${A.count} in</p><div class="going">${names}</div>` : ""}
@@ -138,7 +142,7 @@
     if (look.menuStyle === "harvest" && (e.courses || []).length) more("/menucard.js", () => { const c = document.createElement("div"); c.id = "menuCard"; c.innerHTML = window.MenuCard.html({ style: "harvest", theme: e.dinnerTheme, courses: e.courses, price: LK.priceLine(e) }); ($("#f") || $("#tk"))?.before(c); });
     // ---------- series: the when line says it repeats, the price line says what the course or pass costs ----------
     { const sw = srWhen(e), wb = $("#m .facts > div:first-child > b"); if (sw && wb) { wb.textContent = sw; if (!srSpan(e) && e.date) { const nx = document.createElement("div"); nx.className = "muted"; nx.id = "nextOne"; nx.textContent = `Next one ${when({ date: e.date, startTime: e.date === ltd ? e.startTime : "" })}`; wb.parentElement.after(nx); } }
-      const sp = srPrice(e), pl = $("#price"); if (sp && pl) pl.textContent = "💵 " + sp; }
+      const sp = srPrice(e), pl = $("#price span"); if (sp && pl) pl.textContent = sp; }
     if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
     // coming back to the link: their reply, not a blank form
@@ -173,7 +177,7 @@
   async function done(e, h, data, rid, code, S = {}) {
     document.querySelector(".stick")?.remove(); document.getElementById("fullLink")?.remove(); if (data.response === "no") document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); const yes = data.response === "going", wait = data.response === "waitlist", asked = data.response === "requested", paid = paidOf(e), eid = e.id || id, who = esc(S.first || "your host");
     // count yourself in: the spots and "N in" lines move with your own yes (a returning guest is already counted)
-    if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots")) $("#spots").textContent = S.spotsLine(Math.max(0, S.left - (+data.party || 1))); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
+    if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots span")) $("#spots span").textContent = S.spotsLine(Math.max(0, S.left - (+data.party || 1))); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
     const d = e.date ? e.date.replace(/-/g, "") : "", hm = (x) => x.replace(":", "") + "00", t = HHMM.test(e.startTime || "") ? hm(e.startTime) : "";
     // the calendar end: the host's end time (next day when it ends after midnight), else three hours after the start, like the full invite
     const endT = t ? (HHMM.test(e.endTime || "") && e.endTime !== e.startTime ? hm(e.endTime) : String((+t.slice(0, 2) + 3) % 24).padStart(2, "0") + t.slice(2)) : "";
@@ -208,7 +212,7 @@
           try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
           const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); payPass?.remove(); payDrop?.remove(); iPaid.remove(); }
         catch { iPaid.disabled = false; iPaid.textContent = "Didn't go through. Tap to try again"; } }; }
-    if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
+    if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").innerHTML = G.pin + esc(addr); $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`;
       // series: a course's calendar entry repeats and stops after N; one date of a weekly class goes in once
       if (cal && d && +e.sessions > 1 && srRRule(e)) cal.href += "&recur=" + encodeURIComponent(srRRule(e)); }

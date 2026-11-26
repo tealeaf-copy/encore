@@ -260,11 +260,15 @@ test("a long title stops at a word, never mid-word", () => {
   assert.ok(t.length <= 60, t); assert.ok("Neighbourhood repair cafe and community tool library open afternoon".startsWith(t), t);
 });
 
-test("Potto's weekday question names both dates", () => {
-  assert.equal(c.prClashSay(c.parseEventText("Sunday Dec 7th brunch 11am").dayClash).text, "Dec 7 is a Monday. Keep Mon, Dec 7, or Sun, Dec 6?");
+test("Potto's weekday question: one line, a one-tap fix and Keep (review round 12)", () => {
+  assert.equal(c.prClashSay(c.parseEventText("Sunday Dec 7th brunch 11am").dayClash).text, "Dec 7 is a Monday. Keep it?");
   const w = c.prClashSay(c.parseEventText("Thursday Jan 8 dinner 7pm").dayClash);
-  assert.equal(w.text, "Jan 8 is a Friday. Keep Fri, Jan 8, or Thu, Jan 7?");
-  assert.equal(w.keep, "Keep Fri, Jan 8"); assert.equal(w.alt, "Thu, Jan 7");
+  assert.equal(w.text, "Jan 8 is a Friday. Keep it?");
+  assert.equal(w.keep, "Keep it"); assert.equal(w.alt, "Use Thu, Jan 7");
+  // "fri jan 9" when Jan 9 is a Saturday: the date they typed, the weekday flagged
+  const s = c.parseEventText("supper club 8 seats fri jan 9 7:30. $40 pp covers food, BYO wine");
+  assert.equal(s.date, "2027-01-09"); assert.equal(s.weekday, "saturday"); assert.deepEqual({ ...s.dayClash }, { typed: "friday", date: "2027-01-09", alt: "2027-01-08" });
+  assert.equal(c.prClashSay(s.dayClash).text, "Jan 9 is a Saturday. Keep it?"); assert.equal(c.prClashSay(s.dayClash).alt, "Use Fri, Jan 8");
 });
 
 test("two weekdays read back as one rule: Every Mon and Wed, and the calendar repeats on both", () => {

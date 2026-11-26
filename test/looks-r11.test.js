@@ -87,6 +87,8 @@ test("Terminal and Pixel: readable text on their pages, and Surprise me offers t
     for (const bg of [T.top, T.bot]) { assert.ok(C.contrast(T.ink, bg) >= 4.5, `${v} ink ${p[0]}`); assert.ok(C.contrast(T.soft, bg) >= 4.5, `${v} soft ${p[0]}`); if (v === "terminal") assert.ok(C.contrast("#A6F5BA", bg) >= 7, "phosphor title"); }
     assert.ok(C.contrast(T.btn, T.onBtn) >= 4.5, `${v} button ${p[0]}`); }
   assert.ok(C.pageFrom(LK.VIBES.terminal.look.palette[0]).dark, "Terminal is a dark page"); assert.ok(!C.pageFrom(LK.VIBES.pixel.look.palette[0]).dark, "Pixel is a light one");
-  for (let i = 0; i < 30; i++) for (const name of ["Board game night", "Hack night", "Retro arcade meetup"]) assert.ok(["terminal", "pixel"].includes(LK.surprise({ name }).vibe), name);
+  for (let i = 0; i < 30; i++) for (const name of ["Hack night", "Retro arcade meetup"]) assert.ok(["terminal", "pixel"].includes(LK.surprise({ name }).vibe), name);
+  // review round 12: a board game table gets Card deck or Pixel, never Terminal
+  for (let i = 0; i < 30; i++) assert.ok(["cards", "pixel"].includes(LK.surprise({ name: "Board game night" }).vibe));
   assert.ok(LK.FONTS.mono && LK.FONTS.pixel); for (const k of ["d20", "controller", "key", "floppy", "heartbox", "cursor"]) assert.ok(LOOK.stickers.includes(k), k);
 });

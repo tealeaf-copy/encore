@@ -45,62 +45,71 @@
 .sd-in{position:relative;width:min(100%,460px);height:100%;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom))}
 .sd-top{display:flex;align-items:flex-start;gap:10px}.sd-top>div{flex:1;min-width:0}
 .sd-top h2{margin:2px 0 0;font:600 clamp(26px,7vw,32px)/1.05 Fredoka,system-ui}.sd-top h2 em{font-style:normal;color:#C94A30}.sd-top p{margin:4px 0 0;color:#665A51;font-size:14.5px}
-.sd-x{flex:none;width:44px;height:44px;border-radius:50%;border:2px solid #1F1A17;background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 #1F1A17;color:#1F1A17}
-.sd-dots{display:flex;gap:6px;margin:12px 0 4px}.sd-dots i{flex:1;height:6px;border-radius:6px;background:#E4D9C8;border:1.5px solid #1F1A17;transition:background .25s}.sd-dots i.on{background:#C94A30}.sd-dots i.cur{background:#F2D48F}
+.sd-x{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid #D9CCBB;background:#fff;display:grid;place-items:center;padding:0;cursor:pointer;color:#5A3B2B}.sd-x svg{width:18px;height:18px}
+.sd-dots{display:flex;gap:6px;margin:12px 0 4px}.sd-dots i{flex:1;height:6px;border-radius:6px;background:#E4D9C8;border:0;transition:background .25s}.sd-dots i.on{background:#C94A30}.sd-dots i.cur{background:#F2D48F}
 .sd-stack{position:relative;flex:1;min-height:0;margin:10px 6px 30px}
-.sd-card{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);border:2.5px solid #1F1A17;border-radius:24px;box-shadow:5px 6px 0 #1F1A17;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:50% 90%;transition:transform .32s cubic-bezier(.3,1.3,.5,1),opacity .25s;will-change:transform}
-.sd-card[data-pos="1"]{transform:translateY(10px) scale(.96) rotate(1.6deg);z-index:2}.sd-card[data-pos="2"]{transform:translateY(18px) scale(.92) rotate(-1.8deg);z-index:1}.sd-card[data-pos="0"]{z-index:3;cursor:grab}.sd-card[data-pos="h"]{opacity:0;pointer-events:none;transform:scale(.88)}
+.sd-card{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);border:1.5px solid rgba(31,26,23,.18);border-radius:24px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:50% 90%;transition:transform .32s cubic-bezier(.3,1.3,.5,1),opacity .25s;will-change:transform}
+.sd-card[data-pos="1"]{transform:translateY(10px) scale(.96);z-index:2}.sd-card[data-pos="2"]{transform:translateY(18px) scale(.92);z-index:1}.sd-card[data-pos="0"]{z-index:3;cursor:grab}.sd-card[data-pos="h"]{opacity:0;pointer-events:none;transform:scale(.88)}
 .sd-card.drag{transition:none;cursor:grabbing}.sd-card.drag .sd-badge{opacity:0}
-.sd-media{position:relative;flex:1;min-height:0;margin:10px 10px 0;border:2.5px solid #1F1A17;border-radius:16px;overflow:hidden;background:#fff}.sd-media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.sd-media .ea-cover{border-radius:13px}
+.sd-media{position:relative;flex:1;min-height:0;margin:10px 10px 0;border:1.5px solid rgba(31,26,23,.18);border-radius:16px;overflow:hidden;background:#fff}.sd-media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.sd-media .ea-cover{border-radius:13px}
 .sd-corner{position:absolute;left:20px;top:16px;z-index:3;font:700 15px/1 "Instrument Sans",system-ui;letter-spacing:.24em;text-transform:uppercase;color:#1F1A17;pointer-events:none}.sd-card.dark .sd-corner{color:#FFF8EE}
 .sd-media.art{margin:40px 8px 0;border:0;background:transparent}.sd-media.art .ea-cover{background:transparent!important;border-radius:0}.sd-media.art .ea-cover .ea-txt{display:none}
 .sd-media.art .ea-art{inset:0 2% 2%!important;width:auto!important;height:auto!important;max-width:none!important;justify-content:center!important;align-items:center!important}.sd-media.art .ea-art svg{width:100%!important;height:100%!important;max-width:none!important;overflow:visible}.sd-media.art .ea-art svg [stroke-width]{stroke-width:6px}
 .sd-fb{position:absolute;inset:0;display:grid;place-items:center;font-size:64px}
-.sd-badge{position:absolute;right:10px;top:12px;z-index:3;font:700 13px/1 "Instrument Sans",system-ui;padding:7px 11px;border-radius:999px;background:#F2D48F;border:2px solid #1F1A17;box-shadow:2px 2px 0 #1F1A17;transform:rotate(4deg)}.sd-badge.ex{background:#fff;color:#5A4E45}
+.sd-badge{position:absolute;right:10px;top:12px;z-index:3;font:700 13px/1 "Instrument Sans",system-ui;padding:7px 11px;border-radius:999px;background:#F2D48F;border:0}.sd-badge.ex{background:#fff;color:#5A4E45}
 .sd-stamp{position:absolute;top:22px;z-index:4;font:700 30px/1 Fredoka,system-ui;letter-spacing:.02em;padding:6px 14px;border:4px solid currentColor;border-radius:12px;background:rgba(255,255,255,.88);opacity:0;pointer-events:none}
 .sd-stamp.yes{right:16px;color:#3E6B34;transform:rotate(12deg)}.sd-stamp.no{left:16px;color:#A63A22;transform:rotate(-12deg)}
 .sd-body{flex:none;padding:12px 16px 16px;color:#1F1A17}.sd-card.dark .sd-body{color:#FFF8EE}.sd-card.dark .sd-meta,.sd-card.dark .sd-line,.sd-card.dark .sd-host{color:rgba(255,248,238,.85)}
 .sd-host{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;color:#5A4E45}.sd-host b{font-weight:700}
-.sd-av{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid #1F1A17;overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,#fff);font-size:15px}.sd-av img,.sd-av svg{width:100%;height:100%;object-fit:cover}
+.sd-av{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(31,26,23,.18);overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,#fff);font-size:15px}.sd-av img,.sd-av svg{width:100%;height:100%;object-fit:cover}
 .sd-idea{font-size:20px}
 .sd-body h3{margin:6px 0 2px;font:600 clamp(24px,6.6vw,30px)/1.08 Fredoka,system-ui;text-wrap:balance;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sd-meta{margin:0;font-size:15px;color:#5A4E45;font-weight:600}.sd-line{margin:4px 0 0;font-size:14.5px;color:#5A4E45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sd-acts{display:flex;justify-content:center;align-items:center;gap:18px;padding:6px 0 4px}
-.sd-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:60px;border-radius:999px;border:2.5px solid #1F1A17;font:600 18px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 4px 0 #1F1A17;transition:transform .12s,box-shadow .12s;color:#1F1A17;background:#fff}
-.sd-btn:active{transform:translate(2px,3px);box-shadow:0 0 0 #1F1A17}.sd-no{width:64px;padding:0;font-size:24px}.sd-yes{min-width:190px;padding:0 26px;background:#C94A30;color:#fff}.sd-yes svg{width:24px;height:24px}
+.sd-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border-radius:999px;border:1.5px solid #D9CCBB;font:600 17px "Instrument Sans",system-ui;cursor:pointer;transition:background .12s;color:#1F1A17;background:#fff}
+.sd-btn:active{background:#F7F1E8}.sd-no{width:56px;padding:0;color:#5A3B2B}.sd-no svg{width:20px;height:20px}.sd-yes{min-width:180px;padding:0 26px;background:#C94A30;border-color:#C94A30;color:#fff}.sd-yes:active{background:#B04A30}.sd-yes svg{width:22px;height:22px}
 .sd:focus{outline:none}.sd-btn:focus-visible,.sd-x:focus-visible,.sd-link:focus-visible,.sd-go:focus-visible{outline:3px solid #C94A30;outline-offset:3px}
 .sd-foot{display:flex;justify-content:center;gap:14px;align-items:center;margin:6px 0 0;font-size:14px;color:#665A51}
 .sd-link{background:none;border:0;padding:6px 2px;font:600 15px "Instrument Sans",system-ui;color:#A63A22;text-decoration:underline;cursor:pointer;min-height:40px}
 .sd-keys{display:none}@media (hover:hover) and (pointer:fine){.sd-keys{display:inline}}
 .sd-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sd-end{flex:1;display:grid;align-content:center;justify-items:center;text-align:center;gap:12px;padding:10px 6px 30px}
-.sd-fan{position:relative;width:250px;height:190px;margin-bottom:8px}.sd-fan span{position:absolute;top:10px;width:132px;background:#fff;border:2.5px solid #1F1A17;border-radius:6px;padding:7px 7px 24px;box-shadow:3px 4px 0 #1F1A17}
+.sd-fan{position:relative;width:250px;height:190px;margin-bottom:8px}.sd-fan span{position:absolute;top:10px;width:132px;background:#fff;border:1.5px solid rgba(31,26,23,.18);border-radius:6px;padding:7px 7px 24px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28)}
 .sd-fan span:nth-child(1){left:6px;transform:rotate(-9deg)}.sd-fan span:nth-child(2){left:58px;top:0;transform:rotate(3deg);z-index:2}.sd-fan span:nth-child(3){left:112px;transform:rotate(11deg)}
 .sd-fan .m{position:relative;display:block;aspect-ratio:1/1;overflow:hidden;background:var(--bg,#FDE6A6)}.sd-fan .m img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sd-fan .m .ea-txt{display:none}
 .sd-fan span::before{content:"";position:absolute;top:-10px;left:50%;width:50px;height:16px;margin-left:-25px;background:#F2D48F;opacity:.92;transform:rotate(-5deg);z-index:2}
 .sd-end h2{margin:0;font:600 clamp(28px,8vw,38px)/1.05 Fredoka,system-ui;text-wrap:balance}.sd-end p{margin:0;color:#665A51;max-width:32ch}
-.sd-go{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 28px;border-radius:999px;border:2.5px solid #1F1A17;background:#C94A30;color:#fff;font:600 18px "Instrument Sans",system-ui;text-decoration:none;box-shadow:3px 4px 0 #1F1A17;cursor:pointer}.sd-go.ghost{background:#fff;color:#1F1A17}
+.sd-go{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 28px;border-radius:999px;border:1px solid #C94A30;background:#C94A30;color:#fff;font:600 17px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer}.sd-go.ghost{background:#fff;color:#1F1A17;border:1.5px solid #D9CCBB}
 .sd-end-acts{display:grid;gap:10px;justify-items:center;margin-top:6px}
 .sd-potto{width:70px}.sd-potto svg{width:70px;height:auto}
 @media (min-width:700px){.sd-in{padding-top:28px;padding-bottom:24px}.sd-stack{max-height:640px}}
 @media (max-height:640px){.sd-top p{display:none}.sd-btn{min-height:52px}.sd-no{width:56px}}
 @media (prefers-reduced-motion:reduce){.sd,.sd-card,.sd-dots i{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("sdCss")) return; const s = document.createElement("style"); s.id = "sdCss"; s.textContent = CSS; document.head.appendChild(s); };
-  const HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4 7.1 4c2.1 0 3.6 1.2 4.9 3 1.3-1.8 2.8-3 4.9-3 3.5 0 5.7 3.6 4.4 7.1-1.8 4.8-9.3 9.4-9.3 9.4z" fill="#fff" stroke="#1F1A17" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
+  const HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4 7.1 4c2.1 0 3.6 1.2 4.9 3 1.3-1.8 2.8-3 4.9-3 3.5 0 5.7 3.6 4.4 7.1-1.8 4.8-9.3 9.4-9.3 9.4z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>`;
+  // round 12: drawn line glyphs for close and pass, not the × and ✕ characters
+  const XG = `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>`;
+  // round 12: the cards that match what you're into come first (the interests you picked, on this browser or your account)
+  async function byInterests(cards) { let mine = []; try { if (signedIn()) { const r = await fetch("/api/me/interests", { credentials: "same-origin" }); if (r.ok) mine = (await r.json()).interests || []; } } catch {}
+    if (!mine.length) try { mine = (JSON.parse(ls.get("pl.interests") || "null") || {}).interests || []; } catch {} if (!mine.length) return cards;
+    let L = []; try { L = (await (await fetch("/interests.json")).json()).interests || []; } catch {}
+    const words = L.filter((x) => mine.includes(x.id)).flatMap((x) => [x.id, ...(x.words || [])]).map((w) => String(w).toLowerCase()); if (!words.length) return cards;
+    const score = (c) => { const t = ` ${[c.title, c.line, c.where, ...(c.tags || [])].join(" ").toLowerCase()} `; return (c.tags || []).filter((x) => mine.includes(x)).length * 3 + words.filter((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(t)).length; };
+    return cards.map((c, n) => ({ c, n, s: score(c) })).sort((a, b) => b.s - a.s || a.n - b.n).map((x) => x.c); }
 
   let openNow = false;
   /** Show the deck. opts.cards to skip the fetch (tests); opts.onDone(picks). */
   async function open(opts = {}) { if (openNow || document.querySelector(".sd")) return; openNow = true; css();
     const city = cityNow(); let D = { cards: opts.cards || [] };
     if (!opts.cards) { try { const q = new URLSearchParams({ city }); D = await (await fetch("/api/public/deck?" + q, { credentials: "same-origin" })).json(); } catch { D = { cards: [] }; } }
-    const cards = (D.cards || []).filter((c) => c && c.key && c.title); if (cards.length < 2) { openNow = false; return; }
+    let cards = (D.cards || []).filter((c) => c && c.key && c.title); if (cards.length < 2) { openNow = false; return; } if (!opts.cards) cards = await byInterests(cards);
     add("/save.js"); const total = Math.min(SWIPES, cards.length), picks = [], tags = new Set(); let i = 0, busy = false;
     const el = document.createElement("div"); el.className = "sd"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "sdH");
     const local = D.city && D.local ? D.city : "";
-    el.innerHTML = `<div class="sd-in"><header class="sd-top"><div><h2 id="sdH">Would you <em>go?</em></h2><p>${local ? `Coming up in ${esc(local)}, then ideas. ` : ""}Swipe right for I'm in, left to pass.</p></div><button type="button" class="sd-x" aria-label="Close and see the feed">×</button></header>
+    el.innerHTML = `<div class="sd-in"><header class="sd-top"><div><h2 id="sdH">Would you <em>go?</em></h2><p>${local ? `Coming up in ${esc(local)}, then ideas. ` : ""}Swipe right for I'm in, left to pass.</p></div><button type="button" class="sd-x" aria-label="Close and see the feed">${XG}</button></header>
       <div class="sd-dots" aria-hidden="true">${Array.from({ length: total }, () => "<i></i>").join("")}</div>
       <div class="sd-stack">${cards.map(cardHTML).join("")}</div>
-      <div class="sd-acts"><button type="button" class="sd-btn sd-no" aria-label="Pass">✕</button><button type="button" class="sd-btn sd-yes">${HEART}I'm in</button></div>
+      <div class="sd-acts"><button type="button" class="sd-btn sd-no" aria-label="Pass">${XG}</button><button type="button" class="sd-btn sd-yes">${HEART}I'm in</button></div>
       <p class="sd-foot"><button type="button" class="sd-link" id="sdTopics">Pick topics instead</button><span class="sd-keys">or use ← and →</span></p>
       <p class="sd-sr" aria-live="polite" id="sdLive"></p></div>`;
     document.body.appendChild(el); const prevOverflow = document.body.style.overflow; document.body.style.overflow = "hidden";
@@ -116,7 +125,7 @@
       const n = picks.length, line = n ? `Your ${n} ${n === 1 ? "pick is" : "picks are"} saved.` : "";
       if (signedIn() || how === "close") { close(); if (n && window.PLSave?.toast) window.PLSave.toast(`<b>${esc(line)}</b>${signedIn() ? "" : " Make a free account to keep them."}`, signedIn() ? { go: "/saved", goLabel: "See them", ms: 5000 } : { go: "/signup?mode=friends&from=saves", goLabel: "Make an account", ms: 7000 }); return; }
       const fan = picks.slice(0, 3).map((p) => `<span style="--bg:${tint(p.c)}"><i class="m">${media(p.c)}</i></span>`).join("");
-      $(".sd-in").innerHTML = `<header class="sd-top"><div></div><button type="button" class="sd-x" aria-label="Close and see the feed">×</button></header><div class="sd-end" role="status">
+      $(".sd-in").innerHTML = `<header class="sd-top"><div></div><button type="button" class="sd-x" aria-label="Close and see the feed">${XG}</button></header><div class="sd-end" role="status">
         ${n ? `<div class="sd-fan" aria-hidden="true">${fan}</div><h2 id="sdH">${esc(line)}</h2><p>Make a free account to keep them. We'll tell you when they're close.</p>
         <div class="sd-end-acts"><a class="sd-go" href="/signup?mode=friends&amp;from=saves">Make a free account</a><button type="button" class="sd-link" id="sdFeed">See the feed</button></div>`
         : `<span class="sd-potto" aria-hidden="true">${window.Potto ? window.Potto.svg("think", 70, "") : ""}</span><h2 id="sdH">Nothing caught your eye?</h2><p>The feed has more, or pick a few topics and we'll find better ones.</p>

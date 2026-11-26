@@ -383,7 +383,10 @@
   // ---- owner: shop and bookings ----
   async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
-    let personal = false; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); personal = !!W?.personal; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button"; fab.innerHTML = `🛍 <span class="sf-long">Shop and bookings</span><span class="sf-short">Shop</span>`; fab.setAttribute("aria-label", "Shop and bookings"); document.body.appendChild(fab);
+    let personal = false; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); personal = !!W?.personal; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button";
+    // review round 12: one floating button. Shop and bookings stays out of the way until the host turns on paid work
+    // (a shop, something to book, open to brand work, or tips); "Sell or take bookings" in Edit page opens it
+    const paidOn = !!(mine.forHire || mine.shop?.open || (mine.shop?.items || []).length || (mine.experiences || []).length || mine.support?.on); if (!paidOn) { fab.hidden = true; fab.style.display = "none"; window.__plShopFab = fab; } fab.innerHTML = `🛍 <span class="sf-long">Shop and bookings</span><span class="sf-short">Shop</span>`; fab.setAttribute("aria-label", "Shop and bookings"); document.body.appendChild(fab);
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const st = { shop: JSON.parse(JSON.stringify(mine.shop || { open: false, title: "", note: "", where: "", slots: [], items: [], payUrl: "" })), exps: JSON.parse(JSON.stringify(mine.experiences || [])) };
     let tab = /[?&]orders=1/.test(location.search) ? "orders" : "shop"; // hosts first: the shop (pre-orders, pickup) opens before brand bookings

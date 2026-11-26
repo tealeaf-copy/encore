@@ -11,24 +11,26 @@
   const $ = (s, r = document) => r.querySelector(s);
   const ss = { get: (k) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch {} } };
   const TOK = /^[A-Za-z0-9_-]{20,40}$/;
+  // a drawn line glyph (two people), not an emoji, like the app's other button icons (docs/brand-kit.md, UI tokens)
+  const GLYPH_PAIR = `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.2" cy="6.6" r="2.6"/><path d="M2.6 16.2c.4-3 2.2-4.7 4.6-4.7s4.2 1.7 4.6 4.7"/><circle cx="13.6" cy="7.4" r="2.2"/><path d="M12.6 11.6c.3-.1.7-.1 1-.1 2.1 0 3.6 1.5 3.9 4.2"/></svg>`;
   const TINTS = ["#F2D48F", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"];
   const tint = (n) => TINTS[[...String(n || "")].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTS.length];
   const face = (p, size = 40) => `<span class="cwm-face" style="--c:${esc(p.color && /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : tint(p.name))};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px" aria-hidden="true">${esc(p.emoji || String(p.name || "?").slice(0, 1).toUpperCase())}</span>`;
   const until = (t) => { const d = new Date(t); if (isNaN(d)) return ""; const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), h = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()); return `${day} · ${h}`; };
-  const CSS = `.cwm-hello{max-width:620px;display:flex;gap:12px;align-items:center;background:#FFF8EE;border:2px solid #1F1A17;border-radius:18px;padding:12px 14px;margin:10px 0 14px;box-shadow:3px 3px 0 #1F1A17;transform:rotate(-.6deg);color:#1F1A17;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;position:relative}
-.cwm-hello::before{content:"";position:absolute;top:-9px;left:28px;width:64px;height:16px;background:rgba(242,212,143,.92);transform:rotate(-4deg);border-radius:2px}
+  const CSS = `.cwm-hello{max-width:620px;display:flex;gap:12px;align-items:center;background:#FFF8EE;border:1.5px solid #E4D9C8;border-radius:18px;padding:12px 14px;margin:10px 0 14px;color:#1F1A17;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;position:relative}
 .cwm-hello p{margin:0}.cwm-hello b{font:600 17px/1.25 Fredoka,system-ui,sans-serif}.cwm-hello small{display:block;color:#665A51;font-size:13.5px;margin-top:2px}
 .cwm-face{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:50%;border:2px solid #1F1A17;background:var(--c,#F2D48F);color:#1F1A17;font-weight:700;font-family:Fredoka,system-ui,sans-serif}
 .cwm-faces{display:inline-flex}.cwm-faces .cwm-face+.cwm-face{margin-left:-12px}
 .cwm-box{display:grid;gap:6px;margin:12px 0 4px;justify-items:start}
-.cwm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:2px solid #1F1A17;border-radius:999px;background:#F2D48F;color:#1F1A17;font:600 16px Fredoka,system-ui,sans-serif;cursor:pointer;box-shadow:2px 2px 0 #1F1A17;transition:transform .15s}
-.cwm-btn:hover{transform:translateY(-1px) rotate(-1deg)}.cwm-btn:active{transform:translateY(1px)}.cwm-btn[disabled]{opacity:.6;cursor:default}
-.cwm-btn.pulse{animation:cwmP 1.4s ease-in-out 3}@keyframes cwmP{50%{box-shadow:0 0 0 6px rgba(201,74,48,.25),2px 2px 0 #1F1A17}}
+.cwm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:1.5px solid #1F1A17;border-radius:999px;background:#F2D48F;color:#1F1A17;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
+.cwm-btn svg{flex:none;width:20px;height:20px}
+.cwm-btn:hover{background:#EFCB7C}.cwm-btn[disabled]{opacity:.6;cursor:default}
+.cwm-btn.pulse{animation:cwmP 1.4s ease-in-out 3}@keyframes cwmP{50%{box-shadow:0 0 0 6px rgba(201,74,48,.25)}}
 .cwm-note{margin:0;color:#665A51;font:500 13.5px/1.35 "Instrument Sans",system-ui,sans-serif}.cwm-note.err{color:#A8341A}
 .cwm-copy{width:100%;max-width:340px;min-height:40px;border:2px solid #E4D9C8;border-radius:12px;padding:0 10px;font:500 14px "Instrument Sans",system-ui;color:#1F1A17;background:#fff}
 .cwm-tg{margin:10px 0}#tk .cwm-box{justify-items:center}
 .fv-cwm{min-height:40px;padding:0 14px;font-size:15px;box-shadow:none}
-@media (prefers-reduced-motion:reduce){.cwm-btn,.cwm-btn.pulse{animation:none;transition:none}}`;
+@media (prefers-reduced-motion:reduce){.cwm-btn,.cwm-btn.pulse{animation:none}}`;
   const css = () => { if ($("#cwmCss")) return; const s = document.createElement("style"); s.id = "cwmCss"; s.textContent = CSS; document.head.appendChild(s); };
   const idOf = () => { const m = location.pathname.match(/^\/[ei]\/([A-Za-z0-9_-]{2,80})$/); if (m) return m[1]; const h = location.pathname === "/g" && location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/); return h ? h[1] : ""; };
   const mine = (id) => { try { const M = JSON.parse(localStorage.getItem("encore-rsvp-" + id) || "null"); return M?.rid && M.code ? M : null; } catch { return null; } };
@@ -44,7 +46,7 @@
     catch { note("Copy this link and send it to your friend." + held); const i = document.createElement("input"); i.className = "cwm-copy"; i.readOnly = true; i.value = url; i.setAttribute("aria-label", "Link for your friend"); box.appendChild(i); i.select(); }
     return { ok: true, url };
   }
-  function button(cls = "") { css(); const b = document.createElement("button"); b.type = "button"; b.className = "cwm-btn " + cls; b.innerHTML = `<span aria-hidden="true">👯</span> Come with me?`; return b; }
+  function button(cls = "") { css(); const b = document.createElement("button"); b.type = "button"; b.className = "cwm-btn " + cls; b.innerHTML = `${GLYPH_PAIR}<span>Come with me?</span>`; return b; }
   /** From a feed card, signed in: a link from your own reply. Not replied yet: opens the invite, with the button waiting there. */
   async function fromFeed(eventId, title, url, btn) { const box = btn.closest(".fv-acts")?.parentElement || btn.parentElement; btn.disabled = true;
     const r = await send(() => fetch("/api/me/come-with", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId }) }), { title, box });
@@ -66,7 +68,7 @@
     if (!at || (gview ? at.nextElementSibling?.classList.contains("cwm-box") : $(".cwm-box", at))) return;
     if (ss.get("plw-" + id) && !tg) { tgAsked = ""; setTimeout(together, 400); } // came through a link: show "Mia and Jo are in" straight away
     const box = document.createElement("div"); box.className = "cwm-box"; const b = button(ss.get("cwm-want-" + id) ? "pulse" : ""); box.appendChild(b);
-    if (gview) at.after(box); else { const h = $("h2", at); (h?.nextElementSibling?.matches?.("p") ? h.nextElementSibling : h)?.after(box); }
+    if (gview) at.after(box); else { const bt = $(".btns", at), h = $("h2", at); if (bt) bt.before(box); else (h?.nextElementSibling?.matches?.("p") ? h.nextElementSibling : h)?.after(box); } // review round 12: the door code stays right under "Show this at the door"
     b.onclick = async () => { busy = true; b.disabled = true; const M2 = mine(id) || M; await send(() => fetch("/api/public/come-with", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: id, rid: M2.rid, code: M2.code }) }), { title: (document.querySelector("#view-guest h1, main h1")?.textContent || "").trim(), box }); b.disabled = false; busy = false; };
     together(); }
   // "Mia and Jo are in": above the names on the light invite, under the title on the full one

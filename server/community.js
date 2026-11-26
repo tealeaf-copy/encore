@@ -147,6 +147,8 @@ export function makeCommunity(store) {
     "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests",
     // review round 7: what guests should expect to spend when it isn't a paid spot ("About $40 food cost"), and "at the door"
     "costNote", "ticketNote", "groupPrice", "groupSize", "hostName",
+    // review round 12: the event's look, so a host page that never picked one can wear the latest event's
+    "look",
     // review round 11: pairs and groups said as such ("6 pairs"), and a pre-order's items and order-by day
     "headUnit", "unitCount", "groupCount", "orderItems", "orderBy", "orderByDate", "stockUnit",
     // more than one price ("Adults $55 · Kids $35"); priceLine says it in words

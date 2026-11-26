@@ -32,10 +32,10 @@
   const handle = decodeURIComponent(location.pathname.split("/")[2] || "").toLowerCase(), Q = new URLSearchParams(location.search), year = /^20\d\d$/.test(Q.get("year") || "") ? Q.get("year") : String(new Date().getFullYear());
   const m = document.getElementById("m"); let d;
   try { const r = await fetch(`/api/public/host/${encodeURIComponent(handle)}/recap?year=${year}`); if (!r.ok) throw 0; d = await r.json(); } catch { m.innerHTML = `<p class="empty">No host by that name. <a href="/hosts">See every host</a></p>`; return; }
-  const h = d.host, first = String(h.name || "").split(/[\s']/)[0], A = window.EncoreAvatars;
+  const h = d.host, first = String(h.person || "").trim() || String(h.name || "").split(/[\s']/)[0], A = window.EncoreAvatars; // review round 12: "See Rin's page", the host's first name, not the club's first word
   document.documentElement.style.setProperty("--acc", /^#[0-9a-f]{6}$/i.test(h.theme.accent) ? h.theme.accent : "#C2553A");
   document.title = `${h.name}'s ${d.year} on Pottery Lab`;
-  const av = h.theme.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 58) : esc(h.emoji || "🎉");
+  const av = h.theme.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 58) : h.emoji && h.emoji !== "🎉" ? esc(h.emoji) : `<span style="display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#F2D48F;color:#1F1A17;font:600 22px/1 Fredoka,system-ui,sans-serif">${esc(String(first || h.name || "?").charAt(0).toUpperCase())}</span>`;
   const YRS = [...new Set([...(d.years || []), d.year])].sort(), years = YRS.length < 2 ? "" : YRS.map((y) => `<a href="?year=${y}" ${y === d.year ? 'aria-current="page"' : ""}>${y}</a>`).join("");
   if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Pottery Lab in ${d.year}. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
   const max = Math.max(1, ...d.months), M = "JFMAMJJASOND".split("");
@@ -44,7 +44,7 @@
     <div class="who"><span class="av">${av}</span><div><b>${esc(h.name)}</b><small>${esc(h.city)}</small></div></div>
     <div class="yr">${d.year}</div><p class="yr-sub">${esc(first)}'s year of <em>hosting</em></p>${window.Potto ? `<span class="potto-c">${window.Potto.svg("cheer", 118)}</span>` : ""}
     <div class="stats"><div class="st"><b>${d.events}</b><span>${d.events === 1 ? "gathering" : "gatherings"}</span></div><div class="st"><b>${d.guests}</b><span>people came</span></div>
-      <div class="st"><b>${d.returning}</b><span>came back again</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.longestStreak === 1 ? "week" : "weeks"} in a row, at best</span></div></div>
+      <div class="st"><b>${d.returning}</b><span>came back again</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, at best</span></div></div>
     <div class="bars" aria-label="Gatherings by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>
     ${d.busiestMonth ? `<p class="line">Busiest month: <b>${esc(d.busiestMonth.month)}</b>, with ${d.busiestMonth.n} ${d.busiestMonth.n === 1 ? "gathering" : "gatherings"}.</p>` : ""}
     ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.emoji)} ${esc(t.label)} ×${t.n}</span>`).join("")}</div>` : ""}

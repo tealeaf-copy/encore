@@ -245,3 +245,24 @@ html body :is(a.brand,a.es-brand,.es-rail .es-logo)>svg{width:24px;height:24px;f
 /* covers sit on the page with a hairline, not a thick ink frame and an offset shadow; notes are solid, not dashed */
 html body :is(.gxcover,.cov,.hcover){box-shadow:none!important;border-width:1px!important;border-color:var(--pl-line)!important}
 html body #gExample{border-style:solid!important;border-width:1px!important;border-color:var(--pl-line-strong)!important;background:var(--pl-sand-soft)!important}
+/* ---- UX loop round 1: the last sticker shadows on the invite and the app go calm. Cards that sit get a line; sheets
+   that float get the one soft shadow; a done reply pill is a quiet tint, not an offset block ---- */
+html body :is(.ev2-rsvp .pill.done,.ev-faq,.rail button[data-step][aria-current="step"]){box-shadow:none!important;border-width:1.5px!important}
+html body .ev-faq{border-color:var(--line)!important;border-radius:var(--r-md)!important}
+html body .rail button[data-step][aria-current="step"]{outline:1.5px solid var(--ink)!important}
+html body .pp{border:1.5px solid var(--ui-frame)!important;box-shadow:var(--shadow-sheet)!important}
+/* phones: the bottom tab bar already holds Feed, Discover, Sign in and Sign up, so the header's own links (which were
+   cut off at 320px) step aside; the header keeps the wordmark and its controls (the bell) */
+@media (max-width:860px){html body.es-has-tabs header nav > a:not(.bell):not([class*=bell]){display:none!important}}
+/* the host page's "Next up" card at 320px: the price stays on one line ("$15 a person") and the button keeps its words
+   together, so neither breaks beside the other (public/storefront.js owns the markup) */
+html body .nu-cta{flex-wrap:wrap;row-gap:12px}html body .nu-cta .nu-price{white-space:nowrap}html body .nu-cta :is(a,button){white-space:nowrap}
+/* Home's idea shelf for friends' hosts: four quiet tiles in two columns, the whole tile is the button (no second
+   "Host this" pill on every card) */
+html body #ideaLib.lib-casual .lib-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+html body #ideaLib.lib-casual .lib-card{padding:14px!important;border:1.5px solid var(--line)!important;border-radius:var(--r-md)!important;box-shadow:none!important;transform:none!important;background:var(--card)!important;cursor:pointer;min-height:0!important}
+html body #ideaLib.lib-casual .lib-card h3{font-size:var(--fs-16)!important;margin:8px 0 4px!important;line-height:1.25}
+html body #ideaLib.lib-casual .lib-card .lib-line{font-size:var(--fs-14)!important;color:var(--smoke)!important;margin:0!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+html body #ideaLib.lib-casual .lib-ic i{width:40px!important;height:40px!important}
+html body #ideaLib.lib-casual .lib-head p.note{margin:4px 0 0;font-size:var(--fs-14);color:var(--smoke)}
+@media (min-width:861px){html body #ideaLib.lib-casual .lib-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}

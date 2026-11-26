@@ -10,13 +10,13 @@
 :root{--ink:#1D1B18;--smoke:#5D564E;--paper:#F4F0E8;--card:#FBF9F5;--line:#E2DCD1;--ember:#9A4128}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "Instrument Sans",system-ui,-apple-system,sans-serif}
 main{max-width:920px;margin:0 auto;padding:24px 16px 80px}h1{font:600 28px/1.15 var(--sys-display);margin:0 0 4px}
-.tabs{display:flex;gap:8px;margin:16px 0}.tabs button{min-height:36px;border-radius:999px;border:1.5px solid #CFC6B8;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
+.tabs{display:flex;gap:8px;margin:16px 0}.tabs button{min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
 .tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .r{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px;display:grid;gap:6px}
 .r.hid{border-color:#E7C4B8;background:#FBF3EF}.meta{color:var(--smoke);font-size:13px}.t{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px}
 .r img{max-width:220px;max-height:220px;border-radius:12px;object-fit:cover}
-.acts{display:flex;gap:8px;flex-wrap:wrap}.acts button{min-height:36px;border-radius:999px;border:1.5px solid #CFC6B8;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
-.acts .hide{background:var(--ember);color:#fff;border-color:var(--ember)}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600;background:#ECE6DB}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.acts button{min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;padding:0 14px;cursor:pointer;font:600 14px/1 system-ui}
+.acts .hide{background:var(--ember);color:#fff;border-color:var(--ember)}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:13px;font-weight:600;background:#EFE6D8}
 </style>
 </head>
 <body>
@@ -34,11 +34,14 @@ main{max-width:920px;margin:0 auto;padding:24px 16px 80px}h1{font:600 28px/1.15 
   const who = (t) => { if (t.startsWith("person:")) { try { return atob(t.slice(7).replace(/-/g, "+").replace(/_/g, "/")); } catch { return t; } } return t; };
   async function draw() {
     const j = await (await fetch("/api/admin/reports?status=" + status, { credentials: "same-origin" })).json(), L = j.reports || [];
-    document.getElementById("list").innerHTML = L.length ? L.map((r) => `<article class="r${r.hidden ? " hid" : ""}" id="r-${esc(r.id)}">
-      <div><b>${esc(j.reasons[r.reason] || r.reason)}</b> on ${/^[aeiou]/i.test(r.type || "") ? "an" : "a"} ${esc(r.type)} <span class="pill">${esc(r.status)}</span>${r.hidden ? ' <span class="pill">hidden</span>' : ""}${r.count > 1 ? ` <span class="pill">${r.count} reports</span>` : ""}</div>
-      <div class="meta">${ago(r.at)} · ${esc(who(r.target))}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a>` : ""}${r.from ? " · from " + esc(r.from) : ""}</div>
-      ${r.target.startsWith("moment:") ? `<img src="${esc(r.target.slice(7))}" alt="Reported photo">` : ""}${r.text ? `<div class="t">${esc(r.text)}</div>` : ""}${r.note ? `<div class="t">Note: ${esc(r.note)}</div>` : ""}
-      <div class="acts">${r.hidden ? `<button type="button" data-a="restore" data-id="${esc(r.id)}">Restore</button>` : `<button type="button" class="hide" data-a="hide" data-id="${esc(r.id)}">Hide</button>`}<button type="button" data-a="dismiss" data-id="${esc(r.id)}">Dismiss</button></div></article>`).join("") : `<p class="meta">Nothing here.</p>`;
+    // one card per reported thing: every report on the same post, photo or person is grouped, newest first, with a preview
+    const G = new Map(); for (const r of L) { const g = G.get(r.target) || { ...r, reasons: new Map(), notes: [], froms: new Set(), n: 0 }; g.n++; g.reasons.set(r.reason, (g.reasons.get(r.reason) || 0) + 1); if (r.note) g.notes.push(r.note); if (r.from) g.froms.add(r.from); if (r.at > g.at) Object.assign(g, { at: r.at, id: r.id }); if (!g.text && r.text) g.text = r.text; G.set(r.target, g); }
+    const groups = [...G.values()].sort((a, b) => b.n - a.n || b.at - a.at);
+    document.getElementById("list").innerHTML = groups.length ? groups.map((r) => `<article class="r${r.hidden ? " hid" : ""}" id="r-${esc(r.id)}">
+      <div><b>${[...r.reasons].map(([k, n]) => esc(j.reasons[k] || k) + (n > 1 ? ` (${n})` : "")).join(", ")}</b> on a ${esc(r.type)}${r.hidden ? ' <span class="pill">hidden</span>' : ""}</div>
+      <div class="meta">${r.n > 1 ? `${r.n} reports · ` : ""}latest ${ago(r.at)} · ${esc(who(r.target))}${r.url ? ` · <a href="${esc(r.url)}" target="_blank" rel="noopener">Open it</a>` : ""}${r.froms.size ? " · from " + [...r.froms].slice(0, 3).map(esc).join(", ") + (r.froms.size > 3 ? ` and ${r.froms.size - 3} more` : "") : ""}</div>
+      ${r.target.startsWith("moment:") ? `<img src="${esc(r.target.slice(7))}" alt="Reported photo">` : ""}${r.text ? `<div class="t">${esc(r.text)}</div>` : !r.target.startsWith("moment:") ? `<div class="t meta">No preview. ${r.url ? "Open it to see what was reported." : "The report didn't include the text."}</div>` : ""}${r.notes.map((n) => `<div class="t">Note: ${esc(n)}</div>`).join("")}
+      <div class="acts">${r.hidden ? `<button type="button" data-a="restore" data-id="${esc(r.id)}">Restore</button>` : `<button type="button" class="hide" data-a="hide" data-id="${esc(r.id)}">${r.target.startsWith("person:") ? "Hide this account" : "Hide"}</button>`}<button type="button" data-a="dismiss" data-id="${esc(r.id)}">Dismiss${r.n > 1 ? " all" : ""}</button></div></article>`).join("") : `<p class="meta">Nothing to review. New reports land here.</p>`;
   }
   document.getElementById("list").onclick = async (e) => { const b = e.target.closest("[data-a]"); if (!b) return; b.disabled = true;
     await fetch("/api/admin/reports/" + b.dataset.id, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: b.dataset.a }) }); draw(); };

@@ -6442,7 +6442,9 @@ if(typeof cgHandle==="function"){ const _ch2=cgHandle; cgHandle=function(text){ 
   return _ch2(text) } }
 if(typeof cgChip==="function"){ const _cc2=cgChip; cgChip=function(v){ if(v==="notnow"){ const S=cgState(); S.msgs.push({who:"me",text:"Not now"}); cgSay(S,{text:"No problem. I'll bring it back up if it gets urgent.",mood:"side"}); return } if(v.startsWith("pbdo:")){ const x=(window.__pipI||[])[+v.slice(5)]; if(x){ draft=hydrate(x.e); draft.example=false; location.hash="#studio"; step=1; setTimeout(()=>{ renderStep(); x.acts[0][1]() },60) } return } return _cc2(v) } }
 // Home: brief above the composer for people with events; greeting names Potto
-if(typeof conciergeHTML==="function"){ const _ch3=conciergeHTML; conciergeHTML=function(){ let h=_ch3(); h=h.replace(/<p class="cg-hi"><span class="spark">✦<\/span> /,`<p class="cg-hi">${pipSVG("happy",96)}`).replace('<span class="spark">✦</span> Pottery Lab concierge',`${pipSVG("side",20)}<span class="vh">Ask ${PIP_NAME}</span>`).replace('placeholder="Describe an event, ask for ideas, or name a brand to see what they host"',`placeholder="Dumpling night for 8, Friday…"`); return (allEvents.some(e=>!e.example)?pipBriefHTML():"")+h } }
+if(typeof conciergeHTML==="function"){ const _ch3=conciergeHTML; conciergeHTML=function(){ let h=_ch3(); h=h.replace(/<p class="cg-hi"><span class="spark">✦<\/span> /,`<p class="cg-hi">${pipSVG("happy",96)}`).replace('<span class="spark">✦</span> Pottery Lab concierge',`${pipSVG("side",20)}<span class="vh">Ask ${PIP_NAME}</span>`).replace('placeholder="Describe an event, ask for ideas, or name a brand to see what they host"',`placeholder="Dumpling night for 8, Friday…"`); /* UX loop: the greeting and the ask box first, then Potto's list under them (one Potto on screen: the greeting's) */
+    const br=allEvents.some(e=>!e.example)?pipBriefHTML().replace(/(<div class="pb-head">)<svg[\s\S]*?<\/svg>/,"$1"):"", qi=h.indexOf('id="qsPanel"'), qe=qi<0?-1:h.indexOf("</section>",qi);
+    return qe<0?br+h:h.slice(0,qe+10)+br+h.slice(qe+10) } }
 { const _rp3=renderPrograms; renderPrograms=function(){ _rp3.apply(this,arguments); const el=$("#view-programs"); wirePipBrief(el) } }
 // Chief of staff speaks as Potto, asks before acting, and every action can be undone
 if(typeof cosHTML==="function"){ const _co=cosHTML; cosHTML=function(d){ return _co(d).replace(/<span class="cos-av">✦<\/span>/g,`<span class="cos-av pipav">${pipSVG(cosItems(d).some(x=>x.sev==="now")?"skeptic":"happy",40)}</span>`).replace('<small class="eyebrow">Your chief of staff</small>',isCasual(d)||window.__wsPersonal?"":'<small class="eyebrow">Your chief of staff</small>').replace("Your chief of staff",isCasual(d)||window.__wsPersonal?PIP_NAME:`${PIP_NAME}, your chief of staff`) } }
@@ -8105,7 +8107,9 @@ function applyPlace(d){ if(!d?.city) return; const tz=(CITY_TZ.find(([re])=>re.t
 // Round 4b: Potto's list leads Home; clean guest pages; your city by default; evidence before a "worth it"; a year view.
 // ==================================================================
 // Home: Potto's list first, then the brand
-{ const _dph2=drawPipHome; drawPipHome=async function(){ const r=await _dph2.apply(this,arguments); try{ const v=$("#view-programs"), w=$("#pipHome"), bh=$("#brandHome"); if(v&&w&&bh&&w.querySelector(".piplist")&&bh.compareDocumentPosition(w)&Node.DOCUMENT_POSITION_FOLLOWING) bh.before(w) }catch{} return r } }
+{ const _dph2=drawPipHome; drawPipHome=async function(){ const r=await _dph2.apply(this,arguments); try{ const v=$("#view-programs"), w=$("#pipHome"), bh=$("#brandHome"); if(v&&w&&bh&&w.querySelector(".piplist")&&bh.compareDocumentPosition(w)&Node.DOCUMENT_POSITION_FOLLOWING) bh.before(w)
+  /* Potto's list reads after the greeting and the ask box, never above the Start / How it works header */
+  const anchor=v&&w&&!bh?(v.querySelector("#qsPanel:not([hidden])")||v.querySelector(".hw-tabs")):null; if(anchor&&anchor.nextElementSibling!==w) anchor.after(w) }catch{} return r } }
 // "what should I do today?" gets Potto's list in the chat
 { const _cgh3=cgHandle; cgHandle=function(text){ const t=String(text||""); if(!window.__wsPersonal&&/what should i (?:do|work on)|what'?s (?:on )?my (?:list|plate)|to-?do|where do i start|what(?:'s| is) next\b|\btoday\b.*\?/i.test(t)&&!/idea|brainstorm/i.test(t)){ const S=cgState(); S.msgs.push({who:"me",text:t});
       const I=pipListItems(window.__checksAll||[]); S.msgs.push({who:"enc",text:I.length?`Here's what I'd do, in order:\n${I.map((x,i)=>`${i+1}. ${String(x.t).replace(/[.\s]+$/,"")}. ${x.w}`).join("\n")}\n\nEach one has a button on Home that does the legwork.`:"Nothing needs you right now. Want an idea for the next event? Ask me to brainstorm."}); cgSave(S); drawConcierge?.(); return } return _cgh3.apply(this,arguments) } }
@@ -8878,7 +8882,7 @@ async function drawFaq(e,host){ try{ if(!e?.id||!host) return; const isHost=!!wi
 
 // a full event: "I'm in" joins the waitlist, and the buttons say so
 function gSendLabel(){ const e=window.__gEv; if(!e||e.stage==="interest") return; const v=document.querySelector('#gResp button[aria-pressed="true"]')?.dataset.v||"going", full=!!window.__gFull, s=document.getElementById("g-send");
-  if(s&&!s.disabled&&!s.dataset.exOff){ const want=e.approvalRequired?"Ask to join":v==="going"?(full?"Join waitlist":"I'm in"):"Send"; if(s.textContent.trim()!==want) s.textContent=want } if(e.approvalRequired) return;
+  if(s&&!s.disabled&&!s.dataset.exOff){ const want=e.approvalRequired?"Ask to join":v==="going"&&full?"Join waitlist":"Send"; /* one "I'm in": the choice above says it, this button sends it */ if(s.textContent.trim()!==want) s.textContent=want } if(e.approvalRequired) return;
   const gc=document.querySelector('#gResp [data-v="going"]'); if(gc){ if(full){ if(!gc.dataset.was) gc.dataset.was=gc.textContent; gc.textContent="Join waitlist" } else if(gc.dataset.was){ gc.textContent=gc.dataset.was; delete gc.dataset.was } }
   document.querySelectorAll("#gBar button,#gTopCta").forEach(gb=>{ if(/^(I'm in|Join waitlist)$/.test(gb.textContent.trim())) gb.textContent=full?"Join waitlist":"I'm in" }) }
 document.addEventListener("click",ev=>{ if(ev.target.closest?.("#gResp button")) setTimeout(()=>{ try{ gSendLabel() }catch{} },0) });
@@ -9011,7 +9015,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return; document.queryS
 #view-guest.ev2 .invite.gx{grid-template-rows:auto!important;align-items:start}
 #view-guest.ev2 .invite.gx > .in{grid-row:1!important;grid-column:1}
 #view-guest.ev2 .invite.gx > .ev2-side{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:16px;position:sticky;top:20px}
-#view-guest.ev2 .ev2-side > .gxcover{aspect-ratio:4/3;height:auto;border:2px solid var(--pl-ink);border-radius:22px;box-shadow:6px 6px 0 var(--pl-ink);overflow:hidden;position:relative}
+#view-guest.ev2 .ev2-side > .gxcover{aspect-ratio:4/3;height:auto;border:var(--bw,1.5px) solid var(--line);border-radius:var(--r-lg,24px);box-shadow:none;overflow:hidden;position:relative}
 #view-guest.ev2 .ev2-side > .ev2-rsvp{grid-column:auto;grid-row:auto}
 @media (max-width:860px){#view-guest.ev2 .invite.gx > .ev2-side{grid-column:1;grid-row:1;position:static}#view-guest.ev2 .invite.gx > .in{grid-row:2!important}}
 #view-guest.ev2 .ev2-rs > *{max-width:none!important}
@@ -9034,7 +9038,7 @@ html body .ev2-chat > .gk-grow{max-width:none!important;width:100%;box-sizing:bo
 .ev2 #gForm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;background:transparent;border:0;box-shadow:none;padding:28px 0 0;border-top:1px solid var(--line,var(--pl-line));border-radius:0}
 .ev2 #gForm > #whoGoing,.ev2 #gForm > #evFaq{grid-column:1}
 .ev2 #gForm > .ev2-rs{grid-column:2;grid-row:1/span 3;display:flex;flex-direction:column;gap:16px;min-width:0}
-.ev2 .ev2-rs > .stack{background:#fff;border:2px solid var(--pl-ink);border-radius:22px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px}
+.ev2 .ev2-rs > .stack{background:#fff;border:var(--bw,1.5px) solid var(--line);border-radius:var(--r-lg,24px);box-shadow:none;padding:22px}
 .ev2 #gForm > p.note{display:none}
 .ev2 .gk-grow{max-width:none;margin:12px 0 0;padding:40px 20px;text-align:center;border-radius:28px}
 @media (max-width:860px){.ev2-rsvp{display:none!important}.ev2 .invite.gx{grid-template-columns:minmax(0,1fr);column-gap:0}.ev2 .invite.gx > .gxcover{grid-column:1;grid-row:1}.ev2 .invite.gx > .in{grid-column:1;grid-row:2}.ev2-rsvp{grid-column:1;grid-row:3;position:sticky;bottom:12px;z-index:5}
@@ -9161,12 +9165,13 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
 #view-guest.ev2 .gk .gk-row > div > b{display:none}
 #view-guest.ev2 .gk .gk-row p{margin:0;font-size:16px;font-weight:600}
 /* one card style for every section */
-#view-guest.ev2 #whoGoing,#view-guest.ev2 #evFaq,#view-guest.ev2 #gForm > .ev2-rs,#view-guest.ev2 .in .gk-follow,html body .ev2-chat > #gchat,html body .ev2-chat > .gk-grow,html body .ev2-chat > section.ev2-more{background:#fff!important;border:2px solid var(--pl-ink)!important;border-radius:20px!important;box-shadow:5px 5px 0 var(--pl-ink)!important;padding:22px!important;margin:0!important}
-#view-guest.ev2 #whoGoing h4,#view-guest.ev2 #evFaq h4,.ev2-more h4{font:700 20px/1.2 var(--sys-display);margin:0 0 12px}
-#view-guest.ev2 .wg-cards{gap:0 24px!important}#view-guest.ev2 .wg-cards li{box-shadow:none!important;border:0!important;border-top:1.5px solid var(--pl-line)!important;border-radius:0!important;background:transparent!important;padding:12px 0!important}
+#view-guest.ev2 #whoGoing,#view-guest.ev2 #evFaq,#view-guest.ev2 #gForm > .ev2-rs,#view-guest.ev2 .in .gk-follow,html body .ev2-chat > #gchat,html body .ev2-chat > .gk-grow,html body .ev2-chat > section.ev2-more{background:#fff!important;border:var(--bw,1.5px) solid var(--line)!important;border-radius:var(--r-lg,24px)!important;box-shadow:none!important;padding:22px!important;margin:0!important}
+#view-guest.ev2 #whoGoing h4,#view-guest.ev2 #evFaq h4,.ev2-more h4{font:700 20px/1.2 Fredoka,"Instrument Sans",system-ui;margin:0 0 12px}
+#view-guest.ev2 .wg-cards{gap:0 24px!important}#view-guest.ev2 .wg-cards li{box-shadow:none!important;border:0!important;border-top:1.5px solid #E4D9C8!important;border-radius:0!important;background:transparent!important;padding:12px 0!important}
 /* the RSVP card: ticket, two buttons in a row, then plans changed */
-#view-guest.ev2 #gForm > .ev2-rs{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start}
-#view-guest.ev2 .ev2-rs > *{flex:0 0 100%;min-width:0}
+#view-guest.ev2 #gForm > .ev2-rs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:12px}
+#view-guest.ev2 .ev2-rs > *{flex:none;min-width:0;max-width:100%;box-sizing:border-box}
+#view-guest.ev2 .ev2-rs .gchat,#view-guest.ev2 .ev2-rs a.gchat-go{min-width:0;max-width:100%;overflow:hidden}
 #view-guest.ev2 .ev2-rs > .stack{border:0!important;box-shadow:none!important;padding:0!important;background:none!important}
 #view-guest.ev2 .ev2-rs > .ticket{border:0!important;box-shadow:none!important;background:#F3FAF4!important;border-radius:14px!important;padding:16px!important}
 #view-guest.ev2 .ev2-rs > #plansLink,#view-guest.ev2 .ev2-rs > #socialConf{flex:0 0 auto;width:auto!important;margin:0!important}
@@ -9762,10 +9767,10 @@ if(location.pathname==="/g"){ const s=document.createElement("style"); s.textCon
 // tapping one starts planning it.
 // ==================================================================
 { const _ilh=ideaLibraryHTML; ideaLibraryHTML=function(){ if(!window.__wsPersonal) return _ilh.apply(this,arguments);
-    const F=feed().filter(x=>x.audience==="friends"&&!x.peer).slice(0,6); if(!F.length) return `<section class="lib" id="ideaLib" hidden></section>`;
-    return `<section class="lib" id="ideaLib"><div class="lib-head"><div><h2>Steal an idea</h2></div></div>
+    const F=feed().filter(x=>x.audience==="friends"&&!x.peer).slice(0,4); if(!F.length) return `<section class="lib" id="ideaLib" hidden></section>`;
+    return `<section class="lib lib-casual" id="ideaLib"><div class="lib-head"><div><h2>Ideas to try</h2><p class="note">Tap one and Potto fills in the plan.</p></div></div>
       <div class="lib-grid">${F.map(x=>`<article class="lib-card" tabindex="0" role="button" style="--tint:#F6E7D8" data-casualidea="${esc(x.name)}" data-line="${esc(x.line||"")}"><span class="lib-ic lib-art" aria-hidden="true">${(()=>{ /* the idea's line drawing on its pastel, not an emoji tile */ const A=window.EventArt; if(!A) return ""; const k=A.kindOf({title:x.name,activity:x.format}), t=A.toneOf({id:x.name},k); return `<i style="background:${A.PASTELS[t]}">${A.drawing(k,A.SPOT[t])}</i>` })()}</span><h3>${esc(x.name)}</h3>
-        <p class="lib-line">${esc(x.line)}</p><div class="lib-foot"><span class="lib-meta"></span><span class="btn sm">Host this</span></div></article>`).join("")}</div></section>` } }
+        <p class="lib-line">${esc(x.line)}</p></article>`).join("")}</div></section>` } }
 document.addEventListener("click",ev=>{ const c=ev.target.closest?.("[data-casualidea]"); if(!c) return; ev.preventDefault(); ev.stopPropagation(); try{ const nm=c.dataset.casualidea; quickStart(`${nm}: ${c.dataset.line||"with friends"}`); try{ draft.name=draft.pubTitle=nm; const w=document.getElementById("wzName"); if(w) w.value=nm; if(!draft.startTime){ const m=String(c.dataset.line||"").match(/\bat (\d{1,2})(?::(\d\d))?\s*(am|pm)?/i); if(m){ let hh=+m[1]; if(/pm/i.test(m[3]||"")&&hh<12) hh+=12; else if(!m[3]&&hh>=1&&hh<=6) hh+=12; draft.startTime=String(hh).padStart(2,"0")+":"+(m[2]||"00"); const t=document.getElementById("wzTime"); if(t) t.value=draft.startTime } } }catch{} }catch(err){ console.warn(err) } },true);
 document.addEventListener("keydown",ev=>{ if(ev.key!=="Enter") return; const c=ev.target.closest?.("[data-casualidea]"); if(c) c.click() },true);
 
@@ -10806,11 +10811,11 @@ pre.ck-msg{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
 .dz-f{display:block;grid-column:1/-1}.dz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:6px}.dz-card{display:flex;flex-direction:column;gap:6px;align-items:stretch;padding:8px;border-radius:14px;border:1.5px solid var(--line);background:#fff;cursor:pointer;font:inherit;text-align:left}.dz-card.on{border-color:var(--thac,var(--pl-accent));box-shadow:0 0 0 2px var(--thac,var(--pl-accent))}.dz-sw{position:relative;height:44px;border-radius:9px;background:var(--thbg);border:1px solid rgba(0,0,0,.08);overflow:hidden}.dz-sw i{position:absolute;left:8px;top:9px;width:55%;height:7px;border-radius:4px;background:var(--thfg)}.dz-sw em{position:absolute;right:8px;bottom:8px;width:26px;height:12px;border-radius:999px;background:var(--thac)}.dz-card b{font-size:13px}
 .friends-rail button[hidden]{display:none!important}
 .wiz-bg{position:fixed;inset:0;z-index:9000;background:rgba(31,26,23,.45);display:flex;align-items:center;justify-content:center;padding:16px}
-.wiz{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--pl-surface);border:2.5px solid var(--pl-ink);border-radius:24px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px 22px 18px;color:var(--pl-ink)}
-.wiz h2{font:600 28px/1.15 var(--sys-display);margin:6px 0 6px}.wiz .note{color:var(--pl-soft);margin:0 0 12px}
-.wiz-x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:28px;cursor:pointer;color:var(--pl-soft)}
-.wiz-dots{list-style:none;display:flex;gap:6px;padding:0;margin:0 30px 10px 0;flex-wrap:wrap}.wiz-dots li{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--pl-muted);padding:3px 9px 3px 3px;border-radius:999px;background:#F3EDE5}.wiz-dots li span{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1.5px solid #D8CCBF;font-weight:700;font-size:13px}.wiz-dots li.on{background:var(--pl-sand);color:var(--pl-ink);font-weight:600}.wiz-dots li.on span{border-color:var(--pl-ink)}.wiz-dots li.done span{background:#2F7A4F;border-color:#2F7A4F;color:#fff}
-.wiz textarea,.wiz input:not([type=radio]):not([type=checkbox]):not([type=file]){width:100%;box-sizing:border-box;font-weight:400;font-size:16px;line-height:1.4;font-family:inherit;padding:12px 14px;border:2px solid var(--pl-ink);border-radius:14px;background:#fff;color:var(--pl-ink)}
+.wiz{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--card);border:var(--bw,1.5px) solid var(--ui-frame);border-radius:var(--r-lg,24px);box-shadow:var(--shadow-sheet);padding:22px 22px 18px;color:#1F1A17}
+.wiz h2{font:600 28px/1.15 "Fredoka","Instrument Sans",system-ui,sans-serif;margin:6px 0 6px}.wiz .note{color:#6F6259;margin:0 0 12px}
+.wiz-x{position:absolute;top:10px;right:12px;border:0;background:none;font-size:28px;cursor:pointer;color:#6F6259}
+.wiz-dots{list-style:none;display:flex;gap:6px;padding:0;margin:0 30px 10px 0;flex-wrap:wrap}.wiz-dots li{display:flex;align-items:center;gap:6px;font-size:13px;color:#8A7D73;padding:3px 9px 3px 3px;border-radius:999px;background:#F3EDE5}.wiz-dots li span{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1.5px solid #D8CCBF;font-weight:700;font-size:13px}.wiz-dots li.on{background:#FFE08A;color:#1F1A17;font-weight:600}.wiz-dots li.on span{border-color:#1F1A17}.wiz-dots li.done span{background:#2F7A4F;border-color:#2F7A4F;color:#fff}
+.wiz textarea,.wiz input:not([type=radio]):not([type=checkbox]):not([type=file]){width:100%;box-sizing:border-box;font-weight:400;font-size:16px;line-height:1.4;font-family:inherit;padding:12px 14px;border:2px solid #1F1A17;border-radius:14px;background:#fff;color:#1F1A17}
 .wiz .f{display:grid;gap:6px;margin:10px 0;font-weight:600;font-size:14px}.wiz-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .wiz-choice{display:grid;gap:8px;margin:10px 0}.wiz-choice label{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:12px;border:2px solid var(--pl-line);border-radius:16px;cursor:pointer;background:#fff}.wiz-choice label:has(input:checked){border-color:var(--pl-ink);background:#FFF5D6}.wiz-choice input{grid-row:span 2}.wiz-choice span{font-size:13px;color:var(--pl-soft);grid-column:2}
 .wiz-btns{display:flex;justify-content:space-between;gap:10px;margin-top:16px;align-items:center}.wiz .err{color:#B3261E;font-size:14px;min-height:1em;margin:8px 0 0}

@@ -11,20 +11,30 @@
   // ---- the pairings: a display face and a body face that work together ----
   // dw: display weight, dls: display letter spacing, dk: display size factor (wide or small faces are scaled to sit right)
   const PAIRS = {
-    house: { label: "Pottery Lab", note: "A sturdy serif for titles, Plex Sans for the rest", display: "IBM Plex Serif", body: "IBM Plex Sans", dfb: "Georgia, serif", bfb: "system-ui, -apple-system, sans-serif", dw: 600, dls: "-.01em", dk: 1, q: "IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600" },
-    supper: { label: "Supper club", note: "A classic serif", display: "Playfair Display", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "-.005em", dk: 1, q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
-    florist: { label: "Flower shop", note: "Soft and elegant", display: "Cormorant Garamond", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", thin: true, dw: 600, dls: "0", dk: 1.1, q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700" },
-    pantry: { label: "Pantry", note: "A warm slab", display: "Zilla Slab", body: "Work Sans", dfb: 'Rockwell, "Roboto Slab", Georgia, serif', bfb: "system-ui, sans-serif", dw: 700, dls: "-.005em", dk: 1.04, q: "Zilla+Slab:wght@600;700&family=Work+Sans:wght@400;500;600" },
-    studio: { label: "Studio", note: "Clean and modern", display: "Space Grotesk", body: "Inter", dfb: "system-ui, sans-serif", bfb: "system-ui, sans-serif", dw: 700, dls: "-.02em", dk: 1, q: "Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600" },
-    market: { label: "Market day", note: "Loud and bold", display: "Archivo Black", body: "Archivo", dfb: '"Arial Black", system-ui, sans-serif', bfb: "system-ui, sans-serif", dw: 400, dls: "-.01em", dk: 0.92, q: "Archivo+Black&family=Archivo:wght@400;500;600" },
-    terminal: { label: "Terminal", note: "Mono headings, plain text", display: "IBM Plex Mono", body: "IBM Plex Sans", dfb: "ui-monospace, Menlo, monospace", bfb: "system-ui, sans-serif", dw: 600, dls: "-.02em", dk: 0.92, q: "IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600" },
-    arcade: { label: "Arcade", note: "8-bit headings", display: "Silkscreen", body: "Inter", dfb: "ui-monospace, monospace", bfb: "system-ui, sans-serif", dw: 400, dls: "0", dk: 0.78, q: "Silkscreen:wght@400;700&family=Inter:wght@400;500;600" },
+    house: { title: "serif", label: "Pottery Lab", note: "A sturdy serif for titles, Plex Sans for the rest", display: "IBM Plex Serif", body: "IBM Plex Sans", dfb: "Georgia, serif", bfb: "system-ui, -apple-system, sans-serif", dw: 600, dls: "-.01em", dk: 1, q: "IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600" },
+    supper: { title: "serif", label: "Supper club", note: "A classic serif", display: "Playfair Display", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", dw: 600, dls: "-.005em", dk: 1, q: "Playfair+Display:wght@600;700&family=Lato:wght@400;700" },
+    florist: { title: "serif", label: "Flower shop", note: "Soft and elegant", display: "Cormorant Garamond", body: "Lato", dfb: "Georgia, serif", bfb: "system-ui, sans-serif", thin: true, dw: 600, dls: "0", dk: 1.1, q: "Cormorant+Garamond:wght@600;700&family=Lato:wght@400;700" },
+    pantry: { title: "serif", label: "Pantry", note: "A warm slab", display: "Zilla Slab", body: "Work Sans", dfb: 'Rockwell, "Roboto Slab", Georgia, serif', bfb: "system-ui, sans-serif", dw: 700, dls: "-.005em", dk: 1.04, q: "Zilla+Slab:wght@600;700&family=Work+Sans:wght@400;500;600" },
+    studio: { title: "sans", label: "Studio", note: "Clean and modern", display: "Space Grotesk", body: "Inter", dfb: "system-ui, sans-serif", bfb: "system-ui, sans-serif", dw: 700, dls: "-.02em", dk: 1, q: "Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600" },
+    market: { title: "sans", label: "Market day", note: "Loud and bold", display: "Archivo Black", body: "Archivo", dfb: '"Arial Black", system-ui, sans-serif', bfb: "system-ui, sans-serif", dw: 400, dls: "-.01em", dk: 0.92, q: "Archivo+Black&family=Archivo:wght@400;500;600" },
+    terminal: { title: "sans", label: "Terminal", note: "Mono headings, plain text", display: "IBM Plex Mono", body: "IBM Plex Sans", dfb: "ui-monospace, Menlo, monospace", bfb: "system-ui, sans-serif", dw: 600, dls: "-.02em", dk: 0.92, q: "IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600" },
+    arcade: { title: "sans", label: "Arcade", note: "8-bit headings", display: "Silkscreen", body: "Inter", dfb: "ui-monospace, monospace", bfb: "system-ui, sans-serif", dw: 400, dls: "0", dk: 0.78, q: "Silkscreen:wght@400;700&family=Inter:wght@400;500;600" },
   };
   // ---- reading guardrails, whatever the kit (docs/brand-kit.md "Host brand kits") ----
   // body text never under 16px; the display face only for titles of 20px and up (24px for a thin or condensed face, the
   // "thin" pairs); smaller headings, meta, buttons and body are the body face, which is always a sturdy text face: never
   // a script, a hairline or a display-only face
   const GUARD = { bodyMin: 16, displayMin: 20, thinDisplayMin: 24, bodyNever: /\b(script|hand|brush|cursive|hairline|thin|display|black|silkscreen|pixel|mono)\b/i };
+  // ---- the guest invite is Field Notes whatever the kit (docs/brand-kit.md): a kit brings its accent and cover there, and
+  // its title face only through the sturdy set (IBM Plex Serif 600 or IBM Plex Sans 600; a thin, high-contrast, display or
+  // pixel face reads as the nearest of the two). The page stays linen, the text ink, the corners 6px, and the date, body
+  // and buttons IBM Plex Sans. Read at draw time, so saved kits keep their data. ----
+  const INVITE_FACES = { serif: '"IBM Plex Serif", Georgia, serif', sans: '"IBM Plex Sans", system-ui, -apple-system, sans-serif' };
+  const INVITE_Q = "IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600";
+  /** The sturdy face ("serif" or "sans") a kit's titles take on an invite. */
+  const inviteFace = (k) => (PAIRS[k?.pair]?.title === "sans" ? "sans" : "serif");
+  /** Whether this page is a guest invite: the light invite (/e, /i) or the full invite (/g). */
+  const onInvite = () => typeof location !== "undefined" && /^\/(?:[ei]\/[A-Za-z0-9_-]{2,80}\/?$|g$)/.test(location.pathname || "");
   const bodyOk = (P) => !!P && !GUARD.bodyNever.test(P.body);
   // ---- starter kits, named by vibe ----
   const STARTERS = {
@@ -85,16 +95,23 @@
 
   // ---- fonts and variables ----
   const stack = (name, fb) => `"${name}", ${fb}`;
-  function fonts(k) { const P = PAIRS[k?.pair] || PAIRS.house; return { display: stack(P.display, P.dfb), body: stack(P.body, P.bfb), dw: P.dw, dls: P.dls, dk: P.dk, href: `https://fonts.googleapis.com/css2?family=${P.q}&display=swap`, families: [P.display, P.body] }; }
+  function fonts(k, invite = onInvite()) { const P = PAIRS[k?.pair] || PAIRS.house;
+    if (invite) { const f = inviteFace(k), fam = f === "sans" ? "IBM Plex Sans" : "IBM Plex Serif"; return { display: INVITE_FACES[f], body: INVITE_FACES.sans, dw: 600, dls: f === "sans" ? "-.015em" : "-.01em", dk: 1, href: `https://fonts.googleapis.com/css2?family=${INVITE_Q}&display=swap`, families: [fam, "IBM Plex Sans"] }; }
+    return { display: stack(P.display, P.dfb), body: stack(P.body, P.bfb), dw: P.dw, dls: P.dls, dk: P.dk, href: `https://fonts.googleapis.com/css2?family=${P.q}&display=swap`, families: [P.display, P.body] }; }
   /** The --kit-* variables for a kit, as an object. */
-  function vars(k) { k = k && PAIRS[k.pair] ? k : { ...pick(HOUSE), starter: "house" }; const T = derive(k), F = fonts(k), soft = k.corners !== "crisp";
+  function vars(k, invite = onInvite()) { k = k && PAIRS[k.pair] ? k : { ...pick(HOUSE), starter: "house" }; const T = derive(k), F = fonts(k, invite), soft = k.corners !== "crisp";
+    if (invite) { const C = CC(), bgs = [HOUSE.page, HOUSE.surface], btn = C ? C.buttonFor(T.accent, bgs) : T.btn; let at = T.accentText; if (C) for (let i = 0; i < 12 && C.worst(at, bgs) < 4.5; i++) at = C.mix(at, HOUSE.ink, 0.15);
+      return { "--kit-display": F.display, "--kit-body": F.body, "--kit-dw": "600", "--kit-dls": F.dls, "--kit-dk": "1", "--kit-display-min": "24px", "--kit-body-min": GUARD.bodyMin + "px",
+        "--kit-page": HOUSE.page, "--kit-surface": HOUSE.surface, "--kit-ink": HOUSE.ink, "--kit-soft": "#444845", "--kit-line": "#CFC8B9", "--kit-line-strong": HOUSE.ink,
+        "--kit-accent": T.accent, "--kit-accent-text": C && C.worst(at, bgs) >= 4.5 ? at : HOUSE.accent, "--kit-accent2": T.accent2, "--kit-btn": btn, "--kit-on-btn": C ? C.onColor(btn) : T.onBtn, "--kit-tint": C ? C.mix(HOUSE.surface, T.accent, 0.06) : HOUSE.surface,
+        "--kit-r-card": "6px", "--kit-r-sheet": "6px", "--kit-r-btn": "6px", "--kit-r-chip": "6px", "--kit-r-field": "6px" }; }
     return { "--kit-display": F.display, "--kit-body": F.body, "--kit-dw": String(F.dw), "--kit-dls": F.dls, "--kit-dk": String(F.dk), "--kit-display-min": (PAIRS[k.pair]?.thin ? GUARD.thinDisplayMin : GUARD.displayMin) + "px", "--kit-body-min": GUARD.bodyMin + "px",
       "--kit-page": T.page, "--kit-surface": T.surface, "--kit-ink": T.ink, "--kit-soft": T.soft, "--kit-line": T.line, "--kit-line-strong": T.lineStrong,
       "--kit-accent": T.accent, "--kit-accent-text": T.accentText, "--kit-accent2": T.accent2, "--kit-btn": T.btn, "--kit-on-btn": T.onBtn, "--kit-tint": T.tint,
       "--kit-r-card": soft ? "16px" : "6px", "--kit-r-sheet": soft ? "24px" : "10px", "--kit-r-btn": soft ? "12px" : "8px", "--kit-r-chip": soft ? "999px" : "6px", "--kit-r-field": soft ? "12px" : "6px" }; }
   const cssText = (k) => Object.entries(vars(k)).map(([n, v]) => `${n}:${String(v).replace(/[;{}<>]/g, "")}`).join(";");
   /** The classes a page wears for a kit (on <html>). */
-  const classes = (k) => ["kit-on", "kit-" + (k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), ...(PAIRS[k?.pair]?.thin ? ["kit-thin"] : []), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
+  const classes = (k, invite = onInvite()) => ["kit-on", "kit-" + (invite || k?.corners === "crisp" ? "crisp" : "soft"), "kit-btn-" + (!invite && k?.buttons === "outline" ? "outline" : "pill"), "kit-pair-" + (PAIRS[k?.pair] ? k.pair : "house"), ...(!invite && PAIRS[k?.pair]?.thin ? ["kit-thin"] : []), ...(invite ? ["kit-invite"] : []), "kit-cover-" + (ENUMS.cover.includes(k?.cover) ? k.cover : "lineart"), ...(isHouse(k) ? ["kit-house"] : [])];
 
   // ---- event looks inherit the kit ----
   const HEX = /^#[0-9a-f]{6}$/i;
@@ -121,7 +138,7 @@
     for (const [re, k, what] of KINDS) if (re.test(text)) return { starter: k, why: `for ${what}` };
     return { starter: "house", why: "the house look" }; }
 
-  const API = { GUARD, bodyOk, PAIRS, STARTERS, ENUMS, HOUSE, FROM_FONT, fromTheme, themeOf, starter, kitOf, isHouse, derive, checks, fonts, vars, cssText, classes, lookFor, ownFont, hasLook, suggest };
+  const API = { GUARD, bodyOk, INVITE_FACES, inviteFace, onInvite, PAIRS, STARTERS, ENUMS, HOUSE, FROM_FONT, fromTheme, themeOf, starter, kitOf, isHouse, derive, checks, fonts, vars, cssText, classes, lookFor, ownFont, hasLook, suggest };
 
   // ================= the browser: set once per page =================
   if (typeof document === "undefined" || typeof window === "undefined") { root.EncoreBrandKit = API; return; }
@@ -159,7 +176,7 @@
   // ... and after: a title with no font of its own takes the kit's display face; an event's own font leads the page's headings
   function after(el, e) { const k = el === document.body ? current : mineKit || current; if (!k || !el?.classList) return; const L = e?.look || {};
     if (el.classList.contains("lk-on") && !ownFont(L)) { const F = fonts(k); if (el !== document.body) loadFonts(k); el.style.setProperty("--lk-title", el === document.body ? "var(--kit-display)" : F.display); /* a preview frame in the app: the face itself, the app isn't dressed in the kit */ el.style.setProperty("--lk-tw", String(F.dw)); el.style.setProperty("--lk-tls", F.dls); el.style.setProperty("--lk-tk", String(F.dk)); el.classList.remove("lk-up"); }
-    if (el === document.body) { const R = document.documentElement, LK = window.EncoreLooks, F = ownFont(L) && LK?.FONTS?.[L.titleFont]; if (F) R.style.setProperty("--kit-display", F.css); else if (current) R.style.setProperty("--kit-display", fonts(current).display); } }
+    if (el === document.body) { const R = document.documentElement, LK = window.EncoreLooks, F = ownFont(L) && LK?.FONTS?.[L.titleFont] && (onInvite() && LK.titleFace ? LK.titleFace(L.titleFont) : LK.FONTS[L.titleFont]); if (F) R.style.setProperty("--kit-display", F.css); else if (current) R.style.setProperty("--kit-display", fonts(current).display); } }
   /** The storefront's own variables, pointed at the kit (public/storefront.js apply). */
   const storeTokens = () => ({ "--accent": "var(--kit-accent)", "--bg": "var(--kit-page)", "--card": "var(--kit-surface)", "--ink": "var(--kit-ink)", "--soft": "var(--kit-soft)", "--line": "var(--kit-line)", "--brand": "var(--kit-btn)", "--brand2": "var(--kit-accent-text)", "--on-brand": "var(--kit-on-btn)", "--c": "var(--kit-accent)", "--pink": "var(--kit-tint)", "--radius": "var(--kit-r-btn)", "--head": "var(--kit-display)", "--body": "var(--kit-body)" });
   /** For /x pages and anything else that knows its host: dress the page. */

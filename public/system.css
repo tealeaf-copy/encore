@@ -63,6 +63,24 @@
 }
 /* ==== end of brand tokens ==== */
 
+/* ---- the guest invite's type scale (the light invite /e and the full invite /g; rules in public/slots.css "Field Notes
+   invite"). One scale, ranked: kicker, title, when, place, body, meta. Sizes / line heights in px, spacing on a 4/8 rhythm.
+   A look or brand kit may change only the accent, the cover art and the title face (sturdy set: --inv-title-face) ---- */
+:root{
+  --inv-kicker:500 12px/16px var(--pl-font-mono);--inv-kicker-track:.06em;
+  --inv-title-face:var(--pl-font-serif);--inv-title-size:32px;--inv-title-lh:36px;
+  --inv-when:600 18px/24px var(--pl-font-text);
+  --inv-place:400 16px/22px var(--pl-font-text);
+  --inv-body:400 17px/27px var(--pl-font-text);--inv-measure:60ch;
+  --inv-meta:400 14px/20px var(--pl-font-text);
+  --inv-label:600 15px/20px var(--pl-font-text);
+  --inv-btn:600 16px/20px var(--pl-font-text);
+  --inv-bar-date:600 16px/20px var(--pl-font-text);--inv-bar-sub:400 13px/18px var(--pl-font-text);
+  --inv-field-h:48px;--inv-btn-h:52px;--inv-gap-field:16px;--inv-gap-help:4px;
+  --inv-bar-h:72px;--inv-safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (min-width:861px){:root{--inv-title-size:40px;--inv-title-lh:44px}}
+
 :root{
   /* the type roles pages use: display for headings 20px and up, title for names, buttons and small titles */
   --sys-sans:var(--pl-font-text);

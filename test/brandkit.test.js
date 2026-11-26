@@ -202,7 +202,8 @@ test("rendered: a host page and its invite use at most two families, the kit's; 
       while (w.nextNode()) { const tx = w.currentNode, el = tx.parentElement; if (!tx.textContent.trim() || !el || el.closest("svg,script,style,[hidden],.kit-off")) continue; const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue;
         if (/^[\p{Extended_Pictographic}\s‍️·|•]+$/u.test(tx.textContent)) continue; S.add(getComputedStyle(el).fontFamily.split(",")[0].replace(/["']/g, "").trim()); } return [...S]; });
     for (const url of ["/@bo-render", "/e/bkdin"]) { await p.goto(srv.base + url, { waitUntil: "load" }); await p.waitForTimeout(1500);
-      const F = await families(); assert.ok(F.length <= 2, url + ": " + F.join(", ")); for (const f of F) assert.ok(["Playfair Display", "Lato"].includes(f), url + ": " + f); }
+      // the host page wears the kit's pair; the guest invite is Field Notes: the kit's serif reads as IBM Plex Serif, the rest Plex Sans
+      const F = await families(), ok = url.startsWith("/e/") ? ["IBM Plex Serif", "IBM Plex Sans", "IBM Plex Mono"] : ["Playfair Display", "Lato"]; assert.ok(F.length <= ok.length, url + ": " + F.join(", ")); for (const f of F) assert.ok(ok.includes(f), url + ": " + f); }
     // the Next up card: the title in the display face; chips, the menu and the price in the body face, the menu at body size
     await p.goto(srv.base + "/@bo-render", { waitUntil: "load" }); await p.waitForSelector("#nextUp .nu-menu li", { timeout: 8000 });
     const nu = await p.evaluate(() => Object.fromEntries([".nu-title", ".nu-menu li", ".nu-price", ".nu-meta span"].map((s) => [s, getComputedStyle(document.querySelector("#nextUp " + s)).fontFamily.split(",")[0].replace(/"/g, "")])));

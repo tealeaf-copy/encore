@@ -62,7 +62,20 @@
   // The reply form, kept short: name, how to reach you, the reply, and food only if there's food. Everything else waits in
   // the one disclosure; one name toggle, next to the name; the severe-allergy box only under a food answer; "Save my
   // details on this phone" a quiet line under Send. Runs on every redraw and moves nothing that is already in place.
-  function tidyForm() { const more = $("#slQuietForm .pl-more-in");
+  // After replying on /g: one calm "You're in" card. Invite friends, Add to calendar (the page's own link moves in, so there
+  // is one) and the group chat; the name toggle as a quiet row; "Plans changed? Can't go" as a quiet link (the answer chips
+  // stay in the page, hidden, and the link presses Can't go). Runs on every redraw and moves nothing already in place.
+  function tidyTicket() { const rs = $("#view-guest.ev2 #gForm .ev2-rs"), tk = rs && rs.querySelector(":scope > .ticket"); if (!tk) return; rs.classList.add("pl-tk");
+    const cal = $$("#view-guest .ev2-acts a.btn").find((a) => /calendar|remind me/i.test(a.textContent)); if (cal && !rs.querySelector(".pl-tk-cal")) { cal.classList.add("pl-tk-cal"); rs.appendChild(cal); }
+    $("#g-unwall", rs)?.closest(".gchange")?.classList.add("pl-tk-row");
+    const ch = $$(".gchange", rs).find((g) => g.querySelector("[data-chg]")), yes = /you're in/i.test(tk.textContent) && !/waitlist|asked/i.test(tk.textContent);
+    if (ch && yes && ch.querySelector('[data-chg="no"]')) { ch.classList.add("pl-tk-chg"); if (!$(".pl-out", rs)) { const b = document.createElement("button"); b.type = "button"; b.className = "pl-out"; b.textContent = "Plans changed? Can't go"; b.onclick = () => $('.pl-tk-chg [data-chg="no"]', rs)?.click(); rs.appendChild(b); } } }
+  // The full invite draws the host's words (why) and, under them, the event copy (tagline, description). When the copy only
+  // repeats sentences the host already wrote, it stays hidden, so the page never says "Quiet tables." twice on our account.
+  const sents = (t) => String(t || "").toLowerCase().replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+  function tidyWords() { const inn = $("#view-guest.ev2 .invite .in"), why = inn && inn.querySelector(":scope > .pp-why"); if (!why) return; const W = new Set(sents(why.textContent));
+    for (const p of inn.querySelectorAll(":scope > p:not(.pp-why)")) { const S = sents(p.textContent); const dup = S.length > 0 && S.every((x) => W.has(x)); if (p.hidden !== dup) p.hidden = dup; } }
+  function tidyForm() { try { tidyTicket(); tidyWords(); } catch (err) { console.warn("[slots]", err); } const more = $("#slQuietForm .pl-more-in");
     const f = $("#f"); if (f && more) { const at = $("#qs", f) || $("#send", f); const box = more.parentElement; if (at && box.nextElementSibling !== at) at.before(box); }
     const g = $("#gForm"); if (!g) return; const send = $("#g-send", g), btns = send?.closest(".btns");
     if (more) { $$("details.g-more, details.g-fun", g).forEach((d) => { [...d.children].forEach((c) => { if (c.tagName !== "SUMMARY" && !c.contains($("#g-showme", g))) more.appendChild(c); }); if (!d.querySelector("input,textarea,select")) d.remove(); });

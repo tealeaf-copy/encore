@@ -95,6 +95,22 @@
   /** The palette a look draws with: a legacy dark palette becomes its vibe's light palette. */
   function paletteOf(L) { const p = (L?.palette || []).filter(okHex).map((c) => c.toUpperCase()); const v = LEGACY[p[0]]; return v && VIBES[v] ? VIBES[v].look.palette.slice() : p; }
   function colors(L) { const p = paletteOf(L); if (!p.length || !C) return null; return C.pageFrom(p[0], p.slice(1)); }
+  // ---- Field Notes on the invite (Dec 2026): a look or a brand kit changes only the accent, the cover art and, from a short
+  // sturdy set, the title face. The page stays linen and notebook paper, text stays ink, nothing moves over the page, and the
+  // date, body and buttons are always IBM Plex Sans. Older looks keep their data; at read time a thin, script, display or
+  // pixel title face draws as the nearest sturdy one (brandkit.js does the same for a kit's display face). ----
+  const FN = { page: "#EFEBE2", surface: "#FAF8F3", ink: "#1B1D1C", soft: "#444845", line: "#CFC8B9", lineStrong: "#1B1D1C" };
+  const TITLE_FACES = { serif: { label: "Serif", css: '"IBM Plex Serif", Georgia, serif', family: "IBM Plex Serif", w: 600, ls: "-.01em" }, sans: { label: "Sans", css: '"IBM Plex Sans", system-ui, sans-serif', family: "IBM Plex Sans", w: 600, ls: "-.015em" } };
+  const STURDY = { serif: "serif", script: "serif", slab: "serif", clean: "sans", bold: "sans", rounded: "sans", typewriter: "sans", mono: "sans", pixel: "sans" };
+  /** The sturdy face a title font key draws with on an invite: "serif" (IBM Plex Serif 600) or "sans" (IBM Plex Sans 600). */
+  const sturdyOf = (k) => STURDY[k] || (TITLE_FACES[k] ? k : "serif");
+  const titleFace = (k) => TITLE_FACES[sturdyOf(k)];
+  /** The colours an invite draws with for a look: house paper and ink, the look's accent on buttons and links (at AA on
+   *  linen and notebook), and at most a very light tint of the look's page on the cover frame. */
+  function fieldNotes(T) { const bgs = [FN.page, FN.surface], out = { top: FN.page, bot: FN.page, ink: FN.ink, soft: FN.soft, card: FN.surface, cardInk: FN.ink, line: FN.line, raised: FN.surface, raisedSoft: FN.soft, field: FN.surface, lineStrong: FN.lineStrong, link: "#29489A", btn: "#29489A", onBtn: "#FFFFFF", cover: FN.surface, spot: "" };
+    if (!T || !C) return out; const btn = C.buttonFor(T.btn || T.link || "#29489A", bgs); out.btn = btn; out.onBtn = C.onColor(btn); out.spot = T.spot || btn;
+    let link = C.norm(T.link || btn) || btn; for (let i = 0; i < 12 && C.worst(link, bgs) < 4.5; i++) link = C.mix(link, FN.ink, 0.15); out.link = C.worst(link, bgs) >= 4.5 ? link : FN.ink;
+    out.cover = C.mix(FN.surface, C.norm(T.top) || FN.surface, 0.35); return out; }
   // the main reply button: the host's emoji and words; Ask to join events always say "Ask to join"
   function buttonText(e, fallback) { const L = lookOf(e), em = EMOJI.includes(L.buttonEmoji) ? L.buttonEmoji + " " : ""; if (e?.approvalRequired) return em + "Ask to join";
     const w = LABELS.includes(L.buttonLabel) && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback || "I'm in"; return em + w; }
@@ -109,7 +125,7 @@
   function updateHTML(e) { const u = lookOf(e).update; if (!u?.text) return ""; const at = +u.at || 0;
     return `<div class="lk-update" role="note"><span class="lk-burst" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="${burst()}"/></svg><b>New!</b></span><span class="lk-upd-t"><b>Update${at ? ` <time datetime="${new Date(at).toISOString()}">${esc(ago(at))}</time>` : ""}</b><span>${esc(u.text)}</span></span></div>`; }
   // ---------- the page: colours, title font and the effect, on any element ----------
-  const CSS = `.lk-on{--lk-title:inherit}.lk-on.lk-page{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100%) var(--lk-bot)!important;color:var(--lk-ink)}
+  const CSS = `.lk-on{--lk-title:var(--inv-title-face,inherit)}.lk-on.lk-page{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100%) var(--lk-bot)!important;color:var(--lk-ink)}
 html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100vh,var(--lk-bot) 100%) var(--lk-bot)!important}html.lk-root body.lk-page.lk-page{background:transparent!important;background-color:transparent!important}
 .lk-on .lk-title{font-family:var(--lk-title)!important;font-weight:var(--lk-tw,700)!important;letter-spacing:var(--lk-tls,-.01em)!important;color:var(--lk-ink)!important;text-wrap:balance}
 .lk-on.lk-up .lk-title{line-height:1.05!important}
@@ -215,21 +231,19 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
   body.lk-invite.lk-poster main>*{grid-column:2}body.lk-invite.lk-poster main>.top{grid-column:1/-1}body.lk-invite.lk-poster main>.cov.poster{grid-column:1;grid-row:2/-1;position:sticky;top:24px;align-self:start;margin:0 0 0 auto}
   body.lk-invite.lk-poster main>.cov.poster img{max-height:calc(100vh - 110px)}body.lk-invite.lk-poster h1.lk-title{margin-top:4px}body.lk-invite.lk-poster .stick{left:auto;right:max(16px,calc((100vw - 1080px) / 2 + 16px));transform:none;width:min(512px,calc(50vw - 44px));bottom:16px;border:1px solid var(--lk-line,var(--line));border-radius:999px;padding:8px}}`;
   function css() { if (typeof document === "undefined" || document.getElementById("lk-css")) return; const s = document.createElement("style"); s.id = "lk-css"; s.textContent = CSS + INVITE_CSS; document.head.appendChild(s); }
-  const CLS = ["lk-on", "lk-dark", "lk-light", "lk-up", "lk-page"];
+  const CLS = ["lk-on", "lk-dark", "lk-light", "lk-up", "lk-page", "lk-face-serif", "lk-face-sans"];
   /** Dress `el` (the body on an invite, a frame in the preview) in the event's look. Returns the colours used, or null. */
   function apply(el, e, { fixed = true, page = true } = {}) { css(); const BK = window.EncoreBrandKit; if (BK) e = BK.eventFor(e, el, { fixed, page }); /* the host's brand kit: fonts from the kit unless the event overrides them; no look, the kit's colours */ const L = lookOf(e);
     el.__lkStop?.(); el.__lkStop = null; if (el === document.body) document.documentElement.classList.remove("lk-root"); el.classList.remove(...CLS, ...[...el.classList].filter((c) => /^lk-(fx|font|vibe)-/.test(c)));
     if (!has(L)) return null;
-    const T = colors(L), F = FONTS[L.titleFont]; el.classList.add("lk-on"); if (page && T) el.classList.add("lk-page");
-    if (T) { el.classList.add(T.dark ? "lk-dark" : "lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-link": T.link, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line, "--lk-raised": T.raised, "--lk-raised-soft": T.raisedSoft, "--lk-field": T.field, "--lk-line2": T.lineStrong, "--lk-cover": T.cover || T.card }).forEach(([k, v]) => v && el.style.setProperty(k, v)); }
-    // the whole page: the gradient sits on the root, so the effect layer can sit under the content and over the colour
-    if (el === document.body && page && T) { const R0 = document.documentElement; R0.classList.add("lk-root"); for (const k of ["--lk-top", "--lk-bot"]) R0.style.setProperty(k, el.style.getPropertyValue(k)); }
-    if (F) { loadFont(L.titleFont); el.classList.add("lk-font-" + L.titleFont); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", F.k); if (F.up) el.classList.add("lk-up"); }
+    // Field Notes: the page stays linen (no lk-page, no gradient on the root) and the text ink; the look brings its accent
+    const T0 = colors(L), T = T0 && fieldNotes(T0), F = FONTS[L.titleFont] && titleFace(L.titleFont); el.classList.add("lk-on");
+    if (T) { el.classList.add("lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-link": T.link, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line, "--lk-raised": T.raised, "--lk-raised-soft": T.raisedSoft, "--lk-field": T.field, "--lk-line2": T.lineStrong, "--lk-cover": T.cover }).forEach(([k, v]) => v && el.style.setProperty(k, v)); }
+    if (F) { el.classList.add("lk-face-" + sturdyOf(L.titleFont)); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", 1); }
     if (L.vibe && VIBES[L.vibe]) el.classList.add("lk-vibe-" + L.vibe);
     el.style.setProperty("--lk-glow", L.effect === "lanterns" ? "#F28A3A" : glowOf(L)); if (T) { el.style.setProperty("--lk-pix", T.ink); el.style.setProperty("--lk-spot", T.spot || T.btn); }
+    // no ambient effect or string lights over the page: the cover art carries the mood (effect() and lights() stay for older callers)
     const stops = [];
-    if (L.effect && L.effect !== "none") { el.classList.add("lk-fx-" + L.effect); stops.push(effect(el, L.effect, { fixed, dark: !!T?.dark, colors: particleColors(L, T) })); }
-    if (L.lights) { el.classList.add("lk-fx-lights"); stops.push(lights(el, { fixed })); }
     decorate(el === document.body ? document : el, e); if (BK) BK.after(el, e);
     el.__lkStop = () => stops.forEach((f) => f());
     return T; }
@@ -421,5 +435,5 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { LEGACY, paletteOf, kindVibes, vibeOrder, priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { TITLE_FACES, sturdyOf, titleFace, fieldNotes, LEGACY, paletteOf, kindVibes, vibeOrder, priceLine, jarwall, needPantry, countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

@@ -46,8 +46,8 @@ test("the invite meta and the ticket: drawn glyphs, the door code right under it
   assert.match(invite, /<p class="muted" style="margin:0">Show this at the door<\/p><div class="code">/);
   const cw = read("public/comewith.js"); assert.match(cw, /const bt = \$\("\.btns", at\), h = \$\("h2", at\); if \(bt\) bt\.before\(box\)/);
   assert.ok(!/👯/.test(cw), "a drawn glyph, not 👯"); assert.ok(!/box-shadow:2px 2px 0|rotate\(-1deg\)/.test(cw), "no offset shadow or tilt on Come with me");
-  // the default host face is initials on a tint, not 🎉
-  assert.match(invite, /h\.emoji && h\.emoji !== "🎉" \? esc\(h\.emoji\) : `<span class="ini">/);
+  // the host is the kicker over the title ("MADISON IS HOSTING · HACK NIGHT", Field Notes), not a face row; never 🎉
+  assert.match(invite, /<p class="kicker">\$\{\[who, esc\(kw\)\]\.filter\(Boolean\)\.join\(" · "\)\}<\/p>/); assert.ok(!invite.includes("🎉 is hosting"));
   // food is the point only when it's what the event is
   const fo = vm.runInNewContext(invite.match(/const FOODY = [^\n]*\n[^\n]*\n  const MAINNF[^\n]*\n  const foodyOf[^\n]*/)[0] + "; foodyOf");
   assert.equal(fo({ name: "GDQ watch party", activity: "watch party", concept: "snacks potluck" }), false); assert.equal(fo({ name: "Supper club", concept: "" }), true); assert.equal(fo({ name: "Hangout", concept: "potluck dinner" }), true);

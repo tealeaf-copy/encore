@@ -85,3 +85,186 @@ body.lk-on .sl-card form{border:0!important;box-shadow:none!important;background
 .pl-more-in{display:grid;gap:14px;padding:0 0 16px}.pl-more-in>*{margin:0!important}
 :is(#f #send,#gForm #g-send){background:var(--kit-btn,var(--pl-accent,#9A4128))!important;color:var(--kit-on-btn,#fff)!important;border-color:transparent!important}
 html body :is(#f,#gForm) [hidden][hidden]{display:none!important}
+
+/* ==== Field Notes invite (Dec 2026): one type scale for both guest invites, the light invite (/e: html body #m#m) and the
+   full invite (/g: #view-guest#view-guest.ev2). Tokens are in public/system.css (--inv-*). Ranked top to bottom: a mono
+   kicker, the title in the sturdy title face, the when line in Plex Sans 600, the place in soft ink, then the body at
+   17/27 in ink, meta and helper lines at 14/20. Linen page, notebook cards, 6px corners, 1.5px ink lines, no shadows.
+   A look or brand kit changes only the accent (--lk-btn, --lk-link, --kit-btn), the cover art and the title face. ==== */
+html:has(body.lk-invite),html body.lk-invite,html body.lk-on:has(#view-guest.ev2:not([hidden])){background:var(--pl-page)!important;background-image:none!important}
+html body #m#m{max-width:600px;padding:max(8px,env(safe-area-inset-top)) 16px calc(var(--inv-bar-h) + var(--inv-safe-b) + 32px);color:var(--pl-ink)}
+html body #m#m>.top{margin:0 0 16px;min-height:40px}
+html body #m#m>.cov{border-radius:var(--pl-r-md)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;background:var(--lk-cover,var(--pl-surface))!important;margin:0 0 24px}
+html body #m#m .cov .ea-cover{background:var(--lk-cover,var(--pl-surface))!important}
+/* the kicker, the title, the when line, the place */
+:is(html body #m#m>.kicker,html body #view-guest#view-guest.ev2 .in>#hostHello){display:block!important;margin:0 0 8px!important;padding:0!important;font:var(--inv-kicker)!important;letter-spacing:var(--inv-kicker-track)!important;text-transform:uppercase;color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)))!important;background:none!important;border:0!important;min-height:0!important}
+:is(html body #m#m>.kicker,html body #view-guest#view-guest.ev2 .in>#hostHello) :is(a,span,b){font:inherit!important;letter-spacing:inherit!important;color:inherit!important;text-decoration:none}
+html body #view-guest#view-guest.ev2 .in>#hostHello .hh-av{display:none!important}
+:is(html body #m#m h1.lk-title,html body #view-guest#view-guest.ev2 .invite.gx .in>h3){display:block!important;margin:0 0 12px!important;font-family:var(--lk-title,var(--inv-title-face))!important;font-weight:600!important;font-size:var(--inv-title-size)!important;line-height:var(--inv-title-lh)!important;letter-spacing:var(--lk-tls,-.01em)!important;color:var(--pl-ink)!important;text-transform:none!important;text-shadow:none!important;text-wrap:balance}
+html body #view-guest#view-guest.ev2 .invite.gx .in>h3::after{display:none!important}
+html body #m#m>.facts{display:grid;gap:0;margin:0;font:var(--inv-place);color:var(--pl-soft)}
+html body #m#m>.facts>div:first-child,html body #m#m>.facts>div:first-child b{font:var(--inv-when)!important;color:var(--pl-ink)!important}
+html body #m#m>.facts>div.muted:not([id]){margin-top:4px;font:var(--inv-place);color:var(--pl-soft)!important}
+html body #m#m>.facts>div.muted:not([id])>.ic{display:none}
+html body #m#m>.facts>div[id]{display:flex;align-items:flex-start;gap:8px;font:var(--inv-meta);color:var(--pl-soft)!important}
+html body #m#m>.facts>div:not([id])+div[id]{margin-top:12px}html body #m#m>.facts>div[id]+div[id]{margin-top:4px}
+html body #m#m>.facts>div[id] .ic{width:16px;height:20px;margin:0}
+:is(html body #m#m>.facts,html body #view-guest#view-guest.ev2 .gxfacts) a{color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)))!important;text-decoration:underline;text-underline-offset:3px}
+html body #m#m>.plf{margin:16px 0 0}
+html body #m#m .pls-btn{min-height:40px;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-line-strong)!important;background:transparent!important;font:600 14px/20px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+/* the body: the host's words, in ink, at a reading measure */
+:is(html body #m#m>.why,html body #view-guest#view-guest.ev2 .in>.pp-why){margin:24px 0 0!important;max-width:var(--inv-measure);font:var(--inv-body)!important;color:var(--pl-ink)!important;white-space:pre-wrap}
+html body #m#m>.going-n{margin:24px 0 8px!important;font:var(--inv-label)!important}
+html body #m#m>.going span{border-radius:var(--pl-r-sm);border:1px solid var(--pl-line);background:var(--pl-surface);font:var(--inv-meta)}
+/* the reply card */
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm .ev2-rs){margin:32px 0 0!important;padding:20px 16px!important;display:grid;gap:var(--inv-gap-field);background:var(--pl-surface)!important;border:var(--pl-bw) solid var(--pl-ink)!important;border-radius:var(--pl-r-md)!important;box-shadow:none!important;color:var(--pl-ink)!important;scroll-margin:16px 0 calc(var(--inv-bar-h) + var(--inv-safe-b) + 16px)}
+html body #view-guest#view-guest.ev2 #gForm{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin:32px 0 0!important}
+html body #view-guest#view-guest.ev2 #gForm .ev2-rs{margin:0!important}
+html body #view-guest#view-guest.ev2 #gForm .ev2-rs>.stack{display:grid;gap:var(--inv-gap-field)!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+html body #view-guest#view-guest.ev2 #gForm .ev2-rs>.stack>*{margin:0!important}
+:is(html body #m#m form#f h2.ask,html body #view-guest#view-guest.ev2 #gForm .ev2-rs>.stack>h3){margin:0!important;font:600 20px/28px var(--pl-font-text)!important;letter-spacing:0!important;color:var(--pl-ink)!important}
+html body #m#m form#f>p.muted{font:var(--inv-meta);color:var(--pl-soft)!important}
+/* I'm in · Maybe · Can't go: one row, 48px, the choice in ink */
+html body #m#m form#f .resp{gap:8px}
+:is(html body #m#m form#f .resp label,html body #view-guest#view-guest.ev2 #gResp .chip){min-height:48px!important;padding:0 8px!important;display:grid!important;place-items:center;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-ink)!important;background:transparent!important;color:var(--pl-ink)!important;font:600 16px/20px var(--pl-font-text)!important;box-shadow:none!important;text-transform:none!important}
+:is(html body #m#m form#f .resp label:has(input:checked),html body #view-guest#view-guest.ev2 #gResp .chip[aria-pressed=true]){background:var(--pl-ink)!important;color:#fff!important}
+html body #view-guest#view-guest.ev2 #gResp{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px!important;margin:0!important}
+html body #view-guest#view-guest.ev2 #gResp .chip{width:auto!important;margin:0!important}
+/* fields: the label, then its helper 4px under it, then the 48px field; fields 16px apart */
+html body #view-guest#view-guest.ev2 #gForm .row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:var(--inv-gap-field)!important}
+:is(html body #m#m form#f label.f,html body #m#m form#f .sl-lab,html body #view-guest#view-guest.ev2 #gForm :is(label.f,.sl-lab)){display:grid!important;grid-template-columns:minmax(0,1fr);gap:0!important;margin:0!important;font:var(--inv-label)!important;color:var(--pl-ink)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(label.f,.sl-lab)>:is(small,.note,.h){order:1;display:block!important;margin:var(--inv-gap-help) 0 0!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(label.f,.sl-lab)>:is(input,select,textarea){order:2;margin:8px 0 0!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]),select){box-sizing:border-box;width:100%;height:var(--inv-field-h)!important;min-height:var(--inv-field-h)!important;padding:0 14px!important;border-radius:var(--pl-r-sm)!important;border:var(--pl-bw) solid var(--pl-ink)!important;background:#fff!important;color:var(--pl-ink)!important;font:400 16px/22px var(--pl-font-text)!important;box-shadow:none!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) textarea{border-radius:var(--pl-r-sm)!important;border:var(--pl-bw) solid var(--pl-ink)!important;background:#fff!important;font:400 16px/24px var(--pl-font-text)!important;padding:12px 14px!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(input,select,textarea)::placeholder{color:#6B6E69;opacity:1}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) :is(input,select,textarea):focus-visible{outline:2px solid var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;outline-offset:2px}
+/* checkbox rows: the box on the first line of the text, 15/22; a helper under it at 14/20 */
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check{align-items:flex-start!important;gap:12px!important;margin:0!important;min-height:0!important;font:400 15px/22px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check>span{display:block;min-height:0!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check small{display:block!important;margin:2px 0 0!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .sl-check.pl-rem{justify-content:flex-start!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important;align-items:center!important}
+/* the one disclosure: a quiet row with a chevron */
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .pl-more{margin:0!important;border-top:var(--pl-rule-dashed)!important;border-bottom:var(--pl-rule-dashed)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .pl-more>summary{min-height:48px;font:600 15px/20px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .pl-more>summary::after{content:""!important;width:8px;height:8px;margin:0 4px 4px 12px;border:solid var(--pl-soft);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);font-size:0}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .pl-more[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+:is(html body #m#m form#f,html body #view-guest#view-guest.ev2 #gForm) .pl-more-in{gap:var(--inv-gap-field)!important;padding:4px 0 20px!important}
+/* Send my reply: full width, the accent, never under the bar or the browser's toolbar */
+:is(html body #m#m form#f #send,html body #view-guest#view-guest.ev2 #gForm #g-send){width:100%;min-height:var(--inv-btn-h)!important;height:auto!important;border-radius:var(--pl-r-btn)!important;font:var(--inv-btn)!important;background:var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;color:var(--lk-on-btn,var(--kit-on-btn,#fff))!important;border:0!important;box-shadow:none!important;text-transform:none!important}
+html body #view-guest#view-guest.ev2 #gForm .btns:has(#g-send){display:block!important;margin:4px 0 0!important}
+:is(html body #m#m form#f .consent,html body #view-guest#view-guest.ev2 #gForm .g-consent){margin:0!important;font:400 13px/18px var(--pl-font-text)!important;color:var(--pl-soft)!important;text-align:left!important}
+:is(html body #m#m form#f .consent,html body #view-guest#view-guest.ev2 #gForm .g-consent) a{color:inherit!important}
+/* the quiet cards around the form: I'm in if a friend is, Ask the host */
+:is(html body #m#m,html body #view-guest#view-guest.ev2) .tb-card{margin:16px 0 0!important;padding:0 16px!important;border:var(--pl-bw) solid var(--pl-line)!important;border-radius:var(--pl-r-md)!important;background:transparent!important;box-shadow:none!important}
+:is(html body #m#m,html body #view-guest#view-guest.ev2) .tb-card>summary{min-height:48px!important;margin:0!important;font:600 15px/20px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+:is(html body #m#m,html body #view-guest#view-guest.ev2) .tb-card>summary::after{content:""!important;width:8px;height:8px;margin:0 4px 4px 12px;border:solid var(--pl-soft);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);font-size:0}
+:is(html body #m#m,html body #view-guest#view-guest.ev2) .tb-card[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+:is(html body #m#m,html body #view-guest#view-guest.ev2) .tb-card[open]{padding-bottom:16px!important}
+html body #view-guest#view-guest.ev2 #gForm .tb-card{margin:0!important}
+html body #view-guest#view-guest.ev2 .ev-faq{padding:20px 16px!important;border:var(--pl-bw) solid var(--pl-line)!important;border-radius:var(--pl-r-md)!important;background:transparent!important;box-shadow:none!important}
+html body #view-guest#view-guest.ev2 .ev-faq h4{font:600 18px/24px var(--pl-font-text)!important;margin:0 0 12px!important}
+html body #view-guest#view-guest.ev2 .ev-faq :is(input,.btn){min-height:48px!important;border-radius:var(--pl-r-btn)!important;box-shadow:none!important}
+html body #view-guest#view-guest.ev2 .ev-faq input{border:var(--pl-bw) solid var(--pl-ink)!important;background:#fff!important;font:400 16px/22px var(--pl-font-text)!important}
+/* small actions (Map, Copy link, Add to calendar): 40px, 6px corners, a quiet line */
+:is(html body #m#m .sl-tools,html body #view-guest#view-guest.ev2 .in>.ev2-acts) :is(.sl-btn,.btn){min-height:40px!important;padding:0 14px!important;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-line-strong)!important;background:transparent!important;color:var(--pl-ink)!important;font:600 14px/20px var(--pl-font-text)!important;box-shadow:none!important}
+html body #m#m #slBox{margin:16px 0 0}
+/* ---- the full invite (/g) on its own terms ---- */
+html body #view-guest#view-guest.ev2{color:var(--pl-ink)}
+html body #view-guest#view-guest.ev2 .invite.gx .in{display:flex!important;flex-direction:column;align-items:stretch}
+html body #view-guest#view-guest.ev2 .invite.gx .in>*{order:20}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.lk-update{order:0}html body #view-guest#view-guest.ev2 .invite.gx .in>.eyebrow{order:1}
+html body #view-guest#view-guest.ev2 .invite.gx .in>#hostHello{order:2}html body #view-guest#view-guest.ev2 .invite.gx .in>h3{order:3}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.gxfacts{order:4}html body #view-guest#view-guest.ev2 .invite.gx .in>:is(.ev2-extras,.ev2-addr){order:5}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.gk{order:6}html body #view-guest#view-guest.ev2 .invite.gx .in>.ev2-acts{order:7}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.pp-why{order:8}html body #view-guest#view-guest.ev2 .invite.gx .in>.pp-rules{order:9}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.eyebrow{font:var(--inv-kicker)!important;letter-spacing:var(--inv-kicker-track)!important;text-transform:uppercase;color:var(--pl-soft)!important;margin:0 0 4px!important}
+html body #view-guest#view-guest.ev2 .gxfacts{display:grid!important;gap:4px!important;margin:0!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span[data-k=When]{margin:0!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span[data-k=When] b{display:block!important;font:var(--inv-when)!important;letter-spacing:0!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span[data-k=When] .ev2-when-time{display:inline!important;margin:0!important;font:inherit!important;color:inherit!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span[data-k=When] .ev2-when-time::before{content:" · "}
+html body #view-guest#view-guest.ev2 .gxfacts>span:not([data-k=When]){grid-template-columns:minmax(0,1fr)!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span:not([data-k=When]) small{display:none!important}
+html body #view-guest#view-guest.ev2 .gxfacts>span:not([data-k=When]) b{font:var(--inv-place)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .in>:is(.gk,.ev2-extras,.ev2-addr){margin:12px 0 0!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .in :is(.gk-row,.ev2-extra){gap:8px!important;align-items:flex-start!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important;background:none!important;border:0!important;padding:0!important;margin:0!important;min-height:0!important}
+html body #view-guest#view-guest.ev2 .in :is(.gk-row,.ev2-extra) :is(p,b,span:not(.gk-ic)){margin:0!important;font:inherit!important;color:inherit!important}
+html body #view-guest#view-guest.ev2 .in .gk-ic{width:16px!important;height:20px!important;font-size:0!important}
+html body #view-guest#view-guest.ev2 .in>.ev2-acts{margin:16px 0 0!important;gap:8px!important}
+html body #view-guest#view-guest.ev2 .ev2-side>.gxcover{border-radius:var(--pl-r-md)!important;border:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;background:var(--lk-cover,var(--pl-surface))!important}
+html body #view-guest#view-guest.ev2 .ev2-side>.gxcover :is(.ea-cover,.ev2-poster){background:var(--lk-cover,var(--pl-surface))!important}
+/* host chrome: one slim line, never more than 40px above the cover */
+html body #view-guest#view-guest #geBar.ge-slim{display:flex!important;align-items:center;gap:8px;flex-wrap:nowrap;box-sizing:border-box;height:32px;margin:0 0 -8px!important;padding:0 4px 0 12px!important;border:1px dashed var(--pl-line)!important;border-radius:var(--pl-r-sm)!important;background:transparent!important;box-shadow:none!important;font:500 13px/18px var(--pl-font-text)!important;color:var(--pl-soft)!important;white-space:nowrap;overflow:hidden}
+html body #view-guest#view-guest #geBar.ge-slim .ge-t{color:var(--pl-ink)}
+html body #view-guest#view-guest #geBar.ge-slim .ge-a{all:unset;cursor:pointer;color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)));font-weight:600;text-decoration:underline;text-underline-offset:3px}
+html body #view-guest#view-guest #geBar.ge-slim .ge-x{all:unset;cursor:pointer;margin-left:auto;width:32px;height:30px;display:grid;place-items:center;font-size:18px;color:var(--pl-soft)}
+html body #view-guest#view-guest #geBar.ge-slim :is(.ge-a,.ge-x):focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+/* the sticky bar on /g: the date and spots in the page's format, the one button */
+html body #gBar.g-bar{background:var(--pl-surface)!important;border-top:var(--pl-bw) solid var(--pl-ink)!important;box-shadow:none!important;backdrop-filter:none!important;padding:12px 16px calc(12px + var(--inv-safe-b))!important;gap:12px}
+html body #gBar.g-bar>div{min-width:0}
+html body #gBar.g-bar b{font:var(--inv-bar-date)!important;color:var(--pl-ink)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body #gBar.g-bar small{font:var(--inv-bar-sub)!important;color:var(--pl-soft)!important}
+html body #gBar.g-bar .btn{min-height:48px!important;min-width:120px;padding:0 20px!important;border-radius:var(--pl-r-btn)!important;font:var(--inv-btn)!important;background:var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;color:var(--lk-on-btn,var(--kit-on-btn,#fff))!important;border:0!important;box-shadow:none!important;text-transform:none!important}
+@media (max-width:759px){html body #view-guest#view-guest.ev2{padding-bottom:calc(var(--inv-bar-h) + var(--inv-safe-b) + 24px)!important}}
+@media (min-width:700px){html body #m#m{padding-bottom:64px}html body #m#m form#f{padding:24px!important}}
+@media (min-width:861px){html body #view-guest#view-guest.ev2 #gForm .ev2-rs{padding:24px!important}}
+/* hidden means hidden, over every display rule above; an empty row or slot takes no gap */
+html body #m#m#m [hidden][hidden],html body #view-guest#view-guest#view-guest [hidden][hidden]:not(.invite .in>h3){display:none!important}
+html body #m#m form#f>:is(#qs,#er):empty,html body #view-guest#view-guest.ev2 #gForm .row:not(:has(>:not([hidden]))){display:none!important}
+html body #view-guest#view-guest.ev2 .in .gk-row>div{display:block!important}html body #view-guest#view-guest.ev2 .in .gk-row>div>b{display:inline!important;font:inherit!important}
+html body #view-guest#view-guest.ev2 .in .gk-row>div>b::after{content:": "}html body #view-guest#view-guest.ev2 .in .gk-row>div>p{display:inline!important}
+/* ---- after replying: one calm "You're in" card on both invites. The heading, one line, then the actions as full-width
+   48px buttons (Invite friends, Add to calendar, the group chat), the name toggle as a quiet row, "Plans changed? Can't go"
+   as a quiet link. One Add to calendar per page ---- */
+html body #m#m:has(#tk) #slTools>a.sl-btn,html body #view-guest#view-guest #slTools>a.sl-btn{display:none!important}
+html body #m#m:has(#tk) #slTools:not(:has(>:not(a.sl-btn))),html body #view-guest#view-guest #slTools:not(:has(>:not(a.sl-btn))){display:none!important}
+html body #m#m #tk.ticket{margin:32px 0 0;padding:20px 16px;display:grid;gap:12px;text-align:left;background:var(--pl-surface)!important;border:var(--pl-bw) solid var(--pl-ink)!important;border-radius:var(--pl-r-md)!important;box-shadow:none!important;color:var(--pl-ink)!important}
+html body #m#m #tk.ticket>h2{margin:0;font:600 24px/30px var(--pl-font-text)!important;letter-spacing:-.01em;color:var(--pl-ink)!important}
+html body #m#m #tk.ticket>p{margin:0!important;font:400 16px/22px var(--pl-font-text)!important;color:var(--pl-soft)!important}
+html body #m#m #tk.ticket>p:empty{display:none}
+html body #m#m #tk.ticket .code{justify-self:start;border-radius:var(--pl-r-sm)!important}
+html body #m#m #tk .btns{display:grid!important;grid-template-columns:minmax(0,1fr);justify-content:stretch!important;gap:8px;margin:4px 0 0}
+:is(html body #m#m #tk :is(.btns .btn,.cwm-btn),html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk :is(.cwm-btn,.pl-tk-cal)){box-sizing:border-box;width:100%;min-height:48px!important;display:inline-flex!important;align-items:center;justify-content:center;gap:8px;padding:0 16px!important;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-ink)!important;background:transparent!important;color:var(--pl-ink)!important;font:var(--inv-btn)!important;box-shadow:none!important;text-decoration:none!important;animation:none!important}
+html body #m#m #tk .btns :is(.btn.main,.btn.pay){background:var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;color:var(--lk-on-btn,var(--kit-on-btn,#fff))!important;border-color:transparent!important}
+html body #m#m #tk .cwm-box{margin:0!important;display:block!important}
+html body #m#m #tk #out{all:unset;justify-self:start;align-self:flex-start;cursor:pointer;min-height:32px;display:inline-flex;align-items:center;font:400 14px/20px var(--pl-font-text);color:var(--pl-soft);text-decoration:underline;text-underline-offset:3px}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-out{all:unset;justify-self:start;align-self:flex-start;cursor:pointer;min-height:32px;display:inline-flex;align-items:center;font:400 14px/20px var(--pl-font-text);color:var(--pl-soft);text-decoration:underline;text-underline-offset:3px;order:6}
+:is(html body #m#m #tk #out,html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk .pl-out):focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+html body #m#m>#openFull{margin:16px 0 0;font:600 15px/20px var(--pl-font-text);color:var(--lk-link,var(--kit-accent-text,var(--pl-accent-text)))}
+html body #m#m>#openFull{text-align:left}html body #m#m>#openFull+p.muted,html body #m#m>#yourTurn{margin:4px 0 0!important;text-align:left!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}html body #m#m>#yourTurn{margin-top:16px!important}
+/* /g: the reply column becomes the card */
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk{display:flex!important;flex-direction:column;gap:12px}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>*{order:10;margin:0!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.ticket{order:1}html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.cwm-box{order:2}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-cal{order:3}html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>#gchat{order:4}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row{order:5}html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-out{order:6}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-chg{display:none!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.ticket{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;text-align:left!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.ticket .eyebrow{display:block;margin:0 0 4px!important;font:600 24px/30px var(--pl-font-text)!important;letter-spacing:-.01em!important;text-transform:none!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.ticket :is(p,h3){margin:0!important;font:400 16px/22px var(--pl-font-text)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.cwm-box{display:block!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>#gchat{display:flex!important;align-items:center;gap:12px;min-height:56px;padding:4px 12px!important;border-radius:var(--pl-r-btn)!important;border:var(--pl-bw) solid var(--pl-ink)!important;background:transparent!important;box-shadow:none!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>#gchat b{font:var(--inv-btn)!important}html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>#gchat small{font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row{padding:12px 0 0!important;border-top:var(--pl-rule-dashed)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row label.chip{all:unset;display:flex!important;align-items:flex-start;gap:12px;cursor:pointer;font:400 15px/22px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:22px;height:22px;margin:0;display:inline-grid;place-content:center;border:1.5px solid var(--pl-ink);border-radius:var(--pl-r-sm);background:#fff}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row input[type=checkbox]::before{content:"";width:11px;height:6px;border:solid transparent;border-width:0 0 2px 2px;transform:translateY(-1.5px) rotate(-45deg);box-sizing:border-box}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row input[type=checkbox]:checked{background:var(--pl-ink)}html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row input[type=checkbox]:checked::before{border-color:#fff}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-tk-row input[type=checkbox]:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+html body #view-guest#view-guest.ev2 .ev2-rs.pl-tk>.pl-out.pl-out{order:6;margin-top:-4px!important}
+html body #view-guest#view-guest.ev2 .in .gk-row>div>b{font-family:var(--pl-font-text)!important;font-weight:400!important;text-transform:none!important;letter-spacing:0!important;opacity:1!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .in>#statusPill{order:7;align-self:flex-start;display:inline-flex!important;align-items:center;min-height:0!important;margin:16px 0 0!important;padding:4px 10px!important;border:0!important;border-radius:var(--pl-r-sm)!important;background:var(--pl-sand)!important;box-shadow:none!important;font:600 14px/20px var(--pl-font-text)!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 :is(#whoGoing,.gk-follow){padding:20px 16px!important;border:var(--pl-bw) solid var(--pl-line)!important;border-radius:var(--pl-r-md)!important;background:transparent!important;box-shadow:none!important}
+html body #view-guest#view-guest.ev2 #whoGoing h4{font:600 18px/24px var(--pl-font-text)!important}html body #view-guest#view-guest.ev2 #whoGoing h4 .note{font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .gk-follow :is(input,.btn){min-height:44px!important;border-radius:var(--pl-r-btn)!important;box-shadow:none!important}
+@media (max-width:860px){html body #view-guest#view-guest.ev2 #gForm{display:flex!important;flex-direction:column;gap:16px}html body #view-guest#view-guest.ev2 #gForm>*{order:5;margin:0!important;width:auto!important;max-width:none!important;align-self:stretch}html body #view-guest#view-guest.ev2 #gForm>.ev2-rs{order:1}}
+html body #view-guest#view-guest.ev2 .ev-faq .btn{background:var(--lk-btn,var(--kit-btn,var(--pl-accent)))!important;color:var(--lk-on-btn,var(--kit-on-btn,#fff))!important;border:0!important}
+html body #view-guest#view-guest.ev2 .in .gk-row>div>p{color:var(--pl-soft)!important}
+/* the host's sections and the event copy on /g: section titles are headings at 18/24, the copy reads as body */
+html body #view-guest#view-guest.ev2 .invite.gx .in .evs h3{font:600 18px/24px var(--pl-font-text)!important;letter-spacing:0!important;margin:0 0 4px!important}
+html body #view-guest#view-guest.ev2 .invite.gx .in .evs p{font:var(--inv-body)!important;color:var(--pl-ink)!important;max-width:var(--inv-measure)}
+html body #view-guest#view-guest.ev2 .invite.gx .in>p:not(.pp-why):not(.note):not(.status-pill){order:9;margin:16px 0 0!important;max-width:var(--inv-measure);font:var(--inv-body)!important;color:var(--pl-ink)!important}
+html body #view-guest#view-guest.ev2 .invite.gx .in>p.note{order:9;margin:8px 0 0!important;font:var(--inv-meta)!important;color:var(--pl-soft)!important}
+html body #view-guest#view-guest.ev2 .invite.gx .in>.evs{order:9;margin:24px 0 0!important}
+html body #m#m .evs h3{font:600 18px/24px var(--pl-font-text)!important;letter-spacing:0!important;margin:0 0 4px!important}html body #m#m .evs p{font:var(--inv-body)!important;color:var(--pl-ink)!important;max-width:var(--inv-measure)}

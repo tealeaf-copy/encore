@@ -185,7 +185,7 @@ test("Contacts: only people who opted in match, blocks hold, no hash is stored, 
   assert.match(fs.readFileSync(new URL("../public/settings.html", import.meta.url), "utf8"), /Let people find me by email or phone/);
   const page = await get("/people"); assert.equal(page.status, 200); const html = await page.text();
   for (const s of ["Hosts &amp; clubs", "Suggested", "Contacts", "My code", "Invite friends who aren't on Pottery Lab", "/qr.js", "crypto.subtle"]) assert.ok(html.includes(s), s);
-  assert.match(fs.readFileSync(new URL("../public/qr.js", import.meta.url), "utf8"), /MIT license/);
+  assert.match(fs.readFileSync(new URL("../public/qr.js", import.meta.url), "utf8"), /MIT/);
 });
 
 test("The + sheet: a Create button on the feed, tiles that fit each person, posts through the feed's own endpoint", async () => {

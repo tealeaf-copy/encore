@@ -23,8 +23,8 @@
   const VIBES = {
     garden: { label: "Garden party", look: { palette: ["#A9C3A4", "#3E6B48", "#F2D36B"], effect: "sparkles", titleFont: "rounded", buttonEmoji: "🌿", buttonLabel: "Count me in" } },
     jazz: { label: "Jazz night", look: { palette: ["#EFE2C6", "#1F1A17", "#C2553A"], effect: "paper", titleFont: "bold", buttonEmoji: "🎷", buttonLabel: "I'm in" } },
-    winter: { label: "Winter benefit", look: { palette: ["#C4DDF3", "#1E4E86", "#D94357"], effect: "snow", titleFont: "clean", buttonEmoji: "❄️", buttonLabel: "Save my spot" } },
-    velvet: { label: "Velvet sale", look: { palette: ["#6E0F1F", "#F2C46D", "#F4D7C8"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "Save my spot" } },
+    winter: { label: "Winter benefit", look: { palette: ["#C4DDF3", "#1E4E86", "#D94357"], effect: "snow", titleFont: "clean", buttonEmoji: "❄️", buttonLabel: "I'm in" } },
+    velvet: { label: "Velvet sale", look: { palette: ["#6E0F1F", "#F2C46D", "#F4D7C8"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "I'm in" } },
     flower: { label: "Flower shop", look: { palette: ["#F4E9EC", "#1F3D30", "#E98973"], effect: "petals", titleFont: "script", buttonEmoji: "💐", buttonLabel: "Count me in" } },
     night: { label: "Night out", look: { palette: ["#4A2E1E", "#D8322E", "#F2C46D"], effect: "velvet", titleFont: "bold", buttonEmoji: "🏮", buttonLabel: "I'm in" } },
     market: { label: "Holiday market", look: { palette: ["#5A0F1E", "#E8C26A", "#F6EBD9"], effect: "twinkle", lights: true, titleFont: "bold", buttonEmoji: "🎄", buttonLabel: "Count me in" } },

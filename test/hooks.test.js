@@ -111,7 +111,7 @@ test("A saved event two days out gets one reminder", async () => {
   const r2 = await H().runJobs(Date.now(), srv.base);
   const inbox = X().inbox("ree.hooks@example.com").filter((x) => x.kind === "saved"); assert.equal(inbox.length, 1, "once");
   assert.match(inbox[0].text, new RegExp(`^Your saved event is ${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date(day(2) + "T12:00:00Z").getUTCDay()]}: Soon matcha\\. Spots left: 3\\.$`));
-  const mails = fakeOutbox.slice(sent).filter((m) => m.to.includes("ree.hooks@example.com")); assert.equal(mails.length, 1, "one email"); assert.match(mails[0].text, /Unsubscribe/, "guest list mail: unsubscribe works");
+  const mails = fakeOutbox.slice(sent).filter((m) => m.to.includes("ree.hooks@example.com") && /saved event/i.test(`${m.subject || ""} ${m.text || ""}`)); // the weekly digest may also go out on a Thu/Fri assert.equal(mails.length, 1, "one email"); assert.match(mails[0].text, /Unsubscribe/, "guest list mail: unsubscribe works");
   assert.equal(r2.reminders, 0);
 });
 

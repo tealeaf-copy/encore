@@ -165,6 +165,18 @@ PUBLIC_FIELDS.push("orderBy", "orderByDate", "orderDeadline", "headUnit", "unitC
 PUBLIC_FIELDS.push("look");
 // price tiers ("Adults $55 · Kids $35"), cleaned on save by server/looks.js cleanTiers
 PUBLIC_FIELDS.push("priceTiers");
+// the create canvas (public/canvas.js): the host's own sections, links, an accessibility note and co-hosts, cleaned in
+// publicEvent below and drawn on both invites by public/sections.js
+PUBLIC_FIELDS.push("sections", "links", "accessNote", "cohosts");
+const cleanStr = (v, n) => String(v ?? "").replace(/\r/g, "").trim().slice(0, n);
+export function publicExtras(e) {
+  if (e.sections != null) e.sections = (Array.isArray(e.sections) ? e.sections : []).map((s) => ({ icon: /^[a-z]{2,12}$/.test(String(s?.icon || "")) ? s.icon : "note", title: cleanStr(s?.title, 80), body: cleanStr(s?.body, 1200) })).filter((s) => s.title || s.body).slice(0, 12);
+  if (e.links != null) e.links = (Array.isArray(e.links) ? e.links : []).map((l) => ({ label: cleanStr(l?.label, 60), url: cleanStr(l?.url, 500) })).filter((l) => /^https:\/\/[^\s"'<>]+$/.test(l.url)).slice(0, 6);
+  if (e.accessNote != null) e.accessNote = cleanStr(e.accessNote, 300);
+  // co-hosts: a Pottery Lab handle and the name the host typed, never an email
+  if (e.cohosts != null) e.cohosts = (Array.isArray(e.cohosts) ? e.cohosts : []).map((c) => ({ handle: /^@?[a-z0-9][a-z0-9-]{1,29}$/i.test(String(c?.handle || "")) ? String(c.handle).replace(/^@/, "").toLowerCase() : "", name: /@.*\./.test(String(c?.name || "")) ? "" : cleanStr(c?.name, 60) })).filter((c) => c.handle || c.name).slice(0, 6);
+  return e;
+}
 export function eventMoney(e) {
   const P = e.produce?.budget || [], cost = P.reduce((a, b) => a + (+b.amount || 0), 0) || +e.budget || 0;
   const committed = (e.commits || []).filter((c) => c.status === "Signed" || c.status === "Paid").reduce((a, c) => a + (+c.amount || 0), 0);
@@ -173,7 +185,7 @@ export function eventMoney(e) {
 /** Does this place text give away where someone lives, or a street address? */
 export const looksLikeAddress = (t) => { const x = String(t || ""); return /\b\d{1,6}[a-z]?\s+[A-Za-zÀ-ÿ'.-]+(\s+[A-Za-zÀ-ÿ'.-]+){0,3}\s+(st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|dr|drive|pl|place|way|ct|court|ter|terrace|pkwy|parkway|hwy|sq|square)\b\.?/i.test(x) || /\b(apt|apartment|unit|suite|flat|floor)\s*#?\s*\w+|#\s*\d+|\b(my|our)\s+(place|apartment|flat|house|home|backyard|rooftop|loft)\b|['’]s\s+(place|apartment|flat|house|home)\b/i.test(x); };
 export function publicEvent(data, view) {
-  const e = Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]]));
+  const e = publicExtras(Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]])));
   // review round 13: a group price saved as text ("$40") reaches the pages as the number they read it as
   if (typeof e.groupPrice === "string") { const m = e.groupPrice.replace(/,/g, "").match(/(\d+(?:\.\d{1,2})?)/); if (m && +m[1] > 0) e.groupPrice = +m[1]; else delete e.groupPrice; }
   e.guests = data.noWall ? [] : (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
@@ -629,6 +641,8 @@ export function createApp({ store, dataDir }) {
     req.url = "/e/" + id + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""); next(); });
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
+    // the create canvas's live guest preview (public/canvas.js): the real invite page, fed the draft by postMessage
+    if (id === "_preview") { const page = invitePage(); res.set("Cache-Control", "no-store"); return page ? res.type("html").send(page.replace("<!--META-->", () => '<title>Guest preview · Pottery Lab</title><meta name="robots" content="noindex">')) : res.sendStatus(404); }
     if (!ev) { res.status(404); return sendStatic(res, "404.html", "<p>This invite isn't here.</p>"); } // a cut-off or deleted link: a real not-found page, not a blank invite
     if (ev.example) return res.redirect(302, to);
     const U = app.locals.fanclub?.visibility?.(ws, id) === "members" ? null : (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)

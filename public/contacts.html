@@ -1,0 +1,196 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>People · Pottery Lab</title>
+<meta name="description" content="Everyone who has come, replied or follows you, and who to invite next.">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#F4F0E8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/invite-plan.css"><link rel="stylesheet" href="/system.css">
+<style>
+html,body{margin:0;background:var(--pl-page);color:var(--pl-ink)}
+body .es-rail{box-sizing:border-box}
+.pp{max-width:1180px;margin:0 auto;padding:20px 16px 96px}
+.pp-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 16px}
+.pp-top h1{font:400 40px/1.05 var(--sys-display);letter-spacing:var(--pl-display-track);margin:0}
+.pp-top h1 em{font-style:normal;color:var(--pl-accent-text)}
+.pp-top .ip-acts{margin:0}
+.pp-tabs{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--pl-line)}
+.pp-tabs a{padding:10px 12px;color:var(--pl-soft);text-decoration:none;font:600 14px var(--sys-title);border-bottom:2px solid transparent;margin-bottom:-1px}
+.pp-tabs a[aria-current]{color:var(--pl-ink);border-color:var(--pl-ink)}
+.pp-sugg{display:grid;gap:8px;margin:0 0 16px}
+.pp-sugg .ip-note{margin:0;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pp-lists h2{font:600 13px var(--sys-title);color:var(--pl-muted);margin:0 0 8px}
+.pp-nav{display:none}
+.pp-bar{display:flex;gap:8px;align-items:center;margin:12px 0}
+.pp-bar .ip-in{flex:1}
+.pp-count{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px;font-size:14px;color:var(--pl-soft);flex-wrap:wrap}
+.pp-count b{font:400 20px var(--sys-display);color:var(--pl-ink)}
+.pp-cards .ip-row{grid-template-columns:28px 36px minmax(0,1fr) auto;background:var(--pl-surface)}
+.pp-cards{background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:16px;overflow:hidden}
+.pp-cards .ip-rows{margin:0}.pp-cards.nosel .ip-row{grid-template-columns:36px minmax(0,1fr) auto}
+.pp-ck{width:20px;height:20px;accent-color:var(--pl-accent)}
+.pp-tbl{display:none}
+.pp-bulk{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;display:flex;gap:8px;align-items:center;padding:8px 8px 8px 16px;border-radius:14px;background:var(--pl-ink);color:#fff;box-shadow:var(--pl-shadow-float);font:600 14px var(--sys-title);white-space:nowrap;max-width:calc(100vw - 32px);overflow-x:auto}
+.pp-bulk .ip-b{min-height:36px;background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.pp-bulk .ip-b.pri{background:var(--pl-accent);border-color:var(--pl-accent)}
+.pp-opt{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pp-opt .ip-chip{justify-content:center;white-space:normal;text-align:center;min-height:44px}
+.pp-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:12px 0;font-size:14px}.pp-kv dt{color:var(--pl-muted)}.pp-kv dd{margin:0}
+.pp-hist{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;font-size:14px}.pp-hist li{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--pl-line)}
+.pp-empty{padding:28px 20px;text-align:center;color:var(--pl-soft)}
+.pp-team select.ip-in{min-width:116px}.pp-team td,.pp-team th{padding:10px 8px;border-top:1px solid var(--pl-line);text-align:left;font-size:14px}.pp-team{width:100%;border-collapse:collapse}
+.pp-ev{display:flex;align-items:center;gap:8px;color:var(--pl-soft);text-decoration:none;font:600 14px var(--sys-title);margin:0 0 8px}
+@media (min-width:900px){
+  .pp{padding:28px 24px 64px}
+  .pp-main{display:grid;grid-template-columns:196px minmax(0,1fr);gap:20px;align-items:start}
+  .pp-nav{display:block;position:sticky;top:20px}
+  .pp-nav a{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:10px;color:var(--pl-soft);text-decoration:none;font:500 14px var(--sys-title)}
+  .pp-nav a:hover{background:var(--pl-raised);color:var(--pl-ink)}.pp-nav a[aria-current]{background:var(--pl-accent-soft);color:var(--pl-accent-text)}
+  .pp-nav a .ip-mono{font-size:13px}
+  .pp-nav h2{font:600 13px var(--sys-title);color:var(--pl-muted);margin:16px 12px 6px}
+  .pp-lists{display:none}
+  .pp-cards{display:none}
+  .pp-tbl{display:block;background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:16px;overflow:auto}
+  .pp-tbl table{width:100%;border-collapse:collapse;font-size:14px}
+  .pp-tbl th{position:sticky;top:0;background:var(--pl-surface);text-align:left;font:600 13px var(--sys-title);color:var(--pl-muted);padding:10px 12px;border-bottom:1px solid var(--pl-line);white-space:nowrap}
+  .pp-tbl td{padding:9px 10px;border-bottom:1px solid var(--pl-line);vertical-align:middle;white-space:nowrap}
+  .pp-tbl tr:last-child td{border-bottom:0}.pp-tbl tbody tr{cursor:pointer}.pp-tbl tbody tr:hover td{background:var(--pl-page)}
+  .pp-tbl td.z{color:var(--pl-line-strong)}.pp-tbl td.n{font-family:var(--pl-font-mono);font-variant-numeric:tabular-nums;text-align:right}.pp-tbl th.n{text-align:right}
+  .pp-tbl .nm{font-weight:600}.pp-tbl .sub{color:var(--pl-muted);font-size:13px}
+  .pp-bulk{bottom:24px}
+  .pp-plan{max-width:860px}
+}
+</style></head><body>
+<main class="pp ip" id="pp"><div class="ip-card"><p class="ip-sub">Getting your people…</p></div></main>
+<script src="/authguard.js"></script><script src="/invite-plan.js"></script>
+<script>
+(function () {
+  const E = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const q = (s, el) => (el || document).querySelector(s), qa = (s, el) => [...(el || document).querySelectorAll(s)];
+  const root = q("#pp"), plural = (n, one, many) => `${n} ${n === 1 ? one : many || one + "s"}`;
+  async function api(url, body, method) { const r = await fetch(url, body !== undefined || method ? { method: method || "POST", headers: { "Content-Type": "application/json" }, body: body !== undefined ? JSON.stringify(body) : undefined } : {}); let j = null; try { j = await r.json(); } catch {} if (!r.ok) { const e = new Error(j?.message || "That didn't work."); e.status = r.status; throw e; } return j; }
+  function toast(t) { const d = document.createElement("div"); d.className = "ip-toast"; d.setAttribute("role", "status"); d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+  const ago = (ms) => { if (!ms) return "Never"; const d = Math.round((Date.now() - ms) / 864e5); return d <= 0 ? "Today" : d === 1 ? "Yesterday" : d < 30 ? `${d} days ago` : new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d > 300 ? { year: "numeric" } : {}) }); };
+  const VIA = { came: "Came", replied: "Replied", let_in: "Let in", club: "Fan club", follower: "Follows you", kudos: "Gave kudos", supporter: "Supporter", imported: "Imported", waitlist: "Waitlist", invited: "Invited", listed: "On a guest list" };
+  const ini = (n) => E(String(n || "?").trim().slice(0, 1).toUpperCase() || "?");
+  const tags = (p) => (p.tags || []).slice(0, 3).map((t) => `<span class="ip-tag${/^vip$/i.test(t) ? " vip" : ""}">${E(t)}</span>`).join(" ");
+  const line = (p) => [p.attended ? (p.attended === 1 ? "Came once" : `Came ${p.attended} times`) : p.replies ? "Replied, never came" : VIA[p.via[0]] || "", p.lastSeen ? `last seen ${ago(p.lastSeen).replace(/^(Today|Yesterday)$/, (m) => m.toLowerCase())}` : "", p.again ? "Would go again" : "", p.club ? "Fan club" : "", p.company || "", p.noShows ? plural(p.noShows, "no-show") : ""].filter(Boolean).join(" · ");
+
+  const OPTS = [[{ k: "came", n: 2 }], [{ k: "came", n: 1 }, "Came before"], [{ k: "again" }], [{ k: "club" }], [{ k: "follower" }], [{ k: "maybeLast" }], [{ k: "repliedNeverCame" }], [{ k: "new" }], [{ k: "noShow", not: true }], [{ k: "noShow" }], [{ k: "lapsed", n: 90 }], [{ k: "recent", n: 30 }], [{ k: "plusOnes" }], [{ k: "supporter" }], [{ k: "imported" }], [{ k: "optin" }, "Opted in to email", true]];
+  const S = { chips: [], list: "", q: "", sel: new Set(), data: null, tab: "people" };
+  const m = location.pathname.match(/^\/contacts\/event\/([^/]+)/);
+  try { const u = new URL(location.href); if (u.searchParams.get("tab") === "team") S.tab = "team"; const c = u.searchParams.get("list"); if (c) S.list = c; } catch {}
+
+  if (m) return planPage(decodeURIComponent(m[1]));
+  load();
+
+  async function load() {
+    const u = S.list ? `/api/contacts?list=${encodeURIComponent(S.list)}` : `/api/contacts?chips=${encodeURIComponent(JSON.stringify(S.chips))}${S.q ? "&q=" + encodeURIComponent(S.q) : ""}`;
+    try { S.data = await api(u); } catch (e) { root.innerHTML = e.status === 401 ? `<div class="ip-card"><h2>Sign in to see your people</h2><p class="ip-sub">Everyone who has come to your events, replied or follows you lives here.</p><div class="ip-acts"><a class="ip-b pri" href="/login?next=/people">Sign in</a></div></div>` : `<div class="ip-card"><h2>${E(e.message)}</h2></div>`; return; }
+    if (!S.events) { try { const ev = await api("/api/db/collection?path=events"); const today = new Date().toISOString().slice(0, 10); S.events = (ev.docs || []).map((d) => ({ id: d.id, ...(d.data || {}) })).filter((e) => !e.example && !e.sample && !e.cancelled && (e.date || "9") >= today && (e.name || e.pubTitle)).sort((a, b) => String(a.date).localeCompare(String(b.date))); } catch { S.events = []; } }
+    draw();
+  }
+  const curList = () => (S.list ? (S.data.lists || []).find((l) => l.id === S.list) : null);
+  function draw() { const d = S.data, brand = d.brand, manage = d.role === "manage", L = d.lists || [], cur = curList();
+    const tabs = brand && manage ? `<nav class="pp-tabs" aria-label="People"><a href="/contacts"${S.tab === "people" ? ' aria-current="page"' : ""} data-tab="people">People</a><a href="/contacts?tab=team"${S.tab === "team" ? ' aria-current="page"' : ""} data-tab="team">Team access</a></nav>` : "";
+    const head = `<div class="pp-top"><div><h1>${brand ? "Contacts" : "Your <em>people</em>"}</h1><p class="ip-sub">${d.total ? `${plural(d.total, "person", "people")} who came, replied, followed${brand ? ", or you added" : " or joined your fan club"}. No spreadsheet needed.` : "Everyone who replies, comes or follows you shows up here on their own."}</p></div>
+      <div class="ip-acts">${manage ? `<button class="ip-b sm" type="button" id="ppImport">Import</button><a class="ip-b sm" id="ppExport" href="${E(exportUrl(cur?.name))}">Export${cur ? " list" : ""}</a>` : `<span class="ip-muted">You can view. Ask the owner to manage.</span>`}</div></div>`;
+    if (S.tab === "team") { root.innerHTML = head + tabs + `<div id="ppTeam" class="ip-card"><p class="ip-sub">Loading…</p></div>`; wireTop(); team(); return; }
+    const sugg = (d.suggestions || []).filter((x) => manage).slice(0, 2).map((x, i) => `<div class="ip-note"><p>${E(x.text)}</p><button class="ip-b pri sm" type="button" data-sugg="${i}">Add to ${E(x.event)}</button></div>`).join("");
+    const navLink = (l) => `<a href="?list=${E(l.id)}" data-list="${E(l.id)}"${S.list === l.id ? ' aria-current="page"' : ""}><span>${E(l.name)}</span><span class="ip-mono">${l.count}</span></a>`;
+    const nav = `<nav class="pp-nav" aria-label="Lists"><a href="/contacts" data-list=""${!S.list && !S.chips.length ? ' aria-current="page"' : ""}><span>Everyone</span><span class="ip-mono">${d.total}</span></a><h2>Smart lists</h2>${L.filter((l) => l.builtin && l.count).map(navLink).join("")}${L.some((l) => !l.builtin) ? `<h2>Saved</h2>${L.filter((l) => !l.builtin).map(navLink).join("")}` : ""}</nav>`;
+    const mobileLists = `<div class="pp-lists"><div class="ip-scroll" role="list"><button class="ip-chip" type="button" data-list="" aria-pressed="${!S.list && !S.chips.length}">Everyone <span class="ip-mono">${d.total}</span></button>${L.filter((l) => l.count || !l.builtin).map((l) => `<button class="ip-chip" type="button" data-list="${E(l.id)}" aria-pressed="${S.list === l.id}">${E(l.name)} <span class="ip-mono">${l.count}</span></button>`).join("")}</div></div>`;
+    const chips = cur ? cur.chips.map((c, i) => ({ ...c, label: cur.labels[i] })) : d.chips || [];
+    const bar = `<div class="pp-bar"><label style="flex:1"><span class="ip-sr">Search</span><input class="ip-in" type="search" id="ppQ" placeholder="Search names, companies, tags" value="${E(S.q)}"></label><button class="ip-b" type="button" id="ppFilter">Filter</button></div>
+      ${chips.length ? `<div class="ip-chips" aria-label="Filters">${chips.map((c, i) => `<button class="ip-chip on" type="button" data-unchip="${i}" aria-label="Remove ${E(c.label)}">${E(c.label)}<span class="x" aria-hidden="true">×</span></button>`).join("")}${!cur && manage ? `<button class="ip-b ghost sm" type="button" id="ppSave">Save as list</button>` : ""}${cur && !cur.builtin && manage ? `<button class="ip-b ghost sm" type="button" id="ppDel">Delete list</button>` : ""}</div>` : ""}`;
+    const P = d.people, cols = brand ? ["Name", "Company", "Connected", "Came", "Last seen", "No-show", "Tags", "Opt-in"] : ["Name", "Connected", "Came", "Last seen", "Again", "No-show", "+1s", "Tags"];
+    const cell = (p, c) => ({ Name: `<span class="nm">${E(p.name)}</span>${p.title ? `<div class="sub">${E(p.title)}</div>` : manage && p.email ? `<div class="sub">${E(p.email)}</div>` : ""}`, Company: E(p.company), Connected: E(VIA[["came", "let_in", "club", "supporter", "follower", "kudos", "replied", "waitlist", "invited", "imported", "listed"].find((v) => p.via.includes(v))] || ""), Came: p.attended, "Last seen": p.lastSeen ? E(ago(p.lastSeen)) : `<span class="sub">·</span>`, Again: p.again ? "Yes" : "", "No-show": p.noShows || "", "+1s": p.plusOnes || "", Tags: tags(p), "Opt-in": p.unsubscribed ? "Unsubscribed" : p.consent?.status === "in" ? `<span title="${E(p.consent.source || "")}">Yes</span>` : p.consent?.status === "activity" ? "From replies" : p.consent?.status === "out" ? "No" : `<span class="sub">Not yet</span>` })[c];
+    const numC = new Set(["Came", "No-show", "+1s"]);
+    const list = P.length ? `<div class="pp-cards${manage ? "" : " nosel"}"><div class="ip-rows">${P.map((p) => `<div class="ip-row" data-open="${E(p.id)}" tabindex="0" role="button" aria-label="${E(p.name)}">${manage ? `<input class="pp-ck" type="checkbox" data-sel="${E(p.id)}" aria-label="Select ${E(p.name)}"${S.sel.has(p.id) ? " checked" : ""}>` : ""}<span class="ip-av">${ini(p.name)}</span><span><b>${E(p.name)} ${tags(p)}</b><span class="ip-meta">${E(line(p))}</span></span><span class="ip-end">${p.unsubscribed ? `<span class="ip-muted">No email</span>` : ""}</span></div>`).join("")}</div></div>
+      <div class="pp-tbl"><table><thead><tr>${manage ? `<th><input class="pp-ck" type="checkbox" id="ppAll" aria-label="Select all"></th>` : ""}${cols.map((c) => `<th${numC.has(c) ? ' class="n"' : ""}>${c}</th>`).join("")}</tr></thead><tbody>${P.map((p) => `<tr data-open="${E(p.id)}">${manage ? `<td><input class="pp-ck" type="checkbox" data-sel="${E(p.id)}" aria-label="Select ${E(p.name)}"${S.sel.has(p.id) ? " checked" : ""}></td>` : ""}${cols.map((c) => { const v = cell(p, c); return `<td${numC.has(c) ? ` class="n${!v ? " z" : ""}"` : ""}>${numC.has(c) && !v ? "·" : v}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>`
+      : `<div class="ip-card pp-empty">${d.total ? "No one matches these filters." : "No one yet. Share an event and the people who reply show up here."}</div>`;
+    root.innerHTML = head + tabs + (sugg ? `<div class="pp-sugg">${sugg}</div>` : "") + `<div class="pp-main">${nav}<div>${mobileLists}${bar}<div class="pp-count"><span><b class="ip-mono">${d.count}</b> ${d.count === 1 ? "person" : "people"}${cur ? ` in ${E(cur.name)}` : ""}</span>${d.count && manage ? `<button class="ip-b ghost sm" type="button" id="ppInvAll">Invite all ${d.count}</button>` : ""}</div>${list}</div></div>` + bulkHTML();
+    wireTop(); wire(); }
+  function exportUrl(name) { const p = S.list ? `list=${encodeURIComponent(S.list)}` : `chips=${encodeURIComponent(JSON.stringify(S.chips))}`; return `/api/contacts-export.csv?${p}&name=${encodeURIComponent(name || "people")}`; }
+  function bulkHTML() { const n = S.sel.size; return n ? `<div class="pp-bulk" role="region" aria-label="Selected"><span>${n} selected</span><button class="ip-b sm" type="button" id="ppTag">Tag</button><button class="ip-b pri sm" type="button" id="ppInv">Invite to…</button><button class="ip-b sm" type="button" id="ppClr" aria-label="Clear selection">Clear</button></div>` : ""; }
+
+  function wireTop() { const im = q("#ppImport"); if (im) im.onclick = importSheet;
+    qa("[data-tab]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); S.tab = a.dataset.tab; history.replaceState(null, "", S.tab === "team" ? "/contacts?tab=team" : "/contacts"); draw(); })); }
+  function wire() { const d = S.data;
+    qa("[data-list]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); S.list = b.dataset.list; S.chips = []; S.q = ""; S.sel.clear(); history.replaceState(null, "", S.list ? "/contacts?list=" + encodeURIComponent(S.list) : "/contacts"); load(); }));
+    const qi = q("#ppQ"); let t; if (qi) qi.oninput = () => { clearTimeout(t); t = setTimeout(async () => { S.q = qi.value.trim(); if (S.list) { const cur = curList(); S.chips = cur ? cur.chips.slice() : []; S.list = ""; } await load(); const n = q("#ppQ"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    q("#ppFilter").onclick = filterSheet;
+    qa("[data-unchip]").forEach((b) => (b.onclick = () => { const cur = curList(); if (cur) { S.chips = cur.chips.slice(); S.list = ""; } S.chips.splice(+b.dataset.unchip, 1); load(); }));
+    const sv = q("#ppSave"); if (sv) sv.onclick = async () => { const name = prompt("Name this list", d.chips.map((c) => c.label).join(", ")); if (name == null) return; try { const r = await api("/api/contacts-lists", { name, chips: S.chips }); S.list = r.id; S.chips = []; await load(); toast("List saved. Counts stay live."); } catch (e) { toast(e.message); } };
+    const dl = q("#ppDel"); if (dl) dl.onclick = async () => { if (!confirm("Delete this list? The people stay.")) return; await api("/api/contacts-lists/" + encodeURIComponent(S.list), undefined, "DELETE"); S.list = ""; load(); };
+    qa("[data-sel]").forEach((x) => { x.onclick = (e) => e.stopPropagation(); x.onchange = () => { if (x.checked) S.sel.add(x.dataset.sel); else S.sel.delete(x.dataset.sel); redrawBulk(); qa(`[data-sel="${x.dataset.sel}"]`).forEach((y) => (y.checked = x.checked)); }; });
+    const all = q("#ppAll"); if (all) all.onchange = () => { d.people.forEach((p) => (all.checked ? S.sel.add(p.id) : S.sel.delete(p.id))); draw(); };
+    qa("[data-open]").forEach((r) => { r.onclick = () => personSheet(r.dataset.open); r.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); personSheet(r.dataset.open); } }; });
+    qa("[data-sugg]").forEach((b) => (b.onclick = async () => { const s = d.suggestions[+b.dataset.sugg]; try { const r = await api(`/api/plan/${encodeURIComponent(s.eventId)}/add`, { chips: s.chips }); toast(`Added ${plural(r.added, "person", "people")} to ${s.event}.`); location.href = `/contacts/event/${encodeURIComponent(s.eventId)}`; } catch (e) { toast(e.message); } }));
+    const ia = q("#ppInvAll"); if (ia) ia.onclick = () => eventSheet(null);
+    wireBulk(); }
+  function redrawBulk() { q(".pp-bulk")?.remove(); root.insertAdjacentHTML("beforeend", bulkHTML()); wireBulk(); }
+  function wireBulk() { const tg = q("#ppTag"); if (tg) tg.onclick = tagSheet; const iv = q("#ppInv"); if (iv) iv.onclick = () => eventSheet([...S.sel]); const c = q("#ppClr"); if (c) c.onclick = () => { S.sel.clear(); draw(); }; }
+
+  // ---- sheets ----
+  function sheet(html) { const bg = document.createElement("div"); bg.className = "ip-sheet-bg ip"; bg.innerHTML = `<div class="ip-sheet" role="dialog" aria-modal="true">${html}</div>`; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); }; document.addEventListener("keydown", function k(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", k); } }); setTimeout(() => q("input,select,textarea,button", bg)?.focus(), 30); return { bg, close }; }
+  const lab = (c) => { const L = { came: (c.n || 2) === 1 ? "Came before" : `Came ${c.n}+ times`, again: "Would go again", club: "Fan club", follower: "Followers", maybeLast: "Said maybe last time", repliedNeverCame: "Never came but replied", new: "Never came", noShow: c.not ? "No no-shows" : "No-shows", lapsed: "Came before, not in 90 days", recent: "Seen in the last 30 days", plusOnes: "Brings a plus-one", supporter: "Supporters", imported: "Imported", optin: "Opted in to email" }; return L[c.k] || c.k; };
+  function filterSheet() { const d = S.data; const has = (c) => S.chips.some((x) => x.k === c.k && !!x.not === !!c.not && (x.n || 0) === (c.n || 0));
+    const { bg, close } = sheet(`<h2>Filter</h2><p class="ip-sub">Pick as many as you like. People have to match all of them.</p>
+      <div class="pp-opt" style="margin-top:16px">${OPTS.filter(([, , b]) => !b || d.brand).map(([c, l]) => `<button class="ip-chip" type="button" data-opt='${E(JSON.stringify(c))}' aria-pressed="${has(c)}">${E(l || lab(c))}</button>`).join("")}</div>
+      <div style="display:grid;gap:12px;margin-top:16px"><label class="ip-lab">In a city<input class="ip-in" id="fCity" list="fCities" placeholder="Brooklyn"><datalist id="fCities">${(d.cities || []).map((c) => `<option value="${E(c)}">`).join("")}</datalist></label>
+      <label class="ip-lab">Tagged<select class="ip-in" id="fTag"><option value="">Any tag</option>${(d.tags || []).map((t) => `<option>${E(t)}</option>`).join("")}</select></label>${d.brand ? `<label class="ip-lab">At a company<input class="ip-in" id="fCo" placeholder="Acme"></label>` : ""}</div>
+      <div class="ip-acts" style="justify-content:flex-end"><button class="ip-b" type="button" id="fX">Cancel</button><button class="ip-b pri" type="button" id="fGo">Show people</button></div>`);
+    qa("[data-opt]", bg).forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true")));
+    q("#fX", bg).onclick = close;
+    q("#fGo", bg).onclick = () => { const C = qa("[data-opt][aria-pressed=true]", bg).map((b) => JSON.parse(b.dataset.opt)); const city = q("#fCity", bg).value.trim(), tag = q("#fTag", bg).value, co = q("#fCo", bg)?.value.trim(); if (city) C.push({ k: "city", v: city }); if (tag) C.push({ k: "tag", v: tag }); if (co) C.push({ k: "company", v: co });
+      const cur = curList(); S.chips = [...(cur ? cur.chips : S.chips).filter((x) => ["city", "tag", "company"].includes(x.k) && !C.some((y) => y.k === x.k)), ...C]; S.list = ""; close(); load(); }; }
+  function tagSheet() { const d = S.data; const { bg, close } = sheet(`<h2>Tag ${plural(S.sel.size, "person", "people")}</h2><p class="ip-sub">Tags are yours. Guests never see them.</p><div class="ip-chips" style="margin-top:16px">${(d.tags || []).slice(0, 14).map((t) => `<button class="ip-chip" type="button" data-t="${E(t)}">${E(t)}</button>`).join("")}</div><label class="ip-lab" style="margin-top:12px">Or a new tag<input class="ip-in" id="tNew" maxlength="30" placeholder="Speaker"></label><div class="ip-acts" style="justify-content:flex-end"><button class="ip-b" type="button" id="tX">Cancel</button><button class="ip-b pri" type="button" id="tGo">Add tag</button></div>`);
+    let pick = ""; qa("[data-t]", bg).forEach((b) => (b.onclick = () => { pick = b.dataset.t; qa("[data-t]", bg).forEach((x) => x.setAttribute("aria-pressed", x === b)); }));
+    q("#tX", bg).onclick = close; q("#tGo", bg).onclick = async () => { const tag = q("#tNew", bg).value.trim() || pick; if (!tag) return; try { const r = await api("/api/contacts-bulk/tag", { ids: [...S.sel], tag }); close(); S.sel.clear(); await load(); toast(`Tagged ${r.n} as ${tag}.`); } catch (e) { toast(e.message); } }; }
+  function eventSheet(ids) { const E2 = S.events || []; const n = ids ? ids.length : S.data.count;
+    const { bg, close } = sheet(`<h2>Invite ${plural(n, "person", "people")}</h2><p class="ip-sub">They go on the event's invite plan. Nothing sends until you say so, or their wave comes up.</p>
+      ${E2.length ? `<div class="ip-rows" style="margin:12px 0 0">${E2.slice(0, 8).map((e) => `<button class="ip-row" type="button" data-ev="${E(e.id)}"><span class="ip-av">${E(String(e.date || "").slice(8, 10) || "?")}</span><span><b>${E(e.pubTitle || e.name)}</b><span class="ip-meta">${e.date ? E(new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })) : "No date yet"}${e.headcount ? ` · ${e.headcount} seats` : ""}</span></span><span class="ip-end">›</span></button>`).join("")}</div>` : `<p class="ip-sub" style="margin-top:12px">Make an event first, then come back.</p><div class="ip-acts"><a class="ip-b pri" href="/?app=1&new=1#studio">New event</a></div>`}
+      <div class="ip-acts" style="justify-content:flex-end"><button class="ip-b" type="button" id="eX">Cancel</button></div>`);
+    q("#eX", bg).onclick = close;
+    qa("[data-ev]", bg).forEach((b) => (b.onclick = async () => { const body = ids ? { ids } : S.list ? { list: S.list } : { chips: S.chips }; try { const r = await api(`/api/plan/${encodeURIComponent(b.dataset.ev)}/add`, body); location.href = `/contacts/event/${encodeURIComponent(b.dataset.ev)}`; toast(`Added ${r.added}.`); } catch (e) { toast(e.message); } })); }
+  async function personSheet(id) { let j; try { j = await api("/api/contacts/" + encodeURIComponent(id)); } catch (e) { return toast(e.message); } const p = j.person, d = S.data, manage = d.role === "manage";
+    const resp = { going: "I'm in", maybe: "Maybe", no: "Can't go", declined: "Can't go", requested: "Asked to join", waitlist: "Waitlist" };
+    const { bg, close } = sheet(`<h2>${E(p.name)}</h2><p class="ip-sub">${E(p.via.map((v) => VIA[v] || v).join(" · "))}</p>
+      <dl class="pp-kv">${manage && p.email ? `<dt>Email</dt><dd>${E(p.email)}</dd>` : ""}<dt>Came</dt><dd>${p.attended ? plural(p.attended, "time") : "Not yet"}${p.noShows ? ` · ${plural(p.noShows, "no-show")}` : ""}${p.plusOnes ? ` · ${plural(p.plusOnes, "plus-one")}` : ""}</dd><dt>Last seen</dt><dd>${E(ago(p.lastSeen))}</dd>${p.again ? `<dt>Kudos</dt><dd>Would go again</dd>` : ""}${p.club ? `<dt>Fan club</dt><dd>Member${j.clubSince ? " since " + E(new Date(j.clubSince).toLocaleDateString("en-US", { month: "short", year: "numeric" })) : ""}</dd>` : ""}
+        ${d.brand ? `<dt>Email opt-in</dt><dd>${p.unsubscribed ? "Unsubscribed" : p.consent?.status === "in" ? `Yes, ${E(p.consent.source || "")}` : p.consent?.status === "activity" ? "Replied to you before" : "Not yet"}</dd>` : p.unsubscribed ? `<dt>Email</dt><dd>Unsubscribed. We won't email them.</dd>` : ""}</dl>
+      ${manage ? `<div style="display:grid;gap:12px"><label class="ip-lab">Tags<input class="ip-in" id="pTags" value="${E((p.tags || []).join(", "))}" placeholder="VIP, Customer, Press, Regular, Friend"></label>
+        ${d.brand ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="ip-lab">Company<input class="ip-in" id="pCo" value="${E(p.company)}"></label><label class="ip-lab">Title<input class="ip-in" id="pTi" value="${E(p.title)}"></label></div>` : ""}
+        <label class="ip-lab">City<input class="ip-in" id="pCity" value="${E(p.city)}"></label>
+        ${d.brand && !p.unsubscribed ? `<label class="ip-lab">Email opt-in<select class="ip-in" id="pCons"><option value="">${p.consent?.status === "in" ? "Opted in" : "Leave as is"}</option><option value="in">They opted in</option><option value="out">They opted out</option></select></label>` : ""}
+        <label class="ip-lab">Notes<textarea class="ip-in" id="pNotes" maxlength="600" placeholder="Only you${d.brand ? " and your team" : ""} see this.">${E(p.notes)}</textarea></label></div>` : `${(p.tags || []).length ? `<p>${tags(p)}</p>` : ""}`}
+      ${j.history.length ? `<h3 class="ip-h2" style="margin-top:16px">History</h3><ul class="pp-hist">${j.history.map((h) => `<li><span>${E(h.title)} <span class="ip-muted">${h.date ? E(new Date(h.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })) : ""}</span></span><span class="ip-muted">${h.came ? "Came" : h.noShow ? "No-show" : E(resp[h.response] || h.response || "")}${h.party > 1 ? ` +${h.party - 1}` : ""}</span></li>`).join("")}</ul>` : ""}
+      <div class="ip-acts" style="justify-content:flex-end"><button class="ip-b" type="button" id="pX">${manage ? "Cancel" : "Close"}</button>${manage ? `<button class="ip-b pri" type="button" id="pGo">Save</button>` : ""}</div>`);
+    q("#pX", bg).onclick = close; const go = q("#pGo", bg); if (go) go.onclick = async () => { const b = { tags: q("#pTags", bg).value.split(",").map((x) => x.trim()).filter(Boolean), notes: q("#pNotes", bg).value, city: q("#pCity", bg).value }; if (q("#pCo", bg)) { b.company = q("#pCo", bg).value; b.title = q("#pTi", bg).value; } const cs = q("#pCons", bg)?.value; if (cs) b.consent = { status: cs, source: "Set by your team" };
+      try { await api("/api/contacts/" + encodeURIComponent(id), b); close(); await load(); toast("Saved."); } catch (e) { toast(e.message); } }; }
+  function importSheet() { const brand = S.data.brand;
+    const { bg, close } = sheet(`<h2>Import</h2><p class="ip-sub">Optional. Your people already show up from replies and follows. Paste emails or a CSV once if you have a list from somewhere else.</p>
+      <label class="ip-lab" style="margin-top:12px">Emails or CSV<textarea class="ip-in" id="iText" placeholder="ada@example.com, Bo Tran <bo@example.com>&#10;or a CSV with an Email column"></textarea></label>
+      <label class="ip-b sm" style="margin-top:8px;width:max-content">Choose a CSV file<input type="file" accept=".csv,text/csv,.txt" id="iFile" hidden></label>
+      ${brand ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><label class="ip-lab">Where they came from<input class="ip-in" id="iSrc" placeholder="Booth scan, Nov 2026"></label><label class="ip-lab">Email opt-in<select class="ip-in" id="iCons"><option value="">Use the CSV's column</option><option value="in">They all opted in</option><option value="unknown">Not sure</option></select></label></div><p class="ip-muted" style="margin:6px 0 0">We only email people who opted in or who replied to you before.</p>` : ""}
+      <div id="iPrev" style="margin-top:12px"></div>
+      <div class="ip-acts" style="justify-content:flex-end"><button class="ip-b" type="button" id="iX">Cancel</button><button class="ip-b" type="button" id="iCheck">Check</button><button class="ip-b pri" type="button" id="iGo" disabled>Add them</button></div>`);
+    q("#iX", bg).onclick = close;
+    q("#iFile", bg).onchange = async (e) => { const f = e.target.files[0]; if (f) { q("#iText", bg).value = await f.text(); check(); } };
+    async function check() { try { const p = await api("/api/contacts-import/preview", { text: q("#iText", bg).value }); q("#iPrev", bg).innerHTML = `<div class="ip-note"><div><p><b>${p.add.length}</b> new · <b>${p.update.length}</b> already here${p.update.some((u) => u.fills.length) ? " (we'll fill in blanks)" : ""}${p.dupes ? ` · ${plural(p.dupes, "repeat")} skipped` : ""}${p.bad.length ? ` · ${p.bad.length} without an email` : ""}</p>${p.update.length ? `<p class="ip-muted" style="margin-top:4px">Already here: ${p.update.slice(0, 5).map((u) => E(u.name)).join(", ")}${p.update.length > 5 ? "…" : ""}. Their history stays.</p>` : ""}</div></div>`; q("#iGo", bg).disabled = !(p.add.length || p.update.length); } catch (e) { q("#iPrev", bg).innerHTML = `<p class="ip-sub">${E(e.message)}</p>`; } }
+    q("#iCheck", bg).onclick = check;
+    q("#iGo", bg).onclick = async () => { try { const r = await api("/api/contacts-import", { text: q("#iText", bg).value, source: q("#iSrc", bg)?.value || "Import", consent: q("#iCons", bg)?.value || "" }); close(); await load(); toast(`Added ${r.added}, updated ${r.updated}.`); } catch (e) { toast(e.message); } }; }
+  async function team() { const el = q("#ppTeam"); let j; try { j = await api("/api/contacts-team"); } catch (e) { el.innerHTML = `<p class="ip-sub">${E(e.message)}</p>`; return; }
+    const R = { manage: "Can manage: sees emails, edits, imports, exports, sends", view: "Can view: names, companies, tags and counts", none: "No access" };
+    el.innerHTML = `<h2>Who can see contacts</h2><p class="ip-sub">The owner always manages. Anyone else on your team can view unless you change it.</p>${j.team.length ? `<table class="pp-team" style="margin-top:12px"><thead><tr><th>Person</th><th>Role on the team</th><th>Contacts</th></tr></thead><tbody>${j.team.map((m) => `<tr><td><b>${E(m.name)}</b><div class="ip-muted">${E(m.email)}</div></td><td>${E(m.owner ? "Owner" : m.roles.join(", ") || "Team member")}</td><td>${m.owner ? "Manage" : `<select class="ip-in" data-acc="${E(m.email)}" aria-label="Contacts access for ${E(m.name)}">${["manage", "view", "none"].map((r) => `<option value="${r}"${m.access === r ? " selected" : ""}>${{ manage: "Manage", view: "View", none: "No access" }[r]}</option>`).join("")}</select>`}</td></tr>`).join("")}</tbody></table>` : `<p class="ip-sub">Only you so far.</p>`}
+      <ul class="ip-muted" style="margin:12px 0 0;padding-left:18px">${Object.values(R).map((x) => `<li>${E(x)}</li>`).join("")}</ul>`;
+    qa("[data-acc]", el).forEach((s) => (s.onchange = async () => { try { await api("/api/contacts-team", { email: s.dataset.acc, access: s.value }); toast("Saved."); } catch (e) { toast(e.message); } })); }
+
+  // ---- /people/event/<id>: the invite plan on its own page ----
+  async function planPage(id) { let title = "Invite plan", date = "";
+    try { const ev = await api("/api/db/doc?path=" + encodeURIComponent("events/" + id)); title = ev?.data?.pubTitle || ev?.data?.name || title; date = ev?.data?.date || ""; } catch {}
+    root.innerHTML = `<div class="pp-plan"><a class="pp-ev" href="/contacts">‹ People</a><div class="pp-top"><div><h1>${E(title)}</h1><p class="ip-sub">${date ? E(new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })) + " · " : ""}Who to invite, and where everyone stands.</p></div><div class="ip-acts"><a class="ip-b sm" href="/?app=1#studio" id="ppOpenEv">Open the event</a></div></div><div id="ppPlan"></div></div>`;
+    try { localStorage.setItem("encore.lastEvent", id); } catch {}
+    window.InvitePlan.mount(q("#ppPlan"), id); }
+})();
+</script>
+<script src="/shell.js" defer></script>
+</body></html>

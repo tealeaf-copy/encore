@@ -58,6 +58,7 @@ import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Dis
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountBrandbook } from "./brandbook.js"; // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
+import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
@@ -745,6 +746,7 @@ export function createApp({ store, dataDir }) {
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
+  mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X }); mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
   mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)
@@ -1555,7 +1557,7 @@ export function createApp({ store, dataDir }) {
       if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws0 = workspaceOfEvent(String(b.eventId)), ev0 = ws0 && scopeStore(store, ws0).get("events/" + String(b.eventId))?.data;
         if (ev0 && earlyAccessBlocks(ev0, C.followersOf(ws0).some((f) => f.email === String(b.email || "").trim().toLowerCase()))) { res.status(403).json({ code: "early_access", message: `Followers get first dibs until ${new Date(ev0.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Follow the host with this email to book now, or come back then.` }); return false; } }
       // fan clubs (server/fanclub.js): members-only events and the members-first window
-      if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws1 = workspaceOfEvent(String(b.eventId)), fc = ws1 && app.locals.fanclub?.rsvpGate(ws1, String(b.eventId), [b.email, currentUser(req)?.email]); if (fc) { res.status(403).json(fc); return false; } }
+      if (String(b.response || "").toLowerCase() !== "no" && b.eventId) { const ws1 = workspaceOfEvent(String(b.eventId)), fc = ws1 && !app.locals.invites?.isInvited?.(ws1, String(b.eventId), [b.email, currentUser(req)?.email]) && app.locals.fanclub?.rsvpGate(ws1, String(b.eventId), [b.email, currentUser(req)?.email]); /* a personal invite (server/invites.js) skips the members-first wait */ if (fc) { res.status(403).json(fc); return false; } }
       // answers to the host's own questions: a few short values, plain text only
       if (Array.isArray(b.answers) && b.answers.every((x) => x && typeof x === "object" && "a" in x)) { b.answers = b.answers.slice(0, 15).map((x) => ({ q: String(x.q ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 140), a: String(x.a ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500) })).filter((x) => x.a); }
       else if (b.answers != null) { const A = {}; if (b.answers && typeof b.answers === "object") for (const [k, v] of Object.entries(b.answers).slice(0, 15)) { if (!/^[a-z0-9]{1,12}$/i.test(k)) continue; const one = (x) => String(x ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 500); A[k] = Array.isArray(v) ? v.slice(0, 10).map(one).filter(Boolean) : typeof v === "number" ? Math.max(-1e6, Math.min(1e6, v)) : one(v); } b.answers = A; }
@@ -1623,7 +1625,7 @@ export function createApp({ store, dataDir }) {
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
     if (pol.error) throw httpError(pol.status || 409, pol.code || "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
-    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}) };
+    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}), ...(o.seatBlock != null ? { seatBlock: o.seatBlock } : {}) };
   }
   /** Over: its last day is before today where it happens. Pure apart from the clock. */
   const eventOver = (ev) => { const d = /^\d{4}-\d{2}-\d{2}$/.test(ev?.endDate || "") && ev.endDate >= (ev.date || "") ? ev.endDate : ev?.date; return /^\d{4}-\d{2}-\d{2}$/.test(d || "") && d < todayIn(eventTz(ev)); };
@@ -1753,6 +1755,8 @@ export function createApp({ store, dataDir }) {
       if (pr.response === "going") { const u = partyUnit(ev), room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = Math.max(u, Math.floor(room / u) * u); out.partyCut = true; } } // already in: keeps their spots (whole groups)
       else if (taken + mine > cap || (!cw?.credit && waitlistOf(all.filter((d) => d.id !== prior?.id)).length)) out.response = "waitlist";
     }
+    // seats by audience (server/seats.js): the best block this guest qualifies for, or not open yet, or the waitlist
+    if (req.guest && out.response === "going" && !meAlready && !out.pairOf) { const sb = app.locals.seats?.gate?.(req.ws, eventId, ev, all, out, prior, [em, currentUser(req)?.email]); if (sb?.error) return { body: out, prior, error: sb.error, status: sb.status, code: sb.code }; if (sb?.waitlist) out.response = "waitlist"; else if (sb?.block != null) out.seatBlock = sb.block; }
     if (out.response === "waitlist") out.waitAt = pr.response === "waitlist" && pr.waitAt ? pr.waitAt : Date.now();
     return { body: out, prior };
   }

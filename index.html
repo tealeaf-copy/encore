@@ -10961,7 +10961,7 @@ html body .dz-card.on::after{display:grid;place-items:center;line-height:1;font-
 .wg-emo{font-size:16px}
 @media (prefers-reduced-motion:reduce){.yi,.yi-bg{animation:none}.yi-tick{animation:none;stroke-dashoffset:0}}
 </style>
-<script src="/shell.js" defer></script>
+<script src="/shell.js" defer></script><script src="/invite-plan.js" defer></script>
 <script>
 // Every event without its own photo gets an illustrated cover: label, title and a line drawing for what it is.
 { const css=document.createElement("style"); css.textContent=`.gxcover.ea-on{background:none;position:relative!important;inset:auto!important;width:auto!important;height:auto!important;aspect-ratio:4/3;display:block}.invite.ea-card-on{display:flex!important;flex-direction:column}.invite.ea-card-on>.gxcover.ea-on{flex:none}.gxcover.ea-on>*:not(.ea-host){display:none!important}.gxcover .ea-host{position:absolute;inset:0}.gxcover.ea-on:hover .ea-art{transform:rotate(-4deg) scale(1.06)}`; document.head.appendChild(css);
@@ -12927,7 +12927,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     HV.sig=sigOf(d);
     nav(!!d.id);
     if(stage==="new"){ h.innerHTML=`<div class="hv-start">${typeof pipSVG==="function"?pipSVG("happy",72):""}<h1>What are you hosting?</h1><p class="hv-sub" style="margin:0 0 24px">Tell Potto in a line. You'll check the details, then share.</p><button class="hv-b pri big" type="button" data-hv="create" style="max-width:320px">Start</button></div>`; wire(h,d,P,c,stage); return }
-    const tabs=[["overview","Overview",""],["guests","Guests",c.in?String(c.in):""],["invite","Invite",""]];
+    const tabs=[["overview","Overview",""],["guests","Guests",c.in?String(c.in):""],["plan","Invite",""],["invite","Page",""]]; // Invite: the invite plan (public/invite-plan.js); Page: the look, details and link
     h.innerHTML=`<button class="hv-back" type="button" data-hv="home">${I.back}<span>Your events</span></button>
       <h1 class="hv-title">${E(d.pubTitle||d.name||"Untitled event")}</h1>
       <p class="hv-when">${E([whenLine(d),placeLine(d)].filter(Boolean).join(" · "))}</p>
@@ -12935,9 +12935,9 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
       <div class="hv-cta"><button class="hv-b pri big" type="button" data-hv="${act}" id="hvGo">${E(pl)}</button>
         <div class="hv-row3"><button class="hv-b q" type="button" data-hv="edit">${I.edit}<span class="hv-lab">Edit</span></button><a class="hv-b q" href="${E(link(d))}" target="_blank" rel="noopener" data-hv="preview">${I.eye}<span class="hv-lab">Preview</span></a><button class="hv-b q" type="button" data-hv="tools" aria-haspopup="dialog">${I.more}<span class="hv-lab">More</span></button></div></div>
       <div class="hv-tabs" role="tablist" aria-label="Event">${tabs.map(([k,l,n])=>`<button class="hv-tab" role="tab" type="button" data-tab="${k}" aria-selected="${HV.tab===k}">${l}${n?`<small>${E(n)}</small>`:""}</button>`).join("")}</div>
-      <div class="hv-pane${HV.anim?" in":""}" role="tabpanel">${HV.tab==="guests"?guestsPane(d,P,c,stage):HV.tab==="invite"?invitePane(d,c,stage):overviewPane(d,P,c,stage)}</div>
+      <div class="hv-pane${HV.anim?" in":""}" role="tabpanel">${HV.tab==="guests"?guestsPane(d,P,c,stage):HV.tab==="plan"?`<div id="hvPlan"></div>`:HV.tab==="invite"?invitePane(d,c,stage):overviewPane(d,P,c,stage)}</div>
       <div class="hv-foot"><button type="button" data-hv="help">Need a hand?</button></div>`;
-    HV.anim=false; wire(h,d,P,c,stage);
+    HV.anim=false; wire(h,d,P,c,stage); if(HV.tab==="plan"&&d.id) window.InvitePlan?.mount(q("#hvPlan",h),d.id);
     requestAnimationFrame(()=>qa(".hv-bar i",h).forEach(b=>b.style.width=b.dataset.w));
     milestones(d,c,stage) }
   function sigOf(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id); return [d.id,d.updatedAt,(d.guests||[]).length,R.map(r=>r.id+r.response+(r.paid?1:0)+(r.checkedInAt?1:0)).join()].join("|") }
@@ -13001,7 +13001,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 
   // ================= wiring =================
   function wire(h,d,P,c,stage){
-    qa("[data-tab]",h).forEach(b=>b.onclick=()=>{ HV.tab=b.dataset.tab; HV.anim=true; step={overview:1,guests:6,invite:4}[HV.tab]; HV.lastStep=step; hvRender(); q(".hv-tabs",h)?.scrollIntoView({block:"nearest"}) });
+    qa("[data-tab]",h).forEach(b=>b.onclick=()=>{ HV.tab=b.dataset.tab; HV.anim=true; step={overview:1,guests:6,invite:4,plan:6}[HV.tab]; HV.lastStep=step; hvRender(); q(".hv-tabs",h)?.scrollIntoView({block:"nearest"}) });
     qa("[data-filter]",h).forEach(b=>b.onclick=()=>{ HV.filter=b.dataset.filter; hvRender() });
     qa("[data-hvcov]",h).forEach(b=>b.onclick=()=>window.openCoverSheet?.(d,()=>hvRender()));
     qa("[data-hv]",h).forEach(b=>{ if(b.dataset.hv==="preview") return; b.onclick=e=>{ e.preventDefault(); act(b.dataset.hv,d,b) } });

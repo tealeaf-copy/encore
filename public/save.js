@@ -58,13 +58,15 @@
     setTimeout(() => { const off = (e) => { if (!m.contains(e.target)) { m.remove(); document.removeEventListener("pointerdown", off, true); } }; document.addEventListener("pointerdown", off, true); }, 0);
     m.querySelector("input").focus({ preventScroll: true }); }
 
+  // "Add to a list": the Save to list sheet (public/savelist.js, loaded the first time), the old board menu if it can't load
+  function toList(item, btn) { if (window.PLSaveList) return window.PLSaveList.open(item); const t = document.createElement("script"); t.src = "/savelist.js"; t.onload = () => (window.PLSaveList ? window.PLSaveList.open(item) : boardMenu(btn, item)); t.onerror = () => boardMenu(btn, item); document.head.appendChild(t); }
   // ---------- saving ----------
   async function toggle(item, btn) { const on = isSaved(item.kind, item.ref);
     if (signedIn()) { await load();
       if (server) { const r = await fetch(on ? `/api/me/saves?kind=${encodeURIComponent(item.kind)}&ref=${encodeURIComponent(item.ref)}` : "/api/me/saves", { method: on ? "DELETE" : "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: on ? undefined : JSON.stringify(item) });
         const j = await r.json().catch(() => null); if (!r.ok) { toast(esc(j?.message || "Couldn't save that. Try again.")); return; }
         if (on) server.delete(key(item)); else server.set(key(item), { ...item, board: "" }); emit(); setCount(item, j?.count);
-        if (!on) { const t = toast(`Saved. <button type="button" class="pls-board" style="background:none;border:0;padding:0;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:var(--pl-accent-text)">Add to a board</button>`, { go: "/saved", goLabel: "Your saves", ms: 5000 }); t.querySelector(".pls-board").onclick = () => { t.remove(); boardMenu(btn || t, item); }; }
+        if (!on) { const t = toast(`Saved. <button type="button" class="pls-board" style="background:none;border:0;padding:0;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:var(--pl-accent-text)">Add to a list</button>`, { go: "/library", goLabel: "Library", ms: 5000 }); t.querySelector(".pls-board").onclick = () => { t.remove(); toList(item, btn || t); }; }
         return; } }
     // signed out: this browser keeps it, and the account gets it at signup
     let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img), at: Date.now() }); write(L); emit();
@@ -98,5 +100,5 @@
       if (!(j.interests?.length || j.city)) { const w = await fetch("/api/me/interests", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ interests: Array.isArray(L.interests) ? L.interests : [], city: String(L.city || "").slice(0, 60) }) }); if (!w.ok) return; }
       localStorage.setItem(mark, "1"); localStorage.removeItem("pl.interests"); } catch {} }
   const ready = load().then(() => { emit(); carryInterests(); return merge(); }).catch(() => {});
-  window.PLSave = { carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
+  window.PLSave = { toList, carryInterests, button, isSaved, toggle, add, load, merge, counts, countLine, local: read, signedIn, toast, boards: () => boards, items: () => (server ? [...server.values()] : read()), on: (f) => (subs.add(f), () => subs.delete(f)), ready, css };
 })();

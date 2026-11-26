@@ -9,7 +9,8 @@
 //   file uploaded to it (photos, covers). A team workspace with other people stays theirs; the next person becomes owner.
 // - your account record, so every session you have stops working on the next request
 // - your sign-in methods: Apple and Google identities, passkeys, and the Apple token, revoked with Apple (server/signin.js)
-// - your posts, friends, bell, saves, boards, push devices, blocks, settings (system docs that carry your email)
+// - your posts, friends, bell, saves, boards, library lists and their share links, push devices, blocks, settings
+//   (system docs that carry your email); what you added to a friend's shared list goes too (server/library.js)
 // - on other hosts' events: photos you added are deleted with their files; your replies and kudos stay as numbers for
 //   the host ("Former guest", no email, phone, answers or notes); you leave their followers
 // - your email anywhere else it appears in a list (friends lists, audit lines) is taken out

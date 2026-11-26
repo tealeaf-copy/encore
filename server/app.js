@@ -59,7 +59,7 @@ import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft 
 import { mountBrandbook } from "./brandbook.js"; // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
-import { mountHooks, IDEAS } from "./hooks.js";
+import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
 import { mountIdeasNudge } from "./ideasnudge.js"; // "Ideas to try" where people feel stuck; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { mountAppStore, pwaHead } from "./appstore.js"; // the iOS/Android app: PWA tags, universal links, settings, account deletion, report/block, push
@@ -788,6 +788,7 @@ export function createApp({ store, dataDir }) {
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
+  mountLibrary(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, sendStatic, express }); // server/library.js, after hooks: it reads saves and boards
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).

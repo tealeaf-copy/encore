@@ -1,0 +1,261 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/authguard.js"></script>
+<title>Your library · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Your library (server/library.js): smart lists, your lists, lists friends share with you, and the host library.
+   /saved opens this page too. /l/<token> is a shared list's public view. */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
+a{color:inherit}button{font:inherit;color:inherit}
+.lb{max-width:680px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(140px + env(safe-area-inset-bottom))}
+.lb-k{display:block;font:500 12px/1.4 var(--pl-font-mono,"IBM Plex Mono"),ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+/* header: the title, search and + at right */
+.lb-top{display:flex;align-items:center;gap:4px;margin:20px 0 12px}.lb-top h1{flex:1;margin:0;font:600 28px/1.15 var(--pl-font-serif,"IBM Plex Serif"),Georgia,serif;letter-spacing:-.01em}
+.ic{flex:none;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:6px;background:none;color:var(--pl-ink);cursor:pointer;text-decoration:none}
+.ic svg{width:24px;height:24px}@media (hover:hover){.ic:hover{background:var(--pl-raised)}}.ic[aria-pressed=true]{background:var(--pl-ink);color:var(--pl-page)}
+.lb-search{position:relative;margin:0 0 12px}.lb-search input{width:100%;min-height:46px;padding:0 14px 0 42px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);font:16px var(--pl-font-text,"IBM Plex Sans"),system-ui;color:var(--pl-ink)}
+.lb-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--pl-soft)}.lb-search input:focus{outline:3px solid var(--pl-focus);outline-offset:1px}
+/* chips: one row that scrolls inside itself */
+.lb-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px}.lb-chips::-webkit-scrollbar{display:none}
+.lb-chip{flex:none;min-height:36px;padding:0 14px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);font:500 14px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer;white-space:nowrap}
+.lb-chip[aria-pressed=true]{background:var(--pl-ink);color:var(--pl-page)}.lb-chip .x{margin-left:6px}
+.lb-sort{display:flex;align-items:center;justify-content:space-between;margin:10px 0 4px;min-height:44px}
+.lb-sortbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0;border:0;background:none;font:500 14px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer}.lb-sortbtn svg{width:16px;height:16px}
+/* rows */
+.lb-rows{list-style:none;margin:0;padding:0}.lb-rows li>.lb-row{flex:1;min-width:0}
+.lb-row{display:flex;align-items:center;gap:14px;min-height:76px;padding:10px 0;border-bottom:1px solid var(--pl-line);text-decoration:none;color:inherit;width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;cursor:pointer}
+.lb-row .tx{flex:1;min-width:0}.lb-row b{display:block;font-weight:600;font-size:16px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-row small{display:flex;align-items:center;gap:6px;color:var(--pl-soft);font-size:14px;line-height:1.35;overflow:hidden;white-space:nowrap}.lb-row small span{overflow:hidden;text-overflow:ellipsis}
+.pin{flex:none;width:13px;height:13px;color:var(--pl-accent)}
+@media (hover:hover){a.lb-row:hover b{text-decoration:underline;text-underline-offset:3px}}
+.lb-more{flex:none;width:44px;height:44px;border:0;background:none;border-radius:6px;cursor:pointer;display:grid;place-items:center;color:var(--pl-soft)}.lb-more svg{width:20px;height:20px}
+/* tiles: smart lists get a drawing, your lists a 2x2 collage of their covers */
+.tile{display:block;position:relative;flex:none;width:56px;height:56px;border:1.5px solid var(--pl-ink);border-radius:6px;overflow:hidden;background:var(--pl-raised)}
+.tile svg.d{position:absolute;inset:0;width:100%;height:100%}.tile svg.d *{vector-effect:non-scaling-stroke}.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.tile .ea-cover .ea-txt{display:none}
+.tile.col{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;background:var(--pl-ink)}.tile.col>span{position:relative;overflow:hidden;background:var(--pl-raised)}.tile.col>span:only-child{grid-column:1/-1;grid-row:1/-1}
+.tile.col>span:nth-child(1):nth-last-child(2),.tile.col>span:nth-child(2):nth-last-child(1){grid-row:1/-1}
+.tile.col>span:nth-child(1):nth-last-child(3){grid-row:1/-1}
+.t-going{background:var(--pl-sand)}.t-saved{background:var(--pl-accent-soft)}.t-hosts{background:var(--pl-success-soft)}.t-clubs{background:var(--pl-danger-soft)}.t-went{background:var(--pl-raised)}.t-host{background:var(--pl-sand-soft)}.t-empty{background:var(--pl-surface)}
+.tile.round{border-radius:50%}
+/* grid */
+.lb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 14px;margin-top:8px}@media (min-width:560px){.lb-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lb-card{display:block;text-decoration:none;color:inherit;min-width:0}.lb-card .tile{width:100%;height:auto;aspect-ratio:1}.lb-card b{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-weight:600;overflow:hidden;white-space:nowrap}.lb-card b span{overflow:hidden;text-overflow:ellipsis}
+.lb-card small{display:block;color:var(--pl-soft);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-sec{margin:28px 0 4px;font:600 18px/1.3 var(--pl-font-text,"IBM Plex Sans"),system-ui}
+.lb-empty{margin:20px 0;padding:20px;border:1.5px dashed var(--pl-line-strong);border-radius:6px;background:var(--pl-surface)}.lb-empty b{display:block;font-size:17px}.lb-empty p{margin:6px 0 12px;color:var(--pl-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.primary{background:var(--pl-ink);color:var(--pl-page)}.btn svg{width:18px;height:18px}.btn.sm{min-height:38px;padding:0 12px;font-size:14px}
+.link{min-height:44px;padding:0;border:0;background:none;color:var(--pl-accent-text);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.btn:focus-visible,.link:focus-visible,.ic:focus-visible,.lb-row:focus-visible,.lb-chip:focus-visible,.lb-card:focus-visible,.lb-more:focus-visible{outline:3px solid var(--pl-focus);outline-offset:2px}
+/* one list */
+.back{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:8px 0 0 -6px;padding:0 6px;color:var(--pl-ink);font-weight:500;text-decoration:none;border-radius:6px}.back svg{width:20px;height:20px}
+.lh{display:flex;gap:16px;align-items:flex-end;margin:12px 0 0}.lh .tile{width:120px;height:120px}.lh .tx{flex:1;min-width:0}
+.lh h1{margin:4px 0 2px;font:600 28px/1.15 var(--pl-font-serif,"IBM Plex Serif"),Georgia,serif;letter-spacing:-.01em;overflow-wrap:anywhere}.lh p{margin:0;color:var(--pl-soft);font-size:14px}
+.lnote{margin:14px 0 0;padding:0 0 0 12px;border-left:3px solid var(--pl-sand);font-size:16px;color:var(--pl-ink)}
+.lacts{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px}
+.lacts .ic{border:1.5px solid var(--pl-ink)}
+.hl{background:var(--pl-sand);padding:0 3px;border-radius:2px}
+/* shared view */
+.by{margin:2px 0 0;font-size:15px}.sharebar{margin:18px 0 0;padding:14px 16px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sharebar p{margin:0;flex:1;min-width:200px;font-size:15px}
+/* host library */
+.hscroll{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:8px -16px 0;padding:2px 16px 6px;scroll-snap-type:x proximity}.hscroll::-webkit-scrollbar{display:none}
+.hcard{flex:none;width:228px;scroll-snap-align:start;display:flex;flex-direction:column;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);overflow:hidden}
+.hcard .cv{position:relative;aspect-ratio:3/2;background:var(--pl-raised);border-bottom:1.5px solid var(--pl-ink);overflow:hidden}.hcard .cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.hcard .cv .ea-cover .ea-txt{display:none}
+.hcard .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:2px;flex:1}.hcard .bd b{font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.hcard .bd small{color:var(--pl-soft);font-size:14px}
+.hcard .bd ul{margin:4px 0 0;padding:0 0 0 16px;font-size:14px;color:var(--pl-ink)}.hcard .acts{margin-top:auto;padding-top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.hcard.sq{width:150px}.hcard.sq .cv{aspect-ratio:1;border-bottom:0}.hcard.sq .bd{padding:8px 10px 10px}
+.hsec{display:flex;align-items:baseline;gap:8px;margin:28px 0 0}.hsec h2{margin:0;font:600 18px/1.3 var(--pl-font-text,"IBM Plex Sans"),system-ui}.hsec span{color:var(--pl-soft);font-size:14px}
+.hlede{margin:4px 0 0;color:var(--pl-soft);font-size:15px}
+.keep{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0 16px;padding:14px 16px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface)}.keep p{margin:0;flex:1;min-width:200px}
+.wk{display:grid;gap:10px}
+@media (min-width:861px){.lb{padding-top:28px}.lb-top h1,.lh h1{font-size:32px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<script src="/eventart.js"></script></head><body>
+<main class="lb" id="m" aria-live="polite"></main>
+<script src="/savelist.js"></script>
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const signed = /(?:^|;\s*)encore_in=1/.test(document.cookie), M = $("#m");
+  const safeImg = (u) => (/^\/_blob\/[A-Za-z0-9]{6,40}$/.test(u || "") || /^\/presets\/[A-Za-z0-9_.-]{1,80}$/.test(u || "") ? u : "");
+  const safeUrl = (u) => (/^\/[A-Za-z0-9@_\-./#?=&%]*$/.test(u || "") && !/^\/\//.test(u) ? u : "");
+  const api = async (url, opt = {}) => { const r = await fetch(url, { credentials: "same-origin", ...opt, headers: opt.body ? { "Content-Type": "application/json" } : {}, body: opt.body ? JSON.stringify(opt.body) : undefined }).catch(() => null); const j = r ? await r.json().catch(() => ({})) : {}; return { ok: !!r?.ok, status: r?.status || 0, j }; };
+  const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem("pl.lib." + k); localStorage.setItem("pl.lib." + k, v); } catch {} return null; };
+  const S = window.PLSaveList;
+  const SV = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const IC = { search: SV('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'), plus: SV('<path d="M12 5v14M5 12h14"/>'), grid: SV('<rect x="4" y="4" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"/>'),
+    list: SV('<path d="M4 6h16M4 12h16M4 18h16"/>'), sort: SV('<path d="M8 5v14M8 19l-3-3M8 19l3-3M16 19V5M16 5l-3 3M16 5l3 3"/>'), back: SV('<path d="M15 5l-7 7 7 7"/>'), more: SV('<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>'),
+    share: SV('<path d="M12 4v11M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/>'), edit: SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'), pin: SV('<path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/>') };
+  const PIN = `<svg class="pin" viewBox="0 0 12 12" aria-label="Pinned" role="img"><path d="M4 1h4l-.6 3.6L9.5 6.6h-7l2.1-2z" fill="currentColor"/><path d="M6 6.6V11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+  // the drawn tiles for the smart lists (and the host library): thin ink lines on one calm colour each
+  const L = (d) => `<svg class="d" viewBox="0 0 64 64" fill="none" stroke="#1B1D1C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const DRAW = {
+    going: L('<rect x="15" y="17" width="34" height="31" rx="2"/><path d="M15 25h34M23 13v8M41 13v8"/><path d="M25 37l5 5 9-10"/>'),
+    saved: L('<path d="M22 13h20v38l-10-8-10 8z"/><path d="M27 21c1.5-2 4-2 5 0 1-2 3.5-2 5 0 1.4 2.4-1.6 5.4-5 7.5-3.4-2.1-6.4-5.1-5-7.5z"/>'),
+    hosts: L('<circle cx="30" cy="25" r="7"/><path d="M16 50c2-9 7-13 14-13s12 4 14 13"/><path d="M46 12l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z"/>'),
+    clubs: L('<path d="M17 12v40"/><path d="M17 14l26 7-26 7"/><circle cx="37" cy="40" r="4"/><circle cx="48" cy="40" r="4"/><path d="M30 52c1-4.5 3.6-6.5 7-6.5s6 2 7 6.5M44 49c1-2.5 2.4-3.5 4-3.5 3 0 5 2 6 6"/>'),
+    went: L('<circle cx="28" cy="32" r="13"/><circle cx="28" cy="32" r="9" stroke-dasharray="2 2.5"/><path d="M23.5 32l3 3 5.5-6"/><path d="M44 25c2.5-2 5 2 7.5 0M44 32c2.5-2 5 2 7.5 0M44 39c2.5-2 5 2 7.5 0"/>'),
+    host: L('<path d="M22 18h20"/><path d="M25 18c-7 6-9 14-5 22 2 5 6.5 7 12 7s10-2 12-7c4-8 2-16-5-22"/><path d="M23 47h18"/><path d="M27 30c3 1.5 7 1.5 10 0"/>'),
+    empty: L('<path d="M20 14h18l6 6v30H20z"/><path d="M38 14v6h6"/><path d="M32 28v12M26 34h12"/>') };
+  const smartTile = (id, cls = "") => `<span class="tile t-${id} ${cls}">${DRAW[id] || DRAW.empty}</span>`;
+  const pic = (i) => S.pic(i);
+  const collage = (covers, cls = "") => { const C = (covers || []).slice(0, 4); return C.length ? `<span class="tile col ${cls}" aria-hidden="true">${C.map((c) => `<span>${pic(c)}</span>`).join("")}</span>` : `<span class="tile t-empty ${cls}" aria-hidden="true">${DRAW.empty}</span>`; };
+  const thumb = (i) => `<span class="tile${i.kind === "host" || i.kind === "club" ? " round" : ""}" aria-hidden="true">${pic(i)}</span>`;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const SHARE_WORD = { private: "Private", link: "Share link", friends: "With friends" };
+  const KIND_WORD = { event: "Event", host: "Host", club: "Fan club", idea: "Idea", place: "Place" };
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const when = (d) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return ""; const x = new Date(d + "T12:00:00Z"); return `${DOW[x.getUTCDay()]}, ${MON[x.getUTCMonth()]} ${x.getUTCDate()}`; };
+  const itemSub = (i) => [i.past ? "Went" : KIND_WORD[i.kind], i.kind === "event" ? when(i.date) : "", i.line && i.kind !== "event" ? i.line : ""].filter(Boolean).join(" · ");
+  const itemUrl = (i) => safeUrl(i.url) || (i.kind === "event" ? "/e/" + encodeURIComponent(i.ref) : i.kind === "idea" ? "/ideas#" + i.ref : i.kind === "host" || i.kind === "club" ? "/@" + i.ref : "");
+  const itemRow = (i, more = true) => { const u = itemUrl(i), inner = `${thumb(i)}<span class="tx"><b>${esc(i.title || "Untitled")}</b><small><span>${esc(i.sub ?? itemSub(i))}</span></small></span>`;
+    return `<li style="display:flex;align-items:center;border-bottom:1px solid var(--pl-line)">${u ? `<a class="lb-row" style="border:0" href="${esc(u)}">${inner}</a>` : `<span class="lb-row" style="border:0;cursor:default">${inner}</span>`}${more ? `<button type="button" class="lb-more" data-more="${esc(i.kind)}:${esc(i.ref)}" aria-label="More for ${esc(i.title || "this")}">${IC.more}</button>` : ""}</li>`; };
+  const findItem = (list, key) => list.find((i) => i.kind + ":" + i.ref === key);
+
+  // ---------- the library ----------
+  let D = null, chip = "", q = "", sort = pref("sort") || "recents", view = pref("view") || "list", searchOpen = false;
+  const SORTS = { recents: "Recents", az: "A to Z", added: "Date added" };
+  const CHIPS = [["events", "Events"], ["hosts", "Hosts"], ["clubs", "Clubs"], ["ideas", "Ideas"], ["places", "Places"], ["past", "Past"]];
+  const inChip = (i, c) => (c === "events" ? i.kind === "event" && !i.past : c === "hosts" ? i.kind === "host" : c === "clubs" ? i.kind === "club" : c === "ideas" ? i.kind === "idea" : c === "places" ? i.kind === "place" : c === "past" ? !!i.past : true);
+  function entries() { const pins = D.pins || [], E = [];
+    // an empty smart list stays out of the way until it has something in it
+    for (const s of D.smart) if (s.count) E.push({ key: "smart:" + s.id, href: "#list-" + s.id, name: s.name, sub: s.count ? `${s.sub} · ${s.count}` : s.sub, tile: (c) => smartTile(s.id, c), kicker: "Smart list", t: Math.max(s.opened || 0, s.at || 0), added: 0, smart: true, empty: !s.count });
+    if (D.isHost) E.push({ key: "host", href: "#host", name: "Host library", sub: "Past events, menus, templates", tile: (c) => smartTile("host", c), t: 1, added: 0, smart: true });
+    for (const l of D.lists) E.push({ key: "list:" + l.id, href: "#list-" + l.id, name: l.name, sub: [l.type === "List" ? "List" : l.type, plural(l.count, "thing"), l.share !== "private" ? SHARE_WORD[l.share] : ""].filter(Boolean).join(" · "), tile: (c) => collage(l.covers, c), t: Math.max(l.opened || 0, l.updated || 0), added: l.at || 0 });
+    for (const l of D.shared) E.push({ key: "shared:" + l.token, href: "/l/" + l.token, name: l.name, sub: `${l.by}'s list · ${plural(l.count, "thing")}`, tile: (c) => collage(l.covers, c), t: l.updated || 0, added: l.at || 0 });
+    const cmp = sort === "az" ? (a, b) => a.name.localeCompare(b.name) : sort === "added" ? (a, b) => b.added - a.added : (a, b) => b.t - a.t;
+    const pinned = pins.map((k) => E.find((e) => e.key === k)).filter(Boolean), rest = E.filter((e) => !pins.includes(e.key)).sort(cmp);
+    return [...pinned.map((e) => ({ ...e, pinned: true })), ...rest]; }
+  function homeHtml() {
+    const chips = CHIPS.filter(([c]) => D.items.some((i) => inChip(i, c)));
+    const top = `<div class="lb-top"><h1>Your library</h1><button type="button" class="ic" id="sBtn" aria-label="Search your library" aria-pressed="${searchOpen}">${IC.search}</button><button type="button" class="ic" id="newBtn" aria-label="New list">${IC.plus}</button></div>
+      ${searchOpen ? `<label class="lb-search">${IC.search}<input id="q" type="search" placeholder="Search lists and saves" value="${esc(q)}" autocomplete="off"></label>` : ""}
+      ${chips.length ? `<div class="lb-chips" role="group" aria-label="Show">${chip ? `<button type="button" class="lb-chip" data-chip="" aria-label="Show everything">×</button>` : ""}${chips.filter(([c]) => !chip || c === chip).map(([c, w]) => `<button type="button" class="lb-chip" data-chip="${c}" aria-pressed="${chip === c}">${w}</button>`).join("")}</div>` : ""}`;
+    const Q = q.trim().toLowerCase();
+    // a chip or a search shows things, not lists
+    if (chip || Q) { const lists = Q ? entries().filter((e) => e.name.toLowerCase().includes(Q)) : [], items = D.items.filter((i) => (!chip || inChip(i, chip)) && (!Q || `${i.title} ${i.line}`.toLowerCase().includes(Q)))
+        .sort(sort === "az" ? (a, b) => String(a.title).localeCompare(String(b.title)) : chip === "events" && sort === "recents" ? (a, b) => String(a.date || "9").localeCompare(String(b.date || "9")) : (a, b) => (b.at || 0) - (a.at || 0)); // coming up: soonest first
+      return top + sortRow() + (lists.length ? `<ul class="lb-rows">${lists.map(entryRow).join("")}</ul>` : "") + (items.length ? `<ul class="lb-rows">${items.map((i) => itemRow({ ...i, sub: [itemSub(i), i.in?.length ? "In " + i.in.slice(0, 2).join(", ") : ""].filter(Boolean).join(" · ") })).join("")}</ul>` : "")
+        + (!lists.length && !items.length ? `<div class="lb-empty"><b>Nothing here${Q ? ` for "${esc(q)}"` : ""}.</b><p>Try another word, or clear the filter.</p></div>` : ""); }
+    const E = entries(), quiet = !D.lists.length && !D.shared.length && D.smart.every((s) => !s.count);
+    const body = view === "grid" ? `<div class="lb-grid">${E.map((e) => `<a class="lb-card" href="${esc(e.href)}">${e.tile("")}<b>${e.pinned ? PIN : ""}<span>${esc(e.name)}</span></b><small>${esc(e.sub)}</small></a>`).join("")}</div>` : `<ul class="lb-rows">${E.map(entryRow).join("")}</ul>`;
+    return top + sortRow() + body + (quiet ? `<div class="lb-empty"><b>Your library fills itself.</b><p>Say I'm in to an event, follow a host or tap the heart, and it lands here. Make a list for anything you want to keep together.</p><a class="btn primary" href="/discover">Find something</a></div>` : "")
+      + (D.lists.length ? "" : `<p class="hlede" style="margin-top:18px">Lists are private unless you share them. <button type="button" class="link" id="newBtn2">Make a list</button></p>`); }
+  const entryRow = (e) => `<li><a class="lb-row" href="${esc(e.href)}">${e.tile("")}<span class="tx"><b>${esc(e.name)}</b><small>${e.pinned ? PIN : ""}<span>${esc(e.sub)}</span></small></span></a></li>`;
+  const sortRow = () => `<div class="lb-sort"><button type="button" class="lb-sortbtn" id="sortBtn" aria-label="Sort: ${SORTS[sort]}">${IC.sort}${SORTS[sort]}</button>${chip || q.trim() ? "" : `<button type="button" class="ic" id="viewBtn" aria-label="${view === "grid" ? "Show as a list" : "Show as a grid"}">${view === "grid" ? IC.list : IC.grid}</button>`}</div>`;
+  function drawHome() { M.innerHTML = homeHtml(); document.title = "Your library · Pottery Lab";
+    $("#sBtn").onclick = () => { searchOpen = !searchOpen; if (!searchOpen) q = ""; drawHome(); if (searchOpen) $("#q")?.focus(); };
+    const qi = $("#q"); if (qi) qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; drawHome(); const n = $("#q"); n.focus(); try { n.setSelectionRange(pos, pos); } catch {} };
+    $("#newBtn").onclick = newList; $("#newBtn2") && ($("#newBtn2").onclick = newList);
+    $$("[data-chip]").forEach((b) => (b.onclick = () => { chip = chip === b.dataset.chip ? "" : b.dataset.chip; drawHome(); }));
+    $("#sortBtn").onclick = () => { const s = S.sheet({ title: "Sort by", body: Object.entries(SORTS).map(([k, w]) => `<button type="button" class="psl-row" role="checkbox" data-s="${k}" aria-checked="${k === sort}"><span class="nm"><b>${w}</b></span><span class="psl-ck" aria-hidden="true"></span></button>`).join("") });
+      s.$$("[data-s]").forEach((b) => (b.onclick = () => { sort = b.dataset.s; pref("sort", sort); s.close(); drawHome(); })); };
+    $("#viewBtn") && ($("#viewBtn").onclick = () => { view = view === "grid" ? "list" : "grid"; pref("view", view); drawHome(); });
+    $$("[data-more]").forEach((b) => (b.onclick = () => { const i = findItem(D.items, b.dataset.more); if (i) S.open(i); }));
+    weekend(); }
+  async function loadHome() { const r = await api("/api/me/library"); if (r.ok) { D = r.j; return true; } return false; }
+  function newList(after) { const s = S.sheet({ title: "New list", body: `<label class="psl-k" for="nlName">Name</label><input type="text" id="nlName" maxlength="60" placeholder="Cozy winter spots" autocomplete="off"><label class="psl-k" for="nlNote">Note (optional)</label><textarea id="nlNote" maxlength="280" placeholder="What it's for, in a line"></textarea>${shareRows("private")}<p class="psl-err" hidden></p>`, foot: `<button type="button" class="psl-btn primary" id="nlGo">Make list</button>` });
+    shareWire(s); s.$("#nlGo").onclick = async () => { const name = s.$("#nlName").value.trim(); if (!name) { s.$("#nlName").focus(); return; }
+      const r = await api("/api/me/library/lists", { method: "POST", body: { name, note: s.$("#nlNote").value, share: s.$("[data-sh][aria-checked=true]")?.dataset.sh || "private" } });
+      if (!r.ok) { const e = s.$(".psl-err"); e.hidden = false; e.textContent = r.j.message || "Couldn't make it. Try again."; return; } s.close(); location.hash = "list-" + r.j.list.id; }; }
+  const shareRows = (cur) => `<span class="psl-k">Who can see it</span>${[["private", "Private", "Only you"], ["link", "Share link", "Anyone with the link can look"], ["friends", "Shared with friends", "Friends you added can look and add"]].map(([k, t, w]) => `<button type="button" class="psl-row" role="radio" data-sh="${k}" aria-checked="${k === cur}"><span class="nm"><b>${t}</b><small>${w}</small></span><span class="psl-ck" aria-hidden="true"></span></button>`).join("")}`;
+  const shareWire = (s, on) => s.$$("[data-sh]").forEach((b) => (b.onclick = () => { s.$$("[data-sh]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); on?.(b.dataset.sh); }));
+
+  // ---------- one list ----------
+  let cur = null;
+  async function drawList(id) { const r = await api("/api/me/library/lists/" + encodeURIComponent(id)); if (!r.ok) { M.innerHTML = `<a class="back" href="#">${IC.back}Library</a><div class="lb-empty"><b>That list isn't here any more.</b><p>It may have been deleted.</p></div>`; return; }
+    cur = r.j; const l = cur, smart = !!l.smart; document.title = l.name + " · Pottery Lab";
+    const pinKey = (smart ? "smart:" : "list:") + l.id, pinned = (D?.pins || []).includes(pinKey);
+    const kicker = smart ? "Smart list" : ["List", SHARE_WORD[l.share]].join(" · ");
+    M.innerHTML = `<a class="back" href="#">${IC.back}Library</a>
+      <div class="lh">${smart ? smartTile(l.id) : collage(l.covers)}<div class="tx"><span class="lb-k">${esc(kicker)}</span><h1>${esc(l.name)}</h1><p>${esc(smart ? l.sub : l.type === "List" ? "" : l.type)}${smart || l.type === "List" ? "" : " · "}${plural(l.count, "thing")}${l.contributors?.length ? ` · with ${esc(l.contributors.join(", "))}` : ""}</p></div></div>
+      ${l.note ? `<p class="lnote">${esc(l.note)}</p>` : ""}
+      <div class="lacts">${smart ? "" : `<button type="button" class="btn sm" id="shareBtn">${IC.share}${l.share === "private" ? "Share" : "Sharing"}</button><button type="button" class="btn sm" id="addBtn">${IC.plus}Add</button>`}<button type="button" class="btn sm" id="pinBtn" aria-pressed="${pinned}">${IC.pin}${pinned ? "Pinned" : "Pin"}</button>${smart ? "" : `<button type="button" class="ic" id="editBtn" aria-label="Edit list">${IC.edit}</button>`}</div>
+      ${l.items.length ? `<ul class="lb-rows">${l.items.map((i) => itemRow({ ...i, sub: [itemSub(i), i.addedBy ? "Added by " + i.addedBy : ""].filter(Boolean).join(" · ") })).join("")}</ul>`
+        : `<div class="lb-empty"><b>Nothing here yet.</b><p>${smart ? emptySmart(l.id) : "Tap Add, or use Save to list on any event, host or idea."}</p></div>`}`;
+    $("#pinBtn").onclick = async () => { const p = await api("/api/me/library/pins", { method: "POST", body: { key: pinKey, on: !pinned } }); if (p.ok && D) D.pins = p.j.pins; drawList(id); };
+    $$("[data-more]").forEach((b) => (b.onclick = () => itemMenu(findItem(l.items, b.dataset.more), smart ? null : l)));
+    if (smart) return;
+    $("#shareBtn").onclick = () => shareSheet(l); $("#addBtn").onclick = () => addSheet(l, async (it) => (await api(`/api/me/library/lists/${encodeURIComponent(l.id)}/items`, { method: "POST", body: it })).ok, () => drawList(id)); $("#editBtn").onclick = () => editSheet(l); }
+  const emptySmart = (id) => ({ going: "Say I'm in to an event and it shows here.", saved: "Tap the heart on an event, a host or an idea.", hosts: "Follow a host from their page.", clubs: "Join a host's fan club from their page.", went: "Events you went to land here the day after." })[id] || "";
+  function itemMenu(i, list) { if (!i) return; const s = S.sheet({ title: i.title || "This one", body: `<button type="button" class="psl-row" data-a="lists"><span class="nm"><b>Save to list</b><small>Add it to another list</small></span></button>${list ? `<button type="button" class="psl-row" data-a="rm"><span class="nm"><b>Take off this list</b><small>It stays anywhere else you saved it</small></span></button>` : ""}${itemUrl(i) ? `<a class="psl-row" style="text-decoration:none" href="${esc(itemUrl(i))}"><span class="nm"><b>Open</b></span></a>` : ""}` });
+    s.$('[data-a="lists"]').onclick = () => { s.close(); S.open(i); };
+    s.$('[data-a="rm"]') && (s.$('[data-a="rm"]').onclick = async () => { await api(`/api/me/library/lists/${encodeURIComponent(list.id)}/items?kind=${encodeURIComponent(i.kind)}&ref=${encodeURIComponent(i.ref)}`, { method: "DELETE" }); s.close(); drawList(list.id); }); }
+  function shareSheet(l) { const full = (p) => location.origin + p;
+    const linkBox = (link) => (link ? `<span class="psl-k">The link</span><div class="psl-new" style="padding-top:4px"><input type="text" readonly value="${esc(full(link))}" aria-label="Share link" id="shLink"><button type="button" class="psl-btn sm" id="shCopy">Copy</button></div><button type="button" class="link" id="shNew" style="font-size:14px">Make a new link</button><p class="psl-note">A new link stops the old one working. Shared lists show only public events and first names.</p>` : `<p class="psl-note">Only you can see this list.</p>`);
+    const s = S.sheet({ title: "Share this list", body: `${shareRows(l.share)}<div id="shBox">${linkBox(l.link)}</div>`, foot: navigator.share ? `<button type="button" class="psl-btn primary" id="shShare"${l.link ? "" : " disabled"}>Share</button>` : `<button type="button" class="psl-btn primary" data-close>Done</button>` });
+    const wire = () => { const c = s.$("#shCopy"); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(s.$("#shLink").value); c.textContent = "Copied"; } catch { s.$("#shLink").select(); } };
+      const n = s.$("#shNew"); if (n) n.onclick = () => set(l.share, true); const sh = s.$("#shShare"); if (sh) { sh.disabled = !l.link; sh.onclick = () => navigator.share({ title: l.name, url: full(l.link) }).catch(() => {}); } s.$("[data-close]") && (s.$("[data-close]").onclick = s.close); };
+    const set = async (mode, rotate = false) => { const r = await api("/api/me/library/lists/" + encodeURIComponent(l.id), { method: "POST", body: { share: mode, ...(rotate ? { rotate: true } : {}) } }); if (!r.ok) return; l.share = r.j.list.share; l.link = r.j.list.link; s.$("#shBox").innerHTML = linkBox(l.link); wire(); drawList(l.id); };
+    shareWire(s, (mode) => set(mode)); wire(); }
+  function editSheet(l) { const s = S.sheet({ title: "Edit list", body: `<label class="psl-k" for="edName">Name</label><input type="text" id="edName" maxlength="60" value="${esc(l.name)}"><label class="psl-k" for="edNote">Note</label><textarea id="edNote" maxlength="280" placeholder="What it's for, in a line">${esc(l.note || "")}</textarea><p style="margin:18px 0 0"><button type="button" class="link" id="edDel" style="color:var(--pl-danger)">Delete this list</button></p>`, foot: `<button type="button" class="psl-btn primary" id="edGo">Save</button>` });
+    s.$("#edGo").onclick = async () => { const r = await api("/api/me/library/lists/" + encodeURIComponent(l.id), { method: "POST", body: { name: s.$("#edName").value, note: s.$("#edNote").value } }); if (r.ok) { s.close(); drawList(l.id); } };
+    s.$("#edDel").onclick = async () => { if (!confirm(`Delete "${l.name}"? The things on it stay where else you saved them.`)) return; await api("/api/me/library/lists/" + encodeURIComponent(l.id), { method: "DELETE" }); s.close(); location.hash = ""; }; }
+  /** Add from your library: things you saved, follow or went to, not on this list yet. */
+  async function addSheet(l, add, done) { if (!D) await loadHome(); const have = new Set((l.items || []).map((i) => i.kind + ":" + i.ref)), pool = (D?.items || []).filter((i) => !have.has(i.kind + ":" + i.ref));
+    const rows = (Q) => { const L = pool.filter((i) => !Q || `${i.title} ${i.line}`.toLowerCase().includes(Q)).slice(0, 60); return L.length ? L.map((i) => `<button type="button" class="psl-row" role="checkbox" aria-checked="false" data-k="${esc(i.kind)}:${esc(i.ref)}"><span class="psl-tile one">${pic(i)}</span><span class="nm"><b>${esc(i.title)}</b><small>${esc(itemSub(i))}</small></span><span class="psl-ck" aria-hidden="true"></span></button>`).join("") : `<p class="psl-note">${pool.length ? "Nothing matches." : "Save, follow or say I'm in to things and they show up here to add."}</p>`; };
+    const s = S.sheet({ title: "Add to " + l.name, body: `<div class="psl-new" style="padding-top:8px"><input type="search" id="adQ" placeholder="Search your library" aria-label="Search your library" autocomplete="off"></div><div id="adL">${rows("")}</div>`, foot: `<button type="button" class="psl-btn primary" id="adGo">Add</button>` });
+    const picked = new Set(), wire = () => s.$$("[data-k]").forEach((b) => { b.setAttribute("aria-checked", String(picked.has(b.dataset.k))); b.onclick = () => { picked.has(b.dataset.k) ? picked.delete(b.dataset.k) : picked.add(b.dataset.k); b.setAttribute("aria-checked", String(picked.has(b.dataset.k))); }; });
+    s.$("#adQ").oninput = (e) => { s.$("#adL").innerHTML = rows(e.target.value.trim().toLowerCase()); wire(); }; wire();
+    s.$("#adGo").onclick = async () => { s.$("#adGo").disabled = true; for (const k of picked) { const i = findItem(pool, k); if (i) await add({ kind: i.kind, ref: i.ref, title: i.title, img: safeImg(i.img), line: i.kind === "place" ? i.line : undefined }); } s.close(); done?.(); }; }
+
+  // ---------- a shared list (/l/<token>) ----------
+  async function drawShared(token) { const r = await api("/api/public/lists/" + encodeURIComponent(token));
+    if (!r.ok) { const fo = r.j.code === "friends_only"; M.innerHTML = `<div class="lb-empty" style="margin-top:40px"><b>${fo ? `This list is for ${esc(r.j.by || "the owner")}'s friends.` : "This list isn't shared any more."}</b><p>${fo ? (signed ? `Ask ${esc(r.j.by || "them")} to add you as a friend.` : "Sign in to see it, if you're on their friends list.") : "Ask whoever sent it for a new link."}</p>${fo && !signed ? `<a class="btn primary" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a>` : `<a class="btn" href="/discover">Find something</a>`}</div>`; return; }
+    const l = r.j; document.title = l.name + " · Pottery Lab";
+    M.innerHTML = `<div class="lh" style="margin-top:24px">${collage(l.covers)}<div class="tx"><span class="lb-k">${l.mode === "friends" ? "Shared with friends" : "Shared list"}</span><h1>${esc(l.name)}</h1><p class="by">${l.by ? `A list by ${esc(l.by)} · ` : ""}${plural(l.count, "thing")}</p></div></div>
+      ${l.note ? `<p class="lnote">${esc(l.note)}</p>` : ""}
+      ${l.isOwner ? `<div class="lacts"><a class="btn sm" href="/library#list-${esc(l.id)}">${IC.edit}Edit in your library</a></div>` : l.canAdd ? `<div class="lacts"><button type="button" class="btn sm primary" id="fAdd">${IC.plus}Add something</button></div>` : ""}
+      ${l.items.length ? `<ul class="lb-rows">${l.items.map((i) => itemRow({ ...i, sub: [itemSub(i), i.addedBy ? "Added by " + i.addedBy : ""].filter(Boolean).join(" · ") }, signed)).join("")}</ul>` : `<div class="lb-empty"><b>Nothing on it yet.</b>${l.canAdd ? "<p>Add the first thing.</p>" : ""}</div>`}
+      ${!signed ? `<div class="sharebar"><p>Pottery Lab is for small events hosted by people. Keep what you like in lists.</p><a class="btn sm" href="/signup?mode=friends&amp;from=list">Make a free account</a></div>` : ""}`;
+    $("#fAdd") && ($("#fAdd").onclick = () => addSheet({ name: l.name, items: l.items }, async (it) => (await api(`/api/public/lists/${encodeURIComponent(token)}/items`, { method: "POST", body: it })).ok, () => drawShared(token)));
+    $$("[data-more]").forEach((b) => (b.onclick = () => { const i = findItem(l.items, b.dataset.more); if (!i) return; const s = S.sheet({ title: i.title || "This one", body: `<button type="button" class="psl-row" data-a="lists"><span class="nm"><b>Save to your list</b></span></button>${i.mine || l.isOwner ? `<button type="button" class="psl-row" data-a="rm"><span class="nm"><b>Take it off</b><small>You added this one</small></span></button>` : ""}` });
+      s.$('[data-a="lists"]').onclick = () => { s.close(); S.open(i); };
+      s.$('[data-a="rm"]') && (s.$('[data-a="rm"]').onclick = async () => { await api(`/api/public/lists/${encodeURIComponent(token)}/items?kind=${encodeURIComponent(i.kind)}&ref=${encodeURIComponent(i.ref)}`, { method: "DELETE" }); s.close(); drawShared(token); }); })); }
+
+  // ---------- the host library ----------
+  async function drawHost() { const r = await api("/api/host/library"); document.title = "Host library · Pottery Lab";
+    const head = `<a class="back" href="/library">${IC.back}Library</a><div class="lh">${smartTile("host")}<div class="tx"><span class="lb-k">For hosting</span><h1>Host library</h1><p>Reuse what worked. Each one starts a new draft.</p></div></div>`;
+    if (!r.ok) { M.innerHTML = head + `<div class="lb-empty"><b>Host something and it lands here.</b><p>Past events, menus, playlists, photos and guest lists, ready to reuse.</p><a class="btn primary" href="/?app=1#studio">Host something</a></div>`; return; }
+    const H = r.j, cv = (x) => `<div class="cv">${safeImg(x.img) ? `<img src="${esc(x.img)}" alt="" loading="lazy">` : pic({ kind: "event", ref: x.id, title: x.title, art: x.art })}</div>`, start = (from, id, label = "Start from this") => `<button type="button" class="btn sm${from === "event" ? " primary" : ""}" data-start="${from}" data-id="${esc(id)}">${label}</button>`;
+    const sec = (title, n, lede, cards) => (n ? `<div class="hsec"><h2>${title}</h2><span>${n}</span></div>${lede ? `<p class="hlede">${lede}</p>` : ""}<div class="hscroll">${cards}</div>` : "");
+    M.innerHTML = head
+      + sec("Past events", H.past.length, "", H.past.map((e) => `<article class="hcard">${cv(e)}<div class="bd"><b>${esc(e.title)}</b><small>${esc([when(e.date), e.guests ? plural(e.guests, "guest") : ""].filter(Boolean).join(" · "))}</small><div class="acts">${start("event", e.id, "Copy as a new event")}<button type="button" class="link" data-tpl="${esc(e.id)}" data-name="${esc(e.title)}" style="font-size:14px">Save as a template</button></div></div></article>`).join(""))
+      + sec("Templates", H.templates.length, "", H.templates.map((t) => `<article class="hcard">${cv(t)}<div class="bd"><b>${esc(t.title)}</b><small>Template</small><div class="acts">${start("template", t.id)}<button type="button" class="link" data-drop="${esc(t.id)}" style="font-size:14px">Remove</button></div></div></article>`).join(""))
+      + sec("Menus", H.menus.length, "", H.menus.map((m) => `<article class="hcard"><div class="bd"><span class="lb-k">From ${esc(m.title)}</span><ul>${m.lines.map((x) => `<li>${esc(x)}</li>`).join("")}</ul><div class="acts">${start("menu", m.id)}</div></div></article>`).join(""))
+      + sec("Playlists", H.playlists.length, "", H.playlists.map((p) => `<article class="hcard"><div class="bd"><b>${esc(p.title)}</b><small>${esc(p.host)}</small><div class="acts"><a class="link" style="font-size:14px;display:inline-flex;align-items:center" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">Open playlist</a>${start("playlist", p.id)}</div></div></article>`).join(""))
+      + sec("Guest lists", H.guests.length, "Who came before, ready to invite again.", H.guests.map((g) => `<article class="hcard"><div class="bd"><b>${esc(g.title)}</b><small>${esc([plural(g.count, "guest"), when(g.date)].filter(Boolean).join(" · "))}</small><small>${esc(g.names.join(", "))}${g.count > g.names.length ? " and more" : ""}</small><div class="acts">${start("guests", g.id)}</div></div></article>`).join(""))
+      + sec("Covers", H.covers.length, "", H.covers.map((c) => `<article class="hcard sq">${cv(c)}<div class="bd"><small>${esc(c.title)}</small><div class="acts">${start("cover", c.id)}</div></div></article>`).join(""))
+      + sec("Photos", H.photos.length, "Your own photos from your events and your page.", H.photos.map((p) => `<article class="hcard sq"><div class="cv"><img src="${esc(safeImg(p.img))}" alt="" loading="lazy"></div><div class="bd"><small>${esc(p.title || "")}</small><div class="acts">${start("photo", p.id)}</div></div></article>`).join(""))
+      + (!H.past.length && !H.templates.length && !H.menus.length && !H.photos.length ? `<div class="lb-empty"><b>Nothing to reuse yet.</b><p>After your first event, its menu, playlist, photos and guest list show up here.</p></div>` : "");
+    $$("[data-start]").forEach((b) => (b.onclick = async () => { b.disabled = true; const r2 = await api("/api/host/library/start", { method: "POST", body: { from: b.dataset.start, id: b.dataset.id } }); if (r2.ok && safeUrl(r2.j.open)) location.href = r2.j.open; else { b.disabled = false; window.PLSave?.toast?.(esc(r2.j.message || "Couldn't start it. Try again.")); } }));
+    $$("[data-tpl]").forEach((b) => (b.onclick = async () => { const name = prompt("Name the template", b.dataset.name); if (name === null) return; const r2 = await api("/api/host/library/templates", { method: "POST", body: { eventId: b.dataset.tpl, name } }); if (r2.ok) drawHost(); }));
+    $$("[data-drop]").forEach((b) => (b.onclick = async () => { await api("/api/host/library/templates/" + encodeURIComponent(b.dataset.drop), { method: "DELETE" }); drawHost(); })); }
+
+  // ---------- signed out ----------
+  function drawOut() { const L = window.PLSave?.local?.() || [];
+    M.innerHTML = `<div class="lb-top"><h1>Your library</h1></div><div class="keep"><p>${L.length ? `<b>${plural(L.length, "save")} on this phone.</b> ` : ""}Make a free account to keep saves, make lists and share them with friends.</p><a class="btn primary" href="/signup?mode=friends&amp;from=saves">Make a free account</a></div>
+      ${L.length ? `<ul class="lb-rows">${L.map((i) => itemRow({ ...i, sub: KIND_WORD[i.kind] || "" }, false)).join("")}</ul>` : `<div class="lb-empty"><b>Nothing saved yet.</b><p>Tap the heart on an event, an idea or a host and it lands here.</p><a class="btn" href="/discover">Find something</a></div>`}`; }
+  // this weekend near you (the weekend digest links to /saved#weekend)
+  async function weekend() { if (location.hash !== "#weekend" || $("#wkSec")) return; await new Promise((ok) => { if (window.PLInterests) return ok(); const t = document.createElement("script"); t.src = "/interests.js"; t.onload = ok; t.onerror = ok; document.head.appendChild(t); }); if (!window.PLInterests) return;
+    const me = await PLInterests.get(), saved = (D?.items || []).filter((i) => i.kind === "event").map((i) => i.ref), q2 = `interests=${encodeURIComponent((me.interests || []).join(","))}&city=${encodeURIComponent(me.city || "")}&saved=${encodeURIComponent(saved.join(","))}`;
+    const W = (await api("/api/public/suggest/weekend?" + q2)).j; if (!W?.events?.length) return; PLInterests.css(); const sec = document.createElement("section"); sec.id = "wkSec"; sec.innerHTML = `<h2 class="lb-sec">This weekend near you</h2><div class="wk">${W.events.map(PLInterests.eventCard).join("")}</div>`; M.prepend(sec); }
+
+  // ---------- routing ----------
+  async function route() { const tok = /^\/l\/([A-Za-z0-9_-]{24})$/.exec(location.pathname); if (tok) return drawShared(tok[1]);
+    if (!signed) return drawOut();
+    const h = location.hash, m = /^#(?:list|board)-([A-Za-z0-9]+)$/.exec(h);
+    if (location.pathname === "/library/host" || h === "#host") return drawHost();
+    if (m) { if (!D) loadHome(); return drawList(m[1]); }
+    await loadHome(); cur = null; if (!D) { M.innerHTML = `<div class="lb-empty" style="margin-top:40px"><b>Couldn't load your library.</b><p>Check your connection and try again.</p><button type="button" class="btn" onclick="location.reload()">Try again</button></div>`; return; } drawHome(); }
+  window.addEventListener("hashchange", () => { route(); window.scrollTo({ top: 0 }); });
+  window.addEventListener("pl:lists", async () => { await loadHome(); route(); });
+  (async () => { if (window.PLSave?.ready) await window.PLSave.ready; route(); })();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

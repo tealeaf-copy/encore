@@ -242,7 +242,8 @@ export function mountHooks(app, { store, currentUser, publicOrigin, C, X, SB, se
     const P = /^[A-Za-z0-9_-]{1,80}$/.test(eventId) && rid && code ? X.rsvpProof?.(eventId, rid, code) : null;
     if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
     res.json({ name: clean(P.r.name, 80), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(P.r.email || "").trim()) ? String(P.r.email).trim().slice(0, 200) : "" }); });
-  app.get("/saved", (req, res) => sendStatic(res, "saved.html", "<p>Saved page missing.</p>"));
+  // /saved is the library now (server/library.js, public/library.html): the same page, so old links and bookmarks keep working
+  app.get("/saved", (req, res) => sendStatic(res, "library.html", "<p>Library missing.</p>"));
   // ---- public reads ----
   app.get("/api/public/inspo", (req, res) => { if (limited(req, "read", 1200)) return slow(res); res.set("Cache-Control", "public, max-age=30");
     res.json(H.inspo(base(req), { interests: list(req.query.interests), city: clean(req.query.city, 60), tag: clean(req.query.tag, 20), cursor: String(req.query.cursor || "").slice(0, 40), limit: req.query.limit })); });

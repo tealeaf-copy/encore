@@ -197,7 +197,7 @@ test("Saves keep only our own pictures", async () => {
   await post("/api/me/saves", { kind: "event", ref: "r7Sup", img: "/presets/atelier-bo-apt-cafe-club.jpg" }, c);
   const S = await get("/api/me/saves", c);
   assert.equal(S.items.find((i) => i.ref === "r7Run").img, ""); assert.equal(S.items.find((i) => i.ref === "r7Sup").img, "/presets/atelier-bo-apt-cafe-club.jpg");
-  assert.match(read("public/save.js"), /img: imgOk\(item\.img\)/); assert.ok(!/https:\\\/\\\//.test(read("public/saved.html").match(/const safeImg = [^\n]+/)[0]));
+  assert.match(read("public/save.js"), /img: imgOk\(item\.img\)/); assert.ok(!/https:\\\/\\\//.test(read("public/library.html").match(/const safeImg = [^\n]+/)[0]));
 });
 
 // ---------- 9 ----------

@@ -367,3 +367,11 @@ body.bb{margin:0;background:var(--bb-page);color:var(--bb-ink);font:16px/1.5 var
 .bb-bar.save .t b{font:600 16px var(--bb-sans)}
 @media (min-width:961px){.bb-bar.save{left:auto;right:24px;bottom:24px;border:1px solid var(--bb-ink);border-radius:var(--bb-r);width:360px}}
 .bb-cmp .ph{aspect-ratio:16/10;max-width:300px}
+/* ---- the place card after a request: a small drawn moment ---- */
+.bb-placecard{position:relative;margin:24px 0;padding:24px 20px 20px;border:1px solid var(--bb-ink);border-radius:var(--bb-r);background:var(--bb-card);text-align:center;max-width:420px;animation:bb-up .45s cubic-bezier(.2,.8,.2,1)}
+.bb-placecard::before{content:"";position:absolute;inset:6px;border:var(--bb-rule);border-radius:var(--bb-r);pointer-events:none}
+.bb-placecard h2{margin:4px 0}
+.bb-draw .bb-ic{width:40px;height:40px}
+.bb-draw .bb-ic *{stroke-dasharray:60;stroke-dashoffset:60;animation:bb-ink 1.1s .15s ease forwards}
+@keyframes bb-ink{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.bb-draw .bb-ic *{stroke-dashoffset:0;animation:none}}

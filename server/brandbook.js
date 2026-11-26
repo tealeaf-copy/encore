@@ -216,8 +216,8 @@ const safeEq = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(Str
 
 // ---------------------------------------------------------------------------------------------------------------
 // Requests: the life of one booking. Contact details are shared only once it's booked.
-export const STATUS = { approval: "Waiting on your team", requested: "Sent to the host", countered: "The host suggested a change", accepted: "Accepted, deposit due", booked: "Booked", declined: "Declined", cancelled: "Cancelled", done: "Done" };
-export const HOST_STATUS = { requested: "New request", countered: "You suggested a change", accepted: "Accepted, deposit due", booked: "Booked", declined: "Declined", cancelled: "Cancelled", done: "Done" };
+export const STATUS = { question: "A question for the host", approval: "Waiting on your team", requested: "Sent to the host", countered: "The host suggested a change", accepted: "Accepted, deposit due", booked: "Booked", declined: "Declined", cancelled: "Cancelled", done: "Done" };
+export const HOST_STATUS = { question: "A question", requested: "New request", countered: "You suggested a change", accepted: "Accepted, deposit due", booked: "Booked", declined: "Declined", cancelled: "Cancelled", done: "Done" };
 export const isBooked = (r) => ["booked", "done"].includes(r?.status);
 export const statusOf = (r, today = isoDay()) => (r?.status === "booked" && r.date && r.date < today ? "done" : r?.status);
 
@@ -483,6 +483,16 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     res.json({ ok: true, id: r.id, status: r.status, instant: !!r.instant, instantWhy: I.why, url: `/teams/bookings/${r.id}`, request: view(r, "brand") }); });
   function instantBook(r) { r.status = "accepted"; r.instant = true; r.respondedAt = Date.now(); r.sentAt ||= Date.now(); push(r, "host", "Instant book: accepted"); }
 
+  // a question before booking: a thread with the host, nothing held or charged
+  app.post("/api/bb/questions", small, (req, res) => { const u = need(req, res); if (!u) return; if (limited("q:" + u.ws, 30)) return bad(res, "That's a lot of questions at once. Try again later.", 429, "rate_limited");
+    const b = req.body || {}, F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return bad(res, "This experience isn't bookable right now.", 404, "not_found"); if (F.ws === u.ws) return bad(res, "That's your own experience.");
+    const raw = cleanText(b.text, 1000); if (raw.length < 5) return bad(res, "Write your question first.");
+    const W = getWorkspace(u.ws), n = int(b.headcount || F.p.minGuests, F.p.minGuests, F.p.maxGuests), price = priceFor(F.p, n);
+    const r = { kind: "bbreq", id: rid(8), hostWs: F.ws, handle: F.h.handle, pkgId: F.p.id, pkgName: F.p.name, brandWs: u.ws, brandEmail: lc(u.email), contactName: clean(u.name || getDbUser(u.email)?.name || "", 80), company: clean(W?.plan !== "friends" ? W?.company : b.company, 120) || first(u.name || ""),
+      date: "", flex: null, headcount: n, diets: [], access: [], notes: "", price, terms: cancellationTerms(F.s.policy, F.p.depositPct), venue: { kind: F.p.venue, address: "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
+      status: "question", messages: [{ id: rid(4), from: "brand", name: first(u.name || ""), text: scrubContact(raw), at: Date.now(), hidden: scrubContact(raw) !== raw }], history: [], reviews: {}, billing: {}, createdAt: Date.now(), sentAt: Date.now() };
+    push(r, "brand", "asked a question"); reqSet(r); tell(ownerEmailOf(F.ws), `${r.company} has a question about ${F.p.name}.`, "/host/teams#inbox");
+    res.json({ ok: true, id: r.id, url: `/teams/bookings/${r.id}` }); });
   app.get("/api/bb/requests", (req, res) => { const u = need(req, res); if (!u) return; const L = reqs().filter((r) => r.brandWs === u.ws).sort((a, b) => b.updatedAt - a.updatedAt);
     res.set("Cache-Control", "private, no-store").json({ requests: L.map((r) => view(r, "brand")), rules: rulesOf(u.ws), approver: (rulesOf(u.ws).approvers || []).includes(lc(u.email)) }); });
   app.get("/api/bb/requests/:id", (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !(brandSide(u, r) || hostSide(u, r))) return bad(res, "Not found.", 404, "not_found");
@@ -514,7 +524,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const side = brandSide(u, r) ? "brand" : "host", raw = cleanText(req.body?.text, 1000); if (raw.length < 1) return bad(res, "Write a message first.");
     const text = isBooked(r) ? raw : scrubContact(raw);
     r.messages = [...(r.messages || []), { id: rid(4), from: side, name: side === "host" ? first(C.profileOf(r.hostWs)?.name || "") : first(u.name || r.contactName), text, at: Date.now(), hidden: text !== raw }].slice(-300);
-    if (side === "host" && !r.respondedAt && r.status !== "approval") r.respondedAt = Date.now();
+    if (side === "host" && !r.respondedAt && r.status !== "approval") { r.respondedAt = Date.now(); if (r.status === "question") r.answeredAt = Date.now(); }
     reqSet(r); tell(side === "brand" ? ownerEmailOf(r.hostWs) : r.brandEmail, `New message about ${r.pkgName}`, side === "brand" ? "/host/teams#inbox" : `/teams/bookings/${r.id}`);
     res.json({ request: view(r, side), hidden: text !== raw }); });
 

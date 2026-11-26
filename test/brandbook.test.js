@@ -241,3 +241,15 @@ test("Pages answer and old brand pages still work", async () => {
   for (const p of ["/teams/discover", "/teams/trusted", "/teams/x/ada-table/abc", "/teams/book/ada-table/abc", "/teams/list/abc", "/teams/list/abc/compare", "/teams/bookings", "/host/teams", "/hosts/book", "/teams", "/requests"]) { const r = await get(p); assert.equal(r.status, 200, p); }
   assert.equal((await get("/admin/hosts")).status, 404);
 });
+
+test("A question before booking: nothing held, contact details hidden, the host answers in the thread", async () => {
+  const H = await makeHost("lark-kitchen", "Lark Kitchen", "lark@host.example");
+  const brand = await signup("Remy Ade", "remy@brand.example", { mode: "work", company: "Remy Co" });
+  const q = await ok(await post("/api/bb/questions", { handle: "lark-kitchen", pkg: H.pkg.id, headcount: 10, text: "Can you do nut-free for 10? Call me on 917 555 0123" }, brand));
+  const B = (await ok(await get(`/api/bb/requests/${q.id}`, brand))).request;
+  assert.equal(B.status, "question"); assert.equal(B.deposit.state, "none"); assert.match(B.messages[0].text, /number hidden/); assert.equal(B.contact, null);
+  assert.equal((await post(`/api/bb/requests/${q.id}/pay`, {}, brand)).status, 409, "a question can't take a deposit");
+  const inbox = (await ok(await get("/api/bb/host/requests", H.c))).requests.find((r) => r.id === q.id); assert.equal(inbox.statusText, "A question");
+  await ok(await post(`/api/bb/requests/${q.id}/messages`, { text: "Yes, nut-free is easy." }, H.c));
+  assert.equal((await ok(await get(`/api/bb/requests/${q.id}`, brand))).request.messages.length, 2);
+});

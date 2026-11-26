@@ -47,6 +47,23 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
 .phg img,.phg video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--linen)}.phg b{position:absolute;left:0;right:0;bottom:1px;text-align:center;font:600 11px "Instrument Sans",system-ui}.phg.err{border-color:#A8341A}.phg.err b{color:#A8341A}
 .phg::before{content:"";position:absolute;top:-7px;left:50%;width:40px;height:13px;margin-left:-20px;background:var(--butter);opacity:.9;transform:rotate(-4deg)}
 /* ---- end visual feed ---- */
+/* ---- round 11 UX pass: the app's tokens (public/system.css). Tags are soft tiles (16px corners, so two-line labels
+   don't sit in a squashed pill), the emoji in a small round well, one line weight, Potto's brown on the card frame ---- */
+.card{border:1.5px solid #5A3B2B;border-radius:24px;padding:20px 16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);gap:16px}
+.chips{gap:8px}
+#tags{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.chip{border-width:1.5px;border-color:#D9CCBB;background:#fff;border-radius:16px;min-height:56px;padding:8px 12px 8px 8px;gap:10px;font-size:15px;font-weight:600;line-height:1.2}
+.chip span[aria-hidden]{flex:none;width:36px;height:36px;border-radius:50%;background:var(--linen);display:grid;place-items:center;font-size:18px;line-height:1}
+.chip[aria-pressed=true] span[aria-hidden]{background:rgba(255,255,255,.14)}
+.chips:first-child .chip.again,.chip.again{width:100%;background:#FFF6E2;border-color:#5A3B2B;border-width:1.5px}
+.chip.again span[aria-hidden]{background:var(--butter);color:var(--ink)}
+.chip.again[aria-pressed=true]{background:var(--ink);border-color:var(--ink)}.chip.again[aria-pressed=true] span[aria-hidden]{background:var(--butter)}
+@media (hover:hover){.chip:not([aria-pressed=true]):hover{border-color:#5A3B2B}}
+textarea,input[type=email]{border-radius:12px;border-color:#D9CCBB;background:#fff;font-weight:400}
+textarea:focus,input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(201,74,48,.18)}
+.go:disabled{opacity:1;background:var(--linen);border-color:var(--linen);color:#9A8D82}
+h1{font-weight:600;letter-spacing:-.01em}
+@media (max-width:340px){#tags{grid-template-columns:1fr}}
 </style></head><body>
 <main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
 <div id="body"><p class="muted">Opening…</p></div></main>
@@ -74,7 +91,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
     if (j.sent) return thanks(j);
     // review round 7: "Would go again" first; the subtitle is the place ("at Prospect Park") or "with Marcus"
     body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc(sub(j))}</p>
-      <div class="card"><div><h2>Tap what you loved</h2><div class="chips"><button type="button" class="chip again" data-k="${esc(j.again.k)}" aria-pressed="false"><span aria-hidden="true">🔁</span>${esc(j.again.label)}</button></div><div class="chips" id="tags" style="margin-top:8px">${j.tags.map((t) => `<button type="button" class="chip" data-k="${esc(t.k)}" aria-pressed="false"><span aria-hidden="true">${esc(t.emoji)}</span>${esc(t.label)}</button>`).join("")}</div></div>
+      <div class="card"><div><h2>Tap what you loved</h2><div class="chips"><button type="button" class="chip again" data-k="${esc(j.again.k)}" aria-pressed="false"><span aria-hidden="true" class="ki"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5a5.5 5.5 0 0 1 9.6-3.6L14.5 7M15 9.5a5.5 5.5 0 0 1-9.6 3.6L3.5 11"/><path d="M14.7 3.2v3.9h-3.9M3.3 14.8v-3.9h3.9"/></svg></span>${esc(j.again.label)}</button></div><div class="chips" id="tags" style="margin-top:8px">${j.tags.map((t) => `<button type="button" class="chip" data-k="${esc(t.k)}" aria-pressed="false"><span aria-hidden="true">${esc(t.emoji)}</span>${esc(t.label)}</button>`).join("")}</div></div>
       <label class="f">A short note <small>Optional. It shows on ${esc(host)}'s page with your first name.</small><textarea id="love" maxlength="280" rows="2" placeholder="The food, the people, the moment it got loud"></textarea></label>
       <p class="err" id="err"></p><button class="go" id="send" type="button">Send</button></div>`;
     $$(".chip[data-k]").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"))));

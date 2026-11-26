@@ -124,6 +124,20 @@ Use these word for word.
 - Scrapbook photos look like instant photos with a strip of butter tape on top.
 - Flat colors, no gradients except soft page-cover washes.
 
+### UI tokens
+
+The thick line and the tilts belong to illustrations, Potto, scrapbook photos and invite covers. Controls stay quiet, so the art can be loud. The tokens live in `public/system.css`.
+
+- **Spacing:** 4, 8, 12, 16, 24, 32. Fields are 16 apart; a section break is 24.
+- **Corners:** 12 (fields, small tiles), 16 (cards), 24 (sheets and big cards), pill (buttons and chips). Nothing else.
+- **Lines:** 1.5px. Line (#E4D9C8) for cards, a slightly darker #D9CCBB for fields and outlined buttons. Ink for a selected field. Frames next to Potto (sheets, the help panel) use his warm brown, #5A3B2B.
+- **Shadow:** one soft shadow for things that float (sheets, menus, the help button). Cards that sit on the page get a line, not a shadow. No offset "sticker" shadows on buttons, chips or fields.
+- **Type:** 13 / 14 / 16 / 20 / 28 / 40. Labels 14 semibold, help text 13 regular, field text 16 (iOS zooms on anything smaller).
+- **Focus:** the field turns ink with a soft ember ring. One ring, never two.
+- **Icons:** drawn line glyphs in Potto's brown (1.75px stroke) for UI: share, bell, pin, close. Emoji are fine as content (a host's emoji, a kudos tag), not as button icons.
+- **Steps:** "Step 2 of 5 · Details" over a slim segmented bar, never numbered circles.
+- **Phones:** sheets come up from the bottom, sized with `dvh`, padded for the notch and the home indicator. Footer buttons sit in their own bar, never over the last field.
+
 ## Examples
 
 **Good**

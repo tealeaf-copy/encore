@@ -7,7 +7,7 @@
    - buttons: sm 36 / md 44 / lg 52 (sm becomes 44 on phones), one corner (pill), primary = ember fill, flat.
    - one selected-chip style: ink fill, white text.
    - small red text uses --sys-ember-text (#B04A30, 5:1 on cream). */
-@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 /* a stand-in shaped like Fredoka while it loads, so headings don't change size (and push the page down) when it arrives */
 @font-face{font-family:"Fredoka Fallback";src:local("Arial Bold"),local("Arial-BoldMT"),local("Liberation Sans Bold"),local("Helvetica Bold");font-weight:600 900;size-adjust:94.5%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
 @font-face{font-family:"Fredoka Fallback";src:local("Arial"),local("ArialMT"),local("Liberation Sans"),local("Helvetica");font-weight:100 599;size-adjust:100%;ascent-override:97%;descent-override:24%;line-gap-override:0%}
@@ -16,6 +16,8 @@
   --sys-display:"Fredoka","Fredoka Fallback","Instrument Sans",system-ui,sans-serif;
   --sys-accent:"Fraunces",Georgia,serif;
   --sys-hand:"Caveat",cursive;
+  /* a quiet monospace accent for data only: step counts, times, dates in fields, counts. Never for prose or headings */
+  --sys-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --fs-13:13px;--fs-14:14px;--fs-16:16px;--fs-20:20px;--fs-28:28px;--fs-40:40px;
   --sys-ink:#1F1A17;--sys-paper:#FFF8EE;--sys-line:#D9CCBB;
   --sys-ember:#C94A30;--sys-ember-press:#B04A30;--sys-ember-text:#B04A30;
@@ -25,6 +27,18 @@
   --p-ember:#C94A30;
   /* headings that used to be fluid clamp()s step instead: phone value, then desktop value from 861px */
   --fs-16-20:16px;--fs-20-28:20px;--fs-28-40:28px;
+  /* round 11 UX pass: the small set every page builds on. spacing 4/8/12/16/24/32; three corners (sm fields and
+     small cards, md cards, lg sheets) plus the pill for buttons and chips; one border weight; one soft shadow for
+     things that float (sheets, menus), none on things that sit (cards use a line). Frames next to Potto use his
+     warm brown line, not black ink. */
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
+  --r-sm:12px;--r-md:16px;--r-lg:24px;--r-pill:999px;
+  --bw:1.5px;
+  --ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--linen:#EFE6D8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--butter:#F2D48F;--sage:#6F7F5E;
+  --ui-frame:#5A3B2B;
+  --shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);
+  --shadow-sheet:0 18px 48px -18px rgba(31,26,23,.45);
+  --field-h:48px;
 }
 @media (min-width:861px){:root{--fs-16-20:20px;--fs-20-28:28px;--fs-28-40:40px}}
 
@@ -93,3 +107,28 @@ html :is(body,#view-guest) :is(.invite.th-candlelight,.invite.th-midnight) .chip
 /* brand kit: no italics for emphasis; an accent word in a heading changes colour, not style */
 :is(h1,h2,h3) em{font-style:normal}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ---- round 11 UX pass: cross-page fixes ---- */
+/* buttons that stretch full width keep their label centered (the guest "I'm in", Follow, Send) */
+html body :is(.btn,a.btn,button.btn,a.cta,.cta,a.go,button.go,button.primary,.hd-cta){justify-content:center;text-align:center}
+/* native date and time fields: iOS Safari ignores width on them and they ran past the right edge of sheets; the value
+   is centered there too. Same box as every other field, value on the left, and an empty one still looks like a field */
+html body input:is([type=date],[type=time],[type=datetime-local],[type=month]){-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;text-align:left;min-height:var(--field-h,48px);line-height:1.3}
+html body input:is([type=date],[type=time],[type=datetime-local],[type=month])::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.3em}
+html body input:is([type=date],[type=time],[type=datetime-local],[type=month])::-webkit-datetime-edit{padding:0}
+html body input:is([type=date],[type=time],[type=datetime-local],[type=month])::-webkit-calendar-picker-indicator{opacity:.55;margin-left:auto}
+/* iOS: anything under 16px in a field zooms the whole page when it gets focus */
+@supports (-webkit-touch-callout:none){
+  html body :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select,textarea){font-size:16px!important}
+  /* iOS shows an empty date or time field as a blank box: a page can put a hint right after it (.dt-ph), shown while
+     the field is empty (the page toggles .is-empty on the input) */
+  html body label:has(> input.is-empty + .dt-ph){position:relative}
+  html body input.is-empty + .dt-ph{display:block}
+}
+.dt-ph{display:none;position:absolute;left:15px;bottom:0;height:var(--field-h,48px);line-height:var(--field-h,48px);color:#9A8D82;font-weight:400;font-size:16px;pointer-events:none}
+/* data in mono: dates and times in fields, and any element a page marks .num */
+html body input:is([type=date],[type=time],[type=number]),html body .num{font-family:var(--sys-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+/* help text inside a bold label reads as help, not as a second label */
+html body label :is(small.note,.note,small.hint){font-weight:400}
+/* sheets and fixed bars respect the notch and the home indicator */
+html body :is(.toast,#pipToast){margin-bottom:env(safe-area-inset-bottom,0px)}

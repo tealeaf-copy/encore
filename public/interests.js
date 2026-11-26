@@ -57,6 +57,23 @@
 .pin-empty{background:#FFFDF8;border:2px dashed #C9BBA7;border-radius:16px;padding:14px;color:#665A51}
 @media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
 @media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:24px 24px 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
+/* round 11 UX pass: UI controls take the app's one line (1.5px) and no sticker shadows or tilts; the thick ink line
+   stays on illustrations. Picked chips fill with their colour and gain Potto's brown line */
+.pin{border:1.5px solid #5A3B2B;box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
+.pin .pin-x{border:1.5px solid #D9CCBB;box-shadow:none;display:grid;place-items:center;padding:0 0 2px;color:#665A51}
+.pin-chips{gap:8px}
+.pin-chip{transform:none;box-shadow:none;border:1.5px solid #D9CCBB;font:600 15px "Instrument Sans",system-ui,sans-serif;min-height:44px;padding:4px 14px 4px 10px;gap:8px}
+.pin-chip span{font-size:20px}.pin-chip:hover{transform:none;border-color:#5A3B2B}
+.pin-chip[aria-pressed=true]{transform:none;box-shadow:inset 0 0 0 1px #5A3B2B;border-color:#5A3B2B}
+.pin-main{border:0;box-shadow:none}
+.pin-main:disabled{border:0}
+.pin-city input{border:1.5px solid #D9CCBB;border-radius:12px}
+.pin-cities button{border-color:#D9CCBB}
+.pin-host,.pin-ev{border:1.5px solid #E4D9C8;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);transform:none}
+.pin-ev .th{border:0}.pin-host .av{border:1.5px solid #E4D9C8}
+.pin-fol{border:0}
+.pin-go{background:#F7F1E8;border-top:1px solid #E4D9C8;margin:8px -18px 0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px))}
+@media (max-width:520px){.pin{border-width:1.5px 0 0}.pin-go{margin:8px -16px 0;padding-left:16px;padding-right:16px;bottom:-16px}.pin-chip{min-height:44px;font-size:15px}}
 @media (prefers-reduced-motion:reduce){.pin,.pin-bg,.pin-chip{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("pinCss")) return; const s = document.createElement("style"); s.id = "pinCss"; s.textContent = CSS; document.head.appendChild(s); };
   const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#FDE6A6" };

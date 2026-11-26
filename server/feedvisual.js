@@ -212,7 +212,7 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   // ---- Home to-dos from the server (public/nudges.js): "Show it on Discover" after a host shares a Link only event ----
   // New hosts' events start Link only, so they never fill the feed. Once one is shared (published), the host's Home
   // offers it once: one tap puts it on Discover (and their page), "Not now" never asks about that event again.
-  const nudgeable = (e) => !!e && !!e.published && !e.discoverable && !e.cancelled && !e.example && !e.casual && e.discoverNudge !== "off" && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && e.date >= today() && !!(e.city || e.hood || e.place || e.venue);
+  const nudgeable = (e) => !!e && !!e.published && !e.discoverable && !e.cancelled && !e.example && !e.private && !e.friendsOnly && e.discoverNudge !== "off" && /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") && e.date >= today() && !!(e.city || e.hood || e.place || e.venue);
   app.get("/api/host/nudges", (req, res) => { res.set("Cache-Control", "private, no-store"); const u = viewer(req); if (!u) return res.status(401).json({ code: "unauthenticated", message: "Sign in first." });
     if (!C.profileOf(u.ws)?.handle) return res.json({ discover: null });
     const S = scopeStore(store, u.ws), L = S.list("events").map((d) => ({ id: d.id, e: d.data })).filter((x) => nudgeable(x.e)).sort((a, b) => (b.e.publishedAt || b.e.updatedAt || 0) - (a.e.publishedAt || a.e.updatedAt || 0));

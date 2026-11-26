@@ -146,7 +146,7 @@
       if (ask && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so you hear when ${first} lets you in.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
       // review round 3 (paid spots): no pay link yet, so the host needs a way to send one
       if (!ask && payless(e) && resp !== "no" && !email && !phone) { const hh = $("#ctH"); hh.textContent = `Add an email or phone, so ${first} can send you a way to pay.`; hh.style.color = "#A8341A"; hh.setAttribute("role", "alert"); $("#ct").setAttribute("aria-invalid", "true"); $("#ct").focus(); return; }
-      const code = (String(e.id || id).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
+      const code = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
       const ride = resp === "no" ? "" : $("#rd")?.value || "";
       const data = { eventId: e.id || id, response: ask && resp !== "no" ? "requested" : resp, name, email, ...(phone ? { phone, contactVia: "sms" } : email ? { contactVia: "email" } : {}), dietary: resp === "no" ? "" : $("#dt")?.value.trim().slice(0, 120) || "", ...(ride ? { ride } : {}), ...(Q.length && resp !== "no" ? { answers: { ...answers } } : {}), code, createdAt: Date.now(), via: "invite-lite" };
       $("#send").disabled = true;

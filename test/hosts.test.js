@@ -118,6 +118,9 @@ test("Eric's shop: pandan cakes to order for pickup, stock limits, orders for Er
   assert.equal(o.total, "$82"); assert.match(o.payUrl, /^https:\/\/venmo\.com\/eric\?txn=pay&amount=82&note=.*%23/, "the amount and order number are filled in"); assert.match(o.code, /^[0-9A-F]{4}$/);
   const so = await post("/api/public/order/eric-bakes", { name: "Dev", email: "dev@example.com", slot: "Sun 10–12", items: [{ id: whole, qty: 2 }] });
   assert.equal(so.status, 409, "only 1 left");
+  // duplicate lines for the same item are added up, so they can't get around the per-order max or the stock
+  const dup = await post("/api/public/order/eric-bakes", { name: "Dup", email: "dup@example.com", slot: "Sun 10–12", items: [{ id: whole, qty: 1 }, { id: whole, qty: 1 }] });
+  assert.equal(dup.status, 409, "two lines of 1 still exceed the 1 left");
   assert.equal((await (await get("/api/public/shop/eric-bakes")).json()).shop.items[0].left, 1);
   const L = (await (await get("/api/host/orders", er.cookie)).json()).orders; assert.equal(L.length, 1); assert.equal(L[0].totalText, "$82");
   assert.equal((await post("/api/host/orders/" + L[0].id, { status: "paid" }, er.cookie)).status, 200);

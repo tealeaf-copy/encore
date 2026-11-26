@@ -41,7 +41,7 @@ window.InviteOrder = function (e, ws, H, U) {
       if (shop) { const r = await fetch("/api/public/order/" + encodeURIComponent(handle), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, phone, slot, items: lines.map((x) => ({ id: x.id, qty: qty[x.id] })), note: e.pubTitle || e.name || "" }) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); pay = j.payUrl || ""; code = j.code || ""; where = j.where || "";
         U.ls.set(`encore.order.${handle}.${code}`, JSON.stringify({ code, total: j.total, slot, at: Date.now(), lines: lines.map((x) => ({ name: x.name, qty: qty[x.id] })) })); }
-      else { const rc = (String(eid).slice(0, 2) + [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 46656, 7).toString(36)).toUpperCase().padEnd(5, "X").slice(0, 5);
+      else { const rc = Array.from(crypto.getRandomValues(new Uint8Array(6)),(b)=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b%32]).join("");
         const data = { eventId: eid, response: "going", name, email, ...(phone ? { phone, contactVia: "sms" } : { contactVia: "email" }), order: text.slice(0, 300), code: rc, createdAt: Date.now(), via: "invite-order" };
         const r = await fetch("/api/db/collection?path=rsvps", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": U.gkey(), "x-encore-workspace": ws }, body: JSON.stringify(data) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Didn't go through. Try again."); const rid = String(j.id || j.doc?.id || "").split("/").pop(); code = rc;

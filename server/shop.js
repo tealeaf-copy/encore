@@ -43,9 +43,13 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     const ws = C.wsOfHandle(req.params.handle), h = ws && C.profileOf(ws), s = h?.shop; if (!s?.open) return bad(res, "This shop isn't taking orders right now.", 404, "not_found");
     const b = req.body || {}, name = clean(b.name, 80), email = lc(clean(b.email, 200)), phone = clean(b.phone, 24), slot = clean(b.slot, 60);
     if (!name) return bad(res, "Add your name so they know whose order it is."); if (!PHONE_OK(phone) && !EMAIL_OK(email)) return bad(res, "Add a phone number or email so they can tell you it's ready.");
-    if (s.slots?.length && !s.slots.includes(slot)) return bad(res, "Pick a pickup time.");
+    // a pre-order made from an event's invite may use that event's pickup times
+    const evSlots = (() => { try { const id = clean(b.eventId, 80); if (!id) return []; const e = scopeStore(store, ws).get("events/" + id)?.data; return e?.preorder ? (e.slots || []).map((x) => (typeof x === "string" ? x : x?.label || x?.time || "")).filter(Boolean) : []; } catch { return []; } })();
+    if (s.slots?.length && !s.slots.includes(slot) && !evSlots.includes(slot)) return bad(res, "Pick a pickup time.");
     const S = sold(ws, s.dropId), lines = [];
-    for (const l of Array.isArray(b.items) ? b.items : []) { const it = s.items.find((x) => x.id === l?.id), q = Math.round(+l?.qty || 0); if (!it || q <= 0) continue; if (q > it.max) return bad(res, `Up to ${it.max} ${it.name} per order.`); if (it.stock && (S[it.id] || 0) + q > it.stock) return bad(res, `Only ${Math.max(0, it.stock - (S[it.id] || 0))} ${it.name} left.`, 409, "sold_out"); lines.push({ id: it.id, name: it.name, qty: q, cents: it.cents }); }
+    // one line per item, whatever the order sent (duplicate lines can't get around the per-order max or the stock)
+    const want = new Map(); for (const l of Array.isArray(b.items) ? b.items : []) { const q = Math.round(+l?.qty || 0); if (!l || typeof l.id !== "string" || q <= 0) continue; want.set(l.id, (want.get(l.id) || 0) + q); }
+    for (const [lid, q] of want) { const l = { id: lid, qty: q }; const it = s.items.find((x) => x.id === l?.id); if (!it) continue; if (q > it.max) return bad(res, `Up to ${it.max} ${it.name} per order.`); if (it.stock && (S[it.id] || 0) + q > it.stock) return bad(res, `Only ${Math.max(0, it.stock - (S[it.id] || 0))} ${it.name} left.`, 409, "sold_out"); lines.push({ id: it.id, name: it.name, qty: q, cents: it.cents }); }
     if (!lines.length) return bad(res, "Pick something first.");
     const total = lines.reduce((a, l) => a + l.qty * l.cents, 0), code = crypto.randomBytes(2).toString("hex").toUpperCase(), o = { code, dropId: s.dropId, name, email, phone, slot, note: clean(b.note, 200), lines, total, status: "new", at: Date.now() };
     const r = scopeStore(store, ws).add("orders", o); const W = getWorkspace(ws);

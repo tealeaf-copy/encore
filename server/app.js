@@ -628,7 +628,8 @@ export function createApp({ store, dataDir }) {
     req.url = "/e/" + id + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""); next(); });
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
-    if (!ev || ev.example) return res.redirect(302, to);
+    if (!ev) { res.status(404); return sendStatic(res, "404.html", "<p>This invite isn't here.</p>"); } // a cut-off or deleted link: a real not-found page, not a blank invite
+    if (ev.example) return res.redirect(302, to);
     const U = (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
     const h = C.profileOf(ws), title = (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",

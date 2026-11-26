@@ -70,7 +70,7 @@ export function mountSeries(app, { store, small, C, ownerOnly }) {
     }
     return out.sort((a, b) => (b.entries[0]?.date || b.next?.date || "").localeCompare(a.entries[0]?.date || a.next?.date || ""));
   }
-  app.get("/api/public/host/:handle/series", (req, res) => { if (limited(req)) return bad(res, "Slow down.", 429, "rate_limited"); const ws = C.wsOfHandle?.(String(req.params.handle || "").toLowerCase()); if (!ws) return bad(res, "No host by that name.", 404, "not_found");
+  app.get("/api/public/host/:handle/series", (req, res) => { if (limited(req)) return bad(res, "Slow down.", 429, "rate_limited"); const hd = String(req.params.handle || "").toLowerCase(), ws = C.wsOfHandle?.(hd); if (!ws) return C.showcaseOf?.(hd) ? res.json({ series: [] }) /* a preview page has no series yet */ : bad(res, "No host by that name.", 404, "not_found");
     res.set("Cache-Control", "public, max-age=60").json({ series: changelog(ws) }); });
 
   app.post("/api/host/series/:id/notes", small, (req, res) => { const u = ownerOnly(req, res); if (!u) return; const id = clean(req.params.id, 80), S = scopeStore(store, u.ws), ev = ID.test(id) ? S.get("events/" + id)?.data : null; if (!ev) return bad(res, "No such event.", 404, "not_found");

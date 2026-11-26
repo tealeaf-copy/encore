@@ -257,7 +257,7 @@ export function makeFeedVisual(store, { C, X }) {
     const F = new Set(following); let L = [...by.values()].map((s) => { const R = (s.recaps || []).sort((a, b) => b.madeAt - a.madeAt), done = new Set(R.map((r) => r.eventId));
       s.items.sort((a, b) => (!!a.past === !!b.past ? a.at - b.at : a.past ? -1 : 1)); /* what happened, oldest first, then what's next */
       const rest = s.items.filter((i) => !(i.ev && done.has(i.ev))); s.items = [...R.flatMap((r) => r.items).slice(0, 14), ...rest.filter((i) => i.past).slice(-7), ...rest.filter((i) => !i.past).slice(0, 3)];
-      s.latestAt = Math.max(0, ...s.items.map((i) => i.at)); s.thumb = R[0]?.thumb || (s.items.slice().reverse().find((i) => i.thumb) || {}).thumb || photoOf(I, s._ws, email);
+      s.latestAt = Math.max(0, ...s.items.map((i) => i.at)); s.thumb = (MEDIA_OK(s.host?.avatarUrl) ? s.host.avatarUrl : "") /* the host's own profile picture on their ring, like a face */ || R[0]?.thumb || (s.items.slice().reverse().find((i) => i.thumb) || {}).thumb || photoOf(I, s._ws, email);
       if (R.length) s.recap = { eventId: R[0].eventId, title: R[0].items[0].recap.title };
       delete s.recaps; delete s._ws; return s; }).filter((s) => s.items.length)
       .sort((a, b) => (F.has(b.host.handle) - F.has(a.host.handle)) || (!!b.recap - !!a.recap) || (!!a.sample - !!b.sample) || b.latestAt - a.latestAt).slice(0, 20);

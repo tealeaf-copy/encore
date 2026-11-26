@@ -249,6 +249,8 @@ test("/demo runs the page without the shim, no login; sign-up passes template an
   assert.equal(getWorkspace(j.workspace.id).interestedIn, "team");
   const bad = await (await post("/api/signup", { name: "U", email: "u@tmpl.com", company: "U", password: "long-password-1", template: "<script>" })).json();
   assert.equal(bad.redirect, "/?welcome=1");
+  const friend = await (await post("/api/signup", { name: "V", email: "v@tmpl.com", password: "long-password-1", mode: "friends" })).json();
+  assert.equal(friend.redirect, "/feed?welcome=1", "everyone but a brand team starts on the feed");
   assert.match(await (await get("/signup?template=x")).text(), /location\.search/);
 });
 

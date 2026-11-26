@@ -415,7 +415,9 @@ export function createApp({ store, dataDir }) {
     const q = new URLSearchParams({ welcome: "1" });
     for (const k of ["template", "plan"]) { const v = String(b[k] ?? "").trim(); if (/^[A-Za-z0-9_-]{1,60}$/.test(v)) q.set(k, v); }
     if (q.get("plan") && PLANS.includes(q.get("plan"))) updateWorkspace(W.id, { interestedIn: q.get("plan") });
-    res.json({ ok: true, workspace: { id: W.id, company: W.company, plan: W.plan, trialEndsAt: W.trialEndsAt }, redirect: "/?" + q.toString() });
+    // Everyone but a brand team lands on the feed first; a template or plan from the landing page still opens the app's welcome
+    const toFeed = personal && !q.get("template") && !q.get("plan");
+    res.json({ ok: true, workspace: { id: W.id, company: W.company, plan: W.plan, trialEndsAt: W.trialEndsAt }, redirect: toFeed ? "/feed?welcome=1" : "/?" + q.toString() });
   });
   /** Did this email reply I'm in to the event `ref`, or send it kudos? Then that event's host vouches for them.
    * review round 11: only for an address the guest proved is theirs (they opened the link we emailed to it, which stamps

@@ -131,14 +131,35 @@ function sign(email, ws, sid) {
   const gen = (() => { try { return email && email !== "*" && store ? getDbUser(email)?.gen || 0 : 0; } catch { return 0; } })();
   return createHmac("sha256", secret).update("encore-user:" + email + ":" + ws + ":" + sid + ":" + process.env.APP_PASSWORD + (gen ? ":g" + gen : "")).digest("hex");
 }
-function makeCookie(email, ws = DEFAULT_WS) { const sid = randomBytes(16).toString("hex"); return `${email}.${ws}.${sid}.${sign(email, ws, sid)}`; }
-/** { email, ws, sid } from a valid, unrevoked cookie, else null. email is "*" for the shared password. */
+// Launch review: the cookie no longer carries the email in clear text. A session is "v2.<workspace>.<session id>.<sig>"
+// and the server keeps who it belongs to (system/sess-<hash of the id>, which the data API can't read). The signature
+// still covers the email, workspace and id, so a stolen store row alone isn't a session. Old cookies
+// ("<email>.<ws>.<sid>.<sig>") keep working and are swapped for a v2 one on the next request (upgradeSession).
+const sessPath = (sid) => "system/sess-" + createHash("sha256").update(String(sid)).digest("hex").slice(0, 40);
+function makeCookie(email, ws = DEFAULT_WS, sid = randomBytes(16).toString("hex")) {
+  if (!store) return `${email}.${ws}.${sid}.${sign(email, ws, sid)}`; // no store (a bare team server): the old form
+  store.set(sessPath(sid), { email, ws, at: Date.now(), exp: Date.now() + MAX_AGE_S * 1000 });
+  return `v2.${ws}.${sid}.${sign(email, ws, sid)}`;
+}
+/** { email, ws, sid, legacy } from a valid, unrevoked cookie, else null. email is "*" for the shared password. */
 function session(req) {
   const parts = readCookie(req, COOKIE).split(".");
   if (parts.length < 4) return null;
+  if (parts[0] === "v2" && parts.length === 4) { const [, ws, sid, sig] = parts;
+    if (!/^[A-Za-z0-9]{1,40}$/.test(ws) || !/^[a-f0-9]{32}$/.test(sid) || isRevoked(sid)) return null;
+    const rec = store?.get(sessPath(sid))?.data; if (!rec || rec.ws !== ws || (rec.exp && rec.exp < Date.now())) return null;
+    return same(sig, sign(rec.email, ws, sid)) ? { email: rec.email, ws, sid } : null; }
   const sig = parts.pop(), sid = parts.pop(), ws = parts.pop(), email = parts.join(".");
   if (!email || !/^[A-Za-z0-9]{1,40}$/.test(ws) || !/^[a-f0-9]{32}$/.test(sid) || !same(sig, sign(email, ws, sid)) || isRevoked(sid)) return null;
-  return { email, ws, sid };
+  return { email, ws, sid, legacy: true };
+}
+/** Tests only: an old-style cookie value (email in clear text), to check the upgrade. */
+export const legacyCookieForTest = (email, ws, sid = randomBytes(16).toString("hex")) => `${email}.${ws}.${sid}.${sign(email, ws, sid)}`;
+/** Middleware: a valid old-style cookie (email in clear text) is replaced by a v2 one with the same session id. */
+export function upgradeSession(req, res, next) {
+  try { if (store && authEnabled() && /(?:^|;\s*)encore_auth=/.test(req.headers.cookie || "")) { const s = session(req);
+      if (s?.legacy) { const secure = req.secure ? "; Secure" : ""; res.append("Set-Cookie", `${COOKIE}=${encodeURIComponent(makeCookie(s.email, s.ws, s.sid))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_S}${secure}`); } } } catch {}
+  next();
 }
 /** The signed-in team member (with .ws), or null (not signed in as a named person). */
 export function currentUser(req) {

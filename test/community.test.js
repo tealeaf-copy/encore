@@ -99,11 +99,11 @@ test("Waitlist: someone without a code asks, a member sends them one, and they b
 });
 
 test("The founder code ignores spaces, dashes and case: \"oink oink\" works", async () => {
-  process.env.ENCORE_FOUNDER_CODES = "OINKOINK";
+  process.env.ENCORE_FOUNDER_CODES = "OINKOINK"; process.env.ENCORE_FOUNDER_PER_IP = "20"; // these all come from one IP
   try {
     for (const [i, c] of ["oink oink", "Oink-Oink", "OINKOINK"].entries()) { const X = await join("Pig " + i, `pig${i}.code@example.com`, c); assert.equal(X.r.status, 200, c + " " + JSON.stringify(X.body)); }
     process.env.ENCORE_FOUNDER_CODES = "oink oink";
     const Y = await join("Pig 9", "pig9.code@example.com", "OINKOINK"); assert.equal(Y.r.status, 200, JSON.stringify(Y.body));
     const N = await join("Pig 10", "pig10.code@example.com", "oink"); assert.equal(N.r.status, 403);
-  } finally { delete process.env.ENCORE_FOUNDER_CODES; }
+  } finally { delete process.env.ENCORE_FOUNDER_CODES; delete process.env.ENCORE_FOUNDER_PER_IP; }
 });

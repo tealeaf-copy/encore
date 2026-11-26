@@ -6,6 +6,8 @@ import { createApp } from "../server/app.js";
 
 export async function startServer() {
   process.env.ENCORE_FAKE_AI = "1";
+  // email verification (server/verify.js) is on in production; tests that check it turn it on themselves
+  if (process.env.ENCORE_VERIFY_EMAIL == null) process.env.ENCORE_VERIFY_EMAIL = "0";
   for (const k of ["SLACK_BOT_TOKEN", "SLACK_WEBHOOK_URL", "LINEAR_API_KEY", "LINEAR_TEAM_ID", "APP_PASSWORD", "HUBSPOT_TOKEN", "SF_INSTANCE_URL", "SF_ACCESS_TOKEN", "SF_CLIENT_ID", "SF_CLIENT_SECRET"]) delete process.env[k];
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "encore-test-"));
   const store = openStore(path.join(dir, "test.db"));

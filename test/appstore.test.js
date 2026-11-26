@@ -2,6 +2,7 @@
 // universal links and App Links, the web manifest and icons, the service worker, account deletion (now and after a
 // grace period), report / block / the moderation queue, the text filter, the push registry and send (fake mode),
 // and native.js doing nothing on the web.
+import { getDbUser, putDbUser } from "../server/workspaces.js";
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -143,7 +144,9 @@ test("report, block and the moderation queue: blocked people leave your feed, hi
   const r2 = await (await post("/api/report", { type: "moment", target: "moment:/_blob/AAAAAAAAAAAAAAAAAAAA", reason: "sexual" })).json();
   await post(`/api/admin/reports/${r2.id}`, { action: "hide" }, M.cookie); assert.equal(scopeStore(srv.store, A.ws).get("moments/asm1").data.hidden, true);
   await post(`/api/admin/reports/${r2.id}`, { action: "restore" }, M.cookie); assert.equal(scopeStore(srv.store, A.ws).get("moments/asm1").data.hidden, false);
-  // three different people reporting one thing hide it at once
+  // three different people reporting one thing hide it at once, when they're confirmed accounts at least 7 days old
+  // (launch review: new or unconfirmed accounts queue for a person instead)
+  for (const x of [B, D, M]) { const u = getDbUser(x.email); if (u) putDbUser({ ...u, createdAt: Date.now() - 30 * 864e5 }); }
   const t = "text:" + textHash("You are all terrible");
   for (const x of [B, D, M]) await post("/api/report", { type: "kudos", text: "You are all terrible", reason: "hate" }, x.cookie);
   assert.ok((await (await get("/api/admin/reports", M.cookie)).json()).hidden.includes(t));

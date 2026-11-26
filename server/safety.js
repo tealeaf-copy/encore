@@ -13,8 +13,9 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_WS, scopeStore, allWorkspaceIds } from "./workspaces.js";
+import { DEFAULT_WS, scopeStore, allWorkspaceIds, getWorkspace } from "./workspaces.js";
 import { isAdmin } from "./metrics.js";
+import { emailVerified, trustedReporter, verifyRequired } from "./verify.js";
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -132,15 +133,20 @@ export function mountSafety(app, { store, small, currentUser, X, publicOrigin, e
     const text = clean(b.text, 2000); let target = clean(b.target, 300);
     if ((type === "kudos" || type === "review") && !target && text) target = "text:" + textHash(text);
     if (!TARGET_RE.test(target)) return res.status(400).json({ code: "invalid", message: "What are you reporting?" });
-    const u = viewer(req), from = u ? lc(u.email) : EMAIL_RE.test(lc(b.email)) ? lc(b.email) : "", who = u ? "u:" + sha(lc(u.email)) : "ip:" + sha(req.ip || "?");
+    const u0 = viewer(req); if (u0 && verifyRequired() && !emailVerified(u0.email)) return res.status(403).json({ code: "verify_email", message: "Confirm your email first, then you can report. Tap the link we sent you." });
+    const u = u0, from = u ? lc(u.email) : EMAIL_RE.test(lc(b.email)) ? lc(b.email) : "", who = u ? "u:" + sha(lc(u.email)) : "ip:" + sha(req.ip || "?");
     const id = crypto.randomBytes(9).toString("base64url");
     const r = { kind: "report", id, type, target, reason, note: clean(b.note, 1000), text, name: clean(b.name, 120), url: /^\/[^/]/.test(String(b.url || "")) ? clean(b.url, 300) : "", from, who, at: Date.now(), status: "open" };
     store.set("system/report-" + id, r);
     // three different people on the same thing: hide it now, a person looks next
-    const others = new Set(S.reports().filter((x) => x.target === target && x.status === "open").map((x) => x.who));
-    let autoHidden = false; if (others.size >= 3 && !S.isHidden(target) && !target.startsWith("other:")) { S.hide(target, { reportId: id, auto: true }); autoHidden = true; afterHide(target, true); }
+    // launch review: only reports from verified accounts at least 7 days old count toward hiding; throwaway accounts and
+    // signed-out reports queue for a person. When it hides, the admin and the host both hear about it.
+    r.trusted = !!(u && trustedReporter(u.email)); store.set("system/report-" + id, r);
+    const open = S.reports().filter((x) => x.target === target && x.status === "open"), others = new Set(open.filter((x) => x.trusted).map((x) => x.who));
+    let autoHidden = false; if (others.size >= 3 && !S.isHidden(target) && !target.startsWith("other:")) { S.hide(target, { reportId: id, auto: true }); autoHidden = true; afterHide(target, true); tellHost(target, type, REASONS[reason], req); }
+    const queued = !autoHidden && new Set(open.map((x) => x.who)).size >= 3 && !S.isHidden(target);
     const to = String(process.env.ENCORE_ADMIN_EMAILS || "").split(/[\s,]+/).filter((x) => EMAIL_RE.test(x)), cfg = emailConfig(DEFAULT_WS, true);
-    if (to.length && cfg) sendEmail(cfg, { to: to.join(","), subject: `Report: ${REASONS[reason]} (${type})${autoHidden ? ", hidden after 3 reports" : ""}`, text: `${REASONS[reason]} on a ${type}.\n\n${r.note ? "Note: " + r.note + "\n" : ""}${r.text ? "Text: " + r.text.slice(0, 500) + "\n" : ""}${r.url ? "Where: " + publicOrigin(req) + r.url + "\n" : ""}\nReview it within 24 hours: ${publicOrigin(req)}/moderation#r-${id}` }).catch(() => {});
+    if (to.length && cfg) sendEmail(cfg, { to: to.join(","), subject: `Report: ${REASONS[reason]} (${type})${autoHidden ? ", hidden after 3 reports" : queued ? ", 3+ reports, waiting for you" : ""}`, text: `${REASONS[reason]} on a ${type}.\n\n${r.note ? "Note: " + r.note + "\n" : ""}${r.text ? "Text: " + r.text.slice(0, 500) + "\n" : ""}${r.url ? "Where: " + publicOrigin(req) + r.url + "\n" : ""}\nReview it within 24 hours: ${publicOrigin(req)}/moderation#r-${id}` }).catch(() => {});
     res.json({ ok: true, id, message: "Thanks for telling us. We look at every report within 24 hours." });
   });
 
@@ -155,6 +161,11 @@ export function mountSafety(app, { store, small, currentUser, X, publicOrigin, e
 
   // ---- the moderation queue (ENCORE_ADMIN_EMAILS) ----
   // a moment hidden by the team is also marked hidden where it lives, so the photo walls and stories drop it too
+  // the host hears when their event or page is hidden after reports, and that a person looks within 24 hours
+  function tellHost(target, type, reason, req) { try { let ws = null, what = "";
+      if (target.startsWith("event:")) { const id = target.slice(6); for (const w of allWorkspaceIds()) { const e = scopeStore(store, w).get("events/" + id)?.data; if (e) { ws = w; what = e.pubTitle || e.name || "your event"; break; } } }
+      else if (target.startsWith("host:")) { const h = target.slice(5).replace(/^@/, ""); ws = store.get("system/handle-" + h)?.data?.ws || null; what = "your page"; }
+      const owner = ws && getWorkspace(ws)?.ownerEmail; if (owner) X?.notify?.(owner, { kind: "moderation", key: "hid-" + target, text: `${what} was hidden after several reports (${reason}). A person reviews it within 24 hours.`, link: "/community#contact" }); } catch {} }
   function afterHide(target, hidden) {
     if (target.startsWith("moment:")) { const url = target.slice(7); for (const ws of allWorkspaceIds()) { const St = scopeStore(store, ws); for (const d of St.list("moments")) if (d.data?.url === url) St.update("moments/" + d.id, hidden ? { hidden: true, modHidden: Date.now() } : { hidden: false, modHidden: null }); } }
     try { X?.bust?.(); } catch {}

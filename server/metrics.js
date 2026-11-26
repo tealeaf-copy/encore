@@ -2,7 +2,7 @@
 // Each step is one row in a global collection (system/metrics/funnel, never reachable through the data API) with a
 // timestamp, the workspace id and the event id. No names, emails or phones are ever stored here.
 // GET /api/admin/funnel (people listed in ENCORE_ADMIN_EMAILS only; 404 for everyone else) reads the counts.
-import { scopeStore, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
+import { scopeStore, allWorkspaceIds, DEFAULT_WS, getDbUser } from "./workspaces.js";
 
 export const FUNNEL_STEPS = ["signup", "first_event_created", "share_clicked", "first_reply", "three_replies", "event_done", "kudos_received", "guest_follow", "guest_became_host"];
 // what a browser may send to POST /api/track (everything else is recorded by the server itself)
@@ -31,7 +31,9 @@ export function trackOnce(name, key, props = {}, at) {
   return track(name, props, at);
 }
 export const funnelRows = () => (S ? S.list(COL).map((d) => d.data) : []);
-export const isAdmin = (email) => { const e = String(email || "").trim().toLowerCase(); return !!e && String(process.env.ENCORE_ADMIN_EMAILS || "").split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean).includes(e); };
+// an admin is on ENCORE_ADMIN_EMAILS and has confirmed that email (an account made by sign-up with that address can't be
+// an admin until the link in its inbox is tapped)
+export const isAdmin = (email) => { const e = String(email || "").trim().toLowerCase(); return !!e && String(process.env.ENCORE_ADMIN_EMAILS || "").split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean).includes(e) && (() => { try { return getDbUser(e)?.emailVerified !== false; } catch { return true; } })(); };
 
 /** Events whose date has passed get one event_done row, stamped at noon on the event's date. */
 export function sweepDone(today = new Date().toISOString().slice(0, 10)) {

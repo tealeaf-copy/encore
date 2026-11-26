@@ -52,5 +52,7 @@
       if (!document.getElementById("navChatsCss")) { const s = document.createElement("style"); s.id = "navChatsCss"; s.textContent = `#navMeTab{display:none!important}@media (max-width:760px){body.friends-ws nav.tabs>a{display:none!important}body.friends-ws nav.tabs>#navFeed,body.friends-ws nav.tabs>#navDisc,body.friends-ws nav.tabs>a[data-view=studio],body.friends-ws nav.tabs>#navChats,body.friends-ws nav.tabs>#navMeTab{display:flex!important}body.friends-ws nav.tabs>#navFeed{order:1!important}body.friends-ws nav.tabs>#navDisc{order:2!important}body.friends-ws nav.tabs>a[data-view=studio]{order:3!important}body.friends-ws nav.tabs>#navChats{order:4!important}body.friends-ws nav.tabs>#navMeTab{order:5!important}}`; document.head.appendChild(s); }
       poll(); }; go(); }
   window.PLChatNav = { set, poll, me, has, CHAT, proofs, get n() { return n; } };
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { app(); poll(); }); else { app(); poll(); }
+  // a new account that hasn't confirmed its email sees one line about it (public/verifybanner.js)
+  const verify = () => { if (signed() && !window.__plVerify) { const t = document.createElement("script"); t.src = "/verifybanner.js"; t.defer = true; document.head.appendChild(t); } };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { app(); poll(); verify(); }); else { app(); poll(); verify(); }
 })();

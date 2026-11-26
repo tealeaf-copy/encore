@@ -25,8 +25,11 @@ test("named users sign in with their email and the team password", async () => {
   const { workspace, owner, ...me } = await fetch(srv.base + "/api/me", { headers: { cookie } }).then((x) => x.json());
   assert.equal(workspace.id, "default");
   assert.equal(owner, false);
-  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], approverRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true });
-  const forged = cookie.replace("maya%40acme.com", "sam%40acme.com");
+  assert.deepEqual(me, { name: "Maya Chen", email: "maya@acme.com", roles: ["Event lead", "Account execs"], teamRoles: ["Event lead", "Account execs", "Exec sponsor"], approverRoles: ["Event lead", "Account execs", "Exec sponsor"], verified: true, emailVerified: true });
+  // the cookie doesn't carry the email (launch review); a cookie re-pointed at someone else with this signature fails
+  assert.doesNotMatch(decodeURIComponent(cookie), /maya/);
+  const [, , sid, sig] = decodeURIComponent(cookie.split("=")[1]).split(".");
+  const forged = "encore_auth=" + encodeURIComponent(`sam@acme.com.default.${sid}.${sig}`);
   assert.equal((await fetch(srv.base + "/api/me", { headers: { cookie: forged } })).status, 401, "a cookie can't be re-pointed at someone else");
   await fetch(srv.base + "/api/audit", { method: "POST", headers: { cookie, "Content-Type": "application/json" }, body: JSON.stringify({ eventId: "e1", what: "approved the plan" }) });
   const log = await fetch(srv.base + "/api/audit?eventId=e1", { headers: { cookie } }).then((x) => x.json());

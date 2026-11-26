@@ -20,30 +20,33 @@
     slab: { label: "Slab", css: '"Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif', q: "Zilla+Slab:wght@600;700", w: 700, ls: "-.005em", k: 1.04 },
   };
   // eight colours to pick from when there's no flyer (each with two accents that suit it)
-  const SWATCHES = [["#A9C3A4", "#3E6B48", "#F2D36B", "Sage"], ["#EFE2C6", "#1F1A17", "#C2553A", "Cream"], ["#C4DDF3", "#1E4E86", "#D94357", "Ice"], ["#6E0F1F", "#F2C46D", "#F4D7C8", "Velvet"],
-    ["#F6C9D2", "#B0344F", "#4F7A52", "Blush"], ["#FFE08A", "#C94A30", "#2F7A8A", "Butter"], ["#D3C6F4", "#5A3DA8", "#E26D8E", "Lilac"], ["#4A2E1E", "#D8322E", "#F2C46D", "Night"]];
+  const SWATCHES = [["#DCE3D2", "#2F4A35", "#A4533A", "Sage"], ["#EFE7D8", "#1D1B18", "#9A4128", "Bone"], ["#E4E9EC", "#24384C", "#9A4128", "Stone"], ["#3B1519", "#D4AE76", "#EBDCCF", "Oxblood"],
+    ["#F3E8E6", "#3A2A30", "#8C5A55", "Rose"], ["#E8DDC8", "#5C3013", "#3D5A39", "Oat"], ["#1D2A23", "#D2B26C", "#EDE5D3", "Forest"], ["#1E1A17", "#C9A063", "#E8DED0", "Espresso"]];
   const LABELS = ["I'm in", "Join", "Count me in", "Ask to join"]; // older labels off the word list read "I'm in" (server/looks.js cleanLook)
   const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲", "🍂", "🫙", "☕"];
-  // one-tap vibes. Flower shop is the host page's Flower shop look (storefront.js LOOKS.florist: petal page, deep green)
+  // one-tap vibes, curated as whole palettes: page, ink accent and one warm accent designed together (2026 brand pass).
+  // Light looks sit on bone, stone and paper; dark looks on ink, forest, oxblood, slate and espresso with warm off-white
+  // text. Flat pages, no glows by default, plain "I'm in" with no emoji. Flower shop is the host page's Flower shop look
+  // (storefront.js LOOKS.florist: petal page, deep green)
   const VIBES = {
-    garden: { label: "Garden party", look: { palette: ["#A9C3A4", "#3E6B48", "#F2D36B"], effect: "sparkles", titleFont: "rounded", buttonEmoji: "🌿", buttonLabel: "Count me in" } },
-    jazz: { label: "Jazz night", look: { palette: ["#EFE2C6", "#1F1A17", "#C2553A"], effect: "paper", titleFont: "bold", buttonEmoji: "🎷", buttonLabel: "I'm in" } },
-    winter: { label: "Winter benefit", look: { palette: ["#C4DDF3", "#1E4E86", "#D94357"], effect: "snow", titleFont: "clean", buttonEmoji: "❄️", buttonLabel: "I'm in" } },
-    velvet: { label: "Velvet sale", look: { palette: ["#6E0F1F", "#F2C46D", "#F4D7C8"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "I'm in" } },
-    flower: { label: "Flower shop", look: { palette: ["#F4E9EC", "#1F3D30", "#E98973"], effect: "petals", titleFont: "script", buttonEmoji: "💐", buttonLabel: "Count me in" } },
-    // an izakaya after dark: deep ink-indigo, paper lanterns and a noren curtain, warm amber on the button
-    night: { label: "Night out", look: { palette: ["#141A3A", "#F2A44A", "#E5533D"], effect: "lanterns", titleFont: "bold", buttonEmoji: "🏮", buttonLabel: "I'm in" } },
-    market: { label: "Holiday market", look: { palette: ["#5A0F1E", "#E8C26A", "#F6EBD9"], effect: "twinkle", lights: true, titleFont: "bold", buttonEmoji: "🎄", buttonLabel: "Count me in" } },
-    // a hand of pastel cards: the cover is a flat playing card, the kind of event in the corner and the drawing in the middle
-    // for the quiet, nerdy crowd: a calm dark terminal (phosphor green, amber accent, faint scanlines) and an 8-bit page in four colours
-    terminal: { label: "Terminal", look: { palette: ["#0E1411", "#7CF29A", "#F2B84B"], effect: "scanlines", titleFont: "mono", buttonEmoji: "💻", buttonLabel: "Join" } },
-    pixel: { label: "Pixel", look: { palette: ["#F4EED8", "#3A2E5C", "#E0566B"], effect: "pixels", titleFont: "pixel", buttonEmoji: "👾", buttonLabel: "I'm in" } },
-    cards: { label: "Card deck", look: { palette: ["#F6EFE4", "#2B2340", "#E26D8E"], effect: "none", titleFont: "rounded", buttonEmoji: "✨", buttonLabel: "I'm in", coverStyle: "deck" } },
+    garden: { label: "Garden party", look: { palette: ["#DCE3D2", "#2F4A35", "#A4533A"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
+    jazz: { label: "Jazz night", look: { palette: ["#1E1A17", "#C9A063", "#E8DED0"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
+    winter: { label: "Winter benefit", look: { palette: ["#E4E9EC", "#24384C", "#9A4128"], effect: "snow", titleFont: "clean", buttonLabel: "I'm in" } },
+    velvet: { label: "Velvet sale", look: { palette: ["#3B1519", "#D4AE76", "#EBDCCF"], effect: "none", titleFont: "serif", buttonLabel: "I'm in" } },
+    flower: { label: "Flower shop", look: { palette: ["#F4E9EC", "#1F3D30", "#A85A55"], effect: "petals", titleFont: "script", buttonLabel: "I'm in" } },
+    // an izakaya after dark: deep slate, paper lanterns and a noren curtain, warm amber on the button
+    night: { label: "Night out", look: { palette: ["#151A24", "#D9A25E", "#B9C2CF"], effect: "lanterns", titleFont: "clean", buttonLabel: "I'm in" } },
+    market: { label: "Holiday market", look: { palette: ["#1D2A23", "#D2B26C", "#EDE5D3"], effect: "twinkle", lights: true, titleFont: "serif", buttonLabel: "I'm in" } },
+    // for the quiet, nerdy crowd: a calm dark terminal (soft phosphor green, amber accent, faint scanlines) and an 8-bit page in four colours
+    terminal: { label: "Terminal", look: { palette: ["#0F1412", "#8ED1A1", "#D8B36A"], effect: "scanlines", titleFont: "mono", buttonLabel: "I'm in" } },
+    pixel: { label: "Pixel", look: { palette: ["#EEEADC", "#2E2A44", "#B4495B"], effect: "pixels", titleFont: "pixel", buttonLabel: "I'm in" } },
+    // a hand of muted cards: the cover is a flat playing card, the kind of event in the corner and the drawing in the middle
+    cards: { label: "Card deck", look: { palette: ["#F2EDE4", "#2C2836", "#9A4128"], effect: "none", titleFont: "serif", buttonLabel: "I'm in", coverStyle: "deck" } },
     // a cozy winter pantry: warm ochre plaster, a wall of backlit jars over the page, a hex-tile floor, a slab title and the harvest menu card
-    pantry: { label: "Pantry", look: { palette: ["#D9A55B", "#7A3E12", "#2F5D3A"], effect: "jarwall", titleFont: "slab", buttonEmoji: "🍂", buttonLabel: "I'm in", menuStyle: "harvest" } },
+    pantry: { label: "Pantry", look: { palette: ["#D8B47E", "#5C3013", "#3D5A39"], effect: "jarwall", titleFont: "slab", buttonLabel: "I'm in", menuStyle: "harvest" } },
   };
-  // the card deck's pastels (the same hand as the swipe deck, public/swipedeck.js)
-  const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
+  // the card deck's grounds (the same hand as the swipe deck, public/swipedeck.js), muted to the brand's natural tones
+  const DECK = ["#E8E2D3", "#E3DEE4", "#DDE3E4", "#DFE5D9", "#EEDDD4", "#EDE3CC"];
   // ---------- stickers: small original drawings a host drops on their cover (server/looks.js keeps at most 6) ----------
   const SK = 'stroke="#1F1A17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"', BK = 'fill="#fff" stroke="#fff" stroke-width="11" stroke-linejoin="round"';
   const two = (d, fill) => `<path ${BK} d="${d}"/><path fill="${fill}" ${SK} d="${d}"/>`;
@@ -106,7 +109,7 @@ html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100
 .lk-vibe-night .lk-title{color:#FFFDF8!important}
 .lk-fxl{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}.lk-fxl.fixed{position:fixed;z-index:-1}.lk-fxl canvas{position:absolute;inset:0;width:100%;height:100%}
 .lk-paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(120% 80% at 50% 0,transparent 55%,rgba(110,80,40,.10));opacity:.55;mix-blend-mode:multiply}
-.lk-velvet{background:radial-gradient(150vw 75vh at 50% 0,color-mix(in srgb,var(--lk-glow,#C2384A) 55%,transparent),transparent 70%),radial-gradient(100vw 55vh at 85% 100%,color-mix(in srgb,var(--lk-glow,#C2384A) 30%,transparent),transparent 70%),radial-gradient(130% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45));animation:lk-breathe 9s ease-in-out infinite}
+.lk-velvet{background:radial-gradient(150vw 75vh at 50% 0,color-mix(in srgb,var(--lk-glow,#C2384A) 14%,transparent),transparent 70%),radial-gradient(100vw 55vh at 85% 100%,color-mix(in srgb,var(--lk-glow,#C2384A) 8%,transparent),transparent 70%),radial-gradient(130% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45));animation:lk-breathe 9s ease-in-out infinite}
 .lk-update{position:relative;z-index:2;display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:10px 16px 10px 10px;border-radius:18px;background:#FFF3B0;color:#1F1A17;border:2px solid #1F1A17;box-shadow:3px 3px 0 #1F1A17;transform:rotate(-1deg);width:fit-content;max-width:100%;box-sizing:border-box}
 .lk-burst{flex:none;position:relative;width:54px;height:54px;display:grid;place-items:center}.lk-burst svg{position:absolute;inset:0;width:100%;height:100%;fill:#E2573A;stroke:#1F1A17;stroke-width:3;stroke-linejoin:round}.lk-burst b{position:relative;font:800 13px/1 "Instrument Sans",system-ui,sans-serif;color:#fff;transform:rotate(-10deg)}
 .lk-upd-t{display:grid;gap:2px;font:600 16px/1.3 "Instrument Sans",system-ui,sans-serif;min-width:0;text-align:left}.lk-upd-t>b{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.lk-upd-t time{font-weight:500;color:#5E534B;letter-spacing:0;text-transform:none;margin-left:4px}.lk-upd-t>span{overflow-wrap:anywhere}
@@ -169,7 +172,7 @@ body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-
 @media (min-width:700px){body.lk-invite.lk-fx-jarwall main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 176px)}}`;
   // the light invite (public/invite.html, body.lk-invite): its cards, form and buttons in the look's colours, and the flyer
   // beside the invite on wide screens. Kept here so the invite page itself stays small.
-  const INVITE_CSS = `body.lk-invite.lk-on main{position:relative;z-index:1}body.lk-invite.lk-on .brand{color:var(--lk-ink)}body.lk-invite.lk-on a{color:inherit}
+  const INVITE_CSS = `body.lk-invite.lk-on main{position:relative;z-index:1}body.lk-invite.lk-on .brand,html body.lk-on.lk-on a.brand.brand{color:var(--lk-ink)!important}body.lk-invite.lk-on a{color:inherit}
 body.lk-invite.lk-on .muted{color:var(--lk-soft)}body.lk-invite.lk-on h1.lk-title{font-size:calc(clamp(36px,9.5vw,58px) * var(--lk-tk,1));line-height:1.02;margin:20px 0 12px}
 body.lk-invite .cov.poster{aspect-ratio:auto;border:0;background:none;border-radius:18px;box-shadow:0 22px 44px -22px rgba(0,0,0,.55)}body.lk-invite .cov.poster img{height:auto}
 body.lk-invite.lk-on .cov:not(.poster){border-color:var(--lk-ink);box-shadow:0 18px 36px -22px rgba(0,0,0,.5)}
@@ -181,16 +184,18 @@ body.lk-invite.lk-on .go,body.lk-invite.lk-on .stick a,body.lk-invite.lk-on .btn
 body.lk-invite.lk-on .btn{background:var(--lk-card);color:var(--lk-card-ink);border-color:color-mix(in srgb,var(--lk-card-ink) 28%,var(--lk-card))}
 body.lk-invite.lk-on .stick{background:color-mix(in srgb,var(--lk-bot) 90%,transparent);border-top-color:var(--lk-line);z-index:4}body.lk-invite.lk-on .stick b{color:var(--lk-ink)}
 body.lk-invite.lk-on .going span,body.lk-invite.lk-on .host .av{background:var(--lk-card);color:var(--lk-card-ink);border-color:var(--lk-line)}
-body.lk-invite.lk-on .full,body.lk-invite.lk-on .linkbtn{color:var(--lk-ink)}
+body.lk-invite.lk-on .full,body.lk-invite.lk-on .linkbtn{color:var(--lk-link,var(--lk-ink))}
 html body.lk-invite.lk-on.lk-on button.go,html body.lk-invite.lk-on.lk-on button.go:hover,html body.lk-invite.lk-on.lk-on a.btn.main,html body.lk-invite.lk-on.lk-on a.btn.pay{background:var(--lk-btn)!important;color:var(--lk-on-btn)!important;border-color:var(--lk-btn)!important}
 body.lk-invite.lk-fx-lights main,body.lk-invite.lk-fx-lanterns main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 40px)}
 body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.lk-invite .cov.poster img{width:auto;max-width:100%;max-height:min(74vh,820px)}
 /* wide screens: the flyer on the left, held in place, and the invite beside it */
 /* a dark look: one palette from the look's own tokens. The cover sits in the page's deep tone with the drawing in light
    lines, cards are the raised surface, fields the field tone, secondary buttons outlined. Nothing white, no offset shadows */
+/* the drawing's one spot of colour is the look's accent (docs/brand-kit.md: a drawing never brings a hue of its own) */
+.lk-on :is(.cov,.gxcover,.mk-cov,.em-drawn) .ea-art svg :is([fill="#A9864A"],[fill="#A4533A"],[fill="#56707E"],[fill="#677A5E"],[fill="#76687F"],[fill="#AD6743"],[fill="#9A4128"]){fill:var(--lk-spot)}
 .lk-dark :is(.cov,.gxcover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 .lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
-.lk-dark :is(.cov,.gxcover,.em-drawn) .ea-art svg [stroke="#151515"],.lk-dark .em-drawn svg [stroke="#151515"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover) .ea-art svg [fill="#151515"],.lk-dark .em-drawn svg [fill="#151515"]{fill:var(--lk-ink)}
+.lk-dark :is(.cov,.gxcover,.em-drawn) .ea-art svg [stroke="#2A2622"],.lk-dark .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover) .ea-art svg [fill="#2A2622"],.lk-dark .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}
 .lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"],.lk-dark .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
 body.lk-invite.lk-dark :is(.pls-btn,.sl-btn,.btn:not(.main):not(.pay)){background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 body.lk-invite.lk-dark :is(.pls-btn,.sl-btn) svg{color:var(--lk-ink)}.lk-dark .pls-btn{--pls-fill:transparent}.lk-dark .pls-btn svg path{stroke:var(--lk-ink)}.lk-dark .pls-btn[aria-pressed=true]{--pls-fill:var(--lk-btn)}
@@ -211,12 +216,12 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
     el.__lkStop?.(); el.__lkStop = null; if (el === document.body) document.documentElement.classList.remove("lk-root"); el.classList.remove(...CLS, ...[...el.classList].filter((c) => /^lk-(fx|font|vibe)-/.test(c)));
     if (!has(L)) return null;
     const T = colors(L), F = FONTS[L.titleFont]; el.classList.add("lk-on"); if (page && T) el.classList.add("lk-page");
-    if (T) { el.classList.add(T.dark ? "lk-dark" : "lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line, "--lk-raised": T.raised, "--lk-raised-soft": T.raisedSoft, "--lk-field": T.field, "--lk-line2": T.lineStrong, "--lk-cover": T.cover || T.card }).forEach(([k, v]) => v && el.style.setProperty(k, v)); }
+    if (T) { el.classList.add(T.dark ? "lk-dark" : "lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-link": T.link, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line, "--lk-raised": T.raised, "--lk-raised-soft": T.raisedSoft, "--lk-field": T.field, "--lk-line2": T.lineStrong, "--lk-cover": T.cover || T.card }).forEach(([k, v]) => v && el.style.setProperty(k, v)); }
     // the whole page: the gradient sits on the root, so the effect layer can sit under the content and over the colour
     if (el === document.body && page && T) { const R0 = document.documentElement; R0.classList.add("lk-root"); for (const k of ["--lk-top", "--lk-bot"]) R0.style.setProperty(k, el.style.getPropertyValue(k)); }
     if (F) { loadFont(L.titleFont); el.classList.add("lk-font-" + L.titleFont); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", F.k); if (F.up) el.classList.add("lk-up"); }
     if (L.vibe && VIBES[L.vibe]) el.classList.add("lk-vibe-" + L.vibe);
-    el.style.setProperty("--lk-glow", L.effect === "lanterns" ? "#F28A3A" : glowOf(L)); if (T) el.style.setProperty("--lk-pix", T.ink);
+    el.style.setProperty("--lk-glow", L.effect === "lanterns" ? "#F28A3A" : glowOf(L)); if (T) { el.style.setProperty("--lk-pix", T.ink); el.style.setProperty("--lk-spot", T.spot || T.btn); }
     const stops = [];
     if (L.effect && L.effect !== "none") { el.classList.add("lk-fx-" + L.effect); stops.push(effect(el, L.effect, { fixed, dark: !!T?.dark, colors: particleColors(L, T) })); }
     if (L.lights) { el.classList.add("lk-fx-lights"); stops.push(lights(el, { fixed })); }
@@ -234,7 +239,7 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
       const ea = box.querySelector(".ea-cover:not(.ea-custom)"), A = window.EventArt;
       if (deck && ea) { ea.classList.add("lk-deck");
         // one chubby drawing in the middle of the card, the event's own kind
-        const art = ea.querySelector(".ea-art"); if (art && A) { if (ea.__lkArt == null) ea.__lkArt = art.innerHTML; try { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0], tone = A.toneOf(e || {}, k); art.innerHTML = A.drawing(k, A.SPOT?.[tone] || "#E8452C"); } catch {} } ea.style.setProperty("--lk-deck", DECK[hash(e?.id || e?.name || "") % DECK.length]); const c = document.createElement("span"); c.className = "lk-corner"; c.setAttribute("aria-hidden", "true"); c.textContent = cornerWord(e); ea.appendChild(c); }
+        const art = ea.querySelector(".ea-art"); if (art && A) { if (ea.__lkArt == null) ea.__lkArt = art.innerHTML; try { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0], tone = A.toneOf(e || {}, k); art.innerHTML = A.drawing(k, A.SPOT?.[tone] || "#A4533A"); } catch {} } ea.style.setProperty("--lk-deck", DECK[hash(e?.id || e?.name || "") % DECK.length]); const c = document.createElement("span"); c.className = "lk-corner"; c.setAttribute("aria-hidden", "true"); c.textContent = cornerWord(e); ea.appendChild(c); }
       const st = stickersHTML(L); if (st) { if (getComputedStyle(box).position === "static") box.style.position = "relative"; box.insertAdjacentHTML("beforeend", st); } });
     menus(root, e); }
   // the harvest menu: the full invite's menu card (#menuCard, public/menucard.js) redrawn as the cream harvest card, with the price line
@@ -374,18 +379,18 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
   // what goes with each vibe: a second palette or two in the same family, and effects, fonts and button emoji that suit it.
   // Surprise me rolls one of each, so the result is random but never a clash (a snowflake on a garden party, say).
   const MOODS = {
-    garden: { pal: [["#C8E3C0", "#2F5D3A", "#F2B5C4"], ["#E9F1D6", "#3E6B48", "#E98973"]], fx: ["sparkles", "petals", "none"], font: ["rounded", "script", "serif"], em: ["🌿", "🌷", "🌸", "🙌"] },
-    jazz: { pal: [["#E8DCC4", "#2B211C", "#B8452F"], ["#1F2A2E", "#E7B75F", "#F4E9D8"]], fx: ["paper", "none", "stars"], font: ["bold", "typewriter", "serif"], em: ["🎷", "🎶", "🍷", "🥂"] },
-    winter: { pal: [["#DCE8F5", "#1E4E86", "#D94357"], ["#E9EEF4", "#2E3F66", "#C2553A"]], fx: ["snow", "stars", "sparkles"], font: ["clean", "serif", "rounded"], em: ["❄️", "⛄", "🎁", "🕯️"] },
-    velvet: { pal: [["#4B0F24", "#F2C46D", "#F4D7C8"], ["#2E1A3A", "#E8B4C8", "#F2C46D"]], fx: ["velvet", "sparkles", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
-    flower: { pal: [["#FBE3E8", "#7A2E45", "#5E8C61"], ["#F1EAF7", "#4A2F6B", "#E98973"]], fx: ["petals", "sparkles", "none"], font: ["script", "serif", "rounded"], em: ["💐", "🌷", "🌸", "🌿"] },
-    night: { pal: [["#1B1530", "#F2A44A", "#E26D8E"], ["#0F2230", "#F2C46D", "#E5533D"]], fx: ["lanterns", "stars", "twinkle"], font: ["bold", "rounded", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
-    market: { pal: [["#1F3D30", "#E8C26A", "#F6EBD9"], ["#5A0F1E", "#F2D48F", "#F6EBD9"]], fx: ["twinkle", "sparkles", "snow"], font: ["bold", "serif", "rounded"], em: ["🎄", "🎁", "🍵", "✨"] },
-    terminal: { pal: [["#101418", "#F2B84B", "#7CF29A"], ["#14121C", "#9FB7FF", "#F2B84B"]], fx: ["scanlines", "none", "stars"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
-    pixel: { pal: [["#E9F1DC", "#24324A", "#E0566B"], ["#F6E7D3", "#2E2442", "#3E9C6E"]], fx: ["pixels", "none", "confetti"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },
-    cards: { pal: [["#FBEFF2", "#3A2A55", "#E26D8E"], ["#EEF6F0", "#22433A", "#E0A030"]], fx: ["none", "confetti", "sparkles"], font: ["rounded", "clean", "bold"], em: ["✨", "🎉", "❤️", "🙌"] },
-    // the jar wall stays (it is the look); snow on top now and then, a serif title for a change
-    pantry: { pal: [["#E3B873", "#8A4513", "#3E6B3A"], ["#C98A3E", "#5A2A0E", "#F2D48F"]], fx: ["jarwall"], font: ["slab", "serif"], em: ["🍂", "🫙", "☕", "🕯️"] },
+    garden: { pal: [["#E3E6D6", "#344A2E", "#9A4128"], ["#E9E4D6", "#3E5A3A", "#7A5C2E"]], fx: ["none", "petals"], font: ["serif", "clean"], em: ["🌿", "🌷", "🌸", "🙌"] },
+    jazz: { pal: [["#24201C", "#D0A867", "#EDE3D3"], ["#1B2226", "#C79A5A", "#E6E0D4"]], fx: ["none", "paper", "stars"], font: ["serif", "typewriter", "bold"], em: ["🎷", "🎶", "🍷", "🥂"] },
+    winter: { pal: [["#E6EAEE", "#2B3E52", "#8E3B24"], ["#ECEBE6", "#2F3F4F", "#5F6B57"]], fx: ["snow", "none"], font: ["clean", "serif"], em: ["❄️", "⛄", "🎁", "🕯️"] },
+    velvet: { pal: [["#35161C", "#D4AE76", "#EBDCCF"], ["#2A1D24", "#C9A27A", "#E6D8CC"]], fx: ["none", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
+    flower: { pal: [["#F3E8E6", "#3A2A30", "#8C5A55"], ["#EEEAE2", "#2F4034", "#A86A5E"]], fx: ["petals", "none"], font: ["script", "serif"], em: ["💐", "🌷", "🌸", "🌿"] },
+    night: { pal: [["#161B26", "#D9A25E", "#C7CDD6"], ["#14201F", "#D2B26C", "#C9D2CC"]], fx: ["lanterns", "stars", "none"], font: ["clean", "bold", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
+    market: { pal: [["#1F2B24", "#D2B26C", "#EDE5D3"], ["#2C1A1C", "#D4AE76", "#EBDCCF"]], fx: ["twinkle", "snow", "none"], font: ["serif", "bold"], em: ["🎄", "🎁", "🍵", "✨"] },
+    terminal: { pal: [["#101418", "#D8B36A", "#8ED1A1"], ["#14141A", "#A9B7D9", "#D8B36A"]], fx: ["scanlines", "none"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
+    pixel: { pal: [["#EAEEE2", "#26324A", "#B4495B"], ["#F1E9DC", "#2E2442", "#3D6A4C"]], fx: ["pixels", "none"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },
+    cards: { pal: [["#F3EEE8", "#33283F", "#9A4128"], ["#EDF0EB", "#22433A", "#9C6F2A"]], fx: ["none", "paper"], font: ["serif", "clean", "bold"], em: ["✨", "🎉", "❤️", "🙌"] },
+    // the jar wall stays (it is the look); a serif title for a change
+    pantry: { pal: [["#DDC29A", "#7A3E14", "#3E5A3A"], ["#CDA06A", "#5A2A0E", "#EBDCC0"]], fx: ["jarwall"], font: ["slab", "serif"], em: ["🍂", "🫙", "☕", "🕯️"] },
   };
   // ---------- review round 12: taste defaults by the event's kind ----------
   // The vibes in the order that suits the event (Terminal first for a hack night, Card deck or Pixel for games, Night out
@@ -405,7 +410,7 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
   function surprise(e, { keepPalette = null, avoid = "" } = {}) { const txt = `${e?.activity || ""} ${e?.name || ""} ${e?.pubTitle || ""} ${e?.concept || ""} ${e?.kind || ""}`.toLowerCase();
     const opts = kindVibes(e) || (KINDS.find(([re]) => re.test(txt)) || [null, Object.keys(VIBES)])[1], pool = opts.length > 1 ? opts.filter((v) => v !== avoid) : opts, v = pickOf(pool), base = VIBES[v].look, M = MOODS[v];
     // the vibe's own palette most of the time, else one of its cousins; then an effect, a title font and an emoji from what suits it
-    const L = { ...base, vibe: v, palette: Math.random() < 0.55 ? base.palette : pickOf(M.pal), effect: Math.random() < 0.5 ? base.effect : pickOf(M.fx), titleFont: Math.random() < 0.5 ? base.titleFont : pickOf(M.font), buttonEmoji: Math.random() < 0.5 ? base.buttonEmoji : pickOf(M.em) };
+    const L = { ...base, vibe: v, palette: Math.random() < 0.55 ? base.palette : pickOf(M.pal), effect: Math.random() < 0.5 ? base.effect : pickOf(M.fx), titleFont: Math.random() < 0.5 ? base.titleFont : pickOf(M.font) }; delete L.buttonEmoji; /* the button stays plain: a host can still pick an emoji */
     if (!base.coverStyle) delete L.coverStyle;
     // with a flyer: its own colours, or now and then a page that contrasts with it (a dark flyer can get a dark page)
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }

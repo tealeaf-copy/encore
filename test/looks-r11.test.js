@@ -49,11 +49,11 @@ test("Night out: every text colour on the dark page passes AA, and so does the m
   assert.ok(C.contrast("#FFF6E6", "#26346F") >= 7); assert.ok(C.contrast("#FFFFFF", "#26346F") >= 4.5);
 });
 
-test("Surprise me rolls a palette, effect, font and emoji from what suits the vibe, and every roll saves as it is", () => {
+test("Surprise me rolls a palette, effect and font from what suits the vibe, never a button emoji, and every roll saves as it is", () => {
   const { LK } = browser();
   for (const [k, m] of Object.entries(LK.MOODS)) { assert.ok(LK.VIBES[k], k); for (const fx of m.fx) assert.ok(LOOK.effects.includes(fx)); for (const f of m.font) assert.ok(LOOK.titleFonts.includes(f)); for (const e of m.em) assert.ok(LOOK.buttonEmoji.includes(e)); }
-  const seen = { palette: new Set(), effect: new Set(), titleFont: new Set(), buttonEmoji: new Set() };
-  for (let i = 0; i < 300; i++) { const L = plain(LK.surprise({ name: i % 2 ? "Izakaya night" : "Birthday party" })); assert.deepEqual(cleanLook(L), L, "saves unchanged");
+  const seen = { palette: new Set(), effect: new Set(), titleFont: new Set() };
+  for (let i = 0; i < 300; i++) { const L = plain(LK.surprise({ name: i % 2 ? "Izakaya night" : "Birthday party" })); assert.deepEqual(cleanLook(L), L, "saves unchanged"); assert.equal(L.buttonEmoji, undefined, "the button stays plain");
     const M = LK.MOODS[L.vibe]; assert.ok([LK.VIBES[L.vibe].look.palette, ...M.pal].some((p) => p.join() === L.palette.join()), "a palette from the vibe's family");
     for (const k of Object.keys(seen)) seen[k].add(String(L[k])); }
   for (const k of Object.keys(seen)) assert.ok(seen[k].size >= 3, `${k} varies`);

@@ -70,7 +70,7 @@ html body.lk-on.lk-dark #view-guest :is(.chip,.rsvpbig .chip)[aria-pressed=true]
 /* the cover: framed in the page's own tone, the drawing in light lines on a deep ground, no offset shadow */
 html body.lk-on.lk-dark #view-guest .gxcover{background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
 html body.lk-on.lk-dark #view-guest .gxcover .ea-cover:not(.lk-deck),html body.lk-on.lk-dark #view-guest .ev2-more .ea-cover:not(.lk-deck){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
-html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [stroke="#151515"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [fill="#151515"]{fill:var(--lk-ink)}
+html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [stroke="#2A2622"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [fill="#2A2622"]{fill:var(--lk-ink)}
 html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"]{fill:var(--lk-raised)}html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
 html body.lk-on.lk-dark #view-guest .gk-ic,html body.lk-on.lk-dark #view-guest .gxfacts small::before{background:var(--lk-soft)!important}
 html body.lk-on.lk-dark #view-guest .in .gk-row a{color:var(--lk-ink)!important;text-decoration-color:var(--lk-line2)}
@@ -78,7 +78,7 @@ html body.lk-on.lk-dark #view-guest hr,html body.lk-on.lk-dark #view-guest .ev2-
 html body.lk-on.lk-dark .ev2-chat .ev2-more{background:var(--lk-raised)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}
 html body.lk-on.lk-dark .ev2-chat .ev2-more :is(h4,b,.em){color:var(--lk-ink)!important}html body.lk-on.lk-dark .ev2-chat .ev2-more small{color:var(--lk-raised-soft)!important}html body.lk-on.lk-dark .ev2-chat .ev2-more .em-head a{color:var(--lk-ink)!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--lk-line2)}
 html body.lk-on.lk-dark .ev2-chat .ev2-more .em-art{border-color:var(--lk-line)!important;background:var(--lk-cover)!important}
-html body.lk-on.lk-dark .ev2-chat .em-drawn svg [stroke="#151515"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#151515"]{fill:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}
+html body.lk-on.lk-dark .ev2-chat .em-drawn svg [stroke="#2A2622"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#2A2622"]{fill:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}
 html body.lk-on.lk-dark :is(#view-guest,#gBar) .btn:not(.primary) svg :is(path,rect,circle,line,polyline){stroke:var(--lk-ink)!important}
 html body.lk-on.lk-dark #view-guest .tb-card summary::after,html body.lk-on.lk-dark #view-guest .tb-card summary *{color:var(--lk-ink)!important}
 html body.lk-on.lk-dark #view-guest input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--lk-line2)!important;background:var(--lk-field)!important;display:inline-grid;place-items:center;margin:0}

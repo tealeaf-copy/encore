@@ -17,7 +17,11 @@
   const fromHsl = (H, S, L) => { H = ((H % 360) + 360) % 360; const q = L < 0.5 ? L * (1 + S) : L + S - L * S, p = 2 * L - q;
     const f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; }; return hex(f(H / 360 + 1 / 3) * 255, f(H / 360) * 255, f(H / 360 - 1 / 3) * 255); };
   // a page colour that contrasts with a flyer: the opposite hue, dark for a dark flyer (forest green gets wine red), soft for a light one
-  const contrastPage = (h) => { const [H, S, L] = hsl(h), dark = lum(h) < 0.2; return fromHsl(H + 180 + (dark ? 18 : 0), Math.max(0.45, Math.min(0.75, S + 0.15)), dark ? Math.min(0.2, Math.max(0.14, L)) : 0.8); };
+  // muted, natural tones: no candy pastel or saturated wine, a quiet colour that still reads as the opposite hue
+  const contrastPage = (h) => { const [H, S, L] = hsl(h), dark = lum(h) < 0.2; return fromHsl(H + 180 + (dark ? 18 : 0), Math.max(0.22, Math.min(0.38, S * 0.5)), dark ? Math.min(0.16, Math.max(0.11, L)) : 0.86); };
+  // colourfulness (max minus min channel, 0 grey to 1 pure hue) and a colour with it held to a ceiling at the same hue and lightness
+  const chroma = (h) => { const v = rgb(h); return (Math.max(...v) - Math.min(...v)) / 255; };
+  const tame = (h, max) => { if (chroma(h) <= max) return norm(h); const [H, S, L] = hsl(h); return fromHsl(H, Math.min(S, max / Math.max(0.01, 1 - Math.abs(2 * L - 1))), L); };
   // the worst contrast of a colour against each of several backgrounds (a gradient's two ends)
   const worst = (c, bgs) => Math.min(...[].concat(bgs).map((b) => contrast(c, b)));
   // ink for text on these backgrounds: a tinted near-black or near-white when it passes AA (4.5:1), else plain black or white
@@ -39,14 +43,24 @@
     return darkBg ? "#FFF8EE" : "#1F1A17"; }
   // a page from one colour: a soft vertical gradient, light (most colours) or dark (deep colours), and the ink that reads on it
   function pageFrom(dom, accents = []) { dom = norm(dom) || "#FFE08A"; const dark = lum(dom) < 0.11 || (lum(dom) < 0.2 && hsl(dom)[1] > 0.45 && lum(dom) < 0.16);
-    const top = dark ? mix(dom, "#000000", 0.18) : mix(dom, "#FFFFFF", 0.5), bot = dark ? mix(dom, "#000000", 0.62) : mix(dom, "#FFFFFF", 0.12);
-    const bgs = [top, bot], ink = inkFor(bgs, dom), soft = softFor(ink, bgs);
-    const btn = buttonFor(accents.find((a) => norm(a) && Math.abs(lum(a) - lum(top)) > 0.05) || (dark ? mix(dom, "#FFFFFF", 0.5) : mix(dom, "#000000", 0.45)), bgs);
+    // one flat page colour, no gradient or glow (2026 brand): a deep colour as it is (or deepened), a light one as it is (or lifted)
+    // the 2026 colour audit: a dark page is deep (luminance at most 0.035) and muted, so a wine or navy flyer gives a rich
+    // oxblood or slate rather than a loud maroon; a light page is held to calm, natural tints; the button to a grown-up accent
+    let top = dark ? dom : (lum(dom) >= 0.5 ? dom : mix(dom, "#FFFFFF", 0.45));
+    if (dark) { for (let i = 0; i < 16 && (lum(top) > 0.035 || chroma(top) > 0.17); i++) top = tame(lum(top) > 0.035 ? mix(top, "#000000", 0.12) : top, 0.17); } else { top = tame(top, 0.18); for (let i = 0; i < 8 && lum(top) < 0.45; i++) top = mix(top, "#FFFFFF", 0.15); }
+    const bot = top, bgs = [top, bot], ink = inkFor(bgs, dom), soft = softFor(ink, bgs);
+    const acc = accents.find((a) => norm(a) && Math.abs(lum(a) - lum(top)) > 0.05);
+    const btn = buttonFor(tame(acc || (dark ? mix(dom, "#FFFFFF", 0.5) : mix(dom, "#000000", 0.45)), 0.5), bgs);
     const card = dark ? mix(dom, "#000000", 0.4) : mix(dom, "#FFFFFF", 0.93), cardInk = inkFor([card], dom);
     // a dark page gets one palette built from its own colour: a raised surface for cards, a field tone, a stronger line for
     // outlined buttons and fields, and a deep cover tone for the drawing (light lines on it), so nothing sits on it in white
     const raised = dark ? mix(top, ink, 0.08) : card, field = dark ? mix(bot, ink, 0.07) : "#FFFFFF", lineStrong = mix(dark ? raised : top, ink, dark ? 0.3 : 0.28);
-    return { dark, top, bot, ink, soft, btn, onBtn: onColor(btn), card, cardInk, line: mix(top, ink, 0.16), raised, raisedSoft: softFor(ink, [raised, field]), field, lineStrong, cover: dark ? mix(top, ink, 0.06) : "" }; }
+    const spot = accents.map(norm).find((a) => a && contrast(a, top) >= 1.6) || btn;
+    // accent text (links, "Open the full invite"): the look's accent when it reads at 4.5:1 on the page and on raised cards, else
+    // stepped toward the ink until it does, so a link never trades legibility for colour
+    let link = tame(spot, 0.45); for (let i = 0; i < 12 && Math.min(contrast(link, top), contrast(link, raised)) < 4.5; i++) link = mix(link, ink, 0.12);
+    if (Math.min(contrast(link, top), contrast(link, raised)) < 4.5) link = ink;
+    return { dark, top, bot, ink, soft, link, btn, onBtn: onColor(btn), spot, card, cardInk, line: mix(top, ink, 0.16), raised, raisedSoft: softFor(ink, [raised, field]), field, lineStrong, cover: dark ? mix(top, ink, 0.06) : "" }; }
   // ---- a palette from pixels: a dominant colour and two accents, skipping near-white, near-black and see-through pixels ----
   // data: RGBA bytes (canvas getImageData().data). Buckets of 4 bits a channel; each bucket keeps its average colour.
   function paletteFromPixels(data, step = 1) { const B = new Map();
@@ -64,6 +78,6 @@
     for (const g of rest) { if (out.length >= 3) break; if (out.every((x) => dist(x.c, g.c) > 60)) out.push(g); }
     while (out.length < 3) { const base = hex(...dom.c), l = lum(base); out.push({ c: rgb(mix(base, l > 0.4 ? "#000000" : "#FFFFFF", out.length === 1 ? 0.45 : 0.7)) }); }
     return out.map((g) => hex(...g.c)); }
-  const API = { fromHsl, contrastPage, isHex, norm, rgb, hex, lum, contrast, mix, hsl, worst, inkFor, softFor, onColor, buttonFor, pageFrom, paletteFromPixels };
+  const API = { chroma, tame, fromHsl, contrastPage, isHex, norm, rgb, hex, lum, contrast, mix, hsl, worst, inkFor, softFor, onColor, buttonFor, pageFrom, paletteFromPixels };
   root.EncoreColor = API;
 })(typeof window !== "undefined" ? window : globalThis);

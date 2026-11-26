@@ -15,7 +15,7 @@
   const when = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? `${MON[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)} ${d.slice(0, 4)}` : "");
   /** One ink stamp as an SVG string (works as an image too: no web fonts, no outside references). */
   function stampSvg(s, size = 200) { const k = kindOf(s), ink = INKS[hash(s.eventId || s.title) % INKS.length], label = labelOf(s, k), date = when(s.date), round = hash(s.eventId) % 3 !== 0;
-    let art = window.EventArt ? window.EventArt.drawing(k, ink) : ""; art = art.replace(/#151515/g, ink).replace(/fill="#fff"/g, 'fill="none"').replace(/<svg /, '<svg x="44" y="52" width="112" height="84" ');
+    let art = window.EventArt ? window.EventArt.drawing(k, ink) : ""; art = art.replace(/#2A2622/g, ink).replace(/fill="#fff"/g, 'fill="none"').replace(/<svg /, '<svg x="44" y="52" width="112" height="84" ');
     const id = "p" + (hash(s.eventId + label) % 1e6), shape = round ? `<circle cx="100" cy="100" r="92" fill="none" stroke="${ink}" stroke-width="7"/><circle cx="100" cy="100" r="80" fill="none" stroke="${ink}" stroke-width="2.5" stroke-dasharray="3 5"/>`
       : `<rect x="10" y="22" width="180" height="156" rx="18" fill="none" stroke="${ink}" stroke-width="7"/><rect x="22" y="34" width="156" height="132" rx="10" fill="none" stroke="${ink}" stroke-width="2.5" stroke-dasharray="3 5"/>`;
     const top = round ? `<path id="${id}t" d="M30 100a70 70 0 0 1 140 0" fill="none"/><text font-family="Arial Black,Arial,sans-serif" font-size="17" font-weight="900" letter-spacing="2" fill="${ink}" text-anchor="middle"><textPath href="#${id}t" startOffset="50%">${esc(label)}</textPath></text>`

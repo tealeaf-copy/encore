@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>You're offline · Pottery Lab</title>
+<meta name="theme-color" content="#F7F1E8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--ember:#C94A30;--butter:#F2D48F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#F7F1E8;--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,-apple-system,sans-serif;display:grid;place-items:center;padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+main{width:min(420px,100%);text-align:center}
+h1{font:600 28px/1.15 Fredoka,"Instrument Sans",system-ui,sans-serif;margin:8px 0 6px}
+p{margin:0 0 16px;color:var(--smoke)}
+#potto{display:grid;place-items:center;min-height:140px}
+ul{list-style:none;margin:16px 0;padding:0;display:grid;gap:8px;text-align:left}
+li{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+li b{display:block;font-weight:600}
+li small{color:var(--smoke);font-size:13px}
+button{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;background:var(--ember);color:#fff;border:0;border-radius:999px;min-height:44px;padding:0 22px;cursor:pointer}
+</style>
+</head>
+<body>
+<main>
+  <div id="potto" aria-hidden="true"></div>
+  <h1>You're offline</h1>
+  <p>Pottery Lab needs a connection for new things. Your next plans are below.</p>
+  <ul id="plans" aria-label="Your next plans"></ul>
+  <button type="button" id="again">Try again</button>
+</main>
+<script src="/mascot.js"></script>
+<script>
+(function () {
+  try { if (window.Potto) document.getElementById("potto").innerHTML = window.Potto.svg("sleep", 120, "Potto"); } catch {}
+  document.getElementById("again").onclick = () => location.reload();
+  addEventListener("online", () => location.reload());
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const day = (d) => { try { return new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }); } catch { return d; } };
+  const time = (t) => { const m = /^(\d{2}):(\d{2})$/.exec(t || ""); if (!m) return ""; const h = +m[1], ap = h < 12 ? "am" : "pm"; return `${h % 12 || 12}${m[2] === "00" ? "" : ":" + m[2]}${ap}`; };
+  fetch("/api/me/plans", { credentials: "same-origin" }).then((r) => r.json()).then((j) => {
+    const today = new Date().toISOString().slice(0, 10), L = (j.plans || []).filter((p) => p.response === "going" && (p.date || "9") >= today).slice(0, 5), ul = document.getElementById("plans");
+    ul.innerHTML = L.length ? L.map((p) => `<li><b>${esc(p.emoji ? p.emoji + " " : "")}${esc(p.title)}</b><small>${esc([p.date && day(p.date), time(p.startTime), p.city].filter(Boolean).join(" · "))}</small></li>`).join("") : "";
+    if (!L.length) ul.hidden = true;
+  }).catch(() => { document.getElementById("plans").hidden = true; });
+})();
+</script>
+</body>
+</html>

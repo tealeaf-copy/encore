@@ -1,0 +1,38 @@
+{
+  "id": "/?source=pwa",
+  "name": "Pottery Lab",
+  "short_name": "Pottery Lab",
+  "description": "Find things to do near you, reply in one tap, and host memorable experiences with your fav people.",
+  "lang": "en-US",
+  "dir": "ltr",
+  "start_url": "/feed?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#F7F1E8",
+  "theme_color": "#F7F1E8",
+  "categories": ["social", "lifestyle", "entertainment", "events"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icons/icon-48.png", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/monochrome-512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
+  ],
+  "shortcuts": [
+    { "name": "Feed", "short_name": "Feed", "url": "/feed?source=shortcut", "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Your plans", "short_name": "Plans", "url": "/plans?source=shortcut", "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] },
+    { "name": "New event", "short_name": "New event", "url": "/?app=1&new=1&source=shortcut#studio", "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }] }
+  ]
+}

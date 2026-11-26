@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Find people · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="/authguard.js"></script>
+<style>
+/* Find people (server/findpeople.js): search, People and Hosts & clubs, with Suggested, Contacts and My code */
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text,"Instrument Sans"),system-ui,-apple-system,sans-serif}
+main{max-width:600px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px calc(170px + env(safe-area-inset-bottom))}
+h1{font:400 32px/1.1 var(--sys-display);margin:36px 0 16px;letter-spacing:-.01em}
+.search{position:relative;margin:0 0 12px}.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--pl-soft)}
+.search input{width:100%;min-height:48px;padding:0 14px 0 44px;border:1.5px solid var(--pl-line);border-radius:999px;background:var(--pl-surface);font:16px var(--pl-font-text,"Instrument Sans"),system-ui;color:var(--pl-ink)}
+.search input:focus{outline:0;border-color:var(--pl-ink)}
+.tabs{display:flex;gap:4px;border-bottom:1.5px solid var(--pl-line);margin:0 0 4px}
+.tabs button{flex:1;min-height:48px;border:0;background:none;font:500 15px var(--pl-font-text,"Instrument Sans"),system-ui;color:var(--pl-soft);box-shadow:inset 0 -2px 0 transparent;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--pl-ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--pl-ink)}
+.subs{display:flex;gap:8px;margin:14px 0 6px;overflow-x:auto;scrollbar-width:none}.subs::-webkit-scrollbar{display:none}
+.subs button{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--pl-line);background:var(--pl-surface);font:500 14px var(--pl-font-text,"Instrument Sans"),system-ui;color:var(--pl-ink);cursor:pointer}
+.subs button[aria-selected=true]{background:var(--pl-ink);border-color:var(--pl-ink);color:var(--pl-page)}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 4px}.head h2{margin:0;font:600 17px/1.3 var(--pl-font-text,"Instrument Sans"),system-ui}
+.linkbtn{min-height:44px;padding:0 4px;border:0;background:none;color:var(--pl-accent-text);font:600 15px var(--pl-font-text,"Instrument Sans"),system-ui;cursor:pointer}.linkbtn:disabled{color:var(--pl-soft)}
+ul.rows{list-style:none;margin:0;padding:0}
+.row{display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 0;border-bottom:1px solid var(--pl-line)}
+.row a.who{flex:1;min-width:0;display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}
+.row .t{min-width:0}.row b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row small{display:block;color:var(--pl-soft);font-size:14px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.av{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--c,#D9CCBB) 26%,#fff);font:600 18px var(--pl-font-text,"Instrument Sans"),system-ui;box-shadow:0 0 0 1.5px var(--ring,transparent);border:2px solid var(--pl-surface)}.av img,.av svg{width:100%;height:100%;object-fit:cover}
+.fol{flex:none;min-height:40px;min-width:96px;padding:0 16px;border-radius:999px;border:1.5px solid var(--pl-ink);background:var(--pl-ink);color:var(--pl-page);font:600 14px var(--pl-font-text,"Instrument Sans"),system-ui;cursor:pointer}
+.fol.on{background:transparent;color:var(--pl-ink);border-color:var(--pl-line-strong)}
+.tag{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;background:var(--pl-raised);font-size:12px;font-weight:600;color:var(--pl-ink);vertical-align:2px}
+.empty{margin:24px 0;color:var(--pl-soft);font-size:15px}
+.card{margin:16px 0;padding:20px;border:1px solid var(--pl-line);border-radius:16px;background:var(--pl-surface)}
+.card h2{margin:0 0 6px;font:400 24px/1.2 var(--sys-display)}.card p{margin:0 0 14px;color:var(--pl-soft);font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:600 15px var(--pl-font-text,"Instrument Sans"),system-ui;text-decoration:none;cursor:pointer}
+.btn.go{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent,#fff)}.btn.wide{width:100%}
+.code{display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px 24px}
+.qr{position:relative;width:min(280px,78vw);aspect-ratio:1;padding:14px;border-radius:24px;background:#fff;border:1px solid var(--pl-line)}
+.qr svg.q{display:block;width:100%;height:100%}
+.qr .mark{position:absolute;left:50%;top:50%;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;border-radius:22%;background:#fff;color:var(--pl-accent-text)}.qr .mark svg{width:72%;height:72%}
+.code b{display:block;margin-top:18px;font:400 26px/1.2 var(--sys-display)}.code small{color:var(--pl-soft);font-size:14px}
+.code .acts{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.note{font-size:13px;color:var(--pl-soft);margin:10px 0 0}
+.invite{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--pl-page) 70%,transparent)}
+.invite .btn{display:flex;width:100%;max-width:568px;margin:0 auto}
+@media (max-width:860px){body.es-has-tabs .invite{bottom:calc(70px + env(safe-area-inset-bottom));padding-bottom:12px}}
+:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main>
+  <h1>Find people</h1>
+  <div id="out" hidden><div class="card"><h2>Sign in to find your people</h2><p>See friends who are here, hosts you'd like and your own code to share.</p><a class="btn go" href="/login?next=%2Fpeople">Sign in</a></div></div>
+  <div id="in" hidden>
+    <label class="search"><span class="sr">Search people and hosts</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="q" type="search" placeholder="Search by name" autocomplete="off" enterkeyhint="search"></label>
+    <div class="tabs" role="tablist" aria-label="Who"><button role="tab" id="tPeople" data-t="people" aria-selected="true" aria-controls="pane">People</button><button role="tab" id="tHosts" data-t="hosts" aria-selected="false" aria-controls="pane">Hosts &amp; clubs</button></div>
+    <div class="subs" role="tablist" aria-label="How" id="subs"><button role="tab" data-s="suggested" aria-selected="true">Suggested</button><button role="tab" data-s="contacts" aria-selected="false">Contacts</button><button role="tab" data-s="code" aria-selected="false">My code</button></div>
+    <section id="pane" role="tabpanel" aria-live="polite"></section>
+  </div>
+</main>
+<div class="invite" id="invite" hidden><button type="button" class="btn go" id="inviteBtn">Invite friends who aren't on Pottery Lab</button></div>
+<script src="/avatars.js"></script><script src="/qr.js"></script><script src="/native.js"></script>
+<script>
+(async function () {
+  const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const get = async (u) => { const r = await fetch(u, { credentials: "same-origin" }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "That didn't load."), { status: r.status }); return j; };
+  const send = async (u, body) => { const r = await fetch(u, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.message || "That didn't work."), { status: r.status }); return j; };
+  const okC = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : "#D9CCBB");
+  const MARK = `<svg viewBox="0 0 28 28" aria-hidden="true" fill="currentColor"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="11.3" cy="16.4" r="1.1"/><circle cx="16.7" cy="16.4" r="1.1"/></svg>`;
+  const face = (p) => { const c = okC(p.color), art = p.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(p.avatarArt, c, 48) : "";
+    return `<span class="av" style="--c:${c};--ring:${p.type === "host" ? c : "transparent"}" aria-hidden="true">${/^\/(_blob|presets)\//.test(p.avatarUrl || "") ? `<img src="${esc(p.avatarUrl)}" alt="">` : art || esc(p.emoji && p.emoji !== "🎉" ? p.emoji : String(p.name || "?").slice(0, 1).toUpperCase())}</span>`; };
+  let me = null; try { me = await get("/api/me"); } catch {}
+  if (!me || !me.email) { $("#out").hidden = false; return; }
+  $("#in").hidden = false; $("#invite").hidden = false;
+  let tab = "people", sub = /^(contacts|code)$/.test(location.hash.slice(1)) ? location.hash.slice(1) : "suggested", S = null, CODE = null;
+  const pane = $("#pane");
+  const row = (p) => { const id = p.type === "host" ? "h:" + p.handle : "p:" + p.key;
+    return `<li class="row"><a class="who" href="${esc(p.url || "#")}">${face(p)}<span class="t"><b>${esc(p.name)}${p.club ? `<span class="tag">Fan club</span>` : ""}</b><small>${esc([p.reason, p.place].filter(Boolean).join(" · "))}</small></span></a>
+      <button type="button" class="fol${p.following ? " on" : ""}" data-f="${esc(id)}" aria-pressed="${!!p.following}">${p.following ? "Following" : "Follow"}<span class="sr"> ${esc(p.name)}</span></button></li>`; };
+  async function follow(b) { if (b.disabled) return false; const id = b.dataset.f, on = b.getAttribute("aria-pressed") !== "true"; b.disabled = true;
+    try { if (id.startsWith("h:")) await send(`/api/me/following/${encodeURIComponent(id.slice(2))}`, { on });
+      else if (on) await send("/api/me/friends", { key: id.slice(2) }); else { b.disabled = false; return false; }
+      b.setAttribute("aria-pressed", String(on)); b.classList.toggle("on", on); b.firstChild.textContent = on ? "Following" : "Follow"; return true; } catch (e) { alert(e.message); return false; } finally { b.disabled = false; } }
+  const wire = (root) => $$("[data-f]", root).forEach((b) => (b.onclick = () => follow(b)));
+  const list = (L, none) => (L.length ? `<ul class="rows">${L.map(row).join("")}</ul>` : `<p class="empty">${esc(none)}</p>`);
+
+  async function suggested() { if (!S) { pane.innerHTML = `<p class="empty">Looking…</p>`; try { S = await get("/api/me/people/suggested"); } catch (e) { pane.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; } }
+    const L = tab === "hosts" ? S.hosts : S.people, n = L.length, what = tab === "hosts" ? (n === 1 ? "host" : "hosts") : n === 1 ? "person" : "people";
+    pane.innerHTML = n ? `<div class="head"><h2>${n} ${what} to follow</h2><button type="button" class="linkbtn" id="all">Follow all</button></div>${list(L, "")}`
+      : `<p class="empty">${tab === "hosts" ? "No hosts to suggest yet. Have a look on Discover." : "No one to suggest yet. Go to an event, or check your contacts."}</p>${tab === "hosts" ? `<a class="btn" href="/discover">Open Discover</a>` : `<button type="button" class="btn" data-go="contacts">Check your contacts</button>`}`;
+    wire(pane); $("[data-go]", pane) && ($("[data-go]", pane).onclick = () => pick("contacts"));
+    $("#all") && ($("#all").onclick = async () => { const b = $("#all"); b.disabled = true; b.textContent = "Following…"; for (const x of $$("[data-f][aria-pressed=false]", pane)) await follow(x); b.textContent = "All followed"; }); }
+
+  // contacts: hashed on this device, checked against people who said yes to being found, kept nowhere
+  const normEmail = (e) => { const x = String(e || "").trim().toLowerCase(); return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x) ? x : ""; };
+  const normPhone = (p) => { let d = String(p || "").replace(/\D/g, ""); if (d.length === 11 && d[0] === "1") d = d.slice(1); return d.length >= 7 && d.length <= 15 ? d : ""; };
+  const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  async function readContacts() { if (window.EncoreNative?.contacts) return window.EncoreNative.contacts(); // the app (public/native.js)
+    if ("contacts" in navigator && navigator.contacts.select) { const L = await navigator.contacts.select(["email", "tel"], { multiple: true }); return L.map((c) => ({ emails: c.email || [], phones: c.tel || [] })); }
+    return null; }
+  function contacts() { const can = !!(window.EncoreNative?.contacts || ("contacts" in navigator && navigator.contacts?.select));
+    pane.innerHTML = `<div class="card"><h2>Friends already here</h2><p>Pick contacts and we'll show who's on Pottery Lab. Emails and numbers are scrambled on your phone before anything is sent, only people who said yes to being found can show up, and nothing is kept.</p>
+      ${can ? `<button type="button" class="btn go wide" id="pickC">Check my contacts</button>` : `<p class="note">This browser can't share contacts. Try the app, or invite friends with the button below.</p>`}</div><div id="cOut"></div>`;
+    $("#pickC") && ($("#pickC").onclick = async () => { const out = $("#cOut"), b = $("#pickC"); b.disabled = true;
+      try { const L = await readContacts(); if (!L) throw new Error("Contacts aren't available here."); if (!L.length) { out.innerHTML = `<p class="empty">No contacts picked.</p>`; return; }
+        const H = new Set(); for (const c of L) { for (const e of c.emails || []) { const n = normEmail(e); if (n) H.add(await sha("e:" + n)); } for (const t of c.phones || []) { const n = normPhone(t); if (n) H.add(await sha("t:" + n)); } }
+        out.innerHTML = `<p class="empty">Checking…</p>`; const j = await send("/api/me/people/match", { hashes: [...H].slice(0, 1000) });
+        out.innerHTML = j.matches.length ? `<div class="head"><h2>${j.matches.length} ${j.matches.length === 1 ? "friend is" : "friends are"} here</h2></div>${list(j.matches, "")}` : `<p class="empty">None of them are here yet, or they keep to themselves. Invite them below.</p>`; wire(out); }
+      catch (e) { if (e?.name !== "AbortError") out.innerHTML = `<p class="empty">${esc(e.message || "That didn't work.")}</p>`; } finally { b.disabled = false; } }); }
+
+  // my code: a QR for my page in the brand accent, Pottery Lab's mark in the middle
+  function qrSvg(text, color) { const q = window.PLQR.encode(text, "H"), n = q.size; let d = ""; // public/qr.js (the share sheet's encoder)
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.get(c, r)) d += `M${c} ${r}h1v1h-1z`;
+    return `<svg class="q" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" role="img" aria-label="QR code for your page"><path d="${d}" fill="${color}"/></svg>`; }
+  async function code() { if (!CODE) { pane.innerHTML = `<p class="empty">Loading…</p>`; try { CODE = await get("/api/me/code"); } catch (e) { pane.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; } }
+    if (!CODE.url) { pane.innerHTML = `<div class="card"><h2>Make your page first</h2><p>Your code opens your page, where people can follow you.</p><a class="btn go" href="/settings">Set it up</a></div>`; return; }
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--pl-accent-text").trim() || "#9A3F22";
+    pane.innerHTML = `<div class="card code"><div class="qr">${qrSvg(CODE.url + "#follow", color)}<span class="mark" aria-hidden="true">${MARK}</span></div><b>${esc(CODE.name || "Your page")}</b><small>pottery lab / @${esc(CODE.handle)}</small>
+      <div class="acts"><button type="button" class="btn" id="copyL">Copy link</button></div><p class="note">People scan it with their camera to open your page and follow you.</p></div>`;
+    $("#copyL").onclick = async () => { try { await navigator.clipboard.writeText(CODE.url); $("#copyL").textContent = "Link copied"; setTimeout(() => ($("#copyL").textContent = "Copy link"), 2200); } catch { prompt("Copy this link", CODE.url); } }; }
+
+  // search: first names and hosts; blocked either way never shows
+  let tq = 0; $("#q").oninput = () => { clearTimeout(tq); tq = setTimeout(async () => { const v = $("#q").value.trim(); $("#subs").hidden = !!v; if (!v) return draw();
+    if (v.length < 2) { pane.innerHTML = ""; return; } try { const j = await get("/api/me/people/search?q=" + encodeURIComponent(v)); pane.innerHTML = list(tab === "hosts" ? j.hosts : j.people, `No ${tab === "hosts" ? "hosts" : "people"} called "${v}" yet.`); wire(pane); } catch (e) { pane.innerHTML = `<p class="empty">${esc(e.message)}</p>`; } }, 220); };
+
+  function draw() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); $$("#subs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.s === sub)));
+    $("#subs").hidden = tab === "hosts" || !!$("#q").value.trim(); if ($("#q").value.trim()) return $("#q").oninput();
+    if (tab === "hosts" || sub === "suggested") return suggested(); if (sub === "contacts") return contacts(); return code(); }
+  const pick = (s) => { sub = s; history.replaceState(null, "", s === "suggested" ? location.pathname : "#" + s); draw(); };
+  $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; draw(); }));
+  $$("#subs button").forEach((b) => (b.onclick = () => pick(b.dataset.s)));
+  // invite people who aren't here yet: the phone's share sheet, else copy the link
+  $("#inviteBtn").onclick = async () => { let c = CODE; try { c = c || (CODE = await get("/api/me/code")); } catch {} const url = c?.url || location.origin, text = "I'm on Pottery Lab. Small events, good people. Come find me here.";
+    if (navigator.share) { try { await navigator.share({ title: "Pottery Lab", text, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(url); $("#inviteBtn").textContent = "Link copied. Send it to a friend"; setTimeout(() => ($("#inviteBtn").textContent = "Invite friends who aren't on Pottery Lab"), 2600); } catch { prompt("Copy this link", url); } };
+  draw();
+})();
+</script>
+<script src="/backbar.js"></script>
+<script src="/nav.js"></script>
+<script src="/shell.js"></script>
+</body>
+</html>

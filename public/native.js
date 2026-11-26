@@ -134,5 +134,11 @@
 
   const ready = () => { safeArea(); bar(); try { Splash && Splash.hide({ fadeOutDuration: 200 }); } catch {} };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
-  window.EncoreNative = { platform, share: (d) => navigator.share(d), haptic, go };
+  // ---- contacts, for Find people (public/people.html): read on the phone, hashed there, never uploaded as they are ----
+  // TODO(mobile): add @capacitor-community/contacts to mobile/ and request the permission strings (iOS NSContactsUsageDescription).
+  // Until the plugin is in the app build, contacts is left undefined and Find people falls back to the web Contact Picker.
+  const Contacts = plugin("Contacts");
+  const contacts = Contacts ? async () => { const p = await Contacts.requestPermissions(); if (p && p.contacts && p.contacts !== "granted") throw new Error("Pottery Lab can't see your contacts. You can allow it in Settings.");
+    const r = await Contacts.getContacts({ projection: { emails: true, phones: true } }); return ((r && r.contacts) || []).map((c) => ({ emails: (c.emails || []).map((e) => e.address).filter(Boolean), phones: (c.phones || []).map((t) => t.number).filter(Boolean) })); } : undefined;
+  window.EncoreNative = { platform, share: (d) => navigator.share(d), haptic, go, contacts };
 })();

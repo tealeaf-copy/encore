@@ -70,3 +70,10 @@ test("pages without a tab bar have a way back, and iOS can swipe back", () => {
   assert.match(fs.readFileSync(new URL("../public/native.js", import.meta.url), "utf8"), /touchend[\s\S]*history\.back\(\)/);
   assert.match(fs.readFileSync(new URL("../mobile/native-config/ios/MainViewController.swift", import.meta.url), "utf8"), /allowsBackForwardNavigationGestures = true/);
 });
+
+test("the feed says tonight for today's event, not tomorrow", () => {
+  const src = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), m = src.match(/const dayWord = \(d\) => \{[^\n]*?\};/);
+  assert.ok(m, "dayWord is there"); const dayWord = vm.runInNewContext(m[0].replace(/^const dayWord = /, "(").replace(/;$/, ")"), { Date, Math });
+  const iso = (n) => { const x = new Date(); x.setDate(x.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+  assert.equal(dayWord(iso(0)), "tonight"); assert.equal(dayWord(iso(1)), "tomorrow"); assert.match(dayWord(iso(3)), /^on /);
+});

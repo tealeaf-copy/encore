@@ -93,8 +93,8 @@ test("absurd or untyped numbers are thrown out", () => {
   for (const k of ["headcount", "price", "passPrice", "sessions"]) assert.ok(drop.includes(k), k);
   // a number they never typed
   assert.equal(merge("Supper club Sat 7pm", ans({ headcount: 12 })).M.headcount, undefined);
-  // "6 pairs" is 12 people
-  assert.equal(merge("Tango Fri 9pm, 6 pairs max", ans({ headcount: 12 })).M.headcount, 12);
+  // review round 9: "6 pairs" stays 6 pairs, even when the model counts 12 people
+  assert.equal(merge("Tango Fri 9pm, 6 pairs max", ans({ headcount: 12 })).M.headcount, 6);
   // a distance is never spots
   assert.equal(merge("Group run Sun 8am, 3 miles", ans({ headcount: 3 })).M.headcount, undefined);
 });
@@ -147,7 +147,7 @@ const HARD = [
   ["Bake sale Sat between 4 and 7pm, banana bread $8, cookies $3, pre-order by Thursday", { title: "Bake sale", kind: "pre-order", date: "2026-11-28", startTime: "16:00", endTime: "19:00", preorder: true, orderItems: [{ name: "Banana bread", price: 8 }, { name: "Cookies", price: 3 }], orderDeadline: "by Thursday" },
     { startTime: "16:00", endTime: "19:00", preorder: true, orderItems: [{ name: "Banana bread", price: 8 }, { name: "Cookies", price: 3 }], orderDeadline: "by Thursday", price: "", headcount: 0 }],
   ["Matcha tasting for pairs Sun Dec 13 11am, $40 for 2, 6 pairs max", { title: "Matcha tasting for pairs", date: "2026-12-13", startTime: "11:00", price: 40, priceUnit: "group", groupSize: 2, headcount: 12 },
-    { groupPrice: 40, groupSize: 2, headcount: 12, price: "$40" }],
+    { groupPrice: 40, groupSize: 2, headcount: 6, price: "$40" }],
   ["8 week wheel throwing course Wednesdays 7-9pm from Jan 6, $320 for all 8 or $45 drop-in", { title: "Wheel throwing course", kind: "course", sessions: 8, repeat: "weekly", date: "2027-01-06", startTime: "19:00", endTime: "21:00", price: 320, priceUnit: "total", dropIn: 45 },
     { sessions: 8, price: "$320", priceUnit: undefined, dropIn: 45, date: "2027-01-06", endTime: "21:00" }],
 ];

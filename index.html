@@ -11249,11 +11249,12 @@ const PR_CLASS=/\b(?:dance|dancing|salsa|bachata|tango|kizomba|zumba|ballet|hip[
 const prIsClass=t=>!PR_CRAFT.test(t)&&((PR_CLASS.test(t)&&(PR_LESSON.test(t)||!/\b(?:night|party|social|festival|show|jam|fest)\b/i.test(t)))||(PR_SUBJ.test(t)&&PR_LESSON.test(t)));
 // the place: a named meeting point after "at" ("at Grand Army Plaza", "meet at the Fountain") or a neighbourhood with a
 // hyphen after "in" ("in Bed-Stuy", "in Hell's Kitchen" stays with the older city reader). Days, months and "my place" are not places.
-const PR_PLACE_WORD="[A-Z][\\w'’.]*(?:-[A-Za-z][\\w'’.]*)*";
+// review round 9: letters past ASCII count ("Café Kestrel"), so the reader runs with the u flag
+const PR_PLACE_WORD="\\p{Lu}[\\p{L}\\w'’.]*(?:-\\p{L}[\\p{L}\\w'’.]*)*";
 // a lowercase place word after a name belongs to it: "Beacon station", "Dolores park", "Carroll st"
 const PR_PLACE_NOUN="station|stn|park|square|plaza|library|gardens?|beach|pier|hall|market|cafe|café|bar|studio|center|centre|church|museum|bridge|terminal|field|track|trailhead|lake|reservoir|green|commons|street|st|avenue|ave|road|rd|stop|entrance|gate|steps|fountain";
 function prPlace(text){ const t=String(text||""), skip=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|noon|midnight|tonight|today|tomorrow|i|we|my|our)$`,"i");
-  const re=new RegExp(`(?<![-\\w'’])(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|\\d{1,4}\\b(?![:.]?\\d|\\s*(?:am|pm)\\b)|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN})\\b)?)`,"g"); let m;
+  const re=new RegExp(`(?<![-\\w'’])(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|\\d{1,4}\\b(?![:.]?\\d|\\s*(?:am|pm)\\b)|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN})\\b)?)`,"gu"); let m;
   while((m=re.exec(t))){ if(m[1]==="at"&&prAfterAt(t,m.index)) continue; const words=m[2].split(/\s+/); while(words.length&&(skip.test(words[words.length-1].replace(/[.,]$/,""))||/^(?:of|on|&|\d+)$/i.test(words[words.length-1]))) words.pop();
     if(!words.length||skip.test(words[0].replace(/^the$/i,""))||(words[0].toLowerCase()==="the"&&words.length<2)) continue;
     const place=words.join(" ").replace(/[.,]+$/,""); if(place.length<3) continue;
@@ -11814,7 +11815,7 @@ new MutationObserver(()=>{ try{ const e=window.__gEv, v=document.getElementById(
 const PR8_UNIT=/(?<![$\d.:\/\w])(\d{1,3}(?:\.\d)?)(?:\s*(?:-|–|to)\s*(\d{1,3}(?:\.\d)?))?\s*(?:k|km|kms|kilomet(?:er|re)s?|mi|miles?|stops|shops|laps)\b(?!\s*(?:budget|usd|dollars|\$))(?:\s+(?:loop|route|out and back|out-and-back))?/gi;
 const PR8_UNIT_ONLY=/^\s*\d{1,3}(?:\.\d)?(?:\s*(?:-|–|to)\s*\d{1,3}(?:\.\d)?)?\s*(?:k|km|kms|mi|miles?|stops|shops|laps)\b/i;
 // the host picks who comes
-const PR8_ASK=/\b(?:ask(?:ing)?|request(?:ing)?|apply(?:ing)?)\s+(?:to|2)\s+(?:join|come|attend)\b|\b(?:i|we)(?:['’]ll|\s+will)?\s+(?:pick|choose|approve|select|vet|decide)\s+(?:who|the guests|guests|people|everyone|each)\b|\bapprov(?:e|ing)\s+(?:the\s+)?(?:guests|people|each|everyone|requests|who)\b|\bby approval\b|\binvite[- ]only\b|\bapproval (?:needed|required)\b/i;
+const PR8_ASK=/\b(?:ask(?:ing)?|request(?:ing)?|apply(?:ing)?)\s+(?:to|2)\s+(?:join|come|attend)\b|\b(?:i|we)(?:['’]ll|\s+will)?\s+(?:pick|choose|approve|select|vet|decide)\s+(?:who|the guests|guests|people|everyone|each)\b|\bapprov(?:e|ing)\s+(?:the\s+)?(?:guests|people|each|everyone|requests|who)\b|\bby approval\b|\binvite[- ]only\b|\bapproval (?:needed|required)\b|\bapprove only\b|\brequest access\b|\blet (?:ppl|people|guests|folks|them) in\b/i;
 // "$280 total", "$90 for all" (not "for all 8"), "$200 for the whole course", "$150 for the series"
 const PR8_TOTAL=/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:(?:in\s+)?total\b|for\s+(?:it\s+)?all\b(?!\s*\d)|for\s+the\s+(?:whole\s+|full\s+|entire\s+)?(?:course|series|program(?:me)?|term|block|season)\b)/i;
 // "$50 drop in", "$15 per class drop-in", "$15 a class", "drop-in $15"
@@ -11823,7 +11824,7 @@ const PR8_EMOJI=/[\p{Extended_Pictographic}\p{Regional_Indicator}\u{1F3FB}-\u{1F
 // the sentence the readers see: no distances, "between 4 and 7pm" as "4-7pm", no "at the door"
 function pr8Prep(text){ let t=String(text||""), door=false; const units=[];
   t=t.replace(PR8_UNIT,m=>{ units.push(m.trim()); return " " });
-  t=t.replace(/\bbetween\s+(\d{1,2}(?::\d{2})?)\s*(am|pm)?\s+(?:and|&)\s+(\d{1,2}(?::\d{2})?)\s*(am|pm)?(?![\d:])/gi,(m,a,p1,b,p2)=>`${a}${p1||""}-${b}${p2||""}`);
+  t=t.replace(/\bbetween\s+(\d{1,2}(?::\d{2})?)\s*(am|pm)?\s+(?:and|&)\s+(\d{1,2}(?::\d{2})?)(?:\s*(am|pm))?(?![\d:])/gi,(m,a,p1,b,p2)=>`${a}${p1||""}-${b}${p2||""}`);
   t=t.replace(/\s*\b(?:pay(?:able)?\s+|paid\s+)?at\s+the\s+door\b/gi,()=>{ door=true; return " " });
   t=t.replace(/\s+([,.;])/g,"$1").replace(/([,;])(?:\s*[,;])+/g,"$1").replace(/^[\s,;]+/,"").replace(/\s{2,}/g," ").trim();
   return {text:t,units,door} }
@@ -12024,6 +12025,136 @@ function prAiApply(d,M,P,snap){ const a=prAiDraft(M), b=prAiDraft(P), J=v=>JSON.
   return out }
 // the model's answer within ms, else null (late, an error, or not an object): the regex reading stands
 function prAiRace(p,ms,onLate){ let tm; return Promise.race([Promise.resolve(p).then(r=>r&&typeof r==="object"&&!Array.isArray(r)?r:null,()=>null),new Promise(res=>{ tm=setTimeout(()=>{ try{ onLate?.() }catch{} res(null) },ms) })]).finally(()=>clearTimeout(tm)) }
+// ---------- Potto reads, review round 9 (no AI) ----------
+// a weekday word ("sat", "Thursdays") as 0-6, or null
+const r9Wd=w=>{ w=String(w||"").toLowerCase().replace(/\.$/,""); if(PR_DAY.includes(w)) return PR_DAY.indexOf(w); if(PR_SHORT[w]!=null) return PR_SHORT[w]; w=w.replace(/s$/,""); return PR_DAY.includes(w)?PR_DAY.indexOf(w):PR_SHORT[w]??null };
+const R9_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], r9MD=x=>`${R9_MON[x.getMonth()]} ${x.getDate()}`;
+const R9_DAYNAME=PR_DAY.map(d=>d.replace(/^./,c=>c.toUpperCase()));
+// what a pre-order counts: "30 boxes", "25 cakes", "max 20 loaves"
+const R9_GOODS="loaves|loafs|boxes|cakes|pies|dozens?|jars|bags|slabs|trays|tins|babkas?|buns|cookies|croissants|bagels|pastries|orders|tarts|cupcakes|focaccias?|bouquets|sandwiches";
+// "order by Thu" / "preorder by wed" / "orders close dec 15": the order deadline, never the event's date
+const R9_ORDER_BY=()=>new RegExp(`\\b(?:pre-?)?orders?\\s+(?:in\\s+)?(?:by|before|until|till|due(?:\\s+by)?|close(?:s|d)?(?:\\s+on)?|deadline:?)\\s+(?:(?:on|this|next)\\s+)?((?:${PR_DAYS_RE})(?:\\.?,?\\s+(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?)?|(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?|\\d{1,2}\\/\\d{1,2}|tonight|tomorrow|tmrw)\\b\\.?(?:\\s+(?:at\\s+)?(?:\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)|noon|midnight))?`,"i");
+// a budget, "bring $30" or gas money is a cost note, never the price
+const R9_COST=[[/\$\s?(\d{1,5}(?:\.\d{2})?)\s+(?:[a-z]+\s+)?budget\b/i,m=>m[0].trim()],
+  [/\b(?:cash only,?\s+)?bring\s+\$\s?(\d{1,5}(?:\.\d{2})?)(?:\s+(?:in\s+)?cash)?(?:,?\s+cash only)?/i,(m,t)=>`Bring $${m[1]}${/\bcash\b/i.test(t)?" in cash":""}`],
+  [/\$\s?(\d{1,5}(?:\.\d{2})?)\s+(?:for\s+)?gas(?:\s+money)?\b/i,m=>`$${m[1]} gas money`]];
+// the sentence the round 9 readers see. Returns the text, the order deadline and the cost notes it took out.
+function r9Prep(raw){ let t=String(raw||""); const today=prToday(), out={notes:[]};
+  const ob=t.match(R9_ORDER_BY()); if(ob){ const s=ob[1].trim(), wd=r9Wd(s.split(/[\s,.]+/)[0]), d=prDate(s,today);
+    out.orderBy=d?(wd!=null?R9_DAYNAME[wd]+", ":"")+r9MD(d.date):wd!=null?R9_DAYNAME[wd]:/^tonight$/i.test(s)?"Tonight":/^(?:tomorrow|tmrw)$/i.test(s)?"Tomorrow":s;
+    if(d) out.orderByDate=prISO(d.date); else if(wd!=null){ const x=new Date(today); x.setDate(x.getDate()+((wd-today.getDay()+7)%7)); out.orderByDate=prISO(x) }
+    t=t.replace(ob[0]," "); out.preorder=true }
+  for(const [re,f] of R9_COST){ const m=t.match(re); if(m){ out.notes.push(f(m,String(raw))); t=t.replace(m[0]," ") } }
+  // "8ish" is 8
+  t=t.replace(/\b(?:(?:at|around|abt|about)\s+)?(\d{1,2}(?::\d{2})?)\s*(am|pm)?\s*-?ish\b/gi,(m,a,ap)=>`at ${a}${ap||""}`);
+  // "sat the 19th": the next 19th that's a Saturday
+  t=t.replace(new RegExp(`\\b(?:(${PR_DAYS_RE})\\.?,?\\s+)?(?:on\\s+)?the\\s+(\\d{1,2})(?:st|nd|rd|th)\\b(?!\\s+(?:of\\s+)?(?:${PR_MON_RE}|${PR_DAYS_RE}|weeks?|months?|time|floor|street|st|ave|anniversary|birthday|annual)\\b)`,"i"),(m,w,n)=>{ n=+n; if(n<1||n>31) return m; const wd=w?r9Wd(w):null; let first=null;
+    for(let k=0;k<14;k++){ const y=new Date(today.getFullYear(),today.getMonth()+k,n,12); if(y.getDate()!==n||y<today) continue; if(!first) first=y; if(wd==null||y.getDay()===wd) return `${w?w+" ":""}${r9MD(y)}` }
+    return first?`${w?w+" ":""}${r9MD(first)}`:m });
+  // "saturday after next": the Saturday a week after the coming one
+  t=t.replace(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(${PR_DAYS_RE})\\s+after\\s+next\\b`,"i"),(m,w)=>{ const wd=r9Wd(w); if(wd==null) return m; const x=new Date(today); let k=(wd-today.getDay()+7)%7; if(!k) k=7; x.setDate(x.getDate()+k+7); return `${w} ${r9MD(x)}` });
+  t=t.replace(/\bevery\s+(?:two|2|second|2nd)\s+weeks?\b/gi,"biweekly").replace(/\b(\d{1,2})\s*-?\s*wks?\b/gi,"$1 weeks");
+  // "my place (clinton hill)": in Clinton Hill
+  t=t.replace(/\b(my|our)\s+(place|apt|apartment|house|home|studio|flat|loft)\s*\(\s*([a-z][a-z .'’-]{2,30}?)\s*\)/gi,"$1 $2 in $3");
+  // "(bring cups)" is a bring note
+  t=t.replace(/\(\s*(bring\s[^()]{1,40}?)\s*\)/gi,", $1,");
+  // "show at the end" isn't a place
+  t=t.replace(/\s*\b(?:at|by)\s+the\s+(?:very\s+)?(?:end|start|beginning|finish)\b(?:\s+of\s+(?:the\s+)?(?:night|day|class|course|session|term|series|month|week))?/gi," ");
+  out.text=t.replace(/\s+([,.;])/g,"$1").replace(/([,;])(?:\s*[,;])+/g,"$1").replace(/^[\s,;]+/,"").replace(/\s{2,}/g," ").trim();
+  return out }
+// "plain $4.50, almond $5.50", "apple $28 pecan $32", "box of 12 $30", "$40 whole or $25 half", "Pies: apple $28, pecan $32"
+function r9Items(t,noun){ const out=[], seen=new Set(), N=String(noun||"").trim();
+  const add=(n,p)=>{ n=String(n||"").trim().replace(/^[-–\u2014:,.+\s]+|[-–\u2014:,.+\s]+$/g,"").replace(/^(?:and|or|&|plus)\s+/i,"").replace(/\s{2,}/g," "); if(!n||n.length>40||!/[a-z]{2,}/i.test(n)||!(+p>0)) return;
+    if(/^(?:pickup|pick up|price|each|it'?s|all|total|only|just|deposit|tip|drop[- ]?ins?|pre-?orders?|preorder|cash|tickets?|entry|cover|wine pairing|pairing|class|classes|sessions?|pass|the|a|an|for|food|gas|budget|bring|about|around|is|are|at|costs?)$/i.test(n)) return;
+    if(/\b(?:sat|sun|mon|tues?|wed|thu|thurs|fri|am|pm|per|pp|person|drop[- ]?in|class|pass|deposit|budget|gas|cover|ticket|entry|suggested|split|seats?|spots?|people|ppl|bring|total|course|series|lesson)\b|\bfor(?:\s+\d|$)/i.test(n)) return;
+    const k=n.toLowerCase(); if(seen.has(k)) return; seen.add(k); out.push({name:n.replace(/^./,c=>c.toUpperCase()),price:+p}) };
+  for(let c of String(t||"").split(/[,;\n]|\s+[–\u2014-]\s+|\s+or\s+|\s+and\s+(?=[a-z0-9][a-z0-9' -]*\$)/i)){ c=c.trim(); if(!/\$/.test(c)) continue; const ci=c.lastIndexOf(":"); if(ci>=0) c=c.slice(ci+1).trim();
+    let m; const re=/(?:^|\s)([A-Za-z0-9][A-Za-z0-9'’ &-]{0,38}?)\s*\$\s?(\d{1,4}(?:\.\d{2})?)(?![\d.])/g; while((m=re.exec(c))) add(m[1],m[2]);
+    // "$40 whole", "$25 half": the size after the price, with what it is ("Whole king cake")
+    const s=c.match(/^\$\s?(\d{1,4}(?:\.\d{2})?)\s+(whole|half|dozen|single|double|small|medium|large|mini|half[- ]dozen)\b/i); if(s) add(s[2]+(N?" "+N.toLowerCase():""),s[1]) }
+  return out.slice(0,8) }
+// the thing a pre-order sells, from its title: "Preorder my cinnamon buns" is cinnamon buns, "Babka drop: ..." is babka
+const r9Noun=title=>String(title||"").split(":")[0].replace(/\b(?:pre-?orders?|preorders?|orders?(?:\s+open)?|open|drop|pick-?up|pop-?up|sale|for\s+.*|my|our|the|holiday|weekend|this|week|friday|saturday|sunday)\b/gi," ").replace(/\s{2,}/g," ").trim();
+const r9One=s=>s.replace(/(?:ies)$/i,"y").replace(/(?:(ch|sh|x|ss)es)$/i,"$1").replace(/(?<![su])s$/i,"");
+// spots said with other words: "6 students", "8 wheels max", "cap at 14"
+const R9_SPOTS=/\b(\d{1,4})\s*(?:students|wheels|participants|attendees|dancers|hikers|runners|riders|kids|players|bakers|cooks|tickets)\b|\b(?:cap(?:ped)?\s+at|limit(?:ed)?\s+(?:to\s+)?|capacity\s+(?:of\s+)?)\s*(\d{1,4})\b(?!\s*(?:am|pm|per|each|\$|for\b))/i;
+// a number that's a length of time or a size, never spots: "5 weeks", "2 hrs", "8 inch"
+const r9NotSpots=(t,n)=>new RegExp(`(?<![\\d.$])${+n}\\s*-?\\s*(?:weeks?|wks?|hrs?|hours?|mins?|minutes|days?|parts|inch(?:es)?|in\\b|"|ft\\b|feet|courses|sessions|classes)`,"i").test(t);
+const R9_TIMEW=/\b(?:morning|evening|night|afternoon|week|weekly|biweekly|monthly|day|daily|every|this|next|sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/gi;
+function r9TitleTidy(s,first){ let t=String(s||"").trim();
+  t=t.replace(/^(?:a\s+)?(?:lil|little)\s+(?=\S)/i,"");
+  t=t.replace(/\s+-\d{1,2}\b[\s\S]*$/,"").replace(/\s*\([^)]*\)\s*$/,"");
+  for(let k=0;k<4;k++){ const n=t.replace(/\s+(?:every\s+(?:week|day|month)|weekly|bi-?weekly|fortnightly|monthly|daily)$/i,"").replace(/\s+(?:starts?|starting|begins?|beginning)$/i,"").replace(/\s+\d{1,2}\s*-?\s*weeks?$/i,"").replace(new RegExp(`\\s+open(?:\\s+for\\s+(?:${PR_MON_RE}))?$`,"i"),"").replace(/[\s,:;–\u2014-]+$/,""); if(n===t) break; t=n }
+  if(first){ const i=t.indexOf(":"); if(i>0&&t.slice(i+1).trim().toLowerCase()===first.toLowerCase()) t=t.slice(0,i).trim() }
+  return t?t.replace(/^./,c=>c.toUpperCase()):"" }
+{ const _pr9=prRead; prRead=function(text){ if(!window.__wsPersonal) return _pr9.apply(this,arguments); const raw=String(text||""), Q=r9Prep(raw), o=_pr9.call(this,Q.text), K=new Set(), gone=[];
+  const set=(k,v)=>{ K.add(k); if(v===undefined) delete o[k]; else o[k]=v };
+  try{ const t=Q.text, lo=t.toLowerCase();
+    if(Q.orderBy){ set("orderBy",Q.orderBy); if(Q.orderByDate) set("orderByDate",Q.orderByDate) }
+    if(Q.notes.length){ set("costNote",[o.costNote,...Q.notes].filter(Boolean).join(". ")); const amts=Q.notes.map(x=>+((x.match(/\$(\d+(?:\.\d+)?)/)||[])[1])); if(o.price&&amts.includes(+String(o.price).replace(/[^\d.]/g,""))){ set("price",undefined); set("seatPrice",undefined); set("priceUnit",undefined) } }
+    // the title from the words they typed ("Couch to 5k group", "Sunday 10k"); the tidied text is only for the time, spots and place
+    let ti=o.title||""; const U=pr8Prep(t).units;
+    if(U.length){ const full=r9TitleTidy(pr8Title(prTitle(t))); if(full&&full.toLowerCase()!==ti.toLowerCase()){ const rest=full.replace(/\s*\b\d{1,3}(?:\.\d)?(?:\s*(?:-|–|to)\s*\d{1,3}(?:\.\d)?)?\s*(?:k|km|kms|mi|miles?)\b\s*$/i,"").trim(), weak=x=>!/[a-z]{3,}/i.test(String(x||"").replace(R9_TIMEW," "));
+        if(rest!==full&&!weak(rest)) ti=rest.replace(/^./,c=>c.toUpperCase());
+        else { ti=full; const t0=t.replace(PR8_EMOJI," ").trim(), d0=t0.match(new RegExp(`^(${PR_DAYS_RE})\\b`,"i")); if(d0&&(weak(full.replace(/\b\d+(?:\.\d)?\s*(?:k|km|mi|miles?)\b/gi,""))||new RegExp(`^${prEsc(d0[1])}\\s+${prEsc(full.split(/\s+/)[0])}`,"i").test(t0))) ti=`${R9_DAYNAME[r9Wd(d0[1])]} ${full.replace(/^./,c=>c.toLowerCase())}` } } }
+    // "drop-in improv jam ..., $10 suggested": the first words are the name
+    { const c0=t.split(PR_SPLIT)[0]||""; if(/^drop[- ]?in\b/i.test(c0.trim())&&!new RegExp("^"+prEsc(ti.split(/\s+/)[0]||"#"),"i").test(c0.trim())){ const t0=pr8Title(prTitleClause(c0)); if(t0.split(/\s+/).length>=2) ti=t0 } }
+    // words after the time are where it is, not the name: "tamales + mezcal night saturday after next 8pm east williamsburg"
+    { const tm=t.match(/\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\s+([a-z][a-z'’ -]{2,40}?)(?=\s*(?:[,;$]|\s[–\u2014-]\s|$))/); if(tm){ const w=tm[1].trim(), W=w.split(/\s+/), end=!!ti&&new RegExp(`\\s+${prEsc(w)}$`,"i").test(ti);
+      if(!new RegExp(`\\b(?:${PR_DAYS_RE}|${PR_MON_RE}|every|weekly|monthly|sharp|start|starts|meet|meetup|till|until|onwards|late|and|then|at|in|to|for|with|bring|free|pickup|drop|show|class|lesson|after|before)\\b`,"i").test(w)&&(end||!W.some(x=>new RegExp(`\\b${prEsc(x)}\\b`,"i").test(ti)))){
+        if(end) ti=ti.slice(0,ti.length-w.length).trim(); if(!o.hood&&!o.place&&!o.meet&&W.length<=3) set("hood",prCase(W)) } } }
+    // the course: "5 wks", "4 weeks mondays", "8 weeks" with a weekday is a weekly course of that many classes
+    { const days=prDays(t), wm=t.match(/\b(\d{1,2})\s*-?\s*weeks?\b(?![- ]?(?:pass|card|pack|ago|out|before|later|notice|in advance|left))/i), n=wm?+wm[1]:0;
+      if(n>=2&&n<=26&&!o.sessions&&days.length&&!o.nth){ if((o.weekdays||[]).length>=2){ const W=o.weekdays.map(r9Wd), start=o.date?new Date(o.date+"T12:00:00"):null; set("repeat","weekly");
+          if(start){ const last=Math.max(...W.map(w=>(w-start.getDay()+7)%7)), y=new Date(start); y.setDate(y.getDate()+(n-1)*7+last); set("repeatUntil",prISO(y)) } }
+        else { set("sessions",n); set("course",true); if(o.priceUnit==="total") set("priceUnit",undefined); set("repeat",o.repeat==="biweekly"?"biweekly":"weekly"); if(PR_CLASS.test(t)){ set("label","class"); set("activity","class") } else if(o.label!=="class"){ set("label","workshop"); set("activity","workshop") } } } }
+    // "$200 or $40 per class drop-in" for a course: $200 for the course, $40 a class
+    if(+o.sessions>1&&!o.passPrice&&!o.dropIn){ const dm=t.match(PR8_DROP), D=dm?+(dm[1]||dm[2]||dm[3]):0; if(D){ const A=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?![\d.])/g)].map(m=>+m[1]).filter(v=>v>D); if(A.length===1){ set("price","$"+A[0]); set("seatPrice",A[0]); set("dropIn",D); set("priceUnit",undefined) } } }
+    // pairs and groups: "6 pairs" is 6 pairs; "$120 for the group of 4, 3 groups"
+    if(+o.pairs>0){ set("headcount",+o.pairs); set("headUnit","pairs") }
+    { const g=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s+(?:for|per)\s+(?:a|the|each|one|every)\s+group\s+of\s+(\d{1,2})\b/i); if(g&&+g[2]>=2){ set("groupPrice",+g[1]); set("groupSize",+g[2]); set("price","$"+g[1]); set("seatPrice",undefined); set("priceUnit",undefined) }
+      const gc=t.match(/\b(\d{1,2})\s+groups\b/i); if(gc&&o.groupPrice){ set("headcount",+gc[1]); set("headUnit","groups"); set("groupCount",+gc[1]) } }
+    // pre-orders: a deadline, two or more "name $N", or a pickup or drop with hours
+    const items=r9Items(t,r9One(r9Noun(ti||o.title)));
+    const window_=!!(o.startTime&&o.endTime), pick=/\bpick[\s-]?ups?\b(?!\s+(?:soccer|basketball|volleyball|games?|hockey|football|frisbee|ultimate|run))|\b[a-z]+\s+drop\b(?![- ]?(?:ins?|by|off)\b)/i.test(t);
+    const perHead=/\b(?:pp|a person|per person|a head|a seat|per seat|a class|per class|drop[- ]?in|a ticket|spots|seats|people|ppl)\b/i.test(t);
+    if(!o.preorder&&(Q.preorder||(items.length>=2&&!perHead)||(pick&&window_&&!perHead&&!o.course&&!o.repeat))) set("preorder",true);
+    if(o.preorder){ const old=o.items||[]; let I=items.length>old.length?items:old;
+      if(!I.length){ const noun=r9Noun(ti||o.title), one=r9One(noun), e=t.match(/\$\s?(\d{1,4}(?:\.\d{2})?)\s*(?:\/\s*|a\s+|per\s+|each\b|ea\b|apiece\b)([a-z]+)?/i), b=t.match(/\b(\d{1,2})\s+for\s+\$\s?(\d{1,4}(?:\.\d{2})?)/i);
+        if(e){ const u=e[2]&&!/^(?:each|ea|apiece|person|head|pop|piece)$/i.test(e[2])?e[2].toLowerCase():""; const nm=u?(new RegExp(`\\b${prEsc(u)}`,"i").test(noun)?one:`${one} ${u}`.trim()):one; I=[{name:(nm||"Each").replace(/^./,c=>c.toUpperCase()),price:+e[1]}];
+          if(b&&+b[2]!==+e[1]) I.push({name:noun?`${b[1]} ${noun.toLowerCase()}`:`${b[1]} for $${b[2]}`,price:+b[2]}) } }
+      if(I.length) set("items",I);
+      // a cap: "max 20 loaves", "limit 60", "30 boxes", "only 15"
+      const cap=t.match(new RegExp(`\\b(?:max|limit|only|up to|cap(?:ped)?\\s+at|just)\\s+(\\d{1,4})\\b(?!\\s*(?:per|each|a\\s|am|pm|for\\b|\\$|inch|in\\b))|(?<!\\bof\\s)\\b(\\d{1,4})\\s+(?:${R9_GOODS}|available)\\b`,"i"));
+      if(cap) set("headcount",+(cap[1]||cap[2])) }
+    else { const sp=t.match(R9_SPOTS); if(sp&&!o.headUnit) set("headcount",+(sp[1]||sp[2]));
+      else if(o.headcount&&r9NotSpots(t,o.headcount)&&!new RegExp(`\\b${+o.headcount}\\s*(?:spots|seats|people|guests|places|persons|ppl|friends|max)\\b|\\b(?:max|up to|for)\\s+${+o.headcount}\\b`,"i").test(t)) set("headcount",undefined) }
+    // "2 hrs" from the start is the end
+    if(o.startTime&&!o.endTime){ const h=t.match(/\b(\d(?:\.5)?)\s*(?:hrs?|hours?)\b/i); if(h&&+h[1]>=1&&+h[1]<=8){ const [H,M]=o.startTime.split(":").map(Number), e=H*60+M+Math.round(+h[1]*60); if(e<24*60) set("endTime",`${String(Math.floor(e/60)).padStart(2,"0")}:${String(e%60).padStart(2,"0")}`) } }
+    // a food crawl, walk or tour isn't a pop-up: no pickup times
+    if(!o.preorder&&/\b(?:crawl|tour|walk|pilgrimage|taste test)\b/i.test(t)) set("noSlots",true);
+    // not a place: "cooks from Ottolenghi Simple", "carpool from bk"
+    for(const k of ["meet","place"]) if(o[k]&&new RegExp(`\\b(?:cooks?|cooking|recipes?|dishes|carpool(?:ing)?|rides?|driving|drive|coming|flying|imported|straight|fresh|made|inspired|adapted|reading|chapters?|poems?|anything|everything|bus|train|shuttle)\\s+from\\s+${prEsc(o[k])}\\b`,"i").test(t)){ gone.push(o[k]); set(k,undefined) }
+    // a place on its own between commas or dashes: "..., Lincoln Square, ...", "Wicker Park" between dashes, "Multnomah library"
+    if(!o.place&&!o.meet&&!o.meetMine){ const C=t.split(/\s*,\s*|\s+[–\u2014-]\s+/).slice(1).map(x=>x.trim().replace(/[.!]+$/,""));
+      for(const c of C){ const W=c.split(/\s+/); if(W.length>4||/[\d$:#@()+~]/.test(c)||!/^[\p{L}'’&. -]+$/u.test(c)) continue;
+        if(new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE})s?$|^(?:the|a|an|this|no|all|any|bring|free|cash|byob|partner|wear|take|kids?|dogs?|beginners?|everyone|experienced|headlamps?|coffee|bagels|beers?|drinks|mimosas)$`,"i").test(W[0])||/\b(?:to|join|welcome|only|required|levels?|after|before|cover|scale|switching|friendly|included|needed|pace|paces|optional|provided|home|ask|dm|rsvp|approval|weekly|monthly|biweekly)\b/i.test(c)) continue;
+        const noun=new RegExp(`\\b(?:${PR_PLACE_NOUN}|canyon|village|heights|reserve|house|theater|theatre|center|centre|lot|loop|trail)$`,"i").test(c);
+        if(!(noun||(W.length>=2&&W.every(w=>/^\p{Lu}/u.test(w))))) continue;
+        set("place",W.every(w=>/^\p{Ll}/u.test(w))?prCase(W):c); break } }
+    if(ti) ti=r9TitleTidy(ti,(o.items||[])[0]?.name); if(ti&&ti!==o.title) set("title",ti);
+  }catch(e){ console.warn(e) }
+  Object.defineProperty(o,"_r9",{value:[...K],enumerable:false}); Object.defineProperty(o,"_r9gone",{value:gone,enumerable:false}); return o } }
+// the older readers see the round 9 sentence; what round 9 read wins
+{ const _pe9=parseEventText; parseEventText=function(t){ if(!window.__wsPersonal) return _pe9.apply(this,arguments); const raw=String(t||""), Q=r9Prep(raw), o=_pe9.call(this,Q.text); try{ const p=prRead(raw);
+    for(const k of p._r9||[]) if(p[k]==null) delete o[k]; else o[k]=p[k];
+    if((p._r9||[]).includes("place")&&p.place){ o.venueName=p.place; o.meetPoint=p.place }
+    for(const g of p._r9gone||[]) for(const k of ["venueName","meetPoint"]) if(o[k]&&String(o[k]).toLowerCase()===g.toLowerCase()) delete o[k];
+    if(o.headcount&&!p.headcount&&r9NotSpots(Q.text,o.headcount)) delete o.headcount;
+    if(p.noSlots&&o.label==="pop-up") o.label="get-together";
+  }catch(e){ console.warn(e) } return o } }
+// the model's read keeps the regex count of pairs or groups ("6 pairs" is 6, not 12 people)
+{ const _am9=prAiMerge; prAiMerge=function(p){ const r=_am9.apply(this,arguments); try{ if(p&&p.headUnit&&+p.headcount>0&&r?.M&&r.M.headcount!==p.headcount){ r.M.headcount=p.headcount; delete r.from.headcount } }catch{} return r } }
 // ---------- Potto reads with the model: wiring ----------
 // AI is on with claude.ai's sample, or the server when it has a key (or runs the offline fake); otherwise nothing changes
 let prAiMode=null;
@@ -12062,6 +12193,13 @@ window.prAiWait=async function(bg){ const job=window.__prAiJob; if(!job||job.don
     if(p.ticketNote&&d.price) d.ticketNote=p.ticketNote;
     for(const k of ["venueName","meetPoint"]) if(d[k]&&(PR8_UNIT_ONLY.test(String(d[k]))||/^(?:the\s+)?door$/i.test(String(d[k]).trim()))) d[k]="";
     if(p.emoji&&!d.emoji) d.emoji=p.emoji;
+    // round 9 (no AI): a pre-order's cap and deadline, pairs and groups counted as such, a crawl has no pickup times
+    if(p.preorder){ if(+p.headcount>0) d.headcount=+p.headcount; if(p.orderBy){ d.orderBy=p.orderBy; d.orderDeadline="by "+p.orderBy; if(p.orderByDate) d.orderByDate=p.orderByDate } if(p.items&&!(d.orderItems||[]).length) d.orderItems=p.items }
+    if(p.headUnit){ d.headUnit=p.headUnit; d.headcount=+p.headcount||d.headcount; if(p.groupCount) d.groupCount=p.groupCount } else { delete d.headUnit; delete d.groupCount }
+    if(p.repeatUntil&&!d.repeatUntil) d.repeatUntil=p.repeatUntil;
+    if(p.noSlots){ d.slots=[]; if(d.activity==="pop-up") d.activity="get-together" }
+    for(const g of p._r9gone||[]) for(const k of ["venueName","meetPoint"]) if(d[k]&&String(d[k]).toLowerCase()===String(g).toLowerCase()) d[k]="";
+    if(Array.isArray(d.bring)) d.bring=d.bring.filter(x=>!/^\$\s?\d/.test(String(x)));
     // the model's read, laid over this one when it comes back
     prAiStart(t,d,p) }catch(e){ console.warn(e) } return r } }
 // ---- end Potto reads with the model ----

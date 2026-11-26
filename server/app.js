@@ -722,7 +722,7 @@ export function createApp({ store, dataDir }) {
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
-  mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
+  mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
   mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)

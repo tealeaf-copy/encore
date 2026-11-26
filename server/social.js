@@ -391,18 +391,20 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/me/feed", (req, res) => { const u = me(req, res); if (!u) return; X.ensureProfile(u); const F = X.feed(u.email), em = lc(u.email);
     const authors = [em, ...X.friendsOf(em).map((f) => lc(f.email))], pub = (p) => ({ name: p.name, handle: p.handle, emoji: p.emoji, color: p.color });
     const cheerNames = (L) => (L || []).map((c) => (X.person(c).name || "").split(/\s+/)[0]).filter(Boolean);
-    const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, author: Buffer.from(a).toString("base64url"), who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", cheers: cheerNames(p.cheers), cheered: (p.cheers || []).includes(em), ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
+    const posts = authors.flatMap((a) => postsOf(a).map((p) => ({ kind: "post", at: p.at, id: p.id, author: Buffer.from(a).toString("base64url"), who: pub(X.person(a)), mine: a === em, text: p.text || "", link: p.link || "", cheers: cheerNames(p.cheers), cheered: (p.cheers || []).includes(em), ...(p.ask ? { ask: true } : {}), ...(p.photo ? { media: { type: "image", url: p.photo } } : {}) })));
     // leaderboards (server/leaderboard.js): one "This week in <city>" card, moments from hosts you follow, your own standing
     let lb = []; try { lb = app.locals.leaderboardFeed?.(u, F) || []; } catch {}
     try { lb.push(...(app.locals.fanclub?.feedItems?.(u.email) || [])); } catch {} // fan club updates for members (server/fanclub.js)
     F.items = [...posts, ...lb, ...(F.items || [])].sort((a, b) => (b.at || 0) - (a.at || 0));
     // ---- visual feed (server/feedvisual.js): a card for each event in the feed, stories, and the public sections ----
-    try { const V = app.locals.feedVisual; if (V) { const I = X.index(), E = {}; for (const it of F.items) { const id = it.event?.id; if (id && !E[id] && I.events.get(id)) E[id] = V.card(I, I.events.get(id), { email: em }); } F.events = E; F.visual = V.sections({ email: em }); F.storiesV = V.stories({ email: em, following: F.following || [] }); } } catch (err) { console.warn("feed visual", err?.message); }
+    try { const V = app.locals.feedVisual; if (V) { const I = X.index(), E = {}; for (const it of F.items) { const id = it.event?.id; if (id && !E[id] && I.events.get(id)) E[id] = V.card(I, I.events.get(id), { email: em }); } F.events = E; F.visual = V.sections({ email: em }); F.storiesV = V.stories({ email: em, following: F.following || [] });
+      // the blended stream (server/feedblend.js): friends' posts join events, recaps, milestones and who to follow
+      const Bl = app.locals.feedBlend; if (Bl) F.blend = Bl.blend({ email: em, ws: u.ws, city: String(req.query.city || "").slice(0, 120), posts }); } } catch (err) { console.warn("feed visual", err?.message); }
     res.json(F); });
   app.post("/api/me/posts", small, (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {};
     const text = clean(b.text, 1000), link = cleanLink(b.link), photo = /^\/(_blob|assets)\/[A-Za-z0-9._-]+$/.test(String(b.photo || "")) ? String(b.photo) : "";
     if (b.link && !link) return bad(res, "Links must start with https://"); if (!text && !link && !photo) return bad(res, "Write something, or add a photo or link.");
-    const em = lc(u.email), L = postsOf(em); const p = { id: crypto.randomBytes(8).toString("hex"), text, link, photo, at: Date.now() }; L.unshift(p);
+    const em = lc(u.email), L = postsOf(em); const p = { id: crypto.randomBytes(8).toString("hex"), text, link, photo, at: Date.now(), ...(b.ask === true ? { ask: true } : {}) }; L.unshift(p); // ask: a "Who's in?" post, where a cheer means I'm in (public/composer.js)
     store.set("system/" + postsKey(em), { kind: "posts", list: L.slice(0, 200) }); res.json({ ok: true, post: p }); });
   // cheer a friend's post (or undo): names, not a like count
   app.post("/api/me/posts/:author/:id/cheer", small, (req, res) => { const u = me(req, res); if (!u) return; let a = ""; try { a = Buffer.from(String(req.params.author), "base64url").toString().toLowerCase(); } catch {} const em = lc(u.email);

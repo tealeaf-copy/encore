@@ -90,6 +90,8 @@ export const REACTIONS = ["🔥", "😍", "🥟", "🙌"];
 import { togetherOf } from "./comewith.js"; // "Come with me?": "Mia and Jo are in" on a card
 import { hostedCount, countLine, isPublicEvent } from "./hostlike.js"; // "Host one like this": "3 people hosted this after seeing it"
 import { seriesKey } from "./episodes.js"; // one card per series: the next episode coming up, the latest one past
+import { mountFeedBlend } from "./feedblend.js"; // the blended feed: events, recaps, milestones, who to follow, ideas
+import { mountFindPeople } from "./findpeople.js"; // Find people: search, suggestions, contacts, your code
 export function makeFeedVisual(store, { C, X }) {
   // One pass over the index per rebuild: moments, kudos and who came grouped by event (and moments by workspace), and each
   // workspace's host card and sample flag read once, so building a card no longer scans every moment and guest list.
@@ -294,12 +296,16 @@ export function makeFeedVisual(store, { C, X }) {
     const out = [], seenK = new Set(); for (const c of [...lead, ...mid, ...later]) { if (out.length >= limit || seenK.has(c.key)) continue; seenK.add(c.key); out.push(c); }
     return { cards: out, city: C0 ? clean(city, 60) : "", local: lead.length };
   }
-  return { gen: () => feedGen, sections, stories, recapOf, deck, card, react, reactsOf, myReacts, showcases, momentsPublic, momentsOnPage, wasThere };
+  return { gen: () => feedGen, sections, stories, recapOf, deck, card, react, reactsOf, myReacts, showcases, momentsPublic, momentsOnPage, wasThere,
+    // for the blended feed (server/feedblend.js)
+    hostOf, sample, momentSeen, momentsOf, kudosOf, cardPublic, eventCta, nextOf, artOf, lookOf, momentOut, MEDIA_OK };
 }
 
-export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
+export function mountFeedVisual(app, { store, small, currentUser, C, X, sendPage = (res) => res.status(404).end() }) {
   const V = makeFeedVisual(store, { C, X });
   app.locals.feedVisual = V;
+  const B = mountFeedBlend(app, { store, small, currentUser, C, X, V }); // the blended stream, kudos and dismiss (server/feedblend.js)
+  mountFindPeople(app, { store, small, currentUser, C, X, B, sendPage }); // Find people (server/findpeople.js)
   const hits = new Map(); const limited = (req, n) => { const k = (req.ip || "?") + req.path.split("/").slice(0, 4).join("/"), now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const ipDay = new Map(), REACTS_PER_IP = () => Math.max(1, +process.env.ENCORE_REACTS_PER_IP || 10);
@@ -316,9 +322,9 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   app.get("/api/public/feed", (req, res) => { if (limited(req, Math.max(60, +process.env.ENCORE_FEED_PER_IP_HOUR || 1200))) return bad(res, "Slow down.", 429, "rate_limited");
     const u = viewer(req); res.set("Cache-Control", u ? "private, no-store" : "public, max-age=60");
     const email = u ? lc(u.email) : "", interests = String(req.query.interests || "").slice(0, 400), city = String(req.query.city || "").slice(0, 120);
-    if (u) return res.json({ ...V.sections({ email, device: device(req), interests, city }), stories: V.stories({ email, following: followingOf(email) }) });
-    const body = cachedOut(`feed|${interests}|${city}`, () => ({ ...V.sections({ interests, city }), stories: V.stories({}) })), dev = device(req);
-    res.json(dev ? { ...body, past: body.past.map((c) => ({ ...c, myReacts: V.myReacts(c.id, dev) })) } : body); });
+    if (u) return res.json({ ...V.sections({ email, device: device(req), interests, city }), stories: V.stories({ email, following: followingOf(email) }), blend: B.blend({ email, ws: u.ws, city }) });
+    const body = cachedOut(`feed|${interests}|${city}`, () => ({ ...V.sections({ interests, city }), stories: V.stories({}), blend: B.blend({ city }) })), dev = device(req);
+    res.json(dev ? { ...body, past: body.past.map((c) => ({ ...c, myReacts: V.myReacts(c.id, dev) })), blend: B.decorate(body.blend, { who: dev }) } : body); });
   // stories on their own (the rail can refresh without the whole feed)
   app.get("/api/feed/stories", (req, res) => { const u = viewer(req), email = u ? lc(u.email) : ""; res.set("Cache-Control", "private, no-store"); res.json({ stories: V.stories({ email, following: followingOf(email) }) }); });
   // the swipe deck on a first visit to /feed (public/swipedeck.js): real events in the visitor's city first, then ideas

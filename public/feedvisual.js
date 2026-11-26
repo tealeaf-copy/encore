@@ -182,6 +182,100 @@
   const head = (title, sub = "") => `<header class="fv-h"><h2>${title}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</header>`;
   const section = (cls, inner) => `<section class="fv-sec ${cls}">${inner}</section>`;
 
+  // ---------- the blended stream (server/feedblend.js): events, recaps, milestones, who to follow, ideas, posts ----------
+  // Every card leads with its host. One accent (the brand's ember) for the one primary button; the host's own colour
+  // only as the ring around their face. Thin lines between cards, words doing the work.
+  const ICON = {
+    kudos: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2v2.2M4.6 5.4l1.5 1.5M15.4 5.4l-1.5 1.5"/><path d="M6.8 17h6.4a1.6 1.6 0 0 0 1.6-1.6v-3.9a1.6 1.6 0 0 0-1.6-1.6h-2.4l.5-2.1a1.3 1.3 0 0 0-2.5-.6L7.2 10H6.8z"/><path d="M4 10h2.8v7H4z"/></svg>`,
+    comment: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h12a1 1 0 0 1 1 1v7.2a1 1 0 0 1-1 1H9l-3.6 2.8v-2.8H4a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z"/></svg>`,
+    share: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.5V3.5M6.6 6.8 10 3.4l3.4 3.4"/><path d="M5 10.5v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-5"/></svg>`,
+    x: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg>`,
+  };
+  const okColor = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : "");
+  // a face with a thin ring in the host's own colour (their brand shows here, small)
+  const ringed = (h, size = 36) => `<span class="fb-ring" style="--ring:${esc(okColor(h?.color) || "var(--line-strong)")}">${avatar(h, size)}</span>`;
+  const followBtn = (h) => (!h || h.following || h.mine ? "" : `<button type="button" class="fb-follow-in" data-fb-follow="${esc(h.handle)}" data-url="/@${esc(h.handle)}#follow">Follow<span class="fb-sr"> ${esc(h.name)}</span></button>`);
+  const lead = (h, sub, report) => `<header class="fb-lead"${report ? rep(report) : ""}><a class="fb-host" href="/@${esc(h.handle)}">${ringed(h)}<span><b>${esc(h.name)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></a>${followBtn(h)}</header>`;
+  // a small row of faces: named people first, then unnamed sketch faces (never a name we may not show)
+  const sketch = (f) => `<span class="fv-av" style="--c:${esc(okColor(f.color) || "#E26D8E")};width:24px;height:24px" aria-hidden="true">${window.EncoreAvatars && f.art ? window.EncoreAvatars.svg(f.art, f.color || "#E26D8E", 24) : ""}</span>`;
+  const stack = (faces = [], sketches = []) => (faces.length || sketches.length ? `<span class="fb-stack" aria-hidden="true">${faces.slice(0, 3).map((f) => initial(f, 24)).join("")}${sketches.slice(0, 3 - Math.min(3, faces.length)).map(sketch).join("")}</span>` : "");
+  const initial = (f, size) => `<span class="fv-av fb-ini" style="--c:${esc(okColor(f.color) || "#D9CCBB")};width:${size}px;height:${size}px" aria-hidden="true">${esc(String(f.name || "?").slice(0, 1).toUpperCase())}</span>`;
+  const kudosLine = (k) => `<p class="fb-count" data-fb-count="${esc(k?.target || "")}"${k?.count ? "" : " hidden"}>${stack((k?.names || []).map((n) => ({ name: n })))}<span>${esc(k?.line || "")}</span></p>`;
+  // the quiet row under a post: kudos, comment (the event's group chat, when you were in it), share
+  function actRow(it, { kudosLabel = "Kudos" } = {}) { const k = it.kudos || {};
+    return `${kudosLine(k)}<div class="fb-acts" role="group" aria-label="Actions">
+      ${k.target ? `<button type="button" class="fb-act" data-fb-kudos="${esc(k.target)}" aria-pressed="${!!k.mine}">${ICON.kudos}<span>${esc(kudosLabel)}</span></button>` : ""}
+      ${it.comment ? `<a class="fb-act" href="${esc(it.comment)}">${ICON.comment}<span>Comment</span></a>` : ""}
+      ${it.share ? `<button type="button" class="fb-act" data-fb-share="${esc(it.share.url)}" data-title="${esc(it.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>`; }
+  const meta = (L) => `<p class="fb-meta">${esc(L.filter(Boolean).join(" · "))}</p>`;
+  function evCard(e, i) { const st = e.spotsLeft != null && e.spotsLeft <= 5 ? (e.spotsLeft ? `${e.spotsLeft} spot${e.spotsLeft === 1 ? "" : "s"} left` : "Full") : "";
+    const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="800" height="500" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` : art({ ...e, hood: e.where }, { title: "" });
+    const P = e.proof || {};
+    return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, [e.members ? "For members" : e.drop ? "Drop" : e.followed ? "A host you follow" : "", e.where].filter(Boolean).join(" · "), { type: "event", target: "event:" + e.id, name: e.title })}
+      ${P.line ? `<p class="fb-proof">${stack(P.faces, P.sketches)}<span>${esc(P.line)}</span></p>` : ""}
+      <a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>
+      <h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
+      ${meta([when(e), e.free ? "Free" : e.price, st])}
+      <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
+  function recapCard(r) { const key = "fb:" + r.id;
+    REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });
+    const sub = ["Recap", dayOf(r.date, { weekday: "short", month: "short", day: "numeric" }), r.where].filter(Boolean).join(" · ");
+    return `<article class="fb-card fb-recap" data-fv-id="${esc(r.id)}" data-kind="recap">${lead(r.host, sub, { type: "event", target: "event:" + r.id, name: r.title })}
+      ${r.by ? `<p class="fb-by">${initial(r.by, 20)}<span><b>${esc(r.by.name)}</b> shared ${esc(plural(r.by.photos, "photo"))}</span></p>` : ""}
+      <h3 class="fb-title sm">${esc(r.title)}</h3>
+      ${r.note ? `<blockquote class="fb-note"${rep({ type: "kudos", text: r.note.text, name: r.note.name || "" })}><p>${esc(r.note.text)}</p>${r.note.name ? `<cite>${esc(r.note.name)}</cite>` : ""}</blockquote>` : ""}
+      ${r.stats?.length ? `<p class="fb-stats">${r.stats.map((s) => `<span>${esc(s)}</span>`).join("")}</p>` : ""}
+      <div class="fb-photos" role="group" aria-label="Photos from ${esc(r.title)}" tabindex="0">${(r.photos || []).map((p, i) => `<button type="button" class="fb-ph" data-fv-open="${esc(key)}" data-k="${i}" aria-label="Open photo ${i + 1} of ${r.photos.length}">${mediaBox(p, { ratio: "4/5" })}</button>`).join("")}</div>
+      ${r.next ? `<a class="fb-next" href="${esc(r.next.url)}"><span>Next one</span><b>${esc(dayOf(r.next.date, { weekday: "short", month: "short", day: "numeric" }))}</b><i aria-hidden="true">›</i></a>` : ""}
+      ${actRow(r)}</article>`; }
+  function milestoneCard(m) { const k = m.kudos || {};
+    return `<article class="fb-card fb-ms" data-kind="milestone">${lead(m.host, m.type === "streak" ? "Streak" : "Milestone", m.person ? { type: "person", target: "person:" + m.person.key, key: m.person.key, name: m.person.name } : { type: "host", target: "host:" + m.host.handle, handle: m.host.handle, name: m.host.name })}
+      <div class="fb-ms-b"><span class="fb-ms-n" aria-hidden="true">${esc(m.type === "streak" ? m.n + "w" : ord(m.n))}</span><div><h3 class="fb-ms-t">${esc(m.text)}</h3>${m.sub ? `<p class="fb-line">${esc(m.sub)}</p>` : ""}</div></div>
+      ${kudosLine(k)}<div class="fb-acts"><button type="button" class="fb-send" data-fb-kudos="${esc(k.target)}" aria-pressed="${!!k.mine}">${ICON.kudos}<span>${k.mine ? "Kudos sent" : "Send kudos"}</span></button>${m.share ? `<button type="button" class="fb-act" data-fb-share="${esc(m.share.url)}" data-title="${esc(m.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div></article>`; }
+  const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+  function followRow(f, signedIn) { let gone = []; try { gone = signedIn ? [] : JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); } catch {}
+    f = { ...f, cards: (f.cards || []).filter((c) => !gone.includes(c.type === "host" ? "host:" + c.handle : "person:" + c.key)) }; if (f.cards.length < 2) return "";
+    const card = (c) => { const t = c.type === "host" ? "host:" + c.handle : "person:" + c.key;
+      return `<li class="fb-fc" data-fb-card="${esc(t)}"${c.type === "person" ? rep({ type: "person", target: "person:" + c.key, key: c.key, name: c.name }) : ""}><button type="button" class="fb-x" data-fb-dismiss="${esc(t)}" aria-label="Not for me: ${esc(c.name)}">${ICON.x}</button>
+        <a class="fb-fc-a" href="${esc(c.url || "#")}">${ringed(c, 64)}<b>${esc(c.name)}</b></a><small>${esc(c.reason)}</small>
+        ${c.type === "host" ? `<button type="button" class="fb-fbtn" data-fb-follow="${esc(c.handle)}" data-url="/@${esc(c.handle)}#follow">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>` : `<button type="button" class="fb-fbtn" data-fb-friend="${esc(c.key)}">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>`}</li>`; };
+    return `<section class="fb-card fb-follow" data-kind="follow" aria-labelledby="fbFollowH"><header class="fb-sec"><h2 id="fbFollowH">${esc(f.title)}</h2><a href="${signedIn ? "/people" : "/login?next=/people"}">See all</a></header>
+      <ul class="fb-fcs" tabindex="0" aria-label="${esc(f.title)}">${f.cards.map(card).join("")}</ul></section>`; }
+  const ideasCard = (x) => `<section class="fb-card fb-ideas" data-kind="ideas"><div><p class="fb-kick">Ideas to try</p><h3 class="fb-title sm">Small formats people loved</h3><p class="fb-line">${esc((x.titles || []).join(", "))}${x.count > 3 ? ` and ${x.count - 3} more` : ""}. Swipe through and keep the ones you'd go to, or host.</p></div>
+      <div class="fb-ideas-go"><button type="button" class="fb-ghost" data-fb-deck>Swipe ideas</button><a class="fb-link" href="/ideas">See them all</a></div></section>`;
+  /** A host's post to their fan club ({kind:"club"}, server/fanclub.js), shown to members only; kudos is the club heart. */
+  const clubCard = (u) => (u?.host?.handle ? `<article class="fb-card fb-upd" data-kind="club">${lead(u.host, ["For " + (u.club?.name || "members"), u.at ? new Date(u.at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""].filter(Boolean).join(" · "), u.report ? { type: "post", target: u.report, name: u.host.name } : null)}
+      <p class="fb-text">${esc(u.text || "")}</p>${u.photo && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u.photo) ? `<span class="fb-media"><img class="fv-img" src="${esc(u.photo)}" alt="" loading="lazy" decoding="async"></span>` : ""}${actRow(u)}</article>` : "");
+  const rowCard = (r) => `<section class="fb-card fb-rowc" data-kind="row"><header class="fb-sec"><h2>${esc(r.title || "More coming up")}</h2><a href="/discover">Discover</a></header>${row(r.items.map((e) => mini({ ...e, hood: e.where })).join(""), r.title || "More coming up")}</section>`;
+  const RENDER = { event: evCard, recap: recapCard, milestone: milestoneCard, ideas: ideasCard, club: clubCard, row: rowCard };
+  /** The stream, in the server's order. postRender draws a friend's post (public/feed.html). */
+  function blendHtml(B, { postRender = null, signedIn: si = false } = {}) { let n = 0;
+    const parts = (B.items || []).map((it) => { try { if (it.kind === "post") return postRender ? postRender(it) : ""; if (it.kind === "follow") return followRow(it, si); const f = RENDER[it.kind] || RENDER[it.type]; return f ? f(it, it.kind === "event" ? n++ : 0) : ""; } catch { return ""; } }).filter(Boolean);
+    return `<div class="fb-stream">${parts.join("")}</div>`; }
+  // what the stream's buttons do: kudos (toggled), share, follow, add a friend, dismiss, open the ideas deck
+  const say = (b, t) => { const s = b.querySelector("span"); if (s) s.textContent = t; else b.textContent = t; };
+  function wireBlend(root) {
+    $$("[data-fb-kudos]", root).forEach((b) => (b.onclick = async () => { const on = b.getAttribute("aria-pressed") !== "true", t = b.dataset.fbKudos; b.setAttribute("aria-pressed", String(on)); if (b.classList.contains("fb-send")) say(b, on ? "Kudos sent" : "Send kudos"); if (on && !RM()) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+      try { const club = /^club\.[a-z0-9-]+\|/.test(t), [ca, cid] = t.split("|");
+        const r = await fetch(club ? `/api/me/posts/${encodeURIComponent(ca)}/${encodeURIComponent(cid)}/cheer` : "/api/feed/kudos", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t }) }), j0 = await r.json().catch(() => ({}));
+        if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
+        if (!r.ok) throw new Error(j0.message || ""); const j = club ? { mine: !!j0.cheered, count: j0.hearts || 0 } : j0;
+        const line = $(`[data-fb-count="${CSS.escape(t)}"]`, root); if (line) { const sp = line.querySelector("span:last-child"); line.hidden = !j.count; if (sp) sp.textContent = j.count ? (j.mine && j.count === 1 ? "You gave kudos" : j.mine ? `You and ${j.count - 1} more gave kudos` : `${j.count} gave kudos`) : ""; }
+        b.setAttribute("aria-pressed", String(!!j.mine)); if (b.classList.contains("fb-send")) say(b, j.mine ? "Kudos sent" : "Send kudos"); }
+      catch (e) { b.setAttribute("aria-pressed", String(!on)); if (b.classList.contains("fb-send")) say(b, !on ? "Kudos sent" : "Send kudos"); } }));
+    $$("[data-fb-share]", root).forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.fbShare, title = b.dataset.title || "Pottery Lab";
+      if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
+      try { await navigator.clipboard.writeText(url); say(b, "Link copied"); setTimeout(() => say(b, "Share"), 2200); } catch { prompt("Copy this link", url); } }));
+    $$("[data-fb-follow]", root).forEach((b) => (b.onclick = async () => { if (b.disabled) return; b.disabled = true;
+      try { const r = await fetch(`/api/me/following/${encodeURIComponent(b.dataset.fbFollow)}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }) }); // server/fanclub.js: follow, bell on
+        if (r.ok) { $$(`[data-fb-follow="${CSS.escape(b.dataset.fbFollow)}"]`, root).forEach((x) => { x.disabled = true; x.classList.add("on"); say(x, "Following"); }); return; } location.href = b.dataset.url; } catch { b.disabled = false; } }));
+    $$("[data-fb-friend]", root).forEach((b) => (b.onclick = async () => { if (b.disabled) return; b.disabled = true;
+      try { const r = await fetch("/api/me/friends", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fbFriend }) }); if (!r.ok) throw 0; b.classList.add("on"); say(b, "Following"); } catch { b.disabled = false; } }));
+    $$("[data-fb-dismiss]", root).forEach((b) => (b.onclick = () => { const li = b.closest("li"), ul = li?.parentElement; fetch("/api/feed/dismiss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: b.dataset.fbDismiss }) }).catch(() => {}); try { const L = JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); localStorage.setItem("pl.fbGone", JSON.stringify([b.dataset.fbDismiss, ...L].slice(0, 100))); } catch {}
+      const next = li?.nextElementSibling || li?.previousElementSibling; li?.classList.add("gone"); setTimeout(() => { li?.remove(); if (ul && !ul.children.length) ul.closest(".fb-follow")?.remove(); else next?.querySelector("button,a")?.focus({ preventScroll: true }); }, RM() ? 0 : 220); }));
+    $$("[data-fb-deck]", root).forEach((b) => (b.onclick = () => need("/swipedeck.js", () => window.PLDeck?.open({}))));
+  }
+
   // ---------- putting it together: a short weekly edition ----------
   const showcasePasts = (S) => S.flatMap((P) => P.past.filter((p) => p.cover || p.photos.length).map((p) => ({ id: p.id, title: p.title, date: p.date, place: p.place, cover: p.cover, photos: p.photos.map((u, i) => ({ id: p.id + i, url: u, type: "image" })), host: P.host, page: P.page, cta: P.cta, note: p.note, sample: P.example })));
   const localTown = (V) => { let c = V?.picked?.city || ""; if (!c) try { c = (window.EncorePlace?.get() || {}).city || ""; } catch {} if (!c) try { c = (JSON.parse(localStorage.getItem("pl.interests") || "null") || {}).city || ""; } catch {} return String(c || "").split(",")[0].trim(); };
@@ -230,6 +324,8 @@
     const older = (V.ideas || []).map((x) => `<a class="fv-tile" href="${esc(x.page || "/ideas")}"><span class="fv-tile-m">${x.cover ? `<img class="fv-img" src="${esc(x.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async">` : art({ id: x.id, title: x.title, activity: x.title }, { title: "" })}</span><b>${esc(x.title)}</b><small>${esc([x.host?.name, "Example"].filter(Boolean).join(" · "))}</small></a>`).join("");
     const ideasS = section("fv-ideas", head("Ideas <em>to try</em>", "Small formats people loved. Host one your way.") + slot("inspo", row(older, "More ideas to try"), !older));
     const end = `<footer class="fv-end"><span class="fv-end-p" aria-hidden="true">${potto("sleep", 72)}</span><p>That's the week.</p><p><a href="/discover">See everything on Discover</a>${lbAny ? ` · <a href="/leaderboard">This week's leaderboard</a>` : ""}</p><p><a href="/about">About Pottery Lab</a></p></footer>`;
+    // the blended stream when the server sent one (server/feedblend.js); the sections stay as the fallback
+    const B = F?.blend || V.blend; if (B?.items?.length) return intro + blendHtml(B, { postRender, signedIn: !!F }) + end;
     return intro + `<div class="fv-wall">${nearS}${peopleS}${recentS}${ideasS}</div>` + end; }
   /** The signed-out feed. V: /api/public/feed. lb: true when there's a leaderboard to link to. */
   const composePublic = (V, { lb = "" } = {}) => compose(V, { lb: !!lb });
@@ -252,7 +348,7 @@
       try { const r = await fetch("/api/feed/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: b.dataset.fvReact, emoji: b.dataset.e, device: deviceId }) }); const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.counts) { undo(); return; } // the server said no (too many, signed out): put it back as it was
         $$(`[data-fv-react="${CSS.escape(b.dataset.fvReact)}"]`, root).forEach((x) => { const c = j.counts[x.dataset.e] || 0; x.querySelector("b").textContent = c || ""; x.setAttribute("aria-pressed", String((j.mine || []).includes(x.dataset.e))); x.setAttribute("aria-label", rLabel(x.dataset.e, c)); }); } catch { undo(); } }));
-    slots(root);
+    slots(root); wireBlend(root);
     $$(".fv-btn[data-fv-follow]", root).forEach((b) => (b.onclick = () => followFrom(b)));
     $$("[data-fv-with]", root).forEach((b) => (b.onclick = () => need("/comewith.js", () => window.PLComeWith?.fromFeed(b.dataset.fvWith, b.dataset.title, b.dataset.url, b))));
     $$("[data-fv-in]", root).forEach((a) => (a.onclick = (ev) => { if (RM() || ev.metaKey || ev.ctrlKey) return; ev.preventDefault(); confetti(a); setTimeout(() => (location.href = a.href), 520); }));
@@ -425,12 +521,63 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 @media (min-width:1000px){.fv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fv-near .fv-grid>.fv-ev:only-child{max-width:460px}}
 @media (max-width:360px){.fv-intro{padding-right:60px}.fv-potto{width:52px}.fv-potto svg{width:52px}.fv-intro h1{font-size:26px!important}.fv-tile{width:132px}.fv-scrap{padding:14px 12px 10px}}
 @media (prefers-reduced-motion:reduce){.fv-rise,.fv-rise *,.fv-intro *{opacity:1!important;transform:none!important;transition:none!important;animation:none!important}img.fv-img,.fv-mb>img{opacity:1!important;transition:none!important}.fv-skel i,.fv-ring.just-seen .fv-ring-c,.fv-react.pop span,.fv-menu{animation:none!important}.fv-ph.lead,.fv-ring-c,.fv-sv-in,.fv-btn,.fv-tile img,.fv-ev .fv-media>img{transition:none!important}.fv-ph.lead:hover,.fv-ev:hover .fv-media>img,.fv-tile:hover img{transform:rotate(var(--r,0deg))!important}}
+/* ---- the blended stream: one calm column, thin lines between posts, the host first on every card ---- */
+.fb-stream{--fb-ink:var(--pl-ink);--fb-soft:var(--pl-soft);--fb-line:var(--pl-line);--fb-line2:var(--pl-line-strong);--fb-card:var(--pl-surface);--fb-linen:var(--pl-raised);--fb-acc:var(--pl-accent);--fb-acc-press:var(--pl-accent-press);--fb-acc-text:var(--pl-accent-text);--fb-on-acc:var(--pl-on-accent,#fff);max-width:600px;margin:0 auto;display:flex;flex-direction:column}
+.fb-card{position:relative;min-width:0;padding:28px 0}.fb-card+.fb-card{border-top:1px solid var(--fb-line)}.fb-card:first-child{padding-top:8px}
+.fb-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fb-lead{position:relative;display:flex;align-items:center;gap:10px;min-height:44px;margin:0 0 12px}
+.fb-lead .sf-more{position:static;flex:none;width:36px;height:36px;margin-left:2px;background:transparent;border-color:transparent;color:var(--fb-soft)}.fb-lead .sf-more:hover{border-color:var(--fb-line2)}
+.fb-host{flex:1;min-width:0;display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;min-height:44px}.fb-host>span{min-width:0;display:flex;flex-direction:column}
+.fb-host b{font:600 15px/1.25 var(--pl-font-text,"Instrument Sans",system-ui);color:var(--fb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fb-host small{font-size:13px;line-height:1.35;color:var(--fb-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-host:hover b{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.fb-ring{flex:none;display:grid;place-items:center;padding:2px;border-radius:50%;box-shadow:0 0 0 1.5px var(--ring)}.fb-ring .fv-av{border:0}
+.fb-follow-in{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--fb-line2);background:transparent;color:var(--fb-ink);font:600 13px var(--pl-font-text,"Instrument Sans",system-ui);cursor:pointer}.fb-follow-in:hover{border-color:var(--fb-ink)}.fb-follow-in.on,.fb-follow-in[disabled]{color:var(--fb-soft);border-color:var(--fb-line);cursor:default}
+.fb-proof,.fb-by,.fb-count{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px;line-height:1.35;color:var(--fb-ink)}.fb-by{color:var(--fb-soft);margin:-4px 0 10px}.fb-by b{color:var(--fb-ink);font-weight:600}
+.fb-count{margin:14px 0 0;font-size:13px;color:var(--fb-soft)}.fb-count[hidden]{display:none}
+.fb-note>.sf-more{top:-6px;right:0;background:transparent;border-color:transparent}.fb-ini{font:600 11px/1 var(--pl-font-text,"Instrument Sans",system-ui)!important;color:var(--fb-ink)}
+.fb-stack{display:inline-flex;flex:none}.fb-stack .fv-av{width:24px!important;height:24px!important;font-size:12px!important;border:2px solid var(--fb-card,#fff);background:color-mix(in srgb,var(--c) 30%,var(--fb-card))}.fb-stack .fv-av+.fv-av{margin-left:-8px}.fb-count .fb-stack .fv-av{width:20px!important;height:20px!important}
+.fb-media{position:relative;display:block;aspect-ratio:16/10;border-radius:var(--r-md,16px);overflow:hidden;background:var(--fb-linen)}.fb-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.fb-media .ea-cover{position:absolute!important;inset:0;border-radius:0}
+.fb-title{margin:16px 0 6px;font:600 24px/1.15 var(--sys-display);letter-spacing:-.01em;color:var(--fb-ink);text-wrap:balance;overflow-wrap:anywhere}.fb-title.sm{font-size:20px;margin:4px 0 8px}
+.fb-title a{color:inherit;text-decoration:none}.fb-title a:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1.5px}
+.fb-line{margin:0;font-size:15px;line-height:1.45;color:var(--fb-soft);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}.fb-ideas .fb-line{-webkit-line-clamp:3}
+.fb-meta{margin:8px 0 0;font:400 13px/1.5 var(--sys-mono,ui-monospace,monospace);letter-spacing:-.01em;color:var(--fb-soft);font-variant-numeric:tabular-nums}
+.fb-cta{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;margin-top:18px;border-radius:999px;background:var(--fb-acc);color:var(--fb-on-acc);font:600 16px var(--pl-font-text,"Instrument Sans",system-ui);text-decoration:none;box-sizing:border-box;transition:background .2s,transform .15s var(--fv-ease)}.fb-cta:hover{background:var(--fb-acc-press)}.fb-cta:active{transform:scale(.985)}
+.fb-acts{display:flex;align-items:center;gap:4px;margin:6px -10px 0;flex-wrap:wrap}
+.fb-act{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;border:0;background:none;color:var(--fb-soft);font:500 14px var(--pl-font-text,"Instrument Sans",system-ui);text-decoration:none;cursor:pointer}.fb-act svg{width:20px;height:20px;flex:none}
+.fb-act:hover{color:var(--fb-ink);background:var(--fb-linen)}.fb-act[aria-pressed=true]{color:var(--fb-acc-text)}.fb-act[aria-pressed=true] svg{fill:color-mix(in srgb,var(--fb-acc) 18%,transparent)}
+.fb-act.pop svg,.fb-send.pop svg{animation:fv-pop .5s var(--fv-ease)}
+.fb-note{position:relative;margin:0 0 12px;padding:0 40px 0 14px;border-left:2px solid var(--fb-line2)}.fb-note p{margin:0;font-size:16px;line-height:1.5;color:var(--fb-ink)}.fb-note cite{display:block;margin-top:4px;font-style:normal;font-size:13px;color:var(--fb-soft)}
+.fb-stats{display:flex;flex-wrap:wrap;gap:4px 0;margin:0 0 14px;font:500 13px/1.4 var(--sys-mono,ui-monospace,monospace);color:var(--fb-ink);font-variant-numeric:tabular-nums}.fb-stats span+span::before{content:"·";margin:0 8px;color:var(--fb-soft)}
+.fb-photos{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:0 16px;scroll-padding:0 16px}.fb-photos::-webkit-scrollbar{display:none}
+.fb-ph{flex:0 0 72%;max-width:300px;scroll-snap-align:start;padding:0;border:0;background:none;cursor:pointer;border-radius:12px;overflow:hidden}.fb-ph:only-child{flex-basis:100%;max-width:none}.fb-ph .fv-mb{border-radius:12px}
+.fb-next{display:flex;align-items:center;gap:8px;min-height:44px;margin-top:12px;padding:0 14px;border:1px solid var(--fb-line);border-radius:var(--r-sm,12px);color:var(--fb-ink);text-decoration:none;font-size:14px}.fb-next span{color:var(--fb-soft)}.fb-next b{font-weight:600}.fb-next i{margin-left:auto;font-style:normal;font-size:20px;color:var(--fb-soft)}.fb-next:hover{border-color:var(--fb-line2)}
+.fb-ms-b{display:flex;gap:16px;align-items:center}.fb-ms-n{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;border:1.5px solid var(--fb-line2);font:600 20px/1 var(--sys-display);color:var(--fb-acc-text);font-variant-numeric:tabular-nums}
+.fb-ms .fb-line{-webkit-line-clamp:2}.fb-ms-t{margin:0 0 4px;font:600 20px/1.25 var(--sys-display);color:var(--fb-ink);text-wrap:balance}
+.fb-send{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;margin-left:10px;border-radius:999px;border:1.5px solid var(--fb-acc);background:transparent;color:var(--fb-acc-text);font:600 15px var(--pl-font-text,"Instrument Sans",system-ui);cursor:pointer}.fb-send svg{width:18px;height:18px}
+.fb-send[aria-pressed=true]{background:var(--fb-acc);color:var(--fb-on-acc)}.fb-ms .fb-acts{margin-top:16px}
+.fb-sec{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px}.fb-sec h2{margin:0;font:600 20px/1.2 var(--sys-display);color:var(--fb-ink)}.fb-sec a{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0;color:var(--fb-acc-text);font:600 14px var(--pl-font-text,"Instrument Sans",system-ui);text-decoration:none}
+.fb-fcs{list-style:none;display:flex;gap:12px;margin:0 -16px;padding:2px 16px 4px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none}.fb-fcs::-webkit-scrollbar{display:none}
+.fb-fc{position:relative;flex:0 0 156px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:20px 12px 14px;border:1px solid var(--fb-line);border-radius:var(--r-md,16px);background:var(--fb-card);box-sizing:border-box;transition:opacity .2s,transform .2s}
+.fb-fc.gone{opacity:0;transform:scale(.96)}.fb-fc>.sf-more{display:none}
+.fb-fc-a{display:flex;flex-direction:column;align-items:center;gap:10px;color:inherit;text-decoration:none;min-width:0;max-width:100%}.fb-fc-a b{font:600 15px/1.25 var(--pl-font-text,"Instrument Sans",system-ui);color:var(--fb-ink);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-fc small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;font-size:13px;line-height:1.4;color:var(--fb-soft)}
+.fb-fbtn{margin-top:auto;width:100%;min-height:40px;border-radius:999px;border:1.5px solid var(--fb-ink);background:transparent;color:var(--fb-ink);font:600 14px var(--pl-font-text,"Instrument Sans",system-ui);cursor:pointer}.fb-fbtn:hover{background:var(--fb-ink);color:var(--fb-card)}.fb-fbtn.on,.fb-fbtn[disabled]{border-color:var(--fb-line2);color:var(--fb-soft);background:transparent;cursor:default}
+.fb-x{position:absolute;top:4px;right:4px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--fb-soft);cursor:pointer}.fb-x svg{width:16px;height:16px}.fb-x:hover{background:var(--fb-linen);color:var(--fb-ink)}
+.fb-kick{margin:0 0 2px;font:500 13px var(--sys-mono,ui-monospace,monospace);letter-spacing:.04em;text-transform:uppercase;color:var(--fb-soft)}
+.fb-ideas-go{display:flex;align-items:center;gap:16px;margin-top:16px}.fb-ghost{min-height:44px;padding:0 20px;border-radius:999px;border:1.5px solid var(--fb-ink);background:transparent;color:var(--fb-ink);font:600 15px var(--pl-font-text,"Instrument Sans",system-ui);cursor:pointer}.fb-ghost:hover{background:var(--fb-ink);color:var(--fb-card)}
+.fb-link{display:inline-flex;align-items:center;min-height:44px;color:var(--fb-acc-text);font-weight:600;font-size:14px;text-decoration:none}
+.fb-text{margin:0 0 12px;font-size:16px;line-height:1.5;color:var(--fb-ink);white-space:pre-line}
+.fb-rowc .fv-row{margin:0 -16px;padding:2px 16px 6px}
+.fb-stream .fv-post{border:0;border-radius:0;background:none;padding:28px 0}.fb-stream .fv-post+.fb-card,.fb-stream .fb-card+.fv-post{border-top:1px solid var(--fb-line)}
+.fb-stream :focus-visible{outline:3px solid var(--fb-ink);outline-offset:2px}
+@media (min-width:700px){.fb-title{font-size:28px}.fb-photos,.fb-fcs,.fb-rowc .fv-row{margin:0;padding-left:0;padding-right:0}.fb-ph{flex-basis:46%}.fb-card{padding:36px 0}}
+@media (prefers-reduced-motion:reduce){.fb-cta,.fb-fc,.fb-act.pop svg,.fb-send.pop svg{transition:none!important;animation:none!important}.fb-fc.gone{transform:none}}
 `;
   /** "?interests=…&city=…" from what this visitor picked (pl.interests), for /api/public/feed, or "". */
   function publicQuery() { let v = null; try { v = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch {} if (!v || typeof v !== "object") return "";
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
-  window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery };
+  window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER };
   // the swipe deck (public/swipedeck.js) on a first visit to /feed, signed in or out; it decides whether to show itself
   if (location.pathname === "/feed" || location.pathname === "/") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
     const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };

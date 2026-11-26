@@ -4,7 +4,7 @@
 (function () {
   const C = window.EncoreColor;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"]];
+  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"]];
   // title fonts: the title only; the rest of the page stays in the house sans
   const FONTS = {
     clean: { label: "Clean", css: '"Inter", "Instrument Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
@@ -13,12 +13,15 @@
     script: { label: "Script", css: '"Dancing Script", "Brush Script MT", cursive', q: "Dancing+Script:wght@700", w: 700, ls: "0", k: 1.18 },
     typewriter: { label: "Typewriter", css: '"Courier Prime", "Courier New", monospace', q: "Courier+Prime:wght@700", w: 700, ls: "-.02em", k: 0.96 },
     rounded: { label: "Rounded", css: '"Baloo 2", Fredoka, system-ui, sans-serif', q: "Baloo+2:wght@800", w: 800, ls: "-.02em", k: 1.04 },
+    // a terminal prompt: monospace, with a blinking block cursor after the title (still, for people who prefer less motion)
+    mono: { label: "Mono", css: '"IBM Plex Mono", ui-monospace, Menlo, monospace', q: "IBM+Plex+Mono:wght@600;700", w: 700, ls: "-.03em", k: 0.9 },
+    pixel: { label: "Pixel", css: '"Silkscreen", ui-monospace, monospace', q: "Silkscreen:wght@400;700", w: 700, ls: "0", k: 0.78 },
   };
   // eight colours to pick from when there's no flyer (each with two accents that suit it)
   const SWATCHES = [["#A9C3A4", "#3E6B48", "#F2D36B", "Sage"], ["#EFE2C6", "#1F1A17", "#C2553A", "Cream"], ["#C4DDF3", "#1E4E86", "#D94357", "Ice"], ["#6E0F1F", "#F2C46D", "#F4D7C8", "Velvet"],
     ["#F6C9D2", "#B0344F", "#4F7A52", "Blush"], ["#FFE08A", "#C94A30", "#2F7A8A", "Butter"], ["#D3C6F4", "#5A3DA8", "#E26D8E", "Lilac"], ["#4A2E1E", "#D8322E", "#F2C46D", "Night"]];
   const LABELS = ["I'm in", "Join", "Count me in", "Ask to join"]; // older labels off the word list read "I'm in" (server/looks.js cleanLook)
-  const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️"];
+  const EMOJI = ["👍", "🙌", "🎉", "✨", "🌿", "🌸", "💐", "🌷", "🍷", "🥂", "🍸", "🍜", "🎷", "🎶", "🎄", "❄️", "⛄", "🎁", "🏺", "🍵", "🕯️", "🔥", "🏮", "❤️", "💻", "🎮", "👾", "🕹️", "🎲"];
   // one-tap vibes. Flower shop is the host page's Flower shop look (storefront.js LOOKS.florist: petal page, deep green)
   const VIBES = {
     garden: { label: "Garden party", look: { palette: ["#A9C3A4", "#3E6B48", "#F2D36B"], effect: "sparkles", titleFont: "rounded", buttonEmoji: "🌿", buttonLabel: "Count me in" } },
@@ -26,12 +29,45 @@
     winter: { label: "Winter benefit", look: { palette: ["#C4DDF3", "#1E4E86", "#D94357"], effect: "snow", titleFont: "clean", buttonEmoji: "❄️", buttonLabel: "I'm in" } },
     velvet: { label: "Velvet sale", look: { palette: ["#6E0F1F", "#F2C46D", "#F4D7C8"], effect: "velvet", titleFont: "serif", buttonEmoji: "🏺", buttonLabel: "I'm in" } },
     flower: { label: "Flower shop", look: { palette: ["#F4E9EC", "#1F3D30", "#E98973"], effect: "petals", titleFont: "script", buttonEmoji: "💐", buttonLabel: "Count me in" } },
-    night: { label: "Night out", look: { palette: ["#4A2E1E", "#D8322E", "#F2C46D"], effect: "velvet", titleFont: "bold", buttonEmoji: "🏮", buttonLabel: "I'm in" } },
+    // an izakaya after dark: deep ink-indigo, paper lanterns and a noren curtain, warm amber on the button
+    night: { label: "Night out", look: { palette: ["#141A3A", "#F2A44A", "#E5533D"], effect: "lanterns", titleFont: "bold", buttonEmoji: "🏮", buttonLabel: "I'm in" } },
     market: { label: "Holiday market", look: { palette: ["#5A0F1E", "#E8C26A", "#F6EBD9"], effect: "twinkle", lights: true, titleFont: "bold", buttonEmoji: "🎄", buttonLabel: "Count me in" } },
+    // a hand of pastel cards: the cover is a flat playing card, the kind of event in the corner and the drawing in the middle
+    // for the quiet, nerdy crowd: a calm dark terminal (phosphor green, amber accent, faint scanlines) and an 8-bit page in four colours
+    terminal: { label: "Terminal", look: { palette: ["#0E1411", "#7CF29A", "#F2B84B"], effect: "scanlines", titleFont: "mono", buttonEmoji: "💻", buttonLabel: "Join" } },
+    pixel: { label: "Pixel", look: { palette: ["#F4EED8", "#3A2E5C", "#E0566B"], effect: "pixels", titleFont: "pixel", buttonEmoji: "👾", buttonLabel: "I'm in" } },
+    cards: { label: "Card deck", look: { palette: ["#F6EFE4", "#2B2340", "#E26D8E"], effect: "none", titleFont: "rounded", buttonEmoji: "✨", buttonLabel: "I'm in", coverStyle: "deck" } },
   };
+  // the card deck's pastels (the same hand as the swipe deck, public/swipedeck.js)
+  const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
+  // ---------- stickers: small original drawings a host drops on their cover (server/looks.js keeps at most 6) ----------
+  const SK = 'stroke="#1F1A17" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"', BK = 'fill="#fff" stroke="#fff" stroke-width="11" stroke-linejoin="round"';
+  const two = (d, fill) => `<path ${BK} d="${d}"/><path fill="${fill}" ${SK} d="${d}"/>`;
+  const STICKERS = {
+    star: { label: "Star", svg: two("M32 7l7.4 15.3 16.8 2.4-12.2 11.8 2.9 16.7L32 45.3l-14.9 7.9 2.9-16.7L7.8 24.7l16.8-2.4z", "#F7D36B") + `<path fill="none" ${SK} d="M25 33.5q1.5 2 3 0M35 33.5q1.5 2 3 0"/>` },
+    heart: { label: "Heart", svg: two("M32 54C15 43 8 33 8 23.5 8 15.5 14 10 21 10c4.8 0 8.6 2.6 11 6.6C34.4 12.6 38.2 10 43 10c7 0 13 5.5 13 13.5C56 33 49 43 32 54z", "#F48FA0") + `<path fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" d="M17 21q2-5 7-5"/>` },
+    sparkle: { label: "Sparkle", svg: two("M30 6q3 19 22 24-19 4-22 26-3-22-22-26 19-5 22-24z", "#FFF1A8") + two("M51 6q1 6 7 7.5-6 1.3-7 8-1-6.7-7-8 6-1.5 7-7.5z", "#BFE4EA") },
+    flower: { label: "Flower", svg: [0, 72, 144, 216, 288].map((a) => `<ellipse ${BK} cx="32" cy="17" rx="10" ry="12" transform="rotate(${a} 32 32)"/>`).join("") + [0, 72, 144, 216, 288].map((a) => `<ellipse fill="#F6CBD5" ${SK} cx="32" cy="17" rx="10" ry="12" transform="rotate(${a} 32 32)"/>`).join("") + `<circle fill="#F2A71B" ${SK} cx="32" cy="32" r="8"/>` },
+    lantern: { label: "Lantern", svg: `<path ${BK} d="M32 4v6M22 10h20v5H22zM32 15c-15 0-21 8-21 18s6 18 21 18 21-8 21-18-6-18-21-18zM22 51h20v5H22z"/><path fill="none" ${SK} d="M32 3v7"/><rect fill="#1F1A17" x="22" y="10" width="20" height="5" rx="2"/><ellipse fill="#E5533D" ${SK} cx="32" cy="33" rx="21" ry="18"/><path fill="none" ${SK} d="M12 27h40M11.5 34h41M13 41h38"/><path fill="none" stroke="#FFD9A0" stroke-width="3" stroke-linecap="round" d="M20 22q-4 5-3 10"/><rect fill="#1F1A17" x="22" y="51" width="20" height="5" rx="2"/><path fill="none" ${SK} d="M32 56v6"/>` },
+    dumpling: { label: "Dumpling", svg: two("M6 44c0-15 12-26 26-26s26 11 26 26c0 4-3 6-7 6H13c-4 0-7-2-7-6z", "#FBF1DF") + `<path fill="none" ${SK} d="M20 24q3 5 1 9M30 19q3 6 1 11M40 20q3 6 0 11M49 27q2 4-1 8"/><circle fill="#F48FA0" cx="22" cy="41" r="3"/><circle fill="#F48FA0" cx="42" cy="41" r="3"/><path fill="none" ${SK} d="M29 41q3 3 6 0"/>` },
+    pot: { label: "Pot", svg: two("M18 18h28v5c0 3 9 7 9 18 0 10-8 17-23 17S9 51 9 41c0-11 9-15 9-18z", "#E39A6E") + `<path fill="#F2C9A8" ${SK} d="M15 16h34v6H15z"/><path fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" d="M17 36q0-5 4-8"/><path fill="none" ${SK} d="M23 41q2 2.5 4 0M37 41q2 2.5 4 0"/>` },
+    note: { label: "Music note", svg: `<path fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" d="M24 46V14l28-6v32"/><ellipse ${BK} cx="17" cy="47" rx="9" ry="7"/><ellipse ${BK} cx="45" cy="41" rx="9" ry="7"/><path fill="none" ${SK} d="M24 46V14l28-6v32M24 22l28-6"/><ellipse fill="#B9A6F0" ${SK} cx="17" cy="47" rx="9" ry="7"/><ellipse fill="#B9A6F0" ${SK} cx="45" cy="41" rx="9" ry="7"/>` },
+    d20: { label: "D20", svg: two("M32 5l24 13.5v27L32 59 8 45.5v-27z", "#BFE4EA") + `<path fill="#E6F4F6" ${SK} d="M32 17l13 23H19z"/><path fill="none" ${SK} d="M32 5v12M56 18.5L45 40M8 18.5L19 40M32 59l-13-19M32 59l13-19M8 45.5L19 40M56 45.5L45 40"/>` },
+    controller: { label: "Controller", svg: two("M18 20h28c8 0 12 6 14 16 2 11-1 18-7 18-5 0-7-6-12-6H23c-5 0-7 6-12 6-6 0-9-7-7-18 2-10 6-16 14-16z", "#DCC3EC") + `<path fill="none" ${SK} d="M17 31v10M12 36h10"/><circle fill="#F48FA0" ${SK} cx="44" cy="33" r="3.2"/><circle fill="#F7D36B" ${SK} cx="51" cy="39" r="3.2"/>` },
+    key: { label: "Key", svg: two("M10 12h44a5 5 0 0 1 5 5v31a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5V17a5 5 0 0 1 5-5z", "#E9E3D6") + `<path fill="#FFFCF5" ${SK} d="M15 16h34a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4z"/><path fill="none" ${SK} d="M21 24l7 6-7 6M32 37h11"/>` },
+    floppy: { label: "Floppy disk", svg: two("M9 8h40l7 7v39a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z", "#9BC4E8") + `<path fill="#E6EEF5" ${SK} d="M18 8h26v15H18z"/><path fill="#1F1A17" d="M35 11h5v9h-5z"/><path fill="#FFFCF5" ${SK} d="M16 34h32v22H16z"/><path fill="none" stroke="#9BC4E8" stroke-width="3" stroke-linecap="round" d="M22 42h20M22 49h14"/>` },
+    heartbox: { label: "Heart container", svg: (() => { const rows = ["..XX.XX..", ".XooXooX.", "XowooooOX", "XooooooOX", ".XooooOX.", "..XooOX..", "...XoX...", "....X...."], c = { X: "#1F1A17", o: "#E5533D", O: "#B3321F", w: "#FFFFFF" }; let r = `<rect x="-1" y="2" width="66" height="58" rx="10" fill="#fff"/>`;
+      rows.forEach((row, y) => [...row].forEach((ch, x) => { if (c[ch]) r += `<rect x="${x * 7 + 0.5}" y="${y * 7 + 4}" width="7.2" height="7.2" fill="${c[ch]}"/>`; })); return `<g shape-rendering="crispEdges">${r}</g>`; })() },
+    cursor: { label: "Cursor", svg: two("M16 6v44l11-10 8 18 8-3.5-8-17.5h15z", "#FFFFFF") },
+  };
+  const stickerSVG = (id) => (STICKERS[id] ? `<svg viewBox="-4 -4 72 72" aria-hidden="true" focusable="false">${STICKERS[id].svg}</svg>` : "");
+  const MAX_STICKERS = 6;
+  const cleanStickers = (L) => (Array.isArray(L) ? L : []).filter((x) => x && STICKERS[x.id]).slice(0, MAX_STICKERS).map((x) => ({ id: x.id, x: Math.min(100, Math.max(0, +x.x || 0)), y: Math.min(100, Math.max(0, +x.y || 0)), s: Math.min(1.6, Math.max(0.6, +x.s || 1)), r: Math.min(40, Math.max(-40, +x.r || 0)) }));
+  function stickersHTML(L) { const st = cleanStickers(L?.stickers); if (!st.length) return "";
+    return `<div class="lk-stk" aria-hidden="true">${st.map((x, i) => `<span class="lk-st" data-i="${i}" style="left:${x.x}%;top:${x.y}%;--s:${x.s};--r:${x.r}deg">${stickerSVG(x.id)}</span>`).join("")}</div>`; }
   const okHex = (h) => /^#[0-9a-f]{6}$/i.test(h || "");
   const lookOf = (e) => (e && e.look && typeof e.look === "object" ? e.look : {});
-  const has = (L) => !!(L && ((L.palette || []).some(okHex) || (L.effect && L.effect !== "none") || L.lights || FONTS[L.titleFont] || L.update?.text));
+  const has = (L) => !!(L && ((L.palette || []).some(okHex) || (L.effect && L.effect !== "none") || L.lights || FONTS[L.titleFont] || L.update?.text || L.coverStyle === "deck" || (L.stickers || []).length));
   // a portrait flyer shows whole unless the host picked the banner
   const fitOf = (L) => (L?.coverFit === "poster" || L?.coverFit === "banner" ? L.coverFit : +L?.coverH > +L?.coverW && +L?.coverW > 0 ? "poster" : "banner");
   const fonts = new Set(); const loadFont = (k) => { const F = FONTS[k]; if (!F || fonts.has(k) || typeof document === "undefined") return; fonts.add(k); const l = document.createElement("link"); l.rel = "stylesheet"; l.href = `https://fonts.googleapis.com/css2?family=${F.q}&display=swap`; document.head.appendChild(l); };
@@ -67,7 +103,49 @@ html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100
 @keyframes lk-glow{0%,100%{opacity:.55}50%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.lk-lights .bulb{animation:none;opacity:.9}}
 @keyframes lk-breathe{0%,100%{opacity:.85}50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.lk-velvet{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.lk-velvet{animation:none}}
+/* card deck: the drawn cover as a flat pastel playing card, the kind of event in spaced caps top-left, the drawing big in the middle */
+.ea-cover.lk-deck{background:var(--lk-deck,#F6CBD5)!important}.ea-cover.lk-deck .ea-txt{display:none!important}
+.ea-cover.lk-deck .ea-art{inset:17% 7% 6%!important;width:auto!important;height:auto!important;max-width:none!important;justify-content:center!important;align-items:center!important}.ea-cover.lk-deck .ea-art svg{width:100%!important;height:100%!important;max-width:none!important;overflow:visible}.ea-cover.lk-deck .ea-art svg [stroke-width]{stroke-width:6px}
+.lk-corner{position:absolute;left:6%;top:7%;z-index:2;font:700 clamp(11px,4.4cqw,18px)/1 "Instrument Sans",system-ui,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#1F1A17;pointer-events:none;white-space:nowrap}
+/* stickers on the cover (shown even where a cover hides its other layers) */
+html body .lk-stk.lk-stk.lk-stk.lk-stk{display:block!important}
+.lk-stk{position:absolute;inset:0;z-index:3;pointer-events:none;container-type:inline-size}.lk-st{position:absolute;width:calc(clamp(34px,17cqw,120px) * var(--s,1));aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--r,0deg));filter:drop-shadow(0 4px 6px rgba(31,26,23,.22))}
+.lk-st svg{display:block;width:100%;height:100%;overflow:visible}.lk-stk.edit{pointer-events:auto}.lk-stk.edit .lk-st{cursor:grab;touch-action:none}.lk-stk.edit .lk-st.drag{cursor:grabbing;filter:drop-shadow(0 10px 12px rgba(31,26,23,.35))}
+.lk-pop{animation:lk-pop .45s cubic-bezier(.3,1.7,.5,1)}@keyframes lk-pop{0%{transform:translate(-50%,-50%) scale(.2) rotate(var(--r,0deg))}100%{transform:translate(-50%,-50%) scale(1) rotate(var(--r,0deg))}}
+@media (prefers-reduced-motion:reduce){.lk-pop{animation:none}}
+/* night out: a noren curtain across the top, two paper lanterns that sway, and a warm glow under them */
+.lk-lant{position:absolute;left:0;right:0;top:0;height:460px;z-index:-1;pointer-events:none;overflow:hidden;background:radial-gradient(240px 200px at 7% 120px,rgba(242,164,74,.30),transparent 70%),radial-gradient(240px 200px at 93% 120px,rgba(229,83,61,.26),transparent 70%)}
+.lk-lant.inbox{z-index:0;height:340px}
+.lk-noren{display:block;width:100%;height:54px}
+.lk-ch{position:absolute;top:30px;width:clamp(34px,5.6vw,74px);transform-origin:50% 0;animation:lk-sway 6s ease-in-out infinite}.lk-ch.l{left:max(8px,3vw)}.lk-ch.r{right:max(8px,3vw);animation-delay:-3s}.lk-ch svg{display:block;width:100%;height:auto;overflow:visible}
+.lk-ch::before{content:"";position:absolute;left:-60%;right:-60%;top:20%;height:90%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,190,110,.55),transparent);z-index:-1}
+.lk-lant.inbox .lk-ch{width:34px;top:24px}.lk-lant.inbox .lk-noren{height:40px}
+@media (max-width:600px){.lk-lant:not(.inbox) .lk-ch.l{display:none}.lk-lant:not(.inbox) .lk-ch.r{width:32px;right:10px}}
+@keyframes lk-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@media (prefers-reduced-motion:reduce){.lk-ch{animation:none}}
+/* terminal: faint scanlines over a calm dark page, phosphor title, a block cursor after mono titles */
+.lk-scan{background:repeating-linear-gradient(180deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),radial-gradient(120% 80% at 50% 0,rgba(124,242,154,.08),transparent 60%);opacity:.7}
+@media (prefers-reduced-motion:reduce){.lk-scan{display:none}}
+.lk-vibe-terminal .ea-cover{background:#131B16!important}.lk-vibe-terminal .ea-art svg{filter:invert(1) hue-rotate(180deg) saturate(.8)}.lk-vibe-terminal .ea-cover .ea-txt{color:#A6F5BA}
+.lk-fxl.fixed.lk-pix::after{display:none}
+.lk-vibe-terminal .lk-title{color:#A6F5BA!important;text-shadow:0 0 14px rgba(124,242,154,.28)}
+.lk-font-mono .lk-title::after{content:"";display:inline-block;width:.52em;height:.86em;margin-left:.14em;vertical-align:-.06em;background:currentColor;animation:lk-blink 1.1s steps(1) infinite}
+@keyframes lk-blink{50%{opacity:0}}@media (prefers-reduced-motion:reduce){.lk-font-mono .lk-title::after{animation:none}}
+/* pixel: a crenellated pixel border top and bottom, a few original sprites, crisp edges, square covers */
+.lk-pix{image-rendering:pixelated}.lk-pix::before,.lk-pix::after{content:"";position:absolute;left:0;right:0;height:16px;background:linear-gradient(var(--lk-pix,#3A2E5C) 0 0) 0 0/100% 8px no-repeat,repeating-linear-gradient(90deg,var(--lk-pix,#3A2E5C) 0 8px,transparent 8px 16px) 0 8px/100% 8px no-repeat}
+.lk-pix::before{top:0}.lk-pix::after{bottom:0;transform:scaleY(-1)}
+.lk-pix svg{position:absolute;width:44px;height:44px;shape-rendering:crispEdges}.lk-pix .s1{left:12px;top:30px}.lk-pix .s2{right:14px;top:34px}.lk-pix .s3{right:22px;bottom:28px}
+@media (max-width:600px){.lk-pix svg{width:28px;height:28px}.lk-pix .s1{display:none}}
+.lk-fx-pixels :is(.cov,.gxcover,.mk-cov){border-radius:0!important;box-shadow:6px 6px 0 var(--lk-pix,#3A2E5C)!important}.lk-fx-pixels .ea-cover{border-radius:0!important}
+body.lk-invite.lk-fx-pixels main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 20px)}
+/* night out menu: a handwritten slip of paper, like the menu on an izakaya wall */
+.lk-fx-lanterns .mc{background:#F4EAD3!important;background-image:repeating-linear-gradient(180deg,transparent 0 33px,rgba(31,26,23,.08) 33px 34px)!important;border:2px solid #1F1A17;box-shadow:0 18px 36px -20px rgba(0,0,0,.6);transform:rotate(-.6deg);color:#1F1A17}
+.lk-fx-lanterns .mc .mc-h{color:#B3321F!important;font:700 22px/1 Kalam,"Comic Sans MS",cursive;letter-spacing:.04em;text-transform:none;opacity:1}
+.lk-fx-lanterns .mc .mc-c{background:transparent!important;border-radius:0;padding:8px 6px;border-bottom:2px dotted rgba(31,26,23,.35);text-align:left;box-shadow:none!important}
+.lk-fx-lanterns .mc .mc-c b{font:700 20px/1.25 Kalam,"Comic Sans MS",cursive;color:#1F1A17!important;letter-spacing:0}.lk-fx-lanterns .mc .mc-c small{font:400 15px/1.2 Kalam,"Comic Sans MS",cursive;color:#5A4E45!important;text-transform:none;letter-spacing:0}
+.lk-fx-lanterns .mc .mc-b{display:none}.lk-fx-lanterns .mc .mc-fin{background:#1F1A17!important;color:#F4EAD3!important;border-radius:6px;text-align:center;margin-top:10px;border:0}.lk-fx-lanterns .mc .mc-fin b{color:#F4EAD3!important}
+.lk-fx-lanterns .mc .mc-note{color:#5A4E45!important}`;
   // the light invite (public/invite.html, body.lk-invite): its cards, form and buttons in the look's colours, and the flyer
   // beside the invite on wide screens. Kept here so the invite page itself stays small.
   const INVITE_CSS = `body.lk-invite.lk-on main{position:relative;z-index:1}body.lk-invite.lk-on .brand{color:var(--lk-ink)}body.lk-invite.lk-on a{color:inherit}
@@ -84,7 +162,7 @@ body.lk-invite.lk-on .stick{background:color-mix(in srgb,var(--lk-bot) 90%,trans
 body.lk-invite.lk-on .going span,body.lk-invite.lk-on .host .av{background:var(--lk-card);color:var(--lk-card-ink);border-color:var(--lk-line)}
 body.lk-invite.lk-on .full,body.lk-invite.lk-on .linkbtn{color:var(--lk-ink)}
 html body.lk-invite.lk-on.lk-on button.go,html body.lk-invite.lk-on.lk-on button.go:hover,html body.lk-invite.lk-on.lk-on a.btn.main,html body.lk-invite.lk-on.lk-on a.btn.pay{background:var(--lk-btn)!important;color:var(--lk-on-btn)!important;border-color:var(--lk-btn)!important}
-body.lk-invite.lk-fx-lights main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 40px)}
+body.lk-invite.lk-fx-lights main,body.lk-invite.lk-fx-lanterns main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 40px)}
 body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.lk-invite .cov.poster img{width:auto;max-width:100%;max-height:min(74vh,820px)}
 /* wide screens: the flyer on the left, held in place, and the invite beside it */
 @media (min-width:960px){body.lk-invite.lk-poster main{max-width:1080px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto repeat(24,auto) 1fr;column-gap:56px;padding-top:24px}
@@ -102,12 +180,26 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (el === document.body && page && T) { const R0 = document.documentElement; R0.classList.add("lk-root"); for (const k of ["--lk-top", "--lk-bot"]) R0.style.setProperty(k, el.style.getPropertyValue(k)); }
     if (F) { loadFont(L.titleFont); el.classList.add("lk-font-" + L.titleFont); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", F.k); if (F.up) el.classList.add("lk-up"); }
     if (L.vibe && VIBES[L.vibe]) el.classList.add("lk-vibe-" + L.vibe);
-    el.style.setProperty("--lk-glow", glowOf(L));
+    el.style.setProperty("--lk-glow", L.effect === "lanterns" ? "#F28A3A" : glowOf(L)); if (T) el.style.setProperty("--lk-pix", T.ink);
     const stops = [];
     if (L.effect && L.effect !== "none") { el.classList.add("lk-fx-" + L.effect); stops.push(effect(el, L.effect, { fixed, dark: !!T?.dark, colors: particleColors(L, T) })); }
     if (L.lights) { el.classList.add("lk-fx-lights"); stops.push(lights(el, { fixed })); }
+    decorate(el === document.body ? document : el, e);
     el.__lkStop = () => stops.forEach((f) => f());
     return T; }
+  // ---------- the cover: card deck and stickers, on every cover inside root (the invite's .cov, /g's .gxcover, the preview's .mk-cov) ----------
+  const hash = (t) => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+  function cornerWord(e) { const A = window.EventArt; let w = ""; try { if (A) { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0]; w = A.LABEL?.[k] || ""; } } catch {}
+    return String(w || "Event").replace(/[^\p{L}\p{N}&' -]/gu, "").trim().split(/\s+/).reduce((o, x) => (!o || (o + " " + x).length <= 14 ? (o ? o + " " + x : x) : o), "").slice(0, 14); }
+  function decorate(root, e) { if (!root?.querySelectorAll) return; const L = lookOf(e), deck = L.coverStyle === "deck", sig = JSON.stringify([e?.id, deck, L.stickers || []]);
+    root.querySelectorAll(".cov, .gxcover, .mk-cov").forEach((box) => { if (box.dataset.lkDeco === sig && (!deck || !box.querySelector(".ea-cover") || box.querySelector(".lk-deck")) && (!(L.stickers || []).length || box.querySelector(".lk-stk"))) return; box.dataset.lkDeco = sig;
+      box.querySelectorAll(".lk-stk,.lk-corner").forEach((x) => x.remove());
+      box.querySelectorAll(".ea-cover.lk-deck").forEach((x) => { x.classList.remove("lk-deck"); const a = x.querySelector(".ea-art"); if (a && x.__lkArt != null) a.innerHTML = x.__lkArt; });
+      const ea = box.querySelector(".ea-cover:not(.ea-custom)"), A = window.EventArt;
+      if (deck && ea) { ea.classList.add("lk-deck");
+        // one chubby drawing in the middle of the card, the event's own kind
+        const art = ea.querySelector(".ea-art"); if (art && A) { if (ea.__lkArt == null) ea.__lkArt = art.innerHTML; try { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0], tone = A.toneOf(e || {}, k); art.innerHTML = A.drawing(k, A.SPOT?.[tone] || "#E8452C"); } catch {} } ea.style.setProperty("--lk-deck", DECK[hash(e?.id || e?.name || "") % DECK.length]); const c = document.createElement("span"); c.className = "lk-corner"; c.setAttribute("aria-hidden", "true"); c.textContent = cornerWord(e); ea.appendChild(c); }
+      const st = stickersHTML(L); if (st) { if (getComputedStyle(box).position === "static") box.style.position = "relative"; box.insertAdjacentHTML("beforeend", st); } }); }
   // the velvet glow: an accent close in hue to the page colour (a red on wood, a pink on red), else the page colour lifted
   function glowOf(L) { const p = (L.palette || []).filter(okHex); if (!p.length || !C) return "#C2384A"; const h0 = C.hsl(p[0])[0];
     const near = p.slice(1).find((c) => { const d = Math.abs(C.hsl(c)[0] - h0); return Math.min(d, 360 - d) < 36 && C.hsl(c)[1] > 0.3; }); return near || C.mix(p[0], "#FF8A8A", 0.35); }
@@ -139,6 +231,9 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
     host.prepend(layer);
     if (kind === "paper" || kind === "velvet") { layer.classList.add("lk-" + kind); return () => layer.remove(); }
+    if (kind === "lanterns") { layer.remove(); return lanterns(host, { fixed }); }
+    if (kind === "scanlines") { layer.classList.add("lk-scan"); return () => layer.remove(); }
+    if (kind === "pixels") { layer.classList.add("lk-pix"); layer.innerHTML = SPRITES.map((s, i) => `<svg class="s${i + 1}" viewBox="0 0 ${s[0].length} ${s.length}" aria-hidden="true">${pxRects(s)}</svg>`).join(""); return () => layer.remove(); }
     if (!COUNT[kind]) { layer.remove(); return () => {}; }
     const cv = document.createElement("canvas"); layer.appendChild(cv); const g = cv.getContext("2d"); if (!g) return () => layer.remove();
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches, phone = matchMedia("(pointer: coarse)").matches || innerWidth < 700, dpr = Math.min(phone ? 1.5 : 2, window.devicePixelRatio || 1);
@@ -176,6 +271,29 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     let io = null; if ("IntersectionObserver" in window) { io = new IntersectionObserver(([x]) => { seen = x.isIntersecting; if (seen) go(); }); io.observe(fixed ? host : layer); }
     return () => { alive = false; cancelAnimationFrame(raf); document.removeEventListener("visibilitychange", onVis); removeEventListener("resize", onRs); io?.disconnect(); layer.remove(); }; }
 
+  // night out: a noren curtain (split cloth panels on a wooden rod) and two paper lanterns, line art in warm cream
+  const LANTERN = (id) => `<svg viewBox="0 0 80 128"><defs><radialGradient id="${id}" cx=".45" cy=".45" r=".6"><stop offset="0" stop-color="#FFD58A" stop-opacity=".85"/><stop offset=".7" stop-color="#FFB060" stop-opacity="0"/></radialGradient></defs>
+    <path d="M40 0v16" stroke="#E8D3A8" stroke-width="3" stroke-linecap="round"/><rect x="24" y="14" width="32" height="9" rx="3" fill="#1A1410" stroke="#E8D3A8" stroke-width="2.5"/>
+    <ellipse cx="40" cy="64" rx="36" ry="42" fill="#D9472F" stroke="#FFE2B0" stroke-width="3"/><ellipse cx="40" cy="64" rx="36" ry="42" fill="url(#${id})"/>
+    <path d="M6 44h68M4.5 56h71M4.5 70h71M7 84h66" stroke="#8F2617" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/><path d="M22 34q-8 14-6 30" stroke="#FFE7BF" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <rect x="24" y="103" width="32" height="9" rx="3" fill="#1A1410" stroke="#E8D3A8" stroke-width="2.5"/><path d="M40 112v14M34 116v10M46 116v10" stroke="#F2A44A" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+  function noren(w) { const n = Math.max(3, Math.min(9, Math.round(w / 120))), seg = w / n; let panels = "";
+    for (let i = 0; i < n; i++) { const x = i * seg + 3, pw = seg - 6, mid = i === Math.floor(n / 2);
+      panels += `<path d="M${x.toFixed(1)} 8h${pw.toFixed(1)}v38q0 6-6 6h-${(pw - 12).toFixed(1)}q-6 0-6-6z" fill="#26346F" stroke="#F1DFB8" stroke-width="2"/>`
+        + `<path d="M${(x + 8).toFixed(1)} 42h${(pw - 16).toFixed(1)}" stroke="#F1DFB8" stroke-width="1.6" stroke-dasharray="1 6" stroke-linecap="round"/>`
+        + (mid ? `<circle cx="${(x + pw / 2).toFixed(1)}" cy="27" r="10" fill="none" stroke="#F1DFB8" stroke-width="2.4"/><path d="M${(x + pw / 2 - 6).toFixed(1)} 28q3-4 6 0t6 0" fill="none" stroke="#F2A44A" stroke-width="2.4" stroke-linecap="round"/>` : ""); }
+    return `<svg class="lk-noren" viewBox="0 0 ${w.toFixed(0)} 54" preserveAspectRatio="none">${panels}<path d="M0 7h${w.toFixed(0)}" stroke="#B9874E" stroke-width="5" stroke-linecap="round"/></svg>`; }
+  let lid = 0;
+  function lanterns(host, { fixed = true } = {}) { css(); if (typeof document === "undefined") return () => {}; loadHand();
+    const box = document.createElement("div"); box.className = "lk-lant" + (fixed ? "" : " inbox"); box.setAttribute("aria-hidden", "true");
+    if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
+    const w = Math.max(320, Math.min(1600, fixed ? innerWidth : host.clientWidth || 360));
+    box.innerHTML = noren(w) + `<span class="lk-ch l">${LANTERN("lkLg" + ++lid)}</span><span class="lk-ch r">${LANTERN("lkLg" + ++lid)}</span>`;
+    host.prepend(box); return () => box.remove(); }
+  let hand = false; const loadHand = () => { if (hand || typeof document === "undefined") return; hand = true; const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap"; document.head.appendChild(l); };
+  // pixel sprites, drawn here (original): a star, a heart and a small clay pot, in the page's own ink and two accents
+  const SPRITES = [["...a...", "..aaa..", "aaaaaaa", ".aaaaa.", ".aa.aa.", "a.....a"], [".bb.bb.", "bbbbbbb", "bbbbbbb", ".bbbbb.", "..bbb..", "...b..."], ["..ccc..", ".c...c.", "..ccc..", ".ccccc.", "ccaaacc", ".ccccc.", "..ccc.."]];
+  const pxRects = (rows) => { const col = { a: "var(--lk-btn,#3A2E5C)", b: "#E0566B", c: "var(--lk-pix,#3A2E5C)" }; let o = ""; rows.forEach((r, y) => [...r].forEach((ch, x) => { if (col[ch]) o += `<rect x="${x}" y="${y}" width="1.02" height="1.02" style="fill:${col[ch]}"/>`; })); return o; };
   // string lights: a scalloped wire of small bulbs across the top that glow gently (CSS only, so it costs nothing to run)
   function lights(host, { fixed = true } = {}) { css(); const box = document.createElement("div"); box.className = "lk-lights" + (fixed ? " fixed" : ""); box.setAttribute("aria-hidden", "true");
     if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative";
@@ -194,17 +312,34 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
   async function fromFile(file) { const u = URL.createObjectURL(file); try { return await readImage(u); } finally { setTimeout(() => URL.revokeObjectURL(u), 2000); } }
 
   // ---------- Surprise me: a combo that suits the event ----------
-  const KINDS = [[/holiday market|christmas market|craft fair|makers market|winter market/, ["market", "velvet"]], [/holiday|christmas|xmas|winter|snow|hanukkah|new year|benefit|gala|fundrais/, ["winter", "velvet"]], [/sale|market|pop-?up|ceramic|pottery|clay/, ["velvet", "jazz", "garden"]],
+  const KINDS = [[/\b(game night|gaming|gamers?|lan party|board ?games?|d&d|dnd|tabletop|ttrpg|arcade|speedrun|retro|pixel|hackathon|hack night|demo night|coding|code|devs?|engineers?|engineering|tech|startup|founders?|ops|sre|meetup|linux|open source)\b/, ["terminal", "pixel"]], [/holiday market|christmas market|craft fair|makers market|winter market/, ["market", "velvet"]], [/holiday|christmas|xmas|winter|snow|hanukkah|new year|benefit|gala|fundrais/, ["winter", "velvet"]], [/sale|market|pop-?up|ceramic|pottery|clay/, ["velvet", "jazz", "garden"]],
     [/dinner|supper|wine|cocktail|izakaya|sake|bar\b|omakase|tasting|date night/, ["velvet", "night", "garden"]], [/workshop|class|craft|paint|draw|sew|knit|zine|print|stitch/, ["jazz", "garden"]],
     [/flower|floral|bouquet|garden|picnic|plant|tea\b|matcha|brunch/, ["flower", "garden"]], [/jazz|music|band|gig|show|open mic|poetry|record|vinyl|film|movie/, ["jazz", "night"]],
     [/party|birthday|dance|club|karaoke|night out|drinks/, ["night", "garden"]], [/run|hike|walk|bike|swim|yoga/, ["garden", "winter"]]];
-  const FX_FOR = { market: ["twinkle", "sparkles"], winter: ["snow", "stars"], velvet: ["velvet", "sparkles"], night: ["velvet", "stars"], jazz: ["paper", "none"], garden: ["sparkles", "petals"], flower: ["petals", "sparkles"] };
+  // what goes with each vibe: a second palette or two in the same family, and effects, fonts and button emoji that suit it.
+  // Surprise me rolls one of each, so the result is random but never a clash (a snowflake on a garden party, say).
+  const MOODS = {
+    garden: { pal: [["#C8E3C0", "#2F5D3A", "#F2B5C4"], ["#E9F1D6", "#3E6B48", "#E98973"]], fx: ["sparkles", "petals", "none"], font: ["rounded", "script", "serif"], em: ["🌿", "🌷", "🌸", "🙌"] },
+    jazz: { pal: [["#E8DCC4", "#2B211C", "#B8452F"], ["#1F2A2E", "#E7B75F", "#F4E9D8"]], fx: ["paper", "none", "stars"], font: ["bold", "typewriter", "serif"], em: ["🎷", "🎶", "🍷", "🥂"] },
+    winter: { pal: [["#DCE8F5", "#1E4E86", "#D94357"], ["#E9EEF4", "#2E3F66", "#C2553A"]], fx: ["snow", "stars", "sparkles"], font: ["clean", "serif", "rounded"], em: ["❄️", "⛄", "🎁", "🕯️"] },
+    velvet: { pal: [["#4B0F24", "#F2C46D", "#F4D7C8"], ["#2E1A3A", "#E8B4C8", "#F2C46D"]], fx: ["velvet", "sparkles", "twinkle"], font: ["serif", "script"], em: ["🏺", "🍷", "✨", "🕯️"] },
+    flower: { pal: [["#FBE3E8", "#7A2E45", "#5E8C61"], ["#F1EAF7", "#4A2F6B", "#E98973"]], fx: ["petals", "sparkles", "none"], font: ["script", "serif", "rounded"], em: ["💐", "🌷", "🌸", "🌿"] },
+    night: { pal: [["#1B1530", "#F2A44A", "#E26D8E"], ["#0F2230", "#F2C46D", "#E5533D"]], fx: ["lanterns", "stars", "twinkle"], font: ["bold", "rounded", "typewriter"], em: ["🏮", "🍜", "🍸", "🔥"] },
+    market: { pal: [["#1F3D30", "#E8C26A", "#F6EBD9"], ["#5A0F1E", "#F2D48F", "#F6EBD9"]], fx: ["twinkle", "sparkles", "snow"], font: ["bold", "serif", "rounded"], em: ["🎄", "🎁", "🍵", "✨"] },
+    terminal: { pal: [["#101418", "#F2B84B", "#7CF29A"], ["#14121C", "#9FB7FF", "#F2B84B"]], fx: ["scanlines", "none", "stars"], font: ["mono", "typewriter"], em: ["💻", "👾", "🕹️", "✨"] },
+    pixel: { pal: [["#E9F1DC", "#24324A", "#E0566B"], ["#F6E7D3", "#2E2442", "#3E9C6E"]], fx: ["pixels", "none", "confetti"], font: ["pixel", "mono"], em: ["👾", "🎮", "🕹️", "🎲"] },
+    cards: { pal: [["#FBEFF2", "#3A2A55", "#E26D8E"], ["#EEF6F0", "#22433A", "#E0A030"]], fx: ["none", "confetti", "sparkles"], font: ["rounded", "clean", "bold"], em: ["✨", "🎉", "❤️", "🙌"] },
+  };
+  const FX_FOR = Object.fromEntries(Object.entries(MOODS).map(([k, m]) => [k, m.fx]));
+  const pickOf = (L) => L[(Math.random() * L.length) | 0];
   function surprise(e, { keepPalette = null, avoid = "" } = {}) { const txt = `${e?.activity || ""} ${e?.name || ""} ${e?.pubTitle || ""} ${e?.concept || ""} ${e?.kind || ""}`.toLowerCase();
-    const opts = (KINDS.find(([re]) => re.test(txt)) || [null, Object.keys(VIBES)])[1], pool = opts.length > 1 ? opts.filter((v) => v !== avoid) : opts, v = pool[(Math.random() * pool.length) | 0], base = VIBES[v].look;
-    const fx = FX_FOR[v], L = { ...base, vibe: v, effect: Math.random() < 0.75 ? base.effect : fx[(Math.random() * fx.length) | 0] };
+    const opts = (KINDS.find(([re]) => re.test(txt)) || [null, Object.keys(VIBES)])[1], pool = opts.length > 1 ? opts.filter((v) => v !== avoid) : opts, v = pickOf(pool), base = VIBES[v].look, M = MOODS[v];
+    // the vibe's own palette most of the time, else one of its cousins; then an effect, a title font and an emoji from what suits it
+    const L = { ...base, vibe: v, palette: Math.random() < 0.55 ? base.palette : pickOf(M.pal), effect: Math.random() < 0.5 ? base.effect : pickOf(M.fx), titleFont: Math.random() < 0.5 ? base.titleFont : pickOf(M.font), buttonEmoji: Math.random() < 0.5 ? base.buttonEmoji : pickOf(M.em) };
+    if (!base.coverStyle) delete L.coverStyle;
     // with a flyer: its own colours, or now and then a page that contrasts with it (a dark flyer can get a dark page)
     if (keepPalette && keepPalette.length) { L.palette = Math.random() < 0.4 && C ? [C.contrastPage(keepPalette[0]), ...keepPalette.slice(1, 3)] : keepPalette.slice(0, 3); delete L.vibe; }
     if (e?.approvalRequired) L.buttonLabel = "Ask to join"; return L; }
 
-  window.EncoreLooks = { countFor, lights, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
+  window.EncoreLooks = { countFor, lights, lanterns, decorate, STICKERS, stickerSVG, stickersHTML, cleanStickers, MAX_STICKERS, DECK, cornerWord, MOODS, updateHTML, EFFECTS, FONTS, SWATCHES, LABELS, EMOJI, VIBES, has, fitOf, colors, buttonText, coverHTML, apply, effect, loadFont, fromFile, readImage, surprise, lookOf, safeSrc, css };
 })();

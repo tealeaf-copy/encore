@@ -24,10 +24,12 @@ const URL_OK = (u) => !u || /^https:\/\/[^\s<>"]{3,300}$/i.test(u);
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 // Storefront choices: curated, so every page looks good and stays readable.
 export const STORE = {
-  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30"],
+  accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30", "#26346F"],
   fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold", "florist"],
   backgrounds: ["cream", "white", "blush", "sage", "night", "petal"],
-  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning"],
+  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning", "noren"],
+  // how the page is laid out (public/storefront.js LAYOUTS): "classic" is the page as it has always been
+  layouts: ["classic", "window", "zine", "cards", "menu", "stall"],
   buttons: ["round", "soft", "square"],
   avatars: ["", "florist", "straight", "bob", "pixie", "bun", "ponytail", "curls", "waves", "afro", "braids", "locs", "hijab", "headwrap", "beanie", "beard", "shaved", "chef", "runner", "barista", "baker", "glasses", "hiker"],
 };
@@ -37,8 +39,8 @@ const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
 // parts after the style: skin, hair, eyes, nose, mouth, extra (each a small number; see public/avatars.js)
 const AVATAR_PARTS = [6, 6, 6, 4, 5, 7];
 const avatarOk = (v) => { if (typeof v !== "string" || !/^[a-z]*(~\d){0,6}$/.test(v)) return false; const [style, ...n] = v.split("~"); return STORE.avatars.includes(style) && n.every((x, i) => +x < AVATAR_PARTS[i]); };
-function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
-  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
+export function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), layout: pick("layout", STORE.layouts), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
 // Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
 function cleanGifts(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 16),

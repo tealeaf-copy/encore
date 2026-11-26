@@ -20,7 +20,10 @@
     if (!A) return "#FDE6A6"; const e = { id: c.art?.id || c.key, title: c.title, name: c.title, activity: c.art?.activity || "" }; return A.PASTELS[c.art?.coverArt?.tone] || A.PASTELS[A.toneOf(e, c.art?.coverArt?.kind || A.kindOf(e))] || "#FDE6A6"; }
   const dark = (hex) => { const n = parseInt(String(hex).slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 110; };
   function media(c) { const img = safeImg(c.img); if (img) return `<img src="${esc(img)}" alt="" decoding="async">`; const A = window.EventArt;
-    return A ? A.cover({ id: c.art?.id || c.key, title: c.title, name: c.title, activity: c.art?.activity || "", coverArt: c.art?.coverArt || undefined }, { title: "", label: "" }) : `<span class="sd-fb" aria-hidden="true">✨</span>`; }
+    // one chubby drawing of the event's own kind, big in the middle of the card (the Card deck look in looks.js draws it the same way)
+    const e = { id: c.art?.id || c.key, title: c.title, name: c.title, activity: c.art?.activity || "", coverArt: c.art?.coverArt || undefined };
+    if (!A) return `<span class="sd-fb" aria-hidden="true">✨</span>`; let k = ""; try { k = String((A.valid?.(e.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e)).split("+")[0]; } catch {}
+    return A.cover(e, k ? { title: "", label: "", kind: k, exact: true } : { title: "", label: "" }); }
   function avatar(h) { if (!h) return ""; const u = /^\/(?:_blob\/[A-Za-z0-9]{20}|presets\/[a-z0-9-]+\.(?:svg|jpg|png))$/.test(h.avatarUrl || "") ? h.avatarUrl : "";
     const inner = u ? `<img src="${esc(u)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.color || "#E26D8E", 30) : esc(h.emoji || "🙂"); return `<span class="sd-av" style="--c:${esc(h.color || "#E26D8E")}" aria-hidden="true">${inner}</span>`; }
   const meta = (c) => [c.kind === "event" ? [dayOf(c.when), t12(c.startTime)].filter(Boolean).join(" · ") : "", c.where, c.price].filter(Boolean).join(" · ");
@@ -29,10 +32,11 @@
   const DECK = ["#EEF0B4", "#DCC3EC", "#BFE4EA", "#C8EBCF", "#F6CBD5", "#F8DDB8"];
   function corner(c) { const A = window.EventArt; let w = "";
     try { if (A && c.kind !== "host") { const e = { id: c.art?.id || c.key, title: c.title, name: c.title, activity: c.art?.activity || "" }; w = A.labelOf(c.art?.coverArt?.kind || A.kindOf(e), e) || ""; } } catch {}
-    return String(w || (c.kind === "idea" ? "Idea" : c.kind === "host" ? "Host" : "Event")).replace(/[^\p{L}\p{N}&' -]/gu, "").trim().slice(0, 14); }
-  function cardHTML(c, i) { const bg = safeImg(c.img) ? tint(c) : DECK[i % DECK.length], d = safeImg(c.img) && dark(bg), cw = esc(corner(c));
+    return String(w || (c.kind === "idea" ? "Idea" : c.kind === "host" ? "Host" : "Event")).replace(/[^\p{L}\p{N}&' -]/gu, "").trim().split(/\s+/).reduce((o, x) => (!o || (o + " " + x).length <= 14 ? (o ? o + " " + x : x) : o), "").slice(0, 14); }
+  // owner feedback: only the top-left word, and only on drawn cards (no upside-down copy, no "Host" on photo cards)
+  function cardHTML(c, i) { const ph = !!safeImg(c.img), bg = ph ? tint(c) : DECK[i % DECK.length], d = ph && dark(bg), cw = ph || c.kind === "host" ? "" : esc(corner(c));
     return `<article class="sd-card${d ? " dark" : ""}" data-i="${i}" style="--bg:${bg}" aria-label="${esc(c.title)}">
-      <span class="sd-corner" aria-hidden="true">${cw}</span><span class="sd-corner b" aria-hidden="true">${cw}</span><div class="sd-media${safeImg(c.img) ? " ph" : " art"}">${media(c)}<span class="sd-stamp yes" aria-hidden="true">I'm in</span><span class="sd-stamp no" aria-hidden="true">Pass</span>${c.badge ? `<span class="sd-badge${c.example ? " ex" : ""}">${esc(c.badge)}</span>` : ""}</div>
+      ${cw ? `<span class="sd-corner" aria-hidden="true">${cw}</span>` : ""}<div class="sd-media${safeImg(c.img) ? " ph" : " art"}">${media(c)}<span class="sd-stamp yes" aria-hidden="true">I'm in</span><span class="sd-stamp no" aria-hidden="true">Pass</span>${c.badge ? `<span class="sd-badge${c.example ? " ex" : ""}">${esc(c.badge)}</span>` : ""}</div>
       <div class="sd-body"><p class="sd-host">${hostLine(c)}</p><h3>${esc(c.title)}</h3>${meta(c) ? `<p class="sd-meta">${esc(meta(c))}</p>` : ""}${c.line && c.kind !== "event" ? `<p class="sd-line">${esc(c.line)}</p>` : c.going ? `<p class="sd-line">${esc(c.going)} in so far</p>` : ""}</div></article>`; }
 
   const CSS = `.sd{position:fixed;inset:0;z-index:2147482990;background:#F7F1E8;color:#1F1A17;font:16px/1.45 "Instrument Sans",system-ui,sans-serif;display:flex;justify-content:center;overflow:hidden;animation:sdIn .3s ease}
@@ -48,9 +52,9 @@
 .sd-card[data-pos="1"]{transform:translateY(10px) scale(.96) rotate(1.6deg);z-index:2}.sd-card[data-pos="2"]{transform:translateY(18px) scale(.92) rotate(-1.8deg);z-index:1}.sd-card[data-pos="0"]{z-index:3;cursor:grab}.sd-card[data-pos="h"]{opacity:0;pointer-events:none;transform:scale(.88)}
 .sd-card.drag{transition:none;cursor:grabbing}.sd-card.drag .sd-badge{opacity:0}
 .sd-media{position:relative;flex:1;min-height:0;margin:10px 10px 0;border:2.5px solid #1F1A17;border-radius:16px;overflow:hidden;background:#fff}.sd-media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}.sd-media .ea-cover{border-radius:13px}
-.sd-corner{position:absolute;left:20px;top:16px;z-index:3;font:700 15px/1 "Instrument Sans",system-ui;letter-spacing:.24em;text-transform:uppercase;color:#1F1A17;pointer-events:none}.sd-corner.b{left:auto;top:auto;right:20px;bottom:16px;transform:rotate(180deg)}.sd-card.dark .sd-corner{color:#FFF8EE}
-.sd-media.art{margin:44px 14px 0;border:0;background:transparent}.sd-media.art .ea-cover{background:transparent!important;border-radius:0}.sd-media.art .ea-cover .ea-txt{display:none}
-.sd-media.ph{margin-top:42px}.sd-body{padding-bottom:38px!important}
+.sd-corner{position:absolute;left:20px;top:16px;z-index:3;font:700 15px/1 "Instrument Sans",system-ui;letter-spacing:.24em;text-transform:uppercase;color:#1F1A17;pointer-events:none}.sd-card.dark .sd-corner{color:#FFF8EE}
+.sd-media.art{margin:40px 8px 0;border:0;background:transparent}.sd-media.art .ea-cover{background:transparent!important;border-radius:0}.sd-media.art .ea-cover .ea-txt{display:none}
+.sd-media.art .ea-art{inset:0 2% 2%!important;width:auto!important;height:auto!important;max-width:none!important;justify-content:center!important;align-items:center!important}.sd-media.art .ea-art svg{width:100%!important;height:100%!important;max-width:none!important;overflow:visible}.sd-media.art .ea-art svg [stroke-width]{stroke-width:6px}
 .sd-fb{position:absolute;inset:0;display:grid;place-items:center;font-size:64px}
 .sd-badge{position:absolute;right:10px;top:12px;z-index:3;font:700 13px/1 "Instrument Sans",system-ui;padding:7px 11px;border-radius:999px;background:#F2D48F;border:2px solid #1F1A17;box-shadow:2px 2px 0 #1F1A17;transform:rotate(4deg)}.sd-badge.ex{background:#fff;color:#5A4E45}
 .sd-stamp{position:absolute;top:22px;z-index:4;font:700 30px/1 Fredoka,system-ui;letter-spacing:.02em;padding:6px 14px;border:4px solid currentColor;border-radius:12px;background:rgba(255,255,255,.88);opacity:0;pointer-events:none}

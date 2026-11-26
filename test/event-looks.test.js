@@ -78,7 +78,7 @@ test("the page offers what the server keeps, and the reply button keeps Ask to j
   const { LK, S } = browser();
   assert.deepEqual(plain(LK.EFFECTS.map(([k]) => k)), LOOK.effects); assert.deepEqual(plain(Object.keys(LK.FONTS)), LOOK.titleFonts);
   assert.deepEqual(plain(LK.LABELS), LOOK.buttonLabels); assert.deepEqual(plain(LK.EMOJI), LOOK.buttonEmoji); assert.deepEqual(plain(Object.keys(LK.VIBES)), LOOK.vibes);
-  assert.equal(LK.EMOJI.length, 24);
+  assert.equal(LK.EMOJI.length, 29); // round 11 added five for gamers and engineers
   for (const [k, v] of Object.entries(LK.VIBES)) assert.deepEqual(cleanLook(plain({ ...v.look, vibe: k })), plain({ ...v.look, vibe: k }), `${k} saves as it is`);
   // Flower shop is the host page's Flower shop look
   assert.equal(LK.VIBES.flower.look.palette[0], S.BGS[S.LOOKS.florist.set.bg].bg.toUpperCase()); assert.equal(LK.VIBES.flower.look.palette[1], S.LOOKS.florist.set.accent);

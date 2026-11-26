@@ -72,6 +72,7 @@ import { emailConfig, publicEmailConfig, sendEmail, verifyEmailKey, EMAIL_SERVIC
 import { runReminders } from "./reminders.js";
 import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from "./metrics.js";
 import { mountMcp } from "./mcp.js";
+import { mountMap } from "./map.js"; // the map view (/map) and its geodata (server/geo.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
@@ -786,6 +787,7 @@ export function createApp({ store, dataDir }) {
   mountPotto(app, { store, express, currentUser, C, X }); // Ask Potto (server/potto.js)
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
+  mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).
@@ -1143,6 +1145,8 @@ export function createApp({ store, dataDir }) {
   // When a saved event's cost or commitments move more than 5% from what was approved, the server clears the approvals.
   function afterEventWrite(st, p) {
     const m = /^events\/([A-Za-z0-9_-]+)$/.exec(p); if (!m) return;
+    // the map: look up the place a host just saved (neighbourhood and city only, unless marked public; server/geo.js)
+    if (st.ws && st.ws !== DEFAULT_WS) try { const evG = st.get(p)?.data; if (evG) app.locals.geo?.onEventWrite(evG, C.profileOf(st.ws)); } catch {}
     if (st.ws && st.ws !== DEFAULT_WS) X.onEventChange(st.ws, m[1], process.env.ENCORE_PUBLIC_URL || "").catch(() => {});
     const so = st.get("signoffs/" + m[1]), evN = st.get(p);
     if (so && evN) { const nowM = eventMoney(evN.data); let changed = false;

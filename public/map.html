@@ -1,0 +1,352 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Map · Pottery Lab</title>
+<meta name="description" content="What's on near you, on a hand-drawn map: supper clubs, game nights, run clubs, workshops, drops and markets, hosted by people in your city.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/system.css" id="systemCss">
+<style>
+/* The map view (/map): a full-bleed map, filter pills over it, a bottom sheet with the list (peek, half, full) on phones
+   and the list on the right on desktop. The map itself is public/map.js; the pins are public/pins.js; the plain logic
+   (filters, distances, the sheet's snap points) is public/mapcore.js. */
+/* Field Notes values for the tokens this page reads; system.css carries the same once the Field Notes rollout lands */
+:root{--pl-page:#EFEBE2;--pl-surface:#FAF8F3;--pl-raised:#E6E1D5;--pl-ink:#1B1D1C;--pl-soft:#444845;--pl-line:#CFC8B9;--pl-accent:#29489A;--pl-accent-press:#1F3878;--pl-accent-soft:#E3E8F4;--pl-sand:#F3E7A8;--pl-sand-soft:#F7EFCB;--pl-highlight:#F2DD6B;--pl-tomato:#C2431F;--pl-moss:#56683F;
+  --pl-font-text:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--pl-font-serif:"IBM Plex Serif",Georgia,serif;--pl-font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;--pl-r-sm:6px;
+  --m-ink:var(--pl-ink);--m-paper:var(--pl-page);--m-card:var(--pl-surface);--m-rule:1px dashed var(--pl-line);--m-line:1.5px solid var(--pl-ink);--m-hl:var(--pl-highlight);--m-r:6px;
+  --shown:176px;--full:calc(100dvh - 64px);--top:calc(env(safe-area-inset-top) + 10px)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body.mv{margin:0;overflow:hidden;background:var(--m-paper);color:var(--m-ink);font:15px/1.45 var(--pl-font-text);-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+a{color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.kick{font:500 11px/1.3 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase}
+:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+
+/* ---- the map and what floats over it ---- */
+#stage{position:fixed;inset:0}
+#map{position:absolute;inset:0;background:var(--m-paper) repeating-linear-gradient(0deg,transparent 0 31px,rgba(207,200,185,.45) 31px 32px)}
+#map .maplibregl-ctrl-attrib{font:11px var(--pl-font-text);background:rgba(250,248,243,.85)}
+#map .maplibregl-ctrl-bottom-left{bottom:calc(var(--shown) + 4px)}
+.plmap-mk{all:unset;cursor:pointer;display:block;-webkit-tap-highlight-color:transparent}
+.plmap-mk:focus-visible .plpin-disc{outline:2px solid var(--pl-accent);outline-offset:2px}
+.plmap-you{display:block;width:16px;height:16px;border-radius:50%;background:var(--pl-accent);border:3px solid #fff;outline:1.5px solid var(--pl-accent)}
+.top{position:absolute;z-index:20;top:var(--top);left:12px;right:0;display:flex;gap:8px;align-items:flex-start}
+.ib{flex:none;width:44px;height:44px;display:grid;place-items:center;background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);cursor:pointer;text-decoration:none;color:var(--m-ink)}
+.ib svg{width:20px;height:20px}
+.pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 12px 6px 2px;min-width:0}.pills::-webkit-scrollbar{display:none}
+.pill{flex:none;display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 12px;background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.pill .car{width:10px;height:10px;opacity:.7}
+.pill.on,.pill[aria-expanded=true]{background:var(--m-ink);color:var(--m-card)}.pill.on .vdots i,.pill[aria-expanded=true] .vdots i{border-color:var(--m-card)}
+.pill.mine{gap:7px}.pill.mine svg{width:16px;height:16px}.pill.mine.on svg path{stroke:var(--m-card)}
+.vdots{display:inline-flex}.vdots i{width:11px;height:11px;border-radius:50%;background:var(--v);border:1.5px solid var(--m-ink);margin-left:-3px}.vdots i:first-child{margin-left:0}
+.locate{position:absolute;z-index:20;right:12px;bottom:calc(var(--shown) + 14px);transition:bottom .28s cubic-bezier(.2,.8,.2,1)}
+.locate[aria-busy=true] svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+body[data-snap=full] .locate{opacity:0;pointer-events:none}
+.zoomhint{position:absolute;z-index:19;left:50%;top:calc(var(--top) + 54px);transform:translateX(-50%);background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);padding:6px 12px;font-size:13px;white-space:nowrap}
+
+/* ---- filter menus ---- */
+.menu{position:absolute;z-index:40;min-width:220px;max-width:calc(100vw - 24px);background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);padding:6px}
+.menu .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 8px;border-bottom:var(--m-rule);margin-bottom:4px}
+.menu .mh b{font:600 14px var(--pl-font-text)}
+.menu .opt{display:flex;width:100%;align-items:center;gap:10px;min-height:44px;padding:0 10px;background:none;border:0;border-radius:4px;text-align:left;cursor:pointer;font-size:15px}
+.menu .opt:hover{background:var(--pl-sand-soft)}
+.menu .opt .ck{width:18px;height:18px;flex:none;border:1.5px solid var(--m-ink);border-radius:50%;display:grid;place-items:center}
+.menu .opt[aria-checked=true] .ck{background:var(--m-ink)}.menu .opt[aria-checked=true] .ck::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--m-card)}
+.menu.multi .opt .ck{border-radius:4px}.menu.multi .opt[aria-checked=true] .ck::after{width:9px;height:5px;border-radius:0;background:none;border:2px solid var(--m-card);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.menu .opt small{display:block;color:var(--pl-soft);font-size:13px}
+.menu .opt[aria-disabled=true]{opacity:.55;cursor:default}
+.menu .link{background:none;border:0;padding:6px 4px;font-size:14px;color:var(--pl-accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.vchips{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px}
+.vchip{display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 10px 4px 6px;background:var(--m-paper);border:1.5px solid var(--pl-line);border-radius:var(--m-r);cursor:pointer;text-align:left;font-size:14px;line-height:1.2}
+.vchip svg{flex:none}.vchip[aria-pressed=true]{border-color:var(--m-ink);background:var(--pl-sand-soft);box-shadow:inset 0 -6px 0 var(--m-hl)}
+.menu .foot{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 4px;border-top:var(--m-rule);margin-top:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--m-r);border:1.5px solid var(--pl-accent);background:var(--pl-accent);color:#fff;font:600 15px var(--pl-font-text);cursor:pointer;text-decoration:none}
+.btn.ghost{background:var(--m-card);color:var(--m-ink);border-color:var(--m-ink)}
+
+/* ---- the sheet ---- */
+.sheet{position:fixed;z-index:30;left:0;right:0;bottom:0;height:var(--full);transform:translateY(calc(var(--full) - var(--shown)));background:var(--m-card);border-top:var(--m-line);border-radius:var(--m-r) var(--m-r) 0 0;display:flex;flex-direction:column;will-change:transform}
+.sheet.anim{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.grab{flex:none;display:block;width:100%;padding:9px 0 5px;background:none;border:0;cursor:grab;touch-action:none}
+.grab span{display:block;width:40px;height:4px;margin:0 auto;border-radius:2px;background:var(--m-ink);opacity:.35}
+.sh-head{flex:none;padding:0 16px 2px;touch-action:none;display:flex;flex-direction:column;gap:3px}
+.sh-head h1{margin:0;font:600 19px/1.25 var(--pl-font-serif);letter-spacing:-.01em}
+.sh-head h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sh-head h1 em{font-style:normal;color:inherit;background:linear-gradient(transparent 58%,var(--m-hl) 58%,var(--m-hl) 92%,transparent 92%)}
+.sh-head .kick{color:var(--pl-soft);white-space:nowrap}
+.cats{flex:none;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 16px 12px;border-bottom:var(--m-rule)}.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 12px 0 9px;background:var(--m-paper);border:1.5px solid var(--m-ink);border-radius:var(--m-r);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
+.cat svg path,.cat svg circle{transition:stroke .15s}
+.cat[aria-pressed=true]{background:var(--m-ink);color:var(--m-card)}.cat[aria-pressed=true] svg path{stroke:var(--m-card)}.cat[aria-pressed=true] svg circle{fill:var(--m-card)}
+.list{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 0 calc(24px + env(safe-area-inset-bottom))}
+.rows{list-style:none;margin:0;padding:0}
+.row{position:relative;display:grid;grid-template-columns:84px minmax(0,1fr) 44px;gap:12px;padding:12px 12px 12px 16px;border-bottom:var(--m-rule);cursor:pointer}
+@media (hover:hover){.row:hover{background:color-mix(in srgb,var(--pl-sand-soft) 60%,transparent)}}
+.row.sel{background:var(--pl-sand-soft)}.row.sel::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;background:var(--m-hl);border-radius:0 2px 2px 0}
+.thumb{position:relative;width:84px;height:84px;border:var(--m-line);border-radius:var(--m-r);overflow:hidden;background:var(--m-paper)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .note{position:absolute;inset:0;display:grid;place-items:center;background:var(--m-paper) repeating-linear-gradient(0deg,transparent 0 13px,rgba(207,200,185,.7) 13px 14px)}
+.thumb .note svg{transform:rotate(-6deg)}
+.dist{position:absolute;left:4px;bottom:4px;padding:2px 5px;background:var(--m-card);border:1px solid var(--m-ink);border-radius:4px;font:500 11px/1.2 var(--pl-font-mono)}
+.body{min-width:0;display:grid;gap:2px;align-content:start}
+.body .kick{display:flex;align-items:center;gap:6px;color:var(--pl-soft)}
+.vd{width:9px;height:9px;flex:none;border-radius:50%;background:var(--v);border:1.2px solid var(--m-ink)}
+.ttl{font:600 17px/1.25 var(--pl-font-serif);letter-spacing:-.005em;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ttl:hover{text-decoration:underline;text-underline-offset:3px}
+.hood{margin:0;font-size:13px;color:var(--pl-soft)}
+.by{margin:2px 0 0;display:flex;align-items:center;gap:6px;font-size:13px;min-width:0}.by b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{flex:none;width:22px;height:22px;border-radius:50%;border:1.2px solid var(--m-ink);overflow:hidden;display:grid;place-items:center;background:#fff;font:600 11px var(--pl-font-text)}
+.av svg{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}
+.proof{margin:2px 0 0;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--pl-soft)}
+.stack{display:inline-flex}.stack .av{width:18px;height:18px;margin-left:-6px;font-size:9px}.stack .av:first-child{margin-left:0}
+.tag{display:inline-block;margin-left:4px;padding:0 5px;border:1px dashed var(--pl-soft);border-radius:4px;font:500 10px/16px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+.save{align-self:start;justify-self:end}
+.mv .mv-save.pls-btn{width:44px;height:44px;min-width:44px;padding:0;justify-content:center;border:1.5px solid var(--m-ink);border-radius:var(--m-r);background:var(--m-card)}
+.mv .mv-save.pls-btn svg{width:20px;height:20px}.mv .mv-save .pls-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.mv .mv-save.pls-btn svg path{fill:var(--m-card);stroke:var(--m-ink);stroke-width:1.8}
+.mv .mv-save.pls-btn[aria-pressed=true]{background:var(--pl-sand-soft)}.mv .mv-save.pls-btn[aria-pressed=true] svg path{fill:var(--m-hl)}
+.empty{margin:20px 16px;padding:16px;border:1.5px dashed var(--pl-line);border-radius:var(--m-r);font-size:15px}
+.empty p{margin:0 0 10px}.empty .art{float:right;margin:-4px 0 6px 10px}
+.hoodh{margin:0;padding:18px 16px 6px;font:600 13px var(--pl-font-mono);letter-spacing:.06em;text-transform:uppercase;border-bottom:1.5px solid var(--m-ink);display:flex;justify-content:space-between}
+.legend{margin:14px 16px 0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--pl-soft)}.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .ring{width:14px;height:14px;border-radius:50%;border:1.3px dashed var(--m-ink);background:rgba(41,72,154,.08)}
+.legend .stk{width:14px;height:14px;border-radius:50%;background:var(--m-card);box-shadow:0 0 0 2px #fff,0 0 0 3.3px var(--m-ink)}
+
+/* ---- the selected pin's card ---- */
+.pcard{position:absolute;z-index:25;left:12px;right:12px;bottom:calc(var(--shown) + 12px);display:grid;grid-template-columns:64px minmax(0,1fr) 44px;gap:10px;padding:10px;background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);transition:bottom .28s cubic-bezier(.2,.8,.2,1)}
+.pcard[hidden]{display:none}
+.pcard .thumb{width:64px;height:64px}
+.pcard .ttl{font-size:16px}
+.pcard .where{margin:3px 0 0;font-size:12px;color:var(--pl-soft);display:flex;gap:6px;align-items:flex-start}.pcard .where i{flex:none;margin-top:2px;width:12px;height:12px;border-radius:50%;border:1.2px dashed var(--m-ink)}
+.pcard .go{grid-column:2/-1;display:flex;gap:8px;align-items:center;margin-top:2px}.pcard .go .btn{min-height:40px;padding:0 14px;font-size:14px}
+.pcard .x{position:absolute;top:-14px;right:-6px;width:30px;height:30px;border-radius:50%;background:var(--m-card);border:var(--m-line);display:grid;place-items:center;cursor:pointer;padding:0}
+
+/* ---- the map couldn't load: the list by neighbourhood ---- */
+body.nomap{overflow:auto}
+.nomap #stage{position:static;height:auto}.nomap #map,.nomap .locate,.nomap .pcard,.nomap body[data-snap=full] .locate{opacity:0;pointer-events:none}
+.zoomhint{display:none!important}
+.nomap .top{position:sticky;top:0;left:0;padding:var(--top) 0 8px 12px;background:var(--m-paper);border-bottom:var(--m-rule)}
+.nomap .sheet{position:static;transform:none!important;height:auto;border:0;border-radius:0;background:var(--m-paper)}
+.nomap .grab{display:none}.nomap .list{overflow:visible}.nomap .sh-head{padding-top:14px}
+.quiet{margin:12px 16px 0;padding:12px 14px;border:1.5px dashed var(--pl-line);border-radius:var(--m-r);font-size:14px;color:var(--pl-soft);display:flex;gap:10px;align-items:flex-start}
+.quiet button{background:none;border:0;padding:0;color:var(--pl-accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:14px;white-space:nowrap}
+
+/* ---- first open: "Your city, drawn by hand" ---- */
+.intro{position:fixed;z-index:60;inset:0;display:grid;place-items:center;padding:16px;background:rgba(239,235,226,.72)}
+.intro[hidden]{display:none}
+.icard{width:min(380px,100%);background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);padding:18px 18px 16px;text-align:left}
+.icard .plmap-introart{display:block;width:100%;height:auto;margin:0 0 8px;border-bottom:var(--m-rule);padding-bottom:6px}
+.icard h2{margin:6px 0 6px;font:600 26px/1.15 var(--pl-font-serif);letter-spacing:-.015em}
+.icard p{margin:0 0 14px;font-size:15px;color:var(--pl-soft)}
+.icard .row2{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.icard small{font-size:12px;color:var(--pl-soft);display:flex;gap:6px;align-items:center}.icard small i{flex:none;width:12px;height:12px;border-radius:50%;border:1.2px dashed var(--m-ink);background:rgba(194,67,31,.1)}
+.pli-o{opacity:0;transform:translateY(6px);animation:pliIn .5s ease-out forwards}.pli-o:nth-of-type(2){animation-delay:.08s}.pli-o:nth-of-type(3){animation-delay:.16s}.pli-o:nth-of-type(4){animation-delay:.24s}.pli-o:nth-of-type(5){animation-delay:.32s}.pli-o:nth-of-type(6){animation-delay:.4s}
+.pli-route{stroke-dashoffset:60;animation:pliRoute 1.4s ease-out forwards}
+@keyframes pliIn{to{opacity:1;transform:none}}@keyframes pliRoute{to{stroke-dashoffset:0}}
+.toast{position:fixed;z-index:70;left:50%;top:calc(var(--top) + 56px);transform:translateX(-50%);width:min(360px,calc(100vw - 24px));background:var(--m-card);border:var(--m-line);border-radius:var(--m-r);padding:10px 12px;font-size:14px}
+
+/* ---- desktop: the map on the left, the list on the right ---- */
+@media (min-width:900px){
+  :root{--shown:0px}
+  #stage{right:440px}
+  .sheet{top:0;left:auto;right:0;width:440px;height:100dvh;transform:none!important;border-top:0;border-left:var(--m-line);border-radius:0}
+  .grab{display:none}.sh-head{padding-top:20px}.sh-head h1{font-size:22px}
+  .locate{bottom:24px}.pcard{left:16px;right:auto;width:380px;bottom:24px}
+  #map .maplibregl-ctrl-bottom-left{bottom:0}
+  .nomap .sheet{width:auto}.nomap .rows{max-width:760px}
+}
+@media (prefers-reduced-motion:reduce){.sheet.anim,.locate,.pcard{transition:none}.pli-o,.pli-route{animation:none;opacity:1;transform:none;stroke-dashoffset:0}}
+</style>
+</head><body class="mv">
+<div id="stage">
+  <div id="map" role="region" aria-label="Map of events"></div>
+  <div class="top">
+    <a class="ib" id="back" href="/discover" aria-label="Back to the list"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <div class="pills" role="toolbar" aria-label="Filters">
+      <button type="button" class="pill" id="pWho" aria-haspopup="true" aria-expanded="false" data-menu="who"><span>Everyone</span><svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button type="button" class="pill" id="pVibe" aria-haspopup="true" aria-expanded="false" data-menu="vibe" aria-label="Vibe"><span class="vdots" aria-hidden="true"></span><span>Vibe</span></button>
+      <button type="button" class="pill" id="pWhen" aria-haspopup="true" aria-expanded="false" data-menu="when"><span>When</span><svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button type="button" class="pill" id="pPrice" aria-haspopup="true" aria-expanded="false" data-menu="price"><span>Price</span><svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button type="button" class="pill mine" id="pMine" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5h8v13l-4-3.1-4 3.1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Your map</span></button>
+    </div>
+  </div>
+  <button type="button" class="ib locate" id="locate" aria-label="Show where I am"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="5.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="10" r="1.8" fill="currentColor"/><path d="M10 1.8v2.6M10 15.6v2.6M1.8 10h2.6M15.6 10h2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  <article class="pcard" id="pcard" hidden aria-live="polite"></article>
+</div>
+<section class="sheet" id="sheet" aria-label="Events" data-snap="peek">
+  <button type="button" class="grab" id="grab" aria-label="Show more of the list"><span></span></button>
+  <div class="sh-head" id="shHead"><h1 id="shTitle">Finding what's on</h1><span class="kick" id="shSub"></span></div>
+  <div class="cats" id="cats" role="group" aria-label="Categories"></div>
+  <div class="list" id="list"><div id="note"></div><ol class="rows" id="rows" aria-live="polite"></ol><div class="legend" id="legend"></div></div>
+</section>
+<div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-labelledby="introH"></div>
+<script src="/place.js"></script><script src="/avatars.js"></script><script src="/save.js"></script>
+<script src="/mapcore.js"></script><script src="/pins.js"></script><script src="/map.js"></script>
+<script>
+(function () {
+  const K = window.PLMapCore, PIN = window.PLPins, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const PRM = new URLSearchParams(location.search), LOCALE = navigator.language || "en-US", DESK = matchMedia("(min-width: 900px)"), REDUCE = matchMedia("(prefers-reduced-motion: reduce)");
+  const S = { data: null, extra: [], me: { signedIn: false, follows: [], friends: {}, went: [] }, f: K.EMPTY(), sel: "", you: null, view: null, map: null, nomap: false, snap: "peek" };
+  try { const v = JSON.parse(sessionStorage.getItem("pl.mapf") || "null"); if (v && typeof v === "object") S.f = { ...K.EMPTY(), ...v }; } catch {}
+  if (PRM.get("mine") === "1") S.f.mine = true;
+  const keep = () => { try { sessionStorage.setItem("pl.mapf", JSON.stringify(S.f)); } catch {} };
+  PIN.css(); window.PLSave?.css?.();
+
+  // ---------- data ----------
+  const savedIds = () => { try { return (window.PLSave?.items() || []).filter((i) => i.kind === "event").map((i) => i.ref); } catch { return []; } };
+  const all = () => { const seen = new Set(), L = []; for (const e of [...(S.data?.events || []), ...S.extra]) if (!seen.has(e.id)) { seen.add(e.id); L.push(e); } return L; };
+  const ctx = () => ({ today: K.today(), friends: S.me.friends || {}, follows: S.me.follows || [], saved: savedIds(), went: S.me.went || [] });
+  const origin = () => S.you || S.view || S.data?.center || null;
+  const byId = (id) => all().find((e) => e.id === id);
+  async function loadMine() { const want = [...new Set([...savedIds(), ...(S.me.went || [])])].filter((id) => !(S.data?.events || []).some((e) => e.id === id));
+    if (!want.length) { S.extra = []; return; } try { const j = await (await fetch("/api/public/map/places?ids=" + encodeURIComponent(want.slice(0, 100).join(",")))).json(); S.extra = j.events || []; } catch { S.extra = []; } }
+
+  // ---------- small drawings ----------
+  const hostAv = (h) => { if (!h) return ""; const a = h.avatarArt && window.EncoreAvatars?.valid(h.avatarArt) ? window.EncoreAvatars.svg(h.avatarArt, h.color || "#29489A", 22) : "";
+    return `<span class="av" style="${a ? "" : `background:color-mix(in srgb,${h.color || "#29489A"} 22%,#fff)`}">${a || esc((h.name || "?").trim().charAt(0).toUpperCase())}</span>`; };
+  const faceAv = (f) => { const a = f.art && window.EncoreAvatars?.ART?.[f.art] ? window.EncoreAvatars.svg(f.art, f.color || "#29489A", 18) : ""; return `<span class="av">${a}</span>`; };
+  const friendAv = (p) => `<span class="av" style="background:color-mix(in srgb,${/^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : "#29489A"} 25%,#fff)">${esc(String(p.name || "?").charAt(0).toUpperCase())}</span>`;
+  const thumb = (e, size = 84) => `<div class="thumb">${e.cover ? `<img src="${esc(e.cover)}" alt="" loading="lazy">` : `<div class="note">${PIN.object(e.vibe, Math.round(size * 0.58))}</div>`}${distOf(e) ? `<span class="dist">${esc(distOf(e))}</span>` : ""}</div>`;
+  const distOf = (e) => { const o = origin(); return o && e.geo ? K.formatDistance(K.distanceKm(o, e.geo), LOCALE) : ""; };
+  const kicker = (e) => [e.past ? "Went" : K.whenLabel(e.date, e.startTime, K.today()), e.tier === "free" ? "Free" : e.tier].filter(Boolean).join(" · ");
+  const saveBtn = (e) => { const on = window.PLSave?.isSaved("event", e.id); return `<button type="button" class="pls-btn pls-icon mv-save" data-pls-kind="event" data-pls-ref="${esc(e.id)}" data-pls-title="${esc(e.title)}" data-pls-img="${esc(e.cover || "")}" aria-pressed="${!!on}" aria-label="${on ? "Saved" : "Save"}: ${esc(e.title)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4.2-5.5 4.2z" stroke-linejoin="round"/></svg><span class="pls-t">${on ? "Saved" : "Save"}</span></button>`; };
+  const proof = (e) => { const fr = S.me.friends?.[e.id], line = K.proofLine(e, fr); if (!line) return "";
+    const faces = fr ? (fr.people || []).slice(0, 3).map(friendAv).join("") : (e.faces || []).filter((f) => f.art).slice(0, 3).map(faceAv).join("");
+    return `<p class="proof">${faces ? `<span class="stack" aria-hidden="true">${faces}</span>` : ""}<span>${esc(line)}</span></p>`; };
+  function row(e) { const v = K.vibe(e.vibe);
+    return `<li class="row${e.id === S.sel ? " sel" : ""}" data-id="${esc(e.id)}">${thumb(e)}<div class="body"><span class="kick"><i class="vd" style="--v:${v.color}" title="${esc(v.label)}"></i>${esc(kicker(e))}</span>
+      <a class="ttl" href="${esc(e.url)}">${esc(e.title)}</a><p class="hood">${esc(e.hood || e.city || "")}${e.sample ? `<span class="tag">Sample</span>` : ""}</p>
+      ${e.host ? `<p class="by">${hostAv(e.host)}<span>by <b>${esc(e.host.name)}</b></span></p>` : ""}${proof(e)}</div><div class="save">${saveBtn(e)}</div></li>`; }
+
+  // ---------- the list ----------
+  const visible = () => K.sortEvents(K.filterEvents(all(), S.f, ctx()), S.you); // nearest once we know where you are, else soonest
+  function drawHead(L) { const city = S.data?.city || "your city";
+    $("#shTitle").innerHTML = S.f.mine ? `<em>Your map</em>: ${L.length} ${L.length === 1 ? "spot" : "spots"}` : L.length ? `${L.length} ${L.length === 1 ? "thing" : "things"} on near <em>${esc(city)}</em>` : `Nothing on near ${esc(city)}`;
+    $("#shSub").textContent = S.nomap ? "Grouped by neighbourhood" : S.you ? "Distances from you" : "Distances from the map centre"; }
+  function drawCats() { $("#cats").innerHTML = K.CATS.map((c) => `<button type="button" class="cat" data-cat="${c.id}" aria-pressed="${S.f.cat === c.id}">${PIN.cat(c.id, 18)}<span>${c.label}</span></button>`).join(""); }
+  function drawList() { const L = visible(); drawHead(L);
+    const note = S.nomap ? `<p class="quiet"><span>The map didn't load, so here's everything by neighbourhood.</span><button type="button" id="retry">Try the map</button></p>` : "";
+    $("#note").innerHTML = note;
+    if (!L.length) { $("#rows").innerHTML = `<li class="empty">${S.f.mine ? `<span class="art">${PIN.object("cozy", 40)}</span><p><b>Your map is empty for now.</b></p><p>Save a spot with the bookmark and it lands here as a sticker. Places you went show up too.</p><button type="button" class="btn ghost" data-act="all">See everything</button>` : `<p>Nothing matches these filters.</p><button type="button" class="btn ghost" data-act="clear">Clear filters</button>`}</li>`; }
+    else if (S.nomap) $("#rows").innerHTML = K.groupByHood(L).map((g) => `<li><h2 class="hoodh"><span>${esc(g.hood)}</span><span>${g.events.length}</span></h2><ol class="rows">${g.events.map(row).join("")}</ol></li>`).join("");
+    else $("#rows").innerHTML = L.map(row).join("");
+    $("#legend").innerHTML = S.nomap || !L.length ? "" : `<span><i class="ring"></i>Area only: the host shares the exact spot once you're in</span><span><i class="stk"></i>Saved, as a sticker</span>`;
+    return L; }
+
+  // ---------- pins ----------
+  function drawPins(L) { if (!S.map) return; const saved = new Set(savedIds()), went = new Set(S.me.went || []), at = K.spread(L, spreadAt());
+    S.map.setPlaces(L.map((e) => ({ id: e.id, lat: at[e.id].lat, lng: at[e.id].lng, exact: !!e.geo.exact, r: e.geo.r || 0, color: K.vibe(e.vibe).color, z: saved.has(e.id) ? 3 : 1,
+      label: `${e.title}${e.hood ? ", " + e.hood : ""}`, html: PIN.pin(e, { exact: !!e.geo.exact, saved: saved.has(e.id), went: went.has(e.id), selected: e.id === S.sel }) }))); S.map.select(S.sel); }
+  // fan out pins that would overlap at this zoom: about a pin's width apart on screen
+  const spreadAt = () => { if (!S.map) return {}; const c = S.map.center(), mpp = (78271.517 * Math.cos((c.lat * Math.PI) / 180)) / 2 ** S.map.map.getZoom(); return { within: (38 * mpp) / 1000, ring: (30 * mpp) / 1000 }; };
+  function drawPills() { const W = K.WHO.find((w) => w.id === S.f.who), N = K.WHEN.find((w) => w.id === S.f.when);
+    $("#pWho span").textContent = W && W.id !== "all" ? W.label : "Everyone"; $("#pWho").classList.toggle("on", S.f.who !== "all");
+    $("#pWhen span").textContent = N && N.id !== "any" ? N.label : "When"; $("#pWhen").classList.toggle("on", S.f.when !== "any");
+    $("#pPrice span").textContent = K.priceLabel(S.f); $("#pPrice").classList.toggle("on", !!S.f.prices.length);
+    const vs = S.f.vibes.length ? K.VIBES.filter((v) => S.f.vibes.includes(v.id)) : K.VIBES.slice(0, 4);
+    $("#pVibe .vdots").innerHTML = vs.slice(0, 4).map((v) => `<i style="--v:${v.color}"></i>`).join(""); $("#pVibe span:last-child").textContent = S.f.vibes.length === 1 ? K.vibe(S.f.vibes[0]).label : S.f.vibes.length ? `${S.f.vibes.length} vibes` : "Vibe"; $("#pVibe").classList.toggle("on", !!S.f.vibes.length);
+    $("#pMine").classList.toggle("on", S.f.mine); $("#pMine").setAttribute("aria-pressed", S.f.mine); document.body.classList.toggle("mine", S.f.mine); }
+  function render({ fit = false } = {}) { drawPills(); drawCats(); const L = drawList(); drawPins(L); if (S.sel && !L.some((e) => e.id === S.sel)) select("");
+    else if (S.sel) drawCard(); if (fit && S.map && L.length) S.map.fit(L.map((e) => e.geo), pad()); keep(); }
+  const pad = () => (DESK.matches ? { top: 80, bottom: 40, left: 40, right: 40 } : { top: 80, bottom: shownPx() + 24, left: 32, right: 32 });
+
+  // ---------- selecting ----------
+  function select(id, { fly = false, from = "" } = {}) { S.sel = id || ""; $$(".row").forEach((r) => r.classList.toggle("sel", r.dataset.id === S.sel)); if (S.map) { drawPins(visible()); }
+    const e = byId(S.sel); if (fly && e && S.map) S.map.flyTo(e.geo, Math.max(13.6, S.map.map.getZoom()), pad());
+    if (from === "pin" && e && S.map) setTimeout(() => { const h = $("#pcard").offsetHeight || 0; S.map.flyTo(K.spread(visible(), spreadAt())[e.id] || e.geo, S.map.map.getZoom(), DESK.matches ? { top: 80, bottom: 40, left: 420, right: 40 } : { top: 80, bottom: shownPx() + h + 40, left: 32, right: 32 }); }, 0);
+    if (from === "pin") { const r = $(`.row[data-id="${CSS.escape(S.sel)}"]`); if (r && (DESK.matches || S.snap !== "peek")) r.scrollIntoView({ block: "nearest", behavior: REDUCE.matches ? "auto" : "smooth" }); if (!DESK.matches && S.snap === "full") snap("half"); }
+    drawCard(); }
+  function drawCard() { const c = $("#pcard"), e = byId(S.sel); if (!e || S.nomap) { c.hidden = true; c.innerHTML = ""; return; }
+    const where = e.geo.exact ? `<p class="where"><span>${esc(e.place || "A public spot")}${e.hood ? ", " + esc(e.hood) : ""}</span></p>` : `<p class="where"><i aria-hidden="true"></i><span>Around ${esc(e.hood || e.city || "here")}. The host shares the exact spot once you're in.</span></p>`;
+    c.innerHTML = `<button type="button" class="x" id="pcX" aria-label="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>${thumb(e, 64)}
+      <div class="body"><span class="kick"><i class="vd" style="--v:${K.vibe(e.vibe).color}"></i>${esc(kicker(e))}</span><a class="ttl" href="${esc(e.url)}">${esc(e.title)}</a>${e.host ? `<p class="by">${hostAv(e.host)}<span>by <b>${esc(e.host.name)}</b></span></p>` : ""}</div>
+      <div class="save">${saveBtn(e)}</div><div class="go" style="grid-column:1/-1">${where}</div><div class="go" style="grid-column:1/-1"><a class="btn" href="${esc(e.url)}">See the event</a>${proof(e)}</div>`;
+    c.hidden = false; }
+
+  // ---------- the sheet ----------
+  const sheet = $("#sheet"); let H = K.snapHeights(innerHeight);
+  const shownPx = () => (DESK.matches || S.nomap ? 0 : H[S.snap]);
+  function setShown(px, anim) { sheet.classList.toggle("anim", !!anim && !REDUCE.matches); document.body.style.setProperty("--shown", DESK.matches ? "0px" : px + "px"); document.body.style.setProperty("--full", H.full + "px"); }
+  function snap(name) { S.snap = name; sheet.dataset.snap = name; document.body.dataset.snap = name; setShown(H[name], true); $("#grab").setAttribute("aria-label", name === "full" ? "Show less of the list" : "Show more of the list"); }
+  (function drag() { let y0 = 0, s0 = 0, last = 0, lt = 0, v = 0, on = false, moved = false;
+    const down = (ev) => { if (DESK.matches || S.nomap) return; on = true; moved = false; y0 = last = ev.clientY; lt = performance.now(); s0 = H[S.snap]; v = 0; try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch {} };
+    const move = (ev) => { if (!on) return; const dy = y0 - ev.clientY; if (Math.abs(dy) > 4) moved = true; const now = performance.now(); v = (last - ev.clientY) / Math.max(1, now - lt); last = ev.clientY; lt = now; setShown(Math.max(H.peek - 30, Math.min(H.full, s0 + dy)), false); };
+    const up = (ev) => { if (!on) return; on = false; if (!moved) return; const shown = Math.max(H.peek, Math.min(H.full, s0 + (y0 - ev.clientY))); snap(K.snapTo(shown, v, H)); };
+    for (const el of [$("#grab"), $("#shHead")]) { el.addEventListener("pointerdown", down); el.addEventListener("pointermove", move); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); }
+    $("#grab").addEventListener("click", () => { if (moved) return; snap(S.snap === "peek" ? "half" : S.snap === "half" ? "full" : "peek"); });
+    // at full, pulling the list down from its top brings the sheet back to half
+    let ty = 0; $("#list").addEventListener("touchstart", (e) => { ty = e.touches[0].clientY; }, { passive: true });
+    $("#list").addEventListener("touchmove", (e) => { if (S.snap !== "peek" && $("#list").scrollTop <= 0 && e.touches[0].clientY - ty > 60) { snap(S.snap === "full" ? "half" : "peek"); ty = e.touches[0].clientY; } }, { passive: true });
+    $("#list").addEventListener("scroll", () => { if (S.snap === "peek" && $("#list").scrollTop > 10 && !DESK.matches) snap("half"); }, { passive: true }); })();
+  addEventListener("resize", () => { H = K.snapHeights(innerHeight); setShown(shownPx(), false); S.map?.resize(); });
+
+  // ---------- menus ----------
+  let menu = null; const closeMenu = () => { if (!menu) return; menu.el.remove(); $$(".pill[aria-expanded=true]").forEach((p) => p.setAttribute("aria-expanded", "false")); menu = null; };
+  function openMenu(kind, pill) { if (menu?.kind === kind) return closeMenu(); closeMenu(); const m = document.createElement("div"); m.className = "menu"; m.setAttribute("role", "dialog");
+    const opt = (id, label, on, sub = "", dis = false, role = "menuitemradio") => `<button type="button" class="opt" role="${role}" data-v="${esc(id)}" aria-checked="${on}"${dis ? ` aria-disabled="true"` : ""}><span class="ck" aria-hidden="true"></span><span>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</span></button>`;
+    if (kind === "who") { m.setAttribute("aria-label", "Who"); const si = S.me.signedIn; m.innerHTML = `<div class="mh"><b>Who's going</b></div>` + K.WHO.map((w) => opt(w.id, w.label, S.f.who === w.id, w.id === "friends" ? (si ? "People you follow who said I'm in" : "Sign in to see friends") : w.id === "following" ? (si ? "Their events only" : "Sign in to see who you follow") : "", w.id !== "all" && !si)).join(""); }
+    if (kind === "when") { m.setAttribute("aria-label", "When"); m.innerHTML = `<div class="mh"><b>When</b></div>` + K.WHEN.map((w) => opt(w.id, w.label, S.f.when === w.id)).join(""); }
+    if (kind === "price") { m.classList.add("multi"); m.setAttribute("aria-label", "Price"); m.innerHTML = `<div class="mh"><b>Price</b><button type="button" class="link" data-clear>Any price</button></div>` + K.PRICES.map((p) => opt(p.id, p.label, S.f.prices.includes(p.id), p.id === "free" ? "" : p.id === "$" ? "About $20 or less" : p.id === "$$" ? "$20 to $60" : "More than $60", false, "menuitemcheckbox")).join(""); }
+    if (kind === "vibe") { m.setAttribute("aria-label", "Vibe"); m.style.width = "min(340px, calc(100vw - 24px))";
+      m.innerHTML = `<div class="mh"><b>What kind of night?</b></div><div class="vchips">${K.VIBES.map((v) => `<button type="button" class="vchip" data-vibe="${v.id}" aria-pressed="${S.f.vibes.includes(v.id)}">${PIN.object(v.id, 28)}<span>${esc(v.label)}</span></button>`).join("")}</div><div class="foot"><button type="button" class="link" data-clear>Any vibe</button><button type="button" class="btn" data-done style="min-height:40px">Done</button></div>`; }
+    document.body.appendChild(m); const r = pill.getBoundingClientRect(), w = m.offsetWidth; m.style.top = r.bottom + 8 + "px"; m.style.left = Math.max(12, Math.min(innerWidth - w - 12, r.left)) + "px";
+    pill.setAttribute("aria-expanded", "true"); menu = { kind, el: m };
+    m.addEventListener("click", (ev) => { const o = ev.target.closest(".opt"), vc = ev.target.closest(".vchip");
+      if (ev.target.closest("[data-done]")) return closeMenu();
+      if (ev.target.closest("[data-clear]")) { if (kind === "price") S.f.prices = []; if (kind === "vibe") S.f.vibes = []; render({ fit: true }); return closeMenu(); }
+      if (vc) { const id = vc.dataset.vibe; S.f.vibes = S.f.vibes.includes(id) ? S.f.vibes.filter((x) => x !== id) : [...S.f.vibes, id]; vc.setAttribute("aria-pressed", S.f.vibes.includes(id)); render(); return; }
+      if (!o || o.getAttribute("aria-disabled") === "true") { if (o) location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search); return; }
+      const v = o.dataset.v;
+      if (kind === "price") { S.f.prices = S.f.prices.includes(v) ? S.f.prices.filter((x) => x !== v) : [...S.f.prices, v]; o.setAttribute("aria-checked", S.f.prices.includes(v)); render(); return; }
+      if (kind === "who") S.f.who = v; if (kind === "when") S.f.when = v; render({ fit: true }); closeMenu(); });
+    (m.querySelector("[aria-checked=true],[aria-pressed=true]") || m.querySelector("button"))?.focus({ preventScroll: true }); }
+  $$(".pill[data-menu]").forEach((p) => p.addEventListener("click", (ev) => { ev.stopPropagation(); openMenu(p.dataset.menu, p); }));
+  document.addEventListener("pointerdown", (ev) => { if (menu && !menu.el.contains(ev.target) && !ev.target.closest(".pill")) closeMenu(); }, true);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") { if (menu) closeMenu(); else if (!$("#intro").hidden) closeIntro(); else if (S.sel) select(""); } });
+  $("#pMine").addEventListener("click", async () => { S.f.mine = !S.f.mine; select(""); if (S.f.mine) await loadMine(); render({ fit: true }); });
+
+  // ---------- clicks in the list and the card ----------
+  document.addEventListener("click", (ev) => { const t = ev.target;
+    const cat = t.closest(".cat"); if (cat) { S.f.cat = S.f.cat === cat.dataset.cat ? "" : cat.dataset.cat; render({ fit: true }); return; }
+    if (t.closest("[data-act=clear]")) { S.f = { ...K.EMPTY(), mine: false }; render({ fit: true }); return; }
+    if (t.closest("[data-act=all]")) { S.f.mine = false; render({ fit: true }); return; }
+    if (t.closest("#retry")) { location.reload(); return; }
+    if (t.closest("#pcX")) { select(""); return; }
+    const r = t.closest(".row"); if (!r) return; if (t.closest(".save")) return;
+    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; // a new tab: just open it
+    ev.preventDefault(); const e = byId(r.dataset.id); if (!e) return;
+    // tapping a row centres its pin, then opens the event
+    select(e.id, { fly: !S.nomap }); setTimeout(() => { location.href = e.url; }, S.nomap || REDUCE.matches ? 0 : 420); });
+
+  // ---------- where you are ----------
+  let toastT = 0; const toast = (msg) => { $(".toast")?.remove(); const d = document.createElement("div"); d.className = "toast"; d.setAttribute("role", "status"); d.textContent = msg; document.body.appendChild(d); clearTimeout(toastT); toastT = setTimeout(() => d.remove(), 4200); };
+  $("#locate").addEventListener("click", () => { if (!navigator.geolocation) return toast("This browser can't share a location. Distances are from the map centre."); const b = $("#locate"); b.setAttribute("aria-busy", "true");
+    navigator.geolocation.getCurrentPosition((p) => { b.removeAttribute("aria-busy"); S.you = { lat: p.coords.latitude, lng: p.coords.longitude }; S.map?.you(S.you); S.map?.flyTo(S.you, 14, pad()); render(); },
+      () => { b.removeAttribute("aria-busy"); toast("Location is off. Distances are from the map centre."); }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60e3 }); });
+
+  // ---------- first open: "Your city, drawn by hand" ----------
+  function closeIntro() { $("#intro").hidden = true; try { localStorage.setItem("pl.mapIntro", "1"); } catch {} $("#back").focus({ preventScroll: true }); }
+  function maybeIntro() { let seen = false; try { seen = !!localStorage.getItem("pl.mapIntro"); } catch {} if (PRM.get("intro") !== "1" && (seen || REDUCE.matches)) return;
+    const box = $("#intro"); box.innerHTML = `<div class="icard">${PIN.intro()}<span class="kick" style="color:var(--pl-accent)">The map</span><h2 id="introH">Your city, drawn by hand</h2><p>Every pin is a small drawing of what's on. Save a spot and it turns into a sticker on your own map.</p><p style="margin:0 0 14px"><small><i aria-hidden="true"></i>Homes show as a soft circle, never a door.</small></p><button type="button" class="btn" id="introGo" style="width:100%">Start exploring</button></div>`;
+    box.hidden = false; $("#introGo").onclick = closeIntro; box.onclick = (e) => { if (e.target === box) closeIntro(); }; $("#introGo").focus({ preventScroll: true }); }
+
+  // ---------- start ----------
+  function noMap(why) { S.nomap = true; S.map = null; document.body.classList.add("nomap"); setShown(0, false); render(); if (why) console.info("[map] showing the list instead:", why); }
+  async function start() { const city = PRM.get("city") || window.EncorePlace?.get()?.city || "";
+    try { S.data = await (await fetch("/api/public/map" + (city ? "?city=" + encodeURIComponent(city) : ""))).json(); } catch { S.data = { events: [], hoods: [], tiles: { kind: "off" } }; }
+    $("#back").href = "/discover" + (S.data.city ? "?c=" + encodeURIComponent(S.data.city) : "");
+    try { await window.PLSave?.ready; } catch {}
+    if (window.PLSave?.signedIn()) { try { S.me = await (await fetch("/api/me/map?ids=" + encodeURIComponent((S.data.events || []).map((e) => e.id).slice(0, 40).join(",")), { credentials: "same-origin" })).json(); } catch {} }
+    await loadMine();
+    snap(PRM.get("sheet") && H[PRM.get("sheet")] ? PRM.get("sheet") : "peek"); render(); maybeIntro();
+    if (PRM.get("tiles") === "off") return noMap("tiles=off");
+    try { S.map = await PLMap.mount($("#map"), { center: S.data.center || { lat: 40.71, lng: -73.96 }, zoom: 12.4, tiles: S.data.tiles, lib: S.data.lib, style: window.PL_MAP_STYLE || null, padding: pad, timeoutMs: 10000 }); }
+    catch (e) { return noMap(e?.message); }
+    S.map.onPick((id) => { if (id) { select(id, { from: "pin" }); } else select(""); });
+    let zl = 0; S.map.map.on("zoomend", () => { clearTimeout(zl); zl = setTimeout(() => drawPins(visible()), 60); });
+    S.map.onMove((c) => { S.view = c; if (!S.you) { $$(".row").forEach((r) => { const e = byId(r.dataset.id), d = r.querySelector(".dist"); if (e && d) d.textContent = distOf(e); }); } });
+    S.view = S.map.center(); render({ fit: true });
+    document.dispatchEvent(new CustomEvent("plmap:ready", { detail: S.map })); // for page add-ons (and local previews)
+    window.PLSave?.on?.(() => render()); }
+  start();
+})();
+</script>
+</body></html>

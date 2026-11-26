@@ -12522,6 +12522,45 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
 })();
 </script>
 <!-- ==================== end Tables (review round 11) ==================== -->
+<!-- ==================================================================
+     Review round 13 (engineers, gamers, operators): slots on the invite, quiet guests, episode numbers, Copy as Markdown
+     and the one-line reply on /g (public/slots.js, public/series.js, public/slots.css); the host's "Slots, series and
+     channels" panel in the studio; and the plain-text power path on Home: paste a Discord message or Markdown, or drop
+     an .ics file (public/plain.js). Server: server/slots.js, server/series.js, server/episodes.js, server/hooksout.js.
+     ================================================================== -->
+<link rel="stylesheet" href="/slots.css"><script src="/plain.js" defer></script><script src="/slots.js" defer></script><script src="/series.js" defer></script>
+<script>
+(function(){
+  const q=(s,el=document)=>el.querySelector(s), PT=()=>window.PlainText;
+  // ---- Home: an .ics file, a Discord message or a Markdown block makes a draft ----
+  function plOverlay(d,o){ if(!d||!o) return; if(o.title){ d.pubTitle=o.title; d.name=o.title } if(o.date) d.date=o.date; if(o.startTime) d.startTime=o.startTime; if(o.endTime) d.endTime=o.endTime;
+    if(o.place){ const p=o.place.split(/,\s*/); if(/\d/.test(o.place)&&p.length>1){ d.venueName=p[0]; d.venueAddr=p.slice(1).join(", ") } else d.venueName=o.place }
+    if(o.description) d.concept=o.description; if(o.repeat) d.repeat=o.repeat; if(o.tz) d.tz=o.tz }
+  let plPending=null;
+  if(typeof quickStart==="function"){ const _qs13=quickStart; quickStart=function(text){ const P=PT(), t=String(text||""); if(!P) return _qs13.apply(this,arguments);
+    let o=null, s=t; if(P.isIcs(t)){ o=P.parseIcs(t); if(o) s=[o.title||"An event",o.date?`on ${o.date}`:"",o.startTime?`at ${o.startTime}`:"",o.place?`in ${o.place}`:""].filter(Boolean).join(" ") }
+    else if(P.looksMd(t)){ o=P.parseText(t); s=o.text||t } else if(plPending&&plPending.text===t.trim()) o=plPending.o;
+    plPending=null; const before=typeof draft!=="undefined"?draft:null, r=_qs13.call(this,s);
+    try{ const d=typeof draft!=="undefined"?draft:null; if(o&&d&&d!==before&&!d.example) plOverlay(d,o) }catch(e){ console.warn(e) } return r } }
+  const plIcs=(file)=>{ if(!file||!(/\.ics$/i.test(file.name||"")||/calendar/.test(file.type||""))||file.size>512000) return false; file.text().then(t=>{ if(PT()?.isIcs(t)) quickStart(t); else if(typeof toast==="function") toast("That file doesn't have an event in it.") }); return true };
+  document.addEventListener("paste",ev=>{ const ta=ev.target; if(ta?.id!=="qsText"||!PT()) return; const t=ev.clipboardData?.getData("text")||"";
+    if(PT().isIcs(t)){ ev.preventDefault(); quickStart(t); return }
+    if(PT().looksMd(t)){ ev.preventDefault(); const o=PT().parseText(t); ta.value=o.text; plPending={text:o.text.trim(),o}; ta.dispatchEvent(new Event("input",{bubbles:true})) } });
+  document.addEventListener("dragover",ev=>{ if(ev.target?.closest?.(".cg-box")) ev.preventDefault() });
+  document.addEventListener("drop",ev=>{ if(!ev.target?.closest?.(".cg-box")) return; const f=ev.dataTransfer?.files?.[0]; if(f&&plIcs(f)) ev.preventDefault() });
+  let plT=0; new MutationObserver(()=>{ if(plT) return; plT=setTimeout(()=>{ plT=0; const box=q(".cg-box"); if(!box||q("#plHint")) return;
+    box.insertAdjacentHTML("afterend",`<p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,#5E534B)">Paste a Discord message or Markdown, or <label style="text-decoration:underline;cursor:pointer">open an .ics file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>`);
+    q("#plHint input").onchange=e=>plIcs(e.target.files?.[0]) },400) }).observe(document.documentElement,{childList:true,subtree:true});
+
+  // ---- the studio: Slots, series and channels (public/slots.js) ----
+  let slSaveT=null; const slSave=()=>{ clearTimeout(slSaveT); slSaveT=setTimeout(()=>{ try{ saveEvent(true) }catch(e){ console.warn(e) } },700) };
+  function slStudio(){ const d=typeof draft!=="undefined"?draft:null, host=q("#stepHost"); if(!window.Slots||!d?.id||!host||d.example||!(typeof isCasual==="function"&&isCasual(d))||![1,6,7].includes(+step)||q("#slHost",host)) return;
+    const el=window.Slots.hostPanel(d,{save:slSave}), a=q("#tbHost",host)||q("#tbEdit",host)||q("#qbPanel",host); a?a.after(el):host.append(el);
+    new MutationObserver(()=>{ if(el.hidden) el.hidden=false }).observe(el,{attributes:true,attributeFilter:["hidden"]}) }
+  if(typeof renderStep==="function"){ const _rs13=renderStep; renderStep=function(){ const r=_rs13.apply(this,arguments); [120,1000].forEach(t=>setTimeout(()=>{ try{ slStudio() }catch(e){ console.warn(e) } },t)); return r } }
+})();
+</script>
+<!-- ==================== end review round 13 ==================== -->
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ----

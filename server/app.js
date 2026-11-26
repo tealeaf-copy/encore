@@ -40,6 +40,9 @@ import { mountTables } from "./tables.js"; // review round 11: tables (first 30 
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
+import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
+import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
+import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { withCleanLook, cleanPicks, tierTotal } from "./looks.js"; // per-event looks (Make it yours), price tiers
@@ -594,15 +597,16 @@ export function createApp({ store, dataDir }) {
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
     if (!ev || ev.example) return res.redirect(302, to);
-    const h = C.profileOf(ws), title = ev.pubTitle || ev.name || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
+    const U = (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
+    const h = C.profileOf(ws), title = (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
-      desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
+      desc = [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
       img = /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base);
     // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
 <meta property="og:type" content="website"><meta property="og:title" content="${e(req.cwOg || title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
-<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">`;
+<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}`;
     const page = invitePage();
     if (!page) return res.redirect(302, to);
     // compressed (brotli when the phone takes it, else gzip): the invite is most of what a guest downloads before replying
@@ -682,6 +686,9 @@ export function createApp({ store, dataDir }) {
   // ---- repeats: weekly and monthly events make their next date the morning after, and old links show it (server/repeats.js) ----
   mountRepeats(app, { store, C, X, ownerOnly: (req, res) => ownerOnly(req, res), workspaceOfEvent });
   mountTables(app, { store, small, C, X, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), sendStatic, publicOrigin: (req) => originOf(req) }); // review round 11: tables (server/tables.js)
+  mountSeries(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: episodes and the changelog (server/series.js)
+  mountSlots(app, { store, small, X, ownerOnly: (req, res) => ownerOnly(req, res) }); // review round 13: slots and quiet guests (server/slots.js)
+  mountHooksOut(app, { store, small, C, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req) }); // review round 13: Discord/Slack and calendars (server/hooksout.js)
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
@@ -713,6 +720,19 @@ export function createApp({ store, dataDir }) {
     if (!P) return res.status(404).json({ code: "not_found", message: "No such reply." });
     const all = P.S.list("rsvps").filter((x) => x.data?.eventId === eventId), ev = P.ev || {}, seats = +ev.headcount || 0, waiting = waitlistOf(all).length;
     res.json({ response: P.r.response || "", party: seatsOf(P.r, ev), paid: !!P.r.paid, paidClaim: !!P.r.paidClaim, decidedAt: P.r.decidedAt || null, ...(P.r.response === "waitlist" ? { waitlistPos: waitlistPos(all, P.rid) } : {}), waiting, seats, ...(seats && ev.autoWait !== false ? { left: waiting ? 0 : Math.max(0, seats - seatsTaken(ev, all)) } : {}) }); });
+  // review round 13: the one-line reply the Terminal look shows (curl). A guest who has replied once changes it with that
+  // reply's id and code, through the same write as the invite's own change (seats, waitlist, the host's bell); the answer
+  // says only where their own reply landed.
+  app.post("/api/public/reply/:eventId", small, async (req, res) => { if (replyLimited(req, 20)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
+    const eventId = String(req.params.eventId || "").slice(0, 80), b = req.body || {}, P = X.rsvpProof(eventId, String(b.rid || "").slice(0, 80), String(b.code || "").slice(0, 40));
+    if (!P || !P.ev || !(P.r._k || (P.r._keys || [])[0])) return res.status(404).json({ code: "not_found", message: "No such reply." });
+    let response = { in: "going", going: "going", yes: "going", maybe: "maybe", no: "no", out: "no", cant: "no" }[String(b.response || "").trim().toLowerCase()];
+    if (!response) return res.status(400).json({ code: "invalid", message: 'Send response "in", "maybe" or "no".' });
+    if (response === "going" && P.ev.approvalRequired && P.r.response !== "going") response = "requested";
+    Object.defineProperty(req, "query", { value: { path: "rsvps/" + P.rid }, configurable: true, writable: true });
+    req.headers["x-encore-guest"] = "1"; req.headers["x-encore-key"] = String(P.r._k || P.r._keys[0]); req.guest = true; req.ws = P.ws; req.body = { response, changedAt: Date.now() };
+    const send = res.json.bind(res); res.json = (o) => send(res.statusCode >= 400 ? { code: o?.code, message: o?.message } : { ok: true, response: o?.response || o?.data?.response || response, ...(o?.waitlistPos ? { waitlistPos: o.waitlistPos } : {}) });
+    return writeDoc(req, res, "patch"); });
   mountChecks(app, { store, small, currentUser, publicOrigin: (req) => originOf(req) });
   app.get("/vendor/jspdf.umd.min.js", (req, res) => res.set("Cache-Control", "public, max-age=604800").sendFile(path.join(ROOT, "node_modules", "jspdf", "dist", "jspdf.umd.min.js")));
   app.get("/booking/:id", (req, res) => sendStatic(res, "booking.html", "<p>Booking page missing.</p>"));

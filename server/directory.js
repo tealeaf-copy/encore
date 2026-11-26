@@ -219,7 +219,7 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
       // review round 11: a pre-order says so, with its items and when orders close (spots_left counts what's left to order)
       ...(c.preorder ? { preorder: true, items: orderItemsOf(c), order_by: s(c.orderBy, 40) || (/^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : ""),
         order_by_date: /^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : null, orders_open: status === "upcoming" && !ordersClosed({ ...c, tz: tzOk(c.tz) ? c.tz : tzOfCity(`${c.city || ""} ${c.hood || ""} ${H.h.city || ""}`) }) } : {}),
-      repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when,
+      repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when, episode: Number.isInteger(c.episode) ? c.episode : null, // review round 13: the episode number in its series (server/episodes.js)
       ...tableFields(H, c.id), // review round 11: first 30 minutes, group size, comfort notes, open table, co-hosts (server/tables.js)
       host: hostRef(H.h), url: `${base}/e/${encodeURIComponent(c.id)}`, source: "hosted", speaking: null, original_link: "", companies: [], cover: abs(c.coverPhoto), example: !!(c.sample || H.sample),
       // a class that repeats keeps its id, so guests' kudos from earlier sessions belong to the upcoming one too

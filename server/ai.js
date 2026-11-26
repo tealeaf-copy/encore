@@ -1,6 +1,7 @@
 // Claude access for Pottery Lab. The API key stays on the server: the SDK's default
 // constructor reads ANTHROPIC_API_KEY from the environment. Never log it.
 import Anthropic from "@anthropic-ai/sdk";
+import { pottoReply } from "./pottorules.js";
 
 export const MODEL = "claude-opus-5-5";
 export const MAX_TOKENS = 32000;
@@ -257,6 +258,7 @@ function lastUserText(messages) {
 }
 export function fakeText(prompt) {
   const p = typeof prompt === "string" ? prompt : JSON.stringify(prompt);
+  if (/^POTTO-ASK\b/.test(p)) return JSON.stringify(fakePotto(p));
   if (/"nudges"/.test(p)) {
     return JSON.stringify({
       nudges: [{ to: "Owner", message: "Friendly reminder: a task on your list is due soon. Can you take a look today?" }],
@@ -267,6 +269,14 @@ export function fakeText(prompt) {
   if (/^POTTO-EVENT-READ\b/.test(p)) return JSON.stringify(fakeEventRead(p));
   if (/Reply with only JSON/i.test(p)) return JSON.stringify({ ok: true });
   return "This is a demo reply from Pottery Lab's offline mode (ENCORE_FAKE_AI=1). No AI was called.";
+}
+// Ask Potto (server/potto.js) in offline mode: the same plain rules the no-key path uses, read off the prompt's own
+// context and question, so tests and demos run the whole model path (prompt, JSON reply, link and action checks).
+export function fakePotto(prompt) {
+  const tag = (t) => (String(prompt).match(new RegExp(`<${t}>\\n?([\\s\\S]*?)\\n?</${t}>`)) || [])[1] || "";
+  let ctx = {}; try { ctx = JSON.parse(tag("context") || "{}"); } catch {}
+  const r = pottoReply(tag("question"), ctx, { mode: "fake" });
+  return { answer: r.answer, links: r.links, action: r.action, ...(r.route ? { route: r.route } : {}) };
 }
 // Potto's event read (index.html prAiPrompt) in offline mode: a small, deterministic reading of the host's message, so
 // tests and demos run the page's merge without a key. It only fills what a few plain rules see (an am/pm time, a price

@@ -47,6 +47,8 @@ import { mountKudosAsk } from "./kudosask.js";
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
+import { mountInbox } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
+import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
@@ -767,6 +769,8 @@ export function createApp({ store, dataDir }) {
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
+  mountInbox(app, { store, small, currentUser, C, X, sendStatic, afterRsvp: (...a) => afterRsvp(...a) }); // the Inbox (server/inbox.js)
+  mountPotto(app, { store, express, currentUser, C, X }); // Ask Potto (server/potto.js)
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js

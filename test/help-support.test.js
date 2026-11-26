@@ -95,8 +95,12 @@ test("close, in a browser on an iPhone 13: X, Esc, the backdrop and swipe down; 
     await page.goto("/plans"); await page.waitForFunction(() => window.EncoreHelp?.open && document.querySelector(".es-tabs [data-me]"), null, { timeout: 15e3 });
     const S = (src) => page.evaluate((src) => new Function("root", src)(document.getElementById("encoreHelp").shadowRoot), src);
     const isOpen = () => S(`return !root.querySelector(".eh-panel").hidden`);
-    // UX loop: on a phone with the tab bar, help lives in the Me sheet (no button floating over the page)
-    const openIt = async () => { await page.locator(".es-tabs [data-me]").tap(); await page.locator("#plMe .plme-help").tap(); await page.waitForTimeout(300); assert.equal(await isOpen(), true); };
+    // UX loop: on a phone with the tab bar, help lives in the Me sheet (no button floating over the page). Its Help row
+    // opens Ask Potto (public/potto.js), the one entry for questions and help; the help panel opens from there.
+    await page.waitForFunction(() => window.PLPotto, null, { timeout: 15e3 });
+    await page.locator(".es-tabs [data-me]").tap(); await page.locator("#plMe .plme-help").tap(); await page.waitForSelector("#ptSheet"); await page.keyboard.press("Escape"); await page.waitForTimeout(100);
+    assert.equal(await page.evaluate(() => !!document.getElementById("ptSheet")), false, "Esc closes Potto");
+    const openIt = async () => { await page.evaluate(() => { document.querySelector(".es-tabs [data-me]").focus(); window.EncoreHelp.open(); }); await page.waitForTimeout(300); assert.equal(await isOpen(), true); };
     await openIt();
     const g = await S(`const p=root.querySelector(".eh-panel").getBoundingClientRect(), x=root.querySelector(".eh-head .eh-x").getBoundingClientRect(); return { h:p.height, bottom:p.bottom, vh:innerHeight, xw:x.width, xh:x.height }`);
     assert.ok(g.xw >= 44 && g.xh >= 44, "X is 44px"); assert.ok(g.h <= g.vh * 0.851, "85dvh at most"); assert.ok(Math.abs(g.bottom - g.vh) < 2, "on the bottom");

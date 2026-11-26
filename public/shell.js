@@ -7,6 +7,8 @@
 (function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g" || /^\/chats(\/|$)/.test(location.pathname)) return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Chats in the nav: the unread badge and the Me sheet (public/chatnav.js)
 (function () { try { if (window.__plChatNavLoad) return; window.__plChatNavLoad = 1; const s = document.createElement("script"); s.src = "/chatnav.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
+// The Inbox and Ask Potto (public/potto.js): the bell opens /inbox, the badge, the Potto sheet; signed in only
+(function () { try { if (window.__plPottoLoad || window.PLPotto || !/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/g") return; window.__plPottoLoad = 1; const s = document.createElement("script"); s.src = "/potto.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Collapsible side navigation: one setting for both the public rail and the app's own sidebar, kept per device.
 (function () {
   if (window.__encoreNavFold) return; window.__encoreNavFold = 1;
@@ -28,7 +30,7 @@
 (function () {
   if (window.__encoreShell) return; window.__encoreShell = 1;
   const P0 = location.pathname, P = /^\/chats(\/|$)/.test(P0) ? "/chats" : P0, isG = P === "/g"; const BRAND = document.body?.dataset?.audience === "brand", TABS_ONLY = P === "/" && document.body?.dataset?.shell === "tabs"; // the signed-out home keeps its own desktop header and takes only the phone tab bar
-  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
+  if (!(isG || TABS_ONLY || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats|inbox)$/.test(P) || /^\/team\//.test(P) || /^\/hosts\//.test(P) || /^\/@/.test(P) || /^\/h\//.test(P) || /^\/gifts\/plan/.test(P))) return;
   if (/^\/(teams|gifts|vendor|results|team)$/.test(P) || /^\/team\//.test(P) || /^\/gifts\/plan/.test(P)) document.documentElement.classList.add("es-biz");
   const I = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const ICON = {

@@ -8,6 +8,8 @@ RUN npm ci --omit=dev
 COPY server ./server
 COPY public ./public
 COPY index.html ./index.html
+# Potto answers from the help guide. Without it, every question reads "my guide doesn't cover it".
+COPY docs/help.md ./docs/help.md
 ENV DATA_DIR=/app/data PORT=3000
 VOLUME ["/app/data"]
 EXPOSE 3000

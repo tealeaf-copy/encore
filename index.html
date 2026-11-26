@@ -11861,6 +11861,12 @@ function knRedraw(){ clearTimeout(knRedraw.t); knRedraw.t=setTimeout(()=>{ try{ 
 // first run. Never guests. The panel uses it for its quick questions and for "stuck on a step" offers.
 window.__helpCtx=function(){ try{ const d=typeof draft!=="undefined"?draft:null, ev=typeof allEvents!=="undefined"?allEvents:[];
   return { eventId:d&&d.id&&!d.example&&!d.sample?String(d.id):"", step:typeof step!=="undefined"?step:null, wizard:!!document.querySelector("#wizBg .wiz"), firstRun:!!window.__welcome||!(ev||[]).some(e=>e&&!e.example&&!e.sample) } }catch{ return {} } };
+// What Potto can do in one tap (public/help.js, "#do:" actions): on the open event, else the host's next one. Each returns false when there's no event.
+window.__helpDo=(()=>{ const pick=()=>{ try{ const d=typeof draft!=="undefined"?draft:null; if(d&&d.id&&!d.example&&!d.sample) return d; const t=new Date().toISOString().slice(0,10), L=(typeof allEvents!=="undefined"?allEvents:[]).filter(e=>e&&e.id&&!e.example&&!e.sample&&!e.cancelled); return L.filter(e=>!e.date||e.date>=t).sort((a,b)=>String(a.date||"9").localeCompare(String(b.date||"9")))[0]||L[0]||null }catch{ return null } };
+  const go=(fn)=>()=>{ const e=pick(); if(!e) return false; fn(e); return true };
+  return { ready:()=>(typeof dbReady!=="undefined"&&!!dbReady)&&!!window.__wsDone, event:()=>{ const e=pick(); return e?{id:String(e.id),title:e.pubTitle||e.name||"",shared:!!(e.published||e.discoverable)}:null },
+    share:go(e=>{ if(e.published||e.discoverable) shareSheet(e); else { draft=hydrate(e); openWizard(5) } }), copy:go(e=>copyTxt(inviteText(e),{ok:"Invite copied."})),
+    preview:go(e=>window.open(inviteLink(e),"_blank","noopener")), guests:go(e=>openEvent(e,6)), open:go(e=>openEvent(e,1)), newEvent:()=>{ openWizard(1); return true } } })();
 // review round 8: at the event, the kudos QR also shows a big 4-digit code (it changes every 10 minutes). A guest who
 // scans it types the code with their email or phone and goes straight to kudos, no email round trip (server/kudosnudge.js).
 new MutationObserver(()=>{ try{ const box=document.querySelector(".kn-qr"); if(!box||box.dataset.r8at) return; const img=box.querySelector("img"); const m=(img?.getAttribute("src")||"").match(/kudos-nudge\/([^/]+)\/qr\.svg/); if(!m) return; box.dataset.r8at=1;

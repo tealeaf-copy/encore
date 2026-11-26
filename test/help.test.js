@@ -37,9 +37,12 @@ test("ask: needs sign-in away from onboarding, answers from the guide offline, a
   const r = await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/?app=1#studio", history: [{ role: "host", text: "hi" }] }, c);
   assert.equal(r.status, 200); const j = await r.json();
   assert.equal(j.mode, "guide", "no key: the guide answers"); assert.equal(j.section, "Sharing your invite"); assert.match(j.answer, /Copy invite/);
-  assert.ok(j.actions.some((a) => a.label === "Talk to a person" && a.href === "#person"), "always a person");
+  assert.equal(j.confidence, "high"); assert.ok(j.actions.some((a) => a.href === "#do:share"), "one tap to the share sheet");
+  assert.ok(!j.actions.some((a) => a.href === "#person"), "a sure answer doesn't push a person (the sheet's footer always has one)");
+  const unsure = await (await req("POST", "/api/help/ask", { message: "what's the weather on mars", page: "/" }, c)).json();
+  assert.ok(unsure.actions.some((a) => a.label === "Talk to a person" && a.href === "#person"), "an I don't know offers a person"); assert.equal(unsure.suggestHuman, true);
   assert.equal(typeof j.suggestHuman, "boolean"); assert.ok(!/—/.test(j.answer));
-  for (let i = 1; i < 30; i++) assert.equal((await req("POST", "/api/help/ask", { message: "How do guests pay?", page: "/" }, c)).status, 200, `ask ${i + 1}`);
+  for (let i = 2; i < 30; i++) assert.equal((await req("POST", "/api/help/ask", { message: "How do guests pay?", page: "/" }, c)).status, 200, `ask ${i + 1}`);
   const lim = await req("POST", "/api/help/ask", { message: "How do guests pay?", page: "/" }, c);
   assert.equal(lim.status, 429, "31st ask in an hour"); assert.equal((await lim.json()).suggestHuman, true);
   // someone else still can
@@ -79,7 +82,7 @@ test("ticket: stores the context, emails and texts the team when set up, and is 
   const ws = (await (await req("GET", "/api/me", null, c)).json()).workspace.id; scopeStore(srv.store, ws).set("events/helpev2", { name: "Sunday run", date: "2099-06-01", casual: true });
   // nothing set up: still stored, still an honest answer
   let r = await req("POST", "/api/help/ticket", { message: "My invite won't copy", page: "/?app=1#studio", eventId: "helpev2", browser: "TestBrowser 1.0 · 390x844", transcript: [{ role: "host", text: "copy?" }, { role: "potto", text: "Tap Copy invite." }] }, c);
-  assert.equal(r.status, 200); let j = await r.json(); assert.equal(j.expect, "We'll reply here and by email, usually within a day.");
+  assert.equal(r.status, 200); let j = await r.json(); assert.equal(j.expect, "A person replies within a day, here and by email.");
   let t = srv.store.get("system/support-" + j.id).data;
   assert.equal(t.status, "open"); assert.equal(t.email, "tess@example.com"); assert.equal(t.handle, "tess-runs"); assert.equal(t.signedIn, true);
   assert.equal(t.context.page, "/?app=1#studio"); assert.equal(t.context.eventId, "helpev2"); assert.equal(t.context.eventTitle, "Sunday run"); assert.equal(t.context.browser, "TestBrowser 1.0 · 390x844");

@@ -1,21 +1,36 @@
-// "Need a hand?": Potto's help panel, on every page a host uses and on every onboarding step (sign up, sign in,
-// forgot password, join, onboard). Potto answers from docs/help.md (POST /api/help/ask); "Talk to a person" sends the
-// team a message with the page, the event and the browser attached (POST /api/help/ticket); replies come back here
-// under "Your conversations". If someone sits on a setup step for a minute without moving on, or sees the same error
-// twice, Potto offers help once per session.
+// "Need a hand?": Potto's help sheet, on every page a host uses and on every onboarding step (sign up, sign in,
+// forgot password, join, onboard). Potto answers from docs/help.md (POST /api/help/ask), with one-tap actions where the
+// step is something the app can do (open the share sheet, copy the invite, open the guest list) through index.html's
+// window.__helpDo, and a Did this help? after each answer (POST /api/help/rate). "Talk to a person" sends the team a
+// message with the chat, the page, the event and the device attached, so nobody types it twice (POST /api/help/ticket).
+// The person's replies come back into the same chat, and a solved conversation asks How did we do?. If someone sits on a
+// setup step for a minute without moving on, or sees the same error twice, Potto offers help once per session.
+//
+// The sheet: a modal dialog. On a phone it comes up from the bottom (max 85dvh, a drag handle, padded for the home
+// indicator, lifted over the keyboard with visualViewport); on a computer it floats bottom right. Close always works:
+// the X (44px), Esc, tapping the backdrop and swiping down on the handle or header. While it's open the page behind is
+// inert and doesn't scroll, Tab stays inside, and focus goes back where it was on close.
+//
+// Review: the X used to do nothing. `$(".eh-x")` found the nudge's X first (it comes earlier in the template), so the
+// close handler went there and was then replaced by the nudge's own; the sheet's X never had one. Each X is now bound
+// by its own selector, and a test checks every close path.
 // Loaded by shell.js (the app and public pages) and by a script tag on the sign-up, sign-in, reset, join and onboard pages.
 (function () {
   if (window.__encoreHelp) return; window.__encoreHelp = 1;
   const P = location.pathname, signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
-  const ONB = /^\/(signup|login|forgot|reset|join|onboard)\/?$/.test(P);
+  const ONB = /^\/(signup|login|forgot|reset|join|onboard)\/?$/.test(P), PLANS = P === "/plans";
   const GUEST = P === "/g" || /^\/(e|k)\//.test(P) || P === "/demo" || P === "/support" || P === "/sso/start";
-  if (GUEST || !(ONB || signedIn())) return;
+  if (GUEST || !(ONB || PLANS || signedIn())) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ss = { get: (k) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch {} } };
-  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-  const NUDGED = "encore.help.nudged", SEEN = "encore.help.seen", LOG = "encore.help.log";
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
+  const NUDGED = "encore.help.nudged", SEEN = "encore.help.seen", LOG = "encore.help.chat";
   const LINE = "Stuck? I can help, or get you a person.";
   const VASE = '<svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  // drawn line glyphs in Potto's brown (docs/brand-kit.md, UI tokens), never emoji on buttons
+  const G = (d, s = 20) => `<svg viewBox="0 0 20 20" width="${s}" height="${s}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const X_ICON = G('<path d="M5 5l10 10M15 5L5 15"/>', 20), BACK = G('<path d="M12 4.5 6.5 10l5.5 5.5"/>', 18);
+  const UP = G('<path d="M6.5 9.2V16H4.2a.7.7 0 0 1-.7-.7V9.9c0-.4.3-.7.7-.7zM6.5 9.2l2.9-5.4c1.2 0 2 .9 1.8 2.1l-.4 2.4h4.1c1 0 1.7.9 1.5 1.8l-1 4.6c-.2.8-.9 1.3-1.6 1.3H6.5"/>'), DOWN = G('<path d="M13.5 10.8V4h2.3c.4 0 .7.3.7.7v5.4c0 .4-.3.7-.7.7zM13.5 10.8l-2.9 5.4c-1.2 0-2-.9-1.8-2.1l.4-2.4H5.1c-1 0-1.7-.9-1.5-1.8l1-4.6C4.8 4.5 5.5 4 6.2 4h7.3"/>');
 
   // ---------- quick questions, by where you are ----------
   const Q = {
@@ -27,13 +42,23 @@
     paid: ["Free or paid?", "Can my event be free or paid?"], share: ["How do I share my invite?", "How do I share my invite?"], see: ["What do guests see?", "What do guests see?"],
     pay: ["How do guests pay?", "How do guests pay?"], past: ["Add past events", "How do I add past events?"], look: ["Change my page look", "How do I change my page look?"],
     setup: ["Name, photo and line", "How do I add my page name, photo and a line about me?"],
+    status: ["How's my event doing?", "How many people are coming?"], edit: ["Edit my event", "How do I edit my event?"], cancel: ["Cancel my event", "How do I cancel my event?"],
+    guests: ["Who's coming?", "Where do I see who's coming?"], saidPaid: ["Someone says they paid", "A guest says they paid. What do I do?"], tiers: ["Different prices", "Can I have different prices for adults and kids?"],
+    roster: ["Export my guest list", "How do I export my guest list?"], tables: ["Open tables", "How do open tables work?"], photos: ["Photos from the day", "How do guests add photos?"],
+    kudos: ["How kudos work", "How do kudos work?"], discord: ["Discord or Slack", "How do I post my invite in Discord?"], repeat: ["Make it repeat", "How do I make my event repeat?"],
+    layout: ["Page layouts", "How do I change my page layout?"], shop: ["Set up my shop", "How do I set up my shop?"], discover: ["Get on Discover", "Why isn't my event on Discover?"],
+    findInv: ["Can't find my invite", "I can't find my invite"], reply: ["Change my reply", "How do I change my reply?"], follow: ["Follow a host", "How do I follow a host?"],
   };
   const ctx = () => { try { return (window.__helpCtx && window.__helpCtx()) || {}; } catch { return {}; } };
+  const app = () => (window.__helpDo && typeof window.__helpDo === "object" ? window.__helpDo : null);
+  const appEvent = () => { try { return app()?.event?.() || null; } catch { return null; } };
   function where() {
     if (/^\/(signup|join)$/.test(P)) return "signup"; if (/^\/(login|forgot|reset)$/.test(P)) return "signin"; if (P === "/onboard") return "onboard";
     const w = document.querySelector("#wizBg .wiz"); if (w) return w.getAttribute("aria-label") === "Share your invite" ? "share" : "wizard";
-    if (document.querySelector(".store-pane:not([hidden])") || document.getElementById("fc-save")) return "page";
+    if (document.querySelector(".store-pane:not([hidden])") || document.getElementById("fc-save") || /^\/@/.test(P)) return "page";
+    if (P === "/plans") return "plans"; if (/^\/(discover|events|feed|hosts)$/.test(P)) return "discover";
     const c = ctx(); if (c.firstRun || window.__welcome) return "welcome";
+    if (location.hash === "#studio" && c.eventId) return c.step === 6 ? "guests" : "event";
     return "";
   }
   function chips() {
@@ -41,59 +66,87 @@
     if (w === "signup") return [Q.code, Q.wait, Q.taken, Q.pw, Q.page];
     if (w === "signin") return [Q.reset, Q.taken, Q.google, Q.pw];
     if (w === "onboard") return [Q.page, Q.setup, Q.past, Q.look];
-    if (w === "page") return [Q.setup, Q.look, Q.handle, Q.page, Q.past];
+    if (w === "page") return [Q.setup, Q.layout, Q.shop, Q.handle, Q.past];
     if (w === "wizard" || w === "welcome") return [Q.first, Q.ask, Q.paid, Q.share, Q.see];
-    if (w === "share") return [Q.share, Q.see, Q.pay, Q.ask];
-    return [Q.share, Q.pay, Q.past, Q.look];
+    if (w === "share") return [Q.share, Q.discord, Q.see, Q.pay];
+    if (w === "event") return [Q.status, Q.share, Q.edit, Q.saidPaid, Q.cancel];
+    if (w === "guests") return [Q.guests, Q.saidPaid, Q.tables, Q.roster, Q.photos];
+    if (w === "plans") return [Q.findInv, Q.reply, Q.follow];
+    if (w === "discover") return [Q.discover, Q.follow, Q.findInv];
+    return appEvent() ? [Q.status, Q.share, Q.edit, Q.pay, Q.repeat] : [Q.first, Q.share, Q.pay, Q.look];
   }
 
   // ---------- styles ----------
   const css = document.createElement("style"); css.id = "ehCss";
   css.textContent = `
 .eh-away{display:none!important}
-.eh-btn{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px 8px 10px;border-radius:999px;border:1.5px solid #5A3B2B;background:#FFFCF7;color:#1F1A17;font:600 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);transition:transform .15s}
-:host{all:initial}*{box-sizing:border-box}button,input,select,textarea{font:inherit;color:inherit;margin:0;width:auto}a{color:inherit}svg{display:block;flex:none}
-.eh-btn:hover{transform:translateY(-1px)}:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
-.eh-btn .eh-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#E2463A;border:2px solid #FFFCF7}
-.eh-btn.eh-dock{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto;padding:6px 12px 6px 8px;font-size:13px;min-height:40px}
-.eh-panel{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9600;width:min(400px,calc(100vw - 32px));max-height:min(640px,calc(100vh - var(--eh-bottom,16px) - 24px));display:flex;flex-direction:column;background:#FFFCF7;color:#1F1A17;border:1.5px solid #5A3B2B;border-radius:24px;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:15px/1.45 "Instrument Sans",system-ui,sans-serif;overflow:hidden}
+:host{all:initial}*{box-sizing:border-box}button,input,select,textarea{font:inherit;color:inherit;margin:0;width:auto;touch-action:manipulation}a{color:inherit}svg{display:block;flex:none}
+:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
 [hidden]{display:none!important}
-.eh-head{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;border-bottom:1px solid #E4D9C8}.eh-head h2{margin:0;font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui}.eh-head small{display:block;color:#665A51;font-size:13px;line-height:1.35;margin-top:2px}
+.eh-btn{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px 8px 10px;border-radius:999px;border:1.5px solid #5A3B2B;background:#FFFCF7;color:#1F1A17;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;box-shadow:0 10px 28px -16px rgba(31,26,23,.28);transition:transform .15s}
+.eh-btn:hover{transform:translateY(-1px)}
+.eh-btn .eh-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#C94A30;border:2px solid #FFFCF7}
+.eh-btn.eh-dock{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto;padding:6px 12px 6px 8px;font-size:14px;min-height:44px}
+.eh-scrim{position:fixed;inset:0;z-index:2147483000;background:rgba(31,26,23,.36);cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;animation:ehFade .18s ease-out}
+.eh-panel{position:fixed;z-index:2147483001;right:16px;bottom:16px;width:min(400px,calc(100vw - 32px));height:640px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:#FFFCF7;color:#1F1A17;border:1.5px solid #5A3B2B;border-radius:24px;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;overflow:hidden;overflow:clip;overscroll-behavior:contain;animation:ehPop .18s ease-out}
+.eh-grab{display:none}
+.eh-head{display:flex;align-items:center;gap:12px;padding:12px 8px 12px 16px;border-bottom:1.5px solid #E4D9C8;flex:none}.eh-head h2{margin:0;font:600 20px/1.2 Fredoka,"Instrument Sans",system-ui;outline:none}.eh-head small{display:block;color:#665A51;font-size:13px;line-height:1.35;margin-top:2px}
 .eh-head .eh-face{flex:none;width:40px;height:40px;display:grid;place-items:center}.eh-head .eh-face svg{width:40px;height:40px}
-.eh-x{margin-left:auto;flex:none;align-self:flex-start;border:0;background:none;font-size:26px;line-height:1;width:44px;height:44px;display:grid;place-items:center;padding:0 0 3px;border-radius:50%;cursor:pointer;color:#665A51}.eh-x:hover{background:#F6EFE8;color:#1F1A17}
-.eh-body{flex:1;overflow:auto;padding:12px 14px;display:grid;gap:10px;align-content:start}
-.eh-m{max-width:92%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}.eh-m.me{justify-self:end;background:#1F1A17;color:#fff;border-bottom-right-radius:6px}.eh-m.potto{background:#fff;border:1.5px solid #E9DFD2;border-bottom-left-radius:6px}
-.eh-m.team{background:#FFF1C9;border:1.5px solid #EAD9A0}.eh-m small{display:block;font-size:12px;color:#6B5F56;margin-bottom:2px;font-weight:600}
-.eh-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.eh-acts a,.eh-acts button{display:inline-flex;align-items:center;min-height:36px;padding:4px 12px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 14px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer}
-.eh-chips{display:flex;flex-wrap:wrap;gap:6px}.eh-chips button{min-height:36px;padding:6px 12px;border-radius:999px;border:1.5px solid #E4D9C8;background:#fff;color:#1F1A17;font:600 14px "Instrument Sans",system-ui;cursor:pointer;text-align:left}.eh-chips button:hover{border-color:#1F1A17}
-.eh-ask{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #E4D9C8;align-items:flex-end}.eh-ask textarea{flex:1;min-height:44px;max-height:120px;resize:none;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px 12px;font:16px "Instrument Sans",system-ui;background:#fff;color:#1F1A17}
-.eh-panel :is(textarea,input):focus{outline:none!important;border-color:#1F1A17!important;box-shadow:0 0 0 3px rgba(201,74,48,.18)!important}
-.eh-go{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#C94A30;color:#fff;font:700 15px "Instrument Sans",system-ui;cursor:pointer}.eh-go:disabled{opacity:.6;cursor:default}
-.eh-foot{padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center}.eh-human{flex:1;min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 15px "Instrument Sans",system-ui;cursor:pointer}
-.eh-human:hover{background:#FFF1C9}
-.eh-convos h3,.eh-form h3{margin:4px 0 0;font:600 16px Fredoka,"Instrument Sans",system-ui}.eh-convo{border:1.5px solid #E9DFD2;border-radius:14px;background:#fff;padding:10px}.eh-convo summary{cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;min-height:28px}
-.eh-pill{font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;background:#FDE7DF;color:#8E3A25}.eh-pill.waiting{background:#FFF1C9;color:#6B4E00}.eh-pill.solved{background:#E3F2E6;color:#245C33}.eh-new{font-size:12px;font-weight:700;color:#C94A30}
-.eh-convo .eh-m{margin-top:8px;max-width:100%}.eh-convo form{display:flex;gap:6px;margin-top:8px}.eh-convo input{flex:1;min-height:40px;border:1.5px solid #E4D9C8;border-radius:12px;padding:6px 10px;font:16px "Instrument Sans",system-ui}
-.eh-form{display:grid;gap:10px}.eh-form label{display:block;font-weight:600;font-size:14px}.eh-form label>input,.eh-form label>textarea,.eh-form label>select{display:block;margin-top:4px}.eh-form textarea,.eh-form input:not([type=file]),.eh-form select{width:100%;box-sizing:border-box;border:1.5px solid #E4D9C8;border-radius:12px;padding:10px 12px;font:16px "Instrument Sans",system-ui;background:#fff;color:#1F1A17}
-.eh-form textarea{min-height:110px;resize:vertical}.eh-note{color:#6B5F56;font-size:13px;font-weight:400;margin:0}.eh-err{color:#A93A3A;font-size:14px;margin:0}.eh-err:empty{display:none}.eh-ok{background:#E3F2E6;border-radius:14px;padding:12px;color:#1F3D27}
+.eh-x{margin-left:auto;flex:none;align-self:flex-start;border:0;background:none;width:44px;height:44px;display:grid;place-items:center;padding:0;border-radius:50%;cursor:pointer;color:#5A3B2B}.eh-x:hover{background:#F6EFE8;color:#1F1A17}
+.eh-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 16px;display:grid;gap:12px;align-content:start}
+.eh-log{display:grid;gap:12px}
+.eh-m{max-width:92%;padding:8px 12px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}.eh-m.me{justify-self:end;background:#1F1A17;color:#fff;border-bottom-right-radius:4px}.eh-m.potto{background:#fff;border:1.5px solid #E4D9C8;border-bottom-left-radius:4px}
+.eh-m small{display:block;font-size:13px;color:#665A51;margin-bottom:2px;font-weight:600}.eh-m.team{background:#FFF1C9;border:1.5px solid #EAD9A0}
+.eh-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.eh-acts a,.eh-acts button{display:inline-flex;align-items:center;min-height:44px;padding:4px 14px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 14px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer}
+.eh-acts .eh-do{background:#C94A30;border-color:#C94A30;color:#fff}
+.eh-rate{display:flex;align-items:center;gap:4px;margin-top:8px;color:#665A51;font-size:13px;white-space:normal}.eh-rate span{margin-right:4px}.eh-rate button{width:44px;height:44px;display:grid;place-items:center;border:0;background:none;border-radius:50%;color:#5A3B2B;cursor:pointer}.eh-rate button:hover{background:#F6EFE8}
+.eh-rel{margin-top:8px;font-size:13px;color:#665A51;white-space:normal}.eh-rel button{border:0;background:none;padding:0;min-height:44px;color:#A9462E;font:600 13px "Instrument Sans",system-ui;text-decoration:underline;cursor:pointer;text-align:left}
+.eh-chips{display:flex;flex-wrap:wrap;gap:8px}.eh-chips button{min-height:44px;padding:6px 14px;border-radius:999px;border:1.5px solid #E4D9C8;background:#fff;color:#1F1A17;font:600 14px "Instrument Sans",system-ui;cursor:pointer;text-align:left}.eh-chips button:hover{border-color:#1F1A17}
+.eh-ask{display:flex;gap:8px;padding:12px 16px 8px;border-top:1.5px solid #E4D9C8;align-items:flex-end;flex:none}.eh-ask textarea{flex:1;min-height:44px;max-height:120px;resize:none;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px 12px;font:16px "Instrument Sans",system-ui;background:#fff;color:#1F1A17}
+.eh-panel :is(textarea,input,select):focus{outline:none!important;border-color:#1F1A17!important;box-shadow:0 0 0 3px rgba(201,74,48,.18)!important}
+.eh-go{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#C94A30;color:#fff;font:700 16px "Instrument Sans",system-ui;cursor:pointer}.eh-go:disabled{opacity:.6;cursor:default}
+.eh-foot{padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex:none}.eh-human{flex:1;min-height:44px;border-radius:999px;border:1.5px solid #D9CCBB;background:#fff;color:#1F1A17;font:600 16px "Instrument Sans",system-ui;cursor:pointer}.eh-human:hover{background:#FFF1C9}
+.eh-clear{border:0;background:none;color:#665A51;font:600 13px "Instrument Sans",system-ui;text-decoration:underline;cursor:pointer;min-height:44px;padding:0 4px;justify-self:start}
+.eh-tk{border:1.5px solid #E4D9C8;border-radius:16px;background:#fff;padding:12px;display:grid;gap:8px}.eh-tk-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.eh-tk-h b{font:600 16px Fredoka,"Instrument Sans",system-ui}
+.eh-tk .eh-m{max-width:100%}.eh-tk form{display:flex;gap:8px}.eh-tk input{flex:1;min-width:0;min-height:44px;border:1.5px solid #D9CCBB;border-radius:12px;padding:6px 12px;font:16px "Instrument Sans",system-ui;background:#fff}
+.eh-pill{font-size:13px;font-weight:700;border-radius:999px;padding:1px 8px;background:#FDE7DF;color:#8E3A25}.eh-pill.waiting{background:#FFF1C9;color:#6B4E00}.eh-pill.solved{background:#E3F2E6;color:#245C33}.eh-new{font-size:13px;font-weight:700;color:#C94A30}
+.eh-earlier summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}.eh-earlier .eh-tk{margin-top:8px}
+.eh-form{display:grid;gap:16px}.eh-form h3{margin:0;font:600 20px Fredoka,"Instrument Sans",system-ui;outline:none}.eh-form label{display:block;font-weight:600;font-size:14px}.eh-form label>input,.eh-form label>textarea,.eh-form label>select{display:block;margin-top:4px}
+.eh-form textarea,.eh-form input:not([type=file]):not([type=checkbox]),.eh-form select{width:100%;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px 12px;font:16px "Instrument Sans",system-ui;background:#fff;color:#1F1A17}.eh-form textarea{min-height:96px;resize:vertical}
+.eh-more summary{cursor:pointer;font-weight:600;font-size:14px;min-height:44px;display:flex;align-items:center;color:#A9462E}
+.eh-sla{margin:-8px 0 0;color:#245C33;font-size:14px;font-weight:600}
+.eh-ctx{border:1.5px solid #E4D9C8;border-radius:12px;padding:8px 12px 12px;margin:0;background:#FBF7F0}.eh-ctx legend{font-weight:600;font-size:14px;padding:0 4px}.eh-ctx ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:14px}.eh-ctx li{display:flex;gap:8px;align-items:flex-start}.eh-ctx li span{color:#665A51}
+.eh-ctx label{display:flex;gap:8px;align-items:center;font-weight:600;min-height:44px}.eh-ctx input[type=checkbox]{width:20px;height:20px;accent-color:#C94A30}.eh-ctx details{font-size:13px;color:#665A51;margin-left:28px}.eh-ctx details summary{cursor:pointer;min-height:32px}.eh-ctx details p{margin:4px 0;white-space:pre-wrap}
+.eh-note{color:#665A51;font-size:13px;font-weight:400;margin:0}.eh-err{color:#A93A3A;font-size:14px;margin:0}.eh-err:empty{display:none}.eh-ok{background:#E3F2E6;border-radius:12px;padding:12px;color:#1F3D27}
+.eh-say{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
 .eh-hp{position:absolute!important;left:-10000px!important;width:1px;height:1px;overflow:hidden}
-.eh-back{border:0;background:none;color:#A9462E;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:44px;padding:0 6px;text-decoration:underline}
-.eh-nudge{position:fixed;right:var(--eh-right,16px);bottom:calc(var(--eh-bottom,16px) + 56px);z-index:9550;width:min(300px,calc(100vw - 32px));background:#FFFCF7;border:2px solid #1F1A17;border-radius:18px;box-shadow:4px 4px 0 #1F1A17;padding:12px 12px 12px 14px;font:15px/1.4 "Instrument Sans",system-ui;color:#1F1A17}
-.eh-nudge p{margin:0 28px 10px 0;font-weight:600;display:flex;gap:8px;align-items:center}.eh-nudge .eh-x{position:absolute;top:2px;right:2px;width:36px;height:36px;font-size:22px}.eh-nudge .eh-acts{margin:0}
+.eh-back{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:#A9462E;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:44px;padding:0 4px 0 0;justify-self:start}
+.eh-row{display:flex;gap:8px;align-items:center}
+.eh-nudge{position:fixed;right:var(--eh-right,16px);bottom:calc(var(--eh-bottom,16px) + 56px);z-index:9550;width:min(300px,calc(100vw - 32px));background:#FFFCF7;border:1.5px solid #5A3B2B;border-radius:16px;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);padding:12px 12px 12px 16px;font:15px/1.4 "Instrument Sans",system-ui;color:#1F1A17}
+.eh-nudge p{margin:0 36px 8px 0;font-weight:600;display:flex;gap:8px;align-items:center}.eh-nudge .eh-nx{position:absolute;top:2px;right:2px;width:44px;height:44px;border:0;background:none;display:grid;place-items:center;border-radius:50%;color:#5A3B2B;cursor:pointer}.eh-nudge .eh-acts{margin:0}
 .eh-nudge.eh-dock{top:calc(60px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto}
-@media (max-width:600px){.eh-panel{left:8px;right:8px;width:auto;bottom:max(8px,var(--eh-bottom,8px));max-height:calc(100dvh - var(--eh-bottom,8px) - 16px);border-radius:20px}.eh-btn{font-size:14px;padding:6px;width:48px;height:48px;justify-content:center;border-radius:50%}.eh-btn > span:not(.eh-dot){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
-@media (prefers-reduced-motion:reduce){.eh-btn{transition:none}}`;
+@keyframes ehFade{from{opacity:0}}@keyframes ehPop{from{opacity:0;transform:translateY(8px)}}@keyframes ehUp{from{transform:translateY(100%)}}
+@media (max-width:600px){
+  .eh-panel{left:0;right:0;bottom:var(--eh-kb,0px);width:auto;height:85vh;height:min(85dvh,calc(var(--eh-vvh,100dvh) - 8px));max-height:none;border-radius:24px 24px 0 0;border-width:1.5px 0 0;padding-bottom:env(safe-area-inset-bottom,0px);animation:ehUp .24s cubic-bezier(.2,.8,.2,1)}
+  .eh-panel.eh-kbd{padding-bottom:0}
+  .eh-grab{display:flex;justify-content:center;padding:8px 0 0;flex:none;touch-action:none;cursor:grab}.eh-grab span{width:40px;height:5px;border-radius:999px;background:#D9CCBB}
+  .eh-head{touch-action:none;padding-top:4px}
+  .eh-btn{font-size:14px;padding:6px;width:48px;height:48px;justify-content:center;border-radius:50%}.eh-btn > span:not(.eh-dot){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+@media (prefers-reduced-motion:reduce){.eh-btn{transition:none}.eh-panel,.eh-scrim{animation:none}}`;
 
-  // ---------- the button, the nudge and the panel ----------
+  // ---------- the button, the nudge and the sheet ----------
   // everything lives in a shadow root, so no page style (full-width buttons, label rules) can reach it
   const host = document.createElement("div"); host.id = "encoreHelp"; const root = host.attachShadow({ mode: "open" }); root.appendChild(css);
   const tpl = document.createElement("div"); tpl.className = "eh-root"; root.appendChild(tpl);
   tpl.innerHTML = `<button type="button" class="eh-btn" aria-label="Need a hand?" title="Need a hand?" aria-haspopup="dialog" aria-expanded="false" aria-controls="ehPanel">${VASE}<span>Need a hand?</span><span class="eh-dot" hidden></span></button>
-<div class="eh-nudge" role="status" hidden><button type="button" class="eh-x" aria-label="Not now">×</button><p>${VASE}<span>${LINE}</span></p><div class="eh-acts"><button type="button" data-nudge="ask">Ask Potto</button><button type="button" data-nudge="person">Get a person</button></div></div>
-<section class="eh-panel" id="ehPanel" role="dialog" aria-modal="false" aria-labelledby="ehTitle" hidden>
-  <div class="eh-head"><span class="eh-face">${VASE}</span><div><h2 id="ehTitle">Need a hand?</h2><small>Potto answers from the help guide. A person can too.</small></div><button type="button" class="eh-x" aria-label="Close help">×</button></div>
-  <div class="eh-body" id="ehBody"><div class="eh-chat"><div class="eh-log" aria-live="polite" style="display:grid;gap:10px"></div></div><div class="eh-chips" role="group" aria-label="Common questions"></div><div class="eh-convos" hidden></div><div class="eh-form-wrap" hidden></div></div>
-  <form class="eh-ask"><textarea rows="1" aria-label="Ask Potto a question" placeholder="Ask me anything" maxlength="1000"></textarea><button type="submit" class="eh-go">Ask</button></form>
+<div class="eh-nudge" role="status" hidden><button type="button" class="eh-nx" aria-label="Not now">${X_ICON}</button><p>${VASE}<span>${LINE}</span></p><div class="eh-acts"><button type="button" data-nudge="ask">Ask Potto</button><button type="button" data-nudge="person">Get a person</button></div></div>
+<div class="eh-scrim" hidden></div>
+<section class="eh-panel" id="ehPanel" role="dialog" aria-modal="true" aria-labelledby="ehTitle" hidden>
+  <div class="eh-grab" aria-hidden="true"><span></span></div>
+  <div class="eh-head"><span class="eh-face">${VASE}</span><div><h2 id="ehTitle" tabindex="-1">Need a hand?</h2><small class="eh-sub">Potto answers from the help guide. A person replies within a day.</small></div><button type="button" class="eh-x" aria-label="Close help">${X_ICON}</button></div>
+  <div class="eh-body" id="ehBody"><div class="eh-chat"><div class="eh-log"></div><p class="eh-say" role="status" aria-live="polite"></p></div><div class="eh-chips" role="group" aria-label="Common questions"></div><div class="eh-earlier" hidden></div><div class="eh-form-wrap" hidden></div></div>
+  <form class="eh-ask"><textarea rows="1" aria-label="Ask Potto a question" placeholder="Ask me anything" maxlength="1000" enterkeyhint="send"></textarea><button type="submit" class="eh-go">Ask</button></form>
   <div class="eh-foot"><button type="button" class="eh-human">Talk to a person</button></div>
 </section>`;
   // onboarding forms end at the bottom of the screen: leave room to scroll their last button clear of ours
@@ -102,7 +155,9 @@
     // dialogs open and close between ticks: look again soon after the page changes
     let t = 0; new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = 0; place(); }, 120); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] }); };
   const $ = (s) => root.querySelector(s);
-  const btn = () => $(".eh-btn"), panel = () => $(".eh-panel"), nudge = () => $(".eh-nudge");
+  const btn = () => $(".eh-btn"), panel = () => $(".eh-panel"), nudge = () => $(".eh-nudge"), scrim = () => $(".eh-scrim");
+  const isOpen = () => !panel().hidden;
+  const phone = () => matchMedia("(max-width:600px)").matches;
 
   // Sit above whatever is fixed at the bottom right (tab bars, Edit page and Shop buttons, sticky bars), never on it.
   // When a full-height dialog leaves no room there (the event wizard on a phone), dock in the top left instead.
@@ -124,110 +179,222 @@
   const modalOpen = () => { try { if (document.querySelector("#wizBg .wiz, #wizBg[data-wizard]") && shown(document.querySelector("#wizBg"))) return true;
     for (const e of document.querySelectorAll('[role=dialog], [aria-modal=true], dialog[open], .store-pane, .sheet, .pin-bg, .fv-sv')) if (shown(e)) return true; } catch {} return false; };
   function place() {
-    try { const b = btn(); if (!b) return; const away = panel().hidden && modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
+    try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
       const h = obstacleHeight(), dock = h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);
       const bottom = dock ? 16 : Math.round(h ? h + 12 : 16); document.documentElement.style.setProperty("--eh-bottom", bottom + "px");
     } catch {}
   }
 
-  // ---------- chat ----------
-  let log = []; try { log = JSON.parse(ss.get(LOG) || "[]").slice(-20); } catch {}
-  const saveLog = () => ss.set(LOG, JSON.stringify(log.slice(-20)));
-  function msgHTML(m) {
-    const acts = (m.actions || []).map((a) => a.href === "#person" ? `<button type="button" data-person>${esc(a.label)}</button>` : `<a href="${esc(a.href)}">${esc(a.label)}</a>`).join("");
-    return `<div class="eh-m ${m.role === "potto" ? "potto" : "me"}">${m.role === "potto" ? "<small>Potto</small>" : ""}${esc(m.text)}${acts ? `<div class="eh-acts">${acts}</div>` : ""}</div>`;
+  // ---------- the chat, kept on this device for a week (cleared when you sign in or out) ----------
+  let within = "within a day";
+  let log = []; try { const c = JSON.parse(ls.get(LOG) || "null"); if (c && Date.now() - c.at < 7 * 864e5 && c.signed === signedIn()) log = (c.items || []).slice(-40); } catch {}
+  const saveLog = () => ls.set(LOG, JSON.stringify({ at: Date.now(), signed: signedIn(), items: log.slice(-40) }));
+  const DO_FN = { share: "share", copy: "copy", preview: "preview", guests: "guests", open: "open", new: "newEvent" };
+  function actHTML(a) {
+    if (a.href === "#person") return `<button type="button" data-person>${esc(a.label)}</button>`;
+    const m = /^#do:([a-z]+)$/.exec(a.href);
+    if (m) { if (!DO_FN[m[1]]) return ""; const A = app();
+      // in the app, with no event to act on: the one step that helps is making one
+      if (A && m[1] !== "new" && !appEvent()) return `<button type="button" class="eh-do" data-do="new">New event</button>`;
+      return `<button type="button" class="${m[1] === "new" || m[1] === "share" ? "eh-do" : ""}" data-do="${m[1]}">${esc(a.label)}</button>`; }
+    return /^\/(?!\/)/.test(a.href) ? `<a href="${esc(a.href)}">${esc(a.label)}</a>` : "";
   }
-  function drawLog() { const L = $(".eh-log"), first = { role: "potto", text: ONB && !signedIn() ? "Hi, I'm Potto. Ask me anything about getting started, or pick one below." : "Hi, I'm Potto. Ask me anything, or pick one below." };
-    L.innerHTML = [first, ...log].map(msgHTML).join(""); const B = $("#ehBody"); B.scrollTop = B.scrollHeight; }
+  function msgHTML(m, i) {
+    if (m.role === "ticket") return ticketHTML(m, i);
+    if (m.role !== "potto") return `<div class="eh-m me">${esc(m.text)}</div>`;
+    const acts = [...new Set((m.actions || []).map(actHTML).filter(Boolean))].join("");
+    const rate = m.q && m.section !== undefined ? (m.rated ? `<div class="eh-rate" role="status">${m.rated === "up" ? "Thanks for telling me." : "Sorry about that. A person can pick this up, and they'll see this chat."}</div>`
+      : `<div class="eh-rate" role="group" aria-label="Did this help?"><span>Did this help?</span><button type="button" data-rate="up" data-i="${i}" aria-label="Yes, this helped">${UP}</button><button type="button" data-rate="down" data-i="${i}" aria-label="No, this didn't help">${DOWN}</button></div>`) : "";
+    const rel = (m.related || []).length ? `<div class="eh-rel">Also: ${m.related.map((r) => `<button type="button" data-q="${esc(r.q)}">${esc(r.title)}</button>`).join(", ")}</div>` : "";
+    const down = m.rated === "down" && !(m.actions || []).some((a) => a.href === "#person") ? `<div class="eh-acts"><button type="button" data-person>Talk to a person</button></div>` : "";
+    return `<div class="eh-m potto" data-i="${i}"><small>Potto</small>${esc(m.text)}${acts ? `<div class="eh-acts">${acts}</div>` : ""}${down}${rel}${rate}</div>`;
+  }
+  const greet = () => ({ role: "potto", text: PLANS && !signedIn() ? "Hi, I'm Potto. Looking for an invite? I can help you find it." : ONB && !signedIn() ? "Hi, I'm Potto. Ask me anything about getting started, or pick one below." : "Hi, I'm Potto. Ask me anything, or pick one below." });
+  function drawLog(keepScroll) { const L = $(".eh-log"), B = $("#ehBody"), top = B.scrollTop;
+    L.innerHTML = [greet(), ...log].map((m, i) => msgHTML(m, i - 1)).join("") + (log.length ? `<button type="button" class="eh-clear" data-clear>Start over</button>` : "");
+    bindTicketForms(L); drawEarlier(); B.scrollTop = keepScroll ? top : B.scrollHeight; }
   function drawChips() { $(".eh-chips").innerHTML = chips().map(([label, q]) => `<button type="button" data-q="${esc(q)}">${esc(label)}</button>`).join(""); }
   let busy = false;
   async function ask(text) {
     text = String(text || "").trim(); if (!text || busy) return; busy = true; const go = $(".eh-go"); go.disabled = true;
-    log.push({ role: "host", text }); drawLog(); const L = $(".eh-log"); L.insertAdjacentHTML("beforeend", `<div class="eh-m potto eh-wait"><small>Potto</small>Thinking…</div>`);
+    log.push({ role: "host", text }); drawLog(); $(".eh-log").insertAdjacentHTML("beforeend", `<div class="eh-m potto eh-wait"><small>Potto</small>Thinking…</div>`); say("Potto is thinking."); $("#ehBody").scrollTop = $("#ehBody").scrollHeight;
     let m;
-    try { const r = await fetch("/api/help/ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, page: P + location.search + location.hash, eventId: ctx().eventId || "", history: log.slice(-9, -1).map((x) => ({ role: x.role, text: x.text })) }) });
+    try { const r = await fetch("/api/help/ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, page: P + location.search + location.hash, eventId: ctx().eventId || appEvent()?.id || "", history: log.filter((x) => x.role !== "ticket").slice(-9, -1).map((x) => ({ role: x.role, text: x.text })) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) m = { role: "potto", text: j.message || "I couldn't answer that just now. A person can help.", actions: [{ label: "Talk to a person", href: "#person" }] };
-      else { const acts = (j.actions || []).filter((a) => a && a.label && a.href); if (j.suggestHuman && !acts.some((a) => a.href === "#person")) acts.push({ label: "Talk to a person", href: "#person" }); m = { role: "potto", text: j.answer || "I'm not sure. A person can help.", actions: acts }; }
+      else { const acts = (j.actions || []).filter((a) => a && a.label && a.href); if (j.suggestHuman && !acts.some((a) => a.href === "#person")) acts.push({ label: "Talk to a person", href: "#person" });
+        m = { role: "potto", text: j.answer || "I'm not sure. A person can help.", actions: acts, section: j.section || null, mode: j.mode || "", related: j.related || [], q: text }; }
     } catch { m = { role: "potto", text: "I can't reach Pottery Lab right now. Check your connection, or talk to a person.", actions: [{ label: "Talk to a person", href: "#person" }] }; }
-    log.push(m); saveLog(); drawLog(); busy = false; go.disabled = false; $(".eh-ask textarea").focus();
+    log.push(m); saveLog(); drawLog(); busy = false; go.disabled = false; say("Potto: " + m.text);
+    // the answer reads from its first line, not from the thumbs under it
+    const last = [...root.querySelectorAll(".eh-log .eh-m.potto")].at(-1), B = $("#ehBody"); if (last) B.scrollTop = Math.max(0, last.offsetTop - B.offsetTop - 64);
+    if (!phone()) $(".eh-ask textarea").focus({ preventScroll: true });
+  }
+  // screen readers hear the newest message once, not the whole chat every time it's drawn
+  const say = (t) => { const s = $(".eh-say"); s.textContent = ""; setTimeout(() => { s.textContent = t; }, 60); };
+  async function rate(i, value) {
+    const m = log[i]; if (!m || m.rated) return; m.rated = value; saveLog(); drawLog(true);
+    // the thumbs are gone: focus goes to what replaced them, not to the page
+    const st = $(`.eh-log [data-i="${i}"] .eh-rate`); if (st) { st.tabIndex = -1; st.focus({ preventScroll: true }); }
+    try { await fetch("/api/help/rate", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value, section: m.section || "", question: m.q || "", mode: m.mode || "", page: P + location.search }) }); } catch {}
   }
 
-  // ---------- your conversations ----------
-  let tickets = [], me = null;
+  // ---------- app actions: the share sheet, copy, preview, guests, a new event ----------
+  function runDo(name) {
+    const fn = DO_FN[name]; if (!fn) return; const A = app();
+    if (!A || typeof A[fn] !== "function") { location.href = "/?app=1&do=" + encodeURIComponent(name); return; }
+    close(); setTimeout(() => { let ok = false; try { ok = A[fn]() !== false; } catch {}
+      if (!ok) { log.push({ role: "potto", text: "I couldn't find an event to do that on. Make one first, and I'll help you share it.", actions: [{ label: "New event", href: "#do:new" }] }); saveLog(); open(); } }, 80);
+  }
+  // a link from another page (/?app=1&do=share) runs once the app has loaded its events
+  function doFromUrl() {
+    const q = new URLSearchParams(location.search), name = q.get("do"); if (!name || !DO_FN[name]) return;
+    q.delete("do"); try { history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); } catch {}
+    let n = 0; const t = setInterval(() => { n++; const A = app(); const ready = A && (A.ready ? A.ready() : true);
+      if (ready || n > 60) { clearInterval(t); if (A) runDo(name); } }, 150);
+  }
+
+  // ---------- conversations with a person ----------
+  let tickets = [], me = null, poll = 0;
   const lastTeam = (t) => Math.max(0, ...(t.thread || []).filter((x) => x.by === "team").map((x) => x.at || 0));
   const seenAt = () => +(ls.get(SEEN) || 0);
   async function loadTickets(force) {
     if (!signedIn()) return; const cached = ss.get("encore.help.t"); if (!force && cached) { try { const c = JSON.parse(cached); if (Date.now() - c.at < 5 * 60e3) { tickets = c.tickets; return; } } catch {} }
-    try { const r = await fetch("/api/help/tickets", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json(); tickets = j.tickets || []; window.__ehAdmin = !!j.admin; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); } catch {}
+    try { const r = await fetch("/api/help/tickets", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json(); tickets = j.tickets || []; window.__ehAdmin = !!j.admin; if (j.replyWithin) within = j.replyWithin; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); } catch {}
   }
   function badge() { const unread = tickets.some((t) => lastTeam(t) > seenAt()); const d = $(".eh-dot"); if (d) d.hidden = !unread; btn().setAttribute("aria-label", unread ? "Need a hand? You have a new reply" : "Need a hand?"); }
-  function drawConvos() {
-    const box = $(".eh-convos"); if (!tickets.length && !window.__ehAdmin) { box.hidden = true; return; } box.hidden = false; const seen = openSeen ?? seenAt();
-    box.innerHTML = `<h3>Your conversations</h3>${window.__ehAdmin ? `<p class="eh-note"><a href="/support">Open the team inbox</a></p>` : ""}` + tickets.map((t) => `<details class="eh-convo" data-t="${esc(t.id)}"${lastTeam(t) > seen ? " open" : ""}><summary><span class="eh-pill ${esc(t.status)}">${esc({ open: "Open", waiting: "Replied", solved: "Solved" }[t.status] || t.status)}</span><span>${esc(String(t.message || "").slice(0, 60))}${String(t.message || "").length > 60 ? "…" : ""}</span>${lastTeam(t) > seen ? `<span class="eh-new">New reply</span>` : ""}</summary>${(t.thread || []).map((x) => `<div class="eh-m ${x.by === "team" ? "team" : "me"}">${x.by === "team" ? "<small>Pottery Lab</small>" : ""}${esc(x.text)}</div>`).join("")}<form data-reply="${esc(t.id)}"><input aria-label="Reply" placeholder="Reply" maxlength="4000"><button type="submit" class="eh-go">Send</button></form></details>`).join("");
-    box.querySelectorAll("form[data-reply]").forEach((f) => f.onsubmit = async (e) => { e.preventDefault(); const i = f.querySelector("input"), text = i.value.trim(); if (!text) return; f.querySelector("button").disabled = true;
+  const STATUS = { open: "Sent", waiting: "Replied", solved: "Done" };
+  function threadHTML(t, seen, withChat) {
+    const head = `<div class="eh-tk-h"><b>Your message to the team</b><span class="eh-pill ${esc(t.status)}">${esc(STATUS[t.status] || t.status)}</span><span class="eh-note">Ref ${esc(String(t.id).slice(0, 6).toUpperCase())}</span>${lastTeam(t) > seen ? `<span class="eh-new">New reply</span>` : ""}</div>`;
+    const wait = t.status === "open" && !lastTeam(t) ? `<p class="eh-note">A person replies ${esc(within)}, here and by email.${withChat ? " We included your chat with Potto." : ""}</p>` : "";
+    const msgs = (t.thread || []).map((x) => `<div class="eh-m ${x.by === "team" ? "team" : "me"}">${x.by === "team" ? "<small>Pottery Lab</small>" : ""}${esc(x.text)}</div>`).join("");
+    const csat = t.status === "solved" ? (t.csat ? `<p class="eh-rate" role="status">Thanks for telling us.</p>` : `<div class="eh-rate" role="group" aria-label="Did we sort it out?"><span>Did we sort it out?</span><button type="button" data-trate="up" data-t="${esc(t.id)}" aria-label="Yes, you sorted it">${UP}</button><button type="button" data-trate="down" data-t="${esc(t.id)}" aria-label="No, not really">${DOWN}</button></div>`) : "";
+    return head + wait + msgs + csat + `<form data-reply="${esc(t.id)}"><input aria-label="Reply to the team" placeholder="Reply" maxlength="4000" enterkeyhint="send"><button type="submit" class="eh-go">Send</button></form>`;
+  }
+  function ticketHTML(m) { const t = tickets.find((x) => x.id === m.id), seen = openSeen ?? seenAt();
+    if (t) return `<div class="eh-tk" data-t="${esc(t.id)}" tabindex="-1">${threadHTML(t, seen, m.withChat)}</div>`;
+    return `<div class="eh-tk" tabindex="-1"><div class="eh-tk-h"><b>Your message to the team</b><span class="eh-pill">Sent</span>${m.id ? `<span class="eh-note">Ref ${esc(String(m.id).slice(0, 6).toUpperCase())}</span>` : ""}</div><p class="eh-note">${esc(m.expect || `A person replies ${within}, by email.`)}</p>${m.text ? `<div class="eh-m me">${esc(m.text)}</div>` : ""}</div>`; }
+  function drawEarlier() {
+    const box = $(".eh-earlier"), inLog = new Set(log.filter((m) => m.role === "ticket").map((m) => m.id)), rest = tickets.filter((t) => !inLog.has(t.id));
+    if (!rest.length && !window.__ehAdmin) { box.hidden = true; box.innerHTML = ""; return; } box.hidden = false; const seen = openSeen ?? seenAt(), fresh = rest.some((t) => lastTeam(t) > seen);
+    box.innerHTML = `${window.__ehAdmin ? `<p class="eh-note"><a href="/support">Open the team inbox</a></p>` : ""}${rest.length ? `<details${fresh ? " open" : ""}><summary>Your conversations (${rest.length})${fresh ? ` <span class="eh-new">&nbsp;New reply</span>` : ""}</summary>${rest.map((t) => `<div class="eh-tk" data-t="${esc(t.id)}">${threadHTML(t, seen)}</div>`).join("")}</details>` : ""}`;
+    bindTicketForms(box); badge();
+  }
+  function bindTicketForms(scope) {
+    scope.querySelectorAll("form[data-reply]").forEach((f) => f.onsubmit = async (e) => { e.preventDefault(); const i = f.querySelector("input"), text = i.value.trim(); if (!text) return; f.querySelector("button").disabled = true;
       try { const r = await fetch("/api/help/tickets/" + f.dataset.reply, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't send that.");
-        tickets = tickets.map((t) => (t.id === j.ticket.id ? j.ticket : t)); ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); drawConvos(); } catch (err) { i.value = text; i.setAttribute("aria-invalid", "true"); i.placeholder = err.message; f.querySelector("button").disabled = false; } });
-    badge();
+        tickets = tickets.map((t) => (t.id === j.ticket.id ? j.ticket : t)); ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); drawLog(true); } catch (err) { i.value = text; i.setAttribute("aria-invalid", "true"); i.placeholder = err.message; f.querySelector("button").disabled = false; } });
+  }
+  async function rateTicket(id, value) {
+    try { const r = await fetch(`/api/help/tickets/${encodeURIComponent(id)}/rate`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value }) }); const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ticket) { tickets = tickets.map((t) => (t.id === id ? j.ticket : t)); ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); } } catch {}
+    drawLog(true); if (value === "down") { log.push({ role: "potto", text: "Sorry we didn't sort it out. Tell us what's still wrong and a person will pick it up.", actions: [{ label: "Talk to a person", href: "#person" }] }); saveLog(); drawLog(); }
   }
 
   // ---------- talk to a person ----------
   async function account() { if (me !== null || !signedIn()) return me; try { const j = await (await fetch("/api/me", { credentials: "same-origin" })).json(); me = j?.verified ? j : false; } catch { me = false; } return me; }
+  const deviceLabel = () => { const s = navigator.userAgent; const os = /iPhone/.test(s) ? "iPhone" : /iPad/.test(s) ? "iPad" : /Android/.test(s) ? "Android" : /Mac OS X/.test(s) ? "Mac" : /Windows/.test(s) ? "Windows" : "";
+    const br = /EdgA?\//.test(s) ? "Edge" : /CriOS|Chrome\//.test(s) ? "Chrome" : /FxiOS|Firefox\//.test(s) ? "Firefox" : /Safari\//.test(s) ? "Safari" : ""; return [os, br].filter(Boolean).join(", ") || "This browser"; };
+  const pageLabel = () => { const w = where(); if (/^\/@/.test(P)) return "Your page"; return ({ signup: "Sign up", signin: "Sign in", onboard: "Set up with Potto", share: "The share sheet", wizard: "New event", event: "Your event", guests: "Your guests", plans: "Plans", discover: "Discover" })[w] || (P === "/" ? "Home" : P); };
   async function personForm(topic) {
     open(); const wrap = $(".eh-form-wrap"), acct = await account(), out = !acct;
-    const transcript = log.map((m) => `${m.role === "potto" ? "Potto" : "Me"}: ${m.text}`).join("\n");
-    $(".eh-chat").hidden = true; $(".eh-chips").hidden = true; $(".eh-convos").hidden = true; $(".eh-ask").hidden = true; $(".eh-human").hidden = true; wrap.hidden = false;
-    const c = ctx(), evLine = c.eventId ? ", the event you're on" : "";
-    wrap.innerHTML = `<form class="eh-form" novalidate><h3 id="ehPersonH" tabindex="-1">Talk to a person</h3>
-      ${out ? `<label>What's happening?<select name="topic"><option value="">Pick one</option><option value="code">I need a host code</option><option value="email_taken">My email is already in use</option><option value="reset">My reset email didn't come</option><option value="google">Google sign-in</option><option value="other">Something else</option></select></label>` : ""}
-      <label>What's wrong?<textarea name="message" required>${esc(transcript ? "Here's what I asked Potto:\n" + transcript + "\n\n" : "")}</textarea></label>
+    const chat = log.filter((m) => m.role === "host" || m.role === "potto"), hasQ = chat.some((m) => m.role === "host");
+    $(".eh-chat").hidden = true; $(".eh-chips").hidden = true; $(".eh-earlier").hidden = true; $(".eh-ask").hidden = true; $(".eh-foot").hidden = true; wrap.hidden = false;
+    const c = ctx(), evId = c.eventId || "", ev = appEvent(), evTitle = evId && ev && ev.id === evId ? ev.title : evId ? "The event you're on" : "";
+    wrap.innerHTML = `<form class="eh-form" novalidate><button type="button" class="eh-back">${BACK}Back to Potto</button><div><h3 id="ehPersonH" tabindex="-1">Talk to a person</h3></div><p class="eh-sla">A person replies ${esc(within)}${out ? " by email" : ", here and by email"}.</p>
+      ${out ? `<label>What's happening?<select name="topic"><option value="">Pick one</option>${(PLANS ? [["invite", "I can't find my invite"], ["reply", "Changing my reply"]] : [["code", "I need a host code"], ["email_taken", "My email is already in use"], ["reset", "My reset email didn't come"], ["google", "Google sign-in"]]).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}<option value="other">Something else</option></select></label>` : ""}
+      <label>${hasQ ? `Anything to add? <span class="eh-note">(optional)</span>` : "What do you need?"}<textarea name="message" placeholder="${hasQ ? "Your chat with Potto is included, so you don't have to repeat it." : "A line or two is plenty."}"></textarea></label>
       ${out ? `<label>Your email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>Your name <span class="eh-note">(optional)</span><input name="name" autocomplete="name"></label>`
-        : `<p class="eh-note">We'll reply to <b>${esc(acct.email)}</b> and here.</p><label>Phone <span class="eh-note">(optional, if a call or text is easier)</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label><label>Screenshot <span class="eh-note">(optional)</span><input name="shot" type="file" accept="image/*"></label>`}
+        : ""}
+      <fieldset class="eh-ctx"><legend>We'll include</legend><ul>
+        ${chat.length ? `<li><label><input type="checkbox" name="withChat" checked> Your chat with Potto (${chat.length} ${chat.length === 1 ? "message" : "messages"})</label></li><li><details><summary>See the chat</summary>${chat.map((m) => `<p><b>${m.role === "potto" ? "Potto" : "You"}:</b> ${esc(m.text)}</p>`).join("")}</details></li>` : ""}
+        <li><span>Page:</span> ${esc(pageLabel())}</li>${evTitle ? `<li><span>Event:</span> ${esc(evTitle)}</li>` : ""}<li><span>Device:</span> ${esc(deviceLabel())}</li></ul></fieldset>
+      ${out ? "" : `<p class="eh-note">We'll reply to <b>${esc(acct.email)}</b> and here.</p><details class="eh-more"><summary>Add a phone or a screenshot</summary><div class="eh-form" style="margin-top:8px"><label>Phone <span class="eh-note">(optional, if a call or text is easier)</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label><label>Screenshot <span class="eh-note">(optional)</span><input name="shot" type="file" accept="image/*"></label></div></details>`}
       <div class="eh-hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
-      <p class="eh-note">We'll send this page${evLine} and your browser with it, so you don't have to explain.</p>
       <p class="eh-err" role="alert"></p>
-      <div style="display:flex;gap:8px;align-items:center"><button type="submit" class="eh-go">Send</button><button type="button" class="eh-back">Back to Potto</button></div></form>`;
+      <div class="eh-row"><button type="submit" class="eh-go">Send to the team</button></div></form>`;
     const f = wrap.querySelector("form"), er = f.querySelector(".eh-err");
     if (topic && f.topic) f.topic.value = topic;
     f.querySelector(".eh-back").onclick = backToChat;
-    setTimeout(() => { const t = f.message; t.focus(); t.setSelectionRange(t.value.length, t.value.length); }, 30);
+    setTimeout(() => { $("#ehPersonH").focus(); $("#ehBody").scrollTop = 0; }, 30);
     f.onsubmit = async (e) => { e.preventDefault(); er.textContent = ""; const go = f.querySelector(".eh-go");
-      const message = f.message.value.trim(); if (message.length < 3) { er.textContent = "Say what's wrong, even in a few words."; f.message.focus(); return; }
+      const withChat = !!f.withChat?.checked, message = f.message.value.trim();
+      if (message.length < 3 && !(withChat && hasQ)) { er.textContent = "Say what's wrong, even in a few words."; f.message.focus(); return; }
       if (out && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim())) { er.textContent = "Add your email so we can reply."; f.email.focus(); return; }
       go.disabled = true; go.textContent = "Sending…"; let screenshot = "";
       try {
         const file = f.shot?.files?.[0]; if (file && /^image\//.test(file.type) && file.size < 10e6) { try { const r = await fetch("/api/assets", { method: "POST", credentials: "same-origin", headers: { "Content-Type": file.type }, body: file }); if (r.ok) screenshot = (await r.json()).url || ""; } catch {} }
-        const body = { message, page: P + location.search + location.hash, eventId: c.eventId || "", browser: `${navigator.userAgent} · ${innerWidth}x${innerHeight}`, transcript: log.map((m) => ({ role: m.role, text: m.text })), screenshot, website: f.website.value,
+        const body = { message, page: P + location.search + location.hash, eventId: evId, browser: `${navigator.userAgent} · ${innerWidth}x${innerHeight}`, transcript: withChat ? chat.map((m) => ({ role: m.role, text: m.text, section: m.section || "", rated: m.rated || "" })) : [], screenshot, website: f.website.value,
           ...(out ? { email: f.email.value.trim(), name: f.elements.name.value.trim(), topic: f.topic.value } : { phone: f.phone.value.trim() }) };
         const r = await fetch("/api/help/ticket", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Couldn't send that. Try again.");
-        wrap.innerHTML = `<div class="eh-ok" role="status" tabindex="-1"><b>Sent.</b> ${esc(j.expect || "We'll reply by email, usually within a day.")}</div><button type="button" class="eh-back">Back to Potto</button>`;
-        wrap.querySelector(".eh-back").onclick = backToChat; wrap.querySelector(".eh-ok").focus();
-        log = []; saveLog(); if (!out) { await loadTickets(true); }
-      } catch (err) { er.textContent = err.message; go.disabled = false; go.textContent = "Send"; }
+        if (j.ticket) { tickets = [j.ticket, ...tickets.filter((t) => t.id !== j.id)]; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); }
+        say("Sent. " + (j.expect || `A person replies ${within}.`));
+        log.push({ role: "ticket", id: j.id, withChat: withChat && chat.length > 0, text: j.ticket ? "" : message || chat.filter((m) => m.role === "host").at(-1)?.text || "", expect: j.expect || "" }); saveLog();
+        // scroll the chat, never the sheet (scrollIntoView would also scroll the sheet's clipped box and leave a gap)
+        backToChat(true); const card = [...root.querySelectorAll(".eh-log .eh-tk")].at(-1), B = $("#ehBody"); if (card) { B.scrollTop = Math.max(0, card.offsetTop - B.offsetTop - 16); card.focus({ preventScroll: true }); }
+        startPoll();
+      } catch (err) { er.textContent = err.message; go.disabled = false; go.textContent = "Send to the team"; }
     };
   }
-  function backToChat() { const wrap = $(".eh-form-wrap"); wrap.hidden = true; wrap.innerHTML = ""; $(".eh-chat").hidden = false; $(".eh-chips").hidden = false; $(".eh-ask").hidden = false; $(".eh-human").hidden = false; drawLog(); drawChips(); drawConvos(); $(".eh-ask textarea").focus(); }
+  function backToChat(noFocus) { const wrap = $(".eh-form-wrap"); wrap.hidden = true; wrap.innerHTML = ""; $(".eh-chat").hidden = false; $(".eh-chips").hidden = false; $(".eh-ask").hidden = false; $(".eh-foot").hidden = false; drawLog(); drawChips(); if (noFocus !== true && !phone()) $(".eh-ask textarea").focus(); }
 
   // ---------- open and close ----------
-  let opener = null, openSeen = null;
+  let opener = null, openSeen = null, locked = null, inerted = [];
+  const deepActive = () => { let a = document.activeElement; while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement; return a; };
+  function lockPage() {
+    // iOS Safari scrolls the page under a fixed overlay unless the body itself is pinned: pin it where it was
+    const de = document.documentElement, b = document.body, y = window.scrollY || 0;
+    locked = { y, html: de.style.overflow, pos: b.style.position, top: b.style.top, left: b.style.left, right: b.style.right, width: b.style.width };
+    de.style.overflow = "hidden"; b.style.position = "fixed"; b.style.top = -y + "px"; b.style.left = "0"; b.style.right = "0"; b.style.width = "100%";
+    // the page behind can't be reached by tapping, tabbing or a screen reader while the sheet is open
+    inerted = []; for (const el of document.body.children) if (el !== host && !el.inert && !/^(SCRIPT|STYLE|LINK)$/.test(el.tagName)) { el.inert = true; inerted.push(el); }
+  }
+  function unlockPage() {
+    if (locked) { const de = document.documentElement, b = document.body; de.style.overflow = locked.html; b.style.position = locked.pos; b.style.top = locked.top; b.style.left = locked.left; b.style.right = locked.right; b.style.width = locked.width;
+      try { window.scrollTo({ top: locked.y, behavior: "instant" }); } catch { window.scrollTo(0, locked.y); } locked = null; }
+    for (const el of inerted) el.inert = false; inerted = [];
+  }
+  // the keyboard on a phone: keep the sheet's bottom on top of it, and its height inside what's left
+  function fitViewport() { const v = window.visualViewport, p = panel(); if (!v || !p) return; const kb = Math.max(0, Math.round(innerHeight - v.height - v.offsetTop));
+    p.style.setProperty("--eh-kb", kb + "px"); p.style.setProperty("--eh-vvh", Math.round(v.height) + "px"); p.classList.toggle("eh-kbd", kb > 40); }
   function open(focusAsk) {
-    hideNudge(); const p = panel(); if (!p.hidden) return; opener = document.activeElement; openSeen = seenAt(); p.hidden = false; btn().hidden = true; btn().setAttribute("aria-expanded", "true");
+    hideNudge(); const p = panel(); if (!p.hidden) return; opener = deepActive(); openSeen = seenAt();
+    lockPage(); scrim().hidden = false; p.hidden = false; p.style.transform = ""; btn().hidden = true; btn().setAttribute("aria-expanded", "true");
+    fitViewport(); window.visualViewport?.addEventListener("resize", fitViewport); window.visualViewport?.addEventListener("scroll", fitViewport);
     if (!window.Potto && !document.getElementById("ehMascot")) { const s = document.createElement("script"); s.id = "ehMascot"; s.src = "/mascot.js"; s.onload = face; document.head.appendChild(s); } else face();
-    backToChat(); if (signedIn()) loadTickets().then(drawConvos); if (!focusAsk) setTimeout(() => $(".eh-x").focus(), 0);
+    backToChat(true); if (signedIn()) loadTickets().then(() => { drawLog(); startPoll(); });
+    setTimeout(() => { if (focusAsk === true && !phone()) $(".eh-ask textarea").focus(); else $("#ehTitle").focus(); }, 0);
   }
   function face() { try { if (window.Potto?.svg) $(".eh-face").innerHTML = window.Potto.svg("wave", 40, ""); } catch {} }
-  function close() { const p = panel(); if (p.hidden) return; p.hidden = true; if (openSeen != null && tickets.length) ls.set(SEEN, String(Date.now())); openSeen = null; badge(); btn().hidden = false; btn().setAttribute("aria-expanded", "false"); (opener && document.contains(opener) && opener !== document.body && opener !== host ? opener : btn()).focus(); }
+  function close() { const p = panel(); if (p.hidden) return; p.hidden = true; scrim().hidden = true; p.style.transform = ""; scrim().style.opacity = "";
+    window.visualViewport?.removeEventListener("resize", fitViewport); window.visualViewport?.removeEventListener("scroll", fitViewport); stopPoll(); unlockPage();
+    if (openSeen != null && tickets.length) ls.set(SEEN, String(Date.now())); openSeen = null; badge(); btn().hidden = false; btn().setAttribute("aria-expanded", "false"); place();
+    const back = opener && opener.isConnected && opener !== document.body && opener !== host && !root.contains(opener) ? opener : btn(); try { back.focus({ preventScroll: true }); } catch { back.focus(); } }
+  // replies come into the open sheet while a conversation is waiting on the team
+  function startPoll() { if (poll || !signedIn() || !tickets.some((t) => t.status !== "solved")) return; poll = setInterval(async () => { if (!isOpen() || document.hidden) return; const before = JSON.stringify(tickets); await loadTickets(true); if (JSON.stringify(tickets) !== before) drawLog(true); }, 30e3); }
+  function stopPoll() { clearInterval(poll); poll = 0; }
+  const focusables = () => [...panel().querySelectorAll('button,[href],input:not([type=hidden]),textarea,select,summary,[tabindex]:not([tabindex="-1"])')].filter((e) => !e.disabled && e.getClientRects().length && !e.closest("[hidden],.eh-hp"));
+
+  // swipe down on the handle or the header to close (a phone's sheet). Taps on the X and other buttons stay taps.
+  function swipe(zone) {
+    let d = null;
+    zone.addEventListener("pointerdown", (e) => { if (!phone() || !isOpen() || e.button > 0 || e.target.closest("button,a,input,textarea,select")) return; d = { y: e.clientY, t: Date.now(), id: e.pointerId, dy: 0 }; panel().style.transition = "none"; try { zone.setPointerCapture(e.pointerId); } catch {} });
+    zone.addEventListener("pointermove", (e) => { if (!d || e.pointerId !== d.id) return; d.dy = Math.max(0, e.clientY - d.y); panel().style.transform = d.dy ? `translateY(${d.dy}px)` : ""; scrim().style.opacity = String(Math.max(0.2, 1 - d.dy / 400)); });
+    const end = (e) => { if (!d || (e && e.pointerId !== d.id)) return; const p = panel(), v = d.dy / Math.max(1, Date.now() - d.t), far = d.dy > Math.min(140, p.offsetHeight * 0.25); d = null;
+      p.style.transition = "transform .2s ease-out"; if (far || v > 0.6) { p.style.transform = "translateY(100%)"; setTimeout(close, 180); } else { p.style.transform = ""; scrim().style.opacity = ""; } setTimeout(() => { p.style.transition = ""; }, 220); };
+    zone.addEventListener("pointerup", end); zone.addEventListener("pointercancel", end);
+  }
 
   // ---------- Potto offers help, once a session ----------
-  function offer() { if (ss.get(NUDGED) || !panel().hidden) return; ss.set(NUDGED, "1"); place(); nudge().hidden = false; }
+  function offer(line) { if (ss.get(NUDGED) || isOpen()) return; ss.set(NUDGED, "1"); nudge().querySelector("p span").textContent = line || LINE; place(); nudge().hidden = false; }
   function hideNudge() { const n = nudge(); if (n && !n.hidden) n.hidden = true; }
   let lastSig = "", since = Date.now(), lastInput = 0;
   const sig = () => { const w = document.querySelector("#wizBg .wiz"); return [where(), location.pathname, location.search, location.hash, w ? (w.getAttribute("aria-label") || "") + (w.querySelector(".wiz-dots .on")?.textContent || w.querySelector("h2")?.textContent || "") : "", document.querySelector("main h1, form:not([hidden]) h1, h1")?.textContent?.slice(0, 60) || ""].join("|"); };
   function watchStuck() {
     setInterval(() => { if (document.hidden) { since = Date.now(); return; } const s = sig(); if (s !== lastSig) { lastSig = s; since = Date.now(); return; }
-      const w = where(); if (w && w !== "" && Date.now() - since >= 60e3 && Date.now() - lastInput > 15e3) offer(); }, 3000);
+      const w = where(); if (w && Date.now() - since >= 60e3 && Date.now() - lastInput > 15e3) offer(); }, 3000);
     document.addEventListener("input", (e) => { if (e.target !== host) lastInput = Date.now(); }, true);
     // tapping a button on the step (Copy invite, Next, Save) is progress
     document.addEventListener("click", (e) => { if (e.target !== host && e.target.closest?.("button, a, [role=button]")) since = Date.now(); }, true);
@@ -241,25 +408,42 @@
     new MutationObserver((ms) => { const els = new Set(); for (const m of ms) { const el = (m.target.nodeType === 1 ? m.target : m.target.parentElement)?.closest?.(ERR); if (el) els.add(el); } for (const el of els) check(el, el.matches("#pipToast, .toast")); }).observe(document.body, { childList: true, subtree: true, characterData: true });
     // the sign-in page reloads with ?error=…: two misses in a row count as the same error twice
     if (P === "/login" && /[?&]error=/.test(location.search)) { const n = +(ss.get("encore.help.loginErr") || 0) + 1; ss.set("encore.help.loginErr", String(n)); if (n >= 2) setTimeout(offer, 800); }
+    // a known stuck point: Plans with nothing on it, for someone who came looking for an invite
+    if (PLANS) setTimeout(() => { const e = document.querySelector(".empty"); if (e && e.getClientRects().length && /Nothing on yet/i.test(e.textContent || "")) offer("Looking for an invite? I can help you find it."); }, 6000);
     window.addEventListener("encore:help-error", (e) => { const d = document.createElement("span"); d.textContent = String(e.detail?.message || e.detail || "error"); check(d, false); });
   }
 
   function start() {
     btn().onclick = () => open();
-    $(".eh-x").onclick = close;
+    // each X by its own selector: the nudge's X comes first in the template, so a bare ".eh-x" would find it
+    panel().querySelector(".eh-head .eh-x").addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); close(); });
+    scrim().addEventListener("click", () => close());
+    swipe($(".eh-grab")); swipe($(".eh-head"));
     $(".eh-human").onclick = () => personForm();
-    nudge().querySelector(".eh-x").onclick = hideNudge;
-    nudge().querySelector('[data-nudge="ask"]').onclick = () => { open(true); setTimeout(() => $(".eh-ask textarea").focus(), 30); };
+    nudge().querySelector(".eh-nx").onclick = () => { hideNudge(); btn().focus(); };
+    nudge().querySelector('[data-nudge="ask"]').onclick = () => { open(true); if (PLANS && !log.length) ask(Q.findInv[1]); };
     nudge().querySelector('[data-nudge="person"]').onclick = () => { const t = P === "/signup" ? (/(already have an account)/i.test(document.getElementById("err")?.textContent || "") ? "email_taken" : /invite|code/i.test(document.getElementById("err")?.textContent || "") ? "code" : "") : /^\/(forgot|reset)$/.test(P) ? "reset" : ""; personForm(t); };
     $(".eh-ask").onsubmit = (e) => { e.preventDefault(); const t = $(".eh-ask textarea"); const v = t.value; t.value = ""; ask(v); };
-    $(".eh-ask textarea").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $(".eh-ask").requestSubmit(); } });
-    root.addEventListener("click", (e) => { const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q); if (e.target.closest("[data-person]")) personForm(); });
-    root.addEventListener("keydown", (e) => { if (e.key !== "Escape") return; if (!panel().hidden) { e.stopPropagation(); close(); } else if (!nudge().hidden) { e.stopPropagation(); hideNudge(); btn().focus(); } });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel().hidden && !document.querySelector("#wizBg") ) close(); });
+    $(".eh-ask textarea").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $(".eh-ask").requestSubmit(); } });
+    root.addEventListener("click", (e) => { const t = e.target.closest?.("[data-q],[data-person],[data-do],[data-rate],[data-trate],[data-clear]"); if (!t) return;
+      if (t.dataset.q) return ask(t.dataset.q); if (t.hasAttribute("data-person")) return personForm(); if (t.dataset.do) return runDo(t.dataset.do);
+      if (t.dataset.rate) return rate(+t.dataset.i, t.dataset.rate); if (t.dataset.trate) return rateTicket(t.dataset.t, t.dataset.trate);
+      if (t.hasAttribute("data-clear")) { log = log.filter((m) => m.role === "ticket"); saveLog(); drawLog(); $("#ehTitle").focus(); } });
+    // Esc closes, and Tab stays inside, before any page handler (the wizard's own Esc) sees the key
+    window.addEventListener("keydown", (e) => {
+      if (isOpen()) { if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+        if (e.key === "Tab") { const f = focusables(); if (!f.length) return; const a = root.activeElement, i = f.indexOf(a); if (e.shiftKey ? i <= 0 : i === f.length - 1 || i < 0) { e.preventDefault(); (e.shiftKey ? f[f.length - 1] : f[0]).focus(); } } return; }
+      if (e.key === "Escape" && !nudge().hidden) { e.stopImmediatePropagation(); hideNudge(); } }, true);
+    // the reply time people are promised (ENCORE_SUPPORT_REPLY_HOURS on the server)
+    const cached = ss.get("encore.help.within"); if (cached) within = cached;
+    fetch("/api/help/info", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.replyWithin) { within = j.replyWithin; ss.set("encore.help.within", within); $(".eh-sub").textContent = `Potto answers from the help guide. A person replies ${within}.`; } }).catch(() => {});
+    $(".eh-sub").textContent = `Potto answers from the help guide. A person replies ${within}.`;
     watchStuck();
     if (signedIn()) loadTickets().then(badge);
-    if (new URLSearchParams(location.search).get("help") === "1") { setTimeout(async () => { await loadTickets(true); open(); }, 400); }
-    window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask }; // review round 8: open() for the wizard's own link
+    const q = new URLSearchParams(location.search);
+    if (q.get("help") === "1") { setTimeout(async () => { await loadTickets(true); open(); }, 400); }
+    doFromUrl();
+    window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask, isOpen }; // review round 8: open() for the wizard's own link
   }
   document.body ? mount() : document.addEventListener("DOMContentLoaded", mount);
 })();

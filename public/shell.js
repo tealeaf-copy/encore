@@ -2,7 +2,7 @@
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
 // A friend's invite (/g) never shows the brands link: a guest opening a dinner invite isn't shopping for hosts.
 // "Need a hand?" (public/help.js): Potto's help panel for signed-in hosts, on the app and every public page with this shell.
-(function () { try { if (window.__encoreHelpLoad || !/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/g") return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
+(function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g") return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Collapsible side navigation: one setting for both the public rail and the app's own sidebar, kept per device.
 (function () {
   if (window.__encoreNavFold) return; window.__encoreNavFold = 1;

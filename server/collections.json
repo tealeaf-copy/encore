@@ -1,0 +1,13 @@
+{
+  "_about": "Editorial overrides for Discover's collections (server/collections.js). Collections fill themselves from tags, activity, time and place; this file only nudges them. pin: event ids or host handles to put first (they still have to be public, upcoming and from a real host). exclude: event ids or host handles to leave out. title and intro replace the defaults. hidden: collections to switch off. order: the order shelves show in.",
+  "order": ["weekend", "quiet-nerdy", "solo", "cozy-winter", "eat-around", "loved-hosts"],
+  "hidden": [],
+  "collections": {
+    "quiet-nerdy": { "pin": [], "exclude": [] },
+    "solo": { "pin": [], "exclude": [] },
+    "cozy-winter": { "pin": [], "exclude": [] },
+    "eat-around": { "pin": [], "exclude": [] },
+    "weekend": { "pin": [], "exclude": [] },
+    "loved-hosts": { "pin": [], "exclude": [] }
+  }
+}

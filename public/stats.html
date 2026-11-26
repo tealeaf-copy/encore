@@ -1,0 +1,74 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/calm.js"></script><script src="/authguard.js"></script>
+<title>Your stats · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lists.css">
+<style>
+/* /me: your stats as a guest and a host, private by default, and a soft "How was it?" (public/stats.js, server/stats.js) */
+*{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--sys-sans)}
+a{color:inherit}
+.wrap{max-width:760px}
+h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:0}
+.lede{display:flex;gap:8px;align-items:center;margin:8px 0 20px;color:var(--pl-soft);font-size:15px}.lede svg{flex:none;color:var(--pl-soft)}
+.stack{display:grid;gap:16px}
+/* How was it? one soft card per recent night out, at most three */
+.how{display:grid;gap:4px;padding:16px;border:1px solid var(--pl-line-strong);border-radius:var(--pl-r-lg);background:var(--pl-surface)}
+.how small{font:600 13px var(--sys-sans);color:var(--pl-accent-text)}.how b{font:400 20px/1.25 var(--sys-display);letter-spacing:-.01em}.how p{margin:0;color:var(--pl-soft);font-size:14px}
+.how .acts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:8px}
+.go{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:var(--pl-r-btn);background:var(--pl-accent);color:var(--pl-on-accent)!important;font:600 15px var(--sys-sans);text-decoration:none;border:1px solid var(--pl-accent)}
+.go:hover{background:var(--pl-accent-press)}
+.q{display:inline-flex;align-items:center;min-height:44px;border:0;background:none;padding:0;color:var(--pl-soft);font:500 14px var(--sys-sans);cursor:pointer;text-decoration:none}.q:hover{text-decoration:underline;text-underline-offset:3px}
+.q.clay{color:var(--pl-accent-text);font-weight:600}
+/* nothing yet: Potto, one line, one way forward */
+.empty{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;padding:18px 16px;background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:var(--pl-r-lg)}
+.empty b{display:block;font:400 20px/1.25 var(--sys-display);letter-spacing:-.01em}.empty p{margin:4px 0 6px;color:var(--pl-soft);font-size:14px}
+.empty .potto{width:72px;height:72px}
+/* on your page: what shows */
+.pub{padding:16px;border:1px dashed var(--pl-line-strong);border-radius:var(--pl-r-lg)}
+.pub h2{margin:0;font:600 16px var(--sys-title)}.pub p{margin:4px 0 0;color:var(--pl-soft);font-size:14px}
+.pub .acts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:6px}
+.saved{font-size:13px;color:var(--pl-success)}
+.out{padding:20px 16px;background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:var(--pl-r-lg)}.out p{margin:4px 0 12px;color:var(--pl-soft)}
+</style><script src="/mascot.js"></script></head><body>
+<main class="ls-wrap wrap" id="m">
+  <h1>Your stats</h1>
+  <p class="lede" id="lede"></p>
+  <div id="s" data-calm="stats"></div>
+</main>
+<script src="/stats.js"></script>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]), S = window.PLStats;
+  const LOCK = S.icon("lock", 16), el = $("#s");
+  const get = async (u) => { const r = await fetch(u, { credentials: "same-origin" }); if (!r.ok) throw Object.assign(new Error(String(r.status)), { status: r.status }); return r.json(); };
+  let D; try { D = await get("/api/me/stats"); } catch (e) {
+    $("#lede").textContent = "";
+    el.innerHTML = e.status === 401 ? `<div class="out"><b style="font:400 20px var(--sys-display)">Sign in to see your stats</b><p>Events you've gone to, hosts you follow, the places you've explored. Only you see them.</p><a class="go" href="/login?next=%2Fme">Sign in</a></div>`
+      : `<div class="out"><p>Couldn't load your stats. Check your connection, then try again.</p></div>`; return; }
+  let CI = []; try { CI = (await get("/api/me/checkins")).checkins || []; } catch {}
+  let show = D.show || [], edit = false;
+  const SKIP = "pl.howSkip"; const skipped = () => { try { return JSON.parse(localStorage.getItem(SKIP) || "[]"); } catch { return []; } };
+  $("#lede").innerHTML = `${LOCK}<span>Only you see these, unless you pick some for your page.</span>`;
+  const potto = (pose) => window.Potto ? window.Potto.svg(pose, 72, "Potto") : "";
+  const guestEmpty = `<div class="empty">${potto("wave")}<div><b>Your first night out starts this</b><p>Say you're in to something small this week. Your stats fill in from there.</p><a class="q clay" href="/discover">Find something this week</a></div></div>`;
+  const hostEmpty = `<div class="empty">${potto("carry")}<div><b>Nothing hosted yet</b><p>Host one small night and you'll see guests welcomed, regulars and would-go-again here.</p><a class="q clay" href="/guides/first-supper">Host your first supper club</a></div></div>`;
+  function draw() {
+    const how = CI.filter((c) => !skipped().includes(c.eventId)).map((c) => `<div class="how" data-ev="${esc(c.eventId)}"><small>How was it?</small><b>${esc(c.title)}</b><p>${c.host ? `${esc(c.host)} would love a word. ` : ""}A tap or a line, whatever you like.</p><div class="acts"><a class="go" href="${esc(c.link)}">Leave kudos</a><button type="button" class="q" data-skip="${esc(c.eventId)}">Not now</button></div></div>`).join("");
+    const any = D.guest.length || D.host.length, mine = [...D.host, ...D.guest].filter((x) => show.includes(x.key));
+    el.innerHTML = `<div class="stack">${how}
+      ${D.host.length ? S.card(D.host, { title: "As a host", edit, show }) : ""}
+      ${D.guest.length ? S.card(D.guest, { title: "As a guest", edit, show }) : D.host.length ? "" : guestEmpty}
+      ${!D.host.length && !D.guest.length && D.handle ? hostEmpty : ""}
+      ${any && D.handle ? `<div class="pub"><h2>On your page</h2><p>${mine.length ? `Your page shows ${mine.length === 1 ? "one stat" : mine.length + " stats"}: ${esc(mine.map((x) => x.key === "kinds" ? "favourite kinds" : x.label).join(", "))}.` : "Nothing yet. Your stats stay private until you pick some."}</p>
+        <div class="acts"><button type="button" class="q clay" id="editBtn">${edit ? "Done" : "Choose what shows"}</button>${D.handle ? `<a class="q" href="/@${encodeURIComponent(D.handle)}">See your page</a>` : ""}<span class="saved" id="saved" aria-live="polite"></span></div></div>` : ""}${!D.host.length && D.guest.length ? `<p style="margin:0;font-size:14px;color:var(--pl-soft)">Thinking of hosting something small? <a class="q clay" style="min-height:0" href="/guides/first-supper">Start with a guide</a></p>` : ""}</div>`;
+    el.querySelectorAll("[data-skip]").forEach((b) => (b.onclick = () => { try { localStorage.setItem(SKIP, JSON.stringify([...skipped(), b.dataset.skip].slice(-40))); } catch {} draw(); }));
+    const eb = $("#editBtn"); if (eb) eb.onclick = () => { edit = !edit; draw(); };
+    el.querySelectorAll("[data-show]").forEach((c) => (c.onchange = async () => { const k = c.dataset.show; show = c.checked ? [...new Set([...show, k])] : show.filter((x) => x !== k);
+      try { const r = await fetch("/api/me/stats/show", { method: "PUT", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ show }) }); const j = await r.json(); show = j.show || show; const s = $("#saved"); if (s) s.textContent = "Saved"; } catch {} }));
+  }
+  draw();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

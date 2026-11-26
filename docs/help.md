@@ -447,3 +447,24 @@ Keywords: talk to a person, human, support, contact, someone, real person, email
 Questions: Can I talk to a person? | How do I contact support?
 Tap Talk to a person in this panel. Say what's wrong, or nothing at all: we attach your chat with Potto, the page you're on and your event, so you don't have to explain. A person replies here and by email.
 [Talk to a person](#person)
+
+## Collections on Discover
+
+Keywords: collections, shelves, quiet and nerdy, going solo, this weekend, cozy winter nights, eat your way around, most-loved hosts
+Questions: What are collections? | How does an event get into a collection? | Why isn't my event in a collection?
+Collections are themed shelves on Discover, like "Quiet and nerdy" or "Good for going solo". They fill themselves from public, upcoming events: the title, tags, kind of event, the comfort notes you pick (come alone friendly, quiet corner), the time and the place. Link-only, members-only and past events never show. To land on "Good for going solo", mark your event come alone friendly.
+[See the collections](/collections)
+
+## Guides for hosts
+
+Keywords: guides, guide, next step, first supper club, monthly game night, run a drop, grow your regulars
+Questions: What is Your next step on Home? | How do I start a monthly game night? | Where are the host guides?
+Guides are short programs for hosts. Each step opens the part of Pottery Lab that does it, and ticks itself off once you've done it. Home shows one "Your next step" card; tap Not now to put it away for a week.
+[See the guides](/guides)
+
+## Your stats
+
+Keywords: stats, my stats, streak, events gone to, neighbourhoods explored, regulars, private stats
+Questions: Where are my stats? | Who can see my stats? | How do I show stats on my page?
+Your stats are on the Me sheet under Your stats: events you've gone to, hosts you follow, neighbourhoods explored and, if you host, guests welcomed and regulars. Only you see them. To show some on your page, tap Choose what shows and pick them one at a time.
+[See your stats](/me)

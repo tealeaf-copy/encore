@@ -134,7 +134,8 @@
     (document.querySelector("main") || document.body).prepend(box); }
   /** After a save: the page wears the new kit right away. */
   let savedKit = null;
-  function saved(k) { if (!k) return; mineKit = k; savedKit = k; if (document.body.classList.contains("store")) use(k); }
+  function saved(k) { if (!k) return; mineKit = k; savedKit = k; if (!document.body.classList.contains("store")) return; const h = window.__encoreStoreHost;
+    if (h && window.EncoreStore?.apply) { try { const keep = [...document.querySelectorAll("#storeLinks > :not(a[target])")]; window.EncoreStore.apply({ ...h, brandKit: k, tagline: k.voice || h.tagline }); const ln = document.getElementById("storeLinks"); keep.forEach((x) => ln?.appendChild(x)); return; } catch {} } use(k); } /* the host page redraws in the new kit (cover, portrait, fonts, colours) */
   let current = null, mineKit = null, last = null;
   /** The page's kit (the host whose page, event or invite this is). Re-dresses the last event look drawn with it. */
   function use(k) { if (!k || !PAIRS[k.pair]) return; current = k;

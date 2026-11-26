@@ -17,8 +17,8 @@ html.kit-on{
 @media (min-width:861px){html.kit-on{--kit-fs-display:calc(40px * var(--kit-dk,1));--kit-fs-title:calc(28px * var(--kit-dk,1))}}
 
 /* ---- two families: body face everywhere, display face for display and titles ---- */
-html.kit-on body :where(*:not(.kit-off,.kit-off *,svg,svg *,.lk-title,.kit-keep)){font-family:var(--kit-body)!important}
-html.kit-on body :where(h1,h2,h3,.kit-d,.nu-title,.lk-title,.gxhi,.mh-title,.mc-hv figcaption b):where(:not(.kit-off,.kit-off *)){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important;letter-spacing:var(--kit-dls)}
+html.kit-on body :where(*:not(.kit-off,.kit-off *,.store-pane,.store-pane *,.store-fab,.store-fab *,svg,svg *,.lk-title,.kit-keep)){font-family:var(--kit-body)!important}
+html.kit-on body :where(h1,h2,h3,.kit-d,.nu-title,.lk-title,.gxhi,.mh-title,.mc-hv figcaption b):where(:not(.kit-off,.kit-off *,.store-pane *)){font-family:var(--kit-display)!important;font-weight:var(--kit-dw)!important;letter-spacing:var(--kit-dls)}
 /* the full invite (/g) has id-level font rules: the same two families, one step stronger. The title keeps --lk-title,
    which public/brandkit.js points at the kit's display face unless the event has its own font */
 html.kit-on body #view-guest.ev2 :where(*:not(.kit-off,.kit-off *,svg,svg *,.lk-title,h1,h2,h3)){font-family:var(--kit-body)!important}
@@ -46,7 +46,7 @@ html.kit-on:not(.kit-house):is(.kit-look,:has(body.store)) .ea-cover:not(.ea-cus
 html.kit-on:not(.kit-house).kit-cover-deck:is(.kit-look,:has(body.store)) .ea-cover:not(.ea-custom):not(.lk-deck){--ea-bg:var(--kit-accent2)!important}
 
 /* ---- the Next up card: kit roles throughout ---- */
-html.kit-on body .next-up .nu-eyebrow{font:600 var(--kit-fs-small)/1.2 var(--kit-body)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--kit-accent-text)}
+html.kit-on body .next-up .nu-eyebrow{font:600 var(--kit-fs-small)/1.2 var(--kit-body)!important;letter-spacing:.12em;text-transform:uppercase;color:var(--kit-accent-text)!important}
 html.kit-on body .next-up .nu-title{font-size:var(--kit-fs-display)!important;line-height:1.08;margin:8px 0 4px;color:var(--kit-ink);text-wrap:balance}
 html.kit-on body .next-up .nu-sub{font:400 var(--kit-fs-body)/1.4 var(--kit-body)!important;color:var(--kit-soft)}
 /* chips: calm, quiet line, body face, the meta size */

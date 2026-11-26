@@ -84,7 +84,7 @@
 :focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
 [hidden]{display:none!important}
 .eh-btn{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px 8px 10px;border-radius:999px;border:1.5px solid var(--pl-frame);background:var(--pl-surface);color:var(--pl-ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;box-shadow:0 10px 28px -16px rgba(31,26,23,.28);transition:transform .15s}
-.eh-btn:hover{transform:translateY(-1px)}
+.eh-btn:hover{transform:translateY(-1px)}.eh-btn.eh-intab{display:none}
 .eh-btn .eh-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--pl-accent);border:2px solid var(--pl-surface)}
 .eh-btn.eh-dock{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto;padding:6px 12px 6px 8px;font-size:14px;min-height:44px}
 .eh-scrim{position:fixed;inset:0;z-index:2147483000;background:rgba(31,26,23,.36);cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;animation:ehFade .18s ease-out}
@@ -178,9 +178,13 @@
   const shown = (e) => { if (!e || host.contains(e) || e.hidden) return false; const cs = getComputedStyle(e); if (cs.display === "none" || cs.visibility === "hidden") return false; const r = e.getBoundingClientRect(); return r.width > 40 && r.height > 40; };
   const modalOpen = () => { try { if (document.querySelector("#wizBg .wiz, #wizBg[data-wizard]") && shown(document.querySelector("#wizBg"))) return true;
     for (const e of document.querySelectorAll('[role=dialog], [aria-modal=true], dialog[open], .store-pane, .sheet, .pin-bg, .fv-sv')) if (shown(e)) return true; } catch {} return false; };
+  const tabBar = () => { if (innerWidth > 860) return false; try { for (const e of document.querySelectorAll(".es-tabs,nav.tabs")) { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); if (fixedish(e) && cs.display !== "none" && cs.visibility !== "hidden" && r.width >= innerWidth * 0.9 && r.bottom >= innerHeight - 2 && r.height > 30) return true; } } catch {} return false; };
   function place() {
     try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
-      const h = obstacleHeight(), dock = h > innerHeight * 0.45 - 8;
+      // phones with a bottom tab bar: help lives in the Me sheet (public/chatnav.js), so nothing floats over the page's own
+      // buttons (the Home composer's send arrow, toggles, card menus). The nudge can still offer it once, above the bar.
+      const intab = tabBar() || !!document.querySelector("[data-help-open]"); /* or the page has its own Help row */ b.classList.toggle("eh-intab", intab); host.style.height = intab || phone() ? "" : "72px";
+      const h = obstacleHeight(), dock = !intab && h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);
       const bottom = dock ? 16 : Math.round(h ? h + 12 : 16); document.documentElement.style.setProperty("--eh-bottom", bottom + "px");
     } catch {}
@@ -371,7 +375,7 @@
   function close() { const p = panel(); if (p.hidden) return; p.hidden = true; scrim().hidden = true; p.style.transform = ""; scrim().style.opacity = "";
     window.visualViewport?.removeEventListener("resize", fitViewport); window.visualViewport?.removeEventListener("scroll", fitViewport); stopPoll(); unlockPage();
     if (openSeen != null && tickets.length) ls.set(SEEN, String(Date.now())); openSeen = null; badge(); btn().hidden = false; btn().setAttribute("aria-expanded", "false"); place();
-    const back = opener && opener.isConnected && opener !== document.body && opener !== host && !root.contains(opener) ? opener : btn(); try { back.focus({ preventScroll: true }); } catch { back.focus(); } }
+    const back = opener && opener.isConnected && opener !== document.body && opener !== host && !root.contains(opener) ? opener : btn().classList.contains("eh-intab") ? document.querySelector(".es-tabs [data-me], #navMeTab") || btn() : btn(); try { back.focus({ preventScroll: true }); } catch { back.focus(); } }
   // replies come into the open sheet while a conversation is waiting on the team
   function startPoll() { if (poll || !signedIn() || !tickets.some((t) => t.status !== "solved")) return; poll = setInterval(async () => { if (!isOpen() || document.hidden) return; const before = JSON.stringify(tickets); await loadTickets(true); if (JSON.stringify(tickets) !== before) drawLog(true); }, 30e3); }
   function stopPoll() { clearInterval(poll); poll = 0; }
@@ -443,6 +447,7 @@
     const q = new URLSearchParams(location.search);
     if (q.get("help") === "1") { setTimeout(async () => { await loadTickets(true); open(); }, 400); }
     doFromUrl();
+    document.addEventListener("click", (ev) => { const t = ev.target.closest?.("[data-help-open]"); if (!t) return; ev.preventDefault(); open(true); });
     window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask, isOpen }; // review round 8: open() for the wizard's own link
   }
   document.body ? mount() : document.addEventListener("DOMContentLoaded", mount);

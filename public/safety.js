@@ -25,7 +25,6 @@
 .sf textarea{width:100%;box-sizing:border-box;border:1.5px solid var(--pl-line-strong);border-radius:12px;padding:10px 12px;font:16px/1.4 inherit;min-height:72px;margin:8px 0 12px}
 .sf-foot{max-width:720px;margin:24px auto 96px;padding:0 16px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font:14px/1.4 "Instrument Sans",system-ui,sans-serif}
 .sf-foot a{color:var(--pl-soft)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sf{background:#211B17;color:var(--pl-page)}:root:not([data-theme="light"]) .sf p{color:#C9BBAE}:root:not([data-theme="light"]) .sf button:not(.sf-go){background:#2B241F;color:var(--pl-page);border-color:#3A312B}}
 `; document.head.appendChild(s); }
   const DOTS = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3" cy="8" r="1.6" fill="currentColor"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><circle cx="13" cy="8" r="1.6" fill="currentColor"/></svg>';
 

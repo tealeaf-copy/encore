@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -10,7 +10,6 @@
 <script src="/authguard.js"></script>
 <style>
 :root{--ink:var(--pl-ink);--smoke:var(--pl-soft);--paper:var(--pl-page);--card:var(--pl-surface);--line:var(--pl-line);--line-strong:var(--pl-line-strong);--ember:var(--pl-accent);--frame:var(--pl-frame)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:var(--pl-page);--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,-apple-system,sans-serif}
 main{max-width:640px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}
@@ -64,7 +63,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     </section>
     <section aria-labelledby="hBlock"><h2 id="hBlock">Blocked</h2><p>People and hosts you blocked. You don't see their posts, photos or events.</p><div id="blocks"></div></section>
     <section aria-labelledby="hHelp"><h2 id="hHelp">Help and safety</h2>
-      <ul class="links"><li><a href="/community">Community rules and reporting</a></li><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms</a></li><li><a href="/community#contact" id="contactLink">Contact us</a></li></ul>
+      <ul class="links"><li id="helpRow" hidden><a href="#" data-help-open>Ask Potto, or reach a person</a></li><li><a href="/community">Community rules and reporting</a></li><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms</a></li><li><a href="/community#contact" id="contactLink">Contact us</a></li></ul>
     </section>
     <section id="delete" aria-labelledby="hDel"><h2 id="hDel">Delete your account</h2>
       <div id="pending" class="pending" hidden></div>
@@ -109,6 +108,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:12
     el.innerHTML = B.length ? B.map((b) => `<div class="row"><span>${esc(b.name || (b.target.startsWith("host:") ? "@" + b.target.slice(5) : "Someone"))}<small>${b.target.startsWith("host:") ? "Host" : "Person"}</small></span><button type="button" class="btn sm" data-t="${esc(b.target)}">Unblock</button></div>`).join("") : `<p class="msg">No one. If someone bothers you, open the ⋯ on their post or page.</p>`;
     el.onclick = async (e) => { const t = e.target.dataset.t; if (!t) return; await fetch("/api/me/blocks?target=" + encodeURIComponent(t), { method: "DELETE", credentials: "same-origin" }); drawBlocks(); }; }
   drawBlocks().catch(() => {});
+  { let n = 0; const t = setInterval(() => { if (window.EncoreHelp?.open) { const r = document.getElementById("helpRow"); if (r) r.hidden = false; clearInterval(t); } else if (++n > 20) clearInterval(t); }, 300); } // help lives in this list, not floating over the toggles
   try { const S = await get("/api/public/safety"); if (S.email) { const a = $("#contactLink"); a.href = "mailto:" + S.email; a.textContent = "Contact us (" + S.email + ")"; } } catch {}
   // delete
   async function drawDelete() { const D = await get("/api/me/delete"); $("#days").textContent = D.graceDays;

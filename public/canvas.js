@@ -432,7 +432,7 @@
   function css() { if (document.getElementById("cvCss")) return; const s = document.createElement("style"); s.id = "cvCss"; s.textContent = CSS; document.head.appendChild(s); }
   const CSS = `
 #cv,.cv-sh-bg{--cv-bg:var(--pl-page,#F4F0E8);--cv-ink:var(--pl-ink,#1D1B18);--cv-soft:var(--pl-soft,#5D564E);--cv-line:var(--pl-line,#E2DCD1);--cv-line2:var(--pl-line-strong,#CFC6B8);--cv-card:var(--pl-surface,#FBF9F5);--cv-field:#FFFFFF;
-  --cv-pri:var(--pl-ink,#1D1B18);--cv-on-pri:#FFFFFF;--cv-acc:var(--pl-accent,#9A4128);--cv-acc-soft:var(--pl-accent-soft,#F1E1D8);--cv-err:var(--pl-danger,#A3321E);--cv-sans:var(--pl-font-text,"Instrument Sans",system-ui,sans-serif)}
+  --cv-pri:var(--pl-ink,#1D1B18);--cv-on-pri:#FFFFFF;--cv-acc:var(--pl-accent,#9A4128);--cv-acc-soft:var(--pl-accent-soft,#F1E1D8);--cv-err:var(--pl-danger,#A3321E);--cv-sans:var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif)}
 #cv{--cv-dock-h:60px;--cv-gap:16px;position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:var(--cv-bg);color:var(--cv-ink);font:400 16px/1.5 var(--cv-sans);-webkit-font-smoothing:antialiased}
 body.cv-open{overflow:hidden}body.cv-open #encoreHelp,body.cv-open .es-tabs,body.cv-open #pipFab{visibility:hidden}
 #cv .vh,.cv-sh .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

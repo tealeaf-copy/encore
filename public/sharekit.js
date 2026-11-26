@@ -34,12 +34,12 @@
   const tok = (n, fb) => { try { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || fb; } catch { return fb; } };
   const fam = (f) => (!f ? "" : /[,"']/.test(f) ? f : `"${f}"`);
   // the picture's palette: the host's kit first, then our tokens
-  const T = (b = {}) => { const kd = tok("--kit-display", ""), house = tok("--pl-font-display", '"Instrument Serif", Georgia, serif');
+  const T = (b = {}) => { const kd = tok("--kit-display", ""), house = tok("--pl-font-display", '"IBM Plex Serif", Georgia, serif');
     return { page: b.page || tok("--kit-page", "") || tok("--pl-page", "#F4F0E8"), card: tok("--kit-surface", "") || tok("--pl-surface", "#FBF9F5"), raised: tok("--pl-raised", "#ECE6DB"),
       ink: b.ink || tok("--kit-ink", "") || tok("--pl-ink", "#1D1B18"), soft: b.soft || tok("--kit-soft", "") || tok("--pl-soft", "#5D564E"), line: b.line || tok("--kit-line", "") || tok("--pl-line", "#E2DCD1"),
       accent: b.accent || tok("--kit-accent-text", "") || tok("--pl-accent-text", "#8E3B24"),
       display: b.display ? `${fam(b.display)}, ${house}` : kd ? `${fam(kd)}, ${house}` : house, dw: b.display ? "400" : kd ? tok("--kit-dw", "400") : "400",
-      house, sans: tok("--kit-body", "") ? `${fam(tok("--kit-body", ""))}, system-ui, sans-serif` : tok("--pl-font-text", '"Instrument Sans", system-ui, sans-serif'), mono: tok("--pl-font-mono", "ui-monospace, monospace"), mark: tok("--pl-ink", "#1D1B18") }; };
+      house, sans: tok("--kit-body", "") ? `${fam(tok("--kit-body", ""))}, system-ui, sans-serif` : tok("--pl-font-text", '"IBM Plex Sans", system-ui, sans-serif'), mono: tok("--pl-font-mono", "ui-monospace, monospace"), mark: tok("--pl-ink", "#1D1B18") }; };
   const loadScript = (src, ready) => new Promise((ok) => { if (ready()) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = ok; document.head.appendChild(s); });
   // drawn glyphs (1.75 stroke, currentColor): no third-party logos
   const G = (d, w = 24) => `<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;

@@ -29,7 +29,8 @@ export const STORE = {
   accents: ["#E26D8E", "#C2553A", "#E0A030", "#3E9C6E", "#2F7A8A", "#5B7FD6", "#8C62C9", "#2B211C", "#1F3D30", "#26346F", "#8A4B0F"],
   fonts: ["classic", "editorial", "modern", "playful", "handmade", "bold", "florist"],
   backgrounds: ["cream", "white", "blush", "sage", "night", "petal"],
-  covers: ["wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning", "noren", "pantry"],
+  // "calm" is the default: a quiet brand-kit gradient with the host's name. "drawn" puts line drawings of what they make on it.
+  covers: ["calm", "wash", "sunrise", "dusk", "dots", "waves", "confetti", "plain", "awning", "noren", "pantry", "drawn"],
   // how the page is laid out (public/storefront.js LAYOUTS): "classic" is the page as it has always been
   layouts: ["classic", "window", "zine", "cards", "menu", "stall"],
   buttons: ["round", "soft", "square"],
@@ -41,8 +42,13 @@ const LINK_OK = (u) => /^https:\/\/[^\s<>"]{3,300}$/i.test(u || "");
 // parts after the style: skin, hair, eyes, nose, mouth, extra (each a small number; see public/avatars.js)
 const AVATAR_PARTS = [6, 6, 6, 4, 5, 7];
 const avatarOk = (v) => { if (typeof v !== "string" || !/^[a-z]*(~\d){0,6}$/.test(v)) return false; const [style, ...n] = v.split("~"); return STORE.avatars.includes(style) && n.every((x, i) => +x < AVATAR_PARTS[i]); };
-export function cleanTheme(t = {}, cur = {}) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
-  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), layout: pick("layout", STORE.layouts), coverUrl: BLOB_OK(t.coverUrl ?? cur.coverUrl) ? t.coverUrl ?? cur.coverUrl ?? "" : cur.coverUrl || "", avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
+// the cover photo's focal point ("50% 30%"), from dragging it into place (server/cover.js)
+const POS_OK = (v) => /^\d{1,3}% \d{1,3}%$/.test(v || "") && v.split(" ").every((x) => parseInt(x, 10) <= 100);
+/** coverOk(url): may this upload become the cover? Only the owner's own uploads can (server/cover.js checks the bytes). */
+export function cleanTheme(t = {}, cur = {}, coverOk = () => true) { const pick = (k, list) => (list.includes(t[k]) ? t[k] : list.includes(cur[k]) ? cur[k] : list[0]);
+  const cu = t.coverUrl ?? cur.coverUrl ?? "", coverUrl = BLOB_OK(cu) && (!cu || cu === cur.coverUrl || /^\/presets\//.test(cu) || coverOk(cu)) ? cu : cur.coverUrl || "";
+  const coverPos = coverUrl ? (POS_OK(t.coverPos) ? t.coverPos : coverUrl === cur.coverUrl && POS_OK(cur.coverPos) ? cur.coverPos : "50% 50%") : "";
+  return { accent: pick("accent", STORE.accents), font: pick("font", STORE.fonts), bg: pick("bg", STORE.backgrounds), cover: pick("cover", STORE.covers), buttons: pick("buttons", STORE.buttons), layout: pick("layout", STORE.layouts), coverUrl, coverPos, avatarUrl: BLOB_OK(t.avatarUrl ?? cur.avatarUrl) ? t.avatarUrl ?? cur.avatarUrl ?? "" : cur.avatarUrl || "", avatarArt: avatarOk(t.avatarArt) ? t.avatarArt : avatarOk(cur.avatarArt) ? cur.avatarArt : "" }; }
 function cleanSections(s = {}, cur = {}) { const out = {}; for (const k of ["upcoming", "kudos", "photos", "hire", "tips", "profile", "past"]) out[k] = s[k] != null ? !!s[k] : cur[k] != null ? !!cur[k] : k !== "profile"; return out; }
 // Experiences companies can book: "Private omakase for your team, 8 to 14, from $120 a person"
 function cleanGifts(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: /^[a-z0-9]{6,12}$/.test(x?.id || "") ? x.id : crypto.randomBytes(4).toString("hex"), name: clean(x?.name, 70), desc: clean(x?.desc, 280), emoji: clean(x?.emoji, 16),
@@ -57,7 +63,8 @@ function expPrices(x) { const pick = (o, keys) => Object.fromEntries(keys.map((k
 function cleanLinks(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 4).map((x) => ({ label: clean(x?.label, 24), url: clean(x?.url, 300) })).filter((x) => x.label && LINK_OK(x.url)); }
 
 const PRIVATE_HOST = ["legalName", "taxId", "bizAddress"];
-export function publicHost(h) { if (!h) return h; const o = { ...h }; for (const k of PRIVATE_HOST) delete o[k]; return o; }
+// the shop's exact pickup address is for people who ordered (their confirmation and email), never a public page or API
+export function publicHost(h) { if (!h) return h; const o = { ...h }; for (const k of PRIVATE_HOST) delete o[k]; if (o.shop) { const { address, ...shop } = o.shop; o.shop = shop; } return o; }
 function newCode() { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const b = crypto.randomBytes(8); for (const x of b) s += A[x % A.length]; return s.slice(0, 4) + "-" + s.slice(4, 8); }
 
   // a prepared page's past events (its scrapbook), read-only: title, date, place (neighborhood or city), a note, a shipped cover and the original link
@@ -106,7 +113,9 @@ export function makeCommunity(store) {
   function cleanSupport(p, cur) { if (p == null) return cur || null; const n = (v) => Math.max(0, Math.min(999, Math.round(+v || 0))); return { on: !!p.on, monthly: n(p.monthly), yearly: n(p.yearly), founding: n(p.founding), note: clean(p.note, 200) }; }
   // a wishlist of fun things guests can gift the host: name, rough price, an https link and an emoji
   function cleanWish(L, cur) { if (!Array.isArray(L)) return cur || []; return L.slice(0, 8).map((x) => ({ id: clean(x?.id, 16) || Math.random().toString(36).slice(2, 10), name: clean(x?.name, 60), price: clean(x?.price, 12), url: /^https:\/\/[^\s<>"]+$/i.test(String(x?.url || "").trim()) ? String(x.url).trim().slice(0, 400) : "", emoji: clean(x?.emoji, 4) || "🎁" })).filter((x) => x.name); }
-  function setProfile(ws, p) {
+  // set by the app: which workspace uploaded a /_blob file (its metadata), so a page can only wear its own photos
+  let blobWs = () => null;
+  function setProfile(ws, p, opts = {}) {
     const W = getWorkspace(ws), cur = W?.host || {}, h = clean(p.handle ?? cur.handle, 30).toLowerCase();
     if (!HANDLE_OK(h)) return { error: "Pick a handle of 2–30 lowercase letters, numbers or dashes." };
     const owner = wsOfHandle(h); if (owner && owner !== ws) return { error: "That handle is taken. Try another." };
@@ -116,7 +125,7 @@ export function makeCommunity(store) {
     store.set(handlePath(h), { ws });
     const host = { handle: h, name: clean(p.name ?? cur.name, 60), bio: clean(p.bio ?? cur.bio, 400), city: clean(p.city ?? cur.city, 60), hood: clean(p.hood ?? cur.hood, 60), tags: (Array.isArray(p.tags) ? p.tags : cur.tags || []).map((t) => clean(t, 24)).filter(Boolean).slice(0, 8), emoji: clean(p.emoji ?? cur.emoji ?? "🎉", 4), color: /^#[0-9a-f]{6}$/i.test(p.color || "") ? p.color : cur.color || "#E26D8E", supportUrl: clean(p.supportUrl ?? cur.supportUrl, 300), fanclubUrl: clean(p.fanclubUrl ?? cur.fanclubUrl, 300), fanclubPerks: clean(p.fanclubPerks ?? cur.fanclubPerks, 200),
       venmo: clean(p.venmo ?? cur.venmo, 40).replace(/^@/, "").replace(/[^A-Za-z0-9_-]/g, ""), paypal: clean(p.paypal ?? cur.paypal, 40).replace(/[^A-Za-z0-9_-]/g, ""), cashapp: clean(p.cashapp ?? cur.cashapp, 40).replace(/^\$/, "").replace(/[^A-Za-z0-9_-]/g, ""),
-      theme: cleanTheme(p.theme || {}, cur.theme || {}), brandKit: "brandKit" in p ? (p.brandKit ? cleanKit(p.brandKit, cur.brandKit) : null) : cur.brandKit || null, sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 140),
+      theme: cleanTheme(p.theme || {}, cur.theme || {}, (u) => !!opts.coverOk || (cur.gallery || []).includes(u) || blobWs(u) === ws), brandKit: "brandKit" in p ? (p.brandKit ? cleanKit(p.brandKit, cur.brandKit) : null) : cur.brandKit || null, sections: cleanSections(p.sections || {}, cur.sections || {}), links: cleanLinks(p.links, cur.links), tagline: clean(p.tagline ?? cur.tagline, 140),
       support: cleanSupport(p.support, cur.support), wishlist: cleanWish(p.wishlist, cur.wishlist),
       shop: p.shop ? cleanShop(p.shop, cur.shop || {}) : cur.shop || null, experiences: cleanExperiences(p.experiences, cur.experiences), gifts: cleanGifts(p.gifts, cur.gifts), giftNote: clean(p.giftNote ?? cur.giftNote, 240),
       gallery: Array.isArray(p.gallery) ? p.gallery.filter((u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u)).slice(0, 12) : cur.gallery || [],
@@ -288,7 +297,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
   function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
   // the kit a host's pages draw: saved, else derived from the page theme (and its events' look for an untouched page)
   function kitOf(ws) { const h = profileOf(ws); if (!h) return null; if (h.brandKit) return kitJson(h); let E = []; try { E = [...eventsOf(ws, { onPage: true }), ...eventsOf(ws, { upcoming: false, onPage: true }).slice(-12).reverse()]; } catch {} return kitJson(h, E); }
-  return { kitOf, goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, showcasePreset, addWaitlist, waitlist, sys };
+  return { kitOf, goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, showcasePreset, addWaitlist, waitlist, sys, setBlobWs: (f) => { blobWs = f; } };
 }
 
 export function mountCommunity(app, { X, store, small, json, currentUser, sessionWorkspace, ownerOnly, signupLimited, publicOrigin, C }) {

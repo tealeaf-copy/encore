@@ -27,6 +27,8 @@ import { mountRecognition } from "./recognition.js";
 import { mountScrapbook } from "./scrapbook.js";
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
+import { mountDrops, dropOrderError, soldOf } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
+import { mountCover } from "./cover.js"; // the host page cover photo
 import { mountMarket } from "./market.js";
 import { mountInterest } from "./interest.js"; // one page per experience or shop item (/x/...), and "I'm interested" on preview pages
 import { mountBrand, startResearch } from "./brand.js";
@@ -261,6 +263,8 @@ export function createApp({ store, dataDir }) {
   app.use((req, res, next) => { if (/\.[a-z0-9]{1,5}$/i.test(req.path)) return next(); const hint = /(?:^|;\s*)encore_in=1/.test(req.headers.cookie || ""), authed = authEnabled() ? isAuthed(req) : true;
     if (authed && !hint) res.append("Set-Cookie", `encore_in=1; Path=/; SameSite=Lax; Max-Age=${60 * 60 * 24 * 30}${req.secure ? "; Secure" : ""}`); else if (!authed && hint && authEnabled()) res.append("Set-Cookie", "encore_in=; Path=/; SameSite=Lax; Max-Age=0"); next(); });
   const assetsDir = path.join(dataDir, "assets");
+  // a page only wears its own uploads as a cover (server/community.js cleanTheme): who uploaded a /_blob file
+  C.setBlobWs((u) => { const id = String(u || "").replace(/^\/_blob\//, ""); if (!/^[A-Za-z0-9]{20}$/.test(id)) return null; try { return JSON.parse(fs.readFileSync(path.join(assetsDir, id + ".json"), "utf8")).ws || null; } catch { return null; } });
   fs.mkdirSync(assetsDir, { recursive: true });
   const runs = new Map(); // runId -> { pending: Map<toolUseId, resolve> }
   useAuthStore(store);
@@ -505,7 +509,7 @@ export function createApp({ store, dataDir }) {
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, (req, res, next) => { const to = HANDLE_ALIASES[req.params[0]]; if (to && !C.wsOfHandle(req.params[0])) return res.redirect(301, "/@" + to); next(); });
   app.get(/^\/@([a-z0-9][a-z0-9-]{1,29})$/, async (req, res) => { const ws = C.wsOfHandle(req.params[0]), h = (ws && C.profileOf(ws)) || C.showcaseOf(req.params[0]);
     try { let html = await fsp.readFile(path.join(PUBLIC_DIR, "host.html"), "utf8"); if (h) { const e = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); const desc = h.tagline || h.bio || `${h.name} on Pottery Lab`; const shop = h.shop?.open && h.shop.items?.length ? ` Order ${h.shop.items.map((x) => x.name).slice(0, 2).join(" and ")}.` : "";
-        html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}"><meta name="twitter:card" content="summary">`); }
+        html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}">${/^\/_blob\/[A-Za-z0-9]{20}$/.test(h.theme?.coverUrl || "") ? `<meta property="og:image" content="${e(originOf(req))}${e(h.theme.coverUrl)}"><meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}`); }
       else { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   // the old measurement-method page described the event-team product; off while the site is about hosts
@@ -691,6 +695,8 @@ export function createApp({ store, dataDir }) {
   const SB = mountScrapbook(app, { store, small: express.json({ limit: "200kb" }), currentUser, C, saveImage: async (buf, type, ws) => { const id = randomId(); await fsp.writeFile(path.join(assetsDir, id), buf); await fsp.writeFile(path.join(assetsDir, id + ".json"), JSON.stringify({ id, url: "/_blob/" + id, sizeBytes: buf.length, contentType: type, createdAt: Date.now(), ws })); return "/_blob/" + id; } });
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
+  mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X }); // before /x pages: old shop links open the drop
+  mountCover(app, { assetsDir, currentUser, C });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)
   mountBrand(app, { small, currentUser });
@@ -1462,7 +1468,11 @@ export function createApp({ store, dataDir }) {
           res.status(409).json({ code: "orders_closed", message: evO.orderBy ? `Orders closed. The last day to order was ${evO.orderBy}.` : "Orders closed." }); return false; }
         if (evO?.preorder && (raw0.orderQty != null || raw0.order != null)) { const O = buildOrder(evO, { orderQty: raw0.orderQty, order: raw0.order, slot: b.slot });
           if (O.error) { res.status(400).json({ code: "invalid_order", message: O.error }); return false; }
-          if (O.order) { b.order = O.order; if (O.orderLines) { b.orderLines = O.orderLines; b.orderTotal = O.orderTotal; } } }
+          if (O.order) { b.order = O.order; if (O.orderLines) { b.orderLines = O.orderLines; b.orderTotal = O.orderTotal; } }
+          // a drop (server/drops.js): paused, the per-order max and what's left this batch (the guest's own earlier order doesn't count against them)
+          if (evO.drop && O.orderLines) { const sold = soldOf(S(req), eid0, evO); if (cur0?.eventId === eid0) for (const l of cur0.orderLines || []) sold[l.name] = Math.max(0, (sold[l.name] || 0) - (+l.qty || 0));
+            const er = dropOrderError(evO, O.orderLines, sold); if (er) { res.status(409).json({ code: evO.ordersPaused ? "orders_paused" : "sold_out", message: er }); return false; }
+            b.orderAt = cur0?.orderAt || Date.now(); } }
         else if (evO?.preorder && cur0?.order && req.method === "PUT") b.order = cur0.order; }
       // ---- end review round 8 pre-orders ----
       for (const k of ["response", "status"]) if (b[k] != null && !GUEST_RSVP_RESPONSES.has(String(b[k]).toLowerCase())) { res.status(400).json({ code: "invalid", message: "Pick I'm in, Maybe or Can't go." }); return false; }
@@ -1752,7 +1762,9 @@ export function createApp({ store, dataDir }) {
       if (cents) O.push(`Total: ${orderMoney(cents / 100)}`);
       O.push("");
       if (r.slot) O.push(`Pickup: ${slotLabel(r.slot)}${when ? `, ${when.split(" · ")[0]}` : ""}`); else if (when) O.push(`Pickup: ${when}`);
-      if (where) O.push(`Where: ${where}${pe.addrHidden ? " (the exact address is on your invite)" : ""}`);
+      // a drop's buyer gets the exact pickup address here (and on their order): nowhere public ever shows it
+      if (ev.drop && String(ev.venueAddr || "").trim()) O.push(`Pickup address: ${String(ev.venueAddr).trim()}${ev.hood ? ` (${ev.hood})` : ""}`);
+      else if (where) O.push(`Where: ${where}${pe.addrHidden ? " (the exact address is on your invite)" : ""}`);
       if (cents && url) O.push("", `Pay ${orderMoney(cents / 100)} here: ${payLink(url, cents, [String(r.name || "").trim(), title].filter(Boolean).join(" · "))}`);
       else if (cents && ev.ticketNote) O.push("", `Pay ${orderMoney(cents / 100)} at pickup.`);
       O.push("", `Your order, to see or change it: ${link}`, "", "Plans changed? Open it and tap Can't go, so the batch isn't wasted.");

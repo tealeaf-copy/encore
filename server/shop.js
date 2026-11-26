@@ -27,7 +27,9 @@ export function cleanShop(s = {}, cur = {}) {
     cents: Math.max(0, Math.min(100000, Math.round(+x?.cents || 0))), stock: Math.max(0, Math.min(999, Math.round(+x?.stock || 0))), max: Math.max(1, Math.min(50, Math.round(+x?.max || 6))), order: i,
   })).filter((x) => x.name);
   const slots = (Array.isArray(s.slots) ? s.slots : cur.slots || []).map((x) => clean(x, 60)).filter(Boolean).slice(0, 8);
-  return { open: s.open != null ? !!s.open : !!cur.open, title: clean(s.title ?? cur.title ?? "", 60), note: clean(s.note ?? cur.note ?? "", 240), where: clean(s.where ?? cur.where ?? "", 120), address: clean(s.address ?? cur.address ?? "", 160), slots, items, payUrl: /^https:\/\/[^\s<>"]{3,300}$/i.test(s.payUrl ?? cur.payUrl ?? "") ? s.payUrl ?? cur.payUrl : "", dropId: clean(s.dropId ?? cur.dropId ?? "", 20) || crypto.randomBytes(3).toString("hex") };
+  return { open: s.open != null ? !!s.open : !!cur.open, title: clean(s.title ?? cur.title ?? "", 60), note: clean(s.note ?? cur.note ?? "", 240), where: clean(s.where ?? cur.where ?? "", 120), address: clean(s.address ?? cur.address ?? "", 160), slots, items, payUrl: /^https:\/\/[^\s<>"]{3,300}$/i.test(s.payUrl ?? cur.payUrl ?? "") ? s.payUrl ?? cur.payUrl : "", dropId: clean(s.dropId ?? cur.dropId ?? "", 20) || crypto.randomBytes(3).toString("hex"),
+    // the drop this shop became (server/drops.js); kept so a later save never converts it twice
+    ...(cur.eventId ? { eventId: cur.eventId, migratedAt: cur.migratedAt || 0 } : {}) };
 }
 
 export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }) {
@@ -41,13 +43,13 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
   const sold = (ws, dropId, s = C.profileOf(ws)?.shop) => { const n = {}; for (const d of scopeStore(store, ws).list("orders")) { const o = d.data; if (o.dropId !== dropId || !holding(o, s)) continue; for (const l of o.lines || []) n[l.id] = (n[l.id] || 0) + l.qty; } return n; };
   const itemHits = new Map(); // items ordered from one address this hour
   const contactOf = (o) => (EMAIL_OK(o.email) ? "e:" + lc(o.email) : "") || (o.phone ? "t:" + String(o.phone).replace(/[^\d+]/g, "") : "");
-  const publicShop = (ws) => { const h = C.profileOf(ws), s = h?.shop; if (!s?.open || !s.items?.length) return null; const S = sold(ws, s.dropId);
+  const publicShop = (ws) => { const h = C.profileOf(ws), s = h?.shop; if (!s?.open || !s.items?.length || s.eventId) return null; /* a shop that became a drop sells there */ const S = sold(ws, s.dropId);
     return { title: s.title, note: s.note, where: s.where, slots: s.slots, payUrl: !!s.payUrl, items: s.items.map((x) => ({ id: x.id, name: x.name, desc: x.desc, emoji: x.emoji, photo: x.photo, price: money(x.cents), cents: x.cents, max: x.max, left: x.stock ? Math.max(0, x.stock - (S[x.id] || 0)) : null })) }; };
-  app.get("/api/public/shop/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); res.json({ shop: ws ? publicShop(ws) : null }); });
+  app.get("/api/public/shop/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle), ev = ws && C.profileOf(ws)?.shop?.eventId; res.json({ shop: ws ? publicShop(ws) : null, ...(ev ? { drop: { id: ev, url: `/e/${encodeURIComponent(ev)}` } } : {}) }); });
   // Discover: every open shop
   app.get("/api/public/shops", (req, res) => { const out = []; for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws), p = h?.handle && publicShop(ws); if (!p) continue; out.push({ handle: h.handle, name: h.name, emoji: h.emoji, city: h.city, hood: h.hood, accent: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", title: p.title, items: p.items.slice(0, 3), soldOut: p.items.every((x) => x.left === 0) }); } res.json({ shops: out }); });
   app.post("/api/public/order/:handle", small, async (req, res) => { if (limited(req, 15)) return bad(res, "Too many orders from here. Try again later.", 429, "rate_limited");
-    const ws = C.wsOfHandle(req.params.handle), h = ws && C.profileOf(ws), s = h?.shop; if (!s?.open) return bad(res, "This shop isn't taking orders right now.", 404, "not_found");
+    const ws = C.wsOfHandle(req.params.handle), h = ws && C.profileOf(ws), s = h?.shop; if (!s?.open || s.eventId) return bad(res, s?.eventId ? "This shop moved. Order from the drop on their page." : "This shop isn't taking orders right now.", 404, "not_found");
     const b = req.body || {}, name = clean(b.name, 80), email = lc(clean(b.email, 200)), phone = clean(b.phone, 24), slot = clean(b.slot, 60);
     if (!name) return bad(res, "Add your name so they know whose order it is."); if (!PHONE_OK(phone) && !EMAIL_OK(email)) return bad(res, "Add a phone number or email so they can tell you it's ready.");
     // a pre-order made from an event's invite may use that event's pickup times
@@ -69,8 +71,11 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     X.notify(W?.ownerEmail, { kind: "order", text: `🛍 ${first(name)} ordered ${lines.map((l) => `${l.qty} × ${l.name}`).join(", ")}${o.slot ? ` for ${o.slot}` : ""} (${money(total)})`, link: `/@${h.handle}?orders=1`, eventId: "" });
     const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (cfg && EMAIL_OK(email) && X.canEmail(email)) sendEmail(cfg, { to: email, subject: `Your order from ${h.name}: #${code}`, text: `Thanks ${first(name)}!\n\n${lines.map((l) => `${l.qty} × ${l.name}`).join("\n")}\nTotal: ${money(total)}\n${o.slot ? `Pickup: ${o.slot}${s.where ? ` at ${s.where}` : ""}\n` : ""}${s.payUrl ? `\nPay here: ${s.payUrl}\n` : ""}\nOrder #${code}. Show this at pickup.`, fromName: h.name }).catch(() => {});
     res.json({ ok: true, id: r.id, code, total: money(total), slot: o.slot, where: s.address || s.where, payUrl: payLink(s.payUrl, total, `${h.name} order #${code}`) }); });
-  app.get("/api/host/orders", (req, res) => { const u = me(req, res); if (!u) return; const s = C.profileOf(u.ws)?.shop; const L = scopeStore(store, u.ws).list("orders").map((d) => ({ id: d.id, ...d.data })).sort((a, b) => b.at - a.at);
-    res.json({ address: s?.address || "", where: s?.where || "", orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId, ...(o.status === "new" && !holding(o, s) ? { released: true } : {}) })) }); });
+  // one Orders inbox: every drop's orders (server/drops.js) and the old shop's orders, newest first
+  app.get("/api/host/orders", (req, res) => { const u = me(req, res); if (!u) return; const s = C.profileOf(u.ws)?.shop; const L = scopeStore(store, u.ws).list("orders").map((d) => ({ id: d.id, src: "shop", drop: s?.title || "Earlier shop", ...d.data })).sort((a, b) => b.at - a.at);
+    const D = (() => { try { return app.locals.dropOrders?.(u.ws) || []; } catch { return []; } })();
+    const all = [...D, ...L.map((o) => ({ ...o, totalText: money(o.total), current: !s?.eventId && o.dropId === s?.dropId, ...(o.status === "new" && !holding(o, s) ? { released: true } : {}) }))].sort((a, b) => (b.at || 0) - (a.at || 0));
+    res.json({ address: s?.address || "", where: s?.where || "", orders: all.slice(0, 300) }); });
   app.post("/api/host/orders/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "orders/" + clean(req.params.id, 40), o = S.get(p)?.data; if (!o) return bad(res, "No such order.", 404, "not_found");
     const st = ["new", "paid", "ready", "picked", "cancelled"].includes(req.body?.status) ? req.body.status : o.status; S.update(p, { status: st, [st + "At"]: Date.now() }); res.json({ ok: true, status: st }); });
   // a new batch: sold counts start again

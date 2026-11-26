@@ -52,7 +52,7 @@
     const card = document.createElement("div"); card.className = "card cl-card"; card.id = "collabCard";
     card.innerHTML = `<h3>Got a collab idea?</h3><button class="btn" type="button" id="clGo">Suggest a collab</button>`;
     const fol = document.getElementById("follow"); fol ? fol.after(card) : side.appendChild(card); document.getElementById("hostOwn")?.remove(); // one "host your own" prompt is enough
-    const mineC = await J("/api/collabs"); if ((mineC?.sent || []).some((c) => c.other?.handle === h.handle && c.status === "new")) { sentCard(first); return; }
+    const mineC = /(?:^|;\s*)encore_in=1/.test(document.cookie) ? await J("/api/collabs") : null; /* review round 8: signed out, no call */ if ((mineC?.sent || []).some((c) => c.other?.handle === h.handle && c.status === "new")) { sentCard(first); return; }
     card.querySelector("#clGo").onclick = async () => { const me = await J("/api/me");
       if (!me?.verified) { location.href = `/login?why=collab&next=${encodeURIComponent(location.pathname + "?collab=1")}`; return; }
       const p = (await J("/api/host/profile"))?.host; if (!p?.handle) { card.innerHTML = `<h3>Start your page first</h3><p class="muted">Collabs are host to host.</p><a class="btn" href="/">Start your page</a>`; return; }

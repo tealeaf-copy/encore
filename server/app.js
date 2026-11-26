@@ -44,6 +44,7 @@ import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
+import { buildOrder, slotLabel, orderMoney } from "./preorder.js"; // review round 8
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
@@ -266,6 +267,15 @@ export function createApp({ store, dataDir }) {
   app.get("/api/health", (req, res) => {
     res.json({ ok: true, ai: aiMode(), integrations: configured().map((s) => s.server), auth: authEnabled() });
   });
+  // ---- review round 8: signed in on /login or /signup: say who, with Go to Pottery Lab and Switch account, not the form ----
+  const signedInAs = (req) => { if (req.query.switch || req.query.next) return null; const u = currentUser(req); if (!u) return null; return String(getDbUser(u.email)?.name || u.name || u.email || "").trim() || "you"; };
+  const signedInPage = (name, back) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Signed in · Pottery Lab</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F7F1E8;color:#1F1A17;font:16px/1.5 "Instrument Sans",system-ui,sans-serif}main{background:#fff;border:2px solid #1F1A17;border-radius:20px;padding:28px 24px;width:min(380px,calc(100vw - 32px));box-sizing:border-box;text-align:center}h1{font:600 26px/1.2 Fredoka,system-ui,sans-serif;margin:0 0 6px}p{margin:0 0 18px;color:#665A51}.go{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;background:#C94A30;color:#fff;font:600 17px Fredoka,system-ui,sans-serif;text-decoration:none}.sw{margin-top:12px;min-height:44px;width:100%;border:2px solid #1F1A17;border-radius:999px;background:transparent;font:600 16px Fredoka,system-ui,sans-serif;color:#1F1A17;cursor:pointer}</style></head>
+<body><main id="signedIn"><h1>You're signed in</h1><p>You're signed in as <b>${esc(name)}</b>.</p><a class="go" href="/?app=1">Go to Pottery Lab</a><button class="sw" type="button" id="sw">Switch account</button></main>
+<script>document.getElementById("sw").onclick=async()=>{ try{ await fetch("/api/logout",{method:"POST"}) }catch{} location.href=${JSON.stringify(back)} };</script></body></html>`;
+  app.get("/login", (req, res, next) => { const n = signedInAs(req); if (n) return res.type("html").send(signedInPage(n, "/login")); next(); });
+  app.get("/signup", (req, res, next) => { const n = signedInAs(req); if (n) return res.type("html").send(signedInPage(n, "/signup" + (req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : ""))); next(); });
+  // ---- end review round 8 signed in ----
   app.get("/login", (req, res) => (isAuthed(req) && !req.query.switch ? res.redirect(302, String(req.query.next || "").startsWith("/") && !String(req.query.next).startsWith("//") ? String(req.query.next) : "/?app=1") : res.type("html").send(loginPage()))); // already signed in: go where you were headed
   // ---- forgot password: always the same answer, so nobody learns which emails have accounts ----
   const resetHits = new Map(); const resetLimited = (k, n) => { const now = Date.now(), h = (resetHits.get(k) || []).filter((t) => now - t < 3600e3); h.push(now); resetHits.set(k, h); return h.length > n; };
@@ -942,7 +952,9 @@ export function createApp({ store, dataDir }) {
     const u = currentUser(req), ws = sessionWorkspace(req), W = getWorkspace(ws), T = trialState(W);
     const teamRoles = [...new Set(teamOf(ws).flatMap((x) => x.roles || []))];
     const workspace = { id: ws, company: W?.company || "", plan: W?.plan || "self-hosted", trial: T.trial, trialEnded: T.trialEnded, daysLeft: T.daysLeft };
-    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
+    // review round 8: crm is true only for a team workspace with a CRM connected (the brand request form's CRM fields)
+    const crm = !!u && W?.plan !== "friends" && (listConnections(ws).some((c) => c.connected && ["hubspot", "salesforce", "attio"].includes(c.provider)) || !!(process.env.HUBSPOT_TOKEN || process.env.SF_ACCESS_TOKEN));
+    res.json(u ? { name: u.name, email: u.email, roles: u.roles, teamRoles, approverRoles: approverRoles(ws), owner: !!u.owner, workspace, verified: true, ...(crm ? { crm: true } : {}) } : { verified: false, teamConfigured: teamOf(ws).length > 0 });
   });
   // The audit log can only be appended to, and the server stamps who and when.
   const AUDIT = /^(faq|followers|kudos|kudosasks|kudosloop|vibes|chat|moments|jobs|inquiries|stats|broadcasts|orders|audit|approvals|aeactions|system|signoffs|outbox|crmwrites|reminders|settings|checks|checkReplies)(\/|$)/;
@@ -1265,7 +1277,7 @@ export function createApp({ store, dataDir }) {
       // guests read "Mina's place", never the host's own "my place"
       if (doc.data.casual && view !== "plan") { try { const hn = String(getDbUser(getWorkspace(req.ws)?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0]; const fix = (x) => (typeof x === "string" ? x.replace(/\b(my|our) (place|apartment|flat|house|home|stoop|porch|backyard|yard|garden|rooftop|kitchen|studio|driveway)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)) : x); for (const k of ["meetPoint", "venueName", "name", "pubTitle"]) if (data[k]) data[k] = fix(data[k]); } catch {} }
       // Get-togethers: which bring-list items or pickup windows are already taken (no names), so guests don't double up.
-      if (doc.data.casual && !/giveaway/.test(doc.data.activity || "") && Array.isArray(doc.data.slots) && doc.data.slots.length) { const taken = new Set([...(doc.data.guests || []).map((g) => g.slot), ...S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && d.data.response === "going").map((d) => d.data.slot)].filter(Boolean)); data.claimed = doc.data.slots.filter((x) => taken.has(x)); }
+      if (doc.data.casual && !doc.data.preorder /* review 8: pickup times are shared */ && !/giveaway/.test(doc.data.activity || "") && Array.isArray(doc.data.slots) && doc.data.slots.length) { const taken = new Set([...(doc.data.guests || []).map((g) => g.slot), ...S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && d.data.response === "going").map((d) => d.data.slot)].filter(Boolean)); data.claimed = doc.data.slots.filter((x) => taken.has(x)); }
       if (nom) { data.nomFor = nom.slug; data.nomSuggest = nom.suggest; }
       if (invited) {
         const first = (x) => String(x || "").trim().split(/\s+/)[0] || "";
@@ -1345,7 +1357,16 @@ export function createApp({ store, dataDir }) {
     let b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
     if (GUEST_COLLECTIONS.has(collection) && Buffer.byteLength(JSON.stringify(b)) > GUEST_BODY_MAX) { res.status(413).json({ code: "too_large", message: "That's too much to send. Try a smaller photo or a shorter note." }); return false; }
     if (collection === "rsvps") {
-      b = cleanGuestRsvp(b);
+      const raw0 = b; b = cleanGuestRsvp(b);
+      // ---- review round 8: a pre-order is rebuilt here from the event's own items and prices (server/preorder.js) ----
+      { const pth = String(req.query.path || ""), cur0 = /^rsvps\/[A-Za-z0-9_-]+$/.test(pth) ? S(req).get(pth)?.data : null, eid0 = String(b.eventId || cur0?.eventId || "");
+        const evO = /^[A-Za-z0-9_-]{1,80}$/.test(eid0) ? (S(req).get("events/" + eid0)?.data || null) : null;
+        delete b.order;
+        if (evO?.preorder && (raw0.orderQty != null || raw0.order != null)) { const O = buildOrder(evO, { orderQty: raw0.orderQty, order: raw0.order, slot: b.slot });
+          if (O.error) { res.status(400).json({ code: "invalid_order", message: O.error }); return false; }
+          if (O.order) { b.order = O.order; if (O.orderLines) { b.orderLines = O.orderLines; b.orderTotal = O.orderTotal; } } }
+        else if (evO?.preorder && cur0?.order && req.method === "PUT") b.order = cur0.order; }
+      // ---- end review round 8 pre-orders ----
       for (const k of ["response", "status"]) if (b[k] != null && !GUEST_RSVP_RESPONSES.has(String(b[k]).toLowerCase())) { res.status(400).json({ code: "invalid", message: "Pick I'm in, Maybe or Can't go." }); return false; }
       const utm = cleanUtm(b.utm); delete b.utm;
       // Ticketed dinners can open to followers first: everyone else waits until the window closes.
@@ -1590,6 +1611,21 @@ export function createApp({ store, dataDir }) {
     const pe = publicEvent(ev), title = titleOf(ev), host = hostFirstOf(ws, ev), when = whenOf(ev), origin = originOf(req), link = replyLink(req, ws, r.eventId, id);
     const where = [pe.meetPoint || pe.venueName, pe.venueAddr, pe.hood || pe.city].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(", ");
     const handle = C.profileOf(ws)?.handle, cal = calendarLink(ev, where, `${origin}/e/${encodeURIComponent(r.eventId)}`);
+    // ---- review round 8: a pre-order's email is the order: items, total, pickup time, how to pay ----
+    if (kind === "in" && ev.preorder && r.order) {
+      const L = Array.isArray(r.orderLines) ? r.orderLines : [], cents = Math.round((+r.orderTotal || 0) * 100), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
+      const O = [`Hi ${firstOf(r.name) || "there"},`, "", `${host === "Your host" ? "Your host" : host} has your order for ${title}.`, ""];
+      if (L.length) O.push(...L.map((x) => `${x.qty} × ${x.name}${+x.price > 0 ? ` (${orderMoney(x.price * x.qty)})` : ""}`)); else O.push(String(r.order).split(" · ")[0]);
+      if (cents) O.push(`Total: ${orderMoney(cents / 100)}`);
+      O.push("");
+      if (r.slot) O.push(`Pickup: ${slotLabel(r.slot)}${when ? `, ${when.split(" · ")[0]}` : ""}`); else if (when) O.push(`Pickup: ${when}`);
+      if (where) O.push(`Where: ${where}${pe.addrHidden ? " (the exact address is on your invite)" : ""}`);
+      if (cents && url) O.push("", `Pay ${orderMoney(cents / 100)} here: ${payLink(url, cents, [String(r.name || "").trim(), title].filter(Boolean).join(" · "))}`);
+      else if (cents && ev.ticketNote) O.push("", `Pay ${orderMoney(cents / 100)} at pickup.`);
+      O.push("", `Your order, to see or change it: ${link}`, "", "Plans changed? Open it and tap Can't go, so the batch isn't wasted.");
+      const m = await mailWs(ws, { list: "guest", origin, to, subject: `Your order: ${title}`, text: O.join("\n") + "\n", eventId: r.eventId, kind: "confirm", fromName: host === "Your host" ? "" : host });
+      return !!m.ok; }
+    // ---- end review round 8 order email ----
     const lines = [`Hi ${firstOf(r.name) || "there"},`, "", kind === "in" ? `You're in for ${title}.` : `You asked to join ${title}. ${host === "Your host" ? "Your host lets" : host + " lets"} each guest in, and you'll get an email when you're in.`, ""];
     if (when) lines.push(`When: ${when}`);
     if (where) lines.push(`Where: ${where}${pe.addrHidden ? (kind === "in" ? " (the exact address is on your invite)" : " (the exact address comes once you're in)") : ""}`);

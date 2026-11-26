@@ -34,7 +34,8 @@ h2.sec{font-size:22px;margin:22px 0 4px}.muted{color:var(--soft)}
   const STAGES = ["requested", "quoted", "deposit", "booked"], LABEL = { requested: "Waiting for a quote", quoted: "Quote ready", deposit: "Deposit due", booked: "Booked", declined: "The host passed", cancelled: "Cancelled", done: "Done" };
   function depStatus(b) { if (!b) return ""; const st = b.instant && b.status === "requested" ? "booked" : b.status || ""; return st === "booked" && b.quote?.deposit && !b.depositPaid ? "deposit" : st; }
   const J = async (u) => { try { const r = await fetch(u); return r.ok ? await r.json() : null; } catch { return null; } };
-  const [B, Co, me] = await Promise.all([J("/api/me/requests"), J("/api/collabs"), J("/api/me")]);
+  const signedIn = /(?:^|;\s*)encore_in=1/.test(document.cookie); // review round 8: signed out, no /api/collabs call
+  const [B, Co, me] = await Promise.all([J("/api/me/requests"), signedIn ? J("/api/collabs") : null, J("/api/me")]);
   // spots asked for at approval-only events, remembered on this device
   const spots = []; try { for (const k of Object.keys(localStorage).filter((x) => x.startsWith("encore-rsvp-"))) { const M = JSON.parse(localStorage.getItem(k) || "null"), id = k.slice(12); if (!M?.rid || !M.code) continue; spots.push({ id, M }); } } catch {}
   const spotRows = (await Promise.all(spots.map(async ({ id, M }) => { const s = await J(`/api/public/rsvp-status/${encodeURIComponent(id)}?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`); const c = await J(`/api/public/cards?ids=${encodeURIComponent(id)}`); return { id, M, s, card: c?.cards?.[id] }; }))).filter((x) => x.s && ["requested", "going", "no", "waitlist"].includes(x.s.response) && (x.M.response === "requested" || x.s.decidedAt));

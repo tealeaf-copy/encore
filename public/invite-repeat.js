@@ -24,11 +24,15 @@ window.InviteRepeat = function (e, courseNext, pastOf, when, x = {}) {
     let ct = String(A.ct || "").trim();
     if (!ct && A.rid && A.code && x.prevId) fetch(`/api/public/reply/${encodeURIComponent(x.prevId)}?rid=${encodeURIComponent(A.rid)}&code=${encodeURIComponent(A.code)}`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.email) ct = j.email; }).catch(() => {});
     const b = document.createElement("div"); b.id = "rpAgain"; b.className = "rp-again";
-    b.innerHTML = `<p style="margin:0 0 8px"><b>You were in ${unit}.</b> In again?</p><button type="button" class="go" id="rpGo">I'm in again${nm ? ` · ${esc(nm)}` : ""}</button><button type="button" class="linkbtn" id="rpNo" style="margin-top:6px">Not me</button><p class="err" id="rpErr" role="alert"></p>`;
+    b.innerHTML = `<p style="margin:0 0 8px"><b>You were in ${unit}.</b> In again?</p><button type="button" class="go" id="rpGo">I'm in again${nm ? ` · ${esc(nm)}` : ""}</button><button type="button" class="linkbtn" id="rpEdit" style="margin-top:6px">Change my details</button><button type="button" class="linkbtn" id="rpNo" style="margin-top:2px">Not me</button><p class="err" id="rpErr" role="alert"></p>`;
     f.before(b);
-    $("#rpNo").onclick = () => b.remove();
+    // review round 8: only "In again?" until they ask for the form (Change my details, Not me, or details missing)
+    const stk = document.querySelector(".stick"); f.hidden = true; if (stk) stk.style.display = "none";
+    const showForm = (drop) => { f.hidden = false; if (stk) stk.style.display = ""; if (drop) b.remove(); else { $("#rpEdit")?.remove(); } };
+    $("#rpEdit").onclick = () => { showForm(false); $("#nm").value = $("#nm").value || nm; if (ct && !$("#ct").value) $("#ct").value = ct; $("#nm").focus(); };
+    $("#rpNo").onclick = () => { showForm(true); $("#nm").focus(); };
     $("#rpGo").onclick = () => { const g = f.querySelector('input[name="r"][value="going"]'); if (g) g.checked = true; $("#nm").value = nm; if (ct) $("#ct").value = ct;
-      if (($("#ct").required && !ct) || (window.__qMissing && window.__qMissing())) { b.remove(); $("#nm").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (($("#ct").required && !ct) || (window.__qMissing && window.__qMissing())) { showForm(true); $("#nm").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
       $("#rpGo").disabled = true; new MutationObserver((_, o) => { if (document.getElementById("tk")) { b.remove(); o.disconnect(); } else if ($("#er")?.textContent) { $("#rpGo").disabled = false; $("#rpErr").textContent = $("#er").textContent; } }).observe(document.getElementById("m"), { childList: true, subtree: true, characterData: true });
       f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event("submit", { cancelable: true })); }; }
 };

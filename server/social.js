@@ -81,7 +81,21 @@ export const TRAITS = {
   regular: { name: "The Regular", emoji: "🫶", line: "Keeps coming back." },
   cheerleader: { name: "The Cheerleader", emoji: "📣", line: "Always the first to send kudos afterwards." },
 };
-export const KUDOS_TAGS = [["again", "🔁", "Would go again"], ["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"]];
+export const KUDOS_TAGS = [["again", "🔁", "Would go again"], ["food", "🍜", "Amazing food"], ["welcome", "🤗", "Felt welcome"], ["vibe", "✨", "Great vibe"], ["organized", "📋", "So well organized"], ["met", "👋", "Met new people"], ["fun", "😂", "So much fun"], ["spot", "📍", "Great spot"],
+  // review round 8: tags for runs, hikes and classes (ids stay stable; a page shows the ones that fit the event)
+  ["pace", "👟", "Great pace"], ["route", "🗺️", "Great route"], ["learned", "💡", "Learned a lot"], ["teacher", "🙌", "Great teacher"]];
+/** What kind of event this is for kudos: food, move (runs, hikes, rides), learn (classes, workshops) or other. */
+export function kudosKindOf(ev = {}) {
+  const t = `${ev.activity || ""} ${ev.pubTitle || ""} ${ev.name || ""} ${ev.format || ""}`.toLowerCase();
+  if (/\b(runs?|running|jog|jogging|5k|10k|hikes?|hiking|trail|walks?|walking|rides?|cycling|bike|biking|swim|swimming)\b/.test(t)) return "move";
+  if (/\b(class|classes|course|workshop|lessons?|pottery|wheel|ceramics?|clay|dance|dancing|salsa|bachata|improv|yoga|pilates|language|masterclass|book club|knit|knitting|paint|painting)\b/.test(t)) return "learn";
+  if (ev.preorder || ev.courses || /\b(dinner|supper|brunch|lunch|breakfast|food|cook|cooking|potluck|bake|baking|bread|sourdough|dumplings?|omakase|tasting|feast|picnic|pop-?up|crawl|foodie|bbq|tacos?|pizza|chef|menu|coffee|matcha|tea|wine|drinks)\b/.test(t)) return "food";
+  return "other";
+}
+const KUDOS_BY_KIND = { food: ["again", "food", "welcome", "vibe", "met", "fun", "spot", "organized"], move: ["again", "pace", "route", "welcome", "met", "vibe", "organized", "fun"],
+  learn: ["again", "learned", "teacher", "welcome", "vibe", "met", "fun", "organized"], other: ["again", "welcome", "vibe", "met", "fun", "organized", "spot"] };
+/** The kudos chips for one event, "Would go again" first: [[id, emoji, label], ...]. */
+export const kudosTagsFor = (ev) => KUDOS_BY_KIND[kudosKindOf(ev)].map((id) => KUDOS_TAGS.find((x) => x[0] === id)).filter(Boolean);
 // ---- verified kudos: how we know the reviewer was a guest ----
 // "guest_list": the reply was I'm in and the host marked them as there (checked in at the door, tapped Came, or Attended
 // on the guest list). "rsvp": an I'm-in reply, nothing more. null: the reply wasn't I'm in (a Maybe who left kudos), so
@@ -519,7 +533,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     for (const d of S.list("kudos")) { const kd = d.data || {}; if (kd.email) bump({ email: kd.email, name: kd.name }, "kudos"); }
     try { for (const f of C.followersOf(u.ws)) { const k2 = lc(f.email || f.phone || ""); if (!k2) continue; if (P.has(k2)) P.get(k2).follows = true; else P.set(k2, { name: f.name || "", email: f.email, phone: f.phone || "", yes: 0, came: 0, early: 0, no: 0, kudos: 0, events: 0, follows: true }); } } catch {}
     const L = [...P.entries()].filter(([k2]) => !already.has(k2)).map(([k2, x]) => { const score = x.early * 3 + x.came * 3 + x.yes * 2 + x.kudos + (x.follows ? 1 : 0) - x.no;
-      const why = [x.early ? (x.early === 1 ? "said yes early once" : `said yes early ${x.early} times`) : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
+      const why = [x.early ? (x.early === 1 ? "were in early once" : `were in early ${x.early} times`) : "", x.came ? `came to ${x.came}` : "", x.kudos ? "sent kudos" : "", x.follows && !x.events ? "follows you" : ""].filter(Boolean);
       return { name: x.name || (x.email ? x.email.split("@")[0] : "A friend"), email: x.email, phone: x.phone, score, why: why.length ? why.join(" · ") : "follows you", early: x.early >= 1 }; }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
     res.json({ people: L, history: R.length }); });
   // ---- RSVP by text: the host texts the invite; guests reply YES, MAYBE or NO (SMS or WhatsApp through the same number) ----

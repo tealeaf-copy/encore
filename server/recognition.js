@@ -170,7 +170,7 @@ export function trustFrom({ S = {}, h = {}, example = false, bookings = [], proo
     : expired ? { onFile: false, url: "", expires, expired, insured: !!h.insured, text: "Insurance certificate expired. A new one on request." }
     // "on request" only when the host said they're insured; otherwise say plainly there's nothing on file
     : h.insured ? { onFile: false, url: "", expires, expired, insured: true, text: "Says they're insured. Certificate on request" }
-    : { onFile: false, url: "", expires, expired, insured: false, text: "No insurance certificate on file" };
+    : { onFile: false, url: "", expires, expired, insured: false, text: "Insurance: ask the host" }; // review round 8: neutral, not a red flag on every card
   // what IS real, short lines in order of weight; nothing invented
   // "1 guest hosted", "1 of 2 guests came back", "2 events hosted" read as weak to a brand: those wait for n >= WEAK_MIN
   const lines = [];

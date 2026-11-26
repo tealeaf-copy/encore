@@ -12,7 +12,7 @@ import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS, getDbUser } from
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { localParts } from "./reminders.js";
-import { KUDOS_TAGS, replyKey } from "./social.js";
+import { KUDOS_TAGS, kudosTagsFor, replyKey } from "./social.js";
 import { mountKudosNudge } from "./kudosnudge.js";
 import { nextFor } from "./repeats.js"; // review round 7: "Nothing like it coming up" shows the series' next date // kudos nudges: the host's sheet, the group link, Send for me, the reminder
 
@@ -118,8 +118,8 @@ export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, 
     const pl = clean(P.ev.venueName || P.ev.meetPoint, 80), place = pl && !/^(?:my|our)\b|['’]s\s+(?:place|apartment|flat|house|home)\b/i.test(pl) ? pl : "";
     const em = String(P.r.email || "").trim().toLowerCase(), F = em && h?.handle ? (C.followersOf(P.ws) || []).find((f) => String(f.email || "").toLowerCase() === em) : null;
     res.json({ title: clean(P.ev.pubTitle || P.ev.name, 120), date: ISO.test(P.ev.date || "") ? P.ev.date : "", hostFirst: hostFirst(C, P.ws, P.ev), host: h?.handle ? { handle: h.handle, name: clean(h.name, 60) } : null, place,
-      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: KUDOS_TAGS.filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })), again: { k: "again", emoji: "🔁", label: "Would go again" },
-      order: ["again", ...KUDOS_TAGS.filter(([k]) => k !== "again").map(([k]) => k)], following: F ? (F.pending ? "pending" : true) : false,
+      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: kudosTagsFor(P.ev).filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })) /* review round 8: chips fit the event */, again: { k: "again", emoji: "🔁", label: "Would go again" },
+      order: ["again", ...kudosTagsFor(P.ev).filter(([k]) => k !== "again").map(([k]) => k)], following: F ? (F.pending ? "pending" : true) : false,
       canFollow: !!(h?.handle && P.r.email) }); });
   app.get("/api/public/kudos-more/:eventId", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited");
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working.", 403, "not_granted");

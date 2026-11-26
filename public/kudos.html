@@ -136,14 +136,16 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
     fetch(`/api/public/kudos-group/${encodeURIComponent(id)}?g=${encodeURIComponent(g)}`).then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) })).then(({ ok, j }) => {
       if (!ok) return stop("This link isn't working", j.message || "Ask your host for a new one.");
       if (!j.open) return stop(`${j.title}`, "Kudos open once it's happened.");
+      const here = !!j.here && q.get("here") === "1"; // review round 8: scanned at the event, the code on the host's phone skips the email
       body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc(sub(j))}</p>
         <form class="card gform" id="gf" novalidate><label class="f" for="gc">Your email or phone <small>The one you replied with, so ${esc(j.hostFirst || "your host")} knows it's you.</small></label>
         <input id="gc" name="contact" type="text" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="you@example.com or (555) 123-4567" required>
+        ${here ? `<label class="f" for="gat">Code on ${esc(j.hostFirst ? j.hostFirst + "'s" : "your host's")} phone <small>4 digits. It changes every few minutes.</small></label><input id="gat" name="at" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" placeholder="1234">` : ""}
         <p class="err" id="gErr" role="alert"></p><button class="go" id="gGo" type="submit">Continue</button></form>`;
       const f = $("#gf"), b = $("#gGo");
       f.onsubmit = async (ev) => { ev.preventDefault(); const contact = $("#gc").value.trim(); if (!contact) { $("#gErr").textContent = "Add the email or phone you replied with."; return; }
         b.disabled = true; $("#gErr").textContent = "";
-        try { const r = await fetch(`/api/public/kudos-group/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ g, contact }) });
+        try { const r = await fetch(`/api/public/kudos-group/${encodeURIComponent(id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ g, contact, ...(here && $("#gat")?.value.trim() ? { at: $("#gat").value.trim() } : {}) }) });
           const x = await r.json().catch(() => ({})); if (!r.ok) throw new Error(x.message || "That didn't work. Try again.");
           // the server answers the same way whether or not it found the reply; it sends the link there, or hands the page on
           if (x.next && /^\/k\//.test(x.next)) return location.replace(x.next);

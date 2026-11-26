@@ -25,7 +25,7 @@ import { localParts } from "./reminders.js";
 import { replyKey } from "./social.js";
 import { qrSvg } from "./qr.js";
 
-const DAY = 864e5, MORNING = 9, EVENING = 21;
+const DAY = 864e5, MORNING = 9, EVENING = 21, AT_SLOT_MS = 10 * 60e3; // review round 8: the at-the-event code changes every 10 minutes
 export const NUDGE = { maxHostSends: 2, spacingDays: 3, followUpDays: 3, followUpLastDay: 7, sheetDays: 14, sendDays: 30, pottoBelow: 0.6 };
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
@@ -97,7 +97,7 @@ export function makeKudosNudge(store, { C, canEmail = () => true, hostFirst = ()
   function groupEvent(eventId, g) {
     const ws = workspaceOfEvent(String(eventId || "")); if (!ws || ws === DEFAULT_WS || !g) return null;
     const S = scopeStore(store, ws), ev = S.get("events/" + eventId)?.data, s = settings(S, eventId); if (!ev || !s?.nonce) return null;
-    return eq(groupToken(ws, eventId, s.nonce), String(g)) ? { ws, S, ev, s } : null;
+    return eq(groupToken(ws, eventId, s.nonce), String(g)) ? { ws, S, ev, s, eventId } : null;
   }
   /** The kudos-only proof from the group link: same shape as X.rsvpProof, for the kudos page, Send and Follow only. */
   function kudosProof(eventId, rid, code) {
@@ -227,7 +227,22 @@ export function makeKudosNudge(store, { C, canEmail = () => true, hostFirst = ()
   function setFollowUp(ws, eventId, on) { const S = scopeStore(store, ws); if (!S.get("events/" + eventId)) return null; const s = ensure(S, eventId); S.set(cfgKey(eventId), { ...s, followUp: !!on }); return { on: !!on }; }
   function rotate(ws, eventId) { const S = scopeStore(store, ws); if (!S.get("events/" + eventId)) return null; const s = ensure(S, eventId); S.set(cfgKey(eventId), { ...s, nonce: crypto.randomBytes(8).toString("hex"), rotatedAt: Date.now() }); return true; }
 
-  return { sheet, sendForMe, markNudged, runFollowUps, setFollowUp, rotate, groupEvent, kudosProof, matchGuest, gkCode, groupToken, ensure, progressOf, guestsOf, personalLink, sign: (m) => hmac("fc:" + m, 24) };
+  // ---- review round 8: "at the event" codes. The host's QR screen shows a 4-digit code that changes every 10 minutes;
+  // a guest standing there types it with their email or phone and goes straight to the kudos page (no email round trip).
+  // Only around the event: from an hour before it starts on its day until 4am the next morning, in the event's time zone. ----
+  const atSlot = (now) => Math.floor(now / AT_SLOT_MS);
+  const atCodeOf = (ws, eventId, nonce, slot) => String(parseInt(crypto.createHmac("sha256", secret()).update(`ka:${ws}:${eventId}:${nonce}:${slot}`).digest("hex").slice(0, 8), 16) % 10000).padStart(4, "0");
+  function atLive(ev, now = Date.now()) { const tz = ev?.tz || process.env.ENCORE_TZ || "", L = localParts(now, tz), start = ev?.date || "", end = endOf(ev); if (!ISO.test(start)) return false;
+    const h0 = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? Math.max(0, +ev.startTime.slice(0, 2) - 1) : 0;
+    if (L.day === start && start === end) return L.hour >= h0; if (L.day > start && L.day <= end) return true; if (L.day === start) return L.hour >= h0; return L.day === addDays(end, 1) && L.hour < 4; }
+  /** For the host's QR screen: { live, code, expiresAt } (code only while live). */
+  function atNow(ws, eventId, now = Date.now()) { const S = scopeStore(store, ws), ev = S.get("events/" + eventId)?.data; if (!ev) return { live: false };
+    const s = ensure(S, eventId), live = atLive(ev, now); if (!live) return { live: false }; const k = atSlot(now); return { live: true, code: atCodeOf(ws, eventId, s.nonce, k), expiresAt: (k + 1) * AT_SLOT_MS }; }
+  /** Is this the code on the host's screen (or the one just before it, for a minute after it changed)? */
+  function atOk(G, typed, now = Date.now()) { const t = String(typed || "").replace(/\D/g, ""); if (t.length !== 4 || !atLive(G.ev, now)) return false; const k = atSlot(now);
+    return eq(atCodeOf(G.ws, G.eventId, G.s.nonce, k), t) || (now - k * AT_SLOT_MS < 60e3 && eq(atCodeOf(G.ws, G.eventId, G.s.nonce, k - 1), t)); }
+  // ---- end review round 8 ----
+  return { sheet, sendForMe, markNudged, runFollowUps, setFollowUp, rotate, groupEvent, kudosProof, matchGuest, gkCode, groupToken, ensure, progressOf, guestsOf, personalLink, atNow, atOk, atLive, sign: (m) => hmac("fc:" + m, 24) };
 }
 
 export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrigin, hostFirst }) {
@@ -242,7 +257,9 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
   // ---- the host's "Nudge for kudos" sheet ----
   app.get("/api/host/kudos-nudge/:eventId", (req, res) => { const h = host(req, res); if (!h) return; res.set("Cache-Control", "private, no-store"); res.json(N.sheet(h.u.ws, h.id, publicOrigin(req))); });
   app.get("/api/host/kudos-nudge/:eventId/qr.svg", (req, res) => { const h = host(req, res); if (!h) return; const s = N.sheet(h.u.ws, h.id, publicOrigin(req));
-    res.set("Cache-Control", "private, no-store").type("image/svg+xml").send(qrSvg(s.group.link)); });
+    res.set("Cache-Control", "private, no-store").type("image/svg+xml").send(qrSvg(s.group.link + (req.query.here === "1" ? "&here=1" : ""))); }); // review round 8: the at-the-event QR asks for the code
+  // review round 8: the code guests type at the event (the host's QR screen polls this; it changes every 10 minutes)
+  app.get("/api/host/kudos-nudge/:eventId/at", (req, res) => { const h = host(req, res); if (!h) return; res.set("Cache-Control", "private, no-store"); res.json(N.atNow(h.u.ws, h.id)); });
   app.post("/api/host/kudos-nudge/:eventId/nudged", small, (req, res) => { const h = host(req, res); if (!h) return; const r = N.markNudged(h.u.ws, h.id, clean(req.body?.rid, 80), clean(req.body?.via, 20)); if (!r) return bad(res, "No such guest.", 404, "not_found"); res.json({ ok: true, ...r }); });
   app.post("/api/host/kudos-nudge/:eventId/send", small, async (req, res) => { const h = host(req, res); if (!h) return; const r = await N.sendForMe(h.u.ws, h.id, publicOrigin(req)); if (!r.ok) return bad(res, r.message, r.status, r.code); res.json(r); });
   app.post("/api/host/kudos-nudge/:eventId/follow-up", small, (req, res) => { const h = host(req, res); if (!h) return; res.json({ ok: true, ...N.setFollowUp(h.u.ws, h.id, req.body?.on !== false) }); });
@@ -253,7 +270,7 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
     if (over("gp:" + (req.ip || "?"), 120)) return bad(res, "Slow down.", 429, "rate_limited");
     const id = clean(req.params.eventId, 80), G = N.groupEvent(id, clean(req.query.g, 60)); if (!G) return bad(res, "This link isn't working. Ask your host for a new one.", 403, "not_granted");
     const today = new Date().toISOString().slice(0, 10), h = C.profileOf(G.ws);
-    res.json({ title: clean(G.ev.pubTitle || G.ev.name, 120), date: ISO.test(G.ev.date || "") ? G.ev.date : "", hostFirst: hostFirst(G.ws, G.ev), host: h?.handle ? { name: clean(h.name, 60) } : null, open: !G.ev.date || G.ev.date <= today }); });
+    res.json({ title: clean(G.ev.pubTitle || G.ev.name, 120), date: ISO.test(G.ev.date || "") ? G.ev.date : "", hostFirst: hostFirst(G.ws, G.ev), host: h?.handle ? { name: clean(h.name, 60) } : null, open: !G.ev.date || G.ev.date <= today, here: N.atLive(G.ev) /* review round 8 */ }); });
   app.post("/api/public/kudos-group/:eventId", small, (req, res) => { res.set("Cache-Control", "private, no-store");
     const id = clean(req.params.eventId, 80), perIp = Number(process.env.ENCORE_KUDOS_GROUP_PER_IP || 10), perEvent = Number(process.env.ENCORE_KUDOS_GROUP_PER_EVENT || 60);
     if (over("gi:" + (req.ip || "?"), perIp) || over("ge:" + id, perEvent)) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
@@ -261,6 +278,14 @@ export function mountKudosNudge(app, { store, small, C, X, ownerOnly, publicOrig
     const contact = clean(req.body?.contact, 200); if (!contact) return bad(res, "Add the email or phone you replied with.");
     // per contact too, so one guest's email can't be tried from many places
     const ck = contact.includes("@") ? lc(contact) : digits(contact); if (over("gc:" + id + ":" + ck, Number(process.env.ENCORE_KUDOS_GROUP_PER_CONTACT || 5))) return bad(res, "Too many tries. Try again in an hour.", 429, "rate_limited");
+    // ---- review round 8: at the event, the code on the host's phone instead of the email round trip. The code is checked
+    // before the contact, so a wrong code gets the same answer whether or not that email or phone replied. ----
+    if (req.body?.at != null && req.body.at !== "") { const t0a = Date.now(), okAt = N.atOk(G, clean(req.body.at, 12)), ga = okAt ? N.matchGuest(G.S, id, contact) : null;
+      const reply = () => { if (!okAt) return bad(res, "That code didn't match. Type the 4 digits on your host's phone.", 400, "at_code");
+        if (!ga) return bad(res, NO_MATCH, 404, "no_match");
+        res.json({ ok: true, next: `/k/${encodeURIComponent(id)}?rid=${encodeURIComponent(ga.rid)}&code=${encodeURIComponent(N.gkCode(G.ws, id, ga.rid, G.s.nonce))}` }); };
+      return void setTimeout(reply, Math.max(0, 350 - (Date.now() - t0a))); }
+    // ---- end review round 8 ----
     // Match or not, the same answer, at the same pace. On a match the kudos link goes to that email or phone when we can
     // send there (the safe way); with no email or texting set up, the page goes on with a kudos-only code instead.
     const t0 = Date.now(), g = N.matchGuest(G.S, id, contact), code = g ? N.gkCode(G.ws, id, g.rid, G.s.nonce) : N.gkCode(G.ws, id, "none:" + ck, G.s.nonce);

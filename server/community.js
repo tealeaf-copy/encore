@@ -219,7 +219,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
     return all ? { hosts, events } : { hosts: hosts.slice(0, 80), events: events.slice(0, 60) };
   }
   // ---- what guests say about a host, from their own get-togethers (kudos and guest types) ----
-  const TAGL = { food: "Amazing food", welcome: "Felt welcome", vibe: "Great vibe", organized: "So well organized", met: "Met new people", fun: "So much fun", spot: "Great spot", again: "Would go again" };
+  const TAGL = { food: "Amazing food", welcome: "Felt welcome", vibe: "Great vibe", organized: "So well organized", met: "Met new people", fun: "So much fun", spot: "Great spot", again: "Would go again", pace: "Great pace", route: "Great route", learned: "Learned a lot", teacher: "Great teacher" }; // review round 8: run and class tags
   const TYPEL = { host: "Planners", spark: "Sparks", chill: "Chill Ones", filler: "Last-Minute Yeses", early: "Early Birds", connector: "Connectors", contributor: "Contributors", helper: "Helpers" };
   function resonance(ws) { try { const S = scopeStore(store, ws), K = S.list("kudos").map((d) => d.data || {}), R = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.response === "going" && !r.noShow);
       const tags = {}; let again = 0; for (const k of K) { for (const t of k.tags || []) tags[t] = (tags[t] || 0) + 1; if ((k.tags || []).includes("again") || k.compare === "better") again++; }

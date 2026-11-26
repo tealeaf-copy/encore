@@ -81,7 +81,7 @@
     // the card's own heading carries the title, so the cover shows only its label (no title three times over)
     const cov = EA ? EA.cover(e, { title: "", label: x.type === "idea" ? (i0 ? i0.label : "Idea") : undefined }) : `<div style="display:grid;place-items:center;height:100%;font-size:44px">${esc(i0?.emoji || "✨")}</div>`;
     const vibe = x.type === "idea" && x.look ? `<div class="pli-vibe" style="${lookVars(x.look)}"><span>${esc(vibeName(x.look) || "A look to start from")}</span><i>${esc(btnText(x.look))}</i></div>` : "";
-    return `<div class="pli-media pli-art" style="--ar:${ar}">${ex}${x.type === "art" ? `<span class="pli-kind">${esc(x.status === "upcoming" ? "Coming up" : "Past")}</span>` : ""}${cov}</div>${vibe}`; }
+    return `<div class="pli-media pli-art" style="--ar:${ar}">${ex}${x.type === "art" && x.status !== "upcoming" ? `<span class="pli-kind">Past</span>` : "" /* review 8: "Coming up" is the sticker, never twice */}${cov}</div>${vibe}`; }
 
   // the line under the title, without the title again ("Saturday Run Club: a 5k" reads "A 5k")
   const lineOf = (x) => { const t = String(x.title || "").trim(), l = String(x.line || "").trim(); if (!t || !l) return l; if (l.toLowerCase() === t.toLowerCase()) return "";

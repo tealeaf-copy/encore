@@ -32,9 +32,9 @@ test("a pre-order reaches the guest link with its items, and a reply can carry t
   const doc = await guestDoc("r7bake");
   assert.equal(doc.data.preorder, true); assert.deepEqual(doc.data.orderItems.map((x) => x.name), ["Country loaf", "Focaccia"]);
   assert.equal(doc.data.meetPoint, "Priya's stoop", "guests read Priya's stoop, never the host's own 'my stoop'");
-  const r = await post("/api/db/collection?path=rsvps", { eventId: "r7bake", response: "going", name: "Ben", email: "ben.r7@example.com", order: "2 × Country loaf · pickup 10:00–11:00 · $24", code: "AB123", createdAt: Date.now(), via: "invite-order" }, { "x-encore-guest": "1", "x-encore-key": "r7-key-ben", "x-encore-workspace": doc.workspace });
+  const r = await post("/api/db/collection?path=rsvps", { eventId: "r7bake", response: "going", name: "Ben", email: "ben.r7@example.com", orderQty: [{ i: 0, qty: 2 }], slot: "10:00–11:00", code: "AB123" /* review round 8: items and quantities, the server writes the order */, createdAt: Date.now(), via: "invite-order" }, { "x-encore-guest": "1", "x-encore-key": "r7-key-ben", "x-encore-workspace": doc.workspace });
   assert.equal(r.status, 200); const rid = String((await r.json()).id).split("/").pop();
-  assert.match(scopeStore(srv.store, ws).get("rsvps/" + rid).data.order, /2 × Country loaf/);
+  assert.equal(scopeStore(srv.store, ws).get("rsvps/" + rid).data.order, "2 × Country loaf · pickup 10am to 11am · $24");
 });
 
 test("the light invite: pre-orders get the order form, cost notes, at the door, the drop-in, In again and Today", () => {
@@ -43,7 +43,7 @@ test("the light invite: pre-orders get the order form, cost notes, at the door, 
   assert.match(html, /\(\(e\.slots \|\| \[\]\)\.length && !e\.preorder\)/, "a pre-order's pickup windows don't send it to the full invite");
   assert.match(html, /\/invite-order\.js/);
   assert.match(order, /\/api\/public\/order\//, "the shop's order endpoint when the shop is open");
-  assert.match(order, /order: text/, "else a reply with the order noted");
+  assert.match(order, /orderQty: lines\.map/, "else a reply with the items and quantities (review round 8)");
   assert.match(order, /data-d="-1"/); assert.match(order, /name="slot"/); assert.match(order, />Order</);
   assert.match(html, /e\.costNote \? `<div class="muted" id="cost">💵/);
   assert.match(html, /e\.ticketNote \? "Pay at the door\." : `You'll pay/);

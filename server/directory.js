@@ -282,9 +282,12 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
   function searchEvents(base, q = {}) { const L = filterEvents(base, q), off = decodeCursor(q.cursor), lim = limitOf(q.limit), page = L.slice(off, off + lim);
     return { data: page.map((e) => strip(e)), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length }; }
   function getEvent(base, id) { const e = data(base).events.find((x) => x.id === String(id || "")); return e ? strip(e, { items: null }) : null; }
+  // review 8: free text also reads the bio, talk topics, services and package names; "speaker" means talk formats
+  const hostBlob = (H) => { const h = H.rec; return [h.name, h.handle, h.city, h.area, h.tagline, h.bio || "", ...h.tags, ...h.formats, ...(h.speaking_topics || []), H.h.services || "", ...(H.packages || []).map((p) => p.name)].join(" ").toLowerCase(); };
+  const wordHits = (t, w) => t.includes(w) || (HOST_WORDS[w] ? HOST_WORDS[w].test(t) : false);
   function listHosts(base, q = {}) { const words = s(q.q, 120).toLowerCase().split(/\s+/).filter(Boolean), city = s(q.city, 60).toLowerCase(), ex = truthy(q.include_examples);
-    const L = [...data(base).hosts.values()].map((H) => H.rec).filter((h) => (ex || !h.example) && (!city || `${h.city} ${h.area}`.toLowerCase().includes(city))
-      && (!words.length || ((t) => words.every((w) => t.includes(w)))([h.name, h.handle, h.city, h.area, h.tagline, ...h.tags, ...h.formats].join(" ").toLowerCase())))
+    const L = [...data(base).hosts.values()].filter((H) => { const h = H.rec; return (ex || !h.example) && (!city || `${h.city} ${h.area}`.toLowerCase().includes(city))
+      && (!words.length || ((t) => words.every((w) => wordHits(t, w)))(hostBlob(H))); }).map((H) => H.rec)
       .sort((a, b) => b.upcoming_count + b.past_count + b.reviews.count - (a.upcoming_count + a.past_count + a.reviews.count) || a.name.localeCompare(b.name));
     const off = decodeCursor(q.cursor), lim = limitOf(q.limit, 50);
     return { data: L.slice(off, off + lim), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length }; }
@@ -365,10 +368,22 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
   /** What a host actually does, as text: the formats and titles of their events, their services and packages (not the tagline). */
   function hostText(base, handle) { const D = data(base), H = D.hosts.get(String(handle || "").toLowerCase()); if (!H) return "";
     const ev = D.events.filter((e) => e.host.handle === H.rec.handle && !e._dup).slice(0, 40).map((e) => `${e.format} ${e.title} ${(e.tags || []).join(" ")}`);
-    return [...H.rec.formats, ...ev, H.h.services || "", ...(H.packages || []).map((p) => `${p.name} ${p.category} ${p._x?.desc || ""}`), ...(H.h.experiences || []).map((x) => `${x?.name || ""} ${x?.category || ""}`)].join(" ").slice(0, 8000); }
+    return [...H.rec.formats, ...ev, H.rec.bio || "", ...(H.rec.speaking_topics || []), H.h.services || "", ...(H.packages || []).map((p) => `${p.name} ${p.category} ${p._x?.desc || ""}`), ...(H.h.experiences || []).map((x) => `${x?.name || ""} ${x?.category || ""}`)].join(" ").slice(0, 8000); }
   return { searchEvents, getEvent, listHosts, getHost, formats, listReviews, csv, jsonLd, filterEvents, similar, findHosts, hostText };
 }
 
+// review 8: words people type for a host that the host's own text says differently
+const TALK_RE = /\b(talks?|keynotes?|panels?|panelist|webinars?|podcasts?|speaking|speaker)\b/;
+const HOST_WORDS = { speaker: TALK_RE, speakers: TALK_RE, talk: TALK_RE, talks: TALK_RE, speaking: TALK_RE, keynote: TALK_RE };
+// review round 8: get_leaderboard's categories (server/leaderboard.js CATEGORIES) and the words people use for them
+export const LB_CATS = ["all", "supper", "movement", "workshop", "popup", "talks", "community"];
+const LB_ALIAS = { dining: "supper", dinner: "supper", dinners: "supper", suppers: "supper", "supper club": "supper", "supper clubs": "supper", food: "supper", brunch: "supper", drinks: "supper",
+  run: "movement", runs: "movement", running: "movement", hike: "movement", hikes: "movement", hiking: "movement", fitness: "movement", sport: "movement", sports: "movement",
+  workshops: "workshop", class: "workshop", classes: "workshop", craft: "workshop", crafts: "workshop", "pop-up": "popup", "pop-ups": "popup", popups: "popup", market: "popup",
+  talk: "talks", speaking: "talks", speakers: "talks", speaker: "talks", keynote: "talks", keynotes: "talks", panel: "talks", panels: "talks",
+  meetup: "community", meetups: "community", social: "community", party: "community", parties: "community", everything: "all", any: "all" };
+/** A leaderboard category id for what a caller typed, or "" when it isn't one. */
+export function leaderboardCategory(v) { const k = String(v ?? "").trim().toLowerCase(); return LB_CATS.includes(k) ? k : LB_ALIAS[k] || ""; }
 // ---- find_hosts: what each booking category means in the words hosts use (their services, formats, packages) ----
 export const CATEGORY_WORDS = {
   dining: /\b(dinners?|suppers?|tastings?|chefs?|tables?|omakase|feasts?|supper club)\b/i,
@@ -384,6 +399,8 @@ export function findArgsError(q = {}) {
   if (!posNum(q.budget)) return "budget must be a positive number of dollars, e.g. 2500.";
   if (q.min_reviews != null && q.min_reviews !== "" && !(Number.isFinite(+q.min_reviews) && +q.min_reviews >= 0)) return "min_reviews must be 0 or more.";
   if (q.date != null && q.date !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(String(q.date))) return "date must be YYYY-MM-DD, e.g. 2026-03-14.";
+  // review round 8: yes/no arguments are yes or no
+  for (const k of ["verified_only", "include_examples"]) if (q[k] != null && q[k] !== "" && typeof q[k] !== "boolean" && !/^(true|false|1|0)$/i.test(String(q[k]))) return `${k} must be true or false.`;
   return ""; }
 // common names for arguments, so an unknown one can be pointed at the right one
 const ARG_ALIASES = { query: "q", search: "q", text: "q", keywords: "q", keyword: "q", people: "group_size", guests: "group_size", headcount: "group_size", size: "group_size", group: "group_size", attendees: "group_size", party_size: "group_size",
@@ -483,6 +500,12 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
       if (msg.method === "tools/list") return reply({ tools: PUBLIC_TOOLS });
       if (msg.method === "tools/call") { const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args0 = msg.params?.arguments && typeof msg.params.arguments === "object" && !Array.isArray(msg.params.arguments) ? msg.params.arguments : {};
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
+        // ---- review round 8: arguments must be an object, booleans boolean (or "true"/"false"), a leaderboard category one we have ----
+        { const A = msg.params?.arguments; if (A != null && (typeof A !== "object" || Array.isArray(A))) return fail(-32602, `${name}: arguments must be an object, e.g. {"city": "Brooklyn"}.`);
+          const props = PUBLIC_TOOLS.find((t) => t.name === name)?.inputSchema?.properties || {};
+          for (const [k, v] of Object.entries(A || {})) if (props[k]?.type === "boolean" && v != null) { if (v === "true") args0[k] = true; else if (v === "false") args0[k] = false; else if (typeof v !== "boolean") return fail(-32602, `${k} must be true or false.`); }
+          if (name === "get_leaderboard" && args0.category != null && args0.category !== "") { const c = leaderboardCategory(args0.category); if (!c) return fail(-32602, `Unknown category "${String(args0.category).slice(0, 40)}". Use one of: ${LB_CATS.join(", ")}.`); args0.category = c; } }
+        // ---- end review round 8 ----
         // arguments the tool doesn't take: query is q; anything else is an error that names the one it likely meant
         const known = Object.keys(PUBLIC_TOOLS.find((t) => t.name === name)?.inputSchema?.properties || {}), args = { ...args0 };
         if ("query" in args && !known.includes("query") && known.includes("q")) { if (args.q == null) args.q = args.query; delete args.query; }

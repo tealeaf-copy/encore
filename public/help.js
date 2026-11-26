@@ -258,7 +258,7 @@
     watchStuck();
     if (signedIn()) loadTickets().then(badge);
     if (new URLSearchParams(location.search).get("help") === "1") { setTimeout(async () => { await loadTickets(true); open(); }, 400); }
-    window.EncoreHelp = { open, person: personForm, offer, ask };
+    window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask }; // review round 8: open() for the wizard's own link
   }
   document.body ? mount() : document.addEventListener("DOMContentLoaded", mount);
 })();

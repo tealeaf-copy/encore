@@ -34,6 +34,8 @@ const config: CapacitorConfig = {
     // service workers in WKWebView only run for App-Bound Domains (WKAppBoundDomains in Info.plist, see native-config/ios)
     limitsNavigationsToAppBoundDomains: true,
     preferredContentMode: "mobile",
+    // swipe-back (allowsBackForwardNavigationGestures): Capacitor has no key for it, so native-config/ios/MainViewController.swift
+    // turns it on; public/native.js also goes back on a left-edge swipe
     backgroundColor: "#F7F1E8",
   },
   android: {

@@ -74,6 +74,7 @@ a{color:var(--ember)}
     const j = await r.json().catch(() => ({})); msg.textContent = r.ok ? "Thanks. We'll reply by email within a day." : j.message || "That didn't send. Try again."; if (r.ok) f.reset(); };
 })();
 </script>
+<script src="/backbar.js"></script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body>

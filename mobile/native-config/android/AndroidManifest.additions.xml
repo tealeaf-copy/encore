@@ -1,0 +1,26 @@
+<!-- Android, later (iOS ships first). Add inside <activity android:name=".MainActivity" ...> in
+     android/app/src/main/AndroidManifest.xml after `npx cap add android`. autoVerify makes these App Links: Android checks
+     https://potterylab.ai/.well-known/assetlinks.json (server/appstore.js, ENCORE_ANDROID_PACKAGE and ENCORE_ANDROID_SHA256). -->
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="https" android:host="potterylab.ai" />
+    <data android:scheme="https" android:host="www.potterylab.ai" />
+    <data android:pathPrefix="/e/" />
+    <data android:pathPrefix="/i/" />
+    <data android:pathPrefix="/x/" />
+    <data android:pathPrefix="/@" />
+    <data android:path="/g" />
+    <data android:path="/feed" />
+</intent-filter>
+
+<!-- and, inside <manifest> (outside <application>): -->
+<!--
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.READ_CALENDAR" />
+<uses-permission android:name="android.permission.WRITE_CALENDAR" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+-->
+<!-- Photos: Android 13+ uses the system photo picker, no storage permission needed. -->

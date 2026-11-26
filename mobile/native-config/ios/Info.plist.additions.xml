@@ -1,0 +1,36 @@
+<!-- Add these keys inside the top <dict> of ios/App/App/Info.plist after `npx cap add ios`.
+     The usage strings are what iOS shows when it asks; App Review reads them (guideline 5.1.1(ii)): say what the app does with it. -->
+
+	<!-- camera and photos: adding photos from an event, a cover for your event, your page -->
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to add to an event, or to use as your event's cover.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pick photos to add to an event, or to use as your event's cover.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save photos from events you went to.</string>
+
+	<!-- calendar: "Add to calendar" on an event you're going to (write only) -->
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Add events you're going to to your calendar.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Add events you're going to to your calendar.</string>
+
+	<!-- location: "Near me" on the feed and Discover asks the browser for your location (public/place.js); only the city is kept -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Show things to do near you. Pottery Lab keeps only your city.</string>
+
+	<!-- service workers (the offline screen) only run in WKWebView for App-Bound Domains, at most 10 -->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>potterylab.ai</string>
+		<string>www.potterylab.ai</string>
+	</array>
+
+	<!-- no tracking across other companies' apps and sites: no App Tracking Transparency prompt, no NSUserTrackingUsageDescription -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>

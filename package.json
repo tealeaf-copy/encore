@@ -10,7 +10,13 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "icons": "node scripts/make-app-icons.cjs",
+    "mobile:install": "npm --prefix mobile install",
+    "mobile:sync": "npm --prefix mobile run sync",
+    "mobile:assets": "npm --prefix mobile run assets",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "mobile:android": "npm --prefix mobile run android"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

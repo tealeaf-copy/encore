@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Copy to ios/App/App/App.entitlements after `npx cap add ios` (Xcode: Signing & Capabilities adds the same keys).
+     aps-environment: "development" for Xcode builds; Xcode switches it to "production" when you archive for TestFlight / App Store.
+     associated-domains: must match the domain that serves /.well-known/apple-app-site-association (server/appstore.js). -->
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:potterylab.ai</string>
+		<string>applinks:www.potterylab.ai</string>
+		<string>webcredentials:potterylab.ai</string>
+	</array>
+</dict>
+</plist>

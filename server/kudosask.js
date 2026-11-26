@@ -13,7 +13,8 @@ import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
 import { localParts } from "./reminders.js";
 import { KUDOS_TAGS, replyKey } from "./social.js";
-import { mountKudosNudge } from "./kudosnudge.js"; // kudos nudges: the host's sheet, the group link, Send for me, the reminder
+import { mountKudosNudge } from "./kudosnudge.js";
+import { nextFor } from "./repeats.js"; // review round 7: "Nothing like it coming up" shows the series' next date // kudos nudges: the host's sheet, the group link, Send for me, the reminder
 
 const DAY = 864e5, MORNING = 9, EVENING = 21, LAST_DAY = 3;
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -112,16 +113,23 @@ export function mountKudosAsk(app, { store, small, C, X, ownerOnly, sendStatic, 
   app.get("/api/public/kudos-page/:eventId", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited"); res.set("Cache-Control", "private, no-store");
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working. Open the one from your text or email.", 403, "not_granted");
     const h = C.profileOf(P.ws), K = P.S.get("kudos/" + P.rid)?.data, today = new Date().toISOString().slice(0, 10);
-    res.json({ title: clean(P.ev.pubTitle || P.ev.name, 120), date: ISO.test(P.ev.date || "") ? P.ev.date : "", hostFirst: hostFirst(C, P.ws, P.ev), host: h?.handle ? { handle: h.handle, name: clean(h.name, 60) } : null,
-      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: KUDOS_TAGS.filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })), again: { k: "again", label: "Would go again" },
+    // review round 7: the subtitle names the place ("at Prospect Park"), never "at Marcus's"; "my place" stays private.
+    // "Would go again" comes first (order), and the page knows if they already follow the host.
+    const pl = clean(P.ev.venueName || P.ev.meetPoint, 80), place = pl && !/^(?:my|our)\b|['’]s\s+(?:place|apartment|flat|house|home)\b/i.test(pl) ? pl : "";
+    const em = String(P.r.email || "").trim().toLowerCase(), F = em && h?.handle ? (C.followersOf(P.ws) || []).find((f) => String(f.email || "").toLowerCase() === em) : null;
+    res.json({ title: clean(P.ev.pubTitle || P.ev.name, 120), date: ISO.test(P.ev.date || "") ? P.ev.date : "", hostFirst: hostFirst(C, P.ws, P.ev), host: h?.handle ? { handle: h.handle, name: clean(h.name, 60) } : null, place,
+      name: P.viaGroup ? "" : first(P.r.name), open: !P.ev.date || P.ev.date <= today, sent: !!(K && (K.love || (K.tags || []).length)), tags: KUDOS_TAGS.filter(([k]) => k !== "again").map(([k, emoji, label]) => ({ k, emoji, label })), again: { k: "again", emoji: "🔁", label: "Would go again" },
+      order: ["again", ...KUDOS_TAGS.filter(([k]) => k !== "again").map(([k]) => k)], following: F ? (F.pending ? "pending" : true) : false,
       canFollow: !!(h?.handle && P.r.email) }); });
   app.get("/api/public/kudos-more/:eventId", (req, res) => { if (limited(req, 120)) return bad(res, "Slow down.", 429, "rate_limited");
     const P = proofOf(req); if (!P || !P.ev) return bad(res, "This link isn't working.", 403, "not_granted");
-    const Dir = app.locals.directory; if (!Dir?.similar) return res.json({ events: [] }); const h = C.profileOf(P.ws);
+    const Dir = app.locals.directory; if (!Dir?.similar) return res.json({ events: [], next: nextOf(P) }); const h = C.profileOf(P.ws);
     // review round 6: the same city first; other places only when nothing like it is coming up there
     try { const city = String(P.ev.city || h?.city || "").split(",")[0].trim().toLowerCase(), L = Dir.similar(publicOrigin(req), { eventId: P.r.eventId, activity: P.ev.activity || "", title: P.ev.pubTitle || P.ev.name || "", city: P.ev.city || h?.city || "", host: h?.handle || "", limit: 12 });
       const here = city ? L.filter((e) => `${e.city || ""} ${e.area || ""}`.toLowerCase().includes(city)) : [];
-      res.json({ events: (here.length ? here : L).slice(0, 3) }); } catch { res.json({ events: [] }); } });
+      res.json({ events: (here.length ? here : L).slice(0, 3), next: nextOf(P) }); } catch { res.json({ events: [], next: nextOf(P) }); } });
+  // review round 7: the next date of this event's series, when there is one ({ id, date, startTime } or null)
+  function nextOf(P) { try { const today = localParts(Date.now(), P.ev.tz || process.env.ENCORE_TZ || "").day, n = nextFor(P.S, P.r.eventId, P.ev, today); return n?.date ? { id: n.same ? P.r.eventId : n.id || null, date: n.date, startTime: n.startTime || P.ev.startTime || "", course: !!n.course } : null; } catch { return null; } }
 
   // the second-host loop, for the host who got the kudos (owner of the workspace only; counts, never people)
   app.get("/api/admin/loop-stats", (req, res) => { const u = ownerOnly(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json(loopStats(scopeStore(store, u.ws))); });

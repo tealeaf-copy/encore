@@ -7348,7 +7348,7 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
     if(past){ $$(".eyebrow,small",host).forEach(x=>{ if(/^You're invited$/.test(x.textContent.trim())) x.textContent="That's a wrap" }); $$("a,button",host).forEach(a=>{ if(/Google Calendar|Add to calendar/.test(a.textContent)) a.hidden=true });
       if(!M){ $("#kudosAsk")?.remove(); $("#tipBox")?.remove(); const form=$("#gResp",host)?.closest(".stack"); if(form) form.hidden=true;
         if(!$("#recap")){ let H={}; try{ H=await (await fetch("/api/public/event-host/"+encodeURIComponent(e.id))).json() }catch{} const box=document.createElement("div"); box.id="recap"; box.className="recap"; const h=H.host;
-          box.innerHTML=`${pipSVG("happy",44)}<div><b>You missed this one.</b><p class="note">${h?"Hear about the next one.":"Ask your host about the next one."}</p>${h?`<a class="btn primary" href="/@${esc(h.handle)}">Follow ${esc(String(h.name||"").split(" ")[0])}</a>`:""}</div>`; (host.querySelector(".invite")||host.firstElementChild)?.after(box) } }
+          box.innerHTML=`${pipSVG("happy",44)}<div><b>You missed this one.</b><p class="note">${h?"Hear about the next one.":"Ask your host about the next one."}</p>${h?`<a class="btn primary" href="/@${esc(h.handle)}">Follow ${esc(/* review round 7: the person, not "Ada's" */ (hostFirst(e)!=="your host"?hostFirst(e):"")||H.person||String(h.name||"").split(" ")[0].replace(/['’]s$/i,""))}</a>`:""}</div>`; (host.querySelector(".invite")||host.firstElementChild)?.after(box) } }
       // kudos tags that fit the event
       if(!isDinner(e)) $$('[data-kt="food"]',host).forEach(b=>b.remove()); if(!/run|hike|walk|bike/i.test(e.activity||"")) {} }
     // interest checks: no allergy questions; newcomers welcome
@@ -7389,7 +7389,7 @@ if(typeof cosItems==="function"){ const _ci5=cosItems; cosItems=function(d){ con
 // pop-ups and selling food are get-togethers too
 ACT["pop-up"]={emoji:"🛍",bring:["Cash or a card"],ros:[["0:00","Table and sign up; first batch out"],["0:10","Doors open, first pickup slot"],["2:00","Last slot; leftovers to neighbours"]],tasks:[[-10,"Pick the spot and get the OK"],[-7,"Open pre-orders with pickup slots"],[-3,"Shop and prep"],[-1,"Make and pack"],[1,"Thank everyone; open the next batch"]],tips:"Pre-orders with pickup slots mean no queue and nothing wasted."};
 { const _pe4=parseEventText; parseEventText=function(t){ const o=_pe4(t), lo=String(t||"").toLowerCase(); if(/pop-?up|market stall|\bstall\b|selling|sell (?:my|some|\d+)|bake sale|food cart|\bcart\b|\d+\s*(?:sandwiches|banh mi|bánh mì|cakes|cookies|pastries|loaves|boxes)/.test(lo)&&!/booth|conference|expo/.test(lo)){ o.kind="social"; o.casual=true; o.label=/giveaway|free/.test(lo)?"giveaway":"pop-up"; const n=lo.match(/(\d+)\s*(?:sandwiches|banh mi|bánh mì|cakes|cookies|pastries|loaves|boxes)/); if(n) o.headcount=+n[1]; const pr=lo.match(/\$\s?(\d{1,3})(?!\s*k)/); if(pr) o.itemPrice=+pr[1] } return o } }
-{ const _qs3=quickStart; quickStart=function(text){ const r=_qs3.apply(this,arguments); try{ const o=parseEventText(text); if(o.label==="pop-up"){ draft.activity="pop-up"; draft.slots=draft.slots?.length?draft.slots:["11:00–12:00","12:00–1:00","1:00–2:00"]; draft.discoverable=true; if(o.itemPrice){ draft.price="$"+o.itemPrice; draft.free=false } } }catch(e){ console.warn(e) } return r } }
+{ const _qs3=quickStart; quickStart=function(text){ const r=_qs3.apply(this,arguments); try{ const o=parseEventText(text); if(o.label==="pop-up"){ draft.activity="pop-up"; draft.slots=draft.slots?.length?draft.slots:(o.startTime&&typeof prSlots==="function"?prSlots(o.startTime,o.endTime):["11:00–12:00","12:00–1:00","1:00–2:00"]) /* review round 7: from the host's hours */; draft.discoverable=true; if(o.itemPrice){ draft.price="$"+o.itemPrice; draft.free=false } } }catch(e){ console.warn(e) } return r } }
 // for people hosting with friends, whatever they type is the plan: no "what should the night do for you?"
 { const _ch2=cgHandle; cgHandle=function(text){ const t=String(text||"").trim(); if(window.__wsPersonal&&t.length>=8&&!(typeof prIsQuestion==="function"?prIsQuestion(t):/\?\s*$|^(who|what|where|when|which|why|how|can|could|should|is|are|do|does)\b/i.test(t))){ const S=cgState(); try{ localStorage.removeItem(CG_DRAFT) }catch{} S.msgs.push({who:"me",text:t}); cgSave(S); quickStart(t); cgDrafted(draft.name); return } return _ch2.apply(this,arguments) } }
 // (no "Sell something I make" chip: off-topic for a first event)
@@ -7442,7 +7442,7 @@ function friendlyTitle(text){ let t=String(text||"").trim().replace(/^(?:please\
 { const _rg18=renderGuest; renderGuest=async function(){ const r=await _rg18.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const paid=e.price&&e.price!=="chip";
     $$(".eyebrow,small",host).forEach(x=>{ if(/^You're invited$/.test(x.textContent.trim())&&(e.approvalRequired||$("#hostHello"))) x.hidden=true });
     const hh=$("#hostHello span:last-child"); if(hh&&/saving you a (seat|spot)/.test(hh.textContent)) hh.textContent=`${hostFirst(e)} has ${e.headcount?e.headcount+" ":""}spots at`;
-    if(paid&&e.approvalRequired&&!$("#payWhen")){ const send=$("#g-send",host); if(send){ const n=document.createElement("p"); n.id="payWhen"; n.className="note"; n.textContent=`No payment yet. If ${hostFirst(e)} lets you in, you'll pay ${e.price} here.`; send.closest(".btns")?.before(n) } }
+    if(paid&&e.approvalRequired&&!$("#payWhen")){ const send=$("#g-send",host); if(send){ const n=document.createElement("p"); n.id="payWhen"; n.className="note"; n.textContent=e.ticketNote&&!e.ticketUrl?`No payment yet. If ${hostFirst(e)} lets you in, pay at the door.`:`No payment yet. If ${hostFirst(e)} lets you in, you'll pay ${e.price} here.`; /* review round 7 */ send.closest(".btns")?.before(n) } }
     try{ const F=JSON.parse(localStorage.getItem("encore.following")||"[]"); if(window.__gFollowing||F.length){ const eb=$("#earlyBox"); if(eb&&(window.__gFollowing)) eb.remove() } }catch{}
   }catch(err){ console.warn(err) } return r } }
 
@@ -7467,7 +7467,7 @@ if(typeof cosItems==="function"){ const _ci6=cosItems; cosItems=function(d){ con
 { const _rg19=renderGuest; renderGuest=async function(){ const r=await _rg19.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; const M=myRsvp(e.id), paid=e.price&&e.price!=="chip";
     if(!isFoodEvent(e)){ const dl=$("#g-diet",host)?.closest("label"); if(dl) dl.hidden=true; $$(".gk-allerg",host).forEach(x=>x.remove()) }
     const H=window.__gHostInfo, csrc=safeCover(e.coverPhoto)||H?.cover; if(csrc&&!$("#gCoverImg")){ const cv=$(".gxcover",host); if(cv){ $("#typeCover",host)?.remove(); const img=document.createElement("img"); img.id="gCoverImg"; img.src=csrc; img.alt=""; img.className="gcover-img"; cv.appendChild(img); cv.classList.add("has-photo") } }
-    if(M?.response==="going"&&paid&&!e.ticketUrl&&!$("#payBox")){ const t=$(".ticket",host); if(t){ const b=document.createElement("div"); b.id="payBox"; b.className="lock-in"; b.innerHTML=`<div><b>${esc(e.price)} for your spot</b><p class="note">${esc(hostFirst(e))} will send a way to pay. Nothing to do yet.</p></div>`; t.after(b) } }
+    if(M?.response==="going"&&paid&&!e.ticketUrl&&!$("#payBox")){ const t=$(".ticket",host); if(t){ const b=document.createElement("div"); b.id="payBox"; b.className="lock-in"; b.innerHTML=e.ticketNote?`<div><b>${esc(e.price)} for your spot</b><p class="note">Pay at the door. Nothing to do yet.</p></div>`:`<div><b>${esc(e.price)} for your spot</b><p class="note">${esc(hostFirst(e))} will send a way to pay. Nothing to do yet.</p></div>`; /* review round 7: at the door */ t.after(b) } }
     const hh=$("#hostHello span:last-child"); if(hh&&/has (\d+ )?(seats|spots) at$/.test(hh.textContent)) hh.textContent=`${hostFirst(e)} is hosting`;
     // stray "null" anywhere
     const w=document.createTreeWalker(host,NodeFilter.SHOW_TEXT); const kill=[]; while(w.nextNode()){ if(w.currentNode.nodeValue.trim()==="null") kill.push(w.currentNode) } kill.forEach(n=>n.remove());
@@ -7598,7 +7598,7 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
 { const _rg26=renderGuest; renderGuest=async function(){ const r=await _rg26.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r; document.title=`${guestTitle(e)} · Pottery Lab`;
     const M=myRsvp(e.id); if(M?.response!=="going") return r; const paid=e.price&&e.price!=="chip", t=$(".ticket",host);
     $$(".eyebrow",host).forEach(x=>{ const s=x.textContent.trim(); if(s==="Asked to join"||s==="Asked"||s==="Ask to join"||s==="Spot held"||s==="Almost in") x.textContent=paid&&!M.paid?"Almost in":"You're in" });
-    if(t) $$("p",t).forEach(p=>{ if(/will let you know( here)?\.|says yes to each guest|picks who comes|We'll tell you when/.test(p.textContent)) p.textContent=paid&&!M.paid?`Pay ${e.price} to hold your spot.`:`${e.approvalRequired?hostFirst(e)+" said yes. ":""}See you there.` });
+    if(t) $$("p",t).forEach(p=>{ if(/will let you know( here)?\.|says yes to each guest|picks who comes|We'll tell you when/.test(p.textContent)) p.textContent=paid&&!M.paid?(e.ticketNote&&!e.ticketUrl?"Pay at the door. See you there.":`Pay ${e.price} to hold your spot.`):`${e.approvalRequired?hostFirst(e)+" said yes. ":""}See you there.` });
     const pb=$("#payBox"); if(pb){ /* review round 3 (paid spots): one pay link builder, the light invite's too */ const a=pb.querySelector("a[href^='https://']"); if(a&&e.ticketUrl&&!/amount=/.test(a.href)&&typeof payLinkFor==="function") a.href=payLinkFor(e.ticketUrl,e.price,[M.name,guestTitle(e)].filter(Boolean).join(" · ")); const top=$("#youreIn")||t; if(top&&pb.previousElementSibling!==top) top.after(pb) }
   }catch(err){ console.warn(err) } return r } }
 
@@ -11149,6 +11149,13 @@ function prDays(t){ const out=[], re=new RegExp(`\\b(?:(on|this|next|every(?: ot
       if(!ok||/\bthe\s$/i.test(before)) continue }
     out.push({wd,pre:(m[1]||"").toLowerCase(),plural:!!m[3]&&w!=="weds",index:m.index,text:m[0]}) }
   return out }
+// review round 7: "today", "tonight", "tomorrow" as a day. A capitalised "Tomorrow" that isn't at the start of a
+// sentence ("January pick is Tomorrow and Tomorrow and Tomorrow"), or one inside quotes, is a title, not a day.
+function prRel(t){ t=String(t||""); const re=/\b(tonight|today|this evening|tomorrow|tmrw|tmw|tmr)\b/gi; let m;
+  while((m=re.exec(t))){ const before=t.slice(0,m.index), q=(before.match(/["“”]/g)||[]).length;
+    if(q%2) continue; if(/^[A-Z]/.test(m[1])&&before.trim()&&!/[.!?:;]\s*$/.test(before)) continue;
+    return /^(?:tomorrow|tmrw|tmw|tmr)$/i.test(m[1])?"tomorrow":"today" }
+  return "" }
 // "first Sunday of the month", "last Friday of each month", "every second Saturday"
 function prNth(t){ const m=t.match(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(every\\s+)?(first|1st|second|2nd|third|3rd|fourth|4th|last)\\s+(${PR_DAYS_RE})s?\\b\\.?(\\s+(?:of\\s+(?:the|each|every)\\s+month|(?:of\\s+)?(?:each|every)\\s+month|(?:of\\s+)?the\\s+month|monthly))?`,"i"));
   if(!m) return null; const k=m[2].toLowerCase(), n=PR_NTH[k], w=m[3].toLowerCase(), wd=PR_DAY.includes(w)?PR_DAY.indexOf(w):PR_SHORT[w];
@@ -11210,7 +11217,7 @@ function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].r
       .replace(new RegExp(`\\b\\d{1,2}\\s+(?:${PR_DAY.join("|")})s\\b`,"gi")," ").replace(/\b\d{1,2}\s+(?:weekly\s+)?sessions\b/gi," ");
     for(const d of prDays(t).reverse()) t=t.slice(0,d.index)+" "+t.slice(d.index+d.text.length);
     t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:\/])\b\d{1,2}:\d{2}\b/g," ").replace(/\b(?:noon|tonight|today|tomorrow|tmrw|tmw|this weekend|this evening)\b/gi," ")
-      .replace(/\s{2,}/g," ").trim().replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|this|next|starting|beginning|pickup|and|&|the|of)$/i,"").replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
+      .replace(/\s{2,}/g," ").trim(); for(let k=0;k<4;k++){ const n=t.replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|with|by|to|this|next|starting|beginning|pickup|and|&|the|of)$/i,""); if(n===t) break; t=n } t=t.replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
   return t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim() }
 // the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
 // characters, cut at a list or word boundary so "sourdough loaves and cardamom buns" isn't cut mid-list. When the
@@ -11237,13 +11244,27 @@ const PR_PLACE_WORD="[A-Z][\\w'’.]*(?:-[A-Za-z][\\w'’.]*)*";
 // a lowercase place word after a name belongs to it: "Beacon station", "Dolores park", "Carroll st"
 const PR_PLACE_NOUN="station|stn|park|square|plaza|library|gardens?|beach|pier|hall|market|cafe|café|bar|studio|center|centre|church|museum|bridge|terminal|field|track|trailhead|lake|reservoir|green|commons|street|st|avenue|ave|road|rd|stop|entrance|gate|steps|fountain";
 function prPlace(text){ const t=String(text||""), skip=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|noon|midnight|tonight|today|tomorrow|i|we|my|our)$`,"i");
-  const re=new RegExp(`\\b(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN}))?)`,"g"); let m;
-  while((m=re.exec(t))){ const words=m[2].split(/\s+/); while(words.length&&(skip.test(words[words.length-1].replace(/[.,]$/,""))||/^(?:of|on|&)$/i.test(words[words.length-1]))) words.pop();
+  const re=new RegExp(`(?<![-\\w'’])(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|\\d{1,4}\\b(?![:.]?\\d|\\s*(?:am|pm)\\b)|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN})\\b)?)`,"g"); let m;
+  while((m=re.exec(t))){ if(m[1]==="at"&&prAfterAt(t,m.index)) continue; const words=m[2].split(/\s+/); while(words.length&&(skip.test(words[words.length-1].replace(/[.,]$/,""))||/^(?:of|on|&|\d+)$/i.test(words[words.length-1]))) words.pop();
     if(!words.length||skip.test(words[0].replace(/^the$/i,""))||(words[0].toLowerCase()==="the"&&words.length<2)) continue;
     const place=words.join(" ").replace(/[.,]+$/,""); if(place.length<3) continue;
     if(m[1]==="at") return {place};
     if(/-/.test(place)) return {place,hood:place} }
   return {} }
+// "tacos after at Veracruz", "drinks afterwards at The Owl": where they go after, not where it is
+const prAfterAt=(t,i)=>/\b(?:after|afterwards|afterward|then|later)\b[^,;.!?]{0,30}$/i.test(String(t).slice(Math.max(0,i-40),i));
+// review round 7: pickup windows from the host's hours, an hour each ("10am-1pm": 10:00–11:00, 11:00–12:00, 12:00–1:00)
+function prSlots(start,end){ const m=v=>{ const x=String(v||"").match(/^(\d{2}):(\d{2})$/); return x?+x[1]*60+ +x[2]:null }, s=m(start); if(s==null) return [];
+  let e=m(end); if(e==null||e<=s) e=s+180; const f=v=>{ const h=Math.floor(v/60)%24, mm=v%60; return `${h%12||12}:${String(mm).padStart(2,"0")}` }, out=[];
+  for(let a=s;a<e&&out.length<8;a+=60) out.push(`${f(a)}–${f(Math.min(a+60,e))}`); return out }
+// review round 7: "country loaf $12, focaccia $9": the things on a pre-order, with their prices
+function prItems(t){ const out=[]; for(const c of String(t||"").split(/[,;\n]|\s+and\s+(?=[a-z][a-z' -]*\$)/)){ const m=c.trim().match(/^([A-Za-z][A-Za-z'’ &-]{1,40}?)\s*(?:[:-]\s*)?\$\s?(\d{1,4}(?:\.\d{2})?)(?:\s*(?:each|ea|apiece|a\s+\w+|per\s+\w+))?$/);
+    if(!m||/^(?:pickup|price|each|it'?s|all|total|only|just|deposit|tip|drop[- ]?in|pre-?orders?)$/i.test(m[1].trim())||/\b(?:sat|sun|mon|tue|wed|thu|fri|am|pm|for|or)\b/i.test(m[1])) continue;
+    out.push({name:m[1].trim().replace(/^./,x=>x.toUpperCase()),price:+m[2]}) } return out.slice(0,8) }
+// review round 7: menu and BYOB notes go into the description; a plain "Supper club" title keeps the words that make it
+// this one ("Supper club: Hunan home cooking")
+const PR_NOTE=/\b(?:menu|byob|bring your own|cooking|cuisine|vegetarian|vegan|courses?)\b/i, PR_PLAIN=/^(?:supper club|supper|dinner|dinner party|dinner club|potluck|brunch|lunch|tasting|feast|cookout|bbq)$/i;
+function prNotes(t){ return String(t||"").split(/[,;]|\.\s/).map(x=>x.trim()).filter((x,i)=>i>0&&x&&PR_NOTE.test(x)&&!/\$|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(x)&&x.length<=80).map(x=>x.replace(/\b(\d+)\s+course\b/i,"$1-course").replace(/^./,c=>c.toUpperCase())) }
 // a cost note, not a paid spot: "~$40 food cost", "u pay as u go", "you cover your own", "split the bill"
 const PR_COST=[[/~\s?\$\s?(\d{1,5}(?:\.\d{2})?)(?:\s*(?:food|ingredients?|grocer(?:y|ies)|supplies|materials?|gas)?\s*(?:costs?|each|a person|pp)?)?/i,m=>`About $${m[1]}${/cost/i.test(m[0])?" "+m[0].replace(/^~\s?\$\s?[\d.]+\s*/,"").trim():""}`],
   [/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:food|ingredients?|grocer(?:y|ies)|supplies|materials?|gas)\s*costs?\b/i,m=>m[0].trim()],
@@ -11264,13 +11285,13 @@ const prCase=W=>W.map((w,i)=>i&&/^(?:on|of|the|and|&|by|de|la|du|at)$/i.test(w)?
 const prEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 function prWhere(text){ const t=String(text||""), o={}, cut=[];
   const mt=t.match(/\bmeet(?:ing)?\s+(?:up\s+)?(?:at|by|outside|in front of)\s+(.+)$/i); if(mt){ const W=prGrab(mt[1]); if(W.length) o.meet=W.join(" ") }
-  const re=/\b(at|from|in)\s+/gi; let m;
-  while((m=re.exec(t))){ if(/\bmeet(?:ing)?\s+(?:up\s+)?$/i.test(t.slice(0,m.index))) continue; const W=prGrab(t.slice(m.index+m[0].length)); if(!W.length) continue;
+  const re=/(?<![-\w'’])(at|from|in)\s+/gi; let m;
+  while((m=re.exec(t))){ if(/\bmeet(?:ing)?\s+(?:up\s+)?$/i.test(t.slice(0,m.index))||prAfterAt(t,m.index)) continue; const W=prGrab(t.slice(m.index+m[0].length)); if(!W.length) continue;
     const kw=m[1].toLowerCase(), f=W[0].toLowerCase(); if(/^(?:my|our|mine|home|a|an|your|his|her|their|person|advance|total|all|work|least|most|once)$/.test(f)) continue;
     // a capitalised "at The Smith" / "in Bed-Stuy" stays with the older readers (prPlace, the city reader)
     if(kw!=="from"&&/^[A-Z]/.test(W[0])) continue; if(kw==="in"&&f==="the") continue;
     const name=prCase(W); if(kw==="at"){ if(!o.place) o.place=name } else if(kw==="from"){ if(!o.meet) o.meet=name } else if(!o.hood) o.hood=name;
-    cut.push(new RegExp(`\\s*\\b${kw}\\s+${W.map(prEsc).join("\\s+")}\\b`,"i")) }
+    cut.push(new RegExp(`\\s*(?<![-\\w'’])${kw}\\s+${W.map(prEsc).join("\\s+")}\\b`,"i")) }
   return {...o,cut} }
 // "Sunrise hike rattlesnake ledge": lowercase words after the activity are where it is
 function prTrail(title){ const m=String(title||"").match(/^(.*?\b(?:hike|hiking|run|walk|ride|swim|paddle|climb|picnic|trek|ramble|bike ride))\s+([a-z][a-z'’-]*(?:\s+[a-z][a-z'’-]*){1,3})$/);
@@ -11297,8 +11318,8 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
     if(day&&!nth&&(o.course||(!day.plural&&day.pre!=="every"))&&x.getDay()!==day.wd){ o.dayClash={typed:PR_DAY[day.wd],date:prISO(x),alt:prISO(prNear(x,day.wd,today))}; o.weekday=PR_DAY[x.getDay()] }
     o.date=prISO(x) }
   else if(nth){ let x=prNthDate(today.getFullYear(),today.getMonth(),nth.wd,nth.n); if(!x||x<today) x=prNthDate(today.getFullYear(),today.getMonth()+1,nth.wd,nth.n)||new Date(today.getFullYear(),today.getMonth()+1,1,12); o.date=prISO(x); o.nth=nth.n }
-  else if(/\b(tonight|today|this evening)\b/.test(lo)) o.date=prISO(today);
-  else if(/\b(tomorrow|tmrw|tmw|tmr)\b/.test(lo)){ const x=new Date(today); x.setDate(x.getDate()+1); o.date=prISO(x) }
+  else if(prRel(t)==="today") o.date=prISO(today);
+  else if(prRel(t)==="tomorrow"){ const x=new Date(today); x.setDate(x.getDate()+1); o.date=prISO(x) }
   else if(day){ let k=(day.wd-today.getDay()+7)%7; if(day.pre==="this"){ /* the coming one, today included */ } else if(day.pre==="next"){ if(!k) k=7; k+=7 } else if(!k) k=7; const x=new Date(today); x.setDate(x.getDate()+k); o.date=prISO(x) }
   Object.assign(o,prTimes(t));
   // the repeat
@@ -11317,7 +11338,8 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
   const pwyw=/\bpay[- ]what[- ](?:you|u)[- ](?:want|like|can)\b|\bpwyw\b|\bby donation\b|\bdonation[- ]based\b/i.test(t);
   const paid=[...t.matchAll(/\$\s?(\d{1,5}(?:\.\d{2})?)(?!\s*k\b|\d)/gi)].map(m=>m[1]).filter(v=>+v>0);
   const freeWord=/(?:^|[^-\w])free\b(?!\s*(?:-|time|parking|wi-?fi|refills?|range)\b)/i.test(t.replace(/\b(?:gluten|dairy|nut|sugar|alcohol|booze|meat|carb|caffeine|smoke|scent|fragrance|stress|hands|cruelty|kid|pet|child|tax|fee|duty|rent|feel)[- ]free\b/gi," "));
-  const grp=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|per)\s+(?:a\s+|the\s+)?(?:(\d)\s*(?:people|persons|ppl|guests|of you|of us|adults)\b|(two|three|four|five|six)(?:\s+(?:people|persons|ppl|guests|of you|of us|adults))?\b|(couples?|pair)\b)/i);
+  let grp=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|per)\s+(?:a\s+|the\s+)?(?:(\d)\s*(?:people|persons|ppl|guests|of you|of us|adults)\b|(two|three|four|five|six)(?:\s+(?:people|persons|ppl|guests|of you|of us|adults))?\b|(couples?|pair)\b)/i);
+  if(!grp&&paid.length===1&&!o.repeat&&!o.sessions){ const g2=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(\d)\b(?=\s*(?:[,.;)!]|$|max\b|pairs?\b))/i); if(g2) grp=[g2[0],g2[1],g2[2]] }
   let gN=grp?(grp[2]?+grp[2]:grp[3]?{two:2,three:3,four:4,five:5,six:6}[grp[3].toLowerCase()]:2):0;
   // "group of 5 for $40", "$40 for a group of 5"
   const gOf=t.match(/\bgroups?\s+of\s+(\d{1,2})\s+(?:for|is|at)\s+\$\s?(\d{1,5}(?:\.\d{2})?)|\$\s?(\d{1,5}(?:\.\d{2})?)\s+(?:for|per)\s+(?:a\s+)?groups?\s+of\s+(\d{1,2})\b/i);
@@ -11349,6 +11371,18 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
   const title=prTitle(t); if(title) o.title=title;
   const pl=prPlace(t); if(pl.place) o.place=pl.place; if(pl.hood) o.hood=pl.hood;
   const wh=prWhere(t); if(wh.place&&!o.place) o.place=wh.place; if(wh.hood&&!o.hood) o.hood=wh.hood; if(wh.meet) o.meet=wh.meet;
+  // review round 7: "at my stoop" is where to meet ("My stoop"), never a venue name; "my place" stays with the older readers
+  { const mm=t.match(/(?<![-\w])at\s+(my|our)\s+([a-z][\w'’-]*)\b/i); if(mm&&!/^(?:place|apartment|apt|flat|house|home|pad)$/i.test(mm[2])){ o.meet=(mm[1]+" "+mm[2].toLowerCase()).replace(/^./,c=>c.toUpperCase()); o.meetMine=true; if(o.place&&/^(?:my|our)\b/i.test(o.place)) delete o.place } }
+  // "at my stoop in Park Slope", "at The Annoyance in Lakeview", "in Silver Lake at the ...": "in <Name>" next to a place is the neighbourhood
+  { const re=/(?<![-\w'’])in\s+([A-Z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*){0,3})/g, sk=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|the)$`,"i"); let m;
+    while(!o.hood&&(m=re.exec(t))){ const before=t.slice(Math.max(0,m.index-45),m.index).split(/[,;]/).pop(), after=t.slice(m.index+m[0].length);
+      if(!/(?<![-\w])at\s/i.test(before)&&!/^\s*,?\s*at\s/i.test(after)) continue; const W=m[1].split(/\s+/); while(W.length&&sk.test(W[W.length-1])) W.pop(); if(W.length&&!sk.test(W[0])) o.hood=W.join(" ") } }
+  if(o.meet&&o.place&&o.place===o.hood) delete o.place;
+  // "tacos after at Veracruz": not the place; the older readers' guess gets undone in the wiring
+  { const am=t.match(/\b(?:after|afterwards|afterward|then)\b[^,;.!?]{0,30}?\bat\s+((?:the\s+)?[A-Za-z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*){0,3})/i); if(am) o.afterAt=am[1].replace(/^./,c=>c.toUpperCase()) }
+  if(o.preorder||/pop-?up|bake sale/i.test(t)){ const it=prItems(t); if(it.length) o.items=it }
+  { const N=prNotes(t); if(N.length) o.notes=N.join(". ")+"."; if(o.title&&PR_PLAIN.test(o.title)){ const k=String(t).split(/[,;]|\.\s/).map(x=>x.trim()).slice(1).find(x=>/\b(?:menu|cooking|cuisine|food|feast|dishes|omakase|bbq|tasting)\b/i.test(x)&&!/\$|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(x)&&x.length<=40);
+      if(k) o.title=`${o.title}: ${k.replace(/\b(\d+)\s+course\b/i,"$1-course")}` } }
   // "Sunrise hike rattlesnake ledge": the trail words after the activity are the place
   if(!o.place){ let s=t; for(const re of wh.cut) s=s.replace(re," "); s=s.replace(/\s+meet(?:ing)?\b[\s\S]*$/i,"").split(PR_SPLIT)[0].trim().replace(new RegExp(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); const tr=prTrail(s); if(tr.place) o.place=tr.place }
   return o }
@@ -11398,12 +11432,17 @@ function prMatchEvent(q,events,today){ const L=(events||[]).filter(e=>e&&!e.exam
     if(p.date&&o.month) delete o.month;
     if(p.place){ o.meetPoint=p.place; o.venueName=p.place; if(p.hood) o.hood=p.hood; if(o.city&&(p.place===o.city||p.place.startsWith(o.city+"-")||p.place.startsWith(o.city+" "))) delete o.city }
     if(p.meet) o.meetPoint=p.meet; if(p.hood&&!o.hood) o.hood=p.hood;
+    // review round 7: "at my stoop" isn't a venue; "tacos after at Veracruz" isn't the place
+    if(p.meetMine&&!p.place) delete o.venueName;
+    if(p.afterAt){ for(const k of ["venueName","meetPoint"]) if(o[k]&&o[k].toLowerCase()===p.afterAt.toLowerCase()){ if(p.meet) o[k]=p.meet; else delete o[k] } }
+    if(p.hood&&p.meetMine) o.hood=p.hood; if(p.items) o.items=p.items; if(p.notes) o.notes=p.notes;
   }catch(e){ console.warn(e) } return o } }
 { const _qsZ=quickStart; quickStart=function(text){ const r=_qsZ.apply(this,arguments); try{ const d=typeof draft!=="undefined"?draft:null; if(!d||d.example||!(isCasual(d)||window.__wsPersonal)) return r;
-    const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=/\b(tonight|today|tomorrow|tmrw|tmw|tmr|this evening)\b/i.test(t), typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
+    const t=String(text||""), p=prRead(t), feeler=d.stage==="interest", rel=!!prRel(t)&&!p.nth, typedDate=new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}\\b|\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${PR_MON_RE})\\b`,"i").test(t);
     // the title: keep "Taco night"-style endings an earlier pass added to a short name
     if(p.title&&p.title.length>=2){ const cur=String(d.pubTitle||d.name||""); if(!(cur.toLowerCase().startsWith(p.title.toLowerCase()+" ")&&/^(night|morning|afternoon|evening)$/i.test(cur.slice(p.title.length+1)))){ d.pubTitle=p.title; d.name=p.title } }
-    if(p.date&&!feeler&&(rel?!d.date:(!typedDate||!d.date||p.sessions||p.dayClash))) d.date=p.date;
+    // review round 7: "first Sunday of the month" owns the date and the repeat; a "Tomorrow" in a book title never moves it
+    if(p.date&&!feeler&&(p.nth||(rel?!d.date:(!typedDate||!d.date||p.sessions||p.dayClash)))) d.date=p.date;
     // "Sunday Dec 7th" when Dec 7 is a Monday: keep the date they typed, and Potto asks which they meant
     if(p.dayClash&&!feeler) d.dayClash=p.dayClash; else delete d.dayClash;
     if(p.startTime){ d.startTime=p.startTime; if(p.endTime) d.endTime=p.endTime; else if(p.late||(d.endTime&&d.endTime<=p.startTime)) delete d.endTime }
@@ -11423,9 +11462,15 @@ function prMatchEvent(q,events,today){ const L=(events||[]).filter(e=>e&&!e.exam
     if(p.preorder) d.preorder=true;
     if(p.place&&!/^(my|our)\b/i.test(d.meetPoint||"")&&(!d.meetPoint||d.meetPoint===d.city||p.place.startsWith(d.meetPoint)||d.meetPoint.startsWith(p.place+" "))){ const old=d.meetPoint; d.meetPoint=p.place; if(!d.venueName||d.venueName===old) d.venueName=p.place }
     if(p.hood) d.hood=p.hood; if(p.place&&d.city&&p.place.startsWith(d.city+"-")) d.city="";
-    if(p.place) d.venueName=p.place; if(p.meet&&!/^(my|our)\b/i.test(d.meetPoint||"")) d.meetPoint=p.meet;
+    if(p.place) d.venueName=p.place; if(p.meet&&(p.meetMine||!/^(my|our)\b/i.test(d.meetPoint||""))) d.meetPoint=p.meet;
+    // review round 7: "at my stoop in Park Slope": meet at "My stoop" (no venue name), in Park Slope; "tacos after at Veracruz" isn't where
+    if(p.meetMine&&!p.place) d.venueName=""; if(p.meetMine&&p.hood) d.hood=p.hood;
+    if(p.afterAt){ for(const k of ["venueName","meetPoint"]) if(d[k]&&String(d[k]).toLowerCase()===p.afterAt.toLowerCase()) d[k]=k==="meetPoint"?(p.meet||""):(p.meet||"") }
+    if(p.notes&&!String(d.why||"").trim()) d.why=p.notes;
     // a pre-order sells from the shop: no reply price or spot cap (the shop gets those)
-    if(p.preorder){ d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit; d.headcount=0 }
+    if(p.preorder){ d.price=""; delete d.seatPrice; delete d.itemPrice; delete d.priceUnit; d.headcount=0; if(p.items) d.orderItems=p.items }
+    // review round 7: pickup windows start when the host said ("10am-1pm": 10:00–11:00 ...), not an hour late
+    const stock=["11:00–12:00","12:00–1:00","1:00–2:00"]; if((p.preorder||d.activity==="pop-up")&&p.startTime&&(!(d.slots||[]).length||JSON.stringify(d.slots)===JSON.stringify(stock))) d.slots=prSlots(p.startTime,p.endTime);
     if(d.activity==="pop-up"&&!p.headcount&&prPopupNoCap(t)) d.headcount=0;
     try{ if(typeof renderStep==="function"&&location.hash==="#studio") renderStep() }catch{}
   }catch(e){ console.warn(e) } return r } }
@@ -11693,4 +11738,43 @@ async function fvMoments(){ const d=draft, el=document.getElementById("afterPart
   if(typeof shareSheet==="function"){ const _ssRp=shareSheet; shareSheet=function(d){ const r=_ssRp.apply(this,arguments); try{ const n=document.querySelector("#wizBg .wiz .note"), LK=window.EncoreLooks; if(n&&d&&!d.approvalRequired&&LK){ const L=LK.lookOf(d), em=(LK.EMOJI||[]).includes(L.buttonEmoji)?L.buttonEmoji:"", full=LK.buttonText(d,d.rsvpWords?.yes||"I'm in"), word=em?full.slice(em.length+1):full; n.textContent=`Guests tap ${word}${em?" "+em:""}.` } }catch(err){ console.warn(err) } return r } }
 }
 // ---- end repeats ----
+// ==================================================================
+// ---- review round 7 (host panel): the full invite (/g) and the host's repeat card ----
+// /g: a cost note shows in the facts ("About $40 food cost"); a course with a drop-in gets "Pay $45 for one class" next to
+// Pay; a pre-order opens the light page's order form (/e/<id>, public/invite-order.js); the sticky reply bar never covers
+// "Copy link". Host: a repeat's next date offers "Ask last week's N guests", a message to copy plus a text or email per
+// guest (like the kudos nudge sheet).
+// ==================================================================
+{ const r7Css=document.createElement("style"); r7Css.textContent=`body:has(#gStick:not(.off)) #view-guest{padding-bottom:96px}#view-guest .ev2-acts,#view-guest .ev2-acts .btn{scroll-margin-bottom:96px}.r7-ask .kn-list li{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.r7-ask .kn-who{flex:1;min-width:140px}`; document.head.appendChild(r7Css) }
+// /g: a pre-order's order form lives on the light invite (it sends here only when it can't handle the event)
+if(typeof renderGuest==="function"){ const _rgR7=renderGuest; renderGuest=async function(){ const r=await _rgR7.apply(this,arguments); try{ const e=window.__gEv; if(!e?.id||!e.preorder||!isCasual(e)||location.pathname!=="/g"||(typeof myRsvp==="function"&&myRsvp(e.id))) return r;
+    let full=false; try{ full=!!sessionStorage.getItem("encore-full-"+e.id) }catch{} if(!full&&e.date&&e.date>=localISO()) location.replace("/e/"+encodeURIComponent(e.id)) }catch(err){ console.warn(err) } return r } }
+new MutationObserver(()=>{ try{ const e=window.__gEv, v=document.getElementById("view-guest"); if(!e?.id||!v) return; const paid=e.price&&e.price!=="chip";
+  // the cost note, in the facts
+  const fx=v.querySelector(".gxfacts"); if(fx&&!paid&&e.costNote&&!fx.querySelector("#gCost")){ const s=document.createElement("span"); s.id="gCost"; s.dataset.k="Cost"; s.innerHTML=`<small>Cost</small><b>${esc(e.costNote)}</b>`; fx.appendChild(s) }
+  // a course with a drop-in: pay for one class
+  const pb=v.querySelector("#payBox"); if(pb&&+e.dropIn>0&&+e.sessions>1&&e.ticketUrl&&!pb.querySelector("#payDrop")){ const a=pb.querySelector("a[href^='https://']"); if(a){ const M=typeof myRsvp==="function"?myRsvp(e.id):null, amt=`$${+e.dropIn}`, b=document.createElement("a");
+    b.id="payDrop"; b.className="btn ghost"; b.target="_blank"; b.rel="noopener"; b.style.marginLeft="8px"; b.href=payLinkFor(e.ticketUrl,amt,[M?.name,guestTitle(e),"one class"].filter(Boolean).join(" · ")); b.textContent=`Pay ${amt} for one class`; (pb.querySelector("#payPass")||a).after(b);
+    b.addEventListener("click",()=>{ try{ localStorage.setItem("encore-paytap-"+e.id,"1") }catch{} const ip=document.getElementById("gIPaid"); if(ip) ip.hidden=false }) } }
+}catch{} }).observe(document.documentElement,{childList:true,subtree:true});
+// the host: "Ask last week's N guests" on a repeat's next date
+{ const r7Prev=d=>{ const L=(typeof allEvents!=="undefined"?allEvents:[]).filter(x=>x&&!x.example&&x.id!==d.id&&x.date&&x.date<(d.date||"9")); const key=String(d.pubTitle||d.name||"").toLowerCase();
+    return L.find(x=>x.id===d.prevId)||L.filter(x=>x.repeat&&String(x.pubTitle||x.name||"").toLowerCase()===key).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0]||null };
+  const r7Seen={}, r7Going=id=>r7Seen[id]||(r7Seen[id]=fetch("/api/db/collection?path=rsvps").then(r=>r.ok?r.json():[]).then(j=>(Array.isArray(j)?j:j.docs||j.items||[]).map(x=>({id:x.id,...(x.data||x)})).filter(x=>x.eventId===id&&x.response==="going"&&x.name)).catch(()=>[]));
+  const r7Unit=d=>d.repeat==="weekly"?"last week's":d.repeat==="monthly"?"last month's":"last time's";
+  window.r7AskMsg=(d,origin)=>{ const day=d.date?new Date(d.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):"", tm=d.startTime&&typeof clock12==="function"?clock12(d.startTime):"";
+    return `${guestTitle(d)} is on again${day?" "+(d.date===localISO()?"today":day):""}${tm?" at "+tm:""}. Same plan. In? ${origin}/e/${d.id}` };
+  async function r7Open(d,prev){ const G=await r7Going(prev.id), m=document.createElement("div"); m.className="modal-back"; m.id="r7Ask"; let msg=r7AskMsg(d,location.origin);
+    const one=g=>msg.replace(/^/,`Hi ${String(g.name).trim().split(/\s+/)[0]}! `);
+    m.innerHTML=`<div class="panel stack kn r7-ask" role="dialog" aria-modal="true" aria-label="Ask ${r7Unit(d)} guests"><div class="kn-top"><div><small class="eyebrow">${esc(guestTitle(d))}</small><h3>Ask ${esc(r7Unit(d))} ${G.length} guest${G.length===1?"":"s"}</h3></div><button class="linkbtn kn-x" type="button" id="r7X">Close</button></div>
+      <section class="kn-sec"><h4>Group message</h4><p class="note">For the group chat. Edit it if you like.</p><label class="f"><span class="sr-only">Message</span><textarea id="r7Msg" rows="3">${esc(msg)}</textarea></label><div class="kn-btns"><button class="btn primary sm" type="button" id="r7Copy">Copy message</button></div></section>
+      <section class="kn-sec"><h4>One by one</h4><ul class="kn-list">${G.map((g,i)=>`<li data-i="${i}"><div class="kn-who"><b>${esc(g.name)}</b><small>${esc([g.phone,g.email].filter(Boolean).join(" · ")||"No phone or email")}</small></div><div class="kn-row">${g.phone?`<a class="btn ghost sm" data-r7="text">Text</a>`:""}${g.email?`<a class="btn ghost sm" data-r7="email">Email</a>`:""}</div></li>`).join("")}</ul></section></div>`;
+    document.body.appendChild(m); const close=()=>m.remove(); m.onclick=ev=>{ if(ev.target===m) close() }; m.querySelector("#r7X").onclick=close;
+    const hrefs=()=>{ m.querySelectorAll("li[data-i]").forEach(li=>{ const g=G[+li.dataset.i], t=one(g); const a=li.querySelector('[data-r7="text"]'), b=li.querySelector('[data-r7="email"]'); if(a) a.href=knSms(t,g.phone); if(b) b.href=knMail(t,{to:g.email,subject:`${guestTitle(d)}: in again?`}) }) }; hrefs();
+    m.querySelector("#r7Msg").oninput=ev=>{ msg=ev.target.value; hrefs() }; m.querySelector("#r7Copy").onclick=()=>copyTxt(msg,{ok:"Copied. Paste it in the group chat."}) }
+  new MutationObserver(()=>{ try{ const box=document.getElementById("hk-autoBox"), d=typeof draft!=="undefined"?draft:null; if(!box||!d?.id||d.example||box.querySelector("#r7AskBtn")||box.dataset.r7===d.id) return; box.dataset.r7=d.id;
+    const prev=r7Prev(d); if(!prev||(d.date&&d.date<localISO())) return;
+    r7Going(prev.id).then(G=>{ if(!G.length||box.querySelector("#r7AskBtn")) return; const b=document.createElement("button"); b.type="button"; b.id="r7AskBtn"; b.className="btn sm"; b.textContent=`Ask ${r7Unit(d)} ${G.length} guest${G.length===1?"":"s"}`; b.style.marginTop="8px"; b.onclick=()=>r7Open(d,prev); box.appendChild(b) }) }catch(err){ console.warn(err) } }).observe(document.documentElement,{childList:true,subtree:true});
+}
+// ---- end review round 7 (host panel) ----
 </script>

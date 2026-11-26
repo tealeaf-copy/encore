@@ -11,7 +11,7 @@
 (function () {
   // repeats (review round 6): `id` moves to the next date when this link's date has passed (see load below)
   let id = (location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})/) || [])[1], pastOf = null;
-  const go = () => location.replace("/g#rsvp-" + encodeURIComponent(id || "")), $ =(s, el = document) => el.querySelector(s);
+  const go = () => { try { sessionStorage.setItem("encore-full-" + id, "1"); } catch {} location.replace("/g#rsvp-" + encodeURIComponent(id || "")); }, $ =(s, el = document) => el.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   if (!id) return go();
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
@@ -23,7 +23,7 @@
   const claimed = !rl ? Promise.resolve() : fetch("/api/public/reply/claim", { method: "POST", headers: { "Content-Type": "application/json", "x-encore-key": gkey() }, body: JSON.stringify({ eventId: id, rid: rl[1], t: rl[2] }) }).then((r) => (r.ok ? r.json() : null)).then((j) => {
     if (j?.ok && j.code) { mine = { rid: j.rid, code: j.code, name: j.name || "", gi: -1, response: j.response, wall: false, eventId: id, data: {} }; ls.set("encore-rsvp-" + id, JSON.stringify(mine)); }
     try { history.replaceState(null, "", location.pathname + location.search); } catch {} }).catch(() => {});
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10), ltd = ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`)(new Date());
   // food on the table, the full invite's rule (FOODY in index.html): the activity, name or idea, or a menu
   const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i;
   const foodyOf = (e) => FOODY.test(`${e.activity || ""} ${e.name || ""} ${e.concept || ""}`) || !!(e.menu && (e.menu.courses || e.menu.items || []).length);
@@ -31,7 +31,7 @@
   // "7pm", "7:30am"
   const clock = (t) => HHMM.test(t || "") ? new Date("2000-01-01T" + t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
   // "Sat, Dec 12 · 7pm to 10pm", the one format on both invites
-  const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
+  const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; const day = d && !isNaN(d) ? e.date === ltd ? "Today" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [day, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
   const paidOf = (e) => !!(e.price && e.price !== "chip" && !/^(free|\$?0)$/i.test(String(e.price).trim()));
   const priceText = (e) => { const p = String(e.price).trim(), amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : p; };
     // "$40 for 2" (a group price), "$12 each" (a pop-up or pre-order), "$10 a class" (a drop-in)
@@ -82,13 +82,15 @@
       // only the common case lives here: a friends' event, open or Ask to join. Everything else opens the full invite:
       // work events (more fields), "would you come?" polls, slots, chip-ins, a pay step, plus-ones, a phone the host
       // asked for, and paid spots on an Ask to join event (they pay after the host lets them in). When unsure, hand off.
-      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date < today && !courseNext) || (e.slots || []).length || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
+      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
-      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); })
+      render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when })); })
     .catch(go);
   claimed.then(load);
   // repeats: the past date's note, kudos and photos (public/invite-repeat.js, loaded only when needed)
-  function repeatBits(e, courseNext) { if (!courseNext && !pastOf) return; const s = document.createElement("script"); s.src = "/invite-repeat.js"; s.onload = () => window.InviteRepeat?.(e, courseNext, pastOf, when); document.head.appendChild(s); }
+  const more = (src, cb) => { const s = document.createElement("script"); s.src = src; s.onload = cb; document.head.appendChild(s); };
+  function repeatBits(e, courseNext) { let last = null; try { last = JSON.parse(ls.get("encore-rsvp-" + (pastOf?.id || e.prevId || "")) || "null"); } catch {}
+    const again = !mine && last?.response === "going" && last.name ? last : null; if (!courseNext && !pastOf && !again) return; more("/invite-repeat.js", () => window.InviteRepeat?.(e, courseNext, pastOf, when, { again, prevId: pastOf?.id || e.prevId, ls })); }
 
   function render(e, ws, H, A, back) {
     const h = H.host || {}, first = String(e.hostName || "").trim().split(/\s+/)[0] || H.person || String(h.name || "your host").split(" ")[0].replace(/['’]s$/i, ""), ask = !!e.approvalRequired, title = e.pubTitle || e.name || "You're invited", left = A.seats ? Math.max(0, A.seats - (A.count || 0)) : null, foody = foodyOf(e), paid = paidOf(e);
@@ -107,7 +109,7 @@
     const btn = (v) => ask ? (LK0 ? LK0.buttonText(e) : "Ask to join") : full && v === "going" ? "Join waitlist" : e.qStyle?.button || (v === "going" ? (LK0 ? LK0.buttonText(e, e.rsvpWords?.yes || "I'm in") : e.rsvpWords?.yes || "I'm in") : "Send"); // per-event looks: the host's words and emoji for the going choice
     const routeLink = route ? ` · <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a>` : "";
     $("#m").innerHTML = $("#m .top").outerHTML + `${LK ? LK.updateHTML(e) : ""}${coverBox}<h1 class="lk-title">${esc(title)}</h1>
-      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${spotsLine(left)}</div>` : ""}</div>
+      <div class="facts"><div><b>${esc(when(e))}</b></div>${where ? `<div class="muted">📍 ${esc(where)}${e.addrHidden ? `<span id="addrNote"> · address when you're in</span>` : ""}${routeLink}</div>` : route ? `<div class="muted">📍 <a href="${esc(route)}" target="_blank" rel="noopener">${/run|hike|bike|walk/i.test(e.activity || "") ? "Route" : "Map"}</a></div>` : ""}${paid ? `<div class="muted" id="price">💵 ${esc(priceText(e))}</div>` : e.costNote ? `<div class="muted" id="cost">💵 ${esc(e.costNote)}${/as you go|own|split/i.test(e.costNote) ? "" : " · you pay as you go"}</div>` : ""}${A.seats && !ask ? `<div class="muted" id="spots">${spotsLine(left)}</div>` : ""}</div>
       ${h.name ? `<div class="host"><span class="av">${av}</span><span><b>${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(first)}</a>` : esc(first)}</b> is hosting</span></div>` : ""}
       ${e.why ? `<p class="why">${esc(e.why)}</p>` : ""}
       ${bring.length ? `<div class="kit"><span aria-hidden="true">🎒</span><div><b>Bring</b><p>${bring.map(esc).join(" · ")}</p></div></div>` : ""}
@@ -117,14 +119,14 @@
         <label class="f">Email or phone <small id="ctH">${ask ? `So you hear when ${esc(first)} lets you in.` : payless(e) ? `So ${esc(first)} can send you a way to pay.` : `Optional. For reminders from ${esc(first)}.`}</small><input type="text" id="ct" autocomplete="email" inputmode="email" maxlength="120"${ask || payless(e) ? " required" : ""}></label>
         ${foody ? `<label class="f" id="dtL">Anything you don't eat?<input type="text" id="dt" maxlength="120" placeholder="Nothing, I eat everything"></label>` : ""}
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
-        ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc((typeof srPrice === "function" && srPrice(e)) || priceText(e))}. You'll pay ${esc(first)} after you reply.</p>` : ""}
+        ${paid ? `<p class="muted" id="payNote" style="margin:0">${esc((typeof srPrice === "function" && srPrice(e)) || priceText(e))}. ${e.ticketNote ? "Pay at the door." : `You'll pay ${esc(first)} after you reply.`}</p>` : ""}
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button>
         <p class="consent" id="consent">By replying you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. If you add a phone, you'll get event texts; reply STOP to stop.</p></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
     if (LK) { document.body.classList.add("lk-invite"); LK.css(); if (LK.has(look)) LK.apply(document.body, e); } // per-event looks: colours, title font and effect
     document.body.classList.toggle("lk-poster", !!$("#m .cov.poster"));
     // ---------- series: the when line says it repeats, the price line says what the course or pass costs ----------
-    { const sw = srWhen(e), wb = $("#m .facts > div:first-child > b"); if (sw && wb) { wb.textContent = sw; if (!srSpan(e) && e.date) { const nx = document.createElement("div"); nx.className = "muted"; nx.id = "nextOne"; nx.textContent = `Next one ${when({ date: e.date })}`; wb.parentElement.after(nx); } }
+    { const sw = srWhen(e), wb = $("#m .facts > div:first-child > b"); if (sw && wb) { wb.textContent = sw; if (!srSpan(e) && e.date) { const nx = document.createElement("div"); nx.className = "muted"; nx.id = "nextOne"; nx.textContent = `Next one ${when({ date: e.date, startTime: e.date === ltd ? e.startTime : "" })}`; wb.parentElement.after(nx); } }
       const sp = srPrice(e), pl = $("#price"); if (sp && pl) pl.textContent = "💵 " + sp; }
     if ($("#fullLink")) $("#fullLink").href = "/g#rsvp-" + encodeURIComponent(e.id || id);
     const ctx = { first, left, seats: A.seats, count: A.count || 0, spotsLine, ws };
@@ -152,7 +154,7 @@
         if (!r.ok) throw new Error(j.message || "Didn't send. Try again.");
         const rid = String(j.id || j.doc?.id || "").split("/").pop();
         const saved = j.response || j.data?.response || j.doc?.data?.response; if (saved) data.response = saved; else if (resp === "going" && left === 0 && !ask) data.response = "waitlist";
-        ls.set("encore-rsvp-" + (e.id || id), JSON.stringify({ rid, code, name, gi: -1, response: data.response, wall: false, eventId: e.id || id, data: {} }));
+        ls.set("encore-rsvp-" + (e.id || id), JSON.stringify({ rid, code, name, ct: c, gi: -1, response: data.response, wall: false, eventId: e.id || id, data: {} }));
         done(e, h, data, rid, code, { ...ctx, place: +j.waitlistPos || +j.place || 0 }); }
       catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "Didn't send. Check your connection and try again." : err.message; $("#send").disabled = false; } };
   }
@@ -168,12 +170,12 @@
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");
     const doorCode = yes && !paid && (+e.headcount || 0) >= 20, pay = httpsUrl(e.ticketUrl), chat = httpsUrl(e.chatUrl);
     const place = +S.place || 0, head = yes ? "You're in" : asked ? "Asked" : wait ? (place ? `You're #${place} on the waitlist` : "You're on the waitlist") : data.response === "maybe" ? "Maybe it is" : "Sorry to miss you";
-    const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid && S.paidOk ? "Paid. Your spot is yours." : yes && paid && S.claimed ? `You said you paid. ${who} will confirm.` : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
+    const line = asked ? `${who} will tell you here.` : yes && S.back && e.approvalRequired && !paid ? `${who} let you in. See you there.` : wait ? `If a spot opens, it's yours.${data.email ? " We'll email you." : ""}` : data.response === "maybe" ? `${who} knows. Change it any time.` : data.response === "no" ? `${who} knows. Next time.` : yes && paid && S.paidOk ? "Paid. Your spot is yours." : yes && paid && S.claimed ? `You said you paid. ${who} will confirm.` : yes && paid && e.ticketNote && !pay ? "Pay at the door. See you there." : yes && paid ? (pay ? `Pay ${esc(e.price)} to keep your spot.` : `${who} will send a way to pay ${esc(e.price)}.`) : yes && !doorCode ? "See you there." : "";
     const f = $("#f"); f.outerHTML = `<div class="ticket" id="tk"><h2>${head}</h2>${line ? `<p class="muted" style="margin:0">${line}</p>` : ""}
       ${doorCode ? `<p class="muted" style="margin:0">Show this at the door</p><div class="code">${esc(code)}</div>` : ""}<p id="addr" class="muted" style="margin:0"></p>
       ${e.qStyle?.thanks && yes ? `<p style="font:600 20px/1.3 Caveat,cursive,system-ui;margin:0">${esc(e.qStyle.thanks)}</p>` : ""}
       ${yes && chat ? `<p style="margin:0">💬 <a href="${esc(chat)}" target="_blank" rel="noopener">Join the group chat</a></p>` : ""}
-      <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>${+e.passPrice > 0 && +e.passCount > 1 ? `<a class="btn pay" id="payPass" href="${esc(payLinkOf(pay, "$" + (+e.passPrice), [data.name, e.pubTitle || e.name, e.passCount + " classes"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.passPrice)} for ${esc(+e.passCount)}</a>` : ""}<button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
+      <div class="btns">${yes && paid && pay && !S.paidOk && !S.claimed ? `<a class="btn pay" id="payBtn" href="${esc(payLinkOf(pay, e.price, [data.name, e.pubTitle || e.name].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay ${esc(e.price)}</a>${+e.passPrice > 0 && +e.passCount > 1 ? `<a class="btn pay" id="payPass" href="${esc(payLinkOf(pay, "$" + (+e.passPrice), [data.name, e.pubTitle || e.name, e.passCount + " classes"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.passPrice)} for ${esc(+e.passCount)}</a>` : ""}${+e.dropIn > 0 && +e.sessions > 1 ? `<a class="btn pay" id="payDrop" href="${esc(payLinkOf(pay, "$" + (+e.dropIn), [data.name, e.pubTitle || e.name, "one class"].filter(Boolean).join(" · ")))}" target="_blank" rel="noopener">Pay $${esc(+e.dropIn)} for one class</a>` : ""}<button type="button" class="btn" id="iPaid"${ls.get("encore-paytap-" + eid) ? "" : " hidden"}>I paid</button>` : ""}${yes ? `<a class="btn" id="cal" target="_blank" rel="noopener">Add to calendar</a>` : ""}${asked ? "" : `<a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">${yes || wait ? "See who's coming" : "Change reply"}</a>`}</div>
       ${(yes || wait || asked || data.response === "maybe") && S.ws ? `<button type="button" class="linkbtn" id="out">Plans changed? Can't go</button>` : ""}</div>
       <a class="full" id="openFull" href="/g#rsvp-${encodeURIComponent(eid)}">Open the full invite</a><p class="muted" style="text-align:center;margin:4px 0 0;font-size:14px">For the chat, polls and more.</p>
       ${yes ? `<p class="yourturn muted" id="yourTurn"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(eid)}">Your turn? Hosting friends is free.</a></p>` : ""}`;
@@ -188,12 +190,12 @@
     // review round 3 (paid spots): after Pay, the guest can say "I paid". It records a claim on their own reply;
     // the host still confirms. This device remembers the tap, so coming back shows "I paid" straight away.
     const payBtn = $("#payBtn"), iPaid = $("#iPaid");
-    const payPass = $("#payPass");
-    if (payBtn && iPaid) { [payBtn, payPass].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));
+    const payPass = $("#payPass"), payDrop = $("#payDrop");
+    if (payBtn && iPaid) { [payBtn, payPass, payDrop].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));
       iPaid.onclick = async () => { iPaid.disabled = true;
         try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
           try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, paidClaim: true })); } catch {}
-          const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); payPass?.remove(); iPaid.remove(); }
+          const p = $("#tk p.muted"); if (p) p.textContent = `Got it. ${S.first || "Your host"} will check and confirm.`; payBtn.remove(); payPass?.remove(); payDrop?.remove(); iPaid.remove(); }
         catch { iPaid.disabled = false; iPaid.textContent = "Didn't go through. Tap to try again"; } }; }
     if (yes) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(eid)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`)).json(); if (a?.ok) { const addr = [a.meetPoint || a.venueName, a.venueAddr].filter(Boolean).join(" · "); if (addr && !/^(my|our) place$/i.test(addr)) { $("#addr").textContent = "📍 " + addr; $("#addrNote")?.remove(); where = addr.replace(" · ", ", "); } } } catch {}
       const cal = $("#cal"); if (cal && d) cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.pubTitle || e.name || "")}&dates=${d}${t ? "T" + t : ""}/${t ? dEnd + "T" + endT : d}&location=${encodeURIComponent(where)}&details=${encodeURIComponent(location.origin + "/e/" + eid)}`;

@@ -78,7 +78,7 @@ const GUEST_RSVP_RESPONSES = new Set(["going", "maybe", "declined", "no", "reque
 const GUEST_WALL_STATUSES = new Set(["going", "maybe", "hidden", "cancelled"]);
 // The only fields a guest's reply may carry (what the light and full invites send). Everything else on a reply
 // (paid, let in, checked in, promoted, the device keys) is the host's or the server's and is never taken from a guest.
-const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
+const GUEST_TEXT = { name: 80, title: 120, company: 120, email: 200, phone: 30, guestType: 20, topic: 500, dietary: 500, access: 500, ea: 200, slot: 120, ride: 60, order: 300, code: 12, via: 30, interest: 10, introducedBy: 120, linkedin: 300, eventId: 80, response: 20, status: 20, contactVia: 12 };
 const GUEST_FLAGS = ["plusOne", "severe", "showOnWall", "showMe", "smsOk"];
 export const GUEST_RSVP_KEYS = new Set([...Object.keys(GUEST_TEXT), ...GUEST_FLAGS, "party", "guestIndex", "createdAt", "changedAt", "photo", "dates", "answers", "utm", "source"]);
 // A guest's whole reply, photo included, fits in this many bytes; real replies are a few hundred.
@@ -129,6 +129,9 @@ const PUBLIC_FIELDS = ["questions", "qStyle", "bookingId", "tentative", "hideHos
 PUBLIC_FIELDS.push("sessions", "passPrice", "passCount", "weekdays", "dropIn", "costNote");
 // How the price reads: "$12 each" (priceUnit), "$40 for 2" (groupPrice for groupSize).
 PUBLIC_FIELDS.push("priceUnit", "groupPrice", "groupSize");
+// review round 7: a pre-order's items ("Country loaf $12") for the order form, and the date before this one of a repeat
+// (so the light invite can say "You were in last week. In again?")
+PUBLIC_FIELDS.push("preorder", "orderItems", "prevId", "seriesId");
 // ---- per-event looks: the flyer fit, colours, effect, title font and reply button (server/looks.js cleans it on save) ----
 PUBLIC_FIELDS.push("look");
 export function eventMoney(e) {
@@ -1260,7 +1263,7 @@ export function createApp({ store, dataDir }) {
       const nom = view === "nominate" ? nominatingAe(req, doc.id, doc.data) : null;
       data = publicEvent(data, view);
       // guests read "Mina's place", never the host's own "my place"
-      if (doc.data.casual && view !== "plan") { try { const hn = String(getDbUser(getWorkspace(req.ws)?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0]; const fix = (x) => (typeof x === "string" ? x.replace(/\b(my|our) (place|apartment|flat|house|home)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)) : x); for (const k of ["meetPoint", "venueName", "name", "pubTitle"]) if (data[k]) data[k] = fix(data[k]); } catch {} }
+      if (doc.data.casual && view !== "plan") { try { const hn = String(getDbUser(getWorkspace(req.ws)?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0]; const fix = (x) => (typeof x === "string" ? x.replace(/\b(my|our) (place|apartment|flat|house|home|stoop|porch|backyard|yard|garden|rooftop|kitchen|studio|driveway)\b/gi, (m, w, pl) => (hn ? `${hn}'s ${pl.toLowerCase()}` : `the host's ${pl.toLowerCase()}`)) : x); for (const k of ["meetPoint", "venueName", "name", "pubTitle"]) if (data[k]) data[k] = fix(data[k]); } catch {} }
       // Get-togethers: which bring-list items or pickup windows are already taken (no names), so guests don't double up.
       if (doc.data.casual && !/giveaway/.test(doc.data.activity || "") && Array.isArray(doc.data.slots) && doc.data.slots.length) { const taken = new Set([...(doc.data.guests || []).map((g) => g.slot), ...S(req).list("rsvps").filter((d) => d.data?.eventId === doc.id && d.data.response === "going").map((d) => d.data.slot)].filter(Boolean)); data.claimed = doc.data.slots.filter((x) => taken.has(x)); }
       if (nom) { data.nomFor = nom.slug; data.nomSuggest = nom.suggest; }
@@ -1609,7 +1612,8 @@ export function createApp({ store, dataDir }) {
     // the host's bell: every guest reply, and an email when someone asks to join
     if (req.guest && after && now && now !== was && owner) {
       const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
-      if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: line, link: studio, eventId });
+      // review round 7: a pre-order reply says what they ordered
+      if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
       if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
     }
     // the host let someone in: tell the guest by email, text and their bell

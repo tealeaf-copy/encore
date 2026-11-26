@@ -141,7 +141,9 @@ export function makeCommunity(store) {
   // ---- public events and discover ----
   const PUB = ["name", "pubTitle", "date", "startTime", "city", "headcount", "kind", "activity", "casual", "meetPoint", "theme", "price", "free", "tags", "emoji", "audienceWho", "approvalRequired", "stage", "earlyUntil", "courses", "dinnerTheme", "endTime", "hood", "coverPhoto", "coverArt", "unlisted",
     // series (a class that repeats, a course, a class pass), a pre-order priced by the item, and whether the host hides who is going
-    "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests"];
+    "repeat", "sessions", "passPrice", "passCount", "weekdays", "priceUnit", "dropIn", "preorder", "hideGuests",
+    // review round 7: what guests should expect to spend when it isn't a paid spot ("About $40 food cost"), and "at the door"
+    "costNote", "ticketNote", "groupPrice", "groupSize", "hostName"];
   // the host's neighborhood only stands in for an event in the host's own city (an event elsewhere shows its own city)
   const sameCity = (a, b) => { const k = (v) => String(v || "").split(",")[0].trim().toLowerCase(); return !k(a) || k(a) === k(b); };
   function publicCard(id, e, host) { const o = Object.fromEntries(PUB.filter((k) => e[k] != null).map((k) => [k, e[k]])); // a meet point is only public for open, listed events; private or ask-to-join events keep where-exactly for guests who are in

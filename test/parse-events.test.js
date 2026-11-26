@@ -22,7 +22,7 @@ function load(today = "2026-11-25T10:00:00") {
     cut("{ const _peSr=parseEventText", "{ const _qsSr=quickStart"),
     cut("// ---------- Potto reads: words", "{ const _qsZ=quickStart"),
   ].join("\n");
-  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.seriesPrice=seriesPrice; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap;", ctx);
+  vm.runInContext(code + "\nthis.parseEventText=parseEventText; this.prRead=prRead; this.prTitle=prTitle; this.seriesEvery=seriesEvery; this.seriesPrice=seriesPrice; this.prIsQuestion=prIsQuestion; this.prAsk=prAsk; this.prClashSay=prClashSay; this.prPrice=prPrice; this.prMatchEvent=prMatchEvent; this.prPopupNoCap=prPopupNoCap; this.prRel=prRel; this.prSlots=prSlots; this.prItems=prItems;", ctx);
   return ctx;
 }
 
@@ -175,6 +175,28 @@ const CASES = [
   ["Tango night Fri 9pm, up to 6 couples", { headcount: 12 }],
   // a course start that isn't on the weekday they typed: kept, and Potto asks
   ["Pottery course Thursdays from Jan 8 7pm, 6 sessions", { date: "2027-01-08", sessions: 6, dayClash: { typed: "thursday", date: "2027-01-08", alt: "2027-01-07" } }],
+  // review round 7 (host panel). "first Sunday of the month" owns the date and repeat; a book called "Tomorrow and..." is not a day
+  ["monthly book club first Sunday of the month 2pm at Powell's Books cafe, January pick is Tomorrow and Tomorrow and Tomorrow, free", { title: "Monthly book club", date: "2026-12-06", weekday: "sunday", repeat: "monthly", startTime: "14:00", meetPoint: "Powell's Books cafe" }],
+  ["bookclub tmrw 7pm at Cafe Mogador, reading Tomorrow and Tomorrow and Tomorrow", { date: "2026-11-26", startTime: "19:00", meetPoint: "Cafe Mogador" }],
+  ["Tomorrow 7pm dinner", { date: "2026-11-26", title: "Dinner" }],
+  // a pre-order: no trailing "for", "at my stoop" is the meet point (not a venue), "in Park Slope" the neighbourhood, the items
+  ["sourdough pre-orders for pickup Saturday Dec 12 10am-1pm at my stoop in Park Slope, country loaf $12, focaccia $9, max 20 loaves, order by Thursday", { title: "Sourdough pre-orders", date: "2026-12-12", startTime: "10:00", endTime: "13:00", preorder: true, meetPoint: "My stoop", venueName: undefined, hood: "Park Slope", items: [{ name: "Country loaf", price: 12 }, { name: "Focaccia", price: 9 }] }],
+  // hyphenated words stay whole; "in Silver Lake at the ..." is the neighbourhood, never "Class"
+  ["salsa drop-in class every Sunday 5pm in Silver Lake at the Ukrainian Culture Center, $20 a class or $70 for a 4-class pass, no partner needed", { title: "Salsa drop-in class", hood: "Silver Lake", meetPoint: "the Ukrainian Culture Center", repeat: "weekly", price: "$20", passPrice: 70, passCount: 4 }],
+  // "tacos after at Veracruz" isn't where you meet
+  ["weekly run club every Thursday 6:30pm from Zilker Park, 5k easy pace, all paces welcome, tacos after at Veracruz", { title: "Weekly run club", meetPoint: "Zilker Park", venueName: undefined, repeat: "weekly", startTime: "18:30" }],
+  // a venue runs through "on <Street>", with a number in its name
+  ["8-week wheel throwing course Wednesdays 7-9pm at Studio 5 on Bleecker starting Jan 6, $320 for all 8 or $45 drop-in, 8 wheels max", { venueName: "Studio 5 on Bleecker", meetPoint: "Studio 5 on Bleecker", sessions: 8, price: "$320", dropIn: 45 }],
+  ["Brunch at The Smith Sun 11am", { meetPoint: "The Smith" }],
+  ["Book club at Cafe Mogador Sat 8", { meetPoint: "Cafe Mogador", startTime: "20:00" }],
+  // "$40 for 2," is a group price
+  ["matcha tasting workshop for pairs Sunday Dec 13 11am at my apartment in Williamsburg, $40 for 2, 6 pairs max, take home a chasen", { groupPrice: 40, groupSize: 2, price: "$40", headcount: 12, hood: "Williamsburg" }],
+  ["Pasta night Fri 7pm, $60 for 2 max", { groupPrice: 60, groupSize: 2 }],
+  ["Salsa Tuesdays 7pm, $20 each or $70 for 4", { groupPrice: undefined, passPrice: 70 }],
+  // a plain "Supper club" keeps what makes it this one; menu and BYOB notes go in the description
+  ["supper club at my place in Crown Heights next Saturday 7:30pm, 10 seats, $45 a person, ask to join, 5 course Oaxacan menu, BYOB", { title: "Supper club: 5-course Oaxacan menu", notes: "5-course Oaxacan menu. BYOB.", price: "$45", headcount: 10, hood: "Crown Heights" }],
+  ["supper club Sat 7pm, Hunan home cooking, BYOB", { title: "Supper club: Hunan home cooking", notes: "Hunan home cooking. BYOB." }],
+  ["Dumpling supper at my place Sat 7pm, $30 a person, 10 people", { title: "Dumpling supper", notes: undefined }],
 ];
 
 for (const [input, want] of CASES) {
@@ -274,6 +296,28 @@ test("who's coming finds the event by a loose name, else the next one", () => {
   assert.equal(c.prMatchEvent("", E, "2026-11-25").id, "b");
   assert.equal(c.prMatchEvent("next one", E, "2026-11-25").id, "b");
   assert.equal(c.prMatchEvent("karaoke", E, "2026-11-25"), null);
+});
+
+test("review round 7: a capitalised Tomorrow mid-sentence or in quotes is a title, not a day", () => {
+  assert.equal(c.prRel("January pick is Tomorrow and Tomorrow and Tomorrow"), "");
+  assert.equal(c.prRel('reading "tomorrow, and tomorrow"'), "");
+  assert.equal(c.prRel("Tomorrow 7pm dinner"), "tomorrow");
+  assert.equal(c.prRel("Hosting tomorrow: game night"), "tomorrow");
+  assert.equal(c.prRel("Dinner tonight. Tomorrow we hike"), "today");
+});
+
+test("review round 7: pickup windows start at the host's time, an hour each", () => {
+  assert.deepEqual([...c.prSlots("10:00", "13:00")], ["10:00–11:00", "11:00–12:00", "12:00–1:00"]);
+  assert.deepEqual([...c.prSlots("09:30", "11:00")], ["9:30–10:30", "10:30–11:00"]);
+  assert.deepEqual([...c.prSlots("14:00")], ["2:00–3:00", "3:00–4:00", "4:00–5:00"]);
+  assert.deepEqual([...c.prSlots("")], []);
+  // the pop-up wiring in index.html uses it instead of a fixed 11-to-2
+  assert.match(html, /prSlots\(o\.startTime,o\.endTime\)/);
+});
+
+test("review round 7: pre-order items and prices", () => {
+  assert.deepEqual(JSON.parse(JSON.stringify(c.prItems("bake sale saturday 11-3, banana bread $8, cookies $3, 40 boxes"))), [{ name: "Banana bread", price: 8 }, { name: "Cookies", price: 3 }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.prItems("Pre-order pop-up: sourdough loaves, pickup Sat 10am, $12 each"))), []);
 });
 
 test("a pop-up has no default spot cap unless the host gave a number", () => {

@@ -32,7 +32,8 @@ export const BADGE_RULES = {
 export const SUPER = { events: 5, guests: 15, returningShare: 0.3, kudos: 5, activeDays: 90 };
 
 /** The badges a host has earned, from their activity. */
-export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, createdAt = 0, bookings = 0, clients = 0 }, now = today()) {
+// `upcoming`: dates of the host's events still to come (review round 7: one that's on the calendar is not "host your first")
+export function badgesFor({ dates = [], upcoming = [], guests = 0, returning = 0, kudos = 0, createdAt = 0, bookings = 0, clients = 0 }, now = today()) {
   const past = dates.filter((d) => d && d <= now), last = past[past.length - 1] || "", first = past[0] || "", B = [];
   const wk = streakOf(past, now, "week"), mo = streakOf(past, now, "month"), daysSince = (d) => (d ? (Date.parse(now) - Date.parse(d)) / DAY : Infinity);
   // "New host": hosted at least once, recently started, and nothing yet that says otherwise (a brand booking, past clients, 10+ guests)
@@ -46,24 +47,27 @@ export function badgesFor({ dates = [], guests = 0, returning = 0, kudos = 0, cr
   if (ev && ev > 1) B.push({ id: "m-events", emoji: "🎉", label: `${ev}+ events`, n: ev, why: `Has hosted ${past.length} events` });
   if (gu) B.push({ id: "m-guests", emoji: "🙌", label: `${gu}+ guests`, n: gu, why: `${guests} different people have come` });
   // what's next, for the host's own eyes (Strava goals): keep the streak alive, the next badge, the next milestone
-  const next = [], cur = weekOf(now), hostedThisWeek = past.some((d) => weekOf(d) === cur), upcomingThisWeek = dates.some((d) => d > now && weekOf(d) === cur);
+  const next = [], cur = weekOf(now), hostedThisWeek = past.some((d) => weekOf(d) === cur), upcomingThisWeek = [...dates, ...upcoming].some((d) => d > now && weekOf(d) === cur);
   if (wk >= 2 && !hostedThisWeek) next.push({ id: "streak", emoji: "🔥", text: upcomingThisWeek ? `Your next one keeps your streak going: ${wk + 1} weeks in a row.` : `Host something by Sunday to make it ${wk + 1} weeks in a row.` });
   if (!isSuper) { const need = []; if (past.length < SUPER.events) need.push(`${SUPER.events - past.length} more ${SUPER.events - past.length === 1 ? "event" : "events"}`); if (guests < SUPER.guests) need.push(`${SUPER.guests - guests} more guests`);
     if (returning / Math.max(1, guests) < SUPER.returningShare && kudos < SUPER.kudos) need.push(`a few more people coming back (or ${SUPER.kudos - kudos} more kudos)`); if (past.length && daysSince(last) > SUPER.activeDays) need.push("an event in the next few weeks");
     if (need.length && need.length <= 2) next.push({ id: "super", emoji: "⭐", text: `Super host is close: ${need.join(" and ")}.` }); }
-  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); if (!past.length) next.push({ id: "first", emoji: "🌱", text: "Host your first event to start a streak." });
+  const nextEv = [...MILESTONES.events].reverse().find((m) => m > past.length); const soon = upcoming.filter((d) => d && d > now).sort()[0];
+  if (!past.length) next.push(soon ? { id: "first", emoji: "🌱", text: `Your first one is on ${new Date(soon + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}. It starts your streak.` } : { id: "first", emoji: "🌱", text: "Host your first event to start a streak." });
   else if (nextEv && nextEv - past.length <= 3) next.push({ id: "m-events", emoji: "🎉", text: `${nextEv - past.length} more to reach ${nextEv} events.` });
   return { badges: B, next, streak: { weeks: wk, months: mo }, events: past.length, last, isNew: !!isNew, isSuper };
 }
 
 export function makeRecognition({ C, X }) {
   let cache = null;
+  // the host's events still to come that they've shared or put on their page (published or listed)
+  const upcomingOf = (ws) => { try { return (C.eventsOf?.(ws, { upcoming: true, discoverableOnly: true, onPage: true, privateToo: true, owner: true }) || []).filter((e) => e.date && e.date > today() && e.stage !== "interest" && !e.example).map((e) => e.date); } catch { return []; } };
   function all() {
     if (cache && Date.now() - cache.at < CACHE_MS) return cache.data;
     const out = [];
     for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !h.name) continue; let S; try { S = X.hostStrengths(ws); } catch { continue; }
       const W = getWorkspace(ws), example = isExampleEmail(W?.ownerEmail), clients = (h.gigs || []).filter((g) => g.client && !isPlaceholderBrand(g.client)).length, bookings = +(X.bookingsOf?.(ws) || 0);
-      const r = example ? { badges: [], next: [], streak: { weeks: 0, months: 0 }, events: (S.dates || []).length, last: "", isNew: false, isSuper: false } : badgesFor({ dates: S.dates || [], guests: S.guests, returning: S.returning, kudos: S.kudosCount, createdAt: W?.createdAt || 0, bookings, clients });
+      const r = example ? { badges: [], next: [], streak: { weeks: 0, months: 0 }, events: (S.dates || []).length, last: "", isNew: false, isSuper: false } : badgesFor({ dates: S.dates || [], upcoming: upcomingOf(ws), guests: S.guests, returning: S.returning, kudos: S.kudosCount, createdAt: W?.createdAt || 0, bookings, clients });
       const recent = (S.dates || []).filter((d) => d <= today() && (Date.parse(today()) - Date.parse(d)) / DAY <= 90).length;
       out.push({ ws, handle: h.handle, city: String(h.city || "").trim(), recent, guests: S.guests, returning: S.returning, example, ...r }); }
     // Local Legend (Strava): the most active real host in each city over the last 90 days, only where there's a field to beat (BADGE_RULES)

@@ -59,6 +59,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
   const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body");
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
   const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><circle cx="11.6" cy="19.6" r="1" fill="#1F1A17"/><circle cx="16.4" cy="19.6" r="1" fill="#1F1A17"/></svg>`;
+  const sub = (j) => [day(j.date), j.place ? `at ${j.place}` : j.hostFirst ? `with ${j.hostFirst}` : ""].filter(Boolean).join(" · ");
   const stop = (h, p) => { body.innerHTML = `<h1>${esc(h)}</h1><p class="muted">${esc(p)}</p>`; };
   /* ---- kudos nudges: the group kudos link (/k/<event>?g=<token>) and Send after one chip ---- */
   if (id && !rid && q.get("g")) return groupStart(q.get("g"));
@@ -71,9 +72,9 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
     const host = j.hostFirst || "your host";
     if (!j.open) return stop(`${j.title}`, "Kudos open once it's happened.");
     if (j.sent) return thanks(j);
-    body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc([day(j.date), j.hostFirst ? `at ${j.hostFirst}'s` : ""].filter(Boolean).join(" · "))}</p>
-      <div class="card"><div><h2>Tap what you loved</h2><div class="chips" id="tags">${j.tags.map((t) => `<button type="button" class="chip" data-k="${esc(t.k)}" aria-pressed="false"><span aria-hidden="true">${esc(t.emoji)}</span>${esc(t.label)}</button>`).join("")}</div></div>
-      <div class="chips"><button type="button" class="chip again" data-k="${esc(j.again.k)}" aria-pressed="false"><span aria-hidden="true">🔁</span>${esc(j.again.label)}</button></div>
+    // review round 7: "Would go again" first; the subtitle is the place ("at Prospect Park") or "with Marcus"
+    body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc(sub(j))}</p>
+      <div class="card"><div><h2>Tap what you loved</h2><div class="chips"><button type="button" class="chip again" data-k="${esc(j.again.k)}" aria-pressed="false"><span aria-hidden="true">🔁</span>${esc(j.again.label)}</button></div><div class="chips" id="tags" style="margin-top:8px">${j.tags.map((t) => `<button type="button" class="chip" data-k="${esc(t.k)}" aria-pressed="false"><span aria-hidden="true">${esc(t.emoji)}</span>${esc(t.label)}</button>`).join("")}</div></div>
       <label class="f">A short note <small>Optional. It shows on ${esc(host)}'s page with your first name.</small><textarea id="love" maxlength="280" rows="2" placeholder="The food, the people, the moment it got loud"></textarea></label>
       <p class="err" id="err"></p><button class="go" id="send" type="button">Send</button></div>`;
     $$(".chip[data-k]").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"))));
@@ -97,18 +98,25 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
       <p class="muted yourturn" id="yourTurn" style="margin:6px 0 0;font-size:14px"><a href="/signup?mode=friends&amp;ref=${encodeURIComponent(id)}">Your turn? Hosting friends is free.</a></p></div>
       <section class="more" id="more" hidden aria-labelledby="moreH"><h2 id="moreH">More like this</h2><div id="moreL"></div></section>`;
     const fb = $("#follow"); if (fb) fb.onclick = () => follow(j);
+    // review round 7: following survives a reload (the server knows; this device remembers a tap it made)
+    { let mine = false; try { mine = !!(j.host && localStorage.getItem("encore-follow-" + j.host.handle)); } catch {}
+      const f = j.following || (mine ? true : false); if (f && $("#fol")) $("#fol").innerHTML = f === "pending" ? `<p class="muted" role="status" style="margin:0">Check your email to confirm you're following ${esc(j.hostFirst || j.host.name)}.</p>` : `<span class="btn on" role="status">Following ${esc(j.hostFirst || j.host.name)}</span>`; }
     // ---- visual feed: photos from guests, proved by the same reply link as the kudos ----
     const pb = $("#phBtn"); if (pb) pb.onclick = () => { if (!window.MomentUpload) return; const grid = $("#phGrid"), R = [-3, 2, -1.5, 2.5, -2, 1.5]; let n0 = grid.children.length;
       window.MomentUpload.pick({ q: { eventId: id, rid, code }, onStart: (fs, extra) => { pb.disabled = true; fs.forEach((f, i) => { const u = URL.createObjectURL(f), v = /^video\//.test(f.type); grid.insertAdjacentHTML("beforeend", `<span class="phg" style="--r:${R[(n0 + i) % 6]}deg" data-i="${n0 + i}">${v ? `<video src="${u}" muted playsinline></video>` : `<img src="${u}" alt="">`}<b>Adding…</b></span>`); }); if (extra) grid.insertAdjacentHTML("afterend", `<p class="muted" style="margin:0">The first 6 went up. Add more in a moment.</p>`); },
         onEach: (f, r, err, i) => { const el = grid.querySelector(`[data-i="${n0 + i}"]`); if (!el) return; el.classList.toggle("err", !!err); el.querySelector("b").textContent = err ? "Didn't add" : "Added"; if (err) el.title = err.message; },
         onDone: (n, total) => { pb.disabled = false; n0 = grid.children.length; pb.textContent = "📷 Add more"; if (n < total) { const e = document.createElement("p"); e.className = "err"; e.textContent = n ? `${n} of ${total} added. The others were too big, too long or not a photo.` : "Those didn't add. Photos, or videos up to 15 seconds."; $("#addPh").appendChild(e); } } }); };
     fetch(`/api/public/kudos-more/${encodeURIComponent(id)}?${proof}`).then((r) => (r.ok ? r.json() : { events: [] })).then((m) => {
-      const L = (m.events || []).slice(0, 3); if (!L.length) return noMore();
+      next = m.next || null; const L = (m.events || []).slice(0, 3); if (!L.length) return noMore();
       $("#moreL").innerHTML = L.map((e) => `<a class="ev" href="${esc(e.url)}"><span class="im" ${e.cover ? `style="background-image:url('${esc(e.cover)}')"` : ""}>${e.cover ? "" : esc((e.title || "?").slice(0, 1))}</span><span><b>${esc(e.title)}</b><small>${esc([day(e.start), e.area || e.city, e.price].filter(Boolean).join(" · "))}</small><br><small>by ${esc(e.host?.name || "")}</small></span></a>`).join("");
-      $("#more").hidden = false; }).catch(noMore);
+      if (next) $("#moreL").insertAdjacentHTML("afterbegin", nextHTML()); $("#more").hidden = false; }).catch(noMore);
   }
   // nothing similar coming up: point at everything else instead of an empty space
-  function noMore() { const m = $("#more"); if (!m) return; $("#moreL").innerHTML = `<p class="muted" style="margin:0">Nothing like it coming up yet. <a href="/discover">See what's on</a></p>`; m.hidden = false; }
+  let next = null;
+  // review round 7: the series' own next date first ("Next one: Thu, Dec 3 · 6:30pm"), else "Nothing like it coming up yet"
+  function nextHTML() { const t = /^\d{2}:\d{2}$/.test(next.startTime || "") ? new Date("2000-01-01T" + next.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : "";
+    const w = [day(next.date), t].filter(Boolean).join(" · "); return next.id ? `<a class="ev" id="nextDate" href="/e/${encodeURIComponent(next.id)}"><span class="im">🔁</span><span><b>${next.course ? "Next class" : "Next one"}: ${esc(w)}</b><small>Same plan, new date. Are you in?</small></span></a>` : `<p class="muted" id="nextDate" style="margin:0 0 8px">${next.course ? "Next class" : "Next one"}: ${esc(w)}. ${esc("It opens the morning after.")}</p>`; }
+  function noMore() { const m = $("#more"); if (!m) return; $("#moreL").innerHTML = next ? nextHTML() : `<p class="muted" style="margin:0">Nothing like it coming up yet. <a href="/discover">See what's on</a></p>`; m.hidden = false; }
   async function follow(j, email = "") {
     const b = $("#follow"); if (b) b.disabled = true;
     try { const r = await fetch("/api/public/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ handle: j.host.handle, eventId: id, rid, code, via: "kudos", ...(email ? { email } : {}) }) });
@@ -117,6 +125,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
         $("#fol").innerHTML = `<form id="ff"><input type="email" id="fe" required autocomplete="email" placeholder="Your email" aria-label="Your email"><button class="btn" type="submit">Follow</button></form><p class="err" id="fErr">${email ? esc(x.message || "") : ""}</p>`;
         $("#ff").onsubmit = (ev) => { ev.preventDefault(); follow(j, $("#fe").value.trim()); }; return; }
       if (!r.ok) throw new Error(x.message || "That didn't work. Try again.");
+      try { localStorage.setItem("encore-follow-" + j.host.handle, x.pending ? "pending" : "1"); } catch {}
       $("#fol").innerHTML = x.pending ? `<p class="muted" role="status" style="margin:0">Check your email to confirm you're following ${esc(j.hostFirst || j.host.name)}.</p>` : `<span class="btn on" role="status">Following ${esc(j.hostFirst || j.host.name)}</span>`;
     } catch (e) { if (b) { b.disabled = false; } const p = document.createElement("p"); p.className = "err"; p.textContent = e.message; $("#fol")?.appendChild(p); }
   }
@@ -127,7 +136,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
     fetch(`/api/public/kudos-group/${encodeURIComponent(id)}?g=${encodeURIComponent(g)}`).then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) })).then(({ ok, j }) => {
       if (!ok) return stop("This link isn't working", j.message || "Ask your host for a new one.");
       if (!j.open) return stop(`${j.title}`, "Kudos open once it's happened.");
-      body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc([day(j.date), j.hostFirst ? `at ${j.hostFirst}'s` : ""].filter(Boolean).join(" · "))}</p>
+      body.innerHTML = `<h1>How was ${esc(j.title)}?</h1><p class="muted sub">${esc(sub(j))}</p>
         <form class="card gform" id="gf" novalidate><label class="f" for="gc">Your email or phone <small>The one you replied with, so ${esc(j.hostFirst || "your host")} knows it's you.</small></label>
         <input id="gc" name="contact" type="text" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="you@example.com or (555) 123-4567" required>
         <p class="err" id="gErr" role="alert"></p><button class="go" id="gGo" type="submit">Continue</button></form>`;

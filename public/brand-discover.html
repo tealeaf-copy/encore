@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Book a host for your team · Pottery Lab</title><meta name="description" content="Supper clubs, workshops and calm offsites run by real hosts. Browse by mood, see the full price for your group, and book with a deposit.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap" id="main">
+<section class="bb-xhead"><p class="bb-kicker">For teams</p><h1>A host your team will <em>talk about</em></h1><p class="bb-lede">Supper clubs, workshops and quiet offsites run by people who host for a living. See the full price for your group before you ask.</p>
+<button class="bb-pill" type="button" id="pill" aria-haspopup="dialog"><span class="t" id="pillT"></span><span class="go" aria-hidden="true"></span></button></section>
+<div id="chips"></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:8px 0 16px"><p class="bb-meta" id="count" aria-live="polite"></p><div class="bb-seg" role="group" aria-label="View" style="margin:0"><button type="button" data-v="list" aria-pressed="true"></button><button type="button" data-v="map" aria-pressed="false"></button></div></div>
+<div id="results" class="bb-grid"></div>
+<div id="mapv" class="bb-hide"></div>
+<section class="bb-safe" aria-label="How booking works">
+<div><b id="s1"></b>Earned with 10+ events, a 4.8+ average, replies within a day and no recent cancellations. <a href="/teams/trusted">How it works</a></div>
+<div><b id="s2"></b>Every line before you pay: the price a person, any group minimum, fees and tax. No surprises after.</div>
+<div><b id="s3"></b>Message hosts here. Emails, numbers and addresses are shared once you're booked.</div>
+<div><b id="s4"></b>If your host cancels, you get everything back and we help you find another.</div>
+</section>
+</main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, $, $$ } = BB; BB.top("discover");
+  $("#pill .go").innerHTML = icon("sliders"); $('[data-v="list"]').innerHTML = icon("list") + "&nbsp;List"; $('[data-v="map"]').innerHTML = icon("map") + "&nbsp;Map";
+  $("#s1").innerHTML = icon("check") + "Trusted hosts"; $("#s2").innerHTML = icon("doc") + "The full price"; $("#s3").innerHTML = icon("lock") + "Private until booked"; $("#s4").innerHTML = icon("shield") + "Covered if plans change";
+  const U = new URLSearchParams(location.search); let saved0 = {}; try { saved0 = JSON.parse(localStorage.getItem("bb.filters") || "{}"); } catch {}
+  const F = { mood: U.get("mood") ?? saved0.mood ?? "", people: +(U.get("people") || saved0.people || 12), when: U.get("when") || saved0.when || "next", hood: U.get("hood") ?? saved0.hood ?? "", budget: +(U.get("budget") || saved0.budget || 0), diet: (U.get("diet") ?? saved0.diet ?? "").split(",").filter(Boolean), access: (U.get("access") ?? saved0.access ?? "").split(",").filter(Boolean) };
+  let META = { moods: [], diets: [], access: [], areas: [] }, view = "list", data = [], saved = new Set();
+  const WHEN = { any: "Any time", next: "Next month", soon: "Next two weeks", later: "In 2 to 3 months" };
+  const range = () => { const d = new Date(), iso = (x) => x.toISOString().slice(0, 10); if (F.when === "soon") return [iso(d), iso(new Date(+d + 14 * 864e5))]; if (F.when === "next") { const a = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)), b = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 2, 0)); return [iso(a), iso(b)]; } if (F.when === "later") return [iso(new Date(+d + 45 * 864e5)), iso(new Date(+d + 92 * 864e5))]; return ["", ""]; };
+  const pillText = () => `<b>Team of ${F.people}</b> · ${esc(WHEN[F.when])} · ${esc(F.hood || "Anywhere")}${F.budget ? ` · up to $${F.budget} a person` : ""}${F.diet.length + F.access.length ? ` · ${F.diet.length + F.access.length} needs` : ""}`;
+  function persist() { try { localStorage.setItem("bb.filters", JSON.stringify({ ...F, diet: F.diet.join(","), access: F.access.join(",") })); } catch {} const q = new URLSearchParams(); if (F.mood) q.set("mood", F.mood); q.set("people", F.people); q.set("when", F.when); if (F.hood) q.set("hood", F.hood); if (F.budget) q.set("budget", F.budget); if (F.diet.length) q.set("diet", F.diet.join(",")); if (F.access.length) q.set("access", F.access.join(",")); history.replaceState(null, "", "?" + q); }
+  async function load() { persist(); $("#pillT").innerHTML = pillText(); const [from, to] = range();
+    const q = new URLSearchParams({ mood: F.mood, people: F.people, hood: F.hood, budget: F.budget || "", diet: F.diet.join(","), access: F.access.join(","), from, to });
+    $("#results").setAttribute("aria-busy", "true"); const r = await api("/api/bb/discover?" + q); data = r.results; saved = await BB.savedKeys(); draw(); }
+  function draw() { const m = META.moods.find((x) => x.id === F.mood);
+    $("#count").textContent = `${m ? m.label + " · " : ""}${data.length} ${data.length === 1 ? "experience" : "experiences"} for ${F.people}`;
+    $("#results").removeAttribute("aria-busy");
+    $("#results").innerHTML = data.length ? data.map((c) => BB.card(c, { saved: saved.has(c.handle + "/" + c.pkg), people: F.people })).join("") : `<div class="bb-empty" style="grid-column:1/-1"><p><b>Nothing fits all of that yet.</b></p><p>Try another month, a bigger area, or fewer needs. Hosts add dates every week.</p><button class="bb-btn" type="button" id="reset">Clear the filters</button></div>`;
+    $("#reset")?.addEventListener("click", () => { Object.assign(F, { mood: "", hood: "", budget: 0, diet: [], access: [], when: "any" }); $$("[data-m]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.m === "")); load(); });
+    if (view === "map") drawMap(); }
+  function drawMap(on = "") { const places = data.filter((c) => !c.remote && c.area.lat != null).map((c) => ({ ...c.area, name: c.name, key: c.handle + "/" + c.pkg }));
+    const areas = [...new Set(places.map((p) => p.area))];
+    $("#mapv").innerHTML = `${BB.map(places, { on })}<p class="bb-meta">${icon("lock")} Circles show a neighbourhood, never an address. The exact place is shared once you're booked.</p><div class="bb-map-list">${areas.map((a) => `<button type="button" data-a="${esc(a)}" aria-pressed="${a === on}"><span><b>${esc(a)}</b></span><span class="bb-meta">${places.filter((p) => p.area === a).length} ${places.filter((p) => p.area === a).length === 1 ? "experience" : "experiences"}</span></button>`).join("")}${data.some((c) => c.remote) ? `<button type="button" data-a="__remote"><span><b>Remote-friendly</b></span><span class="bb-meta">${data.filter((c) => c.remote).length} anywhere</span></button>` : ""}</div><div class="bb-grid" id="mapcards"></div>`;
+    const show = (a) => { $("#mapcards").innerHTML = data.filter((c) => (a === "__remote" ? c.remote : !c.remote && c.area.area === a)).map((c) => BB.card(c, { saved: saved.has(c.handle + "/" + c.pkg), people: F.people })).join(""); };
+    $$("[data-a]", $("#mapv")).forEach((b) => (b.onclick = () => { drawMap(b.dataset.a); show(b.dataset.a); }));
+    $$("[data-area]", $("#mapv")).forEach((g) => (g.style.cursor = "pointer", g.onclick = () => { drawMap(g.dataset.area); show(g.dataset.area); }));
+    if (on) show(on); }
+  $$("[data-v]").forEach((b) => (b.onclick = () => { view = b.dataset.v; $$("[data-v]").forEach((x) => x.setAttribute("aria-pressed", x === b)); $("#results").classList.toggle("bb-hide", view === "map"); $("#mapv").classList.toggle("bb-hide", view !== "map"); if (view === "map") drawMap(); }));
+  document.addEventListener("click", async (e) => { const b = e.target.closest("[data-save]"); if (!b) return; e.preventDefault(); const [h, p] = b.dataset.save.split("/"); b.disabled = true;
+    try { const r = await BB.saveTo(h, p, F.people); if (r) { b.setAttribute("aria-pressed", r.saved); b.setAttribute("aria-label", r.saved ? "Saved to your shortlist" : "Save to a shortlist"); r.saved ? saved.add(b.dataset.save) : saved.delete(b.dataset.save); } } catch (er) { BB.toast(er.message); } b.disabled = false; });
+  BB.expandOnClick(document.body);
+  // filters sheet: headcount, date window, budget a person, neighbourhood, dietary needs, accessibility
+  $("#pill").onclick = () => { const T = (arr, on, k) => arr.map((x) => `<button type="button" class="bb-chip" data-${k}="${esc(x)}" aria-pressed="${on.includes(x)}">${esc(x[0].toUpperCase() + x.slice(1))}</button>`).join("");
+    BB.sheet("Your team", `<div class="bb-hc" style="margin-top:0"><span><b>Headcount</b></span><div class="bb-step"><button type="button" data-n="-1" aria-label="Fewer">${icon("minus")}</button><output id="fN">${F.people}</output><button type="button" data-n="1" aria-label="More">${icon("plus")}</button></div></div>
+      <label class="bb-field"><span>When</span><select id="fW">${Object.entries(WHEN).map(([k, v]) => `<option value="${k}"${k === F.when ? " selected" : ""}>${v}</option>`).join("")}</select><small>We show hosts with open dates in that window. Flexible dates are fine at checkout.</small></label>
+      <div class="bb-row"><label class="bb-field"><span>Neighbourhood or city</span><input id="fH" list="areas" value="${esc(F.hood)}" placeholder="Anywhere"><datalist id="areas">${META.areas.map((a) => `<option value="${esc(a)}">`).join("")}<option value="New York"><option value="Brooklyn"><option value="Manhattan"><option value="Queens"></datalist></label>
+      <label class="bb-field"><span>Budget a person</span><select id="fB"><option value="0">Any</option>${[50, 80, 120, 180, 250].map((b) => `<option value="${b}"${b === F.budget ? " selected" : ""}>Up to $${b}</option>`).join("")}</select></label></div>
+      <p class="bb-field"><span>Dietary needs</span></p><div class="bb-toggles" id="fD">${T(META.diets, F.diet, "d")}</div>
+      <p class="bb-field" style="margin-top:16px"><span>Accessibility</span></p><div class="bb-toggles" id="fA">${T(META.access, F.access, "a")}</div>
+      <div class="ft"><button class="bb-link" type="button" id="fClear">Clear</button><button class="bb-btn primary" type="button" id="fGo">Show experiences</button></div>`, { onOpen: (bg, close) => {
+        let n = F.people; bg.querySelectorAll("[data-n]").forEach((b) => (b.onclick = () => { n = Math.max(2, Math.min(500, n + +b.dataset.n * (n >= 30 ? 5 : 1))); bg.querySelector("#fN").textContent = n; }));
+        bg.querySelectorAll("[data-d],[data-a]").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true")));
+        bg.querySelector("#fClear").onclick = () => { bg.querySelectorAll("[aria-pressed=true]").forEach((b) => b.setAttribute("aria-pressed", "false")); bg.querySelector("#fH").value = ""; bg.querySelector("#fB").value = "0"; };
+        bg.querySelector("#fGo").onclick = () => { F.people = n; F.when = bg.querySelector("#fW").value; F.hood = bg.querySelector("#fH").value.trim(); F.budget = +bg.querySelector("#fB").value; F.diet = [...bg.querySelectorAll("[data-d][aria-pressed=true]")].map((b) => b.dataset.d); F.access = [...bg.querySelectorAll("[data-a][aria-pressed=true]")].map((b) => b.dataset.a); close(); load(); }; } }); };
+  api("/api/bb/moods").then((m) => { META = m; $("#chips").append(BB.chips(m.moods, F.mood, (id) => { F.mood = id; load(); })); load(); }).catch(() => { $("#results").innerHTML = '<div class="bb-empty">We couldn\'t load experiences. Check your connection and try again.</div>'; });
+})();
+</script></body></html>

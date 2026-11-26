@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Host ID checks · Pottery Lab</title><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap bb-narrow" id="main"><h1>Host ID checks</h1><p class="bb-lede">Manual review until an ID provider is connected (server/brandbook.js, TODO id-provider). Check the host's ID on a short video call or a document they email, then decide.</p><div id="list" class="bb-list"></div></main>
+<script src="/brandbook.js"></script>
+<script>
+(function () { const { esc, api, $ } = BB;
+  async function load() { const d = await api("/api/bb/admin/verifications"); $("#list").innerHTML = d.verifications.map((v) => `<div class="bb-req"><div><span class="bb-status">${esc(v.state)}</span><h3 style="margin-top:8px">${esc(v.legalName)}</h3><p class="bb-meta">@${esc(v.handle)} · ${esc(v.name)} · ${esc(v.email)} · asked ${new Date(v.submittedAt).toLocaleDateString()}</p></div>${v.state === "pending" ? `<div class="acts"><button class="bb-btn primary" data-h="${esc(v.handle)}" data-a="1">Approve</button><button class="bb-btn quiet" data-h="${esc(v.handle)}" data-a="">Decline</button></div>` : ""}</div>`).join("") || '<p class="bb-meta">Nothing waiting.</p>'; }
+  document.addEventListener("click", async (e) => { const b = e.target.closest("[data-h]"); if (!b) return; await api("/api/bb/admin/verifications/" + b.dataset.h, { approve: !!b.dataset.a }); load(); });
+  load(); })();
+</script></body></html>

@@ -51,6 +51,7 @@ import { mountSlots } from "./slots.js"; // review round 13: slots on the invite
 import { mountPlans } from "./plans.js"; // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
+import { mountBrandbook } from "./brandbook.js"; // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js";
@@ -741,7 +742,8 @@ export function createApp({ store, dataDir }) {
   mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X }); // before /x pages: old shop links open the drop
   mountCover(app, { assetsDir, currentUser, C });
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
-  mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)
+  mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
+  mountBrandbook(app, { store, small, currentUser, C, X, assetsDir, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });

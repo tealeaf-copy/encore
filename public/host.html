@@ -326,4 +326,11 @@ body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:re
     try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified && me.email) { const row = f.querySelector(".row"); if (row) { row.style.display = "none"; f.name.value = me.name || ""; f.email.value = me.email; } } } catch {} };
   go(); })();
 </script>
-<script src="/stats.js" defer></script></body></html>
+<script src="/stats.js" defer></script>
+<script>
+// Bookable for teams (server/brandbook.js): a quiet strip linking to the host's team packages, when they have any
+(function () { const m = /^\/@([a-z0-9-]+)/.exec(location.pathname); if (!m) return; fetch("/api/bb/hostpkgs/" + m[1]).then((r) => (r.ok ? r.json() : null)).then((d) => { if (!d || !d.packages.length) return; const ex = document.getElementById("extras"); if (!ex) return;
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), s = document.createElement("section"); s.className = "hire"; s.id = "forTeams";
+  s.innerHTML = `<small class="muted">For teams</small><h2>Book ${esc(d.name)} for your team</h2>${d.packages.map((p) => `<p style="margin:6px 0"><a href="/teams/x/${esc(m[1])}/${esc(p.id)}"><b>${esc(p.name)}</b></a> · $${Math.round(p.perPersonCents / 100)} a person · ${p.minGuests} to ${p.maxGuests} people</p>`).join("")}`; ex.appendChild(s); }).catch(() => {}); })();
+</script>
+</body></html>

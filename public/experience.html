@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Experience · Pottery Lab</title><meta name="description" content="A host your team can book: photos, the full price for your group, reviews and terms in plain words.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $, $$ } = BB; BB.top("discover");
+  const [, , , handle, pkgId] = location.pathname.split("/"), U = new URLSearchParams(location.search);
+  let people = +(U.get("people") || 0), D = null;
+  const main = $("#main");
+  async function load() {
+    try { D = await api(`/api/bb/x/${encodeURIComponent(handle)}/${encodeURIComponent(pkgId)}${people ? "?people=" + people : ""}`); } catch (e) { main.innerHTML = `<h1>This one isn't bookable right now</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/discover">See other experiences</a>`; return; }
+    people = D.price.headcount; document.title = `${D.pkg.name} with ${D.host.name} · Pottery Lab`; render(); }
+  function cta() { const instant = D.pkg.instant && D.stats.trusted;
+    return `<div class="act"><a class="bb-btn primary lg block" href="/teams/book/${esc(handle)}/${esc(pkgId)}?people=${people}" id="book">${instant ? icon("bolt") + " Book now" : "Request to book"}</a>
+      <button class="bb-btn quiet block" type="button" data-save>${icon("save")} Save to a shortlist</button></div>
+      <p class="fine">${instant ? "Trusted host with Instant book: open dates are confirmed right away." : `Nothing is charged until ${esc(D.host.person || D.host.name)} accepts.`}</p>`; }
+  function render() {
+    const s = D.stats, p = D.pkg, h = D.host;
+    main.innerHTML = `<div id="gal"></div>
+    <div class="bb-xp"><div>
+      <section class="bb-xhead"><p class="bb-kicker">${esc(p.remote ? "Remote-friendly" : D.area.area || D.area.city)}${p.length ? " · " + esc(p.length) : ""} · ${p.minGuests} to ${p.maxGuests} people</p>
+        <h1 style="view-transition-name:bb-title">${esc(p.name)}</h1>
+        <div class="where"><span>with <a href="/@${esc(h.handle)}">${esc(h.name)}</a></span>${s.reviews ? `<span>${icon("star")} <b class="bb-mono">${s.rating.toFixed(1)}</b> · ${s.reviews} team ${s.reviews === 1 ? "review" : "reviews"}</span>` : ""}<span class="bb-badges">${s.trusted ? BB.trustedBadge() : ""}${p.instant && s.trusted ? `<span class="bb-badge instant">${icon("bolt")}Instant book</span>` : ""}</span></div></section>
+      ${BB.trustRow(s)}${BB.verifyRow(s)}
+      <section class="bb-sec"><h2>What you'll do</h2><p style="white-space:pre-line">${esc(p.story)}</p>
+        ${p.includes.length ? `<ul class="bb-facts">${p.includes.map((x) => `<li>${icon("check")}<span>${esc(x)}</span></li>`).join("")}</ul>` : ""}
+        <ul class="bb-facts">${[[icon("home"), D.venue], [icon("clock"), p.length ? `About ${p.length}` : ""], [icon("people"), `${p.minGuests} to ${p.maxGuests} people`], [icon("cal"), `${p.leadDays} days' notice · ${p.weekdays.length === 5 && !p.weekdays.includes(0) ? "weekdays" : "on " + D.availability[0].weekdays.join(", ")}, ${p.time === "daytime" ? "daytime" : p.time === "any" ? "day or evening" : "evenings"}`], p.diets.length ? [icon("table"), "Can cook " + p.diets.join(", ")] : null, p.access.length ? [icon("check"), p.access.map((a) => a[0].toUpperCase() + a.slice(1)).join(", ")] : null].filter((x) => x && x[1]).map(([i, t]) => `<li>${i}<span>${esc(t)}</span></li>`).join("")}</ul></section>
+      <section class="bb-sec"><div class="bb-host"><div>${h.avatar ? `<img class="bb-av" src="${esc(h.avatar)}" alt="">` : `<span class="bb-av">${esc((h.person || h.name)[0] || "")}</span>`}</div>
+        <div><p class="bb-kicker">Your host</p><h2>${esc(h.person || h.name)}${h.person ? `, ${esc(h.name)}` : ""}</h2><p style="white-space:pre-line">${esc(h.story || h.tagline || "")}</p>
+        <ul class="bb-facts">${[s.since ? [icon("cal"), `Hosting since ${s.since}`] : null, s.events ? [icon("table"), `${s.events} events hosted, ${s.teamEvents} for teams on Pottery Lab`] : null, s.again?.pct != null ? [icon("repeat"), s.again.text] : null, s.responseHours != null ? [icon("chat"), `Usually replies in ${BB.hours(s.responseHours)}${s.responseRate != null ? `, answers ${Math.round(s.responseRate * 100)}% of requests within a day` : ""}`] : [icon("chat"), "Replies within a day, or the request is free to withdraw"], s.brands ? [icon("repeat"), `${s.repeatBrands} of ${s.brands} teams booked again`] : null].filter(Boolean).map(([i, t]) => `<li>${i}<span>${esc(t)}</span></li>`).join("")}</ul>
+        <p class="bb-note">${icon("lock")} ${esc(D.contact)}</p></div></div>
+        ${s.trusted ? "" : `<details class="bb-panel"><summary><b>Not a Trusted host yet.</b> What that means</summary><ul class="bb-checks">${s.checks.map((c) => `<li class="${c.met ? "ok" : "no"}">${icon(c.met ? "check" : "minus")}<span>${esc(c.label)}<small>${esc(c.have)}</small></span></li>`).join("")}</ul><p class="bb-meta">New hosts are welcome. Every booking is covered by the same terms.</p></details>`}</section>
+      <section class="bb-sec" id="reviews"><h2>Reviews</h2><div id="rev"></div></section>
+      <section class="bb-sec" id="dates"><h2>When ${esc(h.person || "they")} can do it</h2><p class="bb-meta">Pick a date at checkout, or ask for something like “any weekday evening in ${new Date(D.availability[1].month + "-15").toLocaleDateString("en-US", { month: "long" })}”.</p><div class="bb-cals">${D.availability.map((a) => BB.calendar(a)).join("")}</div>${BB.legend()}</section>
+      ${p.remote ? "" : `<section class="bb-sec"><h2>Where</h2><p>${esc(D.venue)}, around ${esc(D.area.area || D.area.city)}.</p>${BB.map([{ ...D.area, name: p.name }], { on: D.area.area })}<p class="bb-meta">${icon("lock")} This is the neighbourhood, not the address. You get the address once you're booked.</p></section>`}
+      <section class="bb-sec" id="terms"><h2>Deposit and cancellation</h2>${BB.termsList(D.terms)}</section>
+      ${D.others.length ? `<section class="bb-sec"><h2>More from ${esc(h.person || h.name)}</h2><div class="bb-grid">${D.others.map((o) => `<a class="bb-card bb-go" href="/teams/x/${esc(handle)}/${esc(o.id)}?people=${people}"><div class="ph">${BB.cover({ ...o, photos: o.photo ? [o.photo] : [] })}</div><div class="bd"><h3>${esc(o.name)}</h3><p class="sub">${money(o.perPersonCents)} a person</p></div></a>`).join("")}</div></section>` : ""}
+      <p class="bb-meta" style="margin-top:24px"><button class="bb-link" type="button" id="report">${icon("flag")} Report this listing</button></p>
+    </div><aside id="box"></aside></div>
+    <div class="bb-bar"><div class="t"><b id="barT">${money(D.price.totalCents)} total</b><small>for ${people} · ${esc(D.terms.short.split(":")[0])} cancellation</small></div><a class="bb-btn primary" href="/teams/book/${esc(handle)}/${esc(pkgId)}?people=${people}" id="barB">${p.instant && s.trusted ? "Book now" : "Request"}</a></div>`;
+    $("#gal").append(BB.gallery(p, p.name)); $("#rev").append(BB.reviews(D.reviews)); box();
+    $("#report").onclick = () => BB.sheet("Report this listing", `<p>Tell us what's wrong. Someone on our team reads every report within a day.</p><label class="bb-field"><span>What's wrong?</span><textarea id="rpT" maxlength="600"></textarea></label><div class="ft"><span></span><button class="bb-btn primary" id="rpGo">Send report</button></div>`, { onOpen: (bg, close) => (bg.querySelector("#rpGo").onclick = async () => { try { await api("/api/report", { type: "host", target: "host:" + handle, reason: "other", note: bg.querySelector("#rpT").value, url: location.pathname }); close(); BB.toast("Thanks. We'll look at it."); } catch (e) { BB.toast(e.message); } }) });
+  }
+  function box() { const p = D.pkg; $("#box").innerHTML = BB.priceBox(D.price, D.terms, { min: p.minGuests, max: p.maxGuests, cta: cta() });
+    $$("[data-hc]", $("#box")).forEach((b) => (b.onclick = async () => { const n = Math.max(p.minGuests, Math.min(p.maxGuests, people + +b.dataset.hc)); if (n === people) return BB.toast(`${p.name} is for ${p.minGuests} to ${p.maxGuests} people.`); people = n; const r = await api(`/api/bb/price/${encodeURIComponent(handle)}/${encodeURIComponent(pkgId)}?people=${people}`); D.price = r.price; history.replaceState(null, "", "?people=" + people); box(); $("#barT").textContent = BB.money(D.price.totalCents) + " total"; $("#barB").href = `/teams/book/${handle}/${pkgId}?people=${people}`; $("#barT").nextElementSibling.textContent = `for ${people} · ${D.terms.short.split(":")[0]} cancellation`; }));
+    $("[data-save]", $("#box")).onclick = async (e) => { try { const r = await BB.saveTo(handle, pkgId, people); if (r) e.currentTarget.innerHTML = icon("save") + (r.saved ? " Saved. <a href='/teams/list/" + r.id + "'>Open the shortlist</a>" : " Save to a shortlist"); } catch (er) { BB.toast(er.message); } }; }
+  load();
+})();
+</script></body></html>

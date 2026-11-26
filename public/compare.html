@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Compare · Pottery Lab</title><meta name="description" content="Two or three experiences side by side: the full price for your group, terms, trust and what your team voted.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $ } = BB; BB.top("list");
+  const id = location.pathname.split("/")[3], U = new URLSearchParams(location.search), k = U.get("k") || "", want = (U.get("items") || "").split(",").filter(Boolean), main = $("#main");
+  api(`/api/bb/shortlists/${id}${k ? "?k=" + encodeURIComponent(k) : ""}`).then((L) => {
+    let I = L.items.filter((i) => !i.gone && (!want.length || want.includes(i.handle + "/" + i.pkg))).slice(0, 3); if (I.length < 2) I = L.items.filter((i) => !i.gone).slice(0, 3);
+    const v = (i) => L.votes[i.handle + "/" + i.pkg]?.n || 0, best = (f, lower) => { const vals = I.map(f).filter((x) => x != null); const b = lower ? Math.min(...vals) : Math.max(...vals); return (i) => vals.length > 1 && f(i) === b; };
+    const cheapest = best((i) => i.price.totalCents, true), topVotes = best(v), topRating = best((i) => (i.stats.reviews ? i.stats.rating : null)), fastest = best((i) => i.stats.responseHours, true);
+    const rows = [
+      ["Total", (i) => `<span class="${cheapest(i) ? "best" : ""}">${money(i.price.totalCents)}</span><br><small class="bb-meta">for ${i.price.headcount}, all in</small>`],
+      ["A person", (i) => `${money(i.price.effectivePerPersonCents)}${i.pkgInfo.minimumCents ? `<br><small class="bb-meta">Group minimum ${money(i.pkgInfo.minimumCents)}</small>` : ""}`],
+      ["Deposit", (i) => `${money(i.price.depositCents)} <small class="bb-meta">(${i.price.depositPct}%)</small>`],
+      ["Cancellation", (i) => esc(i.terms.short)],
+      ["Team votes", (i) => `<span class="${topVotes(i) ? "best" : ""}">${v(i)}</span>`],
+      ["Reviews", (i) => (i.stats.reviews ? `<span class="${topRating(i) ? "best" : ""}">${i.stats.rating.toFixed(1)}</span> from ${i.stats.reviews}` : "New to teams")],
+      ["Events hosted", (i) => String(i.stats.events)],
+      ["Replies in", (i) => (i.stats.responseHours != null ? `<span class="${fastest(i) ? "best" : ""}">${BB.hours(i.stats.responseHours)}</span>` : "No requests yet")],
+      ["Trust", (i) => [i.stats.trusted ? "Trusted host" : "", i.stats.idChecked ? "ID checked" : "", i.stats.coi?.onFile ? "Insured" : ""].filter(Boolean).join(" · ") || "Email verified"],
+      ["Group size", (i) => `${i.pkgInfo.minGuests} to ${i.pkgInfo.maxGuests}`],
+      ["Notice", (i) => `${i.pkgInfo.leadDays} days`],
+      ["Includes", (i) => esc(i.pkgInfo.includes.join(", ") || "Ask the host")],
+      ["Dietary", (i) => esc(i.pkgInfo.diets.join(", ") || "Ask the host")],
+      ["Access", (i) => esc(i.pkgInfo.access.join(", ") || "Ask the host")],
+      ["Where", (i) => esc(i.pkgInfo.remote ? "Remote" : i.card.area.area || i.card.area.city)],
+    ];
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker"><a href="/teams/list/${id}${k ? "?k=" + encodeURIComponent(k) : ""}">${esc(L.title)}</a></p><h1>Side by side</h1><p class="bb-lede">Highlighted is the best on that line. Prices are totals for your group with every fee in.</p></section>
+      <div class="bb-cmp-wrap"><table class="bb-cmp"><thead><tr><th></th>${I.map((i) => `<th><a class="ph bb-go" style="display:block" href="/teams/x/${esc(i.handle)}/${esc(i.pkg)}?people=${i.price.headcount}">${BB.cover(i.card)}</a><b>${esc(i.card.name)}</b><br><span class="bb-meta">${esc(i.card.host.name)}</span></th>`).join("")}</tr></thead>
+      <tbody>${rows.map(([t, f]) => `<tr><th scope="row">${t}</th>${I.map((i) => `<td>${f(i)}</td>`).join("")}</tr>`).join("")}
+      ${["owner", "member"].includes(L.role) ? `<tr><th></th>${I.map((i) => `<td><a class="bb-btn primary block" href="/teams/book/${esc(i.handle)}/${esc(i.pkg)}?people=${i.price.headcount}">Request</a></td>`).join("")}</tr>` : ""}</tbody></table></div>`;
+    BB.expandOnClick(main);
+  }).catch((e) => { main.innerHTML = `<section class="bb-xhead"><h1>Nothing to compare</h1><p class="bb-lede">${esc(e.message)}</p></section>`; });
+})();
+</script></body></html>

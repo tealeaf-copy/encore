@@ -1,0 +1,86 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Request to book · Pottery Lab</title><meta name="description" content="Three short steps: the date, your group, and a deposit to hold it.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $, $$ } = BB; BB.top("discover");
+  const [, , , handle, pkgId] = location.pathname.split("/"), U = new URLSearchParams(location.search), main = $("#main");
+  let D = null, R = null, step = 1, req = null;
+  const S = { mode: "exact", date: U.get("date") || "", flex: { month: "", days: "weekday", time: "evening" }, people: +(U.get("people") || 0), diets: [], dietNotes: "", access: [], occasion: "", notes: "", company: "", taxId: "", phone: "" };
+  const instant = () => D.pkg.instant && D.stats.trusted && S.mode === "exact";
+  const needsApproval = () => R && R.rules.approval !== "off" && !(R.rules.approvers || []).includes(R.me) && (R.rules.approval === "always" || D.price.totalCents > R.rules.overCents);
+  async function load() {
+    try { D = await api(`/api/bb/x/${encodeURIComponent(handle)}/${encodeURIComponent(pkgId)}${S.people ? "?people=" + S.people : ""}`); } catch (e) { main.innerHTML = `<h1>This one isn't bookable right now</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/discover">See other experiences</a>`; return; }
+    S.people = D.price.headcount; S.flex.month = D.availability[1].month;
+    try { R = await api("/api/bb/brand/rules"); S.company = R.brand ? R.company : ""; }
+    catch (e) { if (e.status === 401) return signin(); }
+    draw(); }
+  function signin() { main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Request to book</p><h1>Sign in to send your request</h1><p class="bb-lede">Use your work email. Your team can see the booking, approve it if needed, and get the invoice.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="bb-btn primary lg" href="/login?next=${encodeURIComponent(location.pathname + location.search)}">Sign in</a><a class="bb-btn lg" href="/signup?mode=work&next=${encodeURIComponent(location.pathname + location.search)}">Create a work account</a></div></section>`; }
+  const summary = () => `<div class="bb-mini"><div class="ph">${BB.cover(D.pkg)}</div><div><h3>${esc(D.pkg.name)}</h3><p class="bb-meta">with ${esc(D.host.name)}${D.stats.trusted ? " · Trusted host" : ""}</p></div></div>
+    <p class="bb-meta">${icon("cal")} ${S.mode === "exact" ? (S.date ? new Date(S.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "Pick a date") : esc(flexText())} · ${icon("people")} ${S.people} people</p>
+    ${BB.priceBox(D.price, D.terms, { stepper: false })}`;
+  const MONTHS = () => { const out = [], d = new Date(); for (let i = 0; i < 6; i++) { const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + i, 15)); out.push([x.toISOString().slice(0, 7), x.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })]); } return out; };
+  const flexText = () => { const m = MONTHS().find((x) => x[0] === S.flex.month)?.[1].split(" ")[0] || ""; return `Any ${[S.flex.days === "any" ? "" : S.flex.days, S.flex.time === "any" ? "" : S.flex.time].filter(Boolean).join(" ") || "day"} in ${m}`; };
+  function draw() {
+    if (req) return done();
+    const steps = ["When", "Your group", "Deposit"];
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${instant() ? "Book now" : "Request to book"}</p><h1>${step === 1 ? "When works for your team?" : step === 2 ? "Who's coming?" : "Hold the date"}</h1></section>
+      <ol class="bb-steps">${steps.map((t, i) => `<li${i + 1 === step ? ' aria-current="step"' : i + 1 < step ? ' class="done"' : ""}>${t}</li>`).join("")}</ol>
+      <div class="bb-checkout"><div id="stepBody"></div><aside id="sum">${summary()}</aside></div>`;
+    const B = $("#stepBody");
+    if (step === 1) {
+      B.innerHTML = `<div class="bb-seg" role="group" aria-label="Date"><button type="button" data-mode="exact" aria-pressed="${S.mode === "exact"}">A date</button><button type="button" data-mode="flex" aria-pressed="${S.mode === "flex"}">I'm flexible</button></div>
+        <div id="exact" class="${S.mode === "exact" ? "" : "bb-hide"}"><div class="bb-cals">${D.availability.map((a) => BB.calendar(a, { picked: S.date, pickable: true })).join("")}</div>${BB.legend()}${instant() ? `<p class="bb-note">${icon("bolt")} <b>Instant book.</b> ${esc(D.host.person || D.host.name)} is a Trusted host, so an open date is yours as soon as the deposit goes through.</p>` : ""}</div>
+        <div id="flex" class="${S.mode === "flex" ? "" : "bb-hide"}"><div class="bb-row3"><label class="bb-field"><span>Month</span><select id="fm">${MONTHS().map(([v, t]) => `<option value="${v}"${v === S.flex.month ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+          <label class="bb-field"><span>Days</span><select id="fd"><option value="weekday">Weekdays</option><option value="weekend">Weekends</option><option value="any">Any day</option></select></label>
+          <label class="bb-field"><span>Time</span><select id="ft"><option value="evening">Evening</option><option value="daytime">Daytime</option><option value="any">Either</option></select></label></div>
+          <p class="bb-note"><b id="flexT">${esc(flexText())}.</b> ${esc(D.host.person || D.host.name)} picks a date that works and you confirm it. Highlighted days are open now.</p><div id="flexCal" class="bb-cals"></div></div>
+        <label class="bb-field" style="margin-top:16px"><span>What's the occasion?</span><input id="occ" maxlength="120" value="${esc(S.occasion)}" placeholder="Team offsite dinner, a client thank-you, a launch"></label>
+        <div class="ft" style="display:flex;justify-content:flex-end"><button class="bb-btn primary lg" type="button" id="next">Next: your group</button></div>`;
+      $("#fd").value = S.flex.days; $("#ft").value = S.flex.time;
+      const flexCal = async () => { const a = await api(`/api/bb/x/${handle}/${pkgId}/availability?month=${S.flex.month}`); $("#flexCal").innerHTML = BB.calendar(a, { flex: S.flex }); $("#flexT").textContent = flexText() + "."; $("#sum").innerHTML = summary(); };
+      $$("[data-mode]").forEach((b) => (b.onclick = () => { S.mode = b.dataset.mode; draw(); }));
+      B.addEventListener("click", (e) => { const d = e.target.closest("button[data-date]"); if (!d) return; S.date = d.dataset.date; $$("button[data-date]").forEach((x) => x.setAttribute("aria-pressed", x === d)); $("#sum").innerHTML = summary(); });
+      ["fm", "fd", "ft"].forEach((id) => ($("#" + id).onchange = () => { S.flex = { month: $("#fm").value, days: $("#fd").value, time: $("#ft").value }; flexCal(); }));
+      if (S.mode === "flex") flexCal();
+      $("#next").onclick = () => { S.occasion = $("#occ").value.trim(); if (S.mode === "exact" && !S.date) return BB.toast("Pick an open date, or choose I'm flexible."); step = 2; draw(); };
+    } else if (step === 2) {
+      B.innerHTML = `<div class="bb-hc" style="margin-top:0"><span><b>Group size</b><br><small class="bb-meta">${D.pkg.minGuests} to ${D.pkg.maxGuests} people</small></span><div class="bb-step"><button type="button" data-hc="-1" aria-label="Fewer">${icon("minus")}</button><output>${S.people}</output><button type="button" data-hc="1" aria-label="More">${icon("plus")}</button></div></div>
+        <p class="bb-field"><span>Dietary needs in the group</span></p><div class="bb-toggles">${["vegetarian", "vegan", "gluten-free", "dairy-free", "nut-free", "halal", "kosher"].map((d) => `<button type="button" class="bb-chip" data-diet="${d}" aria-pressed="${S.diets.includes(d)}">${d[0].toUpperCase() + d.slice(1)}</button>`).join("")}</div>
+        <label class="bb-field" style="margin-top:12px"><span>Anything else about food</span><input id="dn" maxlength="300" value="${esc(S.dietNotes)}" placeholder="2 vegetarian, 1 shellfish allergy"><small>${D.pkg.diets.length ? `${esc(D.host.person || D.host.name)} can cook ${esc(D.pkg.diets.join(", "))}.` : "The host confirms what they can cook."}</small></label>
+        <p class="bb-field"><span>Accessibility</span></p><div class="bb-toggles">${["step-free", "accessible restroom", "seating for everyone", "quiet space", "ASL on request"].map((d) => `<button type="button" class="bb-chip" data-acc="${d}" aria-pressed="${S.access.includes(d)}">${d[0].toUpperCase() + d.slice(1)}</button>`).join("")}</div>
+        <label class="bb-field" style="margin-top:16px"><span>A note for ${esc(D.host.person || D.host.name)}</span><textarea id="nt" maxlength="1200" placeholder="Who's coming, what you'd love the evening to feel like">${esc(S.notes)}</textarea><small>${icon("lock")} Keep contact details out for now. They're shared once you're booked.</small></label>
+        <div class="ft" style="display:flex;justify-content:space-between"><button class="bb-btn quiet" type="button" id="back">Back</button><button class="bb-btn primary lg" type="button" id="next">Next: deposit</button></div>`;
+      B.querySelectorAll("[data-hc]").forEach((b) => (b.onclick = async () => { const n = Math.max(D.pkg.minGuests, Math.min(D.pkg.maxGuests, S.people + +b.dataset.hc)); if (n === S.people) return BB.toast(`${D.pkg.name} is for ${D.pkg.minGuests} to ${D.pkg.maxGuests} people.`); S.people = n; B.querySelector("output").textContent = n; D.price = (await api(`/api/bb/price/${handle}/${pkgId}?people=${n}`)).price; $("#sum").innerHTML = summary(); }));
+      B.querySelectorAll("[data-diet],[data-acc]").forEach((b) => (b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true")));
+      const keep = () => { S.diets = [...B.querySelectorAll("[data-diet][aria-pressed=true]")].map((b) => b.dataset.diet); S.access = [...B.querySelectorAll("[data-acc][aria-pressed=true]")].map((b) => b.dataset.acc); S.dietNotes = $("#dn").value.trim(); S.notes = $("#nt").value.trim(); };
+      $("#back").onclick = () => { keep(); step = 1; draw(); }; $("#next").onclick = () => { keep(); step = 3; draw(); };
+    } else {
+      const ap = needsApproval(), inst = instant() && !ap;
+      B.innerHTML = `${ap ? `<p class="bb-note">${icon("people")} <b>Your team approves bookings ${esc(R.rules.approval === "always" ? "" : "over " + money(R.rules.overCents))}.</b> We'll send this to ${esc((R.rules.approvers || []).join(", "))} first, then to the host.</p>` : ""}
+        <h2>The deposit</h2><p><b>${money(D.price.depositCents)}</b> (${D.price.depositPct}%) holds the date. ${inst ? "It's charged now and the date is yours." : `It's only charged if ${esc(D.host.person || D.host.name)} accepts. If they can't, it's released.`} The other ${money(D.price.balanceCents)} is due 7 days before.</p>
+        <h3 style="margin-top:16px">If plans change</h3>${BB.termsList(D.terms)}
+        <div class="bb-row" style="margin-top:16px"><label class="bb-field"><span>Company on the invoice</span><input id="co" maxlength="120" value="${esc(S.company)}" required></label><label class="bb-field"><span>VAT or tax ID <small style="display:inline">(optional)</small></span><input id="tx" maxlength="40" value="${esc(S.taxId)}"></label></div>
+        ${BB.native() ? `<p class="bb-note">Booking for teams happens on the web. Open potterylab.com on a laptop to pay the deposit.</p>` : `<div class="bb-panel">${icon("card")} <b>${R.pay?.provider === "stripe" ? "Card details on the next screen" : "Test mode"}</b><p class="bb-meta">${R.pay?.provider === "stripe" ? `Payments are handled securely by Stripe${R.pay.test ? ", in test mode" : ""}.` : "Payments aren't connected here, so no card is charged. The deposit is marked as held so you can try the whole flow."}</p></div>`}
+        <div class="ft" style="display:flex;justify-content:space-between;gap:8px"><button class="bb-btn quiet" type="button" id="back">Back</button>${BB.native() ? "" : `<button class="bb-btn primary lg" type="button" id="send">${inst ? `Book and pay ${money(D.price.depositCents)}` : ap ? "Send for approval" : `Send request · hold ${money(D.price.depositCents)}`}</button>`}</div>
+        <p class="bb-meta" id="err" role="alert"></p>`;
+      $("#back").onclick = () => { step = 2; draw(); };
+      $("#send")?.addEventListener("click", async (e) => { const btn = e.currentTarget; S.company = $("#co").value.trim(); S.taxId = $("#tx").value.trim(); if (!S.company) { $("#co").focus(); return ($("#err").textContent = "Add your company name for the invoice."); }
+        btn.disabled = true; btn.textContent = "Sending…";
+        try { const r = await api("/api/bb/requests", { handle, pkg: pkgId, headcount: S.people, ...(S.mode === "exact" ? { date: S.date } : { flex: S.flex }), diets: S.diets, dietNotes: S.dietNotes, access: S.access, occasion: S.occasion, notes: S.notes, company: S.company });
+          if (S.taxId) await api(`/api/bb/requests/${r.id}/billing`, { company: S.company, taxId: S.taxId });
+          const p = await api(`/api/bb/requests/${r.id}/pay`, {}); if (p.redirect) { location.href = p.redirect; return; } req = p.request; draw(); }
+        catch (er) { btn.disabled = false; btn.textContent = "Try again"; $("#err").textContent = er.message; } });
+    }
+  }
+  function done() { const r = req, booked = r.status === "booked";
+    main.innerHTML = `<section class="bb-xhead" style="max-width:640px"><p class="bb-kicker">${booked ? "Booked" : r.status === "approval" ? "Sent to your team" : "Request sent"}</p><h1>${booked ? `You're booked with <em>${esc(D.host.person || D.host.name)}</em>` : r.status === "approval" ? "Waiting on your team's OK" : `${esc(D.host.person || D.host.name)} has your request`}</h1>
+      <p class="bb-lede">${booked ? `${esc(r.pkgName)} for ${r.headcount}, ${esc(new Date(r.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }))}. The address and their contact details are on your booking now.` : r.status === "approval" ? "We've asked your approver. Once they say yes, it goes straight to the host." : `They usually reply ${D.stats.responseHours != null ? "in " + BB.hours(D.stats.responseHours) : "within a day"}. Your ${money(r.deposit.cents)} deposit is held, not charged, until they accept.`}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="bb-btn primary lg" href="/teams/bookings/${r.id}">Open the booking</a><a class="bb-btn lg" href="/teams/discover">Keep browsing</a></div>
+      ${r.deposit?.provider === "fake" ? `<p class="bb-meta" style="margin-top:16px">Test mode: no card was charged.</p>` : ""}</section>`; }
+  load();
+})();
+</script></body></html>

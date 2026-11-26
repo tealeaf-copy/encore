@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shortlist · Pottery Lab</title><meta name="description" content="A shortlist your team can vote and comment on before anyone books.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<body class="bb"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $, $$ } = BB; BB.top("list");
+  const id = location.pathname.split("/")[3] || "", k = new URLSearchParams(location.search).get("k") || "", main = $("#main");
+  const vid = (() => { try { let v = localStorage.getItem("bb.voter"); if (!v) { v = "v-" + Math.random().toString(36).slice(2, 12); localStorage.setItem("bb.voter", v); } return v; } catch { return "v-" + Math.random().toString(36).slice(2, 12); } })();
+  let name = (() => { try { return localStorage.getItem("bb.name") || ""; } catch { return ""; } })(), L = null, pick = new Set();
+  const q = (extra = "") => `?${k ? "k=" + encodeURIComponent(k) + "&" : ""}voter=${encodeURIComponent(vid)}${extra}`;
+  async function index() { try { const r = await api("/api/bb/shortlists"); main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Shortlists</p><h1>Ideas your team is <em>weighing up</em></h1><p class="bb-lede">Save experiences without booking anything. Share a list so your team can vote and comment, then compare the top few.</p></section>
+      ${r.shortlists.length ? `<div class="bb-list">${r.shortlists.map((s) => `<a class="bb-req" href="/teams/list/${s.id}"><div><h3>${esc(s.title)}</h3><p class="bb-meta">${s.n} ${s.n === 1 ? "option" : "options"}${s.people ? ` · for ${s.people}` : ""} · updated ${new Date(s.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p></div><span class="bb-btn quiet">Open</span></a>`).join("")}</div>` : `<div class="bb-empty"><p>Nothing saved yet. Tap the bookmark on any experience to start a list.</p><a class="bb-btn primary" href="/teams/discover">Browse by mood</a></div>`}`; }
+    catch (e) { main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see your shortlists</h1><p class="bb-lede">Shortlists belong to your team's workspace.</p><a class="bb-btn primary lg" href="/login?next=/teams/list">Sign in</a></section>`; } }
+  async function load() { try { L = await api(`/api/bb/shortlists/${id}${q()}`); } catch (e) { main.innerHTML = `<section class="bb-xhead"><h1>This shortlist is private</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/discover">Browse experiences</a></section>`; return; } draw(); }
+  function draw() { const canVote = L.role !== "viewer", canEdit = ["owner", "member"].includes(L.role), live = L.items.filter((i) => !i.gone);
+    const max = Math.max(1, ...live.map((i) => L.votes[i.handle + "/" + i.pkg]?.n || 0)), lead = live.slice().sort((a, b) => (L.votes[b.handle + "/" + b.pkg]?.n || 0) - (L.votes[a.handle + "/" + a.pkg]?.n || 0))[0];
+    const voters = new Set(Object.values(L.votes).flatMap((v) => v.names));
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Shortlist${L.by ? " by " + esc(L.by) : ""}</p><h1>${esc(L.title)}</h1>
+      <p class="bb-lede">${live.length} ${live.length === 1 ? "option" : "options"}${L.people ? ` for ${L.people} people` : ""}. ${canVote ? "Vote for any you'd be happy with. Everyone sees the votes." : "You're viewing. Ask for the team link to vote."}</p>
+      ${voters.size ? `<div class="bb-votes"><div class="bb-faces">${[...voters].slice(0, 8).map((n) => `<span title="${esc(n)}">${esc(n[0] || "")}</span>`).join("")}</div><span class="bb-meta">${voters.size} ${voters.size === 1 ? "person has" : "people have"} voted</span></div>` : ""}</section>
+      ${L.links ? `<div class="bb-share"><div class="row"><span><b>Team link</b><br><small class="bb-meta">They can vote and comment</small></span><button class="bb-btn" type="button" data-copy="${esc(L.links.vote)}">${icon("share")} Copy</button></div><div class="row"><span><b>View-only link</b><br><small class="bb-meta">For a manager who just wants to look</small></span><button class="bb-btn quiet" type="button" data-copy="${esc(L.links.view)}">Copy</button></div></div>` : ""}
+      ${canVote && !L.links && !name ? `<label class="bb-field" style="max-width:320px"><span>Your name, so the team knows who voted</span><input id="nm" maxlength="40" placeholder="e.g. Sam"></label>` : ""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0"><button class="bb-btn" type="button" id="cmp" disabled>${icon("list")} Compare <span id="cmpN">0</span></button><span class="bb-meta">Pick 2 or 3 to see them side by side.</span></div>
+      <div id="items">${live.map((it) => item(it, max, lead === it && (L.votes[it.handle + "/" + it.pkg]?.n || 0) > 0)).join("") || '<div class="bb-empty">Nothing on this list yet. <a href="/teams/discover">Browse by mood</a> and tap the bookmark.</div>'}</div>`;
+    wire(); }
+  function item(it, max, leading) { const c = it.card, key = it.handle + "/" + it.pkg, v = L.votes[key] || { n: 0, names: [], mine: false }, cm = (L.comments || []).filter((x) => x.key === key);
+    return `<article class="bb-item" data-key="${esc(key)}"><a class="ph bb-go" href="/teams/x/${esc(it.handle)}/${esc(it.pkg)}?people=${L.people || ""}">${BB.cover(c)}</a>
+      <div><label style="float:right;display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" data-pick="${esc(key)}" ${pick.has(key) ? "checked" : ""}> Compare</label>
+        <h3>${leading ? `<span class="bb-hl">Leading</span> ` : ""}${esc(c.name)}</h3><p class="bb-meta">${esc(c.host.name)}${c.host.trusted ? " · Trusted host" : ""} · ${esc(c.remote ? "Remote" : c.area.area)}${it.stats.reviews ? ` · ${icon("star")} ${it.stats.rating.toFixed(1)} (${it.stats.reviews})` : ""}</p>
+        <div class="bb-votes"><button class="bb-btn ${v.mine ? "ink" : ""}" type="button" data-vote="${esc(key)}" aria-pressed="${v.mine}" ${L.role === "viewer" ? "disabled" : ""}>${icon(v.mine ? "check" : "plus")} ${v.mine ? "You voted" : "Vote"}</button><div class="bb-meter" aria-hidden="true"><i style="width:${Math.round((100 * v.n) / max)}%"></i></div><span class="bb-mono">${v.n}</span></div>
+        ${v.names.length ? `<p class="bb-meta">${esc(v.names.join(", "))}</p>` : ""}
+        <div class="bb-comments">${cm.map((x) => `<div class="bb-comment"><b>${esc(x.by)}</b> ${esc(x.text)}</div>`).join("")}</div>
+        ${L.role !== "viewer" ? `<form class="bb-compose" data-c="${esc(key)}"><input maxlength="600" placeholder="Add a comment" aria-label="Comment on ${esc(c.name)}"><button class="bb-btn quiet" type="submit">Post</button></form>` : ""}
+        ${["owner", "member"].includes(L.role) ? `<p style="margin:8px 0 0"><button class="bb-link" type="button" data-rm="${esc(key)}">Remove from list</button></p>` : ""}</div>
+      <div><p style="margin:0"><b class="bb-mono" style="font-size:18px">${money(it.price.totalCents)}</b><br><span class="bb-meta">total for ${it.price.headcount} · ${money(it.price.effectivePerPersonCents)} a person</span></p><p class="bb-meta">${esc(it.terms.short)}</p>${["owner", "member"].includes(L.role) ? `<a class="bb-btn primary block" href="/teams/book/${esc(it.handle)}/${esc(it.pkg)}?people=${it.price.headcount}">Request to book</a>` : ""}</div></article>`; }
+  function who() { if (L.links) return true; if (!name) { const i = $("#nm"); const n = (i?.value || "").trim(); if (!n) { i?.focus(); BB.toast("Add your name first."); return false; } name = n; try { localStorage.setItem("bb.name", n); } catch {} } return true; }
+  function wire() {
+    $$("[data-copy]").forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.copy; try { if (navigator.share && matchMedia("(max-width:700px)").matches) await navigator.share({ title: L.title, url }); else { await navigator.clipboard.writeText(url); BB.toast("Link copied"); } } catch {} }));
+    $$("[data-vote]").forEach((b) => (b.onclick = async () => { if (!who()) return; const [h, p] = b.dataset.vote.split("/"); b.disabled = true; try { L = await api(`/api/bb/shortlists/${id}/vote${q()}`, { handle: h, pkg: p, name, voter: vid, k }); draw(); } catch (e) { BB.toast(e.message); b.disabled = false; } }));
+    $$("form[data-c]").forEach((f) => (f.onsubmit = async (e) => { e.preventDefault(); if (!who()) return; const t = f.querySelector("input").value.trim(); if (!t) return; try { L = await api(`/api/bb/shortlists/${id}/comments${q()}`, { key: f.dataset.c, text: t, name, k }); draw(); } catch (er) { BB.toast(er.message); } }));
+    $$("[data-rm]").forEach((b) => (b.onclick = async () => { const [h, p] = b.dataset.rm.split("/"); try { L = await api(`/api/bb/shortlists/${id}/items${q()}`, { handle: h, pkg: p, remove: true }); draw(); } catch (e) { BB.toast(e.message); } }));
+    $$("[data-pick]").forEach((c) => (c.onchange = () => { if (c.checked) { if (pick.size >= 3) { c.checked = false; return BB.toast("Compare up to 3 at a time."); } pick.add(c.dataset.pick); } else pick.delete(c.dataset.pick); upd(); }));
+    const upd = () => { $("#cmpN").textContent = pick.size; $("#cmp").disabled = pick.size < 2; }; upd();
+    $("#cmp").onclick = () => { location.href = `/teams/list/${id}/compare?items=${encodeURIComponent([...pick].join(","))}${k ? "&k=" + encodeURIComponent(k) : ""}`; };
+    BB.expandOnClick(main); }
+  id ? load() : index();
+})();
+</script></body></html>

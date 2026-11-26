@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
 <script src="/authguard.js"></script>
 <style>
-:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--ember:#C94A30}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#F7F1E8;--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
+:root{--ink:var(--pl-ink);--smoke:var(--pl-soft);--paper:var(--pl-page);--card:var(--pl-surface);--line:var(--pl-line);--line-strong:var(--pl-line-strong);--ember:var(--pl-accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:var(--pl-page);--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,-apple-system,sans-serif}
 main{max-width:680px;margin:0 auto;padding:max(32px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}

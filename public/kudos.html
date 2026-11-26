@@ -7,7 +7,7 @@
 <style>
 /* One-tap kudos, from the link in the morning-after text or email (/k/<event>?rid=..&code=..). The reply id and code
    prove it's a guest who replied, the same proof POST /api/public/kudos checks. Small on purpose: it opens instantly. */
-:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember-d:#A63A22;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8;--card:#fff}
+:root{--paper:var(--pl-page);--linen:var(--pl-raised);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember-d:var(--pl-accent-text);--butter:var(--pl-sand);--sage:var(--pl-sage);--line:var(--pl-line);--card:#fff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
 a{color:var(--ember-d)}main{max-width:520px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 40px}
 .top{display:flex;align-items:center;margin:4px 0 14px}.brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
@@ -15,12 +15,12 @@ h1{font:700 30px/1.1 var(--sys-display);margin:6px 0 4px}h2{font:600 20px/1.2 va
 .muted{color:var(--smoke)}.sub{margin:0 0 16px}
 .card{background:var(--card);border:2px solid var(--ink);border-radius:22px;padding:16px;box-shadow:0 0 0 4px #fff,0 12px 28px -20px rgba(31,26,23,.55);display:grid;gap:14px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1.5px solid var(--line);background:#FFFCF7;color:var(--ink);border-radius:999px;min-height:44px;padding:0 14px;font:600 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip{border:1.5px solid var(--line);background:var(--pl-surface);color:var(--ink);border-radius:999px;min-height:44px;padding:0 14px;font:600 15px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .chip.again{background:var(--butter);border-color:var(--ink);border-width:2px}.chip.again[aria-pressed=true]{background:var(--ink);color:#fff}
 .chip:focus-visible,.go:focus-visible,.btn:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 label.f{display:grid;gap:5px;font-weight:600}label.f small{font-weight:400;color:var(--smoke)}
-textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:16px;background:#FFFCF7;color:var(--ink)}textarea{resize:vertical;min-height:72px}
+textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:16px;background:var(--pl-surface);color:var(--ink)}textarea{resize:vertical;min-height:72px}
 .go{background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:52px;padding:0 20px;font:600 17px "Instrument Sans",system-ui,sans-serif;cursor:pointer;width:100%}.go:disabled{opacity:.6}
 .btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:999px;min-height:46px;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
 .btn.on{background:var(--sage);border-color:var(--sage);color:#fff}
@@ -38,7 +38,7 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
 .chip span[aria-hidden]{font-size:20px}
 .go:disabled{opacity:.45;cursor:default}
 /* the group kudos link: who are you? */
-.gform{display:grid;gap:10px}.gform input{width:100%;padding:14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:17px;background:#FFFCF7;color:var(--ink)}
+.gform{display:grid;gap:10px}.gform input{width:100%;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:17px;background:var(--pl-surface);color:var(--ink)}
 .gform input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 /* ---- end kudos nudges ---- */
 /* ---- visual feed: add photos from the night (they become moments on the event's page, the host's scrapbook and the feed) ---- */
@@ -49,23 +49,23 @@ textarea,input[type=email]{width:100%;padding:12px 14px;border:1.5px solid #DCCF
 /* ---- end visual feed ---- */
 /* ---- round 11 UX pass: the app's tokens (public/system.css). Tags are soft tiles (16px corners, so two-line labels
    don't sit in a squashed pill), the emoji in a small round well, one line weight, Potto's brown on the card frame ---- */
-.card{border:1.5px solid #5A3B2B;border-radius:24px;padding:20px 16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);gap:16px}
+.card{border:1.5px solid var(--pl-frame);border-radius:24px;padding:20px 16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);gap:16px}
 .chips{gap:8px}
 #tags{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.chip{border-width:1.5px;border-color:#D9CCBB;background:#fff;border-radius:16px;min-height:56px;padding:8px 12px 8px 8px;gap:10px;font-size:15px;font-weight:600;line-height:1.2}
+.chip{border-width:1.5px;border-color:var(--pl-line-strong);background:#fff;border-radius:16px;min-height:56px;padding:8px 12px 8px 8px;gap:10px;font-size:15px;font-weight:600;line-height:1.2}
 .chip span[aria-hidden]{flex:none;width:36px;height:36px;border-radius:50%;background:var(--linen);display:grid;place-items:center;font-size:18px;line-height:1}
 .chip[aria-pressed=true] span[aria-hidden]{background:rgba(255,255,255,.14)}
-.chips:first-child .chip.again,.chip.again{width:100%;background:#FFF6E2;border-color:#5A3B2B;border-width:1.5px}
+.chips:first-child .chip.again,.chip.again{width:100%;background:#FFF6E2;border-color:var(--pl-frame);border-width:1.5px}
 .chip.again span[aria-hidden]{background:var(--butter);color:var(--ink)}
 .chip.again[aria-pressed=true]{background:var(--ink);border-color:var(--ink)}.chip.again[aria-pressed=true] span[aria-hidden]{background:var(--butter)}
-@media (hover:hover){.chip:not([aria-pressed=true]):hover{border-color:#5A3B2B}}
-textarea,input[type=email]{border-radius:12px;border-color:#D9CCBB;background:#fff;font-weight:400}
+@media (hover:hover){.chip:not([aria-pressed=true]):hover{border-color:var(--pl-frame)}}
+textarea,input[type=email]{border-radius:12px;border-color:var(--pl-line-strong);background:#fff;font-weight:400}
 textarea:focus,input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(201,74,48,.18)}
-.go:disabled{opacity:1;background:var(--linen);border-color:var(--linen);color:#9A8D82}
+.go:disabled{opacity:1;background:var(--linen);border-color:var(--linen);color:var(--pl-muted)}
 h1{font-weight:600;letter-spacing:-.01em}
 @media (max-width:340px){#tags{grid-template-columns:1fr}}
 </style></head><body>
-<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
+<main id="m" aria-live="polite"><div class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/></svg>pottery lab</a></div>
 <div id="body"><p class="muted">Opening…</p></div></main>
 <script src="/momentupload.js" defer></script><!-- visual feed: Add photos -->
 <script>
@@ -75,7 +75,7 @@ h1{font-weight:600;letter-spacing:-.01em}
   const id = (location.pathname.match(/^\/k\/([A-Za-z0-9_-]{2,80})/) || [])[1] || "", q = new URLSearchParams(location.search), rid = q.get("rid") || "", code = q.get("code") || "";
   const proof = `rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`, body = $("#body");
   const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || "") ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "");
-  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><circle cx="11.6" cy="19.6" r="1" fill="#1F1A17"/><circle cx="16.4" cy="19.6" r="1" fill="#1F1A17"/></svg>`;
+  const pot = `<svg class="pot" viewBox="0 0 28 28" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.4" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><circle cx="11.6" cy="19.6" r="1" fill="#1D1B18"/><circle cx="16.4" cy="19.6" r="1" fill="#1D1B18"/></svg>`;
   const sub = (j) => [day(j.date), j.place ? `at ${j.place}` : j.hostFirst ? `with ${j.hostFirst}` : ""].filter(Boolean).join(" · ");
   const stop = (h, p) => { body.innerHTML = `<h1>${esc(h)}</h1><p class="muted">${esc(p)}</p>`; };
   /* ---- kudos nudges: the group kudos link (/k/<event>?g=<token>) and Send after one chip ---- */

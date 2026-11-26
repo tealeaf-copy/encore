@@ -21,69 +21,69 @@
 
   const CSS = `.pin-bg{position:fixed;inset:0;z-index:8000;background:rgba(31,26,23,.45);display:grid;place-items:center;padding:12px;animation:pinFade .25s ease}
 @keyframes pinFade{from{opacity:0}}
-.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:#F7F1E8;border:2.5px solid #1F1A17;border-radius:26px;box-shadow:6px 6px 0 #1F1A17;padding:22px 18px 18px;color:#1F1A17;font:16px/1.45 "Instrument Sans",system-ui,sans-serif;
+.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:26px;box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;
   background-image:radial-gradient(rgba(102,90,81,.08) 1px,transparent 1.2px);background-size:7px 7px;animation:pinUp .4s cubic-bezier(.3,1.4,.5,1)}
 @keyframes pinUp{from{transform:translateY(30px) rotate(-1deg);opacity:0}}
-.pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:#C94A30}
-.pin .pin-sub{color:#665A51;margin:0 0 14px;max-width:420px}
-.pin .pin-x{position:absolute;z-index:3;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:2px solid #1F1A17;background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 #1F1A17}
+.pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:var(--pl-accent)}
+.pin .pin-sub{color:var(--pl-soft);margin:0 0 14px;max-width:420px}
+.pin .pin-x{position:absolute;z-index:3;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:2px solid var(--pl-ink);background:#fff;font-size:22px;line-height:1;cursor:pointer;box-shadow:2px 2px 0 var(--pl-ink)}
 .pin .pin-potto{position:absolute;z-index:1;top:-6px;right:70px;width:86px;transform:rotate(8deg);pointer-events:none}
 .pin-chips{display:flex;flex-wrap:wrap;gap:10px 8px;margin:6px 0 16px}
-.pin-chip{--r:0deg;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:6px 16px 6px 12px;border:2.5px solid #1F1A17;border-radius:999px;background:#fff;font:600 16px var(--sys-title);color:#1F1A17;cursor:pointer;transform:rotate(var(--r));box-shadow:2px 3px 0 #1F1A17;transition:transform .2s cubic-bezier(.3,1.7,.5,1),background .15s}
+.pin-chip{--r:0deg;display:inline-flex;align-items:center;gap:7px;min-height:48px;padding:6px 16px 6px 12px;border:2.5px solid var(--pl-ink);border-radius:999px;background:#fff;font:600 16px var(--sys-title);color:var(--pl-ink);cursor:pointer;transform:rotate(var(--r));box-shadow:2px 3px 0 var(--pl-ink);transition:transform .2s cubic-bezier(.3,1.7,.5,1),background .15s}
 .pin-chip span{font-size:22px;line-height:1}.pin-chip:hover{transform:rotate(0) scale(1.04)}
-.pin-chip[aria-pressed=true]{background:var(--c,#F2D48F);transform:rotate(calc(var(--r) * -1)) scale(1.06);box-shadow:3px 4px 0 #1F1A17}
+.pin-chip[aria-pressed=true]{background:var(--c,var(--pl-sand));transform:rotate(calc(var(--r) * -1)) scale(1.06);box-shadow:3px 4px 0 var(--pl-ink)}
 .pin-chip[aria-pressed=true]::after{content:"✓";margin-left:2px;font:700 14px "Instrument Sans",system-ui}
-.pin-chip:focus-visible,.pin button:focus-visible,.pin input:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
+.pin-chip:focus-visible,.pin button:focus-visible,.pin input:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
 .pin-city{display:grid;gap:6px;margin:0 0 16px}.pin-city label{font:600 16px var(--sys-title)}
-.pin-city input{min-height:48px;border:2px solid #1F1A17;border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
-.pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid #1F1A17;background:#FFFDF8;border-radius:999px;padding:4px 12px;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:#1F1A17;color:#fff}
-.pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,#F7F1E8 30%);padding:14px 0 4px;margin-top:4px}
-.pin-main{min-height:52px;padding:0 24px;border:2.5px solid #1F1A17;border-radius:999px;background:#C94A30;color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 #1F1A17}.pin-main:disabled{background:#EFE6D8;color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
-.pin-skip{background:none;border:0;color:#665A51;text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer;min-height:44px}
-.pin-n{font:600 14px "Instrument Sans",system-ui;color:#665A51}
+.pin-city input{min-height:48px;border:2px solid var(--pl-ink);border-radius:16px;padding:10px 14px;font:inherit;font-size:16px;background:#fff;max-width:340px}
+.pin-cities{display:flex;flex-wrap:wrap;gap:6px}.pin-cities button{border:1.5px solid var(--pl-ink);background:var(--pl-surface);border-radius:999px;padding:4px 12px;font:600 14px "Instrument Sans",system-ui;cursor:pointer;min-height:36px}.pin-cities button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
+.pin-go{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:-18px;background:linear-gradient(transparent,var(--pl-page) 30%);padding:14px 0 4px;margin-top:4px}
+.pin-main{min-height:52px;padding:0 24px;border:2.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 17px "Instrument Sans",system-ui;cursor:pointer;box-shadow:3px 3px 0 var(--pl-ink)}.pin-main:disabled{background:var(--pl-raised);color:#4A3F37;border-style:dashed;box-shadow:none;cursor:default}
+.pin-skip{background:none;border:0;color:var(--pl-soft);text-decoration:underline;font:500 15px "Instrument Sans",system-ui;cursor:pointer;min-height:44px}
+.pin-n{font:600 14px "Instrument Sans",system-ui;color:var(--pl-soft)}
 .pin h3{font:600 20px var(--sys-display);margin:18px 0 8px}
 .pin-hosts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:12px}
-.pin-host{position:relative;background:#fff;border:2px solid #1F1A17;border-radius:18px;padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 #1F1A17;transform:rotate(var(--r,0deg))}
-.pin-host .av{width:54px;height:54px;border-radius:50%;border:2px solid #1F1A17;display:grid;place-items:center;font-size:26px;background:#FFF1D2;overflow:hidden}.pin-host .av img{width:100%;height:100%;object-fit:cover}
-.pin-host b{font:600 16px/1.15 var(--sys-title)}.pin-host small{color:#665A51;font-size:13px;line-height:1.3}
-.pin-host .why{display:inline-block;background:#F2D48F;border-radius:6px;padding:1px 7px;font:600 12px "Instrument Sans",system-ui;color:#1F1A17;justify-self:start}
-.pin-host .ex{position:absolute;top:8px;right:8px;border:1.5px solid #1F1A17;border-radius:999px;padding:1px 8px;font:700 11px "Instrument Sans",system-ui;background:#fff}
-.pin-fol{min-height:40px;border:2px solid #1F1A17;border-radius:999px;background:#1F1A17;color:#fff;font:600 14px "Instrument Sans",system-ui;cursor:pointer;margin-top:4px}.pin-fol[aria-pressed=true]{background:#fff;color:#1F1A17}
-.pin-host form{display:grid;gap:6px}.pin-host form input{min-height:40px;border:1.5px solid #DCCFBE;border-radius:10px;padding:6px 10px;font:inherit;font-size:16px}
+.pin-host{position:relative;background:#fff;border:2px solid var(--pl-ink);border-radius:18px;padding:12px;display:grid;gap:6px;align-content:start;box-shadow:2px 2px 0 var(--pl-ink);transform:rotate(var(--r,0deg))}
+.pin-host .av{width:54px;height:54px;border-radius:50%;border:2px solid var(--pl-ink);display:grid;place-items:center;font-size:26px;background:var(--pl-sand-soft);overflow:hidden}.pin-host .av img{width:100%;height:100%;object-fit:cover}
+.pin-host b{font:600 16px/1.15 var(--sys-title)}.pin-host small{color:var(--pl-soft);font-size:13px;line-height:1.3}
+.pin-host .why{display:inline-block;background:var(--pl-sand);border-radius:6px;padding:1px 7px;font:600 12px "Instrument Sans",system-ui;color:var(--pl-ink);justify-self:start}
+.pin-host .ex{position:absolute;top:8px;right:8px;border:1.5px solid var(--pl-ink);border-radius:999px;padding:1px 8px;font:700 11px "Instrument Sans",system-ui;background:#fff}
+.pin-fol{min-height:40px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px "Instrument Sans",system-ui;cursor:pointer;margin-top:4px}.pin-fol[aria-pressed=true]{background:#fff;color:var(--pl-ink)}
+.pin-host form{display:grid;gap:6px}.pin-host form input{min-height:40px;border:1.5px solid var(--pl-line-strong);border-radius:10px;padding:6px 10px;font:inherit;font-size:16px}
 .pin-evs{display:grid;gap:10px}
-.pin-ev{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid #1F1A17;border-radius:16px;padding:8px;text-decoration:none;color:#1F1A17;box-shadow:2px 2px 0 #1F1A17}
-.pin-ev .th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid #1F1A17;background:#FDE6A6}.pin-ev .th img{width:100%;height:100%;object-fit:cover}.pin-ev .th .ea-cover .ea-txt{display:none}
-.pin-ev b{font:600 16px/1.15 var(--sys-title);display:block}.pin-ev small{color:#665A51;font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
-.pin-empty{background:#FFFDF8;border:2px dashed #C9BBA7;border-radius:16px;padding:14px;color:#665A51}
+.pin-ev{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--pl-ink);border-radius:16px;padding:8px;text-decoration:none;color:var(--pl-ink);box-shadow:2px 2px 0 var(--pl-ink)}
+.pin-ev .th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1.5px solid var(--pl-ink);background:var(--pl-sand)}.pin-ev .th img{width:100%;height:100%;object-fit:cover}.pin-ev .th .ea-cover .ea-txt{display:none}
+.pin-ev b{font:600 16px/1.15 var(--sys-title);display:block}.pin-ev small{color:var(--pl-soft);font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
+.pin-empty{background:var(--pl-surface);border:2px dashed #C9BBA7;border-radius:16px;padding:14px;color:var(--pl-soft)}
 @media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
 @media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:24px 24px 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
 /* round 11 UX pass: UI controls take the app's one line (1.5px) and no sticker shadows or tilts; the thick ink line
    stays on illustrations. Picked chips fill with their colour and gain Potto's brown line */
-.pin{border:1.5px solid #5A3B2B;box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
-.pin .pin-x{border:1.5px solid #D9CCBB;box-shadow:none;display:grid;place-items:center;padding:0 0 2px;color:#665A51}
+.pin{border:1.5px solid var(--pl-frame);box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}
+.pin .pin-x{border:1.5px solid var(--pl-line-strong);box-shadow:none;display:grid;place-items:center;padding:0 0 2px;color:var(--pl-soft)}
 .pin-chips{gap:8px}
-.pin-chip{transform:none;box-shadow:none;border:1.5px solid #D9CCBB;font:600 15px "Instrument Sans",system-ui,sans-serif;min-height:44px;padding:4px 14px 4px 10px;gap:8px}
-.pin-chip span{font-size:20px}.pin-chip:hover{transform:none;border-color:#5A3B2B}
-.pin-chip[aria-pressed=true]{transform:none;box-shadow:inset 0 0 0 1px #5A3B2B;border-color:#5A3B2B}
+.pin-chip{transform:none;box-shadow:none;border:1.5px solid var(--pl-line-strong);font:600 15px "Instrument Sans",system-ui,sans-serif;min-height:44px;padding:4px 14px 4px 10px;gap:8px}
+.pin-chip span{font-size:20px}.pin-chip:hover{transform:none;border-color:var(--pl-frame)}
+.pin-chip[aria-pressed=true]{transform:none;box-shadow:inset 0 0 0 1px var(--pl-frame);border-color:var(--pl-frame)}
 .pin-main{border:0;box-shadow:none}
 .pin-main:disabled{border:0}
-.pin-city input{border:1.5px solid #D9CCBB;border-radius:12px}
-.pin-cities button{border-color:#D9CCBB}
-.pin-host,.pin-ev{border:1.5px solid #E4D9C8;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);transform:none}
-.pin-ev .th{border:0}.pin-host .av{border:1.5px solid #E4D9C8}
+.pin-city input{border:1.5px solid var(--pl-line-strong);border-radius:12px}
+.pin-cities button{border-color:var(--pl-line-strong)}
+.pin-host,.pin-ev{border:1.5px solid var(--pl-line);box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);transform:none}
+.pin-ev .th{border:0}.pin-host .av{border:1.5px solid var(--pl-line)}
 .pin-fol{border:0}
-.pin-go{background:#F7F1E8;border-top:1px solid #E4D9C8;margin:8px -18px 0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px))}
+.pin-go{background:var(--pl-page);border-top:1px solid var(--pl-line);margin:8px -18px 0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px))}
 @media (max-width:520px){.pin{border-width:1.5px 0 0}.pin-go{margin:8px -16px 0;padding-left:16px;padding-right:16px;bottom:-16px}.pin-chip{min-height:44px;font-size:15px}}
 @media (prefers-reduced-motion:reduce){.pin,.pin-bg,.pin-chip{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("pinCss")) return; const s = document.createElement("style"); s.id = "pinCss"; s.textContent = CSS; document.head.appendChild(s); };
-  const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#FDE6A6" };
+  const TINT = { peach: "#FCCBA6", sky: "#A9D5F8", mint: "#CDEBD5", blush: "#FBD3CB", lilac: "#E2D6F7", sand: "#F1E6D3", butter: "#E3D7BE" };
 
   // ---------- cards (also for the feed) ----------
   function hostCard(h, i = 0) { const r = ((i * 37) % 5 - 2) * 0.6, av = safeImg(h.avatar);
     return `<div class="pin-host" style="--r:${r}deg" data-handle="${esc(h.handle)}">${h.example ? `<span class="ex">Example</span>` : ""}<span class="av">${av ? `<img src="${esc(av)}" alt="">` : esc(h.emoji || "🙂")}</span>
       <b>${esc(h.name)}</b>${h.why ? `<span class="why">${esc(h.why)}</span>` : ""}<small>${esc(h.tagline || [h.area, h.city].filter(Boolean).join(", "))}</small>
       ${h.next ? `<small>Next: <a href="${esc(safeUrl(h.next.url))}">${esc(h.next.title)}</a></small>` : ""}
-      ${h.example ? `<a class="pin-fol" style="display:grid;place-items:center;text-decoration:none;background:#fff;color:#1F1A17" href="${esc(safeUrl(h.url))}">See page</a>` : `<button type="button" class="pin-fol" data-follow="${esc(h.handle)}" aria-pressed="${!!h.following}">${h.following ? "Following" : "Follow"}</button>`}</div>`; }
+      ${h.example ? `<a class="pin-fol" style="display:grid;place-items:center;text-decoration:none;background:#fff;color:var(--pl-ink)" href="${esc(safeUrl(h.url))}">See page</a>` : `<button type="button" class="pin-fol" data-follow="${esc(h.handle)}" aria-pressed="${!!h.following}">${h.following ? "Following" : "Follow"}</button>`}</div>`; }
   function eventCard(e) { const img = safeImg(e.cover), EA = window.EventArt;
     return `<a class="pin-ev" href="${esc(safeUrl(e.url))}"><span class="th">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : EA ? EA.cover({ id: e.id, title: e.title, activity: e.format }) : ""}</span>
       <span><b>${esc(e.title)}</b><small>${esc([e.when, e.area || e.city].filter(Boolean).join(" · "))}</small><small>${esc([e.price, e.spots_left != null ? `${e.spots_left} spots left` : "", e.host?.name ? "by " + e.host.name : ""].filter(Boolean).join(" · "))}</small>${e.friends ? `<small class="fr">${esc(e.friends)}</small>` : ""}</span>
@@ -120,7 +120,7 @@
     const potto = window.Potto ? `<span class="pin-potto" aria-hidden="true">${window.Potto.svg("cheer", 86, "")}</span>` : "";
     const step1 = () => { box.innerHTML = `${potto}<button class="pin-x" type="button" aria-label="Close">×</button>
       <h2 id="pinH">What are you <em>into?</em></h2><p class="pin-sub">${opts.after === "signup" ? "Pick a few. We'll find hosts to follow and things to do." : "Pick a few. We'll show you hosts and events near you. No account needed."}</p>
-      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#F2D48F"}">${esc(i.label)}</button>`).join("")}</div>
+      <div class="pin-chips" role="group" aria-label="Interests">${L.map((i, k) => `<button type="button" class="pin-chip" data-i="${esc(i.id)}" aria-pressed="${pick.has(i.id)}" style="--r:${((k * 53) % 7 - 3) * 0.9}deg;--c:${TINT[i.tone] || "#E3D7BE"}">${esc(i.label)}</button>`).join("")}</div>
       <div class="pin-city"><label for="pinCity">Your city</label><input id="pinCity" autocomplete="address-level2" placeholder="e.g. Brooklyn" value="${esc(city)}" maxlength="60">
         ${cities.length ? `<div class="pin-cities" role="group" aria-label="Cities with events">${cities.map((c) => `<button type="button" data-c="${esc(c)}" aria-pressed="${c.toLowerCase() === city.toLowerCase()}">${esc(c)}</button>`).join("")}</div>` : ""}</div>
       <div class="pin-go"><button class="pin-main" type="button" id="pinGo">Show me</button><button class="pin-skip" type="button" id="pinSkip">Not now</button><span class="pin-n" id="pinN" aria-live="polite"></span></div>`;

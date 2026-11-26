@@ -40,15 +40,15 @@
   const initials = (n) => String(n || "?").trim().split(/\s+/).slice(0, 1).map((w) => w[0]?.toUpperCase() || "?").join("");
   const linkify = (h) => h.replace(/\bhttps?:\/\/[^\s<]+[^\s<.,;:!?)\]'"]/g, (u) => `<a href="${u}" target="_blank" rel="noopener nofollow">${u}</a>`);
   const emojiOnly = (t) => t.length <= 12 && /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|‍|️|\s)+$/u.test(t);
-  function av(p, cls = "") { if (p?.avatar?.url) return `<span class="ch-av ${cls}" aria-hidden="true"><img src="${esc(p.avatar.url)}" alt="" loading="lazy"></span>`; if (p?.avatar?.art && window.EncoreAvatars?.svg) { try { return `<span class="ch-av ${cls}" style="--t:#FFF1C9" aria-hidden="true">${window.EncoreAvatars.svg(p.avatar.art)}</span>`; } catch {} } return `<span class="ch-av ${cls}" style="--t:${esc(p?.tint || "#F6D7A7")}" aria-hidden="true">${esc(initials(p?.name))}</span>`; }
+  function av(p, cls = "") { if (p?.avatar?.url) return `<span class="ch-av ${cls}" aria-hidden="true"><img src="${esc(p.avatar.url)}" alt="" loading="lazy"></span>`; if (p?.avatar?.art && window.EncoreAvatars?.svg) { try { return `<span class="ch-av ${cls}" style="--t:var(--pl-sand-soft)" aria-hidden="true">${window.EncoreAvatars.svg(p.avatar.art)}</span>`; } catch {} } return `<span class="ch-av ${cls}" style="--t:${esc(p?.tint || "#F6D7A7")}" aria-hidden="true">${esc(initials(p?.name))}</span>`; }
   function thumb(c) { if (c.cover) return `<span class="ch-thumb"><img src="${esc(c.cover)}" alt="" loading="lazy"></span>`;
     const E = window.EventArt; if (E) { try { const e = { name: c.art?.name || c.title, pubTitle: c.art?.name || c.title, activity: c.art?.activity || "", coverArt: c.art?.coverArt || null }; const pk = e.coverArt || {}; const kind = E.valid(pk.kind) ? pk.kind : E.kindOf(e), tone = E.PASTELS[pk.tone] ? pk.tone : E.toneOf(e, kind);
         return `<span class="ch-thumb" style="--ch-bg:${E.PASTELS[tone]}">${E.drawing(kind, E.SPOT[tone])}</span>`; } catch {} }
     return `<span class="ch-thumb">${esc(initials(c.title))}</span>`; }
   // own bubbles: the host's accent when white text reads on it (4.5:1), else ember
   function accentFor(hex) { const kit = getComputedStyle(document.documentElement).getPropertyValue("--kit-accent").trim(); const a = /^#[0-9a-f]{6}$/i.test(kit) ? kit : hex;
-    if (!/^#[0-9a-f]{6}$/i.test(a || "")) return "#C94A30"; const L = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
-    return 1.05 / (L(a) + 0.05) >= 4.5 ? a : "#C94A30"; }
+    if (!/^#[0-9a-f]{6}$/i.test(a || "")) return "#9A4128"; const L = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    return 1.05 / (L(a) + 0.05) >= 4.5 ? a : "#9A4128"; }
 
   // ---- routing: /chats and /chats/<event> ----
   const route = { id: (/^\/chats\/([A-Za-z0-9_-]{1,80})/.exec(location.pathname) || [])[1] || "" };
@@ -69,11 +69,11 @@
       ${c.upcoming && c.when ? `<span class="ch-when">${c.role === "host" || c.role === "cohost" ? '<span class="ch-tag">Hosting</span> ' : ""}${esc(c.when)}</span>` : ""}</span></a>`; }
   function paintRows() { const box = $("#chRows"); if (!box || !B) return; const t = q.trim().toLowerCase();
     const L = (B.chats || []).filter((c) => !t || [c.title, c.last?.text, c.last?.by, ...(c.faces || []).map((f) => f.name)].join(" ").toLowerCase().includes(t));
-    if (!(B.chats || []).length) { box.innerHTML = `<div class="ch-empty">${window.Potto ? window.Potto.svg("wave", 96, "Potto waving") : ""}<b>No chats yet</b><span>When you're in for an event, its group chat shows up here.</span><a class="ch-btn primary" href="/discover">Find something to do</a>${B.signedIn ? "" : `<a href="/login?next=/chats" style="color:#B04A30;font-weight:600;min-height:44px;display:inline-flex;align-items:center">Have an account? Sign in</a>`}</div>`; return; }
+    if (!(B.chats || []).length) { box.innerHTML = `<div class="ch-empty">${window.Potto ? window.Potto.svg("wave", 96, "Potto waving") : ""}<b>No chats yet</b><span>When you're in for an event, its group chat shows up here.</span><a class="ch-btn primary" href="/discover">Find something to do</a>${B.signedIn ? "" : `<a href="/login?next=/chats" style="color:var(--pl-accent-text);font-weight:600;min-height:44px;display:inline-flex;align-items:center">Have an account? Sign in</a>`}</div>`; return; }
     if (!L.length) { box.innerHTML = `<p class="ch-sec" style="justify-content:center">Nothing matches "${esc(q)}"</p>`; return; }
     const up = L.filter((c) => c.upcoming), past = L.filter((c) => !c.upcoming);
     box.innerHTML = (up.length ? `<h2 class="ch-sec">Upcoming</h2>${up.map(rowHTML).join("")}` : "") + (past.length ? `<h2 class="ch-sec">Past</h2>${past.map(rowHTML).join("")}` : "") +
-      (B.signedIn ? "" : `<p class="ch-sec" style="font-weight:400;margin-top:20px">On another phone? <a href="/signup?mode=friends&amp;next=/chats" style="color:#B04A30;font-weight:600">Make a free account</a> to see your chats anywhere.</p>`); }
+      (B.signedIn ? "" : `<p class="ch-sec" style="font-weight:400;margin-top:20px">On another phone? <a href="/signup?mode=friends&amp;next=/chats" style="color:var(--pl-accent-text);font-weight:600">Make a free account</a> to see your chats anywhere.</p>`); }
   $("#chQ")?.addEventListener("input", (e) => { q = e.target.value; paintRows(); });
   document.addEventListener("click", (e) => { const a = e.target.closest?.(".ch-row[data-id]"); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(a.dataset.id); });
 
@@ -105,7 +105,7 @@
       delay = idle < 6 ? 3000 : idle < 20 ? 5000 : idle < 60 ? 8000 : 15000; }
     catch (err) { if (id !== route.id) return; if (!T) { const c = (B?.chats || []).find((x) => x.id === id);
         if (err.status === 404) stateView("This chat isn't here", "The event may have been deleted, or the link is cut off.", c, `<a class="ch-btn" href="/chats">See your chats</a>`);
-        else if (err.status === 403) stateView(err.code === "not_member" ? "This chat is for guests who are in" : "Not in the chat yet", err.message, c, `<a class="ch-btn primary" href="/g#rsvp-${encodeURIComponent(id)}">Open the invite</a>${B?.signedIn ? "" : `<a href="/login?next=${encodeURIComponent("/chats/" + id)}" style="color:#B04A30;font-weight:600">Sign in</a>`}`);
+        else if (err.status === 403) stateView(err.code === "not_member" ? "This chat is for guests who are in" : "Not in the chat yet", err.message, c, `<a class="ch-btn primary" href="/g#rsvp-${encodeURIComponent(id)}">Open the invite</a>${B?.signedIn ? "" : `<a href="/login?next=${encodeURIComponent("/chats/" + id)}" style="color:var(--pl-accent-text);font-weight:600">Sign in</a>`}`);
         else stateView("Couldn't open the chat", "Check your connection and try again.", c, `<button class="ch-btn" type="button" onclick="location.reload()">Try again</button>`); loading = false; return; }
       delay = Math.min(30000, delay * 2); }
     finally { loading = false; } schedule(); }

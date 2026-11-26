@@ -20,20 +20,20 @@
   const isSaved = (kind, ref) => (server ? server.has(`${kind}:${ref}`) : read().some((x) => x.kind === kind && x.ref === ref));
 
   // ---------- look ----------
-  const CSS = `.pls-btn{--pls-fill:#fff;position:relative;display:inline-flex;align-items:center;gap:6px;min-height:40px;min-width:40px;padding:0 12px 0 10px;border:1.5px solid #D9CCBB;border-radius:999px;background:#fff;color:#1F1A17;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;transition:background .18s,border-color .18s}
-.pls-btn:hover{border-color:#1F1A17}.pls-btn:active{background:#FFF6E6}
-.pls-btn svg{width:22px;height:22px;flex:none;overflow:visible}.pls-btn svg path{fill:var(--pls-fill);stroke:#1F1A17;stroke-width:1.75;stroke-linejoin:round;transition:fill .2s}
-.pls-btn[aria-pressed=true]{--pls-fill:#C94A30;background:#FFF1D2}.pls-btn.pls-icon{padding:0;width:44px;height:44px;justify-content:center}.pls-btn.pls-icon .pls-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  const CSS = `.pls-btn{--pls-fill:#fff;position:relative;display:inline-flex;align-items:center;gap:6px;min-height:40px;min-width:40px;padding:0 12px 0 10px;border:1.5px solid var(--pl-line-strong);border-radius:999px;background:#fff;color:var(--pl-ink);font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;transition:background .18s,border-color .18s}
+.pls-btn:hover{border-color:var(--pl-ink)}.pls-btn:active{background:#FFF6E6}
+.pls-btn svg{width:22px;height:22px;flex:none;overflow:visible}.pls-btn svg path{fill:var(--pls-fill);stroke:var(--pl-ink);stroke-width:1.75;stroke-linejoin:round;transition:fill .2s}
+.pls-btn[aria-pressed=true]{--pls-fill:var(--pl-accent);background:var(--pl-sand-soft)}.pls-btn.pls-icon{padding:0;width:44px;height:44px;justify-content:center}.pls-btn.pls-icon .pls-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .pls-btn.pls-pop svg{animation:plsPop .45s cubic-bezier(.3,1.8,.5,1)}@keyframes plsPop{0%{transform:scale(1)}35%{transform:scale(1.3)}100%{transform:scale(1)}}
-.pls-btn:focus-visible{outline:3px solid #C94A30;outline-offset:2px}
-.pls-toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;width:min(92vw,420px);background:#FFFDF8;border:1.5px solid #E4D9C8;border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:12px 14px;display:flex;gap:10px;align-items:center;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;color:#1F1A17;animation:plsIn .35s cubic-bezier(.3,1.5,.5,1)}
-.pls-toast b{font-family:var(--sys-display);font-weight:600}.pls-toast .pls-go{margin-left:auto;flex:none;background:#C94A30;color:#fff;border:1px solid #C94A30;border-radius:999px;padding:8px 12px;font:600 14px "Instrument Sans",system-ui;text-decoration:none;white-space:nowrap}
-.pls-toast .pls-x{flex:none;background:none;border:0;font-size:20px;line-height:1;cursor:pointer;color:#665A51;min-width:32px;min-height:32px}
+.pls-btn:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}
+.pls-toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;width:min(92vw,420px);background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:12px 14px;display:flex;gap:10px;align-items:center;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;color:var(--pl-ink);animation:plsIn .35s cubic-bezier(.3,1.5,.5,1)}
+.pls-toast b{font-family:var(--sys-display);font-weight:600}.pls-toast .pls-go{margin-left:auto;flex:none;background:var(--pl-accent);color:#fff;border:1px solid var(--pl-accent);border-radius:999px;padding:8px 12px;font:600 14px "Instrument Sans",system-ui;text-decoration:none;white-space:nowrap}
+.pls-toast .pls-x{flex:none;background:none;border:0;font-size:20px;line-height:1;cursor:pointer;color:var(--pl-soft);min-width:32px;min-height:32px}
 @keyframes plsIn{from{transform:translateX(-50%) translateY(20px);opacity:0}}
 @media (min-width:861px){.pls-toast{bottom:28px}}
-.pls-menu{position:fixed;z-index:9001;width:240px;background:#FFFDF8;border:1.5px solid #E4D9C8;border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:8px;display:grid;gap:4px;font:500 15px "Instrument Sans",system-ui}
-.pls-menu b{font:600 15px var(--sys-title);padding:4px 8px}.pls-menu button{text-align:left;background:none;border:0;border-radius:10px;padding:9px 10px;font:inherit;color:#1F1A17;cursor:pointer;min-height:40px}.pls-menu button:hover,.pls-menu button[aria-current]{background:#FFF1D2}
-.pls-menu form{display:flex;gap:6px;padding:4px}.pls-menu input{flex:1;min-width:0;border:1.5px solid #DCCFBE;border-radius:10px;padding:8px;font:inherit;font-size:16px}.pls-menu form button{background:#1F1A17;color:#fff;text-align:center;padding:8px 10px}
+.pls-menu{position:fixed;z-index:9001;width:240px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28);padding:8px;display:grid;gap:4px;font:500 15px "Instrument Sans",system-ui}
+.pls-menu b{font:600 15px var(--sys-title);padding:4px 8px}.pls-menu button{text-align:left;background:none;border:0;border-radius:10px;padding:9px 10px;font:inherit;color:var(--pl-ink);cursor:pointer;min-height:40px}.pls-menu button:hover,.pls-menu button[aria-current]{background:var(--pl-sand-soft)}
+.pls-menu form{display:flex;gap:6px;padding:4px}.pls-menu input{flex:1;min-width:0;border:1.5px solid var(--pl-line-strong);border-radius:10px;padding:8px;font:inherit;font-size:16px}.pls-menu form button{background:var(--pl-ink);color:#fff;text-align:center;padding:8px 10px}
 @media (prefers-reduced-motion:reduce){.pls-btn,.pls-btn svg,.pls-toast{animation:none!important;transition:none!important}}`;
   const css = () => { if (document.getElementById("plsCss")) return; const s = document.createElement("style"); s.id = "plsCss"; s.textContent = CSS; document.head.appendChild(s); };
   const HEART = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.4 7.6 3.6 4 7.1 4c2.1 0 3.6 1.2 4.9 3 1.3-1.8 2.8-3 4.9-3 3.5 0 5.7 3.6 4.4 7.1-1.8 4.8-9.3 9.4-9.3 9.4z"/></svg>`;
@@ -64,7 +64,7 @@
       if (server) { const r = await fetch(on ? `/api/me/saves?kind=${encodeURIComponent(item.kind)}&ref=${encodeURIComponent(item.ref)}` : "/api/me/saves", { method: on ? "DELETE" : "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: on ? undefined : JSON.stringify(item) });
         const j = await r.json().catch(() => null); if (!r.ok) { toast(esc(j?.message || "Couldn't save that. Try again.")); return; }
         if (on) server.delete(key(item)); else server.set(key(item), { ...item, board: "" }); emit(); setCount(item, j?.count);
-        if (!on) { const t = toast(`Saved. <button type="button" class="pls-board" style="background:none;border:0;padding:0;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:#A63A22">Add to a board</button>`, { go: "/saved", goLabel: "Your saves", ms: 5000 }); t.querySelector(".pls-board").onclick = () => { t.remove(); boardMenu(btn || t, item); }; }
+        if (!on) { const t = toast(`Saved. <button type="button" class="pls-board" style="background:none;border:0;padding:0;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:var(--pl-accent-text)">Add to a board</button>`, { go: "/saved", goLabel: "Your saves", ms: 5000 }); t.querySelector(".pls-board").onclick = () => { t.remove(); boardMenu(btn || t, item); }; }
         return; } }
     // signed out: this browser keeps it, and the account gets it at signup
     let L = read(); if (on) L = L.filter((x) => !(x.kind === item.kind && x.ref === item.ref)); else L.unshift({ kind: item.kind, ref: item.ref, title: item.title || "", img: imgOk(item.img), at: Date.now() }); write(L); emit();

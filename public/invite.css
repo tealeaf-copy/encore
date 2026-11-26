@@ -2,7 +2,7 @@
 /* The invite, on its own: what a guest needs to say yes, in a page small enough to open instantly on a phone.
    Ask to join events reply here too. Anything more involved (paid spots with a pay step, slots, polls, plus-ones, work
    events) opens the full invite at /g#rsvp-<id>. */
-:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#5E534B;--ember:#C94A30;--ember-d:#A8441F;--line:#E4D9C8;--card:#fff}
+:root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember-d:var(--pl-accent-text);--line:var(--pl-line);--card:#fff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
 a{color:var(--ember-d)}main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 110px}
 .top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}.brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
@@ -15,11 +15,11 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:16px 0 6px}
 form{background:#fff;border:2px solid var(--ink);border-radius:22px;padding:16px;display:grid;gap:12px;box-shadow:0 0 0 4px #fff,0 12px 28px -20px rgba(31,26,23,.55)}
 .resp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.resp label{display:grid;place-items:center;border:1.5px solid var(--line);border-radius:14px;padding:11px 6px;font-weight:600;cursor:pointer;text-align:center}.resp input{position:absolute;opacity:0;pointer-events:none}.resp label:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}.resp label:has(input:focus-visible){outline:3px solid var(--ember);outline-offset:2px}
 label.f{display:grid;gap:5px;font-weight:600;font-size:16px}label.f[hidden]{display:none}label.f small{font-weight:400;color:var(--smoke)}
-input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:13px 14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:16px;background:#FFFCF7;color:var(--ink)}
+input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:13px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:16px;background:var(--pl-surface);color:var(--ink)}
 .go{background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:52px;padding:0 20px;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer;width:100%}.go:disabled{opacity:.6}
 .err{color:#A8341A;font-weight:600;min-height:0;margin:0}
-.ticket{background:#fff;border:2px dashed var(--ink);border-radius:22px;padding:18px;text-align:center;display:grid;gap:8px}.ticket h2{font:700 28px var(--sys-display);margin:0}.ticket .code{font:700 28px/1 var(--sys-display);letter-spacing:.12em;background:#FFE08A;color:#1F1A17;border-radius:12px;padding:8px 14px;justify-self:center}
-.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.btn{border:1px solid #D9CCBB;background:#fff;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:0 16px;font-weight:600;font-size:16px;font-family:inherit;text-decoration:none;color:var(--ink)}.btn.main{background:var(--ink);color:#fff}
+.ticket{background:#fff;border:2px dashed var(--ink);border-radius:22px;padding:18px;text-align:center;display:grid;gap:8px}.ticket h2{font:700 28px var(--sys-display);margin:0}.ticket .code{font:700 28px/1 var(--sys-display);letter-spacing:.12em;background:var(--pl-sand);color:var(--pl-ink);border-radius:12px;padding:8px 14px;justify-self:center}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.btn{border:1px solid var(--pl-line-strong);background:#fff;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:0 16px;font-weight:600;font-size:16px;font-family:inherit;text-decoration:none;color:var(--ink)}.btn.main{background:var(--ink);color:#fff}
 .stick[hidden]{display:none!important}.stick{position:fixed;left:50%;transform:translateX(-50%);width:min(100%,560px);bottom:0;background:rgba(255,248,238,.96);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:10px;backdrop-filter:blur(6px)}.stick b{font-weight:600;font-size:16px;font-family:inherit}
 .stick a{flex:1;justify-content:center;background:var(--ember);color:#fff;border:1px solid var(--ember);border-radius:999px;min-height:44px;display:inline-flex;align-items:center;padding:0 18px;font:600 16px "Instrument Sans",system-ui,sans-serif;text-decoration:none}
 .full{display:block;text-align:center;margin:18px 0 0;font-weight:600}
@@ -30,7 +30,7 @@ input[type=text],input[type=email],input[type=tel],textarea{width:100%;padding:1
 .ini{font:700 20px var(--sys-display);color:var(--ink)}
 .ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}/* round 12: line glyphs in the meta lines, not emoji */
 .kit{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;margin:6px 0 12px}.kit p{margin:2px 0 0}.kit b{font-weight:600}
-select{width:100%;padding:12px 14px;border:1.5px solid #DCCFBE;border-radius:14px;font:inherit;font-size:16px;background:#FFFCF7;color:var(--ink)}
+select{width:100%;padding:12px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-size:16px;background:var(--pl-surface);color:var(--ink)}
 .btn.pay{background:var(--ember);border-color:var(--ember);color:#fff}.linkbtn{background:none;border:0;color:var(--smoke);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;justify-self:center;min-height:44px}
 [hidden]{display:none!important}
 /* per-event looks: their styles live in looks.js (body.lk-invite) */

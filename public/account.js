@@ -6,14 +6,14 @@
   function style() { if (css) return; css = true; const s = document.createElement("style"); s.textContent = `
 .acct-bg{position:fixed;inset:0;background:rgba(20,16,14,.45);display:flex;align-items:flex-end;justify-content:center;z-index:9999}
 @media (min-width:640px){.acct-bg{align-items:center}}
-.acct{background:#FFFCF7;color:#1F1A17;width:min(440px,100%);border-radius:22px 22px 0 0;padding:22px 20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.25);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:92vh;overflow:auto}
+.acct{background:var(--pl-surface);color:var(--pl-ink);width:min(440px,100%);border-radius:22px 22px 0 0;padding:22px 20px 24px;box-shadow:0 20px 60px rgba(0,0,0,.25);font:16px/1.45 "Instrument Sans",system-ui,sans-serif;max-height:92vh;overflow:auto}
 @media (min-width:640px){.acct{border-radius:22px}}
-.acct h2{font:600 28px/1.15 var(--sys-display);margin:0 0 6px}.acct p{margin:0 0 14px;color:#6F6259}
+.acct h2{font:600 28px/1.15 var(--sys-display);margin:0 0 6px}.acct p{margin:0 0 14px;color:var(--pl-soft)}
 .acct form{display:grid;gap:10px}.acct label{display:grid;gap:4px;font-size:13px;font-weight:600}
-.acct input{border:1px solid #E7DFD3;border-radius:12px;padding:11px 12px;font-weight:400;font-size:16px;font-family:inherit;background:#fff}
-.acct,.acct button,.acct input{font-family:"Instrument Sans",system-ui,sans-serif}.acct button[type=submit]{border:2px solid #1F1A17;border-radius:999px;padding:13px;background:var(--accent,#C4532F);color:#fff;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(31,26,23,.08)}.acct .alt{border:1.5px solid #E4D9C8;border-radius:999px;padding:11px;background:#fff;color:#1F1A17;font-weight:600;font-size:16px;cursor:pointer;width:100%;margin-top:8px}
-.acct .alt{background:none;border:0;color:#8E3A25;text-decoration:underline;cursor:pointer;font-weight:400;font-size:14px;font-family:inherit;padding:4px 0}
-.acct .err{color:#B3261E;font-size:14px;min-height:1em;margin:0}.acct .x{float:right;background:none;border:0;font-size:20px;cursor:pointer;color:#6F6259}`; document.head.appendChild(s); }
+.acct input{border:1px solid var(--pl-line);border-radius:12px;padding:11px 12px;font-weight:400;font-size:16px;font-family:inherit;background:#fff}
+.acct,.acct button,.acct input{font-family:"Instrument Sans",system-ui,sans-serif}.acct button[type=submit]{border:2px solid var(--pl-ink);border-radius:999px;padding:13px;background:var(--accent,var(--pl-accent));color:#fff;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(31,26,23,.08)}.acct .alt{border:1.5px solid var(--pl-line);border-radius:999px;padding:11px;background:#fff;color:var(--pl-ink);font-weight:600;font-size:16px;cursor:pointer;width:100%;margin-top:8px}
+.acct .alt{background:none;border:0;color:var(--pl-accent-text);text-decoration:underline;cursor:pointer;font-weight:400;font-size:14px;font-family:inherit;padding:4px 0}
+.acct .err{color:#B3261E;font-size:14px;min-height:1em;margin:0}.acct .x{float:right;background:none;border:0;font-size:20px;cursor:pointer;color:var(--pl-soft)}`; document.head.appendChild(s); }
   async function me() { try { const j = await (await fetch("/api/me")).json(); return j?.verified ? j : null; } catch { return null; } }
   /** Make sure there's an account, then resolve true; resolve false if the person closes the sheet. */
   function ensure({ handle = "", hostName = "", name = "", email = "" } = {}) {
@@ -25,7 +25,7 @@
         <p>${mode === "new" ? `Free. Guests never need a code.` : `Sign in to follow ${esc(first)}.`}</p>
         <form>${mode === "new" ? `<label>Your name<input name="name" autocomplete="name" required value="${esc(name)}"></label>` : ""}
           <label>Email<input name="email" type="email" autocomplete="email" required value="${esc(email)}"></label>
-          <label>Mobile <span style="font-weight:400;color:#6F6259">(optional, for a text)</span><input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" value="${esc((() => { try { return localStorage.getItem("encore.phone") || ""; } catch { return ""; } })())}"></label>
+          <label>Mobile <span style="font-weight:400;color:var(--pl-soft)">(optional, for a text)</span><input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 123 4567" value="${esc((() => { try { return localStorage.getItem("encore.phone") || ""; } catch { return ""; } })())}"></label>
           <label>Password${mode === "new" ? " (10+ characters)" : ""}<input name="password" type="password" autocomplete="${mode === "new" ? "new-password" : "current-password"}" ${mode === "new" ? 'minlength="10"' : ""} required></label>
           <p class="err" role="alert"></p><button type="submit">${mode === "new" ? "Create account" : "Sign in"}</button></form>
         <button class="alt" type="button">${mode === "new" ? "Already have an account? Sign in" : "New here? Create an account"}</button></div>`;

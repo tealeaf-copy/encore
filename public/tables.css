@@ -1,6 +1,6 @@
 /* Tables (review round 11): the plan card, "I'm in if", open-table questions and your table, on /g and /e; the host's
    Table panel in the studio. Calm: type does the work, one hairline, a monospace accent for times and counts. */
-.tb-plan,.tb-card,.tb-panel{--tb-ink:var(--ink,#1F1A17);--tb-soft:var(--smoke,var(--muted,#5E534B));--tb-line:var(--line,#E4D9C8);--tb-bg:var(--card,#fff);--tb-acc:var(--ember-d,var(--accent,#A8441F))}
+.tb-plan,.tb-card,.tb-panel{--tb-ink:var(--ink,var(--pl-ink));--tb-soft:var(--smoke,var(--muted,var(--pl-soft)));--tb-line:var(--line,var(--pl-line));--tb-bg:var(--card,#fff);--tb-acc:var(--ember-d,var(--accent,var(--pl-accent-text)))}
 .tb-mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .tb-plan{margin:10px 0 16px;padding:16px 18px 14px;border:1px solid var(--tb-line);border-radius:16px;background:var(--tb-bg);color:var(--tb-ink);text-align:left}
 .tb-eyebrow{margin:0 0 4px;font:600 11px/1.3 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--tb-soft)}
@@ -52,7 +52,7 @@
 .tb-ans{font-size:11px;line-height:1.4;color:var(--tb-soft)}
 .tb-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tb-h{margin:0 0 6px;font:600 11px/1.3 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--tb-soft)}
-.tb-home{margin:18px 0 0;padding:14px 18px;border:1px solid var(--tb-line);border-radius:14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between;--tb-line:var(--line,#E4D9C8);--tb-soft:var(--smoke,var(--muted,#5E534B))}
+.tb-home{margin:18px 0 0;padding:14px 18px;border:1px solid var(--tb-line);border-radius:14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between;--tb-line:var(--line,var(--pl-line));--tb-soft:var(--smoke,var(--muted,var(--pl-soft)))}
 .tb-home p{margin:0;font-size:14px}.tb-home a{font-weight:600}
 @media (prefers-reduced-motion:reduce){.tb-plan,.tb-card{transition:none}}
 /* review round 13: the one "New" badge (first time with this host), and a stat with nothing to count yet */

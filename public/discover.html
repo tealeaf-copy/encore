@@ -8,18 +8,18 @@
 <link rel="stylesheet" href="/lists.css">
 <style>
 /* design review: one short intro, one location chip, short cards, every section capped */
-:root{--p-ember:#B04A30;--red:#B04A30}
+:root{--p-ember:var(--pl-accent-text);--red:var(--pl-accent-text)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .intro{padding:14px 0 10px}.intro h1{font-size:var(--fs-28-40,28px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:16px}
-.fbar{margin-bottom:8px}.fbar .loc{gap:6px;border:1.5px solid var(--line-strong,#D9CCBB)!important;background:var(--card,#FFFCF7)!important;box-shadow:none!important;color:var(--ink)!important;padding:0 14px!important}
-.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,#FFFCF7);border:1.5px solid var(--line);border-radius:16px}
+.fbar{margin-bottom:8px}.fbar .loc{gap:6px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;box-shadow:none!important;color:var(--ink)!important;padding:0 14px!important}
+.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line);border-radius:16px}
 .locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
 .locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "Instrument Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:14px;color:var(--soft)}.locp .note:empty{display:none}
 section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 4px}section .lede{color:var(--soft);margin:0 0 16px;font-size:14px}
 #events,#fyList{margin-top:16px}.ls-grid .why{display:block;color:var(--smoke,#665A51)!important;font-size:13px}
 .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
-.note-box{margin:8px 0 12px;padding:14px 16px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;color:#5A4E45;font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
+.note-box{margin:8px 0 12px;padding:14px 16px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:16px;color:var(--pl-soft);font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
 .note-box button{background:none;border:0;font:inherit;cursor:pointer;padding:0;text-decoration:underline;min-height:44px}
 .more-btn{margin-top:12px;min-height:44px}
 .far-h{grid-column:1/-1;margin:14px 0 0;font-size:16px}
@@ -32,37 +32,37 @@ section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 
 /* hosts worth following: one card shape. Fixed slots (avatar, name + tag, place and counts, a one-line "next" strip,
    Follow in the same top-right spot), so every card in a row is the same height and nothing floats. */
 .hlist{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
-.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:16px;background:var(--card,#FFFCF7);border:1.5px solid var(--line,#E4D9C8);border-radius:16px;color:var(--ink,#1F1A17);transition:border-color .15s}
-.hcd:hover{border-color:var(--line-strong,#D9CCBB)}
-.hcd:focus-within{border-color:#1F1A17}
-.hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid var(--line,#E4D9C8)}
+.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line,var(--pl-line));border-radius:16px;color:var(--ink,var(--pl-ink));transition:border-color .15s}
+.hcd:hover{border-color:var(--line-strong,var(--pl-line-strong))}
+.hcd:focus-within{border-color:var(--pl-ink)}
+.hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid var(--line,var(--pl-line))}
 .hcd-av svg,.hcd-av img{width:100%;height:100%;object-fit:cover}
 .hcd-id{grid-area:id;min-width:0}
 .hcd-top{display:flex;align-items:center;gap:6px;min-width:0}
 .hcd-name{font:600 17px/1.25 var(--sys-title);color:inherit;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hcd-name::after{content:"";position:absolute;inset:0;border-radius:inherit}
-.hcd-name:focus-visible{outline:none}.hcd:has(.hcd-name:focus-visible){outline:3px solid #1F1A17;outline-offset:2px}
+.hcd-name:focus-visible{outline:none}.hcd:has(.hcd-name:focus-visible){outline:3px solid var(--pl-ink);outline-offset:2px}
 .hcd-ex{display:none}
-.hcd-sub{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:#665A51;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "Instrument Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid var(--line-strong,#D9CCBB)!important;background:var(--card,#FFFCF7)!important;color:#1F1A17!important;cursor:pointer;box-shadow:none!important}
-.hcd-f:hover{border-color:#1F1A17!important}.hcd-f[aria-pressed=true]{background:#1F1A17!important;color:#fff!important}
-.hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid #1F1A17;outline-offset:2px}
-.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:12px;background:#F7F1E8;font-size:14px;line-height:1.3;color:#1F1A17;text-decoration:none;min-width:0}
-.hcd-nx b{flex:none;font-weight:600;color:#B04A30}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-a.hcd-nx:hover{background:#EFE6D8}
-.hcd-exs{display:none;font-weight:600;color:#5A4E45}
+.hcd-sub{display:block;margin-top:2px;font-size:13px;line-height:1.35;color:var(--pl-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "Instrument Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;color:var(--pl-ink)!important;cursor:pointer;box-shadow:none!important}
+.hcd-f:hover{border-color:var(--pl-ink)!important}.hcd-f[aria-pressed=true]{background:var(--pl-ink)!important;color:#fff!important}
+.hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
+.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:12px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
+.hcd-nx b{flex:none;font-weight:600;color:var(--pl-accent-text)}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+a.hcd-nx:hover{background:var(--pl-raised)}
+.hcd-exs{display:none;font-weight:600;color:var(--pl-soft)}
 .hcd-exs{display:inline}@media (max-width:520px){.hcd-f{min-width:0;padding:0 14px!important}}
-.hcd-nx.none{color:#665A51;pointer-events:none}
+.hcd-nx.none{color:var(--pl-soft);pointer-events:none}
 @media (prefers-reduced-motion:reduce){.hcd{transition:none}.hcd:hover{transform:none}}
 /* the end of the page: one way in for new hosts, the quiz as a quiet line under it */
 .endcards{display:grid;gap:12px;padding-top:32px}
-#hostCard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:20px;background:var(--card,#FFFCF7)!important;border:1.5px solid var(--line,#E4D9C8)!important;border-radius:16px!important;box-shadow:none!important}
-#hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:#665A51;font-size:14px}#hostCard .btn{min-height:44px;flex:none}
-#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 20px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;background:transparent}
+#hostCard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:20px;background:var(--card,var(--pl-surface))!important;border:1.5px solid var(--line,var(--pl-line))!important;border-radius:16px!important;box-shadow:none!important}
+#hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:var(--pl-soft);font-size:14px}#hostCard .btn{min-height:44px;flex:none}
+#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 20px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:16px;background:transparent}
 #quiz:empty{display:none}
 #quiz>span[aria-hidden]{font-size:26px!important;line-height:1}
-#quiz h2{font-size:16px;margin:0}#quiz small{color:#665A51;font-size:13px}#quiz small a{color:#B04A30}
-#quiz .btn{min-height:44px;flex:none;margin-left:auto;background:var(--card,#FFFCF7)!important;color:#1F1A17!important;border:1.5px solid var(--line-strong,#D9CCBB)!important;box-shadow:none!important}
+#quiz h2{font-size:16px;margin:0}#quiz small{color:var(--pl-soft);font-size:13px}#quiz small a{color:var(--pl-accent-text)}
+#quiz .btn{min-height:44px;flex:none;margin-left:auto;background:var(--card,var(--pl-surface))!important;color:var(--pl-ink)!important;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;box-shadow:none!important}
 @media (max-width:520px){#hostCard .btn,#quiz .btn{width:100%;margin-left:0;display:inline-flex;align-items:center;justify-content:center}}
 #events .tags,#fyList .tags{display:none!important}
 /* until the events arrive, the sections under them wait too, so nothing on screen jumps down when the cards land */
@@ -73,7 +73,7 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
 <script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body class="dc-wait">
 <div class="wrap">
-  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a>
     <nav><a href="/discover" aria-current="page">Discover</a><a href="/hosts">Hosts</a><a href="/login">Sign in</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
 
   <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs and bakes on a stoop, hosted by people near you. Tap one to see it and say you're in.</p></div>

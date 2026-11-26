@@ -17,9 +17,9 @@
     const rail = P === "/g" || /^\/(discover|events|leaderboard|feed|ideas|saved|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats)$/.test(P) || /^\/(team|hosts|h|chats)\//.test(P) || /^\/@/.test(P);
     if (rail) root.classList.add("es-pre");
     const st = document.createElement("style"); st.id = "navFoldCss";
-    st.textContent = `@media (max-width:860px){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:16px!important}}@media (min-width:861px){html.es-pre body{padding-left:224px}html.es-pre.nav-folded body{padding-left:72px}html.es-pre body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:224px;background:#FFFDFA;border-right:1px solid #E9E1D6;z-index:1}html.es-pre.nav-folded body::before{width:72px}html.es-pre body header.top{display:none}}
-.nav-fold{position:absolute;top:22px;right:-13px;width:26px;height:26px;border-radius:50%;border:1px solid #E4D9C8;background:#fff;color:#6B5F56;display:grid;place-items:center;cursor:pointer;z-index:60;padding:0;box-shadow:0 2px 6px rgba(31,26,23,.08);transition:transform .2s}
-.nav-fold:hover{color:#1F1A17;transform:scale(1.08)}.nav-fold:focus-visible{outline:3px solid #C94A30;outline-offset:2px}.nav-fold svg{width:14px;height:14px;transition:transform .25s}
+    st.textContent = `@media (max-width:860px){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:16px!important}}@media (min-width:861px){html.es-pre body{padding-left:224px}html.es-pre.nav-folded body{padding-left:72px}html.es-pre body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--pl-surface);border-right:1px solid var(--pl-line);z-index:1}html.es-pre.nav-folded body::before{width:72px}html.es-pre body header.top{display:none}}
+.nav-fold{position:absolute;top:22px;right:-13px;width:26px;height:26px;border-radius:50%;border:1px solid var(--pl-line);background:#fff;color:var(--pl-soft);display:grid;place-items:center;cursor:pointer;z-index:60;padding:0;box-shadow:0 2px 6px rgba(31,26,23,.08);transition:transform .2s}
+.nav-fold:hover{color:var(--pl-ink);transform:scale(1.08)}.nav-fold:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}.nav-fold svg{width:14px;height:14px;transition:transform .25s}
 html.nav-folded .nav-fold svg{transform:rotate(180deg)}
 @media (max-width:860px){.nav-fold{display:none}}
 @media (min-width:861px){
@@ -27,7 +27,7 @@ html.nav-folded .nav-fold svg{transform:rotate(180deg)}
   html.nav-folded .es-rail a{justify-content:center;padding:10px!important;width:46px!important}
   html.nav-folded .es-rail a > span,html.nav-folded .es-rail .es-out,html.nav-folded .es-logo > span{display:none!important}
   html.nav-folded body.es-has-rail,html.nav-folded body.guestmode.es-has-rail{padding-left:72px!important}
-  html.nav-folded .es-rail a:hover::after{content:attr(aria-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#1F1A17;color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
+  html.nav-folded .es-rail a:hover::after{content:attr(aria-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--pl-ink);color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
 }
 @media (min-width:1000px){
   html.nav-folded header.top{width:72px!important}
@@ -35,7 +35,7 @@ html.nav-folded .nav-fold svg{transform:rotate(180deg)}
   html.nav-folded header.top .logo{padding:0!important}html.nav-folded header.top .logo span,html.nav-folded #signOut{display:none!important}
   html.nav-folded nav.tabs a{font-size:0!important;justify-content:center;padding:10px!important;width:46px;position:relative}
   html.nav-folded nav.tabs a svg{width:22px;height:22px}
-  html.nav-folded nav.tabs a:hover::after{content:attr(data-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:#1F1A17;color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
+  html.nav-folded nav.tabs a:hover::after{content:attr(data-label);position:absolute;left:58px;top:50%;transform:translateY(-50%);white-space:nowrap;background:var(--pl-ink);color:#fff;font:600 12.5px system-ui;padding:5px 9px;border-radius:8px;pointer-events:none;z-index:70}
   html.nav-folded header.top .rail,html.nav-folded header.top .status{display:none!important}
   html.nav-folded body{padding-left:72px!important}
 }`;

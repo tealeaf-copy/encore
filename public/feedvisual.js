@@ -10,7 +10,7 @@
   const RM = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
   const TILT = [-3, 2, -1.5, 1.2, -2, 2.5, -1, 1.6];
   const NOTE = ["#FFE9A8", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#FCCBA6"];
-  const TAPE = ["#F2D48F", "#B9C7A6", "#E9A08F"];
+  const TAPE = ["#E3D7BE", "#B9C7A6", "#E9A08F"];
   const REG = new Map(); // story sets the viewer can open: rail stories and a card's photos
   let deviceId = ""; try { deviceId = localStorage.getItem("fv.device") || ""; if (!deviceId) { deviceId = "d" + Math.random().toString(36).slice(2, 14) + Date.now().toString(36); localStorage.setItem("fv.device", deviceId); } } catch { deviceId = "d" + Math.random().toString(36).slice(2, 14); }
   const seen = (() => { let S = new Set(); try { S = new Set(JSON.parse(localStorage.getItem("fv.seen") || "[]")); } catch {} return { has: (k) => S.has(k), add: (k) => { S.add(k); try { localStorage.setItem("fv.seen", JSON.stringify([...S].slice(-600))); } catch {} } }; })();
@@ -27,9 +27,9 @@
   const lum = (hex) => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return 1; const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   // the event's colours: its flyer's palette, else a pastel from its illustrated cover
   function tintOf(e) { const p = (e.look?.palette || []).filter((c) => /^#[0-9a-f]{6}$/i.test(c)); const A = window.EventArt;
-    const bg = p[0] || (A ? A.PASTELS[A.toneOf({ ...e, title: e.title }, A.kindOf({ ...e, name: e.title }))] : "#FDE6A6") || "#FDE6A6", dark = lum(bg) < 0.179; /* white wins below this luminance; above it ink does */
-    const acc = p.find((c, i) => i && Math.abs(lum(c) - lum(bg)) > 0.25) || (dark ? "#F2D48F" : "#C94A30");
-    return { bg, ink: dark ? "#FFF8EE" : "#1F1A17", soft: dark ? "#FFF8EE" : lum(bg) < 0.45 ? "#1F1A17" : "#5A4E45", acc, dark }; } /* a mid-tone tint keeps soft text at full ink so it stays at 4.5:1 */
+    const bg = p[0] || (A ? A.PASTELS[A.toneOf({ ...e, title: e.title }, A.kindOf({ ...e, name: e.title }))] : "#E3D7BE") || "#E3D7BE", dark = lum(bg) < 0.179; /* white wins below this luminance; above it ink does */
+    const acc = p.find((c, i) => i && Math.abs(lum(c) - lum(bg)) > 0.25) || (dark ? "#E3D7BE" : "#9A4128");
+    return { bg, ink: dark ? "#F4F0E8" : "#1D1B18", soft: dark ? "#F4F0E8" : lum(bg) < 0.45 ? "#1D1B18" : "#5D564E", acc, dark }; } /* a mid-tone tint keeps soft text at full ink so it stays at 4.5:1 */
   const tintStyle = (T) => `--tint:${T.bg};--tink:${T.ink};--tsoft:${T.soft};--tacc:${T.acc}`;
   function btnText(e, fallback = "I'm in") { const L = e.look || {}, em = L.buttonEmoji ? L.buttonEmoji + " " : ""; if (e.approvalRequired) return em + "Ask to join"; return em + (L.buttonLabel && L.buttonLabel !== "Ask to join" ? L.buttonLabel : fallback); }
   function art(e, opts = {}) { const A = window.EventArt; if (!A) return `<div class="fv-artfb">${esc(e.emoji || "🎉")}</div>`; return A.cover({ ...e, name: e.title, pubTitle: e.title, coverArt: e.coverArt || undefined }, { ...(opts.title != null ? { title: opts.title } : {}) }); }
@@ -257,7 +257,7 @@
     const hs = $("[data-fv-slot=hosts]", root); if (hs && !hs.dataset.on) { hs.dataset.on = 1; fetch("/api/public/suggest/hosts?limit=8" + (window.FeedVisual?.publicQuery ? "&" + String(window.FeedVisual.publicQuery()).replace(/^[?&]/, "") : "")).then((r) => (r.ok ? r.json() : null)).then((j) => { const L = (j?.hosts || []).filter((h) => h?.handle && h.name).slice(0, 8); if (!L.length) return; hs.insertAdjacentHTML("beforeend", row(L.map(hostTile).join(""), "Hosts you might like")); hs.hidden = false; const sec = hs.closest(".fv-sec"); if (sec) sec.hidden = false; }).catch(() => {}); }
   }
   function confetti(a) { const r = a.getBoundingClientRect(), box = document.createElement("div"); box.className = "fv-confetti"; box.setAttribute("aria-hidden", "true"); box.style.left = r.left + r.width / 2 + "px"; box.style.top = r.top + r.height / 2 + "px";
-    const C = ["#C94A30", "#F2D48F", "#6F7F5E", "#E9A08F"]; for (let i = 0; i < 16; i++) { const ang = (i / 16) * Math.PI * 2, d = 40 + (i * 13) % 40; box.insertAdjacentHTML("beforeend", `<i style="--dx:${Math.cos(ang) * d}px;--dy:${Math.sin(ang) * d - 30}px;--c:${C[i % C.length]};--rot:${(i * 47) % 360}deg"></i>`); }
+    const C = ["#9A4128", "#E3D7BE", "#5F6B57", "#E9A08F"]; for (let i = 0; i < 16; i++) { const ang = (i / 16) * Math.PI * 2, d = 40 + (i * 13) % 40; box.insertAdjacentHTML("beforeend", `<i style="--dx:${Math.cos(ang) * d}px;--dy:${Math.sin(ang) * d - 30}px;--c:${C[i % C.length]};--rot:${(i * 47) % 360}deg"></i>`); }
     document.body.appendChild(box); setTimeout(() => box.remove(), 900); }
 
   // ---------- styles ----------
@@ -266,7 +266,7 @@
   need("/hostlike.js");
   function css() { if (document.getElementById("fvCss")) return; const s = document.createElement("style"); s.id = "fvCss"; s.textContent = CSS_TEXT; document.head.appendChild(s); }
   const CSS_TEXT = `
-:root{--fv-ink:#1F1A17;--fv-paper:#F7F1E8;--fv-linen:#EFE6D8;--fv-card:#FFFCF7;--fv-ember:#C94A30;--fv-ember-d:#A63A22;--fv-butter:#F2D48F;--fv-sage:#6F7F5E;--fv-smoke:#665A51;--fv-line:#E4D9C8;--fv-line2:#D9CCBB;--fv-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;--fv-ease:cubic-bezier(.2,.7,.2,1)}
+:root{--fv-ink:var(--pl-ink);--fv-paper:var(--pl-page);--fv-linen:var(--pl-raised);--fv-card:var(--pl-surface);--fv-ember:var(--pl-accent);--fv-ember-d:var(--pl-accent-text);--fv-butter:var(--pl-sand);--fv-sage:var(--pl-sage);--fv-smoke:var(--pl-soft);--fv-line:var(--pl-line);--fv-line2:var(--pl-line-strong);--fv-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;--fv-ease:cubic-bezier(.2,.7,.2,1)}
 .fv-wall{display:flex;flex-direction:column;gap:56px;padding:8px 0 8px}
 .fv-av{flex:none;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:color-mix(in srgb,var(--c) 22%,#fff);border:1.5px solid var(--fv-line2);font-size:14px;line-height:1}.fv-av img,.fv-av svg{width:100%!important;height:100%!important;object-fit:cover;max-width:none!important;max-height:none!important}
 /* stories rail: thin rings, ember when there's something new */
@@ -301,7 +301,7 @@
 .fv-cap2{margin:6px 0 0;font-size:13px;color:var(--fv-smoke)}
 .fv-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}
 .fv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 20px;border-radius:999px;border:1.5px solid var(--fv-line2);background:var(--fv-card);color:var(--fv-ink);font:600 15px "Instrument Sans",system-ui;text-decoration:none;cursor:pointer;transition:background .2s,border-color .2s,transform .15s var(--fv-ease)}
-.fv-btn:hover{border-color:var(--fv-ink)}.fv-btn:active{transform:scale(.97)}.fv-btn.primary{background:var(--fv-ember);border-color:var(--fv-ember);color:#fff;font-size:16px}.fv-btn.primary:hover{background:#B04A30;border-color:#B04A30}
+.fv-btn:hover{border-color:var(--fv-ink)}.fv-btn:active{transform:scale(.97)}.fv-btn.primary{background:var(--fv-ember);border-color:var(--fv-ember);color:#fff;font-size:16px}.fv-btn.primary:hover{background:var(--pl-accent-text);border-color:var(--pl-accent-text)}
 .fv-card :focus-visible,.fv-tile:focus-visible,.fv-row:focus-visible,.fv-sv :focus-visible{outline:3px solid var(--fv-ink);outline-offset:2px}
 /* More: a quiet round button and a small menu */
 .fv-more{position:relative;margin-left:auto}.fv-more>summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid transparent;cursor:pointer;color:var(--fv-smoke)}.fv-more>summary::-webkit-details-marker{display:none}
@@ -317,7 +317,7 @@
 .fv-ev.poster .fv-media>img{padding:12px;box-sizing:border-box}
 .fv-ev .fv-body{padding:14px 2px 0}
 @media (hover:hover){.fv-ev .fv-media>img{transition:transform .6s var(--fv-ease),opacity .5s}.fv-ev:hover .fv-media>img{transform:scale(1.015)}}
-.fv-friends{display:flex;align-items:center;margin-top:8px;font-size:13px;color:var(--fv-smoke)}.fv-friends i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--c);border:1.5px solid var(--fv-paper);font:600 13px var(--sys-title);font-style:normal;color:#1F1A17;margin-right:-6px}.fv-friends span{margin-left:12px;color:var(--fv-ink)}
+.fv-friends{display:flex;align-items:center;margin-top:8px;font-size:13px;color:var(--fv-smoke)}.fv-friends i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--c);border:1.5px solid var(--fv-paper);font:600 13px var(--sys-title);font-style:normal;color:var(--pl-ink);margin-right:-6px}.fv-friends span{margin-left:12px;color:var(--fv-ink)}
 .fv-friends:not([hidden])~.fv-cap2,.fv-together:not([hidden])~.fv-cap2{display:none}
 .fv-together{display:block;margin:8px 0 0}.fv-together .plf-pill{font-size:13px;border:0;background:none;padding:0}
 /* 2. the scrapbook page: instant photos on a quiet card */
@@ -329,7 +329,7 @@
 @media (hover:hover){.fv-ph.lead:hover{transform:rotate(0deg) translateY(-2px)}}
 .fv-mb{position:relative;display:block;width:100%;background:var(--fv-linen);overflow:hidden;border-radius:2px}.fv-mb>img,.fv-mb>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}.fv-mb>.ea-cover{position:absolute}
 .fv-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:rgba(31,26,23,.72);color:#fff;display:grid;place-items:center;font-size:16px;padding-left:3px}
-.fv-cap{display:block;min-height:24px;padding:6px 2px 2px;font:600 20px/1.1 Caveat,"Bradley Hand","Segoe Print",cursive;color:#2B211C;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fv-cap{display:block;min-height:24px;padding:6px 2px 2px;font:600 20px/1.1 Caveat,"Bradley Hand","Segoe Print",cursive;color:var(--pl-ink);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fv-plus{position:absolute;inset:0;display:grid;place-items:center;border-radius:8px;background:rgba(31,26,23,.42);color:#fff;font:500 16px var(--fv-mono)}
 .fv-tape{position:absolute;width:64px;height:20px;background:var(--tp);opacity:.9;z-index:3;pointer-events:none}.fv-tape.top{top:-10px;left:50%;transform:translateX(-50%) rotate(var(--tr))}
 .fv-scrap .fv-title.sm{margin-top:14px}
@@ -353,7 +353,7 @@
 .fv-inspo :is(.pli-tape,.pli-tags,.pli-kind,.pli-count,.pli-vibe,.pli-line,.pli-sticker,.pli-real,.pls-btn){display:none!important}.fv-inspo .pli-cap{transform:none!important;padding:8px 0 0!important;font-size:20px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fv-inspo .pli-body{padding:8px 0 0!important;gap:4px!important}.fv-inspo .pli-title{font-size:15px!important}.fv-inspo .pli-by{font-size:13px!important;color:var(--fv-smoke)}.fv-inspo .pli-by a{border:0!important;font-weight:500!important}
 .fv-inspo .pli-ex{transform:none!important;top:8px!important;right:8px!important;border:0!important;font:500 13px "Instrument Sans",system-ui!important;color:var(--fv-smoke)}.fv-inspo .pli-host{background:none!important;color:var(--fv-ink)!important;border:1.5px solid var(--fv-line2)!important;box-shadow:none!important;min-height:44px}.fv-inspo .pli-real{min-height:44px}
 .fv-inspo .pli-fly{border-radius:12px}
-.fv-artfb{display:grid;place-items:center;height:100%;font-size:48px;background:#FDE6A6}
+.fv-artfb{display:grid;place-items:center;height:100%;font-size:48px;background:var(--pl-sand)}
 /* the end */
 .fv-end{margin:64px 0 24px;padding-top:24px;border-top:1.5px solid var(--fv-line);text-align:center}.fv-end p{margin:0 0 6px;color:var(--fv-smoke);font-size:14px}.fv-end p:first-of-type{font:600 20px var(--sys-display);color:var(--fv-ink)}.fv-end a{color:var(--fv-ember-d);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
 /* loading: the opening and a card, the size they'll be */
@@ -378,21 +378,21 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 @media (hover:hover){.fv-sv-in:hover .fv-sv-prev,.fv-sv-in:hover .fv-sv-next{opacity:.8}}
 .fv-sv-foot{position:relative;z-index:3;margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 16px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.65))}
 .fv-sv-note{margin:0;font:600 26px/1.15 Caveat,cursive;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.6)}
-.fv-sv-cta{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;background:#fff;color:#1F1A17;font:600 16px "Instrument Sans",system-ui;text-decoration:none;border:0}
+.fv-sv-cta{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 22px;border-radius:999px;background:#fff;color:var(--pl-ink);font:600 16px "Instrument Sans",system-ui;text-decoration:none;border:0}
 .fv-sv-unmute{min-height:44px;border-radius:999px;border:1.5px solid rgba(255,255,255,.6);background:rgba(0,0,0,.35);color:#fff;padding:0 14px;font:600 14px "Instrument Sans",system-ui;cursor:pointer}
 .fv-sv-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .fv-sv.paused .fv-sv-bars{opacity:.6}
 /* recap stories: a title card, a quote, an ending card */
-.fv-sv.light .fv-sv-top{color:#1F1A17}.fv-sv.light .fv-sv-top button{background:rgba(31,26,23,.1);color:#1F1A17}.fv-sv.light .fv-sv-bars i{background:rgba(31,26,23,.2)}.fv-sv.light .fv-sv-bars b{background:#1F1A17}.fv-rc-pol.sm{width:min(56%,190px);padding-bottom:22px;transform:rotate(2deg);margin-bottom:6px}
-.fv-sv-rc,.fv-sv-q,.fv-sv-end{position:absolute;inset:0;display:grid;place-items:center;padding:96px 22px 150px;background:var(--tint,#F7F1E8);color:var(--tink,#1F1A17);overflow:hidden}
+.fv-sv.light .fv-sv-top{color:var(--pl-ink)}.fv-sv.light .fv-sv-top button{background:rgba(31,26,23,.1);color:var(--pl-ink)}.fv-sv.light .fv-sv-bars i{background:rgba(31,26,23,.2)}.fv-sv.light .fv-sv-bars b{background:var(--pl-ink)}.fv-rc-pol.sm{width:min(56%,190px);padding-bottom:22px;transform:rotate(2deg);margin-bottom:6px}
+.fv-sv-rc,.fv-sv-q,.fv-sv-end{position:absolute;inset:0;display:grid;place-items:center;padding:96px 22px 150px;background:var(--tint,var(--pl-page));color:var(--tink,var(--pl-ink));overflow:hidden}
 .fv-rc-in{position:relative;display:grid;justify-items:center;gap:10px;text-align:center;width:min(100%,380px)}.fv-rc-in>.fv-stk{position:absolute;top:-6px;right:6px;z-index:4}
 .fv-stk{display:inline-block;font:600 13px/1 "Instrument Sans",system-ui;padding:6px 10px;border-radius:999px;background:var(--fv-card);color:var(--fv-ink);border:1px solid var(--fv-line)}.fv-stk.new{background:var(--fv-butter);border-color:var(--fv-butter)}
 .fv-rc-pol{position:relative;display:block;width:min(74%,260px);background:#fff;border-radius:4px;padding:9px 9px 34px;box-shadow:0 18px 48px -18px rgba(31,26,23,.45);transform:rotate(-2deg)}
 .fv-sv-stage .fv-rc-pol img{display:block;width:100%;height:auto;max-height:none;aspect-ratio:1/1;object-fit:cover;background:var(--fv-linen)}.fv-rc-art{position:relative;display:block;aspect-ratio:1/1;overflow:hidden}
 .fv-rc-t{margin:10px 0 0;font:600 clamp(26px,7vw,36px)/1.05 var(--sys-display);text-wrap:balance}
 .fv-rc-came{margin:0;font:600 30px/1 Caveat,cursive}.fv-rc-came b{font:600 52px/1 var(--sys-display);color:var(--fv-ember);margin-right:4px}
-.fv-rc-sub{margin:0;font:400 13px/1.5 var(--fv-mono);color:var(--tsoft,#5A4E45)}
-.fv-sv-q{background:#2B211C}.fv-quote{position:relative;margin:0;background:var(--n);border-radius:4px 4px 18px 4px;padding:16px 16px 12px;transform:rotate(var(--r,-1.2deg))}.fv-quote.big{width:min(100%,380px);padding:26px 22px 18px}.fv-quote blockquote{margin:0;font:600 23px/1.18 Caveat,"Bradley Hand",cursive;color:#1F1A17}.fv-quote.big blockquote{font-size:34px;line-height:1.12}.fv-quote figcaption{margin-top:8px;font-size:13px;color:#3E352F;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fv-rc-sub{margin:0;font:400 13px/1.5 var(--fv-mono);color:var(--tsoft,var(--pl-soft))}
+.fv-sv-q{background:var(--pl-ink)}.fv-quote{position:relative;margin:0;background:var(--n);border-radius:4px 4px 18px 4px;padding:16px 16px 12px;transform:rotate(var(--r,-1.2deg))}.fv-quote.big{width:min(100%,380px);padding:26px 22px 18px}.fv-quote blockquote{margin:0;font:600 23px/1.18 Caveat,"Bradley Hand",cursive;color:var(--pl-ink)}.fv-quote.big blockquote{font-size:34px;line-height:1.12}.fv-quote figcaption{margin-top:8px;font-size:13px;color:#3E352F;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .fv-stamp{display:inline-block;font:500 13px/1.2 "Instrument Sans",system-ui;color:#4E6140}.fv-pin{display:none}
 .fv-sv-end{background:var(--fv-butter)}.fv-end-in{position:relative;display:grid;justify-items:center;gap:6px;text-align:center;width:min(100%,360px)}.fv-end-in h2{margin:0;font:600 clamp(26px,7vw,34px)/1.08 var(--sys-display);text-wrap:balance}.fv-end-in p{margin:0;color:#3E352F}.fv-end-k{font:500 13px var(--fv-mono)!important;letter-spacing:.06em;text-transform:uppercase;margin-top:10px!important}
 .fv-sv-cta.big{min-height:56px;padding:0 30px;font-size:18px;background:var(--fv-ember);color:#fff}button.fv-sv-cta{cursor:pointer}

@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
 <script src="/authguard.js"></script>
 <style>
-:root{--ink:#1F1A17;--smoke:#665A51;--paper:#F7F1E8;--card:#FFFCF7;--line:#E4D9C8;--line-strong:#D9CCBB;--ember:#C94A30;--frame:#5A3B2B}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:#F7F1E8;--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
+:root{--ink:var(--pl-ink);--smoke:var(--pl-soft);--paper:var(--pl-page);--card:var(--pl-surface);--line:var(--pl-line);--line-strong:var(--pl-line-strong);--ember:var(--pl-accent);--frame:var(--pl-frame)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ink:var(--pl-page);--smoke:#C9BBAE;--paper:#15110E;--card:#211B17;--line:#3A312B;--line-strong:#4A3F37}}
 *{box-sizing:border-box}[hidden]{display:none!important}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,-apple-system,sans-serif}
 main{max-width:640px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom))}
@@ -27,13 +27,13 @@ section>p{margin:0 0 12px;color:var(--smoke);font-size:14px}
 .sw:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .btn{font:600 16px/1 var(--sys-title);min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .btn.go{background:var(--ember);border-color:var(--ember);color:#fff}
-.btn.danger{color:#B04A30;border-color:#B04A30}
+.btn.danger{color:var(--pl-accent-text);border-color:var(--pl-accent-text)}
 .btn.sm{min-height:36px;padding:0 14px;font-size:14px}
 ul.links{list-style:none;margin:0;padding:0}ul.links li{border-top:1.5px solid var(--line)}ul.links li:first-child{border-top:0}
 ul.links a{display:flex;min-height:48px;align-items:center;color:var(--ink);text-decoration:none}
 ul.links a::after{content:"›";margin-left:auto;color:var(--smoke);font-size:20px}
 #delete{border-color:#E7C4B8}
-.pending{background:#FBEDE8;border:1.5px solid #E7C4B8;border-radius:12px;padding:12px;margin:0 0 12px;color:#1F1A17}
+.pending{background:#FBEDE8;border:1.5px solid #E7C4B8;border-radius:12px;padding:12px;margin:0 0 12px;color:var(--pl-ink)}
 form.del{display:grid;gap:12px;margin-top:12px}
 form.del label.opt{display:flex;gap:10px;align-items:flex-start;font-size:16px}
 form.del label.opt input{margin-top:4px;width:20px;height:20px;accent-color:var(--ember)}

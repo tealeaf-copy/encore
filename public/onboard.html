@@ -2,7 +2,7 @@
 <title>Set up with Potto · Pottery Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#F7F1E8;--linen:#EFE6D8;--ink:#1F1A17;--smoke:#665A51;--ember:#C94A30;--ember2:#A93C26;--butter:#F2D48F;--sage:#6F7F5E;--line:#E4D9C8;--card:#FFFDFA;--ok:#3E7A4F}
+:root{--paper:var(--pl-page);--linen:var(--pl-raised);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember2:#A93C26;--butter:var(--pl-sand);--sage:var(--pl-sage);--line:var(--pl-line);--card:var(--pl-surface);--ok:#3E7A4F}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.5 "Instrument Sans",system-ui,sans-serif;overflow-x:hidden}
@@ -96,7 +96,7 @@ label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
 .opts{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
 .opts button{min-height:40px;padding:6px 12px;border-radius:12px;border:2px solid var(--line);background:#fff;cursor:pointer;font:600 14.5px "Instrument Sans",system-ui;text-transform:capitalize}
 .opts button[aria-pressed="true"]{border-color:var(--ink);background:var(--butter)}
-.preview{position:sticky;top:12px;border:2.5px solid var(--ink);border-radius:22px;overflow:hidden;background:var(--pv-bg,#FBF6EF);color:var(--pv-ink,#2B211C)}
+.preview{position:sticky;top:12px;border:2.5px solid var(--ink);border-radius:22px;overflow:hidden;background:var(--pv-bg,#FBF6EF);color:var(--pv-ink,var(--pl-ink))}
 .pv-cover{height:120px;background:var(--pv-cover)}
 .pv-body{padding:0 18px 18px}
 .pv-av{width:72px;height:72px;border-radius:50%;border:3px solid var(--pv-bg,#FBF6EF);background:#fff;display:grid;place-items:center;font-size:36px;margin-top:-36px}
@@ -377,13 +377,13 @@ label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
     catch (e) { revMsg(e.message); } finally { b.disabled = false; b.classList.remove("busy"); } };
 
   // ---- 4. page ----
-  const COVER = { wash: (a) => `linear-gradient(135deg, ${a}33, ${a}88 60%, ${a}cc)`, sunrise: () => "linear-gradient(180deg,#F9C784,#F7A9B6)", dusk: () => "linear-gradient(180deg,#3B2A4D,#C06C84)", dots: (a) => `radial-gradient(${a}55 18%, transparent 20%) 0 0/22px 22px, #FFF7EC`, waves: (a) => `repeating-radial-gradient(circle at 0 100%, ${a}22 0 12px, ${a}55 12px 24px)`, confetti: () => "radial-gradient(circle at 20% 30%,#F2D48F 6px,transparent 7px),radial-gradient(circle at 70% 60%,#E26D8E 5px,transparent 6px),radial-gradient(circle at 45% 80%,#5B7FD6 5px,transparent 6px),radial-gradient(circle at 85% 25%,#3E9C6E 6px,transparent 7px),#FFF7EC", plain: (a) => `${a}22` };
-  const BG = { cream: ["#FBF6EF", "#2B211C"], white: ["#FFFFFF", "#1F1A17"], blush: ["#FDEEF0", "#2B211C"], sage: ["#EEF2E8", "#22281D"], night: ["#1C1714", "#F7F1E8"] };
+  const COVER = { wash: (a) => `linear-gradient(135deg, ${a}33, ${a}88 60%, ${a}cc)`, sunrise: () => "linear-gradient(180deg,#F9C784,#F7A9B6)", dusk: () => "linear-gradient(180deg,#3B2A4D,#C06C84)", dots: (a) => `radial-gradient(${a}55 18%, transparent 20%) 0 0/22px 22px, #FFF7EC`, waves: (a) => `repeating-radial-gradient(circle at 0 100%, ${a}22 0 12px, ${a}55 12px 24px)`, confetti: () => "radial-gradient(circle at 20% 30%,#E3D7BE 6px,transparent 7px),radial-gradient(circle at 70% 60%,#E26D8E 5px,transparent 6px),radial-gradient(circle at 45% 80%,#5B7FD6 5px,transparent 6px),radial-gradient(circle at 85% 25%,#3E9C6E 6px,transparent 7px),#FFF7EC", plain: (a) => `${a}22` };
+  const BG = { cream: ["#FBF6EF", "#1D1B18"], white: ["#FFFFFF", "#1D1B18"], blush: ["#FDEEF0", "#1D1B18"], sage: ["#EEF2E8", "#22281D"], night: ["#1C1714", "#F4F0E8"] };
   const FONT = { classic: "Instrument Sans, system-ui", editorial: "Georgia, serif", modern: "system-ui, sans-serif", playful: "Fredoka, system-ui", handmade: "Fredoka, system-ui", bold: "Fredoka, system-ui" };
-  const pageView = () => { const h = S.host || {}, t = h.theme || {}, P = S.preview || {}; return { name: P.name ?? h.name ?? "", tagline: P.tagline ?? h.tagline ?? "", bio: P.bio ?? h.bio ?? "", accent: P.accent || t.accent || "#C2553A", cover: P.cover || t.cover || "wash", font: P.font || t.font || "classic", bg: P.bg || t.bg || "cream", emoji: P.emoji || h.emoji || "✨" }; };
+  const pageView = () => { const h = S.host || {}, t = h.theme || {}, P = S.preview || {}; return { name: P.name ?? h.name ?? "", tagline: P.tagline ?? h.tagline ?? "", bio: P.bio ?? h.bio ?? "", accent: P.accent || t.accent || "#9A4128", cover: P.cover || t.cover || "wash", font: P.font || t.font || "classic", bg: P.bg || t.bg || "cream", emoji: P.emoji || h.emoji || "✨" }; };
   function drawPreview() { const v = pageView(), [bg, ink] = BG[v.bg] || BG.cream, el = $("#preview"); el.style.setProperty("--pv-bg", bg); el.style.setProperty("--pv-ink", ink); el.style.setProperty("--pv-accent", v.accent); el.style.setProperty("--pv-cover", (COVER[v.cover] || COVER.wash)(v.accent));
     const E = S.drafts.experiences.slice(0, 3), G = S.drafts.gifts.slice(0, 2);
-    el.innerHTML = `<div class="pv-cover"></div><div class="pv-body"><div class="pv-av">${esc(v.emoji)}</div><h2 class="pv-name" style="font-family:${FONT[v.font] || FONT.classic}">${esc(v.name || "Your page")}</h2>${v.tagline ? `<p class="pv-tag" style="color:${v.bg === "night" ? "#F7F1E8" : v.accent}">${esc(v.tagline)}</p>` : ""}${v.bio ? `<p class="pv-bio">${esc(v.bio)}</p>` : ""}
+    el.innerHTML = `<div class="pv-cover"></div><div class="pv-body"><div class="pv-av">${esc(v.emoji)}</div><h2 class="pv-name" style="font-family:${FONT[v.font] || FONT.classic}">${esc(v.name || "Your page")}</h2>${v.tagline ? `<p class="pv-tag" style="color:${v.bg === "night" ? "#F4F0E8" : v.accent}">${esc(v.tagline)}</p>` : ""}${v.bio ? `<p class="pv-bio">${esc(v.bio)}</p>` : ""}
       ${[...E.map((x) => [x.emoji, x.name, x.price]), ...G.map((x) => [x.emoji, x.name, x.cents ? $c(x.cents) + " each" : ""])].map(([e, n, p]) => `<div class="pv-pk"><span>${esc(e || "")} <b>${esc(n)}</b></span><span>${esc(p || "")}</span></div>`).join("")}<span class="pv-btn">Request a date</span></div>`; }
   const pageMsg = (t, good) => { const m = $("#pageMsg"); m.textContent = t || ""; m.classList.toggle("good", !!good); };
   async function applyPage(field, value) { const page = {}; if (["accent", "cover", "font", "bg"].includes(field)) page.theme = { [field]: value }; else page[field] = value;

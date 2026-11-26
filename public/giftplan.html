@@ -4,7 +4,7 @@
 <meta name="description" content="Tell Potto who it's for and your budget. Get a gift per group from local makers, with dates and costs.">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#FFF8EE;--ink:#1F1A17;--smoke:#6B5F56;--ember:#B04A30;--red:#C4532F;--line:#E4D9C8;--butter:#FFE08A;--leaf:#EEF4EA}
+:root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent-text);--red:var(--pl-accent);--line:var(--pl-line);--butter:var(--pl-sand);--leaf:#EEF4EA}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif}a{color:inherit}
 .wrap{max-width:1000px;margin:0 auto;padding:18px 18px 80px}
 header.top{display:flex;justify-content:space-between;align-items:center;padding:4px 0 10px}header.top .brand{text-decoration:none;font:700 20px var(--sys-display);display:flex;gap:8px;align-items:center;min-height:44px}header.top nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;color:var(--smoke);text-decoration:none;font-weight:600}
@@ -13,12 +13,12 @@ h1{font:700 var(--fs-28-40,28px)/1.06 var(--sys-display);margin:6px 0 8px}h1 em,
 .hero{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:18px;align-items:center}.hero .pt{justify-self:center}
 .ask{background:#fff;border:2.5px solid var(--ink);border-radius:24px;box-shadow:0 0 0 5px #fff,0 14px 30px -20px rgba(31,26,23,.5);padding:18px;display:grid;gap:14px}
 .ask label{display:grid;gap:5px;font-weight:600;font-size:14px}.ask label small{font-weight:400;color:var(--smoke);font-size:13px}
-.ask input,.ask textarea{min-height:46px;padding:11px 14px;border:1px solid #DCCFBE;border-radius:14px;font:inherit;font-weight:400;background:#FFFCF7;min-width:0;width:100%}
+.ask input,.ask textarea{min-height:46px;padding:11px 14px;border:1px solid var(--pl-line-strong);border-radius:14px;font:inherit;font-weight:400;background:var(--pl-surface);min-width:0;width:100%}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}.row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end}
 fieldset.kind{border:0;padding:0;margin:0;display:grid;gap:8px}fieldset.kind legend{font-weight:600;font-size:14px;padding:0;margin-bottom:6px}
 .pills{display:flex;flex-wrap:wrap;gap:8px}.pills label{position:relative;display:block}.pills input{position:absolute;opacity:0;width:1px;height:1px}
-.pills span{display:inline-flex;flex-direction:column;justify-content:center;min-height:44px;padding:6px 14px;border:1.5px solid #DCCFBE;border-radius:14px;background:#FFFCF7;font-weight:600;font-size:14px;cursor:pointer;line-height:1.2}.pills span small{font-weight:400;color:var(--smoke);font-size:13px}
-.pills input:checked+span{border-color:var(--ink);background:var(--ink);color:#fff}.pills input:checked+span small{color:#E9DFD2}.pills input:focus-visible+span{outline:3px solid var(--ember);outline-offset:2px}
+.pills span{display:inline-flex;flex-direction:column;justify-content:center;min-height:44px;padding:6px 14px;border:1.5px solid var(--pl-line-strong);border-radius:14px;background:var(--pl-surface);font-weight:600;font-size:14px;cursor:pointer;line-height:1.2}.pills span small{font-weight:400;color:var(--smoke);font-size:13px}
+.pills input:checked+span{border-color:var(--ink);background:var(--ink);color:#fff}.pills input:checked+span small{color:var(--pl-line)}.pills input:focus-visible+span{outline:3px solid var(--ember);outline-offset:2px}
 .eg{display:flex;flex-wrap:wrap;gap:8px}.eg button{min-height:44px;border:1.5px dashed #CDBFAE;background:none;border-radius:999px;padding:6px 14px;font-weight:600;font-size:14px;font-family:inherit;cursor:pointer;color:var(--smoke)}
 details.list{border:1px dashed #CDBFAE;border-radius:16px;padding:0 14px}details.list>summary{min-height:46px;display:flex;align-items:center;font-weight:600;cursor:pointer}details.list[open]{padding-bottom:14px}details.list .row{margin-top:4px}
 .go{min-height:48px;background:var(--red);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:12px 22px;font:700 16px "Instrument Sans",system-ui;box-shadow:3px 3px 0 var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}.go:disabled{opacity:.6}
@@ -26,12 +26,12 @@ details.list{border:1px dashed #CDBFAE;border-radius:16px;padding:0 14px}details
 .think{display:grid;justify-items:center;gap:6px;padding:30px 10px;text-align:center}.think ol{list-style:none;padding:0;margin:0;color:var(--smoke)}.think li{opacity:.35;transition:opacity .4s}.think li.on{opacity:1;color:var(--ink);font-weight:600}
 .card{background:#fff;border:1.5px solid var(--line);border-radius:22px;padding:20px}
 .plan{margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:22px}.plan>*{min-width:0}
-.label{border-radius:14px;padding:10px 14px;font-size:14px;background:#FFF1D2;border:1px solid #F0D9A8}.label b{display:block}.label button{margin-top:8px}
+.label{border-radius:14px;padding:10px 14px;font-size:14px;background:var(--pl-sand-soft);border:1px solid #F0D9A8}.label b{display:block}.label button{margin-top:8px}
 .intro{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px;align-items:center}.intro p{margin:0;font:600 20px/1.35 "Instrument Sans",system-ui}.intro .src{font:400 14px/1.5 "Instrument Sans",system-ui;margin-top:4px}
 .src{font-size:14px;color:var(--smoke)}.src a{color:var(--ember)}
 .gifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:18px}
 .gift{background:#fff;border:2.5px solid var(--ink);border-radius:22px;box-shadow:0 0 0 4px #fff,0 4px 0 4px rgba(31,26,23,.14);overflow:hidden;display:flex;flex-direction:column}
-.gift .art{line-height:0;background:#F6EFE6;border-bottom:2px solid var(--ink)}.gift .art svg{width:100%;height:auto;display:block}
+.gift .art{line-height:0;background:var(--pl-page);border-bottom:2px solid var(--ink)}.gift .art svg{width:100%;height:auto;display:block}
 .gift .bd{padding:16px;display:grid;gap:8px}.gift h3{margin:0;font:700 20px/1.15 var(--sys-display)}
 .gift .for{font-size:14px;color:var(--smoke)}.gift .for b{color:var(--ink)}
 .gift .price{font:700 28px/1.1 var(--sys-display)}.gift .price small{display:block;font:500 14px "Instrument Sans",system-ui;color:var(--smoke);margin-top:2px}
@@ -47,7 +47,7 @@ details.sub{border-top:1px dashed var(--line);font-size:14px}details.sub>summary
 .comp{background:var(--leaf);border:1.5px solid #B9D3AE;border-radius:16px;padding:12px 14px;font-size:16px}.comp b{margin-right:4px}
 .pbk h4{font:700 16px var(--sys-title);margin:12px 0 4px}.pbk ul{padding-left:20px;margin:4px 0}.pbk p{margin:6px 0}.pbk .note{margin:6px 0}
 .read{font-size:14px;color:var(--smoke);margin:8px 0 0;padding-left:18px}
-.quote{background:#FFF1D2;border:2px solid var(--ink);border-radius:22px;padding:18px 20px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.quote p{margin:0;max-width:560px}.quote b{font:700 20px var(--sys-display);display:block}.quote .ql{list-style:none;margin:0;padding:0;display:grid;gap:8px;flex:1 1 100%}.quote .ql li{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.quote{background:var(--pl-sand-soft);border:2px solid var(--ink);border-radius:22px;padding:18px 20px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.quote p{margin:0;max-width:560px}.quote b{font:700 20px var(--sys-display);display:block}.quote .ql{list-style:none;margin:0;padding:0;display:grid;gap:8px;flex:1 1 100%}.quote .ql li{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .dl h2{font:700 20px var(--sys-display);margin:0 0 8px}.dlrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.dlrow .btn{width:100%;text-align:center}.dl .src{margin:8px 0 0}
 .folds{display:grid;gap:10px}
 details.fold{background:#fff;border:1.5px solid var(--line);border-radius:18px}details.fold.pf{background:var(--leaf);border-color:#B9D3AE}
@@ -57,22 +57,22 @@ details.fold>summary::after{content:"";grid-column:2;grid-row:1/3;width:10px;hei
 h3.sub{font:700 16px var(--sys-title);margin:14px 0 6px}
 .segs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.seg{border:1px dashed var(--line);border-radius:16px;padding:12px}.seg b{display:block}.seg dl{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:8px 0 0;font-size:14px}.seg dt{color:var(--smoke)}.seg dd{margin:0;font-weight:600}.seg .sn{background:#FFF6D8;border-radius:10px;padding:6px 9px;font-size:14px;margin-top:8px}
 .tl{list-style:none;margin:10px 0 0;padding:0}.tl li{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px dashed var(--line)}.tl li b{color:var(--ember)}.tl small{color:var(--smoke)}
-.copy{position:relative;background:#FFFCF7;border:1px solid var(--line);border-radius:14px;padding:50px 14px 12px;white-space:pre-wrap;font-size:16px}.copy .cp{position:absolute;right:6px;top:6px}
+.copy{position:relative;background:var(--pl-surface);border:1px solid var(--line);border-radius:14px;padding:50px 14px 12px;white-space:pre-wrap;font-size:16px}.copy .cp{position:absolute;right:6px;top:6px}
 .warn{background:#FFE3D6;border:2px solid var(--ember);border-radius:16px;padding:12px 16px;margin:0 0 14px;font-size:16px}.warn .btn{margin-top:8px}.tl li.past b{color:var(--ember)}
 .note{white-space:pre-line;font:600 20px/1.25 Caveat,cursive;background:#FFF6D8;border-radius:6px;padding:14px 16px;transform:rotate(-.6deg);box-shadow:0 8px 18px -12px rgba(0,0,0,.4)}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.two>*{min-width:0}
 table.bt{width:100%;border-collapse:collapse;font-size:14px}table.bt th,table.bt td{text-align:left;padding:8px 6px;border-top:1px dashed var(--line);vertical-align:top}table.bt th{font-size:13px;color:var(--smoke);text-transform:uppercase;letter-spacing:.04em;border-top:0}.btw{overflow-x:auto}
 .gates{list-style:none;padding:0;margin:6px 0 0;display:grid;gap:6px}.gates li{display:flex;gap:8px}.gates li::before{content:"☐";font-size:16px;line-height:1.3}.gates small{color:var(--smoke)}
-.next{background:#FFF1D2;border:2px solid var(--ink);border-radius:22px;padding:22px;display:grid;gap:8px;justify-items:start}.next h2{margin:0;font:700 28px var(--sys-display)}.next p{margin:0;color:var(--smoke)}
+.next{background:var(--pl-sand-soft);border:2px solid var(--ink);border-radius:22px;padding:22px;display:grid;gap:8px;justify-items:start}.next h2{margin:0;font:700 28px var(--sys-display)}.next p{margin:0;color:var(--smoke)}
 a:focus-visible,button:focus-visible,summary:focus-visible,.btw:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 body.viewing h1{font-size:var(--fs-28-40,28px)}body.viewing .hero{grid-template-columns:1fr}body.viewing .hero .pt{display:none}body.viewing .lede{margin-bottom:4px}.ask[hidden]{display:none}
 @media (max-width:860px){html body.es-has-tabs{padding-bottom:calc(84px + env(safe-area-inset-bottom))}.sum{grid-template-columns:1fr}}
 @media (max-width:720px){.hero{grid-template-columns:1fr}.hero .pt{display:none}.row,.row3,.two{grid-template-columns:1fr}.tl li{grid-template-columns:1fr;gap:2px}.dlrow{grid-template-columns:1fr}.intro{grid-template-columns:56px minmax(0,1fr)}.intro p{font-size:16px}
-  .btw{overflow:visible}table.stack thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}table.stack tr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:#FFFCF7}table.stack td{display:grid;grid-template-columns:40% minmax(0,1fr);gap:8px;border:0;padding:3px 0}table.stack td::before{content:attr(data-label);color:var(--smoke);font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}table.stack td:first-child{display:block;font-weight:700;padding-bottom:6px}table.stack td:first-child::before{display:none}}
+  .btw{overflow:visible}table.stack thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}table.stack tr{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--pl-surface)}table.stack td{display:grid;grid-template-columns:40% minmax(0,1fr);gap:8px;border:0;padding:3px 0}table.stack td::before{content:attr(data-label);color:var(--smoke);font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}table.stack td:first-child{display:block;font-weight:700;padding-bottom:6px}table.stack td:first-child::before{display:none}}
 @media print{header.top,.ask,.dl,.quote,.next,.hero .pt,.cp,.es-tabs,.es-rail,.gift .btn{display:none!important}details.fold>summary::after{display:none}body{background:#fff}}
 </style></head><body data-audience="brand">
 <div class="wrap">
-  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><nav><a href="/gifts">Gifts</a><a href="/hosts/book">For brands</a></nav></header>
+  <header class="top"><a class="brand" href="/"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</a><nav><a href="/gifts">Gifts</a><a href="/hosts/book">For brands</a></nav></header>
   <div class="hero"><div><h1 id="hTitle">Plan your <em>gifts</em></h1><p class="lede" id="hLede"></p></div><div class="pt" id="heroPotto"></div></div>
   <form class="ask" id="ask">
     <div class="row"><label>Brand<input name="company" required maxlength="100" placeholder="e.g. Exa" autocomplete="organization"></label><label>Website <small>(optional)</small><input name="website" maxlength="200" placeholder="exa.ai"></label></div>

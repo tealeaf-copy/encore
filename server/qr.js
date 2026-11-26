@@ -67,7 +67,7 @@ export function qrMatrix(text) {
 }
 
 /** An SVG of the QR code for `text`, with a 4-module quiet zone. */
-export function qrSvg(text, { dark = "#1F1A17", light = "#FFFFFF" } = {}) {
+export function qrSvg(text, { dark = "#1D1B18", light = "#FFFFFF" } = {}) {
   const M = qrMatrix(text), n = M.length, q = 4, w = n + q * 2; let d = "";
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (M[y][x]) d += `M${x + q} ${y + q}h1v1h-1z`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${w}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${w}" height="${w}" fill="${light}"/><path d="${d}" fill="${dark}"/></svg>`;

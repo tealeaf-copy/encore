@@ -130,7 +130,7 @@
 
   // ---- status bar and splash ----
   const Bar = plugin("StatusBar"), Splash = plugin("SplashScreen");
-  function bar() { if (!Bar) return; try { const dark = matchMedia("(prefers-color-scheme: dark)").matches && !document.querySelector('[data-theme="light"]'); Bar.setStyle({ style: dark ? "DARK" : "LIGHT" }); if (platform === "android") { Bar.setOverlaysWebView({ overlay: false }); Bar.setBackgroundColor({ color: dark ? "#15110E" : "#F7F1E8" }); } } catch {} }
+  function bar() { if (!Bar) return; try { const dark = matchMedia("(prefers-color-scheme: dark)").matches && !document.querySelector('[data-theme="light"]'); Bar.setStyle({ style: dark ? "DARK" : "LIGHT" }); if (platform === "android") { Bar.setOverlaysWebView({ overlay: false }); Bar.setBackgroundColor({ color: dark ? "#15110E" : "#F4F0E8" }); } } catch {} }
 
   const ready = () => { safeArea(); bar(); try { Splash && Splash.hide({ fadeOutDuration: 200 }); } catch {} };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();

@@ -264,19 +264,19 @@ export function loginPage() {
   if (/^#(rsvp-|survey-|nominate-|plan-|roadmap|guests-|approve-|signoff-|confnom)/.test(location.hash)) location.replace("/g" + location.search + location.hash); // keep ?utm_… for the RSVP
 </script>
 <style>
-  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "Instrument Sans",system-ui,sans-serif;background:#FAF7F2;color:#2B211C}
-  form{background:#fff;padding:32px 24px;border-radius:24px;border:1.5px solid #E4D9C8;box-shadow:none;width:min(360px,calc(100vw - 32px));box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px "Instrument Sans",system-ui,sans-serif;background:#F4F0E8;color:#1D1B18}
+  form{background:#fff;padding:32px 24px;border-radius:24px;border:1.5px solid #E2DCD1;box-shadow:none;width:min(360px,calc(100vw - 32px));box-sizing:border-box}
   .brand{display:flex;align-items:center;gap:8px;font:600 20px "Fraunces",Georgia,serif;margin-bottom:18px}
-  h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#75685F;font-size:14px}
-  label{display:block;font-size:14px;font-weight:600;color:#2B211C;margin-bottom:16px}
+  h1{margin:0 0 4px;font:600 24px "Fraunces",Georgia,serif}.sub{margin:0 0 18px;color:#5D564E;font-size:14px}
+  label{display:block;font-size:14px;font-weight:600;color:#1D1B18;margin-bottom:16px}
   input,button{width:100%;box-sizing:border-box;font:inherit;padding:11px 14px;border-radius:12px;min-height:48px}
-  input{border:1.5px solid #D9CCBB;margin:8px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:none;border-color:#1F1A17;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
-  button{border:0;background:#C94A30;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;border-radius:999px;min-height:52px}button:hover{background:#B04A30}button:disabled{opacity:.6;cursor:default}
+  input{border:1.5px solid #CFC6B8;margin:8px 0 0;background:#fff;font-weight:400;font-size:16px}input:focus{outline:none;border-color:#1D1B18;box-shadow:0 0 0 3px rgba(201,74,48,.22)}
+  button{border:0;background:#9A4128;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;border-radius:999px;min-height:52px}button:hover{background:#8E3B24}button:disabled{opacity:.6;cursor:default}
   .err{color:#A93A3A;margin:0 0 12px;font-size:13px}.err:empty{display:none}p{margin:0 0 12px}
-  a{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:2px;padding:0;text-align:center;color:#B04A30;font-size:14px;text-decoration:none}
+  a{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:2px;padding:0;text-align:center;color:#8E3B24;font-size:14px;text-decoration:none}
 </style><link rel="stylesheet" href="/system.css"></head><body>
 <form method="post" action="/api/login"><input type="hidden" name="next" id="nextIn"><script>try{const n=new URLSearchParams(location.search).get("next");if(n&&n.charAt(0)==="/"&&n.charAt(1)!=="/")document.getElementById("nextIn").value=n}catch(e){}</script>
-  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#C4532F" stroke="#1F1A17" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#F2D48F" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1F1A17" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#6F6259">Good to see you again.</p>
+  <div class="brand"><svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true"><path d="M10.2 3.2h7.6v1.9c0 1.3-1.1 1.9-1.1 3.3 0 1.5 5.6 3.4 5.6 9.4 0 4.6-3.7 7.4-8.3 7.4s-8.3-2.8-8.3-7.4c0-6 5.6-7.9 5.6-9.4 0-1.4-1.1-2-1.1-3.3z" fill="#9A4128" stroke="#1D1B18" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.4 16.7c2 1.3 4.3-.9 6.8.2 2.4 1 4.5-.8 6.6.1" fill="none" stroke="#E3D7BE" stroke-width="2.2" stroke-linecap="round"/><path d="M9.6 3.2h8.8" stroke="#1D1B18" stroke-width="1.8" stroke-linecap="round"/></svg>pottery lab</div><h1>Sign in</h1><p style="margin:-6px 0 14px;color:#5D564E">Good to see you again.</p>
   <script>if (location.search.includes("error=sso")) document.write("<p>Single sign-on didn't work. Try again, or ask your admin.</p>"); else if (location.search.includes("error=4")) document.write("<p>Your company uses single sign-on. Sign in with SSO instead.</p>"); else if (location.search.includes("error=3")) document.write("<p>Too many tries. Take a breather and try again later.</p>"); else if (location.search.includes("error")) document.write("<p>That email and password don't match.</p>"); else if (location.search.includes("why=collab")) document.write("<p>Sign in to suggest a collab. Hosts only.</p>")</script>
   ${users().length || signupEnabled() ? `<label>Email<input type="email" name="email" autocomplete="email" ${users().length || !process.env.APP_PASSWORD ? "required" : ""}></label>` : ""}
   <label>${users().some((u) => u.pw) || signupEnabled() ? "Password" : "Team password"}<input type="password" name="password" autocomplete="current-password" autofocus required></label>

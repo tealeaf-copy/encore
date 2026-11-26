@@ -44,28 +44,28 @@ nav.links{display:flex;gap:26px}nav.links a{text-decoration:none;color:var(--mut
 .sgrid.flip{grid-template-columns:300px minmax(0,1fr)}.sgrid.flip .win{order:2}
 .win{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 40px 120px -40px rgba(0,0,0,.8)}
 .winbar{display:flex;gap:6px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);color:var(--dim);font-size:.8rem}
-.winbar i{width:9px;height:9px;border-radius:50%;background:#3A302A}.winbar span{margin-left:10px}
-.winbody{background:#FAF7F2;color:#2B211C;padding:18px}
+.winbar i{width:9px;height:9px;border-radius:50%;background:var(--pl-ink)}.winbar span{margin-left:10px}
+.winbody{background:var(--pl-page);color:var(--pl-ink);padding:18px}
 .winbody.dark{background:transparent;color:var(--ink)}
 .proof{font:400 1.55rem/1.25 "Fraunces";letter-spacing:-.02em}.proof .dim{color:#7C6F66}
 .feats{margin-top:34px}.feats small{color:var(--dim);font-size:.85rem}.feats ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}.feats li{font-size:1rem}
 .tag{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.05em;color:#7C6F66;margin-top:10px}
 
 /* demo inside window */
-.dform{display:flex;gap:8px;background:#fff;border:1px solid #E9E1D6;border-radius:12px;padding:6px}
-.dform input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1rem;padding:9px 10px;color:#2B211C;outline:none}
-.dform .btn{flex:none;border:0;border-radius:9px;background:#B04A30;color:#fff;font:600 .92rem "Instrument Sans";padding:0 16px;cursor:pointer}
+.dform{display:flex;gap:8px;background:#fff;border:1px solid var(--pl-line);border-radius:12px;padding:6px}
+.dform input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:1rem;padding:9px 10px;color:var(--pl-ink);outline:none}
+.dform .btn{flex:none;border:0;border-radius:9px;background:var(--pl-accent-text);color:#fff;font:600 .92rem "Instrument Sans";padding:0 16px;cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:5px 11px;font:500 .85rem "Instrument Sans";color:#2B211C;cursor:pointer}
-.chip[aria-pressed=true]{border-style:solid;border-color:#2B211C;background:#2B211C;color:#fff}
-.plan{margin-top:14px;border-top:1px solid #E9E1D6;padding-top:12px;display:grid;gap:12px}
+.chip{border:1px dashed #D8CCBE;background:transparent;border-radius:999px;padding:5px 11px;font:500 .85rem "Instrument Sans";color:var(--pl-ink);cursor:pointer}
+.chip[aria-pressed=true]{border-style:solid;border-color:var(--pl-ink);background:var(--pl-ink);color:#fff}
+.plan{margin-top:14px;border-top:1px solid var(--pl-line);padding-top:12px;display:grid;gap:12px}
 .plan .ttl{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}.plan .ttl b{font:500 1.15rem "Fraunces"}
 .plan .note{color:#7A6D64;font-size:.85rem}
 .tot{font:500 1.45rem "Fraunces"}
 .ln{display:grid;grid-template-columns:1fr auto;gap:1px 12px;padding:6px 0;border-bottom:1px solid #F1EBE3;font-size:.92rem}.ln small{grid-column:1/-1;color:#9A8D84;font-size:.76rem}.ln b{font-weight:600;font-variant-numeric:tabular-nums}
 .dates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.dates div{background:#F4EEE6;border-radius:10px;padding:7px 10px;font-size:.8rem}.dates b{display:block;font-size:.88rem}
 .as{font-size:.68rem;font-weight:600;color:#A27B3C;background:#F6EDDC;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
-.keep{justify-self:start;display:inline-flex;border-radius:999px;background:#B04A30;color:#fff;text-decoration:none;font:600 .9rem "Instrument Sans";padding:9px 16px}
+.keep{justify-self:start;display:inline-flex;border-radius:999px;background:var(--pl-accent-text);color:#fff;text-decoration:none;font:600 .9rem "Instrument Sans";padding:9px 16px}
 .fade{animation:fade .35s ease}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 .duo{display:grid;grid-template-columns:1fr 200px;gap:18px;align-items:center}.duo .phone{border:8px solid #0B0807;border-radius:28px;overflow:hidden}
 

@@ -24,11 +24,11 @@ const mix = (a, b, p) => { const h = (x) => [1, 3, 5].map((i) => parseInt(x.slic
 test("every look: each text colour on /i and /g passes AA against what it sits on (static colour pairs)", () => {
   const { C, LK } = browser(); const AA = 4.5, ok = (fg, bg, what) => { const r = C.contrast(fg, bg); assert.ok(r >= AA, `${what}: ${fg} on ${bg} is ${r.toFixed(2)}`); };
   // the fixed components first: the door code chip sets its own ink (it was the look's ink on butter: 1.1 on a dark look)
-  assert.match(inviteCss, /\.ticket \.code\{[^}]*background:#FFE08A;color:#1F1A17/); ok("#1F1A17", "#FFE08A", "door code");
+  assert.match(inviteCss, /\.ticket \.code\{[^}]*background:var\(--pl-sand\);color:var\(--pl-ink\)/); ok("#1D1B18", "#E3D7BE", "door code");
   // the chat card on /g is white whatever the look: ink text and a smoke note, reset over the look's light ink
-  assert.match(html, /html body\.lk-on \.gchat\.gchat :is\(b,h3,h4,p,span,label,li,[^)]*\)\{color:#1F1A17!important\}/);
-  assert.match(html, /html body\.lk-on \.gchat\.gchat :is\(small,\.note,\.eyebrow,\.gc-m small\)\{color:#665A51!important\}/);
-  ok("#1F1A17", "#FFFFFF", "chat card ink"); ok("#665A51", "#FFFFFF", "chat card note"); ok("#B04A30", "#FFFFFF", "chat card link");
+  assert.match(html, /html body\.lk-on \.gchat\.gchat :is\(b,h3,h4,p,span,label,li,[^)]*\)\{color:var\(--pl-ink\)!important\}/);
+  assert.match(html, /html body\.lk-on \.gchat\.gchat :is\(small,\.note,\.eyebrow,\.gc-m small\)\{color:var\(--pl-soft\)!important\}/);
+  ok("#1D1B18", "#FFFFFF", "chat card ink"); ok("#5D564E", "#FFFFFF", "chat card note"); ok("#8E3B24", "#FFFFFF", "chat card link");
   // the repeat line and "Plans changed?" use the look's soft colour (they were ink brown on a dark page)
   assert.match(html, /#view-guest \.sr-every\{color:var\(--lk-soft\)!important;opacity:1!important\}/); assert.match(html, /#view-guest \.gchange>\.eyebrow\{color:var\(--lk-soft\)!important\}/);
   const looks = Object.entries(LK.VIBES); assert.ok(looks.length >= 10); for (const k of ["terminal", "pixel", "night", "velvet", "winter"]) assert.ok(LK.VIBES[k], k);
@@ -36,7 +36,7 @@ test("every look: each text colour on /i and /g passes AA against what it sits o
     for (const bg of [T.top, T.bot]) { ok(T.ink, bg, `${k} ink`); ok(T.soft, bg, `${k} soft (repeat line, Plans changed?, muted lines)`); }
     ok(T.onBtn, T.btn, `${k} button`); ok(T.cardInk, T.card, `${k} card text (form, ticket)`); ok(mix(T.cardInk, T.card, 0.74), T.card, `${k} muted text on the card`); }
   // no look: the house colours
-  ok("#1F1A17", "#FFF8EE", "ink on paper"); ok("#5E534B", "#FFF8EE", "smoke on paper");
+  ok("#1D1B18", "#F4F0E8", "ink on paper"); ok("#5D564E", "#F4F0E8", "smoke on paper");
 });
 
 test("the invite meta and the ticket: drawn glyphs, the door code right under its label, Come with me after it", () => {

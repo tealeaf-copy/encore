@@ -13,21 +13,21 @@
   const TOK = /^[A-Za-z0-9_-]{20,40}$/;
   // a drawn line glyph (two people), not an emoji, like the app's other button icons (docs/brand-kit.md, UI tokens)
   const GLYPH_PAIR = `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.2" cy="6.6" r="2.6"/><path d="M2.6 16.2c.4-3 2.2-4.7 4.6-4.7s4.2 1.7 4.6 4.7"/><circle cx="13.6" cy="7.4" r="2.2"/><path d="M12.6 11.6c.3-.1.7-.1 1-.1 2.1 0 3.6 1.5 3.9 4.2"/></svg>`;
-  const TINTS = ["#F2D48F", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"];
+  const TINTS = ["#E3D7BE", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#A9D5F8", "#FCCBA6"];
   const tint = (n) => TINTS[[...String(n || "")].reduce((a, c) => a + c.charCodeAt(0), 0) % TINTS.length];
   const face = (p, size = 40) => `<span class="cwm-face" style="--c:${esc(p.color && /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : tint(p.name))};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.46)}px" aria-hidden="true">${esc(p.emoji || String(p.name || "?").slice(0, 1).toUpperCase())}</span>`;
   const until = (t) => { const d = new Date(t); if (isNaN(d)) return ""; const day = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), h = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()); return `${day} · ${h}`; };
-  const CSS = `.cwm-hello{max-width:620px;display:flex;gap:12px;align-items:center;background:#FFF8EE;border:1.5px solid #E4D9C8;border-radius:18px;padding:12px 14px;margin:10px 0 14px;color:#1F1A17;font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;position:relative}
-.cwm-hello p{margin:0}.cwm-hello b{font:600 17px/1.25 var(--sys-title)}.cwm-hello small{display:block;color:#665A51;font-size:13.5px;margin-top:2px}
-.cwm-face{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:50%;border:2px solid #1F1A17;background:var(--c,#F2D48F);color:#1F1A17;font-weight:700;font-family:var(--sys-display)}
+  const CSS = `.cwm-hello{max-width:620px;display:flex;gap:12px;align-items:center;background:var(--pl-page);border:1.5px solid var(--pl-line);border-radius:18px;padding:12px 14px;margin:10px 0 14px;color:var(--pl-ink);font:500 15px/1.35 "Instrument Sans",system-ui,sans-serif;position:relative}
+.cwm-hello p{margin:0}.cwm-hello b{font:600 17px/1.25 var(--sys-title)}.cwm-hello small{display:block;color:var(--pl-soft);font-size:13.5px;margin-top:2px}
+.cwm-face{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:50%;border:2px solid var(--pl-ink);background:var(--c,var(--pl-sand));color:var(--pl-ink);font-weight:700;font-family:var(--sys-display)}
 .cwm-faces{display:inline-flex}.cwm-faces .cwm-face+.cwm-face{margin-left:-12px}
 .cwm-box{display:grid;gap:6px;margin:12px 0 4px;justify-items:start}
-.cwm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:1.5px solid #1F1A17;border-radius:999px;background:#F2D48F;color:#1F1A17;font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
+.cwm-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:1.5px solid var(--pl-ink);border-radius:999px;background:var(--pl-sand);color:var(--pl-ink);font:600 16px "Instrument Sans",system-ui,sans-serif;cursor:pointer}
 .cwm-btn svg{flex:none;width:20px;height:20px}
 .cwm-btn:hover{background:#EFCB7C}.cwm-btn[disabled]{opacity:.6;cursor:default}
 .cwm-btn.pulse{animation:cwmP 1.4s ease-in-out 3}@keyframes cwmP{50%{box-shadow:0 0 0 6px rgba(201,74,48,.25)}}
-.cwm-note{margin:0;color:#665A51;font:500 13.5px/1.35 "Instrument Sans",system-ui,sans-serif}.cwm-note.err{color:#A8341A}
-.cwm-copy{width:100%;max-width:340px;min-height:40px;border:2px solid #E4D9C8;border-radius:12px;padding:0 10px;font:500 14px "Instrument Sans",system-ui;color:#1F1A17;background:#fff}
+.cwm-note{margin:0;color:var(--pl-soft);font:500 13.5px/1.35 "Instrument Sans",system-ui,sans-serif}.cwm-note.err{color:#A8341A}
+.cwm-copy{width:100%;max-width:340px;min-height:40px;border:2px solid var(--pl-line);border-radius:12px;padding:0 10px;font:500 14px "Instrument Sans",system-ui;color:var(--pl-ink);background:#fff}
 .cwm-tg{margin:10px 0}#tk .cwm-box{justify-items:center}
 .fv-cwm{min-height:40px;padding:0 14px;font-size:15px;box-shadow:none}
 @media (prefers-reduced-motion:reduce){.cwm-btn,.cwm-btn.pulse{animation:none}}`;

@@ -87,7 +87,7 @@ const ea = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<"
 export function unfurlOf(store, ws, id, ev, base) {
   const title = titleOf(store, id, ev, ws), open = !closed(ev) && !ev.approvalRequired, left = open ? spotsLeft(scopeStore(store, ws), id, ev) : null, when = [dayOf(ev.date), clock(ev.startTime)].filter(Boolean).join(" · ");
   const spots = left == null ? "" : left === 0 ? "Full, waitlist open" : `${left} spot${left === 1 ? "" : "s"} left`;
-  const meta = [`<meta name="theme-color" content="#C4532F">`,
+  const meta = [`<meta name="theme-color" content="#9A4128">`,
     when ? `<meta name="twitter:label1" content="When"><meta name="twitter:data1" content="${ea(when)}">` : "", spots ? `<meta name="twitter:label2" content="Spots"><meta name="twitter:data2" content="${ea(spots)}">` : "",
     `<link rel="alternate" type="application/json+oembed" href="${ea(base)}/oembed?url=${encodeURIComponent(base + "/e/" + id)}&amp;format=json" title="${ea(title)}">`, `<link rel="alternate" type="text/calendar" href="${ea(base)}/e/${encodeURIComponent(id)}.ics" title="Add to calendar">`].join("");
   return { title, spots, meta };

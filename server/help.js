@@ -446,20 +446,20 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
 const ADMIN_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Help inbox · Pottery Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#1F1A17;--soft:#665A51;--line:#E4D9C8;--bg:#F7F1E8;--clay:#C94A30}
+:root{--ink:#1D1B18;--soft:#5D564E;--line:#E2DCD1;--bg:#F4F0E8;--clay:#9A4128}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Instrument Sans",system-ui,sans-serif}
 main{max-width:920px;margin:0 auto;padding:24px 16px 60px}h1{font:600 28px 'Instrument Serif',Georgia,serif;margin:0 0 4px}.sub{color:var(--soft);margin:0 0 16px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}.stat{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}.stat b{display:block;font:600 28px 'Instrument Serif',Georgia,serif}.stat span{color:var(--soft);font-size:13px}
 .gaps{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 16px}.gaps h2{font:600 16px 'Instrument Sans',system-ui,sans-serif;margin:0 0 6px}.gaps ul{margin:0;padding-left:18px;font-size:14px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.tabs button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;min-height:44px}.tabs button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
-.t{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}.t:target{outline:3px solid #F2D48F}
-.top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.top b{font-size:16px}.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:#FDE7DF;color:#8E3A25}.pill.waiting{background:#FFF1C9;color:#6B4E00}.pill.solved{background:#E3F2E6;color:#245C33}
+.t{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px}.t:target{outline:3px solid #E3D7BE}
+.top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.top b{font-size:16px}.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:#FDE7DF;color:#8E3B24}.pill.waiting{background:#F0E9DA;color:#6B4E00}.pill.solved{background:#E3F2E6;color:#245C33}
 .muted{color:var(--soft);font-size:13px}dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:2px 10px;margin:10px 0;font-size:13px}dt{color:var(--soft)}dd{margin:0;overflow-wrap:anywhere}
 .ctx{background:#FBF7F0;border-radius:12px;padding:8px 12px;margin:10px 0}.ctx h3{font:600 14px "Instrument Sans",system-ui;margin:0 0 4px}
 .msg{border-left:3px solid var(--line);padding:4px 10px;margin:8px 0;white-space:pre-wrap}.msg.team{border-color:var(--clay)}.msg small{display:block;color:var(--soft);font-size:12px}
 details{margin:8px 0}summary{cursor:pointer;font-weight:600;font-size:13px;min-height:28px}
-form{display:grid;gap:8px;margin-top:10px}textarea{width:100%;min-height:80px;border:1.5px solid #D9CCBB;border-radius:12px;padding:10px;font:inherit}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select{border:1.5px solid #D9CCBB;border-radius:12px;padding:8px;font:inherit;min-height:44px}
+form{display:grid;gap:8px;margin-top:10px}textarea{width:100%;min-height:80px;border:1.5px solid #CFC6B8;border-radius:12px;padding:10px;font:inherit}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select{border:1.5px solid #CFC6B8;border-radius:12px;padding:8px;font:inherit;min-height:44px}
 button.go{border:0;background:var(--clay);color:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
 .ok{color:#245C33;font-size:13px}.err{color:#A93A3A;font-size:13px}
 </style></head><body><main><h1>Help inbox</h1><p class="sub">What hosts asked for. Replies go to them in the app and by email.</p>

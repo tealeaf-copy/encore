@@ -1,7 +1,7 @@
 /* Pottery Lab: a studio feel on every page. Paper grain, buttons with a little clay squish, warm selection and
    focus rings, and nothing moves for people who asked their device for less motion. */
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2147483000;opacity:.06;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .38  0 0 0 0 .25  0 0 0 0 .16  0 0 0 1.4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
-::selection{background:#F6C9A8;color:#1F1A17}
+::selection{background:var(--pl-accent-soft);color:var(--pl-ink)}
 a.btn,button.btn,.btn,.cta,.es-rail a,.chip{transition:transform .2s cubic-bezier(.3,1.7,.5,1),background-color .2s,box-shadow .2s}
 a.btn:active,button.btn:active,.btn:active,.cta:active,.chip:active,button.primary:active{transform:scale(.95) rotate(-.6deg)}
 @media (hover:hover){a.btn:hover,button.btn:hover,.cta:hover{transform:translateY(-1px) rotate(-.6deg)}}

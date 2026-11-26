@@ -15,30 +15,30 @@
   // calm cards (lists pass): a 1.5px line, no shadow, no tilt, one 4:5 media ratio, at most one quiet status word, tags as
   // plain small text, a full title over two lines, one primary action ("Host this") and the rest behind a quiet More
   const CSS = `.fv-inspo .pli{flex:0 0 min(78vw,260px)!important;width:min(78vw,260px)!important;margin:0 !important}.fv-inspo :is(.pli-meta,.pli-more){display:none!important}
-.pli{position:relative;display:flex;min-width:0;color:#1F1A17;font:15px/1.4 "Instrument Sans",system-ui,sans-serif}
-.pli-card{flex:1;display:flex;flex-direction:column;min-width:0;background:#FFFCF7;border:1.5px solid #E4D9C8;border-radius:16px;overflow:visible;box-shadow:none;transition:border-color .2s}
-@media (hover:hover){.pli:hover .pli-card{border-color:#D9CCBB}}
-.pli-media{position:relative;aspect-ratio:4/5;margin:0;border-radius:15px 15px 0 0;overflow:hidden;background:#EFE6D8}
+.pli{position:relative;display:flex;min-width:0;color:var(--pl-ink);font:15px/1.4 "Instrument Sans",system-ui,sans-serif}
+.pli-card{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;overflow:visible;box-shadow:none;transition:border-color .2s}
+@media (hover:hover){.pli:hover .pli-card{border-color:var(--pl-line-strong)}}
+.pli-media{position:relative;aspect-ratio:4/5;margin:0;border-radius:15px 15px 0 0;overflow:hidden;background:var(--pl-raised)}
 .pli-media img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
 @media (hover:hover){.pli-media img,.pli-media .ea-art{transition:transform .5s cubic-bezier(.2,.8,.2,1)}.pli:hover .pli-media img,.pli:hover .pli-media .ea-art{transform:scale(1.03)}}
 .pli-art .ea-cover{position:absolute!important;inset:0}
 .pli-body{flex:1;display:flex;flex-direction:column;gap:4px;padding:12px 14px 14px;min-width:0}
 .pli-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.pli-meta{margin:0;font-size:13px;line-height:1.4;color:#665A51;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pli-meta b{font-weight:600;color:#1F1A17}
+.pli-meta{margin:0;font-size:13px;line-height:1.4;color:var(--pl-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pli-meta b{font-weight:600;color:var(--pl-ink)}
 .pli-title{font:600 17px/1.25 var(--sys-title);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-wrap:pretty}
-.pli-line{color:#665A51;font-size:14px;line-height:1.4;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.pli-by{display:flex;gap:4px;min-width:0;font-size:13px;color:#665A51;margin:0;white-space:nowrap}.pli-by a{min-width:0;overflow:hidden;text-overflow:ellipsis;color:#1F1A17;font-weight:600;text-decoration:none;padding:13px 0;margin:-13px 0}.pli-by a:hover{text-decoration:underline}
+.pli-line{color:var(--pl-soft);font-size:14px;line-height:1.4;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pli-by{display:flex;gap:4px;min-width:0;font-size:13px;color:var(--pl-soft);margin:0;white-space:nowrap}.pli-by a{min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--pl-ink);font-weight:600;text-decoration:none;padding:13px 0;margin:-13px 0}.pli-by a:hover{text-decoration:underline}
 .pli-acts{display:flex;gap:8px;align-items:center;margin-top:auto;padding-top:10px}
-.pli-host{flex:1;display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:0 14px;border:1.5px solid #D9CCBB;border-radius:999px;background:#FFFCF7;color:#1F1A17;font:600 15px "Instrument Sans",system-ui;cursor:pointer;box-shadow:none;text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.pli-host{flex:1;display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding:0 14px;border:1.5px solid var(--pl-line-strong);border-radius:999px;background:var(--pl-surface);color:var(--pl-ink);font:600 15px "Instrument Sans",system-ui;cursor:pointer;box-shadow:none;text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
 /* a grid of ideas reads calm with an outlined "Host this" (the feed's ideas row does the same); it fills ember on hover and press */
-.pli-host:hover,.pli-host:active{background:#C94A30;border-color:#C94A30;color:#fff}
-.pli-more{position:relative;flex:none}.pli-more>summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid #E4D9C8;cursor:pointer;color:#665A51;background:#FFFCF7}.pli-more>summary::-webkit-details-marker{display:none}
+.pli-host:hover,.pli-host:active{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff}
+.pli-more{position:relative;flex:none}.pli-more>summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--pl-line);cursor:pointer;color:var(--pl-soft);background:var(--pl-surface)}.pli-more>summary::-webkit-details-marker{display:none}
 .pli-more>summary>span,.pli-more>summary>span::before,.pli-more>summary>span::after{display:block;width:4px;height:4px;border-radius:50%;background:currentColor}.pli-more>summary>span{position:relative}.pli-more>summary>span::before,.pli-more>summary>span::after{content:"";position:absolute;top:0}.pli-more>summary>span::before{left:-7px}.pli-more>summary>span::after{left:7px}
-.pli-more>summary:hover,.pli-more[open]>summary{border-color:#D9CCBB;color:#1F1A17}
-.pli-menu{position:absolute;right:0;bottom:52px;z-index:30;min-width:210px;display:grid;gap:2px;padding:6px;background:#FFFCF7;border:1.5px solid #E4D9C8;border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28)}
-.pli-mi,.pli-menu .pls-btn{display:flex!important;align-items:center;gap:8px;width:100%!important;height:auto!important;min-height:44px;padding:0 12px!important;border:0!important;border-radius:12px!important;background:none!important;box-shadow:none!important;color:#1F1A17!important;font:500 15px "Instrument Sans",system-ui!important;text-align:left;text-decoration:none;cursor:pointer;white-space:nowrap}
-.pli-mi:hover,.pli-menu .pls-btn:hover{background:#EFE6D8!important}.pli-menu .pls-btn svg{width:20px;height:20px}
-.pli-mnote{display:block;padding:4px 12px 6px;color:#665A51;font-size:13px}.pli-mnote:empty,.pli-mnote[hidden]{display:none}
+.pli-more>summary:hover,.pli-more[open]>summary{border-color:var(--pl-line-strong);color:var(--pl-ink)}
+.pli-menu{position:absolute;right:0;bottom:52px;z-index:30;min-width:210px;display:grid;gap:2px;padding:6px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28)}
+.pli-mi,.pli-menu .pls-btn{display:flex!important;align-items:center;gap:8px;width:100%!important;height:auto!important;min-height:44px;padding:0 12px!important;border:0!important;border-radius:12px!important;background:none!important;box-shadow:none!important;color:var(--pl-ink)!important;font:500 15px "Instrument Sans",system-ui!important;text-align:left;text-decoration:none;cursor:pointer;white-space:nowrap}
+.pli-mi:hover,.pli-menu .pls-btn:hover{background:var(--pl-raised)!important}.pli-menu .pls-btn svg{width:20px;height:20px}
+.pli-mnote{display:block;padding:4px 12px 6px;color:var(--pl-soft);font-size:13px}.pli-mnote:empty,.pli-mnote[hidden]{display:none}
 .pli-fly{position:absolute;inset:0;background:linear-gradient(180deg,var(--f0) 0,var(--f0b) 100%);color:var(--f1);display:flex;flex-direction:column;justify-content:space-between;padding:16px 14px 14px;overflow:hidden}
 .pli-fly small{font:600 13px "Instrument Sans",system-ui;opacity:.85;position:relative;z-index:1}
 .pli-fly .pli-fb{align-self:flex-start;position:relative;z-index:1;background:var(--f2);color:var(--f2i);border-radius:999px;padding:6px 12px;font:600 13px "Instrument Sans",system-ui}
@@ -59,11 +59,11 @@
   const lum = (h) => { const n = parseInt(h.slice(1), 16), c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
   const shade = (h, k) => { const n = parseInt(h.slice(1), 16), f = (v) => Math.max(0, Math.min(255, Math.round(v + (k > 0 ? (255 - v) * k : v * k)))); return "#" + [f((n >> 16) & 255), f((n >> 8) & 255), f(n & 255)].map((v) => v.toString(16).padStart(2, "0")).join(""); };
-  function lookVars(L) { const p = (L?.palette || []).filter(okHex); const bg = p[0] || "#FDE6A6", dark = lum(bg) < 0.25;
-    let ink = p[1] && contrast(p[1], bg) >= 4.5 ? p[1] : dark ? "#FFFDF8" : "#1F1A17"; let acc = p[2] || p[1] || "#C94A30"; if (contrast(acc, bg) < 1.4) acc = dark ? "#F2D48F" : "#C94A30";
+  function lookVars(L) { const p = (L?.palette || []).filter(okHex); const bg = p[0] || "#E3D7BE", dark = lum(bg) < 0.25;
+    let ink = p[1] && contrast(p[1], bg) >= 4.5 ? p[1] : dark ? "#FBF9F5" : "#1D1B18"; let acc = p[2] || p[1] || "#9A4128"; if (contrast(acc, bg) < 1.4) acc = dark ? "#E3D7BE" : "#9A4128";
     // the stamp's text must reach 4.5:1: nudge the accent darker (white text) or lighter (ink text) until it does
-    for (let i = 0; i < 8 && Math.max(contrast("#1F1A17", acc), contrast("#FFFFFF", acc)) < 4.5; i++) acc = shade(acc, contrast("#FFFFFF", acc) >= contrast("#1F1A17", acc) ? -0.08 : 0.08);
-    const accInk = contrast("#1F1A17", acc) >= contrast("#FFFFFF", acc) ? "#1F1A17" : "#FFFFFF";
+    for (let i = 0; i < 8 && Math.max(contrast("#1D1B18", acc), contrast("#FFFFFF", acc)) < 4.5; i++) acc = shade(acc, contrast("#FFFFFF", acc) >= contrast("#1D1B18", acc) ? -0.08 : 0.08);
+    const accInk = contrast("#1D1B18", acc) >= contrast("#FFFFFF", acc) ? "#1D1B18" : "#FFFFFF";
     return `--f0:${bg};--f0b:${shade(bg, dark ? 0.12 : -0.08)};--f1:${ink};--f2:${acc};--f2i:${accInk}`; }
   const btnText = (L) => `${L?.buttonEmoji ? L.buttonEmoji + " " : ""}${L?.buttonLabel || "I'm in"}`;
 

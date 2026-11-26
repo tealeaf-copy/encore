@@ -47,7 +47,7 @@ export const kitJson = (h, events) => { const k = kitOf(h, events); return k ? J
 export const migrateKit = (h, events) => JSON.parse(JSON.stringify(kitOf(h, events)));
 /** A suggested starter for a host who hasn't saved a kit: from their first event's look, else what they host. */
 export const suggestKit = (h, events) => JSON.parse(JSON.stringify(BK.suggest(h, events)));
-/** The variables for a kit, as CSS text ("--kit-page:#F7F1E8;..."). */
+/** The variables for a kit, as CSS text ("--kit-page:#F4F0E8;..."). */
 export const kitCss = (k) => BK.cssText(k);
 
 const escA = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -76,11 +76,11 @@ export function emailBrand(h) { if (!h) return null; const k = kitOf(h), T = BK.
 const escH = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 /** A plain-text email as simple HTML: a bar in the host's accent, their logo or name, the text with its links. */
 export function emailHtml(text, brand, origin = "") {
-  const base = String(origin || process.env.ENCORE_PUBLIC_URL || "").replace(/\/$/, ""), a = /^#[0-9A-F]{6}$/i.test(brand?.accent || "") ? brand.accent : "#C94A30";
+  const base = String(origin || process.env.ENCORE_PUBLIC_URL || "").replace(/\/$/, ""), a = /^#[0-9A-F]{6}$/i.test(brand?.accent || "") ? brand.accent : "#9A4128";
   const link = (s) => s.replace(/https?:\/\/[^\s<>"]+[^\s<>".,)!?]/g, (u) => `<a href="${u}" style="color:${a};font-weight:600">${u}</a>`);
   const paras = escH(String(text || "")).split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px;line-height:1.5">${link(p).replace(/\n/g, "<br>")}</p>`).join("");
-  const logo = brand?.logo && base ? `<img src="${escH(base + brand.logo)}" alt="${escH(brand.name || "")}" height="40" style="display:block;height:40px;width:auto;max-width:200px">` : brand?.name ? `<b style="font-size:18px;color:#1F1A17">${escH(brand.name)}</b>` : "";
-  return `<!doctype html><html><body style="margin:0;background:#F7F1E8"><div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-top:4px solid ${a};font:16px/1.5 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1F1A17">` +
+  const logo = brand?.logo && base ? `<img src="${escH(base + brand.logo)}" alt="${escH(brand.name || "")}" height="40" style="display:block;height:40px;width:auto;max-width:200px">` : brand?.name ? `<b style="font-size:18px;color:#1D1B18">${escH(brand.name)}</b>` : "";
+  return `<!doctype html><html><body style="margin:0;background:#F4F0E8"><div style="max-width:560px;margin:0 auto;background:#FFFFFF;border-top:4px solid ${a};font:16px/1.5 -apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1D1B18">` +
     `${logo ? `<div style="padding:20px 24px 4px">${logo}</div>` : ""}<div style="padding:16px 24px 8px">${paras}</div></div></body></html>`;
 }
 

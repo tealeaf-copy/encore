@@ -37,9 +37,9 @@
     return before.length >= 2 ? before : []; }
 
   // ---- the guest's picker: a stepper for each tier, and the total under it ----
-  const CSS = `.pt-tiers{border:1.5px solid var(--lk-line,#E4D9C8);border-radius:16px;padding:12px 14px;margin:0 0 14px;display:grid;gap:8px}.pt-tiers>b{font:600 14px "Instrument Sans",system-ui,sans-serif}
+  const CSS = `.pt-tiers{border:1.5px solid var(--lk-line,var(--pl-line));border-radius:16px;padding:12px 14px;margin:0 0 14px;display:grid;gap:8px}.pt-tiers>b{font:600 14px "Instrument Sans",system-ui,sans-serif}
 .pt-row{display:flex;align-items:center;gap:10px;justify-content:space-between}.pt-row span{font-weight:600}.pt-row small{color:inherit;opacity:.85;font-weight:500;margin-left:6px}
-.pt-step{display:inline-flex;align-items:center;gap:6px}.pt-step button{all:unset;box-sizing:border-box;cursor:pointer;width:36px;height:36px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font:700 18px/1 system-ui}.pt-step button:focus-visible{outline:3px solid #C94A30;outline-offset:2px}.pt-step button:disabled{opacity:.35;cursor:not-allowed}
+.pt-step{display:inline-flex;align-items:center;gap:6px}.pt-step button{all:unset;box-sizing:border-box;cursor:pointer;width:36px;height:36px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font:700 18px/1 system-ui}.pt-step button:focus-visible{outline:3px solid var(--pl-accent);outline-offset:2px}.pt-step button:disabled{opacity:.35;cursor:not-allowed}
 .pt-step output{min-width:22px;text-align:center;font:700 16px "Instrument Sans",system-ui,sans-serif}.pt-sum{margin:2px 0 0;font-weight:700}`;
   function css() { if (typeof document === "undefined" || document.getElementById("pt-css")) return; const s = document.createElement("style"); s.id = "pt-css"; s.textContent = CSS; document.head.appendChild(s); }
   /** The picker's HTML: one row a tier; the first starts at 1. */

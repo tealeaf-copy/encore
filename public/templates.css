@@ -1,10 +1,10 @@
 /* Event design templates, shared by the guest page, the host's storefront and Discover. One class per template. */
-.tpl-sticker,.th-sticker{--thbg:#FFF8EE;--thfg:#1F1A17;--thac:#E2573A;--thchip:#FFE08A}
+.tpl-sticker,.th-sticker{--thbg:var(--pl-page);--thfg:var(--pl-ink);--thac:#E2573A;--thchip:var(--pl-sand)}
 .tpl-picnic,.th-picnic{--thbg:#EAF7EC;--thfg:#173B22;--thac:#2F8F4E;--thchip:#FFD36E}
 .tpl-disco,.th-disco{--thbg:#F3E8FF;--thfg:#2A1742;--thac:#B03FD0;--thchip:#FFC2E0}
 .tpl-sunny,.th-sunny{--thbg:#FFF3C4;--thfg:#3A2A05;--thac:#E28A00;--thchip:#FFFFFF}
 .tpl-ocean,.th-ocean{--thbg:#E6F3FF;--thfg:#0F2A44;--thac:#1F6FD1;--thchip:#BFE3FF}
-.tpl-linen{--thbg:#FAF3EA;--thfg:#2B211C;--thac:#B04A30;--thchip:#F3E2CF}
+.tpl-linen{--thbg:#FAF3EA;--thfg:var(--pl-ink);--thac:var(--pl-accent-text);--thchip:#F3E2CF}
 .tpl-candlelight{--thbg:#2A1E17;--thfg:#F3E7D6;--thac:#C9A96A;--thchip:#4A3729}
 .tpl-gallery{--thbg:#FFFFFF;--thfg:#111111;--thac:#111111;--thchip:#EFEFEF}
 .tpl-midnight{--thbg:#14213A;--thfg:#E8ECF4;--thac:#B9C4D6;--thchip:#24365A}

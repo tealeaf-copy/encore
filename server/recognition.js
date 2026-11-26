@@ -126,7 +126,7 @@ export function mountRecognition(app, { C, X }) {
     let all = []; try { all = X.hostStrengths(ws).dates || []; } catch {} const years = [...new Set(all.map((d) => +d.slice(0, 4)))].sort();
     const me = R.of(h.handle), W0 = getWorkspace(ws), person = String(getDbUser(W0?.ownerEmail || "")?.name || "").trim().split(/\s+/)[0] || "";
     const rec = recapOf(S, year), rh = me?.rhythm || rhythmOf(all); if (rh === "month") { rec.longestStreak = longestMonths(S.dates || []); rec.streakUnit = "month"; } else rec.streakUnit = "week";
-    res.json({ years, host: { handle: h.handle, name: h.name, person, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#C2553A" } }, badges: me?.badges || [], ...rec }); });
+    res.json({ years, host: { handle: h.handle, name: h.name, person, city: h.city || "", emoji: h.emoji || "", theme: { avatarArt: h.theme?.avatarArt || "", avatarUrl: h.theme?.avatarUrl || "", accent: h.theme?.accent || h.color || "#9A4128" } }, badges: me?.badges || [], ...rec }); });
   app.get("/api/public/hosts/showcase", (req, res) => res.json(R.showcase()));
   app.get("/api/public/badge-rules", (req, res) => res.json(BADGE_RULES));
   app.get("/api/public/host/:handle/badges", (req, res) => { const ws0 = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (ws0 && /@demo\.encore$/i.test(getWorkspace(ws0)?.ownerEmail || "")) return res.json({ badges: [], streak: { weeks: 0, months: 0 }, events: 0, example: true }); const x = R.of(req.params.handle); res.json(x ? { badges: x.badges, next: x.next, streak: x.streak, events: x.events } : { badges: [], streak: { weeks: 0, months: 0 }, events: 0 }); });

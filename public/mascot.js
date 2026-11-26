@@ -4,7 +4,7 @@
 // hops when tapped. Nothing moves for people who ask their device for less motion.
 (function () {
   // drawn soft and chubby: one round pot, a warm brown outline, dot eyes, a little U smile, pink cheeks and a striped glaze band
-  const INK = "#5A3B2B", CLAY = "#F1B48A", CLAY_D = "#E39A6C", GLAZE = "#F5D77E", STRIPE = "#E9B94F", CREAM = "#FFF8EE", SW = 3.6;
+  const INK = "#5A3B2B", CLAY = "#DDA88A", CLAY_D = "#C98C6C", GLAZE = "#EBE0CA", STRIPE = "#BF9671", CREAM = "#FBF9F5", SW = 3.6;
   const BODY_D = "M80 50c0-4-3-6-3-9h46c0 3-3 5-3 9c24 6 41 25 41 52c0 32-27 56-61 56s-61-24-61-56c0-27 17-46 41-52z";
   const body = `<path d="${BODY_D}"/>`;
   const limb = (d, w = 10) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + SW * 2}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${CLAY}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -14,7 +14,7 @@
     ? `<path d="M76 104c3 3 8 3 11 0M113 104c3 3 8 3 11 0" stroke="${INK}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`
     : `<circle cx="81" cy="103" r="4" fill="${INK}"/><circle cx="119" cy="103" r="4" fill="${INK}"/>`;
   const mouth = (mood) => mood === "sleep" ? `<path d="M96 116c2 2 6 2 8 0" stroke="${INK}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`
-    : mood === "cheer" ? `<path d="M92 108c0 10 16 10 16 0z" fill="${INK}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M96 114c2 2 6 2 8 0" stroke="#F29A9A" stroke-width="3" stroke-linecap="round" fill="none"/>`
+    : mood === "cheer" ? `<path d="M92 108c0 10 16 10 16 0z" fill="${INK}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M96 114c2 2 6 2 8 0" stroke="#E6A99A" stroke-width="3" stroke-linecap="round" fill="none"/>`
     : mood === "think" ? `<path d="M95 112c3-2 7-2 10 0" stroke="${INK}" stroke-width="3.4" stroke-linecap="round" fill="none"/>`
     : `<path d="M94 106c0 8 12 8 12 0" stroke="${INK}" stroke-width="3.4" stroke-linecap="round" fill="none"/>`;
   let _pid = 0;
@@ -24,7 +24,7 @@
     wave: { armL: limb("M58 118c-14 4-20 14-22 26") + glove(36, 146), armR: limb("M142 112c14-8 20-24 22-38") + glove(165, 70), legL: limb("M88 156v22", 10) + shoe(84, 184, -1), legR: limb("M112 156v22", 10) + shoe(116, 184), fx: `<path d="M178 58l8-6M182 72l10 0M176 46l4-9" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>` },
     run: { armL: limb("M58 116c-16-2-24 8-28 18") + glove(30, 136), armR: limb("M142 116c14 10 26 8 34 0") + glove(178, 114), legL: limb("M88 154c-6 10-16 16-26 16", 10) + shoe(56, 172, -1), legR: limb("M112 154c8 8 10 18 8 28", 10) + shoe(124, 186), fx: `<path d="M8 96h26M14 112h18M4 128h22" stroke="${INK}" stroke-width="4" stroke-linecap="round" opacity=".8"/>` },
     cheer: { armL: limb("M58 112c-12-10-16-28-14-44") + glove(44, 64), armR: limb("M142 112c12-10 16-28 14-44") + glove(156, 64), legL: limb("M88 156c-4 8-8 16-14 22", 10) + shoe(70, 184, -1), legR: limb("M112 156c4 8 8 16 14 22", 10) + shoe(130, 184), fx: `<path d="M30 40l6 10M44 30v12M58 36l-4 10M142 36l4 10M156 30v12M170 40l-6 10" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>` },
-    carry: { armL: limb("M58 118c-6 14 4 22 18 22") + glove(80, 140), armR: limb("M142 118c6 14-4 22-18 22") + glove(120, 140), legL: limb("M88 160v18", 10) + shoe(84, 184, -1), legR: limb("M112 160v18", 10) + shoe(116, 184), front: `<path d="M66 132h68l-6 18H72z" fill="#fff" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M76 132c0-12 48-12 48 0" fill="${GLAZE}" stroke="${INK}" stroke-width="4"/><circle cx="100" cy="117" r="5" fill="#E2455C" stroke="${INK}" stroke-width="3"/>` },
+    carry: { armL: limb("M58 118c-6 14 4 22 18 22") + glove(80, 140), armR: limb("M142 118c6 14-4 22-18 22") + glove(120, 140), legL: limb("M88 160v18", 10) + shoe(84, 184, -1), legR: limb("M112 160v18", 10) + shoe(116, 184), front: `<path d="M66 132h68l-6 18H72z" fill="#fff" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><path d="M76 132c0-12 48-12 48 0" fill="${GLAZE}" stroke="${INK}" stroke-width="4"/><circle cx="100" cy="117" r="5" fill="#A4533A" stroke="${INK}" stroke-width="3"/>` },
     think: { armL: limb("M58 118c-14 4-20 14-22 26") + glove(36, 146), armR: limb("M142 124c12 2 8-12-6-14") + glove(134, 110), legL: limb("M88 156v22", 10) + shoe(84, 184, -1), legR: limb("M112 156v22", 10) + shoe(116, 184), fx: `<circle cx="160" cy="62" r="5" fill="#fff" stroke="${INK}" stroke-width="3"/><circle cx="176" cy="42" r="9" fill="#fff" stroke="${INK}" stroke-width="3"/>`, mood: "think" },
     sleep: { armL: limb("M60 124c-10 6-12 16-8 24") + glove(52, 150), armR: limb("M140 124c10 6 12 16 8 24") + glove(148, 150), legL: limb("M88 158v18", 10) + shoe(84, 182, -1), legR: limb("M112 158v18", 10) + shoe(116, 182), fx: `<g class="pt-z"><path d="M140 30h12l-12 14h12" stroke="${INK}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M160 12h8l-8 9h8" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>`, mood: "sleep" },
   };
@@ -33,7 +33,7 @@
   /** A Potto sticker. pose: wave | run | cheer | carry | think | sleep. */
   function svg(pose = "wave", size = 140, label = "Potto, your Pottery Lab chief of staff") {
     const P = POSES[pose] || POSES.wave, mood = P.mood || pose;
-    const gid = "ptg" + (++_pid), torso = `<g fill="${CLAY}">${body}</g>${glaze(gid)}<path d="M77 41h46" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round"/><path d="M60 78c6-8 14-12 20-14" stroke="${CREAM}" stroke-width="4" fill="none" stroke-linecap="round" opacity=".7"/><ellipse cx="72" cy="113" rx="7" ry="4" fill="#F29595" opacity=".9"/><ellipse cx="128" cy="113" rx="7" ry="4" fill="#F29595" opacity=".9"/><g fill="none" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round">${body}</g>`;
+    const gid = "ptg" + (++_pid), torso = `<g fill="${CLAY}">${body}</g>${glaze(gid)}<path d="M77 41h46" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round"/><path d="M60 78c6-8 14-12 20-14" stroke="${CREAM}" stroke-width="4" fill="none" stroke-linecap="round" opacity=".7"/><ellipse cx="72" cy="113" rx="7" ry="4" fill="#E6A99A" opacity=".9"/><ellipse cx="128" cy="113" rx="7" ry="4" fill="#E6A99A" opacity=".9"/><g fill="none" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round">${body}</g>`;
     const parts = [["legL", P.legL], ["legR", P.legR], ["armL", P.armL], ["armR", P.armR], ["torso", torso + (P.front || "")]];
     const W = "" && `<g stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round" fill="#fff">${parts.map(([k, h]) => `<g class="pt-${k}">${under(h)}</g>`).join("")}<g class="pt-fx">${under(P.fx || "")}</g></g>`;
     const ink = parts.map(([k, h]) => k === "torso" ? `<g class="pt-torso">${torso}<g class="pt-eyes">${eyes(mood)}</g>${mouth(mood)}${P.front || ""}</g>` : `<g class="pt-${k}">${h}</g>`).join("");

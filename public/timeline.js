@@ -79,11 +79,14 @@
   const calBtn = (it) => `<button type="button" class="tl-cal" data-addcal="${esc(it.key)}" aria-label="Add ${esc(it.title)} to your calendar" aria-haspopup="menu" aria-expanded="false">${ICON.cal}</button>`;
   function rowHtml(it, { now = Date.now(), dim = true, cal = false } = {}) { const withCal = cal && calOk(it);
     const past = dim && isPast(it, now), live = isLive(it, now), time = it.allDay ? (it.span ? "" : "All day") : clock(it.time);
-    const st = it.status ? `<span class="tl-st">${esc(it.status)}</span>` : "", rest = [it.place, it.host ? `with ${it.host}` : ""].filter(Boolean).map(esc).join(" · ");
+    const st = it.status ? `<span class="tl-st">${esc(it.status)}</span>` : "", rest = it.host ? esc(`with ${it.host}`) : "";
+    // where it is, on its own line with a pin: the venue for people who are in and the host, else the area (the address follows once you're in)
+    const locked = (it.kind === "going" || it.kind === "waitlist" || it.kind === "saved") && it.in === false && it.place;
+    const loc = it.place ? `<span class="tl-loc"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 14.5c-2.9-3.3-4.3-5.7-4.3-7.6a4.3 4.3 0 0 1 8.6 0c0 1.9-1.4 4.3-4.3 7.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="6.9" r="1.5" fill="currentColor"/></svg><span>${esc(it.place)}${locked ? ' · <span class="tl-locked">address when you\'re in</span>' : ""}</span></span>` : "";
     const href = it.draft ? `/?open=${encodeURIComponent(it.eventId)}` : it.href || `/e/${encodeURIComponent(it.eventId)}`;
     return `<li class="tl-row k-${esc(it.kind)}${past ? " is-past" : ""}${live ? " is-live" : ""}${it.draft ? " is-draft" : ""}${withCal ? " has-cal" : ""}"><a class="tl-a" href="${esc(href)}">`
       + `<span class="tl-time">${live ? "Now" : esc(time)}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
-      + `<span class="tl-body"><span class="tl-k">${esc(KIND[it.kind] || "")}</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${st}${st && rest ? " · " : ""}${rest}</span></span>`
+      + `<span class="tl-body"><span class="tl-k">${esc(KIND[it.kind] || "")}</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${st}${st && rest ? " · " : ""}${rest}</span>${loc}</span>`
       + `<span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${withCal ? calBtn(it) : ""}</li>`;
   }
   /** An itinerary row (inside a plan, or nested in a multi-day block). */

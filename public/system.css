@@ -266,3 +266,15 @@ html body #ideaLib.lib-casual .lib-card .lib-line{font-size:var(--fs-14)!importa
 html body #ideaLib.lib-casual .lib-ic i{width:40px!important;height:40px!important}
 html body #ideaLib.lib-casual .lib-head p.note{margin:4px 0 0;font-size:var(--fs-14);color:var(--smoke)}
 @media (min-width:861px){html body #ideaLib.lib-casual .lib-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+/* ---- UX loop round 2 ---- */
+/* an accent word in a heading reads at AA on paper and cards (ember text, not the button ember) */
+:is(h1,h2,h3) em{color:var(--sys-ember-text)}
+/* phones: the plan starters in the new-event sheet and Home's quick chips are full 44px targets */
+@media (max-width:860px){html body :is(.hv-sheet .tpl button,#qsPanel [data-fill],#qsPanel [data-say]){min-height:44px}}
+/* phones: text links inside the invite's meta and consent lines get a 44px hit box without moving */
+@media (max-width:860px){html body #view-guest :is(.gk-row a,.consent a,.g-consent a,.made a,footer a){display:inline-block;padding-top:13px;padding-bottom:13px;margin-top:-13px;margin-bottom:-13px}}
+/* the reply form's tick boxes ("It's a severe allergy", "Save my details on this phone") read as plain rows like
+   "Coming solo", not as pills with a box jammed against the words */
+html body #view-guest#view-guest label.chip.chip:has(> input[type=checkbox]){border:0!important;background:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;display:flex!important;align-items:center!important;gap:12px!important;min-height:44px;font-weight:500;align-self:stretch!important;text-align:left}
+html body #view-guest label.chip > input[type=checkbox]{flex:none;margin:0!important;width:22px!important;height:22px!important}
+@media (max-width:860px){html body #helpSide{display:none!important}}

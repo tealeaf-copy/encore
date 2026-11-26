@@ -66,3 +66,5 @@ body.lk-on .sl-card .sl-btn:not(.ghost){background:var(--sl-ink);color:var(--sl-
 .sl-panel [data-ser][aria-pressed=true]{background:var(--sl-ink);color:var(--sl-bg);border-color:var(--sl-ink)}
 body.lk-on .sl-card form{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
 .sl-ep{color:inherit!important;-webkit-text-fill-color:currentColor}
+/* UX loop: "Ask me about" waits behind one quiet line until someone wants it */
+.sl-askd{margin:8px 0 0}.sl-askd>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px;color:inherit;list-style:none}.sl-askd>summary::-webkit-details-marker{display:none}.sl-askd>summary::before{content:"+";display:inline-grid;place-items:center;width:20px;margin-right:6px;font-weight:600}.sl-askd[open]>summary::before{content:"\2212"}

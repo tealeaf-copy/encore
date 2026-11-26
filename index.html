@@ -5255,7 +5255,7 @@ async function renderGuest(){
     <label class="f">Accessibility or arrival needs<span class="h">Step-free access, seating, parking. Anything that makes the evening easier.</span><input id="g-access" placeholder="e.g. step-free entrance, a chair with a back" value="${esc(me?.access||"")}"></label>
     ${EXEC?`<label class="f">Your assistant's email (optional)<span class="h">We'll copy them on logistics only.</span><input id="g-ea" type="email"></label>`:""}
     ${EXEC?`<input id="g-li" type="hidden" value="${esc(me?.linkedin||"")}"><input id="g-photo" type="file" hidden><input type="checkbox" id="g-wall" hidden>`:`<div class="row"><label class="f">LinkedIn profile<input id="g-li" type="url" placeholder="https://www.linkedin.com/in/…" value="${esc(me?.linkedin||"")}"></label><label class="f">Photo<span class="h">Optional headshot for the guest page</span><input id="g-photo" type="file" accept="image/*"></label></div>
-    <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> Show my name, company and photo to other guests</label>`}
+    <label class="chip" style="align-self:flex-start"><input type="checkbox" id="g-wall"> ${typeof isCasual==="function"&&isCasual(e)?"Show my name to other guests":"Show my name, company and photo to other guests"}</label>`}
     <p class="note">${esc(e.brand||brandProfile?.company||"The host")} uses your details only to run this event and follow up about it.${(e.privacyUrl||brandProfile?.privacyUrl)?` <a href="${esc(e.privacyUrl||brandProfile.privacyUrl)}" target="_blank" rel="noopener">Privacy notice</a>.`:""} You can ask to be removed at any time.</p>
     <div class="btns"><button type="button" class="btn primary" id="g-send">Send</button></div>
     <p class="note g-consent" style="font-size:13px;margin:6px 0 0">By replying you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>. If you add a phone, you'll get event texts; reply STOP to stop.</p></div>`;
@@ -8665,7 +8665,9 @@ async function drawGoing(e,host){ try{ const M=myRsvp(e.id); host.querySelectorA
 (async()=>{ try{ if(!isGuestRoute?.()) return; const r=await fetch("/api/me"); if(!r.ok) return; window.__isMember=true; new MutationObserver(()=>{ document.querySelectorAll(".gk-grow").forEach(g=>{ if(!g.dataset.mem){ g.dataset.mem=1; g.innerHTML=`<p><b>Host your own?</b> You're already a member. <a href="/">Open Pottery Lab</a> and tell Potto what you're planning.</p>` } }) }).observe(document.documentElement,{childList:true,subtree:true}) }catch{} })();
 // sign out, from the app
 async function signOut(){ try{ await fetch("/api/logout",{method:"POST"}) }catch{} try{ Object.keys(localStorage).filter(k=>/^encore-(me|cg|rsvp)/.test(k)).forEach(k=>localStorage.removeItem(k)) }catch{} location.href="/" }
-(()=>{ try{ if(isGuestRoute?.()) return; const add=()=>{ const st=document.querySelector(".status"); if(!st||document.getElementById("signOut")) return; const b=document.createElement("button"); b.type="button"; b.id="signOut"; b.className="viewtoggle"; b.textContent="Sign out"; b.onclick=signOut; st.before(b) }; add(); setTimeout(add,1500) }catch{} })();
+(()=>{ try{ if(isGuestRoute?.()) return; const add=()=>{ const st=document.querySelector(".status"); if(!st||document.getElementById("signOut")) return; const b=document.createElement("button"); b.type="button"; b.id="signOut"; b.className="viewtoggle"; b.textContent="Sign out"; b.onclick=signOut; st.before(b);
+      /* help sits in the sidebar with Sign out (help.js opens it), instead of a button floating over the page */
+      const h=document.createElement("button"); h.type="button"; h.id="helpSide"; h.className="viewtoggle"; h.setAttribute("data-help-open",""); h.textContent="Help"; b.before(h) }; add(); setTimeout(add,1500) }catch{} })();
 // friends hosts: "New event" goes to Potto, and the words stay friendly
 /* New event for friends hosts: see the guide below */
 { const _bm4=brandMode; brandMode=function(){ if(window.__wsPersonal) return "consumer"; return _bm4.apply(this,arguments) } }
@@ -12623,7 +12625,7 @@ function r12Fix(d,t){ if(!d||d.example) return; const p=prRead(t);
   document.addEventListener("dragover",ev=>{ if(ev.target?.closest?.(".cg-box")) ev.preventDefault() });
   document.addEventListener("drop",ev=>{ if(!ev.target?.closest?.(".cg-box")) return; const f=ev.dataTransfer?.files?.[0]; if(f&&plIcs(f)) ev.preventDefault() });
   let plT=0; new MutationObserver(()=>{ if(plT) return; plT=setTimeout(()=>{ plT=0; const box=q(".cg-box"); if(!box||q("#plHint")) return;
-    box.insertAdjacentHTML("afterend",`<p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,var(--pl-soft))">Paste a Discord message or Markdown, or <label style="text-decoration:underline;cursor:pointer">open an .ics file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>`);
+    box.insertAdjacentHTML("afterend",`<p id="plHint" style="margin:8px 2px 0;font-size:13px;color:var(--smoke,var(--pl-soft))">You can paste a Discord post, or <label style="text-decoration:underline;cursor:pointer;display:inline-block;padding:12px 0;margin:-12px 0">open a calendar file<input type="file" accept=".ics,text/calendar" hidden></label>.</p>`);
     q("#plHint input").onchange=e=>plIcs(e.target.files?.[0]) },400) }).observe(document.documentElement,{childList:true,subtree:true});
 
   // ---- the studio: Slots, series and channels (public/slots.js) ----
@@ -12814,7 +12816,7 @@ body:not(.hv-help):has(#view-studio:not([hidden]) > #hv:not([hidden])) #encoreHe
 .hv-sheet .tool > svg{width:18px;height:18px;color:#A99C90}
 .hv-sheet .live-card{border-radius:20px;overflow:hidden;background:#fff;border:1.5px solid var(--pl-line);animation:hvPop .5s cubic-bezier(.2,1.3,.4,1) .1s both}
 @keyframes hvPop{from{transform:scale(.94) rotate(-1deg);opacity:0}to{transform:none;opacity:1}}
-.hv-sheet .live-cov{height:140px;background:var(--pl-sand) center/cover no-repeat;display:grid;place-items:center;font-size:56px}
+.hv-sheet .live-cov{position:relative;height:140px;background:var(--pl-sand) center/cover no-repeat;display:grid;place-items:center;font-size:56px;overflow:hidden}
 .hv-sheet .live-in{display:grid;gap:6px;padding:16px}
 .hv-sheet .live-in b{font:600 24px/1.15 var(--sys-display);overflow-wrap:anywhere}
 .hv-sheet .live-in span{color:var(--pl-soft)}
@@ -13063,7 +13065,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const TPL=[["Supper club","Supper club at my place, Saturday 7pm, 8 seats, $35 a person"],["Hack night","Hack night at the office, Thursday 6:30pm, about 20 people, pizza and lightning demos"],["Game night","Board game night at my place, Friday 7pm, 6 people, bring a snack"],["Potluck","Potluck in the park, Sunday 1pm, everyone brings a dish"],["Run club","Easy 5k run, Saturday 8am, McCarren Park, coffee after"],["Book club","Book club at the café, first Tuesday 7pm, 10 people"]];
   function openCreate(seed,direct){ if(!direct&&!seed&&window.EncoreDrop?.choose) return window.EncoreDrop.choose({event:()=>openCreate("",true),onDone:j=>{ if(j?.id){ location.hash="#programs"; location.reload() } }});
     const S=sheet({title:"What's the plan?",label:"New event",body:`<div class="potto">${typeof pipSVG==="function"?pipSVG("happy",48):""}<p>Text it to me like you would a friend. I'll fill in the rest.</p></div>
-      <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>A Discord message, Markdown or an .ics file works too.</small></label>
+      <label class="f"><span class="vh" style="position:absolute;left:-9999px">What's the plan?</span><textarea id="hvWhat" rows="4" placeholder="Dumpling night at my place, Saturday 7pm, about 8 people">${E(seed||"")}</textarea><small>Pasting a Discord post or a calendar invite works too.</small></label>
       <div id="hvIdeas" hidden></div>
       <div id="hvTpl"><p class="sect" style="margin:0 0 8px">Or start from one of these</p><div class="tpl">${TPL.map(([n],i)=>`<button type="button" data-tpl="${i}">${E(n)}</button>`).join("")}</div></div><p class="err" id="hvErr" role="alert"></p>`,
       foot:`<button class="hv-b pri" type="button" id="hvNext">Next</button>`});
@@ -13128,7 +13130,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   // the moment it goes live: one calm screen. The invite as guests see it, one Share button, and the way to the event.
   function openLive(d){ const cov=typeof safeCover==="function"?safeCover(d.coverPhoto):"", em=(typeof titleEmoji==="function"&&titleEmoji(d))||"";
     const S=sheet({title:"It's live",label:"It's live",sub:"Send it to your friends. Replies show up on your event.",body:`
-      <div class="live-card"><div class="live-cov" style="${cov?`background-image:url('${E(cov)}')`:""}" aria-hidden="true">${cov?"":E(em)}</div><div class="live-in"><b>${E(d.pubTitle||d.name||"")}</b><span>${E([whenLine(d),placeLine(d)].filter(Boolean).join(" · "))}</span><span class="live-btn">${d.approvalRequired?"Ask to join":"I'm in"}</span><small>${E(link(d).replace(/^https?:\/\//,""))}</small></div></div>`,
+      <div class="live-card"><div class="live-cov" style="${cov?`background-image:url('${E(cov)}')`:""}" aria-hidden="true">${cov?"":(()=>{ try{ return window.EventArt?.cover(d,{title:"",label:""})||E(em) }catch{ return E(em) } })() /* the invite's own line drawing, not an emoji tile */}</div><div class="live-in"><b>${E(d.pubTitle||d.name||"")}</b><span>${E([whenLine(d),placeLine(d)].filter(Boolean).join(" · "))}</span><span class="live-btn">${d.approvalRequired?"Ask to join":"I'm in"}</span><small>${E(link(d).replace(/^https?:\/\//,""))}</small></div></div>`,
       foot:`<button class="hv-b" type="button" id="hvToEv">Go to your event</button><button class="hv-b pri" type="button" id="hvShareGo">${I.share}<span>Share</span></button>`});
     q("#hvToEv",S.bg).onclick=()=>{ S.close(); hvRender(); window.scrollTo({top:0}) };
     q("#hvShareGo",S.bg).onclick=async()=>{ try{ if(d?.id&&typeof trackStep==="function") trackStep("share_clicked",d.id) }catch{}

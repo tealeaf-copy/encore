@@ -11,7 +11,8 @@ import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, DEFAULT_WS, getDbUser } from "./workspaces.js";
 import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { smsConfig, sendSms } from "./sms.js";
-import { localParts } from "./reminders.js";
+import { localParts, pottoSettings } from "./reminders.js";
+import { eventTz } from "./tz.js";
 import { KUDOS_TAGS, kudosTagsFor, replyKey } from "./social.js";
 import { mountKudosNudge } from "./kudosnudge.js";
 import { nextFor } from "./repeats.js"; // review round 7: "Nothing like it coming up" shows the series' next date // kudos nudges: the host's sheet, the group link, Send for me, the reminder
@@ -31,7 +32,7 @@ export function askLine(title, host, link) { return host ? `How was ${title} at 
 export const kudosLink = (origin, eventId, rid, code) => `${origin}/k/${encodeURIComponent(eventId)}?rid=${encodeURIComponent(rid)}&code=${encodeURIComponent(code)}`;
 
 /** Is `now` the morning after the event ended (from 9am that day, for up to 3 days if the server was asleep)? */
-export function askWindow(ev, now, tz = ev?.tz || process.env.ENCORE_TZ || "") {
+export function askWindow(ev, now, tz = eventTz(ev)) {
   const end = ISO.test(ev?.endDate || "") && ev.endDate >= (ev.date || "") ? ev.endDate : ev?.date; if (!ISO.test(end || "")) return false;
   const L = localParts(now, tz), days = Math.round((Date.parse(L.day + "T12:00:00Z") - Date.parse(end + "T12:00:00Z")) / DAY);
   return days >= 1 && days <= LAST_DAY && L.hour >= MORNING && L.hour < EVENING;
@@ -55,7 +56,7 @@ export async function runKudosAsks(store, { now = Date.now(), workspaces = null,
     for (const d of S.list("events")) { const ev = d.data || {}, eventId = d.id;
       if (ev.example || !ev.casual || ev.stage === "interest" || ev.cancelled) continue;
       if (ev.autoRemind === false) continue; // the host's per-event switch for messages to guests
-      if (!askWindow(ev, now)) continue;
+      if (!askWindow(ev, now, eventTz(ev, pottoSettings(S).tz))) continue; // review round 11: the morning after where the event is
       const title = clean(ev.pubTitle || ev.name, 120) || "the event", host = hostFirst(C, ws, ev), email = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true);
       const row = { ws, eventId, asked: 0, sms: 0, email: 0, skipped: 0 };
       for (const { rid, r } of eligibleGuests(S, eventId)) {

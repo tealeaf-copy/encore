@@ -88,8 +88,25 @@ export const REACTIONS = ["🔥", "😍", "🥟", "🙌"];
 import { togetherOf } from "./comewith.js"; // "Come with me?": "Mia and Jo are in" on a card
 import { hostedCount, countLine, isPublicEvent } from "./hostlike.js"; // "Host one like this": "3 people hosted this after seeing it"
 export function makeFeedVisual(store, { C, X }) {
-  const sample = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
-  function hostOf(ws) { const h = C.profileOf(ws); if (!h?.handle) return null;
+  // One pass over the index per rebuild: moments, kudos and who came grouped by event (and moments by workspace), and each
+  // workspace's host card and sample flag read once, so building a card no longer scans every moment and guest list.
+  const groups = new WeakMap();
+  // writes that change what the feed shows: a host page (system/ws-), an event, reply, photo, kudos, badge or reaction
+  let wsGen = 0, feedGen = 0;
+  store.events?.on?.("change", (e) => { const p = String(e?.path || ""); if (p.startsWith("system/ws-")) wsGen++;
+    if (/^system\/(ws|reacts|handle)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
+  function G(I) { let g = groups.get(I); if (g && g.gen !== wsGen) { g.gen = wsGen; g.host = new Map(); g.sample = new Map(); } if (g) return g;
+    g = { gen: wsGen, mom: new Map(), momWs: new Map(), kud: new Map(), came: new Map(), host: new Map(), sample: new Map(), when: new Map() };
+    const push = (M, k, v) => { let L = M.get(k); if (!L) M.set(k, (L = [])); L.push(v); };
+    for (const m of I.moments) { push(g.mom, m.eventId, m); const ws = I.events.get(m.eventId)?.ws; if (ws) push(g.momWs, ws, m); }
+    for (const k of I.kudos) push(g.kud, k.eventId, k);
+    for (const L of I.att.values()) for (const id of new Set(L.map((a) => a.eventId))) g.came.set(id, (g.came.get(id) || 0) + 1);
+    groups.set(I, g); return g; }
+  const momentsOf = (I, id) => G(I).mom.get(id) || [], kudosOf = (I, id) => G(I).kud.get(id) || [];
+  const memo = (M, k, f) => { if (M.has(k)) return M.get(k); const v = f(); M.set(k, v); return v; };
+  const sample = (ws, I = X.index()) => memo(G(I).sample, ws, () => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || ""));
+  const hostOf = (ws, I = X.index()) => memo(G(I).host, ws, () => hostOf0(ws));
+  function hostOf0(ws) { const h = C.profileOf(ws); if (!h?.handle) return null;
     return { handle: h.handle, name: h.name || h.handle, emoji: h.emoji || "🎉", color: h.theme?.accent || h.color || "#E26D8E", avatarArt: h.theme?.avatarArt || "", avatarUrl: MEDIA_OK(h.theme?.avatarUrl) || /^\/presets\/[a-z0-9-]+\.svg$/.test(h.theme?.avatarUrl || "") ? h.theme.avatarUrl : "" }; }
   const lookOf = (e) => { const L = cleanLook(e?.look) || {}; const o = {}; for (const k of ["palette", "coverFit", "coverW", "coverH", "effect", "titleFont", "buttonEmoji", "buttonLabel", "lights", "vibe"]) if (L[k] != null) o[k] = L[k]; return o; };
   const artOf = (e) => { const a = e?.coverArt; if (!a || typeof a !== "object") return null; const o = {}; if (typeof a.kind === "string") o.kind = a.kind.slice(0, 40); if (typeof a.tone === "string") o.tone = a.tone.slice(0, 20); if (typeof a.label === "string") o.label = clean(a.label, 40); if (typeof a.svg === "string" && /^<svg /.test(a.svg) && a.svg.length < 40000) o.svg = a.svg; return o; };
@@ -108,14 +125,14 @@ export function makeFeedVisual(store, { C, X }) {
 
   /** One event as a card: the flyer or cover, its look, the host, and for past events the photos people can see. */
   function card(I, x, { email = "", device = "" } = {}) {
-    const e = x.e, past = !!e.date && e.date < today(), h = hostOf(x.ws), going = past ? 0 : (C.goingOf(x.ws, x.id, e).going || 0);
-    const photos = I.moments.filter((m) => m.eventId === x.id && momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0)).slice(0, 12).map(momentOut);
-    const K = I.kudos.filter((k) => k.eventId === x.id && (k.love || (k.tags || []).length)), q = K.filter((k) => k.love && k.verified).sort((a, b) => (b.verified === "guest_list") - (a.verified === "guest_list") || b.love.length - a.love.length)[0];
-    const came = [...I.att.values()].filter((L) => L.some((a) => a.eventId === x.id)).length;
+    const e = x.e, past = !!e.date && e.date < today(), h = hostOf(x.ws, I), going = past ? 0 : (C.goingOf(x.ws, x.id, e).going || 0);
+    const photos = momentsOf(I, x.id).filter((m) => momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0)).slice(0, 12).map(momentOut);
+    const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length), q = K.filter((k) => k.love && k.verified).sort((a, b) => (b.verified === "guest_list") - (a.verified === "guest_list") || b.love.length - a.love.length)[0];
+    const came = G(I).came.get(x.id) || 0;
     const cap = +e.headcount || 0;
     return { id: x.id, title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
       approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", coverArt: artOf(e), look: lookOf(e), host: h, url: `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
-      ...(sample(x.ws) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
+      ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
         const T = togetherOf(scopeStore(store, x.ws).list("rsvps"), e, x.id); return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
       fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY };
@@ -135,20 +152,22 @@ export function makeFeedVisual(store, { C, X }) {
   const fitOf = (P, text, place) => { let n = 0; if (P.interests.length) { const T = interestsOf(text, ""); n += P.interests.filter((i) => T.includes(i)).length * 3; } if (P.city && lc(place).includes(P.city)) n += 2; return n; };
   /** Everything for the feed's visual sections, for one viewer (email "" when signed out). interests and city order it. */
   function sections({ email = "", device = "", interests = [], city = "" } = {}) {
-    const I = X.index(), now = Date.now(), t = today(now), all = [...I.events.values()].filter((x) => C.profileOf(x.ws)?.handle);
+    const I = X.index(), now = Date.now(), t = today(now), all = [...I.events.values()].filter((x) => hostOf(x.ws, I));
     const P = { interests: cleanInterests(interests), city: lc(clean(city, 60)) }, fit = (x) => fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""} ${x.e.format || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`);
-    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws) - sample(b.ws)) || fit(b) - fit(a) || String(a.e.date).localeCompare(String(b.e.date))).slice(0, 16).map((x) => card(I, x, { email, device }));
+    const upcoming = all.filter((x) => cardPublic(x.e) && (x.e.date || "") >= t && x.e.stage !== "interest").sort((a, b) => (sample(a.ws, I) - sample(b.ws, I)) || fit(b) - fit(a) || String(a.e.date).localeCompare(String(b.e.date))).slice(0, 16).map((x) => card(I, x, { email, device }));
     // a quiet city still has something coming up: Discover's example events, marked as examples, after the real ones
     if (upcoming.length < 6) { try { const have = new Set(upcoming.map((e) => e.id)); for (const d of C.discover().events || []) { if (upcoming.length >= 8) break; if (!d?.id || have.has(d.id) || !d.host?.handle || d.unlisted || (d.date && d.date < t)) continue; have.add(d.id);
       upcoming.push({ id: d.id, title: d.title || d.name || "", date: d.date || "", startTime: d.startTime || "", city: d.city || "", hood: d.hood || "", emoji: d.emoji || "", activity: d.activity || "", approvalRequired: !!d.approvalRequired, past: false, cover: MEDIA_OK(d.coverPhoto) ? d.coverPhoto : "", coverArt: artOf(d), look: {}, host: { handle: d.host.handle, name: d.host.name, emoji: d.host.emoji || "🎉", color: d.host.color || "#E26D8E", avatarArt: d.host.avatarArt || "", avatarUrl: "" }, url: `/g#rsvp-${encodeURIComponent(d.id)}`, page: `/@${d.host.handle}`, going: d.going || 0, sample: !!d.sample, fresh: false }); } } catch {} }
     // example (sample) events stay only while they're recent: an old example isn't what people are hosting
     const fresh = now - SHOWCASE_FRESH_DAYS * DAY;
-    const pastX = all.filter((x) => x.e.date && x.e.date < t && Date.parse(x.e.date) > now - 120 * DAY && (cardPublic(x.e) || wasThere(I, x.id, email)) && !x.e.cancelled && !(sample(x.ws) && Date.parse(x.e.date) < fresh));
+    const pastX = all.filter((x) => x.e.date && x.e.date < t && Date.parse(x.e.date) > now - 120 * DAY && (cardPublic(x.e) || wasThere(I, x.id, email)) && !x.e.cancelled && !(sample(x.ws, I) && Date.parse(x.e.date) < fresh));
     const fitC = (c) => fitOf(P, `${c.title} ${c.activity}`, `${c.city} ${c.hood}`);
-    const past = pastX.map((x) => card(I, x, { email, device })).sort((a, b) => (!!b.photos.length - !!a.photos.length) || (!!a.sample - !!b.sample) || fitC(b) - fitC(a) || String(b.date).localeCompare(String(a.date))).slice(0, 12);
+    // ordered on what's known before a card is built (has photos this viewer may see, example, fit, newest), then only 12 built
+    const pastK = pastX.map((x) => ({ x, ph: momentsOf(I, x.id).some((m) => momentSeen(I, m, email)), sm: sample(x.ws, I), fit: fitOf(P, `${x.e.pubTitle || x.e.name || ""} ${x.e.activity || ""}`, `${x.e.city || ""} ${x.e.hood || ""}`), date: x.e.date || "" }));
+    const past = pastK.sort((a, b) => (b.ph - a.ph) || (a.sm - b.sm) || b.fit - a.fit || String(b.date).localeCompare(String(a.date))).slice(0, 12).map((k) => card(I, k.x, { email, device }));
     if (P.interests.length || P.city) upcoming.sort((a, b) => (!!a.sample - !!b.sample) || fitC(b) - fitC(a) || String(a.date).localeCompare(String(b.date)));
-    const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws), page: hostOf(x.ws) ? `/@${hostOf(x.ws).handle}` : "" } }; });
-    const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws);
+    const moments = I.moments.filter((m) => m.at > now - 30 * DAY && momentSeen(I, m, email)).sort((a, b) => b.at - a.at).slice(0, 12).map((m) => { const x = I.events.get(m.eventId); return { ...momentOut(m), event: { id: x.id, title: x.e.pubTitle || x.e.name || "", date: x.e.date || "", host: hostOf(x.ws, I), page: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : "" } }; });
+    const kudos = I.kudos.filter((k) => k.love && k.verified && cardPublic(I.events.get(k.eventId)?.e) && k.at > now - 120 * DAY).sort((a, b) => b.at - a.at).slice(0, 8).map((k) => { const x = I.events.get(k.eventId), h = hostOf(x.ws, I);
       return { id: k.id, text: scrub(k.love).slice(0, 240), name: first(k.name) || "A guest", tags: (k.tags || []).slice(0, 3), verifiedLabel: k.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in", event: { id: x.id, title: x.e.pubTitle || x.e.name || "", host: h, page: h ? `/@${h.handle}` : "" } }; });
     // prepared pages: what they did in the last two weeks stays with the real content; older things become ideas to steal
     const isFresh = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") && Date.parse(d) >= fresh, ideas = [];
@@ -177,8 +196,8 @@ export function makeFeedVisual(store, { C, X }) {
   function recapOf(I, x, { email = "", now = Date.now() } = {}) {
     const e = x.e, t = today(now); if (!e || !/^\d{4}-\d{2}-\d{2}$/.test(e.date || "") || e.date >= t || e.cancelled || e.example || e.stage === "interest") return null;
     if (!momentsPublic(e) && !wasThere(I, x.id, email)) return null;
-    const photos = I.moments.filter((m) => m.eventId === x.id && momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0));
-    const K = I.kudos.filter((k) => k.eventId === x.id && (k.love || (k.tags || []).length));
+    const photos = momentsOf(I, x.id).filter((m) => momentSeen(I, m, email)).sort((a, b) => (a.at || 0) - (b.at || 0));
+    const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length);
     if (photos.length + K.length < RECAP_MIN) return null;
     let d = store.get(recapKey(x.id))?.data;
     if (!d) { const end = /^\d{4}-\d{2}-\d{2}$/.test(e.endDate || "") && e.endDate >= e.date ? e.endDate : e.date; if (now - (Date.parse(end + "T12:00:00Z") + DAY) > RECAP_WINDOW) return null;
@@ -197,19 +216,19 @@ export function makeFeedVisual(store, { C, X }) {
     return { eventId: x.id, madeAt: d.madeAt, host: h, items, thumb: still };
   }
   /** A real photo for a host's ring when their stories are only flyers or art: their newest photo anyone may see, or a cover. */
-  function photoOf(I, ws, email) { const m = I.moments.filter((y) => I.events.get(y.eventId)?.ws === ws && momentSeen(I, y, email) && (y.type === "image" || MEDIA_OK(y.poster))).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
+  function photoOf(I, ws, email) { const m = (G(I).momWs.get(ws) || []).filter((y) => momentSeen(I, y, email) && (y.type === "image" || MEDIA_OK(y.poster))).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
     if (m) return m.type === "image" ? m.url : m.poster;
     const x = [...I.events.values()].find((y) => y.ws === ws && cardPublic(y.e) && MEDIA_OK(y.e.coverPhoto)); return x ? x.e.coverPhoto : ""; }
   /** Stories: one circle per host with photos, videos or flyers from the last 14 days, and recap stories, newest first. */
   function stories({ email = "", following = [], now = Date.now() } = {}) {
     const I = X.index(), since = now - 14 * DAY, t = today(now), by = new Map();
-    const add = (ws, it) => { const h = hostOf(ws); if (!h) return null; if (!by.has(h.handle)) by.set(h.handle, { key: "h:" + h.handle, host: h, items: [], showcase: false, _ws: ws, ...(sample(ws) ? { sample: true } : {}) }); if (it) by.get(h.handle).items.push(it); return by.get(h.handle); };
-    const when = (e) => { const d = e.date ? new Date(e.date + "T12:00:00") : null; return d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short" }) : ""; };
+    const add = (ws, it) => { const h = hostOf(ws, I); if (!h) return null; if (!by.has(h.handle)) by.set(h.handle, { key: "h:" + h.handle, host: h, items: [], showcase: false, _ws: ws, ...(sample(ws, I) ? { sample: true } : {}) }); if (it) by.get(h.handle).items.push(it); return by.get(h.handle); };
+    const when = (e) => memo(G(I).when, e.date || "", () => { const d = e.date ? new Date(e.date + "T12:00:00") : null; return d && !isNaN(d) ? d.toLocaleDateString("en-US", { weekday: "short" }) : ""; });
     for (const m of I.moments) { if (!(m.at > since) || !momentSeen(I, m, email)) continue; const x = I.events.get(m.eventId);
-      add(x.ws, { id: "m:" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), thumb: m.type === "video" ? (MEDIA_OK(m.poster) ? m.poster : "") : m.url, caption: [x.e.pubTitle || x.e.name, when(x.e)].filter(Boolean).join(" · "), note: momentOut(m).caption, by: first(m.authorName) || "", at: m.at, past: true, cta: { label: "See page", url: hostOf(x.ws) ? `/@${hostOf(x.ws).handle}` : `/g#rsvp-${x.id}` } }); }
+      add(x.ws, { id: "m:" + m.id, ev: x.id, type: m.type === "video" ? "video" : "image", url: m.url, ...(MEDIA_OK(m.poster) ? { poster: m.poster } : {}), thumb: m.type === "video" ? (MEDIA_OK(m.poster) ? m.poster : "") : m.url, caption: [x.e.pubTitle || x.e.name, when(x.e)].filter(Boolean).join(" · "), note: momentOut(m).caption, by: first(m.authorName) || "", at: m.at, past: true, cta: { label: "See page", url: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : `/g#rsvp-${x.id}` } }); }
     for (const x of I.events.values()) { const e = x.e; if (!cardPublic(e) && !wasThere(I, x.id, email)) continue; const at = e.updatedAt || e.createdAt || 0, up = (e.date || "") >= t;
       if (up && e.stage !== "interest" && (at > since || Date.parse(e.date) - now < 21 * DAY)) add(x.ws, { id: "f:" + x.id, type: MEDIA_OK(e.coverPhoto) ? "image" : "art", url: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", thumb: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", art: { title: e.pubTitle || e.name || "", activity: e.activity || "", coverArt: artOf(e), date: e.date || "", id: x.id }, look: lookOf(e), caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Math.max(at, since + 1), past: false, cta: { label: "See invite", url: `/g#rsvp-${encodeURIComponent(x.id)}` } });
-      else if (!up && e.date && Date.parse(e.date) > since && MEDIA_OK(e.coverPhoto) && momentsOnPage(e)) add(x.ws, { id: "c:" + x.id, ev: x.id, type: "image", url: e.coverPhoto, thumb: e.coverPhoto, caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Date.parse(e.date) + 20 * 3600e3, past: true, cta: { label: "See page", url: hostOf(x.ws) ? `/@${hostOf(x.ws).handle}` : `/g#rsvp-${x.id}` } });
+      else if (!up && e.date && Date.parse(e.date) > since && MEDIA_OK(e.coverPhoto) && momentsOnPage(e)) add(x.ws, { id: "c:" + x.id, ev: x.id, type: "image", url: e.coverPhoto, thumb: e.coverPhoto, caption: [e.pubTitle || e.name, when(e)].filter(Boolean).join(" · "), at: Date.parse(e.date) + 20 * 3600e3, past: true, cta: { label: "See page", url: hostOf(x.ws, I) ? `/@${hostOf(x.ws, I).handle}` : `/g#rsvp-${x.id}` } });
       // a recap goes first on the host's ring (its photos aren't shown twice)
       const R = !up ? recapOf(I, x, { email, now }) : null; if (R) { const s = add(x.ws, null); if (s) (s.recaps ||= []).push(R); } }
     const F = new Set(following); let L = [...by.values()].map((s) => { const R = (s.recaps || []).sort((a, b) => b.madeAt - a.madeAt), done = new Set(R.map((r) => r.eventId));
@@ -248,7 +267,7 @@ export function makeFeedVisual(store, { C, X }) {
     const out = [], seenK = new Set(); for (const c of [...lead, ...mid, ...later]) { if (out.length >= limit || seenK.has(c.key)) continue; seenK.add(c.key); out.push(c); }
     return { cards: out, city: C0 ? clean(city, 60) : "", local: lead.length };
   }
-  return { sections, stories, recapOf, deck, card, react, reactsOf, showcases, momentsPublic, momentsOnPage, wasThere };
+  return { gen: () => feedGen, sections, stories, recapOf, deck, card, react, reactsOf, myReacts, showcases, momentsPublic, momentsOnPage, wasThere };
 }
 
 export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
@@ -262,13 +281,23 @@ export function mountFeedVisual(app, { store, small, currentUser, C, X }) {
   const followingOf = (email) => { try { return email ? [...new Set([...X.index().events.values()].map((v) => v.ws))].filter((w) => C.followersOf(w).some((f) => lc(f.email) === lc(email))).map((w) => C.profileOf(w)?.handle).filter(Boolean) : []; } catch { return []; } };
   const device = (req) => (/^[A-Za-z0-9_-]{8,40}$/.test(String(req.query.device || req.body?.device || "")) ? "dev:" + String(req.query.device || req.body.device) : "");
   // the signed-out feed: public content only (and no cookies needed, so it can be cached for a minute)
-  app.get("/api/public/feed", (req, res) => { const u = viewer(req); res.set("Cache-Control", u ? "private, no-store" : "public, max-age=60");
-    const email = u ? lc(u.email) : ""; res.json({ ...V.sections({ email, device: device(req), interests: String(req.query.interests || "").slice(0, 400), city: String(req.query.city || "") }), stories: V.stories({ email, following: followingOf(email) }) }); });
+  // Signed out, the answer is the same for everyone who picked the same things, so it's kept for a minute (or until
+  // something it shows changes); only "my reactions" are per device, and those are filled in per request.
+  const outCache = new Map(), OUT_MS = 60_000;
+  const cachedOut = (key, make) => { const now = Date.now(), c = outCache.get(key); if (c && c.gen === V.gen() && now - c.at < OUT_MS) return c.v;
+    const v = make(), gen = V.gen(); /* after: what building it wrote itself (kudos labels saved back) changes nothing shown */ if (outCache.size > 500) outCache.clear(); outCache.set(key, { gen, at: now, v }); return v; };
+  app.get("/api/public/feed", (req, res) => { if (limited(req, Math.max(60, +process.env.ENCORE_FEED_PER_IP_HOUR || 1200))) return bad(res, "Slow down.", 429, "rate_limited");
+    const u = viewer(req); res.set("Cache-Control", u ? "private, no-store" : "public, max-age=60");
+    const email = u ? lc(u.email) : "", interests = String(req.query.interests || "").slice(0, 400), city = String(req.query.city || "").slice(0, 120);
+    if (u) return res.json({ ...V.sections({ email, device: device(req), interests, city }), stories: V.stories({ email, following: followingOf(email) }) });
+    const body = cachedOut(`feed|${interests}|${city}`, () => ({ ...V.sections({ interests, city }), stories: V.stories({}) })), dev = device(req);
+    res.json(dev ? { ...body, past: body.past.map((c) => ({ ...c, myReacts: V.myReacts(c.id, dev) })) } : body); });
   // stories on their own (the rail can refresh without the whole feed)
   app.get("/api/feed/stories", (req, res) => { const u = viewer(req), email = u ? lc(u.email) : ""; res.set("Cache-Control", "private, no-store"); res.json({ stories: V.stories({ email, following: followingOf(email) }) }); });
   // the swipe deck on a first visit to /feed (public/swipedeck.js): real events in the visitor's city first, then ideas
   app.get("/api/public/deck", (req, res) => { if (limited(req, 600)) return bad(res, "Slow down.", 429, "rate_limited"); const u = viewer(req); res.set("Cache-Control", "private, no-store");
-    res.json(V.deck({ city: String(req.query.city || ""), interests: String(req.query.interests || "").slice(0, 400), email: u ? lc(u.email) : "", ideas: app.locals.hooks?.IDEAS || [], limit: Math.max(5, Math.min(20, +req.query.limit || 12)) })); });
+    const q = { city: String(req.query.city || "").slice(0, 120), interests: String(req.query.interests || "").slice(0, 400), email: u ? lc(u.email) : "", ideas: app.locals.hooks?.IDEAS || [], limit: Math.max(5, Math.min(20, +req.query.limit || 12)) };
+    res.json(u ? V.deck(q) : cachedOut(`deck|${q.interests}|${q.city}|${q.limit}`, () => V.deck(q))); });
   // what an upload may be, for the browser's own check before it sends anything
   app.get("/api/public/moment-limits", (req, res) => res.json({ imageMB: Math.round((momentMaxBytes("image") / 1048576) * 10) / 10, videoMB: Math.round((momentMaxBytes("video") / 1048576) * 10) / 10, seconds: MOMENT_MAX_SECONDS, perPick: 6, types: [...MOMENT_IMAGE_TYPES, ...MOMENT_VIDEO_TYPES] }));
   // tap-to-react on past events: one of each emoji per person (signed in) or device, toggled

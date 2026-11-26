@@ -15,8 +15,12 @@ import { configured, configuredFor, callTool, withCrm } from "./integrations/ind
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
-import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos } from "./social.js";
-import { ordersClosed } from "./tz.js";
+import { makeSocial, mountSocial, seatsOf, heldOf, seatsTaken, waitlistOf, waitlistPos, partyUnit, dueCents } from "./social.js";
+import { ordersClosed, tzOk } from "./tz.js";
+// review round 11: an event keeps a valid IANA time zone only (from its tz field, else the x-encore-tz header the browser may send on create)
+const withTz = (body, req, fresh) => { if (!body || typeof body !== "object" || Array.isArray(body)) return body; const o = { ...body };
+  if (o.tz != null && !(typeof o.tz === "string" && o.tz.length <= 64 && tzOk(o.tz))) delete o.tz;
+  if (fresh && !o.tz) { const h = String(req.get("x-encore-tz") || "").slice(0, 64); if (h && tzOk(h)) o.tz = h; } return o; };
 import { smsConfig, sendSms } from "./sms.js";
 import { mountHosts, earlyAccessBlocks } from "./hosts.js";
 import { mountRecognition } from "./recognition.js";
@@ -47,7 +51,7 @@ import { useMetricsStore, track, trackOnce, funnel, isAdmin, CLIENT_STEPS } from
 import { mountMcp } from "./mcp.js";
 import { authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
-import { buildOrder, slotLabel, orderMoney } from "./preorder.js"; // review round 8
+import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
@@ -362,13 +366,17 @@ export function createApp({ store, dataDir }) {
     if (q.get("plan") && PLANS.includes(q.get("plan"))) updateWorkspace(W.id, { interestedIn: q.get("plan") });
     res.json({ ok: true, workspace: { id: W.id, company: W.company, plan: W.plan, trialEndsAt: W.trialEndsAt }, redirect: "/?" + q.toString() });
   });
-  /** Did this email reply I'm in to the event `ref`, or send it kudos? Then that event's host vouches for them. */
+  /** Did this email reply I'm in to the event `ref`, or send it kudos? Then that event's host vouches for them.
+   * review round 11: only for an address the guest proved is theirs (they opened the link we emailed to it, which stamps
+   * emailProvenAt on the reply). Anyone can type someone else's email into an invite, so a bare reply vouches for no one. */
   function guestVouch(ref, email) {
     if (!ref || !email) return null; const ws = workspaceOfEvent(ref); if (!ws || ws === DEFAULT_WS) return null;
     const St = scopeStore(store, ws); if (!St.get("events/" + ref)) return null;
     const same = (d) => d.data?.eventId === ref && String(d.data?.email || "").trim().toLowerCase() === email;
-    if (St.list("rsvps").some((d) => same(d) && (d.data.response === "going" || d.data.status === "Attended"))) return { ws, eventId: ref, via: "reply" };
-    if (St.list("kudos").some(same)) return { ws, eventId: ref, via: "kudos" };
+    const proven = (r) => !!r?.emailProvenAt && String(r.emailProven || "").trim().toLowerCase() === email;
+    const R = St.list("rsvps").filter((d) => same(d) && proven(d.data));
+    if (R.some((d) => d.data.response === "going" || d.data.status === "Attended")) return { ws, eventId: ref, via: "reply" };
+    if (R.length && St.list("kudos").some(same)) return { ws, eventId: ref, via: "kudos" };
     return null;
   }
   app.post("/api/join", small, (req, res) => {
@@ -645,7 +653,7 @@ export function createApp({ store, dataDir }) {
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
   app.locals.social = X;
-  mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
+  mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
   mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)
@@ -689,6 +697,9 @@ export function createApp({ store, dataDir }) {
     if (!d || d.data?.eventId !== eventId || !eq(replyToken(ws, rid), t)) return res.status(404).json({ code: "not_found", message: "This link doesn't work any more. Ask for a new one from the invite." });
     if (k.length < 8) return res.status(400).json({ code: "invalid", message: "Missing guest key." });
     const r = d.data; if (r._k !== k && !(r._keys || []).includes(k)) St.update("rsvps/" + rid, { _keys: [...(r._keys || []).filter((x) => x !== k), k].slice(-5) });
+    // review round 11: this link was only ever emailed to the address on the reply, so opening it proves that email (guestVouch)
+    // (not when the guest changed the email after the link went out: then only a link sent since proves the new one)
+    if (EMAIL_OK(String(r.email || "").trim()) && String(r.emailProven || "") !== String(r.email).trim().toLowerCase() && (!r.emailChangedAt || (r.linkSentAt || 0) > r.emailChangedAt)) St.update("rsvps/" + rid, { emailProvenAt: Date.now(), emailProven: String(r.email).trim().toLowerCase() });
     const all = St.list("rsvps").filter((x) => x.data?.eventId === eventId);
     res.json({ ok: true, rid, eventId, code: r.code || "", name: r.name || "", email: r.email || "", response: r.response || "", party: r.party || 1, dietary: r.dietary || "", ...(r.response === "waitlist" ? { waitlistPos: waitlistPos(all, rid), waiting: waitlistOf(all).length } : {}) }); });
   // Where a reply stands, for the guest who holds its id and code: the response and, on the waitlist, their place in line.
@@ -1363,10 +1374,37 @@ export function createApp({ store, dataDir }) {
     return true;
   };
   // Guest RSVPs and wall entries: the server stamps the source and only takes the statuses a guest may choose.
+  // ---- review round 11: guest survey answers (feedback) and roadmap invite requests (interest) ----
+  // Small (4 KB), only the fields the survey and request forms send, for a real event (or a roadmap item), and a few an hour
+  // from one address per event, so a guest link can't be used to fill the store.
+  const noteHits = new Map(), GUEST_NOTE_MAX = 4 * 1024;
+  const noteStr = (v, n) => String(v ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
+  const noteNum = (v, lo, hi) => (typeof v === "number" && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined);
+  const NOTE_FIELDS = {
+    feedback: { rating: (v) => noteNum(v, 0, 10), nps: (v) => noteNum(v, 0, 10), highlights: (v) => (Array.isArray(v) ? v.slice(0, 12).filter((x) => typeof x === "string").map((x) => noteStr(x, 80)).filter(Boolean) : undefined),
+      role: (v) => noteStr(v, 120), wouldReturn: (v) => (typeof v === "boolean" ? v : undefined), gotValue: (v) => (typeof v === "boolean" ? v : undefined), referral: (v) => noteStr(v, 200),
+      referralNameOk: (v) => (typeof v === "boolean" ? v : undefined), comment: (v) => noteStr(v, 1500), lift: (v) => noteStr(v, 40), nextIdea: (v) => noteStr(v, 500) },
+    interest: { item: (v) => noteStr(v, 160), name: (v) => noteStr(v, 120), email: (v) => noteStr(v, 200), company: (v) => noteStr(v, 120), title: (v) => noteStr(v, 120) },
+  };
+  function guestNote(req, res, collection, b) {
+    if (Buffer.byteLength(JSON.stringify(b)) > GUEST_NOTE_MAX) { res.status(413).json({ code: "too_large", message: "That's too much to send. Try a shorter note." }); return false; }
+    const eventId = String(b.eventId || "");
+    if (collection === "feedback" || eventId) { if (!/^[A-Za-z0-9_-]{1,80}$/.test(eventId) || !S(req).get("events/" + eventId)) { res.status(404).json({ code: "not_found", message: "That event isn't here any more." }); return false; } }
+    const o = {}; for (const [k, f] of Object.entries(NOTE_FIELDS[collection])) { if (b[k] == null) continue; const v = f(b[k]); if (v !== undefined && v !== "") o[k] = v; }
+    if (collection === "interest" && !o.item) { res.status(400).json({ code: "invalid", message: "Pick what you'd like an invite to." }); return false; }
+    const now = Date.now(), ip = req.ip || "?"; if (noteHits.size > 50_000) noteHits.clear();
+    const hit = (k, n) => { let h = noteHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; noteHits.set(k, h); } return ++h.n > n; };
+    const a = hit(`${collection}|${ip}|${eventId || o.item}`, +(process.env.ENCORE_NOTE_PER_HOUR || 10)), z = hit(`${collection}|${ip}`, +(process.env.ENCORE_NOTE_IP_PER_HOUR || 60));
+    if (a || z) { res.status(429).json({ code: "rate_limited", message: "Lots of answers from here at once. Try again in a few minutes." }); return false; }
+    req.body = { ...o, ...(eventId ? { eventId } : {}), source: "guest", createdAt: now };
+    return true;
+  }
+  // ---- end review round 11 guest notes ----
   const guestShape = (req, res, collection) => {
     if (!req.guest) return true;
     let b = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {};
     if (GUEST_COLLECTIONS.has(collection) && Buffer.byteLength(JSON.stringify(b)) > GUEST_BODY_MAX) { res.status(413).json({ code: "too_large", message: "That's too much to send. Try a smaller photo or a shorter note." }); return false; }
+    if (collection === "feedback" || collection === "interest") return guestNote(req, res, collection, b); // review round 11
     if (collection === "rsvps") {
       const raw0 = b; b = cleanGuestRsvp(b);
       // ---- review round 8: a pre-order is rebuilt here from the event's own items and prices (server/preorder.js) ----
@@ -1422,6 +1460,7 @@ export function createApp({ store, dataDir }) {
     if (col === "rsvps") {
       // review round 3 (paid spots): "I paid" only on the guest's own reply that is already there; the server stamps when
       if (!cur) delete b.paidClaim; else if (b.paidClaim === true && !cur.data.paidClaim) b.paidClaimAt = Date.now(); else if (cur.data.paidClaimAt) b.paidClaimAt = cur.data.paidClaimAt;
+      if (cur && b.email != null && String(b.email).trim().toLowerCase() !== String(cur.data.email || "").trim().toLowerCase()) b.emailChangedAt = Date.now(); // review round 11: see the reply link claim
       if (cur) { b.eventId = cur.data.eventId; if (req.method === "PUT") for (const [kk, v] of Object.entries(cur.data)) if (!GUEST_RSVP_KEYS.has(kk) && !(kk in b)) b[kk] = v; }
       else { const eid = String(b.eventId || ""); if (!/^[A-Za-z0-9_-]{1,80}$/.test(eid) || !S(req).get("events/" + eid)) { res.status(404).json({ code: "not_found", message: "That event isn't here any more." }); return false; }
         if (rsvpLimited(req, eid)) { res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); return false; } }
@@ -1444,7 +1483,7 @@ export function createApp({ store, dataDir }) {
     if (!req.guest || !/^rsvps\/[A-Za-z0-9_-]+$/.test(path) || !body) return body;
     if (body.response !== "going" && body.party == null && body.plusOne == null && body.orderLines == null) return body;
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
-    if (pol.error) throw httpError(409, "sold_out", pol.error);
+    if (pol.error) throw httpError(pol.status || 409, pol.code || "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
     return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}) };
   }
@@ -1454,7 +1493,7 @@ export function createApp({ store, dataDir }) {
     if (!ownedWrite(req, res) || !versionOk(req, res)) return;
     const p = String(req.query.path || ""), St = S(req), before = St.get(p)?.data || null, isEv = /^events\/[^/]+$/.test(p), isR = /^rsvps\/[A-Za-z0-9_-]+$/.test(p);
     req.body = guardGuestReply(req, p, req.body);
-    if (isEv) req.body = withCleanLook(req.body); // per-event looks: allow-listed values only
+    if (isEv) { req.body = withTz(withCleanLook(req.body), req, !before); if (how === "put" && before?.tz && req.body && typeof req.body === "object" && !("tz" in req.body)) req.body = { ...req.body, tz: before.tz }; } // per-event looks: allow-listed values only; a real time zone, kept
     // the host letting someone in is remembered, so a later change of mind doesn't need asking again
     if (isR && !req.guest && req.body?.response === "going" && before && before.response !== "going") req.body = { ...req.body, letInAt: before.letInAt || Date.now() };
     if (isEv && !req.guest && before) rememberVersion(St, p, before);
@@ -1535,21 +1574,25 @@ export function createApp({ store, dataDir }) {
     const G = ev.guests || [], pr = prior?.data || {};
     const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
     const out = { ...body, ...(inv ? { _inv: inv } : {}) };
-    if (out.party != null || out.plusOne != null) out.party = seatsOf(out, ev);
     // "Come with me?" (server/comewith.js): a friend's reply through the link fills the spot held for them, or joins the pair
     const cw = req.guest && !pr.withOf ? friendTerms(req, S(req), ev, eventId, prior?.id || null) : null;
+    // review round 11: a pairs or group-only booking comes in whole groups (1 becomes 2 for pairs), and says so when it changed
+    if (!cw?.pairOf && (out.party != null || out.plusOne != null || (partyUnit(ev) > 1 && out.response === "going"))) { const asked = Math.floor(+out.party) || 0; out.party = seatsOf({ ...out, response: out.response || "going" }, ev); if (partyUnit(ev) > 1 && asked && asked !== out.party) out.partyCut = true; }
     if (cw) { out.withOf = cw.withOf; out._withH = cw.withH; if (cw.pairOf) { out.pairOf = cw.pairOf; delete out.party; } }
     // ask-to-join: a guest's yes is a request until the host lets them in (once let in, they can change their mind back)
     if (req.guest && ev.approvalRequired && out.response === "going" && pr.response !== "going" && !pr.letInAt) out.response = "requested";
-    // a pre-order's cap counts what's ordered (max 20 loaves), and a full one says how many are left instead of a waitlist
-    if (ev.preorder && req.guest && out.response === "going" && +ev.headcount > 0 && Array.isArray(out.orderLines) && out.orderLines.length) {
-      const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = heldOf(out, ev);
-      if (taken + mine > cap) { const left = Math.max(0, cap - taken); return { body: out, prior, error: left ? `Only ${left} left. Pick fewer.` : "Sold out. Nothing left to order.", left }; }
+    // a pre-order's cap counts what's ordered (max 20 loaves), and a full one says how many are left instead of a waitlist.
+    // review round 11: with a menu, I'm in needs an order, and a pre-order never goes on the waitlist.
+    if (ev.preorder && req.guest && out.response === "going") {
+      const lines = Array.isArray(out.orderLines) && out.orderLines.length;
+      if (!lines && itemsOf(ev).some((x) => x.name)) return { body: out, prior, error: "Pick something first.", status: 400, code: "invalid_order" };
+      if (+ev.headcount > 0) { const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = heldOf(out, ev);
+        if (taken + mine > cap) { const left = Math.max(0, cap - taken); return { body: out, prior, error: left ? `Only ${left} left. Pick fewer.` : "Sold out.", left }; } }
       return { body: out, prior };
     }
     if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && !out.pairOf) {
       const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }) - (cw?.credit || 0), mine = seatsOf(out, ev);
-      if (pr.response === "going") { const room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = room; out.partyCut = true; } } // already in: keeps their spots
+      if (pr.response === "going") { const u = partyUnit(ev), room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = Math.max(u, Math.floor(room / u) * u); out.partyCut = true; } } // already in: keeps their spots (whole groups)
       else if (taken + mine > cap || (!cw?.credit && waitlistOf(all.filter((d) => d.id !== prior?.id)).length)) out.response = "waitlist";
     }
     if (out.response === "waitlist") out.waitAt = pr.response === "waitlist" && pr.waitAt ? pr.waitAt : Date.now();
@@ -1585,7 +1628,7 @@ export function createApp({ store, dataDir }) {
   /** Spots freed by any path (a guest's Can't go, the host saying Not this time, a bigger cap) go to the waitlist in order:
    * the first group that fits gets in, and is told by email (when email is on) and in their bell. */
   async function promoteWaitlist(req, ws, eventId) {
-    const St = scopeStore(store, ws), ev = St.get("events/" + eventId)?.data; if (!ev || ev.autoWait === false || !(+ev.headcount > 0)) return [];
+    const St = scopeStore(store, ws), ev = St.get("events/" + eventId)?.data; if (!ev || ev.preorder || ev.autoWait === false || !(+ev.headcount > 0)) return []; // review round 11: a pre-order never waits in line, so none move up
     const done = [];
     for (let i = 0; i < 100; i++) {
       const all = St.list("rsvps").filter((d) => d.data?.eventId === eventId), free = +ev.headcount - seatsTaken(ev, all); if (free <= 0) break;
@@ -1617,8 +1660,9 @@ export function createApp({ store, dataDir }) {
   // door." With neither: "<Host> will send you a way to pay." Free and pay-what-you-like events get nothing.
   function payLines(ev, r, host, link) {
     const p = String(ev?.price || "").trim(); if (!p || p === "chip" || /^(free|\$?0)$/i.test(p)) return [];
-    const n = parseFloat(p.replace(/[^\d.]/g, "")); if (!(n > 0)) return [];
-    const cents = Math.round(n * 100), amt = "$" + (cents / 100).toFixed(cents % 100 ? 2 : 0), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
+    // review round 11: what this reply owes: the price a person × its spots, or the group price × its groups (dueCents, server/social.js)
+    const cents = dueCents(ev, r); if (!(cents > 0)) return [];
+    const amt = "$" + (cents / 100).toFixed(cents % 100 ? 2 : 0), url = /^https:\/\/[^\s"'<>]+$/.test(String(ev.ticketUrl || "").trim()) ? String(ev.ticketUrl).trim() : "";
     if (url) return ["", `Pay ${amt} here: ${payLink(url, cents, [String(r?.name || "").trim(), titleOf(ev)].filter(Boolean).join(" · "))}`, `Already paid? Open your invite and tap I paid: ${link}`];
     if (ev.ticketNote) return ["", `Pay ${amt} at the door.`];
     return ["", `${host === "Your host" ? "Your host" : host} will send you a way to pay.`];
@@ -1672,7 +1716,7 @@ export function createApp({ store, dataDir }) {
     if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }
     // the host's bell: every guest reply, and an email when someone asks to join
     if (req.guest && after && now && now !== was && owner) {
-      const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
+      const line = { going: `🎉 ${who} is in for ${title}.`, maybe: `${who} said Maybe to ${title}.`, no: was === "going" ? `${who} can't go to ${title} now. Their spot opened up.${after.paid ? " They had paid." : after.paidClaim ? " They said they paid." : ""}` : `${who} can't go to ${title}.`, waitlist: `${who} joined the waitlist for ${title}.`, requested: `🙋 ${who} asked to join ${title}.` }[now === "declined" ? "no" : now];
       // review round 7: a pre-order reply says what they ordered
       if (line) X.notify(owner, { kind: now === "requested" ? "ask" : "reply", key: `rsvp-${id}-${now}`, text: now === "going" && after.order ? `🛍 ${who} ordered ${String(after.order).slice(0, 160)} (${title}).` : line, link: studio, eventId });
       if (now === "requested" && X.canEmail(owner)) { try { await mailWs(ws, { to: owner, subject: `${who} asked to join ${title}`, text: `${String(after.name || who).slice(0, 80)} asked to join ${title}${whenOf(ev) ? ` (${whenOf(ev)})` : ""}.\n\nLet in or Not this time: ${originOf(req)}${studio}\n`, eventId, kind: "ask" }); } catch {} }
@@ -1698,14 +1742,14 @@ export function createApp({ store, dataDir }) {
     if (req.guest && OWNED.has(p) && !guestKey(req)) return res.status(403).json({ code: "not_granted", message: "Missing guest key." });
     if (!guestShape(req, res, p)) return;
     let body = req.guest && OWNED.has(p) ? { ...(req.body || {}), _k: guestKey(req) } : req.body;
-    if (p === "events") body = withCleanLook(body); // per-event looks: allow-listed values only
+    if (p === "events") body = withTz(withCleanLook(body), req, true); // per-event looks: allow-listed values only; a real time zone
     if (p === "rsvps") { if (req.guest && body && typeof body.response === "string") body = { ...body, response: body.response.toLowerCase() };
       // guests reply only to real events, once the event is over replies are closed, and one address can't flood an event
       if (req.guest) { const eidG = String(body?.eventId || ""), evG = /^[A-Za-z0-9_-]+$/.test(eidG) ? S(req).get("events/" + eidG)?.data : null;
         if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
         if (evG.date && evG.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." });
         if (rsvpLimited(req, eidG)) return res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); }
-      const pol = rsvpPolicy(req, body); if (pol.error) return res.status(409).json({ code: "sold_out", message: pol.error, left: pol.left }); body = pol.body;
+      const pol = rsvpPolicy(req, body); if (pol.error) return res.status(pol.status || 409).json({ code: pol.code || "sold_out", message: pol.error, ...(pol.left != null ? { left: pol.left } : {}) }); body = pol.body;
       // the same email from another device can't overwrite someone's reply: only a device that sent it or opened the emailed
       // link (its guest key), a verified personal invite, or the host can change it. Anyone else gets the link sent to that email.
       if (pol.prior && req.guest) { const sameDevice = keyOk(pol.prior.data, guestKey(req)), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});

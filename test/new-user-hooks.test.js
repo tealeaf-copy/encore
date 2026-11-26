@@ -10,6 +10,7 @@ import { resetLoginLimits } from "../server/auth.js";
 import { fakeOutbox } from "../server/email.js";
 import { momentsPublic } from "../server/feedvisual.js";
 import { dropWindow, dropLine, droppable } from "../server/photodrop.js";
+import { zonedMs } from "../server/tz.js";
 
 let srv;
 const J = { "content-type": "application/json" };
@@ -72,12 +73,14 @@ test("Swipe deck: real events in the visitor's city first, then ideas and photos
 
 test("Photo drops: the morning after, one email and one inbox item per guest who was in, never twice", async () => {
   const past = day(-1), now = morningAfter(past), PD = srv.app.locals.photoDrops;
+  // review round 11: the drops run on the event's own time zone (these are in Brooklyn and Queens), so the job runs at 10am there
+  const nowNY = zonedMs(new Date(Date.parse(past + "T12:00:00Z") + 864e5).toISOString().slice(0, 10), "10:00", "America/New_York");
   assert.equal(dropWindow({ date: past }, now), true);
   assert.equal(dropWindow({ date: past }, now - 5 * 3600e3), false, "not at 5am");
   assert.equal(dropWindow({ date: day(-6) }, now), false, "not a week later");
   assert.equal(droppable({ date: past, noPhotos: true }), false); assert.equal(droppable({ date: past, autoRemind: false }), false);
   const before = fakeOutbox.length, linh = await join("Linh Guest", "linh.nu@example.com");
-  const r = await PD.run({ now, origin: "https://pl.example", workspaces: [S.mai.ws] });
+  const r = await PD.run({ now: nowNY, origin: "https://pl.example", workspaces: [S.mai.ws] });
   const mine = fakeOutbox.slice(before).filter((m) => /Add your photos/.test(m.subject));
   const to = mine.map((m) => String(m.to)).sort();
   assert.ok(to.includes("linh.nu@example.com") && to.includes("jo.nu@example.com"));
@@ -91,7 +94,7 @@ test("Photo drops: the morning after, one email and one inbox item per guest who
   const inbox = await (await get("/api/me/inbox", linh.cookie)).json();
   const item = inbox.items.find((i) => i.kind === "photos" && /Add your photos from Dumpling night/.test(i.text)); assert.ok(item, "inbox item");
   assert.match(item.link, /^\/p\/nuPast\?rid=nuR0&code=NC0$/);
-  const again = await PD.run({ now: now + 3600e3, origin: "https://pl.example", workspaces: [S.mai.ws] }); assert.equal(again.sent, 0, "once per guest per event");
+  const again = await PD.run({ now: nowNY + 3600e3, origin: "https://pl.example", workspaces: [S.mai.ws] }); assert.equal(again.sent, 0, "once per guest per event");
   // the hourly job runs drops after the kudos follow-ups (server/kudosask.js calls this object)
   assert.equal(typeof srv.app.locals.kudosNudge.runFollowUps, "function");
 });

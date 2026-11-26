@@ -17,7 +17,8 @@ import { KUDOS_TAGS, VERIFIED_LABEL, withVerified } from "./social.js";
 import { guessFormat, cleanLogos, isTalk, TALK_FORMATS, httpsLink, audienceOf } from "./scrapbook.js";
 import { categoryOf as bookCategoryOf, CATEGORIES as BOOK_CATEGORIES } from "./market.js";
 import { perPerson, isFlat, priceText } from "./search.js";
-import { tzOk, tzOfCity } from "./tz.js";
+import { tzOk, tzOfCity, ordersClosed } from "./tz.js";
+import { partyUnit } from "./social.js";
 
 const TTL = () => (process.env.ENCORE_DIRECTORY_CACHE_MS != null ? Math.max(0, +process.env.ENCORE_DIRECTORY_CACHE_MS || 0) : 60_000);
 const PER_HOUR = () => Math.max(1, +process.env.ENCORE_DIRECTORY_PER_HOUR || 600);
@@ -208,9 +209,12 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     const fromCard = (c, H, status) => { const cp = splitPlace(c.city), city = cp.area ? s(c.city, 60) : s(cp.city, 60), sr = seriesOf(c);
       return { id: c.id, title: s(c.title, 140), status, start: /^\d{4}-\d{2}-\d{2}$/.test(c.date || "") ? c.date : "", time: [clock(c.startTime), clock(c.endTime)].filter(Boolean).join(" to "),
       city, area: s(c.hood, 60), format: formatOf({ activity: c.activity, title: c.title, tags: c.tags }), tags: (Array.isArray(c.tags) ? c.tags : []).map((t) => s(t, 24)).filter(Boolean).slice(0, 8),
-      price: priceOf(c), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.max(0, Math.round(+c.headcount - (c.preorder ? +c.ordered || 0 : +c.going || 0))) : null, ask_to_join: !!c.approvalRequired,
+      price: priceOf(c), spots_left: status === "upcoming" && +c.headcount > 0 && !c.hideGuests ? Math.floor(Math.max(0, Math.round(+c.headcount - (c.preorder ? +c.ordered || 0 : +c.going || 0))) / partyUnit(c)) : null, ask_to_join: !!c.approvalRequired,
+      // review round 11: what one spot is (a person, a pair or group that books together, an item of a pre-order), in spots_left's units
+      spot_unit: c.preorder ? "item" : partyUnit(c) > 1 ? "group" : "person", group_size: Math.floor(+c.groupSize) > 1 ? Math.min(50, Math.floor(+c.groupSize)) : null,
       // review round 11: a pre-order says so, with its items and when orders close (spots_left counts what's left to order)
-      ...(c.preorder ? { preorder: true, items: orderItemsOf(c), order_by: s(c.orderBy, 40) || (/^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : "") } : {}),
+      ...(c.preorder ? { preorder: true, items: orderItemsOf(c), order_by: s(c.orderBy, 40) || (/^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : ""),
+        order_by_date: /^\d{4}-\d{2}-\d{2}$/.test(c.orderByDate || "") ? c.orderByDate : null, orders_open: status === "upcoming" && !ordersClosed({ ...c, tz: tzOk(c.tz) ? c.tz : tzOfCity(`${c.city || ""} ${c.hood || ""} ${H.h.city || ""}`) }) } : {}),
       repeat: sr.repeat, sessions: sr.sessions, ends: sr.ends, pass: sr.pass, when: sr.when,
       host: hostRef(H.h), url: `${base}/e/${encodeURIComponent(c.id)}`, source: "hosted", speaking: null, original_link: "", companies: [], cover: abs(c.coverPhoto), example: !!(c.sample || H.sample),
       // a class that repeats keeps its id, so guests' kudos from earlier sessions belong to the upcoming one too
@@ -262,7 +266,10 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
   const strip = (e, { items = 10 } = {}) => { const { _start, _dup, _raw, _tz, ...o } = e; return { ...o, reviews: { ...e.reviews, items: items == null ? e.reviews.items : e.reviews.items.slice(0, items) } }; };
   const truthy = (v) => /^(1|true|yes)$/i.test(String(v ?? ""));
   const encodeCursor = (n) => Buffer.from("o:" + n).toString("base64url");
-  const decodeCursor = (c) => { try { const m = Buffer.from(String(c || ""), "base64url").toString().match(/^o:(\d{1,7})$/); return m ? +m[1] : 0; } catch { return 0; } };
+  // review round 11: a cursor we didn't make, or one past the end of the list now (it changed since), is a 400 invalid_cursor
+  const badCursor = () => Object.assign(new Error("That cursor doesn't work any more. Start again without one."), { status: 400, code: "invalid_cursor" });
+  const decodeCursor = (c) => { if (c == null || c === "") return 0; const m = (() => { try { return Buffer.from(String(c), "base64url").toString().match(/^o:(\d{1,7})$/); } catch { return null; } })(); if (!m) throw badCursor(); return +m[1]; };
+  const pageOf = (L, q, d) => { const off = decodeCursor(q.cursor), lim = limitOf(q.limit, d); if (off > 0 && off >= L.length) throw badCursor(); return { off, lim, page: L.slice(off, off + lim), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null }; };
   const limitOf = (v, d = 20) => Math.max(1, Math.min(MAX_LIMIT, Math.round(+v || d)));
   function filterEvents(base, q = {}) {
     const D = data(base), format = s(q.format, 24).toLowerCase(), type = s(q.type, 24).toLowerCase();
@@ -288,8 +295,8 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     for (const x of M) x.w = x.m.hit.reduce((a, h, k) => a + h / df[k], 0);
     return M.sort((a, b) => b.m.n - a.m.n || b.w - a.w || a.i - b.i).map((x) => x.e);
   }
-  function searchEvents(base, q = {}) { const L = filterEvents(base, q), off = decodeCursor(q.cursor), lim = limitOf(q.limit), page = L.slice(off, off + lim);
-    return { data: page.map((e) => strip(e)), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length }; }
+  function searchEvents(base, q = {}) { const L = filterEvents(base, q), P = pageOf(L, q, 20);
+    return { data: P.page.map((e) => strip(e)), next_cursor: P.next_cursor, total: L.length }; }
   function getEvent(base, id) { const e = data(base).events.find((x) => x.id === String(id || "")); return e ? strip(e, { items: null }) : null; }
   // review 8: free text also reads the bio, talk topics, services and package names; "speaker" means talk formats
   const hostBlob = (H) => { const h = H.rec; return [h.name, h.handle, h.city, h.area, h.tagline, h.bio || "", ...h.tags, ...h.formats, ...(h.speaking_topics || []), H.h.services || "", ...(H.packages || []).map((p) => p.name)].join(" ").toLowerCase(); };
@@ -298,8 +305,8 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     const L = [...data(base).hosts.values()].filter((H) => { const h = H.rec; return (ex || !h.example) && (!city || `${h.city} ${h.area}`.toLowerCase().includes(city))
       && (!words.length || ((t) => words.every((w) => wordHits(t, w)))(hostBlob(H))); }).map((H) => H.rec)
       .sort((a, b) => b.upcoming_count + b.past_count + b.reviews.count - (a.upcoming_count + a.past_count + a.reviews.count) || a.name.localeCompare(b.name));
-    const off = decodeCursor(q.cursor), lim = limitOf(q.limit, 50);
-    return { data: L.slice(off, off + lim), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length }; }
+    const P = pageOf(L, q, 50);
+    return { data: P.page, next_cursor: P.next_cursor, total: L.length }; }
   function getHost(base, handle) { const H = data(base).hosts.get(s(handle, 30).toLowerCase().replace(/^@/, "")); if (!H) return null;
     return { ...H.rec, reviews: { ...H.rec.reviews, items: H.reviewItems.slice(0, 50) }, events: filterEvents(base, { status: "all", host: H.rec.handle, include_examples: "1" }).map((e) => strip(e)) }; }
   function formats(base, q = {}) { const L = filterEvents(base, { status: q.status || "all", include_examples: q.include_examples }), F = {}, Ci = {}, FC = {}, speaking = L.filter((e) => e.speaking).length;
@@ -308,8 +315,8 @@ export function makeDirectory({ store, C, SB, LB = () => null }) {
     return { total: L.length, types: { speaking }, formats: sort(F).map(([format, count]) => ({ format, count })), cities: sort(Ci).map(([city, count]) => ({ city, count })), by_format_and_city: sort(FC).map(([k, count]) => { const [format, city] = k.split("|"); return { format, city, count }; }) }; }
   function listReviews(base, q = {}) { const D = data(base), host = s(q.host, 30).toLowerCase().replace(/^@/, ""), ev = s(q.event ?? q.event_id, 120), words = s(q.q, 120).toLowerCase().split(/\s+/).filter(Boolean), ex = truthy(q.include_examples) || !!host || !!ev;
     const L = D.reviews.filter((r) => (ex || !r.example) && (!host || r.host.handle === host) && (!ev || r.event?.id === ev) && (!words.length || ((t) => words.every((w) => t.includes(w)))([r.text, r.name, ...r.tags, r.event?.title || "", r.host.name].join(" ").toLowerCase())));
-    const off = decodeCursor(q.cursor), lim = limitOf(q.limit, 20), tags = {}; for (const r of L) for (const t of r.tags) tags[t] = (tags[t] || 0) + 1;
-    return { data: L.slice(off, off + lim).map(({ _at, ...r }) => r), next_cursor: off + lim < L.length ? encodeCursor(off + lim) : null, total: L.length,
+    const P = pageOf(L, q, 20), tags = {}; for (const r of L) for (const t of r.tags) tags[t] = (tags[t] || 0) + 1;
+    return { data: P.page.map(({ _at, ...r }) => r), next_cursor: P.next_cursor, total: L.length,
       top_tags: Object.entries(tags).sort((a, b) => b[1] - a[1] || (/^(again|Would go again)$/.test(a[0]) ? 1 : 0) - (/^(again|Would go again)$/.test(b[0]) ? 1 : 0) || String(a[0]).localeCompare(String(b[0]))).slice(0, 5).map(([label, count]) => ({ tag: KUDOS_TAGS.find((k) => k[2] === label)?.[0] || "", label, count })) }; }
   function csv(base, q = {}) {
     const cols = ["id", "title", "status", "start", "time", "city", "area", "format", "tags", "price", "spots_left", "host_handle", "host_name", "host_url", "url", "source", "original_link", "companies", "cover", "example", "review_count", "would_go_again_pct", "when", "repeat", "sessions", "pass_price", "pass_count"];
@@ -416,7 +423,7 @@ export function mcpArgsError(props = {}, args = {}) {
       if (["from", "to", "date"].includes(k) && !realDate(t)) return `${k} must be a date as YYYY-MM-DD, e.g. 2026-03-14.`; }
     if (P.type === "boolean" && typeof v !== "boolean" && !/^(true|false|1|0)$/i.test(String(v))) return `${k} must be true or false.`;
     if (P.type === "number") { const n = typeof v === "string" && v.trim() !== "" ? +v.replace(/[$,\s]/g, "") : v; if (typeof n !== "number" || !Number.isFinite(n)) return `${k} must be a number.`;
-      if (k === "limit" && !(Number.isInteger(n) && n >= 1)) return "limit must be a whole number from 1 to 100."; } }
+      if (k === "limit" && !(Number.isInteger(n) && n >= 1 && n <= MAX_LIMIT)) return `limit must be a whole number from 1 to ${MAX_LIMIT}.`; } } // review round 11: over 100 is an error, not a quiet clamp
   return ""; }
 export function findArgsError(q = {}) {
   if (!posNum(q.group_size)) return "group_size must be a positive number of people, e.g. 20.";
@@ -444,7 +451,7 @@ const EVENT_FILTERS = { q: str("Words to look for, any of them: events matching 
   format: str("One format. class = a class or course people sign up for (dance, salsa, bachata, improv, yoga, pilates, a language, music lessons); workshop = a hands-on one-off (pottery, the wheel, a masterclass). Others: dinner, brunch, run, hike, pop-up, coffee, picnic, drinks, party, meetup, summit, conference, online. talk matches every speaking engagement (talk, keynote, webinar, podcast, panel).", { examples: FORMATS }),
   type: str("speaking: only speaking engagements (talks, keynotes, webinars, podcasts, panels, workshops the host taught)", { enum: ["speaking"] }),
   status: str("upcoming (default), past or all", { enum: ["upcoming", "past", "all"] }), from: str("Earliest date, YYYY-MM-DD"), to: str("Latest date, YYYY-MM-DD"), host: str("A host's handle, e.g. atbo"),
-  include_examples: { type: "boolean", description: "Also return sample events from example hosts (off by default)" }, limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") };
+  include_examples: { type: "boolean", description: "Also return sample events from example hosts (off by default)" }, limit: { type: "number", description: "1 to 100 (default 20); more is an error" }, cursor: str("next_cursor from the last page") };
 const OBJ = { type: "object" }, PAGE_OUT = (extra = {}) => ({ type: "object", properties: { data: { type: "array", items: OBJ }, next_cursor: { type: ["string", "null"] }, total: { type: "integer" }, ...extra }, required: ["data", "next_cursor", "total"] });
 const OUT = { search_events: PAGE_OUT(), get_event: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, when: { type: "string" }, price: { type: ["string", "null"] }, reviews: OBJ }, required: ["id", "title"] },
   list_hosts: PAGE_OUT(), find_hosts: { type: "object", properties: { data: { type: "array", items: OBJ }, total: { type: "integer" }, query: OBJ, book_url: { type: "string" } }, required: ["data", "total"] }, get_host: { type: "object", properties: { handle: { type: "string" }, name: { type: "string" }, events: { type: "array", items: OBJ }, reviews: OBJ }, required: ["handle", "name"] },
@@ -460,7 +467,7 @@ export const PUBLIC_TOOLS = [
   { name: "list_hosts", description: "Hosts with a public page: name, city, what they host, event counts, a review summary, whether they're open to paid work (for_hire), group_size, responds_in, their best leaderboard rank and speaking_topics.", inputSchema: { type: "object", properties: { q: str("Words to match"), city: str("City or neighborhood"), limit: { type: "number", description: "Up to 100 (default 50)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
   { name: "get_host", description: "One host's public profile, their events in the directory and recent reviews.", inputSchema: { type: "object", properties: { handle: str("The host's handle, e.g. atbo") }, required: ["handle"] }, annotations: { readOnlyHint: true } },
   { name: "list_formats", description: "Event counts by format and by city, for building filters.", inputSchema: { type: "object", properties: { status: str("upcoming, past or all (default)", { enum: ["upcoming", "past", "all"] }) } }, annotations: { readOnlyHint: true } },
-  { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, how we know they were a guest (verified: guest_list = came, on the guest list; rsvp = replied I'm in; null = neither), plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "Up to 100 (default 20)" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
+  { name: "get_reviews", description: "Guests' reviews (kudos) for one event or for a host: first name, what they loved, the chips they tapped, the date, how we know they were a guest (verified: guest_list = came, on the guest list; rsvp = replied I'm in; null = neither), plus counts. No star ratings exist.", inputSchema: { type: "object", properties: { event_id: str("An event id"), host: str("A host's handle"), q: str("Words to match"), limit: { type: "number", description: "1 to 100 (default 20); more is an error" }, cursor: str("next_cursor from the last page") } }, annotations: { readOnlyHint: true } },
 ].map((t) => ({ ...t, outputSchema: OUT[t.name] }));
 
 // ---- leaderboard (host awards work): the MCP tool for server/leaderboard.js, and formatOf shared with it ----
@@ -540,7 +547,7 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
         if (extra.length) { const k = extra[0], m = closestArg(k, known); return fail(-32602, `${name} has no argument "${k}".${m ? ` Did you mean "${m}"?` : ""} It takes: ${known.join(", ") || "no arguments"}.`); }
         { const bad = mcpArgsError(PUBLIC_TOOLS.find((t) => t.name === name)?.inputSchema?.properties || {}, args); if (bad) return fail(-32602, bad); }
         if (name === "find_hosts") { const bad = findArgsError(args); if (bad) return fail(-32602, bad); }
-        try { return reply(text(fn(args, b))); } catch (e) { return reply({ ...text(String(e.message || e)), isError: true }); } }
+        try { return reply(text(fn(args, b))); } catch (e) { if (e?.code === "invalid_cursor") return fail(-32602, e.message); return reply({ ...text(String(e.message || e)), isError: true }); } }
       return fail(-32601, `Method not found: ${msg.method}`);
     } catch (e) { return fail(-32603, String(e.message || e)); }
   }
@@ -549,6 +556,8 @@ export function mountDirectory(app, { store, small, C, SB, PUBLIC_DIR, sendText,
   app.post("/mcp/public", (req, res, next) => { open(res); const wait = overLimit(req, "mcp"); if (wait) { res.set("Retry-After", String(wait)); return res.status(429).json({ jsonrpc: "2.0", id: null, error: { code: -32029, message: `Too many requests. Try again in ${wait}s.` } }); } next(); },
     small, (err, req, res, next) => (err?.type === "entity.parse.failed" || err instanceof SyntaxError ? res.status(400).json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }) : next(err)),
     (req, res) => { const b = base(req), body = req.body;
+      // review round 11: a body that isn't JSON (text/plain, a form) is a JSON-RPC parse error, not a silent 202
+      if (!req.is("application/json") || body == null || typeof body !== "object") return res.status(400).json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error: send a JSON-RPC message as application/json." } });
       if (Array.isArray(body)) { if (!body.length) return res.json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Empty batch" } }); const out = body.slice(0, 100).map((m) => handle(m, b)).filter(Boolean); return out.length ? res.json(out) : res.status(202).end(); }
       const out = handle(body || {}, b); return out ? res.json(out) : res.status(202).end(); });
 
@@ -573,7 +582,7 @@ function openapi(base) {
   const ref = (n) => ({ $ref: "#/components/schemas/" + n });
   const json = (schema) => ({ "application/json": { schema } });
   const list = (item, extra = {}) => ({ type: "object", required: ["data", "next_cursor", "total"], properties: { data: { type: "array", items: ref(item) }, next_cursor: { type: ["string", "null"] }, total: { type: "integer" }, ...extra } });
-  const ok = (schema, d = "OK") => ({ 200: { description: d, content: json(schema) }, 429: { description: "Too many requests from this IP this hour", content: json(ref("Error")) } });
+  const ok = (schema, d = "OK") => ({ 200: { description: d, content: json(schema) }, 400: { description: "A bad parameter: code invalid (the message says which), or invalid_cursor (a cursor that isn't one of ours, or past the end of a list that changed; start again without it)", content: json(ref("Error")) }, 429: { description: "Too many requests from this IP this hour", content: json(ref("Error")) } });
   const nf = { 404: { description: "Not found", content: json(ref("Error")) } };
   const nstr = { type: ["string", "null"] };
   return { openapi: "3.1.0",
@@ -631,6 +640,9 @@ function openapi(base) {
         repeat: { type: "string", enum: ["", "weekly", "biweekly", "monthly"], description: "How it repeats; empty for a one-off" }, sessions: { type: ["integer", "null"], description: "How many sessions a course has; null if it isn't a course" },
         ends: { type: "string", description: "A course's last session, YYYY-MM-DD; empty otherwise" }, pass: { type: ["object", "null"], properties: { price: { type: "string", description: "e.g. $70" }, count: { type: "integer" } }, description: "A class pass: price for count classes" },
         when: { type: "string", description: "The series in words, e.g. 8 Wednesdays, Jan 6 to Feb 24 · 7pm; Every Tue · 7pm; First Sun of each month. Empty for a one-off" }, ask_to_join: { type: "boolean", description: "The host lets guests in" },
+        spot_unit: { type: "string", enum: ["person", "group", "item"], description: "What spots_left counts: people, whole groups (a pair or group books together, see group_size) or a pre-order's items" },
+        group_size: { type: ["integer", "null"], description: "How many people one booking is, for a price per pair or group; null otherwise" },
+        order_by_date: { type: ["string", "null"], description: "A pre-order's last day to order, YYYY-MM-DD, or null" }, orders_open: { type: "boolean", description: "A pre-order still taking orders (its order-by day hasn't passed where the event is)" },
         preorder: { type: "boolean", description: "A pre-order (set only on one): guests order items for pickup" }, items: { type: "array", items: { type: "object", properties: { name: { type: "string" }, price: { type: "number", description: "Dollars; 0 when the host gave none" } } }, description: "A pre-order's items" }, order_by: { type: "string", description: "When a pre-order's orders close, as the host said it (e.g. Thursday), or empty" },
         host: ref("HostRef"), url: { type: "string", format: "uri", description: "The public invite (/e/:id) or the host page's scrapbook" }, source: { type: "string", enum: ["hosted", "scrapbook"] },
         original_link: { type: "string", description: "The original page for an imported event (Partiful, Luma, Eventbrite, a website)" }, companies: { type: "array", items: { type: "string" } }, cover: { type: "string" }, example: { type: "boolean" }, reviews: ref("Reviews"),

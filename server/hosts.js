@@ -37,7 +37,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
   function audienceFor(u, ev) {
     const lanes = lanesOf(`${ev.activity || ""} ${ev.name || ""} ${ev.pubTitle || ""}`), city = lc(ev.city || C.profileOf(u.ws)?.city), want = words(ev.audienceWho || ""), I = X.index(), out = [];
     const followers = new Set(C.followersOf(u.ws).map((f) => lc(f.email))), friends = new Set(X.friendsOf(u.email).map((f) => f.email));
-    for (const d of store.list("system")) { const w = d.data; if (w?.kind !== "workspace" || w.id === u.ws || !w.ownerEmail) continue; const em = lc(w.ownerEmail), h = C.profileOf(w.id) || {};
+    for (const d of store.listPrefix("system", "ws-")) { const w = d.data; if (w?.kind !== "workspace" || w.id === u.ws || !w.ownerEmail) continue; const em = lc(w.ownerEmail), h = C.profileOf(w.id) || {};
       const alerts = X.alertsOf(em), P = X.eventProfile(em), why = [];
       const theirCity = lc(h.city || alerts.find((a) => a.homeCity || a.city)?.homeCity || alerts.find((a) => a.city)?.city || "");
       const sameCity = city && theirCity && (theirCity.includes(city) || city.includes(theirCity));

@@ -9,7 +9,7 @@ export const COLLAB_KINDS = [["cohost", "Co-host an event"], ["popup", "Pop up t
 export function mountCollabs(app, { store, small, currentUser, C, X }) {
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "account_required", message: "Sign in to suggest a collab." }); return null; } return u; };
   const hits = new Map(); const limited = (k, n) => { const now = Date.now(); const h = (hits.get(k) || []).filter((t) => now - t < 864e5); h.push(now); hits.set(k, h); return h.length > n; };
-  const all = () => store.list("system").map((d) => d.data).filter((x) => x?.kind === "collab");
+  const all = () => store.listPrefix("system", "collab-").map((d) => d.data).filter((x) => x?.kind === "collab");
   const get = (id) => store.get("system/collab-" + id)?.data;
   const put = (c) => store.set("system/collab-" + c.id, c);
   const card = (ws) => { const h = C.profileOf(ws); return h?.handle ? { handle: h.handle, name: h.name || "@" + h.handle, avatarArt: h.theme?.avatarArt || "", accent: h.theme?.accent || h.color || "" } : null; };

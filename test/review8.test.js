@@ -57,7 +57,9 @@ test("pre-orders: the server writes the order and total from the event's items; 
     r = await reply({ eventId: "r8bake", name: "Cy", email: "cy.r8@example.com", orderQty });
     assert.equal(r.status, 400, JSON.stringify(orderQty)); assert.equal((await r.json()).code, "invalid_order"); }
   // free text without quantities is dropped on a pre-order with a menu, and an order never lands on an event that isn't one
-  r = await reply({ eventId: "r8bake", name: "Di", email: "di.r8@example.com", order: "20 × Country loaf · $1" }); assert.equal(r.status, 200);
+  // review round 11: so I'm in with only free text is "Pick something first." (a pre-order with a menu needs an order)
+  r = await reply({ eventId: "r8bake", name: "Di", email: "di.r8@example.com", order: "20 × Country loaf · $1" }); assert.equal(r.status, 400); assert.equal((await r.json()).message, "Pick something first.");
+  r = await reply({ eventId: "r8bake", name: "Di", email: "di.r8@example.com", order: "20 × Country loaf · $1", response: "maybe" }); assert.equal(r.status, 200);
   assert.equal(St.get("rsvps/" + String((await r.json()).id).split("/").pop()).data.order, undefined);
   r = await reply({ eventId: "r8party", name: "Ed", email: "ed.r8@example.com", order: "2 × Country loaf" }); assert.equal(r.status, 200);
   assert.equal(St.get("rsvps/" + String((await r.json()).id).split("/").pop()).data.order, undefined);

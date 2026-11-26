@@ -52,6 +52,8 @@ export function openStore(file) {
       ON CONFLICT(path) DO UPDATE SET data = excluded.data, updated = excluded.updated`),
     del: db.prepare("DELETE FROM docs WHERE path = ?"),
     list: db.prepare("SELECT id, data, updated FROM docs WHERE parent = ? ORDER BY id"),
+    // a range on the primary key, so "system/ws-..." reads only workspaces, not every inbox and pref beside them
+    listP: db.prepare("SELECT id, data, updated FROM docs WHERE path >= ? AND path < ? AND parent = ? ORDER BY path"),
     dumpP: db.prepare("SELECT path, data, updated FROM docs WHERE substr(path, 1, ?) = ? ORDER BY path"),
     delP: db.prepare("DELETE FROM docs WHERE substr(path, 1, ?) = ?"),
   };
@@ -114,6 +116,12 @@ export function openStore(file) {
     list(collection) {
       parsePath(collection, "collection");
       return q.list.all(collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated }));
+    },
+    /** The documents of one collection whose ids start with idPrefix ("system", "ws-" → every workspace). */
+    listPrefix(collection, idPrefix) {
+      parsePath(collection, "collection");
+      const lo = `${collection}/${String(idPrefix || "")}`; // path segments are ASCII, so U+FFFF sorts after all of them
+      return q.listP.all(lo, lo + "\uffff", collection).map((r) => ({ id: r.id, data: JSON.parse(r.data), updated: r.updated }));
     },
     close() { db.close(); },
   };

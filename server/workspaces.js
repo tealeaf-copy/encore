@@ -26,6 +26,7 @@ export function scopeStore(store, ws) {
     delete: (p) => store.delete(pre + p),
     add: (c, d) => { const r = store.add(pre + c, d); return { ...r, path: strip(r.path) }; },
     list: (c) => store.list(pre + c),
+    listPrefix: (c, idp) => store.listPrefix(pre + c, idp),
     close: () => {},
   };
 }
@@ -52,7 +53,7 @@ export function createWorkspace({ company, ownerEmail, personal = false, ref = "
 }
 /** Every workspace id, the default one first (for the daily job). */
 export function allWorkspaceIds() {
-  return [DEFAULT_WS, ...need().list("system").map((d) => d.data).filter((w) => w?.kind === "workspace").map((w) => w.id)];
+  return [DEFAULT_WS, ...need().listPrefix("system", "ws-").map((d) => d.data).filter((w) => w?.kind === "workspace").map((w) => w.id)];
 }
 export function updateWorkspace(id, patch) { return need().update("system/ws-" + id, patch).data; }
 const PAID = new Set(PLANS);
@@ -69,7 +70,7 @@ const userPath = (email) => "system/u-" + sha(String(email).trim().toLowerCase()
 export function getDbUser(email) { return email ? need().get(userPath(email))?.data || null : null; }
 export function putDbUser(u) { need().set(userPath(u.email), u); return u; }
 export function membersOf(ws) {
-  return need().list("system").map((d) => d.data).filter((u) => u && u.kind === "user" && u.ws === ws).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  return need().listPrefix("system", "u-").map((d) => d.data).filter((u) => u && u.kind === "user" && u.ws === ws).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
 
 // ---------- invites: one-time join tokens, stored hashed ----------
@@ -101,7 +102,7 @@ export function findMcpToken(token) {
 }
 /** A workspace's MCP tokens, without the tokens: [{id, name, email, createdAt, lastUsedAt}]. */
 export function listMcpTokens(ws) {
-  return need().list("system").filter((d) => d.data?.kind === "mcptoken" && d.data.ws === ws && !d.data.revokedAt)
+  return need().listPrefix("system", "mcp-").filter((d) => d.data?.kind === "mcptoken" && d.data.ws === ws && !d.data.revokedAt)
     .map((d) => ({ id: d.id.slice(4), name: d.data.name, email: d.data.email || null, createdAt: d.data.createdAt, lastUsedAt: d.data.lastUsedAt || null }))
     .sort((a, b) => a.createdAt - b.createdAt);
 }
@@ -157,7 +158,7 @@ export function connectionTokens(ws) {
 // ---------- contact / security-review inbox ----------
 export function saveContact(msg) { const id = randomId(); need().set("system/contact-" + id, { kind: "contact", id, ...msg }); return id; }
 export function listContacts() {
-  return need().list("system").map((d) => d.data).filter((d) => d?.kind === "contact").sort((a, b) => b.at - a.at)
+  return need().listPrefix("system", "contact-").map((d) => d.data).filter((d) => d?.kind === "contact").sort((a, b) => b.at - a.at)
     .map(({ kind, msgKind, ...m }) => ({ ...m, kind: msgKind }));
 }
 

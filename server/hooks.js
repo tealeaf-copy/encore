@@ -94,7 +94,7 @@ export function makeHooks({ store, C, X, Dir, SB }) {
   function dropBoard(email, id) { const S = savesRaw(email); if (!S.boards.some((b) => b.id === id)) return false; S.boards = S.boards.filter((b) => b.id !== id); for (const i of S.items) if (i.board === id) i.board = ""; writeSaves(email, S); return true; }
   /** How many people saved each thing: real saves on accounts only. */
   function counts() { if (countCache && Date.now() - countCache.at < 20_000) return countCache.map; const m = new Map();
-    for (const d of store.list("system")) { const v = d.data; if (v?.kind !== "plsave" || !Array.isArray(v.items)) continue; for (const i of v.items) { const k = i.kind + ":" + i.ref; m.set(k, (m.get(k) || 0) + 1); } }
+    for (const d of store.listPrefix("system", "plsave-")) { const v = d.data; if (v?.kind !== "plsave" || !Array.isArray(v.items)) continue; for (const i of v.items) { const k = i.kind + ":" + i.ref; m.set(k, (m.get(k) || 0) + 1); } }
     countCache = { at: Date.now(), map: m }; return m; }
   const countOf = (kind, ref) => counts().get(kind + ":" + ref) || 0;
 
@@ -200,7 +200,7 @@ export function makeHooks({ store, C, X, Dir, SB }) {
 
   // ---- jobs: saved-event reminders and the weekend digest ----
   const done = (k) => !!sys("pljob-" + hash(k)), mark = (k) => put("pljob-" + hash(k), { kind: "pljob", at: Date.now() });
-  function savers() { return store.list("system").map((d) => d.data).filter((v) => v?.kind === "plsave" && v.email); }
+  function savers() { return store.listPrefix("system", "plsave-").map((d) => d.data).filter((v) => v?.kind === "plsave" && v.email); }
   function digest(base, email, now = Date.now()) { const P = interestsOfUser(email), S = savesRaw(email), saved = S.items.filter((i) => i.kind === "event").map((i) => i.ref);
     if (!P.interests.length && !P.city && !saved.length) return { from: "", to: "", events: [] };
     return weekend(base, { interests: P.interests, city: P.city, saved, now, limit: 6 }); }
@@ -214,7 +214,7 @@ export function makeHooks({ store, C, X, Dir, SB }) {
         if (cfg && X.canEmail(v.email)) sendEmail(cfg, { list: "guest", origin: base, to: v.email, subject: `Your saved event is ${day}`, text: `${e.title}, ${niceDate(e.start)}${e.time ? " at " + e.time.split(" to ")[0] : ""}${e.area || e.city ? `, ${e.area || e.city}` : ""}.${spots}\n\nAre you in? ${link(rel(base, e.url))}\n\nYou saved this on Pottery Lab. See your saves: ${link("/saved")}` }).catch(() => {}); } }
     // the weekend digest: Thursday or Friday where the person is (their city's time zone, else ENCORE_TZ), once per
     // weekend, only when something matches
-    { const people = new Set([...store.list("system").map((x) => x.data).filter((v) => v?.kind === "plint" && v.email).map((v) => lc(v.email)), ...savers().map((v) => lc(v.email))]);
+    { const people = new Set([...store.listPrefix("system", "plint-").map((x) => x.data).filter((v) => v?.kind === "plint" && v.email).map((v) => lc(v.email)), ...savers().map((v) => lc(v.email))]);
       for (const em of people) { if (!isUser(em)) continue; const tz = zoneOf(interestsOfUser(em).city), d = dow(localDay(now, tz)); if (d !== 4 && d !== 5) continue; const W = weekendOf(now, tz), k = `digest|${em}|${W.from}`; if (done(k)) continue; const D = digest(base, em, now); if (!D.events.length) { out.skipped++; continue; } mark(k);
         const names = D.events.map((e) => e.title), text = `This weekend near you: ${names.slice(0, 2).join(", ")}${names.length > 2 ? ` and ${names.length - 2} more` : ""}`;
         X.notify(em, { kind: "digest", key: "digest-" + W.from, text, link: D.events.length === 1 ? D.events[0].url : "/saved#weekend" }); out.digests++;

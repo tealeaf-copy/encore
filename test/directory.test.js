@@ -105,7 +105,8 @@ test("Filters: q, city, format, status, dates, host; and pagination", async () =
   const p1 = await get("/api/v1/events?status=all&limit=2"); assert.equal(p1.data.length, 2); assert.ok(p1.total > 2); assert.ok(p1.next_cursor);
   const p2 = await get("/api/v1/events?status=all&limit=2&cursor=" + p1.next_cursor);
   assert.ok(!p2.data.some((e) => p1.data.some((x) => x.id === e.id)), "pages don't overlap");
-  assert.equal((await get("/api/v1/events?limit=1000&status=all")).data.length, Math.min(100, p1.total), "at most 100 a page");
+  assert.equal((await get("/api/v1/events?limit=100&status=all")).data.length, Math.min(100, p1.total), "at most 100 a page");
+  assert.equal((await fetch(srv.base + "/api/v1/events?limit=1000&status=all")).status, 400, "review round 11: over 100 is an error, as documented");
   const F = await get("/api/v1/formats"); assert.ok(F.formats.find((f) => f.format === "dinner").count >= 2); assert.ok(F.cities.find((c) => c.city === "Brooklyn"));
 });
 

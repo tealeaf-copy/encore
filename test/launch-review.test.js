@@ -134,6 +134,10 @@ test("invite-only: a guest who was in at the ref event, or sent it kudos, signs 
   try {
     const no = await signup("Stranger", "stranger.lr@example.com", { ref: "lrOpen" });
     assert.equal(no.status, 403); assert.equal(no.j.code, "invite_required");
+    // review round 11: a reply vouches only once its email is proven: Ana opens the link in her "You're in" email
+    assert.equal((await signup("Ana Diaz", "ana.lr@guest.example.com", { ref: "lrOpen" })).status, 403, "a bare reply proves nothing");
+    const lk = mailsTo("ana.lr@guest.example.com").map((m) => m.text.match(/#reply=([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)/)).find(Boolean);
+    assert.ok(lk, "the reply link"); assert.equal((await post("/api/public/reply/claim", { eventId: "lrOpen", rid: lk[1], t: lk[2] }, null, { "x-encore-key": "lr-key-ana" })).status, 200);
     const ana = await signup("Ana Diaz", "ana.lr@guest.example.com", { ref: "lrOpen" });
     assert.equal(ana.status, 200, JSON.stringify(ana.j));
     const W = srv.store.get("system/ws-" + ana.j.workspace.id).data;
@@ -144,6 +148,8 @@ test("invite-only: a guest who was in at the ref event, or sent it kudos, signs 
     assert.equal((await signup("Fy", "fy.lr@guest.example.com", { ref: "lrOpen" })).status, 403);
     // kudos on the event vouches too
     scopeStore(srv.store, ws).set("kudos/lrK1", { eventId: "lrPast", rid: "lrK1", name: "Gus", email: "gus.lr@guest.example.com", tags: ["food"], at: Date.now() });
+    assert.equal((await signup("Gus", "gus.lr@guest.example.com", { ref: "lrPast" })).status, 403, "kudos without a proven email");
+    scopeStore(srv.store, ws).set("rsvps/lrK1", { eventId: "lrPast", name: "Gus", email: "gus.lr@guest.example.com", response: "maybe", emailProvenAt: Date.now(), emailProven: "gus.lr@guest.example.com" });
     const gus = await signup("Gus", "gus.lr@guest.example.com", { ref: "lrPast" });
     assert.equal(gus.status, 200); assert.equal(srv.store.get("system/ws-" + gus.j.workspace.id).data.vouchedBy.via, "kudos");
   } finally { process.env.ENCORE_INVITE_ONLY = ""; }

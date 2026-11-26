@@ -9,6 +9,8 @@ import { emailConfig, sendEmail } from "./email.js";
 import { track } from "./metrics.js";
 import { smsConfig, sendSms, useSmsStop } from "./sms.js";
 import { holdsOf, togetherOf, friendTerms } from "./comewith.js"; // "Come with me?": held spots, pairs joined, who came together
+import { eventTz, zonedMs, hourIn } from "./tz.js";
+import { pottoSettings } from "./reminders.js";
 import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
@@ -53,7 +55,24 @@ export const newcomerEmoji = () => "🌱";
 /** The most people one reply can bring: the guest plus the plus-ones the host allows (one by default), at most 6; a group booking ("$120 for the group of 4") holds the whole group, at most 50. */
 export const partyMax = (ev) => Math.max(2, Math.min(6, 1 + (Math.floor(+ev?.plusOnes) || 0)), Math.floor(+ev?.groupSize) > 1 ? Math.min(50, Math.floor(+ev.groupSize)) : 0);
 /** How many spots one reply (or host-marked guest) holds: a party of three holds three. */
-export const seatsOf = (r, ev) => r?.pairOf ? 0 /* came with a friend into their pair or group: the friend's reply holds it */ : Math.max(1, Math.min(ev ? partyMax(ev) : 6, Math.floor(+r?.party) || (+r?.plusOnes > 0 ? 1 + Math.floor(+r.plusOnes) : r?.plusOne ? 2 : 1)));
+export const seatsOf = (r, ev) => { if (r?.pairOf) return 0; /* came with a friend into their pair or group: the friend's reply holds it */ const n = Math.max(1, Math.min(ev ? partyMax(ev) : 6, Math.floor(+r?.party) || (+r?.plusOnes > 0 ? 1 + Math.floor(+r.plusOnes) : r?.plusOne ? 2 : 1)));
+  return r?.response != null ? partyRound(n, ev) : n; }; // a reply to a pairs-only class holds the whole pair (host-added rows count as typed)
+// ---- review round 11: group bookings ----
+/** The size one booking comes in: groupSize on a group-only price ("$40 for 2", "$120 for the group of 4"), else 1.
+ *  "$20 each or $70 for 4" (priceUnit each) still sells single spots. */
+export const partyUnit = (ev) => { const g = Math.floor(+ev?.groupSize); return g > 1 && ev?.priceUnit !== "each" ? Math.min(50, g) : 1; };
+/** A party rounded up to whole groups (1 → 2 for pairs), and down to the most whole groups one reply may hold. */
+export function partyRound(n, ev) { const u = partyUnit(ev); if (u <= 1) return n; let k = Math.ceil(Math.max(1, n) / u) * u;
+  if (ev && k > partyMax(ev)) k = Math.max(u, Math.floor(partyMax(ev) / u) * u); return k; }
+const centsOf = (p) => { const n = parseFloat(String(p ?? "").replace(/[^\d.]/g, "")); return n > 0 ? Math.round(n * 100) : 0; };
+/** What one reply owes, in cents: the per-person price × its spots, or the group price × its groups ("$70 for 4" beats
+ *  four singles when both are on offer). 0 when there's no price. */
+export function dueCents(ev, r) {
+  const seats = seatsOf(r, ev), each = centsOf(ev?.price), gs = Math.floor(+ev?.groupSize), gp = centsOf(ev?.groupPrice);
+  if (gs > 1 && gp > 0) { if (partyUnit(ev) > 1 || !each) return gp * Math.ceil(seats / gs); return Math.min(each * seats, gp * Math.floor(seats / gs) + each * (seats % gs)); }
+  return each * seats;
+}
+// ---- end review round 11 group bookings ----
 /** What one reply holds against the cap: on a pre-order, the items ordered (2 loaves hold 2); otherwise its spots. */
 export const heldOf = (r, ev) => { if (r?.pairOf) return 0; if (ev?.preorder && Array.isArray(r?.orderLines) && r.orderLines.length) return r.orderLines.reduce((a, x) => a + Math.max(0, Math.floor(+x?.qty) || 0), 0); return seatsOf(r, ev) + holdsOf(r, ev) /* "Come with me?": a friend's spot, held 48 hours */; };
 export const replyKey = (x) => lc(x?.email || x?.name || (x?.phone ? "tel:" + String(x.phone).replace(/[^\d+]/g, "") : ""));
@@ -166,7 +185,9 @@ export function makeSocial(store, { C, saveBlob }) {
       for (const [eid, rs] of byEv) { const ev = events.get(eid)?.e; if (!ev) continue; rs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); const firstAt = rs.find((r) => r.response === "going")?.createdAt || 0, evAt = Date.parse((ev.date || "") + "T" + (ev.startTime || "12:00")) || 0;
         rs.forEach((r, i) => { if (!r.email || r.response !== "going") return; addAtt(r.email, { eventId: eid, ws, name: r.name, at: Date.parse(ev.date || "") || r.createdAt || 0, early: i < 3 || r.createdAt - firstAt < DAY, last: !!evAt && evAt - (r.createdAt || 0) > 0 && evAt - (r.createdAt || 0) < 2 * DAY, filler: !!r.promotedAt, plusOne: !!r.plusOne, slot: r.slot || "", rsvpAt: r.createdAt }); }); }
       for (const d of S.list("moments")) if (!d.data?.hidden) moments.push({ id: d.id, ws, ...d.data }); // visual feed: a moment the host hid is gone everywhere but the host's own list
-      for (const d of S.list("kudos")) kudos.push({ id: d.id, ws, ...withVerified(S, d.id, d.data) }); // verified: worked out on read (see kudosVerified)
+      // the replies and events just read stand in for one store read per kudos
+      const rById = new Map(R.map((r) => [r.id, r])), SV = { ...S, get: (p) => { const [c, id] = p.split("/"); if (c === "rsvps" && rById.has(id)) return { data: rById.get(id) }; if (c === "events" && events.get(id)?.ws === ws) return { data: events.get(id).e }; return S.get(p); } };
+      for (const d of S.list("kudos")) kudos.push({ id: d.id, ws, ...withVerified(SV, d.id, d.data) }); // verified: worked out on read (see kudosVerified)
       for (const d of S.list("vibes")) vibes.push({ id: d.id, ws, ...d.data });
     }
     cache = { at: Date.now(), events, att, moments, kudos, vibes };
@@ -277,7 +298,7 @@ export function makeSocial(store, { C, saveBlob }) {
   const aKey = (email) => "alerts-" + hash(email);
   const alertsOf = (email) => sys(aKey(email))?.list || [];
   function saveAlerts(email, L) { put(aKey(email), { kind: "alerts", email: lc(email), list: L }); }
-  function allAlerts() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "alerts").flatMap((x) => (x.list || []).map((a) => ({ ...a, email: x.email }))); }
+  function allAlerts() { return store.listPrefix("system", "alerts-").map((d) => d.data).filter((x) => x?.kind === "alerts").flatMap((x) => (x.list || []).map((a) => ({ ...a, email: x.email }))); }
   async function onEventChange(ws, id, origin = "") {
     const S = scopeStore(store, ws), e = S.get("events/" + id)?.data; bust(); if (!e || e.example || !e.discoverable || (e.date || "") < today()) return 0;
     const W = getWorkspace(ws); let n = 0;
@@ -309,7 +330,8 @@ export function makeSocial(store, { C, saveBlob }) {
         notify(x.owner, { kind: "prep", text: `${dd < 0 ? "Overdue" : "Due today"}: ${t.text} (${title})`, link: `/?app=1&open=${encodeURIComponent(x.id)}#studio`, eventId: x.id });
         const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true); if (cfg) sendEmail(cfg, { to: x.owner, subject: `${dd < 0 ? "Overdue" : "Due today"}: ${t.text}`, text: `For ${title}${e.date ? ` on ${niceDate(e.date)}` : ""}:\n\n☐ ${t.text}\n\nTick it off in Pottery Lab: ${origin}/?app=1&open=${encodeURIComponent(x.id)}#studio` }).catch(() => {}); }
       // the day before: remind everyone who said yes, by email and text, once (hosts can switch it off per event)
-      { const startAt = Date.parse(`${e.date}T${/^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime : "18:00"}:00`), hrs = (startAt - now) / 3600e3, hr = (() => { try { return e.tz ? +new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: e.tz }).format(now) : 12; } catch { return 12; } })();
+      // review round 11: "tomorrow" and 9am to 9pm where the event is (its tz, its city's, the host's), not the server's clock
+      { const zt = eventTz(e, pottoSettings(S).tz), startAt = zonedMs(e.date, /^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime : "18:00", zt), hrs = (startAt - now) / 3600e3, hr = zt ? hourIn(zt, now) : 12;
         if (e.autoRemind !== false && (e.published || e.discoverable) && hrs >= 20 && hrs <= 27 && hr >= 9 && hr < 21 && !done("remind-" + x.id)) { mark("remind-" + x.id);
           const cfg = emailConfig(x.ws, false) || emailConfig(DEFAULT_WS, true), when = `${new Date(e.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}${e.startTime ? " at " + new Date("2000-01-01T" + e.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : ""}`, where = e.meetPoint || e.venueName || "", link = `${origin}/g#rsvp-${x.id}`;
           let sent = 0; const seen = new Set();
@@ -349,7 +371,12 @@ export function makeSocial(store, { C, saveBlob }) {
   return { loopTouch, recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
 }
 
-export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw }) {
+export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw, afterRsvp = null }) {
+  // review round 11: a guest's key on Who's coming (for their card, Add friend, Keep in touch) is an HMAC of their email or
+  // phone with the server's secret and the event id, so it can't be worked back from a known address or matched across events
+  let attSecret = "";
+  const attSec = () => process.env.SESSION_SECRET || attSecret || (attSecret = store.get("system/secret")?.data?.v || (() => { const v = crypto.randomBytes(32).toString("hex"); store.set("system/secret", { v }); return v; })());
+  const attKey = (eventId, pk) => crypto.createHmac("sha256", attSec()).update(`attendee:${eventId}|${pk}`).digest("hex").slice(0, 24);
   const hits = new Map(); const limited = (req, n = 30) => { const k = (req.ip || "?") + req.path.split("/").slice(0, 4).join("/"), now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
@@ -397,10 +424,10 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
       chats.push({ id: a.eventId, title: x.e.pubTitle || x.e.name || "Event", date: x.e.date || "", last: last ? `${String(last.name || "").split(" ")[0] || "Someone"}: ${clean(last.text, 80)}` : "", at: last?.at || 0 }); }
     res.json({ hosts, people, chats, hosted: ownEv.some((x) => x.e.date && x.e.date < today() && !x.e.example) }); });
   app.get("/api/people", (req, res) => { const u = me(req, res); if (!u) return; const q = lc(req.query.q).replace(/^@/, ""); if (q.length < 2) return res.json({ people: [] });
-    const out = []; for (const d of store.list("system")) { const w = d.data; if (w?.kind !== "workspace") continue; const h = C.profileOf(w.id); const p = X.person(w.ownerEmail); if (lc(w.ownerEmail) === lc(u.email)) continue; if ((h?.handle || "").includes(q) || lc(p.name).includes(q) || lc(w.ownerEmail) === q) out.push({ name: p.name, handle: h?.handle || null, emoji: h?.emoji || "🙂", color: h?.color, city: h?.city || "", email: lc(w.ownerEmail) === q ? lc(w.ownerEmail) : undefined, key: Buffer.from(lc(w.ownerEmail)).toString("base64url") }); if (out.length >= 12) break; }
+    const out = []; for (const d of store.listPrefix("system", "ws-")) { const w = d.data; if (w?.kind !== "workspace") continue; const h = C.profileOf(w.id); const p = X.person(w.ownerEmail); if (lc(w.ownerEmail) === lc(u.email)) continue; if ((h?.handle || "").includes(q) || lc(p.name).includes(q) || lc(w.ownerEmail) === q) out.push({ name: p.name, handle: h?.handle || null, emoji: h?.emoji || "🙂", color: h?.color, city: h?.city || "", email: lc(w.ownerEmail) === q ? lc(w.ownerEmail) : undefined, key: Buffer.from(lc(w.ownerEmail)).toString("base64url") }); if (out.length >= 12) break; }
     res.json({ people: out }); });
   const emailFromKey = (k) => { try { return Buffer.from(String(k || ""), "base64url").toString(); } catch { return ""; } };
-  app.post("/api/me/friends", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}; let email = b.key ? emailFromKey(b.key) : ""; if (!email && b.eventId && b.pkey) { try { const ws2 = workspaceOfEvent(clean(b.eventId, 80)); const R = ws2 ? scopeStore(store, ws2).list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === b.eventId) : []; const mine = R.some((r) => lc(r.email) === lc(u.email) && r.response === "going"); const hit = R.find((r) => r.email && hash(lc(r.email)) === String(b.pkey)); if (mine && hit) email = lc(hit.email); } catch {} } if (!email && b.handle) { const ws = C.wsOfHandle(String(b.handle).replace(/^@/, "")); email = ws ? getWorkspace(ws)?.ownerEmail : ""; }
+  app.post("/api/me/friends", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}; let email = b.key ? emailFromKey(b.key) : ""; if (!email && b.eventId && b.pkey) { try { const ws2 = workspaceOfEvent(clean(b.eventId, 80)); const R = ws2 ? scopeStore(store, ws2).list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === b.eventId) : []; const mine = R.some((r) => lc(r.email) === lc(u.email) && r.response === "going"); const hit = R.find((r) => r.email && attKey(String(b.eventId), lc(r.email)) === String(b.pkey)); if (mine && hit) email = lc(hit.email); } catch {} } if (!email && b.handle) { const ws = C.wsOfHandle(String(b.handle).replace(/^@/, "")); email = ws ? getWorkspace(ws)?.ownerEmail : ""; }
     if (!email || !X.userOf(email)) return bad(res, "No member by that name.", 404, "not_found"); if (lc(email) === lc(u.email)) return bad(res, "That's you!"); X.addFriend(u.email, email); res.json({ ok: true, friend: X.person(email) }); });
   app.delete("/api/me/friends/:key", (req, res) => { const u = me(req, res); if (!u) return; X.dropFriend(u.email, emailFromKey(req.params.key)); res.json({ ok: true }); });
   // inbox
@@ -475,7 +502,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
     const R0 = S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === id), past = !!ev.date && ev.date < today(), door = past && (R0.some((r) => r.checkedInAt) || (ev.guests || []).some((g) => /Attended/.test(g.status || "")));
     const arche = (email, gt) => { if (TRAITS[gt] && gt !== "early") return { name: TRAITS[gt].name, emoji: TRAITS[gt].emoji }; try { const P2 = email ? X.eventProfile(email) : null; if (P2?.top && (P2.attended || 0) >= 2) return { name: P2.top.name, emoji: P2.top.emoji }; } catch {} const q = TRAITS[gt]; if (q) return { name: q.name, emoji: q.emoji }; return { name: "New to Pottery Lab", emoji: newcomerEmoji(email || gt || "") }; };
     for (const d of S.list("rsvps")) { const r = d.data || {}; const yes = (r.response === "going" || (ev.stage === "interest" && r.interest === "in")) && !r.noShow && (!door || !!r.checkedInAt); if (r.eventId !== id || !yes) continue; const k = lc(r.email || (r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "") || d.id); if (seen.has(k)) continue; seen.add(k); total += seatsOf(r, ev); if (r.showMe === false) continue;
-      out.push({ name: short(r.name), archetype: arche(lc(r.email) || lc("name:" + (r.name || d.id)), r.guestType), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email || r.phone ? { key: hash(lc(r.email || "tel:" + String(r.phone).replace(/[^\d+]/g, ""))) } : {}) }); }
+      out.push({ name: short(r.name), archetype: arche(lc(r.email) || lc("name:" + (r.name || d.id)), r.guestType), fact: clean(r.funFact, 120), emoji: r.emoji || "", you: d.id === String(req.query.rid || ""), plus: !!r.plusOne, ...(r.email || r.phone ? { key: attKey(id, lc(r.email || "tel:" + String(r.phone).replace(/[^\d+]/g, ""))) } : {}) }); }
     const names = new Set(out.map((o) => lc(o.name))); const replied = new Set(R0.flatMap((r) => [lc(r.email || ""), r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : "", lc(r.name || ""), r.name ? lc(short(r.name)) : ""]).filter(Boolean)); const gone = new Set(S.list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === id && r.noShow).flatMap((r) => [lc(r.email || ""), lc(short(r.name)), lc(r.name || "")]).filter(Boolean)); for (const g of ev.guests || []) { if (gone.has(lc(g.email || "")) || gone.has(lc(g.name || "")) || gone.has(lc(short(g.name)))) continue; if (g.source !== "Walk-in" && (replied.has(lc(g.email || "")) || (g.phone && replied.has("tel:" + String(g.phone).replace(/[^\d+]/g, ""))) || replied.has(lc(g.name || "")) || replied.has(lc(short(g.name))))) continue; if (!/^(Going|Attended)$/.test(g.status || "") || (door && g.status !== "Attended")) continue; if (g.source === "Walk-in") { total++; continue; } const k = lc(g.email || (g.phone ? "tel:" + String(g.phone).replace(/[^\d+]/g, "") : "") || g.name); if (!k || seen.has(k) || names.has(lc(short(g.name)))) continue; seen.add(k); total++; out.push({ name: short(g.name), archetype: arche(lc(g.email)), fact: "" }); }
     // spots left as a new guest would get them: none while anyone is waiting (the waitlist goes first)
     const RD = S.list("rsvps").filter((d) => d.data?.eventId === id), waiting = waitlistOf(RD).length, seats = +ev.headcount || 0, left = seats && ev.autoWait !== false ? (waiting ? 0 : Math.max(0, seats - seatsTaken(ev, RD))) : null;
@@ -485,7 +512,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   // a guest's card, opened from Who's coming: only for people who chose to be shown, never their email
   app.get("/api/public/person/:eventId/:key", (req, res) => { const id = clean(req.params.eventId, 80), key = clean(req.params.key, 40), ws = workspaceOfEvent(id); if (!ws) return bad(res, "No such event.", 404, "not_found");
     const S = scopeStore(store, ws), ev = S.get("events/" + id)?.data; if (!ev || ev.example || ev.hideGuests) return bad(res, "Not shown.", 404, "not_found");
-    const pk = (r) => (r.email ? lc(r.email) : r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : ""); const d = S.list("rsvps").find((x) => x.data?.eventId === id && pk(x.data) && hash(pk(x.data)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
+    const pk = (r) => (r.email ? lc(r.email) : r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : ""); const d = S.list("rsvps").find((x) => x.data?.eventId === id && pk(x.data) && attKey(id, pk(x.data)) === key && x.data.showMe !== false); if (!d) return bad(res, "Not shown.", 404, "not_found");
     const r = d.data, em = lc(r.email), w = String(r.name || "").trim().split(/\s+/).filter(Boolean), name = w.length ? w[0] + (w[1] ? " " + w[1][0].toUpperCase() + "." : "") : "Guest";
     let P = {}; try { P = X.eventProfile(em) || {}; } catch {}
     const quizT = r.guestType !== "early" && TRAITS[r.guestType]; const top = quizT ? { ...quizT, quiz: true } : P.top && (P.attended || 0) >= 2 ? { name: P.top.name, emoji: P.top.emoji, line: P.top.line } : { name: "New to Pottery Lab", emoji: newcomerEmoji(em || lc("name:" + (r.name || d.id))), line: "" };
@@ -609,7 +636,7 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   // ---- Keep in touch after the night: two guests who both went become friends on Pottery Lab (no account needed; it's keyed by email) ----
   app.post("/api/public/keep-in-touch", small, (req, res) => { if (limited(req, 30)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, id = clean(b.eventId, 80), P = X.rsvpProof(id, b.rid, b.code);
     if (!P || P.r.response !== "going") return bad(res, "Only people who went can do this.", 403, "not_granted"); let mine = lc(P.r.email || ""); const given = lc(clean(b.email, 200)); if (!mine && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(given)) { mine = given; try { P.S.update("rsvps/" + String(b.rid).replace(/[^A-Za-z0-9_-]/g, ""), { email: given }); } catch {} } if (!mine && P.r.phone) mine = "tel:" + String(P.r.phone).replace(/[^\d+]/g, ""); if (!mine) return res.json({ ok: false, reason: "need_email", message: "Add your email so you can find each other again." });
-    const pk = (r) => (r.email ? lc(r.email) : r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : ""); const other = P.S.list("rsvps").map((d) => d.data || {}).find((r) => r.eventId === id && r.response === "going" && pk(r) && hash(pk(r)) === String(b.pkey || ""));
+    const pk = (r) => (r.email ? lc(r.email) : r.phone ? "tel:" + String(r.phone).replace(/[^\d+]/g, "") : ""); const other = P.S.list("rsvps").map((d) => d.data || {}).find((r) => r.eventId === id && r.response === "going" && pk(r) && attKey(id, pk(r)) === String(b.pkey || ""));
     const otherKey = other ? pk(other) : ""; let back = false; if (!otherKey) return res.json({ ok: false, reason: "no_contact", message: "Couldn't find them. Say hi in person next time." });
     try { X.addFriend(mine, otherKey); back = X.friendsOf(otherKey).some((f) => lc(f.email) === mine); if (other.email) X.notify(lc(other.email), { kind: "friend", key: `kit-${id}-${hash(mine)}`, text: `${first(P.r.name) || "Someone"} from ${P.ev?.pubTitle || P.ev?.name || "the event"} wants to keep in touch 👋`, link: "/feed", eventId: id }); } catch {}
     res.json({ ok: true, mutual: !!back }); });
@@ -631,14 +658,17 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   // the group chat: guests who RSVP'd (or are interested) and the host; giveaway messages are private to the host
   const chatList = (S, eventId, viewerRid) => S.list("chat").map((d) => ({ id: d.id, ...d.data })).filter((m) => m.eventId === eventId && (!m.private || m.rid === viewerRid || viewerRid === "host")).sort((a, b) => a.at - b.at).slice(-200).map(({ rid, email, ...m }) => ({ ...m, mine: viewerRid !== "host" && rid === viewerRid, ...(m.poll ? { poll: { ...m.poll, votes: Object.fromEntries(Object.entries(m.poll.votes || {}).map(([o, L]) => [o, L.map((v) => v.name)])), myVotes: Object.entries(m.poll.votes || {}).filter(([, L]) => L.some((v) => v.rid === viewerRid)).map(([o]) => o) } } : {}) }));
   app.get("/api/public/chat/:eventId", (req, res) => { const P = X.rsvpProof(req.params.eventId, req.query.rid, req.query.code); if (!P || P.r.response !== "going") return bad(res, P?.r.response === "requested" ? "Chat opens once the host says yes." : "Chat opens once you're in.", 403, "not_granted"); res.json({ messages: chatList(P.S, P.r.eventId, P.rid), getThere: P.ev?.getThere || [], private: /giveaway/.test(P.ev?.activity || "") }); });
-  app.post("/api/public/chat/:eventId", small, (req, res) => { if (limited(req, 60)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(req.params.eventId, b.rid, b.code); if (!P || P.r.response !== "going") return bad(res, "Chat opens once you're in.", 403, "not_granted");
+  app.post("/api/public/chat/:eventId", small, async (req, res) => { if (limited(req, 60)) return bad(res, "Slow down.", 429, "rate_limited"); const b = req.body || {}, P = X.rsvpProof(req.params.eventId, b.rid, b.code); if (!P || P.r.response !== "going") return bad(res, "Chat opens once you're in.", 403, "not_granted");
     const kind = ["late", "release", "text"].includes(b.kind) ? b.kind : "text", text = clean(b.text, 600), give = /giveaway/.test(P.ev?.activity || "");
     if (kind === "text" && !text) return bad(res, "Say something first.");
     const body = kind === "late" ? `Running late${text ? `: ${text}` : ""}` : kind === "release" ? `Can't go. Please give my ${give ? "slice" : "spot"} to someone else.${text ? ` ${text}` : ""}` : text;
     P.S.add("chat", { eventId: P.r.eventId, rid: P.rid, by: first(P.r.name) || "Guest", role: "guest", kind, text: body, private: give || kind !== "text", at: Date.now() });
-    if (kind === "release") { P.S.set("rsvps/" + P.rid, { ...P.r, response: "no", releasedAt: Date.now(), changedAt: Date.now() }); }
-    const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "msg", text: `💬 ${first(P.r.name)}${P.ev?.pubTitle || P.ev?.name ? ` in ${P.ev.pubTitle || P.ev.name}` : ""}: ${body.slice(0, 120)}`, link: `/?app=1&open=${encodeURIComponent(P.r.eventId)}#studio`, eventId: P.r.eventId });
-    res.json({ ok: true, released: kind === "release" }); });
+    // review round 11: giving the spot away is a Can't go like any other: the waitlist moves up (afterRsvp in server/app.js),
+    // and the host hears whether this guest had paid or said they paid, so they can sort out a refund or a swap
+    let moved = {}; const paidNote = P.r.paid ? " They had paid." : P.r.paidClaim ? " They said they paid." : "";
+    if (kind === "release") { const next = { ...P.r, response: "no", releasedAt: Date.now(), changedAt: Date.now() }; P.S.set("rsvps/" + P.rid, next); try { moved = (await afterRsvp?.(req, P.ws, P.rid, P.r, next)) || {}; } catch {} }
+    const W = getWorkspace(P.ws); X.notify(W?.ownerEmail, { kind: "msg", text: `💬 ${first(P.r.name)}${P.ev?.pubTitle || P.ev?.name ? ` in ${P.ev.pubTitle || P.ev.name}` : ""}: ${body.slice(0, 120)}${kind === "release" ? paidNote : ""}`, link: `/?app=1&open=${encodeURIComponent(P.r.eventId)}#studio`, eventId: P.r.eventId });
+    res.json({ ok: true, released: kind === "release", ...(moved.promoted ? { promoted: true } : {}) }); });
   app.get("/api/host/chat/:eventId", (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80); if (!S.get("events/" + id)) return bad(res, "No such event.", 404, "not_found");
     const R = S.list("rsvps").map((d) => ({ id: d.id, ...d.data })).filter((r) => r.eventId === id); res.json({ messages: chatList(S, id, "host"), phones: R.filter((r) => r.response === "going" && r.phone).map((r) => ({ name: r.name, phone: r.phone, slot: r.slot || "" })), sms: !!smsConfig() }); });
   app.post("/api/host/chat/:eventId", small, async (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), id = clean(req.params.eventId, 80), ev = S.get("events/" + id)?.data; if (!ev) return bad(res, "No such event.", 404, "not_found");

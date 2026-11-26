@@ -34,7 +34,13 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
   const hits = new Map(); const limited = (req, n = 20) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; hits.set(k, h); } return ++h.n > n; };
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
-  const sold = (ws, dropId) => { const n = {}; for (const d of scopeStore(store, ws).list("orders")) { const o = d.data; if (o.dropId !== dropId || o.status === "cancelled") continue; for (const l of o.lines || []) n[l.id] = (n[l.id] || 0) + l.qty; } return n; };
+  // review round 11: when the shop takes payment online, an order nobody has paid for holds its items for
+  // ENCORE_ORDER_HOLD_HOURS (24 by default), then they go back on sale. Paid, ready and picked-up orders always hold.
+  const holdMs = () => Math.max(1, +process.env.ENCORE_ORDER_HOLD_HOURS || 24) * 3600e3;
+  const holding = (o, s, now = Date.now()) => o.status !== "cancelled" && !(o.status === "new" && s?.payUrl && now - (o.at || 0) > holdMs());
+  const sold = (ws, dropId, s = C.profileOf(ws)?.shop) => { const n = {}; for (const d of scopeStore(store, ws).list("orders")) { const o = d.data; if (o.dropId !== dropId || !holding(o, s)) continue; for (const l of o.lines || []) n[l.id] = (n[l.id] || 0) + l.qty; } return n; };
+  const itemHits = new Map(); // items ordered from one address this hour
+  const contactOf = (o) => (EMAIL_OK(o.email) ? "e:" + lc(o.email) : "") || (o.phone ? "t:" + String(o.phone).replace(/[^\d+]/g, "") : "");
   const publicShop = (ws) => { const h = C.profileOf(ws), s = h?.shop; if (!s?.open || !s.items?.length) return null; const S = sold(ws, s.dropId);
     return { title: s.title, note: s.note, where: s.where, slots: s.slots, payUrl: !!s.payUrl, items: s.items.map((x) => ({ id: x.id, name: x.name, desc: x.desc, emoji: x.emoji, photo: x.photo, price: money(x.cents), cents: x.cents, max: x.max, left: x.stock ? Math.max(0, x.stock - (S[x.id] || 0)) : null })) }; };
   app.get("/api/public/shop/:handle", (req, res) => { const ws = C.wsOfHandle(req.params.handle); res.json({ shop: ws ? publicShop(ws) : null }); });
@@ -47,19 +53,24 @@ export function mountShop(app, { store, small, currentUser, publicOrigin, C, X }
     // a pre-order made from an event's invite may use that event's pickup times
     const evSlots = (() => { try { const id = clean(b.eventId, 80); if (!id) return []; const e = scopeStore(store, ws).get("events/" + id)?.data; return e?.preorder ? (e.slots || []).map((x) => (typeof x === "string" ? x : x?.label || x?.time || "")).filter(Boolean) : []; } catch { return []; } })();
     if (s.slots?.length && !s.slots.includes(slot) && !evSlots.includes(slot)) return bad(res, "Pick a pickup time.");
-    const S = sold(ws, s.dropId), lines = [];
+    const S = sold(ws, s.dropId, s), lines = [];
+    // one open order per person per batch: a second one from the same email or phone would hold stock twice
+    { const me0 = contactOf({ email, phone }); if (me0 && scopeStore(store, ws).list("orders").some((d) => d.data?.dropId === s.dropId && d.data.status === "new" && holding(d.data, s) && contactOf(d.data) === me0))
+      return bad(res, `You already have an order in for this batch. Ask ${first(h.name) || "the host"} to change it.`, 409, "order_exists"); }
     // one line per item, whatever the order sent (duplicate lines can't get around the per-order max or the stock)
     // whole numbers only: 2.6 loaves is a typo, not 3 (review round 10)
     const want = new Map(); for (const l of Array.isArray(b.items) ? b.items : []) { if (!l || typeof l.id !== "string") continue; const q = +l.qty; if (l.qty != null && l.qty !== "" && !Number.isInteger(q)) return bad(res, "Pick a whole number of each.", 400, "invalid_order"); if (!(q > 0)) continue; want.set(l.id, (want.get(l.id) || 0) + q); }
-    for (const [lid, q] of want) { const l = { id: lid, qty: q }; const it = s.items.find((x) => x.id === l?.id); if (!it) continue; if (q > it.max) return bad(res, `Up to ${it.max} ${it.name} per order.`); if (it.stock && (S[it.id] || 0) + q > it.stock) return bad(res, `Only ${Math.max(0, it.stock - (S[it.id] || 0))} ${it.name} left.`, 409, "sold_out"); lines.push({ id: it.id, name: it.name, qty: q, cents: it.cents }); }
+    for (const [lid, q] of want) { const l = { id: lid, qty: q }; const it = s.items.find((x) => x.id === l?.id); if (!it) continue; if (q > it.max) return bad(res, `Up to ${it.max} ${it.name} per order.`); if (it.stock && (S[it.id] || 0) + q > it.stock) { const left = Math.max(0, it.stock - (S[it.id] || 0)); return bad(res, left ? `Only ${left} ${it.name} left.` : `Sold out. No ${it.name} left.`, 409, "sold_out"); } lines.push({ id: it.id, name: it.name, qty: q, cents: it.cents }); }
     if (!lines.length) return bad(res, "Pick something first.");
+    { const now = Date.now(), k = req.ip || "?", n = lines.reduce((a, l) => a + l.qty, 0); let hh = itemHits.get(k); if (!hh || now - hh.start > 3600_000) { hh = { n: 0, start: now }; itemHits.set(k, hh); } if (itemHits.size > 50_000) itemHits.clear();
+      if (hh.n + n > Math.max(1, +process.env.ENCORE_ORDER_ITEMS_PER_IP_HOUR || 40)) return bad(res, "That's a lot of orders from here. Try again later.", 429, "rate_limited"); hh.n += n; }
     const total = lines.reduce((a, l) => a + l.qty * l.cents, 0), code = crypto.randomBytes(2).toString("hex").toUpperCase(), o = { code, dropId: s.dropId, name, email, phone, slot, note: clean(b.note, 200), lines, total, status: "new", at: Date.now() }; o.slot = slotLabel(slot); // stored and emailed as "10am to 11am"
     const r = scopeStore(store, ws).add("orders", o); const W = getWorkspace(ws);
     X.notify(W?.ownerEmail, { kind: "order", text: `🛍 ${first(name)} ordered ${lines.map((l) => `${l.qty} × ${l.name}`).join(", ")}${o.slot ? ` for ${o.slot}` : ""} (${money(total)})`, link: `/@${h.handle}?orders=1`, eventId: "" });
     const cfg = emailConfig(ws, false) || emailConfig(DEFAULT_WS, true); if (cfg && EMAIL_OK(email) && X.canEmail(email)) sendEmail(cfg, { to: email, subject: `Your order from ${h.name}: #${code}`, text: `Thanks ${first(name)}!\n\n${lines.map((l) => `${l.qty} × ${l.name}`).join("\n")}\nTotal: ${money(total)}\n${o.slot ? `Pickup: ${o.slot}${s.where ? ` at ${s.where}` : ""}\n` : ""}${s.payUrl ? `\nPay here: ${s.payUrl}\n` : ""}\nOrder #${code}. Show this at pickup.`, fromName: h.name }).catch(() => {});
     res.json({ ok: true, id: r.id, code, total: money(total), slot: o.slot, where: s.address || s.where, payUrl: payLink(s.payUrl, total, `${h.name} order #${code}`) }); });
   app.get("/api/host/orders", (req, res) => { const u = me(req, res); if (!u) return; const s = C.profileOf(u.ws)?.shop; const L = scopeStore(store, u.ws).list("orders").map((d) => ({ id: d.id, ...d.data })).sort((a, b) => b.at - a.at);
-    res.json({ address: s?.address || "", where: s?.where || "", orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId })) }); });
+    res.json({ address: s?.address || "", where: s?.where || "", orders: L.slice(0, 300).map((o) => ({ ...o, totalText: money(o.total), current: o.dropId === s?.dropId, ...(o.status === "new" && !holding(o, s) ? { released: true } : {}) })) }); });
   app.post("/api/host/orders/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "orders/" + clean(req.params.id, 40), o = S.get(p)?.data; if (!o) return bad(res, "No such order.", 404, "not_found");
     const st = ["new", "paid", "ready", "picked", "cancelled"].includes(req.body?.status) ? req.body.status : o.status; S.update(p, { status: st, [st + "At"]: Date.now() }); res.json({ ok: true, status: st }); });
   // a new batch: sold counts start again

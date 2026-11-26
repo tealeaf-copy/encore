@@ -81,7 +81,7 @@ export function makeCommunity(store) {
     const out = []; for (let i = 0; i < n; i++) { const code = newCode(); store.set(codePath(code), { kind: "code", code, ownerWs: ws, ownerEmail: email, ownerName: name, createdAt: Date.now() }); out.push(code); }
     return out;
   }
-  function codesOf(email) { return store.list("system").map((d) => d.data).filter((c) => c?.kind === "code" && c.ownerEmail === email).sort((a, b) => a.createdAt - b.createdAt); }
+  function codesOf(email) { return store.listPrefix("system", "code-").map((d) => d.data).filter((c) => c?.kind === "code" && c.ownerEmail === email).sort((a, b) => a.createdAt - b.createdAt); }
   function checkCode(code) {
     // host codes ignore spaces, dashes and case: "oink oink", "OINK-OINK" and "oinkoink" are the same code
     const flat = (x) => String(x || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), founders = String(process.env.ENCORE_FOUNDER_CODES || "").split(",").map(flat).filter(Boolean);
@@ -277,7 +277,7 @@ const TYPE_NAMES = { host: "Planner", spark: "Spark", chill: "Chill One", filler
     const seen = new Set(); return out.sort((a, b) => b.score - a.score).filter((r) => { const k = `${String(r.host.name).toLowerCase()}|${String(r.gift.name).toLowerCase()}`; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 24); }
   // ---- waitlist ----
   function addWaitlist(w) { const id = crypto.randomBytes(8).toString("hex"); store.set("system/wait-" + id, { kind: "wait", id, ...w, at: Date.now() }); return id; }
-  function waitlist() { return store.list("system").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
+  function waitlist() { return store.listPrefix("system", "wait-").map((d) => d.data).filter((x) => x?.kind === "wait" && !x.invitedAt).sort((a, b) => b.at - a.at); }
   function cardOf(id) { const ws = workspaceOfEvent(id); if (!ws) return null; const d = scopeStore(store, ws).list("events").find((x) => x.id === id); return d?.data && !d.data.example ? publicCard(id, d.data, profileOf(ws)) : null; }
   return { goingOf, openDatesOf, takenDates, addOns, coveredCities, giftMakers, resonance, shortlist, cardOf, issueCodes, codesOf, checkCode, useCode, getCode, wsOfHandle, profileOf, setProfile, followersOf, follow, eventsOf, discover, discoverStatus, pageGaps, showcaseOf, showcasePreset, addWaitlist, waitlist, sys };
 }

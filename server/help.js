@@ -140,7 +140,7 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
   const me = (req) => { try { return currentUser(req); } catch { return null; } };
   const isAdmin = (u) => !!u && adminEmails().includes(lc(u.email));
   const key = (id) => "system/support-" + id;
-  const all = () => store.list("system").map((d) => d.data).filter((x) => x?.kind === "support");
+  const all = () => store.listPrefix("system", "support-").map((d) => d.data).filter((x) => x?.kind === "support");
   const get = (id) => { const s = String(id || "").replace(/[^a-f0-9]/g, ""); return s ? store.get(key(s))?.data || null : null; };
   const put = (t) => store.set(key(t.id), t);
   const origin = (req) => { try { return publicOrigin(req); } catch { return ""; } };

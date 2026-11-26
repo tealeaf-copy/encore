@@ -296,7 +296,7 @@
   async function account() { if (me !== null || !signedIn()) return me; try { const j = await (await fetch("/api/me", { credentials: "same-origin" })).json(); me = j?.verified ? j : false; } catch { me = false; } return me; }
   const deviceLabel = () => { const s = navigator.userAgent; const os = /iPhone/.test(s) ? "iPhone" : /iPad/.test(s) ? "iPad" : /Android/.test(s) ? "Android" : /Mac OS X/.test(s) ? "Mac" : /Windows/.test(s) ? "Windows" : "";
     const br = /EdgA?\//.test(s) ? "Edge" : /CriOS|Chrome\//.test(s) ? "Chrome" : /FxiOS|Firefox\//.test(s) ? "Firefox" : /Safari\//.test(s) ? "Safari" : ""; return [os, br].filter(Boolean).join(", ") || "This browser"; };
-  const pageLabel = () => { const w = where(); if (/^\/@/.test(P)) return "Your page"; return ({ signup: "Sign up", signin: "Sign in", onboard: "Set up with Potto", share: "The share sheet", wizard: "New event", event: "Your event", guests: "Your guests", plans: "Plans", discover: "Discover" })[w] || (P === "/" ? "Home" : P); };
+  const pageLabel = () => { const w = where(); if (/^\/@/.test(P)) return "Your page"; return ({ signup: "Sign up", signin: "Sign in", onboard: "Set up with Potto", share: "The share sheet", wizard: "New event", event: "Your event", guests: "Your guests", plans: "Plans", discover: ({ "/feed": "Feed", "/events": "Events", "/hosts": "Hosts" })[P] || "Discover" })[w] || (P === "/" ? "Home" : P); };
   async function personForm(topic) {
     open(); const wrap = $(".eh-form-wrap"), acct = await account(), out = !acct;
     const chat = log.filter((m) => m.role === "host" || m.role === "potto"), hasQ = chat.some((m) => m.role === "host");

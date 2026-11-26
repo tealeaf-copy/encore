@@ -14,7 +14,7 @@ const block = html.slice(html.indexOf("The host's event page and the create flow
 const TODAY = "2026-11-26";
 const ctx = { localISO: () => TODAY, dayDiff: (s) => Math.round((new Date(s + "T00:00:00") - new Date(TODAY + "T00:00:00")) / 864e5), evOver: (d) => !!d.date && d.date < TODAY };
 vm.createContext(ctx);
-vm.runInContext(html.slice(a, b) + "\nObject.assign(this,{hvStage,hvPeople,hvCounts,hvStatus,hvPrimary,hvSeeLine,hvJoinLine,hvPotto});", ctx);
+vm.runInContext(html.slice(a, b) + "\nObject.assign(this,{hvStage,hvPeople,hvCounts,hvStatus,hvPrimary,hvAtHome,hvSeeLine,hvJoinLine,hvPotto});", ctx);
 const ev = (o = {}) => ({ id: "e1", name: "Cooking night", date: "2026-12-05", startTime: "19:00", meetPoint: "My place", headcount: 6, published: true, discoverable: true, unlisted: true, ...o });
 const R = (response, n, o = {}) => ({ id: "r" + n, eventId: "e1", name: ["Van Le", "Sam Ortiz", "Priya Shah", "Dev Rao", "Lena Park", "Ben Cho"][n % 6], response, createdAt: n, ...o });
 const view = (d, rs) => { const P = ctx.hvPeople(d, rs), c = ctx.hvCounts(d, P), s = ctx.hvStage(d); const J = (x) => JSON.parse(JSON.stringify(x)); return { P: J(P), c: J(c), s, status: ctx.hvStatus(d, c, s)[0], primary: J(ctx.hvPrimary(d, c, s)), potto: ctx.hvPotto(d, c, s, P) }; };
@@ -24,7 +24,9 @@ test("one ember button that changes with the stage", () => {
   assert.deepEqual(view(ev({ published: false, discoverable: false }), []).primary, ["Share invite", "publish"], "a draft");
   assert.deepEqual(view(ev({ published: false, discoverable: false, startTime: "" }), []).primary, ["Add the details", "edit"], "a draft with no time asks for it");
   assert.deepEqual(view(ev(), []).primary, ["Share invite", "share"], "shared, nobody in yet");
-  assert.deepEqual(view(ev(), [R("going", 0)]).primary, ["Message guests", "message"], "replies in");
+  assert.deepEqual(view(ev({ venueAddr: "12 Elm St" }), [R("going", 0)]).primary, ["Message guests", "message"], "replies in");
+  assert.deepEqual(view(ev(), [R("going", 0)]).primary, ["Add the address", "edit"], "at my place, people in, no address yet: ask for it");
+  assert.deepEqual(view(ev({ meetPoint: "Prospect Park" }), [R("going", 0)]).primary, ["Message guests", "message"], "a park needs no address");
   assert.deepEqual(view(ev(), [R("going", 0), R("requested", 1), R("requested", 2)]).primary, ["Review 2 asks", "asks"], "asks come first");
   assert.deepEqual(view(ev({ date: TODAY }), [R("going", 0)]).primary, ["Check in", "door"], "day of");
   assert.deepEqual(view(ev({ date: "2026-11-20" }), [R("going", 0)]).primary, ["Ask for photos", "photos"], "after");

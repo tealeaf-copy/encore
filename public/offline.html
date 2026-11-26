@@ -26,7 +26,7 @@ button{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;background
 <main>
   <div id="potto" aria-hidden="true"></div>
   <h1>You're offline</h1>
-  <p>Pottery Lab needs a connection for new things. Your next plans are below.</p>
+  <p>Pottery Lab needs a connection for new things.<span id="plansNote" hidden> Your next plans are below.</span></p>
   <ul id="plans" aria-label="Your next plans"></ul>
   <button type="button" id="again">Try again</button>
 </main>
@@ -42,7 +42,7 @@ button{font:600 16px/1 Fredoka,"Instrument Sans",system-ui,sans-serif;background
   fetch("/api/me/plans", { credentials: "same-origin" }).then((r) => r.json()).then((j) => {
     const today = new Date().toISOString().slice(0, 10), L = (j.plans || []).filter((p) => p.response === "going" && (p.date || "9") >= today).slice(0, 5), ul = document.getElementById("plans");
     ul.innerHTML = L.length ? L.map((p) => `<li><b>${esc(p.emoji ? p.emoji + " " : "")}${esc(p.title)}</b><small>${esc([p.date && day(p.date), time(p.startTime), p.city].filter(Boolean).join(" · "))}</small></li>`).join("") : "";
-    if (!L.length) ul.hidden = true;
+    if (!L.length) ul.hidden = true; else document.getElementById("plansNote").hidden = false;
   }).catch(() => { document.getElementById("plans").hidden = true; });
 })();
 </script>

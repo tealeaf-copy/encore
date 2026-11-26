@@ -86,11 +86,13 @@ test("2. I'm in if: a pre-order stays Maybe and says to order; a Come with me li
   assert.equal((await (await guest("r13CW", "Xan Third", "xan13")).json()).response, "going", "the third seat is still free");
 });
 
-test("3. tier picks: party is what was picked, unknown tiers drop out, more than a reply may hold is an error", async () => {
+test("3. tier picks: party is what was picked, unknown tiers are refused, more than a reply may hold is an error", async () => {
   assert.ok((await put("events/r13T", { ...base, name: "Family supper", date: day(6), headcount: 20, price: "$55", priceTiers: [{ label: "Adults", price: 55 }, { label: "Kids", price: 35 }] })).ok);
   const a = await guest("r13T", "Ann A", "ann13", "going", { party: 1, tiers: [{ label: "Adults", n: 4 }, { label: "Kids", n: 3 }] });
   assert.equal(a.status, 400); assert.equal((await a.json()).message, "Pick up to 6.");
-  const b = await (await guest("r13T", "Ben B", "ben13", "going", { party: 5, tiers: [{ label: "adults", n: 2 }, { label: "Bogus", n: 5 }] })).json();
+  // launch review: an unknown tier ("Seniors") is an error that names the real ones, not a spot with no amount
+  const sx = await guest("r13T", "Sy S", "sy13", "going", { tiers: [{ label: "Seniors", n: 1 }] }); assert.equal(sx.status, 400); assert.equal((await sx.json()).message, "Pick one of: Adults, Kids");
+  const b = await (await guest("r13T", "Ben B", "ben13", "going", { party: 5, tiers: [{ label: "adults", n: 2 }] })).json();
   const B = S().get("rsvps/" + b.id).data; assert.deepEqual(B.tiers, [{ label: "Adults", n: 2 }]); assert.equal(B.party, 2, "min(partyMax, picks), not the 5 sent");
   // changing a reply goes through the same rules
   const r = await fetch(srv.base + "/api/db/doc?path=rsvps/" + b.id, { method: "PUT", headers: { ...J, "x-encore-guest": "1", "x-encore-key": "k-ben13xxxxx" }, body: JSON.stringify({ ...B, tiers: [{ label: "Kids", n: 9 }] }) });

@@ -94,8 +94,8 @@
     // iOS: a swipe in from the left edge goes back a page, like Safari (mobile/native-config/ios/MainViewController.swift
     // turns on the WebView's own gesture; this covers builds without it). Not while a sheet or a drag is open.
     if (/iP(hone|ad|od)/.test(navigator.userAgent) || Cap?.getPlatform?.() === "ios") { let sx = -1, sy = 0;
-      addEventListener("touchstart", (e) => { const t = e.touches[0]; sx = e.touches.length === 1 && t.clientX < 24 && !document.querySelector('[aria-modal="true"]') ? t.clientX : -1; sy = t.clientY; }, { passive: true });
-      addEventListener("touchend", (e) => { if (sx < 0) return; const t = e.changedTouches[0]; if (t.clientX - sx > 90 && Math.abs(t.clientY - sy) < 60 && history.length > 1) history.back(); sx = -1; }, { passive: true }); }
+      document.addEventListener("touchstart", (e) => { const t = e.touches[0]; sx = e.touches.length === 1 && t.clientX < 24 && !document.querySelector('[aria-modal="true"]') ? t.clientX : -1; sy = t.clientY; }, { passive: true });
+      document.addEventListener("touchend", (e) => { if (sx < 0) return; const t = e.changedTouches[0]; if (t.clientX - sx > 90 && Math.abs(t.clientY - sy) < 60 && history.length > 1) history.back(); sx = -1; }, { passive: true }); }
     App.addListener("appStateChange", (s) => { if (s.isActive) document.dispatchEvent(new CustomEvent("encore:resume")); });
   }
 

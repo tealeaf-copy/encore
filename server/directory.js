@@ -67,7 +67,7 @@ const srWhen = (e) => { const head = srSpan(e) || srEvery(e); if (!head) return 
 const srAmt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : ""; };
 const srPrice = (e) => { const p = e.price && e.price !== "chip" ? srAmt(e.price) : "", n = +e.sessions || 0, pp = +e.passPrice || 0, pc = +e.passCount || 0;
   // a pass and sessions together: the pass is the bundle ("$20 a class, or $100 for all 6"), never "$20 for all 6" beside it
-  if (pp && pc > 1) { const of = n > 1 && pc === n ? `all ${n}` : ""; return p ? `${p} a class, or ${srAmt(pp)} for ${of || pc}` : `${srAmt(pp)} for ${of || pc + " classes"}`; } if (p && e.priceUnit === "class") return `${p} a class`; if (n > 1 && p) return +e.dropIn > 0 ? `${p} for all ${n}, or ${srAmt(e.dropIn)} a class` : `${p} for all ${n}`; return ""; };
+  if (pp && pc > 1) { const of = n > 1 && pc === n ? `all ${n}` : ""; return p ? `${p} a class, or ${srAmt(pp)} for ${of || pc}` : `${srAmt(pp)} for ${of || pc + " classes"}`; } if (p && e.priceUnit === "total") return +e.dropIn > 0 ? `${p} for the course, or ${srAmt(e.dropIn)} a class` : `${p} total`; if (p && e.priceUnit === "class") return `${p} a class`; if (n > 1 && p) return +e.dropIn > 0 ? `${p} for all ${n}, or ${srAmt(e.dropIn)} a class` : `${p} for all ${n}`; return ""; };
 // invite.html's clock: "7pm", "7:30am"; "" for anything that isn't HH:MM
 const clockOr = (t) => (/^\d{2}:\d{2}$/.test(t || "") ? clock(t) : "");
 const ymd = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;

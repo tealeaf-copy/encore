@@ -19,7 +19,7 @@
     return `<span class="plf-pill" role="note"><span class="plf-faces" aria-hidden="true">${P.slice(0, 3).map((p, i) => `<span style="--c:${tint(p, i)}">${esc(face(p))}</span>`).join("")}</span><span><b>${esc(info.line.split(" ")[0])}</b>${esc(info.line.slice(info.line.indexOf(" ")))}</span></span>`; }
   async function get(ids) { if (!signedIn() || !ids.length) return {}; try { const r = await fetch("/api/me/friends-going?ids=" + encodeURIComponent(ids.slice(0, 40).join(",")), { credentials: "same-origin" }); return r.ok ? (await r.json()).events || {} : {}; } catch { return {}; } }
   // ---- on the invite pages ----
-  const idOf = () => { const m = location.pathname.match(/^\/e\/([A-Za-z0-9_-]{2,80})$/); if (m) return m[1]; const h = location.pathname === "/g" && location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/); return h ? h[1] : ""; };
+  const idOf = () => { const m = location.pathname.match(/^\/[ei]\/([A-Za-z0-9_-]{2,80})$/); if (m) return m[1]; const h = location.pathname === "/g" && location.hash.match(/^#rsvp-([A-Za-z0-9_-]{2,80})/); return h ? h[1] : ""; };
   let info = null, title = "";
   function place() { const id = idOf(); if (!id) return; if (document.querySelector(`.plf[data-e="${id}"]`)) return;
     const anchor = location.pathname === "/g" ? document.querySelector("#view-guest h1") : document.querySelector("main .facts"); if (!anchor) return;

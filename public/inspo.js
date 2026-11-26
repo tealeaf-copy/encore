@@ -97,10 +97,13 @@
         ${x.host?.handle ? `<p class="pli-by">by <a href="${esc(safeUrl(x.host.url) || "/@" + x.host.handle)}">${esc(x.host.name)}</a></p>` : ""}
         ${tags.length ? `<div class="pli-tags">${tags.map((t) => `<button type="button" data-pli-tag="${esc(t.id)}">${esc(t.emoji)} ${esc(t.label)}</button>`).join("")}</div>` : ""}
         <div class="pli-acts">${save}<button type="button" class="pli-host" data-pli-host="${esc(x.id)}">Host this</button>${real}</div>
-        <p class="pli-count" data-pls-count="${esc(x.save.kind + ":" + x.save.ref)}">${esc(window.PLSave ? window.PLSave.countLine(x.saves || 0) : "")}</p></div></div></article>`; }
+        <p class="pli-count" data-pls-count="${esc(x.save.kind + ":" + x.save.ref)}">${esc(window.PLSave ? window.PLSave.countLine(x.saves || 0) : "")}</p>${hostedKey(x) ? `<p class="pli-count pli-hosted" data-pl-hosted="${esc(hostedKey(x))}" hidden></p>` : ""}</div></div></article>`; }
+  // "3 people hosted this after seeing it" (public/hostlike.js fills it in): an idea, or the real event a card came from
+  const hostedKey = (x) => (x.type === "idea" && /^idea-[A-Za-z0-9_-]{2,110}$/.test(x.id || "") ? x.id : x.save?.kind === "event" && /^[A-Za-z0-9_-]{2,80}$/.test(x.save.ref || "") ? x.save.ref : "");
+  if (!document.querySelector('script[src="/hostlike.js"]')) { const s = document.createElement("script"); s.src = "/hostlike.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); }
 
   /** "Host this": signed in, a new event from this idea; signed out, signup first and the idea waits in this browser. */
-  function hostThis(id) { const x = items.get(id); try { localStorage.setItem("pl.hostIdea", JSON.stringify({ id, title: x?.title || "", at: Date.now() })); } catch {}
+  function hostThis(id) { const x = items.get(id); try { localStorage.removeItem("pl.hostLike"); localStorage.setItem("pl.hostIdea", JSON.stringify({ id, title: x?.title || "", at: Date.now() })); } catch {}
     if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) location.href = "/?app=1&idea=" + encodeURIComponent(id);
     else location.href = "/signup?mode=friends&from=idea&idea=" + encodeURIComponent(id); }
   document.addEventListener("click", (e) => { const h = e.target.closest?.("[data-pli-host]"); if (h) { e.preventDefault(); hostThis(h.dataset.pliHost); } });

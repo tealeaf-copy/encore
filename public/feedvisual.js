@@ -96,7 +96,7 @@
           ${it.type === "video" ? `<button type="button" class="fv-sv-mute" aria-pressed="${!muted}" aria-label="${muted ? "Unmute" : "Mute"}">${muted ? "🔇" : "🔊"}</button>` : ""}<button type="button" class="fv-sv-pause" aria-pressed="false" aria-label="Pause">❚❚</button><button type="button" class="fv-sv-x" aria-label="Close stories">✕</button></div>
         <div class="fv-sv-stage">${media}</div>
         <button type="button" class="fv-sv-prev" aria-label="Previous story"><span aria-hidden="true">‹</span></button><button type="button" class="fv-sv-next" aria-label="Next story"><span aria-hidden="true">›</span></button>
-        <div class="fv-sv-foot">${it.note ? `<p class="fv-sv-note">${esc(it.note)}</p>` : ""}${it.cta?.follow ? `<button type="button" class="fv-sv-cta" data-fv-follow="${esc(it.cta.follow)}" data-url="${esc(it.cta.url || "#")}">${esc(it.cta.label || "Follow")}</button>` : `<a class="fv-sv-cta${it.type === "end" ? " big" : ""}" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>`}${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
+        <div class="fv-sv-foot">${it.note ? `<p class="fv-sv-note">${esc(it.note)}</p>` : ""}${it.cta?.follow ? `<button type="button" class="fv-sv-cta" data-fv-follow="${esc(it.cta.follow)}" data-url="${esc(it.cta.url || "#")}">${esc(it.cta.label || "Follow")}</button>` : `<a class="fv-sv-cta${it.type === "end" ? " big" : ""}" href="${esc(it.cta?.url || "#")}">${esc(it.cta?.label || "See page")} <span aria-hidden="true">→</span></a>`}${it.type === "end" && it.ev && !/^s[cx]-/.test(it.ev) ? `<button type="button" class="fv-sv-cta" data-pl-like="${esc(it.ev)}" data-title="${esc(it.end?.title || "")}">✨ Host one like this</button>` : ""}${it.type === "video" && muted ? `<button type="button" class="fv-sv-unmute">🔇 Tap for sound</button>` : ""}</div>
         <p class="fv-sv-sr" aria-live="polite">${esc(`${k + 1} of ${s.items.length}. ${it.caption || ""}`)}</p></div>`;
       const bars = $$(".fv-sv-bars b", el), bar = bars[k];
       $(".fv-sv-x", el).onclick = close; $(".fv-sv-prev", el).onclick = prev; $(".fv-sv-next", el).onclick = next; $(".fv-sv-pause", el).onclick = () => setPaused(!paused);
@@ -137,8 +137,14 @@
     return `<article class="fv-card fv-flyer${T.dark ? " dark" : ""}" style="${tintStyle(T)};--r:${r}deg" data-fv-fx="${fx(e)}" ${L.lights ? 'data-fv-lights="1"' : ""}>${fxLayer(fx(e))}${byline(by)}
       <a class="fv-fl-media" href="${esc(e.url)}" style="aspect-ratio:${ratio}" aria-label="${esc(e.title)}: see invite">${media}${tape(r > 0 ? 1 : 0, "top")}<span class="fv-stks">${stk}</span>${saveSpot({ kind: "event", id: e.id, title: e.title, url: e.url, image: e.cover || "" })}</a>
       <div class="fv-fl-b"><div class="fv-host">${avatar(e.host, 34)}<span><b>${esc(e.host?.name || "A host")}</b> is hosting</span></div>
-        <h3 class="fv-title"${fontAttr(e)}>${esc(e.title)}</h3><p class="fv-when">${esc([when(e), where(e)].filter(Boolean).join(" · "))}${e.going ? ` <span class="fv-going">${esc(e.going)} in</span>` : ""}</p>${friendsSpot(e)}
-        <div class="fv-acts"><a class="fv-btn primary" data-fv-in href="${esc(e.url)}">${esc(btnText(e))}</a><a class="fv-btn" href="${esc(e.url)}">See invite</a></div></div></article>`; }
+        <h3 class="fv-title"${fontAttr(e)}>${esc(e.title)}</h3><p class="fv-when">${esc([when(e), where(e)].filter(Boolean).join(" · "))}${e.going ? ` <span class="fv-going">${esc(e.going)} in</span>` : ""}</p>${friendsSpot(e)}${togetherSpot(e)}
+        <div class="fv-acts"><a class="fv-btn primary" data-fv-in href="${esc(e.url)}">${esc(btnText(e))}</a><a class="fv-btn" href="${esc(e.url)}">See invite</a>${withBtn(e)}</div></div></article>`; }
+  // "Come with me?" (public/comewith.js): signed in, a link for one friend from your own reply; "Mia and Jo are in" once both are
+  const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
+  const withBtn = (e) => (signedIn() && e.id && !e.sample && !e.past ? `<button type="button" class="fv-btn fv-cwm" data-fv-with="${esc(e.id)}" data-title="${esc(e.title)}" data-url="${esc(e.url)}"><span aria-hidden="true">👯</span> Come with me?</button>` : "");
+  const togetherSpot = (e) => ((e.together || []).length ? `<span class="fv-together" data-fv-together="${esc(JSON.stringify(e.together.slice(0, 2)))}" hidden></span>` : "");
+  // "Host one like this" (public/hostlike.js) on a real past event, and how many hosted one after seeing it
+  const likeBtn = (e) => (e.id && !e.sample && !/^s[cx]-/.test(e.id) ? `<button type="button" class="fv-btn fv-like" data-pl-like="${esc(e.id)}" data-title="${esc(e.title)}"><span aria-hidden="true">✨</span> Host one like this</button>` : "");
   // a mini flyer for the "This weekend" strip
   function mini(e, i) { const T = tintOf(e); return `<a class="fv-mini" href="${esc(e.url)}" style="${tintStyle(T)};--r:${TILT[(i + 2) % TILT.length] / 1.5}deg"><span class="fv-mini-m">${e.cover ? `<img src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async">` : art(e, { title: "" })}</span><b>${esc(e.title)}</b><small>${esc([short(e), where(e)].filter(Boolean).join(" · "))}</small>${e.spotsLeft != null && e.spotsLeft <= 3 ? sticker(e.spotsLeft ? "Last spots!" : "Full", "hot sm") : e.fresh ? sticker("New", "new sm") : ""}</a>`; }
   // a past event: a photo dump of taped polaroids, who came, one kudos quote, reactions
@@ -152,7 +158,7 @@
     const drop = !by && e.newPhotos ? { who: e.host, html: `<b>📸 Photo drop</b> · ${esc(e.newPhotos)} new from guests` } : null; by = by || drop;
     return `<article class="fv-card fv-dump${drop ? " drop" : ""}" style="--r:${r}deg">${saveSpot({ kind: "past", id: e.id, title: e.title, url: e.page || e.url || "", image: P[0]?.poster || (P[0]?.type === "video" ? "" : P[0]?.url) || "" })}${byline(by)}<div class="fv-dump-h"><div><h3>${esc(e.title)}</h3><p class="fv-when">${esc([e.host?.name, dayOf(e.date, { weekday: "short", month: "short", day: "numeric" }), where(e)].filter(Boolean).join(" · "))}</p></div>${stats ? `<span class="fv-tally">${esc(stats)}</span>` : ""}</div>
       <div class="fv-pols${P.length > 2 ? " many" : ""}" tabindex="0" aria-label="Photos from ${esc(e.title)}">${pol}</div>${q}
-      <div class="fv-acts">${e.id && !/^s[cx]-/.test(e.id) || /^s[cx]-/.test(e.id || "") ? reacts(e) : ""}<a class="fv-btn" href="${esc(e.page || e.url || "#")}">See page</a></div></article>`; }
+      <div class="fv-acts">${e.id && !/^s[cx]-/.test(e.id) || /^s[cx]-/.test(e.id || "") ? reacts(e) : ""}<a class="fv-btn" href="${esc(e.page || e.url || "#")}">See page</a>${likeBtn(e)}</div>${e.hostedLine ? `<p class="fv-hosted">${esc(e.hostedLine)}</p>` : ""}</article>`; }
   function reacts(e) { const C = e.reacts || {}, M = new Set(e.myReacts || []); return `<div class="fv-reacts" role="group" aria-label="React to ${esc(e.title)}">${["🔥", "😍", "🥟", "🙌"].map((x) => `<button type="button" class="fv-react" data-fv-react="${esc(e.id)}" data-e="${x}" aria-pressed="${M.has(x)}" aria-label="${{ "🔥": "Fire", "😍": "Love it", "🥟": "Yum", "🙌": "Hands up" }[x]}${C[x] ? ", " + C[x] : ""}"><span aria-hidden="true">${x}</span><b>${C[x] || ""}</b></button>`).join("")}</div>`; }
   // fresh photos: one big tilted polaroid next to two small ones
   function bento(M, key) { const P = M.slice(0, 3); REG.set(key, { host: P[0]?.event?.host || { name: "Fresh photos" }, items: P.map((m) => ({ id: "m:" + m.id, type: m.type === "video" ? "video" : "image", url: m.url, poster: m.poster, caption: [m.event?.title, dayOf(m.event?.date, { weekday: "short" })].filter(Boolean).join(" · "), note: m.caption, by: m.by, past: true, cta: { label: "See page", url: m.event?.page || "#" } })) });
@@ -231,10 +237,12 @@
         if (!r.ok || !j.counts) { undo(); return; } // the server said no (too many, signed out): put it back as it was
         $$(`[data-fv-react="${CSS.escape(b.dataset.fvReact)}"]`, root).forEach((x) => { const c = j.counts[x.dataset.e] || 0; x.querySelector("b").textContent = c || ""; x.setAttribute("aria-pressed", String((j.mine || []).includes(x.dataset.e))); x.setAttribute("aria-label", rLabel(x.dataset.e, c)); }); } catch { undo(); } }));
     slots(root);
+    $$("[data-fv-with]", root).forEach((b) => (b.onclick = () => need("/comewith.js", () => window.PLComeWith?.fromFeed(b.dataset.fvWith, b.dataset.title, b.dataset.url, b))));
     $$("[data-fv-in]", root).forEach((a) => (a.onclick = (ev) => { if (RM() || ev.metaKey || ev.ctrlKey) return; ev.preventDefault(); confetti(a); setTimeout(() => (location.href = a.href), 520); })); }
   // fill the slots once their renderers exist (window.PLSave, window.PLInspo, the suggest endpoint); until then they stay hidden
   function slots(root) {
     if (window.PLSave?.button) $$("[data-fv-save]", root).forEach((s) => { if (s.dataset.on) return; s.dataset.on = 1; try { const b = window.PLSave.button(JSON.parse(s.dataset.fvSave)); if (b) { typeof b === "string" ? (s.innerHTML = b) : s.appendChild(b); s.hidden = false; } } catch {} });
+    $$("[data-fv-together]", root).forEach((s) => { if (s.dataset.on) return; if (!window.PLFriends) return need("/friendsgoing.js", () => slots(root)); s.dataset.on = 1; try { s.innerHTML = JSON.parse(s.dataset.fvTogether).map((t) => window.PLFriends.html({ count: t.count, line: t.line, people: t.people })).join(" "); s.hidden = false; } catch {} });
     $$("[data-fv-friends][data-names]", root).forEach((s) => { try { const N = JSON.parse(s.dataset.names); if (!N.length) return; s.innerHTML = `${N.map((n, i) => `<i style="--c:${NOTE[i % NOTE.length]}" aria-hidden="true">${esc(String(n).slice(0, 1).toUpperCase())}</i>`).join("")}<span>${esc(N.slice(0, 2).join(", "))}${N.length > 2 ? ` +${N.length - 2}` : ""} going</span>`; s.hidden = false; } catch {} });
     const ins = $("[data-fv-slot=inspo]", root); if (ins && window.PLInspo?.card) fetch("/api/public/inspo?limit=6" + (window.FeedVisual?.publicQuery ? "&" + String(window.FeedVisual.publicQuery()).replace(/^[?&]/, "") : "")).then((r) => (r.ok ? r.json() : null)).then((j) => { const L = (j?.data || j?.items || j?.ideas || []).slice(0, 6); if (!L.length) return; ins.innerHTML = head("Ideas to steal", { doodle: "star" }) + `<div class="fv-strip fv-inspo">${L.map((x) => { try { const c = window.PLInspo.card(x); return typeof c === "string" ? c : c?.outerHTML || ""; } catch { return ""; } }).join("")}</div>`; ins.hidden = false; }).catch(() => {});
     const hs = $("[data-fv-slot=hosts]", root); if (hs) fetch("/api/public/suggest/hosts?limit=8").then((r) => (r.ok ? r.json() : null)).then((j) => { const L = (j?.hosts || []).filter((h) => h?.handle && h.name).slice(0, 8); if (!L.length) return; hs.innerHTML = head("Hosts you might like") + `<div class="fv-strip fv-hostrow">${L.map((h, i) => `<a class="fv-hostc" href="/@${esc(h.handle)}" style="--r:${TILT[i % TILT.length] / 2}deg">${avatar({ ...h, avatarArt: h.avatarArt || h.theme?.avatarArt, avatarUrl: h.avatarUrl || h.theme?.avatarUrl, color: h.color || h.theme?.accent }, 56)}<b>${esc(h.name)}</b><small>${esc(h.city || h.why || "")}</small></a>`).join("")}</div>`; hs.hidden = false; }).catch(() => {});
@@ -245,6 +253,9 @@
     document.body.appendChild(box); setTimeout(() => box.remove(), 900); }
 
   // ---------- styles ----------
+  // load a helper script once; run cb when it's there
+  function need(src, cb) { const s0 = document.querySelector(`script[src="${src}"]`); if (s0) { if (s0.dataset.ok) cb?.(); else s0.addEventListener("load", () => cb?.()); return; } const s = document.createElement("script"); s.src = src; s.onload = () => { s.dataset.ok = 1; cb?.(); }; document.head.appendChild(s); }
+  need("/hostlike.js");
   function css() { if (document.getElementById("fvCss")) return; const s = document.createElement("style"); s.id = "fvCss"; s.textContent = CSS_TEXT; document.head.appendChild(s); }
   const CSS_TEXT = `
 :root{--fv-ink:#1F1A17;--fv-paper:#F7F1E8;--fv-linen:#EFE6D8;--fv-ember:#C94A30;--fv-ember-d:#A63A22;--fv-butter:#F2D48F;--fv-sage:#6F7F5E;--fv-smoke:#665A51;--fv-line:#E4D9C8}
@@ -294,6 +305,10 @@
 /* washi tape */
 .fv-tape{position:absolute;width:74px;height:22px;background:var(--tp);opacity:.88;z-index:3;border-left:2px dotted rgba(255,255,255,.55);border-right:2px dotted rgba(255,255,255,.55);box-shadow:0 1px 0 rgba(31,26,23,.12);pointer-events:none}
 .fv-tape.top{top:-11px;left:50%;transform:translateX(-50%) rotate(var(--tr))}.fv-tape.tl{top:-8px;left:-16px;transform:rotate(-38deg);width:56px}.fv-tape.tr{top:-8px;right:-16px;transform:rotate(36deg);width:56px}
+/* "Come with me?" and "Host one like this" */
+.fv-together{display:block;margin:6px 0 2px}.fv-together .plf-pill{font-size:14px}
+.fv-hosted{margin:8px 2px 0;color:#665A51;font:600 13.5px/1.35 "Instrument Sans",system-ui,sans-serif}
+.fv-like{white-space:nowrap}.fv-cwm{white-space:nowrap}
 /* polaroids */
 .fv-pol{position:relative;display:block;background:#fff;border:2px solid var(--fv-ink);border-radius:6px;padding:8px 8px 6px;box-shadow:3px 4px 0 rgba(31,26,23,.85);transform:rotate(var(--r,0deg));cursor:pointer;color:var(--fv-ink);text-align:center;font:inherit;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
 .fv-pol:hover{transform:rotate(calc(var(--r,0deg) * -1)) scale(1.03);z-index:4}.fv-pol:active{transform:rotate(0) scale(.98)}

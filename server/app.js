@@ -34,6 +34,8 @@ import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, medi
 import { mountKudosAsk } from "./kudosask.js";
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
+import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
+import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
 import { mountHooks } from "./hooks.js"; // interests, Inspo (/ideas), saves and boards (/saved), passport, friends going, digest
 import { withCleanLook } from "./looks.js"; // per-event looks (Make it yours)
 import { buildEstimateScript } from "./estimate.js";
@@ -572,6 +574,10 @@ export function createApp({ store, dataDir }) {
   const ogCardFor = (ev, base) => { try { const pick = ev.coverArt && typeof ev.coverArt === "object" && EA?.valid(ev.coverArt.kind) ? String(ev.coverArt.kind).split("+")[0] : EA ? EA.kindOf(ev) : "party"; return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
   // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
   // and is the reply page itself (public/invite.html). The part after "#" never reaches a server, so /g links can't preview.
+  // "Come with me?" links (/i/<id>?with=<token>) open the same light invite; the preview says who sent it
+  app.get(/^\/i\/([A-Za-z0-9_-]{2,80})$/, (req, res, next) => { const id = req.params[0], tok = String(req.query.with || ""), ws = workspaceOfEvent(id);
+    try { const St = ws && scopeStore(store, ws), ev = St?.get("events/" + id)?.data, F = ev && findHold(St, id, tok); if (F && F.inviter.data?.response === "going") req.cwOg = `${firstOf(F.inviter.data.name) || "A friend"} wants you to come to ${titleOf(ev)}`; } catch {}
+    req.url = "/e/" + id + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""); next(); });
   app.get(/^\/e\/([A-Za-z0-9_-]{2,80})$/, (req, res) => { const id = req.params[0], ws = workspaceOfEvent(id), ev = ws ? scopeStore(store, ws).get("events/" + id)?.data : null, to = "/g#rsvp-" + encodeURIComponent(id);
     const e = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]), base = `${req.protocol}://${req.get("host")}`;
     if (!ev || ev.example) return res.redirect(302, to);
@@ -582,7 +588,7 @@ export function createApp({ store, dataDir }) {
     // the invite itself, in a page small enough to open instantly on a phone (public/invite.html); it hands anything
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
-<meta property="og:type" content="website"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
+<meta property="og:type" content="website"><meta property="og:title" content="${e(req.cwOg || title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${/\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
 <meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">`;
     const page = invitePage();
     if (!page) return res.redirect(302, to);
@@ -641,6 +647,8 @@ export function createApp({ store, dataDir }) {
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountFeedVisual(app, { store, small, currentUser, C, X }); // ---- visual feed (server/feedvisual.js) ----
+  mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
+  mountHostLike(app, { store, small, currentUser }); // "Host one like this" (server/hostlike.js)
   mountHosts(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountRecognition(app, { C, X });
   mountGiftPlan(app, { store, small, discoverHosts: () => C.discover().hosts.filter((h) => h.handle && h.name) });
@@ -1528,6 +1536,9 @@ export function createApp({ store, dataDir }) {
     const meAlready = G.some((g) => (g.status === "Going" || g.status === "Attended") && ((em && String(g.email || "").toLowerCase() === em)));
     const out = { ...body, ...(inv ? { _inv: inv } : {}) };
     if (out.party != null || out.plusOne != null) out.party = seatsOf(out, ev);
+    // "Come with me?" (server/comewith.js): a friend's reply through the link fills the spot held for them, or joins the pair
+    const cw = req.guest && !pr.withOf ? friendTerms(req, S(req), ev, eventId, prior?.id || null) : null;
+    if (cw) { out.withOf = cw.withOf; out._withH = cw.withH; if (cw.pairOf) { out.pairOf = cw.pairOf; delete out.party; } }
     // ask-to-join: a guest's yes is a request until the host lets them in (once let in, they can change their mind back)
     if (req.guest && ev.approvalRequired && out.response === "going" && pr.response !== "going" && !pr.letInAt) out.response = "requested";
     // a pre-order's cap counts what's ordered (max 20 loaves), and a full one says how many are left instead of a waitlist
@@ -1536,10 +1547,10 @@ export function createApp({ store, dataDir }) {
       if (taken + mine > cap) { const left = Math.max(0, cap - taken); return { body: out, prior, error: left ? `Only ${left} left. Pick fewer.` : "Sold out. Nothing left to order.", left }; }
       return { body: out, prior };
     }
-    if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready) {
-      const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }), mine = seatsOf(out, ev);
+    if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && !out.pairOf) {
+      const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }) - (cw?.credit || 0), mine = seatsOf(out, ev);
       if (pr.response === "going") { const room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = room; out.partyCut = true; } } // already in: keeps their spots
-      else if (taken + mine > cap || waitlistOf(all.filter((d) => d.id !== prior?.id)).length) out.response = "waitlist";
+      else if (taken + mine > cap || (!cw?.credit && waitlistOf(all.filter((d) => d.id !== prior?.id)).length)) out.response = "waitlist";
     }
     if (out.response === "waitlist") out.waitAt = pr.response === "waitlist" && pr.waitAt ? pr.waitAt : Date.now();
     return { body: out, prior };
@@ -1655,6 +1666,7 @@ export function createApp({ store, dataDir }) {
   async function afterRsvp(req, ws, id, before, after) {
     const St = scopeStore(store, ws), eventId = String(after?.eventId || before?.eventId || ""), ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? St.get("events/" + eventId)?.data : null; if (!ev) return {};
     const was = before?.response || "", now = after?.response || "", title = titleOf(ev), owner = getWorkspace(ws)?.ownerEmail || "", who = firstOf(after?.name || before?.name) || "Someone", studio = `/?app=1&open=${encodeURIComponent(eventId)}#studio`;
+    if (now === "going" && was !== "going" && after?.withOf) { try { claimHold(St, id, after); } catch {} } // the friend's own reply holds the spot now
     const promoted = await promoteWaitlist(req, ws, eventId);
     // the second-host loop: a guest who sent another host kudos in the last 30 days says I'm in here (server/social.js)
     if (now === "going" && was !== "going" && after?.email) { try { X.loopTouch(after.email, ws, "rsvp"); } catch {} }

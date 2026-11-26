@@ -85,6 +85,8 @@ const cardPublic = (e) => !!e && !closed(e) && !!e.discoverable && !e.unlisted &
 const MEDIA_OK = (u) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "") || /^\/presets\/[a-z0-9-]{1,60}\.(jpg|webp|png)$/.test(u || "");
 export const REACTIONS = ["🔥", "😍", "🥟", "🙌"];
 
+import { togetherOf } from "./comewith.js"; // "Come with me?": "Mia and Jo are in" on a card
+import { hostedCount, countLine, isPublicEvent } from "./hostlike.js"; // "Host one like this": "3 people hosted this after seeing it"
 export function makeFeedVisual(store, { C, X }) {
   const sample = (ws) => /@demo\.encore$/i.test(getWorkspace(ws)?.ownerEmail || "");
   function hostOf(ws) { const h = C.profileOf(ws); if (!h?.handle) return null;
@@ -114,6 +116,8 @@ export function makeFeedVisual(store, { C, X }) {
     return { id: x.id, title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
       approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : "", coverArt: artOf(e), look: lookOf(e), host: h, url: `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
       ...(sample(x.ws) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
+      ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
+        const T = togetherOf(scopeStore(store, x.ws).list("rsvps"), e, x.id); return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),
       fresh: (Date.now() - (e.createdAt || e.updatedAt || 0)) < 4 * DAY };
   }
   // ---------- prepared pages ----------

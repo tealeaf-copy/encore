@@ -41,7 +41,49 @@ html body.lk-on.lk-fx-lanterns #view-guest .mc .mc-c b{color:#1F1A17!important}h
 html body.lk-on .ev2-chat>p.ev2-foot,html body.lk-on .ev2-chat>p.ev2-foot a{color:var(--lk-ink)!important}
 /* review round 14: "More from Ada" follows the look's card, and on a dark look the side rail lets the page show through */
 html body.lk-on .ev2-chat .ev2-more{background:var(--lk-card)!important;color:var(--lk-card-ink)!important;border:1px solid var(--lk-line)!important}html body.lk-on .ev2-chat .ev2-more :is(h4,b,.em-head){color:var(--lk-card-ink)!important}html body.lk-on .ev2-chat .ev2-more small{color:color-mix(in srgb,var(--lk-card-ink) 72%,var(--lk-card))!important}
-html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filter:none!important;border-right-color:transparent!important}html body.lk-on.lk-dark .es-rail :is(a,a>span,.es-out,.es-logo,.es-logo>span,.nav-fold){color:var(--lk-ink)!important}html body.lk-on.lk-dark .es-rail :is(a:hover,a[aria-current]){background:color-mix(in srgb,var(--lk-ink) 12%,transparent)!important}`;
+html body.lk-on.lk-dark .es-rail{background:transparent!important;backdrop-filter:none!important;border-right-color:transparent!important}html body.lk-on.lk-dark .es-rail :is(a,a>span,.es-out,.es-logo,.es-logo>span,.nav-fold){color:var(--lk-ink)!important}html body.lk-on.lk-dark .es-rail :is(a:hover,a[aria-current]){background:color-mix(in srgb,var(--lk-ink) 12%,transparent)!important}
+/* the title: the host's font at a calm size, in the case the host typed it */
+html body.lk-on #view-guest.ev2 .invite.gx .in h3.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-tk,1))!important;line-height:1.08!important;text-transform:none!important;text-shadow:none!important;margin:8px 0 16px!important}
+html body.lk-on #view-guest.ev2 .gxfacts span[data-k=When] b{font-size:var(--fs-20,20px)!important}html body.lk-on #view-guest.ev2 .ev2-when-time{font-size:16px!important}
+html body.lk-on #view-guest.ev2 .in .gk .gk-row,html body.lk-on #view-guest.ev2 .in .gk .gk-row p,html body.lk-on #view-guest.ev2 .gxfacts span:not([data-k=When]) b{font-size:16px!important}
+/* dark looks: every part built from the look's own tokens (page, raised surface, field, ink, soft ink, line, button), so
+   nothing sits on the page as a white card. Light looks keep their cream cards. */
+html body.lk-on.lk-dark #geBar{background:color-mix(in srgb,var(--lk-ink) 7%,transparent)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important;color:var(--lk-ink)!important}
+html body.lk-on.lk-dark #geBar *{color:var(--lk-ink)!important}
+html body.lk-on.lk-dark :is(#view-guest,#gBar,.es-top) :is(.btn:not(.primary):not(.go),.btn.ghost,.btn.sm:not(.primary),.sl-btn){background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+html body.lk-on.lk-dark :is(#view-guest,#gBar,.es-top) :is(.btn:not(.primary):not(.go),.sl-btn) svg{color:var(--lk-ink)!important;stroke:currentColor}
+html body.lk-on.lk-dark .es-top nav a{color:var(--lk-ink)!important}html body.lk-on.lk-dark .es-top nav a.cta{background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest #forWho>div{background:var(--lk-raised)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}html body.lk-on.lk-dark #view-guest #forWho :is(b,p,span){color:var(--lk-ink)!important}html body.lk-on.lk-dark #view-guest #forWho small{color:var(--lk-raised-soft)!important}
+html body.lk-on.lk-dark #view-guest #gExample{background:color-mix(in srgb,var(--lk-ink) 7%,transparent)!important;border:1.5px dashed var(--lk-line2)!important;color:var(--lk-ink)!important}html body.lk-on.lk-dark #view-guest #gExample *{color:var(--lk-ink)!important}
+html body.lk-on.lk-dark .es-top a.btn,html body.lk-on.lk-dark .es-top button.btn{background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important}
+html body.lk-on.lk-dark #view-guest :is(.ev2-rs>.stack,#whoGoing,#evFaq,.gk-follow,.ev2-more,.recap,.tb-card){background:var(--lk-raised)!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest :is(.ev2-rs>.stack,#whoGoing,#evFaq,.gk-follow,.ev2-more,.recap,.tb-card) :is(h3,h4,b,p,span:not(.gk-av):not(.fc span),label,li,summary,strong,.rail-h){color:var(--lk-ink)!important}
+html body.lk-on.lk-dark #view-guest :is(.ev2-rs>.stack,#whoGoing,#evFaq,.gk-follow,.ev2-more,.recap,.tb-card) :is(small,.note,.muted,.eyebrow){color:var(--lk-raised-soft)!important}
+html body.lk-on.lk-dark #view-guest :is(.ev2-rs>.stack,#whoGoing,#evFaq,.gk-follow,.ev2-more,.recap) a:not(.btn){color:var(--lk-ink)!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--lk-line2)}
+html body.lk-on.lk-dark #view-guest :is(.wg-cards>li,.wg-cards .wg-c,.ev2-more .rail a,.rail-card){background:transparent!important;border-color:var(--lk-line)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest :is(input:not([type=checkbox]):not([type=radio]),textarea,select){background:var(--lk-field)!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest :is(input,textarea)::placeholder{color:var(--lk-raised-soft)!important;opacity:1}
+html body.lk-on.lk-dark #view-guest :is(input,textarea,select):focus{border-color:var(--lk-ink)!important;outline:3px solid color-mix(in srgb,var(--lk-btn) 45%,transparent)!important;outline-offset:1px}
+html body.lk-on.lk-dark #view-guest input:is([type=checkbox],[type=radio]){accent-color:var(--lk-btn);background:var(--lk-field)!important;border-color:var(--lk-line2)!important}
+html body.lk-on.lk-dark #view-guest :is(.chip,.rsvpbig .chip){background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest :is(.chip,.rsvpbig .chip)[aria-pressed=true]{background:var(--lk-ink)!important;color:var(--lk-bot)!important;border-color:var(--lk-ink)!important}
+/* the cover: framed in the page's own tone, the drawing in light lines on a deep ground, no offset shadow */
+html body.lk-on.lk-dark #view-guest .gxcover{background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+html body.lk-on.lk-dark #view-guest .gxcover .ea-cover:not(.lk-deck),html body.lk-on.lk-dark #view-guest .ev2-more .ea-cover:not(.lk-deck){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
+html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [stroke="#151515"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [fill="#151515"]{fill:var(--lk-ink)}
+html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"]{fill:var(--lk-raised)}html body.lk-on.lk-dark #view-guest .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
+html body.lk-on.lk-dark #view-guest .gk-ic,html body.lk-on.lk-dark #view-guest .gxfacts small::before{background:var(--lk-soft)!important}
+html body.lk-on.lk-dark #view-guest .in .gk-row a{color:var(--lk-ink)!important;text-decoration-color:var(--lk-line2)}
+html body.lk-on.lk-dark #view-guest hr,html body.lk-on.lk-dark #view-guest .ev2-div{border-color:var(--lk-line)!important}
+html body.lk-on.lk-dark .ev2-chat .ev2-more{background:var(--lk-raised)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}
+html body.lk-on.lk-dark .ev2-chat .ev2-more :is(h4,b,.em){color:var(--lk-ink)!important}html body.lk-on.lk-dark .ev2-chat .ev2-more small{color:var(--lk-raised-soft)!important}html body.lk-on.lk-dark .ev2-chat .ev2-more .em-head a{color:var(--lk-ink)!important;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--lk-line2)}
+html body.lk-on.lk-dark .ev2-chat .ev2-more .em-art{border-color:var(--lk-line)!important;background:var(--lk-cover)!important}
+html body.lk-on.lk-dark .ev2-chat .em-drawn svg [stroke="#151515"]{stroke:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#151515"]{fill:var(--lk-ink)}html body.lk-on.lk-dark .ev2-chat .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}
+html body.lk-on.lk-dark :is(#view-guest,#gBar) .btn:not(.primary) svg :is(path,rect,circle){stroke:currentColor!important}
+html body.lk-on.lk-dark #view-guest .tb-card summary::after,html body.lk-on.lk-dark #view-guest .tb-card summary *{color:var(--lk-ink)!important}
+html body.lk-on.lk-dark #view-guest input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--lk-line2)!important;background:var(--lk-field)!important;display:inline-grid;place-items:center;margin:0}
+html body.lk-on.lk-dark #view-guest input[type=checkbox]:checked{background:var(--lk-ink)!important;border-color:var(--lk-ink)!important}html body.lk-on.lk-dark #view-guest input[type=checkbox]:checked::after{content:"";width:10px;height:6px;border:2px solid var(--lk-bot);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+html body.lk-on.lk-dark #view-guest .hh-av{background:var(--lk-raised)!important;border-color:var(--lk-line2)!important}`;
   let gSig = "";
   function guest() { const host = document.getElementById("view-guest"), e = window.__gEv;
     if (!host || !e?.id || !host.classList.contains("ev2") || host.hidden || host.offsetParent === null) { if (gSig) { LK.apply(document.body, {}); gSig = ""; } return; }

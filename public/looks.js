@@ -101,9 +101,9 @@
   const CSS = `.lk-on{--lk-title:inherit}.lk-on.lk-page{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100%) var(--lk-bot)!important;color:var(--lk-ink)}
 html.lk-root{background:linear-gradient(180deg,var(--lk-top) 0,var(--lk-bot) 100vh,var(--lk-bot) 100%) var(--lk-bot)!important}html.lk-root body.lk-page.lk-page{background:transparent!important;background-color:transparent!important}
 .lk-on .lk-title{font-family:var(--lk-title)!important;font-weight:var(--lk-tw,700)!important;letter-spacing:var(--lk-tls,-.01em)!important;color:var(--lk-ink)!important;text-wrap:balance}
-.lk-on.lk-up .lk-title{text-transform:uppercase;line-height:.98!important}
+.lk-on.lk-up .lk-title{line-height:1.05!important}
 .lk-vibe-pantry .lk-title{color:#3B2414!important;text-shadow:0 1px 0 rgba(255,244,220,.55)}
-.lk-vibe-night .lk-title{color:#FFFDF8!important;text-shadow:0 0 1px #fff,0 0 14px color-mix(in srgb,var(--lk-glow,#D8322E) 85%,transparent),0 0 34px color-mix(in srgb,var(--lk-glow,#D8322E) 55%,transparent)}
+.lk-vibe-night .lk-title{color:#FFFDF8!important}
 .lk-fxl{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}.lk-fxl.fixed{position:fixed;z-index:-1}.lk-fxl canvas{position:absolute;inset:0;width:100%;height:100%}
 .lk-paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(120% 80% at 50% 0,transparent 55%,rgba(110,80,40,.10));opacity:.55;mix-blend-mode:multiply}
 .lk-velvet{background:radial-gradient(150vw 75vh at 50% 0,color-mix(in srgb,var(--lk-glow,#C2384A) 55%,transparent),transparent 70%),radial-gradient(100vw 55vh at 85% 100%,color-mix(in srgb,var(--lk-glow,#C2384A) 30%,transparent),transparent 70%),radial-gradient(130% 90% at 50% 40%,transparent 55%,rgba(0,0,0,.45));animation:lk-breathe 9s ease-in-out infinite}
@@ -141,7 +141,7 @@ html body .lk-stk.lk-stk.lk-stk.lk-stk{display:block!important}
 @media (prefers-reduced-motion:reduce){.lk-scan{display:none}}
 .lk-vibe-terminal .ea-cover{background:#131B16!important}.lk-vibe-terminal .ea-art svg{filter:invert(1) hue-rotate(180deg) saturate(.8)}.lk-vibe-terminal .ea-cover .ea-txt{color:#A6F5BA}
 .lk-fxl.fixed.lk-pix::after{display:none}
-.lk-vibe-terminal .lk-title{color:#A6F5BA!important;text-shadow:0 0 14px rgba(124,242,154,.28)}
+.lk-vibe-terminal .lk-title{color:#A6F5BA!important}
 .lk-font-mono .lk-title::after{content:"";display:inline-block;width:.52em;height:.86em;margin-left:.14em;vertical-align:-.06em;background:currentColor;animation:lk-blink 1.1s steps(1) infinite}
 @keyframes lk-blink{50%{opacity:0}}@media (prefers-reduced-motion:reduce){.lk-font-mono .lk-title::after{animation:none}}
 /* pixel: a crenellated pixel border top and bottom, a few original sprites, crisp edges, square covers */
@@ -186,6 +186,21 @@ html body.lk-invite.lk-on.lk-on button.go,html body.lk-invite.lk-on.lk-on button
 body.lk-invite.lk-fx-lights main,body.lk-invite.lk-fx-lanterns main{padding-top:calc(max(12px,env(safe-area-inset-top)) + 40px)}
 body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.lk-invite .cov.poster img{width:auto;max-width:100%;max-height:min(74vh,820px)}
 /* wide screens: the flyer on the left, held in place, and the invite beside it */
+/* a dark look: one palette from the look's own tokens. The cover sits in the page's deep tone with the drawing in light
+   lines, cards are the raised surface, fields the field tone, secondary buttons outlined. Nothing white, no offset shadows */
+.lk-dark :is(.cov,.gxcover):not(.poster):not(.lk-pcov){background:var(--lk-cover)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck):not(.ea-custom){background:var(--lk-cover)!important;color:var(--lk-ink)!important}
+.lk-dark :is(.cov,.gxcover,.em-drawn) .ea-art svg [stroke="#151515"],.lk-dark .em-drawn svg [stroke="#151515"]{stroke:var(--lk-ink)}.lk-dark :is(.cov,.gxcover) .ea-art svg [fill="#151515"],.lk-dark .em-drawn svg [fill="#151515"]{fill:var(--lk-ink)}
+.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg [fill="#fff"],.lk-dark .em-drawn svg [fill="#fff"]{fill:var(--lk-raised)}.lk-dark :is(.cov,.gxcover) .ea-cover:not(.lk-deck) .ea-art svg{filter:none!important}
+body.lk-invite.lk-dark :is(.pls-btn,.sl-btn,.btn:not(.main):not(.pay)){background:transparent!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important;box-shadow:none!important}
+body.lk-invite.lk-dark :is(.pls-btn,.sl-btn) svg{color:var(--lk-ink)}.lk-dark .pls-btn{--pls-fill:transparent}.lk-dark .pls-btn svg path{stroke:var(--lk-ink)}.lk-dark .pls-btn[aria-pressed=true]{--pls-fill:var(--lk-btn)}
+body.lk-invite.lk-dark form,body.lk-invite.lk-dark .tb-card{background:var(--lk-raised)!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line)!important;box-shadow:none!important}
+body.lk-invite.lk-dark .tb-card :is(summary,b,p,span,label){color:var(--lk-ink)!important}body.lk-invite.lk-dark :is(form,.tb-card) :is(small,.muted,.consent){color:var(--lk-raised-soft)!important}
+body.lk-invite.lk-dark :is(input:not([type=checkbox]):not([type=radio]),textarea,select){background:var(--lk-field)!important;color:var(--lk-ink)!important;border:1.5px solid var(--lk-line2)!important}
+body.lk-invite.lk-dark :is(input,textarea)::placeholder{color:var(--lk-raised-soft);opacity:1}
+body.lk-invite.lk-dark input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--lk-line2);background:var(--lk-field);display:inline-grid;place-items:center;margin:0}
+body.lk-invite.lk-dark input[type=checkbox]:checked{background:var(--lk-ink);border-color:var(--lk-ink)}body.lk-invite.lk-dark input[type=checkbox]:checked::after{content:"";width:10px;height:6px;border:2px solid var(--lk-bot);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-tk,1))!important;line-height:1.08;text-transform:none;text-shadow:none}body.lk-invite.lk-on h2.ask{font-size:20px}
 @media (min-width:960px){body.lk-invite.lk-poster main{max-width:1080px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto repeat(24,auto) 1fr;column-gap:56px;padding-top:24px}
   body.lk-invite.lk-poster main>*{grid-column:2}body.lk-invite.lk-poster main>.top{grid-column:1/-1}body.lk-invite.lk-poster main>.cov.poster{grid-column:1;grid-row:2/-1;position:sticky;top:24px;align-self:start;margin:0 0 0 auto}
   body.lk-invite.lk-poster main>.cov.poster img{max-height:calc(100vh - 110px)}body.lk-invite.lk-poster h1.lk-title{margin-top:4px}body.lk-invite.lk-poster .stick{left:auto;right:max(16px,calc((100vw - 1080px) / 2 + 16px));transform:none;width:min(512px,calc(50vw - 44px));bottom:16px;border:1px solid var(--lk-line,var(--line));border-radius:999px;padding:8px}}`;
@@ -196,7 +211,7 @@ body.lk-invite .cov.poster{width:fit-content;max-width:100%;margin:0 auto}body.l
     el.__lkStop?.(); el.__lkStop = null; if (el === document.body) document.documentElement.classList.remove("lk-root"); el.classList.remove(...CLS, ...[...el.classList].filter((c) => /^lk-(fx|font|vibe)-/.test(c)));
     if (!has(L)) return null;
     const T = colors(L), F = FONTS[L.titleFont]; el.classList.add("lk-on"); if (page && T) el.classList.add("lk-page");
-    if (T) { el.classList.add(T.dark ? "lk-dark" : "lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line }).forEach(([k, v]) => el.style.setProperty(k, v)); }
+    if (T) { el.classList.add(T.dark ? "lk-dark" : "lk-light"); Object.entries({ "--lk-top": T.top, "--lk-bot": T.bot, "--lk-ink": T.ink, "--lk-soft": T.soft, "--lk-btn": T.btn, "--lk-on-btn": T.onBtn, "--lk-card": T.card, "--lk-card-ink": T.cardInk, "--lk-line": T.line, "--lk-raised": T.raised, "--lk-raised-soft": T.raisedSoft, "--lk-field": T.field, "--lk-line2": T.lineStrong, "--lk-cover": T.cover || T.card }).forEach(([k, v]) => v && el.style.setProperty(k, v)); }
     // the whole page: the gradient sits on the root, so the effect layer can sit under the content and over the colour
     if (el === document.body && page && T) { const R0 = document.documentElement; R0.classList.add("lk-root"); for (const k of ["--lk-top", "--lk-bot"]) R0.style.setProperty(k, el.style.getPropertyValue(k)); }
     if (F) { loadFont(L.titleFont); el.classList.add("lk-font-" + L.titleFont); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", F.k); if (F.up) el.classList.add("lk-up"); }

@@ -43,7 +43,10 @@
     const bgs = [top, bot], ink = inkFor(bgs, dom), soft = softFor(ink, bgs);
     const btn = buttonFor(accents.find((a) => norm(a) && Math.abs(lum(a) - lum(top)) > 0.05) || (dark ? mix(dom, "#FFFFFF", 0.5) : mix(dom, "#000000", 0.45)), bgs);
     const card = dark ? mix(dom, "#000000", 0.4) : mix(dom, "#FFFFFF", 0.93), cardInk = inkFor([card], dom);
-    return { dark, top, bot, ink, soft, btn, onBtn: onColor(btn), card, cardInk, line: mix(top, ink, 0.16) }; }
+    // a dark page gets one palette built from its own colour: a raised surface for cards, a field tone, a stronger line for
+    // outlined buttons and fields, and a deep cover tone for the drawing (light lines on it), so nothing sits on it in white
+    const raised = dark ? mix(top, ink, 0.08) : card, field = dark ? mix(bot, ink, 0.07) : "#FFFFFF", lineStrong = mix(dark ? raised : top, ink, dark ? 0.3 : 0.28);
+    return { dark, top, bot, ink, soft, btn, onBtn: onColor(btn), card, cardInk, line: mix(top, ink, 0.16), raised, raisedSoft: softFor(ink, [raised, field]), field, lineStrong, cover: dark ? mix(top, ink, 0.06) : "" }; }
   // ---- a palette from pixels: a dominant colour and two accents, skipping near-white, near-black and see-through pixels ----
   // data: RGBA bytes (canvas getImageData().data). Buckets of 4 bits a channel; each bucket keeps its average colour.
   function paletteFromPixels(data, step = 1) { const B = new Map();

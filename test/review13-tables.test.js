@@ -180,3 +180,9 @@ test("minor: /api/v1/events rejects filters it doesn't have; Host one like this 
   const looks = fs.readFileSync(new URL("../public/looks.js", import.meta.url), "utf8"); assert.match(looks, /\.lk-hex\{background-repeat:repeat;-webkit-mask:linear-gradient/);
   for (const f of ["../server/tables.js", "../public/tables.js", "../public/again.html"]) assert.ok(!/—/.test(fs.readFileSync(new URL(f, import.meta.url), "utf8")), f + ": no em dashes");
 });
+
+// a private event's agenda can name the place: only guests who are in (and the host) see it
+import { readFileSync as _rf } from "node:fs";
+test("a private event's agenda stays with guests who are in", () => {
+  assert.match(_rf(new URL("../server/tables.js", import.meta.url), "utf8"), /agenda: closed\(ev\) && !going && !isHost \? \[\] : T\.agenda/);
+});

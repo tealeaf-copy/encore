@@ -28,7 +28,7 @@
   // round 12: the meta lines wear drawn line glyphs (pin, people, price tag, calendar), like the app's buttons
   const gl = (d) => `<svg class="ic" viewBox="0 0 20 20" aria-hidden="true"><path d="${d}"/></svg>`, G = { pin: gl("M10 17.5c-3.6-4.2-5.4-7.2-5.4-9.6a5.4 5.4 0 0 1 10.8 0c0 2.4-1.8 5.4-5.4 9.6zM10 9.9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"), people: gl("M7.3 9a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2zM2.6 16.2c.4-3 2.2-4.7 4.7-4.7s4.3 1.7 4.7 4.7M13.4 9.2a2.2 2.2 0 1 0 0-4.4M14 11.6c2 .2 3.3 1.7 3.6 4.4"), tag: gl("M3.2 10.4V3.6a.6.6 0 0 1 .6-.6h6.8l6.2 6.2a1 1 0 0 1 0 1.4l-5.8 5.8a1 1 0 0 1-1.4 0zM7 7.4h.01"), cal: gl("M4 5.2h12a.8.8 0 0 1 .8.8v10a.8.8 0 0 1-.8.8H4a.8.8 0 0 1-.8-.8V6a.8.8 0 0 1 .8-.8zM3.2 9h13.6M7 3.2v3.6M13 3.2v3.6") };
   const FOODY = /giveaway|bake|cake|cook|potluck|friendsgiving|thanksgiving|feast|caf[eé]|coffee|brunch|picnic|supper|dinner|bbq|cookout|pastr|cookie|bread|mochi/i;
-  // round 12: food is the point only when it's what the event is; "snacks potluck" at a watch party is a side mention (index.html FOODY)
+  // food only when it's the point (index.html FOODY)
   const MAINNF = /hack ?night|hackathon|build night|watch party|viewing party|\blan\b|game night|board games?|book club|paper club|reading group/i;
   const foodyOf = (e) => FOODY.test(`${e.activity || ""} ${e.name || ""}`) || (FOODY.test(e.concept || "") && !MAINNF.test(`${e.activity || ""} ${e.name || ""} ${e.concept || ""}`)) || !!(e.menu && (e.menu.courses || e.menu.items || []).length);
   const HHMM = /^\d{2}:\d{2}$/, httpsUrl = (u) => /^https:\/\/[^\s"'<>]+$/.test(String(u || "").trim()) ? String(u).trim() : "";
@@ -46,9 +46,9 @@
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
     if (e.priceUnit === "total" && !(+e.sessions > 1)) return +e.dropIn > 0 ? `${amt(p)} for the course, or ${amt(e.dropIn)} a class` : `${amt(p)} total`; // round 8: "$280 total or $50 drop in"
     return /a person|per person|each/i.test(p) ? p : `${/^\d/.test(p) ? amt(p) : p} a person`; };
-  // review round 3 (paid spots): the Pay button carries the amount and a note, the way the full invite and the shop do
-  // (payLink in server/shop.js): Venmo gets amount and "Name · Title", PayPal.me and Cash App get the amount, others pass through.
-  // what this reply owes, as the server works it out (dueCents): the price a person × spots, or the group price × groups
+  // the Pay button carries the amount and a note
+  // (payLink in server/shop.js)
+  // what this reply owes (server dueCents)
   const dueOf = (e, party) => { const c = (p) => Math.round((parseFloat(String(p ?? "").replace(/[^\d.]/g, "")) || 0) * 100), k = Math.max(1, Math.floor(+party) || 1), gs = Math.floor(+e.groupSize), gp = c(e.groupPrice), each = c(e.price);
     const t = gs > 1 && gp > 0 ? (e.priceUnit !== "each" || !each ? gp * Math.ceil(k / gs) : Math.min(each * k, gp * Math.floor(k / gs) + each * (k % gs))) : each * k; return t > 0 ? "$" + (t / 100).toFixed(t % 100 ? 2 : 0) : e.price; };
   const payLinkOf = (url, price, note) => { const u = httpsUrl(url); if (!u) return ""; const n = parseFloat(String(price || "").replace(/[^\d.]/g, "")); if (!(n > 0)) return u; const cents = Math.round(n * 100), amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;
@@ -74,7 +74,7 @@
   const srWhen = (e) => { const head = srSpan(e) || srEvery(e); if (!head) return ""; const s = clock(e.startTime), en = s && e.endTime !== e.startTime ? clock(e.endTime) : ""; return [head, s && (en ? `${s} to ${en}` : s)].filter(Boolean).join(" · "); };
   // "$180 for all 6", "$20 a class, or $70 for 4"; "" when there's nothing series-shaped to say
   const srPrice = (e) => { const amt = (v) => { const m = String(v ?? "").match(/(\d+(?:\.\d{1,2})?)/); return m ? "$" + m[1] : ""; }, p = e.price && e.price !== "chip" ? amt(e.price) : "", n = +e.sessions || 0, pp = +e.passPrice || 0, pc = +e.passCount || 0;
-    // a pass and sessions together: the pass is the bundle ("$20 a class, or $100 for all 6"), never "$20 for all 6" beside it
+    // a pass is the bundle: "$20 a class, or $100 for all 6"
     if (pp && pc > 1) { const of = n > 1 && pc === n ? `all ${n}` : ""; return p ? `${p} a class, or ${amt(pp)} for ${of || pc}` : `${amt(pp)} for ${of || pc + " classes"}`; } if (p && e.priceUnit === "class") return `${p} a class`; if (n > 1 && p) return +e.dropIn > 0 ? `${p} for all ${n}, or ${amt(e.dropIn)} a class` : `${p} for all ${n}`; return ""; };
   // the calendar repeat, COUNT for a course
   const srRRule = (e) => { const x = srDate(e.date), r = srRep(e); if (!x || !r) return ""; const BY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][x.getDay()]; const f = r === "monthly" ? `FREQ=MONTHLY;BYDAY=${srNth(x)}${BY}` : r === "biweekly" ? "FREQ=WEEKLY;INTERVAL=2" : r === "weekly" ? "FREQ=WEEKLY" + (srDays(e).length > 1 ? ";BYDAY=" + srDays(e).map((i) => ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][i]).join(",") : "") : ""; return f ? "RRULE:" + f + (+e.sessions > 1 ? `;COUNT=${+e.sessions}` : "") : ""; };
@@ -84,7 +84,7 @@
       // where their reply stands (and their place on the waitlist); older servers only have rsvp-status
       return fetch("/api/public/reply/" + q).then(j).catch(() => null).then((x) => x || fetch("/api/public/rsvp-status/" + q).then(j).catch(() => null)); })() : null])
     .then(async ([doc, H, A, st]) => { const e = doc?.data, ws = doc?.workspace;
-      // ---- repeats (review round 6): a past date of a repeat shows the next date's form; a running course stays open ----
+      // ---- repeats: a past date shows the next date's form ----
       let courseNext = "";
       if (e && ws && e.casual && !pastOf && e.date && e.date < today && (e.repeat || +e.sessions > 1)) { const J = await fetch("/api/public/next/" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).catch(() => null), n = J?.next;
         if (n?.same && n.date) courseNext = n.date;
@@ -96,7 +96,7 @@
       if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
       render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
-      // review round 11: coming back to a pre-order shows the order (items, pickup, total, Pay, I paid), not "You're in"
+      // a returning pre-order guest sees their order
       else if (e.preorder && mine?.order && st && st.response === "going") more("/invite-order.js", () => window.InviteOrder?.ticket?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }, { ...mine, paid: !!st.paid, paidClaim: !!st.paidClaim || !!mine.paidClaim }, document.getElementById("tk"))); })
     .catch(go);
   claimed.then(load);
@@ -117,7 +117,7 @@
     const av = h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="40" height="40">` : (h.emoji && h.emoji !== "🎉" ? esc(h.emoji) : `<span class="ini">${esc(String(first || h.name || "?").trim().charAt(0).toUpperCase())}</span>`), avTint = !h.avatarUrl && !(h.emoji && h.emoji !== "🎉") ? ` style="background:${["#F2D48F", "#FBD3CB", "#CDEBD5", "#E2D6F7", "#CFE3F7"][[...String(h.name || "")].reduce((a, c) => a + c.charCodeAt(0), 0) % 5]};border-color:transparent"` : "";
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
-    // review round 11: "6 pairs" / "3 pairs left" for pairs and groups (public/spots.js), else "12 spots" / "4 spots left"
+    // "6 pairs" or "12 spots" (public/spots.js)
     const SP = window.EncoreSpots, spotsOf = (n) => (SP ? SP.spotsText(e, n) : n == null ? `${A.seats} spot${A.seats === 1 ? "" : "s"}` : `${n} spot${n === 1 ? "" : "s"} left`), orderBy = SP ? SP.orderByText(e) : "";
     const full = left === 0 && !ask, spotsLine = (n) => (n === 0 ? "Full · waitlist open" : n === A.seats ? spotsOf(null) : spotsOf(n));
     // the main button says what it sends: "I'm in" or "Send"
@@ -181,7 +181,7 @@
     // count yourself in: the spots and "N in" lines move with your own yes (a returning guest is already counted)
     if (yes && !S.back) { if (S.seats && S.left > 0 && $("#spots span")) $("#spots span").textContent = S.spotsLine(Math.max(0, S.left - (+data.party || 1))); const n = $(".going-n"); if (n) { n.textContent = `${S.count + 1} in`; const me = document.createElement("span"); me.textContent = data.name; $(".going")?.prepend(me); } }
     const d = e.date ? e.date.replace(/-/g, "") : "", hm = (x) => x.replace(":", "") + "00", t = HHMM.test(e.startTime || "") ? hm(e.startTime) : "";
-    // the calendar end: the host's end time (next day when it ends after midnight), else three hours after the start, like the full invite
+    // calendar end: the host's end time, else start + 3h
     const endT = t ? (HHMM.test(e.endTime || "") && e.endTime !== e.startTime ? hm(e.endTime) : String((+t.slice(0, 2) + 3) % 24).padStart(2, "0") + t.slice(2)) : "";
     const dEnd = t && endT < t ? (() => { const x = new Date(e.date + "T12:00:00"); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); })() : d;
     let where = [e.meetPoint || e.venueName, e.hood || e.city].filter(Boolean).join(", ");

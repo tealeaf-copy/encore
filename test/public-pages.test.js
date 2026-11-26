@@ -55,6 +55,20 @@ test("signup saves the club or group name as the page name", () => {
 test("Discover and the homepage reserve space for late sections", () => {
   assert.match(read("public/discover.html"), /<body class="dc-wait">/);
   const home = read("public/home.html");
-  assert.match(home, /<section id="feedSec">/);
+  assert.match(home, /<section [^>]*id="feedSec"/);
   assert.match(home, /fi-sk/);
+});
+
+// /about tells why Pottery Lab exists (docs/about-story.md): the host first, then guests, then brands, in the house voice.
+test("/about: the host's story, five pillars, three readers, the tagline word for word, and plain words", () => {
+  const home = read("public/home.html"), text = home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
+  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Somebody carried the chairs\.<\/h1>/);
+  assert.equal((home.match(/<li><div><span class="n">0\d · /g) || []).length, 5, "five pillars");
+  const order = ["For hosts", "For guests", "For brands"].map((k) => text.indexOf(`<span class="kick">${k}</span>`));
+  assert.ok(order.every((i) => i > 0) && order[0] < order[1] && order[1] < order[2], "hosts, then guests, then brands");
+  assert.match(text, /Host memorable experiences, with your fav people\.<\/p><p>We've been the planner\. This is the tool we wished we had\./);
+  assert.match(text, /where you go to explore, discover and plan out your in-person events and experiences with the people you love/, "the guest line");
+  assert.match(text, /<b>Coming soon:<\/b>/, "what isn't built yet is labelled");
+  assert.doesNotMatch(text.replace(/<!doctype[^>]*>/i, ""), /—|!|seamless|effortless|unlock|elevate|curated|magical|marketplace|empower|attendees|\bseats\b|per person/i);
+  assert.match(home, /<meta name="description" content="[^"]*host[^"]*">/);
 });

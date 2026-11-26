@@ -143,7 +143,7 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
   let seen = false; try { seen = !!localStorage.getItem("pl.aboutNote"); } catch {} if (seen) return;
   const put = () => { const m = document.querySelector("main"); if (!m || document.getElementById("plAbout")) return;
     const n = document.createElement("p"); n.id = "plAbout"; n.className = "pl-about";
-    n.innerHTML = `<span>New here? <a href="/about">What is Pottery Lab</a> · <a href="/start">Plan a dinner</a></span><button type="button" aria-label="Dismiss">×</button>`;
+    n.innerHTML = `<span>New here? <a href="/about">Why we exist</a> · <a href="/start">Plan a dinner</a></span><button type="button" aria-label="Dismiss">×</button>`;
     const st = document.createElement("style"); st.textContent = `.pl-about{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:4px 4px 4px 14px;border:1px solid var(--pl-line);border-radius:var(--pl-r-sm,8px);background:var(--pl-surface);color:var(--pl-soft);font:400 14px/1.4 var(--pl-font-text,system-ui);box-sizing:border-box}.pl-about a{color:var(--pl-accent-text);font-weight:600}.pl-about button{flex:none;min-width:44px;min-height:44px;border:0;background:none;color:var(--pl-soft);font-size:20px;cursor:pointer;border-radius:8px}`;
     document.head.appendChild(st); (document.getElementById("rail") || m).before(n);
     const done = () => { try { localStorage.setItem("pl.aboutNote", "1"); } catch {} };

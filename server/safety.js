@@ -9,7 +9,8 @@
 //
 // Docs: system/report-<id>, system/modhide-<hash of target>, system/blocks-<hash of email>.
 // Targets: "person:<key>" (key = base64url of the email, as the feed sends it), "host:<handle>", "post:<author key>:<id>",
-// "moment:<url>", "text:<hash of the words>" (a kudos or review), "event:<id>", "other:<anything>".
+// "moment:<url>", "text:<hash of the words>" (a kudos or review), "event:<id>", "comment:<id>" (a comment under a feed
+// card, server/feedcomments.js), "other:<anything>".
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,8 +26,8 @@ export const textHash = (t) => sha(String(t || "").trim().replace(/\s+/g, " ").t
 const clean = (s, n) => String(s ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, n);
 
 export const REASONS = { spam: "Spam or scam", hate: "Hate or harassment", sexual: "Sexual content", violence: "Violence or threats", unsafe: "Unsafe event or person", private: "Shares private info", fake: "Fake or misleading", other: "Something else" };
-const TYPES = ["post", "moment", "kudos", "review", "host", "person", "event", "other"];
-const TARGET_RE = /^(person|host|post|moment|text|event|other):[^\s]{1,300}$/;
+const TYPES = ["post", "moment", "kudos", "review", "host", "person", "event", "comment", "other"];
+const TARGET_RE = /^(person|host|post|moment|text|event|comment|other):[^\s]{1,300}$/;
 
 // ---------- the text filter ----------
 // Whole words only (so "Scunthorpe" and "classic" pass), with common letter swaps (f*ck, sh1t, @ss).

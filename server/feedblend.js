@@ -24,10 +24,13 @@
 // - Kudos stacks name only the viewer's friends and guests whose kudos are already public on open events.
 // - Blocks work both ways in suggestions; dismissed suggestions stay gone for that person or device.
 // - Kudos and dismiss need a session and are rate limited by IP and by person.
+// - Kudos and comments (server/feedcomments.js) share one gate, cardOf: the card a target names, only when this viewer
+//   may see it. Every card kind's target goes through it, so what the feed draws is what the server accepts.
 import crypto from "node:crypto";
 import { scopeStore, getWorkspace, DEFAULT_WS } from "./workspaces.js";
 import { seriesKey, episodeNumber } from "./episodes.js";
 import { streakOf } from "./recognition.js";
+import { makeCommentStore } from "./feedcomments.js";
 
 const DAY = 864e5;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -86,6 +89,12 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   const dismissed = (who) => new Set(who ? store.get(dPath(who))?.data?.list || [] : []);
   function dismiss(who, target) { const L = [target, ...[...dismissed(who)].filter((x) => x !== target)].slice(0, 300); store.set(dPath(who), { kind: "feeddismiss", list: L }); return L.length; }
   const safety = () => app?.locals?.appstore?.safety || null;
+  const CS = makeCommentStore(store, { X, safety }); // comments under a card (server/feedcomments.js)
+  const commentsOf = (v, target) => { try { return CS.summary(target, v); } catch { return { count: 0, last: [] }; } };
+  /** The words next to the count: the viewer first ("You and 2 more"), then names they may see, then a plain count. */
+  const kudosLine = (count, mine, names = []) => { if (!count) return ""; const others = count - (mine ? 1 : 0), people = (n) => `${n} ${n === 1 ? "person" : "people"}`;
+    if (mine) return !others ? "You gave kudos" : others === 1 && names.length === 1 ? `You and ${names[0]} gave kudos` : `You and ${others} more gave kudos`;
+    return !names.length ? `${people(count)} gave kudos` : count === 1 ? `${names[0]} gave kudos` : count === 2 && names.length >= 2 ? `${names[0]} and ${names[1]} gave kudos` : `${names[0]} and ${count - 1} more gave kudos`; };
   const blocksOf = (em) => { try { return new Set((safety()?.blocksOf(em) || []).map((b) => b.target)); } catch { return new Set(); } };
 
   // ---------- who is looking ----------
@@ -123,16 +132,20 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     return { line, faces: named.slice(0, 3), sketches: n > named.length ? sketches : [], n };
   }
   // kudos on a card: the count, and the first names the viewer may see (friends; guests whose kudos are public)
-  function kudosOf(v, target, publicNames = []) { const d = kudosDoc(target), by = Object.entries(d?.by || {});
-    const names = [...publicNames]; for (const [, g] of by) if (g.email && v.friends.has(g.email)) { const nm = first(X.person(g.email).name); if (nm && !names.includes(nm)) names.push(nm); }
-    const count = by.length + publicNames.length, mine = !!(v.who && d?.by?.[hashKey(v.who)]);
-    return { target, count, mine, names: names.slice(0, 3), line: count ? (names.length ? (count > names.length ? `${names[0]} and ${count - 1} more gave kudos` : names.length === 2 ? `${names[0]} and ${names[1]} gave kudos` : `${names[0]} gave kudos`) : `${count} gave kudos`) : "" }; }
-  // comment: the event's group chat, for people who were in it; nobody else
+  function kudosOf(v, target, publicNames = []) { const d = kudosDoc(target), by = Object.entries(d?.by || {}), me = v.who ? hashKey(v.who) : "";
+    const names = [...publicNames]; for (const [w, g] of by) if (w !== me && g.email && v.friends.has(g.email)) { const nm = first(X.person(g.email).name); if (nm && !names.includes(nm)) names.push(nm); }
+    const count = by.length + publicNames.length, mine = !!(me && d?.by?.[me]);
+    return { target, count, mine, names: names.slice(0, 3), line: kudosLine(count, mine, names) }; }
+  // a recap's kudos also count the guests whose kudos are already public on an open event (first names)
+  const recapNames = (I, x) => (x && V.cardPublic(x.e) ? [...new Set(V.kudosOf(I, x.id).filter((k) => k.love && k.verified).map((k) => first(k.name)).filter(Boolean))].slice(0, 2) : []);
+  const clubKudos = (handle, p) => ({ target: "club." + lc(handle) + "|" + p.id, club: true, count: p.hearts, mine: !!p.hearted, names: [], line: kudosLine(p.hearts, !!p.hearted) });
+  // the event's group chat, for people who were in it; nobody else (a small link inside the comment sheet)
   const chatOf = (v, x) => (v.email && V.wasThere(v.I, x.id, v.email) ? `/g#rsvp-${encodeURIComponent(x.id)}` : "");
 
+  const earlyFor = (v, x) => { const fc = app?.locals?.fanclub; try { return !!fc && fc.visibility(x.ws, x.id) === "early" && !(v.email && fc.isMember(x.ws, v.email)); } catch { return false; } };
   // ---------- events ----------
-  function events(v, now = Date.now()) { const I = v.I, t = today(now), once = new Set(), M = memberEvents(v), fc = app?.locals?.fanclub;
-    const early = (x) => { try { return fc && fc.visibility(x.ws, x.id) === "early" && !(v.email && fc.isMember(x.ws, v.email)); } catch { return false; } };
+  function events(v, now = Date.now()) { const I = v.I, t = today(now), once = new Set(), M = memberEvents(v);
+    const early = (x) => earlyFor(v, x);
     const L = [...I.events.values()].filter((x) => (V.cardPublic(x.e) || M.has(x.id)) && !early(x) && (x.e.date || "") >= t && hostOK(I, x.ws) && !v.blocks.has("host:" + lc(V.hostOf(x.ws, I).handle)) && !v.blocks.has("event:" + x.id));
     const local = (x) => (v.city && lc(`${x.e.city || ""} ${x.e.hood || ""}`).includes(v.city) ? 1 : 0);
     const score = (x) => (v.followed.has(x.ws) ? 100 : 0) + (v.known.has(lc(x.owner)) ? 60 : 0) + local(x) * 20 + ((x.e.createdAt || x.e.updatedAt || 0) > now - 4 * DAY ? 6 : 0) - Math.min(30, Math.max(0, (Date.parse(x.e.date) - now) / DAY));
@@ -141,7 +154,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       .map((x) => { const c = V.card(I, x, { email: v.email }), h = hostLead(v, x.ws, c.host);
         return { kind: "event", key: "e:" + x.id, id: x.id, host: h, title: c.title, line: descOf(x.e, x.ws), date: c.date, startTime: c.startTime, where: placeOf(x.e), city: c.city, cover: c.cover, coverArt: c.coverArt, look: { palette: c.look?.palette || [] },
           members: M.has(x.id), free: c.free, price: c.price, drop: !!(x.e.preorder || x.e.drop), going: c.going || 0, ...(c.spotsLeft != null ? { spotsLeft: c.spotsLeft } : {}), proof: proofOf(v, x, c.going), approvalRequired: c.approvalRequired,
-          cta: c.cta?.own ? c.cta : V.eventCta(x.e, x.id) /* the event's own page; the host's own card says Manage */, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), kudos: kudosOf(v, "e:" + x.id), followed: v.followed.has(x.ws) }; }); }
+          cta: c.cta?.own ? c.cta : V.eventCta(x.e, x.id) /* the event's own page; the host's own card says Manage */, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), chat: chatOf(v, x), kudos: kudosOf(v, "e:" + x.id), comments: commentsOf(v, "e:" + x.id), followed: v.followed.has(x.ws) }; }); }
 
   // ---------- recaps ----------
   function recaps(v, now = Date.now()) { const I = v.I, t = today(now), out = [];
@@ -155,11 +168,11 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       const K = V.kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length), of = K.length, yes = K.filter((k) => (k.tags || []).includes("again") || k.compare === "better").length;
       let ed = null; try { ed = episodeNumber(store, x.id, x.ws); } catch {}
       const stats = [c.came ? `${c.came} went` : "", of >= 3 ? `${Math.round((yes / of) * 100)}% would go again` : "", ed >= 2 ? `${ord(ed)} edition` : ""].filter(Boolean);
-      const pub = V.cardPublic(e) ? [...new Set(K.filter((k) => k.love && k.verified).map((k) => first(k.name)).filter(Boolean))].slice(0, 2) : [];
+      const pub = recapNames(I, x);
       const note = c.quote ? { text: c.quote.text, name: c.quote.name } : P.find((m) => clean(m.caption).length > 3) ? { text: scrub(clean(P.find((m) => clean(m.caption).length > 3).caption, 200)), name: first(P.find((m) => clean(m.caption).length > 3).authorName) } : null;
       const nx = V.nextOf(I, x, t);
       out.push({ kind: "recap", key: "r:" + x.id, id: x.id, host: h, by, title: c.title, date: e.date, where: placeOf(e), note, stats, photos: P.slice(-10).map(V.momentOut), photoCount: P.length,
-        next: nx ? { title: nx.title, date: nx.date, url: nx.url } : null, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), kudos: kudosOf(v, "r:" + x.id, pub), followed: v.followed.has(x.ws),
+        next: nx ? { title: nx.title, date: nx.date, url: nx.url } : null, share: { url: `/e/${encodeURIComponent(x.id)}`, title: c.title }, comment: chatOf(v, x), chat: chatOf(v, x), kudos: kudosOf(v, "r:" + x.id, pub), comments: commentsOf(v, "r:" + x.id), followed: v.followed.has(x.ws),
         _s: (v.followed.has(x.ws) ? 50 : 0) + (by ? 40 : 0) + Math.min(10, P.length) - (now - Date.parse(e.date)) / DAY / 3 }); }
     return out.sort((a, b) => b._s - a._s).slice(0, 8).map(({ _s, ...r }) => r); }
 
@@ -171,14 +184,14 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       const n = L.length, last = L[n - 1]; if (!STEPS.includes(n) || Date.parse(last.e.date) < now - 21 * DAY) continue;
       const noun = nounOf(last.e), id = `h-${hashKey(ws + "|" + n)}`, came = V.card(I, last, { email: v.email }).came || 0;
       out.push({ kind: "milestone", key: "m:" + id, id, type: "host", host: hostLead(v, ws, h), text: `${h.name} hosted their ${ord(n)} ${noun}`, sub: [clean(last.e.pubTitle || last.e.name, 80), placeOf(last.e), came ? `${came} came last time` : ""].filter(Boolean).join(" · "),
-        n, at: Date.parse(last.e.date), kudos: kudosOf(v, "m:" + id), share: { url: `/@${h.handle}`, title: h.name }, followed: v.followed.has(ws) }); }
+        n, at: Date.parse(last.e.date), kudos: kudosOf(v, "m:" + id), comments: commentsOf(v, "m:" + id), share: { url: `/@${h.handle}`, title: h.name }, followed: v.followed.has(ws) }); }
     // friends' streaks: three weeks or more in a row at one host's events, the latest in the last eight days
     for (const f of v.friends) { const A = (I.att.get(f) || []).map((a) => I.events.get(a.eventId)).filter((x) => x && V.cardPublic(x.e) && x.e.date && x.e.date < t); if (A.length < 3) continue;
       const p = X.person(f), nm = first(p.name); if (!nm || v.blocks.has("person:" + keyOf(f))) continue;
       const ws = [...A.reduce((m, x) => m.set(x.ws, (m.get(x.ws) || 0) + 1), new Map())].sort((a, b) => b[1] - a[1])[0][0], at = A.filter((x) => x.ws === ws), h = hostOK(I, ws); if (!h) continue;
       const wk = streakOf(at.map((x) => x.e.date), t, "week"), latest = at.map((x) => x.e.date).sort().at(-1); if (wk < 3 || Date.parse(latest) < now - 8 * DAY) continue;
       const id = `s-${hashKey(f + "|" + ws + "|" + wk)}`, noun = nounOf(at[at.length - 1].e);
-      out.push({ kind: "milestone", key: "m:" + id, id, type: "streak", host: hostLead(v, ws, h), person: { ...face(p, nm), key: keyOf(f) }, text: `${nm} kept a ${wk}-week ${noun} streak`, sub: `with ${h.name}`, n: wk, at: Date.parse(latest), kudos: kudosOf(v, "m:" + id), share: { url: `/@${h.handle}`, title: h.name }, followed: v.followed.has(ws) }); }
+      out.push({ kind: "milestone", key: "m:" + id, id, type: "streak", host: hostLead(v, ws, h), person: { ...face(p, nm), key: keyOf(f) }, text: `${nm} kept a ${wk}-week ${noun} streak`, sub: `with ${h.name}`, n: wk, at: Date.parse(latest), kudos: kudosOf(v, "m:" + id), comments: commentsOf(v, "m:" + id), share: { url: `/@${h.handle}`, title: h.name }, followed: v.followed.has(ws) }); }
     return out.sort((a, b) => (b.followed - a.followed) || b.at - a.at).slice(0, 4).map(({ at, ...m }) => m); }
 
   // ---------- hosts and people to follow ----------
@@ -221,7 +234,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     try { for (const c of fc.clubMemberships(v.email)) { const ws = C.wsOfHandle(c.handle); if (!ws) continue; const h = hostOK(v.I, ws); if (!h || v.blocks.has("host:" + lc(h.handle))) continue;
       for (const p of fc.postsOf(ws, { viewer: v.email }).filter((p) => p.at >= now - 21 * DAY).slice(0, 3))
         out.push({ kind: "club", key: "c:" + ws + ":" + p.id, id: p.id, host: hostLead(v, ws, h), club: { name: c.club, handle: h.handle }, text: p.text, photo: p.photo, at: p.at, report: p.report,
-          kudos: { target: "club." + lc(h.handle) + "|" + p.id, club: true, count: p.hearts, mine: p.hearted, names: [], line: p.hearts ? `${p.hearts} gave kudos` : "" } }); } } catch {}
+          kudos: clubKudos(h.handle, p), comments: commentsOf(v, "club." + lc(h.handle) + "|" + p.id) }); } } catch {}
     return out.sort((a, b) => b.at - a.at).slice(0, 4); }
   /** Members-only events from the clubs the viewer is in (they're off Discover, so cardPublic leaves them out). */
   function memberEvents(v) { const fc = app?.locals?.fanclub; if (!v.email || !fc) return new Set(); const S = new Set();
@@ -240,14 +253,32 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   }
   /** What one device or person did to a shared (cached) stream: their kudos, and the suggestions they dismissed. */
   function decorate(B, { who = "" } = {}) { if (!B || !who) return B; const gone = dismissed(who), w = hashKey(who);
-    return { ...B, items: B.items.map((it) => { let x = it; if (it.kudos) x = { ...x, kudos: { ...it.kudos, mine: !!kudosDoc(it.kudos.target)?.by?.[w] } };
+    return { ...B, items: B.items.map((it) => { let x = it; if (it.kudos) { const mine = !!kudosDoc(it.kudos.target)?.by?.[w]; x = { ...x, kudos: { ...it.kudos, mine, line: kudosLine(it.kudos.count, mine, it.kudos.names) } }; }
       if (it.kind === "follow") x = { ...x, cards: it.cards.filter((c) => !gone.has(c.type === "host" ? "host:" + lc(c.handle) : "person:" + c.key)) }; return x; }).filter((it) => it.kind !== "follow" || it.cards.length >= 2) }; }
-  /** May this viewer give kudos to this card? Upcoming open events, past events they may see with photos, current milestones. */
-  function kudosTarget(target, { email = "" } = {}) { const m = /^([erm]):([A-Za-z0-9_-]{1,80})$/.exec(String(target || "")); if (!m) return false; const I = X.index(), t = today();
-    if (m[1] === "m") { const v = viewerOf({ email, I }); return milestones(v).some((x) => x.id === m[2]); }
-    const x = I.events.get(m[2]); if (!x || !hostOK(I, x.ws)) return false;
-    if (m[1] === "e") return V.cardPublic(x.e) && (x.e.date || "") >= t;
-    return !!x.e.date && x.e.date < t && (V.cardPublic(x.e) || V.wasThere(I, x.id, lc(email))); }
+  /**
+   * The card a target names, when this viewer may see it (else null): { target, kind, ws, owner, title, eventId, chat }.
+   * One gate for kudos and comments, with the same rules the stream uses: upcoming open events and interest checks,
+   * members-only events for members (and their host), past events the viewer may see, current milestones, and fan
+   * club posts for members (and their host). Private, unlisted, friends-only and cancelled events have no card.
+   */
+  function cardOf(target, v, memo = {}) { const tg = String(target || ""), I = v.I, t = today(), fc = app?.locals?.fanclub;
+    const cm = /^club\.([a-z0-9][a-z0-9-]{1,29})\|([A-Za-z0-9_-]{1,40})$/.exec(tg);
+    if (cm) { try { const ws = C.wsOfHandle(cm[1]); if (!fc || !ws || !v.email || !hostOK(I, ws) || v.blocks.has("host:" + cm[1])) return null; const owner = lc(getWorkspace(ws)?.ownerEmail), member = fc.isMember(ws, v.email);
+        if (!member && owner !== v.email && v.ws !== ws) return null; const p = fc.postsOf(ws, { viewer: v.email }).find((p) => p.id === cm[2]); if (!p) return null;
+        return { target: tg, kind: "club", ws, owner, title: clean(p.text, 60) || "your club post", handle: cm[1], post: p, member }; } catch { return null; } }
+    const m = /^([erm]):([A-Za-z0-9_-]{1,80})$/.exec(tg); if (!m) return null;
+    if (m[1] === "m") { const ms = (memo.ms || (memo.ms = milestones(v))).find((x) => x.id === m[2]); if (!ms) return null; const ws = C.wsOfHandle(ms.host.handle); return { target: tg, kind: "milestone", ws, owner: lc(getWorkspace(ws)?.ownerEmail), title: ms.text }; }
+    const x = I.events.get(m[2]), h = x && hostOK(I, x.ws); if (!h || v.blocks.has("host:" + lc(h.handle)) || v.blocks.has("event:" + x.id)) return null;
+    const e = x.e, mine = !!v.email && lc(x.owner) === v.email, card = { target: tg, ws: x.ws, owner: lc(x.owner), title: clean(e.pubTitle || e.name, 80) || "an event", eventId: x.id, chat: chatOf(v, x) };
+    if (m[1] === "e") { if ((e.date || "") < t) return null; const M = memo.M || (memo.M = memberEvents(v));
+      let hostOfMembers = false; try { hostOfMembers = mine && !!fc && fc.visibility(x.ws, x.id) === "members" && !e.cancelled && !e.private && !e.example; } catch {}
+      return (V.cardPublic(e) && (mine || !earlyFor(v, x))) || M.has(x.id) || hostOfMembers ? { ...card, kind: "event" } : null; }
+    return e.date && e.date < t && !e.example && (V.cardPublic(e) || (!e.cancelled && V.wasThere(I, x.id, v.email))) ? { ...card, kind: "recap" } : null; }
+  /** The kudos on a card as this viewer sees them now: the count, whether theirs is in, and the line of names. */
+  function kudosFor(v, card) { if (card.kind === "club") { let p = card.post; try { p = app.locals.fanclub.postsOf(card.ws, { viewer: v.email }).find((q) => q.id === card.post.id) || p; } catch {} return clubKudos(card.handle, p); }
+    return kudosOf(v, card.target, card.kind === "recap" ? recapNames(v.I, v.I.events.get(card.eventId)) : []); }
+  /** May this viewer give kudos to this card? (kept for callers that only need yes or no) */
+  function kudosTarget(target, { email = "", ws = "" } = {}) { return !!cardOf(target, viewerOf({ email, ws })); }
   /** What the "+" sheet offers this person (public/composer.js): the tiles that fit what they can do. */
   function composeOptions({ email = "", ws = "", now = Date.now() } = {}) { email = lc(email); if (!email) return { signedIn: false, tiles: [] };
     const I = X.index(), t = today(now), p = X.person(email), prof = ws && ws !== DEFAULT_WS ? C.profileOf(ws) : null, host = !!prof?.handle && [...I.events.values()].some((x) => x.ws === ws && !x.e.example); // a host: has a page and has made something
@@ -257,7 +288,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     past.sort((a, b) => b.date.localeCompare(a.date));
     const tiles = ["event", ...(host ? ["drop"] : []), ...(past.length ? ["photos"] : []), ...(club ? ["club"] : [])];
     return { signedIn: true, name: first(p.name) || first(prof?.name) || "", face: { name: first(p.name), emoji: p.emoji || "", color: p.color || "", handle: p.handle || "" }, host, club, past: past.slice(0, 6), tiles }; }
-  return { composeOptions, blend, decorate, arrange, follows, peopleFor, viewerOf, milestones, recaps, events, giveKudos, kudosDoc, dismiss, dismissed, kudosTarget };
+  return { composeOptions, blend, decorate, arrange, follows, peopleFor, viewerOf, milestones, recaps, events, giveKudos, kudosDoc, dismiss, dismissed, kudosTarget, cardOf, kudosFor, kudosLine, comments: CS };
 }
 
 export function mountFeedBlend(app, { store, small, currentUser, C, X, V }) {
@@ -269,12 +300,16 @@ export function mountFeedBlend(app, { store, small, currentUser, C, X, V }) {
   const hits = new Map(); const over = (k, n) => { const now = Date.now(); let h = hits.get(k); if (!h || now - h.start > 3600e3) { h = { n: 0, start: now }; hits.set(k, h); } if (hits.size > 50000) hits.clear(); return ++h.n > n; };
   const perIp = () => Math.max(1, +process.env.ENCORE_FEED_KUDOS_PER_IP_HOUR || 120), perWho = () => Math.max(1, +process.env.ENCORE_FEED_KUDOS_PER_HOUR || 60);
   const whoOf = (req, res) => { const u = viewer(req); if (!u) { bad(res, "Sign in to give kudos.", 401, "unauthenticated"); return null; } return { u, who: "u:" + lc(u.email) }; };
-  // one tap of appreciation (toggled): on an event, a recap or a milestone
+  // one tap of appreciation (toggled): on an event or interest check, a recap, a milestone or a fan club post.
+  // The answer is the card's kudos as the feed would draw them now: count, mine, names and the line.
   app.post("/api/feed/kudos", small, (req, res) => { res.set("Cache-Control", "private, no-store");
     if (over("ip|k|" + (req.ip || "?"), perIp())) return bad(res, "Slow down.", 429, "rate_limited");
     const W = whoOf(req, res); if (!W) return; if (over("who|k|" + W.who, perWho())) return bad(res, "That's a lot of kudos for one hour.", 429, "rate_limited");
-    const target = String(req.body?.target || "").slice(0, 90); if (!B.kudosTarget(target, { email: W.u ? W.u.email : "" })) return bad(res, "No such post.", 404, "not_found");
-    res.json({ ok: true, target, ...B.giveKudos(target, W.who, W.u ? W.u.email : "") }); });
+    const target = String(req.body?.target || "").slice(0, 120), v = B.viewerOf({ email: W.u.email, ws: W.u.ws }), card = B.cardOf(target, v); if (!card) return bad(res, "No such post.", 404, "not_found");
+    // a fan club post keeps its own heart (server/fanclub.js); everything else is a tap on the card's kudos doc
+    if (card.kind === "club") { if (!card.member) return bad(res, "That post is for members.", 403, "not_member"); if (!app.locals.fanclub.heart(card.ws, card.post.id, W.u.email, !card.post.hearted)) return bad(res, "No such post.", 404, "not_found"); }
+    else B.giveKudos(target, W.who, W.u.email);
+    res.json({ ok: true, ...B.kudosFor(v, card) }); });
   // the "+" sheet (public/composer.js): which tiles to show
   app.get("/api/me/compose", (req, res) => { res.set("Cache-Control", "private, no-store"); const u = viewer(req); if (!u) return res.json({ signedIn: false, tiles: [] }); res.json(B.composeOptions({ email: u.email, ws: u.ws })); });
   // "not for me" on a follow suggestion: gone for this person or device

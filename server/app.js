@@ -44,6 +44,7 @@ import { mountLeaderboard } from "./leaderboard.js";
 import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, small moves, warmth, Circles, Potto's nudges, /start, /path (server/hostloop.js)
 import { mountExperiments } from "./experiments.js"; // deterministic A/B tests and /admin/experiments (server/experiments.js)
 import { mountFeedVisual } from "./feedvisual.js"; // visual feed: stories, media-first cards, the public feed, moment controls
+import { mountFeedComments } from "./feedcomments.js"; // comments under feed cards: list, add, delete, fresh counts
 import { mountKudosAsk } from "./kudosask.js";
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
@@ -765,6 +766,7 @@ export function createApp({ store, dataDir }) {
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
+  mountFeedComments(app, { small, currentUser, X }); // ---- comments on feed cards (server/feedcomments.js), next to the feed blend it reads ----
   mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X }); mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)

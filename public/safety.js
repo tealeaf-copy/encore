@@ -34,7 +34,7 @@
     bg.addEventListener("click", (e) => { if (e.target === bg) close(); }); document.addEventListener("keydown", key); document.body.appendChild(bg); setTimeout(() => bg.querySelector("button,input")?.focus(), 30); return { el: bg.firstChild, close }; }
   async function post(url, body, method = "POST") { const r = await fetch(url, { method, credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't work. Try again."); return j; }
   function toast(t) { const n = document.createElement("div"); n.setAttribute("role", "status"); n.style.cssText = "position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pl-ink);color:#fff;padding:10px 16px;border-radius:999px;font:600 14px/1.3 'IBM Plex Sans',system-ui,sans-serif;z-index:10001;max-width:calc(100vw - 32px)"; n.textContent = t; document.body.appendChild(n); setTimeout(() => n.remove(), 3200); }
-  const what = (t) => ({ post: "post", moment: "photo", kudos: "kudos", review: "review", person: "person", host: "page", event: "event" })[t] || "this";
+  const what = (t) => ({ post: "post", moment: "photo", kudos: "kudos", review: "review", person: "person", host: "page", event: "event", comment: "comment" })[t] || "this";
 
   /** o: { type, target, text, key, handle, name } */
   function open(o) {

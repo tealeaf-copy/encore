@@ -200,13 +200,30 @@
   const sketch = (f) => `<span class="fv-av" style="--c:${esc(okColor(f.color) || "#E26D8E")};width:24px;height:24px" aria-hidden="true">${window.EncoreAvatars && f.art ? window.EncoreAvatars.svg(f.art, f.color || "#E26D8E", 24) : ""}</span>`;
   const stack = (faces = [], sketches = []) => (faces.length || sketches.length ? `<span class="fb-stack" aria-hidden="true">${faces.slice(0, 3).map((f) => initial(f, 24)).join("")}${sketches.slice(0, 3 - Math.min(3, faces.length)).map(sketch).join("")}</span>` : "");
   const initial = (f, size) => `<span class="fv-av fb-ini" style="--c:${esc(okColor(f.color) || "#D9CCBB")};width:${size}px;height:${size}px" aria-hidden="true">${esc(String(f.name || "?").slice(0, 1).toUpperCase())}</span>`;
-  const kudosLine = (k) => `<p class="fb-count" data-fb-count="${esc(k?.target || "")}"${k?.count ? "" : " hidden"}>${stack((k?.names || []).map((n) => ({ name: n })))}<span>${esc(k?.line || "")}</span></p>`;
-  // the quiet row under a post: kudos, comment (the event's group chat, when you were in it), share
+  // kudos and comments: what each card shows now. The item itself is kept up to date, so a redraw keeps a tap, and
+  // the count sits on the button ("Kudos · 3") with the line of names above the row.
+  const SOC = new Map(); let SI = false;
+  const nNum = (n) => (n > 0 ? (n > 999 ? "999+" : String(n)) : "");
+  // the same words the server writes (server/feedblend.js kudosLine), for the moment between a tap and its answer
+  const kLine = (count, mine, names = []) => { if (!count) return ""; const others = count - (mine ? 1 : 0);
+    if (mine) return !others ? "You gave kudos" : others === 1 && names.length === 1 ? `You and ${names[0]} gave kudos` : `You and ${others} more gave kudos`;
+    return !names.length ? `${count} ${count === 1 ? "person" : "people"} gave kudos` : count === 1 ? `${names[0]} gave kudos` : count === 2 && names.length >= 2 ? `${names[0]} and ${names[1]} gave kudos` : `${names[0]} and ${count - 1} more gave kudos`; };
+  const kudosIn = (k) => `${stack((k?.names || []).map((n) => ({ name: n })))}<span>${esc(k?.line ?? kLine(k?.count || 0, !!k?.mine, k?.names || []))}</span>`;
+  const kudosLine = (k) => `<p class="fb-count" data-fb-count="${esc(k?.target || "")}"${k?.count ? "" : " hidden"}>${kudosIn(k)}</p>`;
+  const kudosBtn = (k, cls = "fb-act", label = "Kudos") => `<button type="button" class="${cls}" data-fb-kudos="${esc(k.target)}" aria-pressed="${!!k.mine}">${ICON.kudos}<span>${esc(label)}</span><i class="fb-n" data-fb-kn>${nNum(k.count)}</i></button>`;
+  // Comment opens the thread in a sheet (public/feedcomments.js); signed out it goes to sign in
+  const commentBtn = (it) => { const t = it.kudos?.target; if (!t) return ""; const inner = `${ICON.comment}<span>Comment</span><i class="fb-n" data-fb-cn="${esc(t)}">${nNum(it.comments?.count)}</i>`;
+    return SI ? `<button type="button" class="fb-act" data-fb-comment="${esc(t)}" data-focus="1">${inner}</button>` : `<a class="fb-act" href="/login?next=${encodeURIComponent(location.pathname)}">${inner}</a>`; };
+  // the latest one or two comments, quiet, under the card: "Maya  See you there", then "View all 5 comments"
+  const cmIn = (t, c = {}) => { const L = c.last || [], n = c.count || 0;
+    return L.map((x) => `<p class="fb-cm-l"><b>${esc(x.mine ? "You" : x.name || "Someone")}</b> ${esc(x.text)}</p>`).join("") + (n > L.length ? `<button type="button" class="fb-cm-all" data-fb-comment="${esc(t)}">View all ${n} comments</button>` : ""); };
+  const cmPreview = (it) => { const t = it.kudos?.target; return t ? `<div class="fb-cm" data-fb-cm="${esc(t)}"${it.comments?.count ? "" : " hidden"}>${cmIn(t, it.comments)}</div>` : ""; };
+  // the quiet row under a post: kudos, comment, share, then the comment preview
   function actRow(it, { kudosLabel = "Kudos" } = {}) { const k = it.kudos || {};
     return `${kudosLine(k)}<div class="fb-acts" role="group" aria-label="Actions">
-      ${k.target ? `<button type="button" class="fb-act" data-fb-kudos="${esc(k.target)}" aria-pressed="${!!k.mine}">${ICON.kudos}<span>${esc(kudosLabel)}</span></button>` : ""}
-      ${it.comment ? `<a class="fb-act" href="${esc(it.comment)}">${ICON.comment}<span>Comment</span></a>` : ""}
-      ${it.share ? `<button type="button" class="fb-act" data-fb-share="${esc(it.share.url)}" data-title="${esc(it.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>`; }
+      ${k.target ? kudosBtn(k, "fb-act", kudosLabel) : ""}
+      ${commentBtn(it)}
+      ${it.share ? `<button type="button" class="fb-act" data-fb-share="${esc(it.share.url)}" data-title="${esc(it.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>${cmPreview(it)}`; }
   const meta = (L) => `<p class="fb-meta">${esc(L.filter(Boolean).join(" · "))}</p>`;
   function evCard(e, i) { const st = e.spotsLeft != null && e.spotsLeft <= 5 ? (e.spotsLeft ? `${e.spotsLeft} spot${e.spotsLeft === 1 ? "" : "s"} left` : "Full") : "";
     const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="800" height="500" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` : art({ ...e, hood: e.where }, { title: "" });
@@ -231,7 +248,7 @@
   function milestoneCard(m) { const k = m.kudos || {};
     return `<article class="fb-card fb-ms" data-kind="milestone">${lead(m.host, m.type === "streak" ? "Streak" : "Milestone", m.person ? { type: "person", target: "person:" + m.person.key, key: m.person.key, name: m.person.name } : { type: "host", target: "host:" + m.host.handle, handle: m.host.handle, name: m.host.name })}
       <div class="fb-ms-b"><span class="fb-ms-n" aria-hidden="true">${esc(m.type === "streak" ? m.n + "w" : ord(m.n))}</span><div><h3 class="fb-ms-t">${esc(m.text)}</h3>${m.sub ? `<p class="fb-line">${esc(m.sub)}</p>` : ""}</div></div>
-      ${kudosLine(k)}<div class="fb-acts"><button type="button" class="fb-send" data-fb-kudos="${esc(k.target)}" aria-pressed="${!!k.mine}">${ICON.kudos}<span>${k.mine ? "Kudos sent" : "Send kudos"}</span></button>${m.share ? `<button type="button" class="fb-act" data-fb-share="${esc(m.share.url)}" data-title="${esc(m.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div></article>`; }
+      ${kudosLine(k)}<div class="fb-acts">${k.target ? kudosBtn(k, "fb-send", k.mine ? "Kudos sent" : "Send kudos") : ""}${commentBtn(m)}${m.share ? `<button type="button" class="fb-act" data-fb-share="${esc(m.share.url)}" data-title="${esc(m.share.title || "")}">${ICON.share}<span>Share</span></button>` : ""}</div>${cmPreview(m)}</article>`; }
   const ord = (n) => { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
   function followRow(f, signedIn) { let gone = []; try { gone = signedIn ? [] : JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); } catch {}
     f = { ...f, cards: (f.cards || []).filter((c) => !gone.includes(c.type === "host" ? "host:" + c.handle : "person:" + c.key)) }; if (f.cards.length < 2) return "";
@@ -249,20 +266,44 @@
   const rowCard = (r) => `<section class="fb-card fb-rowc" data-kind="row"><header class="fb-sec"><h2>${esc(r.title || "More coming up")}</h2><a href="/discover">Discover</a></header>${row(r.items.map((e) => mini({ ...e, hood: e.where })).join(""), r.title || "More coming up")}</section>`;
   const RENDER = { event: evCard, recap: recapCard, milestone: milestoneCard, ideas: ideasCard, club: clubCard, row: rowCard };
   /** The stream, in the server's order. postRender draws a friend's post (public/feed.html). */
-  function blendHtml(B, { postRender = null, signedIn: si = false } = {}) { let n = 0;
+  function blendHtml(B, { postRender = null, signedIn: si = false } = {}) { let n = 0; SI = !!si; SOC.clear(); for (const it of B.items || []) if (it?.kudos?.target) SOC.set(it.kudos.target, it);
     const parts = (B.items || []).map((it) => { try { if (it.kind === "post") return postRender ? postRender(it) : ""; if (it.kind === "follow") return followRow(it, si); const f = RENDER[it.kind] || RENDER[it.type]; return f ? f(it, it.kind === "event" ? n++ : 0) : ""; } catch { return ""; } }).filter(Boolean);
     return `<div class="fb-stream">${parts.join("")}</div>`; }
   // what the stream's buttons do: kudos (toggled), share, follow, add a friend, dismiss, open the ideas deck
   const say = (b, t) => { const s = b.querySelector("span"); if (s) s.textContent = t; else b.textContent = t; };
+  const note = (t) => { if (window.PLToast) return window.PLToast(t); const n = document.createElement("div"); n.setAttribute("role", "status"); n.className = "fb-toast"; n.textContent = t; document.body.appendChild(n); setTimeout(() => n.remove(), 3200); };
+  /** Put a card's kudos on screen (and on its item): the pressed state, the number on the button, the line of names. */
+  function setKudos(t, k) { const it = SOC.get(t); if (it) it.kudos = { ...it.kudos, ...k };
+    $$(`[data-fb-kudos="${CSS.escape(t)}"]`).forEach((b) => { b.setAttribute("aria-pressed", String(!!k.mine)); const n = b.querySelector("[data-fb-kn]"); if (n) n.textContent = nNum(k.count); if (b.classList.contains("fb-send")) say(b, k.mine ? "Kudos sent" : "Send kudos"); });
+    $$(`[data-fb-count="${CSS.escape(t)}"]`).forEach((line) => { line.hidden = !k.count; line.innerHTML = kudosIn(k); }); }
+  /** Put a card's comments on screen (and on its item): the number on the button and the preview under the card. */
+  function setComments(t, c) { const it = SOC.get(t); if (it) it.comments = c;
+    $$(`[data-fb-cn="${CSS.escape(t)}"]`).forEach((n) => (n.textContent = nNum(c.count))); $$(`[data-fb-cm="${CSS.escape(t)}"]`).forEach((el) => { el.hidden = !c.count; el.innerHTML = cmIn(t, c); }); }
+  // fresh counts for the cards on screen: the feed answer can be a minute old signed out, or a saved copy on a slow connection
+  let socT = 0; const tapped = new Map();
+  function socialSoon(ms = 500) { clearTimeout(socT); socT = setTimeout(async () => { const T = [...new Set($$("[data-fb-kudos]").map((b) => b.dataset.fbKudos))].slice(0, 40), t0 = Date.now(); if (!T.length) return;
+    try { const r = await fetch("/api/feed/social?targets=" + encodeURIComponent(T.join(",")), { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json();
+      for (const [t, x] of Object.entries(j.items || {})) { if ($(`[data-fb-kudos="${CSS.escape(t)}"][data-busy]`) || (tapped.get(t) || 0) >= t0) continue; /* a tap since we asked wins */ if (x.kudos) setKudos(t, x.kudos); if (x.comments) setComments(t, x.comments); } } catch {} }, ms); }
+  function openComments(t, { focus = false, opener = null } = {}) { need("/feedcomments.js", () => window.PLComments?.open({ target: t, signedIn: SI, focus, opener, onChange: (c) => setComments(t, c), onClose: () => socialSoon(0) })); }
+  // Comment and "View all N comments" open the sheet (one listener: the preview is redrawn as comments change)
+  document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-fb-comment]"); if (!b) return; e.preventDefault(); openComments(b.dataset.fbComment, { focus: !!b.dataset.focus, opener: b }); });
+  let linked = false; // a link from the inbox ("Maya commented on Sunday Supper") opens that thread: /feed?comments=<target>
   function wireBlend(root) {
-    $$("[data-fb-kudos]", root).forEach((b) => (b.onclick = async () => { const on = b.getAttribute("aria-pressed") !== "true", t = b.dataset.fbKudos; b.setAttribute("aria-pressed", String(on)); if (b.classList.contains("fb-send")) say(b, on ? "Kudos sent" : "Send kudos"); if (on && !RM()) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
-      try { const club = /^club\.[a-z0-9-]+\|/.test(t), [ca, cid] = t.split("|");
-        const r = await fetch(club ? `/api/me/posts/${encodeURIComponent(ca)}/${encodeURIComponent(cid)}/cheer` : "/api/feed/kudos", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t }) }), j0 = await r.json().catch(() => ({}));
+    if (!linked) { linked = true; try { const q = new URLSearchParams(location.search), t = q.get("comments"); if (t) { q.delete("comments"); history.replaceState(history.state, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); openComments(t); } } catch {} }
+    // kudos: the count moves at once, then takes the server's answer (count, names, line); a failed tap goes back and says why
+    $$("[data-fb-kudos]", root).forEach((b) => (b.onclick = async () => { const t = b.dataset.fbKudos; if (b.dataset.busy) return;
+      if (!SI) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
+      tapped.set(t, Date.now());
+      const was = { names: [], ...(SOC.get(t)?.kudos || { target: t, count: +(b.querySelector("[data-fb-kn]")?.textContent || 0) || 0, mine: b.getAttribute("aria-pressed") === "true" }) }, on = !was.mine, count = Math.max(0, (was.count || 0) + (on ? 1 : -1));
+      setKudos(t, { ...was, mine: on, count, line: kLine(count, on, was.names) }); if (on && !RM()) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
+      $$(`[data-fb-kudos="${CSS.escape(t)}"]`).forEach((x) => (x.dataset.busy = 1));
+      try { const r = await fetch("/api/feed/kudos", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t }) }), j = await r.json().catch(() => ({}));
         if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
-        if (!r.ok) throw new Error(j0.message || ""); const j = club ? { mine: !!j0.cheered, count: j0.hearts || 0 } : j0;
-        const line = $(`[data-fb-count="${CSS.escape(t)}"]`, root); if (line) { const sp = line.querySelector("span:last-child"); line.hidden = !j.count; if (sp) sp.textContent = j.count ? (j.mine && j.count === 1 ? "You gave kudos" : j.mine ? `You and ${j.count - 1} more gave kudos` : `${j.count} gave kudos`) : ""; }
-        b.setAttribute("aria-pressed", String(!!j.mine)); if (b.classList.contains("fb-send")) say(b, j.mine ? "Kudos sent" : "Send kudos"); }
-      catch (e) { b.setAttribute("aria-pressed", String(!on)); if (b.classList.contains("fb-send")) say(b, !on ? "Kudos sent" : "Send kudos"); } }));
+        if (!r.ok || typeof j.count !== "number") throw new Error(j.message || "");
+        setKudos(t, { target: t, count: j.count, mine: !!j.mine, names: j.names || [], line: j.line }); }
+      catch (e) { setKudos(t, was); note(e?.message || "Kudos didn't go through. Try again."); }
+      finally { $$(`[data-fb-kudos="${CSS.escape(t)}"]`).forEach((x) => delete x.dataset.busy); } }));
+    socialSoon();
     $$("[data-fb-share]", root).forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.fbShare, title = b.dataset.title || "Pottery Lab";
       if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
       try { await navigator.clipboard.writeText(url); say(b, "Link copied"); setTimeout(() => say(b, "Share"), 2200); } catch { prompt("Copy this link", url); } }));
@@ -546,6 +587,11 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-act{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 12px;border-radius:999px;border:0;background:none;color:var(--fb-soft);font:500 14px var(--pl-font-text,"IBM Plex Sans",system-ui);text-decoration:none;cursor:pointer}.fb-act svg{width:20px;height:20px;flex:none}
 .fb-act:hover{color:var(--fb-ink);background:var(--fb-linen)}.fb-act[aria-pressed=true]{color:var(--fb-acc-text)}.fb-act[aria-pressed=true] svg{fill:color-mix(in srgb,var(--fb-acc) 18%,transparent)}
 .fb-act.pop svg,.fb-send.pop svg{animation:fv-pop .5s var(--fv-ease)}
+.fb-n{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums;color:inherit}.fb-n:empty{display:none}.fb-n::before{content:"·";margin-right:6px;font-weight:400;opacity:.7}
+.fb-cm{margin:6px 0 0;padding:10px 0 0;border-top:1px solid var(--fb-line)}.fb-cm[hidden]{display:none}
+.fb-cm-l{margin:0 0 4px;font-size:14px;line-height:1.45;color:var(--fb-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.fb-cm-l b{font-weight:600;margin-right:4px}
+.fb-cm-all{display:inline-flex;align-items:center;min-height:44px;margin:-6px 0 -12px;padding:0;border:0;background:none;color:var(--fb-soft);font:500 14px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-cm-all:hover{color:var(--fb-ink);text-decoration:underline;text-underline-offset:3px}
+.fb-toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9500;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui)}
 .fb-note{position:relative;margin:0 0 12px;padding:0 40px 0 14px;border-left:2px solid var(--fb-line2)}.fb-note p{margin:0;font-size:16px;line-height:1.5;color:var(--fb-ink)}.fb-note cite{display:block;margin-top:4px;font-style:normal;font-size:13px;color:var(--fb-soft)}
 .fb-stats{display:flex;flex-wrap:wrap;gap:4px 0;margin:0 0 14px;font:500 13px/1.4 var(--sys-mono,ui-monospace,monospace);color:var(--fb-ink);font-variant-numeric:tabular-nums}.fb-stats span+span::before{content:"·";margin:0 8px;color:var(--fb-soft)}
 .fb-photos{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:0 16px;scroll-padding:0 16px}.fb-photos::-webkit-scrollbar{display:none}

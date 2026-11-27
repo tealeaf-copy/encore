@@ -99,7 +99,7 @@ export function makeFeedVisual(store, { C, X }) {
   // writes that change what the feed shows: a host page (system/ws-), an event, reply, photo, kudos, badge or reaction
   let wsGen = 0, feedGen = 0;
   store.events?.on?.("change", (e) => { const p = String(e?.path || ""); if (p.startsWith("system/ws-")) wsGen++;
-    if (/^system\/(ws|reacts|handle)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
+    if (/^system\/(ws|reacts|handle|feedkudos|feedcom|modhide)-/.test(p) || /(^|\/)(events|rsvps|moments|kudos|vibes)\/[^/]+$/.test(p)) feedGen++; });
   function G(I) { let g = groups.get(I); if (g && g.gen !== wsGen) { g.gen = wsGen; g.host = new Map(); g.sample = new Map(); } if (g) return g;
     g = { gen: wsGen, mom: new Map(), momWs: new Map(), kud: new Map(), came: new Map(), host: new Map(), sample: new Map(), when: new Map() };
     const push = (M, k, v) => { let L = M.get(k); if (!L) M.set(k, (L = [])); L.push(v); };

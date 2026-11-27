@@ -205,7 +205,8 @@ test("in a browser, signed out: Help on an invite, /g, /chats and /teams loads h
     for (const [p, sel, want] of [["/e/supinv1", "footer [data-help]:visible", "Reply to an invite"], ["/teams", "[data-help]:visible", "Book a host"], ["/g#rsvp-supinv1", "", "Reply to an invite"], ["/chats", "", "Reply to an invite"]]) {
       await page.goto(p); await page.waitForLoadState("load"); await page.waitForFunction(() => window.PLHelp && window.PLReport, null, { timeout: 10e3 });
       assert.equal(await helpLoaded(), false, `${p}: help.js isn't loaded before the tap`);
-      if (sel) await page.locator(sel).first().click(); else await page.evaluate(() => window.PLHelp.open());
+      // a footer link comes once the page has drawn
+      if (sel) { const l = page.locator(sel).first(); await l.waitFor({ timeout: 20e3 }); await l.click(); } else await page.evaluate(() => window.PLHelp.open());
       await page.waitForFunction(() => { const p = document.getElementById("encoreHelp")?.shadowRoot?.querySelector(".eh-panel"); return p && !p.hidden; }, null, { timeout: 10e3 });
       assert.equal(await isOpen(), true, `${p}: the sheet is open`); assert.ok((await chips()).includes(want), `${p}: ${want} (${(await chips()).join(", ")})`);
       const foot = await page.evaluate(() => { const r = document.getElementById("encoreHelp").shadowRoot; return { human: !!r.querySelector(".eh-human")?.getClientRects().length, promise: r.querySelector(".eh-promise")?.textContent, urgent: !!r.querySelector(".eh-urgent") }; });

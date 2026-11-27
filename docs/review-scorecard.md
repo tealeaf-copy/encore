@@ -208,3 +208,53 @@ Screens: `event-kinds/` in the session scratchpad, at 390px (1280px for the summ
 - The meter can't see a restaurant's own system: "Updated" is the host saying they called.
 - Session capacity is first come, first saved; there's no waitlist per session yet.
 - Sponsor logos are links the brand gives the host; there's no upload in the sponsors editor.
+
+## Round 17 (nine reviewers, one honest loop)
+
+Screens: `round17/before` and `round17/after` in the session scratchpad, plus `round17/walk` for each step of each journey. Driven in a real browser at 390px and 1280px on a seeded world: the demo hosts (run crew, supper club and pandan cake, apartment café, flower studio, bánh mì cart), the Fernwood Labs brand world (9 bookable hosts, 8 bookings, 3 campaigns, 120 guests), and a new casual host made by walking /start to sign-up to a link. Every page was also run through an audit script: console errors, failed requests, sideways scroll, tap targets under 44px at 390, the serif under 24px, text under 12px, dark patches, layout shift and its sources.
+
+Compared against: Partiful (the invite, the reply and the group feel), Luma (a clean event page and calendar), Eventbrite (tickets and organiser tools). None of them keeps the home address back until you're in while still naming the neighbourhood, takes a cake order with a pickup slot on the same link, or shows a brand what money is at risk by date.
+
+| Reviewer | Use | Joy | Ease | Intu | Pick | What moved (before → after) |
+|---|---|---|---|---|---|---|
+| Casual event attendee | 7 → 9 | 8 → 8 | 8 → 9 | 8 → 9 | 7 → 8 | Before: a dinner at "My place, Greenpoint" showed no place at all, not even "address when you're in", and the host's line for guests never appeared. Now the invite says Greenpoint, that the address comes once you're in, and the host's line. Reply (a double tap makes one reply), calendar, the address after the yes, Invite friends, Plans signed out, and offline ("Didn't send. Check your connection") all hold. |
+| Casual event host | 6 → 9 | 8 → 9 | 6 → 9 | 7 → 8 | 6 → 8 | Before: /start promised "Everything you typed comes with you", then sign-up dropped the host on the feed with no link. Now it lands on "Your first one is out in the world" with the link (8 seconds scripted, well under 3 minutes by hand). The event sits right under the composer on Home, not three screens down. Back closes the editor. |
+| Experience host | 8 → 9 | 8 → 8 | 8 → 8 | 7 → 8 | 8 → 8 | A drop took four orders end to end (stock, pickup slot, order number, the address after ordering). Fixed: the address is still there when the buyer comes back, no "I'm in" bar after an order, the Home card reads "Open for orders · 4 orders" with no "No date yet" nags. A brand request arrives as "Needs you" with the brief, Accept, Suggest a change, Decline. |
+| Field marketer | 9 → 9 | 9 → 9 | 9 → 9 | 8 → 9 | 9 → 9 | Quick book to a sent request in three taps (a double tap makes one request). When the host cancels: "Your host cancelled", refund or credit, a note to guests. Fixed: a cancelled booking no longer says "$1,080 still due" and "the date is open"; the signed-out page has a way on when a city has no hosts. |
+| Brand | 9 → 9 | 9 → 9 | 9 → 9 | 8 → 9 | 9 → 9 | Home, campaigns, the report, insights and company settings hold from rounds 1 to 3 of the brand loop. The signed-out /teams page now matches them (notebook surfaces, 6px corners, no emoji). |
+| Engineer | 7 → 8 | 7 → 8 | 8 → 9 | 8 → 9 | 7 → 8 | Fixed: Back with the editor open left the editor floating over Home; a 404 on every editor open; Home jumped 350px when "Needs you" arrived (CLS 0.40 → 0.03) and 180px when the Discover nudge arrived (0.28 → 0.02); the full invite slid right on wide screens (0.19 → 0.01). Still 8: see below. |
+| Product designer | 7 → 8 | 8 → 8 | 8 → 9 | 8 → 9 | 7 → 8 | Fixed: 20px serif section heads on host pages, Discover cards and the map; 10 and 11px text on the map; three column widths on desktop Home; emoji and white cards on /teams; "Bo's is hosting". Still 8: see below. |
+| UX/UI designer | 7 → 8 | 8 → 8 | 7 → 8 | 8 → 9 | 7 → 8 | Fixed: about 40 controls under 44px at 390 (invite tools and tick rows, host bar, Plans, Inbox, Saved, People, /start, About, the map, the editor, report links). Still 8: see below. |
+| Product manager | 7 → 9 | 8 → 8 | 7 → 9 | 7 → 8 | 7 → 8 | The two dead ends are gone (sign-up from /start, a city with no hosts on /teams), each surface walked has one next step, and nothing walked promises what it doesn't do. Still 8: Home carries three nudge cards under the events. |
+
+### Fixed in round 17
+
+- **/start to a link** (public/start.html, server/signin.js): the sign-up link passes a real path, and a new account that was headed somewhere lands there, not on the welcome screen. Tested in test/signin.test.js.
+- **The invite says where** (server/app.js `publicEvent`, public/invite.html): a home is still never shown, but "My place, Greenpoint" keeps Greenpoint as the area, and an invite with a hidden address always says "Address when you're in". "A line for guests" from /start is saved as the public line (`why`). invite.html is 38,332 characters.
+- **Back closes the editor** (public/canvas.js): the editor is a history step. Back closes it, asks first when there are unsaved changes, and closes that sheet on the next Back.
+- **Home** (index.html): what you're hosting sits under the composer, with "Needs you" and the Discover nudge above it, all in the zone that waits and fades in together, so nothing jumps. One centred column on wide screens. A drop's card reads "Open for orders" with its order count, and an always-open drop gets no date, time or meeting-point to-dos.
+- **Drops** (public/replybar.js, public/invite-order.js): the reply bar goes away once an order is in; the pickup address is asked for again with the order's own code when the buyer returns.
+- **The full invite** (/g): room for the side menu from the first paint on wide screens, a top heading for screen readers, 44px tools and tick rows, "Bo is hosting".
+- **Type and targets**: host page section heads sit at 24px so a host's kit can set them in the serif; Discover and map card titles use the text face; nothing under 12px on the map; 44px across the surfaces listed above.
+- **Words**: the follow button no longer says "unlock".
+- **Brands**: /teams signed out on the brand kit; a cancelled or declined booking drops the stale money panel.
+
+### Still under 9, and why
+
+Code can fix these; this round ran out of room:
+
+- **Engineer**: a host page with badges and a track record still shifts on a wide screen while they arrive (CLS about 0.3 at 1280 on /@long-table, 0 at 390); /teams/discover signed out shifts once at 100ms at 1280 (0.35) when its header lands; the app and /start have more than one h1.
+- **Designers**: the event editor's Save is an ink pill and its dock a pill, where the kit says 6px ink-blue buttons; Home and the host event view still use 16 to 24px card corners; the menu card on a supper club invite is plum with coloured dots; a host page with no cover prints the host's name on the banner and again under it; the feed's Follow (40px) and dismiss (36px) buttons live in public/feedvisual.js, which another change owns right now; settings switches are 48 by 28; brand Insights chips are 32px; the contact tick boxes are 20px.
+- **Product manager and hosts**: Home still shows three nudge cards (next step, monthly, Potto's list) and "warmth" needs a plain word; the idea chips under the composer lead with hack nights for a dinner host; a drop's "Open the full invite" leads to an event-style page.
+- **Sign in** (left alone as asked): the sign-in page has 8 h1 elements, most hidden.
+
+Needs something code can't give:
+
+- **Delight for a guest** ("I'd pick this over Partiful"): a cold guest sees one host and no faces. It needs real hosts, photos and friends on the platform; comments and kudos on the feed are being built now.
+- **Paid seats**: money moves through the host's own pay link. A real checkout needs a payments account and an owner decision.
+- **The app**: push, haptics and Add to Home Screen were not tested; they need the native build.
+- **An owner decision**: with the Standard policy the money at risk reads $165, then $660 on day 7, then $330, because the balance is due that day and half comes back. It is exact, and it reads oddly.
+
+### Not walked this round
+
+Rewards and the fan club beyond its first card, the after-event flow (kudos, photos, recap), campaigns and insights beyond loading them and reading them, check-in, and anything behind sign-in with Apple, Google or a passkey. Their scores above lean on earlier rounds.

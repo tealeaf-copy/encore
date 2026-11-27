@@ -124,6 +124,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
     try { const r = await fetch("/api/public/hosts/search?q=" + encodeURIComponent(asked)); const j = await r.json(); if (n !== aiSeq) return; ai = { q: asked, matches: j.matches || [] }; } catch {} if (n === aiSeq) { aiBusy = false; draw(); } };
   $("#q").value = U.get("q") || ""; $("#q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); shown = FIRST; clearTimeout(aiT); aiT = setTimeout(askAI, 650); draw(); };
   $("#q").onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(aiT); askAI(); } };
+  (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach($("#q"), { kind: "search", potto: false })); // autocomplete (public/autocomplete.js): what or where
   let BADGES = {};
   fetch("/api/public/hosts/showcase").then((r) => r.json()).then((j) => { BADGES = j.badges || {}; if (H.length) draw(); }).catch(() => {});
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { EVS = d.events || [];
@@ -141,5 +142,5 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   }).catch(() => { $("#count").textContent = ""; $("#grid").innerHTML = `<div class="ls-empty"><b>Couldn't load hosts.</b><p>Check your connection, then refresh the page.</p></div>`; });
 })();
 </script>
-<script src="/nav.js"></script><script src="/shell.js"></script>
+<script src="/autocomplete.js" defer></script><script src="/nav.js"></script><script src="/shell.js"></script>
 </body></html>

@@ -201,6 +201,8 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
     const ta = el.querySelector("textarea"), send = el.querySelector(".pt-send"), mic = el.querySelector('[data-a="mic"]');
     const fit = () => { ta.style.height = "auto"; ta.style.height = Math.min(140, ta.scrollHeight) + "px"; const has = !!ta.value.trim() || !!S.photo; send.hidden = !has; if (SR) mic.hidden = has; };
     ta.addEventListener("input", fit);
+    // autocomplete (public/autocomplete.js): a tap finishes the question
+    (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach(ta, { kind: "ask" })); if (!window.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
     ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); el.querySelector("form").requestSubmit(); } });
     el.querySelector("form").onsubmit = (e) => { e.preventDefault(); const q = ta.value.trim(); if (!q && !S.photo) return; ta.value = ""; fit(); ask(q); };
     el.addEventListener("click", (e) => { if (e.target === el) close(); });

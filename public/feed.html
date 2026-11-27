@@ -126,7 +126,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 .fv-empty-line{margin:0;color:var(--pl-soft);font-size:14px}.fv-empty-line a,.fv-empty-line button{color:var(--pl-accent-text);font-weight:600;background:none;border:0;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:44px}
 .fpw{display:inline-flex}.tabs .fpw{margin-left:auto}.tabs .fpw+.bell-d{margin-left:0}.top .fp,.tabs .fp{display:inline-grid;place-items:center;min-width:44px;min-height:44px;color:var(--pl-frame)}.top .fp svg{width:22px;height:22px}
 </style><link rel="stylesheet" href="/playful.css">
-<script src="/calm.js"></script><script src="/authguard.js"></script><script src="/place.js"></script>
+<script src="/calm.js"></script><script src="/authguard.js"></script><script src="/place.js"></script><script src="/autocomplete.js" defer></script>
 </head><body>
 <script>if(!["me","alerts","friends"].includes(location.hash.slice(1)))document.body.classList.add("pre-feed")</script>
 <div class="wrap">
@@ -306,6 +306,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
       ${L.length ? L.map((a) => alertCard(a, AL, a.id === fresh)).join("") + form : form}</section>`;
     if (msg) $("#alMsg").textContent = msg;
     $$("[data-ex]", m).forEach((b) => (b.onclick = () => { $("#alIn").value = b.dataset.ex; $("#alIn").focus(); }));
+    { const el = $("#alIn"); (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach(el, { kind: "alert", city: myCity })); } // autocomplete (public/autocomplete.js)
     $$("[data-al]", m).forEach((card) => wireAlert(m, card));
     if (fresh) { const c = m.querySelector(`[data-al="${CSS.escape(fresh)}"]`); if (c) c.scrollIntoView({ block: "start", behavior: "smooth" }); }
     $("#alF").onsubmit = async (ev) => { ev.preventDefault(); const text = $("#alIn").value.trim(), out = $("#alMsg"); if (!text) { out.textContent = "Tell us what to watch for first."; $("#alIn").focus(); return; }
@@ -322,7 +323,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
     card.querySelector('[data-act="test"]').onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const j = await post(`/api/me/alerts/${encodeURIComponent(id)}/test`); F.unread = (F.unread || 0) + 1; drawBell(); const bell = $("#bell"); bell && bell.classList.add("ring-now"); setTimeout(() => bell && bell.classList.remove("ring-now"), 1600);
       toast(j.push ? "Sent. Check the bell and your phone." : "Sent. Check the bell at the top."); } catch (e) { toast(e.message); } b.disabled = false; };
     card.querySelector('[data-act="edit"]').onclick = () => { const sec = document.createElement("form"); sec.className = "al-edit"; sec.innerHTML = `<label for="ale-${esc(id)}" class="wt-lab">What should we watch for?</label><div class="wt-row"><input id="ale-${esc(id)}" maxlength="300" value="${esc(a.text)}" autocomplete="off"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-x>Cancel</button></div><p class="wt-msg" role="status"></p>`;
-      card.querySelector(".al-acts").replaceWith(sec); const inp = sec.querySelector("input"); inp.focus(); sec.querySelector("[data-x]").onclick = () => drawAlerts(m);
+      card.querySelector(".al-acts").replaceWith(sec); const inp = sec.querySelector("input"); (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach(inp, { kind: "alert", city: myCity })); inp.focus(); sec.querySelector("[data-x]").onclick = () => drawAlerts(m);
       sec.onsubmit = async (e) => { e.preventDefault(); try { const j = await api("/api/me/alerts/" + encodeURIComponent(id), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: inp.value.trim(), city: myCity() }) }); AL.alerts = AL.alerts.map((x) => (x.id === id ? j.alert : x)); toast("Saved."); drawAlerts(m, { fresh: id }); } catch (er) { sec.querySelector(".wt-msg").textContent = er.message; } }; }; }
   // ---- Friends: requests to accept, find people, your friends and what they're up to (server/social.js /api/me/friends) ----
   const pav = (p) => (window.FeedVisual?.avatar ? window.FeedVisual.avatar(p, 40) : av(p));

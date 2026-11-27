@@ -128,7 +128,9 @@ html body .pc-scrim .pc-sheet textarea.pc-text.pc-text.pc-text,html body .pc-scr
       q("[data-post]").textContent = st.club ? "Send to members" : st.ask ? "Ask" : "Post"; ready(); };
     const ready = () => { q("[data-post]").disabled = !(st.text.trim() || st.photo || (!st.club && st.link.trim())); };
     const has = () => !!(st.text.trim() || st.photo || st.link.trim());
-    ta.oninput = () => { st.text = ta.value; ready(); }; q("[data-url]").oninput = (e) => { st.link = e.target.value; ready(); };
+    ta.oninput = () => { st.text = ta.value; ready(); };
+    // autocomplete (public/autocomplete.js): post starters, while it's still a short line
+    (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach(ta, { kind: "post" })); if (!window.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); } q("[data-url]").oninput = (e) => { st.link = e.target.value; ready(); };
     q("[data-link]").onclick = (e) => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(on)); if (!on) st.link = ""; paint(); if (on) q("[data-url]").focus(); };
     q("[data-poll]").onclick = () => { st.ask = !st.ask; paint(); if (st.ask && !st.text.trim()) ta.placeholder = "Dumplings at mine on Friday?"; ta.focus(); };
     const upload = async (f) => { if (!f) return; if (f.size > 8e6) return msg("That photo is over 8 MB."); msg("Adding your photo…");

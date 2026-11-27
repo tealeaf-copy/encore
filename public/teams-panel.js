@@ -41,6 +41,8 @@
         <button class="bb-btn primary lg wide" type="submit" id="tpGo">${icon("people")}Find hosts</button></form>
       <div id="tpRes" aria-live="polite"></div>`;
     const f = $("#tpQf", el), res = $("#tpRes", el);
+    // autocomplete (public/autocomplete.js): the city, with the datalist folded into one list
+    (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach(f.city, { kind: "city" })); if (!window.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
     f.addEventListener("input", () => { t0 ||= Date.now(); }, { once: true });
     $$("[data-goal]", el).forEach((b) => (b.onclick = () => { t0 ||= Date.now(); Q.goal = b.dataset.goal; $$("[data-goal]", el).forEach((x) => x.setAttribute("aria-pressed", x === b)); }));
     f.onsubmit = (e) => { e.preventDefault(); t0 ||= Date.now(); Q.date = f.date.value; Q.people = +f.people.value || 0; Q.budget = +f.budget.value || ""; Q.city = f.city.value.trim(); if (!Q.date || Q.people < 2) return BB.toast("Add a date and the group size."); try { localStorage.setItem("tp.quick", JSON.stringify(Q)); } catch {} search(); };

@@ -141,13 +141,26 @@
       const r = await useGps(); if (!el.isConnected) return; b.disabled = false; t.textContent = "Use my location";
       if (r.ok) return pick(r.city, "gps"); msg(r.message, r.closest); };
     const inp = $(".pls-search input"), sugg = $(".pls-sugg");
-    const suggest = () => { const q = norm(inp.value); if (!q) { sugg.innerHTML = ""; return; }
-      const evN = new Map(known.map((x) => [norm(x.city), x.n])), pool = [...known.map((x) => x.city), ...CITIES.map((c) => c[0])], out = [];
-      for (const c of pool) { if (out.length >= 6) break; const n = norm(c); if (out.some((o) => norm(o) === n)) continue; const hit = n.startsWith(q) || n.split(/\s+/).some((w) => w.startsWith(q)); const alias = !hit && CITIES.find((x) => x[0] === c && x[3] && x[3].split("|").some((a) => a.startsWith(q))); if (hit || alias) out.push(c); }
-      if (!out.some((o) => norm(o) === q) && inp.value.trim().length >= 2) out.push(inp.value.trim());
-      sugg.innerHTML = out.map((c) => `<button type="button" class="pls-opt" role="listitem" data-city="${esc(c)}"><span>${esc(c)}</span><small>${evN.get(norm(c)) ? `${evN.get(norm(c))} coming up` : find(c) ? "" : "Use this"}</small></button>`).join(""); wireChips(sugg); };
+    // autocomplete (public/autocomplete.js): neighbourhoods find their city, nicknames and accents work; a combobox
+    // with the rows as its options (arrow keys, Enter). Without that file, the plain name match below.
+    sugg.id = "plsSugg"; sugg.setAttribute("role", "listbox"); sugg.setAttribute("aria-label", "Cities"); inp.setAttribute("role", "combobox"); inp.setAttribute("aria-controls", "plsSugg"); inp.setAttribute("aria-expanded", "false"); inp.setAttribute("aria-autocomplete", "list");
+    if (!window.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
+    let act = -1;
+    const mark = () => { const O = [...sugg.querySelectorAll("[data-city]")]; O.forEach((b, i) => b.setAttribute("aria-selected", String(i === act))); if (act >= 0 && O[act]) inp.setAttribute("aria-activedescendant", O[act].id); else inp.removeAttribute("aria-activedescendant"); };
+    const suggest = () => { const q = norm(inp.value); act = -1; if (!q) { sugg.innerHTML = ""; inp.setAttribute("aria-expanded", "false"); mark(); return; }
+      const evN = new Map(known.map((x) => [norm(x.city), x.n])), S = window.PLSuggest, hint = new Map(); let out = [];
+      if (S && S.rankPlaces) { for (const x of S.rankPlaces(inp.value, { kind: "city", city: cur, places: S.places ? S.places() : undefined, eventCities: known, history: recent(), limit: 6 })) { out.push(x.value); if (x.hint && x.hint !== "Recent") hint.set(norm(x.value), x.hint); } }
+      else { const pool = [...known.map((x) => x.city), ...CITIES.map((c) => c[0])];
+        for (const c of pool) { if (out.length >= 6) break; const n = norm(c); if (out.some((o) => norm(o) === n)) continue; const hit = n.startsWith(q) || n.split(/\s+/).some((w) => w.startsWith(q)); const alias = !hit && CITIES.find((x) => x[0] === c && x[3] && x[3].split("|").some((a) => a.startsWith(q))); if (hit || alias) out.push(c); } }
+      // what was typed, as is, for a city we don't know (not when a row already starts with it)
+      const fits = (o) => norm(o) === q || (!!S?.rankPlaces && (norm(o).startsWith(q) || norm(hint.get(norm(o)) || "").startsWith(q)));
+      if (!out.some(fits) && !(S?.cityOf && S.cityOf(inp.value, S.places ? S.places() : undefined)) && inp.value.trim().length >= 2) out.push(inp.value.trim());
+      sugg.innerHTML = out.map((c, i) => `<button type="button" class="pls-opt" role="option" id="plsO${i}" tabindex="-1" aria-selected="false" data-city="${esc(c)}"><span>${esc(c)}</span><small>${evN.get(norm(c)) ? `${evN.get(norm(c))} coming up` : hint.get(norm(c)) ? esc(hint.get(norm(c))) : find(c) || (S && S.cityOf && S.cityOf(c)) ? "" : "Use this"}</small></button>`).join("");
+      inp.setAttribute("aria-expanded", String(out.length > 0)); wireChips(sugg); };
     inp.addEventListener("input", suggest);
-    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const first = sugg.querySelector("[data-city]"); if (first) pick((find(first.dataset.city)?.[0]) || first.dataset.city, "manual"); } });
+    inp.addEventListener("keydown", (e) => { const O = sugg.querySelectorAll("[data-city]");
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && O.length) { e.preventDefault(); act = e.key === "ArrowDown" ? (act + 1) % O.length : act <= 0 ? O.length - 1 : act - 1; mark(); O[act].scrollIntoView({ block: "nearest" }); return; }
+      if (e.key === "Enter") { e.preventDefault(); const b = O[act >= 0 ? act : 0]; if (b) pick((find(b.dataset.city)?.[0]) || b.dataset.city, "manual"); } });
     $(".pls-x").onclick = () => close();
     back.addEventListener("click", (e) => { if (e.target === back) close(); });
     function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); return; }

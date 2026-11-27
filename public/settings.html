@@ -82,6 +82,9 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     </section>
     <!-- end Potto by text -->
     <section aria-labelledby="hReply" id="replies"><h2 id="hReply">Your replies</h2><p>What Potto fills in when you reply to an invite. Hosts see it only once you send your reply.</p><div id="replyDetails"></div><script src="/replydetails.js" defer></script></section>
+    <!-- autocomplete (public/autocomplete.js, server/suggest.js): Potto's suggestions as you type; off keeps the ones from this device -->
+    <section aria-labelledby="hSug" id="suggest"><h2 id="hSug">Suggestions as you type</h2><p>When you type an idea or a place, Potto offers a few ways to finish it. A tap fills it in. Your recent picks stay on this device.</p>
+      <div class="row"><span>Suggestions from Potto<small>Smarter ones as you type. Only what you typed, your city and the kind of field are sent. Off keeps the quick ones from this device.</small></span><input type="checkbox" class="sw" id="pottoSuggest" aria-label="Suggestions from Potto" checked></div></section>
     <section aria-labelledby="hName" id="names"><h2 id="hName">Your name on the feed</h2><p>Kudos and comments on the feed are public, like the posts they're on. Choose who sees your name next to them. Everyone else sees "A guest". Hosts always see who commented on their own posts.</p>
       <fieldset class="nm-set"><legend>Show my name on kudos and comments</legend>
         <label class="row"><span>Everyone</span><input type="radio" name="socialName" value="everyone" checked></label>
@@ -148,6 +151,10 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
   const popKeep = (on) => { try { localStorage.setItem("pl.msgPopups", on ? "1" : "0"); } catch {} };
   $("#msgPopups").checked = E.chatPopups !== false; popKeep(E.chatPopups !== false);
   $("#msgPopups").onchange = (e) => { popKeep(e.target.checked); send("/api/me/prefs", { chatPopups: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; popKeep(e.target.checked); }); };
+  // Suggestions from Potto (public/autocomplete.js reads pl.suggestPotto; server/suggest.js reads the account's choice)
+  const sugKeep = (on) => { try { localStorage.setItem("pl.suggestPotto", on ? "1" : "0"); localStorage.removeItem("pl.suggest.mine"); } catch {} };
+  $("#pottoSuggest").checked = E.pottoSuggest !== false; sugKeep(E.pottoSuggest !== false);
+  $("#pottoSuggest").onchange = (e) => { sugKeep(e.target.checked); send("/api/me/prefs", { pottoSuggest: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; sugKeep(e.target.checked); }); };
   $("#replyDigest").onchange = (e) => { E.replyDigest = e.target.checked; send("/api/me/prefs", { replyDigest: e.target.checked }).catch(() => { e.target.checked = !e.target.checked; }); };
   // who sees your name on feed kudos and comments (server/feedblend.js nameShown): Everyone, People I follow, Only hosts
   { const set = (v) => document.querySelectorAll('input[name="socialName"]').forEach((r) => (r.checked = r.value === v)); set(E.socialName || "everyone"); let cur = E.socialName || "everyone";

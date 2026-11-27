@@ -355,7 +355,7 @@
     document.body.appendChild(el); S.el = el; css(); draw(); wire(el);
     if (!touch() && !String(S.W.pubTitle || "").trim()) setTimeout(() => q("#cvTitle", el)?.focus(), 60); }
   function stateLine() { const live = !S.isNew; return S.dirty ? (live ? "Not saved yet. Guests see changes after you save." : "Draft, saved on this device. Only you can see it.") : live ? "Live. Guests see changes after you save." : "Draft. Only you can see it."; }
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); }
   // the dock says what's on: "Look: Sage", "Effect: Petals"
   function lookName(W) { const L = W.look || {}, LK = root.EncoreLooks, p = (L.palette || [])[0]; if (!p) return "House"; const sw = (LK?.SWATCHES || []).find((x) => x[0] === p); return sw ? sw[3] : LK?.VIBES?.[L.vibe]?.label || "Your colours"; }
   function dockNames() { const W = S?.W, el = S?.el; if (!W || !el) return; for (const [k, ic, word, v] of [["look", I.look, "Look", lookName(W)], ["effect", I.fx, "Effect", effectName(W)]]) { const b = q(`.cv-dock [data-cv=${k}]`, el); if (!b) continue;
@@ -378,6 +378,28 @@
   // a quiet pulse on what just changed, here and in the guest preview
   function pulse(sel, what) { const n = typeof sel === "string" ? q(sel, S.el) : sel; if (n) { n.classList.remove("cv-pulse"); void n.offsetWidth; n.classList.add("cv-pulse"); } preview(what); }
   function setMode(m) { S.mode = m; S.el.classList.toggle("guest", m === "guest"); qa(".cv-mode [data-mode]", S.el).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m))); preview(); if (m === "guest") q(".cv-mode [data-mode=guest]", S.el)?.focus({ preventScroll: true }); }
+
+  // ---------- autocomplete (public/autocomplete.js): the title, "Something else" and the place sheet ----------
+  // A picked idea fills what it knows (its kind, day, time and place), then what the canvas's own reading of a whole line
+  // (planFromLine) finds in the words, for Potto's or a typed one. Only empty fields fill; the title stays in focus.
+  const sugCity = () => S?.W?.city || PROFILE?.city || "";
+  const nextDay = (k) => { const d = new Date(), n = WD.indexOf(k); if (n < 0) return ""; d.setDate(d.getDate() + ((n - d.getDay() + 7) % 7)); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  function suggestHook() { const P = root.PLSuggest; if (!P?.attach || !S?.el) return;
+    const t = q("#cvTitle", S.el); if (t) P.attach(t, { kind: "idea", city: sugCity, onPick: pickIdea });
+    const own = q("#cvKindOwn", S.el); if (own) P.attach(own, { kind: "kind", maxLen: 24, city: sugCity }); }
+  function pickIdea(it) { if (!S) return; let W = S.W; const text = String(it.value || it.text || ""), P = planFromLine(text) || {}, was = [W.date, W.startTime, W.meetPoint || W.venueName, W.planKind].join("|");
+    W.pubTitle = W.name = it.title || P.title || text;
+    const date = (it.day ? nextDay(it.day) : "") || P.date, time = it.time || P.startTime || "", place = it.place || P.meetPoint || "", city = it.city || it.dest || "", n = it.n || P.headcount || 0;
+    if (date && !W.date) W.date = date; if (time && !W.startTime) W.startTime = time; if (place && !W.meetPoint && !W.venueName) W.meetPoint = place; if (city && !W.city) W.city = city; if (n && !+W.headcount) W.headcount = n;
+    if (S.isNew && !W.planKind && it.k && PLAN_KINDS.some((x) => x.k === it.k && !x.handoff && !x.own)) { const r = applyKind(W, it.k, S.open); S.W = W = r.d; S.open = r.open; }
+    try { app("applyPlace")?.(W); } catch {}
+    changed(true); const nt = q("#cvTitle", S.el); if (nt) { try { nt.focus({ preventScroll: true }); nt.setSelectionRange(nt.value.length, nt.value.length); } catch {} }
+    if ([W.date, W.startTime, W.meetPoint || W.venueName, W.planKind].join("|") !== was) say("Filled in from that. Tap anything to change it."); }
+  function suggestPlace(Sh) { const P = root.PLSuggest; if (!P?.attach) return; const city = Sh.$("#cvCity");
+    P.attach(Sh.$("#cvWhere"), { kind: "place", city: () => city.value.trim() || sugCity(), onPick: (it) => { if (it.city && !city.value.trim()) city.value = it.city; } });
+    P.attach(city, { kind: "city", city: sugCity }); }
+  if (!root.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
+  (root.__plSuggestQ = root.__plSuggestQ || []).push(() => suggestHook()); // the canvas may open before the file lands
 
   // ---------- autosave on this device ----------
   let saveT = 0;
@@ -483,6 +505,7 @@
       <label class="cv-f">Exact address <small>Only guests who are in see it.</small><input id="cvAddr" value="${esc(W.venueAddr || "")}" placeholder="12 Elm St, apt 4B" autocomplete="street-address" maxlength="160"></label>
       <label class="cv-f">City<input id="cvCity" value="${esc(W.city || "")}" autocomplete="address-level2" maxlength="60"></label>` + sw("cvPub", W.placePublic === true, "This is a public spot", "A park, a café or a bar. The map shows the exact pin. Leave it off for a home."), foot: done() });
     let pub = W.placePublic === true; wireSw(Sh, "cvPub", (v) => { pub = v; });
+    suggestPlace(Sh); // autocomplete on the place and the city (public/autocomplete.js)
     Sh.$("[data-done]").onclick = () => { W.meetPoint = Sh.$("#cvWhere").value.trim(); W.venueAddr = Sh.$("#cvAddr").value.trim(); W.city = Sh.$("#cvCity").value.trim(); if (pub) W.placePublic = true; else delete W.placePublic; try { app("applyPlace")?.(W); } catch {} Sh.close(); changed(true); pulse("#cvPlace", "place"); }; }
 
   function cohostSheet() { const W = S.W; W.cohosts = Array.isArray(W.cohosts) ? W.cohosts : [];

@@ -92,6 +92,7 @@ html body .ex-chips button{border-style:solid;border-width:1.5px}
   const ppl = (o) => !o.max ? "Any group size" : (o.min > 1 ? `${o.min}–${o.max}` : `Up to ${o.max}`) + " guests";
   function filters() { $("#filters").innerHTML = `<button class="cat ls-chip" data-c="" aria-pressed="${!cat}">Everything</button>${cats.map((c) => `<button class="cat ls-chip" data-c="${c.key}" aria-pressed="${cat === c.key}">${esc(c.label)}</button>`).join("")}<input id="city" placeholder="City" aria-label="City" value="${esc(city)}"><input id="people" type="number" min="1" placeholder="Guests" aria-label="How many guests" value="${esc(people)}">`;
     $$(".cat").forEach((b) => (b.onclick = () => { cat = b.dataset.c; matchMode = false; shown = 6; load(); filters(); }));
+    (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => P.attach($("#city"), { kind: "city" })); // autocomplete (public/autocomplete.js)
     let t; ["#city", "#people"].forEach((s) => ($(s).oninput = () => { clearTimeout(t); t = setTimeout(() => { city = $("#city").value.trim(); people = $("#people").value.trim(); matchMode = false; shown = 6; load(); }, 300); })); }
   function coverArt(h, o) { const ph = o.photo || (h.gallery || [])[0]; if (ph) return `<img src="${esc(ph)}" alt="">`; const EA = window.EventArt, skip = (q) => !["party", "tech", "talk", "giveaway", "market"].includes(q), byCat = { food: "cook", dining: "dinner", movement: "run", workshop: "craft", drinks: "coffee", culture: "paint" };
     const k = EA ? EA.kindsOf({ title: o.name }).filter(skip)[0] || byCat[o.category] || "" : ""; return k ? `<span class="xp-art">${EA.drawing(k, h.accent || "#29489A")}</span>` : esc(o.emoji || "✨"); }
@@ -168,5 +169,5 @@ html body .ex-chips button{border-style:solid;border-width:1.5px}
   const fill = (f) => { if (!f || f.dataset.me) return; f.dataset.me = "1"; const set = (n, v) => { const el = f.elements[n]; if (el && !el.value && v) el.value = v; }; set("name", me.name); set("email", me.email); set("company", me.workspace?.company); };
   const scan = () => document.querySelectorAll("form#bk, form.book-form").forEach(fill); scan(); new MutationObserver(scan).observe(document.body, { childList: true, subtree: true }); })();
 </script>
-<script src="/shell.js"></script>
+<script src="/autocomplete.js" defer></script><script src="/shell.js"></script>
 </body></html>

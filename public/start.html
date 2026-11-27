@@ -204,6 +204,14 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   }
   $("#copy").onclick = async () => { try { await navigator.clipboard.writeText($("#link").value); } catch { $("#link").select(); document.execCommand?.("copy"); } $("#copy").innerHTML = (fx.check ? fx.check() : "") + " Copied"; fx.haptic?.("light"); fx.sound?.("done"); };
   $("#save").onclick = () => { if (!d.title || !d.title.trim()) { d.title = T[t].title; fill(); } if (signed) save(); else prompt(); };
+  // autocomplete (public/autocomplete.js): the idea and the place; a picked idea brings its template, day, time and place
+  const KIND_T = { dinner: "dinner4", drinks: "drinks", brunch: "coffee", game: "game", table: "table", potluck: "potluck", picnic: "picnic", run: "run", book: "bookclub", hack: "series", weekend: "weekend", summit: "summit" };
+  const onDay = (k) => { const n = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(k); if (n < 0) return ""; const x = new Date(); x.setDate(x.getDate() + ((n - x.getDay() + 7) % 7 || 7)); return iso(x); };
+  const pickIdea = (it) => { const k = KIND_T[it.k]; if (k && k !== t) { const keepPlace = d.place; t = k; d = { ...fresh(t), place: keepPlace }; copy(); }
+    d.title = it.title || it.value || it.text; if (it.time) d.time = it.time; if (it.day) { d.date = onDay(it.day); if (d.endDate && d.endDate <= d.date) d.endDate = plus(d.date, T[t].days || 1); } if (it.place && !String(d.place || "").trim()) d.place = it.place; if (it.n) d.seats = it.n;
+    fill(); draw(); keep(); };
+  (window.__plSuggestQ = window.__plSuggestQ || []).push((P) => { P.attach(F.title, { kind: "idea", onPick: pickIdea }); P.attach(F.place, { kind: "place" }); });
 })();
 </script>
+<script src="/autocomplete.js" defer></script>
 </body></html>

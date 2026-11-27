@@ -13,7 +13,7 @@ const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 test("brand tokens: the block defines every role", () => {
   for (const k of ["page", "surface", "raised", "ink", "soft", "muted", "line", "line-strong", "accent", "accent-press", "accent-text", "accent-soft", "on-accent", "sand", "sand-soft", "sage", "success", "success-soft", "warning", "warning-soft", "danger", "danger-soft"]) assert.ok(T[k], "--pl-" + k);
   assert.match(block, /--pl-font-display:/); assert.match(block, /--pl-font-text:/); assert.match(block, /--pl-font-mono:/); assert.match(block, /--pl-focus:/);
-  assert.match(block, /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?family=IBM\+Plex\+Sans:wght@400;500;600&family=IBM\+Plex\+Serif:wght@600&family=IBM\+Plex\+Mono:wght@500&display=swap"\)/, "the fonts load in the token block, only the weights used, font-display swap");
+  assert.match(block, /@import url\("\/fonts\/css2\?family=IBM\+Plex\+Sans:wght@400;500;600&family=IBM\+Plex\+Serif:wght@600&family=IBM\+Plex\+Mono:wght@500&display=swap"\)/, "the fonts load in the token block, only the weights used, font-display swap, from the local copies (/fonts/css2)");
 });
 
 test("brand tokens: every text and background pair passes AA", () => {

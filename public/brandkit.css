@@ -102,3 +102,10 @@ html.kit-on body.store :is(.tags i,.ev-p,.perk,.trust-line span,.gigs span,.stor
 .bk-entry small{display:block;color:var(--pl-soft);font-size:13px}.bk-entry button{min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--pl-ink);background:var(--pl-ink);color:#fff;font:600 13px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
 /* with a saved kit, the older colour, font and background swatches in the page editor are the kit's job */
 html.kit-saved .store-pane :is(.sws.fonts,.sws.accents,.sws.bgs),html.kit-saved .store-pane h4:has(+ :is(.sws.fonts,.sws.accents,.sws.bgs)){display:none}
+
+/* ---- platform chrome stays in the house kit: an editor or sheet (.kit-off, and every aria-modal sheet: the drop setup,
+   the photo sheet, share, save to list, questions, effects) never wears the host's colours or faces; those are for the
+   host's own public surfaces (their page, invites, the order page). public/brandkit.js marks sheets as they open. ---- */
+html.kit-on :is(.kit-off,[aria-modal="true"]){--pl-ink:#1B1D1C;--pl-soft:#444845;--pl-muted:#444845;--pl-page:#EFEBE2;--pl-surface:#FAF8F3;--pl-line:#CFC8B9;--pl-line-strong:#1B1D1C;--pl-accent:#29489A;--pl-accent-press:#1F3878;--pl-accent-text:#29489A;
+  --sys-sans:var(--pl-font-text);--sys-display:var(--pl-font-display);--sys-title:var(--pl-font-text);--sys-accent:var(--pl-font-display);--sys-mono:var(--pl-font-mono);--sys-hand:"Caveat",cursive;--sys-ink:#1B1D1C;--sys-ember:#29489A;--sys-ember-press:#1F3878;--sys-ember-text:#29489A;--p-ember:#29489A;
+  --ink:#1B1D1C;--card:#FAF8F3;--line:#CFC8B9;--kit-accent:#29489A;--kit-btn:#29489A;--kit-accent-text:#29489A;--kit-on-accent:#fff;color:#1B1D1C;font-family:var(--pl-font-text)}

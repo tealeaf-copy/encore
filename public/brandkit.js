@@ -196,4 +196,8 @@
   root.EncoreBrandKit = API;
   // a page served with its host's kit (the light invite, /x pages): <script>window.__encoreKit=...</script>
   if (window.__encoreKit) use(window.__encoreKit);
+  // platform sheets (editors, share, save, the drop setup) stay in the house kit on a host's branded page: mark each as it opens (public/brandkit.css .kit-off)
+  if (typeof document !== "undefined" && typeof MutationObserver === "function") { const mark = (n) => { if (n.nodeType !== 1) return; if (n.matches?.('[aria-modal="true"]')) n.classList.add("kit-off"); n.querySelectorAll?.('[aria-modal="true"]').forEach((d) => d.classList.add("kit-off")); };
+    const go = () => new MutationObserver((L) => { if (!document.documentElement.classList.contains("kit-on")) return; for (const m of L) { m.addedNodes.forEach(mark); if (m.type === "attributes") mark(m.target); } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-modal"] });
+    if (document.body) go(); else addEventListener("DOMContentLoaded", go); }
 })(typeof window !== "undefined" ? window : globalThis);

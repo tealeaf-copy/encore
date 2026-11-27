@@ -45,7 +45,7 @@ section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 
 .hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
 .hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:44px;padding:8px 12px;border-radius:6px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
 .hcd-nx b{flex:none;font-weight:600;color:var(--pl-accent-text)}.hcd-nx span{min-width:0;overflow-wrap:anywhere;text-wrap:pretty} /* the next event title in full, on two lines if it needs them */
-.ls-card :is(.ls-title,.ls-sub,.ls-when),.hcd small,.endcards :is(p,small),.note-box{text-wrap:pretty} /* no word alone on the last line */
+.ls-card .ls-title,.endcards :is(p,small),.note-box{text-wrap:pretty}.ls-card :is(.ls-sub,.ls-when),.hcd small{text-wrap:balance} /* no word alone on the last line */
 a.hcd-nx:hover{background:var(--pl-raised)}
 .hcd-exs{display:none;font-weight:600;color:var(--pl-soft)}
 .hcd-exs{display:inline}@media (max-width:520px){.hcd-f{min-width:0;padding:0 14px!important}}
@@ -248,7 +248,9 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
     try { const st = await (await fetch("/api/host/discover-status", { credentials: "same-origin" })).json(); if (st && Array.isArray(st.gaps) && Array.isArray(st.waiting)) { MINE = { gaps: st.gaps, waiting: st.waiting, handle: String(st.handle || "") }; } } catch {} if (LOADED) drawEvents(); } } catch {} })();
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
   { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
-  const ready = () => document.body.classList.remove("dc-wait"); setTimeout(ready, 8000);
+  // shelves that haven't answered by the time the page shows (a slow connection) land under "Coming up", never above
+  // it: arriving above, they pushed the list a screen down under the reader (CLS 0.6)
+  const ready = () => { if (!document.body.classList.contains("dc-wait")) return; const sh = $("#plShelves"), ev = $("#evSec"); if (sh && ev && (!sh.children.length || sh.hasAttribute("aria-busy"))) ev.after(sh); document.body.classList.remove("dc-wait"); }; setTimeout(ready, 8000);
   // the shelves (public/collections.js) have answered once #plShelves carries its class and is no longer busy; never wait on them for more than 2.5 seconds
   const shelvesIn = new Promise((done) => { const el = $("#plShelves"), ok = () => !el || (el.classList.contains("plk-shelves") && !el.hasAttribute("aria-busy")); if (ok()) return done();
     const mo = new MutationObserver(() => { if (ok()) { mo.disconnect(); done(); } }); mo.observe(el, { attributes: true, attributeFilter: ["class", "aria-busy"] }); setTimeout(() => { mo.disconnect(); done(); }, 2500); });

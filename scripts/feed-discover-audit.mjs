@@ -93,7 +93,7 @@ if (DUMP) {
 
 // ---------- the browser ----------
 const WATCH = () => { const W = (window.__fda = { cls: 0, shifts: [], rejections: [], shared: [], booted: Date.now() });
-  try { new PerformanceObserver((l) => l.getEntries().forEach((e) => { if (!e.hadRecentInput) { W.cls += e.value; if (e.value > 0.02) W.shifts.push({ v: +e.value.toFixed(3), who: (e.sources || []).slice(0, 2).map((s) => (s.node ? (s.node.id ? "#" + s.node.id : s.node.className && typeof s.node.className === "string" ? "." + s.node.className.trim().split(/\s+/)[0] : s.node.nodeName) : "?")).join(",") }); } })).observe({ type: "layout-shift", buffered: true }); } catch {}
+  try { new PerformanceObserver((l) => l.getEntries().forEach((e) => { if (!e.hadRecentInput) { W.cls += e.value; if (e.value > 0.02) W.shifts.push({ t: Math.round(e.startTime), r: (e.sources || []).slice(0, 1).map((s) => `${Math.round(s.previousRect.y)}->${Math.round(s.currentRect.y)}`).join(""), v: +e.value.toFixed(3), who: (e.sources || []).slice(0, 2).map((s) => (s.node ? (s.node.id ? "#" + s.node.id : s.node.className && typeof s.node.className === "string" ? "." + s.node.className.trim().split(/\s+/)[0] : s.node.nodeName) : "?")).join(",") }); } })).observe({ type: "layout-shift", buffered: true }); } catch {}
   addEventListener("unhandledrejection", (e) => W.rejections.push(String(e.reason?.message || e.reason).slice(0, 160)));
   try { Object.defineProperty(navigator, "share", { configurable: true, value: async (d) => { W.shared.push(d); } }); } catch {}
   try { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (t) => { W.copied = t; } } }); } catch {} };
@@ -106,6 +106,7 @@ async function open(state, width, url, { warm = false } = {}) {
   const phone = width < 600, ctx = await browser.newContext({ ...(phone ? pw.devices["iPhone 13"] : {}), viewport: { width, height: phone ? 844 : 900 }, serviceWorkers: "block" });
   if (state.cookie) { const [k, ...v] = state.cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }]); }
   await ctx.addInitScript(WATCH);
+  if (process.env.FDA_PROBE) await ctx.addInitScript((sel) => { addEventListener("DOMContentLoaded", () => { const t0 = performance.now(); for (const s of sel.split(",")) { const el = document.querySelector(s); if (el) new MutationObserver(() => console.log("PROBE", Math.round(performance.now()), s, el.getBoundingClientRect().height | 0, (el.innerText || "").slice(0, 40).replace(/\s+/g, " "))).observe(el, { childList: true, subtree: true, characterData: true }); } }); }, process.env.FDA_PROBE);
   if (state.city !== null) await ctx.addInitScript((city) => { try { if (!sessionStorage.getItem("fda.city")) { sessionStorage.setItem("fda.city", "1"); localStorage.setItem("encore.place", JSON.stringify({ city, source: "manual", at: Date.now() })); localStorage.setItem("encore.city", city); sessionStorage.setItem("encore.feedCity", "1"); } } catch {} }, state.city);
   await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
   const page = await ctx.newPage(), errs = [];
@@ -113,6 +114,7 @@ async function open(state, width, url, { warm = false } = {}) {
   if (process.env.FDA_TIME) page.on("pageerror", (e) => console.log("STACK", String(e.stack).slice(0, 600)));
   page.on("pageerror", (e) => /Transition was aborted because of invalid state/.test(String(e.message)) || errs.push(`pageerror on ${page.url().slice(base.length)}: ` + String(e.message || e).split("\n")[0].slice(0, 160)));
   // an outside script or style answers empty here (no internet), so its integrity check fails: that is this run, not the page
+  if (process.env.FDA_PROBE) page.on("console", (m) => /^PROBE/.test(m.text()) && console.log(m.text()));
   page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|integrity' attribute for resource 'https:\/\/(?!127)/.test(m.text())) errs.push("console: " + m.text().slice(0, 160)); });
   page.on("requestfailed", (r) => { const u = r.url(); if (u.startsWith(base) && !/net::ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push(`request failed: ${u.slice(base.length, base.length + 100)} ${r.failure()?.errorText}`); });
   page.on("response", (r) => { const u = r.url(); if (!u.startsWith(base)) return; const p = u.slice(base.length); if (r.status() >= 400 && !(r.status() === 401 && !state.cookie && /^\/api\/(me|workspace|host)\b/.test(p))) errs.push(`${r.status()} ${r.request().method()} ${p.slice(0, 100)}`); });
@@ -150,7 +152,7 @@ const SCAN = () => { const vis = (el) => { const r = el.getBoundingClientRect(),
   // a lone word on the last line of short copy on a card
   const words = (el) => { const W = [], tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let t; while ((t = tw.nextNode())) { if (t.parentElement.closest(".fb-sr,.sr-only,[hidden]")) continue; const re = /\S+/g; let m; while ((m = re.exec(t.data))) { const rg = document.createRange(); rg.setStart(t, m.index); rg.setEnd(t, m.index + m[0].length); const b = rg.getClientRects()[0]; if (b) W.push({ w: m[0], top: Math.round(b.top) }); } } return W; };
   for (const el of document.querySelectorAll(".fb-card :is(h2,h3,p,small,blockquote p), .fv-intro :is(h1,h2,p), .ls-card :is(.ls-title,.ls-sub,.ls-when), .hcd :is(.hcd-name,small), .endcards :is(h2,p,small), .note-box, .ls-empty :is(b,p), .fv-empty-line, .intro :is(h1,p), .sec-h h2, .fb-fc :is(b,small), .shop :is(b,small), .empty, .fside :is(h3,p,small)")) {
-    if (!vis(el) || el.querySelector("p,h3,div")) continue; const t = (el.innerText || "").trim(); if (t.length > 160 || t.split(/\s+/).length < 4) continue;
+    if (!vis(el) || el.querySelector("p,h3,div") || el.scrollHeight > el.clientHeight + 2) continue; // a clamped line ends where the clamp is, not on its last word const t = (el.innerText || "").trim(); if (t.length > 160 || t.split(/\s+/).length < 4) continue;
     const W = words(el); if (W.length < 4) continue; const a = W[W.length - 1], b = W[W.length - 2]; if (a.top > b.top + 4 && !/^[·•|›→]$/.test(a.w)) out.orphans.push(`${name(el)} ends on "${a.w}" alone`); }
   // copy: no em dashes, no emoji in chrome (buttons, nav, headings, tabs)
   const txt = document.body.innerText || ""; if (/—/.test(txt)) out.emdash.push(...[...txt.matchAll(/.{0,30}—.{0,30}/g)].slice(0, 3).map((m) => m[0]));
@@ -187,7 +189,7 @@ async function auditPage(c, state, url) {
   rec(c, "errors", !errs.length && !W.rejections.length, [...new Set([...errs, ...W.rejections.map((r) => "rejection: " + r)])].join("; "));
   rec(c, "overlay", !top.overlay.length, top.overlay.length ? "up on load, covering the page: " + top.overlay.join(", ") : "");
   rec(c, "overflow", top.scroll <= 1 && end.scroll <= 1, top.scroll > 1 ? `${top.scroll}px sideways (${top.wide.join(", ")})` : "");
-  rec(c, "cls", W.cls <= 0.1, W.cls > 0.1 ? `CLS ${W.cls.toFixed(3)}: ${W.shifts.slice(0, 4).map((s) => s.v + " " + s.who).join(", ")}` : "");
+  rec(c, "cls", W.cls <= 0.1, W.cls > 0.1 ? `CLS ${W.cls.toFixed(3)}: ${W.shifts.slice(0, 4).map((s) => `${s.v} ${s.who} (${s.r} at ${s.t}ms)`).join(", ")}` : "");
   rec(c, "clip", !u(top.clipped, end.clipped).length, u(top.clipped, end.clipped).slice(0, 6).join("; "));
   if (c.width < 600) rec(c, "targets", !u(top.small, end.small).length, `${u(top.small, end.small).length} under 44px: ` + u(top.small, end.small).slice(0, 8).join("; "));
   rec(c, "help", !end.underHelp.length && !top.underHelp.length, u(top.underHelp, end.underHelp).slice(0, 4).join("; "));

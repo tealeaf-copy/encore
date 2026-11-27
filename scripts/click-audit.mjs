@@ -71,6 +71,7 @@ const PAGES = [
   ["/feed", ["host"], { name: "photo sheet", setup: "photo" }], [`/e/${S.open}`, ["guest"], { name: "save-to-list sheet", setup: "savelist" }], ["/plans", ["guest"], { name: "Plans peek", setup: "peek" }],
   ["/login", ["out"]], ["/signup", ["out"]], ["/leaderboard", ["out", "guest"]], [`/post/e/${S.open}`, ["out", "guest"]], // main's one-field sign-in; a feed card's comments open its post page
   [`/plans/${S.vegas}`, ["trip"]], [`/e/${S.vegas}`, ["out", "guest"]], ["/proposals", ["bhost"]], ["/ideas", ["out", "guest"]], // a group trip's feeler (server/trips.js), brand proposals, Ideas
+  ["/teams/market", ["brand"]], ["/host/insights", ["host"]], ["/admin/paid-insights", ["admin"]], // Paid Insights on the trends engine (server/paidinsights.js)
   ["/teams/home", ["brand"]], ["/teams/discover", ["brand"]], [`/teams/x/long-table/${pkg}`, ["brand"]], [`/teams/book/long-table/${pkg}`, ["brand"]], ["/teams/campaigns", ["brand"]],
   ...["plan", "source", "book", "invite", "run", "measure"].map((t) => [`/teams/campaigns/${C1}/${t}`, ["brand"]]), [`/teams/campaigns/${C1}/report`, ["brand"]],
   ["/teams/insights", ["brand"]], ["/teams/formats", ["brand"]], ["/teams/company", ["brand"]], ["/teams/hosts", ["brand"]], ["/teams/bookings", ["brand"]], ["/host/teams", ["bhost"]],

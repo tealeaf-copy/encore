@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Host · Pottery Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/community.css">
 <style>
 main.late-wait :is(#scrapbook,#offer,.sr-wrap,.turnout){visibility:hidden}
@@ -22,7 +22,6 @@ h2.sec{font-size:20px;margin:4px 0 10px}
 main h2.sec,main .hire h2,main .proof h2,main section[id^="ow"] h2,main .sr-sec h2{font-size:24px!important;line-height:1.2}
 .nu-more{margin:-6px 0 12px;font-size:14px;color:var(--soft)}
 .book-sum{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between;margin-top:8px}.book-sum p{margin:0;flex:1 1 280px;color:var(--soft);font-size:16px}.book-sum p b{color:var(--ink);font-weight:600}.book-toggle[aria-expanded="true"]{background:transparent!important;color:var(--ink)!important;border:1.5px solid var(--line)}.book-more[hidden]{display:none!important}.book-more{margin-top:14px}.book-toggle:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
-.more-kudos{margin-top:10px}.more-kudos summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--brand2,var(--pl-accent-text));padding:12px 0}.more-kudos summary:focus-visible{outline:3px solid var(--ink);outline-offset:2px;border-radius:6px}.more-kudos .wall{margin-top:8px}
 @media (max-width:860px){body.es-has-tabs,body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}body.is-owner{padding-bottom:calc(212px + env(safe-area-inset-bottom))!important}}
 .wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:10px}.kq{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;position:relative}.kq p{font:500 16px/1.4 "IBM Plex Sans",system-ui,sans-serif;margin:6px 0}.kq small{color:var(--soft)}.kq .t{font-size:20px;letter-spacing:2px}
 .kq:nth-child(3n+1){transform:rotate(-.6deg)}.kq:nth-child(3n+2){transform:rotate(.5deg)}
@@ -104,17 +103,6 @@ body.is-owner{padding-bottom:110px}
 @media (max-width:600px){body.is-owner .store-fab{bottom:14px!important;top:auto!important}body.is-owner .store-fab.shop-fab{bottom:76px!important}body.is-owner main,body.is-owner .wrap{padding-bottom:84px}}
 @media (max-width:860px){body.es-has-tabs .store-fab{bottom:calc(84px + env(safe-area-inset-bottom))!important;top:auto!important}body.es-has-tabs .store-fab.shop-fab{bottom:calc(146px + env(safe-area-inset-bottom))!important}body.es-has-tabs.is-owner main,body.es-has-tabs.is-owner .wrap{padding-bottom:160px}body.es-has-tabs .store-pane{z-index:70}}
 body,.wrap,#m{display:flow-root}.grid:has(> .ev-series){grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))!important;gap:18px}.ev-series{display:grid;gap:6px;align-content:start}.potto-empty{display:block;width:92px;margin:0 auto 6px}.more-dates{margin:0;font-size:13px;color:var(--pl-soft);padding:0 6px}#m .ev-by{display:none!important}.ev-face.host{display:none!important}
-/* What guests say, calm: one summary line, then quotes as a quiet list (no chips, no emoji, no badges) */
-.vibe-line{margin:6px 0 0;color:var(--muted,#6B6058);font-size:16px;line-height:1.5}
-.s-kudos .wall{display:block!important;columns:auto!important}
-.s-kudos .wall .kq.kq{background:none!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important;padding:16px 40px 16px 0!important;margin:0!important;transform:none!important}
-.s-kudos .wall .kq.kq:first-child{border-top:0!important;padding-top:4px!important}
-.s-kudos .kq p{margin:0 0 6px;font-size:17px;line-height:1.45}
-.s-kudos .kq small{color:var(--muted,#6B6058);font-size:14px}
-.s-kudos .kq .t,.s-kudos .kq .vf{display:none!important}
-.s-kudos .kq .sf-more{position:absolute!important;top:12px;right:0;width:36px;height:36px;border:0!important;background:none!important;opacity:.55}
-.s-kudos .kq .sf-more:hover,.s-kudos .kq .sf-more:focus-visible{opacity:1}
-
 /* platform section headings (what's on offer, past events, reviews, booking) wear the Field Notes face; the host's own
    brand kit stays on their name, their events and their own words */
 html.kit-on body :is(h2.sec,#offer>h2,#scrapbook .sb-h h2,#book h2,.recs>h2,#forTeams>h2){font-family:var(--pl-font-display)!important;font-weight:var(--pl-display-weight,600)!important;letter-spacing:-.01em!important}
@@ -126,7 +114,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <div class="wrap">
   <header class="top"><a class="brand kit-off" href="/"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a>
     <nav><a href="/discover">Discover</a><a href="/plans">Plans</a><a class="cta" href="/signup?mode=friends">Start your page</a></nav></header>
-  <main id="m" data-calm="host" style="min-height:calc(100vh - 60px)"><div class="cover" aria-hidden="true"></div><p class="empty" style="margin-top:24px" data-calm-wait>Loading…</p></main>
+  <main id="m" data-calm="host" style="min-height:100vh"><div class="cover" aria-hidden="true"></div><p class="empty" style="margin-top:24px" data-calm-wait>Loading…</p></main>
 </div>
 <footer>Made with Pottery Lab · <a href="/about">About</a> · <a href="/hosts">Find more hosts</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
 <script src="/eventart.js"></script><script src="/spots.js"></script><script src="/community.js"></script>
@@ -135,7 +123,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/kudoswall.js"></script>
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -144,7 +132,9 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
   const side = {}, sideGet = (k) => { const p = side[k] || fetch("/api/public/host/" + encodeURIComponent(handle) + "/" + k).then((r) => r.json()); delete side[k]; return p; };
   const ask = (k) => { side[k] = fetch("/api/public/host/" + encodeURIComponent(handle) + "/" + k).then((r) => r.json()); side[k].catch(() => {}); };
   for (const k of ["badges", "rank"]) ask(k);
-  let d; try { const r = await fetch("/api/public/host/" + encodeURIComponent(handle)); if (!r.ok) throw 0; d = await r.json(); if (!d.host?.showcase) ask("trust"); /* an example page has no track record to ask for */ await Promise.race([Promise.allSettled(Object.values(side)), new Promise((ok) => setTimeout(ok, 700))]); } catch { m.innerHTML = `<div class="empty" style="margin-top:40px">${window.Potto ? `<span class="potto-empty">${window.Potto.svg("sleep", 92)}</span>` : ""}Nobody's home at this link. <a href="/hosts">Find a host</a></div>`; document.querySelector("body > footer")?.remove(); return; }
+  // kudos, photos and what they host: asked for now and drawn in the first pass with the rest (public/kudoswall.js), so nothing drops in later
+  const profP = fetch("/api/public/profile/" + encodeURIComponent(handle)).then((r) => r.json()); profP.catch(() => {});
+  let d; try { const r = await fetch("/api/public/host/" + encodeURIComponent(handle)); if (!r.ok) throw 0; d = await r.json(); if (!d.host?.showcase) ask("trust"); /* an example page has no track record to ask for */ await Promise.race([Promise.allSettled([...Object.values(side), profP]), new Promise((ok) => setTimeout(ok, 700))]); } catch { m.innerHTML = `<div class="empty" style="margin-top:40px">${window.Potto ? `<span class="potto-empty">${window.Potto.svg("sleep", 92)}</span>` : ""}Nobody's home at this link. <a href="/hosts">Find a host</a></div>`; document.querySelector("body > footer")?.remove(); return; }
   // a run club that meets every Saturday is one card with its other dates, not a row of identical cards
   const series = (L) => { const out = [], seen = new Map(); for (const e of L || []) { const k = String(e.title || "").trim().toLowerCase(); const f = k && seen.get(k); if (f) { f._more = (f._more || 0) + 1; f._list.push(e); } else { const c = { ...e, _list: [] }; if (k) seen.set(k, c); out.push(c); } }
     for (const c of out) if (c._more) c._dates = c._list.slice(0, 3).map((x) => x.date ? new Date(x.date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "").filter(Boolean).join(", ") + (c._list.length > 3 ? "…" : ""); return out; };
@@ -212,14 +202,12 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
     else { if (fo.parentElement !== aside) { fo.style.margin = ""; document.getElementById("sideExtras").after(fo); } if (cc && fo.nextElementSibling !== cc) { cc.style.margin = ""; fo.after(cc); } } };
   placeFollow(); addEventListener("resize", () => { clearTimeout(placeFollow.t); placeFollow.t = setTimeout(placeFollow, 150); }); new MutationObserver(() => { clearTimeout(placeFollow.m); placeFollow.m = setTimeout(placeFollow, 120); }).observe(m, { childList: true, subtree: true });
   // kudos wall, what they host, the vibe, their event profile, photos
-  if (!h.showcase) fetch("/api/public/profile/" + encodeURIComponent(h.handle)).then((r) => r.json()).then((x) => { const S = x.strengths || {}, P = x.profile || {}, W = { run: "Runs", hike: "Hikes", bike: "Bike rides", cook: "Cooking nights", potluck: "Potlucks", games: "Game nights", movie: "Movie nights", concert: "Concerts", cafe: "Café mornings", bake: "Bakes and giveaways", picnic: "Picnics", book: "Book club", club: "Club meetups" };
+  if (!h.showcase) profP.then((x) => { const S = x.strengths || {}, P = x.profile || {}, W = { run: "Runs", hike: "Hikes", bike: "Bike rides", cook: "Cooking nights", potluck: "Potlucks", games: "Game nights", movie: "Movie nights", concert: "Concerts", cafe: "Café mornings", bake: "Bakes and giveaways", picnic: "Picnics", book: "Book club", club: "Club meetups" };
     const ex = document.getElementById("extras"), se = document.getElementById("sideExtras");
-    // one section for what guests think: the numbers, the words they picked, and a few kudos (the rest one tap away)
-    const KQ = (S.kudos || []).filter((k) => k.love || (k.tags || []).length), kq = (k) => `<div class="kq">${k.love ? `<p>"${esc(k.love)}"</p>` : ""}<small>${esc(k.name)}${k.event ? ` · at ${esc(k.event)}` : ""}</small></div>`;
-    ex.innerHTML = `${S.tags?.length || KQ.length ? `<section class="s-vibe" aria-labelledby="vibeH"><h2 class="sec" id="vibeH" style="margin-top:22px">What guests say</h2>${S.tags?.length ? `<p class="vibe-line">Most often: ${S.tags.slice(0, 3).map((t) => esc(String(t.label).charAt(0).toLowerCase() + String(t.label).slice(1))).join(" · ")}</p>` : ""}
-      ${KQ.length ? `<div class="s-kudos" style="margin-top:14px"><div class="wall">${KQ.slice(0, 3).map(kq).join("")}</div>${KQ.length > 3 ? `<details class="more-kudos"><summary>Read ${Math.min(KQ.length, 18) - 3} more</summary><div class="wall">${KQ.slice(3, 18).map(kq).join("")}</div></details>` : ""}</div>` : ""}</section>` : ""}
-      ${(h.gallery || []).length ? `<div class="s-work"><h2 class="sec" style="margin-top:22px">Recent work</h2><div class="gal work">${h.gallery.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div></div>` : ""}
+    ex.innerHTML = `${(h.gallery || []).length ? `<div class="s-work"><h2 class="sec" style="margin-top:22px">Recent work</h2><div class="gal work">${h.gallery.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}</div></div>` : ""}
       ${S.moments?.length ? `<div class="s-photos"><h2 class="sec" style="margin-top:22px">Photos</h2><div class="gal">${S.moments.map((m) => m.type === "video" ? `<video src="${esc(m.url)}" muted playsinline controls preload="metadata"></video>` : `<img src="${esc(m.url)}" alt="${esc(m.caption || "")}" loading="lazy">`).join("")}</div></div>` : ""}`;
+    // kudos: one section, its own file (public/kudoswall.js); it goes above the past events
+    window.EncoreKudos?.mount(S, { owner: isOwner, pastId: d.past?.[0]?.id || "", at: ex });
     if ((h.gifts || []).length) window.EncoreShop?.gifts?.(h, first);
     if ((h.experiences || []).length) { window.EncoreShop?.experiences(h, first, S); const bk = document.getElementById("book"), sec = document.querySelector("h2.sec.s-coming");
       if (bk && sec && !d.upcoming.length) { sec.before(bk); document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; }); } }

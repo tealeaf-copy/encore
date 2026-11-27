@@ -49,7 +49,7 @@ test("regression: items added in setup show to guests, signed out and as the own
 });
 
 test("privacy: the exact pickup address never reaches a public page, the feed, /x pages or the API; buyers get it", async () => {
-  const j = await (await post("/api/host/drops", { ...PANDAN, title: "Private test" }, { cookie: host })).json();
+  const j = await (await post("/api/host/drops", { ...PANDAN, title: "Private test", windows: [{ date: new Date(Date.now() + 864e5).toISOString().slice(0, 10), start: "09:00", end: "10:00" }] }, { cookie: host })).json(); // pickup tomorrow: the exact spot is theirs now (it comes the day before)
   // the old shop's address too (a host saved one before drops existed)
   const W = getWorkspace(ws); updateWorkspace(ws, { host: { ...W.host, shop: { open: true, title: "Old", items: [], slots: [], where: "Midtown", address: ADDR } } });
   for (const p of ["/api/public/host/bo-drops", "/api/public/drops/bo-drops", "/api/public/drop/" + j.id, "/api/public/discover", "/api/public/feed", "/@bo-drops", "/e/" + j.id, "/x/bo-drops/shop/0", "/api/public/shop/bo-drops", "/api/public/shops"]) {

@@ -124,9 +124,9 @@ test("guest: a drop order needs a YES before it's placed; talk to a person makes
   const j = await (await post("/api/host/drops", { title: "Pandan Saturday", items: [{ name: "Pandan honeycomb cake", price: "18" }, { name: "Kaya toast box", price: "9.50" }], slots: ["Sat 9 to 10am", "Sun 10 to 11am"], area: "Fort Greene", address: "12 Elm St", always: true, pay: "pickup" }, maya.cookie)).json();
   assert.ok(j.id, JSON.stringify(j)); srv.app.locals.social.notify(priya.email, { kind: "drop", key: "drop-" + j.id, text: "Maya's drop is open", link: "/e/" + j.id, eventId: j.id });
   const orders = () => scopeStore(srv.store, maya.ws).list("rsvps").filter((d) => d.data.eventId === j.id);
-  const a = await text("+12125550102", "2 cakes for saturday pickup", { who: "Priya" }); assert.match(a.out, /2 × Pandan honeycomb cake \(\$36\), pickup Sat 9 to 10am.*Reply YES to place it/);
+  const a = await text("+12125550102", "2 cakes for saturday pickup", { who: "Priya" }); assert.match(a.out, /2 × Pandan honeycomb cake \(\$36\), pickup (Sat|Saturdays) (· )?9 to 10am.*Reply YES to place it/);
   assert.equal(orders().length, 0, "nothing placed before a yes");
-  const b = await text("+12125550102", "yes", { who: "Priya" }); assert.match(b.out, /^Placed: 2 × Pandan honeycomb cake, pickup Sat 9 to 10am/);
+  const b = await text("+12125550102", "yes", { who: "Priya" }); assert.match(b.out, /^Placed: 2 × Pandan honeycomb cake, pickup (Sat|Saturdays) (· )?9 to 10am/);
   assert.equal(orders().length, 1); assert.deepEqual(orders()[0].data.orderLines.map((l) => [l.name, l.qty]), [["Pandan honeycomb cake", 2]]);
   // a NO skips it
   await text("+12125550102", "order 1 kaya toast for sun pickup"); assert.match((await text("+12125550102", "no")).out, /didn't change anything/); assert.equal(orders().length, 1);

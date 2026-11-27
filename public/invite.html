@@ -178,11 +178,11 @@
     /\brun/.test(e.activity) && more("/runfollow.js", () => RunFollow(e, h, data, rid, code, eid));
     // a guest who steps out frees their spot and hears it went through
     const out = $("#out"); if (out) out.onclick = async () => { out.disabled = true;
-      try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": gkey(), "x-encore-workspace": S.ws }, body: JSON.stringify({ response: "no", changedAt: Date.now() }) }); if (!r.ok) throw 0;
+      try { const r = await fetch("/api/public/reply/" + encodeURIComponent(eid), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response: "no", rid, code }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "");
         try { const m0 = JSON.parse(ls.get("encore-rsvp-" + eid) || "{}"); ls.set("encore-rsvp-" + eid, JSON.stringify({ ...m0, response: "no" })); } catch {}
         const tk = $("#tk"); tk.innerHTML = `<h2>You're out</h2><p class="muted" style="margin:0">Thanks for telling ${who}.</p><div class="btns"><a class="btn main" href="/g#rsvp-${encodeURIComponent(eid)}">Change reply</a></div>`;
         if (yes && $(".going-n")) { const n = $(".going-n"), k = Math.max(0, (parseInt(n.textContent, 10) || 1) - 1); if (k) n.textContent = `${k} in`; else document.querySelectorAll(".going-n, .going").forEach((x) => x.remove()); } }
-      catch { out.disabled = false; out.textContent = "Didn't go through. Tap to try again"; } };
+      catch (x) { out.disabled = false; out.textContent = (x.message ? x.message + " " : "") + "Didn't go through. Tap to try again"; } };
     const payBtn = $("#payBtn"), iPaid = $("#iPaid");
     const payPass = $("#payPass"), payDrop = $("#payDrop");
     if (payBtn && iPaid) { [payBtn, payPass, payDrop].filter(Boolean).forEach((b) => b.addEventListener("click", () => { ls.set("encore-paytap-" + eid, "1"); iPaid.hidden = false; }));

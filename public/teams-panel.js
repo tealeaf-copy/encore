@@ -66,7 +66,7 @@
           <li>${icon("doc")}<span><b>${money(x.totalCents)}</b> total for ${Q.people}. ${money(x.depositCents)} deposit holds the date once the host accepts.</span></li>
           <li>${icon("cal")}<span>${esc(day(date, { weekday: "long" }))}. ${esc(x.availability.line)}.</span></li>
           <li>${icon("people")}<span>${esc(x.access.line)}</span></li>${x.approval ? `<li>${icon("check")}<span>${esc(x.approval.line)}</span></li>` : ""}</ul>
-          <p class="tp-q" style="margin:12px 0 6px">Money at risk by date</p>${riskList(X, 5)}<p class="tp-note">${esc(x.terms)}.</p></div>
+          <p class="tp-q" style="margin:12px 0 6px">Money at risk by date</p>${riskList(X, 5)}${X && X.why ? `<p class="tp-note" data-risk-why>${esc(X.why)}</p>` : ""}<p class="tp-note">${esc(x.terms)}.</p></div>
         <form id="tpBf"><h3 style="margin:16px 0 4px;font:600 18px var(--pl-font-text)">The brief</h3><p class="ti-sub" style="margin:0 0 12px">${esc(x.host.name)} reads this before accepting. Either side can change it; the other is asked to agree again.</p>${briefForm(b0, B, { headcount: Q.people })}
         <div class="ft"><button class="bb-btn quiet" type="button" data-close>Not yet</button><button class="bb-btn primary" type="submit">${x.approval?.needed ? "Ask for approval" : "Send the request"}</button></div></form>`, { onOpen: (bg, close) => {
           bg.querySelector("#tpBf").onsubmit = async (e) => { e.preventDefault(); const brief = readBrief(e.target), btn = e.target.querySelector("[type=submit]"); btn.disabled = true;
@@ -88,7 +88,7 @@
       ${E.status === "approval" || (!past && !/^(cancelled|declined)$/.test(E.status)) /* nothing is committed or due once it is off */ ? `<section class="tp-box"><h2>${E.status === "approval" ? "Before you approve" : "What you've committed"}</h2><div class="tp-grid two"><div><ul class="tp-facts">
           <li>${icon("doc")}<span><b>${money(E.money.totalCents)}</b> total. ${money(E.money.paidCents)} paid, ${money(E.money.dueCents)} still due.</span></li>
           <li>${icon("cal")}<span>${esc(E.availability.line)}</span></li>${E.access ? `<li>${icon("people")}<span><b>Access.</b> ${esc(E.access.line)}</span></li>` : ""}</ul></div>
-        <div>${E.exposure ? `<p class="tp-q">Money at risk by date</p>${riskList(E.exposure, 5)}<p class="tp-note">${esc(E.exposure.line)}</p>` : ""}</div></div></section>` : ""}
+        <div>${E.exposure ? `<p class="tp-q">Money at risk by date</p>${riskList(E.exposure, 5)}<p class="tp-note">${esc(E.exposure.line)}</p>${E.exposure.why ? `<p class="tp-note" data-risk-why>${esc(E.exposure.why)}</p>` : ""}` : ""}</div></div></section>` : ""}
       <section class="tp-box"><h2>The brief</h2><p class="ti-sub">${esc(S.agreed ? S.line : `${S.line} · version ${E.brief?.v || 1}`)}</p>${E.briefLines.length ? `<ul class="tp-lines">${E.briefLines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : `<p class="ti-sub">No brief yet. Write one so you and the host agree on the night.</p>`}
         <div class="tp-acts">${E.brief && !S.brand ? `<button class="bb-btn primary" id="tpAgree">Agree to this version</button>` : ""}<button class="bb-btn${E.brief ? " quiet" : " primary"}" id="tpEditB">${E.brief ? "Change the brief" : "Write the brief"}</button></div></section>
       <section class="tp-box"><h2>Seats and the host</h2><ul class="tp-den"><li><span>Brand-invited${E.seats.planned ? `, ${E.seats.planned.brand} planned` : ""}</span><b>${E.seats.brand.invited} invited, ${E.seats.brand.yes} in${past ? `, ${E.seats.brand.attended} came` : ""}</b></li>

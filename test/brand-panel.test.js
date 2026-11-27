@@ -36,9 +36,10 @@ test("money at risk by date follows the policy: free, then half the deposit, the
   assert.equal(at(28), 44000, "under 7 days: the deposit stays with the host");
   assert.equal(X.maxAtRiskCents, 88000); assert.equal(X.nowAtRiskCents, 0);
   assert.match(X.line, /^Free to cancel until .+ After that, up to \$880 is at risk\.$/);
+  assert.match(X.why, /^Why it goes up, then down: .+ the rest is due, and half of everything paid is at risk for that one day\. From .+ only the \$440 deposit stays with the host/, "one plain line says why the number rises and falls; the amounts are untouched");
   // inside the window already, the past rows are gone and today's risk shows
   const Y = exposureSchedule({ policy: "firm", totalCents: 100000, depositCents: 25000, date: day(10), today });
-  assert.equal(Y.freeUntil, ""); assert.equal(Y.nowAtRiskCents, 25000, "firm, 10 days out: the deposit stays"); assert.ok(Y.rows.every((r) => r.until >= today)); assert.match(Y.line, /if you cancel now/);
+  assert.equal(Y.freeUntil, ""); assert.equal(Y.nowAtRiskCents, 25000, "firm, 10 days out: the deposit stays"); assert.ok(Y.rows.every((r) => r.until >= today)); assert.match(Y.line, /if you cancel now/); assert.equal(Y.why, "", "no line when the number only goes one way");
   assert.equal(exposureSchedule({ date: "" }).rows.length, 0);
 });
 

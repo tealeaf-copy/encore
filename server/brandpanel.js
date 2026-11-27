@@ -110,7 +110,11 @@ export function exposureSchedule({ policy = "standard", totalCents = 0, depositC
   const rows = groups.map((g) => ({ from: addDays(date, -g.high), until: addDays(date, -g.low), daysBefore: g.low, atRiskCents: g.atRiskCents })).filter((r) => r.until >= today)
     .map((r) => { const from = r.from < today ? today : r.from; return { ...r, from, label: r.atRiskCents ? `${short(from)}${r.until !== from ? ` to ${short(r.until)}` : ""}: ${money0(r.atRiskCents)} at risk` : `Until ${short(r.until)}: nothing at risk, free to cancel` }; });
   const max = Math.max(0, ...groups.map((g) => g.atRiskCents)), free = groups.find((g) => !g.atRiskCents && g.high >= P.full), freeUntil = free && addDays(date, -free.low) >= today ? addDays(date, -free.low) : "";
-  return { rows, maxAtRiskCents: max, nowAtRiskCents: lead >= 0 ? risk(lead) : 0, freeUntil, line: freeUntil ? `Free to cancel until ${short(freeUntil)}. After that, up to ${money0(max)} is at risk.` : `Up to ${money0(max)} is at risk if you cancel now.` };
+  // one plain line for the day the number goes up and then comes down (Standard: the rest is due 7 days before, the same
+  // day the half-back rule ends). The amounts are the policy's own; this only says why they move.
+  const up = rows.findIndex((r, i) => rows[i + 1] && rows[i + 1].atRiskCents < r.atRiskCents && r.atRiskCents > 0), spike = up >= 0 ? rows[up] : null, before = up > 0 ? rows[up - 1] : null, after = up >= 0 ? rows[up + 1] : null;
+  const why = spike && after ? `Why it goes up, then down: ${before && before.atRiskCents ? `until ${short(before.until)} only the deposit is paid, so half of it is at risk. ` : ""}On ${short(spike.from)} the rest is due, and half of everything paid is at risk${spike.until === spike.from ? " for that one day" : ""}. From ${short(after.from)} only the ${money0(depositCents)} deposit stays with the host, and the rest comes back.` : "";
+  return { rows, why, maxAtRiskCents: max, nowAtRiskCents: lead >= 0 ? risk(lead) : 0, freeUntil, line: freeUntil ? `Free to cancel until ${short(freeUntil)}. After that, up to ${money0(max)} is at risk.` : `Up to ${money0(max)} is at risk if you cancel now.` };
 }
 
 /** Accessibility in plain words: what the host has said yes to, and what they haven't listed (never guessed). */

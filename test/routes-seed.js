@@ -57,7 +57,9 @@ export function pagesFor(S) {
     "/", "/feed", "/discover", "/events", "/ideas", "/hosts", "/saved", "/plans", "/chats", `/chats/${S.open}`, "/settings", "/community", "/playbook",
     "/signup", "/login", "/about", "/privacy", "/terms", `/@${S.handle}`, `/e/${S.open}`, `/e/${S.past}`, `/i/${S.open}`, "/g", `/x/${S.handle}/${S.exp}`,
     `/plans/rtTable`, `/plans/rtTrip`, `/plans/rtSummit`, `/speakers/rtSummit/sp1`, `/e/rtTable`, "/start?t=table", "/guides/weekend-away", `/again/${S.past}?${q(S.pastRid)}`, `/k/${S.past}?${q(S.pastRid)}`, `/recap/${S.handle}`, `/p/${S.past}?${q(S.pastRid)}`, "/?app=1", "/leaderboard", "/pricing",
-    { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA", // friend invites (server/friendinvites.js): the admin page, and a link that no longer works { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
+    // friend invites (server/friendinvites.js): the admin page, and a link that no longer works
+    { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA",
+    "/import/instagram", "/import/instagram?mode=refresh", { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }
 
@@ -66,7 +68,7 @@ export function apisFor(S) {
   const q = (r) => `rid=${encodeURIComponent(r.rid)}&code=${encodeURIComponent(r.code)}`;
   return [
     "/api/signup/config", "/api/public/feed", "/api/public/discover", "/api/public/inspo", "/api/public/hosts", `/api/public/host/${S.handle}`, `/api/public/host/${S.handle}/scrapbook`,
-    `/api/public/kudos-page/${S.past}?${q(S.pastRid)}`, "/api/v1/events", "/api/v1/hosts", "/api/public/leaderboard",
+    `/api/public/kudos-page/${S.past}?${q(S.pastRid)}`, "/api/v1/events", "/api/v1/hosts", "/api/public/leaderboard", "/api/igimport/config",
     { path: "/api/me", signedIn: true }, { path: "/api/me/feed", signedIn: true }, { path: "/api/me/saves", signedIn: true }, { path: "/api/chats", signedIn: true },
     { path: `/api/chats/${S.open}`, signedIn: true }, { path: "/api/me/inbox", signedIn: true }, { path: "/api/photos/recent", signedIn: true }, { path: "/api/photos/templates?kind=cover" }, { path: "/api/photos/templates?kind=avatar" },
     { path: "/api/host/profile", host: true }, { path: "/api/db/collection?path=events", host: true }, { path: `/api/host/kudos/${S.past}`, host: true },

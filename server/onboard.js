@@ -329,10 +329,14 @@ async function safeUrl(u) { let x; try { x = new URL(String(u).trim()); } catch 
   if (net.isIP(h) || /^(localhost|.*\.local|.*\.internal|.*\.localhost)$/i.test(h) || !h.includes(".")) return null;
   try { const A = await dns.lookup(h, { all: true }); if (!A.length || A.some((a) => privateAddress(a.address))) return null; } catch { return null; } return x; }
 export async function readLink(u, { limit = 1_500_000 } = {}) {
+  // Instagram pages are never fetched (its terms forbid it): "Start from your Instagram" (server/igimport.js) uses the person's own account or their photos
+  const igHost = (x) => /(^|\.)(instagram\.com|instagr\.am)$/i.test(x?.hostname || "");
+  try { if (igHost(new URL(String(u || "").trim()))) return { ok: false, message: "I don't read Instagram pages. Use Start from your Instagram at /import/instagram instead.", instagram: true }; } catch {}
   let url = await safeUrl(u); if (!url) return { ok: false, message: "I can only read public https links." };
+  if (igHost(url)) return { ok: false, message: "I don't read Instagram pages. Use Start from your Instagram at /import/instagram instead.", instagram: true };
   for (let hop = 0; hop < 4; hop++) { const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 8000);
     try { const r = await fetch(url.href, { redirect: "manual", signal: ctl.signal, headers: { "user-agent": "PotteryLabBot/1.0 (+onboarding; reads a page the host shared)", accept: "text/html,text/plain" } });
-      if (r.status >= 300 && r.status < 400 && r.headers.get("location")) { url = await safeUrl(new URL(r.headers.get("location"), url).href); if (!url) return { ok: false, message: "That link redirects somewhere I can't read." }; continue; }
+      if (r.status >= 300 && r.status < 400 && r.headers.get("location")) { url = await safeUrl(new URL(r.headers.get("location"), url).href); if (!url || igHost(url)) return { ok: false, message: "That link redirects somewhere I can't read." }; continue; }
       if (!r.ok) return { ok: false, message: `That page answered ${r.status}. Paste the text instead.` };
       const reader = r.body.getReader(), chunks = []; let n = 0; for (;;) { const { done, value } = await reader.read(); if (done) break; n += value.length; if (n > limit) { ctl.abort(); break; } chunks.push(value); }
       const html = Buffer.concat(chunks).toString("utf8"), meta = (p) => (html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${p}["'][^>]*content=["']([^"']*)["']`, "i")) || html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${p}["']`, "i")) || [])[1] || "";

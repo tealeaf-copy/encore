@@ -145,7 +145,7 @@ label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
     <div class="sources" id="sources" aria-live="polite"></div>
     <div class="grid2" style="margin-top:6px">
       <div><label class="lab" for="paste">Paste an email, a quote or your prices</label><div class="field"><textarea id="paste" rows="5" spellcheck="true"></textarea></div><button type="button" class="btn ghost small" id="pasteAdd">Add this</button></div>
-      <div><label class="lab" for="link">Your website or Instagram</label><div class="field"><input id="link" type="url" inputmode="url" autocomplete="url" placeholder="https://"></div><button type="button" class="btn ghost small" id="linkAdd">Read it</button>
+      <div><label class="lab" for="link">Your website</label><div class="field"><input id="link" type="url" inputmode="url" autocomplete="url" placeholder="https://"></div><button type="button" class="btn ghost small" id="linkAdd">Read it</button>
         <div id="gmail" hidden></div></div>
     </div>
     <p class="msg" id="bringMsg" role="status"></p>
@@ -301,7 +301,7 @@ label.lab{display:block;font-weight:600;font-size:14.5px;margin:0 0 4px}
   drop.addEventListener("drop", (e) => [...(e.dataTransfer?.files || [])].slice(0, 10).forEach(readFile));
   $("#pasteAdd").onclick = () => { const v = $("#paste").value.trim(); if (!v) { bringMsg("Paste something first."); return $("#paste").focus(); } const isEmail = /^(from|subject|to|date):/im.test(v) || /^(hi|hello|hey|dear)\b/i.test(v);
     S.material.push({ label: isEmail ? `Pasted email ${S.material.filter((m) => /^Pasted/.test(m.label)).length + 1}` : `Pasted text ${S.material.filter((m) => /^Pasted/.test(m.label)).length + 1}`, kind: /^(from|subject):/im.test(v) ? "eml" : "text", text: v }); $("#paste").value = ""; grow($("#paste")); bringMsg("Added.", true); drawSources(); save(); };
-  $("#linkAdd").onclick = async () => { let u = $("#link").value.trim(); if (!u) return $("#link").focus(); if (/^@?[A-Za-z0-9._]{2,30}$/.test(u)) u = "https://www.instagram.com/" + u.replace(/^@/, "") + "/"; if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  $("#linkAdd").onclick = async () => { let u = $("#link").value.trim(); if (!u) return $("#link").focus(); if (/^@[A-Za-z0-9._]{2,30}$/.test(u) || /^(?:https?:\/\/)?(?:www\.|m\.)?(?:instagram\.com|instagr\.am)\b/i.test(u)) { location.href = "/import/instagram?mode=refresh&next=%2Fonboard"; return; } /* Instagram is never fetched: "Start from your Instagram" (public/igimport.js) */ if (!/^https?:\/\//i.test(u)) u = "https://" + u;
     const item = { label: u.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60), kind: "text", text: "", working: true }; S.material.push(item); drawSources(); $("#linkAdd").disabled = true;
     try { const r = await api("/api/onboard/link", { url: u }); item.text = r.text; item.working = false; $("#link").value = ""; bringMsg("Read " + item.label + ".", true); } catch (e) { S.material.splice(S.material.indexOf(item), 1); bringMsg(e.message); }
     $("#linkAdd").disabled = false; drawSources(); save(); };

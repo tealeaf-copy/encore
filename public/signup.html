@@ -146,7 +146,9 @@ form button:not([type=button]):not([role=tab]){min-height:52px;font-size:16px;ma
       { const pre = (new URLSearchParams(location.search).get("preset") || "").replace(/[^a-z0-9-]/g, ""); if (pre) { try { const P = await (await fetch("/presets/" + pre + ".json")).json(); let r2 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(P) });
         if (r2.status === 400) { const r3 = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ ...P, handle: P.handle + "-" + Math.random().toString(36).slice(2, 5) }) }); r2 = r3; }
         const j2 = await r2.json().catch(() => ({})); if (j2?.host?.handle) { location.href = "/@" + j2.host.handle + "?welcome=1"; return; } } catch {} } }
-      if (q.get("next") === "start") { location.href = "/start?save=1"; return; } // a dinner planned before signing up (public/start.html) comes with the account
+      if (q.get("next") === "start") { location.href = "/start?save=1"; return; }
+      // ---- hook: "Start from your Instagram" or "Start from scratch" (public/igimport.html, server/igimport.js). A new host page, not a follower or a brand team ----
+      if (body.mode === "friends" && !q.get("regularOf") && !q.get("preset") && !q.get("next")) { location.href = "/import/instagram?next=" + encodeURIComponent(j.redirect || "/?welcome=1"); return; } // a dinner planned before signing up (public/start.html) comes with the account
       location.href = j.redirect || "/?welcome=1";
     } catch { err.textContent = "Can't reach Pottery Lab. Check your connection."; go.disabled = false; }
   });

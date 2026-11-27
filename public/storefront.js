@@ -272,7 +272,7 @@
     const sw = (k, v, inner, title) => `<button type="button" class="sw" data-k="${k}" data-v="${v}" aria-pressed="${st.theme[k] === v}" title="${title || v}">${inner}</button>`;
     function draw() { const t = st.theme;
       pane.innerHTML = `<div class="sp-head"><b>Make it yours</b><button type="button" class="sp-x" aria-label="Close">✕</button></div>
-        <p class="sp-url">${location.host}/@${h.handle} <button type="button" id="sp-copy">Copy link</button></p><div id="spName"></div>${window.EncoreBrandKit ? `<div class="bk-entry"><span><b>Brand kit</b><small>Fonts and colors for your page, events and invites</small></span><button type="button" data-brandkit>Open</button></div>` : ""}${window.__plShopFab ? `<p class="sp-paid" style="margin:8px 0 0;font-size:14px">Sell something or take bookings? <button type="button" id="spPaid" style="background:none;border:0;padding:0;font:inherit;font-weight:600;color:#B04A30;text-decoration:underline;cursor:pointer;min-height:32px">Turn on paid work</button></p>` : ""}
+        <p class="sp-url">${location.host}/@${h.handle} <button type="button" id="sp-copy">Copy link</button></p><div id="spName"></div><div id="spIg"></div>${window.EncoreBrandKit ? `<div class="bk-entry"><span><b>Brand kit</b><small>Fonts and colors for your page, events and invites</small></span><button type="button" data-brandkit>Open</button></div>` : ""}${window.__plShopFab ? `<p class="sp-paid" style="margin:8px 0 0;font-size:14px">Sell something or take bookings? <button type="button" id="spPaid" style="background:none;border:0;padding:0;font:inherit;font-weight:600;color:#B04A30;text-decoration:underline;cursor:pointer;min-height:32px">Turn on paid work</button></p>` : ""}
         <h4>Looks</h4><div class="sws looks">${Object.entries(LOOKS).map(([k, L]) => `<button type="button" class="sw lk" data-look="${k}" aria-pressed="${lookOf(t) === k}" title="${L.label}"><i class="lk-i lk-${k}" style="background:${cover({ ...t, ...L.set, coverUrl: "" })}"></i><small>${L.label}</small></button>`).join("")}</div>
         <h4>Layout</h4><div class="sws layouts">${Object.entries(LAYOUTS).map(([k, L]) => sw("layout", k, `<span class="lay-i" aria-hidden="true">${LAYG[k] || ""}</span><small>${L.label}</small>`, L.label)).join("")}</div>
         <h4>Color</h4><div class="sws accents">${ACCENTS.map((a) => sw("accent", a, `<i style="background:${a}"></i>`)).join("")}</div>
@@ -295,6 +295,7 @@
         <div id="spSupport"></div><div class="sp-actions"><button type="button" class="sp-save" id="sp-save">Save</button><span id="sp-msg"></span></div>`;
       if (!friends) proofEditor(pane.querySelector("#spProof"));
       try { window.EncoreSupport?.mount(pane.querySelector("#spSupport"), mine); window.EncoreSupport?.mountName(pane.querySelector("#spName")); } catch {}
+      try { window.IgImport?.settingsRow(pane.querySelector("#spIg")); } catch {} // hook: "Import from Instagram" (public/igimport.js)
       pane.querySelector(".sp-x").onclick = () => { pane.hidden = true; };
       pane.querySelector("#sp-copy").onclick = async () => { const b = pane.querySelector("#sp-copy"), link = `${location.origin}/@${h.handle}`;
         // a browser can refuse the clipboard: then show the link, selected, so it can be copied by hand

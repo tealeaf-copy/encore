@@ -1,0 +1,136 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Start your page · Pottery Lab</title>
+<meta name="description" content="Start your Pottery Lab page from your own Instagram. You check every line before it's saved.">
+<meta name="robots" content="noindex">
+<script src="/authguard.js"></script>
+<style>
+/* /import/instagram: "Start from your Instagram" (server/igimport.js, docs/instagram-import.md). Field Notes tokens only. */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text);-webkit-font-smoothing:antialiased}
+main{max-width:600px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px calc(120px + env(safe-area-inset-bottom))}
+.top{display:flex;justify-content:space-between;align-items:center;min-height:52px}
+.brand{display:flex;gap:8px;align-items:center;text-decoration:none;color:inherit;font-weight:600}
+.top a.skip{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-soft);font-size:15px}
+.eyebrow{display:block;font:500 13px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin:16px 0 8px}
+h1{font:600 34px/1.1 var(--pl-font-display);letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+h2{font:600 20px/1.25 var(--pl-font-display);margin:28px 0 10px}
+.lede{margin:0 0 20px;color:var(--pl-soft)}
+.pick{display:grid;gap:12px;margin:8px 0 0}
+.opt{display:grid;grid-template-columns:44px 1fr;gap:4px 14px;align-items:start;text-align:left;width:100%;padding:18px 16px;background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;color:var(--pl-ink);font:inherit;cursor:pointer;text-decoration:none}
+.opt b{font:600 18px/1.3 var(--pl-font-display)}.opt span{grid-column:2;color:var(--pl-soft);font-size:15px}
+.opt i{grid-row:span 2;width:44px;height:44px;border:1.5px solid var(--pl-ink);border-radius:6px;display:grid;place-items:center;font-style:normal;font:500 16px var(--pl-font-mono)}
+.opt.main{border-color:var(--pl-accent);box-shadow:inset 0 0 0 1px var(--pl-accent)}.opt.main i{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
+.opt:focus-visible,.btn:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.fine{font-size:14px;color:var(--pl-soft);margin:12px 0 0}
+label.f,.f{display:grid;gap:6px;font-weight:600;font-size:15px;margin:0 0 16px}.f small{font-weight:400;color:var(--pl-soft);font-size:14px}
+input[type=text],input[type=url],input:not([type]),textarea{width:100%;min-height:48px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:16px var(--pl-font-text);padding:10px 12px}
+textarea{min-height:96px;resize:vertical}input:focus,textarea:focus{outline:2px solid var(--pl-accent);outline-offset:1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:6px;border:1.5px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px var(--pl-font-text);text-decoration:none;cursor:pointer;padding:0 18px;text-align:center}
+.btn.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}.btn.wide{width:100%}.btn[disabled]{opacity:.6;cursor:default}
+.btn.sm{min-height:44px;font-size:15px;padding:0 14px}
+.or{display:flex;align-items:center;gap:12px;color:var(--pl-soft);font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.04em;margin:22px 0}.or::before,.or::after{content:"";flex:1;border-top:1px dashed var(--pl-line)}
+.official{padding:16px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface)}.official p{margin:8px 0 0;font-size:14px;color:var(--pl-soft)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin:10px 0 0}
+.th{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1.5px solid var(--pl-ink);background:var(--pl-raised)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th button.x{position:absolute;top:4px;right:4px;width:32px;height:32px;border-radius:6px;border:1px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px var(--pl-font-text);cursor:pointer;line-height:1}
+.addph{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border:1.5px dashed var(--pl-ink);border-radius:6px;background:var(--pl-surface);font-weight:600;cursor:pointer}
+.addph input{position:absolute;width:1px;height:1px;opacity:0}
+.count{font:500 13px var(--pl-font-mono);color:var(--pl-soft);margin:8px 0 0}
+.priv{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px dashed var(--pl-line);border-radius:6px;font-size:14px;color:var(--pl-soft);margin:18px 0 0;background:var(--pl-surface)}
+.msg{color:var(--pl-danger);font-size:15px;min-height:22px;margin:8px 0 0}
+/* reading */
+.reading{display:grid;justify-items:center;text-align:center;padding:24px 0}
+.reading h1{font-size:28px;margin-top:8px}
+.found{list-style:none;margin:18px 0 0;padding:0;width:100%;max-width:440px;text-align:left;border-top:1px dashed var(--pl-line)}
+.found li{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px dashed var(--pl-line);font-size:16px;opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
+.found li.in{opacity:1;transform:none}.found li i{flex:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--pl-ink);display:grid;place-items:center;font-style:normal;font-size:13px}
+.found li.done i{background:var(--pl-ink);color:var(--pl-surface)}
+.potto-bob{animation:bob 2.4s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.potto-bob{animation:none}.found li{transition:none}}
+/* review */
+.card{background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;padding:16px;margin:0 0 12px}
+.fl{display:grid;gap:6px;margin:0 0 14px}.fl:last-child{margin-bottom:0}
+.fl .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.fl .hd b{font-size:15px}
+.src{font:500 13px/1.3 var(--pl-font-mono);color:var(--pl-accent-text)}.src.none{color:var(--pl-soft)}
+.now{font-size:14px;color:var(--pl-soft);margin:0}
+.use{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;min-height:32px}
+.use input{width:20px;height:20px;accent-color:var(--pl-accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media (max-width:480px){.two{grid-template-columns:1fr;gap:0}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 12px;border-radius:6px;border:1.5px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--pl-ink);color:var(--pl-surface)}
+.offer{display:grid;grid-template-columns:1fr 132px 44px;gap:8px;align-items:center;margin:0 0 6px}
+.offer input{min-height:44px}.offer .x{width:44px;height:44px;border:1.5px solid var(--pl-ink);border-radius:6px;background:var(--pl-surface);cursor:pointer;font-size:16px;color:var(--pl-ink)}
+.offer-src{font:500 13px var(--pl-font-mono);color:var(--pl-soft);margin:-2px 0 10px;grid-column:1/-1}
+.offer-src.chk{color:var(--pl-warning,#7A5600)}
+.sw{display:flex;gap:10px;flex-wrap:wrap}.sw label{display:grid;justify-items:center;gap:4px;font:500 13px var(--pl-font-mono);color:var(--pl-soft)}
+.sw input[type=color]{width:56px;height:56px;border:1.5px solid var(--pl-ink);border-radius:6px;padding:2px;background:var(--pl-surface);cursor:pointer}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.ph button{position:relative;aspect-ratio:1;padding:0;border:1.5px solid var(--pl-ink);border-radius:6px;overflow:hidden;background:var(--pl-raised);cursor:pointer}
+.ph button img{width:100%;height:100%;object-fit:cover;display:block}
+.ph button[aria-pressed=true]{outline:3px solid var(--pl-accent);outline-offset:1px}
+.ph button[aria-pressed=true]::after{content:"✓";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:6px;background:var(--pl-accent);color:var(--pl-on-accent);display:grid;place-items:center;font:600 15px var(--pl-font-text)}
+.ph button.art{display:grid;place-items:center;background:var(--pl-surface)}
+.ph small{position:absolute;bottom:4px;right:4px;background:var(--pl-surface);border:1px solid var(--pl-ink);border-radius:6px;padding:0 6px;font:500 13px var(--pl-font-mono);color:var(--pl-ink)}
+.go{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--pl-page);border-top:1px dashed var(--pl-line);z-index:20}
+.go .in{max-width:600px;margin:0 auto}.go .fine{text-align:center;margin:6px 0 0;font-size:13px}
+.disc{background:none;border:0;padding:0;color:var(--pl-accent-text);font:600 15px var(--pl-font-text);text-decoration:underline;cursor:pointer;min-height:44px}
+</style>
+</head><body>
+<main id="m">
+  <header class="top"><a class="brand" href="/feed" aria-label="Pottery Lab"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>pottery lab</a><a class="skip" id="skip" href="/feed?welcome=1">Skip for now</a></header>
+
+  <section id="sChoice" hidden>
+    <span class="eyebrow">Start your page</span>
+    <h1>How do you want to start?</h1>
+    <p class="lede">Your page is where people find you, follow you and see what you host.</p>
+    <div class="pick">
+      <button type="button" class="opt main" id="goIg"><i aria-hidden="true">IG</i><b>Start from your Instagram</b><span>Potto reads your bio and a few of your posts and drafts your page. You check every line.</span></button>
+      <a class="opt" id="goScratch" href="/feed?welcome=1"><i aria-hidden="true">+</i><b>Start from scratch</b><span>A blank page. Fill it in as you go.</span></a>
+    </div>
+    <p class="fine">Nothing goes on your page until you say so.</p>
+  </section>
+
+  <section id="sSource" hidden>
+    <span class="eyebrow" id="srcEye">Start from your Instagram</span>
+    <h1 id="srcH">Show Potto your Instagram</h1>
+    <p class="lede" id="srcLede">Only your own account. Potto drafts your page from what you share here.</p>
+    <div id="official" hidden>
+      <div class="official"><a class="btn pri wide" id="connect" href="/api/igimport/oauth/start">Connect Instagram</a><p>For business and creator accounts. We read your profile and recent posts once, then let go of the key.</p></div>
+      <div class="or">Or use your photos</div>
+    </div>
+    <label class="f">Your Instagram handle <small>We link it on your page.</small><input id="handle" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="@yourshop"></label>
+    <label class="f">Paste your bio <small>On Instagram, tap Edit profile, then copy your bio.</small><textarea id="bio" placeholder="Vietnamese coffee, dripped slow. Open daily 8 to 5."></textarea></label>
+    <div class="f"><span>Pick 3 to 12 photos</span><small>Screenshots of your profile, highlights and posts work well. So do photos of your shop, menu and drinks.</small>
+      <label class="addph" id="addph"><input id="files" type="file" accept="image/*" multiple>Choose photos</label>
+      <div class="thumbs" id="thumbs"></div><p class="count" id="count" aria-live="polite"></p></div>
+    <label class="f">Anything else? <small>Optional. Your menu, prices or hours, only what's true today.</small><textarea id="extra" placeholder="Pandan latte $6. Tastings every first Sunday."></textarea></label>
+    <p class="priv"><span aria-hidden="true">i</span><span>Your photos are read to make the draft, then let go. Only the ones you pick for your page are kept. Nothing is fetched about anyone else.</span></p>
+    <p class="msg" id="srcErr" role="alert"></p>
+    <button type="button" class="btn pri wide" id="read">Read my Instagram</button>
+    <p class="fine" id="discWrap" hidden>Imported before? <button type="button" class="disc" id="disc">Disconnect</button></p>
+  </section>
+
+  <section id="sRead" class="reading" hidden aria-live="polite">
+    <div class="potto-bob" id="potto"></div>
+    <h1>Potto is reading your posts…</h1>
+    <p class="lede" style="margin:0">This takes a few seconds.</p>
+    <ul class="found" id="found"></ul>
+  </section>
+
+  <section id="sReview" hidden>
+    <span class="eyebrow" id="revEye">Your draft</span>
+    <h1 id="revH">Here's your page, drafted</h1>
+    <p class="lede">Check each line and change anything. Nothing is saved until you tap the button at the bottom.</p>
+    <div id="review"></div>
+    <p class="msg" id="saveErr" role="alert"></p>
+  </section>
+</main>
+<div class="go" id="goBar" hidden><div class="in"><button type="button" class="btn pri wide" id="save">Looks good, save my page</button><p class="fine">Nothing is public until you tap this.</p></div></div>
+<script src="/mascot.js"></script><script src="/avatars.js"></script>
+<script src="/igimport.js"></script>
+<script>IgImport.page();</script>
+<script src="/help.js" defer></script>
+</body></html>

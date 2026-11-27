@@ -2,6 +2,7 @@
 // constructor reads ANTHROPIC_API_KEY from the environment. Never log it.
 import Anthropic from "@anthropic-ai/sdk";
 import { pottoReply } from "./pottorules.js";
+import { IG_PROMPT_TAG, fakeIgDraft } from "./igdraft.js"; // "Start from your Instagram" in offline mode (server/igimport.js)
 
 export const MODEL = "claude-opus-5-5";
 export const MAX_TOKENS = 32000;
@@ -259,6 +260,8 @@ function lastUserText(messages) {
 export function fakeText(prompt) {
   const p = typeof prompt === "string" ? prompt : JSON.stringify(prompt);
   if (/^POTTO-ASK\b/.test(p)) return JSON.stringify(fakePotto(p));
+  // a prompt can be content blocks (text and images, as complete() sends them): the Instagram draft reads its text blocks
+  if (p.includes(IG_PROMPT_TAG)) return JSON.stringify(fakeIgDraft(prompt));
   if (/"nudges"/.test(p)) {
     return JSON.stringify({
       nudges: [{ to: "Owner", message: "Friendly reminder: a task on your list is due soon. Can you take a look today?" }],

@@ -32,6 +32,7 @@ import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
 import { mountDrops, dropOrderError, soldOf } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
 import { mountCover } from "./cover.js"; // the host page cover photo
+import { mountIgImport } from "./igimport.js"; // "Start from your Instagram": a draft of the host page from their own Instagram (server/igimport.js)
 import { mountMarket } from "./market.js";
 import { mountInterest } from "./interest.js"; // one page per experience or shop item (/x/...), and "I'm interested" on preview pages
 import { mountBrand, startResearch } from "./brand.js";
@@ -792,6 +793,7 @@ export function createApp({ store, dataDir }) {
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X }); // before /x pages: old shop links open the drop
   mountCover(app, { assetsDir, currentUser, C });
+  mountIgImport(app, { store, currentUser, C, assetsDir, publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a) }); // ---- Start from your Instagram (server/igimport.js) ----
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
   mountBrandbook(app, { store, small, currentUser, C, X, assetsDir, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)

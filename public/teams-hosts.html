@@ -10,7 +10,7 @@
   const of = (x) => (x.of ? `${x.n} of ${x.of}${x.pct != null ? ` (${x.pct}%)` : ""}` : "No answers yet");
   (async () => { let d; try { d = await api("/api/teams/hosts"); } catch (e) {
       main.removeAttribute("aria-busy");
-      if (e.status === 401) { main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see your hosts</h1><p class="bb-lede">The hosts your team has booked, how their events went, and one tap to book them again.</p><a class="bb-btn primary lg" href="/login?next=/teams/hosts">Sign in</a></section>`; return; }
+      if (e.status === 401) { BB.teamGate(main, { title: "Sign in to see your hosts", lede: "The hosts your team has booked, how their events went, and one tap to book them again." }); return; }
       main.innerHTML = `<section class="bb-xhead"><h1>Your hosts</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
     main.removeAttribute("aria-busy");
     main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">${esc(d.company)}</p><h1>Your hosts</h1><p class="ti-sub">Everyone your team has booked, what came of it, and the brief you agreed last time.</p></div><div class="acts"><a class="bb-btn quiet" href="/teams/discover">${icon("all")}Find a new host</a></div></header>

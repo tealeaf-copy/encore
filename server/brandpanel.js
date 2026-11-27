@@ -124,13 +124,16 @@ export function accessNotes(pkg = {}) {
 // goal, the exact date being open, the budget and the host's track record.
 export function quickRank(cands = [], { date = "", people = 0, budgetCents = 0, city = "", goal = "" } = {}) {
   const G = goalOf(goal), C = lc(city);
-  const fits = cands.filter((x) => (!people || (people >= x.minGuests && people <= x.maxGuests)) && (!C || [x.city, x.areaCity, x.area].map(lc).includes(C) || (C === "new york" && ["brooklyn", "manhattan", "queens"].includes(lc(x.areaCity)))) && !x.remote);
-  const scored = fits.map((x) => { let s = 0; const why = [];
+  const sizeOk = (x) => !people || (people >= x.minGuests && people <= x.maxGuests), cityOk = (x) => !C || [x.city, x.areaCity, x.area].map(lc).includes(C) || (C === "new york" && ["brooklyn", "manhattan", "queens"].includes(lc(x.areaCity)));
+  let fits = cands.filter((x) => sizeOk(x) && cityOk(x) && !x.remote), near = false;
+  // nothing fits every filter: show the closest hosts instead of an empty box, each with what doesn't match
+  if (!fits.length) { near = true; fits = cands.filter((x) => !x.remote).map((x) => ({ ...x, miss: [!cityOk(x) ? `In ${x.areaCity || x.city || "another city"}` : "", !sizeOk(x) ? `Takes ${x.minGuests}${x.maxGuests > x.minGuests ? "–" + x.maxGuests : ""} guests` : ""].filter(Boolean) })); }
+  const scored = fits.map((x) => { let s = near ? -25 * (x.miss || []).length : 0; const why = [];
     const moodHit = G ? (x.moods || []).filter((m) => G.moods.includes(m)).length : 0; if (G) { s += moodHit ? 30 + 5 * moodHit : 0; if (moodHit) why.push(`Suits a ${G.label.toLowerCase()}`); }
     if (x.dateState === "open") { s += 40; why.push("Open on your date"); } else if (x.altDate) s += 15;
     const pp = x.effectivePerPersonCents || x.perPersonCents; if (budgetCents) { if (pp <= budgetCents) { s += 20; why.push("Inside your budget"); } else s -= Math.min(40, Math.round(((pp - budgetCents) / budgetCents) * 100)); }
     s += Math.round((x.quality || 0) * 0.3) + (x.trusted ? 5 : 0);
-    return { ...x, score: s, why, overBudgetCents: budgetCents && pp > budgetCents ? pp - budgetCents : 0 }; });
+    return { ...x, score: s, why, near, miss: x.miss || [], overBudgetCents: budgetCents && pp > budgetCents ? pp - budgetCents : 0 }; });
   scored.sort((a, b) => b.score - a.score || a.totalCents - b.totalCents);
   const seen = new Set(), out = []; for (const x of scored) { if (seen.has(x.handle)) continue; seen.add(x.handle); out.push(x); if (out.length === 3) break; } // three different hosts
   return out;
@@ -457,7 +460,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
         cands.push({ ...card, price, city: x.s.city || x.h.city || "", areaCity: A.city, area: A.area, access: p.access || [], diets: p.diets || [], moods: p.moods || [], quality: st.quality, trusted: st.trusted, totalCents: full.totalCents, effectivePerPersonCents: full.effectivePerPersonCents,
           dateState, altDate, policy: x.s.policy, depositCents: full.depositCents, terms: terms.short, priceLines: full.lines.filter((l) => l.cents || l.k === "people"), summary: full.summary }); } }
     const top = quickRank(cands, { date, people, budgetCents, city: only ? "" : city, goal }).map((x) => { const when = x.dateState === "open" ? date : x.altDate;
-      return { handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, area: x.area, photo: x.photo, lead: x.lead, art: x.art, moods: x.moods, rating: x.rating, reviews: x.reviews, trusted: x.trusted, instant: x.instant, why: x.why,
+      return { near: !!x.near, miss: x.miss || [], handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, area: x.area, photo: x.photo, lead: x.lead, art: x.art, moods: x.moods, rating: x.rating, reviews: x.reviews, trusted: x.trusted, instant: x.instant, why: x.why,
         totalCents: x.totalCents, perPersonCents: x.effectivePerPersonCents, summary: x.summary, priceLines: x.priceLines, depositCents: x.depositCents, terms: x.terms, overBudgetCents: x.overBudgetCents,
         availability: { date, state: x.dateState, alt: x.altDate, line: !date ? "Pick a date to check it" : x.dateState === "open" ? `Open on ${short(date)}` : x.altDate ? `Not ${short(date)}. Open ${short(x.altDate)}` : `Not open near ${short(date)}` },
         exposure: exposureSchedule({ policy: x.policy, totalCents: x.totalCents, depositCents: x.depositCents, date: when, today }), access: accessNotes({ access: x.access, diets: x.diets }),

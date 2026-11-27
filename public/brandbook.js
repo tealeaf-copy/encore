@@ -204,5 +204,15 @@
   }
   async function savedKeys() { try { const L = await myLists(); return new Set((L[0]?.keys) || []); } catch { return new Set(); } }
 
-  window.BB = { esc, money, api, icon, top, cover, drawn, card, expandOnClick, chips, gallery, viewer, trustRow, verifyRow, trustedBadge, stars, priceBox, priceLines, termsList, reviews, calendar, legend, map, sheet, toast, saveTo, savedKeys, myLists, hours, native, $, $$ };
+
+  // one signed-out panel for every brand page: what the page is for, sign in, or start a team
+  function teamGate(main, { title = "Sign in to your team", lede = "Book trusted local hosts, run each event end to end, and see what came of it." } = {}) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    main.removeAttribute?.("aria-busy");
+    main.innerHTML = `<section class="bb-xhead tg"><p class="bb-kicker">For B2B marketing teams</p><h1>${esc(title)}</h1><p class="bb-lede">${esc(lede)}</p>
+      <div class="tg-acts"><a class="bb-btn primary lg" href="/login?next=${next}">Sign in</a><a class="bb-btn lg" href="/signup?mode=work&amp;next=${next}">Start a team, free</a></div>
+      <p class="tg-alt">Just looking? <a href="/teams/discover">Browse hosts</a> without an account.</p>
+      <ul class="tg-why" aria-label="What teams get"><li><b>Hosts with real followings</b><span>Supper clubs, studios and run clubs people already come back to.</span></li><li><b>Outcomes beyond attendance</b><span>Target accounts in the room, connections, meetings and pipeline.</span></li><li><b>Benchmarks that keep guests private</b><span>Pooled numbers only show with 10 or more people across 3 or more events.</span></li></ul></section>`;
+  }
+  window.BB = { esc, money, api, icon, top, cover, drawn, card, expandOnClick, chips, gallery, viewer, trustRow, verifyRow, trustedBadge, stars, priceBox, priceLines, termsList, reviews, calendar, legend, map, sheet, toast, saveTo, savedKeys, myLists, hours, native, teamGate, $, $$ };
 })();

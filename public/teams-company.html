@@ -8,7 +8,7 @@
   const { esc, api, icon, money, $, $$ } = BB; BB.top("home");
   const main = $("#main"), opts = (M, cur) => Object.entries(M).map(([k, v]) => `<option value="${esc(k)}"${k === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
   async function load() { let d; try { d = await api("/api/teams/company"); } catch (e) { main.removeAttribute("aria-busy");
-      main.innerHTML = e.status === 401 ? `<section class="bb-xhead"><h1>Sign in to see your company</h1><a class="bb-btn primary lg" href="/login?next=/teams/company">Sign in</a></section>` : `<section class="bb-xhead"><h1>Company settings</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
+      if (e.status === 401) return BB.teamGate(main, { title: "Sign in to see your company", lede: "Your team, approvals, budget rules and brand kit, in one place." }); main.innerHTML = `<section class="bb-xhead"><h1>Company settings</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
     main.removeAttribute("aria-busy"); const O = d.org;
     if (!O) { main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Workspace and teams</p><h1>Company settings</h1><p class="ti-sub">Set the approval rule, brand rules and invoicing once. Every team at your company books under them, without new setup.</p></div></header>
         ${d.suggest ? `<section class="tp-box"><h2>${esc(d.suggest.name)} is already here</h2><p class="ti-sub">${d.suggest.teams} ${d.suggest.teams === 1 ? "team books" : "teams book"} under its settings. Join to use the same rules.</p><div class="tp-acts"><button class="bb-btn primary" id="join">Join ${esc(d.suggest.name)}</button></div></section>` : ""}

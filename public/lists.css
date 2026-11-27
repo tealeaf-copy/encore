@@ -43,7 +43,7 @@ a.ls-title::after{content:"";position:absolute;inset:0;border-radius:inherit}a.l
 .ls-btn:hover{border-color:var(--ink,#1F1A17)}
 .ls-btn.primary{background:var(--sys-ember,#C94A30);border-color:var(--sys-ember,#C94A30);color:#fff}.ls-btn.primary:hover{background:var(--sys-ember-press,#B04A30);border-color:var(--sys-ember-press,#B04A30)}
 /* empty and end states: say what happened and offer one next step */
-.ls-empty{grid-column:1/-1;display:grid;justify-items:center;gap:8px;text-align:center;padding:40px 16px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;color:var(--smoke,#665A51)}
+.ls-empty{grid-column:1/-1;display:grid;justify-items:center;align-content:center;gap:8px;text-align:center;padding:40px 16px;border:1.5px dashed var(--line-strong,#D9CCBB);border-radius:16px;color:var(--smoke,#665A51)}
 .ls-empty b{font:600 20px/1.25 var(--sys-title,system-ui);color:var(--ink,#1F1A17)}.ls-empty p{margin:0;max-width:420px}.ls-empty .ls-btn{margin-top:8px}
 .ls-end{display:grid;justify-items:center;gap:6px;text-align:center;margin:48px auto 0;padding-top:24px;border-top:1.5px solid var(--line,#E4D9C8);max-width:560px;color:var(--smoke,#665A51)}
 .ls-end b{font:600 20px var(--sys-title,system-ui);color:var(--ink,#1F1A17)}.ls-end .ls-btn{margin-top:10px}
@@ -69,3 +69,6 @@ a.ls-title::after{content:"";position:absolute;inset:0;border-radius:inherit}a.l
 @media (max-width:860px){html body :is(.pli-by a,.foot a,.teams a,.ls-foot a){padding-top:14px!important;padding-bottom:14px!important;margin-top:-14px!important;margin-bottom:-14px!important}}
 /* the smallest phones: ideas stay one column, with the shorter 3:2 media so a card fits on one screen */
 @media (max-width:359px){.ls-grid.compact .pli-media{aspect-ratio:3/2}}
+
+/* empty-state action: the same button as Follow, at its natural height */
+.ls-empty .ls-btn{height:auto;min-height:44px;padding:0 18px}

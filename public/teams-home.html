@@ -17,7 +17,7 @@
     return `<p class="ti-mline">${got ? `<span class="ti-mstamp" data-mile="${esc(c.id)}">${esc(got[0])}</span>` : ""}${next ? `<small>Next: ${esc(next[0].toLowerCase())}, ${esc(next[2])}</small>` : ""}</p>`; };
   const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
   (async () => { let d; try { d = await api("/api/teams/home"); } catch (e) {
-      if (e.status === 401) { main.innerHTML = `<section class="bb-xhead"><h1>Sign in to your team</h1><a class="bb-btn primary lg" href="/login?next=/teams/home">Sign in</a></section>`; return; }
+      if (e.status === 401) { BB.teamGate(main); return; }
       if (e.code === "not_brand") { location.replace("/?app=1"); return; } main.innerHTML = `<p>${esc(e.message)}</p>`; return; }
     const M = d.money, R = d.results, Z = d.resonates;
     main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">${esc(d.company)}</p><h1>${esc(hello())}${d.name ? `, <em>${esc(d.name)}</em>` : ""}</h1><p class="ti-sub">Book one event, see what's coming up, and what came of the last one.</p></div>

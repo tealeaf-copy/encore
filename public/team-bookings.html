@@ -9,7 +9,7 @@
   const id = location.pathname.split("/")[3] || "", main = $("#main");
   const day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "");
   const when = (r) => (r.date ? day(r.date) : r.flexText);
-  const signin = () => (main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see your team's bookings</h1><a class="bb-btn primary lg" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a></section>`);
+  const signin = () => BB.teamGate(main, { title: "Sign in to see your team's bookings", lede: "Every request, deposit and date your team has with a host, and what to do next on each." });
   async function list() { let d; try { d = await api("/api/bb/requests"); } catch (e) { return e.status === 401 ? signin() : (main.innerHTML = `<p>${esc(e.message)}</p>`); }
     let rules; try { rules = await api("/api/bb/brand/rules"); } catch {}
     const waiting = d.requests.filter((r) => r.status === "approval");

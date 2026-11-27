@@ -14,7 +14,7 @@
   const today = new Date().toISOString().slice(0, 10);
   const STATUS = { approval: "Waiting on your team", requested: "Sent to the host", countered: "The host suggested a change", accepted: "Accepted, deposit due", booked: "Booked", declined: "Declined", cancelled: "Cancelled", done: "Done", question: "A question" };
   const CST = { planning: "Planning", active: "Running", done: "Wrapped up" };
-  const signin = () => (main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see your campaigns</h1><a class="bb-btn primary lg" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a></section>`);
+  const signin = () => BB.teamGate(main, { title: "Sign in to see your campaigns", lede: "Every event in a program, the guest lists, and the follow-up for sales in one place." });
   const fail = (e) => (main.removeAttribute("aria-busy"), e.status === 401 ? signin() : e.code === "not_brand" ? (main.innerHTML = `<section class="bb-xhead"><h1>Campaigns are for brand teams</h1><p class="bb-lede">Hosting? Start from <a href="/?app=1">your Home</a>.</p></section>`) : (main.innerHTML = `<section class="bb-xhead"><h1>Not found</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/campaigns">All campaigns</a></section>`));
   const meterHtml = (B) => { const tot = Math.max(B.budgetCents, B.committedCents + B.pendingCents, 1), c = Math.round((B.committedCents / tot) * 100), p = Math.round((B.pendingCents / tot) * 100);
     return `<div class="ti-meter${B.over ? " over" : ""}" role="img" aria-label="${money(B.committedCents)} committed of ${money(B.budgetCents)}"><i style="width:${c}%"></i><i class="p" style="left:${c}%;width:${p}%"></i></div>`; };

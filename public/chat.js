@@ -73,7 +73,7 @@
     if (!L.length) { box.innerHTML = `<p class="ch-sec" style="justify-content:center">Nothing matches "${esc(q)}"</p>`; return; }
     const up = L.filter((c) => c.upcoming), past = L.filter((c) => !c.upcoming);
     box.innerHTML = (up.length ? `<h2 class="ch-sec">Upcoming</h2>${up.map(rowHTML).join("")}` : "") + (past.length ? `<h2 class="ch-sec">Past</h2>${past.map(rowHTML).join("")}` : "") +
-      (B.signedIn ? "" : `<p class="ch-sec" style="font-weight:400;margin-top:20px">On another phone? <a href="/signup?mode=friends&amp;next=/chats" style="color:var(--pl-accent-text);font-weight:600">Make a free account</a> to see your chats anywhere.</p>`); }
+      (B.signedIn ? "" : `<p class="ch-hint">On another phone? <a href="/signup?mode=friends&amp;next=/chats">Make a free account</a> to see your chats anywhere.</p>`); }
   $("#chQ")?.addEventListener("input", (e) => { q = e.target.value; paintRows(); });
   document.addEventListener("click", (e) => { const a = e.target.closest?.(".ch-row[data-id]"); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(a.dataset.id); });
 

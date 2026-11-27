@@ -25,7 +25,7 @@
   const riskList = (X, n = 4) => (X && X.rows.length ? `<ul class="tp-risk">${X.rows.slice(0, n).map((r) => `<li><span>${esc(r.atRiskCents ? `${day(r.from)}${r.until !== r.from ? " to " + day(r.until) : ""}` : `Until ${day(r.until)}`)}</span><b>${r.atRiskCents ? money(r.atRiskCents) + " at risk" : "$0, free to cancel"}</b></li>`).join("")}</ul>` : "");
 
   // ---- quick book ----
-  function quickBook(el, { title = "Book one event", lede = "Tell us the date, the group and the goal. We'll show three hosts who can do it, with the full price and what's at risk if plans change." } = {}) {
+  function quickBook(el, { title = "Book one event", lede = "Tell us the date, the group and the goal. We'll show up to three hosts who can do it, with the full price and what's at risk if plans change." } = {}) {
     const U = new URLSearchParams(location.search); let saved = {}; try { saved = JSON.parse(localStorage.getItem("tp.quick") || "{}"); } catch {}
     const Q = { date: U.get("date") || saved.date || nextWeekday(21), people: +(U.get("people") || saved.people || 12), budget: +(U.get("budget") || saved.budget || 0) || "", city: U.get("city") || saved.city || "New York", goal: U.get("goal") || saved.goal || "customer" };
     if (Q.date < localIso(1)) Q.date = nextWeekday(21);
@@ -38,7 +38,7 @@
         <label class="bb-field"><span>Budget a person</span><input type="number" name="budget" min="0" max="2000" inputmode="numeric" placeholder="Any" value="${esc(Q.budget)}"></label>
         <label class="bb-field wide"><span>City</span><input name="city" list="tpCities" value="${esc(Q.city)}" autocomplete="address-level2"><datalist id="tpCities">${CITIES.map((c) => `<option value="${c}">`).join("")}</datalist></label>
         <div class="goals wide"><p class="bb-field" style="margin:0 0 6px"><span>Goal</span></p><div class="tp-goals" role="group" aria-label="Goal">${GOALS.map(([k, t]) => `<button type="button" data-goal="${k}" aria-pressed="${k === Q.goal}">${t}</button>`).join("")}</div></div>
-        <button class="bb-btn primary lg wide" type="submit" id="tpGo">${icon("people")}Show 3 hosts</button></form>
+        <button class="bb-btn primary lg wide" type="submit" id="tpGo">${icon("people")}Find hosts</button></form>
       <div id="tpRes" aria-live="polite"></div>`;
     const f = $("#tpQf", el), res = $("#tpRes", el);
     f.addEventListener("input", () => { t0 ||= Date.now(); }, { once: true });
@@ -48,10 +48,11 @@
       const q = new URLSearchParams({ date: Q.date, people: Q.people, budget: Q.budget || "", city: Q.city, goal: Q.goal }); if (prev) q.set("only", `${prev.host.handle}/${prev.pkg}`);
       try { data = await api("/api/teams/quick?" + q); } catch (e) { res.innerHTML = `<p class="ti-sub">${esc(e.message)}</p>`; return; } draw(); }
     function draw() { const L = data.results;
-      if (!L.length) { res.innerHTML = `<div class="tp-box quiet"><h3>Nothing fits all of that yet</h3><p class="ti-sub">Try another date, a nearby city or a bigger budget. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>`; return; }
-      res.innerHTML = `<p class="bb-meta" style="margin:14px 0 0">${L.length === 1 ? "One host" : `${L.length} hosts`} for ${Q.people} on ${esc(day(Q.date))}${Q.city && !prev ? ` in ${esc(Q.city)}` : ""}. Totals include everything; nothing is charged until the host accepts.</p>
+      if (!L.length) { res.innerHTML = `<div class="tp-box quiet"><h3>No hosts are taking bookings yet</h3><p class="ti-sub">New hosts join every week. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>`; return; }
+      const near = L.some((x) => x.near);
+      res.innerHTML = `${near ? `<div class="tp-box quiet" style="margin-top:14px"><h3>No host fits all of that yet</h3><p class="ti-sub">These are the closest. What's different is marked on each one. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>` : ""}<p class="bb-meta" style="margin:14px 0 0">${near ? `Closest ${L.length === 1 ? "host" : `${L.length} hosts`}` : L.length === 1 ? "One host" : `${L.length} hosts`} for ${Q.people} on ${esc(day(Q.date))}${Q.city && !prev && !near ? ` in ${esc(Q.city)}` : ""}. Totals include everything; nothing is charged until the host accepts.</p>
         <div class="tp-res">${L.map((x, i) => `<article class="tp-opt"><a class="ph" href="/teams/x/${esc(x.handle)}/${esc(x.pkg)}?people=${Q.people}" aria-label="${esc(x.name)}">${BB.cover(x)}</a><div class="bd">
-          <p class="who">${esc(x.host.name)}${x.area ? ` · ${esc(x.area)}` : ""}${x.trusted ? " " + BB.trustedBadge() : ""}</p><h3>${esc(x.name)}</h3>
+          <p class="who">${esc(x.host.name)}${x.area ? ` · ${esc(x.area)}` : ""}${x.trusted ? " " + BB.trustedBadge() : ""}</p><h3>${esc(x.name)}</h3>${(x.miss || []).length ? `<p class="tp-miss" style="margin:2px 0 6px;font-weight:600;color:var(--pl-ink)">Not a full match: ${esc(x.miss.join(" · "))}</p>` : ""}
           <p class="tp-total">${money(x.totalCents)}<small>total for ${Q.people}, about ${money(x.perPersonCents)} a person${x.overBudgetCents ? `, ${money(x.overBudgetCents)} a person over budget` : ""}</small></p>
           ${x.why.length ? `<ul class="tp-why">${x.why.slice(0, 3).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
           <ul class="tp-facts"><li>${icon("cal")}<span><span class="tp-dot ${x.availability.state === "open" ? "open" : ""}" aria-hidden="true"></span>${esc(x.availability.line)}</span></li>

@@ -11,7 +11,7 @@
   const pc = (v) => (v == null ? "" : v + "%");
   const meter = (v) => (v == null ? "" : `<span class="meter" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></span>`);
   const privacy = (extra = "") => `<p class="ti-privacy">${icon("lock")}<span>Totals only, from guests who chose to be counted. A number shows when at least ${META?.thresholds?.people || 10} people and ${META?.thresholds?.events || 3} events are behind it. ${extra}<a href="/teams/insights/how">How insights work</a></span></p>`;
-  const signin = () => (main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see insights</h1><p class="bb-lede">Insights are for brand teams on Pottery Lab.</p><a class="bb-btn primary lg" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in</a></section>`);
+  const signin = () => BB.teamGate(main, { title: "Sign in to see insights", lede: "What kinds of events your buyers come to, and what came of them. Guests choose what you see." });
 
   async function boot() {
     try { META = await api("/api/insights/meta"); const A = await api("/api/insights/audience"); AUD = A.audience; SUGG = A.suggested || []; }

@@ -18,7 +18,7 @@
     $("methods").innerHTML = rows.join("");
     if (!can) { $("pkAdd").hidden = true; $("pkWhere").textContent = "This browser can't make passkeys. Try the Pottery Lab app or another browser."; }
   }
-  async function load() { if (!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const r = await fetch("/api/passkeys", { credentials: "same-origin" }); if (!r.ok) return; box.hidden = false; draw(await r.json()); }
+  async function load() { if (!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; box.hidden = false; /* shown at once, so the sections under it do not jump 200px when the list arrives */ const r = await fetch("/api/passkeys", { credentials: "same-origin" }); if (!r.ok) { box.hidden = true; return; } draw(await r.json()); }
   $("methods").addEventListener("click", async (e) => { const b = e.target.closest("[data-pk]"); if (!b) return; if (!confirm("Remove this passkey? You can still sign in with your email.")) return;
     b.disabled = true; try { const r = await fetch("/api/passkeys/" + encodeURIComponent(b.dataset.pk), { method: "DELETE", credentials: "same-origin" }); if (!r.ok) throw new Error(); $("pkMsg").textContent = "Passkey removed."; load(); } catch (x) { b.disabled = false; $("pkMsg").textContent = "Couldn't remove it. Try again."; } });
   $("pkAdd").addEventListener("click", async () => {

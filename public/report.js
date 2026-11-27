@@ -88,6 +88,8 @@
     fetch("/api/status", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j) return; ss.set("pl.status", JSON.stringify({ at: Date.now(), incident: j.incident || null })); banner(j.incident || null); }).catch(() => {}); }
 
   window.PLReport = { report: (err, kind = "error") => report(kind, err?.message || String(err || ""), err?.stack || ""), recent: () => recent().map((x) => x.id), app: APP, status: () => incident, load };
-  const start = () => { footLink(); watchToasts(); const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200)); idle(status, { timeout: 4000 }); };
+  // the footer link waits until the page has drawn itself, so it never sits mid-screen and gets pushed down (no layout shift)
+  const start = () => { watchToasts(); const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200)); idle(status, { timeout: 4000 });
+    const foot = () => setTimeout(() => idle(footLink, { timeout: 3000 }), 1500); if (document.readyState === "complete") foot(); else addEventListener("load", foot, { once: true }); };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true }); else start();
 })();

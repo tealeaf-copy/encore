@@ -711,7 +711,7 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-add textarea::placeholder{color:var(--fb-soft);opacity:1}.fb-stream .fb-add textarea:hover{border-color:var(--fb-line2)}.fb-stream .fb-add textarea:focus-visible{outline:2px solid var(--fb-acc);outline-offset:0;border-color:var(--fb-acc)}
 .fb-sendc{flex:none;min-height:44px;padding:0 16px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--fb-acc);color:var(--fb-on-acc);font:600 15px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-sendc:hover{background:var(--fb-acc-press)}.fb-sendc[disabled]{opacity:.5;cursor:default}
 /* Send stays put (it used to appear on focus, which moved the emoji and GIF buttons under a finger mid-tap); on a narrow phone your face makes room */
-@media (max-width:430px){form.fb-add>.fb-f{display:none}.fb-add .fx-b{width:36px}.fb-sendc{padding:0 12px}}
+@media (max-width:430px){form.fb-add>.fb-f{display:none}.fb-add .fx-b{width:44px}.fb-sendc{padding:0 12px}}
 .fb-stream .fb-add textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-add-err{flex-basis:100%;margin:0;padding-left:34px;font-size:13px;line-height:1.4;font-weight:600;color:var(--fb-acc-text)}.fb-add-err:empty{display:none}
 a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid var(--fb-line);border-radius:var(--pl-r-md,6px);color:var(--fb-soft);font-size:15px;text-decoration:none;box-sizing:border-box}.fb-add-out:hover{border-color:var(--fb-line2);color:var(--fb-ink)}

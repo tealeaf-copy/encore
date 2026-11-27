@@ -43,8 +43,9 @@ section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 
 .hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "IBM Plex Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;color:var(--pl-ink)!important;cursor:pointer;box-shadow:none!important}
 .hcd-f:hover{border-color:var(--pl-ink)!important}.hcd-f[aria-pressed=true]{background:var(--pl-ink)!important;color:#fff!important}
 .hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
-.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:6px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
-.hcd-nx b{flex:none;font-weight:600;color:var(--pl-accent-text)}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:44px;padding:8px 12px;border-radius:6px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
+.hcd-nx b{flex:none;font-weight:600;color:var(--pl-accent-text)}.hcd-nx span{min-width:0;overflow-wrap:anywhere;text-wrap:pretty} /* the next event title in full, on two lines if it needs them */
+.ls-card :is(.ls-title,.ls-sub,.ls-when),.hcd small,.endcards :is(p,small),.note-box{text-wrap:pretty} /* no word alone on the last line */
 a.hcd-nx:hover{background:var(--pl-raised)}
 .hcd-exs{display:none;font-weight:600;color:var(--pl-soft)}
 .hcd-exs{display:inline}@media (max-width:520px){.hcd-f{min-width:0;padding:0 14px!important}}

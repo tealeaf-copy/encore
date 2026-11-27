@@ -9,7 +9,10 @@
 :root{--eh-bottom:calc(84px + env(safe-area-inset-bottom,0px))} /* "Need a hand?" sits above the comment box */
 *{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page,#EFEBE2);color:var(--pl-ink,#1B1D1C);font:16px/1.5 var(--sys-sans,"IBM Plex Sans",system-ui,sans-serif);color-scheme:light}
 .ppg{max-width:600px;margin:0 auto;padding:8px 16px 0}
-.pp-top{display:flex;align-items:center;min-height:52px}
+.ppg{--fb-ink:var(--pl-ink);--fb-soft:var(--pl-soft);--fb-line:var(--pl-line);--fb-line2:var(--pl-line-strong);--fb-card:var(--pl-surface);--fb-linen:var(--pl-raised);--fb-acc:var(--pl-accent);--fb-acc-press:var(--pl-accent-press);--fb-acc-text:var(--pl-accent-text);--fb-on-acc:var(--pl-on-accent,#fff)}
+/* the very top: back, then the host (or person) with the one Follow control, before the card, kudos and comments */
+.pp-top{display:flex;align-items:center;gap:6px;min-height:60px;padding:6px 0;border-bottom:1px solid var(--pl-line,#CFC8B9)}.pp-top .fb-lead{flex:1;min-width:0;margin:0}
+.ppg .pp-top .pp-back{flex:none;width:44px;height:44px;justify-content:center;padding:0;margin-left:-10px}
 .pp-back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 4px;margin-left:-4px;border-radius:var(--pl-r-btn,6px);color:var(--pl-accent-text,#29489A);font:600 15px var(--sys-sans,"IBM Plex Sans",system-ui);text-decoration:none}
 .pp-back:hover{text-decoration:underline;text-underline-offset:3px}.pp-back svg{width:20px;height:20px}
 #ppCard .fb-card{padding-top:8px;padding-bottom:4px}
@@ -56,7 +59,7 @@
 <script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/safety.js" defer></script>
 </head><body>
 <main class="ppg" id="m">
-  <div class="pp-top"><a class="pp-back" id="ppBack" href="/feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Back to the feed</a></div>
+  <div class="pp-top"><a class="pp-back" id="ppBack" href="/feed" aria-label="Back to the feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></a></div>
   <h1 class="fb-sr" id="ppH">Post</h1>
   <div id="ppCard"></div>
   <section class="pp-sec" id="kudos" aria-labelledby="ppKH"><h2 id="ppKH">Kudos</h2><div id="ppK"></div></section>
@@ -78,6 +81,8 @@
   $("#ppH").textContent = P.title || "Post";
   // the card, drawn the way the feed draws it, with its kudos button wired (the lists below take the previews' place)
   FV.css(); $("#ppCard").innerHTML = S.card(P.item, { signedIn: !!P.signedIn, me: P.me || null }); FV.wire($("#ppCard"));
+  // the host (or the person) moves to the very top, next to Back: the only Follow on the page
+  { const lead = $("#ppCard .fb-lead"); if (lead) $(".pp-top").appendChild(lead); }
   // everyone who gave kudos: you first, then the newest; "A guest" for someone who keeps their name to themselves
   let K = P.kudos || { count: 0, people: [] };
   function drawKudos() { const L = K.people || [];

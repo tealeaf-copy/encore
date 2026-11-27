@@ -195,7 +195,13 @@
   const okColor = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : "");
   // a face with a thin ring in the host's own colour (their brand shows here, small)
   const ringed = (h, size = 36) => `<span class="fb-ring" style="--ring:${esc(okColor(h?.color) || "var(--line-strong)")}">${avatar(h, size)}</span>`;
-  const followBtn = (h) => (!h || h.following || h.mine ? "" : `<button type="button" class="fb-follow-in" data-fb-follow="${esc(h.handle)}" data-url="/@${esc(h.handle)}#follow">Follow<span class="fb-sr"> ${esc(h.name)}</span></button>`);
+  // the one Follow control, in the header next to the name. On a post page (LEADFULL) it also says Following (with a
+  // small menu: notifications, Unfollow) and, on your own post, Edit page; the feed keeps just Follow, for hosts you don't follow yet
+  let LEADFULL = false;
+  const CHECK = `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3L15 7"/></svg>`;
+  const followingBtn = (h) => `<button type="button" class="fb-follow-in on" data-fb-fmenu="${esc(h.handle)}" aria-haspopup="menu" aria-expanded="false">Following${CHECK}<span class="fb-sr"> ${esc(h.name)}</span></button>`;
+  const followBtn = (h) => (!h ? "" : h.mine ? (LEADFULL ? `<a class="fb-follow-in" href="/@${esc(h.handle)}">Edit page</a>` : "") : h.following ? (LEADFULL ? followingBtn(h) : "")
+    : `<button type="button" class="fb-follow-in" data-fb-follow="${esc(h.handle)}" data-url="/@${esc(h.handle)}#follow" data-name="${esc(h.name)}">Follow<span class="fb-sr"> ${esc(h.name)}</span></button>`);
   const lead = (h, sub, report) => `<header class="fb-lead"${report ? rep(report) : ""}><a class="fb-host" href="/@${esc(h.handle)}">${ringed(h)}<span><b>${esc(h.name)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></a>${followBtn(h)}</header>`;
   // a small row of faces: named people first, then unnamed sketch faces (never a name we may not show)
   const sketch = (f) => `<span class="fv-av" style="--c:${esc(okColor(f.color) || "#E26D8E")};width:24px;height:24px" aria-hidden="true">${window.EncoreAvatars && f.art ? window.EncoreAvatars.svg(f.art, f.color || "#E26D8E", 24) : ""}</span>`;
@@ -376,6 +382,26 @@
         tapped.set(t, Date.now()); setKudos(t, { target: t, count: j.count, mine: !!j.mine, names: j.names || [], faces: j.faces || faces0, popMe: false, line: j.line }); live(`${j.mine ? "Kudos given" : "Kudos taken back"}. ${j.line || "No kudos yet"}.`); }
       catch (e) { setKudos(t, { ...was, popMe: false }); note(e?.message || "Kudos didn't go through. Try again."); }
       finally { $$(`[data-fb-kudos="${CSS.escape(t)}"]`).forEach((x) => delete x.dataset.busy); } })); }
+  /** Follow in place (server/fanclub.js: follow, bell on). Signed out it goes to the host's page to follow there. */
+  async function followClick(b) { if (b.disabled) return; b.disabled = true;
+    try { const r = await fetch(`/api/me/following/${encodeURIComponent(b.dataset.fbFollow)}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }) });
+      if (r.ok) { $$(`[data-fb-follow="${CSS.escape(b.dataset.fbFollow)}"]`).forEach((x) => { if (x.classList.contains("fb-follow-in") && LEADFULL) { x.outerHTML = followingBtn({ handle: x.dataset.fbFollow, name: x.dataset.name || "" }); return; } x.disabled = true; x.classList.add("on"); say(x, "Following"); });
+        live("Following. You'll hear about their next event."); $(`[data-fb-fmenu="${CSS.escape(b.dataset.fbFollow)}"]`)?.focus({ preventScroll: true }); return; }
+      location.href = b.dataset.url; } catch { b.disabled = false; } }
+  // Following (on a post page): a small menu with notifications on or off, and Unfollow
+  let fmenu = null; const closeFm = () => { if (!fmenu) return; fmenu.m.remove(); fmenu.b.setAttribute("aria-expanded", "false"); fmenu = null; };
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && fmenu) { const b = fmenu.b; closeFm(); b.focus(); } });
+  document.addEventListener("click", async (e) => { const b = e.target.closest?.("[data-fb-fmenu]"); if (!b) { if (fmenu && !fmenu.m.contains(e.target)) closeFm(); return; }
+    e.preventDefault(); if (fmenu?.b === b) { closeFm(); return; } closeFm(); const h = b.dataset.fbFmenu, name = b.querySelector(".fb-sr")?.textContent.trim() || "";
+    let notify = true; try { const j = await (await fetch("/api/me/following", { credentials: "same-origin" })).json(); const x = (j.hosts || []).find((y) => String(y.handle || "").toLowerCase() === h.toLowerCase()); if (x && (x.notify === false || x.bell === false)) notify = false; } catch {}
+    const m = document.createElement("div"); m.className = "fb-fm"; m.setAttribute("role", "menu"); m.setAttribute("aria-label", "Following " + name);
+    m.innerHTML = `<button type="button" role="menuitemcheckbox" aria-checked="${notify}" data-fm="bell">Tell me about new events<span>${notify ? "On" : "Off"}</span></button><button type="button" role="menuitem" data-fm="off">Unfollow</button>`;
+    b.after(m); b.setAttribute("aria-expanded", "true"); fmenu = { m, b }; m.querySelector("button").focus({ preventScroll: true });
+    m.onclick = async (ev) => { const it = ev.target.closest("[data-fm]"); if (!it) return; const body = it.dataset.fm === "off" ? { on: false } : { on: true, notify: !notify };
+      try { const r = await fetch(`/api/me/following/${encodeURIComponent(h)}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); if (!r.ok) throw 0; closeFm();
+        if (body.on === false) { b.outerHTML = followBtn({ handle: h, name }); const nb = $(`[data-fb-follow="${CSS.escape(h)}"].fb-follow-in`); if (nb) { nb.onclick = () => followClick(nb); nb.focus({ preventScroll: true }); } live("Unfollowed."); }
+        else { live(body.notify ? "You'll hear about their new events." : "No more notes about their new events."); b.focus({ preventScroll: true }); } }
+      catch { note("That didn't go through. Try again."); } }; });
   function wireBlend(root) {
     if (!linked) { linked = true; try { const t = new URLSearchParams(location.search).get("comments"), p = postOf(t); if (p) { location.replace(p); return; } } catch {} }
     wireKudos(root); need("/feedfun.js", () => window.PLFun?.paint(root)); // the emoji and GIF pickers, our stickers, reactions
@@ -383,9 +409,7 @@
     $$("[data-fb-share]", root).forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.fbShare, title = b.dataset.title || "Pottery Lab";
       if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
       try { await navigator.clipboard.writeText(url); say(b, "Link copied"); setTimeout(() => say(b, "Share"), 2200); } catch { prompt("Copy this link", url); } }));
-    $$("[data-fb-follow]", root).forEach((b) => (b.onclick = async () => { if (b.disabled) return; b.disabled = true;
-      try { const r = await fetch(`/api/me/following/${encodeURIComponent(b.dataset.fbFollow)}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }) }); // server/fanclub.js: follow, bell on
-        if (r.ok) { $$(`[data-fb-follow="${CSS.escape(b.dataset.fbFollow)}"]`, root).forEach((x) => { x.disabled = true; x.classList.add("on"); say(x, "Following"); }); return; } location.href = b.dataset.url; } catch { b.disabled = false; } }));
+    $$("[data-fb-follow]", root).forEach((b) => (b.onclick = () => followClick(b)));
     $$("[data-fb-friend]", root).forEach((b) => (b.onclick = async () => { if (b.disabled) return; b.disabled = true;
       try { const r = await fetch("/api/me/friends", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fbFriend }) }); if (!r.ok) throw 0; b.classList.add("on"); say(b, "Following"); } catch { b.disabled = false; } }));
     $$("[data-fb-dismiss]", root).forEach((b) => (b.onclick = () => { const li = b.closest("li"), ul = li?.parentElement; fetch("/api/feed/dismiss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: b.dataset.fbDismiss }) }).catch(() => {}); try { const L = JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); localStorage.setItem("pl.fbGone", JSON.stringify([b.dataset.fbDismiss, ...L].slice(0, 100))); } catch {}
@@ -649,6 +673,10 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-host:hover b{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .fb-ring{flex:none;display:grid;place-items:center;padding:2px;border-radius:50%;box-shadow:0 0 0 1.5px var(--ring)}.fb-ring .fv-av{border:0}
 .fb-follow-in{flex:none;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--fb-line2);background:transparent;color:var(--fb-ink);font:600 13px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-follow-in:hover{border-color:var(--fb-ink)}.fb-follow-in.on,.fb-follow-in[disabled]{color:var(--fb-soft);border-color:var(--fb-line);cursor:default}
+.fb-lead .fb-follow-in{position:relative;display:inline-flex;align-items:center;gap:4px;text-decoration:none}.fb-follow-in svg{width:16px;height:16px}.fb-follow-in[data-fb-fmenu]{cursor:pointer;color:var(--fb-ink)}.fb-follow-in[data-fb-fmenu]:hover{border-color:var(--fb-line2)}
+.fb-fm{position:absolute;right:0;top:calc(100% + 4px);z-index:30;display:flex;flex-direction:column;min-width:220px;padding:4px;border:1px solid var(--fb-line2,#1B1D1C);border-radius:var(--pl-r-md,6px);background:var(--fb-card,#FAF8F3);box-shadow:0 12px 28px -16px rgba(27,29,28,.45)}
+.fb-fm button{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-ink,#1B1D1C);font:500 14px var(--pl-font-text,"IBM Plex Sans",system-ui);text-align:left;cursor:pointer}.fb-fm button:hover{background:var(--fb-linen,#E6E1D5)}
+.fb-fm [aria-checked] span{margin-left:auto;font:600 12px var(--sys-mono,ui-monospace,monospace);color:var(--fb-soft,#444845)}.fb-fm [aria-checked=true] span{color:var(--fb-acc-text,#29489A)}
 .fb-proof,.fb-by{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px;line-height:1.35;color:var(--fb-ink)}.fb-by{color:var(--fb-soft);margin:-4px 0 10px}.fb-by b{color:var(--fb-ink);font-weight:600}
 /* the social block: a thin line, the kudos faces and names, the action row, the latest comments, the comment box */
 .fb-soc{margin-top:20px;border-top:1px solid var(--fb-line)}
@@ -733,7 +761,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
-  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => blendHtml({ items: [item], me }, { signedIn }) };
+  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };
   window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:
   // on a first visit it used to cover the whole feed and its tab bar

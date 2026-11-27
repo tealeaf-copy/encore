@@ -256,3 +256,24 @@ test("Big emoji, and the card draws GIFs, stickers and reaction chips in boxes t
   assert.match(fun, /prefers-reduced-motion:reduce\)\{\.fx-sv \*\{animation:none!important\}/); assert.ok(!/https?:\/\/(?!www\.w3\.org)/.test(fun.replace(/\/\/[^\n]*\n/g, "\n")), "no library, no CDN");
   assert.ok(!/—/.test(fun + fs.readFileSync(new URL("../server/gifs.js", import.meta.url), "utf8")), "no em dashes");
 });
+
+test("One Follow, in the header next to the name: Follow, Following with its menu, or Edit page on a post page; the post page puts it at the very top", async () => {
+  const win = { addEventListener() {}, matchMedia: () => ({ matches: false }) }, doc = { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), head: { appendChild() {} }, body: { classList: { contains: () => false } }, cookie: "" };
+  const load = () => { const ctx = vm.createContext({ window: win, document: doc, localStorage: { getItem: () => null, setItem() {} }, sessionStorage: { getItem: () => null, setItem() {} }, matchMedia: win.matchMedia, location: { pathname: "/feed", search: "", origin: "" }, navigator: {}, console, setTimeout, clearTimeout, URLSearchParams, Intl, CSS: { escape: (s) => s } });
+    vm.runInContext(fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), ctx); return ctx.window.FeedVisual; };
+  const card = cardIn(await feedOf("jun"), "e:fsGame"), host = card.host, count = (h) => (h.match(/data-fb-follow=|data-fb-fmenu=|>Edit page</g) || []).length;
+  const leadOf = (h) => /<header class="fb-lead"[\s\S]*?<\/header>/.exec(h)[0];
+  // the feed: Follow for a host you don't follow yet, in the header; nothing for one you follow or your own
+  let FV = load(); let html = FV.blendHtml({ items: [{ ...card, host: { ...host, following: false, mine: false } }] }, { signedIn: true });
+  assert.equal(count(html), 1); assert.match(leadOf(html), /data-fb-follow="meeple-fs"[^>]*>Follow</, "Follow sits in the header");
+  assert.equal(count(FV.blendHtml({ items: [{ ...card, host: { ...host, following: true } }] }, { signedIn: true })), 0);
+  // the post page: Following (a menu with notifications and Unfollow), Edit page on your own
+  FV = load(); html = FV.social.card({ ...card, host: { ...host, following: true, mine: false } }, { signedIn: true });
+  assert.equal(count(html), 1); assert.match(leadOf(html), /class="fb-follow-in on" data-fb-fmenu="meeple-fs" aria-haspopup="menu" aria-expanded="false">Following<svg/);
+  html = FV.social.card({ ...card, host: { ...host, mine: true } }, { signedIn: true }); assert.equal(count(html), 1); assert.match(leadOf(html), /<a class="fb-follow-in" href="\/@meeple-fs">Edit page<\/a>/);
+  html = FV.social.card({ ...card, host: { ...host, following: false, mine: false } }, { signedIn: false }); assert.equal(count(html), 1, "signed out: Follow, which goes to sign in through the host's page");
+  const page = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
+  assert.match(page, /<div class="pp-top"><a class="pp-back" id="ppBack" href="\/feed" aria-label="Back to the feed">/); assert.match(page, /const lead = \$\("#ppCard \.fb-lead"\); if \(lead\) \$\("\.pp-top"\)\.appendChild\(lead\);/);
+  assert.ok(page.indexOf('class="pp-top"') < page.indexOf('id="ppCard"') && page.indexOf('id="ppCard"') < page.indexOf('id="kudos"') && page.indexOf('id="kudos"') < page.indexOf('id="comments"'), "the header, then the card, the kudos and the comments");
+  const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"); assert.match(fv, /JSON\.stringify\(body\)/); assert.match(fv, /\{ on: false \} : \{ on: true, notify: !notify \}/);
+});

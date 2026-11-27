@@ -31,7 +31,7 @@ experienced hosts and a booking they can run end to end.
 - Headline: Every good night out starts with a host.
 - Earlier headline, retired as too abstract: Somebody carried the chairs.
 - Alternatives on file: The people who make the plans deserve more. / Hosting is work. We help it pay. / Find the people behind your favorite nights.
-- Deck (live, Nov 2026): Before the first guest replies, the host has already bought the groceries. Pottery Lab is built for that person. It takes care of the invites and the money, and it helps new people find them.
+- Deck (live, Nov 2026): Before the first guest replies, the host has already bought the groceries. Pottery Lab is built for that person. It takes the admin off their plate, rewards every night they host, and helps new people find them.
 - Earlier deck: Behind every supper club, game night and Saturday run is a host doing work nobody sees. Pottery Lab makes that work easier, gets it paid, and helps the right people find it.
 
 **C. Name the reader**

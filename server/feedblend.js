@@ -186,6 +186,9 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     const P0 = (e.orderItems || []).map((it) => +it.price || 0).filter((n) => n > 0), lo = P0.length ? Math.min(...P0) : 0;
     return { pickup: P.line(e), left, free: false, price: lo ? `${new Set(P0).size > 1 ? "From " : ""}$${lo % 1 ? lo.toFixed(2) : lo}` : "", ...(photo ? { cover: photo } : {}), cta: { label: "Order", url: `/e/${encodeURIComponent(x.id)}` } }; };
   // ---------- events ----------
+  // a drop (order ahead, server/drops.js) is on even with no day ("always available"), and shows what it costs, never "Free"
+  const isDrop = (e) => !!(e?.preorder || e?.drop);
+  const dropPrice = (e) => { const P = (e.orderItems || []).map((i) => +i.price).filter((n) => n > 0); if (!P.length) return ""; const m = Math.min(...P), f = "$" + (m % 1 ? m.toFixed(2) : m); return P.length > 1 && Math.max(...P) > m ? "From " + f : f; };
   function events(v, now = Date.now()) { const I = v.I, t = today(now), once = new Set(), M = memberEvents(v);
     const early = (x) => earlyFor(v, x) && !(v.email && lc(x.owner) === v.email); // a members-first date is still on its own host's feed (it was missing there: review round 19)
     const dayOf = (x) => (x.e.drop ? globalThis.PLPickup.firstDate(x.e, t) : x.e.date || "");

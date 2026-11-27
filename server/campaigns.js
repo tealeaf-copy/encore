@@ -193,10 +193,10 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
     return { id: g.id, event: g.event, name: show ? g.name : first(g.name), email: show ? g.email : maskEmail(g.email), company: show ? g.company : "", title: show ? g.title : "", source: g.source, consent: { share: !!g.consent?.share, via: g.consent?.via || "", at: g.consent?.at || 0 },
       status: g.status, invitedAt: g.invitedAt, repliedAt: g.repliedAt, checkedIn: g.checkedIn, followUp: g.followUp, limited: !show }; };
   // review 16: the start time where the event is, with that city's time zone, so a team in one city reads another's right
-  const localOf = (r) => { try { const st = scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, h = C.profileOf?.(r.hostWs) || {}, pkg = (st.packages || []).find((x) => x.id === r.pkgId) || {};
+  const localOf = (r) => { try { const st = X.bb?.setupOf?.(r.hostWs) || scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, h = C.profileOf?.(r.hostWs) || {}, pkg = (st.packages || []).find((x) => x.id === r.pkgId) || {};
     const city = st.city || h.city || "", tz = eventTz({ city, hood: st.area }) || ""; return { time: HMOK(r.time) ? r.time : pkg.time === "daytime" ? "12:00" : "19:00", tz, zone: tzShort(tz, r.date) }; } catch { return { time: "", tz: "", zone: "" }; } };
   const reqCard = (r) => { const st = statusOf(r); return { local: localOf(r), id: r.id, status: st, name: r.pkgName, handle: r.handle, pkg: r.pkgId, host: hostName(r), date: r.date || "", flex: r.flex || null, headcount: r.headcount, totalCents: r.price?.totalCents || 0, paidCents: paidOf(r), approval: r.approval || null, url: `/teams/bookings/${r.id}`, area: areaOf(r) }; };
-  const areaOf = (r) => { const s = scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, A = approxArea(s.area, s.city); return A.area || A.city || ""; };
+  const areaOf = (r) => { const s = X.bb?.setupOf?.(r.hostWs) || scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, A = approxArea(s.area, s.city); return A.area || A.city || ""; };
   function full(c, role) { const R = reqsOf(c);
     return { id: c.id, title: c.title, goal: c.goal, audience: c.audience, cities: c.cities, budgetCents: c.budgetCents, start: c.start, end: c.end, kpis: c.kpis, status: c.status, role, memberRole: c.memberRole, owner: c.ownerEmail, single: !!c.single, series: c.series || null, inviteFrom: c.inviteFrom || {},
       briefs: Object.fromEntries(R.map((r) => [r.id, X.briefLines?.(r.id) || []])),
@@ -284,7 +284,7 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
   function guestEvent(c, r, { make = false } = {}) {
     if (!r || r.brandWs !== c.ws) return ""; const S = scopeStore(store, c.ws), id = c.guestEvents?.[r.id] || geId(r);
     if (S.get("events/" + id)?.data) return id; if (!make || !["accepted", "booked", "done"].includes(statusOf(r))) return "";
-    const st = scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, h = C.profileOf?.(r.hostWs) || {}, pkg = (st.packages || []).find((x) => x.id === r.pkgId) || {};
+    const st = X.bb?.setupOf?.(r.hostWs) || scopeStore(store, r.hostWs).get("teambook/setup")?.data || {}, h = C.profileOf?.(r.hostWs) || {}, pkg = (st.packages || []).find((x) => x.id === r.pkgId) || {};
     const city = st.city || h.city || "", A = approxArea(st.area, city), W = getWorkspace(c.ws) || {}, company = W.company || "Our team";
     if (!claimEvent(id, c.ws)) return "";
     S.set("events/" + id, { id, kind: "social", casual: true, name: r.pkgName, pubTitle: r.pkgName, date: r.date || "", startTime: HMOK(r.time) ? r.time : pkg.time === "daytime" ? "12:00" : "19:00",

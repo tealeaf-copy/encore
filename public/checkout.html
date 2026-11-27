@@ -15,7 +15,7 @@
     try { D = await api(`/api/bb/x/${encodeURIComponent(handle)}/${encodeURIComponent(pkgId)}${S.people ? "?people=" + S.people : ""}`); } catch (e) { main.innerHTML = `<h1>This one isn't bookable right now</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn" href="/teams/discover">See other experiences</a>`; return; }
     S.people = D.price.headcount; S.flex.month = D.availability[1].month;
     try { R = await api("/api/bb/brand/rules"); S.company = R.brand ? R.company : ""; }
-    catch (e) { if (e.status === 401) return signin(); }
+    catch (e) { if (e.status === 401 && !D.example) return signin(); R = { rules: { approval: "off", approvers: [] }, company: "", brand: true, pay: { provider: "fake", test: true } }; } // an example can be walked signed out
     draw(); }
   function signin() { main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Request to book</p><h1>Sign in to send your request</h1><p class="bb-lede">Use your work email. Your team can see the booking, approve it if needed, and get the invoice.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="bb-btn primary lg" href="/login?next=${encodeURIComponent(location.pathname + location.search)}">Sign in</a><a class="bb-btn lg" href="/signup?mode=work&next=${encodeURIComponent(location.pathname + location.search)}">Create a work account</a></div></section>`; }
@@ -27,7 +27,7 @@
   function draw() {
     if (req) return done();
     const steps = ["When", "Your group", "Deposit"];
-    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${instant() ? "Book now" : "Request to book"}</p><h1>${step === 1 ? "When works for your team?" : step === 2 ? "Who's coming?" : "Hold the date"}</h1></section>
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${instant() ? "Book now" : "Request to book"}${D.example ? " " + BB.exampleTag() : ""}</p><h1>${step === 1 ? "When works for your team?" : step === 2 ? "Who's coming?" : "Hold the date"}</h1>${D.example && !D.example.demo ? BB.exampleLine(D.example.line) : ""}</section>
       <ol class="bb-steps">${steps.map((t, i) => `<li${i + 1 === step ? ' aria-current="step"' : i + 1 < step ? ' class="done"' : ""}>${t}</li>`).join("")}</ol>
       <div class="bb-checkout"><div id="stepBody"></div><aside id="sum">${summary()}</aside></div>`;
     const B = $("#stepBody");
@@ -69,13 +69,18 @@
         <p class="bb-meta" id="err" role="alert"></p>`;
       $("#back").onclick = () => { step = 2; draw(); };
       $("#send")?.addEventListener("click", async (e) => { const btn = e.currentTarget; S.company = $("#co").value.trim(); S.taxId = $("#tx").value.trim(); if (!S.company) { $("#co").focus(); return ($("#err").textContent = "Add your company name for the invoice."); }
+        if (D.example && !D.example.demo) return exampleStop();
         btn.disabled = true; btn.textContent = "Sending…";
         try { const r = await api("/api/bb/requests", { handle, pkg: pkgId, headcount: S.people, ...(S.mode === "exact" ? { date: S.date } : { flex: S.flex }), diets: S.diets, dietNotes: S.dietNotes, access: S.access, occasion: S.occasion, notes: S.notes, company: S.company, ...(new URLSearchParams(location.search).get("campaign") ? { campaign: new URLSearchParams(location.search).get("campaign") } : {}) });
           if (S.taxId) await api(`/api/bb/requests/${r.id}/billing`, { company: S.company, taxId: S.taxId });
           const p = await api(`/api/bb/requests/${r.id}/pay`, {}); if (p.redirect) { location.href = p.redirect; return; } req = p.request; draw(); }
-        catch (er) { btn.disabled = false; btn.textContent = "Try again"; $("#err").textContent = er.message; } });
+        catch (er) { btn.disabled = false; btn.textContent = "Try again"; if (er.code === "example") return exampleStop(); $("#err").textContent = er.message; } });
     }
   }
+  // an example host: everything up to here works; the last step says so and offers to find a real host
+  function exampleStop() { const when = S.mode === "exact" ? S.date : flexText();
+    BB.findReal({ handle, pkg: pkgId, name: D.pkg.name, host: D.host.name, headcount: S.people, date: S.mode === "exact" ? S.date : "", city: D.host.city || D.area.city,
+      preview: { company: S.company, contact: "you", pkgName: D.pkg.name, headcount: S.people, service: D.pkg.kind === "service", when, totalCents: D.price.totalCents, depositCents: D.price.depositCents, notes: S.notes } }); }
   function done() { const r = req, booked = r.status === "booked";
     main.innerHTML = `<section class="bb-xhead" style="max-width:640px"><p class="bb-kicker">${booked ? "Booked" : r.status === "approval" ? "Sent to your team" : "Request sent"}</p><h1>${booked ? `You're booked with <em>${esc(D.host.person || D.host.name)}</em>` : r.status === "approval" ? "Waiting on your team's OK" : `${esc(D.host.person || D.host.name)} has your request`}</h1>
       <p class="bb-lede">${booked ? `${esc(r.pkgName)} for ${r.headcount}, ${esc(new Date(r.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }))}. The address and their contact details are on your booking now.` : r.status === "approval" ? "We've asked your approver. Once they sign off, it goes straight to the host." : `They usually reply ${D.stats.responseHours != null ? "in " + BB.hours(D.stats.responseHours) : "within a day"}. Your ${money(r.deposit.cents)} deposit is held, not charged, until they accept.`}</p>

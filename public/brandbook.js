@@ -56,6 +56,8 @@
     lock: '<rect x="5" y="10.5" width="14" height="10" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
     card: '<rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="M3 9.5h18M6.5 15h4"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.1"/>', eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+    services: '<path d="M4 19.5h16"/><path d="M6 19.5v-6a6 6 0 0 1 12 0v6"/><path d="M12 7.5v-3M10.5 4.5h3"/>',
     inbox: '<path d="M3.5 13.5l2.5-8h12l2.5 8v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 13.5H9l1 2h4l1-2h5.5"/>',
     home: '<path d="M4 11l8-6.5 8 6.5v9H4z"/><path d="M10 20v-5h4v5"/>',
     spark: '<path d="M4 19.5h16"/><path d="M6.5 16v-4M11 16V8M15.5 16v-6M20 16V5"/>',
@@ -87,9 +89,9 @@
   // ---- a card that expands into the experience page ----
   function card(c, { saved = false, people = 0 } = {}) {
     const href = `/teams/x/${encodeURIComponent(c.handle)}/${encodeURIComponent(c.pkg)}${people ? "?people=" + people : ""}`, key = c.handle + "/" + c.pkg;
-    return `<article class="bb-card" data-key="${esc(key)}"><a href="${href}" class="bb-go" data-key="${esc(key)}"><div class="ph">${cover(c)}${c.host.trusted ? `<span class="flag">${trustedBadge()}</span>` : ""}</div>
+    return `<article class="bb-card" data-key="${esc(key)}"><a href="${href}" class="bb-go" data-key="${esc(key)}"><div class="ph">${cover(c)}${c.host.trusted ? `<span class="flag">${trustedBadge()}</span>` : c.host.example ? `<span class="flag">${exampleTag()}</span>` : ""}</div>
       <div class="bd"><h3>${esc(c.name)}</h3><p class="who"><span>${esc(c.host.name)}</span><span>· ${esc(c.remote ? "Remote" : c.area.area || c.area.city)}</span>${c.reviews ? `<span>· ${icon("star")} <span class="bb-mono">${c.rating.toFixed(1)}</span> (${c.reviews})</span>` : ""}</p>
-      <p class="tot"><b>${esc(c.price.summary)}</b></p><p class="sub">${money(c.perPersonCents)} a person · ${c.minGuests} to ${c.maxGuests} people${c.instant ? " · Instant book" : ""}</p></div></a>
+      <p class="tot"><b>${esc(c.price.summary)}</b></p><p class="sub">${c.unit && c.unit !== "person" ? esc(c.unitPrice) : money(c.perPersonCents) + " a person"} · ${c.minGuests} to ${c.maxGuests} ${c.kind === "service" ? "guests" : "people"}${c.instant ? " · Instant book" : ""}</p></div></a>
       <button class="save" type="button" data-save="${esc(key)}" aria-pressed="${saved}" aria-label="${saved ? "Saved to your shortlist" : "Save to a shortlist"}">${icon("save")}</button></article>`;
   }
   // cards grow into the page: the clicked photo carries the hero's transition name across the navigation
@@ -161,8 +163,8 @@
   function reviews(R) {
     const el = document.createElement("div");
     const teams = R.brands || [], guests = R.guests || [];
-    const T = (x) => `<div class="bb-review">${stars(x.rating)}<p>${esc(x.text)}</p><p class="by">${esc([x.role, x.company].filter(Boolean).join(", ") || "A team that booked")} · ${esc(x.pkg || "")}${x.headcount ? ` for ${x.headcount}` : ""}${x.month ? " · " + new Date(x.month + "-15").toLocaleDateString("en-US", { month: "long", year: "numeric" }) : ""}</p></div>`;
-    const G = (x) => `<div class="bb-review"><p>“${esc(x.text)}”</p><p class="by">${esc(x.name)}${x.event ? ", at " + esc(x.event) : ""}</p></div>`;
+    const T = (x) => `<div class="bb-review">${stars(x.rating)}${x.example ? ` ${exampleTag("Example review")}` : ""}<p>${esc(x.text)}</p><p class="by">${esc([x.role, x.company].filter(Boolean).join(", ") || "A team that booked")} · ${esc(x.pkg || "")}${x.headcount ? ` for ${x.headcount}` : ""}${x.month ? " · " + new Date(x.month + "-15").toLocaleDateString("en-US", { month: "long", year: "numeric" }) : ""}</p></div>`;
+    const G = (x) => `<div class="bb-review">${x.example ? exampleTag("Example kudos") : ""}<p>“${esc(x.text)}”</p><p class="by">${esc(x.name)}${x.event ? ", at " + esc(x.event) : ""}</p></div>`;
     el.innerHTML = `<div class="bb-tabs" role="tablist"><button role="tab" aria-selected="true" data-t="t">From teams who booked (${teams.length})</button><button role="tab" aria-selected="false" data-t="g">From guests (${guests.length})</button></div>
       <div data-p="t" class="bb-reviews">${teams.length ? teams.map(T).join("") : '<p class="bb-meta">No team reviews yet. Every review here comes from a booking on Pottery Lab.</p>'}</div><div data-p="g" class="bb-reviews bb-hide">${guests.length ? guests.map(G).join("") : '<p class="bb-meta">No guest kudos yet.</p>'}</div>`;
     el.addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (!b) return; $$("[data-t]", el).forEach((x) => x.setAttribute("aria-selected", x === b)); $$("[data-p]", el).forEach((p) => p.classList.toggle("bb-hide", p.dataset.p !== b.dataset.t)); });
@@ -223,5 +225,32 @@
       <p class="tg-alt">Just looking? <a href="/teams/discover">Browse hosts</a> without an account.</p>
       <ul class="tg-why" aria-label="What teams get"><li><b>Hosts with real followings</b><span>Supper clubs, studios and run clubs people already come back to.</span></li><li><b>Outcomes beyond attendance</b><span>Target accounts in the room, connections, meetings and pipeline.</span></li><li><b>Benchmarks that keep guests private</b><span>Pooled numbers only show with 10 or more people across 3 or more events.</span></li></ul></section>`;
   }
-  window.BB = { esc, money, api, icon, top, cover, drawn, card, expandOnClick, chips, gallery, viewer, trustRow, verifyRow, trustedBadge, stars, priceBox, priceLines, termsList, reviews, calendar, legend, map, sheet, toast, saveTo, savedKeys, myLists, hours, native, teamGate, $, $$ };
+  // ---- example hosts (server/brandexamples.js): tagged on every card and page, walkable, never booked ----
+  const EXLINE = "This is an example host so you can see how booking works. Real hosts in your city will show here as they join.";
+  const exampleTag = (t = "Example") => `<span class="bb-badge example" title="Made up, to show how booking works">${esc(t)}</span>`;
+  const exampleLine = (line) => `<p class="bb-exline">${icon("info")}<span>${esc(line || EXLINE)}</span></p>`;
+  const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
+  /** The last step on an example host: say so, show what would have happened, offer to find a real host. Nothing is sent. */
+  function findReal(ctx = {}) {
+    const who = ctx.host || "This host", note = `Find us a real host like ${who}${ctx.name ? ` (${ctx.name})` : ""}${ctx.city ? ` in ${ctx.city}` : ""}${ctx.headcount ? ` for ${ctx.headcount}` : ""}${/^\d{4}-\d{2}-\d{2}$/.test(ctx.date || "") ? ` around ${new Date(ctx.date + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}` : ""}.`;
+    return sheet("This one is an example", `<p>${esc(who)} is an example host, made up so you can see how booking works. Nothing was sent to anyone and nothing was charged.</p>
+      ${ctx.preview ? `<p><button class="bb-link" type="button" data-hostview>${icon("eye")} See what the host would have seen</button></p>` : ""}
+      <form id="frF"><h3 style="margin:14px 0 4px;font:600 17px var(--bb-sans)">Ask us to find a real host for this</h3><p class="bb-meta" style="margin:0 0 10px">We look for a real host who fits and write back within 2 working days. Nothing is booked until you say yes.</p>
+      ${signedIn() ? "" : `<label class="bb-field"><span>Your work email</span><input type="email" name="email" required autocomplete="email"></label><label class="bb-field"><span>Company</span><input name="company" autocomplete="organization"></label>`}
+      <label class="bb-field"><span>What you need</span><textarea name="note" maxlength="1500">${esc(note)}</textarea></label>
+      <div class="ft"><button class="bb-btn quiet" type="button" data-close>Keep looking</button><button class="bb-btn primary" type="submit">Ask us to find a real host</button></div></form><p class="bb-meta" id="frDone" aria-live="polite"></p>`, { onOpen: (bg) => {
+        const hv = bg.querySelector("[data-hostview]"); if (hv) hv.onclick = () => hostPreview(ctx.preview);
+        bg.querySelector("#frF").onsubmit = async (e) => { e.preventDefault(); const f = e.target, btn = f.querySelector("[type=submit]"); btn.disabled = true;
+          try { const r = await api("/api/bb/find-real-host", { handle: ctx.handle, pkg: ctx.pkg, headcount: ctx.headcount, date: ctx.date, city: ctx.city, goal: ctx.goal, note: f.note.value, email: f.email?.value, company: f.company?.value }); f.remove(); bg.querySelector("#frDone").textContent = r.message; }
+          catch (er) { btn.disabled = false; toast(er.message); } }; } });
+  }
+  /** What the host would see for this request: their inbox card, read only. */
+  function hostPreview(p = {}) {
+    const rows = [["Group", `${p.headcount} ${p.service ? "guests" : "people"}`], ["When", p.when || "A date you pick"], ["Total", p.totalCents != null ? money(p.totalCents) : ""], ["Deposit", p.depositCents != null ? `${money(p.depositCents)}, held when they accept` : ""], ["Goal", p.goal || ""], ["Guests", p.mix || ""]].filter((r) => r[1]);
+    return sheet("What the host would see", `<p class="bb-meta">This is the host's inbox card for your request, read only. Your email and phone stay hidden until you're booked.</p>
+      <div class="bb-panel" style="padding:14px 16px"><p class="bb-kicker">New request</p><h3 style="margin:2px 0 6px;font:600 18px var(--bb-sans)">${esc(p.company || "Your company")} · ${esc(p.pkgName || "")}</h3><p class="bb-meta" style="margin:0 0 10px">From ${esc(p.contact || "you")}. Reply within a day.</p>
+      <table class="bb-lines"><tbody>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${esc(v)}</td></tr>`).join("")}</tbody></table>
+      ${p.notes ? `<p style="margin:10px 0 0">${esc(p.notes)}</p>` : ""}<p class="bb-meta" style="margin:12px 0 0">The host can accept, suggest a change (a date or a price) or decline.</p></div>`);
+  }
+  window.BB = { esc, money, api, icon, top, cover, drawn, card, exampleTag, exampleLine, findReal, hostPreview, EXLINE, expandOnClick, chips, gallery, viewer, trustRow, verifyRow, trustedBadge, stars, priceBox, priceLines, termsList, reviews, calendar, legend, map, sheet, toast, saveTo, savedKeys, myLists, hours, native, teamGate, $, $$ };
 })();

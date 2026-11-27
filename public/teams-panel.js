@@ -11,7 +11,7 @@
   const of = (x) => (x ? `${x.n} of ${x.of}${x.pct != null ? ` (${x.pct}%)` : ""}` : "");
   const fail = (e) => BB.toast(e.message || "Something went wrong. Try again.");
   const opts = (M, cur) => Object.entries(M).map(([k, v]) => `<option value="${esc(k)}"${k === cur ? " selected" : ""}>${esc(typeof v === "string" ? v : v.label)}</option>`).join("");
-  const CITIES = ["New York", "Brooklyn", "Manhattan", "Queens", "San Francisco", "Los Angeles", "Chicago"];
+  const CITIES = ["New York", "Brooklyn", "Manhattan", "Queens", "San Francisco", "Los Angeles", "Austin", "Chicago", "Seattle", "Boston", "London"];
 
   // ---- the brief form, shared by quick book, the event panel and the host ----
   function briefForm(b, O, { headcount = 0 } = {}) {
@@ -30,7 +30,7 @@
     const Q = { date: U.get("date") || saved.date || nextWeekday(21), people: +(U.get("people") || saved.people || 12), budget: +(U.get("budget") || saved.budget || 0) || "", city: U.get("city") || saved.city || "New York", goal: U.get("goal") || saved.goal || "customer" };
     if (Q.date < localIso(1)) Q.date = nextWeekday(21);
     const again = U.get("again") || ""; let t0 = 0, data = null, prev = null;
-    const GOALS = [["customer", "Customer dinner"], ["team", "Team bonding"], ["community", "Community"], ["workshop", "Workshop"]];
+    const GOALS = [["customer", "Customer dinner"], ["team", "Team bonding"], ["offsite", "Team offsite"], ["workshop", "Workshop"], ["wellness", "Wellness"], ["community", "Community"], ["conference", "Conference week"], ["celebration", "Launch or party"], ["catering", "Food for the office"], ["summit", "Summit help"]];
     el.classList.add("tp-qb"); el.setAttribute("aria-label", title);
     el.innerHTML = `<p class="ti-k">${esc(again ? "Book again" : "Quick book")}</p><h2 id="tpQbT">${esc(title)}</h2><p class="ti-sub" id="tpQbL">${esc(lede)}</p>
       <form class="tp-qf" id="tpQf" novalidate><label class="bb-field"><span>Date</span><input type="date" name="date" required min="${localIso(1)}" value="${esc(Q.date)}"></label>
@@ -50,15 +50,17 @@
     function draw() { const L = data.results;
       if (!L.length) { res.innerHTML = `<div class="tp-box quiet"><h3>No hosts are taking bookings yet</h3><p class="ti-sub">New hosts join every week. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>`; return; }
       const near = L.some((x) => x.near);
-      res.innerHTML = `${near ? `<div class="tp-box quiet" style="margin-top:14px"><h3>No host fits all of that yet</h3><p class="ti-sub">These are the closest. What's different is marked on each one. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>` : ""}<p class="bb-meta" style="margin:14px 0 0">${near ? `Closest ${L.length === 1 ? "host" : `${L.length} hosts`}` : L.length === 1 ? "One host" : `${L.length} hosts`} for ${Q.people} on ${esc(day(Q.date))}${Q.city && !prev && !near ? ` in ${esc(Q.city)}` : ""}. Totals include everything; nothing is charged until the host accepts.</p>
+      res.innerHTML = `${near ? `<div class="tp-box quiet" style="margin-top:14px"><h3>No host fits all of that yet</h3><p class="ti-sub">These are the closest. What's different is marked on each one. Or <a href="/teams/discover#browse">browse every host</a>.</p></div>` : ""}<p class="bb-meta" style="margin:14px 0 0">${near ? `Closest ${L.length === 1 ? "host" : `${L.length} hosts`}` : L.length === 1 ? "One host" : `${L.length} hosts`} for ${Q.people} on ${esc(day(Q.date))}${Q.city && !prev && !near ? ` in ${esc(Q.city)}` : ""}. Totals include everything; nothing is charged until the host accepts.</p>${data.exampleLine && !data.demo ? BB.exampleLine(data.exampleLine) : ""}
         <div class="tp-res">${L.map((x, i) => `<article class="tp-opt"><a class="ph" href="/teams/x/${esc(x.handle)}/${esc(x.pkg)}?people=${Q.people}" aria-label="${esc(x.name)}">${BB.cover(x)}</a><div class="bd">
-          <p class="who">${esc(x.host.name)}${x.area ? ` · ${esc(x.area)}` : ""}${x.trusted ? " " + BB.trustedBadge() : ""}</p><h3>${esc(x.name)}</h3>${(x.miss || []).length ? `<p class="tp-miss" style="margin:2px 0 6px;font-weight:600;color:var(--pl-ink)">Not a full match: ${esc(x.miss.join(" · "))}</p>` : ""}
-          <p class="tp-total">${money(x.totalCents)}<small>total for ${Q.people}, about ${money(x.perPersonCents)} a person${x.overBudgetCents ? `, ${money(x.overBudgetCents)} a person over budget` : ""}</small></p>
+          <p class="who">${esc(x.host.name)}${x.area ? ` · ${esc(x.area)}` : ""}${x.trusted ? " " + BB.trustedBadge() : ""}${x.example ? " " + BB.exampleTag() : ""}</p><h3>${esc(x.name)}</h3>${(x.miss || []).length ? `<p class="tp-miss" style="margin:2px 0 6px;font-weight:600;color:var(--pl-ink)">Not a full match: ${esc(x.miss.join(" · "))}</p>` : ""}
+          <p class="tp-total">${money(x.totalCents)}<small>total for ${Q.people}${x.kind === "service" ? `, ${esc(x.unitPrice)}` : `, about ${money(x.perPersonCents)} a person`}${x.overBudgetCents ? `, ${money(x.overBudgetCents)} a person over budget` : ""}</small></p>
           ${x.why.length ? `<ul class="tp-why">${x.why.slice(0, 3).map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
           <ul class="tp-facts"><li>${icon("cal")}<span><span class="tp-dot ${x.availability.state === "open" ? "open" : ""}" aria-hidden="true"></span>${esc(x.availability.line)}</span></li>
             <li>${icon("shield")}<span><b>If plans change.</b> ${esc(x.exposure.line)}</span></li>
             <li>${icon("people")}<span><b>Access.</b> ${esc(x.access.line)}</span></li>${x.approval ? `<li>${icon("check")}<span>${esc(x.approval.line)}</span></li>` : ""}</ul>
           <div class="acts"><button class="bb-btn primary" type="button" data-book="${i}">${x.availability.state === "open" ? "Book this" : "Book " + esc(day(x.availability.alt || Q.date))}</button><a class="bb-btn quiet" href="/teams/x/${esc(x.handle)}/${esc(x.pkg)}?people=${Q.people}">Details</a></div></div></article>`).join("")}</div>`;
+      const E = data.extras || [];
+      if (E.length) res.insertAdjacentHTML("beforeend", `<section class="tp-extras" aria-label="Often added"><p class="ti-k" style="margin:18px 0 6px">Often added</p><div class="tp-exl">${E.map((x) => `<a class="tp-ex" href="/teams/x/${esc(x.handle)}/${esc(x.pkg)}?people=${Q.people}"><span class="ph ic">${icon(/flower|centrepiece|floral|vase/i.test(x.name) ? "spark" : /photo|video|headshot|booth|recap/i.test(x.name) ? "camera" : /staff|crew|coordinator|check-in|plan/i.test(x.name) ? "people" : "table")}</span><span><b>${esc(x.name)}</b><small>${esc(x.host.name)}${x.example ? " · Example" : ""} · ${esc(x.unitPrice)}</small></span></a>`).join("")}</div></section>`);
       $$("[data-book]", res).forEach((b) => (b.onclick = () => bookSheet(L[+b.dataset.book]))); }
     function bookSheet(x) { const date = x.availability.state === "open" ? Q.date : x.availability.alt || Q.date, X = x.availability.state === "open" ? x.exposure : x.exposure, B = data.brief;
       const b0 = prev?.brief ? { ...prev.brief, mix: { brand: Math.min(prev.brief.mix.brand, Q.people - Math.min(prev.brief.mix.host, Q.people)), host: Math.min(prev.brief.mix.host, Q.people) } } : { ...B.defaults, goal: Q.goal, together: B.goals[Q.goal]?.together || B.defaults.together, ...(Q.goal === "community" ? { mix: { brand: Q.people - Math.floor(Q.people / 2), host: Math.floor(Q.people / 2) }, invites: "both" } : { mix: { brand: Q.people, host: 0 } }) };
@@ -69,10 +71,14 @@
           <p class="tp-q" style="margin:12px 0 6px">Money at risk by date</p>${riskList(X, 5)}${X && X.why ? `<p class="tp-note" data-risk-why>${esc(X.why)}</p>` : ""}<p class="tp-note">${esc(x.terms)}.</p></div>
         <form id="tpBf"><h3 style="margin:16px 0 4px;font:600 18px var(--pl-font-text)">The brief</h3><p class="ti-sub" style="margin:0 0 12px">${esc(x.host.name)} reads this before accepting. Either side can change it. The other is asked to agree again.</p>${briefForm(b0, B, { headcount: Q.people })}
         <div class="ft"><button class="bb-btn quiet" type="button" data-close>Not yet</button><button class="bb-btn primary" type="submit">${x.approval?.needed ? "Ask for approval" : "Send the request"}</button></div></form>`, { onOpen: (bg, close) => {
-          bg.querySelector("#tpBf").onsubmit = async (e) => { e.preventDefault(); const brief = readBrief(e.target), btn = e.target.querySelector("[type=submit]"); btn.disabled = true;
+          const exStop = (brief) => BB.findReal({ handle: x.handle, pkg: x.pkg, name: x.name, host: x.host.name, headcount: Q.people, date, city: Q.city, goal: Q.goal,
+            preview: { company: "", contact: "you", pkgName: x.name, headcount: Q.people, service: x.kind === "service", when: day(date, { weekday: "long" }), totalCents: x.totalCents, depositCents: x.depositCents, goal: (B.goals[brief.goal] || {}).label || "", mix: brief.mix ? `${brief.mix.brand} from you${brief.mix.host ? `, ${brief.mix.host} from the host` : ""}` : "", notes: brief.plan || "" } });
+          bg.querySelector("#tpBf").onsubmit = async (e) => { e.preventDefault(); const brief = readBrief(e.target), btn = e.target.querySelector("[type=submit]");
+            if (x.example && !data.demo) return exStop(brief);
+            btn.disabled = true;
             try { const r = await api("/api/bb/requests", { handle: x.handle, pkg: x.pkg, headcount: Q.people, date, single: true, goal: brief.goal, brief, setupSec: t0 ? Math.round((Date.now() - t0) / 1000) : null, via: prev ? "again" : "quick", ...(prev ? { againOf: prev.id } : {}) });
               close(); location.href = `/teams/bookings/${r.id}?new=1`; }
-            catch (er) { btn.disabled = false; if (er.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`; return; } fail(er); } }; } }); }
+            catch (er) { btn.disabled = false; if (er.code === "example") return exStop(brief); if (er.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname + location.search)}`; return; } fail(er); } }; } }); }
     if (again) api(`/api/teams/events/${encodeURIComponent(again)}`).then((d) => { prev = d.event; Q.people = prev.headcount; Q.goal = prev.brief?.goal || Q.goal; f.people.value = Q.people; $$("[data-goal]", el).forEach((x) => x.setAttribute("aria-pressed", x.dataset.goal === Q.goal));
       $("#tpQbT", el).textContent = `Book ${prev.host.name} again`; $("#tpQbL", el).textContent = `The same format and brief as ${prev.name}${prev.date ? " on " + day(prev.date) : ""}. Pick a new date.`; search(); }).catch(() => {});
     return el;

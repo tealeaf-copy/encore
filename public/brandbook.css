@@ -398,3 +398,11 @@ body.bb[data-top]:not(:has(> .bb-top)){padding-top:57px}
   body.bb .ti-tag button::after{left:-11px;right:-11px}
   body.bb .ti-sugg button{min-height:44px;padding:0 14px}
 }
+
+/* example hosts (server/brandexamples.js): a quiet tag and one plain line, never louder than a real host */
+.bb-badge.example{border-style:dashed;border-color:var(--bb-ink);color:var(--bb-ink);background:var(--bb-card);font-weight:600}
+.bb-exline{display:flex;gap:8px;align-items:flex-start;margin:10px 0 0;padding:10px 12px;border:1px dashed var(--bb-line);border-radius:var(--bb-r);background:var(--bb-raised);color:var(--bb-ink);font:400 15px/1.45 var(--bb-sans)}
+.bb-exline .bb-ic{flex:none;width:18px;height:18px;margin-top:2px}
+.bb-sub{margin:18px 0 6px;font:600 16px var(--bb-sans);color:var(--bb-ink)}
+.bb-av.art{overflow:hidden;padding:0}
+.bb-av.art svg{width:100%;height:100%;display:block}

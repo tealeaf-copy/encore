@@ -29,7 +29,7 @@
       ["Where", (i) => esc(i.pkgInfo.remote ? "Remote" : i.card.area.area || i.card.area.city)],
     ];
     main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker"><a href="/teams/list/${id}${k ? "?k=" + encodeURIComponent(k) : ""}">${esc(L.title)}</a></p><h1>Side by side</h1><p class="bb-lede">Highlighted is the best on that line. Prices are totals for your group with every fee in.</p></section>
-      <div class="bb-cmp-wrap"><table class="bb-cmp"><thead><tr><th></th>${I.map((i) => `<th><a class="ph bb-go" style="display:block" href="/teams/x/${esc(i.handle)}/${esc(i.pkg)}?people=${i.price.headcount}">${BB.cover(i.card)}</a><b>${esc(i.card.name)}</b><br><span class="bb-meta">${esc(i.card.host.name)}</span></th>`).join("")}</tr></thead>
+      <div class="bb-cmp-wrap"><table class="bb-cmp"><thead><tr><th></th>${I.map((i) => `<th><a class="ph bb-go" style="display:block" href="/teams/x/${esc(i.handle)}/${esc(i.pkg)}?people=${i.price.headcount}">${BB.cover(i.card)}</a><b>${esc(i.card.name)}</b><br><span class="bb-meta">${esc(i.card.host.name)}</span>${i.card.host.example ? " " + BB.exampleTag() : ""}</th>`).join("")}</tr></thead>
       <tbody>${rows.map(([t, f]) => `<tr><th scope="row">${t}</th>${I.map((i) => `<td>${f(i)}</td>`).join("")}</tr>`).join("")}
       ${["owner", "member"].includes(L.role) ? `<tr><th></th>${I.map((i) => `<td><a class="bb-btn primary block" href="/teams/book/${esc(i.handle)}/${esc(i.pkg)}?people=${i.price.headcount}">Request</a></td>`).join("")}</tr>` : ""}</tbody></table></div>`;
     BB.expandOnClick(main);

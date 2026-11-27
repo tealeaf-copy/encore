@@ -37,6 +37,8 @@
   function draw() { const m = META.moods.find((x) => x.id === F.mood);
     $("#count").textContent = `${m ? m.label + " · " : ""}${data.length} ${data.length === 1 ? "experience" : "experiences"} for ${F.people}`;
     $("#results").removeAttribute("aria-busy");
+    let ex = $("#exl"); if (!ex) { ex = document.createElement("div"); ex.id = "exl"; $("#results").before(ex); }
+    ex.innerHTML = data.some((c) => c.host.example) ? BB.exampleLine("Hosts marked Example are made up so you can see how booking works. Real hosts in your city will show here as they join.") : "";
     $("#results").innerHTML = data.length ? data.map((c) => BB.card(c, { saved: saved.has(c.handle + "/" + c.pkg), people: F.people })).join("") : `<div class="bb-empty" style="grid-column:1/-1"><p><b>Nothing fits all of that yet.</b></p><p>Try another month, a bigger area, or fewer needs. Hosts add dates every week.</p><button class="bb-btn" type="button" id="reset">Clear the filters</button></div>`;
     $("#reset")?.addEventListener("click", () => { Object.assign(F, { mood: "", hood: "", budget: 0, diet: [], access: [], when: "any" }); $$("[data-m]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.m === "")); load(); });
     if (view === "map") drawMap(); }

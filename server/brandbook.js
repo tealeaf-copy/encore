@@ -26,7 +26,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { scopeStore, getWorkspace, getDbUser, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
+import { scopeStore, getWorkspace, getDbUser, allWorkspaceIds, DEFAULT_WS, saveContact } from "./workspaces.js";
+import { exampleSetups, exampleByHandle, exampleByWs, isExampleWs, examplesHidden, EXAMPLE_LINE } from "./brandexamples.js";
 import { scrubContact } from "./chat.js";
 import { isAdmin } from "./metrics.js";
 import { isNativeReq } from "./fanclub.js";
@@ -53,6 +54,7 @@ export const MOODS = [
   { id: "calm", label: "Calm offsites", line: "Slow mornings, quiet rooms, good food." },
   { id: "celebrate", label: "Celebrations", line: "Launches, wins, birthdays, a year done." },
   { id: "remote", label: "Remote-friendly", line: "Kits in the mail, a host on the call." },
+  { id: "services", label: "Event help", line: "Food, photos, flowers, staff and planning for your own event." },
   { id: "under50", label: "Under $50 a person", line: "Good times that fit a small budget." },
 ];
 const MOOD_IDS = MOODS.map((m) => m.id).filter((m) => m !== "under50");
@@ -67,6 +69,8 @@ export const POLICIES = {
   firm: { label: "Firm", full: 30, half: 14 },
 };
 const money0 = (c) => "$" + Math.round((+c || 0) / 100).toLocaleString("en-US");
+/** What a brand reads when it tries to book an example host. */
+export const EXAMPLE_REFUSAL = "This is an example host, so it can't take a real booking. Ask us to find a real host for this and we'll look for one who fits.";
 export const money = (c) => { const v = Math.round(+c || 0); return "$" + (v % 100 ? (v / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : (v / 100).toLocaleString("en-US")); };
 
 /** The cancellation terms a brand reads on the experience page and at checkout. */
@@ -92,12 +96,27 @@ export function refundFor(policy, daysBefore, paidCents, depositCents) {
 // The full price, always: the total for the group, with every line, before anyone pays.
 export const FEE_BPS = () => int(process.env.ENCORE_TEAM_FEE_BPS || 0, 0, 3000); // Pottery Lab's booking fee, paid by the brand
 
+// Services (a florist, a photographer, event staff, a summit planner, a caterer) are priced per unit, not per guest:
+// "table" (one per perUnitGuests guests), "staff-day" (one staffer per perUnitGuests attendees, for a day), "hour" (at
+// least minUnits hours), "package" (one, scoped by attendees). The headcount stays the number of guests or attendees;
+// units are worked out from it, never less than minUnits. Everything else about a package is unchanged.
+export const UNITS = { person: "a person", table: "a table", "staff-day": "a staffer a day", hour: "an hour", package: "for the package" };
+export const unitOf = (pkg = {}) => (UNITS[pkg.unit] && pkg.unit !== "person" ? pkg.unit : "");
+export function unitsFor(pkg = {}, headcount = 0, override = null) {
+  const u = unitOf(pkg); if (!u) return headcount; const lo = Math.max(1, Math.round(+pkg.minUnits || 1));
+  if (override != null && +override > 0) return Math.max(lo, Math.min(1000, Math.round(+override)));
+  if (u === "package") return 1; if (u === "hour") return lo;
+  return Math.max(lo, Math.ceil((headcount || 0) / Math.max(1, +pkg.perUnitGuests || 1)));
+}
+/** "$140 a table", "$45 a person": the price as a brand reads it on a card. */
+export const unitPrice = (pkg = {}) => { const u = unitOf(pkg); return u === "package" ? `${money(pkg.perPersonCents)} for the package` : `${money(pkg.perPersonCents)} ${UNITS[u || "person"]}`; };
 /** priceFor(pkg, headcount) -> lines, total, deposit and the summary line ("$1,440 total for 12"). */
 export function priceFor(pkg = {}, headcount = 0, { feeBps = FEE_BPS(), override = null } = {}) {
   const n = int(headcount, 0, 5000), pp = int(override?.perPersonCents ?? pkg.perPersonCents, 0, 1e8), min = int(pkg.minimumCents, 0, 1e9);
   const taxBps = int(pkg.taxBps, 0, 2500), depositPct = int(pkg.depositPct || 25, 10, 100);
-  const lines = [], base = pp * n;
-  lines.push({ k: "people", label: `${money(pp)} a person × ${n}`, cents: base });
+  const lines = [], u = unitOf(pkg), units = u ? unitsFor(pkg, n, override?.units) : n, base = pp * units;
+  const unitNote = u === "table" ? `${pkg.perUnitGuests || 8} guests a table` : u === "staff-day" ? `About 1 staffer for every ${pkg.perUnitGuests || 50} attendees` : u === "hour" && pkg.minUnits > 1 ? `${pkg.minUnits} hours minimum` : "";
+  lines.push(u === "package" ? { k: "people", label: `${pkg.name || "Package"}, for up to ${pkg.maxGuests || n} attendees`, cents: base } : { k: "people", label: `${money(pp)} ${UNITS[u || "person"]} × ${units}`, cents: base, ...(unitNote ? { note: unitNote } : {}) });
   const topUp = min > base ? min - base : 0;
   if (topUp) lines.push({ k: "minimum", label: `Group minimum is ${money(min)}`, cents: topUp, note: "Small groups pay the minimum" });
   const subtotal = base + topUp;
@@ -108,7 +127,7 @@ export function priceFor(pkg = {}, headcount = 0, { feeBps = FEE_BPS(), override
   const total = subtotal + fee + tax, deposit = Math.round((total * depositPct) / 100);
   const includes = (pkg.includes || []).slice(0, 4).map((s) => lc(s));
   const incl = includes.length ? `includes ${includes.length > 1 ? includes.slice(0, -1).join(", ") + " and " + includes.slice(-1) : includes[0]}` : "";
-  return { headcount: n, perPersonCents: pp, minimumCents: min, subtotalCents: subtotal, feeCents: fee, taxCents: tax, totalCents: total, depositPct, depositCents: deposit, balanceCents: total - deposit,
+  return { headcount: n, unit: u || "person", units, perPersonCents: pp, minimumCents: min, subtotalCents: subtotal, feeCents: fee, taxCents: tax, totalCents: total, depositPct, depositCents: deposit, balanceCents: total - deposit,
     effectivePerPersonCents: n ? Math.round(total / n) : 0, lines, includes: incl,
     summary: n ? `${money0(total)} total for ${n}` : "", line: n ? `${money0(total)} total for ${n}${incl ? " · " + incl : ""}` : "" };
 }
@@ -162,7 +181,7 @@ export function availabilityFor(pkg = {}, month, { taken = new Set(), today = is
   const wd = Array.isArray(pkg.weekdays) && pkg.weekdays.length ? pkg.weekdays : [1, 2, 3, 4, 5], closed = new Set(pkg.closed || []);
   const earliest = isoDay(Date.parse(today + "T12:00:00Z") + (pkg.leadDays || 0) * DAY);
   for (let d = 1; d <= days; d++) { const date = `${month}-${String(d).padStart(2, "0")}`, w = new Date(date + "T12:00:00Z").getUTCDay();
-    const state = date < today ? "past" : date < earliest ? "notice" : !wd.includes(w) || closed.has(date) ? "closed" : taken.has(date) ? "booked" : "open";
+    const state = date < today ? "past" : date < earliest ? "notice" : !wd.includes(w) || closed.has(date) || (pkg.openUntil && date > pkg.openUntil) ? "closed" : taken.has(date) ? "booked" : "open";
     out.push({ date, w, state }); }
   return { month, days: out, time: pkg.time || "evening", weekdays: wd.map((i) => WD[i]) };
 }
@@ -186,9 +205,17 @@ const AREAS = {
   "west village": [40.7358, -74.0036, "Manhattan"], "east village": [40.7265, -73.9815, "Manhattan"], "lower east side": [40.7150, -73.9843, "Manhattan"], "chelsea": [40.7465, -74.0014, "Manhattan"],
   "soho": [40.7233, -74.0030, "Manhattan"], "tribeca": [40.7163, -74.0086, "Manhattan"], "harlem": [40.8116, -73.9465, "Manhattan"], "midtown": [40.7549, -73.9840, "Manhattan"],
   "astoria": [40.7644, -73.9235, "Queens"], "long island city": [40.7447, -73.9485, "Queens"], "flushing": [40.7675, -73.8331, "Queens"], "jackson heights": [40.7557, -73.8831, "Queens"],
-  "mission": [37.7599, -122.4148, "San Francisco"], "hayes valley": [37.7759, -122.4245, "San Francisco"], "silver lake": [34.0869, -118.2702, "Los Angeles"], "logan square": [41.9235, -87.7083, "Chicago"],
+  "mission": [37.7599, -122.4148, "San Francisco"], "soma": [37.7785, -122.4056, "San Francisco"], "dogpatch": [37.7577, -122.3889, "San Francisco"], "bernal heights": [37.7389, -122.4152, "San Francisco"],
+  "outer sunset": [37.7540, -122.4950, "San Francisco"], "japantown": [37.7854, -122.4294, "San Francisco"], "marin": [37.9000, -122.5600, "San Francisco"], "flatiron": [40.7411, -73.9897, "Manhattan"], "hudson valley": [42.2500, -73.7900, "New York"],
+  "arts district": [34.0403, -118.2335, "Los Angeles"], "echo park": [34.0782, -118.2606, "Los Angeles"], "venice": [33.9850, -118.4695, "Los Angeles"], "topanga": [34.0939, -118.6018, "Los Angeles"],
+  "east austin": [30.2620, -97.7160, "Austin"], "south congress": [30.2450, -97.7500, "Austin"], "zilker": [30.2660, -97.7730, "Austin"], "hill country": [30.3200, -98.0000, "Austin"],
+  "west loop": [41.8820, -87.6500, "Chicago"], "wicker park": [41.9088, -87.6796, "Chicago"], "lincoln park": [41.9214, -87.6513, "Chicago"], "andersonville": [41.9800, -87.6680, "Chicago"],
+  "ballard": [47.6687, -122.3847, "Seattle"], "capitol hill": [47.6253, -122.3222, "Seattle"], "fremont": [47.6510, -122.3500, "Seattle"], "green lake": [47.6800, -122.3270, "Seattle"], "bainbridge": [47.6262, -122.5212, "Seattle"],
+  "south end": [42.3420, -71.0730, "Boston"], "back bay": [42.3503, -71.0810, "Boston"], "seaport": [42.3510, -71.0440, "Boston"], "cambridge": [42.3736, -71.1097, "Boston"], "north shore": [42.5500, -70.9000, "Boston"],
+  "clerkenwell": [51.5240, -0.1050, "London"], "shoreditch": [51.5260, -0.0790, "London"], "hackney": [51.5450, -0.0550, "London"], "islington": [51.5380, -0.1030, "London"], "las vegas arts district": [36.1590, -115.1530, "Las Vegas"], "hayes valley": [37.7759, -122.4245, "San Francisco"], "silver lake": [34.0869, -118.2702, "Los Angeles"], "logan square": [41.9235, -87.7083, "Chicago"],
 };
-const CITIES = { "new york": [40.7128, -74.006], "brooklyn": [40.6782, -73.9442], "manhattan": [40.7831, -73.9712], "queens": [40.7282, -73.7949], "san francisco": [37.7749, -122.4194], "los angeles": [34.0522, -118.2437], "chicago": [41.8781, -87.6298] };
+const CITIES = { "new york": [40.7128, -74.006], "brooklyn": [40.6782, -73.9442], "manhattan": [40.7831, -73.9712], "queens": [40.7282, -73.7949], "san francisco": [37.7749, -122.4194], "los angeles": [34.0522, -118.2437], "chicago": [41.8781, -87.6298],
+  "austin": [30.2672, -97.7431], "seattle": [47.6062, -122.3321], "boston": [42.3601, -71.0589], "london": [51.5072, -0.1276], "las vegas": [36.1699, -115.1398] };
 export function approxArea(area = "", city = "") {
   const a = AREAS[lc(area)], c = CITIES[lc(city)] || CITIES[lc(a?.[2])];
   const at = a || c; if (!at) return { area: clean(area, 60) || clean(city, 60), city: clean(city, 60), lat: null, lng: null, radiusM: 0, approximate: true };
@@ -323,17 +350,23 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   app.get("/admin/hosts", (req, res, next) => { const u = me(req); if (!u || !isAdmin(u.email)) return res.status(404).type("text").send("Not found"); page("host-review.html")(req, res, next); });
 
   // ---- reading hosts ----
-  const setupOf = (ws) => S0(ws).get("teambook/setup")?.data || null;
+  const setupOf = (ws) => (isExampleWs(ws) ? exampleByWs(ws)?.s || null : S0(ws).get("teambook/setup")?.data || null);
   const verifyOf = (ws) => S0(ws).get("teambook/verify")?.data || {};
   const reqs = () => store.listPrefix("system", "bbreq-").map((d) => d.data).filter((r) => r && r.kind === "bbreq");
   const reqGet = (id) => store.get("system/bbreq-" + String(id || "").replace(/[^a-f0-9]/g, "").slice(0, 24))?.data || null;
   const reqSet = (r) => { r.updatedAt = Date.now(); store.set("system/bbreq-" + r.id, r); return r; };
   const ownerEmailOf = (ws) => getWorkspace(ws)?.ownerEmail || "";
-  const example = (ws) => isExampleEmail(ownerEmailOf(ws));
+  const example = (ws) => isExampleWs(ws) || isExampleEmail(ownerEmailOf(ws));
+  // an example host (server/brandexamples.js) is read like a real one: its profile, setup, stats and reviews come from there
+  const profOf = (ws) => exampleByWs(ws)?.h || C.profileOf(ws);
+  const wsOf = (handle) => C.wsOfHandle(lc(handle)) || (!examplesHidden() && exampleByHandle(handle)?.ws) || null;
+  // the sandboxed demo brand (server/branddemo.js) may walk a booking with an example host; nobody else can
+  const demoBrand = (ws) => !!ws && !!X.isDemoWs?.(ws);
   const ownsPhotoFor = (ws) => (url) => { try { const id = String(url).split("/").pop(); return JSON.parse(fs.readFileSync(path.join(assetsDir, id + ".json"), "utf8")).ws === ws; } catch { return false; } };
 
   /** Every number on a host's trust row, worked out from what happened on Pottery Lab. */
   function statsOf(ws, now = Date.now()) {
+    if (isExampleWs(ws)) { const E = exampleByWs(ws); const s = { ...(E?.stats || {}) }; const t = trustedCheck(s); s.trusted = false; s.checks = t.checks; s.quality = qualityScore(s); return s; } // never Trusted: the history is an example
     const today = isoDay(now), mine = reqs().filter((r) => r.hostWs === ws);
     let T = {}; try { T = X.trustOf ? X.trustOf(ws) : {}; } catch {}
     const doneTeam = mine.filter((r) => statusOf(r, today) === "done" && !r.linkedEvent).length;
@@ -361,27 +394,29 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   const coiPublic = (c, today) => (c?.file && (!c.expires || c.expires >= today) ? { onFile: true, insurer: c.insurer || "", expires: c.expires || "" } : { onFile: false });
   X.teamStatsOf = statsOf;
 
-  const hostCard = (ws, h) => ({ handle: h.handle, name: h.name || h.handle, person: first(getDbUser(ownerEmailOf(ws))?.name || ""), avatar: h.theme?.avatarUrl || "", emoji: h.emoji || "", tagline: h.tagline || "", example: example(ws) });
-  const pkgPublic = (p) => ({ id: p.id, name: p.name, story: p.story, moods: p.moods, perPersonCents: p.perPersonCents, minimumCents: p.minimumCents, minGuests: p.minGuests, maxGuests: p.maxGuests, leadDays: p.leadDays, length: p.length, includes: p.includes, diets: p.diets, access: p.access, remote: p.remote, instant: p.instant, weekdays: p.weekdays, time: p.time, taxBps: p.taxBps, depositPct: p.depositPct, photos: p.photos, lead: photoLead(p), venue: p.venue, art: p.art || "" });
+  const hostCard = (ws, h) => ({ handle: h.handle, name: h.name || h.handle, person: isExampleWs(ws) ? exampleByWs(ws)?.person || "" : first(getDbUser(ownerEmailOf(ws))?.name || ""), avatar: h.theme?.avatarUrl || "", avatarArt: h.theme?.avatarArt || "", accent: h.theme?.accent || "", emoji: h.emoji || "", tagline: h.tagline || "", example: example(ws), ...(example(ws) ? { exampleLine: EXAMPLE_LINE } : {}) });
+  const pkgPublic = (p) => ({ id: p.id, name: p.name, story: p.story, moods: p.moods, perPersonCents: p.perPersonCents, minimumCents: p.minimumCents, minGuests: p.minGuests, maxGuests: p.maxGuests, leadDays: p.leadDays, length: p.length, includes: p.includes, diets: p.diets, access: p.access, remote: p.remote, instant: p.instant, weekdays: p.weekdays, time: p.time, taxBps: p.taxBps, depositPct: p.depositPct, photos: p.photos, lead: photoLead(p), venue: p.venue, art: p.art || "",
+    kind: p.kind || "experience", unit: unitOf(p) || "person", unitPrice: unitPrice(p), minUnits: p.minUnits || 0, perUnitGuests: p.perUnitGuests || 0, addOns: p.addOns || [], details: p.details || [], goals: p.goals || [] });
   // every workspace with a setup that's on: found through the handle index C keeps (only hosts with pages can be listed)
-  function allSetups() { const out = [];
+  function allSetups({ examples = false } = {}) { const out = []; // examples only where a brand browses (Discover, the map, Quick book), never in a metric
     for (const ws of allWorkspaceIds()) { if (ws === DEFAULT_WS) continue; const h = C.profileOf(ws); if (!h?.handle) continue; const s = setupOf(ws); if (!s?.on) continue; out.push({ ws, h, s }); }
+    if (!examples) return out; const taken = new Set(out.map((x) => lc(x.h.handle))); for (const x of exampleSetups()) if (!taken.has(x.h.handle)) out.push(x); // examples last; a real host with the same handle wins
     return out; }
   const cardOf = ({ ws, h, s }, p, people, stats) => { const pr = priceFor(p, people || p.minGuests); return { handle: h.handle, pkg: p.id, name: p.name, story: p.story.slice(0, 180), moods: p.moods, remote: p.remote, lead: photoLead(p), photo: (p.photos || [])[0] || null, photos: (p.photos || []).slice(0, 4), art: p.art || "",
     host: { ...hostCard(ws, h), trusted: stats.trusted, verified: { email: stats.emailVerified, phone: stats.phoneVerified, id: stats.idChecked } }, area: approxArea(s.area, s.city || h.city),
-    perPersonCents: p.perPersonCents, minGuests: p.minGuests, maxGuests: p.maxGuests, price: { summary: pr.summary, totalCents: pr.totalCents, headcount: pr.headcount, effectivePerPersonCents: pr.effectivePerPersonCents }, rating: stats.rating, reviews: stats.reviews, quality: stats.quality, instant: p.instant && stats.trusted, policy: cancellationTerms(s.policy, p.depositPct).short, includes: pr.includes }; };
+    perPersonCents: p.perPersonCents, unit: unitOf(p) || "person", unitPrice: unitPrice(p), kind: p.kind || "experience", goals: p.goals || [], alsoIn: s.alsoIn || [], example: example(ws), minGuests: p.minGuests, maxGuests: p.maxGuests, price: { summary: pr.summary, totalCents: pr.totalCents, headcount: pr.headcount, effectivePerPersonCents: pr.effectivePerPersonCents }, rating: stats.rating, reviews: stats.reviews, quality: stats.quality, instant: p.instant && stats.trusted, policy: cancellationTerms(s.policy, p.depositPct).short, includes: pr.includes }; };
 
   // ---- Discover ----
   app.get("/api/bb/moods", (req, res) => res.json({ moods: MOODS, diets: DIETS, access: ACCESS, areas: AREA_NAMES, trusted: TRUSTED }));
   app.get("/api/bb/discover", (req, res) => { if (limited("d:" + req.ip, 600)) return bad(res, "Slow down.", 429, "rate_limited");
     const q = req.query || {}, mood = MOODS.some((m) => m.id === q.mood) ? q.mood : "", people = int(q.people, 0, 2000), budget = int(q.budget, 0, 100000) * 100, hood = lc(q.hood), diets = String(q.diet || "").split(",").filter((d) => DIETS.includes(d)), access = String(q.access || "").split(",").filter((d) => ACCESS.includes(d));
     const from = ISO.test(q.from || "") ? q.from : "", to = ISO.test(q.to || "") ? q.to : "", out = [];
-    for (const x of allSetups()) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; const st = statsOf(x.ws);
+    for (const x of allSetups({ examples: true })) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; const st = statsOf(x.ws);
       for (const p of x.s.packages.filter((p) => p.on)) {
         if (mood === "under50" ? !(p.perPersonCents && p.perPersonCents <= 5000) : mood === "remote" ? !p.remote : mood && !p.moods.includes(mood)) continue;
         if (people && (people < p.minGuests || people > p.maxGuests)) continue;
         if (budget && p.perPersonCents > budget) continue;
-        if (hood && !p.remote && lc(x.s.area) !== hood && lc(x.s.city || x.h.city) !== hood && lc(approxArea(x.s.area, x.s.city).city) !== hood) continue;
+        if (hood && !p.remote && lc(x.s.area) !== hood && lc(x.s.city || x.h.city) !== hood && lc(approxArea(x.s.area, x.s.city).city) !== hood && !(x.s.alsoIn || []).map(lc).includes(hood)) continue;
         if (diets.some((d) => !p.diets.includes(d)) || access.some((a) => !p.access.includes(a))) continue;
         if (from) { const months = new Set([from.slice(0, 7), (to || from).slice(0, 7)]); let any = false; for (const m of months) { const A = availabilityFor(p, m, { taken: takenFor(x.ws, p.id) }); if (A.days.some((d) => d.state === "open" && d.date >= from && (!to || d.date <= to))) any = true; } if (!any) continue; }
         out.push(cardOf(x, p, people, st)); } }
@@ -389,26 +424,27 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     res.set("Cache-Control", "private, no-store").json({ results: out, total: out.length, mood: MOODS.find((m) => m.id === mood) || null }); });
 
   const takenFor = (ws, pkgId) => new Set([...reqs().filter((r) => r.hostWs === ws && r.pkgId === pkgId && ["booked", "accepted"].includes(r.status) && r.date).map((r) => r.date), ...(X.heldDates?.(ws, pkgId) || [])]); // a recovery hold keeps the date (server/brandpanel3.js)
-  const findPkg = (handle, pkgId) => { const ws = C.wsOfHandle(lc(handle)); const h = ws && C.profileOf(ws); const s = ws && setupOf(ws); const p = s?.packages?.find((x) => x.id === String(pkgId || "")); return ws && h && s && p ? { ws, h, s, p } : null; };
+  const findPkg = (handle, pkgId) => { const ws = wsOf(handle); const h = ws && profOf(ws); const s = ws && setupOf(ws); const p = s?.packages?.find((x) => x.id === String(pkgId || "")); return ws && h && s && p ? { ws, h, s, p } : null; };
 
   // ---- the experience page ----
   app.get("/api/bb/x/:handle/:pkg", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F || (!F.s.on && me(req)?.ws !== F.ws) || (!F.p.on && me(req)?.ws !== F.ws)) return bad(res, "This experience isn't bookable right now.", 404, "not_found");
     const { ws, h, s, p } = F, st = statsOf(ws), people = int(req.query.people || p.minGuests, 1, 2000), today = isoDay();
     const mine = reqs().filter((r) => r.hostWs === ws);
-    const brandReviews = mine.map((r) => ({ r, v: reviewsFor(r, "public").public })).filter((x) => x.v).sort((a, b) => b.v.at - a.v.at).slice(0, 12).map(({ r, v }) => ({ ...v, pkg: r.pkgName, headcount: r.headcount, month: r.date ? r.date.slice(0, 7) : "" }));
-    let T = {}; try { T = X.trustOf ? X.trustOf(ws) : {}; } catch {}
-    const guestReviews = (T.testimonials || []).filter((t) => t.source === "guest").slice(0, 6).map((t) => ({ text: t.quote, name: first(t.name), event: t.event || "" }));
-    const others = s.packages.filter((x) => x.on && x.id !== p.id).map((x) => ({ id: x.id, name: x.name, perPersonCents: x.perPersonCents, photo: (x.photos || [])[0] || null, lead: photoLead(x), art: x.art || "" }));
+    const E = exampleByWs(ws);
+    const brandReviews = E ? E.reviews : mine.map((r) => ({ r, v: reviewsFor(r, "public").public })).filter((x) => x.v).sort((a, b) => b.v.at - a.v.at).slice(0, 12).map(({ r, v }) => ({ ...v, pkg: r.pkgName, headcount: r.headcount, month: r.date ? r.date.slice(0, 7) : "" }));
+    let T = {}; try { T = !E && X.trustOf ? X.trustOf(ws) : {}; } catch {}
+    const guestReviews = E ? E.kudos : (T.testimonials || []).filter((t) => t.source === "guest").slice(0, 6).map((t) => ({ text: t.quote, name: first(t.name), event: t.event || "" }));
+    const others = s.packages.filter((x) => x.on && x.id !== p.id).map((x) => ({ id: x.id, name: x.name, perPersonCents: x.perPersonCents, unitPrice: unitPrice(x), photo: (x.photos || [])[0] || null, lead: photoLead(x), art: x.art || "" }));
     const months = [today.slice(0, 7), isoDay(Date.parse(today.slice(0, 7) + "-15T12:00:00Z") + 31 * DAY).slice(0, 7)];
     res.set("Cache-Control", "private, no-store").json({ host: { ...hostCard(ws, h), story: s.story || h.bio || "", city: s.city || h.city || "", gallery: (h.gallery || []).slice(0, 8) }, pkg: pkgPublic(p), stats: { ...st, checks: st.checks },
       area: approxArea(s.area, s.city || h.city), price: priceFor(p, people), terms: cancellationTerms(s.policy, p.depositPct), reviews: { brands: brandReviews, guests: guestReviews },
       availability: months.map((m) => availabilityFor(p, m, { taken: takenFor(ws, p.id), today })), others, criteria: TRUSTED, venue: p.venue === "host" ? "At the host's space" : p.venue === "brand" ? "At your office or venue" : "At a venue the host books",
-      contact: "Message the host here. Emails and numbers are shared once you're booked." }); });
+      contact: "Message the host here. Emails and numbers are shared once you're booked.", alsoIn: s.alsoIn || [], example: example(ws) ? { line: EXAMPLE_LINE, demo: demoBrand(me(req)?.ws) } : null }); });
   app.get("/api/bb/x/:handle/:pkg/availability", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F) return bad(res, "Not found.", 404, "not_found"); res.json(availabilityFor(F.p, String(req.query.month || ""), { taken: takenFor(F.ws, F.p.id) })); });
   app.get("/api/bb/price/:handle/:pkg", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F) return bad(res, "Not found.", 404, "not_found"); const u = me(req); res.json({ price: priceFor(F.p, int(req.query.people, 1, 2000), { feeBps: u ? feeFor(u.ws, F.ws) : FEE_BPS() }), terms: cancellationTerms(F.s.policy, F.p.depositPct) }); });
-  app.get("/api/bb/hostpkgs/:handle", (req, res) => { const ws = C.wsOfHandle(lc(req.params.handle)), h = ws && C.profileOf(ws), s = ws && setupOf(ws); if (!h || !s?.on) return res.json({ packages: [] });
+  app.get("/api/bb/hostpkgs/:handle", (req, res) => { const ws = wsOf(req.params.handle), h = ws && profOf(ws), s = ws && setupOf(ws); if (!h || !s?.on) return res.json({ packages: [] });
     res.set("Cache-Control", "public, max-age=60").json({ name: h.name, packages: s.packages.filter((p) => p.on).map((p) => ({ id: p.id, name: p.name, perPersonCents: p.perPersonCents, minGuests: p.minGuests, maxGuests: p.maxGuests })) }); });
-  app.get("/api/bb/map", (req, res) => { const out = []; for (const x of allSetups()) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; for (const p of x.s.packages.filter((p) => p.on && !p.remote)) out.push({ handle: x.h.handle, pkg: p.id, name: p.name, ...approxArea(x.s.area, x.s.city || x.h.city) }); } res.json({ places: out, note: "Areas are approximate. The exact address is shared once you're booked." }); });
+  app.get("/api/bb/map", (req, res) => { const out = []; for (const x of allSetups({ examples: true })) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; for (const p of x.s.packages.filter((p) => p.on && !p.remote)) out.push({ handle: x.h.handle, pkg: p.id, name: p.name, ...approxArea(x.s.area, x.s.city || x.h.city) }); } res.json({ places: out, note: "Areas are approximate. The exact address is shared once you're booked." }); });
 
   // ---- shortlists ----
   const slGet = (id) => store.get("system/bbsl-" + String(id || "").replace(/[^a-f0-9]/g, "").slice(0, 20))?.data || null;
@@ -456,9 +492,9 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   // ---- request to book ----
   const brandSide = (u, r) => !!u && u.ws === r.brandWs;
   const hostSide = (u, r) => !!u && u.ws === r.hostWs;
-  const hostPeople = (r) => { const h = C.profileOf(r.hostWs) || {}, s = setupOf(r.hostWs) || {}; return { hostName: h.name || "", hostEmail: ownerEmailOf(r.hostWs), hostPhone: s.phone || verifyOf(r.hostWs).phone?.number || "" }; };
+  const hostPeople = (r) => { const h = profOf(r.hostWs) || {}, s = setupOf(r.hostWs) || {}; return { hostName: h.name || "", hostEmail: ownerEmailOf(r.hostWs), hostPhone: s.phone || verifyOf(r.hostWs).phone?.number || "" }; };
   function view(r, side) {
-    const st = statusOf(r), h = C.profileOf(r.hostWs) || {};
+    const st = statusOf(r), h = profOf(r.hostWs) || {};
     const o = { id: r.id, status: st, statusText: (side === "host" ? HOST_STATUS[st] : STATUS[st]) || st, handle: r.handle, pkg: r.pkgId, pkgName: r.pkgName, host: { name: h.name || "", handle: h.handle, avatar: h.theme?.avatarUrl || "" }, company: r.company, contactName: side === "host" ? first(r.contactName) : r.contactName,
       date: r.date, flex: r.flex, flexText: r.flex ? flexLabel(r.flex) : "", headcount: r.headcount, diets: r.diets || [], access: r.access || [], notes: r.notes || "", occasion: r.occasion || "", price: r.price, terms: r.terms, counter: r.counter || null, instant: !!r.instant,
       deposit: r.deposit, approval: r.approval || null, createdAt: r.createdAt, respondedAt: r.respondedAt || 0, history: r.history || [],
@@ -478,7 +514,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   function createRequest(u, b = {}) { const no = (error, status = 400, code = "invalid") => ({ error, status, code });
     const F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return no("This experience isn't bookable right now.", 404, "not_found");
     if (F.ws === u.ws) return no("That's your own experience.");
-    if (example(F.ws) && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1") return no("This is an example host, so it can't take requests.", 403, "example");
+    if (example(F.ws) && !demoBrand(u.ws) && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1") return no(EXAMPLE_REFUSAL, 403, "example");
     const { ws, h, s, p } = F, n = int(b.headcount, 0, 2000);
     if (n < p.minGuests || n > p.maxGuests) return no(`${p.name} is for ${p.minGuests} to ${p.maxGuests} people.`);
     const date = ISO.test(b.date || "") ? b.date : "", flex = !date && b.flex && /^\d{4}-\d{2}$/.test(b.flex.month || "") ? { month: b.flex.month, days: ["weekday", "weekend", "any"].includes(b.flex.days) ? b.flex.days : "weekday", time: ["evening", "daytime", "any"].includes(b.flex.time) ? b.flex.time : "evening" } : null;
@@ -507,6 +543,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   // a question before booking: a thread with the host, nothing held or charged
   app.post("/api/bb/questions", small, (req, res) => { const u = need(req, res); if (!u) return; if (limited("q:" + u.ws, 30)) return bad(res, "That's a lot of questions at once. Try again later.", 429, "rate_limited");
     const b = req.body || {}, F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return bad(res, "This experience isn't bookable right now.", 404, "not_found"); if (F.ws === u.ws) return bad(res, "That's your own experience.");
+    if (example(F.ws) && !demoBrand(u.ws)) return bad(res, EXAMPLE_REFUSAL, 403, "example");
     const raw = cleanText(b.text, 1000); if (raw.length < 5) return bad(res, "Write your question first.");
     const W = getWorkspace(u.ws), n = int(b.headcount || F.p.minGuests, F.p.minGuests, F.p.maxGuests), price = priceFor(F.p, n);
     const r = { kind: "bbreq", id: rid(8), hostWs: F.ws, handle: F.h.handle, pkgId: F.p.id, pkgName: F.p.name, brandWs: u.ws, brandEmail: lc(u.email), contactName: clean(u.name || getDbUser(u.email)?.name || "", 80), company: clean(W?.plan !== "friends" ? W?.company : b.company, 120) || first(u.name || ""),
@@ -545,7 +582,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     if (limited("m:" + u.email, 120)) return bad(res, "Slow down a little.", 429, "rate_limited");
     const side = brandSide(u, r) ? "brand" : "host", raw = cleanText(req.body?.text, 1000); if (raw.length < 1) return bad(res, "Write a message first.");
     const text = isBooked(r) ? raw : scrubContact(raw);
-    r.messages = [...(r.messages || []), { id: rid(4), from: side, name: side === "host" ? first(C.profileOf(r.hostWs)?.name || "") : first(u.name || r.contactName), text, at: Date.now(), hidden: text !== raw }].slice(-300);
+    r.messages = [...(r.messages || []), { id: rid(4), from: side, name: side === "host" ? first(profOf(r.hostWs)?.name || "") : first(u.name || r.contactName), text, at: Date.now(), hidden: text !== raw }].slice(-300);
     if (side === "host" && !r.respondedAt && r.status !== "approval") { r.respondedAt = Date.now(); if (r.status === "question") r.answeredAt = Date.now(); }
     reqSet(r); tell(side === "brand" ? ownerEmailOf(r.hostWs) : r.brandEmail, `New message about ${r.pkgName}`, side === "brand" ? "/host/teams#inbox" : `/teams/bookings/${r.id}`);
     res.json({ request: view(r, side), hidden: text !== raw }); });
@@ -562,7 +599,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const side = brandSide(u, r) ? "brand" : "host", paid = (r.payments || []).filter((p) => p.state === "charged").reduce((a, p) => a + p.cents, 0), days = r.date ? Math.floor((Date.parse(r.date + "T12:00:00Z") - Date.now()) / DAY) : 999;
     const refund = side === "host" ? paid : refundFor(r.terms?.policy, days, paid, r.deposit?.cents || 0);
     r.status = "cancelled"; r.cancelledBy = side; r.cancelledAt = Date.now(); r.refund = { cents: refund, at: Date.now() }; releaseDeposit(r); push(r, side, `cancelled${refund ? `, ${money(refund)} back to the brand` : ""}`);
-    reqSet(r); tell(side === "brand" ? ownerEmailOf(r.hostWs) : r.brandEmail, `${side === "brand" ? r.company : C.profileOf(r.hostWs)?.name || "The host"} cancelled ${r.pkgName}.`, side === "brand" ? "/host/teams#inbox" : `/teams/bookings/${r.id}`);
+    reqSet(r); tell(side === "brand" ? ownerEmailOf(r.hostWs) : r.brandEmail, `${side === "brand" ? r.company : profOf(r.hostWs)?.name || "The host"} cancelled ${r.pkgName}.`, side === "brand" ? "/host/teams#inbox" : `/teams/bookings/${r.id}`);
     try { X.onBbCancel?.(r, side); } catch (e) { console.warn("[brandbook] cancel hook", e.message); } // a host cancelling close to the date starts recovery (server/brandpanel2.js)
     res.json({ request: view(r, side), refundCents: refund }); });
   app.post("/api/bb/requests/:id/billing", small, (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !brandSide(u, r)) return bad(res, "Not found.", 404, "not_found");
@@ -582,7 +619,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
 
   // the invoice: HTML, printable to PDF, with company name and VAT or tax ID
   app.get("/teams/invoice/:id", (req, res) => { const u = me(req); const r = reqGet(req.params.id); if (!u || !r || !(brandSide(u, r) || hostSide(u, r)) || !isBooked(r)) return res.status(404).type("text").send("Not found");
-    const h = C.profileOf(r.hostWs) || {}, I = invoiceOf(r, { hostName: h.name || "", hostTaxId: setupOf(r.hostWs)?.taxId || "" });
+    const h = profOf(r.hostWs) || {}, I = invoiceOf(r, { hostName: h.name || "", hostTaxId: setupOf(r.hostWs)?.taxId || "" });
     res.set("Cache-Control", "private, no-store").type("html").send(invoiceHtml(I)); });
 
   // ---- the host side ----
@@ -644,7 +681,19 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
       out.push({ handle: h.handle, name: h.name, email: ownerEmailOf(ws), legalName: V.id.legalName, state: V.id.state, submittedAt: V.id.submittedAt, reviewedAt: V.id.reviewedAt || 0 }); }
     res.set("Cache-Control", "private, no-store").json({ verifications: out.sort((a, b) => (a.state === "pending" ? -1 : 1) - (b.state === "pending" ? -1 : 1) || b.submittedAt - a.submittedAt) }); });
   // the pieces server/brandpanel.js builds on (quick book, briefs, host earnings), read only
-  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf, createRequest, feeFor, view };
+  // "Ask us to find a real host for this": what a brand sends from an example host, kept for the Pottery Lab team
+  // (system/contact-*, msgKind "find-host", listed with the other contact messages). Nothing is booked or charged.
+  app.post("/api/bb/find-real-host", small, (req, res) => { if (limited("fh:" + req.ip, 20)) return bad(res, "That's a lot of requests. Try again in a while.", 429, "rate_limited");
+    const u = me(req), b = req.body || {}, email = lc(u?.email || b.email); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return bad(res, "Add your work email so we can write back.");
+    const F = b.handle ? findPkg(b.handle, b.pkg) : null, W = u ? getWorkspace(u.ws) : null, demo = demoBrand(u?.ws);
+    if (demo) return res.json({ ok: true, demo: true, message: "This is the demo, so nothing is sent. In your own account this goes to our team, and we write back within 2 working days." });
+    const rec = { msgKind: "find-host", name: clean(u?.name || b.name, 120), email, company: clean(W && W.plan !== "friends" ? W.company : b.company, 120), at: Date.now(), ...(u ? { ws: u.ws, from: u.email } : {}),
+      example: F ? { handle: F.h.handle, pkg: F.p.id, name: F.p.name, host: F.h.name } : null, city: clean(b.city || F?.s.city, 60), date: ISO.test(b.date || "") ? b.date : "", headcount: int(b.headcount, 0, 5000), goal: clean(b.goal, 30),
+      message: cleanText(b.note, 1500) || `Find a real host like ${F?.h.name || "this example"}${F ? ` (${F.p.name})` : ""}.` };
+    const id = saveContact(rec); console.log(`[find-host] ${email}${rec.company ? ` (${rec.company})` : ""} wants a real host like ${rec.example?.host || "?"} in ${rec.city || "?"}`);
+    res.json({ ok: true, id, message: "Thanks. Someone on our team will look for a real host who fits and write back within 2 working days. Nothing is booked or charged." }); });
+
+  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf, createRequest, feeFor, view, profOf, wsOf, pkgPublic, hostCard, demoBrand, chargeDeposit, instantBook };
   app.post("/api/bb/admin/verifications/:handle", small, (req, res) => { const a = admin(req, res); if (!a) return; const ws = C.wsOfHandle(lc(req.params.handle)); if (!ws) return bad(res, "No host by that name.", 404, "not_found");
     const V = verifyOf(ws); if (!V.id) return bad(res, "Nothing to review.", 409, "conflict"); V.id = { ...V.id, state: req.body?.approve ? "approved" : "declined", reviewedAt: Date.now(), reviewedBy: lc(a.email), note: clean(req.body?.note, 300) };
     S0(ws).set("teambook/verify", V); tell(ownerEmailOf(ws), req.body?.approve ? "You're ID checked. The badge is on your team listings now." : "We couldn't confirm your ID. Reply to our email and we'll sort it out.", "/host/teams#trust"); res.json({ ok: true, state: V.id.state }); });

@@ -44,6 +44,7 @@ import { emailConfig, sendEmail, EMAIL_RE } from "./email.js";
 import { isAdmin } from "./metrics.js";
 import { capture } from "./posthog.js";
 import * as CRM from "./crmsync.js";
+import { EXAMPLE_LINE } from "./brandexamples.js";
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -75,7 +76,21 @@ export const GOALS = {
     metrics: ["returning", "costPerReturning", "nextOptIns", "hostFollows", "useful"] },
   workshop: { id: "workshop", label: "Workshop", line: "Everyone makes or learns something, together.", moods: ["handson"], together: "class",
     metrics: ["showRate", "back", "useful", "costPerGuest"] },
+  offsite: { id: "offsite", label: "Team offsite", line: "A day away to plan, think and slow down.", moods: ["calm", "bonding"], together: "roundtable",
+    metrics: ["showRate", "useful", "back", "costPerGuest"] },
+  wellness: { id: "wellness", label: "Wellness", line: "Yoga, a sound bath or a run: a calmer kind of team time.", moods: ["calm"], together: "class",
+    metrics: ["showRate", "back", "costPerGuest"] },
+  conference: { id: "conference", label: "Conference week", line: "The side event people remember: a morning run, coffee, a happy hour.", moods: ["celebrate", "bonding", "client"], together: "introductions",
+    metrics: ["targetsAttended", "meetings", "useful", "costPerGuest"] },
+  celebration: { id: "celebration", label: "Launch or party", line: "A launch, a pop-up or the holiday party.", moods: ["celebrate"], together: "introductions",
+    metrics: ["showRate", "useful", "hostFollows", "costPerGuest"] },
+  catering: { id: "catering", label: "Food for the office", line: "Office breakfast, a team lunch or a catered company event.", moods: ["services"], together: "standard", service: true,
+    metrics: ["showRate", "costPerGuest"] },
+  summit: { id: "summit", label: "Summit help", line: "Planning, staff, photos and flowers for your own summit.", moods: ["services"], together: "introductions", service: true,
+    metrics: ["targetsAttended", "meetings", "opportunities", "costPerGuest"] },
 };
+// goals where Quick book also suggests services to add (flowers, photos, food, staff), never instead of the main three
+const ADDON_GOALS = ["customer", "celebration", "conference", "community", "offsite", "summit", "catering", "team"];
 export const goalOf = (g) => GOALS[g] || null;
 export const TOGETHER = {
   introductions: { label: "An introductions plan", line: "The host seats people who should meet and starts each table off." },
@@ -129,18 +144,29 @@ export function accessNotes(pkg = {}) {
 // goal, the exact date being open, the budget and the host's track record.
 export function quickRank(cands = [], { date = "", people = 0, budgetCents = 0, city = "", goal = "" } = {}) {
   const G = goalOf(goal), C = lc(city);
-  const sizeOk = (x) => !people || (people >= x.minGuests && people <= x.maxGuests), cityOk = (x) => !C || [x.city, x.areaCity, x.area].map(lc).includes(C) || (C === "new york" && ["brooklyn", "manhattan", "queens"].includes(lc(x.areaCity)));
+  const sizeOk = (x) => !people || (people >= x.minGuests && people <= x.maxGuests), cityOk = (x) => !C || [x.city, x.areaCity, x.area, ...(x.alsoIn || [])].map(lc).includes(C) || (C === "new york" && ["brooklyn", "manhattan", "queens"].includes(lc(x.areaCity)));
   let fits = cands.filter((x) => sizeOk(x) && cityOk(x) && !x.remote), near = false;
   // nothing fits every filter: show the closest hosts instead of an empty box, each with what doesn't match
   if (!fits.length) { near = true; fits = cands.filter((x) => !x.remote).map((x) => ({ ...x, miss: [!cityOk(x) ? `In ${x.areaCity || x.city || "another city"}` : "", !sizeOk(x) ? `Takes ${x.minGuests}${x.maxGuests > x.minGuests ? "–" + x.maxGuests : ""} guests` : ""].filter(Boolean) })); }
   const scored = fits.map((x) => { let s = near ? -25 * (x.miss || []).length : 0; const why = [];
-    const moodHit = G ? (x.moods || []).filter((m) => G.moods.includes(m)).length : 0; if (G) { s += moodHit ? 30 + 5 * moodHit : 0; if (moodHit) why.push(`Suits a ${G.label.toLowerCase()}`); }
+    const moodHit = G ? (x.moods || []).filter((m) => G.moods.includes(m)).length : 0, goalHit = !!G && (x.goals || []).includes(G.id);
+    if (G) { s += goalHit ? 50 + ((x.goals || [])[0] === G.id ? 8 : 0) : moodHit ? 30 + 5 * moodHit : 0; if (goalHit || moodHit) why.push(G.service ? `Fits ${G.label.toLowerCase()}` : `Suits a ${G.label.toLowerCase()}`); }
     if (x.dateState === "open") { s += 40; why.push("Open on your date"); } else if (x.altDate) s += 15;
     const pp = x.effectivePerPersonCents || x.perPersonCents; if (budgetCents) { if (pp <= budgetCents) { s += 20; why.push("Inside your budget"); } else s -= Math.min(40, Math.round(((pp - budgetCents) / budgetCents) * 100)); }
     s += Math.round((x.quality || 0) * 0.3) + (x.trusted ? 5 : 0);
     return { ...x, score: s, why, near, miss: x.miss || [], overBudgetCents: budgetCents && pp > budgetCents ? pp - budgetCents : 0 }; });
   scored.sort((a, b) => b.score - a.score || a.totalCents - b.totalCents);
   const seen = new Set(), out = []; for (const x of scored) { if (seen.has(x.handle)) continue; seen.add(x.handle); out.push(x); if (out.length === 3) break; } // three different hosts
+  return out;
+}
+
+/** quickRank, real hosts first: up to 3 real hosts that fit; example hosts fill what's left; the closest of either
+ *  only when nothing fits. An example never takes a real host's place. */
+export function realFirst(cands = [], q = {}) {
+  const R = quickRank(cands.filter((x) => !x.host?.example), q), E = quickRank(cands.filter((x) => x.host?.example), q);
+  const fit = R.filter((x) => !x.near); if (fit.length >= 3) return fit.slice(0, 3);
+  const out = [...fit], seen = new Set(fit.map((x) => x.handle)), add = (L) => { for (const x of L) { if (out.length >= 3) break; if (!seen.has(x.handle)) { seen.add(x.handle); out.push(x); } } };
+  add(E.filter((x) => !x.near)); add(R.filter((x) => x.near)); add(E.filter((x) => x.near));
   return out;
 }
 
@@ -457,21 +483,27 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
     const q = req.query || {}, people = int(q.people, 0, 2000), date = ISO.test(q.date || "") ? q.date : "", budgetCents = int(q.budget, 0, 100000) * 100, city = clean(q.city, 60), goal = goalOf(q.goal) ? q.goal : "", today = isoDay(), only = clean(q.only, 120).toLowerCase();
     if (!people) return bad(res, "How many people?"); if (date && date < today) return bad(res, "That date has passed.");
     const u = me(req), W = u ? getWorkspace(u.ws) : null, rules = u && W?.plan !== "friends" ? BB().rulesOf(u.ws) : null, cands = [];
-    for (const x of BB().allSetups()) { if (BB().example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; if (u && x.ws === u.ws) continue; const st = BB().statsOf(x.ws), A = approxArea(x.s.area, x.s.city || x.h.city);
+    for (const x of BB().allSetups({ examples: true })) { if (BB().example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; if (u && x.ws === u.ws) continue; const st = BB().statsOf(x.ws), A = approxArea(x.s.area, x.s.city || x.h.city);
       for (const p of x.s.packages.filter((p) => p.on && (!only || only === `${x.h.handle}/${p.id}`))) { const card = BB().cardOf(x, p, people || p.minGuests, st), price = card.price, taken = BB().takenFor(x.ws, p.id);
         let dateState = "", altDate = ""; if (date) { const months = [date.slice(0, 7), addDays(date, 20).slice(0, 7)], days = months.flatMap((m) => availabilityFor(p, m, { taken, today }).days); dateState = days.find((d) => d.date === date)?.state || "closed";
           if (dateState !== "open") { const near = days.filter((d) => d.state === "open" && Math.abs(daysBetween(date, d.date)) <= 14).sort((a, b) => Math.abs(daysBetween(date, a.date)) - Math.abs(daysBetween(date, b.date)))[0]; altDate = near?.date || ""; } }
         const full = priceFor(p, people, u ? { feeBps: BB().feeFor(u.ws, x.ws) } : {}), terms = cancellationTerms(x.s.policy, p.depositPct);
-        cands.push({ ...card, price, city: x.s.city || x.h.city || "", areaCity: A.city, area: A.area, access: p.access || [], diets: p.diets || [], moods: p.moods || [], quality: st.quality, trusted: st.trusted, totalCents: full.totalCents, effectivePerPersonCents: full.effectivePerPersonCents,
+        cands.push({ ...card, price, alsoIn: x.s.alsoIn || [], city: x.s.city || x.h.city || "", areaCity: A.city, area: A.area, access: p.access || [], diets: p.diets || [], moods: p.moods || [], quality: st.quality, trusted: st.trusted, totalCents: full.totalCents, effectivePerPersonCents: full.effectivePerPersonCents,
           dateState, altDate, policy: x.s.policy, depositCents: full.depositCents, terms: terms.short, priceLines: full.lines.filter((l) => l.cents || l.k === "people"), summary: full.summary }); } }
-    const top = quickRank(cands, { date, people, budgetCents, city: only ? "" : city, goal }).map((x) => { const when = x.dateState === "open" ? date : x.altDate;
-      return { near: !!x.near, miss: x.miss || [], handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, area: x.area, photo: x.photo, lead: x.lead, art: x.art, moods: x.moods, rating: x.rating, reviews: x.reviews, trusted: x.trusted, instant: x.instant, why: x.why,
+    // services (food, photos, flowers, staff, planning) lead only for a service goal; otherwise they're suggested as add-ons.
+    // Real hosts always come first: examples fill the slots left when fewer than 3 real hosts fit, never displacing one.
+    const G = goalOf(goal), isSvc = (x) => x.kind === "service", rq = { date, people, budgetCents, city: only ? "" : city, goal };
+    const main = only ? cands : cands.filter((x) => (G?.service ? isSvc(x) && (x.goals || []).includes(goal) : !isSvc(x)));
+    const ranked = realFirst(main, rq), seen = new Set(ranked.map((x) => x.handle));
+    const extras = !only && ADDON_GOALS.includes(goal) ? realFirst(cands.filter((x) => isSvc(x) && (x.goals || []).includes(goal) && !seen.has(x.handle)), rq).filter((x) => !x.near).map((x) => ({ handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, unitPrice: x.unitPrice, totalCents: x.totalCents, art: x.art, lead: x.lead, photo: x.photo, example: !!x.host?.example, why: x.why.slice(0, 1) })) : [];
+    const top = ranked.map((x) => { const when = x.dateState === "open" ? date : x.altDate;
+      return { near: !!x.near, example: !!x.host?.example, kind: x.kind, unitPrice: x.unitPrice, miss: x.miss || [], handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, area: x.area, photo: x.photo, lead: x.lead, art: x.art, moods: x.moods, rating: x.rating, reviews: x.reviews, trusted: x.trusted, instant: x.instant, why: x.why,
         totalCents: x.totalCents, perPersonCents: x.effectivePerPersonCents, summary: x.summary, priceLines: x.priceLines, depositCents: x.depositCents, terms: x.terms, overBudgetCents: x.overBudgetCents,
         availability: { date, state: x.dateState, alt: x.altDate, line: !date ? "Pick a date to check it" : x.dateState === "open" ? `Open on ${short(date)}` : x.altDate ? `Not ${short(date)}. Open ${short(x.altDate)}` : `Not open near ${short(date)}` },
         exposure: exposureSchedule({ policy: x.policy, totalCents: x.totalCents, depositCents: x.depositCents, date: when, today }), access: accessNotes({ access: x.access, diets: x.diets }),
         approval: rules ? (BB().needsApproval(rules, x.totalCents, u.email) ? { needed: true, line: `Needs an OK from ${(rules.approvers || []).map((e) => first(nameOf(e)) || e).join(" or ")} first` } : { needed: false, line: "No approval needed" }) : null }; });
     capture("brand_quickbook_searched", { ws: u?.ws, guests: people, goal, results: top.length, signed_in: !!u }); // counts only (server/posthog.js)
-    res.set("Cache-Control", "private, no-store").json({ results: top, total: cands.length, query: { date, people, budget: budgetCents / 100, city, goal }, goals: Object.values(GOALS).map(({ id, label, line }) => ({ id, label, line })),
+    res.set("Cache-Control", "private, no-store").json({ results: top, extras, exampleLine: top.some((x) => x.example) ? EXAMPLE_LINE : "", demo: !!(u && BB().demoBrand?.(u.ws)), total: cands.length, query: { date, people, budget: budgetCents / 100, city, goal }, goals: Object.values(GOALS).map(({ id, label, line }) => ({ id, label, line })),
       brief: { goals: GOALS, together: TOGETHER, creative: CREATIVE, invites: INVITES, photos: PHOTOS, followup: FOLLOWUP, defaults: briefDefaults(goal || "customer", people) } }); });
 
   // ---- one event: owner, timeline, approval, brief, seats, survey, summary link ----

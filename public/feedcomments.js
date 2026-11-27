@@ -17,17 +17,19 @@
     const target = P.target, signedIn = !!P.canPost, list = root.querySelector("#ppList"), head = root.querySelector("#ppCH"), boxWrap = root.querySelector("#ppBox");
     let L = (P.comments || []).slice(), total = P.count || L.length, max = P.max || 500, reTo = null;
     const summary = () => ({ count: total, last: L.filter((c) => !c.pending).slice(-3).map((c) => ({ ...c, text: String(c.text).replace(/\s+/g, " ").slice(0, 280) })) });
-    const row = (c, reply) => `<li class="pp-c${reply ? " re" : ""}${c.pending ? " wait" : ""}" id="c-${esc(c.id)}"${c.mine || c.pending ? "" : ` data-report="${esc(JSON.stringify({ type: "comment", target: "comment:" + c.id, key: c.key || "", name: c.guest ? "" : c.name || "", text: c.text || "" }))}"`}>${face(c.face)}
+    const S = () => FV() || {};
+    const words = (c) => (c.text ? `<p class="pp-t${c.big || S().emojiOnly?.(c.text) ? " big" : ""}">${esc(c.text)}</p>` : "");
+    const row = (c, reply) => `<li class="pp-c${reply ? " re" : ""}${c.pending ? " wait" : ""}${c.fresh ? " fx-new" : ""}" id="c-${esc(c.id)}"${c.pending ? "" : ` data-cid="${esc(c.id)}"`}${c.mine || c.pending ? "" : ` data-report="${esc(JSON.stringify({ type: "comment", target: "comment:" + c.id, key: c.key || "", name: c.guest ? "" : c.name || "", text: c.text || (c.gif ? "GIF: " + c.gif.url : c.sticker ? "Sticker: " + c.sticker : "") }))}"`}>${face(c.face)}
       <div class="pp-b"><p class="pp-who"><b>${esc(c.mine ? "You" : c.name || "Someone")}</b>${c.host ? `<span class="pp-tag">Host</span>` : ""}${c.pending ? `<span class="pp-at">sending</span>` : `<a class="pp-at" href="#c-${esc(c.id)}"><time datetime="${esc(stamp(c.at))}">${esc(ago(c.at))}</time></a>`}</p>
-      <p class="pp-t">${esc(c.text)}</p>${!c.pending && ((signedIn && !reply) || c.canDelete) ? `<p class="pp-do">${signedIn && !reply ? `<button type="button" class="pp-btn" data-reply="${esc(c.id)}">Reply<span class="fb-sr"> to ${esc(c.mine ? "your comment" : c.name || "this comment")}</span></button>` : ""}${c.canDelete ? `<button type="button" class="pp-btn" data-del="${esc(c.id)}">Delete</button>` : ""}</p>` : ""}</div></li>`;
+      ${words(c)}${S().mediaHtml?.(c) || ""}${S().rxHtml?.(c) || ""}${!c.pending && (signedIn || c.canDelete) ? `<p class="pp-do">${signedIn ? `<button type="button" class="pp-btn" data-rx-open aria-label="React to ${esc(c.mine ? "your comment" : (c.name || "this person") + "'s comment")}">React</button>` : ""}${signedIn && !reply ? `<button type="button" class="pp-btn" data-reply="${esc(c.id)}">Reply<span class="fb-sr"> to ${esc(c.mine ? "your comment" : c.name || "this comment")}</span></button>` : ""}${c.canDelete ? `<button type="button" class="pp-btn" data-del="${esc(c.id)}">Delete</button>` : ""}</p>` : ""}</div></li>`;
     function draw() { const ids = new Set(L.map((c) => c.id)), kids = new Map(), top = [];
       for (const c of L) { if (c.re && ids.has(c.re)) { if (!kids.has(c.re)) kids.set(c.re, []); kids.get(c.re).push(c); } else top.push(c); }
       list.innerHTML = top.length ? top.map((c) => row(c, false) + (kids.get(c.id)?.length ? `<li class="pp-rs"><ol aria-label="Replies to ${esc(c.mine ? "your comment" : c.name || "this comment")}">${kids.get(c.id).map((k) => row(k, true)).join("")}</ol></li>` : "")).join("")
         : `<li class="pp-empty">No comments yet.</li>`;
-      head.innerHTML = `Comments${total ? ` <span class="pp-n">${total}</span>` : ""}`; }
+      head.innerHTML = `Comments${total ? ` <span class="pp-n">${total}</span>` : ""}`; window.PLFun?.paint(list); }
     // the box at the bottom: signed out, a way to sign in that comes back to this page
     boxWrap.innerHTML = signedIn ? `<form class="pp-f" data-pp-box novalidate><p class="pp-re" hidden><span></span><button type="button" class="pp-re-x" aria-label="Stop replying">${X_ICON}</button></p>
-        <div class="pp-row">${face(P.me || { g: 1 })}<label class="fb-sr" for="ppText">Add a comment</label><textarea id="ppText" rows="1" maxlength="${max}" placeholder="Add a comment…" enterkeyhint="send" autocomplete="off"></textarea><button class="pp-send" type="submit" disabled>Send</button></div>
+        <div class="pp-row">${face(P.me || { g: 1 })}<label class="fb-sr" for="ppText">Add a comment</label><textarea id="ppText" rows="1" maxlength="${max}" placeholder="Add a comment…" enterkeyhint="send" autocomplete="off"></textarea>${S().funBtns?.() || ""}<button class="pp-send" type="submit" disabled>Send</button></div>
         <p class="pp-meta"><span class="pp-err" role="alert"></span><span class="pp-cnt" aria-hidden="true"></span></p></form>`
       : `<div class="pp-f" data-pp-box><a class="pp-in" href="/login?next=${encodeURIComponent(location.pathname)}">Sign in to comment</a></div>`;
     const form = boxWrap.querySelector("form"), ta = boxWrap.querySelector("textarea"), send = boxWrap.querySelector(".pp-send"), err = boxWrap.querySelector(".pp-err"), cnt = boxWrap.querySelector(".pp-cnt"), reEl = boxWrap.querySelector(".pp-re");
@@ -45,16 +47,23 @@
       ta.addEventListener("input", () => { say(""); grow(); });
       ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing && matchMedia("(pointer:fine)").matches) { e.preventDefault(); form.requestSubmit(); } });
       // it shows at once (marked "sending"), then the server's copy takes its place; a failure puts the words back
-      form.onsubmit = async (e) => { e.preventDefault(); const text = ta.value.trim(); if (!text || form.dataset.busy) return; form.dataset.busy = 1; say("");
-        const re = reTo, tmp = { id: "tmp" + Date.now(), name: "You", mine: true, pending: true, text, at: Date.now(), face: P.me || {}, ...(re ? { re } : {}) };
+      const submit = async (att = {}) => { const text = ta.value.trim(); if ((!text && !att.gif && !att.sticker) || form.dataset.busy) return; form.dataset.busy = 1; say("");
+        const re = reTo, tmp = { id: "tmp" + Date.now(), name: "You", mine: true, pending: true, fresh: !matchMedia("(prefers-reduced-motion: reduce)").matches, text, at: Date.now(), face: P.me || {}, ...(re ? { re } : {}), ...att };
         L.push(tmp); total++; draw(); ta.value = ""; grow(); replyTo(null); document.getElementById("c-" + tmp.id)?.scrollIntoView({ block: "nearest" });
-        try { const r = await fetch("/api/feed/comments", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, text, ...(re ? { re } : {}) }) }), j = await r.json().catch(() => ({}));
+        try { const r = await fetch("/api/feed/comments", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, text, ...att, ...(re ? { re } : {}) }) }), j = await r.json().catch(() => ({}));
           if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
           if (!r.ok || !j.comment) throw new Error(j.message || "That didn't send. Try again.");
           L = L.map((c) => (c.id === tmp.id ? j.comment : c)); total = j.count ?? total; draw(); onChange?.(j.summary || summary()); FV()?.live(re ? "Your reply is posted." : "Your comment is posted."); }
         catch (er) { L = L.filter((c) => c.id !== tmp.id); total = Math.max(0, total - 1); draw(); if (!ta.value) ta.value = text; if (re) replyTo(re); say(er.message); }
         delete form.dataset.busy; grow(); };
+      form.onsubmit = (e) => { e.preventDefault(); submit(); };
+      // a GIF or a sticker from the GIF button (public/feedfun.js) goes out at once, with any words already in the box
+      form.addEventListener("pl:attach", (e) => submit(e.detail || {}));
     }
+    // reactions (public/feedfun.js): the chips under that comment, the new one popping once
+    list.dataset.fxTarget = target; list.dataset.fxIn = signedIn ? "1" : "0";
+    document.addEventListener("pl:rx", (e) => { const d = e.detail || {}; if (d.target !== target || !L.some((c) => c.id === d.id)) return;
+      L = L.map((c) => ({ ...c, fresh: false, pop: "", ...(c.id === d.id ? { rx: d.reactions, pop: d.pop } : {}) })); draw(); onChange?.(summary()); });
     draw();
     // a link to one comment (#c-<id>, from an inbox note or its time): bring it into view and mark it for a moment
     const h = /^#c-([A-Za-z0-9_-]{1,40})$/.exec(location.hash); if (h) { const el = document.getElementById("c-" + h[1]); if (el) { el.classList.add("hl"); el.scrollIntoView({ block: "center" }); setTimeout(() => el.classList.remove("hl"), 2400); } }

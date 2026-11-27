@@ -206,13 +206,14 @@ test("Plain text only: markup is kept as words by the server and escaped by the 
   // the card: the count on the Kudos button, a Comment button with its count, the preview and "View all"
   assert.match(html, /data-fb-kudos="e:kcOpen"[^>]*>[\s\S]*?<span>Kudos<\/span><i class="fb-n" data-fb-kn>3<\/i>/);
   assert.match(html, new RegExp(`<button type="button" class="fb-act" data-fb-comment="e:kcOpen"[^>]*>[\\s\\S]*?<span>Comment</span><i class="fb-n" data-fb-cn="e:kcOpen">${card.comments.count}</i>`));
-  assert.match(html, new RegExp(`View all ${card.comments.count} comments`));
+  if (card.comments.count > card.comments.last.length) assert.match(html, new RegExp(`View all ${card.comments.count} comments`)); else assert.ok(!/View all/.test(html), "every comment is already on the card");
+  const four = ctx.window.FeedVisual.blendHtml({ items: [{ ...card, comments: { ...card.comments, count: 12 } }] }, { signedIn: true }); assert.match(four, /<a class="fb-cm-all" href="\/post\/e\/kcOpen">View all 12 comments<\/a>/);
   // signed out: Comment goes to sign in, and comes back to the feed
   const out = ctx.window.FeedVisual.blendHtml({ items: [card] }, { signedIn: false }); assert.match(out, /<a class="fb-act" href="\/login\?next=%2Ffeed">[\s\S]*?<span>Comment<\/span>/);
   // the sheet escapes every comment it draws, and carries Report and Block for other people's
   // the post page's thread escapes every comment it draws, and carries Report and Block for other people's
   const sheet = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8"), page = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
-  assert.match(sheet, /<p class="pp-t">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.mine \? "You" : c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
+  assert.match(sheet, /<p class="pp-t\$\{[^}]*\}">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.mine \? "You" : c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
   // the group chat is a quiet link on the post page, never in the comment flow on the card
   assert.match(page, /Open the group chat/); assert.ok(!/group chat/i.test(html), "no group chat link on the card");
   for (const f of [sheet, page, fs.readFileSync(new URL("../server/feedcomments.js", import.meta.url), "utf8")]) assert.ok(!/—/.test(f), "no em dashes");

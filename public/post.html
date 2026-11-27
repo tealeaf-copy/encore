@@ -30,6 +30,7 @@
 .pp-who{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;margin:0;padding-right:40px;font-size:15px;line-height:1.35}.pp-who b{font-weight:600}
 .pp-tag{font-size:12px;font-weight:600;color:var(--pl-accent-text,#29489A)}
 .pp-at{font:400 12px/1.35 var(--sys-mono,ui-monospace,monospace);color:var(--pl-soft,#444845);font-variant-numeric:tabular-nums;text-decoration:none}a.pp-at{padding:14px 6px;margin:-14px -6px}a.pp-at:hover{text-decoration:underline;text-underline-offset:3px}
+.pp-t.big{font-size:28px;line-height:1.2}.pp-b .fx-gif{height:180px}.pp-b .fx-stk{width:96px;height:96px}
 .pp-t{margin:2px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pp-do{display:flex;gap:4px;margin:0 0 -10px -10px}
 .pp-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--pl-soft,#444845);font:500 13px var(--sys-sans,"IBM Plex Sans",system-ui);cursor:pointer}.pp-btn:hover{color:var(--pl-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}.pp-btn.sure{color:var(--pl-accent-text,#29489A);font-weight:600}
@@ -64,7 +65,7 @@
     <div id="ppBox"></div></section>
 </main>
 <script id="postData" type="application/json">null</script>
-<script src="/feedvisual.js"></script><script src="/feedcomments.js"></script>
+<script src="/feedvisual.js"></script><script src="/feedfun.js"></script><script src="/feedcomments.js"></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

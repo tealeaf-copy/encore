@@ -20,6 +20,9 @@
 // - Notes (the inbox, X.notify): the host hears once per card an hour; someone who wrote a comment hears when someone
 //   replies to it, and the people who replied hear about later replies, once per thread an hour. Never for your own
 //   comment, never from someone you blocked, and not when you muted the card's host or turned notes off in the Inbox.
+// - Fun: a comment can be a GIF (server/gifs.js: only the provider's CDN) or one of our stickers, with or without words;
+//   1 to 3 emoji alone are drawn larger (big); quick reactions on a comment (REACTIONS, one per person, block-aware,
+//   POST /api/feed/comments/:id/react). The words still go through the filter. public/feedfun.js draws the pickers.
 // - Freshness: kudos and comment writes bump the feed's generation (server/feedvisual.js), so the signed-out feed (a
 //   minute's cache) is rebuilt; the page also asks /api/feed/social for fresh counts after it draws, and the service
 //   worker drops its saved feed after a kudos or comment goes through (public/sw.js).

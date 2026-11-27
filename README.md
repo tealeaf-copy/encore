@@ -58,6 +58,9 @@ Run the tests with `npm test` (they use fake AI and a temporary database).
 | `ENCORE_LEGAL_NAME` / `ENCORE_LEGAL_ADDRESS` | unset | Company name and address on `/privacy` and `/terms` (default "Pottery Lab", no address) |
 | `ANTHROPIC_API_KEY` | unset | Claude key. Stays on the server |
 | `ENCORE_FAKE_AI` | `0` | `1` = offline demo mode, no network calls |
+| `GIPHY_API_KEY` | unset | GIF search for feed comments (server/gifs.js): GIPHY, rating `pg`, searched from the server with nothing about the viewer, "Powered by GIPHY" in the picker. Unset (and no Tenor key): the GIF button offers our own 16 stickers |
+| `TENOR_API_KEY` | unset | The same with Tenor (Google's v2 API, `contentfilter=medium`, "via Tenor"). Used only when `GIPHY_API_KEY` is unset |
+| `ENCORE_GIFS_PER_IP_HOUR` | `240` | GIF searches per IP per hour |
 | `SLACK_BOT_TOKEN` | unset | Slack Web API (send messages, DMs by email, find users) |
 | `SLACK_DEFAULT_CHANNEL` | unset | Channel for messages with no channel given (PM nudges) |
 | `SLACK_WEBHOOK_URL` | unset | Without a bot token: send-only Slack via an incoming webhook |

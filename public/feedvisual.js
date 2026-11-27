@@ -188,6 +188,7 @@
   const ICON = {
     kudos: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.2v2.2M4.6 5.4l1.5 1.5M15.4 5.4l-1.5 1.5"/><path d="M6.8 17h6.4a1.6 1.6 0 0 0 1.6-1.6v-3.9a1.6 1.6 0 0 0-1.6-1.6h-2.4l.5-2.1a1.3 1.3 0 0 0-2.5-.6L7.2 10H6.8z"/><path d="M4 10h2.8v7H4z"/></svg>`,
     comment: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h12a1 1 0 0 1 1 1v7.2a1 1 0 0 1-1 1H9l-3.6 2.8v-2.8H4a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z"/></svg>`,
+    smile: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M7 11.8c.8 1 1.8 1.5 3 1.5s2.2-.5 3-1.5"/><path d="M7.5 8h.01M12.5 8h.01" stroke-width="2.2"/></svg>`,
     share: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.5V3.5M6.6 6.8 10 3.4l3.4 3.4"/><path d="M5 10.5v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-5"/></svg>`,
     x: `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg>`,
   };
@@ -226,16 +227,30 @@
     return SI ? `<button type="button" class="fb-act" data-fb-comment="${esc(t)}" data-focus="1">${inner}</button>` : `<a class="fb-act" href="/login?next=${encodeURIComponent(location.pathname)}">${inner}</a>`; };
   const ago = (t) => { const s = Math.max(0, (Date.now() - (t || 0)) / 1000); return s < 60 ? "now" : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : s < 7 * 86400 ? `${Math.floor(s / 86400)}d` : new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   const stamp = (t) => { try { return new Date(t || 0).toISOString(); } catch { return ""; } };
-  // the latest three comments, then "View all 12 comments" (to the post page)
-  const cmRow = (c) => `<li class="fb-c${c.pending ? " wait" : ""}"><p><b>${esc(c.mine ? "You" : c.name || "Someone")}</b> ${esc(c.text)}<time class="fb-at" datetime="${esc(stamp(c.at))}">${esc(c.pending ? "sending" : ago(c.at))}</time></p></li>`;
+  // the fun parts (public/feedfun.js draws the pickers and the sticker art; the boxes here are their final size, so nothing moves)
+  const RXG = { heart: ["❤️", "Love"], laugh: ["😂", "Funny"], wow: ["😮", "Wow"], clap: ["👏", "Applause"], fire: ["🔥", "Fire"], sad: ["😢", "Sad"] };
+  const STK = { cheers: "Cheers", bowl: "Steaming bowl", potto: "Potto dancing", confetti: "Confetti", shoe: "Running shoe", heart: "Heart", clap: "Applause", "see-you": "See you there", "so-good": "So good", "count-me-in": "Count me in", dice: "Dice", coffee: "Coffee", sun: "Sunny", star: "Star", wave: "Wave", cake: "Cake" };
+  const SEG = typeof Intl !== "undefined" && Intl.Segmenter ? new Intl.Segmenter("en", { granularity: "grapheme" }) : null;
+  /** One to three emoji and nothing else: drawn larger, like a sticker (the server's emojiOnly, for the moment before it answers). */
+  const emojiOnly = (t) => { const s = String(t || "").replace(/\s+/g, ""); if (!s || s.length > 48) return false; const G = SEG ? [...SEG.segment(s)].map((x) => x.segment) : [...s];
+    return G.length <= 3 && G.every((g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g) && !/[\p{L}\p{N}]/u.test(g.replace(/[\u{1F3FB}-\u{1F3FF}⃣️]/gu, ""))); };
+  const rxHtml = (c) => ((c.rx || []).length ? `<span class="fx-rxs">${c.rx.filter((x) => RXG[x.r]).map((x) => `<button type="button" class="fx-rx${x.mine ? " on" : ""}${c.pop === x.r ? " pop" : ""}" data-rx="${x.r}" aria-pressed="${!!x.mine}" aria-label="${RXG[x.r][1]}, ${+x.n}${x.mine ? ", yours" : ""}"><span aria-hidden="true">${RXG[x.r][0]}</span>${+x.n}</button>`).join("")}</span>` : "");
+  const gifOk = (g) => g && /^https:\/\/(media\d?\.giphy\.com|i\.giphy\.com|media\d?\.tenor\.com|c\.tenor\.com)\//.test(g.url || "") && +g.w > 0 && +g.h > 0;
+  const mediaHtml = (c) => (gifOk(c.gif) ? `<span class="fx-gif" style="aspect-ratio:${+c.gif.w}/${+c.gif.h}"><img src="${esc(c.gif.url)}" alt="GIF" loading="lazy" decoding="async" width="${+c.gif.w}" height="${+c.gif.h}"></span><small class="fx-via">via ${c.gif.src === "giphy" ? "GIPHY" : "Tenor"}</small>`
+    : c.sticker && STK[c.sticker] ? `<span class="fx-stk" data-stk="${esc(c.sticker)}" role="img" aria-label="Sticker: ${esc(STK[c.sticker])}"></span>` : "");
+  const words = (c) => (c.text ? ` <span class="fb-tx${c.big || emojiOnly(c.text) ? " big" : ""}">${esc(c.text)}</span>` : "");
+  // the latest three comments, then "View all 12 comments" (to the post page); a long press or React opens quick reactions
+  const cmRow = (c) => `<li class="fb-c${c.pending ? " wait" : ""}${c.fresh ? " fx-new" : ""}"${c.pending ? "" : ` data-cid="${esc(c.id)}"`}><p><b>${esc(c.mine ? "You" : c.name || "Someone")}</b>${words(c)}<time class="fb-at" datetime="${esc(stamp(c.at))}">${esc(c.pending ? "sending" : ago(c.at))}</time>${c.pending ? "" : `<button type="button" class="fx-rt" data-rx-open aria-label="React to ${esc(c.mine ? "your comment" : (c.name || "this person") + "'s comment")}">React</button>`}</p>${mediaHtml(c)}${rxHtml(c)}</li>`;
   const cmIn = (t, c = {}) => { const L = (c.last || []).slice(-3), n = c.count || 0, p = postOf(t);
     return `<ol class="fb-cms" aria-label="Latest comments">${L.map(cmRow).join("")}</ol>` + (n > L.length && p ? `<a class="fb-cm-all" href="${esc(p)}">View all ${n} comments</a>` : ""); };
-  const cmPreview = (it) => { const t = it.kudos?.target; return t ? `<div class="fb-cm" data-fb-cm="${esc(t)}"${it.comments?.count ? "" : " hidden"}>${cmIn(t, it.comments)}</div>` : ""; };
-  // the comment box on the card: one line, grows as you write; Send sits next to it once you start
+  const cmPreview = (it) => { const t = it.kudos?.target; return t ? `<div class="fb-cm" data-fb-cm="${esc(t)}" data-fx-target="${esc(t)}" data-fx-in="${SI ? 1 : 0}"${it.comments?.count ? "" : " hidden"}>${cmIn(t, it.comments)}</div>` : ""; };
+  /** The emoji and GIF buttons next to a comment box (public/feedfun.js opens their pickers). */
+  const funBtns = () => `<button type="button" class="fx-b" data-fx="emoji" aria-label="Add an emoji" aria-haspopup="dialog" aria-expanded="false">${ICON.smile}</button><button type="button" class="fx-b fx-gifb" data-fx="gif" aria-label="Add a GIF or a sticker" aria-haspopup="dialog" aria-expanded="false"><span>GIF</span></button>`;
+  // the comment box on the card: one line, grows as you write; emoji and GIF next to it; Send once you start
   const addBox = (it) => { const t = it.kudos?.target, p = postOf(t); if (!t || !p) return "";
     if (!SI) return `<a class="fb-add fb-add-out" href="/login?next=${encodeURIComponent(p)}">${face({ g: 1 })}<span>Sign in to add a comment</span></a>`;
     const id = "fbAdd" + nAdd++;
-    return `<form class="fb-add" data-fb-add="${esc(t)}" novalidate>${face(ME || { g: 1 })}<label class="fb-sr" for="${id}">Add a comment</label><textarea id="${id}" rows="1" maxlength="500" placeholder="Add a comment…" enterkeyhint="send" autocomplete="off"></textarea><button type="submit" class="fb-sendc" disabled>Send</button><p class="fb-add-err" role="alert"></p></form>`; };
+    return `<form class="fb-add" data-fb-add="${esc(t)}" novalidate>${face(ME || { g: 1 })}<label class="fb-sr" for="${id}">Add a comment</label><textarea id="${id}" rows="1" maxlength="500" placeholder="Add a comment…" enterkeyhint="send" autocomplete="off"></textarea>${funBtns()}<button type="submit" class="fb-sendc" disabled>Send</button><p class="fb-add-err" role="alert"></p></form>`; };
   /** The social block: a thin line, the faces and names, the action row, the latest comments, the comment box. */
   const socBlock = (it, acts) => `<div class="fb-soc" data-fb-soc="${esc(it.kudos?.target || "")}">${kudosLine(it.kudos || {})}${acts}${cmPreview(it)}${addBox(it)}</div>`;
   function actRow(it, { kudosLabel = "Kudos" } = {}) { const k = it.kudos || {};
@@ -300,7 +315,7 @@
     $$(`[data-fb-count="${CSS.escape(t)}"]`).forEach((line) => { line.hidden = !K.count || !postOf(t); line.innerHTML = kudosIn(K); }); fire("pl:kudos", { target: t, kudos: K }); }
   /** Put a card's comments on screen (and on its item): the number on the button and the latest three under the card. */
   function setComments(t, c) { const it = SOC.get(t); if (it) it.comments = c;
-    $$(`[data-fb-cn="${CSS.escape(t)}"]`).forEach((n) => (n.textContent = nNum(c.count))); $$(`[data-fb-cm="${CSS.escape(t)}"]`).forEach((el) => { el.hidden = !c.count; el.innerHTML = cmIn(t, c); }); fire("pl:comments", { target: t, comments: c }); }
+    $$(`[data-fb-cn="${CSS.escape(t)}"]`).forEach((n) => (n.textContent = nNum(c.count))); $$(`[data-fb-cm="${CSS.escape(t)}"]`).forEach((el) => { el.hidden = !c.count; el.innerHTML = cmIn(t, c); window.PLFun?.paint(el); }); fire("pl:comments", { target: t, comments: c }); }
   // fresh counts for the cards on screen: the feed answer can be a minute old signed out, or a saved copy on a slow connection
   let socT = 0; const tapped = new Map();
   function socialSoon(ms = 500) { clearTimeout(socT); socT = setTimeout(async () => { const T = [...new Set($$("[data-fb-kudos]").map((b) => b.dataset.fbKudos))].slice(0, 40), t0 = Date.now(); if (!T.length) return;
@@ -317,13 +332,18 @@
   document.addEventListener("input", (e) => { const ta = e.target.closest?.("form.fb-add textarea"); if (!ta) return; const er = ta.form.querySelector(".fb-add-err"); if (er) er.textContent = ""; grow(ta); });
   document.addEventListener("keydown", (e) => { const ta = e.target.closest?.("form.fb-add textarea"); if (!ta || e.key !== "Enter" || e.shiftKey || e.isComposing || !matchMedia("(pointer:fine)").matches) return; e.preventDefault(); ta.form.requestSubmit(); });
   document.addEventListener("submit", (e) => { const f = e.target.closest?.("form.fb-add[data-fb-add]"); if (!f) return; e.preventDefault(); postComment(f); });
+  // a GIF or a sticker picked for a card's box (public/feedfun.js) goes out at once, with any words already in the box
+  document.addEventListener("pl:attach", (e) => { const f = e.target.closest?.("form.fb-add[data-fb-add]"); if (f) postComment(f, e.detail || {}); });
+  // a reaction went through (public/feedfun.js): the chips under that comment, the new one popping once
+  document.addEventListener("pl:rx", (e) => { const { target, id, reactions, pop } = e.detail || {}, it = SOC.get(target); if (!it?.comments?.last?.some((c) => c.id === id)) return;
+    setComments(target, { ...it.comments, last: it.comments.last.map((c) => (c.id === id ? { ...c, rx: reactions, pop: RM() ? "" : pop } : { ...c, pop: "", fresh: false })) }); });
   /** Post a comment from a card: it shows at once (marked "sending"), then the server's copy takes its place. */
-  async function postComment(f) { const t = f.dataset.fbAdd, ta = f.querySelector("textarea"), er = f.querySelector(".fb-add-err"), text = ta.value.trim(); if (!text || f.dataset.busy) return;
+  async function postComment(f, extra = {}) { const t = f.dataset.fbAdd, ta = f.querySelector("textarea"), er = f.querySelector(".fb-add-err"), text = ta.value.trim(), att = extra.gif ? { gif: extra.gif } : extra.sticker ? { sticker: extra.sticker } : {}; if ((!text && !att.gif && !att.sticker) || f.dataset.busy) return;
     if (!SI) { location.href = "/login?next=" + encodeURIComponent(postOf(t) || location.pathname); return; }
     f.dataset.busy = 1; if (er) er.textContent = ""; tapped.set("c|" + t, Date.now());
-    const was = SOC.get(t)?.comments || { count: 0, last: [] }, tmp = { id: "tmp" + Date.now(), name: "You", mine: true, pending: true, text, at: Date.now(), face: ME || {} };
+    const was = SOC.get(t)?.comments || { count: 0, last: [] }, tmp = { id: "tmp" + Date.now(), name: "You", mine: true, pending: true, fresh: !RM(), text, at: Date.now(), face: ME || {}, ...att };
     setComments(t, { count: (was.count || 0) + 1, last: [...(was.last || []), tmp].slice(-3) }); ta.value = ""; grow(ta);
-    try { const r = await fetch("/api/feed/comments", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t, text }) }), j = await r.json().catch(() => ({}));
+    try { const r = await fetch("/api/feed/comments", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: t, text, ...att }) }), j = await r.json().catch(() => ({}));
       if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(postOf(t) || location.pathname); return; }
       if (!r.ok || !j.comment) throw new Error(j.message || "That didn't send. Try again.");
       tapped.set("c|" + t, Date.now()); setComments(t, j.summary || { count: j.count, last: [...(was.last || []), j.comment].slice(-3) }); live("Your comment is posted."); }
@@ -358,7 +378,7 @@
       finally { $$(`[data-fb-kudos="${CSS.escape(t)}"]`).forEach((x) => delete x.dataset.busy); } })); }
   function wireBlend(root) {
     if (!linked) { linked = true; try { const t = new URLSearchParams(location.search).get("comments"), p = postOf(t); if (p) { location.replace(p); return; } } catch {} }
-    wireKudos(root);
+    wireKudos(root); need("/feedfun.js", () => window.PLFun?.paint(root)); // the emoji and GIF pickers, our stickers, reactions
     socialSoon(); backTo();
     $$("[data-fb-share]", root).forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.fbShare, title = b.dataset.title || "Pottery Lab";
       if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
@@ -658,9 +678,28 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-stream .fb-add textarea{flex:1;min-width:0;height:44px;min-height:44px;max-height:132px;box-sizing:border-box;resize:none;margin:0;padding:11px 12px;border:1px solid var(--fb-line);border-radius:var(--pl-r-md,6px);background:#fff;color:var(--fb-ink);font:16px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui)}
 .fb-add textarea::placeholder{color:var(--fb-soft);opacity:1}.fb-stream .fb-add textarea:hover{border-color:var(--fb-line2)}.fb-stream .fb-add textarea:focus-visible{outline:2px solid var(--fb-acc);outline-offset:0;border-color:var(--fb-acc)}
 .fb-sendc{flex:none;min-height:44px;padding:0 16px;border:0;border-radius:var(--pl-r-btn,6px);background:var(--fb-acc);color:var(--fb-on-acc);font:600 15px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-sendc:hover{background:var(--fb-acc-press)}.fb-sendc[disabled]{opacity:.5;cursor:default}
-.fb-add:not(.on):not(:focus-within) .fb-sendc{display:none}
+/* Send stays put (it used to appear on focus, which moved the emoji and GIF buttons under a finger mid-tap); on a narrow phone your face makes room */
+@media (max-width:430px){form.fb-add>.fb-f{display:none}.fb-add .fx-b{width:36px}.fb-sendc{padding:0 12px}}
+.fb-stream .fb-add textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-add-err{flex-basis:100%;margin:0;padding-left:34px;font-size:13px;line-height:1.4;font-weight:600;color:var(--fb-acc-text)}.fb-add-err:empty{display:none}
 a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid var(--fb-line);border-radius:var(--pl-r-md,6px);color:var(--fb-soft);font-size:15px;text-decoration:none;box-sizing:border-box}.fb-add-out:hover{border-color:var(--fb-line2);color:var(--fb-ink)}
+/* the fun parts of a comment: big emoji, a GIF or one of our stickers, reaction chips, React (public/feedfun.js) */
+.fb-tx.big{font-size:28px;line-height:1.2;letter-spacing:.04em}
+.fx-gif{display:block;height:120px;max-width:min(100%,280px);margin:4px 0 0;border-radius:var(--pl-r-md,6px);overflow:hidden;background:var(--fb-linen,#E6E1D5)}.fx-gif img{display:block;width:100%;height:100%;object-fit:cover}
+.fx-via{display:block;margin:2px 0 0;font:400 11px/1.3 var(--sys-mono,ui-monospace,monospace);color:var(--fb-soft,#444845)}
+.fx-stk{display:block;width:72px;height:72px;margin:2px 0 0}.fx-stk svg{width:100%;height:100%;overflow:visible}
+.fx-rxs{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 2px -2px}
+.fx-rx{display:inline-flex;align-items:center;gap:4px;min-height:44px;box-sizing:border-box;padding:0 8px;border:8px solid transparent;border-left-width:2px;border-right-width:2px;margin:-8px 0;background:var(--fb-card,#FAF8F3);background-clip:padding-box;box-shadow:inset 0 0 0 1px var(--fb-line,#CFC8B9);border-radius:999px;color:var(--fb-ink,#1B1D1C);font:600 12px/1 var(--pl-font-text,"IBM Plex Sans",system-ui);font-variant-numeric:tabular-nums;cursor:pointer}
+.fx-rx span{font-size:14px;line-height:1}.fx-rx:hover{box-shadow:inset 0 0 0 1px var(--fb-line2,#1B1D1C)}.fx-rx.on{color:var(--fb-acc-text,#29489A);background-color:color-mix(in srgb,var(--fb-acc,#29489A) 9%,var(--fb-card,#FAF8F3));box-shadow:inset 0 0 0 1px var(--fb-acc,#29489A)}
+.fx-rx.pop{animation:fx-pop .42s ease-out}@keyframes fx-pop{0%{transform:scale(.6)}60%{transform:scale(1.14)}100%{transform:none}}
+.fx-rt{display:inline-flex;align-items:center;min-height:44px;margin:-12px 0 -12px 2px;padding:0 6px;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-soft,#444845);font:500 12px var(--pl-font-text,"IBM Plex Sans",system-ui);vertical-align:middle;cursor:pointer;opacity:0}
+.fb-c:hover .fx-rt,.fx-rt:focus-visible{opacity:1}.fx-rt:hover{color:var(--fb-ink,#1B1D1C);text-decoration:underline;text-underline-offset:3px}
+@media (hover:none){.fb-c .fx-rt{display:none}}
+.fb-c.fx-new{animation:fx-slide .28s ease-out}@keyframes fx-slide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fx-b{flex:none;display:grid;place-items:center;width:40px;min-height:44px;padding:0;border:0;border-radius:var(--pl-r-btn,6px);background:none;color:var(--fb-soft,#444845);cursor:pointer}.fx-b svg{width:22px;height:22px}.fx-b:hover,.fx-b[aria-expanded=true]{color:var(--fb-ink,#1B1D1C);background:var(--fb-linen,#E6E1D5)}
+.fx-gifb span{padding:3px 4px 2px;border:1.5px solid currentColor;border-radius:4px;font:700 10px/1 var(--sys-mono,ui-monospace,monospace);letter-spacing:.06em}
+.fb-add{position:relative}.fb-add .fx-b{margin-top:0}
+@media (prefers-reduced-motion:reduce){.fx-rx.pop,.fb-c.fx-new{animation:none}}
 .fb-toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9500;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:999px;background:var(--pl-ink);color:#fff;font:600 14px/1.3 var(--pl-font-text,"IBM Plex Sans",system-ui)}
 .fb-note{position:relative;margin:0 0 12px;padding:0 40px 0 14px;border-left:2px solid var(--fb-line2)}.fb-note p{margin:0;font-size:16px;line-height:1.5;color:var(--fb-ink)}.fb-note cite{display:block;margin-top:4px;font-style:normal;font-size:13px;color:var(--fb-soft)}
 .fb-stats{display:flex;flex-wrap:wrap;gap:4px 0;margin:0 0 14px;font:500 13px/1.4 var(--sys-mono,ui-monospace,monospace);color:var(--fb-ink);font-variant-numeric:tabular-nums}.fb-stats span+span::before{content:"·";margin:0 8px;color:var(--fb-soft)}
@@ -694,7 +733,7 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
-  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, card: (item, { signedIn = false, me = null } = {}) => blendHtml({ items: [item], me }, { signedIn }) };
+  const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => blendHtml({ items: [item], me }, { signedIn }) };
   window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER, social };
   // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:
   // on a first visit it used to cover the whole feed and its tab bar

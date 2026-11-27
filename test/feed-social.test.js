@@ -9,7 +9,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { startServer } from "./helpers.js";
 import { resetLoginLimits } from "../server/auth.js";
-import { postPath, targetOfPost } from "../server/feedcomments.js";
+import vm from "node:vm";
+import { postPath, targetOfPost, emojiOnly, REACTIONS } from "../server/feedcomments.js";
+import { cleanGif, STICKERS } from "../server/gifs.js";
 
 let srv;
 const J = { "content-type": "application/json" };
@@ -166,4 +168,91 @@ test("The card: faces, the latest comments, the comment box and the post page li
   assert.match(src, /<label class="fb-sr" for="\$\{id\}">Add a comment<\/label><textarea/); assert.match(src, /aria-pressed="\$\{!!k\.mine\}"/);
   assert.match(src, /Sign in to add a comment/); assert.match(src, /View all \$\{n\} comments/); assert.match(src, /role", "status"\); el\.setAttribute\("aria-live", "polite"\)/);
   assert.ok(!/—/.test(src), "no em dashes");
+});
+
+// ---- the fun parts: reactions on comments, GIFs and our stickers, big emoji ----
+const react = async (who, target, id, r) => { const res = await post(`/api/feed/comments/${encodeURIComponent(id)}/react`, { target, r }, who ? U[who].cookie : ""); return { status: res.status, ...(await res.json()) }; };
+const rxOf = (L, id) => Object.fromEntries((L.find((c) => c.id === id)?.rx || []).map((x) => [x.r, x.n]));
+
+test("Reactions on a comment: add, count, one per person, the same again takes it back, blocks, and the feed carries them", async () => {
+  assert.deepEqual(REACTIONS, ["heart", "laugh", "wow", "clap", "fire", "sad"]);
+  const c = (await say("ivy", "e:fsChess", "Lovely park for it.")).comment;
+  let j = await react("maya", "e:fsChess", c.id, "heart"); assert.equal(j.status, 200); assert.deepEqual(j.reactions, [{ r: "heart", n: 1, mine: true }]);
+  j = await react("jun", "e:fsChess", c.id, "heart"); assert.deepEqual(j.reactions, [{ r: "heart", n: 2, mine: true }]);
+  j = await react("maya", "e:fsChess", c.id, "laugh"); assert.deepEqual(j.reactions, [{ r: "heart", n: 1 }, { r: "laugh", n: 1, mine: true }], "one reaction per person: Maya's heart became a laugh");
+  j = await react("maya", "e:fsChess", c.id, "laugh"); assert.deepEqual(j.reactions, [{ r: "heart", n: 1 }], "the same again takes it back");
+  // signed out can read the chips, not add to them; only the six; only a comment you can see
+  assert.equal((await react("", "e:fsChess", c.id, "heart")).status, 401);
+  assert.equal((await react("jun", "e:fsChess", c.id, "thumbsdown")).status, 400);
+  assert.equal((await react("jun", "e:fsChess", "nope", "heart")).status, 404); assert.equal((await react("jun", "e:fsPriv", c.id, "heart")).status, 404);
+  // the feed carries the reactions on the previewed comments, signed in and out
+  assert.deepEqual(rxOf(cardIn(await feedOf("jun"), "e:fsChess").comments.last, c.id), { heart: 1 }); assert.equal(cardIn(await feedOf("jun"), "e:fsChess").comments.last.find((x) => x.id === c.id).rx[0].mine, true);
+  assert.deepEqual(rxOf(cardIn(await pubFeed(), "e:fsChess").comments.last, c.id), { heart: 1 });
+  // blocks: Noor blocked Leo, so Leo's reaction doesn't count for Noor, and Noor can't react to Leo's comment
+  await react("leo", "e:fsChess", c.id, "fire");
+  assert.deepEqual(rxOf((await (await get("/api/feed/comments?target=e:fsChess", U.noor.cookie)).json()).comments, c.id), { heart: 1 });
+  assert.deepEqual(rxOf((await (await get("/api/feed/comments?target=e:fsChess", U.jun.cookie)).json()).comments, c.id), { heart: 1, fire: 1 });
+  const leos = (await (await get("/api/feed/comments?target=e:fsGame", U.jun.cookie)).json()).comments.find((x) => x.name === "Leo"); assert.ok(leos);
+  assert.equal((await react("noor", "e:fsGame", leos.id, "heart")).status, 404, "a blocked person's comment isn't there to react to");
+  // rate limited
+  process.env.ENCORE_FEED_COMMENTS_PER_HOUR = "1"; let last = 0; for (let i = 0; i < 8; i++) last = (await react("sam", "e:fsChess", c.id, "wow")).status; assert.equal(last, 429);
+});
+
+test("GIFs: only the provider's own CDN is kept, the words still go through the filter, and stickers are ours", async () => {
+  const ok = { src: "giphy", url: "https://media2.giphy.com/media/abc/200.gif?cid=x&rid=200.gif", mp4: "https://media2.giphy.com/media/abc/200.mp4", w: 267, h: 200 };
+  assert.deepEqual(cleanGif(ok), { src: "giphy", url: "https://media2.giphy.com/media/abc/200.gif", mp4: "https://media2.giphy.com/media/abc/200.mp4", w: 267, h: 200 }, "tracking query dropped");
+  assert.ok(cleanGif({ src: "tenor", url: "https://media.tenor.com/x/tenor.gif", w: 220, h: 160 }));
+  for (const bad of [{ ...ok, url: "http://media2.giphy.com/media/abc/200.gif" }, { ...ok, url: "https://evil.example/200.gif" }, { ...ok, url: "https://media2.giphy.com.evil.example/a.gif" }, { ...ok, src: "tenor" },
+    { ...ok, url: "https://media2.giphy.com/media/abc/page.html" }, { ...ok, url: "javascript:alert(1)//media2.giphy.com/a.gif" }, { ...ok, w: 0 }, { ...ok, h: 99999 }, { ...ok, src: "imgur" }, null, "x"]) assert.equal(cleanGif(bad), null, JSON.stringify(bad));
+  assert.equal(cleanGif({ ...ok, mp4: "https://evil.example/a.mp4" }).mp4, undefined, "a bad mp4 is dropped, the GIF stays");
+  // on a card
+  let r = await post("/api/feed/comments", { target: "e:fsGame", text: "", gif: ok }, U.jun.cookie), j = await r.json(); assert.equal(r.status, 200, JSON.stringify(j)); assert.equal(j.comment.gif.url, "https://media2.giphy.com/media/abc/200.gif"); assert.equal(j.comment.text, "");
+  assert.equal(cardIn(await pubFeed(), "e:fsGame").comments.last.at(-1).gif.src, "giphy", "a GIF comment shows on the card, signed out too");
+  assert.equal((await post("/api/feed/comments", { target: "e:fsGame", gif: { ...ok, url: "https://evil.example/a.gif" } }, U.jun.cookie)).status, 400);
+  assert.equal((await post("/api/feed/comments", { target: "e:fsGame", text: "this is shit", gif: ok }, U.jun.cookie)).status, 400, "the words with a GIF still go through the filter");
+  r = await post("/api/feed/comments", { target: "e:fsGame", sticker: "cheers" }, U.jun.cookie); assert.equal(r.status, 200); assert.equal((await r.json()).comment.sticker, "cheers");
+  assert.equal((await post("/api/feed/comments", { target: "e:fsGame", sticker: "<svg>" }, U.jun.cookie)).status, 400);
+  // a GIF comment can be reported like any other: it carries an id for the report menu
+  const T = await (await get("/api/feed/comments?target=e:fsGame", U.maya.cookie)).json(), g = T.comments.find((c) => c.gif); assert.ok(g.id && g.key);
+  srv.app.locals.appstore.safety.hide("comment:" + g.id, { by: "test" }); assert.ok(!(await (await get("/api/feed/comments?target=e:fsGame")).json()).comments.some((c) => c.id === g.id), "hidden for everyone");
+  srv.app.locals.appstore.safety.unhide("comment:" + g.id);
+});
+
+test("The GIF button: our stickers with no key; with a key, the search goes to the provider with nothing about the viewer", async () => {
+  delete process.env.GIPHY_API_KEY; delete process.env.TENOR_API_KEY;
+  let j = await (await get("/api/feed/gifs?q=party", U.jun.cookie)).json(); assert.equal(j.provider, "stickers"); assert.deepEqual(j.stickers, STICKERS); assert.equal(STICKERS.length, 16);
+  const fun = fs.readFileSync(new URL("../public/feedfun.js", import.meta.url), "utf8"); for (const id of STICKERS) assert.ok(fun.includes(`${JSON.stringify(id).replace(/^"(.*)"$/, /-/.test(id) ? '"$1"' : "$1")}: [`), "every sticker is drawn: " + id);
+  const real = globalThis.fetch, seen = [];
+  globalThis.fetch = async (url, opts = {}) => { const u = String(url); if (!u.startsWith("https://api.giphy.com/")) return real(url, opts); seen.push({ u, headers: opts.headers || {} });
+    return new Response(JSON.stringify({ data: [{ images: { fixed_height: { url: "https://media1.giphy.com/media/q1/200.gif", mp4: "https://media1.giphy.com/media/q1/200.mp4", width: "300", height: "200" } } }, { images: { fixed_height: { url: "https://evil.example/x.gif", width: "1", height: "1" } } }] }), { headers: { "content-type": "application/json" } }); };
+  try { process.env.GIPHY_API_KEY = "test-key";
+    j = await (await get("/api/feed/gifs?q=" + encodeURIComponent("Board Games"), U.jun.cookie)).json();
+    assert.equal(j.provider, "giphy"); assert.deepEqual(j.results, [{ src: "giphy", url: "https://media1.giphy.com/media/q1/200.gif", mp4: "https://media1.giphy.com/media/q1/200.mp4", w: 300, h: 200 }], "only CDN results");
+    assert.equal(seen.length, 1); const q = new URL(seen[0].u); assert.equal(q.searchParams.get("rating"), "pg"); assert.equal(q.searchParams.get("q"), "board games");
+    assert.ok(!/jun|example\.com|fs-secret/i.test(seen[0].u + JSON.stringify(seen[0].headers)), "nothing about the viewer"); assert.ok(!Object.keys(seen[0].headers).some((h) => /cookie|forwarded|x-real-ip/i.test(h)));
+    await get("/api/feed/gifs?q=board%20games", U.maya.cookie); assert.equal(seen.length, 1, "cached for a while");
+  } finally { globalThis.fetch = real; delete process.env.GIPHY_API_KEY; }
+});
+
+test("Big emoji, and the card draws GIFs, stickers and reaction chips in boxes that don't move", async () => {
+  for (const t of ["🎉", "🎉🔥", "👍🏽", "❤️❤️❤️", "🇺🇸", " 😂 😂 "]) assert.equal(emojiOnly(t), true, t);
+  for (const t of ["🎉🎉🎉🎉", "hi 🎉", "123", "ok", "", "#1"]) assert.equal(emojiOnly(t), false, t);
+  const e = await say("kit", "e:fsChess", "🎉🔥"); assert.equal(e.comment.big, true); assert.equal((await say("kit", "e:fsChess", "great 🎉")).comment.big, undefined);
+  // the feed's own renderer on a card with a GIF, a sticker, big emoji and reactions
+  const win = { addEventListener() {}, matchMedia: () => ({ matches: false }) }, doc = { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], createElement: () => ({ style: {}, setAttribute() {}, appendChild() {} }), head: { appendChild() {} }, body: { classList: { contains: () => false } }, cookie: "" };
+  const ctx = vm.createContext({ window: win, document: doc, localStorage: { getItem: () => null, setItem() {} }, sessionStorage: { getItem: () => null, setItem() {} }, matchMedia: win.matchMedia, location: { pathname: "/feed", search: "", origin: "" }, navigator: {}, console, setTimeout, clearTimeout, URLSearchParams, Intl, CSS: { escape: (s) => s } });
+  vm.runInContext(fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), ctx);
+  const card = cardIn(await feedOf("jun"), "e:fsGame"), last = [{ id: "a", name: "Maya", text: "", at: Date.now(), gif: { src: "giphy", url: "https://media1.giphy.com/media/q1/200.gif", w: 300, h: 200 }, rx: [{ r: "heart", n: 3, mine: true }, { r: "laugh", n: 1 }] },
+    { id: "b", name: "Jun", text: "", at: Date.now(), sticker: "potto" }, { id: "c", name: "Ana", text: "🎉🔥", at: Date.now() }];
+  const html = ctx.window.FeedVisual.blendHtml({ items: [{ ...card, comments: { count: 3, last } }] }, { signedIn: true });
+  assert.match(html, /<span class="fx-gif" style="aspect-ratio:300\/200"><img src="https:\/\/media1\.giphy\.com\/media\/q1\/200\.gif" alt="GIF" loading="lazy"[^>]*width="300" height="200"><\/span><small class="fx-via">via GIPHY<\/small>/);
+  assert.match(html, /<span class="fx-stk" data-stk="potto" role="img" aria-label="Sticker: Potto dancing"><\/span>/); assert.match(html, /<span class="fb-tx big">🎉🔥<\/span>/);
+  assert.match(html, /class="fx-rx on" data-rx="heart" aria-pressed="true" aria-label="Love, 3, yours"/); assert.match(html, /data-rx="laugh" aria-pressed="false" aria-label="Funny, 1"/);
+  assert.equal(ctx.window.FeedVisual.social.mediaHtml({ gif: { src: "giphy", url: "https://evil.example/x.gif", w: 10, h: 10 } }), "", "a GIF from anywhere else is never drawn"); assert.match(html, /data-fx="emoji" aria-label="Add an emoji"/); assert.match(html, /data-fx="gif" aria-label="Add a GIF or a sticker"/);
+  assert.match(html, /data-fx-target="e:fsGame" data-fx-in="1"/);
+  // fixed boxes: the GIF has a height and the sticker a size in the first paint; motion stops for reduced motion
+  const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), fun = fs.readFileSync(new URL("../public/feedfun.js", import.meta.url), "utf8");
+  assert.match(fv, /\.fx-gif\{display:block;height:120px/); assert.match(fv, /\.fx-stk\{display:block;width:72px;height:72px/); assert.match(fv, /prefers-reduced-motion:reduce\)\{\.fx-rx\.pop,\.fb-c\.fx-new\{animation:none\}/);
+  assert.match(fun, /prefers-reduced-motion:reduce\)\{\.fx-sv \*\{animation:none!important\}/); assert.ok(!/https?:\/\/(?!www\.w3\.org)/.test(fun.replace(/\/\/[^\n]*\n/g, "\n")), "no library, no CDN");
+  assert.ok(!/—/.test(fun + fs.readFileSync(new URL("../server/gifs.js", import.meta.url), "utf8")), "no em dashes");
 });

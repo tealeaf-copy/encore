@@ -86,8 +86,9 @@
   window.addEventListener("hashchange", boot);
   document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", boot) : boot();
   // the light invite: the second tap of a double tap on Send would land on the ticket that replaces the form (and open
-  // the group chat), so a tap on the ticket within half a second of a tap anywhere else is ignored. It lives here, not in
-  // the invite's own page, which has to stay under 40,000 characters.
-  { let at = 0, onTk = false; document.addEventListener("click", (e) => { const tk = !!e.target.closest?.("#tk"), now = Date.now(); if (tk && !onTk && now - at < 500) { e.preventDefault(); e.stopPropagation(); return; } at = now; onTk = tk; }, true); }
+  // the group chat), so a tap on the ticket within half a second of a tap elsewhere, on the same spot, is ignored (a quick
+  // tap on Follow or Add to calendar somewhere else on the new ticket goes through). It lives here, not in the invite's
+  // own page, which has to stay under 40,000 characters.
+  { let at = 0, onTk = false, x = 0, y = 0; document.addEventListener("click", (e) => { const tk = !!e.target.closest?.("#tk"), now = Date.now(); if (tk && !onTk && now - at < 500 && Math.hypot(e.clientX - x, e.clientY - y) < 40) { e.preventDefault(); e.stopPropagation(); return; } at = now; onTk = tk; x = e.clientX; y = e.clientY; }, true); }
   window.PLComeWith = { fromFeed, button, css, send };
 })();

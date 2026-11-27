@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Help · Pottery Lab</title>
+<meta name="description" content="Ask Potto, or reach a person at Pottery Lab. Guests, hosts and brands.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/system.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--pl-page,#EFEBE2);color:var(--pl-ink,#1B1D1C);font:400 17px/1.6 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif)}
+main{max-width:640px;margin:0 auto;padding:40px 16px 64px}
+.k{font:500 13px var(--pl-font-mono,"IBM Plex Mono",monospace);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text,#29489A);margin:0 0 8px}
+h1{font:600 40px/1.1 var(--pl-font-display,"IBM Plex Sans",system-ui,sans-serif);letter-spacing:-.02em;margin:0 0 10px}
+p{margin:0 0 16px;color:var(--pl-soft,#444845)}
+.who{display:grid;gap:12px;margin:24px 0}
+.who button{display:grid;gap:2px;text-align:left;width:100%;min-height:64px;padding:14px 16px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:8px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 17px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}
+.who button small{font-weight:400;font-size:16px;color:var(--pl-soft,#444845)}
+.who button:hover{border-color:var(--pl-accent,#29489A)}
+.today{margin:28px 0 0;padding:16px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:8px;background:var(--pl-sand,#F3E7A8)}
+.today b{display:block;margin:0 0 4px}.today p{color:var(--pl-ink,#1B1D1C);margin:0 0 12px}
+.go{min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--pl-accent,#29489A);color:#fff;font:600 16px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}
+.promise{margin:24px 0 0;font-size:16px}
+a{color:var(--pl-accent-text,#29489A)}
+</style>
+</head>
+<body>
+<main>
+  <p class="k">Help</p>
+  <h1>How can we help?</h1>
+  <p>Potto answers from the help guide in a few seconds. A person is always one tap away.</p>
+  <div class="who" role="group" aria-label="I'm here as">
+    <button type="button" data-help="guest">I'm a guest<small>Replying, the address, the calendar, paying the host, ordering a drop</small></button>
+    <button type="button" data-help="host">I host<small>Making an event, sharing it, guests, getting paid, memberships, drops</small></button>
+    <button type="button" data-help="brand">I'm with a brand<small>Booking a host, the brief, approvals, invoices</small></button>
+  </div>
+  <div class="today"><b>Is your event today?</b><p>Tell us what's wrong and we text the team right away.</p><button type="button" class="go" data-help data-help-urgent>My event is today</button></div>
+  <p class="promise" id="promise">We reply within 24 hours, usually sooner. <a href="/community#contact">Other ways to reach us</a></p>
+</main>
+<script>
+(function () {
+  fetch("/api/help/info").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.promise) document.getElementById("promise").firstChild.textContent = j.promise + " "; }).catch(() => {});
+  // /help?err=<id> (from an error page or toast) and /help?open=1 open the sheet straight away, with that id attached
+  const q = new URLSearchParams(location.search), err = (q.get("err") || "").replace(/[^a-z0-9]/g, "").slice(0, 16);
+  if (err || q.get("open") === "1" || q.get("role")) addEventListener("load", () => setTimeout(() => window.PLHelp && window.PLHelp.open({ errorId: err, role: q.get("role") || "" }), 200), { once: true });
+})();
+</script>
+</body>
+</html>

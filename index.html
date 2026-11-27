@@ -5202,7 +5202,7 @@ async function renderGuest(){
   host.classList.remove("wide"); const nm=location.hash.match(/^#nominate-([A-Za-z0-9_]+)-([a-z0-9-]+)(?:~[a-f0-9]+)?$/);
   if(nm){ if(!db){ host.innerHTML=`<div class="panel"><p class="empty">Open this link in Pottery Lab while signed in.</p></div>`; return } if(host.dataset.key!=="nom"+nm[1]){ host.dataset.key="nom"+nm[1]; renderNominate(host,nm[1],nm[2]) } return }
   const gm=location.hash.match(/^#(rsvp|survey)-([A-Za-z0-9_]+)(?:\.g(\d+))?(?:\.i-[A-Za-z0-9_-]+~[a-f0-9]+)?$/)||[], kind=gm[1], id=gm[2], gi=gm[3]!=null?+gm[3]:null;
-  let EXEC=false; const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}${EXEC?"":`<p class="note" style="text-align:center;font-size:13px">${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Pottery Lab</a>`:"Made with Pottery Lab"}</p>`}</div>`;
+  let EXEC=false; const shell=inner=>`<div style="padding-block:8px 40px" class="stack">${inner}${EXEC?"":`<p class="note" style="text-align:center;font-size:13px">${window.ENCORE_SERVER?`<a href="${location.origin}/?ref=guest" target="_blank" rel="noopener">Made with Pottery Lab</a>`:"Made with Pottery Lab"} · <a href="/help" data-help="guest">Help</a></p>`}</div>`;
   if(!db){ host.innerHTML=shell(`<div class="panel"><p class="empty">${db===null&&dbReady===false?"Sign in to reply.":"Loading your invite…"}</p></div>`); return }
   let ev=allEvents.find(e=>e.id===id);
   let tried=false; if(!ev&&id){ try{ const s=await Promise.race([db.doc("events/"+id).get(),new Promise((_,no)=>setTimeout(()=>no(new Error("slow")),3500))]); if(s.exists) ev={id,...s.data()} }catch{} tried=true } else if(!ev) tried=true

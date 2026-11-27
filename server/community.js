@@ -109,6 +109,7 @@ export function makeCommunity(store) {
   function useCode(code, { ws, email, name }) {
     const c = getCode(code); if (!c) return null;
     store.update(codePath(code), { usedAt: Date.now(), usedByEmail: email, usedByName: name, usedByWs: ws });
+    if (c.batch) return null; // a cohort code from the admin (server/launch.js) connects nobody
     // The two people are connected: each follows the other's host page.
     try { follow(c.ownerWs, { email, name, via: "invite" }); const inviter = getWorkspace(c.ownerWs); follow(ws, { email: c.ownerEmail, name: c.ownerName, via: "invite" }); scopeStore(store, c.ownerWs).add("audit", { eventId: "", what: `${first(name)} joined Pottery Lab with your host code`, kind: "growth", at: Date.now() }); return inviter; } catch { return null; }
   }

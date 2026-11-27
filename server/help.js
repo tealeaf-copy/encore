@@ -2,8 +2,8 @@
 //
 // - POST /api/help/ask {message, page, eventId?, history[]} → {answer, actions:[{label, href}], suggestHuman, section,
 //   confidence, related[], lookup?}.
-//   Signed in: 30 an hour per person (ENCORE_HELP_PER_HOUR). Signed out: only from the onboarding pages (sign up, sign in,
-//   forgot password, join, onboard), 10 an hour per IP (ENCORE_HELP_PER_HOUR_IP), with no account context.
+//   Signed in: 30 an hour per person (ENCORE_HELP_PER_HOUR). Signed out: from any page (a guest on an invite, a brand
+//   on /teams, someone stuck at sign-in), 10 an hour per IP (ENCORE_HELP_PER_HOUR_IP), with no account context.
 //   Retrieval first: the guide is split into sections, each with keywords and the questions it answers, and matched with
 //   synonyms and light stemming (matchSections). A strong match is a grounded answer on its own. With ANTHROPIC_API_KEY the
 //   model rewrites it for the host from the whole guide and the host's light context (handle, what their page is missing,
@@ -17,15 +17,23 @@
 // - POST /api/help/ticket: a message to a person. Stored in system/support-<id> (outside every workspace, like collabs),
 //   status open, with the context the person never has to type: the chat with Potto (when they keep it attached), the page,
 //   the event, the device and the app version. The message can be empty when the chat says it. The team hears by email
-//   (ENCORE_SUPPORT_EMAIL, comma list) and text (ENCORE_SUPPORT_SMS, comma list). Signed out needs an email; a hidden
-//   honeypot field and per-IP limits keep bots out. The reply time people are promised is ENCORE_SUPPORT_REPLY_HOURS
-//   (default 24: "A person replies within a day.").
+//   (ENCORE_SUPPORT_EMAIL, comma list). Signed out needs an email or a phone; a hidden honeypot field and per-IP limits
+//   keep bots out. The reply time people are promised is ENCORE_SUPPORT_REPLY_HOURS (default 24: "A person replies
+//   within a day.", and "We reply within 24 hours, usually sooner." in the sheet). The ticket also carries who they are
+//   here (role: guest, host or brand), the booking, the app version and the ids of recent errors on their device
+//   (public/report.js, server/errors.js), never anything they typed elsewhere.
+//   Urgent ("My event is today"): flagged, listed first on /support, and texted to ENCORE_SUPPORT_SMS at once. Two an
+//   hour per person or IP and 20 an hour in all may text; past that it is still stored and emailed. A normal ticket is
+//   only texted when no support email is set, so the team always hears somehow.
+//   Signed out, the answer carries a private key (kept on that device by public/help.js) so the person can read the
+//   team's reply in the same chat: GET /api/help/t/:id?k=<key>, POST /api/help/t/:id {k, text}.
 // - GET /api/help/info: the reply time, for the "Talk to a person" form.
 // - GET /api/help/tickets, POST /api/help/tickets/:id, POST /api/help/tickets/:id/rate: the host's own conversations,
 //   their replies, and How did we do? once a conversation is solved.
 // - GET /support, GET /api/support/tickets, GET /api/support/metrics, POST /api/support/tickets/:id: the team inbox and its
 //   numbers, for ENCORE_ADMIN_EMAILS only. Everyone else gets a 404. A reply reaches the host as an in-app notification,
-//   an email, and in their help sheet.
+//   an email (or a text, when they only left a phone), and in their help sheet. Urgent open tickets come first. Without
+//   ENCORE_SUPPORT_EMAIL the inbox shows a red setup line; tickets are stored and listed here either way.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -38,6 +46,7 @@ import { scopeStore, getWorkspace, DEFAULT_WS } from "./workspaces.js";
 import { IDEAS } from "./hooks.js";
 import { pickIdeas } from "./ideasnudge.js";
 import { POTTO_VOICE } from "./pottovoice.js";
+import { ERR_ID, findError } from "./errors.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GUIDE_FILE = path.join(ROOT, "docs", "help.md");
@@ -68,6 +77,9 @@ export function replyHours() { const n = Math.round(Number(process.env.ENCORE_SU
 /** "within an hour", "within 4 hours", "within a day", "within 2 days". */
 export function replyWithin(h = replyHours()) { return h <= 1 ? "within an hour" : h < 24 || h % 24 ? `within ${h} hours` : h === 24 ? "within a day" : `within ${h / 24} days`; }
 // signed out, there's no "here" to come back to: the reply goes by email
+/** The promise in the help sheet: "We reply within 24 hours, usually sooner." */
+export function promiseLine(h = replyHours()) { return `We reply within ${h === 1 ? "an hour" : h + " hours"}${h > 2 ? ", usually sooner" : ""}.`; }
+export const ROLES = ["guest", "host", "brand"];
 export const expectLine = (email) => (email ? `A person replies ${replyWithin()} by email, to ${email}.` : `A person replies ${replyWithin()}, here and by email.`);
 
 // ---------- the guide ----------
@@ -247,7 +259,7 @@ Host's question: ${message}
 
 Reply with only JSON: {"answer": "...", "actions": [{"label": "...", "href": "/..."}], "suggestHuman": false}`;
 }
-const okHref = (h) => h === "#person" || new RegExp(`^#do:(${DO_ACTIONS.join("|")})$`).test(h) || /^\/(?!\/)[^\s<>"']{0,200}$/.test(h);
+const okHref = (h) => h === "#person" || h === "#urgent" || new RegExp(`^#do:(${DO_ACTIONS.join("|")})$`).test(h) || /^\/(?!\/)[^\s<>"']{0,200}$/.test(h);
 function shapeAnswer(j) {
   const answer = noDash(clean(j?.answer, 700));
   const actions = (Array.isArray(j?.actions) ? j.actions : []).map((a) => ({ label: clean(a?.label, 40), href: String(a?.href || "").trim() })).filter((a) => a.label && okHref(a.href)).slice(0, 3);
@@ -329,13 +341,14 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
   const askLimited = (req, u) => (u ? limited("ask:u:" + lc(u.email), Number(process.env.ENCORE_HELP_PER_HOUR || 30)) : limited("ask:ip:" + (req.ip || "?"), Number(process.env.ENCORE_HELP_PER_HOUR_IP || 10)));
   app.locals.help = { lastPrompt: "" };
 
-  app.get("/api/help/info", (req, res) => res.json({ replyHours: replyHours(), replyWithin: replyWithin(), expect: expectLine() }));
+  // the help page: for everyone (links from error pages, the offline page and emails land here; it opens the sheet)
+  app.get("/help", (req, res) => (sendStatic ? sendStatic(res, "help.html", "<p>Help page missing.</p>") : res.redirect(302, "/")));
+  app.get("/api/help/info", (req, res) => res.json({ replyHours: replyHours(), replyWithin: replyWithin(), promise: promiseLine(), expect: expectLine() }));
 
   // ---- ask Potto ----
   app.post("/api/help/ask", body, async (req, res) => {
     const b = req.body || {}, u = me(req), page = cleanPath(b.page);
     if (hp(b)) return res.status(400).json({ code: "rejected", message: "Couldn't send that." });
-    if (!u && !OPEN_HELP_PAGE.test(page)) return res.status(401).json({ code: "account_required", message: "Sign in to ask Potto." });
     if (askLimited(req, u)) return res.status(429).json({ code: "rate_limited", message: "That's a lot of questions for one hour. Talk to a person, or try again soon.", suggestHuman: true });
     const message = cleanText(b.message, 1000); if (message.length < 2) return res.status(400).json({ code: "invalid", message: "Ask me something first." });
     const history = (Array.isArray(b.history) ? b.history : []).slice(-8).map((t) => ({ role: t?.role === "potto" ? "potto" : "host", text: cleanText(t?.text, 600) })).filter((t) => t.text);
@@ -361,7 +374,6 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
   // ---- Did this help? ----
   app.post("/api/help/rate", body, (req, res) => {
     const b = req.body || {}, u = me(req), page = cleanPath(b.page);
-    if (!u && !OPEN_HELP_PAGE.test(page)) return res.status(401).json({ code: "account_required", message: "Sign in first." });
     if (!["up", "down"].includes(b.value)) return res.status(400).json({ code: "invalid", message: "Pick a thumb." });
     if (u ? limited("rate:u:" + lc(u.email), 60) : limited("rate:ip:" + (req.ip || "?"), 30)) return res.status(429).json({ code: "rate_limited", message: "Thanks, we've got it." });
     const id = rid(); store.set("system/helprate-" + id, { kind: "helprate", id, value: b.value, section: clean(b.section, 120), question: clean(b.question, 300), mode: clean(b.mode, 20), page, signedIn: !!u, at: Date.now() });
@@ -369,44 +381,65 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
   });
 
   // ---- talk to a person ----
-  async function tellTeam(t, req, line) {
-    const out = { email: false, sms: 0 }, to = list(process.env.ENCORE_SUPPORT_EMAIL).filter((x) => EMAIL_RE.test(x)), cfg = emailCfg(), link = `${origin(req)}/support#t-${t.id}`;
-    if (to.length && cfg) { const ctxt = t.context || {};
+  // urgent tickets text the team at once: 2 an hour per person (or IP), 20 an hour in all, so a loop can't run up a bill
+  let urgentTexts = [];
+  const urgentTextOk = (who) => { const now = Date.now(); urgentTexts = urgentTexts.filter((x) => now - x < HOUR); if (urgentTexts.length >= 20 || limited("urgent:" + who, 2)) return false; urgentTexts.push(now); return true; };
+  async function tellTeam(t, req, line, { text = false } = {}) {
+    const out = { email: false, sms: 0 }, to = list(process.env.ENCORE_SUPPORT_EMAIL).filter((x) => EMAIL_RE.test(x)), cfg = emailCfg(), link = `${origin(req)}/support#t-${t.id}`, ctxt = t.context || {};
+    const errs = (ctxt.errorIds || []).map((id) => { const e = findError(store, id); return e ? `${id}: ${e.message}` : id; });
+    if (to.length && cfg) {
       const chat = (t.transcript || []).length ? `\n\nChat with Potto first:\n${t.transcript.map((m) => `${m.role === "potto" ? "Potto" : "Them"}: ${m.text}`).join("\n")}` : "";
-      const text = `${line}\n\nFrom: ${t.name || "(no name)"} <${t.email}>${t.phone ? `, ${t.phone}` : ""}${t.handle ? `, @${t.handle}` : ""}${t.signedIn ? "" : " (not signed in)"}\n${t.topic ? `Topic: ${TOPICS[t.topic] || t.topic}\n` : ""}Page: ${ctxt.page || "?"}${ctxt.eventId ? `\nEvent: ${ctxt.eventTitle || ""} (${ctxt.eventId})` : ""}\nSummary: ${t.summary || ""}\nDevice: ${ctxt.device || "?"}\nBrowser: ${ctxt.browser || "?"}\nApp: ${[ctxt.app?.version, ctxt.app?.commit].filter(Boolean).join(" ") || "?"}\n\n${t.thread[t.thread.length - 1]?.text || t.message}${t.thread.length > 1 ? "" : chat}\n\nOpen the ticket: ${link}`;
-      const r = await sendEmail(cfg, { to, subject: `Help: ${clean(t.message, 70)}`, text, replyTo: t.email }).catch(() => ({ ok: false })); out.email = !!r?.ok; }
+      const body = `${t.urgent ? "URGENT, their event is today. " : ""}${line}\n\nFrom: ${t.name || "(no name)"} <${t.email || "no email"}>${t.phone ? `, ${t.phone}` : ""}${t.handle ? `, @${t.handle}` : ""}${t.signedIn ? "" : " (not signed in)"}\nRole: ${t.role || "?"}\n${t.topic ? `Topic: ${TOPICS[t.topic] || t.topic}\n` : ""}Page: ${ctxt.page || "?"}${ctxt.eventId ? `\nEvent: ${ctxt.eventTitle || ""} (${ctxt.eventId})` : ""}${ctxt.bookingId ? `\nBooking: ${ctxt.bookingId}` : ""}\nSummary: ${t.summary || ""}\nDevice: ${ctxt.device || "?"}\nBrowser: ${ctxt.browser || "?"}\nApp: ${[ctxt.app?.version, ctxt.app?.commit, ctxt.client].filter(Boolean).join(" ") || "?"}${errs.length ? `\nRecent errors: ${errs.join("; ")}` : ""}\n\n${t.thread[t.thread.length - 1]?.text || t.message}${t.thread.length > 1 ? "" : chat}\n\nOpen the ticket: ${link}`;
+      const r = await sendEmail(cfg, { to, subject: `${t.urgent ? "URGENT, event today: " : "Help: "}${clean(t.message, 70)}`, text: body, ...(t.email ? { replyTo: t.email } : {}) }).catch(() => ({ ok: false })); out.email = !!r?.ok; }
+    // a text: urgent tickets, or any ticket when no support email is set (the team always hears somehow)
     const nums = list(process.env.ENCORE_SUPPORT_SMS), sms = smsConfig();
-    if (nums.length && sms) for (const n of nums) { const r = await sendSms(sms, { to: n, text: `Pottery Lab help: ${clean(t.name || t.email, 40)}: ${clean(t.thread[t.thread.length - 1]?.text || t.message, 120)} ${link}` }).catch(() => ({ ok: false })); if (r?.ok) out.sms++; }
+    if (nums.length && sms && (text || !to.length)) for (const n of nums) { const r = await sendSms(sms, { to: n, text: `${t.urgent ? "URGENT, event today. " : ""}Pottery Lab help: ${clean(t.name || t.email || t.phone, 40)}: ${clean(t.thread[t.thread.length - 1]?.text || t.message, 120)} ${link}` }).catch(() => ({ ok: false })); if (r?.ok) out.sms++; }
     return out;
   }
+  const PHONE = /^\+?[0-9 ()-]{7,20}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
   app.post("/api/help/ticket", body, async (req, res) => {
-    const b = req.body || {}, u = me(req);
+    const b = req.body || {}, u = me(req), who = u ? "u:" + lc(u.email) : "ip:" + (req.ip || "?");
     if (hp(b)) return res.status(400).json({ code: "rejected", message: "Couldn't send that." });
     if (u ? limited("t:u:" + lc(u.email), Number(process.env.ENCORE_HELP_TICKETS_PER_HOUR || 10)) : limited("t:ip:" + (req.ip || "?"), Number(process.env.ENCORE_HELP_TICKETS_PER_HOUR_IP || 5)))
       return res.status(429).json({ code: "rate_limited", message: "We've got your messages. Give us a little time to reply." });
-    const email = u ? lc(u.email) : lc(clean(b.email, 200));
-    if (!EMAIL_RE.test(email)) return res.status(400).json({ code: "invalid", message: "Add your email so we can reply." });
+    // signed out: an email or a phone, so we can reply ("contact" is either, as typed in one box)
+    const typed = clean(b.contact, 200), phone = PHONE.test(clean(b.phone, 30)) ? clean(b.phone, 30) : !u && PHONE.test(typed) && !typed.includes("@") ? typed : "";
+    const email = u ? lc(u.email) : EMAIL_RE.test(lc(clean(b.email, 200))) ? lc(clean(b.email, 200)) : EMAIL_RE.test(lc(typed)) ? lc(typed) : "";
+    if (!email && !phone) return res.status(400).json({ code: "invalid", message: "Add your email or phone so we can reply." });
     const transcript = (Array.isArray(b.transcript) ? b.transcript : []).slice(-20).map((t) => ({ role: t?.role === "potto" ? "potto" : "host", text: cleanText(t?.text, 600), ...(t?.section ? { section: clean(t.section, 120) } : {}), ...(t?.rated === "up" || t?.rated === "down" ? { rated: t.rated } : {}) })).filter((t) => t.text);
     // the person never repeats themselves: with a chat attached, the message can be empty and the last question stands in
     let message = cleanText(b.message, 4000); const lastQ = [...transcript].reverse().find((t) => t.role === "host")?.text || "";
     if (message.length < 3 && lastQ) message = lastQ;
     if (message.length < 3) return res.status(400).json({ code: "invalid", message: "Say what's wrong, even in a few words." });
-    const phone = /^\+?[0-9 ()-]{7,20}$/.test(clean(b.phone, 30)) ? clean(b.phone, 30) : "";
-    const page = cleanPath(b.page), eventId = clean(b.eventId, 80), ctx = hostContext({ store, C, user: u, page, eventId: u ? eventId : "" });
-    const browser = clean(b.browser || req.get("user-agent"), 300);
+    const page = cleanPath(b.page), eventId = ID.test(clean(b.eventId, 80)) ? clean(b.eventId, 80) : "", ctx = hostContext({ store, C, user: u, page, eventId: u ? eventId : "" });
+    const browser = clean(b.browser || req.get("user-agent"), 300), W = u ? getWorkspace(u.ws) : null;
+    const role = W && W.plan && !["friends", "self-hosted"].includes(W.plan) ? "brand" : ROLES.includes(b.role) ? b.role : u ? "host" : "guest";
+    const errorIds = [...new Set((Array.isArray(b.errorIds) ? b.errorIds : []).map(String).filter((x) => ERR_ID.test(x)))].slice(0, 5);
+    const urgent = b.urgent === true || b.urgent === "1";
     const now = Date.now(), t = { kind: "support", id: rid(), status: "open", at: now, updatedAt: now, email, name: clean(u?.name || b.name, 120), phone, signedIn: !!u, ws: u?.ws || null, handle: ctx.handle || "",
-      topic: TOPICS[b.topic] ? b.topic : "", message,
-      context: { page, eventId: ctx.event ? eventId : "", eventTitle: ctx.event?.title || "", eventStatus: ctx.event?.status || "", pageMissing: ctx.pageMissing || [], browser, device: deviceOf(browser), app: appVersion() },
+      topic: TOPICS[b.topic] ? b.topic : "", message, role, ...(urgent ? { urgent: true } : {}), ...(u ? {} : { key: crypto.randomBytes(16).toString("hex") }),
+      context: { page, eventId: ctx.event ? eventId : u ? "" : eventId, eventTitle: ctx.event?.title || "", eventStatus: ctx.event?.status || "", pageMissing: ctx.pageMissing || [], bookingId: ID.test(clean(b.bookingId, 80)) ? clean(b.bookingId, 80) : "", errorIds, browser, device: deviceOf(browser), app: appVersion(), client: clean(b.app, 24) },
       screenshot: u && /^\/_blob\/[A-Za-z0-9]{20}$/.test(String(b.screenshot || "")) ? b.screenshot : "",
       transcript, thread: [{ by: "host", name: clean(u?.name || b.name, 80), text: message, at: now }] };
-    t.summary = ticketSummary(t); put(t); countHelp(store, "handoffs");
-    const told = await tellTeam(t, req, `New help request${u ? "" : " (not signed in)"}.`);
+    t.summary = ticketSummary(t); put(t); countHelp(store, "handoffs"); if (urgent) countHelp(store, "urgent");
+    const texted = urgent && urgentTextOk(who);
+    const told = await tellTeam(t, req, `New ${urgent ? "urgent " : ""}help request${u ? "" : " (not signed in)"}.`, { text: texted });
     put({ ...t, notified: told });
     // a receipt, so they know it landed: only to a signed-in host's own, proven email (never to an address typed in a form)
     if (u) { const cfg = emailCfg(); if (cfg) sendEmail(cfg, { to: email, subject: `We got your message (ref ${refOf(t.id)})`, text: `Hi ${clean(t.name, 80).split(" ")[0] || "there"},\n\nThanks for writing. ${expectLine()}\n\nWhat you sent:\n${message}\n\nYou can follow along in the help panel: ${origin(req)}/?app=1&help=1\n\nRef ${refOf(t.id)}\nPottery Lab`, replyTo: list(process.env.ENCORE_SUPPORT_EMAIL).find((x) => EMAIL_RE.test(x)) || undefined }).catch(() => {}); }
-    console.log(`[help] ticket ${t.id} from ${t.signedIn ? "a host" : "someone signed out"}: ${clean(message, 120)}`);
-    res.json({ ok: true, id: t.id, ref: refOf(t.id), status: t.status, expect: expectLine(u ? "" : email), replyHours: replyHours(), ticket: u ? view(t) : null });
+    console.log(`[help] ${urgent ? "urgent " : ""}ticket ${t.id} from ${t.signedIn ? "a host" : "someone signed out"}: ${clean(message, 120)}`);
+    const expect = u ? expectLine() : email ? expectLine(email) : `A person replies ${replyWithin()} by text, to ${phone}.`;
+    res.json({ ok: true, id: t.id, ref: refOf(t.id), status: t.status, urgent, texted: told.sms > 0, expect: urgent ? `${told.sms ? "We've texted the team. " : ""}${expect}` : expect, replyHours: replyHours(), ticket: view(t), ...(t.key ? { key: t.key } : {}) });
   });
+  // signed out: the person's own conversation, with the key their device got when they wrote
+  const keyed = (req, res) => { const t = get(req.params.id), k = String(req.query?.k || req.body?.k || "");
+    const ok = t && t.key && k.length === t.key.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(t.key));
+    if (!ok) { res.status(404).json({ code: "not_found", message: "We can't find that conversation." }); return null; } return t; };
+  app.get("/api/help/t/:id", (req, res) => { if (limited("tk:ip:" + (req.ip || "?"), 120)) return res.status(429).json({ code: "rate_limited", message: "Slow down a little." }); const t = keyed(req, res); if (t) res.set("Cache-Control", "no-store").json({ ticket: view(t) }); });
+  app.post("/api/help/t/:id", body, async (req, res) => { if (limited("t:ip:" + (req.ip || "?"), Number(process.env.ENCORE_HELP_TICKETS_PER_HOUR_IP || 5) * 2)) return res.status(429).json({ code: "rate_limited", message: "Give us a little time to reply." });
+    const t = keyed(req, res); if (!t) return; const text = cleanText(req.body?.text, 4000); if (!text) return res.status(400).json({ code: "invalid", message: "Write a message." });
+    const now = Date.now(); t.thread = [...(t.thread || []), { by: "host", name: clean(t.name, 80), text, at: now }].slice(-100); t.status = "open"; t.updatedAt = now; put(t);
+    await tellTeam(t, req, `${clean(t.name || t.email || t.phone, 80)} replied.`); res.json({ ok: true, ticket: view(t) }); });
   // the host's own conversations
   const view = (t) => ({ id: t.id, status: t.status, at: t.at, updatedAt: t.updatedAt, message: t.message, csat: t.csat?.value || "", thread: (t.thread || []).map((m) => ({ by: m.by, name: m.by === "team" ? "Pottery Lab" : m.name || "", text: m.text, at: m.at })) });
   app.get("/api/help/tickets", (req, res) => { const u = me(req); if (!u) return res.status(401).json({ code: "account_required", message: "Sign in to see your conversations." });
@@ -426,19 +459,25 @@ export function mountHelp(app, { store, express, currentUser, C, X, sendStatic, 
     t.csat = { value: req.body.value, note: clean(req.body?.note, 300), at: Date.now() }; put(t); res.json({ ok: true, ticket: view(t) }); });
 
   // ---- the team inbox ----
+  // what the inbox needs to reach the team and to answer people, as true / false (never a value)
+  const supportSetup = () => ({ supportEmail: list(process.env.ENCORE_SUPPORT_EMAIL).some((x) => EMAIL_RE.test(x)), email: !!emailCfg(), supportSms: list(process.env.ENCORE_SUPPORT_SMS).length > 0, sms: !!smsConfig() });
   const notFound = (res) => { res.status(404); return sendStatic ? sendStatic(res, "404.html", "<p>Page not found.</p>") : res.type("text").send("Not found"); };
   app.get("/support", (req, res) => { const u = me(req); if (!isAdmin(u)) return notFound(res); res.set("Cache-Control", "private, no-store").type("html").send(ADMIN_PAGE); });
   app.get("/api/support/tickets", (req, res) => { const u = me(req); if (!isAdmin(u)) return res.status(404).json({ code: "not_found", message: "Not found." });
-    const want = STATUSES.includes(req.query.status) ? req.query.status : "", order = { open: 0, waiting: 1, solved: 2 };
-    res.json({ tickets: all().filter((t) => !want || t.status === want).sort((a, b) => (order[a.status] - order[b.status]) || b.updatedAt - a.updatedAt).slice(0, 300), counts: Object.fromEntries(STATUSES.map((s) => [s, all().filter((t) => t.status === s).length])) }); });
-  app.get("/api/support/metrics", (req, res) => { const u = me(req); if (!isAdmin(u)) return res.status(404).json({ code: "not_found", message: "Not found." }); res.json(helpMetrics(store)); });
+    // urgent ones still open come first, then open, waiting and solved; each newest first. The signed-out key stays out.
+    const want = STATUSES.includes(req.query.status) ? req.query.status : "", order = { open: 0, waiting: 1, solved: 2 }, rank = (t) => (t.urgent && t.status === "open" ? -1 : order[t.status]);
+    const withErrors = (t) => { const { key, ...x } = t; const ids = t.context?.errorIds || []; return ids.length ? { ...x, errors: ids.map((id) => { const e = findError(store, id); return e ? { id, kind: e.kind, message: e.message, page: e.page, n: e.n } : { id }; }) } : x; };
+    res.json({ setup: supportSetup(), urgent: all().filter((t) => t.urgent && t.status === "open").length, tickets: all().filter((t) => !want || t.status === want).sort((a, b) => (rank(a) - rank(b)) || b.updatedAt - a.updatedAt).slice(0, 300).map(withErrors), counts: Object.fromEntries(STATUSES.map((s) => [s, all().filter((t) => t.status === s).length])) }); });
+  app.get("/api/support/metrics", (req, res) => { const u = me(req); if (!isAdmin(u)) return res.status(404).json({ code: "not_found", message: "Not found." }); res.json({ ...helpMetrics(store), setup: supportSetup() }); });
   app.post("/api/support/tickets/:id", body, async (req, res) => { const u = me(req); if (!isAdmin(u)) return res.status(404).json({ code: "not_found", message: "Not found." });
     const t = get(req.params.id); if (!t) return res.status(404).json({ code: "not_found", message: "No such ticket." });
     const reply = cleanText(req.body?.reply, 4000), status = STATUSES.includes(req.body?.status) ? req.body.status : reply ? "waiting" : t.status, now = Date.now(), notified = { inbox: false, email: false };
     if (!reply && status === t.status) return res.status(400).json({ code: "invalid", message: "Write a reply or pick a status." });
     if (reply) { t.thread = [...(t.thread || []), { by: "team", name: clean(u.name, 80), email: lc(u.email), text: reply, at: now }].slice(-100);
       if (t.signedIn && X?.notify) { try { X.notify(t.email, { kind: "support", text: `💬 Pottery Lab: ${clean(reply, 120)}`, link: "/?app=1&help=1" }); notified.inbox = true; } catch {} }
-      const cfg = emailCfg(); if (cfg) { const first = clean(t.name, 80).split(" ")[0];
+      // signed out with only a phone: the reply goes by text
+      if (!t.email && t.phone) { const sms = smsConfig(); if (sms) { const r = await sendSms(sms, { to: t.phone, text: `Pottery Lab: ${clean(reply, 300)}` }).catch(() => ({ ok: false })); notified.sms = !!r?.ok; } }
+      const cfg = t.email ? emailCfg() : null; if (cfg) { const first = clean(t.name, 80).split(" ")[0];
         const r = await sendEmail(cfg, { to: t.email, subject: "Re: your Pottery Lab question", text: `Hi ${first || "there"},\n\n${reply}\n\n${t.signedIn ? `You can also reply in the help panel: ${origin(req)}/?app=1&help=1` : "Reply to this email to keep talking."}\n\nPottery Lab`, replyTo: list(process.env.ENCORE_SUPPORT_EMAIL).find((x) => EMAIL_RE.test(x)) || lc(u.email) }).catch(() => ({ ok: false }));
         notified.email = !!r?.ok; } }
     if (status === "solved" && t.status !== "solved" && t.signedIn && X?.notify && !reply) { try { X.notify(t.email, { kind: "support", text: "💬 Pottery Lab marked your question sorted. How did we do?", link: "/?app=1&help=1" }); notified.inbox = true; } catch {} }
@@ -466,7 +505,11 @@ form{display:grid;gap:8px;margin-top:10px}textarea{width:100%;min-height:80px;bo
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select{border:1.5px solid #1B1D1C;border-radius:12px;padding:8px;font:inherit;min-height:44px}
 button.go{border:0;background:var(--clay);color:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
 .ok{color:#245C33;font-size:13px}.err{color:#A93A3A;font-size:13px}
-</style></head><body><main><h1>Help inbox</h1><p class="sub">What hosts asked for. Replies go to them in the app and by email.</p>
+.setup{background:#F8E1DC;color:#A93A3A;border:1.5px solid #A93A3A;border-radius:12px;padding:10px 14px;font-weight:600;margin:0 0 16px}.urgentline{background:#F8E1DC;border-radius:12px;padding:8px 14px;font-weight:600;margin:0 0 16px}
+.pill.urgent{background:#A93A3A;color:#fff}.t.is-urgent{border-color:#A93A3A;border-width:2px}
+</style></head><body><main><h1>Help inbox</h1><p class="sub">What guests, hosts and brands asked for. Replies go to them in the app, by email, or by text when they only left a phone. <a href="/admin/launch">Launch checklist</a></p>
+<p class="setup" id="setup" role="alert" hidden></p><p class="urgentline" id="urgentline" hidden></p>
+<section class="gaps" id="inc"><h2>Status line</h2><p class="muted" style="margin:0 0 8px">Something broken for everyone? People see this at the top of every page and in the help sheet.</p><form id="incF" class="row" style="margin:0"><input name="message" maxlength="200" aria-label="Status message" placeholder="Texts are slow right now. Email works." style="flex:1;min-width:200px;min-height:44px;border:1.5px solid #1B1D1C;border-radius:12px;padding:8px 10px;font:inherit"><button class="go">Show it</button><button type="button" class="go" id="incOff" style="background:#fff;color:#1B1D1C;border:1.5px solid #1B1D1C">Clear</button></form><p class="muted" id="incNote" role="status" style="margin:6px 0 0"></p></section>
 <section class="stats" id="stats" aria-label="The last 30 days"></section><section class="gaps" id="gaps" hidden><h2>Questions Potto couldn't answer</h2><ul></ul><p class="muted" style="margin:6px 0 0">Add an answer to docs/help.md and Potto picks it up.</p></section>
 <div class="tabs" role="group" aria-label="Show"><button data-s="open" aria-pressed="true">Open</button><button data-s="waiting" aria-pressed="false">Waiting</button><button data-s="solved" aria-pressed="false">Solved</button><button data-s="" aria-pressed="false">All</button></div>
 <div id="list" aria-live="polite">Loading…</div></main>
@@ -485,11 +528,11 @@ button.go{border:0;background:var(--clay);color:#fff;border-radius:999px;padding
     tile(String(m.gaps.count), "questions Potto couldn't answer (30 days)");
     const G=document.getElementById("gaps"); if(m.gaps.recent.length){ G.hidden=false; const ul=G.querySelector("ul"); ul.textContent=""; for(const g of m.gaps.recent){ ul.append(el("li",null,g.q+(g.page?" ("+g.page+")":""))) } }
     if(m.answers.worst.length){ const d=el("div","stat"); d.append(el("span",null,"Answers people said didn't help: "+m.answers.worst.map(w=>w.section+" ("+w.down+")").join(", "))); S.append(d) } }catch{} }
-  function card(t){ const c=el("article","t"); c.id="t-"+t.id; const top=el("div","top"); top.append(el("b",null,t.name||t.email), el("span","pill "+t.status,t.status), el("span","muted","Ref "+t.id.slice(0,6).toUpperCase()+" · "+when(t.at)+(t.signedIn?"":" · not signed in"))); if(t.csat&&t.csat.value) top.append(el("span","muted",t.csat.value==="up"?"Rated: helped":"Rated: didn't help")); c.append(top);
+  function card(t){ const c=el("article","t"); c.id="t-"+t.id; const top=el("div","top"); if(t.urgent) c.classList.add("is-urgent"); top.append(el("b",null,t.name||t.email||t.phone), ...(t.urgent?[el("span","pill urgent","Event today")]:[]), el("span","pill "+t.status,t.status), el("span","muted","Ref "+t.id.slice(0,6).toUpperCase()+" · "+when(t.at)+(t.signedIn?"":" · not signed in"))); if(t.csat&&t.csat.value) top.append(el("span","muted",t.csat.value==="up"?"Rated: helped":"Rated: didn't help")); c.append(top);
     const dl=el("dl"); const add=(k,v,href)=>{ if(!v) return; dl.append(el("dt",null,k)); const d=el("dd"); if(href){ const a=el("a",null,v); a.href=href; d.append(a) } else d.textContent=v; dl.append(d) };
     if(t.summary){ const s=el("p","ctx",t.summary); s.style.margin="10px 0 0"; c.append(s) }
     add("Email",t.email,"mailto:"+t.email); add("Phone",t.phone); add("Page",t.handle?"@"+t.handle:"",t.handle?"/@"+t.handle:""); add("Topic",TOP[t.topic]||""); const x=t.context||{};
-    add("On",x.page); add("Event",x.eventId?((x.eventTitle||"")+" ("+x.eventId+")"+(x.eventStatus?", "+x.eventStatus:"")):""); add("Page needs",(x.pageMissing||[]).join(", ")); add("Device",x.device); add("Browser",x.browser); add("App",[x.app&&x.app.version,x.app&&x.app.commit].filter(Boolean).join(" ")); add("Screenshot",t.screenshot?"Open":"",t.screenshot||"");
+    add("Role",t.role||""); add("On",x.page); add("Booking",x.bookingId||""); add("Errors",(t.errors||[]).map(e=>e.id+(e.message?": "+e.message:"")).join("; "),(t.errors||[]).length?"/admin/launch":""); add("Event",x.eventId?((x.eventTitle||"")+" ("+x.eventId+")"+(x.eventStatus?", "+x.eventStatus:"")):""); add("Page needs",(x.pageMissing||[]).join(", ")); add("Device",x.device); add("Browser",x.browser); add("App",[x.app&&x.app.version,x.app&&x.app.commit,x.client].filter(Boolean).join(" ")); add("Screenshot",t.screenshot?"Open":"",t.screenshot||"");
     add("Told team",t.notified?((t.notified.email?"email":"no email")+(t.notified.sms?", "+t.notified.sms+" text"+(t.notified.sms>1?"s":""):"")):""); c.append(dl);
     if((t.transcript||[]).length){ const d=el("details","ctx"); d.open=true; d.append(el("summary",null,"Chat with Potto before this ("+t.transcript.length+")")); for(const m of t.transcript){ const p=el("div","msg"+(m.role==="potto"?" team":"")); p.append(el("small",null,(m.role==="potto"?"Potto":(t.signedIn?"Host":"Visitor"))+(m.section?" · from "+m.section:"")+(m.rated?" · rated "+(m.rated==="up"?"helpful":"not helpful"):""))); p.append(document.createTextNode(m.text)); d.append(p) } c.append(d) }
     for(const m of t.thread||[]){ const p=el("div","msg"+(m.by==="team"?" team":"")); p.append(el("small",null,(m.by==="team"?"Team"+(m.name?" ("+m.name+")":""):(m.name||(t.signedIn?"Host":"Visitor")))+" · "+when(m.at))); p.append(document.createTextNode(m.text)); c.append(p) }
@@ -498,7 +541,13 @@ button.go{border:0;background:var(--clay);color:#fff;border-radius:999px;padding
     const go=el("button","go","Send"); go.type="submit"; const note=el("span","muted"); row.append(sel,go,note); f.append(lab,row);
     f.onsubmit=async(e)=>{ e.preventDefault(); go.disabled=true; note.className="muted"; note.textContent="Sending…"; try{ const r=await fetch("/api/support/tickets/"+t.id,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({reply:ta.value,status:sel.value})}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.message||"Couldn't send that."); note.className="ok"; note.textContent=ta.value.trim()?("Sent"+(j.notified&&j.notified.email?", emailed":"")+(j.notified&&j.notified.inbox?", in their app":"")+"."):"Saved."; setTimeout(load,900) }catch(err){ note.className="err"; note.textContent=err.message } go.disabled=false };
     c.append(f); return c }
-  async function load(){ try{ const r=await fetch("/api/support/tickets"+(want?"?status="+want:""),{credentials:"same-origin"}); const j=await r.json(); L.textContent=""; document.querySelectorAll(".tabs button").forEach(b=>{ const n=j.counts&&b.dataset.s?j.counts[b.dataset.s]:null; b.textContent=(b.dataset.s?b.dataset.s[0].toUpperCase()+b.dataset.s.slice(1):"All")+(n!=null?" ("+n+")":"") });
+  function setup(j){ const s=j.setup||{}, S=document.getElementById("setup"), miss=[]; if(!s.supportEmail) miss.push("ENCORE_SUPPORT_EMAIL isn't set, so nobody is emailed when a ticket comes in. Tickets are still stored and listed here."); else if(!s.email) miss.push("Email sending isn't set up (ENCORE_EMAIL_KEY, ENCORE_EMAIL_FROM), so the team isn't emailed and replies can't reach people by email.");
+    if(s.supportSms&&!s.sms) miss.push("ENCORE_SUPPORT_SMS is set but texting isn't (ENCORE_TWILIO_*), so urgent tickets can't text you."); S.hidden=!miss.length; S.textContent="Setup: "+miss.join(" ");
+    const U=document.getElementById("urgentline"); U.hidden=!j.urgent; U.textContent=j.urgent?j.urgent+" urgent, open: their event is today. They're at the top.":"" }
+  async function incident(on){ const f=document.getElementById("incF"), N=document.getElementById("incNote"); try{ const r=await fetch("/api/admin/incident",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({on,message:f.message.value})}); const k=await r.json().catch(()=>({})); if(!r.ok) throw new Error(k.message||"That didn't work."); f.message.value=""; N.textContent=k.incident?"Showing now: "+k.incident.message:"Nothing showing." }catch(e){ N.textContent=e.message } }
+  document.getElementById("incF").onsubmit=(e)=>{ e.preventDefault(); incident(true) }; document.getElementById("incOff").onclick=()=>incident(false);
+  fetch("/api/status",{credentials:"same-origin"}).then(r=>r.json()).then(k=>{ document.getElementById("incNote").textContent=k.incident?"Showing now: "+k.incident.message:"Nothing showing." }).catch(()=>{});
+  async function load(){ try{ const r=await fetch("/api/support/tickets"+(want?"?status="+want:""),{credentials:"same-origin"}); const j=await r.json(); L.textContent=""; setup(j); document.querySelectorAll(".tabs button").forEach(b=>{ const n=j.counts&&b.dataset.s?j.counts[b.dataset.s]:null; b.textContent=(b.dataset.s?b.dataset.s[0].toUpperCase()+b.dataset.s.slice(1):"All")+(n!=null?" ("+n+")":"") });
       if(!(j.tickets||[]).length){ L.append(el("p","muted","Nothing here.")); return } for(const t of j.tickets) L.append(card(t)); if(location.hash){ const x=document.querySelector(location.hash); if(x) x.scrollIntoView() } }catch{ L.textContent="Couldn't load the inbox." } stats() }
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ want=b.dataset.s; document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); load() });
   if(location.hash) { want=""; document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.s===""))) }

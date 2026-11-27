@@ -30,9 +30,11 @@ test("help guide: every section has words to match and no em dashes", () => {
   assert.equal(none.section, null); assert.equal(none.suggestHuman, true); assert.match(none.answer, /I'm not sure/);
 });
 
-test("ask: needs sign-in away from onboarding, answers from the guide offline, and is rate limited per person", async () => {
-  assert.equal((await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/?app=1#studio" })).status, 401, "signed out, on the app");
-  assert.equal((await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/discover" })).status, 401, "signed out, on a public page");
+test("ask: anyone can ask from any page (launch), answers from the guide offline, and is rate limited per person", async () => {
+  // signed out on the app or a public page (a guest on an invite, a brand on /teams): it answers, with no account context
+  assert.equal((await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/?app=1#studio" })).status, 200, "signed out, on the app");
+  assert.equal((await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/discover" })).status, 200, "signed out, on a public page");
+  assert.doesNotMatch(srv.app.locals.help.lastPrompt, /"handle"|"event"/, "no account context");
   const c = await host("Ana Ask", "ana@example.com", "ana-asks");
   const r = await req("POST", "/api/help/ask", { message: "How do I share my invite?", page: "/?app=1#studio", history: [{ role: "host", text: "hi" }] }, c);
   assert.equal(r.status, 200); const j = await r.json();
@@ -56,7 +58,8 @@ test("ask, signed out: works on the signup page, with no account context, 10 an 
   assert.equal(r.status, 200); const j = await r.json(); assert.equal(j.section, "Host codes and invite-only"); assert.match(j.answer, /host code/i);
   assert.match(srv.app.locals.help.lastPrompt, /"signedIn":false/); assert.doesNotMatch(srv.app.locals.help.lastPrompt, /"handle"|"event"/, "no account context");
   assert.equal((await req("POST", "/api/help/ask", { message: "hi", page: "/login", website: "http://spam" })).status, 400, "the honeypot blocks");
-  for (let i = 1; i < 10; i++) assert.equal((await req("POST", "/api/help/ask", { message: "Password rules?", page: i % 2 ? "/login" : "/forgot" })).status, 200, `ask ${i + 1}`);
+  // the two signed-out asks in the test before count too: 10 an hour from this IP in all
+  for (let i = 3; i < 10; i++) assert.equal((await req("POST", "/api/help/ask", { message: "Password rules?", page: i % 2 ? "/login" : "/forgot" })).status, 200, `ask ${i + 1}`);
   assert.equal((await req("POST", "/api/help/ask", { message: "Password rules?", page: "/signup" })).status, 429, "11th from this IP");
 });
 
@@ -77,7 +80,7 @@ test("ask: the model prompt has the host's light context and never a guest's det
   assert.ok(!srv.app.locals.help.lastPrompt.includes("\"title\":\"Dumpling night\""));
 });
 
-test("ticket: stores the context, emails and texts the team when set up, and is honest when not", async () => {
+test("ticket: stores the context, emails the team when set up (texts only when urgent), and is honest when not", async () => {
   const c = await host("Tess Ticket", "tess@example.com", "tess-runs");
   const ws = (await (await req("GET", "/api/me", null, c)).json()).workspace.id; scopeStore(srv.store, ws).set("events/helpev2", { name: "Sunday run", date: "2099-06-01", casual: true });
   // nothing set up: still stored, still an honest answer
@@ -94,8 +97,8 @@ test("ticket: stores the context, emails and texts the team when set up, and is 
   const mail = fakeOutbox.slice(before).find((m) => m.to.includes("team@pottery.example"));
   assert.ok(mail, "the team got an email"); assert.deepEqual(mail.to, ["team@pottery.example", "help@pottery.example"]); assert.equal(mail.replyTo, "tess@example.com");
   assert.match(mail.text, /Guests can't see my address/); assert.match(mail.text, new RegExp(`/support#t-${j.id}`)); assert.match(mail.text, /Page: \/@tess-runs/);
-  assert.equal(fakeTexts.length, texts + 1); assert.equal(fakeTexts.at(-1).to, "+15550001111");
-  t = srv.store.get("system/support-" + j.id).data; assert.equal(t.phone, "+1 555 222 3333"); assert.equal(t.screenshot, "/_blob/AAAAAAAAAAAAAAAAAAAA"); assert.deepEqual(t.notified, { email: true, sms: 1 });
+  assert.equal(fakeTexts.length, texts, "a normal ticket is emailed, not texted (launch: texts are for event-day tickets)");
+  t = srv.store.get("system/support-" + j.id).data; assert.equal(t.phone, "+1 555 222 3333"); assert.equal(t.screenshot, "/_blob/AAAAAAAAAAAAAAAAAAAA"); assert.deepEqual(t.notified, { email: true, sms: 0 });
   // the host sees it under Your conversations
   const mine = await (await req("GET", "/api/help/tickets", null, c)).json(); assert.equal(mine.tickets.length, 2); assert.equal(mine.admin, false);
   assert.equal((await req("POST", "/api/help/ticket", { message: "" }, c)).status, 400, "needs a message");

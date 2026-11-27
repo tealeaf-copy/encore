@@ -23,7 +23,7 @@ after(async () => { for (const k of ["ENCORE_SIGNUP", "SESSION_SECRET", "ENCORE_
 
 test("handoff: the chat goes along as context, the message can be empty, the device is in words, and the reply time comes from the env", async () => {
   const c = await host("Hana Handoff", "hana-handoff@example.com");
-  assert.deepEqual(await (await req("GET", "/api/help/info")).json(), { replyHours: 24, replyWithin: "within a day", expect: "A person replies within a day, here and by email." });
+  assert.deepEqual(await (await req("GET", "/api/help/info")).json(), { replyHours: 24, replyWithin: "within a day", promise: "We reply within 24 hours, usually sooner.", expect: "A person replies within a day, here and by email." });
   process.env.ENCORE_SUPPORT_REPLY_HOURS = "4"; assert.equal((await (await req("GET", "/api/help/info")).json()).replyWithin, "within 4 hours");
   const transcript = [{ role: "host", text: "How do I share my invite?" }, { role: "potto", text: "Tap Copy invite.", section: "Sharing your invite", rated: "down" }];
   const r = await req("POST", "/api/help/ticket", { message: "", page: "/?app=1#studio", browser: `${IPHONE} · 390x664`, transcript }, c);
@@ -43,7 +43,7 @@ test("handoff: the chat goes along as context, the message can be empty, the dev
 
 test("CSAT: Did this help? is stored per answer, How did we do? only once solved, and the team sees both in the metrics", async () => {
   const c = await host("Cleo Csat", "cleo-csat@example.com"), lead = await host("Lead", "lead@pottery.example");
-  assert.equal((await req("POST", "/api/help/rate", { value: "up", section: "Sharing your invite", question: "How do I share my invite?", page: "/" })).status, 401, "signed out, away from onboarding");
+  assert.equal((await req("POST", "/api/help/rate", { value: "sideways", section: "Sharing your invite", question: "How do I share my invite?", page: "/e/abc" })).status, 400, "signed out works anywhere (launch), with a real thumb");
   assert.equal((await req("POST", "/api/help/rate", { value: "meh", page: "/" }, c)).status, 400);
   for (const [value, section] of [["up", "Sharing your invite"], ["up", "How guests pay"], ["down", "Cancelling an event"]]) assert.equal((await req("POST", "/api/help/rate", { value, section, question: "q", page: "/" }, c)).status, 200);
   const rates = srv.store.listPrefix("system", "helprate-").map((d) => d.data); assert.equal(rates.length, 3); assert.ok(rates.every((r) => r.kind === "helprate" && r.at));
@@ -137,8 +137,8 @@ test("a guest on Plans who isn't signed in can ask; someone upset gets a person 
   const r = await req("POST", "/api/help/ask", { message: "I can't find my invite", page: "/plans" }); assert.equal(r.status, 200);
   const j = await r.json(); assert.equal(j.section, "Finding an invite you got"); assert.ok(j.actions.some((a) => a.href === "/plans"));
   assert.doesNotMatch(srv.app.locals.help.lastPrompt, /"handle"|"event"/, "no account context signed out");
-  assert.equal((await req("POST", "/api/help/ask", { message: "I can't find my invite", page: "/discover" })).status, 401, "only Plans and the onboarding pages");
-  assert.match(read("public/shell.js"), /location\.pathname === "\/plans"\)/, "shell.js loads help on Plans for everyone");
+  assert.equal((await req("POST", "/api/help/ask", { message: "I can't find my invite", page: "/discover" })).status, 200, "any page, signed out (launch)");
+  assert.match(read("server/appstore.js"), /<script src="\/report\.js" defer><\/script>/, "every page carries the help loader (public/report.js)");
   const c = await host("Uma Upset", "uma-upset@example.com");
   const up = await (await req("POST", "/api/help/ask", { message: "my invite link is broken and guests can't open it", page: "/" }, c)).json();
   assert.equal(up.suggestHuman, true); assert.ok(up.actions.some((a) => a.href === "#person"), "a person, offered in the answer"); assert.match(up.answer, /^Sorry it's been a pain\./);

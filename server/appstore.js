@@ -54,7 +54,7 @@ const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test
 // a page-to-page fade the browser skips rejects its promises; that's not an error (public/netguard.js does the same on
 // full pages, this is the light invite's copy)
 const VT_QUIET = `<script>addEventListener("pagereveal",(e)=>{const t=e.viewTransition;if(t)["ready","finished","updateCallbackDone"].forEach((k)=>t[k]&&t[k].catch(()=>{}))})</script>`;
-const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script>`;
+const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
 // every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
 // link a finger lands on (server/perf.js)
 // the page-to-page fade's opt-in, in the head of every full page: public/craft.css has the same rule, but it is added by

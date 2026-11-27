@@ -51,6 +51,8 @@ import { mountKudosAsk } from "./kudosask.js";
 import { mountTables } from "./tables.js"; // review round 11: tables (first 30 minutes, I'm in if, open tables, Same table next time, roster)
 import { mountRepeats } from "./repeats.js"; // weekly and monthly events make their next date (server/repeats.js)
 import { mountHelp } from "./help.js";
+import { mountErrors, noteServerError } from "./errors.js";
+import { mountLaunch } from "./launch.js";
 import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
 import { mountPottoText } from "./pottotext.js"; import { mountFriendInvites } from "./friendinvites.js"; // Potto by text, friend invites by text
@@ -292,6 +294,9 @@ export function createApp({ store, dataDir }) {
   // Signed-in people: their own workspace. Guests: the workspace of the event their link is for.
   const S = (req) => { if (req.ws == null) req.ws = req.guest ? guestWorkspace(req) : sessionWorkspace(req); return scopeStore(store, req.ws); };
   const app = express();
+  // help and error reports on every page (public/report.js): pages a module sends as a plain string (the /teams pages,
+  // admin pages) get the same deferred tag that pwaHead (server/appstore.js) gives the rest
+  app.use((req, res, next) => { if (req.method !== "GET" || /^\/(api|_blob)\//.test(req.path)) return next(); const send = res.send; res.send = function (b) { if (typeof b === "string" && !b.includes("/report.js") && /^text\/html/.test(String(res.get("Content-Type") || "")) && /<\/head>/i.test(b)) b = b.replace(/<\/head>/i, '<script src="/report.js" defer></script></head>'); return send.call(this, b); }; next(); });
   // Moving to a new address (e.g. potterylab.ai): set ENCORE_CANONICAL_HOST and every page visit on any other host
   // (the old onrender address, www.) is sent there permanently, same path and query. API calls are left alone so
   // pages already open keep working; localhost and tests are never redirected.
@@ -824,6 +829,8 @@ export function createApp({ store, dataDir }) {
   // ---- end repeats ----
   // help: Potto answers from docs/help.md, a person answers the rest (/api/help/*), and the team inbox (/support, admins only)
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
+  mountErrors(app, { store, express, currentUser, isAdmin }); // client error reports (server/errors.js)
+  mountLaunch(app, { store, express, currentUser, isAdmin, publicOrigin: (req) => originOf(req), dataDirOf: () => dataDir }); // /admin/launch, invite code batches, the status line (server/launch.js)
   mountInbox(app, { store, small, currentUser, C, X, sendStatic, afterRsvp: (...a) => afterRsvp(...a) }); // the Inbox (server/inbox.js)
   mountPotto(app, { store, express, currentUser, C, X }); // Ask Potto (server/potto.js)
   // ---- Potto by text and friend invites by text (server/pottotext.js, server/friendinvites.js) ----
@@ -2167,7 +2174,7 @@ export function createApp({ store, dataDir }) {
   // One bad request never takes the server down: anything a route throws ends here. The API answers JSON; a page that
   // fails gets a friendly page with a way back. Unexpected errors are logged once, as one line with the route, and the
   // answer never carries their message (it can hold internals).
-  app.use(errorMiddleware({ page: () => fs.readFileSync(path.join(PUBLIC_DIR, "404.html"), "utf8") })); // server/perf.js
+  app.use(errorMiddleware({ page: () => fs.readFileSync(path.join(PUBLIC_DIR, "404.html"), "utf8"), onError: (e) => noteServerError(store, e) })); // server/perf.js; a 500 lands in the error log (server/errors.js)
 
   return app;
 }

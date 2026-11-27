@@ -14,13 +14,24 @@
 // Review: the X used to do nothing. `$(".eh-x")` found the nudge's X first (it comes earlier in the template), so the
 // close handler went there and was then replaced by the nudge's own; the sheet's X never had one. Each X is now bound
 // by its own selector, and a test checks every close path.
-// Loaded by shell.js (the app and public pages) and by a script tag on the sign-up, sign-in, reset, join and onboard pages.
+// Loaded on the first tap of any Help link by public/report.js (every page, signed in or not: invites, chats, /teams,
+// error pages), and by a script tag on the sign-up, sign-in, reset, join and onboard pages (with the floating button).
+// Loaded on a tap there's no floating button: the page's own Help link is the way in.
+//
+// Launch: the first screen fits who you are here. A guest (an invite, Plans, Discover signed out) sees replying,
+// changing a reply, the address, the calendar, paying the host and ordering a drop; a host sees creating, sharing,
+// guests, getting paid, memberships and drops; a brand (/teams pages, a team workspace) sees booking, the brief,
+// approvals, invoices and looking around first. Guest, Host and Brand under the questions switch it. "Talk to a
+// person" is always there with the promised reply time, and "My event is today" sends an urgent ticket that texts the
+// team (server/help.js). Signed out, the reply comes back here too: the ticket's private key stays on this device.
+// A status line the team posted (GET /api/status) shows at the top of the sheet.
 (function () {
-  if (window.__encoreHelp) return; window.__encoreHelp = 1;
+  if (window.__encoreHelp && window.EncoreHelp && !window.EncoreHelp.lazy) return; window.__encoreHelp = 1;
   const P = location.pathname, signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   const ONB = /^\/(signup|login|forgot|reset|join|onboard)\/?$/.test(P), PLANS = P === "/plans";
   const GUEST = P === "/g" || /^\/(e|k)\//.test(P) || P === "/demo" || P === "/support" || P === "/sso/start";
-  if (GUEST || !(ONB || PLANS || signedIn())) return;
+  const LAZY = !!window.__ehLazy; // opened from a Help link (public/report.js): for everyone, everywhere
+  if (!LAZY && (GUEST || !(ONB || PLANS || signedIn()))) return;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const ss = { get: (k) => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch {} } };
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }, del: (k) => { try { localStorage.removeItem(k); } catch {} } };
@@ -48,7 +59,24 @@
     kudos: ["How kudos work", "How do kudos work?"], discord: ["Discord or Slack", "How do I post my invite in Discord?"], repeat: ["Make it repeat", "How do I make my event repeat?"],
     layout: ["Page layouts", "How do I change my page layout?"], shop: ["Set up my shop", "How do I set up my shop?"], discover: ["Get on Discover", "Why isn't my event on Discover?"],
     findInv: ["Can't find my invite", "I can't find my invite"], reply: ["Change my reply", "How do I change my reply?"], follow: ["Follow a host", "How do I follow a host?"],
+    // by who you are here (launch)
+    gReply: ["Reply to an invite", "How do I reply to an invite?"], gAddr: ["Where is it?", "Where is the event? I can't see the address."], gCal: ["Add to my calendar", "How do I add the event to my calendar?"],
+    gPay: ["Pay the host", "How do I pay for my spot?"], gDrop: ["Order from a drop", "How do I order from a drop?"],
+    hPaid: ["Get paid", "When do I get my money?"], hClub: ["Memberships", "How do memberships and fan clubs work?"], hDrop: ["Start a drop", "How do I start a drop?"],
+    bBook: ["Book a host", "How do I book a host for my team?"], bBrief: ["The brief", "What goes in the brief?"], bAppr: ["Approvals", "How do approvals work?"],
+    bInv: ["Invoices", "Where is my invoice?"], bDemo: ["Look around first", "Can I try it before booking?"],
   };
+  const ROLE_CHIPS = { guest: ["gReply", "reply", "gAddr", "gCal", "gPay", "gDrop"], host: ["first", "share", "guests", "hPaid", "hClub", "hDrop"], brand: ["bBook", "bBrief", "bAppr", "bInv", "bDemo"] };
+  const ROLE_LABEL = { guest: "Guest", host: "Host", brand: "Brand" };
+  let roleSet = ss.get("encore.help.role") || "";
+  /** Who this person is here: what they picked, else a brand page or team workspace, an invite, else signed in or not. */
+  function roleOf() {
+    if (ROLE_CHIPS[roleSet]) return roleSet;
+    if (document.body?.dataset?.audience === "brand" || document.documentElement.classList.contains("es-biz") || /^\/(teams|team|vendor|results|booking|brand)(\/|$|-)/.test(P)) return "brand";
+    if (me && me.workspace && me.workspace.plan && !["friends", "self-hosted"].includes(me.workspace.plan)) return "brand";
+    if (P === "/g" || /^\/(e|i|k)\//.test(P) || /^\/chats/.test(P) && !signedIn()) return "guest";
+    return signedIn() ? "host" : "guest";
+  }
   const ctx = () => { try { return (window.__helpCtx && window.__helpCtx()) || {}; } catch { return {}; } };
   const app = () => (window.__helpDo && typeof window.__helpDo === "object" ? window.__helpDo : null);
   const appEvent = () => { try { return app()?.event?.() || null; } catch { return null; } };
@@ -62,7 +90,9 @@
     return "";
   }
   function chips() {
-    const w = where();
+    const w = where(), r = roleOf();
+    // a guest or a brand gets their own questions anywhere but the sign-up steps (the app's own state is a host's)
+    if (r !== "host" && !["signup", "signin", "onboard"].includes(w)) return w === "plans" && r === "guest" ? [Q.findInv, Q.reply, Q.gAddr, Q.gCal, Q.gPay] : ROLE_CHIPS[r].map((k) => Q[k]);
     if (w === "signup") return [Q.code, Q.wait, Q.taken, Q.pw, Q.page];
     if (w === "signin") return [Q.reset, Q.taken, Q.google, Q.pw];
     if (w === "onboard") return [Q.page, Q.setup, Q.past, Q.look];
@@ -71,9 +101,10 @@
     if (w === "share") return [Q.share, Q.discord, Q.see, Q.pay];
     if (w === "event") return [Q.status, Q.share, Q.edit, Q.saidPaid, Q.cancel];
     if (w === "guests") return [Q.guests, Q.saidPaid, Q.tables, Q.roster, Q.photos];
-    if (w === "plans") return [Q.findInv, Q.reply, Q.follow];
-    if (w === "discover") return [Q.discover, Q.follow, Q.findInv];
-    return appEvent() ? [Q.status, Q.share, Q.edit, Q.pay, Q.repeat] : [Q.first, Q.share, Q.pay, Q.look];
+    if (w === "plans" && roleOf() === "guest") return [Q.findInv, Q.reply, Q.gAddr, Q.gCal, Q.gPay];
+    if (w === "discover" && roleOf() === "host") return [Q.discover, Q.follow, Q.share];
+    if (roleOf() === "host" && appEvent()) return [Q.status, Q.share, Q.edit, Q.pay, Q.repeat];
+    return ROLE_CHIPS[roleOf()].map((k) => Q[k]);
   }
 
   // ---------- styles ----------
@@ -135,7 +166,11 @@
   .eh-head{touch-action:none;padding-top:4px}
   .eh-btn{font-size:14px;padding:6px;width:48px;height:48px;justify-content:center;border-radius:50%}.eh-btn > span:not(.eh-dot){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 }
-@media (prefers-reduced-motion:reduce){.eh-btn{transition:none}.eh-panel,.eh-scrim{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.eh-btn{transition:none}.eh-panel,.eh-scrim{animation:none}}
+.eh-lazy .eh-btn{display:none!important}
+.eh-roles{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin:10px 0 0;color:var(--pl-soft);font-size:14px}.eh-roles button{border:0;background:none;min-height:44px;padding:0 6px;color:var(--pl-accent-text);font:600 14px "IBM Plex Sans",system-ui;text-decoration:underline;cursor:pointer}.eh-roles button[aria-pressed=true]{color:var(--pl-ink);text-decoration:none}
+.eh-foot{flex-wrap:wrap}.eh-promise{flex-basis:100%;margin:0 0 2px;color:var(--pl-soft);font-size:14px;line-height:1.35}.eh-urgent{min-height:44px;border-radius:999px;border:1.5px solid var(--pl-line-strong);background:var(--pl-sand,#F3E7A8);color:var(--pl-ink);font:600 15px "IBM Plex Sans",system-ui;cursor:pointer;padding:0 14px}
+.eh-status{margin:0 0 12px;background:var(--pl-sand,#F3E7A8);border:1.5px solid var(--pl-ink);border-radius:8px;padding:8px 12px;font-size:15px}.eh-status:empty{display:none}`;
 
   // ---------- the button, the nudge and the sheet ----------
   // everything lives in a shadow root, so no page style (full-width buttons, label rules) can reach it
@@ -147,12 +182,13 @@
 <section class="eh-panel" id="ehPanel" role="dialog" aria-modal="true" aria-labelledby="ehTitle" hidden>
   <div class="eh-grab" aria-hidden="true"><span></span></div>
   <div class="eh-head"><span class="eh-face">${VASE}</span><div><h2 id="ehTitle" tabindex="-1">Need a hand?</h2><small class="eh-sub">Potto answers from the help guide. A person replies within a day.</small></div><button type="button" class="eh-x" aria-label="Close help">${X_ICON}</button></div>
-  <div class="eh-body" id="ehBody"><div class="eh-chat"><div class="eh-log"></div><p class="eh-say" role="status" aria-live="polite"></p></div><div class="eh-chips" role="group" aria-label="Common questions"></div><div class="eh-earlier" hidden></div><div class="eh-form-wrap" hidden></div></div>
+  <div class="eh-body" id="ehBody"><p class="eh-status" role="status"></p><div class="eh-chat"><div class="eh-log"></div><p class="eh-say" role="status" aria-live="polite"></p></div><div class="eh-chips" role="group" aria-label="Common questions"></div><div class="eh-roles" role="group" aria-label="Questions for"></div><div class="eh-earlier" hidden></div><div class="eh-form-wrap" hidden></div></div>
   <form class="eh-ask"><textarea rows="1" aria-label="Ask Potto a question" placeholder="Ask me anything" maxlength="1000" enterkeyhint="send"></textarea><button type="submit" class="eh-go">Ask</button></form>
-  <div class="eh-foot"><button type="button" class="eh-human">Talk to a person</button></div>
+  <div class="eh-foot"><p class="eh-promise">We reply within 24 hours, usually sooner.</p><button type="button" class="eh-human">Talk to a person</button><button type="button" class="eh-urgent">My event is today</button></div>
 </section>`;
   // onboarding forms end at the bottom of the screen: leave room to scroll their last button clear of ours
   if (ONB) { const pad = document.createElement("style"); pad.textContent = "body{padding-bottom:calc(var(--eh-bottom,16px) + 64px)!important}"; document.head.appendChild(pad); }
+  if (LAZY) tpl.classList.add("eh-lazy");
   const mount = () => { document.body.appendChild(host); place(); setInterval(place, 1500); window.addEventListener("resize", place); start();
     // dialogs open and close between ticks: look again soon after the page changes
     let t = 0; new MutationObserver(() => { if (t) return; t = setTimeout(() => { t = 0; place(); }, 120); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "open"] }); };
@@ -205,12 +241,13 @@
   }
 
   // ---------- the chat, kept on this device for a week (cleared when you sign in or out) ----------
-  let within = "within a day";
+  let within = "within a day", promise = "We reply within 24 hours, usually sooner.";
   let log = []; try { const c = JSON.parse(ls.get(LOG) || "null"); if (c && Date.now() - c.at < 7 * 864e5 && c.signed === signedIn()) log = (c.items || []).slice(-40); } catch {}
   const saveLog = () => ls.set(LOG, JSON.stringify({ at: Date.now(), signed: signedIn(), items: log.slice(-40) }));
   const DO_FN = { share: "share", copy: "copy", preview: "preview", guests: "guests", open: "open", new: "newEvent" };
   function actHTML(a) {
     if (a.href === "#person") return `<button type="button" data-person>${esc(a.label)}</button>`;
+    if (a.href === "#urgent") return `<button type="button" data-person="urgent">${esc(a.label)}</button>`;
     const m = /^#do:([a-z]+)$/.exec(a.href);
     if (m) { if (!DO_FN[m[1]]) return ""; const A = app();
       // in the app, with no event to act on: the one step that helps is making one
@@ -232,7 +269,10 @@
   function drawLog(keepScroll) { const L = $(".eh-log"), B = $("#ehBody"), top = B.scrollTop;
     L.innerHTML = [greet(), ...log].map((m, i) => msgHTML(m, i - 1)).join("") + (log.length ? `<button type="button" class="eh-clear" data-clear>Start over</button>` : "");
     bindTicketForms(L); drawEarlier(); B.scrollTop = keepScroll ? top : B.scrollHeight; }
-  function drawChips() { $(".eh-chips").innerHTML = chips().map(([label, q]) => `<button type="button" data-q="${esc(q)}">${esc(label)}</button>`).join(""); }
+  function drawChips() { $(".eh-chips").innerHTML = chips().map(([label, q]) => `<button type="button" data-q="${esc(q)}">${esc(label)}</button>`).join("");
+    const r = roleOf(), R = $(".eh-roles"); if (!R) return; const w = where(); R.hidden = !!w && !["plans", "discover"].includes(w);
+    R.innerHTML = `<span>Questions for</span>${Object.keys(ROLE_CHIPS).map((k) => `<button type="button" data-role="${k}" aria-pressed="${k === r}">${ROLE_LABEL[k]}</button>`).join("")}`; }
+  function drawStatus() { const x = window.PLReport?.status?.(), b = $(".eh-status"); if (b) b.textContent = x?.message ? x.message : ""; }
   let busy = false;
   async function ask(text) {
     text = String(text || "").trim(); if (!text || busy) return; busy = true; const go = $(".eh-go"); go.disabled = true;
@@ -277,8 +317,11 @@
   let tickets = [], me = null, poll = 0;
   const lastTeam = (t) => Math.max(0, ...(t.thread || []).filter((x) => x.by === "team").map((x) => x.at || 0));
   const seenAt = () => +(ls.get(SEEN) || 0);
+  const KEYS = "encore.help.keys", keys = () => { try { return JSON.parse(ls.get(KEYS) || "[]").filter((x) => x && x.id && x.k && Date.now() - x.at < 30 * 864e5); } catch { return []; } };
+  const keyOf = (id) => keys().find((x) => x.id === id)?.k || "";
   async function loadTickets(force) {
-    if (!signedIn()) return; const cached = ss.get("encore.help.t"); if (!force && cached) { try { const c = JSON.parse(cached); if (Date.now() - c.at < 5 * 60e3) { tickets = c.tickets; return; } } catch {} }
+    if (!signedIn()) { const K = keys(); if (!K.length) return; const L = await Promise.all(K.slice(-5).map((x) => fetch(`/api/help/t/${encodeURIComponent(x.id)}?k=${encodeURIComponent(x.k)}`, { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+      tickets = L.filter(Boolean).map((j) => j.ticket).sort((a, b) => b.updatedAt - a.updatedAt); return; } const cached = ss.get("encore.help.t"); if (!force && cached) { try { const c = JSON.parse(cached); if (Date.now() - c.at < 5 * 60e3) { tickets = c.tickets; return; } } catch {} }
     try { const r = await fetch("/api/help/tickets", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json(); tickets = j.tickets || []; window.__ehAdmin = !!j.admin; if (j.replyWithin) within = j.replyWithin; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); } catch {}
   }
   function badge() { const unread = tickets.some((t) => lastTeam(t) > seenAt()); const d = $(".eh-dot"); if (d) d.hidden = !unread; btn().setAttribute("aria-label", unread ? "Need a hand? You have a new reply" : "Need a hand?"); }
@@ -301,7 +344,7 @@
   }
   function bindTicketForms(scope) {
     scope.querySelectorAll("form[data-reply]").forEach((f) => f.onsubmit = async (e) => { e.preventDefault(); const i = f.querySelector("input"), text = i.value.trim(); if (!text) return; f.querySelector("button").disabled = true;
-      try { const r = await fetch("/api/help/tickets/" + f.dataset.reply, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't send that.");
+      try { const k = signedIn() ? "" : keyOf(f.dataset.reply); const r = await fetch((k ? "/api/help/t/" : "/api/help/tickets/") + f.dataset.reply, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, ...(k ? { k } : {}) }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "Couldn't send that.");
         tickets = tickets.map((t) => (t.id === j.ticket.id ? j.ticket : t)); ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); drawLog(true); } catch (err) { i.value = text; i.setAttribute("aria-invalid", "true"); i.placeholder = err.message; f.querySelector("button").disabled = false; } });
   }
   async function rateTicket(id, value) {
@@ -315,23 +358,26 @@
   const deviceLabel = () => { const s = navigator.userAgent; const os = /iPhone/.test(s) ? "iPhone" : /iPad/.test(s) ? "iPad" : /Android/.test(s) ? "Android" : /Mac OS X/.test(s) ? "Mac" : /Windows/.test(s) ? "Windows" : "";
     const br = /EdgA?\//.test(s) ? "Edge" : /CriOS|Chrome\//.test(s) ? "Chrome" : /FxiOS|Firefox\//.test(s) ? "Firefox" : /Safari\//.test(s) ? "Safari" : ""; return [os, br].filter(Boolean).join(", ") || "This browser"; };
   const pageLabel = () => { const w = where(); if (/^\/@/.test(P)) return "Your page"; return ({ signup: "Sign up", signin: "Sign in", onboard: "Set up with Potto", share: "The share sheet", wizard: "New event", event: "Your event", guests: "Your guests", plans: "Plans", discover: ({ "/feed": "Feed", "/events": "Events", "/hosts": "Hosts" })[P] || "Discover" })[w] || (P === "/" ? "Home" : P); };
-  async function personForm(topic) {
+  const bookingId = () => (P.match(/^\/teams\/(?:e|invoice|bookings)\/([A-Za-z0-9_-]{4,40})/) || location.search.match(/[?&](?:booking|req|r)=([A-Za-z0-9_-]{4,40})/) || [])[1] || "";
+  const pageEvent = () => (P.match(/^\/(?:e|i|k|chats)\/([A-Za-z0-9_-]{2,80})/) || location.hash.match(/^#(?:rsvp|survey|plan|guests)-([A-Za-z0-9_-]{2,80})/) || [])[1] || "";
+  async function personForm(topic, opts = {}) {
+    const urgent = !!opts.urgent;
     open(); const wrap = $(".eh-form-wrap"), acct = await account(), out = !acct;
     const chat = log.filter((m) => m.role === "host" || m.role === "potto"), hasQ = chat.some((m) => m.role === "host");
-    $(".eh-chat").hidden = true; $(".eh-chips").hidden = true; $(".eh-earlier").hidden = true; $(".eh-ask").hidden = true; $(".eh-foot").hidden = true; wrap.hidden = false;
-    const c = ctx(), evId = c.eventId || "", ev = appEvent(), evTitle = evId && ev && ev.id === evId ? ev.title : evId ? "The event you're on" : "";
-    wrap.innerHTML = `<form class="eh-form" novalidate><button type="button" class="eh-back">${BACK}Back to Potto</button><div><h3 id="ehPersonH" tabindex="-1">Talk to a person</h3></div><p class="eh-sla">A person replies ${esc(within)}${out ? " by email" : ", here and by email"}.</p>
-      ${out ? `<label>What's happening?<select name="topic"><option value="">Pick one</option>${(PLANS ? [["invite", "I can't find my invite"], ["reply", "Changing my reply"]] : [["code", "I need a host code"], ["email_taken", "My email is already in use"], ["reset", "My reset email didn't come"], ["google", "Google sign-in"]]).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}<option value="other">Something else</option></select></label>` : ""}
-      <label>${hasQ ? `Anything to add? <span class="eh-note">(optional)</span>` : "What do you need?"}<textarea name="message" placeholder="${hasQ ? "Your chat with Potto is included, so you don't have to repeat it." : "A line or two is plenty."}"></textarea></label>
-      ${out ? `<label>Your email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label><label>Your name <span class="eh-note">(optional)</span><input name="name" autocomplete="name"></label>`
+    $(".eh-chat").hidden = true; $(".eh-chips").hidden = true; $(".eh-roles").hidden = true; $(".eh-earlier").hidden = true; $(".eh-ask").hidden = true; $(".eh-foot").hidden = true; wrap.hidden = false;
+    const c = ctx(), evId = c.eventId || pageEvent(), ev = appEvent(), evTitle = evId && ev && ev.id === evId ? ev.title : evId ? "The event you're on" : "", bk = bookingId(), role = roleOf(), errs = [...new Set([errFrom, ...(window.PLReport?.recent?.() || [])].filter(Boolean))].slice(-5);
+    wrap.innerHTML = `<form class="eh-form" novalidate><button type="button" class="eh-back">${BACK}Back to Potto</button><div><h3 id="ehPersonH" tabindex="-1">${urgent ? "Your event is today" : "Talk to a person"}</h3></div><p class="eh-sla">${urgent ? "We text the team now, and reply as fast as we can." : `${esc(promise)} ${out ? "Here, and by email or text." : "Here and by email."}`}</p>
+      ${out && !urgent ? `<label>What's happening?<select name="topic"><option value="">Pick one</option>${(PLANS ? [["invite", "I can't find my invite"], ["reply", "Changing my reply"]] : [["code", "I need a host code"], ["email_taken", "My email is already in use"], ["reset", "My reset email didn't come"], ["google", "Google sign-in"]]).map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}<option value="other">Something else</option></select></label>` : ""}
+      <label>${urgent ? "What's going wrong?" : hasQ ? `Anything to add? <span class="eh-note">(optional)</span>` : "What do you need?"}<textarea name="message" placeholder="${urgent ? "Guests can't get in, the address is wrong, a payment failed..." : hasQ ? "Your chat with Potto is included, so you don't have to repeat it." : "A line or two is plenty."}"></textarea></label>
+      ${out ? `<label>Your email or phone<input name="email" type="text" autocomplete="email" inputmode="email" required placeholder="you@example.com or 555 123 4567"></label><label>Your name <span class="eh-note">(optional)</span><input name="name" autocomplete="name"></label>`
         : ""}
       <fieldset class="eh-ctx"><legend>We'll include</legend><ul>
         ${chat.length ? `<li><label><input type="checkbox" name="withChat" checked> Your chat with Potto (${chat.length} ${chat.length === 1 ? "message" : "messages"})</label></li><li><details><summary>See the chat</summary>${chat.map((m) => `<p><b>${m.role === "potto" ? "Potto" : "You"}:</b> ${esc(m.text)}</p>`).join("")}</details></li>` : ""}
-        <li><span>Page:</span> ${esc(pageLabel())}</li>${evTitle ? `<li><span>Event:</span> ${esc(evTitle)}</li>` : ""}<li><span>Device:</span> ${esc(deviceLabel())}</li></ul></fieldset>
+        <li><span>Page:</span> ${esc(pageLabel())}</li>${evTitle ? `<li><span>Event:</span> ${esc(evTitle)}</li>` : ""}${bk ? `<li><span>Booking:</span> ${esc(bk)}</li>` : ""}<li><span>Device:</span> ${esc(deviceLabel())}</li>${errs.length ? `<li><span>Recent errors:</span> ${esc(errs.join(", "))}</li>` : ""}</ul></fieldset>
       ${out ? "" : `<p class="eh-note">We'll reply to <b>${esc(acct.email)}</b> and here.</p><details class="eh-more"><summary>Add a phone or a screenshot</summary><div class="eh-form" style="margin-top:8px"><label>Phone <span class="eh-note">(optional, if a call or text is easier)</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label><label>Screenshot <span class="eh-note">(optional)</span><input name="shot" type="file" accept="image/*"></label></div></details>`}
       <div class="eh-hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
       <p class="eh-err" role="alert"></p>
-      <div class="eh-row"><button type="submit" class="eh-go">Send to the team</button></div></form>`;
+      <div class="eh-row"><button type="submit" class="eh-go">${urgent ? "Send now" : "Send to the team"}</button></div></form>`;
     const f = wrap.querySelector("form"), er = f.querySelector(".eh-err");
     if (topic && f.topic) f.topic.value = topic;
     f.querySelector(".eh-back").onclick = backToChat;
@@ -339,14 +385,15 @@
     f.onsubmit = async (e) => { e.preventDefault(); er.textContent = ""; const go = f.querySelector(".eh-go");
       const withChat = !!f.withChat?.checked, message = f.message.value.trim();
       if (message.length < 3 && !(withChat && hasQ)) { er.textContent = "Say what's wrong, even in a few words."; f.message.focus(); return; }
-      if (out && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.value.trim())) { er.textContent = "Add your email so we can reply."; f.email.focus(); return; }
+      const contact = out ? f.email.value.trim() : ""; if (out && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) && !/^\+?[0-9 ()-]{7,20}$/.test(contact)) { er.textContent = "Add your email or phone so we can reply."; f.email.focus(); return; }
       go.disabled = true; go.textContent = "Sending…"; let screenshot = "";
       try {
         const file = f.shot?.files?.[0]; if (file && /^image\//.test(file.type) && file.size < 10e6) { try { const r = await fetch("/api/assets", { method: "POST", credentials: "same-origin", headers: { "Content-Type": file.type }, body: file }); if (r.ok) screenshot = (await r.json()).url || ""; } catch {} }
-        const body = { message, page: P + location.search + location.hash, eventId: evId, browser: `${navigator.userAgent} · ${innerWidth}x${innerHeight}`, transcript: withChat ? chat.map((m) => ({ role: m.role, text: m.text, section: m.section || "", rated: m.rated || "" })) : [], screenshot, website: f.website.value,
-          ...(out ? { email: f.email.value.trim(), name: f.elements.name.value.trim(), topic: f.topic.value } : { phone: f.phone.value.trim() }) };
+        const body = { message, page: P + location.search + location.hash, eventId: evId, bookingId: bk, role, urgent, errorIds: errs, app: window.PLReport?.app || "", browser: `${navigator.userAgent} · ${innerWidth}x${innerHeight}`, transcript: withChat ? chat.map((m) => ({ role: m.role, text: m.text, section: m.section || "", rated: m.rated || "" })) : [], screenshot, website: f.website.value,
+          ...(out ? { contact, name: f.elements.name.value.trim(), topic: f.topic?.value || "" } : { phone: f.phone.value.trim() }) };
         const r = await fetch("/api/help/ticket", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(j.message || "Couldn't send that. Try again.");
+        if (j.key) ls.set(KEYS, JSON.stringify([...keys(), { id: j.id, k: j.key, at: Date.now() }].slice(-5)));
         if (j.ticket) { tickets = [j.ticket, ...tickets.filter((t) => t.id !== j.id)]; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); }
         say("Sent. " + (j.expect || `A person replies ${within}.`));
         log.push({ role: "ticket", id: j.id, withChat: withChat && chat.length > 0, text: j.ticket ? "" : message || chat.filter((m) => m.role === "host").slice(-1)[0]?.text || "", expect: j.expect || "" }); saveLog();
@@ -377,12 +424,15 @@
   // the keyboard on a phone: keep the sheet's bottom on top of it, and its height inside what's left
   function fitViewport() { const v = window.visualViewport, p = panel(); if (!v || !p) return; const kb = Math.max(0, Math.round(innerHeight - v.height - v.offsetTop));
     p.style.setProperty("--eh-kb", kb + "px"); p.style.setProperty("--eh-vvh", Math.round(v.height) + "px"); p.classList.toggle("eh-kbd", kb > 40); }
-  function open(focusAsk) {
+  let errFrom = "";
+  function open(o) {
+    const focusAsk = o === true; if (o && typeof o === "object") { if (ROLE_CHIPS[o.role]) roleSet = o.role; /* this page's link says who it's for; only a tap on Guest, Host or Brand is kept for the visit */ if (o.errorId) errFrom = String(o.errorId).slice(0, 16); if (o.urgent) setTimeout(() => personForm("", { urgent: true }), 0); }
     hideNudge(); const p = panel(); if (!p.hidden) return; opener = deepActive(); openSeen = seenAt();
     lockPage(); scrim().hidden = false; p.hidden = false; p.style.transform = ""; btn().hidden = true; btn().setAttribute("aria-expanded", "true");
     fitViewport(); window.visualViewport?.addEventListener("resize", fitViewport); window.visualViewport?.addEventListener("scroll", fitViewport);
     if (!window.Potto && !document.getElementById("ehMascot")) { const s = document.createElement("script"); s.id = "ehMascot"; s.src = "/mascot.js"; s.onload = face; document.head.appendChild(s); } else face();
-    backToChat(true); if (signedIn()) loadTickets().then(() => { drawLog(); startPoll(); });
+    backToChat(true); drawStatus(); if (signedIn() || keys().length) loadTickets().then(() => { drawLog(); startPoll(); });
+    if (signedIn() && me === null) account().then(() => drawChips());
     setTimeout(() => { if (focusAsk === true && !phone()) $(".eh-ask textarea").focus(); else $("#ehTitle").focus(); }, 0);
   }
   function face() { try { if (window.Potto?.svg) $(".eh-face").innerHTML = window.Potto.svg("wave", 40, ""); } catch {} }
@@ -391,7 +441,7 @@
     if (openSeen != null && tickets.length) ls.set(SEEN, String(Date.now())); openSeen = null; badge(); btn().hidden = false; btn().setAttribute("aria-expanded", "false"); place();
     const back = opener && opener.isConnected && opener !== document.body && opener !== host && !root.contains(opener) ? opener : btn().classList.contains("eh-intab") ? document.querySelector(".es-tabs [data-me], #navMeTab") || btn() : btn(); try { back.focus({ preventScroll: true }); } catch { back.focus(); } }
   // replies come into the open sheet while a conversation is waiting on the team
-  function startPoll() { if (poll || !signedIn() || !tickets.some((t) => t.status !== "solved")) return; poll = setInterval(async () => { if (!isOpen() || document.hidden) return; const before = JSON.stringify(tickets); await loadTickets(true); if (JSON.stringify(tickets) !== before) drawLog(true); }, 30e3); }
+  function startPoll() { if (poll || !(signedIn() || keys().length) || !tickets.some((t) => t.status !== "solved")) return; poll = setInterval(async () => { if (!isOpen() || document.hidden) return; const before = JSON.stringify(tickets); await loadTickets(true); if (JSON.stringify(tickets) !== before) drawLog(true); }, 30e3); }
   function stopPoll() { clearInterval(poll); poll = 0; }
   const focusables = () => [...panel().querySelectorAll('button,[href],input:not([type=hidden]),textarea,select,summary,[tabindex]:not([tabindex="-1"])')].filter((e) => !e.disabled && e.getClientRects().length && !e.closest("[hidden],.eh-hp"));
 
@@ -437,14 +487,15 @@
     panel().querySelector(".eh-head .eh-x").addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); close(); });
     scrim().addEventListener("click", () => close());
     swipe($(".eh-grab")); swipe($(".eh-head"));
-    $(".eh-human").onclick = () => personForm();
+    $(".eh-human").onclick = () => personForm(); $(".eh-urgent").onclick = () => personForm("", { urgent: true });
+    window.addEventListener("pl:status", drawStatus);
     nudge().querySelector(".eh-nx").onclick = () => { hideNudge(); btn().focus(); };
     nudge().querySelector('[data-nudge="ask"]').onclick = () => { open(true); if (PLANS && !log.length) ask(Q.findInv[1]); };
     nudge().querySelector('[data-nudge="person"]').onclick = () => { const t = P === "/signup" ? (/(already have an account)/i.test(document.getElementById("err")?.textContent || "") ? "email_taken" : /invite|code/i.test(document.getElementById("err")?.textContent || "") ? "code" : "") : /^\/(forgot|reset)$/.test(P) ? "reset" : ""; personForm(t); };
     $(".eh-ask").onsubmit = (e) => { e.preventDefault(); const t = $(".eh-ask textarea"); const v = t.value; t.value = ""; ask(v); };
     $(".eh-ask textarea").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $(".eh-ask").requestSubmit(); } });
-    root.addEventListener("click", (e) => { const t = e.target.closest?.("[data-q],[data-person],[data-do],[data-rate],[data-trate],[data-clear]"); if (!t) return;
-      if (t.dataset.q) return ask(t.dataset.q); if (t.hasAttribute("data-person")) return personForm(); if (t.dataset.do) return runDo(t.dataset.do);
+    root.addEventListener("click", (e) => { const t = e.target.closest?.("[data-q],[data-role],[data-person],[data-do],[data-rate],[data-trate],[data-clear]"); if (!t) return;
+      if (t.dataset.q) return ask(t.dataset.q); if (t.dataset.role) { roleSet = t.dataset.role; ss.set("encore.help.role", roleSet); return drawChips(); } if (t.hasAttribute("data-person")) return personForm("", { urgent: t.dataset.person === "urgent" }); if (t.dataset.do) return runDo(t.dataset.do);
       if (t.dataset.rate) return rate(+t.dataset.i, t.dataset.rate); if (t.dataset.trate) return rateTicket(t.dataset.t, t.dataset.trate);
       if (t.hasAttribute("data-clear")) { log = log.filter((m) => m.role === "ticket"); saveLog(); drawLog(); $("#ehTitle").focus(); } });
     // Esc closes, and Tab stays inside, before any page handler (the wizard's own Esc) sees the key
@@ -454,15 +505,15 @@
       if (e.key === "Escape" && !nudge().hidden) { e.stopImmediatePropagation(); hideNudge(); } }, true);
     // the reply time people are promised (ENCORE_SUPPORT_REPLY_HOURS on the server)
     const cached = ss.get("encore.help.within"); if (cached) within = cached;
-    fetch("/api/help/info", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.replyWithin) { within = j.replyWithin; ss.set("encore.help.within", within); $(".eh-sub").textContent = `Potto answers from the help guide. A person replies ${within}.`; } }).catch(() => {});
+    fetch("/api/help/info", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.promise) { promise = j.promise; const pr = $(".eh-promise"); if (pr) pr.textContent = promise; } if (j?.replyWithin) { within = j.replyWithin; ss.set("encore.help.within", within); $(".eh-sub").textContent = `Potto answers from the help guide. A person replies ${within}.`; } }).catch(() => {});
     $(".eh-sub").textContent = `Potto answers from the help guide. A person replies ${within}.`;
     watchStuck();
     if (signedIn()) loadTickets().then(badge);
     const q = new URLSearchParams(location.search);
     if (q.get("help") === "1") { setTimeout(async () => { await loadTickets(true); open(); }, 400); }
     doFromUrl();
-    document.addEventListener("click", (ev) => { const t = ev.target.closest?.("[data-help-open]"); if (!t) return; ev.preventDefault(); open(true); });
-    window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask, isOpen }; // review round 8: open() for the wizard's own link
+    document.addEventListener("click", (ev) => { const t = ev.target.closest?.("[data-help-open],[data-help]"); if (!t || (t.hasAttribute("data-help-open") && signedIn() && window.PLPotto)) return; ev.preventDefault(); open({ role: t.dataset.help || "", urgent: t.hasAttribute("data-help-urgent"), errorId: t.dataset.err || "" }); });
+    window.EncoreHelp = window.PLHelp = { open, close, person: personForm, offer, ask, isOpen, urgent: () => personForm("", { urgent: true }) }; // review round 8: open() for the wizard's own link
   }
   document.body ? mount() : document.addEventListener("DOMContentLoaded", mount);
 })();

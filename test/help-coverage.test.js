@@ -80,7 +80,7 @@ test("retrieval: synonyms and word forms find the same answer; every section is 
   for (const s of G.sections) { assert.ok(s.keywords.length, `${s.title} has keywords`); assert.ok(s.questions.length, `${s.title} says what it answers`);
     for (const q of s.questions) assert.equal(matchSections(q)[0]?.s.title, s.title, `"${q}" finds ${s.title}`); }
   // app actions in the guide are ones the app can run
-  for (const s of G.sections) for (const l of s.links) assert.match(l.href, /^(\/|#person$|#do:(share|copy|preview|guests|open|new)$)/, `${s.title}: ${l.href}`);
+  for (const s of G.sections) for (const l of s.links) assert.match(l.href, /^(\/|#person$|#urgent$|#do:(share|copy|preview|guests|open|new)$)/, `${s.title}: ${l.href}`);
 });
 
 test("event lookup: the host's own event in counts, never names; reply time and device in words", () => {

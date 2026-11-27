@@ -158,7 +158,7 @@ export function idempotency({ who = () => "" } = {}) {
  * JSON with a code; a page that fails gets a friendly page with a way back (page(): the 404 page, reworded). Unexpected
  * errors are logged as one line with the route, and the answer never carries their message (it can hold internals).
  */
-export function errorMiddleware({ page = () => "", log = (...a) => console.error(...a) } = {}) {
+export function errorMiddleware({ page = () => "", log = (...a) => console.error(...a), onError = null } = {}) {
   // eslint-disable-next-line no-unused-vars
   return (err, req, res, next) => {
     if (res.headersSent) { try { res.end(); } catch {} return; }
@@ -167,13 +167,15 @@ export function errorMiddleware({ page = () => "", log = (...a) => console.error
     const code = typeof err?.code === "string" && /^[a-z_]{2,40}$/.test(err.code) ? err.code : "server_error";
     const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600 ? err.status : code === "server_not_connected" || code === "tool_not_found" ? 404 : code === "tool_error" ? 502 : 500;
     const unexpected = status >= 500 && code === "server_error";
-    if (unexpected) log("[http]", req.method, String(req.originalUrl || req.url || "").split("?")[0].slice(0, 200), err?.stack || err);
+    // a ref the person can quote to support (the "Something went wrong" toast shows it; server/errors.js keeps it)
+    const ref = unexpected ? crypto.randomBytes(4).toString("hex") : "", where = String(req.originalUrl || req.url || "").split("?")[0].slice(0, 200);
+    if (unexpected) { log("[http]", req.method, where, `ref ${ref}`, err?.stack || err); try { onError?.({ ref, method: req.method, path: where, err }); } catch {} }
     const message = unexpected ? "Something went wrong on our side. Try again in a moment." : String(err?.message || "Something went wrong.");
     if (!String(req.path || "").startsWith("/api/") && req.method === "GET" && req.accepts(["html", "json"]) === "html") {
-      let html = ""; try { html = String(page() || "").replace(/<title>[^<]*/, "<title>Something went wrong · Pottery Lab").replace(/<h1>[\s\S]*?<\/h1><p>[\s\S]*?<\/p>/, "<h1>Something went <em>wrong</em>.</h1><p>That's on us. Try again in a moment.</p>"); } catch {}
+      let html = ""; try { html = String(page() || "").replace(/<title>[^<]*/, "<title>Something went wrong · Pottery Lab").replace(/<h1>[\s\S]*?<\/h1><p>[\s\S]*?<\/p>/, "<h1>Something went <em>wrong</em>.</h1><p>That's on us. Try again in a moment.</p>").replace(/href="\/help"/, `href="/help?err=${ref}"`).replace("<!--REF-->", ref ? `Ref ${ref}` : ""); } catch {}
       return res.status(status).set("Cache-Control", "no-store").type("html").send(html || "<!doctype html><title>Something went wrong</title><p>Something went wrong on our side. Try again in a moment.</p>");
     }
-    res.status(status).json({ code, message });
+    res.status(status).json(ref ? { code, message, ref } : { code, message });
   };
 }
 

@@ -142,7 +142,7 @@ Events are free unless you add a price. Open the event, tap Edit details, and ty
 ## How guests pay
 
 Keywords: pay, payment, pay link, venmo, paypal, cash app, paid spots, money, at the door, collect
-Questions: How do guests pay? | How do I get paid? | Does Pottery Lab take the money?
+Questions: How do guests pay? | How do guests pay me? | Does Pottery Lab take the money?
 Add a payment link (Venmo, PayPal.me, Cash App or any https link) when the wizard asks How do guests pay?, or later in Edit details under Payment link. Venmo, PayPal.me and Cash App links get the amount filled in for guests. Pottery Lab doesn't take the money; it goes straight to you. Guests can tap I paid, and you confirm it on their name.
 
 ## I paid
@@ -497,11 +497,127 @@ Questions: How do group chats work? | How do I message my guests? | How do I mut
 Every event has a group chat. Guests who are in join it; Maybe and waitlisted guests can read it if you allow it. Open it from Chats in the bottom bar, or Message guests on your event. You can mute a chat, pin a message, and take someone out. Your contact details aren't shared.
 [Open Chats](/chats)
 
+## Replying to an invite
+
+Keywords: reply, rsvp, respond, say yes, accept invite, register, sign up for an event, how to reply, coming
+Questions: How do I reply to an invite? | How do I RSVP? | How do I say I'm coming? | Do I need an account to reply?
+Open the invite link and tap I'm in, Maybe or Can't go. Add your name and an email or phone, so the host can reach you. You don't need an account. If the host lets each guest in, you'll see you asked, and the invite updates when they say yes.
+[Plans](/plans)
+
+## Where the event is
+
+Keywords: address, where is it, location, can't see the address, exact address, directions, where do i go, map, venue
+Questions: Where is the event? I can't see the address. | Why can't I see the address? | Where do I go?
+The invite shows the area. The exact address shows on the invite once you're in, so reply I'm in first. If the host lets each guest in, it shows after they say yes. For a drop, the pickup address shows once you order. Still stuck? Ask the host in the event's group chat.
+[Plans](/plans)
+
+## Adding an event to your calendar
+
+Keywords: add to calendar, my calendar, google calendar, apple calendar, outlook, ics file, save the date, remind me
+Questions: How do I add the event to my calendar? | Can I add it to Google Calendar? | How do I save the date?
+Reply I'm in, then tap Add to calendar on the invite. It saves a calendar file that Apple, Google and Outlook calendars open. In the event's group chat, the chat's details have Add to calendar too.
+
+## Paying the host
+
+Keywords: pay the host, pay for my spot, as a guest, refund, chip in
+Questions: How do I pay for my spot? | How do I pay for the event as a guest? | I paid the host, now what? | Can I get a refund?
+If the event has a price, the invite says how the host takes payment: a pay link (Venmo, PayPal, Cash App or another link) or at the door. Tap the pay link and pay, then tap I paid so the host can confirm it. The money goes straight to the host and Pottery Lab never holds it, so refunds are up to the host. Ask them in the event's chat.
+
+## Ordering from a drop
+
+Keywords: order from a drop, drop, order ahead, pick up my order, pickup time, pre-order, buy, menu, bakery
+Questions: How do I order from a drop? | How do I pick up my order? | Where do I pick up?
+Open the drop's link, pick what you want and how many, choose a pickup time, add your name and an email or phone, and tap Order. The exact pickup address shows once you order. The drop says how you pay: a link after ordering, or at pickup. The host tells you when it's ready.
+
+## My event is today
+
+Keywords: event today, urgent, emergency, right now, tonight, help now, asap, on the day, guests can't get in, it's today
+Questions: My event is today and something is wrong | I need help now | Is there an urgent line?
+Tap My event is today at the bottom of this panel and say what's wrong in a line. We text the team right away and reply as fast as we can. If guests can't find the place, the event's group chat reaches everyone fastest.
+[My event is today](#urgent)
+
+## Getting paid
+
+Keywords: get paid, how do i get paid, payout, payouts, collect money, receive money, my earnings, deposit from a brand
+Questions: How do I get paid? | When do I get my money? | How do I collect money for my event?
+For your own events, guests pay you directly. Add a Venmo, PayPal.me, Cash App or other https link in Edit details under Payment link, or pick At the door. Pottery Lab doesn't take a cut or hold the money. Guests tap I paid and you confirm it on their name. Bookings from brands have their own deposit, on the booking in Team bookings.
+[Open my event](#do:open)
+
+## Memberships
+
+Keywords: membership, memberships, members, paid membership, subscription, subscribers, regulars club, charge members
+Questions: How do memberships and fan clubs work? | Can I sell memberships? | Can I charge for a membership?
+Your regulars join your fan club for free. Members get first dibs on new events and drops, members-only events, a members' chat and your updates. Start it from the Fan club card on your page. Charging for memberships isn't open to every host yet. If you want it, talk to a person and we'll tell you where it stands.
+[Open my page](/@{handle})
+
+## Starting a drop
+
+Keywords: start a drop, make a drop, sell for pickup, bake sale, order ahead, drop orders, batch, sell things
+Questions: How do I start a drop? | How do I sell things for pickup? | Where are my drop orders?
+Tap New and pick A drop (order ahead, pick up at a set time). Potto sets it up in 3 short steps: your items with a price, pickup times, and where. The exact address only goes to people who ordered. Share the link like an invite. Every order lands in Orders, where you mark it ready.
+[New](#do:new)
+
+## Signing up as a brand
+
+Keywords: brand account, work account, team account, sign up as a brand, company account, field marketer, marketing team
+Questions: How do I sign up as a brand? | How do I make a team account?
+On sign-up, pick For a brand and use your work email, your company and its website. Pottery Lab is invite-only for now, so use the code from your invite, or the link that has it. Your team can see bookings, approve them and get invoices.
+[Sign up for a brand](/signup?mode=work)
+
+## Booking a host for your team
+
+Keywords: book a host, booking, team event, team booking, request to book, hire a host, offsite, corporate event, book an experience, hold the date
+Questions: How do I book a host for my team? | How do I book an experience? | How does booking work?
+Open Discover hosts, pick an experience and tap Request to book. Three short steps: when works for your team, who's coming (with dietary needs), then hold the date with a deposit. The host accepts, suggests a change or declines. The deposit is paid on the web, not in the app.
+[Discover hosts](/teams/discover)
+
+## The brief
+
+Keywords: brief, the brief, what to tell the host, requirements, goals, room rules, run of show, same brief, book again
+Questions: What goes in the brief? | How do I change the brief? | Can I reuse a brief?
+The brief is what you and the host agree on: the date, the headcount, what the event is for, and room needs like access or dietary needs. Both of you agree to it before it's booked, and any edit asks the other side again. To book a host again, Book again on Your hosts copies the last brief.
+[Your hosts](/teams/hosts)
+
+## Approvals
+
+Keywords: approval, approvals, approve, sign off, manager approval, budget approval, ok before booking, approver, waiting on your team
+Questions: How do approvals work? | Who approves a booking? | Can we require an OK before booking?
+In Team bookings, turn on Ask for an OK before a request goes to the host, always or only over an amount. A request then says Waiting on your team until an approver says yes. Approvers' own requests go straight through. Nothing is held or charged while it waits.
+[Team bookings](/teams/bookings)
+
+## Invoices
+
+Keywords: invoice, invoices, receipt, billing, vat, tax id, pdf, accounts payable, billing details
+Questions: Where is my invoice? | How do I get an invoice? | Can I add our tax ID to the invoice?
+Once a booking is booked (the deposit went through), open it in Team bookings for its invoice. Save your company name and VAT or tax ID in the booking's billing details first. The invoice opens as a page you can print or save as a PDF.
+[Team bookings](/teams/bookings)
+
+## Looking around first
+
+Keywords: demo, try it, look around, sample, preview, test drive, before booking, how it works for brands, the demo
+Questions: Can I try it before booking? | Is there a demo? | How does it work for brands?
+Yes. Browse Discover hosts and open any experience to see what's included and the price. Nothing goes to a host until you send a request, and nothing is charged until you hold a date with a deposit. To see what guests get, open the sample event.
+[Discover hosts](/teams/discover) [Sample event](/demo)
+
+## Messaging a host before you book
+
+Keywords: message the host, contact the host, host phone, host email, ask a question, chat with the host
+Questions: How do I message the host? | Why can't I see the host's email?
+Each request has a thread with the host in Team bookings. Emails and numbers stay hidden until you're booked; then the contact details and the address show on the booking.
+[Team bookings](/teams/bookings)
+
+## Cancelling a booking
+
+Keywords: cancel booking, cancel a booking, deposit back, reschedule, move the date, refund a booking
+Questions: How do I cancel a booking? | Do we get the deposit back? | Can we move a booking to another day?
+Open the booking in Team bookings and tap Cancel. What comes back depends on how close the date is, and the booking shows what's at risk before you confirm. To move the date, message the host on the booking.
+[Team bookings](/teams/bookings)
+
 ## Talking to a person
 
 Keywords: talk to a person, human, support, contact, someone, real person, email you
 Questions: Can I talk to a person? | How do I contact support?
-Tap Talk to a person in this panel. Say what's wrong, or nothing at all: we attach your chat with Potto, the page you're on and your event, so you don't have to explain. A person replies here and by email.
+Tap Talk to a person at the bottom of this panel. Say what's wrong, or nothing at all: we attach your chat with Potto, the page you're on and your event, so you don't have to explain. A person replies here and by email (or by text, if you only left a phone), in the time shown above the button. If your event is today, tap My event is today instead.
 [Talk to a person](#person)
 
 ## Collections on Discover

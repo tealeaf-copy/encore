@@ -88,7 +88,7 @@ form button:not([type=button]):not([role=tab]){min-height:52px;font-size:16px;ma
     ci.addEventListener("input", check);
     // review round 12: "Have a host code?" is there even when hosting isn't invite-only, so a founder or friend code still counts
     const ca = document.getElementById("codeAsk"); const askSync = () => { ca.hidden = !cw.hidden; }; ca.onclick = () => { cw.hidden = false; askSync(); ci.focus(); }; askSync();
-    if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set("friends"); askSync(); }
+    if (q.get("code")) { cw.hidden = false; ci.value = q.get("code").toUpperCase(); check(); set(q.get("mode") === "work" ? "work" : "friends"); askSync(); } // a brand's cohort code keeps the work form
     fetch("/api/signup/config").then((r) => r.json()).then((c) => { if (c.inviteOnly) { window.__inviteOnly = true; if (new URLSearchParams(location.search).get("ref")) { const n = document.createElement("p"); n.className = "nocode"; n.textContent = "You came from an event, so you don't need a host code."; cw.before(n); } else { cw.hidden = false; document.getElementById("nocodeHint").hidden = false; } askSync(); } else if (!wl.hidden) { wl.hidden = true; f.hidden = false; } }).catch(() => {});
     if (location.hash === "#ask") { f.hidden = true; wl.hidden = false; }
     document.getElementById("haveCode").onclick = (e) => { e.preventDefault(); wl.hidden = true; f.hidden = false; ci.focus(); };

@@ -3,7 +3,8 @@
 // Signed out, Feed comes first (it's the app's default view): Feed, Discover, Ideas, Sign in, Start your page.
 // and, on pages without their own header, a top bar with Discover and Host something. Phones keep the page's own header.
 // A friend's invite (/g) never shows the brands link: a guest opening a dinner invite isn't shopping for hosts.
-// "Need a hand?" (public/help.js): Potto's help panel for signed-in hosts, on the app and every public page with this shell.
+// "Need a hand?" (public/help.js): the Help link in the rail (signed in or not) and the Me sheet; public/report.js loads
+// help.js on the first tap, so it costs nothing on page load. Plans, invites and chats included.
 // A fresh page starts at the top. Some browsers carry the last page's scroll offset across a page-to-page fade
 // (cross-document view transition), so a profile opened from far down the feed landed mid-page. Back/forward, reloads
 // and #links keep their own position, and a reader who has already touched the page is never moved.
@@ -13,7 +14,6 @@
   const top = () => { if (!touched && (window.scrollY || document.documentElement.scrollTop) > 0) window.scrollTo(0, 0); };
   top(); addEventListener("pagereveal", top, { once: true }); document.addEventListener("DOMContentLoaded", top, { once: true });
   addEventListener("pageshow", (e) => { if (!e.persisted) { top(); setTimeout(top, 60); } }, { once: true }); } catch {} })();
-(function () { try { if (window.__encoreHelpLoad || !(/(?:^|;\s*)encore_in=1/.test(document.cookie) || location.pathname === "/plans") || location.pathname === "/g" || /^\/chats(\/|$)/.test(location.pathname)) return; window.__encoreHelpLoad = 1; const s = document.createElement("script"); s.src = "/help.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // Chats in the nav: the unread badge and the Me sheet (public/chatnav.js)
 (function () { try { if (window.__plChatNavLoad) return; window.__plChatNavLoad = 1; const s = document.createElement("script"); s.src = "/chatnav.js"; s.defer = true; (document.head || document.documentElement).appendChild(s); } catch {} })();
 // The Inbox and Ask Potto (public/potto.js): the bell opens /inbox, the badge, the Potto sheet; signed in only
@@ -107,8 +107,8 @@ body.es-has-tabs{padding-bottom:84px}body.es-has-tabs header nav > a,body.es-has
         : host ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/?app=1", ICON.home, "Home") + item("/contacts", ICON.people, "Guests") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/?app=1&new=1#studio", ICON.plus, "New event") + item("/plans", ICON.cal, "Plans") + item("/library", ICON.heart, "Library") + item(W?.handle ? "/@" + W.handle : "/?app=1", ICON.me, "My page")
         : signed ? item("/feed", ICON.globe, "Feed", alerts ? `<span class="es-n">${alerts > 99 ? "99+" : alerts}</span>` : "") + item("/discover", ICON.search, "Discover") + chatsItem + item("/ideas", ICON.spark, "Ideas") + item("/plans", ICON.cal, "Plans") + item("/library", ICON.heart, "Library")
         : (BRAND ? "" : item("/feed", ICON.globe, "Feed")) + item("/discover", ICON.search, "Discover") + (BRAND ? "" : item("/ideas", ICON.spark, "Ideas") + (guestChats ? chatsItem : "")) + item("/hosts", ICON.people, "Hosts") + (BRAND ? "" : item("/about", ICON.about, "About")) + (BRAND ? item("/gifts", ICON.gift, "Gifts") : "") + (isG ? "" : item("/hosts/book", ICON.brief, "For brands")) + item("/login", ICON.login, "Sign in") + (BRAND ? "" : item("/signup?mode=friends", ICON.plus, "Start your page"))) +
-      (signed ? `<a href="#" class="es-out">Sign out</a><a href="/settings" class="es-out es-set" style="margin-top:0">Settings</a><a href="#" class="es-out es-set" style="margin-top:0" data-help-open>Help</a>` : ""); // app store: Settings (notifications, blocked, delete account)
-    setTimeout(() => { const o = rail.querySelector(".es-out"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
+      (signed ? `<a href="#" class="es-out">Sign out</a><a href="/settings" class="es-out es-set" style="margin-top:0">Settings</a><a href="#" class="es-out es-set" style="margin-top:0" data-help-open>Help</a>` : `<a href="/help" class="es-out es-set" data-help>Help</a>`); // app store: Settings (notifications, blocked, delete account)
+    setTimeout(() => { const o = rail.querySelector(".es-out:not(.es-set)"); if (o) o.onclick = async (ev) => { ev.preventDefault(); try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch {} location.href = "/"; }; }, 0);
     if (!TABS_ONLY) { document.body.prepend(rail); document.body.classList.add("es-has-rail"); }
     // phones: a bottom tab bar with a big + in the middle (event pages keep their own sticky RSVP bar instead)
     if (!isG) { const tabs = document.createElement("nav"); tabs.className = "es-tabs"; tabs.setAttribute("aria-label", "Pottery Lab");

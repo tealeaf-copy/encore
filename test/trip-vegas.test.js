@@ -264,6 +264,9 @@ test("browser at 390: the feeler on the light invite, then the trip page for the
     assert.match(await page.locator(".tr-done").innerText(), /You're keen/);
     const small = await page.$$eval("button, a.tr-b", (L) => L.filter((b) => b.offsetParent && b.closest(".tr")).map((b) => b.getBoundingClientRect().height).filter((h) => h < 44)); assert.deepEqual(small, [], "44px tap targets");
     await page.reload(); await page.waitForSelector("[data-fedit]", { timeout: 10000 }); // the answer is remembered on this phone
+    await page.waitForLoadState("networkidle"); await page.waitForTimeout(800);
+    assert.equal(await page.locator(".pl-planhook").count(), 0, "no empty Where we're staying block under a feeler");
+    assert.ok(!/To come/.test(await page.locator("body").innerText()));
     // the organiser's trip page
     const [k, ...v] = maya.cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: srv.base }]);
     await page.goto(`${srv.base}/plans/${id}`); await page.waitForSelector("#stay", { timeout: 15000 });

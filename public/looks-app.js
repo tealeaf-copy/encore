@@ -91,7 +91,7 @@ html body.lk-on.lk-dark #view-guest .hh-av{background:var(--lk-raised)!important
     if (!document.getElementById("lk-gcss")) { const s = document.createElement("style"); s.id = "lk-gcss"; s.textContent = GCSS; document.head.appendChild(s); }
     const sig = e.id + JSON.stringify(L); if (sig !== gSig) { gSig = sig; LK.apply(document.body, e); }
     LK.decorate(host, e);
-    const inn = host.querySelector(".invite.gx .in"), h3 = inn?.querySelector("h3"); if (h3 && !h3.classList.contains("lk-title")) h3.classList.add("lk-title");
+    const inn = host.querySelector(".invite.gx .in"), h3 = inn?.querySelector("h3"); if (h3 && !h3.classList.contains("lk-title")) h3.classList.add("lk-title"); if (h3 && location.pathname === "/g" && !h3.hasAttribute("aria-level")) { h3.setAttribute("role", "heading"); h3.setAttribute("aria-level", "1"); } /* the invite page has one top heading for screen readers */
     // the update callout, above the title
     if (inn && L.update?.text && !inn.querySelector(".lk-update")) { const w = document.createElement("div"); w.innerHTML = LK.updateHTML(e); (h3 || inn.firstChild) && inn.insertBefore(w.firstElementChild, inn.querySelector(".eyebrow") || h3); }
     // a poster flyer: whole, with its size reserved

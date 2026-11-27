@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script src="/authguard.js"></script>
+<script src="/authguard.js"></script><script src="/place.js"></script>
 <title>Events · Pottery Lab</title>
 <meta name="description" content="Supper clubs, run clubs, workshops and pop-ups that hosts made public, coming up and from their scrapbooks. With what guests said.">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   <div class="ls-filters" role="group" aria-label="Filter events">
     <button type="button" class="ls-chip" data-s="upcoming" aria-pressed="true">Coming up</button><button type="button" class="ls-chip" data-s="past" aria-pressed="false">Past</button><button type="button" class="ls-chip" data-s="all" aria-pressed="false">All</button>
     <span class="ls-sep" aria-hidden="true"></span>
-    <label class="sr" for="city">City</label><select class="ls-chip" id="city"><option value="">Anywhere</option></select>
+    <button type="button" class="ls-chip" id="city" aria-haspopup="dialog" aria-label="City: Anywhere. Change city"><span id="cityName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <label class="sr" for="format">Kind of event</label><select class="ls-chip" id="format"><option value="">Any kind</option></select>
     <button type="button" class="ls-chip" id="spk" aria-pressed="false">Talks</button>
   </div>
@@ -90,7 +90,7 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     { const seen = new Set(); $("#grid").innerHTML = shown.length ? shown.map((e) => card(e, seen)).join("") : ""; }
     $("#count").textContent = j.total ? `${j.total} event${j.total === 1 ? "" : "s"}` : "";
     if (!j.total) { const up = st.status === "upcoming"; $("#grid").innerHTML = `<div class="ls-empty">${window.Potto ? `<span class="ls-potto" aria-hidden="true">${Potto.svg("think", 64, "")}</span>` : ""}<b>${up ? "Nothing coming up here yet." : "No events match that."}</b><p>${up ? "See what hosts have done before, or look in another city." : "Try fewer words, or another city or kind of event."}</p><button type="button" class="ls-btn" id="emptyGo">${up ? "See past events" : "Clear filters"}</button></div>`;
-      $("#emptyGo").onclick = () => { if (up) { st.status = "all"; } else { st.q = ""; st.city = ""; st.format = ""; st.type = ""; $("#q").value = ""; $("#city").value = ""; $("#format").value = ""; } paint(); load(); }; }
+      $("#emptyGo").onclick = () => { if (up) { st.status = "all"; } else { st.q = ""; st.city = ""; st.format = ""; st.type = ""; $("#q").value = ""; $("#format").value = ""; } paint(); load(); }; }
     $("#more").hidden = !cursor;
     history.replaceState(null, "", location.pathname + (qs() && qs() !== "status=upcoming" ? "?" + qs() : ""));
   }
@@ -98,7 +98,9 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
     const j = await (await fetch("/api/v1/formats?status=all")).json().catch(() => null); if (!j) return;
     const opt = (v, t, sel) => `<option value="${esc(v)}"${v === sel ? " selected" : ""}>${esc(t)}</option>`;
     const C = j.cities.map((c) => c.city); if (st.city && !C.includes(st.city)) C.unshift(st.city);
-    $("#city").innerHTML = opt("", "Anywhere", st.city) + C.map((c) => opt(c, c, st.city)).join("");
+    // one city picker (public/place.js): a bottom sheet on phones, a popover on desktop; a pick applies at once
+    const CS = j.cities.map((c) => ({ city: c.city, n: c.count || c.n || 0 }));
+    $("#city").onclick = () => { const PL = window.EncorePlace; if (!PL?.sheet) return; PL.sheet({ anchor: $("#city"), current: st.city, cities: CS.slice(0, 10), title: "Events where?", onPick: (c) => { st.city = (c && (C.find((x) => x.toLowerCase() === c.toLowerCase()) || C.find((x) => PL.near(x, c, 30)))) || c; paint(); load(); } }); };
     const F = j.formats.map((f) => f.format).filter((f) => f !== "other"); if (st.format && !F.includes(st.format)) F.unshift(st.format);
     $("#format").innerHTML = opt("", "Any kind", st.format) + F.map((f) => opt(f, label(f), st.format)).join("");
   }
@@ -115,10 +117,9 @@ dialog::backdrop{background:rgba(31,26,23,.45)}
   }
   $("#q").value = st.q;
   // the filter row: the active choice is filled, a picked city or kind too
-  const paint = () => { document.querySelectorAll("[data-s]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.s === st.status))); $("#spk").setAttribute("aria-pressed", String(st.type === "speaking")); $("#city").classList.toggle("on", !!st.city); $("#format").classList.toggle("on", !!st.format); };
+  const paint = () => { document.querySelectorAll("[data-s]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.s === st.status))); $("#spk").setAttribute("aria-pressed", String(st.type === "speaking")); $("#city").classList.toggle("on", !!st.city); $("#cityName").textContent = st.city || "Anywhere"; $("#city").setAttribute("aria-label", `City: ${st.city || "Anywhere"}. Change city`); $("#format").classList.toggle("on", !!st.format); };
   document.querySelectorAll("[data-s]").forEach((b) => { b.onclick = () => { st.status = b.dataset.s; paint(); load(); }; });
   let t; $("#q").oninput = () => { clearTimeout(t); t = setTimeout(() => { st.q = $("#q").value.trim(); load(); }, 250); };
-  $("#city").onchange = () => { st.city = $("#city").value; paint(); load(); };
   $("#format").onchange = () => { st.format = $("#format").value; paint(); load(); };
   $("#more").onclick = () => load(true);
   $("#spk").onclick = () => { st.type = st.type === "speaking" ? "" : "speaking"; if (st.type && st.status === "upcoming") st.status = "all"; paint(); load(); };

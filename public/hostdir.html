@@ -46,7 +46,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
   <section class="ls-head"><div><h1>Find a host</h1>
     <p class="ls-what">Bakers, potters, run crews and cooks who host small events. Follow one to hear when they post the next.</p></div></section>
-  <div class="bar"><input class="ls-search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="ls-filters" role="group" aria-label="Filter hosts"><label class="sr" for="city">City</label><select class="ls-chip" id="city"><option value="">Anywhere</option></select><span class="ls-sep" aria-hidden="true"></span><span id="kinds" style="display:contents"></span></div></div>
+  <div class="bar"><input class="ls-search" id="q" type="search" placeholder="Try “pottery for 20” or a city" aria-label="Search hosts by what they host or where"><div class="ls-filters" role="group" aria-label="Filter hosts"><button type="button" class="ls-chip" id="city" aria-haspopup="dialog" aria-label="City: Anywhere. Change city"><span id="cityName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button><span class="ls-sep" aria-hidden="true"></span><span id="kinds" style="display:contents"></span></div></div>
   <section class="tops" id="tops" hidden aria-labelledby="topsT"></section>
   <p class="ls-count" id="count" style="margin:0 0 16px">Loading hosts…</p>
   <div class="grid" id="grid" style="min-height:40vh"></div>
@@ -67,6 +67,8 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   const sync = () => { const P = new URLSearchParams(); if (kind !== "all") P.set("type", kind); if (city) P.set("city", city); if (q) P.set("q", q); history.replaceState(null, "", "/hosts" + (P.toString() ? "?" + P : "")); };
   const groupsOf = (h) => { const words = { title: [h.name, h.tagline, (h.tags || []).join(" "), (h.experiences || []).map((x) => x.name).join(" ")].join(" "), why: h.bio || "" }; const K = window.EventArt ? window.EventArt.kindsOf(words) : []; return new Set(K.map((k) => GROUP[k]).filter(Boolean)); };
   const cityOf = (h) => String(h.city || "").trim();
+  const drawCity = () => { const b = $("#city"); if (!b) return; $("#cityName").textContent = city || "Anywhere"; b.classList.toggle("on", !!city); b.setAttribute("aria-label", `City: ${city || "Anywhere"}. Change city`); };
+  const inCity = (h) => !city || cityOf(h) === city || (!!window.EncorePlace && !!cityOf(h) && window.EncorePlace.near(cityOf(h), city, 30));
   const nearMe = (h) => { if (!mine) return false; const c = cityOf(h); if (!c) return false; return window.EncorePlace ? window.EncorePlace.near(c, mine) : c.toLowerCase() === mine.toLowerCase(); };
   // complete profiles first: people browsing want to see who a host is before they follow
   const done = (h) => (h.tagline || h.bio ? 2 : 0) + ((h.theme && (h.theme.avatarArt || h.theme.avatarUrl)) || (h.gallery || []).length ? 2 : 0) + ((h.tags || []).length ? 1 : 0) + ((h.experiences || []).length ? 1 : 0) + (cityOf(h) ? 1 : 0);
@@ -94,7 +96,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
       <ol>${B.entries.slice(0, 5).map((e) => `<li><span class="rk" aria-label="Number ${e.rank}">${e.rank}</span><span class="ta" aria-hidden="true">${ta(e.host)}</span><span><a href="/@${encodeURIComponent(e.host.handle)}">${esc(e.host.name)}</a><small>${esc(e.why)}</small></span></li>`).join("")}</ol>`;
     box.hidden = false; }
   function draw() { sync(); drawTop();
-    const pass = (h) => (kind === "all" || h._g.has(kind)) && (!city || cityOf(h) === city), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
+    const pass = (h) => (kind === "all" || h._g.has(kind)) && inCity(h), hay = (h) => `${h.name} ${h.tagline || ""} ${h.bio || ""} ${(h.tags || []).join(" ")} ${h.city || ""} ${h.hood || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}`.toLowerCase();
     const smart = ai && ai.q === q && ai.matches.length ? ai.matches.map((m) => { const h = H.find((x) => x.handle === m.handle); return h && pass(h) ? { ...h, _why: m.why } : null; }).filter(Boolean) : null;
     // typed words: a host matches if it mentions any of them, most mentions first (the smart results replace this a moment later)
     const tw = q.split(/\s+/).filter((w) => w.length > 2), kw = (h) => tw.filter((w) => hay(h).includes(w)).length;
@@ -107,7 +109,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
     $("#count").innerHTML = smart && smart.length ? `Best matches for “${esc(q)}”` : L.length ? `${L.length} ${L.length === 1 ? "host" : "hosts"}${local.length ? ` · near ${esc(mine)} first` : ""}${aiBusy ? ` <span class="thinking">· finding the best fits…</span>` : ""}` : aiBusy ? `<span class="thinking">Finding the best fits…</span>` : "";
     const V = L.slice(0, shown);
     $("#grid").innerHTML = V.length ? V.map(cardOf).join("") : `<div class="ls-empty"><b>No hosts match that yet.</b><p>Try another word or city, or look through every host.</p><button type="button" class="ls-btn primary" id="allH">Show every host</button></div>`;
-    { const a = $("#allH"); if (a) a.onclick = () => { q = ""; city = ""; kind = "all"; $("#q").value = ""; $("#city").value = ""; $("#city").classList.remove("on"); document.querySelectorAll("#kinds [data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === "all"))); shown = FIRST; draw(); }; }
+    { const a = $("#allH"); if (a) a.onclick = () => { q = ""; city = ""; kind = "all"; $("#q").value = ""; drawCity(); document.querySelectorAll("#kinds [data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === "all"))); shown = FIRST; draw(); }; }
     const m = $("#more"), left = L.length - V.length;
     m.hidden = left <= 0; if (left > 0) m.textContent = `Show ${Math.min(STEP, left)} more`;
   }
@@ -127,10 +129,10 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
       .sort((a, b) => (!!a.sample - !!b.sample) || done(b) - done(a) || (b.upcoming || 0) - (a.upcoming || 0) || (b.followers || 0) - (a.followers || 0) || String(a.name).localeCompare(b.name));
     chips($("#kinds"), KINDS.filter(([k]) => k === "all" || H.some((h) => h._g.has(k))), kind, (v) => (kind = v));
     const C = {}; for (const h of H) { const c = cityOf(h); if (c) C[c] = (C[c] || 0) + 1; }
-    const sel = $("#city"), cities = Object.entries(C).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c]) => c);
-    if (city && !cities.includes(city)) cities.unshift(city);
-    sel.innerHTML = `<option value="">Anywhere</option>` + cities.map((c) => `<option value="${esc(c)}"${c === city ? " selected" : ""}>${esc(c)}</option>`).join("");
-    sel.onchange = () => { city = sel.value; sel.classList.toggle("on", !!city); shown = FIRST; draw(); }; sel.classList.toggle("on", !!city);
+    const cities = Object.entries(C).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([c, n]) => ({ city: c, n }));
+    // one city picker (public/place.js): a bottom sheet on phones, a popover on desktop; a pick applies at once
+    $("#city").onclick = () => { const P = window.EncorePlace; if (!P?.sheet) return; P.sheet({ anchor: $("#city"), current: city, cities: cities.slice(0, 10), title: "Hosts where?", listLabel: "Where hosts are", onPick: (c) => { city = c; shown = FIRST; drawCity(); draw(); } }); };
+    drawCity();
     draw(); if (q) askAI();
   }).catch(() => { $("#count").textContent = ""; $("#grid").innerHTML = `<div class="ls-empty"><b>Couldn't load hosts.</b><p>Check your connection, then refresh the page.</p></div>`; });
 })();

@@ -12,10 +12,6 @@
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .intro{padding:14px 0 10px}.intro h1{font-size:var(--fs-28-40,28px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:16px}
 .fbar{margin-bottom:8px}.fbar .loc{gap:6px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;box-shadow:none!important;color:var(--ink)!important;padding:0 14px!important}
-.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line);border-radius:6px}
-.locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
-.locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
-.locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:14px;color:var(--soft)}.locp .note:empty{display:none}
 section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 4px}section .lede{color:var(--soft);margin:0 0 16px;font-size:14px}
 #events,#fyList{margin-top:16px}.ls-grid .why{display:block;color:var(--smoke,#665A51)!important;font-size:13px}
 .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
@@ -81,16 +77,10 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   <div class="intro"><h1 id="introH">Small events, big welcome</h1><p id="introP">Run clubs, supper clubs and bakes on a stoop, hosted by people near you. Tap one to see it and say you're in.</p></div>
 
   <div class="fbar ls-filters" role="group" aria-label="Where and what">
-    <button type="button" class="loc ls-chip" id="locBtn" aria-label="Change city" aria-expanded="false" aria-controls="locPanel"><i class="gl" style="--g:var(--g-pin)" aria-hidden="true"></i> <span id="locName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
+    <button type="button" class="loc ls-chip" id="locBtn" aria-label="Change city" aria-haspopup="dialog"><i class="gl" style="--g:var(--g-pin)" aria-hidden="true"></i> <span id="locName">Anywhere</span> <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <span class="ls-sep" aria-hidden="true"></span>
     <span id="filters" style="display:contents"></span>
   </div>
-  <form class="locp" id="locPanel" hidden>
-    <label for="locIn">Your city</label>
-    <input id="locIn" name="c" list="locCities" placeholder="Type a city" autocomplete="off" data-1p-ignore data-lpignore="true"><datalist id="locCities"></datalist>
-    <button type="submit" class="go">Show events</button><button type="button" id="locGps">Use my location</button><button type="button" id="locAny">Anywhere</button>
-    <p class="note" id="locNote" aria-live="polite"></p>
-  </form>
 
   <section id="forYou" hidden><h2 id="fyH">Picked for you</h2><p class="lede" id="fyL"></p><div class="ls-grid" id="fyList"></div></section>
 
@@ -143,17 +133,13 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
       <div class="ls-acts"><a class="ls-btn primary" href="${url}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${save}${H.handle ? `<a class="ls-mi" href="/@${encodeURIComponent(H.handle)}">More from ${esc(H.name || "this host")}</a>` : ""}</div></details></div></div></article>`; };
 
   // ---- one location chip: tap to set your city ----
-  if (P) $("#locCities").innerHTML = P.CITIES.map((c) => `<option value="${esc(c[0])}">`).join("");
-  const drawLoc = () => { $("#locName").textContent = city || "Anywhere"; const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && (!data.events.length || data.events.some(near)) ? "Small events near you" : "Small events, big welcome"; };
-  const openLoc = (open) => { $("#locPanel").hidden = !open; $("#locBtn").setAttribute("aria-expanded", String(open)); if (open) { $("#locIn").value = city; $("#locNote").textContent = ""; $("#locIn").focus(); } };
-  const setCity = (c, source) => { city = String(c || "").trim(); try { if (P) { if (source === "gps") { /* place.js already saved it */ } else P.setManual(city); } else localStorage.setItem("encore.city", city); } catch {} evShown = PAGE; farOpen = false; drawLoc(); drawAll(); };
-  $("#locBtn").onclick = () => openLoc($("#locPanel").hidden);
-  $("#locPanel").onsubmit = (e) => { e.preventDefault(); const v = $("#locIn").value.trim(); const c = (P && P.find(v)?.[0]) || v; setCity(c); openLoc(false); $("#locBtn").focus(); };
-  $("#locAny").onclick = () => { setCity(""); openLoc(false); $("#locBtn").focus(); };
-  $("#locGps").onclick = async () => { if (!P) return; const b = $("#locGps"), note = $("#locNote"); if (b.disabled) return; b.disabled = true; b.textContent = "Finding you…"; note.textContent = ""; const r = await (P.useGps ? P.useGps() : P.resolve({ prompt: true }).then((p) => (p.city ? { ok: true, city: p.city } : { ok: false, message: "Your phone couldn't find a location right now." }))); b.disabled = false; b.textContent = "Use my location";
-    if (!r.ok) { note.innerHTML = esc(r.message) + (r.closest && r.closest.length ? " " + r.closest.map((c) => `<button type="button" class="ls-chip" data-near="${esc(c)}">${esc(c)}</button>`).join(" ") : ""); note.querySelectorAll("[data-near]").forEach((x) => (x.onclick = () => { setCity(x.dataset.near); openLoc(false); $("#locBtn").focus(); })); return; }
-    setCity(r.city, "gps"); openLoc(false); $("#locBtn").focus(); };
-  $("#locPanel").onkeydown = (e) => { if (e.key === "Escape") { openLoc(false); $("#locBtn").focus(); } };
+  // one city picker (public/place.js): a bottom sheet on phones, a popover on desktop; a pick applies at once
+  const label = () => { if (!city) return "Anywhere"; const p = P?.get?.(); return p && p.city === city && P.label ? P.label(p) : city; };
+  const drawLoc = () => { $("#locName").textContent = label(); $("#locBtn").setAttribute("aria-label", `Showing ${label()}. Change city`); const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && (!data.events.length || data.events.some(near)) ? "Small events near you" : "Small events, big welcome"; };
+  const setCity = (c, source) => { city = String(c || "").trim(); try { if (P) { if (source === "gps" || source === "manual") { /* place.js already saved it */ } else P.setManual(city); } else localStorage.setItem("encore.city", city); } catch {} evShown = PAGE; farOpen = false; drawLoc(); drawAll(); };
+  // the cities in the sheet: where the events on this page are, busiest first
+  const evCities = () => { const n = new Map(); for (const e of data.events || []) { const c = String(e.city || "").trim(); if (!c) continue; const k = c.toLowerCase(); n.set(k, { city: c, n: (n.get(k)?.n || 0) + 1 }); } return [...n.values()].sort((a, b) => b.n - a.n).slice(0, 10); };
+  $("#locBtn").onclick = () => { if (!P?.sheet) return; P.sheet({ anchor: $("#locBtn"), current: city, cities: () => { const L = evCities(); return L.length ? L : undefined; }, onPick: (c, source) => setCity(c, source) }); };
   drawLoc();
 
   // ---- what kind of thing: one row of chips ----
@@ -253,7 +239,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   drawFilters();
 
   // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)
-  (async () => { if (city) return; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
+  (async () => { if (city) return; try { if (localStorage.getItem("encore.city") !== null) return; } catch {} try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && !city) { setCity(W.city); return; } } catch {}
     try { if (P && !city) { const p = await P.resolve({ prompt: false }); if (p && p.city && !city) { city = p.city; drawLoc(); drawAll(); } } } catch {} })();
   (async () => { try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified) { SIGNED = true; $("#hostCard")?.remove();
     try { const st = await (await fetch("/api/host/discover-status", { credentials: "same-origin" })).json(); if (st && Array.isArray(st.gaps) && Array.isArray(st.waiting)) { MINE = { gaps: st.gaps, waiting: st.waiting, handle: String(st.handle || "") }; } } catch {} if (LOADED) drawEvents(); } } catch {} })();

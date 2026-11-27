@@ -101,6 +101,7 @@ import { mountDelightAfter } from "./delightafter.js"; // during and after the e
 import { mountSuggest } from "./suggest.js"; // Potto's autocomplete: ideas and places as you type (server/suggest.js, public/autocomplete.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
+import { mountPageLayout } from "./pagelayout.js"; // [arrange hook] the host page's own order, styles and blocks (server/pagelayout.js)
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
 import { typeOf, typeLabel } from "./eventtypes.js"; // the type tag (Pop-up, Pickup, House party, ...) on the invite and in link previews
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
@@ -615,6 +616,7 @@ export function createApp({ store, dataDir }) {
         html = html.replace("<title>Host · Pottery Lab</title>", `<title>${e(h.name)} · Pottery Lab</title><meta name="description" content="${e(desc + shop)}"><meta property="og:title" content="${e(h.name)}"><meta property="og:description" content="${e(desc + shop)}"><meta property="og:type" content="profile"><meta property="og:url" content="${e(originOf(req))}/@${e(h.handle)}">${pageImg ? `<meta property="og:image" content="${e(originOf(req) + pageImg)}">` : ""}<meta name="twitter:card" content="${h.theme?.coverUrl ? "summary_large_image" : "summary"}">`); }
       if (h && !ws && !h.example) html = html.replace("</head><body>", `<style>.pv-note{margin:0;padding:10px 16px;background:#F2D48F;color:#1F1A17;font:600 14px/1.3 "IBM Plex Sans",system-ui,sans-serif;text-align:center}</style></head><body><p class="pv-note" role="note" data-preview>${PREVIEW_LABEL}</p>`);
       else if (!h) { res.status(404); html = html.replace("<title>Host · Pottery Lab</title>", `<title>No host by that name · Pottery Lab</title><meta name="robots" content="noindex">`); }
+      if (ws) html = PAGE_LAYOUT.inject(html, ws); // [arrange hook] the host's live layout, in the first paint (server/pagelayout.js)
       sendText(req, res, html); } catch { res.status(404).send("<p>Host page missing.</p>"); } });
   // the old measurement-method page described the event-team product; off while the site is about hosts
   app.get("/method", (req, res) => res.redirect(302, "/about"));
@@ -804,6 +806,7 @@ export function createApp({ store, dataDir }) {
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
   mountFanclub(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // before community: it reads the host page answer and guards follow and pledge
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
+  const PAGE_LAYOUT = mountPageLayout(app, { store, C, X, currentUser, assetsDir }); // [arrange hook] owner-only layout API; the live layout goes into /@handle
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
   const RD /* the host's reply summary */ = makeReplyDigest({ store, X, mail: (...a) => mailWs(...a), inboxPrefs: (email) => inboxPrefsOf(store, email) });

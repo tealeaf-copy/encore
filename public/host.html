@@ -125,6 +125,8 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
 <script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
+<!-- [arrange hook] the host's page layout: the shared rules, then the page side (public/arrange-core.js, public/arrange.js) -->
+<script src="/arrange-core.js"></script><script src="/arrange.js"></script>
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -185,6 +187,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
       ${tastes.length && !(h.experiences || []).length ? `<p style="margin:4px 0 0;font-size:14px;font-weight:600">What are you into?</p><div class="chips" aria-label="What you're into">${tastes.map((t) => `<label><input type="checkbox" name="t" value="${esc(t)}"><span>${esc(t)}</span></label>`).join("")}</div>` : ""}
       <button class="btn" type="submit">Follow</button><small class="muted" id="ferr" role="alert"></small></form>`}</div>
       </aside></div>`;
+  window.PLArrange?.mount(h, d, isOwner); // [arrange hook] the host's own order, styles and blocks, in this same frame (public/arrange.js)
   window.EncoreClub?.mount(h, d); // the fan club card at #club (public/fanclub.js): join or leave for a guest, start and members for the host
   window.EncoreMembership?.mount(h, d); // paid memberships at #membership (public/memberships.js): Become a member, You're a member, the host's setup and members
   // one "Support" card for every way to chip in: tips, a pledge, the support links and the wishlist

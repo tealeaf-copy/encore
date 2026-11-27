@@ -25,7 +25,8 @@ test("pages sent straight from a route (brand, admin) get the app head: the page
 
 test("the light invite opts in to the page fade too, and stays under 40,000 characters", async () => {
   await fetch(srv.base + "/api/db/doc?path=events/qaInv", { method: "PUT", headers: { ...J, cookie: host }, body: JSON.stringify({ name: "Dumpling night", date: "2031-05-02", startTime: "19:00", published: true, city: "Brooklyn" }) });
-  const h = await (await fetch(srv.base + "/e/qaInv")).text(); assert.match(h, /\(prefers-reduced-motion:no-preference\)\{@view-transition\{navigation:auto\}\}/); assert.ok(h.length < 40000, String(h.length));
+  const h = await (await fetch(srv.base + "/e/qaInv")).text(); assert.match(h, /<link rel="stylesheet" href="\/invite\.css[^"]*">/); assert.ok(h.length < 40000, String(h.length));
+  assert.match(read("public/invite.css"), /@media \(prefers-reduced-motion:no-preference\)\{@view-transition\{navigation:auto\}\}/, "the opt-in rides in the invite's stylesheet, ahead of the first paint");
   assert.ok(read("public/invite.html").length < 40000);
 });
 
@@ -61,7 +62,7 @@ test("feed card headers: the report button's hit area stays around the button, n
 test("the full invite: Open in app opens the event in the app, and a reply made on another phone changes with its code", () => {
   const h = read("index.html"); assert.doesNotMatch(h, /onclick="try\{localStorage\.setItem\('encore-open',\$\{JSON\.stringify\(JSON\.stringify/); assert.match(h, /href="\/\?app=1&open=\$\{encodeURIComponent\(id\)\}#studio">Manage/);
   assert.match(h, /if\(M\.rid&&M\.code\)\{[^}]*fetch\("\/api\/public\/reply\/"/);
-  assert.match(read("public/comewith.js"), /if \(tk && !onTk && now - at < 500\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); return; \}/, "the second tap of a double tap on Send doesn't reach the ticket");
+  assert.match(read("public/comewith.js"), /if \(tk && !onTk && now - at < 500 && Math\.hypot\(e\.clientX - x, e\.clientY - y\) < 40\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); return; \}/, "the second tap of a double tap on Send doesn't reach the ticket");
 });
 
 test("phone tap targets: brand links and text buttons, footers, the share sheet's dots, inbox rows reach 44px", () => {

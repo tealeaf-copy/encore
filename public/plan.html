@@ -74,6 +74,8 @@
 .it-msg{font:400 14px var(--pl-font-text);color:var(--pl-success)}.it-msg.bad{color:var(--pl-danger)}
 @media (min-width:640px){.it-row{grid-template-columns:150px 92px 150px 1fr}.it-row .wide{grid-column:auto}.it-row .sub{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){.pv-skel i{animation:none}}
+/* printed for the door or the front table: the title, the dates and the plan, on white, nothing else */
+@media print{body{background:#fff!important}.pc-btn,.pc-menu,.pv-acts,.fn-where,.it-wrap,.fn-check+.fn-note,nav,header,.es-rail,.es-tabs,#pottoDock,[class*="potto-dock"]{display:none!important}.pc{border:0!important}.pl-plan{max-width:none;padding:0}.fn-day{break-inside:avoid}.fn-next{border:1px solid #000;background:none;color:#000}}
 </style>
 </head><body>
 <div class="wrap"><main class="pl-plan" id="m" aria-live="polite" aria-busy="true"><div class="pv-skel" aria-label="Getting the plan"><i class="c"></i><i class="t"></i><i class="a"></i><i class="r"></i><i class="r"></i><i class="r"></i></div></main></div>
@@ -129,17 +131,19 @@
     const empty = !P.locked && !P.days.some((d) => d.items.length), w = when();
     m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
       + (P.status || w ? `<div class="pv-status">${P.status ? `<span class="pv-chipst">${esc(P.status)}</span>` : ""}${w ? `<span class="pv-when">${esc(w)}</span>` : ""}</div>` : "")
-      + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}</div>`
+      + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}${P.isHost && !empty ? `<button type="button" data-print>Print the plan</button>` : ""}</div>`
       + whereHtml()
       + `<h2 class="pv-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
       + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml()))
       + beforeHtml()
       + (P.editable ? editorHtml(empty) : "");
     m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
+    m.querySelector(".pv-acts [data-print]")?.addEventListener("click", () => window.print()); // the agenda for the door, on one sheet
     const more = m.querySelector(".pc-more"); if (more) more.onclick = (e) => { e.stopPropagation(); let mn = m.querySelector(".pc-menu"); if (mn) { mn.remove(); more.setAttribute("aria-expanded", "false"); return; }
       mn = document.createElement("div"); mn.className = "pc-menu"; mn.setAttribute("role", "menu");
-      mn.innerHTML = `<a role="menuitem" href="/e/${encodeURIComponent(P.id)}">Open the invite</a>${P.date ? `<a role="menuitem" href="${esc(window.PLAddCal?.ics(P) || "#")}">Add to calendar (.ics)</a>` : ""}<button type="button" role="menuitem" data-copy>Copy link</button>${P.isHost ? `<a role="menuitem" href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}`;
+      mn.innerHTML = `<a role="menuitem" href="/e/${encodeURIComponent(P.id)}">Open the invite</a>${P.date ? `<a role="menuitem" href="${esc(window.PLAddCal?.ics(P) || "#")}">Add to calendar (.ics)</a>` : ""}<button type="button" role="menuitem" data-copy>Copy link</button>${P.locked ? "" : `<button type="button" role="menuitem" data-print>Print the plan</button>`}${P.isHost ? `<a role="menuitem" href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}`;
       m.querySelector(".pc").style.position = "relative"; m.querySelector(".pc").appendChild(mn); more.setAttribute("aria-expanded", "true");
+      mn.querySelector("[data-print]")?.addEventListener("click", () => { mn.remove(); window.print(); });
       mn.querySelector("[data-copy]").onclick = async (ev) => { try { await navigator.clipboard.writeText(location.origin + "/e/" + P.id); ev.target.textContent = "Copied"; } catch {} }; };
     // ticking the packing list: the tick answers at once, a light haptic in the app, and it stays on this phone
     m.querySelectorAll("[data-pack]").forEach((c) => (c.onchange = () => { const L = [...m.querySelectorAll("[data-pack]")].filter((x) => x.checked).map((x) => x.nextElementSibling.textContent); ls.set("pl.pack." + P.id, L); if (c.checked && fx) { fx.ink(c); fx.haptic("light"); } }));

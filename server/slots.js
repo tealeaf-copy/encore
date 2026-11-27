@@ -42,15 +42,22 @@ const CONTACT = [/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, /\b(?:https?:\/\/|www
 export const scrubAsk = (v) => clean(v, 200).split(/\s*[,;|]\s*|\s+\/\s+/).map((c) => c.trim()).filter((c) => c && !CONTACT.some((re) => re.test(c)))
   .join(", ").replace(/\s+/g, " ").replace(/^[\s,;:.-]+|[\s,;:-]+$/g, "").trim().slice(0, 60).replace(/[\s,;:-]+$/, "");
 
+/** A fair shuffle (Fisher-Yates) for "Shuffle seeds". */
+export function shuffled(L, rnd = Math.random) { const a = L.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 /** Seed positions for a bracket of `size`: top seeds meet the lowest (and get the byes). Pure. */
 export function seedOrder(size) { let o = [1, 2]; while (o.length < size) { const n = o.length * 2 + 1; o = o.flatMap((x) => [x, n - x]); } return o; }
 /** The rounds of a bracket from its entrants (null is a bye) and the winners entered so far. Pure. */
+// A slot holds a player, null (a bye: nobody will ever be there) or undefined (waiting on the match before it). Only a
+// real bye moves a player on by itself; someone facing a match that hasn't been played waits for it (review 17: an
+// unplayed first round used to send the top seed straight to the final).
 export function bracketRounds(entrants, winners = {}) {
-  const R = []; let cur = entrants.slice();
-  for (let r = 0; cur.length > 1; r++) { const round = [];
-    for (let m = 0; m < cur.length / 2; m++) { const a = cur[2 * m] ?? null, b = cur[2 * m + 1] ?? null, w0 = winners[`${r}-${m}`];
-      const w = a && !b ? a : b && !a ? b : w0 && (w0 === a || w0 === b) ? w0 : null; round.push({ a, b, w, bye: !!(a && !b) || !!(b && !a) }); }
-    R.push(round); cur = round.map((x) => x.w); }
+  const R = []; let cur = entrants.map((x) => x ?? null);
+  for (let r = 0; cur.length > 1; r++) { const round = [], next = [];
+    for (let m = 0; m < cur.length / 2; m++) { const a = cur[2 * m], b = cur[2 * m + 1], w0 = winners[`${r}-${m}`], known = a !== undefined && b !== undefined;
+      const w = !known ? null : a && !b ? a : b && !a ? b : w0 && (w0 === a || w0 === b) ? w0 : null;
+      round.push({ a: a ?? null, b: b ?? null, w, bye: known && (!!(a && !b) || !!(b && !a)) });
+      next.push(w || (known && !a && !b ? null : undefined)); }
+    R.push(round); cur = next; }
   return R;
 }
 
@@ -116,8 +123,13 @@ export function mountSlots(app, { store, small, X, ownerOnly }) {
       S.update("events/" + id, { lineup: cfg, ...(note != null ? { firstTimerNote: note || "" } : {}) }); }
     else if (b.action === "reorder") { const want = (Array.isArray(b.order) ? b.order : []).map((r) => clean(r, 80)), D = L.demos || []; L.demos = [...want.map((r) => D.find((d) => d.rid === r)).filter(Boolean), ...D.filter((d) => !want.includes(d.rid))]; }
     else if (b.action === "remove") { const r = clean(b.rid, 80); L.demos = (L.demos || []).filter((d) => d.rid !== r); }
-    else if (b.action === "seed") { const B = lineupOf(ev); if (B?.kind !== "bracket") return bad(res, "There's no bracket on this one."); const live = goingNow(S, id), opt = (L.optin || []).filter((r) => live.has(r)).slice(0, B.size);
-      if (opt.length < 2) return bad(res, "Two guests need to opt in first."); let P = 2; while (P < opt.length) P *= 2; const order = seedOrder(P); L.entrants = order.map((s) => opt[s - 1] || null); L.winners = {}; L.champion = null; }
+    else if (b.action === "seed") { const B = lineupOf(ev); if (B?.kind !== "bracket") return bad(res, "There's no bracket on this one."); const live = goingNow(S, id), how = ["shuffle", "here"].includes(b.order) ? b.order : "optin";
+      // seeding helpers: in the order people opted in (the default), only who's checked in tonight, or shuffled
+      const here = how === "here" ? new Set(latestReplies(S, id).filter((x) => x.r.checkedInAt).map((x) => x.id)) : null;
+      let opt = (L.optin || []).filter((r) => live.has(r) && (!here || here.has(r)));
+      if (how === "shuffle") opt = shuffled(opt);
+      opt = opt.slice(0, B.size);
+      if (opt.length < 2) return bad(res, how === "here" ? "Check in two players who opted in first." : "Two guests need to opt in first."); let P = 2; while (P < opt.length) P *= 2; const order = seedOrder(P); L.entrants = order.map((s) => opt[s - 1] || null); L.winners = {}; L.champion = null; }
     else if (b.action === "winner") { const R = bracketRounds(L.entrants || [], L.winners || {}), r = Math.floor(+b.round), m = Math.floor(+b.match), x = R[r]?.[m], w = clean(b.rid, 80);
       if (!x || !x.a || !x.b || (w && w !== x.a && w !== x.b)) return bad(res, "That match isn't ready."); L.winners = { ...(L.winners || {}) }; if (w) L.winners[`${r}-${m}`] = w; else delete L.winners[`${r}-${m}`];
       // a changed winner clears what came after it

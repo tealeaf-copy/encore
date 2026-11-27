@@ -101,6 +101,33 @@ test("round 5, the invite planner: kinder words, a board that counts up as repli
   assert.match(read("public/contacts.html"), /<script src="\/fx\.js"><\/script>/);
 });
 
+test("round 6, game and hack nights: seeding helpers, a bracket that fills seat by seat, a champion stamp, who's first up", async () => {
+  const { shuffled, bracketRounds, seedOrder } = await import("../server/slots.js");
+  // six players in a bracket of 8: the top two seeds get byes, but wait for the first-round winners before the semis
+  const E = seedOrder(8).map((s) => ["A", "B", "C", "D", "E", "F"][s - 1] || null), R0 = bracketRounds(E, {});
+  assert.equal(R0[0][0].w, "A", "a real bye moves the top seed on"); assert.equal(R0[1][0].a, "A"); assert.equal(R0[1][0].b, null);
+  assert.equal(R0[1][0].w, null, "but A waits for D or E: an unplayed match isn't a bye"); assert.equal(R0[1][0].bye, false); assert.equal(R0[2][0].a, null, "nobody is in the final yet");
+  const R1 = bracketRounds(E, { "0-1": "D", "0-3": "C", "1-0": "A", "1-1": "B", "2-0": "B" }); assert.equal(R1[2][0].w, "B", "played out, it has a champion");
+  const L = ["a", "b", "c", "d", "e"], S = shuffled(L, () => 0.3); assert.deepEqual([...S].sort(), L, "a shuffle keeps everyone"); assert.deepEqual(L, ["a", "b", "c", "d", "e"], "and leaves the list alone");
+  const srv = read("server/slots.js");
+  assert.match(srv, /how = \["shuffle", "here"\]\.includes\(b\.order\) \? b\.order : "optin"/, "opt-in order stays the default");
+  assert.match(srv, /latestReplies\(S, id\)\.filter\(\(x\) => x\.r\.checkedInAt\)/, "Seed who's here uses check-ins");
+  const js = read("public/slots.js"), css = read("public/slots.css");
+  for (const t of ["Seed in opt-in order", "Shuffle seeds", "Seed who's here", "Top seeds get the byes."]) assert.ok(js.includes(t), t);
+  assert.match(js, /class="sl-seats" role="img" aria-label="\$\{Math\.min\(L\.optedIn, L\.size\)\} of \$\{L\.size\} seats taken"/);
+  assert.match(js, /<span class="sl-stamp">Champion<\/span>/); assert.match(js, /<span class="sl-first">First up<\/span>/);
+  assert.match(js, /btn\.textContent = path === "claim"/, "a tap says what's happening at once");
+  for (const sel of [".sl-card{", ".sl-in{", ".sl-btn{", ".sl-opt{", ".sl-m{", "\n.sl-panel{"]) { const i = css.indexOf(sel), rule = css.slice(i, css.indexOf("}", i)); assert.match(rule, /border-radius:6px/, sel.trim() + " has Field Notes corners"); }
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{\.sl-seat\.on\{transform:none\}\}/);
+  assert.ok(read("public/invite.html").length < 40000, "the invite stays under 40,000 characters");
+});
+
+test("round 6, summits: the plan prints for the door", () => {
+  const P = read("public/plan.html");
+  assert.match(P, /@media print\{body\{background:#fff!important\}\.pc-btn,\.pc-menu,\.pv-acts,\.fn-where,\.it-wrap/);
+  assert.match(P, /data-print>Print the plan<\/button>/); assert.match(P, /window\.print\(\)/);
+});
+
 test("the app's Home settles once: late cards wait under the quick-start panel and show together, the hint draws with the composer", () => {
   const spa = read("index.html");
   assert.match(spa, /#view-programs\.pl-settling>#qsPanel~\*\{visibility:hidden\}/, "hidden but laid out, so their arrival moves nothing on screen");

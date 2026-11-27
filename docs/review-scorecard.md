@@ -150,3 +150,33 @@ Screens: `review17/round-5/before` and `review17/round-5/after`. Driven as the w
 - **Thoughtful defaults for the host**: the editor folds away under "Edit the plan" once there's a plan, and an empty plan offers shapes to start from: "Weekend away", "Summit run of show" and "One evening", built from the event's own days and start time. Potto says the one true thing about it: "Start from a shape, then change what you like. I'll keep it in time order." (the server sorts by day and time).
 - **The invite planner** (public/invite-plan.js): someone who replied before but hasn't come yet reads "First time", not "Replied, never came". The capacity meter fills once a visit. The Status board counts up on the first look and, as replies arrive, a changed column counts on from what it was with an ink underline. Check in answers the tap at once (the button turns into a "Here" stamp, the count ticks, a green arrivals line fills, a haptic in the app), then saves; when everyone's in, the "All here" stamp lands and Potto says "Everyone's here. I'll stop counting." The thank-you button waits until someone's checked in.
 - **Planner fixes**: people added by email alone show their email instead of a blank name; the meter leads with who's in when nothing was sent yet ("8 in", not "0 invited").
+
+## Round 6
+
+Screens: `review17/round-6/before` and `review17/round-6/after`. Driven as the game night host (opt-ins, seeding, the bracket on the invite), a hack night guest (the demo queue) and the summit host (the agenda on paper), then every persona's main path again to check nothing else slipped.
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Engineer | 9 | 9 | 9 | 9 | 9 | Found and fixed a real bracket bug: an unplayed first-round match counted as a bye, so a top seed walked into the final. Taps on the invite's slots answer at once. Zero crawl problems at 390 and 1280. |
+| Product designer | 9 | 9 | 9 | 9 | 9 | The slot cards, fields and buttons on the invite now use the 6px corners; the bracket's seats are small drawn tokens; the champion gets a stamp. The report, the plan page and the check-in screens hold together as one magazine. |
+| Field marketer (brand) | 9 | 9 | 9 | 9 | 9 | Holds. |
+| Game or hack night host | 9 | 9 | 9 | 9 | 9 | Three ways to seed (opt-in order, shuffled, or only who's checked in), "Top seeds get the byes" said plainly, a bracket guests watch fill seat by seat, a Champion stamp, "First up" on the demo queue and how long the slots run. |
+| Weekend getaway host | 9 | 9 | 9 | 9 | 9 | Holds. |
+| Small summit host | 9 | 9 | 9 | 9 | 9 | "Print the plan" lays the agenda out on one clean sheet for the door: the title, the dates and each day, nothing else. With the run-of-show shape, Up next, name tags and the stamped check-in, the day feels looked after. |
+
+### Fixed in round 6
+
+- **Bracket rounds** (`bracketRounds` in server/slots.js): a slot is a player, a bye (nobody will be there) or waiting on the match before it. Only a real bye moves a player on; the semis show "TBD" until the first round is played, and the champion only exists once the final is.
+- **Seeding helpers**: the host's panel offers "Seed in opt-in order" (the default), "Shuffle seeds" (a fair shuffle) and "Seed who's here" (opt-ins who are checked in), with "Top seeds get the byes" under them. The seed action takes `order: "shuffle" | "here"`.
+- **The bracket on the invite** before it's seeded: a row of seats that fill as people opt in ("2 seats left"), drawn as tokens; after the final, a "Champion" stamp.
+- **The demo queue** says who's "First up" and "4 of 8 taken · 5 min each". Claiming a slot or opting in changes the button at once ("Saving", "Putting you in") and puts it back if the save fails.
+- **Slots on brand**: 6px corners on the slot cards, fields, options, bracket matches, the host panel and the series card; buttons are 6px, not pills.
+- **Summits**: "Print the plan" (for the host, and in the ... menu for anyone who can see the plan) prints the agenda on white with the buttons, map and editor left out.
+
+### Where it ended
+
+All fourteen personas are at 9 or higher on every score. The six that were at 8 on delight (engineer, designer, field marketer, game or hack night host, weekend getaway host, summit host) are at 9.
+
+Potto speaks in two places added this loop, as docs/potto-voice.md asks: the empty plan editor ("Start from a shape, then change what you like. I'll keep it in time order.") and check-in when everyone's arrived ("Everyone's here. I'll stop counting.").
+
+Left for later, none of them below 9: a real map tile behind the drawn area on the plan page (map.js loads MapLibre from a CDN, too heavy for a thumbnail); tracks or rooms on a summit agenda; the test world writes some past events straight into the store, so a host's studio asks `/api/signoff` about events the event index doesn't know and gets 404s (test data only, not a product path).

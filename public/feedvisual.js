@@ -292,6 +292,7 @@
     if (!linked) { linked = true; try { const q = new URLSearchParams(location.search), t = q.get("comments"); if (t) { q.delete("comments"); history.replaceState(history.state, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); openComments(t); } } catch {} }
     // kudos: the count moves at once, then takes the server's answer (count, names, line); a failed tap goes back and says why
     $$("[data-fb-kudos]", root).forEach((b) => (b.onclick = async () => { const t = b.dataset.fbKudos; if (b.dataset.busy) return;
+      if (Date.now() - (tapped.get(t) || 0) < 500) return; // a double tap is one kudos: on a fast connection the first had already landed, and the second took it back
       if (!SI) { location.href = "/login?next=" + encodeURIComponent(location.pathname); return; }
       tapped.set(t, Date.now());
       const was = { names: [], ...(SOC.get(t)?.kudos || { target: t, count: +(b.querySelector("[data-fb-kn]")?.textContent || 0) || 0, mine: b.getAttribute("aria-pressed") === "true" }) }, on = !was.mine, count = Math.max(0, (was.count || 0) + (on ? 1 : -1));
@@ -572,14 +573,14 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fb-host b{font:600 15px/1.25 var(--pl-font-text,"IBM Plex Sans",system-ui);color:var(--fb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fb-host small{font-size:13px;line-height:1.35;color:var(--fb-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-host:hover b{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .fb-ring{flex:none;display:grid;place-items:center;padding:2px;border-radius:50%;box-shadow:0 0 0 1.5px var(--ring)}.fb-ring .fv-av{border:0}
-.fb-follow-in{flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:1.5px solid var(--fb-line2);background:transparent;color:var(--fb-ink);font:600 13px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-follow-in:hover{border-color:var(--fb-ink)}.fb-follow-in.on,.fb-follow-in[disabled]{color:var(--fb-soft);border-color:var(--fb-line);cursor:default}
+.fb-follow-in{flex:none;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--fb-line2);background:transparent;color:var(--fb-ink);font:600 13px var(--pl-font-text,"IBM Plex Sans",system-ui);cursor:pointer}.fb-follow-in:hover{border-color:var(--fb-ink)}.fb-follow-in.on,.fb-follow-in[disabled]{color:var(--fb-soft);border-color:var(--fb-line);cursor:default}
 .fb-proof,.fb-by,.fb-count{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px;line-height:1.35;color:var(--fb-ink)}.fb-by{color:var(--fb-soft);margin:-4px 0 10px}.fb-by b{color:var(--fb-ink);font-weight:600}
 .fb-count{margin:14px 0 0;font-size:13px;color:var(--fb-soft)}.fb-count[hidden]{display:none}
 .fb-note>.sf-more{top:-6px;right:0;background:transparent;border-color:transparent}.fb-ini{font:600 11px/1 var(--pl-font-text,"IBM Plex Sans",system-ui)!important;color:var(--fb-ink)}
 .fb-stack{display:inline-flex;flex:none}.fb-stack .fv-av{width:24px!important;height:24px!important;font-size:12px!important;border:2px solid var(--fb-card,#fff);background:color-mix(in srgb,var(--c) 30%,var(--fb-card))}.fb-stack .fv-av+.fv-av{margin-left:-8px}.fb-count .fb-stack .fv-av{width:20px!important;height:20px!important}
 .fb-media{position:relative;display:block;aspect-ratio:16/10;border-radius:var(--r-md,16px);overflow:hidden;background:var(--fb-linen)}.fb-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.fb-media .ea-cover{position:absolute!important;inset:0;border-radius:0}
 .fb-title{margin:16px 0 6px;font:600 24px/1.15 var(--sys-display);letter-spacing:-.01em;color:var(--fb-ink);text-wrap:balance;overflow-wrap:anywhere}.fb-title.sm{font-size:20px;margin:4px 0 8px}
-.fb-title a{color:inherit;text-decoration:none}.fb-title a:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1.5px}
+.fb-title a{display:block;padding:6px 0;margin:-6px 0;color:inherit;text-decoration:none}.fb-title a:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1.5px}
 .fb-line{margin:0;font-size:15px;line-height:1.45;color:var(--fb-soft);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}.fb-ideas .fb-line{-webkit-line-clamp:3}
 .fb-meta{margin:8px 0 0;font:400 13px/1.5 var(--sys-mono,ui-monospace,monospace);letter-spacing:-.01em;color:var(--fb-soft);font-variant-numeric:tabular-nums}
 .fb-cta{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;margin-top:18px;border-radius:999px;background:var(--fb-acc);color:var(--fb-on-acc);font:600 16px var(--pl-font-text,"IBM Plex Sans",system-ui);text-decoration:none;box-sizing:border-box;transition:background .2s,transform .15s var(--fv-ease)}.fb-cta:hover{background:var(--fb-acc-press)}.fb-cta:active{transform:scale(.985)}

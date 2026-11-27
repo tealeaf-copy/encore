@@ -145,7 +145,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
   const earlyFor = (v, x) => { const fc = app?.locals?.fanclub; try { return !!fc && fc.visibility(x.ws, x.id) === "early" && !(v.email && fc.isMember(x.ws, v.email)); } catch { return false; } };
   // ---------- events ----------
   function events(v, now = Date.now()) { const I = v.I, t = today(now), once = new Set(), M = memberEvents(v);
-    const early = (x) => earlyFor(v, x);
+    const early = (x) => earlyFor(v, x) && !(v.email && lc(x.owner) === v.email); // a members-first date is still on its own host's feed (it was missing there: review round 19)
     const L = [...I.events.values()].filter((x) => (V.cardPublic(x.e) || M.has(x.id)) && !early(x) && (x.e.date || "") >= t && hostOK(I, x.ws) && !v.blocks.has("host:" + lc(V.hostOf(x.ws, I).handle)) && !v.blocks.has("event:" + x.id));
     const local = (x) => (v.city && lc(`${x.e.city || ""} ${x.e.hood || ""}`).includes(v.city) ? 1 : 0);
     const score = (x) => (v.followed.has(x.ws) ? 100 : 0) + (v.known.has(lc(x.owner)) ? 60 : 0) + local(x) * 20 + ((x.e.createdAt || x.e.updatedAt || 0) > now - 4 * DAY ? 6 : 0) - Math.min(30, Math.max(0, (Date.parse(x.e.date) - now) / DAY));

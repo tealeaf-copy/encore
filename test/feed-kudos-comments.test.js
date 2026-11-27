@@ -213,3 +213,23 @@ test("Plain text only: markup is kept as words by the server and escaped by the 
   assert.match(sheet, /<p class="fcm-t">\$\{esc\(c\.text\)\}<\/p>/); assert.match(sheet, /<b>\$\{esc\(c\.name \|\| "Someone"\)\}<\/b>/); assert.match(sheet, /data-report="\$\{esc\(JSON\.stringify\(\{ type: "comment", target: "comment:" \+ c\.id/);
   assert.match(sheet, /Open the group chat/); assert.ok(!/—/.test(sheet + fs.readFileSync(new URL("../server/feedcomments.js", import.meta.url), "utf8")), "no em dashes");
 });
+
+// review round 19: walked in a browser as a guest and as the host, at 390 and 1280
+test("A members-first date is still on its own host's feed, with its kudos and comments", async () => {
+  assert.equal((await put("events/kcEarly", { kind: "social", casual: true, city: "Brooklyn", discoverable: true, published: true, name: "Rye Loaf Night", activity: "supper", date: day(5) }, U.theo.cookie)).status, 200);
+  assert.ok((await post("/api/host/club/events/kcEarly", { visibility: "early" }, U.theo.cookie)).ok);
+  const mine = cardIn(await feedOf("theo"), "e:kcEarly"); assert.ok(mine, "the host sees their own card"); assert.equal(mine.cta.label, "Manage");
+  assert.equal(cardIn(await feedOf("sam"), "e:kcEarly"), undefined, "someone outside the club still waits");
+  assert.equal((await kudos("sam", "e:kcEarly")).status, 404); assert.equal((await say("theo", "e:kcEarly", "Members get this one first.")).status, 200);
+});
+test("A comment in the host's Inbox keeps its own full stops: who and where on the line, the words as the preview", async () => {
+  const { linesOf } = await import("../server/inbox.js");
+  const r = linesOf({ kind: "comment", text: 'Sam commented on Dumpling night: pork and chive: "Bringing my own chilli oil. See you Thursday."' });
+  assert.equal(r.line, "Sam commented on Dumpling night: pork and chive"); assert.equal(r.preview, "Bringing my own chilli oil. See you Thursday.");
+});
+test("Feed cards: a double tap is one kudos, 44px targets and 6px corners on the comment sheet", () => {
+  const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), fc = fs.readFileSync(new URL("../public/feedcomments.js", import.meta.url), "utf8");
+  assert.match(fv, /if \(Date\.now\(\) - \(tapped\.get\(t\) \|\| 0\) < 500\) return;/);
+  assert.match(fv, /\.fb-follow-in\{flex:none;min-height:44px;[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-title a\{display:block;padding:6px 0;margin:-6px 0/);
+  assert.doesNotMatch(fc, /border-radius:(1\d|2\d)px/, "the sheet, its field and Send are on the kit's 6px"); assert.match(fc, /\.fcm-send\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/);
+});

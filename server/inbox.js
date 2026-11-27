@@ -126,7 +126,7 @@ export function linesOf(n, { title = "", type = "" } = {}) {
     return { line: `New in ${where}`, preview: clean(rest, 200) };
   }
   if (k === "msg" && (m = /^(.+?) in (.+?): (.*)$/s.exec(t))) return { line: `${m[1]} messaged you about ${m[2]}`, preview: clean(m[3], 200) };
-  if ((k === "kudos-in" || k === "faq") && (m = /^(.+?): "(.+?)"?$/s.exec(t))) return { line: noDot(m[1]), preview: clean(m[2].replace(/"$/, ""), 200) };
+  if ((k === "kudos-in" || k === "faq" || k === "comment") /* a comment keeps its own full stops: the words in quotes are the preview, whole */ && (m = /^(.+?): "(.+?)"?$/s.exec(t))) return { line: noDot(m[1]), preview: clean(m[2].replace(/"$/, ""), 200) };
   if (["prep", "support", "tip"].includes(k) && (m = /^(.+?): (.+)$/s.exec(t))) return { line: noDot(m[1]), preview: clean(m[2].replace(/^"|"$/g, ""), 200) };
   if (k === "club" && (m = /^(.+?) first: (.+?)\. (.+)$/.exec(t))) return { line: `Your ${m[1]} spots open now`, preview: `${m[2]}. ${m[3]}` };
   // "Kit followed you. They'll hear first about your next event": the first sentence is the line, the rest the preview

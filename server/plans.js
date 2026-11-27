@@ -302,7 +302,8 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     return { id, eventId: id, key: "plan:" + id, title: titleOf(ev), date: ev.date || "", startMs: sp.startMs, endMs: multiDay(ev) ? spanOf({ ...ev, startTime: "" }).endMs : sp.endMs, allDay: multiDay(ev) || sp.allDay, tz: sp.tz, status, editable: isHost && !ev.drop, endDate: lastDay(ev), startTime: ev.startTime || "", endTime: ev.endTime || "", chip: typeChip(ev), multi: multiDay(ev),
       place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), cover: /^\/(_blob|presets)\//.test(ev.coverPhoto || "") ? ev.coverPhoto : (h.gallery || [])[0] || "", coverArt: ev.coverArt || null,
       host: { name: clean(h.name || ev.hostName, 60), first: hostFirstOf(ws, ev), handle: h.handle || "", avatarArt: h.theme?.avatarArt || "", color: h.theme?.accent || h.color || "" },
-      isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length,
+      // chat: the group chat, for people who are in (the event audit); a cancelled plan offers no calendar
+      isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, cancelled: !!ev.cancelled, chat: inn && !ev.cancelled ? `/chats/${encodeURIComponent(id)}` : "", locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length,
       // what to bring and what the host covers, for the "Before you go" card (the invite shows the same lists to everyone)
       bring: listOf(ev.bring).filter((x) => !/^yourself$/i.test(x)), included: listOf(ev.included), city: clean(String(ev.city || "").split(",")[0], 60) };
   }

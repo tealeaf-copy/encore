@@ -221,6 +221,7 @@
   // the chat's details: the event, who's in, mute, and the host's controls
   function details() { if (!T) return; const host = isHost(), M = T.members || [];
     sheet(`<div class="ch-det"><h2>${esc(T.event.title)}</h2><p>${esc([T.event.when, `${T.event.inCount} in`].filter(Boolean).join(" · "))}</p>
+      ${T.event.hostHandle ? `<div class="ch-hrow"><a href="/@${encodeURIComponent(T.event.hostHandle)}"><b>${esc(T.event.hostFull || T.event.host)}</b><small>${T.me.role === "host" ? "Your page" : "Host"}</small></a>${host ? "" : `<button type="button" class="plf-btn" data-pl-follow="${esc(T.event.hostHandle)}" data-name="${esc(T.event.hostFull || T.event.host)}" aria-pressed="false">Follow</button>`}</div>` : ""}
       <div class="ch-acts"><a class="ch-act" href="${esc(T.event.url)}">${G.open}Open the event</a><a class="ch-act" href="/help" data-help="${T.me.role === "guest" ? "guest" : "host"}">${G.help || G.open}Get help</a>${T.me.role === "guest" ? `<a class="ch-act" href="/e/${encodeURIComponent(T.event.id)}.ics?${qOf(T.event.id)}">${G.cal}Add to calendar</a>` : ""}</div>
       <label class="ch-tog"><span>Mute this chat<small>No alerts or emails. It stays in your chats.</small></span><input type="checkbox" id="chMute" ${T.me.muted ? "checked" : ""}></label>
       ${host ? `<label class="ch-tog"><span>Guests who said Maybe can read it<small>They can't send until they're in.</small></span><input type="checkbox" id="chMaybe" ${T.me.maybeRead ? "checked" : ""}></label>` : ""}

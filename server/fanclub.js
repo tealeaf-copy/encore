@@ -249,7 +249,7 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
   /** Guest reads of an event (/api/db/doc): members-only needs a member; members-first says so. */
   F.readGate = (req, ws, id) => { const v = F.visOf(ws, id); if (!v) return null; const u = viewer(req), c = F.config(ws), h = C.profileOf(ws) || {};
     if (v.only && !(u && (u.ws === ws || F.canSee(ws, u.email)))) return { deny: { code: "club_only", message: `This event is for ${c.name} only.`, club: c.name, handle: h.handle || "", host: h.name || "" } };
-    return { extra: { club: { name: c.name, handle: h.handle || "", only: !!v.only, earlyUntil: v.earlyUntil && v.earlyUntil > Date.now() ? v.earlyUntil : 0, member: !!u && F.isMember(ws, u.email) } } }; };
+    return { extra: { club: { name: c.name, handle: h.handle || "", only: !!v.only, earlyUntil: v.earlyUntil && v.earlyUntil > Date.now() ? v.earlyUntil : 0, member: !!u && F.isMember(ws, u.email), ...(v.byMembership ? { paid: true } : {}) /* a paid members window: server/memberships.js decides who replies */ } } }; };
 
   // ---- the public host page: club summary, follow state, stats; members-only events stay with members; no paid tiers in the app ----
   app.use((req, res, next) => {

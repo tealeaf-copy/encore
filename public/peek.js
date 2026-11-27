@@ -73,7 +73,7 @@
   function html(p) {
     const lock = p.locked && p.place && p.role !== "host" ? ` · <span class="pk-lock">address when you're in</span>` : "";
     return `<figure class="pk-cover">${coverHtml(p)}${p.chip ? `<figcaption class="pk-chip">${esc(p.chip)}</figcaption>` : ""}</figure>`
-      + `${p.host?.name || p.host?.first ? `<a class="pk-host"${p.host.href ? ` href="${esc(p.host.href)}"` : ""}><span class="pk-av">${avatarHtml(p.host)}</span><span>Hosted by <b>${p.role === "host" ? "you" : esc(p.host.name || p.host.first)}</b></span></a>` : ""}`
+      + `${p.host?.name || p.host?.first ? `<div class="pk-hrow"><a class="pk-host"${p.host.href ? ` href="${esc(p.host.href)}"` : ""}><span class="pk-av">${avatarHtml(p.host)}</span><span>Hosted by <b>${p.role === "host" ? "you" : esc(p.host.name || p.host.first)}</b></span></a>${p.role !== "host" && /^[a-z0-9][a-z0-9-]{1,39}$/.test(p.host.handle || "") ? `<button type="button" class="plf-btn" data-pl-follow="${esc(p.host.handle)}" data-name="${esc(p.host.name || p.host.first)}" aria-pressed="false">Follow</button>` : ""}</div>` : ""}`
       + `<h2 class="pk-title" id="pkTitle">${esc(p.title)}</h2>`
       + `<p class="pk-fact">${I.clock}<span>${esc(p.when)}</span></p>`
       + (p.place || p.online ? `<p class="pk-fact">${I.pin}<span>${esc(p.place || "Online")}${lock}${p.address ? `<small class="pk-addr">${esc(p.address)}</small>` : ""}</span></p>` : "")

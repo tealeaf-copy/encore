@@ -196,6 +196,7 @@ PUBLIC_FIELDS.push("priceTiers");
 // publicEvent below and drawn on both invites by public/sections.js
 PUBLIC_FIELDS.push("sections", "links", "accessNote", "cohosts");
 PUBLIC_FIELDS.push("planKind"); // what the host is planning: a table, a weekend away, a summit (server/kinds.js); the parts with addresses stay off the public doc
+PUBLIC_FIELDS.push("cancelled", "example"); // the event audit: a cancelled event says so to guests, and an example says it is one
 PUBLIC_FIELDS.push("endDate", "included"); // review 16: a weekend away's last day; what's included (a workshop's materials)
 const cleanStr = (v, n) => String(v ?? "").replace(/\r/g, "").trim().slice(0, n);
 export function publicExtras(e) {
@@ -721,8 +722,12 @@ export function createApp({ store, dataDir }) {
 <meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}`; // the host's brand kit reaches the light invite with its host (/api/public/event-host), so the page stays small
     const page = invitePage();
     if (!page) return res.redirect(302, to);
+    // signed in, your reply follows your account (the event audit): a reply made on another device is put where this
+    // phone keeps replies before the invite reads it, so it shows "You're in", not a blank form. Only for you, never cached.
+    let mineJs = ""; try { const u = currentUser(req); if (u?.email) { const em = String(u.email).toLowerCase(), d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && String(x.data?.email || "").toLowerCase() === em && x.data?.code).sort((a, b) => (b.data.changedAt || b.data.createdAt || 0) - (a.data.changedAt || a.data.createdAt || 0))[0];
+      if (d) mineJs = `<script>try{const k=${JSON.stringify("encore-rsvp-" + id)};localStorage.getItem(k)||localStorage.setItem(k,${JSON.stringify(JSON.stringify({ rid: d.id, code: d.data.code, name: d.data.name || "", response: d.data.response, eventId: id })).replace(/</g, "\\u003c")})}catch{}</script>`; } } catch {}
     // compressed (brotli when the phone takes it, else gzip): the invite is most of what a guest downloads before replying
-    sendText(req, res, page.replace("<!--META-->", () => meta), { cache: "public, max-age=120" }); });
+    sendText(req, res, page.replace("<!--META-->", () => meta + mineJs), { cache: mineJs ? "private, no-store" : "public, max-age=120" }); });
   // public/invite.html, read again only when the file changes
   let inviteCache = null;
   function invitePage() { const f = path.join(PUBLIC_DIR, "invite.html");

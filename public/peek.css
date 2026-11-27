@@ -25,6 +25,7 @@ html.pk-open{overflow:hidden}
 @media (prefers-reduced-motion:no-preference){.pk-ghost,.pk-ghostline{animation:pkPulse 1.2s ease-in-out infinite alternate}}
 @keyframes pkPulse{to{opacity:.55}}
 /* host, title, facts */
+.pk-hrow{display:flex;align-items:center;gap:12px}.pk-hrow .pk-host{flex:1;min-width:0}
 .pk-host{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--pl-ink);text-decoration:none;font:400 15px var(--pl-font-text);align-self:flex-start}
 a.pk-host[href]:hover b{text-decoration:underline;text-underline-offset:3px}
 .pk-host b{font-weight:600}

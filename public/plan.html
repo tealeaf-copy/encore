@@ -5,10 +5,12 @@
 <link rel="stylesheet" href="/community.css"><link rel="stylesheet" href="/playful.css"><link rel="stylesheet" href="/timeline.css">
 <style>
 .pl-plan{max-width:680px;margin:0 auto;padding-bottom:48px}
-.pv-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
+.pv-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}.pv-chg{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;font:500 15px var(--pl-font-text);color:var(--pl-accent-text,var(--pl-accent));text-decoration:underline;text-underline-offset:3px}
 .pv-chipst{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 14px var(--pl-font-text)}
 .pv-when{font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-accent-text)}
 .pv-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+/* the host line (the event audit): face and name open the host's page, Follow in place (public/follow.js) */
+.pv-host{display:flex;align-items:center;gap:12px;margin:14px 0 0}.pv-host>a{display:flex;align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;color:var(--pl-ink);text-decoration:none;font:600 16px/1.3 var(--pl-font-text)}.pv-host>a b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pv-host>a small{display:block;font:400 14px/1.3 var(--pl-font-text);color:var(--pl-soft)}
 .pv-acts a,.pv-acts button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}
 .pv-acts .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
 .pv-acts svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -79,7 +81,7 @@
 </style>
 </head><body>
 <div class="wrap"><main class="pl-plan" id="m" aria-live="polite" aria-busy="true"><div class="pv-skel" aria-label="Getting the plan"><i class="c"></i><i class="t"></i><i class="a"></i><i class="r"></i><i class="r"></i><i class="r"></i></div></main></div>
-<script src="/authguard.js"></script><script src="/fx.js"></script><script src="/mascot.js" defer></script><script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script><script src="/kinds.js"></script>
+<script src="/authguard.js"></script><script src="/fx.js"></script><script src="/mascot.js" defer></script><script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script><script src="/kinds.js"></script><script src="/follow.js" defer></script>
 <script>
 // A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day,
 // set like a travel notebook: a divider for each day, the morning, afternoon and evening named for when they are
@@ -133,8 +135,9 @@
     const noPlan = (K?.kind === "table" && empty) || P.runOfShow, ros = K?.kind === "summit" && P.isHost;
     m.classList.toggle("kd-wide", K?.kind === "summit" && P.isHost);
     m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
-      + (P.status || w ? `<div class="pv-status">${P.status ? `<span class="pv-chipst">${esc(P.status)}</span>` : ""}${w ? `<span class="pv-when">${esc(w)}</span>` : ""}</div>` : "")
-      + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}${P.isHost && !empty ? `<button type="button" data-print>Print the plan</button>` : ""}</div>`
+      + (P.status || w ? `<div class="pv-status">${P.status ? `<span class="pv-chipst">${esc(P.status)}</span>` : ""}${P.response && !P.isHost && !P.cancelled ? `<a class="pv-chg" href="/e/${encodeURIComponent(P.id)}">Change reply</a>` : ""}${w ? `<span class="pv-when">${esc(w)}</span>` : ""}</div>` : "")
+      + (P.host?.handle ? `<div class="pv-host"><a href="/@${encodeURIComponent(P.host.handle)}"><span><b>${esc(P.host.name || P.host.first)}</b><small>${P.isHost ? "Your page" : "Host"}</small></span></a>${P.isHost ? "" : `<button type="button" class="plf-btn" data-pl-follow="${esc(P.host.handle)}" data-name="${esc(P.host.name || P.host.first)}" aria-pressed="false">Follow</button>`}</div>` : "")
+      + `<div class="pv-acts">${P.date && !P.cancelled ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.chat ? `<a href="${esc(P.chat)}">Group chat</a>` : ""}${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}${P.isHost && !empty ? `<button type="button" data-print>Print the plan</button>` : ""}</div>`
       + whereHtml()
       + KH
       + (noPlan ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length || T.daysBetween(P.date, P.endDate) + 1} days` : esc(T.rangeText(P.date))}</small></h2>`

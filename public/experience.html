@@ -2,7 +2,7 @@
 <title>Experience · Pottery Lab</title><meta name="description" content="A host your team can book: photos, the full price for your group, reviews and terms in plain words.">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
 <body class="bb" data-top><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
-<script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
+<script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script><script src="/follow.js" defer></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("discover");
@@ -22,7 +22,7 @@
     <div class="bb-xp"><div>
       <section class="bb-xhead"><p class="bb-kicker">${esc(p.remote ? "Remote-friendly" : D.area.area || D.area.city)}${p.length ? " · " + esc(p.length) : ""} · ${p.minGuests} to ${p.maxGuests} people</p>
         <h1 style="view-transition-name:bb-title">${esc(p.name)}</h1>
-        <div class="where"><span>with ${h.example ? esc(h.name) : `<a href="/@${esc(h.handle)}">${esc(h.name)}</a>`}</span>${s.reviews ? `<span>${icon("star")} <b class="bb-mono">${s.rating.toFixed(1)}</b> · ${s.reviews} team ${s.reviews === 1 ? "review" : "reviews"}</span>` : ""}<span class="bb-badges">${h.example ? BB.exampleTag() : ""}${s.trusted ? BB.trustedBadge() : ""}${p.instant && s.trusted ? `<span class="bb-badge instant">${icon("bolt")}Instant book</span>` : ""}</span></div></section>
+        <div class="where"><span>with ${h.example ? esc(h.name) : `<a href="/@${esc(h.handle)}">${esc(h.name)}</a>`}</span>${h.example ? "" : `<button type="button" class="plf-btn" data-pl-follow="${esc(h.handle)}" data-name="${esc(h.name)}" aria-pressed="false">Follow</button>`}${s.reviews ? `<span>${icon("star")} <b class="bb-mono">${s.rating.toFixed(1)}</b> · ${s.reviews} team ${s.reviews === 1 ? "review" : "reviews"}</span>` : ""}<span class="bb-badges">${h.example ? BB.exampleTag() : ""}${s.trusted ? BB.trustedBadge() : ""}${p.instant && s.trusted ? `<span class="bb-badge instant">${icon("bolt")}Instant book</span>` : ""}</span></div></section>
 ${D.example && !D.example.demo ? BB.exampleLine(D.example.line) : ""}${D.alsoIn?.length ? `<p class="bb-meta">${icon("pin")} Also works in ${esc(D.alsoIn.join(", "))}</p>` : ""}
       ${BB.trustRow(s)}${h.example ? "" : BB.verifyRow(s)}
       <section class="bb-sec"><h2>What you'll do</h2><p style="white-space:pre-line">${esc(p.story)}</p>

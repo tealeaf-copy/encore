@@ -13415,6 +13415,44 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 <style>/* Home on a wide screen: one centred column, every card the same width (it was three widths and two alignments) */
 @media (min-width:861px){body.friends-ws #view-programs{max-width:880px;margin-left:auto;margin-right:auto}body.friends-ws #view-programs > .cg,body.friends-ws #view-programs > .pipbrief,body.friends-ws #view-programs .plg-card{max-width:none}body.friends-ws #view-programs > .pipbrief{margin-left:0;margin-right:0}}
 #signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#signOutM a[style*="none"] + .so-dot{display:none}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+<script>
+// ---- the event audit (scripts/event-audit.mjs) on the full invite: the host line with the host's face and name (their
+// page) and Follow in place, the same as the light invite's (public/follow.js); Report under the invite
+// (public/event-extras.js; Help is main's footer link, public/report.js); a cancelled event says so and asks for no reply ----
+(function(){ if(location.pathname!=="/g"||typeof renderGuest!=="function") return;
+  for(const src of ["/follow.js","/event-extras.js"]) if(!document.querySelector(`script[src="${src}"]`)){ const t=document.createElement("script"); t.src=src; t.defer=true; document.head.appendChild(t) }
+  const st=document.createElement("style"); st.textContent=`html body.g-cancelled #view-guest#view-guest#view-guest :is(#gForm,[data-addcal]),html body.g-cancelled :is(#gBar,.g-bar,.prb),html body.g-early #view-guest#view-guest#view-guest #gForm,html body.g-early :is(#gBar,.g-bar,.prb){display:none!important}#view-guest .gx-lz{text-align:center;font-size:14px}#view-guest .gx-lz a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .gx-cancel h3{margin:0 0 6px}`; document.head.appendChild(st);
+  // the parts are placed by one function: after each render, and again whenever a later redraw of the page replaces them
+  const H={}, ML={}; let id0="";
+  function place(){ const e=window.__gEv, host=document.getElementById("view-guest"); if(!e?.id||!host||!/^#rsvp-/.test(location.hash)) return;
+    const inv=host.querySelector(".invite .in"); if(!inv) return;
+    const own=(typeof allEvents!=="undefined"?allEvents:[]).some(x=>x&&x.id===e.id&&!x.example), M=myRsvp(e.id);
+    document.body.classList.toggle("g-cancelled",!!e.cancelled);
+    // members first: inside the club's window, someone who isn't a member is told when they can reply (the server refuses until then).
+    // A paid members window (server/memberships.js) has its own rules by tier: its line for this viewer comes from
+    // /api/public/seats (memberships.guestLine, the light invite's line too), so there is one rule, not two.
+    const CL=e.club, open=!e.cancelled&&!own&&CL&&+CL.earlyUntil>Date.now()&&!M, P=open&&CL.paid?ML[e.id]:null;
+    if(open&&CL.paid&&P===undefined){ ML[e.id]=null; fetch("/api/public/seats/"+encodeURIComponent(e.id),{credentials:"same-origin"}).then(x=>x.ok?x.json():null).catch(()=>null).then(j=>{ ML[e.id]=j||{}; place() }) }
+    const early=open&&(CL.paid?!!(P&&P.on&&P.can===false&&P.line):!CL.member); document.body.classList.toggle("g-early",!!early);
+    if(!early) host.querySelector(".gx-early")?.remove();
+    if(early&&!host.querySelector(".gx-early")){ const n=document.createElement("div"); n.className="panel gx-early"; n.setAttribute("role","status"); const t=new Date(+CL.earlyUntil).toLocaleString("en-US",{weekday:"short",hour:"numeric",minute:"2-digit"});
+      n.innerHTML=CL.paid?`<h3>Members get in first</h3><p class="note">${esc(P.line)}</p>${CL.handle?`<a class="btn" href="/@${esc(CL.handle)}">See the host's page</a>`:""}`
+        :`<h3>Members first until ${esc(t)}</h3><p class="note">${esc(CL.name||"The host's members")} can reply first. Join the club to reply now, or come back then.</p>${CL.handle?`<a class="btn" href="/@${esc(CL.handle)}">See the club</a>`:""}`;
+      const f=host.querySelector("#gForm"); if(f) f.before(n); else inv.after(n) }
+    const X=H[e.id], h=X?.host;
+    if(h?.handle&&!host.querySelector(".hrow")){ const name=h.name||X.person||hostFirst(e), d=document.createElement("div"); d.className="hrow";
+      d.innerHTML=`<a href="/@${esc(h.handle)}"><span class="hav">${h.avatarUrl?`<img src="${esc(h.avatarUrl)}" alt="">`:esc((name||"?")[0])}</span><b>${esc(name)}</b></a>${own?"":`<button type="button" class="plf-btn" data-pl-follow="${esc(h.handle)}" data-name="${esc(name)}" aria-pressed="false">Follow</button>`}`;
+      const at=inv.querySelector(":scope > .gxfacts")||inv.querySelector(":scope > h3"); if(at) at.after(d); else inv.prepend(d) }
+    // signed in, the Follow button follows in place, so the "Hear about the next one" email card would be a second Follow
+    if(/(?:^|;\s*)encore_in=1/.test(document.cookie)) host.querySelectorAll(".gk-follow").forEach(x=>{ if(x.style.display!=="none") x.style.display="none" });
+    if(!document.querySelector(".gx-lz")){ const p=document.createElement("p"); p.className="note gx-lz"; p.innerHTML=`<a href="#" data-lz="report">Report</a>`; (host.firstElementChild||host).appendChild(p) }
+    if(e.cancelled&&!host.querySelector(".gx-cancel")){ const who=hostFirst(e), n=document.createElement("div"); n.className="panel gx-cancel"; n.setAttribute("role","status");
+      n.innerHTML=`<h3>${esc(who==="your host"?"This was cancelled":who+" cancelled this one")}</h3><p class="note" style="margin:0">${M?.response==="going"?"You were in, so there's nothing to do. ":""}Replies are closed.${own?"":` Follow ${esc(who==="your host"?"the host":who)} to hear about the next one.`}</p>`;
+      const f=host.querySelector("#gForm"); if(f) f.before(n); else inv.after(n) } }
+  const _rgAu=renderGuest; renderGuest=async function(){ const r=await _rgAu.apply(this,arguments); try{ const e=window.__gEv; place(); /* the closed and members-first states first; the host line once its host is known */ if(e?.id&&!H[e.id]) H[e.id]=await fetch("/api/public/event-host/"+encodeURIComponent(e.id)).then(x=>x.ok?x.json():{}).catch(()=>({}));
+      place(); if(!id0){ id0=1; const v=document.getElementById("view-guest"); if(v) new MutationObserver(()=>{ try{ place() }catch{} }).observe(v,{childList:true,subtree:true}) } }catch(err){ console.warn(err) } return r };
+})();
+</script>
 <!-- round 18 -->
 <script>
 // ---- Review round 18: one top heading per screen. A view or panel that is not on screen keeps its content, so its

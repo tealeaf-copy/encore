@@ -159,6 +159,8 @@ export const ring = (points, goal) => ({ points, goal, pct: Math.min(100, Math.r
 // ---------- milestones ----------
 export const MILESTONES = [
   { id: "first", test: (s) => s.published >= 1 && !(s.hosted >= 1), /* a first, not the fifth: someone who has already held one is never told this is their first */ title: "Your first one is out in the world.", line: "Now the only job is to show up. I'll keep the list." },
+  // the first guest to say yes, before the host has held anything: the moment it turns into a real night (the sheet names the guest, see stateOf)
+  { id: "firstyes", test: (s) => s.guests >= 1 && !(s.hosted >= 1), title: "Your first yes.", line: "Someone's coming. It's a real night now." },
   { id: "tenth", test: (s) => s.hosted >= 10, title: "Ten nights hosted.", line: "That's a habit now. A good one." },
   { id: "soldout", test: (s) => s.soldOut >= 1, title: "Every seat taken.", line: "Your first sold-out night. Someone's on the waitlist wishing they'd been faster." },
   { id: "regular", test: (s) => s.regulars >= 1, title: "You have a regular.", line: "Someone came back a third time. That's the whole point." },
@@ -332,7 +334,7 @@ export function makeHostLoop(store, { C, X, push = () => null, origin = () => pr
       list: pastE.map((x) => ({ id: x.id, date: x.e.date, guests: going.get(x.id) || 0, again: again(x.id) })),
       upcoming: upE.map((x) => ({ id: x.id, name: name(x), date: x.e.date, going: going.get(x.id) || 0, cap: cap(x.e), reminded: !!x.e.remindedAt || moved("remind", x.id) })),
       last: last ? { id: last.id, name: name(last), date: last.e.date, going: going.get(last.id) || 0, thanked: moved("thank", last.id), photos: photos.has(last.id) || moved("photo", last.id) } : null,
-      asks, regulars, guests: [...people.keys()].length,
+      asks, regulars, guests: [...people.keys()].length, firstGuest: clean(String(R.filter((r) => r.response === "going" && r.noShow !== true && r.eventId && r.name).sort((a, b) => (+a.at || +a.createdAt || 0) - (+b.at || +b.createdAt || 0))[0]?.name || "").trim().split(/\s+/)[0], 24),
       maxGuests: Math.max(0, ...pastE.map((x) => going.get(x.id) || 0)), soldOut: pastE.concat(upE).filter((x) => cap(x.e) >= 2 && (going.get(x.id) || 0) >= cap(x.e)).length,
       ticketed: pastE.concat(upE).filter((x) => { const p = String(x.e.price ?? ""); return p && !/^(free|0|\$?0|chip)$/i.test(p) && !x.e.free; }).length,
       series: evs.filter((x) => x.e.series === true || x.e.repeat === "weekly" || x.e.repeat === "monthly" || x.e.episode).length ? 1 : 0,
@@ -362,7 +364,7 @@ export function makeHostLoop(store, { C, X, push = () => null, origin = () => pr
       streak: { ...s, ...line }, headsUp: headsUp(s, { days: hv }),
       moves: { today: todaysMove(list), list, order, doneToday },
       warmth: { ...ring(w.points, d.goal), parts: w.parts, month: MONTHS[+now.slice(5, 7) - 1] },
-      celebrate: celebrate ? { id: celebrate.id, title: celebrate.title, line: celebrate.line, eventId: f.upcoming[0]?.id || f.last?.id || "" } : null,
+      celebrate: celebrate ? { id: celebrate.id, ...(celebrate.id === "firstyes" && f.firstGuest ? { title: `${f.firstGuest} is in.`, line: "Your first yes. It's a real night now." } : { title: celebrate.title, line: celebrate.line }), eventId: f.upcoming[0]?.id || f.last?.id || "" } : null,
       path: pathOf({ ...f, streakBest: s.best }), badges: loopBadges(base0, f, s).map(({ id, label, why }) => ({ id, label, why })),
       circle: { on: !!d.circle.on, cadence: d.circle.cadence, tier: CIRCLE.tiers[d.circle.tier || 0] },
       potto: f.events ? "" : POTTO.empty, hosted: f.hosted, events: f.events,

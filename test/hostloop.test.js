@@ -101,7 +101,9 @@ test("Warmth points: events, guests welcomed, would-go-again and small moves, ag
 });
 
 test("Milestones are celebrated once each: first event out, the 10th, the first sold-out night, the first regular", () => {
-  assert.deepEqual(MILESTONES.map((m) => m.id), ["first", "tenth", "soldout", "regular"]);
+  assert.deepEqual(MILESTONES.map((m) => m.id), ["first", "firstyes", "tenth", "soldout", "regular"]);
+  assert.equal(nextCelebration({ published: 1, hosted: 0, guests: 1 }, ["first"]).id, "firstyes", "the first guest to say yes is its own moment");
+  assert.equal(nextCelebration({ published: 3, hosted: 2, guests: 9 }, ["first"]), null, "not for a host who has already held one");
   const f = { published: 1, hosted: 0, soldOut: 0, regulars: 0 };
   const c = nextCelebration(f, []); assert.equal(c.id, "first"); assert.equal(c.title, "Your first one is out in the world.");
   assert.equal(nextCelebration(f, ["first"]), null, "seen: never again");

@@ -43,7 +43,7 @@
       dist: "About 2.5 mi (4 km) there and back.", route: "Over the bridge walkway to Brooklyn, a turn around at the far end, and back to Manhattan. The middle of the bridge is a gentle climb both ways. It fills up with walkers after mid-morning, so we go early and keep right.",
       paces: P.easy, d: 6, t: "06:45", m: 60, n: 15, tone: "butter", after: "Coffee in Lower Manhattan once the sun is up.",
       bring: ["A light layer", "Your phone for photos at the top"], transit: "The 4, 5 and 6 stop at Brooklyn Bridge-City Hall. The J and Z stop at Chambers St.", sunrise: true },
-    { id: "prospect", at: "in Prospect Park", borough: "Brooklyn", hood: "Prospect Park", park: "Prospect Park", title: "Easy loop of Prospect Park", short: "One loop of the park drive, a little over 5K. Every pace welcome.",
+    { id: "prospect", at: "in Prospect Park", borough: "Brooklyn", hood: "Park Slope", park: "Prospect Park", title: "Easy loop of Prospect Park", short: "One loop of the park drive, a little over 5K. Every pace welcome.",
       spot: "Prospect Park entrance at Grand Army Plaza", find: "The main park entrance at Grand Army Plaza, where Flatbush Ave meets Prospect Park West. Look for us by the entrance.",
       dist: "About 3.35 mi (5.4 km), one loop.", route: "One loop of the park drive in the runners' lane. Rolling, with one longer climb. We regroup back at the entrance.",
       paces: P.easy, d: 6, t: "08:00", m: 75, n: 15, tone: "mint", after: "Bagels and coffee in Park Slope after.",
@@ -177,7 +177,7 @@
 .rt-b:hover{border-color:var(--pl-ink,#1B1D1C)}.rt-b:focus-visible,.rt-x:focus-visible,.rt-go:focus-visible,.rt-ln:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
 .rt-b b{font-weight:600;font-size:16px}.rt-b span{font-size:14px;color:var(--pl-soft,#444845)}.rt-b small{font:500 12px/1.3 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft,#444845)}
 .rt-card{margin:16px 0;padding:14px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:16px/1.45 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
-.rt-card h2{margin:0;font:600 18px/1.3 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}.rt-card>p{margin:4px 0 10px;color:var(--pl-soft,#444845);font-size:15px}
+.rt-hd{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;align-items:start}.rt-card h2{margin:10px 0 0;font:600 18px/1.3 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}.rt-card>p{margin:4px 0 10px;color:var(--pl-soft,#444845);font-size:15px}
 .rt-card .rt-row{display:grid;gap:8px}.rt-ln{background:none;border:0;padding:0;min-height:44px;color:var(--pl-accent-text,#29489A);font:600 15px inherit;font-family:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .rt-fol{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--pl-line,#E2DCD1)}.rt-fol span{font-size:15px}
 .rt-go{min-height:44px;padding:0 16px;border:1.5px solid var(--pl-accent,#29489A);border-radius:6px;background:var(--pl-accent,#29489A);color:#fff;font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;cursor:pointer}.rt-go:disabled{opacity:.6}
@@ -204,7 +204,9 @@
   // ---- is the host in New York? Their page city, the city picker on this phone, or what they told Potto ----
   let PROF = null; const getJ = (u) => fetch(u, { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const profile = () => PROF || (PROF = getJ("/api/host/profile").then((j) => j?.host || {}));
-  async function hostInNYC() { try { if (isNYC(root.EncorePlace?.get?.()?.city)) return true; } catch {} try { if (isNYC(localStorage.getItem("pl.runCity"))) return true; } catch {} const h = await profile(); return isNYC(h.city) || isNYC(h.hood); }
+  // the city picker keeps its choice in "encore.place" (public/place.js), which isn't loaded on every page
+  const pickedCity = () => { try { return root.EncorePlace?.get?.()?.city || JSON.parse(localStorage.getItem("encore.place") || "null")?.city || ""; } catch { return ""; } };
+  async function hostInNYC() { if (isNYC(pickedCity())) return true; try { if (isNYC(localStorage.getItem("pl.runCity"))) return true; } catch {} const h = await profile(); return isNYC(h.city) || isNYC(h.hood); }
 
   // ---- the host's followers, and one message to all of them about the next run ----
   async function messageSheet() { const [F, E] = await Promise.all([getJ("/api/host/followers"), getJ("/api/potto/events")]); const n = +F?.count || 0, mine = (E?.events || []).filter((e) => e.mine);
@@ -222,15 +224,15 @@
       catch (e) { er.textContent = e.message; b.disabled = false; } }); }
 
   // ---- the host's Home: a card when they're in New York ----
-  async function homeCard() { const v = q("#view-programs"); if (!v || q("#rtHome", v) || !root.__wsPersonal || !(await hostInNYC()) || q("#rtHome", v)) return;
+  async function homeCard() { const v = q("#view-programs"); let hid = false; try { hid = localStorage.getItem("pl.rtHide") === "1"; } catch {} if (!v || hid || q("#rtHome", v) || !root.__wsPersonal || !(await hostInNYC()) || q("#rtHome", v)) return;
     const F = await getJ("/api/host/followers"), n = +F?.count || 0, today = localIso(new Date()), dow = new Date().getDay();
     const top = LIST.slice().sort((a, b) => ((a.d - dow + 7) % 7 || 7) - ((b.d - dow + 7) % 7 || 7)).slice(0, 3); if (q("#rtHome", v)) return;
     const card = document.createElement("section"); card.className = "rt-card"; card.id = "rtHome"; card.setAttribute("aria-labelledby", "rtHomeH"); css();
-    card.innerHTML = `<h2 id="rtHomeH">New York runs, ready to go</h2><p>The spot, route, pace groups and coffee after are filled in. Pick one, check it, share the link.</p>
+    card.innerHTML = `<div class="rt-hd"><h2 id="rtHomeH">New York runs, ready to go</h2><button type="button" class="rt-x" data-hide aria-label="Hide New York runs">${X}</button></div><p>The spot, route, pace groups and coffee after are filled in. Pick one, check it, share the link.</p>
       <div class="rt-row">${top.map((T) => `<button type="button" class="rt-b" data-tpl="${T.id}"><b>${esc(T.title)}</b><span>${esc(lineOf(T))}</span></button>`).join("")}</div>
       <button type="button" class="rt-ln" data-all>See all ${LIST.length} New York runs</button>
       <div class="rt-fol"><span>${n ? `${n} ${n === 1 ? "person follows" : "people follow"} you` : "No followers yet. Guests can follow you after they reply."}</span>${n ? `<button type="button" class="rt-go sec" data-msg>Message them</button>` : ""}</div>`;
-    card.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.tpl) use(b.dataset.tpl, { today }); else if (b.hasAttribute("data-all")) sheet(); else if (b.hasAttribute("data-msg")) messageSheet(); });
+    card.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; if (b.hasAttribute("data-hide")) { try { localStorage.setItem("pl.rtHide", "1"); } catch {} card.remove(); return; } if (b.dataset.tpl) use(b.dataset.tpl, { today }); else if (b.hasAttribute("data-all")) sheet(); else if (b.hasAttribute("data-msg")) messageSheet(); });
     const at = q("#qsPanel", v) || q(".cg", v); if (at) at.after(card); else v.prepend(card); }
   let ht = 0; const later = () => { clearTimeout(ht); ht = setTimeout(() => homeCard().catch(() => {}), 200); };
 
@@ -246,6 +248,6 @@
   function boot() { if (!q("#view-programs")) return; later(); new MutationObserver(later).observe(q("#view-programs"), { childList: true });
     document.addEventListener("click", guard, true); document.addEventListener("keydown", guard, true);
     addEventListener("pl:place", () => { const c = q("#rtHome"); if (!c) later(); }); }
-  root.RunTemplates = { ...pure, sheet, use, messageSheet, hostInNYC };
+  root.RunTemplates = { ...pure, sheet, use, messageSheet, hostInNYC, pickedCity };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
 })(typeof window !== "undefined" ? window : globalThis);

@@ -38,9 +38,7 @@
     if (e.priceUnit === "each") return `${amt(p)} each`; if (e.priceUnit === "class") return `${amt(p)} a class`;
     if (e.priceUnit === "total" && !(+e.sessions > 1)) return +e.dropIn > 0 ? `${amt(p)} for the course, or ${amt(e.dropIn)} a class` : `${amt(p)} total`; // round 8: "$280 total or $50 drop in"
     return /a person|per person|each/i.test(p) ? p : `${/^\d/.test(p) ? amt(p) : p} a person`; };
-  // the Pay button carries the amount and a note
-  // (payLink in server/shop.js)
-  // what this reply owes (server dueCents)
+  // what this reply owes (server dueCents); the Pay button carries the amount and a note (payLink, server/shop.js)
   const dueOf = (e, party) => { const c = (p) => Math.round((parseFloat(String(p ?? "").replace(/[^\d.]/g, "")) || 0) * 100), k = Math.max(1, Math.floor(+party) || 1), gs = Math.floor(+e.groupSize), gp = c(e.groupPrice), each = c(e.price);
     const t = gs > 1 && gp > 0 ? (e.priceUnit !== "each" || !each ? gp * Math.ceil(k / gs) : Math.min(each * k, gp * Math.floor(k / gs) + each * (k % gs))) : each * k; return t > 0 ? "$" + (t / 100).toFixed(t % 100 ? 2 : 0) : e.price; };
   const payLinkOf = (url, price, note) => { const u = httpsUrl(url); if (!u) return ""; const n = parseFloat(String(price || "").replace(/[^\d.]/g, "")); if (!(n > 0)) return u; const cents = Math.round(n * 100), amt = (cents / 100).toFixed(cents % 100 ? 2 : 0); let m;

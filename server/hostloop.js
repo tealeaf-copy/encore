@@ -277,7 +277,7 @@ export function dueNudges(cands, { now = Date.now(), tz = "UTC", prefs = {}, sen
 
 // ---------- the pre-signup draft ----------
 // /start's templates (public/start.html) the create canvas has a kind for (public/canvas.js PLAN_KINDS)
-const START_KIND = { "": "dinner", dinner4: "dinner", table8: "dinner", soldout: "dinner", table: "table", game: "game", weekend: "weekend", summit: "summit" };
+const START_KIND = { "": "dinner", dinner4: "dinner", table8: "dinner", soldout: "dinner", table: "table", game: "game", weekend: "weekend", summit: "summit", run: "run" }; // run: the canvas with the run sign-up, and New York templates for a New York host
 /** Where "Plan a dinner" (/start) takes a signed-in host instead: the create canvas with the kind set, or null to stay. Pure. */
 export function startRedirect(q = {}, host = null) {
   if (!host || q.save || q.saved || q.from) return null; const t = typeof q.t === "string" ? q.t : "";

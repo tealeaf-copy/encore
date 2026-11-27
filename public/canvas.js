@@ -333,7 +333,7 @@
   // New York run templates (public/runtemplates.js): for a host in New York (their page city, the city picker, Potto),
   // one row over the kinds: "New York runs, ready to go" opens the picker; a template fills the spot, route, pace groups,
   // after, what to bring and the run sign-up in one tap.
-  const nycHost = (W) => { const R = root.RunTemplates; if (!R) return false; let c = [PROFILE?.city, PROFILE?.hood, W?.city]; try { c.push(root.EncorePlace?.get?.()?.city, localStorage.getItem("pl.runCity")); } catch {} return c.some((x) => R.isNYC(x)); };
+  const nycHost = (W) => { const R = root.RunTemplates; if (!R) return false; let c = [PROFILE?.city, PROFILE?.hood, W?.city]; try { c.push(R.pickedCity?.(), localStorage.getItem("pl.runCity")); } catch {} return c.some((x) => R.isNYC(x)); };
   function nycRow(W) { if (!S.isNew || !nycHost(W) || (W.planKind && W.planKind !== "run")) return ""; const T = W.runTpl && root.RunTemplates.byId(W.runTpl);
     return `<div class="cv-nyc cv-ed"><span><b>${T ? `From: ${esc(T.title)}` : "New York runs, ready to go"}</b><small>${T ? "Filled in from this run. Pick another spot and the route, pace groups and after follow." : "The spot, route, pace groups and coffee after, filled in."}</small></span><button type="button" data-cv="nycruns">${T ? "Change" : "Pick a run"}</button></div>`; }
   function kindsRow(W) { if (!S.isNew) return ""; const own = W.planKind === "other";

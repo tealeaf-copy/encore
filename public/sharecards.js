@@ -82,7 +82,7 @@
 .plsc-list dt{font:500 max(12px,2.6cqw)/1.3 var(--pl-font-mono,ui-monospace,monospace);letter-spacing:.06em;text-transform:uppercase;color:var(--plsc-accent,var(--pl-accent-text,#29489A))}
 .plsc-list dd{margin:0;font:600 max(16px,3.7cqw)/1.3 var(--pl-font-serif,Georgia,serif);overflow-wrap:anywhere}
 .plsc-potto{position:absolute;right:6cqw;bottom:13cqw;width:19cqw;pointer-events:none}.plsc-potto img{width:100%;display:block}
-.plsc-foot{flex:none;display:flex;justify-content:space-between;gap:8px;margin-top:3cqw;border-top:1.5px solid var(--plsc-ink);padding:3cqw 0 4.4cqw;font:500 max(11px,2.6cqw)/1.2 var(--pl-font-mono,ui-monospace,monospace);letter-spacing:.06em;text-transform:uppercase;color:var(--plsc-soft)}
+.plsc-foot span{white-space:nowrap}.plsc-foot{flex:none;display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;margin-top:3cqw;border-top:1.5px solid var(--plsc-ink);padding:3cqw 0 4.4cqw;font:500 max(11px,2.6cqw)/1.2 var(--pl-font-mono,ui-monospace,monospace);letter-spacing:.06em;text-transform:uppercase;color:var(--plsc-soft)}
 .plsc--link .plsc-body{padding-top:3cqw}.plsc--link .plsc-title{font-size:clamp(24px,7.6cqw,92px)}
 .plsc-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .plsc-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-line-strong,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,system-ui,sans-serif);text-decoration:none;cursor:pointer}

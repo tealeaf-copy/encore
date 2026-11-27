@@ -75,7 +75,7 @@
       document.title = `${d.first ? d.first + "'s" : "A"} ${d.year} in nights · Pottery Lab`;
       player(m, d, { label: document.title, back: "/", pngOf: (id) => `/y/${tok[1]}/${id}.png`, extra: `<div class="ply-own"><p><b>Make your own.</b> Your year in nights, free, on web and phone.</p><a class="plsc-btn is-go" href="/year/${d.year}">Make your own</a></div>` }); return; }
     if (!mine) return; const Y = mine[1]; let type = "all", edition = "guest", at = 0;
-    const load = async () => { let d; try { d = await getJ(`/api/me/year/${Y}?type=${encodeURIComponent(type)}&edition=${edition}`); }
+    const load = async () => { let d; try { if (!/(?:^|;\s*)encore_in=1/.test(document.cookie)) throw Object.assign(new Error("signed out"), { status: 401 }); d = await getJ(`/api/me/year/${Y}?type=${encodeURIComponent(type)}&edition=${edition}`); }
       catch (e) { m.innerHTML = e.status === 401 ? `<div class="ply-out">${potto("wave")}<h1>Your ${Y} in nights</h1><p>Where you went, who you went back to, and a card to share. Free, on web and phone.</p><a class="plsc-btn is-go" href="/login?next=${encodeURIComponent("/year/" + Y)}">Sign in to see yours</a></div>` : `<div class="ply-out"><p>Couldn't load your year. Check your connection, then try again.</p></div>`; return; }
       const q = `type=${encodeURIComponent(type)}&edition=${edition}`, start = at === "summary" ? d.cards.findIndex((c) => c.summary) : 0;
       const link = `<div class="ply-link" id="plyLink"><label class="ply-sw"><input type="checkbox" id="plyShare"${d.share?.on ? " checked" : ""}><span><b>A public link</b><small>Anyone with it sees these cards and nothing else. Off until you turn it on.</small></span></label><p class="ply-url" id="plyUrl">${d.share?.on ? `<a href="${esc(d.share.url)}">${esc(location.origin + d.share.url)}</a>` : ""}</p></div>`;
@@ -94,7 +94,7 @@
     spot.parentElement.insertBefore(d, spot); d.querySelector(".ply-later").onclick = () => { try { localStorage.setItem("pl.yearPrompt." + p.key, "1"); } catch {} d.remove(); }; }
 
   const CSS = `
-.ply{display:grid;gap:12px}
+.ply{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 .ply-bars{display:flex;gap:4px}.ply-bars i{flex:1;height:4px;border-radius:2px;background:var(--pl-line,#CFC8B9);overflow:hidden}.ply-bars i b{display:block;height:100%;width:0;background:var(--pl-ink,#1B1D1C)}
 .ply-bars i.done b,.ply-bars i.now.still b{width:100%}.ply-bars i.now.run b{animation:plyFill ${STEP_MS}ms linear forwards}
 @keyframes plyFill{from{width:0}to{width:100%}}

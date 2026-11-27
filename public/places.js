@@ -63,12 +63,12 @@
         <ol class="plp-strip" aria-label="Nights">${L.map((p) => `<li><button type="button" class="plp-ph${p.id === peekId ? " is-sel" : ""}" data-peek="${esc(p.id)}" aria-label="${esc(`${p.title}, ${niceDate(p.date)}`)}">${thumb(p)}<span>${esc(p.month || "")}</span>${p.hidden ? `<small>Hidden</small>` : ""}</button></li>`).join("") || `<li class="plp-none">${showFriends ? "Nothing from friends yet." : "No nights here yet."}</li>`}</ol>
         ${P ? peek(P, o) : ""}</div>`;
       box.querySelector("#plpX").onclick = close;
-      box.querySelectorAll("[data-area]").forEach((b) => (b.onclick = () => { sel = sel === b.dataset.area ? "" : b.dataset.area; peekId = ""; draw(); box.querySelector(`[data-area="${CSS.escape(b.dataset.area)}"]`)?.focus(); }));
+      box.querySelectorAll("[data-area]").forEach((b) => (b.onclick = () => { sel = sel === b.dataset.area ? "" : b.dataset.area; peekId = ""; draw(); box.querySelector(`[data-area="${window.CSS.escape(b.dataset.area)}"]`)?.focus(); }));
       box.querySelectorAll("[data-peek]").forEach((b) => (b.onclick = () => { peekId = b.dataset.peek; draw(); box.querySelector("#plpPeek")?.focus(); }));
       box.querySelectorAll("[data-type]").forEach((b) => (b.onclick = () => reload(`year=${D.year}&type=${encodeURIComponent(b.dataset.type)}`)));
       const ys = box.querySelector("#plpYear"); if (ys) ys.onchange = () => reload(`year=${ys.value}`);
       const lb = box.querySelector("#plpLayer"); if (lb) lb.onclick = async () => { showFriends = !showFriends; sel = ""; peekId = ""; if (showFriends) await loadFriends(); draw(); box.querySelector("#plpLayer")?.focus(); };
-      const pc = box.querySelector("#plpPeekX"); if (pc) pc.onclick = () => { const id = peekId; peekId = ""; draw(); box.querySelector(`[data-peek="${CSS.escape(id)}"]`)?.focus(); };
+      const pc = box.querySelector("#plpPeekX"); if (pc) pc.onclick = () => { const id = peekId; peekId = ""; draw(); box.querySelector(`[data-peek="${window.CSS.escape(id)}"]`)?.focus(); };
       const hb = box.querySelector("#plpHide"); if (hb) hb.onclick = async () => { const p = (D.places || []).find((x) => x.id === peekId); if (!p) return; try { const j = await send("/api/me/places/hide", { eventId: p.id, hidden: !p.hidden }); p.hidden = j.hidden.includes(p.id); } catch {} draw(); box.querySelector("#plpHide")?.focus(); }; }
     if (showFriends) await loadFriends(); draw(); box.querySelector("#plpX").focus(); }
 
@@ -145,7 +145,7 @@ html.plp-lock{overflow:hidden}
   const signedIn = () => /(?:^|;\s*)encore_in=1/.test(document.cookie);
   async function boot() { const P = location.pathname;
     // /me: your card, in #plPlacesHook
-    if (P === "/me") { const el = document.getElementById("plPlacesHook"); if (!el) return; try { card(el, await getJ(`/api/me/places?year=${YEAR}`), { own: true }); } catch {} return; }
+    if (P === "/me") { const el = document.getElementById("plPlacesHook"); if (!el || !signedIn()) return; try { card(el, await getJ(`/api/me/places?year=${YEAR}`), { own: true }); } catch {} return; }
     // a page: yours (always), or theirs when they show it; under the side column's extras
     const m = P.match(/^\/@([a-z0-9][a-z0-9-]{1,29})\/?$/i); if (m) { let d; try { d = await getJ(`/api/public/places/${encodeURIComponent(m[1].toLowerCase())}?year=${YEAR}`); } catch { return; } if (!d.on || (!d.own && !d.places?.length)) return;
       let n = 0; const put = () => { const side = document.getElementById("sideExtras"); if (!side) { if (++n < 40) setTimeout(put, 250); return; } if (document.getElementById("plPlacesPub")) return; const w = document.createElement("div"); w.id = "plPlacesPub"; w.style.marginBottom = "12px"; side.appendChild(w); card(w, d, { own: !!d.own, handle: m[1].toLowerCase() }); }; put(); return; }

@@ -94,8 +94,8 @@ export function mapOf(areas = [], seed = "") { const A = areas.filter((a) => Num
   const r3 = (v) => Math.round(v * 1000) / 1000, max = Math.max(...A.map((a) => a.n || 1));
   const pts = A.map((a, i) => ({ x: 0.5 + ((xs[i] - cx) / span) * 0.7, y: 0.5 + ((ys[i] - cy) / span) * 0.7 }));
   // neighbours that sit close on a real map are nudged apart, so each one's pins and name can be read (it's a drawing, not a survey)
-  for (let it = 0; it < 40; it++) for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) { const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, d = Math.hypot(dx, dy) || 0.001; if (d >= 0.22) continue;
-    const push = (0.22 - d) / 2, ux = dx / d, uy = dy / d; pts[i].x -= ux * push; pts[i].y -= uy * push; pts[j].x += ux * push; pts[j].y += uy * push; }
+  for (let it = 0; it < 40; it++) for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) { const dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, d = Math.hypot(dx, dy) || 0.001; if (d >= 0.28) continue;
+    const push = (0.28 - d) / 2, ux = dx / d, uy = dy / d; pts[i].x -= ux * push; pts[i].y -= uy * push; pts[j].x += ux * push; pts[j].y += uy * push; }
   const cl = (v) => Math.min(0.9, Math.max(0.1, v));
   return { ...doodle(seed), areas: A.map((a, i) => ({ key: a.key, x: r3(cl(pts[i].x)), y: r3(cl(pts[i].y)), r: r3(0.045 + 0.04 * Math.sqrt((a.n || 1) / max)), n: a.n || 1, label: clean(a.label, 30) })) }; }
 // keeps a quote someone wrote free of contact details and of anyone else's name
@@ -246,8 +246,8 @@ export function makePlaces({ store, C, X = null, geo = null, now = () => Date.no
     // a human moment: words someone wrote about you (kudos on what you hosted), else your own words to a host
     const ids = new Set(rows.map((r) => r.id)), got = I.kudos.filter((k) => ids.has(k.eventId) && k.love && k.email !== me && rows.find((r) => r.id === k.eventId)?.role === "hosted").sort((a, b) => b.love.length - a.love.length)[0];
     const gave = I.kudos.filter((k) => ids.has(k.eventId) && k.love && k.email === me).sort((a, b) => b.love.length - a.love.length)[0];
-    if (got) { const r = rows.find((x) => x.id === got.eventId), by = nameForCard(got.email, me); add("quote", { kicker: "In someone's words", quote: { text: scrubQuote(got.love, othersAt(I, got.eventId, me)), by: by ? `${by}, after ${nightName(r)}` : `A guest at ${nightName(r)}` }, potto: "cheer", tone: "blush" }); }
-    else if (gave) { const r = rows.find((x) => x.id === gave.eventId), ow = getDbUser(lc(getWorkspace(I.events.get(gave.eventId)?.ws)?.ownerEmail || ""))?.name; add("quote", { kicker: "In your words", quote: { text: scrubQuote(gave.love, [...othersAt(I, gave.eventId, me), ...(r && !r.public && ow ? [first(ow)] : [])]), by: `You, after ${nightName(r)}` }, potto: "cheer", tone: "blush" }); }
+    if (got) { const r = rows.find((x) => x.id === got.eventId), by = nameForCard(got.email, me); add("quote", { kicker: "In someone's words", quote: { text: scrubQuote(got.love, othersAt(I, got.eventId, me)), by: by ? `${by}, after ${nightName(r)}` : `A guest at ${nightName(r)}` }, art: r.art, potto: "cheer", tone: "blush" }); }
+    else if (gave) { const r = rows.find((x) => x.id === gave.eventId), ow = getDbUser(lc(getWorkspace(I.events.get(gave.eventId)?.ws)?.ownerEmail || ""))?.name; add("quote", { kicker: "In your words", quote: { text: scrubQuote(gave.love, [...othersAt(I, gave.eventId, me), ...(r && !r.public && ow ? [first(ow)] : [])]), by: `You, after ${nightName(r)}` }, art: r?.art || "heart", potto: "cheer", tone: "blush" }); }
     // your favourite night: one you took photos at, else one you sent kudos for, else the one of your favourite kind
     const favNight = rows.find((r) => r.photos.length) || (gave && rows.find((r) => r.id === gave.eventId)) || rows.find((r) => fav && r.kind === fav[0]) || latest;
     add("photo", { kicker: "A night to keep", title: nightName(favNight), sub: [niceDay(favNight.date), favNight.area?.hood || favNight.area?.city].filter(Boolean).join(" · "), art: favNight.art, tone: "lilac" }, { photo: favNight.photos[0] || "", photoNote: favNight.photos[0] ? "Only you see this photo. Cards you save use the drawing." : "" });

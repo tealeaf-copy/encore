@@ -18,8 +18,8 @@ experienced hosts and a booking they can run end to end.
   with the people you love." The For guests column carries it word for word, and the close echoes it.
 - **Brands:** where brands find trusted, experienced hosts, learn what kinds of experiences resonate with their
   buyers, and run campaigns end to end. The For brands column names what is built (Discover by mood and occasion, the
-  Trusted host badge, team shortlists, the full price for the group, request to book, approvals and invoices) and
-  labels insights and campaigns "Coming soon".
+  Trusted host badge, Quick book, campaigns from the brief to the report) and insights with their privacy rule (a
+  number shows only with at least 10 people and 3 events behind it, `K` in server/insights.js).
 
 ## Three options
 
@@ -31,7 +31,8 @@ experienced hosts and a booking they can run end to end.
 - Headline: Every good night out starts with a host.
 - Earlier headline, retired as too abstract: Somebody carried the chairs.
 - Alternatives on file: The people who make the plans deserve more. / Hosting is work. We help it pay. / Find the people behind your favorite nights.
-- Deck: Behind every supper club, game night and Saturday run is a host doing work nobody sees. Pottery Lab makes that work easier, gets it paid, and helps the right people find it.
+- Deck (live, Nov 2026): Before the first guest replies, the host has already bought the groceries. Pottery Lab is built for that person. It takes care of the invites and the money, and it helps new people find them.
+- Earlier deck: Behind every supper club, game night and Saturday run is a host doing work nobody sees. Pottery Lab makes that work easier, gets it paid, and helps the right people find it.
 
 **C. Name the reader**
 - Headline: For the one who started the group chat.
@@ -39,28 +40,36 @@ experienced hosts and a booking they can run end to end.
 
 ## The pick: B
 
-"Somebody carried the chairs" starts with the host, not the product, and it is a scene anyone who has hosted has lived.
-It is a little wry without a joke, and it makes the point (the work is invisible) without saying "underappreciated". The
-deck does the explaining, so a brand marketer or an engineer still knows what this is in one line. A reads like a slogan
+The pick began as "Somebody carried the chairs". The owner found it too abstract, so the headline now says the point
+outright: "Every good night out starts with a host." The deck carries the concrete scene (the groceries bought before
+anyone replies) and then says plainly what Pottery Lab does. The deck does the explaining, so a brand marketer or an engineer still knows what this is in one line. A reads like a slogan
 and C narrows the reader to people who already host, when guests and brands read this page too.
 
 ## Section order
 
 1. Kicker WHY WE EXIST, the headline, the deck, Plan a dinner (/start, no account needed) and Explore what's on.
-2. The night: the week behind one dinner.
-3. The problem: the people who make a city feel alive are rarely seen, paid or thanked, and the tools aren't for them.
-4. A pull quote in our own voice (not a testimonial).
-5. What changes: five pillars, each with features that exist today (thanked, an easier job, paid, a following, found).
-6. For hosts, for guests, for brands.
+2. The night: the week behind one dinner, day by day.
+3. The problem: the work nobody sees, and tools made to sell tickets to strangers.
+4. A pull quote in the team's own words (not a testimonial).
+5. For hosts: four pillars, two lines each, all built today (easier, paid, a following, found).
+6. Who it's for: a short hosts card (start with one dinner), then guests, then brands with insights.
 7. What's on right now (live, public events).
-8. What we believe, ending on the tagline, word for word.
-9. The close: Plan a dinner, Explore what's on, For brands (/teams/discover).
+8. House rules (eight beats eighty, private unless you say so, no ads), ending on the tagline, word for word.
+9. The close, one step per reader: Plan a dinner (/start), Find something this weekend (/feed), Book a host for your
+   team (/teams/discover).
+
+## The Nov 2026 edit
+
+The page was about 1,050 words. It is now under 600, about two minutes. Cut: the list of event types in the problem
+section, the fifth pillar (thanks folded into "A following"), bullets that repeated each other (stats, streaks, brand
+kit, imports, flyers, QR codes, tips, wishlists, packages), the hosts card's feature list (the pillars say it), three
+beliefs that restated the pillars, and "What we believe" as a heading. Insights and campaigns are built now, so the
+"Coming soon" label is gone and the brands card names Quick book, campaigns and the insights threshold instead.
 
 ## Left out on purpose
 
 - Card payments inside Pottery Lab. Guests pay through the host's own pay link (Venmo, PayPal, Cash App or a Stripe
   link); there is no built-in Stripe checkout, so the page doesn't claim one.
-- Brand insights and campaigns, which are being built: labelled "Coming soon" on the page.
 - Paid supporter tiers. Pledges record a tier and charge no one, so the page says tips and a supporter link.
 - The invite planner and People, which aren't on main yet.
 - Fees and take rates, numbers of hosts or guests, logos and quotes from real people.

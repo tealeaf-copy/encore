@@ -37,7 +37,7 @@
 .hl-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:9990;display:flex;align-items:flex-end;justify-content:center}
 .hl-sheet{background:var(--pl-page);border:1px solid var(--pl-ink);border-radius:6px 6px 0 0;width:100%;max-width:480px;padding:20px 16px calc(20px + env(safe-area-inset-bottom));text-align:center;color:var(--pl-ink)}
 @media (min-width:600px){.hl-sheet-bg{align-items:center}.hl-sheet{border-radius:6px}}
-.hl-sheet h2{font:400 28px/1.15 var(--pl-font-display);margin:8px 0 6px}.hl-sheet p{margin:0 0 16px;color:var(--pl-soft)}
+.hl-sheet h2{font:600 28px/1.15 var(--pl-font-display);margin:8px 0 6px}.hl-sheet p{margin:0 0 16px;color:var(--pl-soft)}
 `;
   const st = document.createElement("style"); st.id = "hostloop-css"; st.textContent = css; (document.head || document.documentElement).appendChild(st);
 

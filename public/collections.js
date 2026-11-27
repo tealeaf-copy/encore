@@ -34,7 +34,7 @@ section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}secti
 .plk-shelves:empty{display:none}
 .plk-slc{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:12px 0 0;padding:0 14px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.plk-slc:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
 .plk-card .plk-sl{position:absolute;top:8px;right:8px;z-index:2;width:44px;height:44px;display:grid;place-items:center;border-radius:999px;border:1.5px solid var(--pl-ink,#1B1D1C);background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);cursor:pointer;padding:0}.plk-card .plk-sl:focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
-.plk-sh h2{font:400 var(--fs-20-28,20px)/1.2 var(--sys-title);margin:0;letter-spacing:-.015em}
+.plk-sh h2{font:600 var(--fs-20-28,20px)/1.2 var(--sys-title);margin:0;letter-spacing:-.015em}
 .plk-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .plk-hd a{flex:none;display:inline-flex;align-items:center;min-height:44px;color:var(--pl-accent-text);font:600 14px var(--sys-sans);text-decoration:none}
 .plk-hd a:hover{text-decoration:underline;text-underline-offset:3px}
@@ -55,7 +55,7 @@ section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}secti
 .plk-row .plk-host{width:auto}
 /* one collection: a short intro and a calm two-column grid */
 .plk-page .plk-intro{max-width:620px;margin:4px 0 20px}
-.plk-page h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:0}
+.plk-page h1{font:600 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:0}
 .plk-page .plk-intro p{margin:8px 0 0;color:var(--pl-soft);font-size:16px;line-height:1.5}
 .plk-page .plk-n{display:block;margin-top:10px;font:500 13px var(--sys-mono);color:var(--pl-muted)}
 .plk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}

@@ -8702,7 +8702,7 @@ async function signOut(){ try{ await fetch("/api/logout",{method:"POST"}) }catch
 (()=>{ try{ if(isGuestRoute?.()) return; const add=()=>{ const st=document.querySelector(".status"); if(!st||document.getElementById("signOut")) return; const b=document.createElement("button"); b.type="button"; b.id="signOut"; b.className="viewtoggle"; b.textContent="Sign out"; b.onclick=signOut; st.before(b);
       /* help sits in the sidebar with Sign out (help.js opens it), instead of a button floating over the page */
       /* design audit: the same three in the same order as the side menu on every other page (Sign out, Settings, Help) */
-      const s=document.createElement("a"); s.id="settingsSide"; s.className="viewtoggle"; s.href="/settings"; s.textContent="Settings"; b.after(s);
+      const s=document.createElement("button"); s.type="button"; s.id="settingsSide"; s.className="viewtoggle"; s.textContent="Settings"; s.onclick=()=>{ location.href="/settings" }; b.after(s); /* a button like its neighbours, so it takes their look */
       const h=document.createElement("button"); h.type="button"; h.id="helpSide"; h.className="viewtoggle"; h.setAttribute("data-help-open",""); h.textContent="Help"; s.after(h) }; add(); setTimeout(add,1500) }catch{} })();
 // friends hosts: "New event" goes to Potto, and the words stay friendly
 /* New event for friends hosts: see the guide below */

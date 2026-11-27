@@ -32,7 +32,7 @@
 @media (max-width:520px){.plg-go{flex:1 1 100%}}
 /* the guide pages */
 .plg-wrap{max-width:720px}
-.plg-wrap h1{font:400 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:0}
+.plg-wrap h1{font:600 var(--fs-28-40,28px)/1.08 var(--sys-display);letter-spacing:-.015em;margin:0}
 .plg-intro{margin:10px 0 0;color:var(--pl-soft);font-size:16px;line-height:1.55;max-width:60ch}
 .plg-prog{display:grid;gap:8px;margin:18px 0 8px}.plg-prog span.plg-n{font:500 13px var(--sys-mono);color:var(--pl-soft)}
 .plg-steps{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
@@ -46,7 +46,7 @@
 .plg-step.done .plg-go{background:var(--pl-surface);color:var(--pl-ink)!important;border-color:var(--pl-line-strong)}
 .plg-list{display:grid;gap:12px;margin:20px 0 0}
 .plg-gc{position:relative;display:grid;gap:6px;padding:18px;background:var(--pl-surface);border:1px solid var(--pl-line);border-radius:var(--pl-r-md);text-decoration:none;color:inherit}
-.plg-gc:hover{border-color:var(--pl-line-strong)}.plg-gc h2{margin:0;font:400 22px/1.2 var(--sys-title);letter-spacing:-.015em}.plg-gc p{margin:0;color:var(--pl-soft);font-size:14px}
+.plg-gc:hover{border-color:var(--pl-line-strong)}.plg-gc h2{margin:0;font:600 22px/1.2 var(--sys-title);letter-spacing:-.015em}.plg-gc p{margin:0;color:var(--pl-soft);font-size:14px}
 .plg-gc .plg-n{font:500 13px var(--sys-mono);color:var(--pl-soft)}
 .plg-note{margin:16px 0 0;padding:14px 16px;border:1px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);color:var(--pl-soft);font-size:14px}
 .plg-note a{color:var(--pl-accent-text);font-weight:600}

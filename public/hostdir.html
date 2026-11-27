@@ -54,7 +54,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   <button type="button" class="ls-btn" id="more" hidden style="margin-top:24px"></button>
   <p class="teams" style="border-width:1.5px">Booking for a brand? <a href="/hosts/book">Request a date</a>.</p>
 </div>
-<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script><script src="/follow.js"></script>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script><script src="/follow.js" defer></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -88,7 +88,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   const igOf = (h) => ((h.links || []).find((l) => /^https:\/\/(www\.)?instagram\.com\//i.test(l.url || "")) || {}).url || "";
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
       <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `${nextTag(h)}<span class="nx-l">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}</span>
-      <span class="ft">${window.PLFollow ? window.PLFollow.button({ handle: h.handle, name: h.name, showcase: h.showcase }, { cls: "ls-btn primary" }) : ""}${h.showcase && igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : ""}</span></div>`;
+      <span class="ft">${window.PLFollow ? window.PLFollow.button({ handle: h.handle, name: h.name, showcase: h.showcase }, { cls: "ls-btn primary" }) : `<button type="button" class="plf-btn ls-btn primary" data-pl-follow="${esc(h.handle)}" data-name="${esc(h.name)}"${h.showcase ? ' data-showcase="1"' : ""} aria-pressed="false">${h.showcase ? "Notify me when they join" : "Follow"}<span class="sr"> ${esc(h.name)}</span></button>`}${h.showcase && igOf(h) ? `<a class="ig" href="${esc(igOf(h))}" target="_blank" rel="noopener">Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : ""}</span></div>`;
   // Top hosts this month (from the leaderboard): the picked city, else the visitor's, else the busiest; only when the board qualifies
   const TOP = new Map(); let topSeq = 0;
   async function drawTop() { const box = $("#tops"); if (!box) return; if (q || kind !== "all") { box.hidden = true; return; } const want = city || mine || "", n = ++topSeq;

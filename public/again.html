@@ -40,7 +40,7 @@ h1{font:700 30px/1.12 var(--sys-display);margin:0 0 8px}.muted{color:var(--smoke
     const host = and(j.hosts || []), nx = j.next, inAlready = nx && nx.response === "going";
     document.title = `Same table next time? ${j.title} · Pottery Lab`;
     m.innerHTML = `<p class="eyebrow">${esc(j.title)}${j.date ? ` · <span class="mono">${esc(day(j.date))}</span>` : ""}</p><h1>Same table next time${j.name ? `, ${esc(j.name)}` : ""}?</h1>
-      <p class="muted">${host ? `${esc(host)} ${(j.hosts || []).length > 1 ? "host" : "hosts"} it again` : "It happens again"}${nx ? "." : `. ${host ? esc((j.hosts || [])[0]) : "The host"} hasn't set the next date yet. Tap now and you're in once it's up.`}</p>
+      <p class="muted">${nx ? `${host ? `${esc(host)} ${(j.hosts || []).length > 1 ? "host" : "hosts"} it again` : "It happens again"}.` : `${host ? esc((j.hosts || [])[0]) : "The host"} hasn't set the next date yet. Tap I'm in and you're in as soon as it's set.`}</p>
       <div class="card">${nx ? `<div class="next"><span class="eyebrow">Next one</span><b><span class="mono">${esc(day(nx.date))}${nx.startTime ? ` · ${esc(clock(nx.startTime))}` : ""}</span></b></div>` : ""}
         <div id="act">${inAlready ? `<p class="done">You're in for ${esc(day(nx.date))}.</p><p><a href="/e/${encodeURIComponent(nx.id)}">Open the invite</a></p>` : j.pledged ? `<p class="done">You're in once the next date is set.</p>` : `<button class="go" id="go" type="button">I'm in</button>`}</div></div>
       <p class="muted" style="font-size:14px">Not this time? You don't need to do anything.</p>`;

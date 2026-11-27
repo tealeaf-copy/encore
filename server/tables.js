@@ -327,7 +327,7 @@ export function mountTables(app, { store, small, C, X, ownerOnly, currentUser = 
         for (const x of cameTo(S, id, ev)) { if (!x.id) continue; const log = "sametable/" + id + "--" + x.id; if (S.get(log)) continue; const em = lc(x.r.email); if (!em) continue;
           let code = String(x.r.code || ""); if (!code) { code = crypto.randomBytes(5).toString("hex").toUpperCase(); try { S.update("rsvps/" + x.id, { code }); } catch { continue; } }
           S.set(log, { eventId: id, rid: x.id, at: now, channel: "pending" }); // logged first: one ask, ever
-          const link = againLink(origin, id, x.id, code), when = nx ? `The next one is ${fmtDay(nx.data.date)}.` : `${host || "Your host"} hasn't set the next date yet. Tap now and you're in when it's up.`;
+          const link = againLink(origin, id, x.id, code), when = nx ? `The next one is ${fmtDay(nx.data.date)}.` : `${host || "Your host"} hasn't set the next date yet. Tap I'm in and you're in as soon as it's set.`;
           const inbox = X.notify(em, { kind: "sametable", key: "sametable-" + id + "-" + x.id, text: `Same table next time? ${when}`, link: `/again/${encodeURIComponent(id)}?rid=${encodeURIComponent(x.id)}&code=${encodeURIComponent(code)}`, eventId: id }) !== false;
           const mailed = await mail(ws, ev, em, `Same table next time? ${t}`, `Hi ${first(x.r.name) || "there"},\n\nThanks for coming to ${t}${host ? ` with ${host}` : ""}.\n\nSame table next time? ${when}\nOne tap and you're in: ${link}\n\nNot this time? No need to reply. This is the only note about it.\n`, origin);
           S.set(log, { eventId: id, rid: x.id, at: now, channel: mailed ? "email" : inbox ? "inbox" : "none" }); row.asked++; out.asked++; if (mailed) out.emailed++; if (inbox) out.inbox++; }

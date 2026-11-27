@@ -81,7 +81,7 @@ body{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
       <input class="field" id="idIn" type="text" name="username" placeholder="you@example.com or (555) 123-4567" autocomplete="username" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="200" required>
       <p class="err" id="idErr" role="alert"></p>
       <div class="note" id="smsOff" hidden role="status"><span id="smsOffTxt">Text sign-in isn't on yet. Use your email instead.</span><br><button type="button" class="lnk" id="useEmail">Use my email</button></div>
-      <button class="go" type="submit" id="idGo">Continue</button>
+      <button class="go" type="submit" id="idGo">Send me a code</button>
     </form>
     <div class="row2"><button type="button" class="lnk small" id="kbSwap">Use a phone number</button></div>
     <div id="others" hidden>
@@ -108,7 +108,7 @@ body{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
       <label for="otpIn">6-digit code</label>
       <input class="field code" id="otpIn" name="one-time-code" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
       <p class="err" id="otpErr" role="alert"></p>
-      <button class="go" type="submit" id="otpGo">Continue</button>
+      <button class="go" type="submit" id="otpGo">Check the code</button>
     </form>
     <p class="hint" id="otpHint">No email yet? Check your spam folder, or tap the link in the email.</p>
     <div class="row2"><button type="button" class="lnk small" id="resend">Send a new code</button></div>
@@ -123,7 +123,7 @@ body{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important}
       <label for="codeIn">Invite code</label>
       <input class="field invite" id="codeIn" name="code" placeholder="e.g. OINK-OINK" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required>
       <p class="err" id="codeErr" role="alert"></p>
-      <button class="go" type="submit" id="codeGo">Continue</button>
+      <button class="go" type="submit" id="codeGo">Use this code</button>
     </form>
     <div class="links">
       <button type="button" class="lnk" id="toWait">No code? Join the waitlist</button>

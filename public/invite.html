@@ -121,7 +121,7 @@
         ${e.carpool ? `<label class="f" id="rdL">Getting there<select id="rd"><option value="">On my own</option><option value="can drive">I can drive people</option><option value="needs a ride">I need a ride</option></select></label>` : ""}
         ${paid && TI ? TI.pickerHTML(e) : ""}${paid ? `<p class="muted" id="payNote" style="margin:0">${esc((typeof srPrice === "function" && srPrice(e)) || priceText(e))}. ${e.ticketNote ? "Pay at the door." : `You'll pay ${esc(first)} after you reply.`}</p>` : ""}
         <div id="qs"></div><p class="err" id="er" role="alert"></p><button class="go" id="send">${esc(btn("going"))}</button>
-        <p class="consent" id="consent">By replying you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. If you add a phone, you'll get event texts; reply STOP to stop.</p></form>
+        <p class="consent" id="consent">By replying you agree to the <a href="/terms" target="_blank">Terms</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. If you add a phone, you'll get event texts. Reply STOP to stop.</p></form>
       ${A.count > Math.min(8, (A.attendees || []).length) ? `<a class="full" id="fullLink">See who's coming</a>` : ""}`;
     if (LK) { document.body.classList.add("lk-invite"); LK.css(); const BK = window.EncoreBrandKit; BK?.use(h.kit); if (LK.has(look) || BK?.current) LK.apply(document.body, e); } // per-event looks: colours, title font and effect
     document.body.classList.toggle("lk-poster", !!$("#m .cov.poster"));

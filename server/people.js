@@ -52,7 +52,7 @@ export function chipLabel(c = {}) {
     city: () => `${not ? "Not in" : "In"} ${v || "a city"}`,
     tag: () => (not ? `Not ${v}` : v || "Tagged"),
     maybeLast: () => (not ? "Didn't say maybe last time" : "Said maybe last time"),
-    repliedNeverCame: () => (not ? "Has come before" : "Never came but replied"),
+    repliedNeverCame: () => (not ? "Has come before" : "Replied, never came"),
     noShow: () => (not ? "No no-shows" : "No-shows"),
     new: () => (not ? "Has come before" : "Never came"),
     supporter: () => (not ? "Not a supporter" : v ? TIER_LABEL[v] || "Supporters" : "Supporters"),
@@ -110,7 +110,7 @@ export function builtinLists(people, { brand = false } = {}) {
     ...(topCity ? [["city", `Followers in ${topCity}`, [{ k: "follower" }, { k: "city", v: topCity }]]] : []),
     ["vip", "VIP", [{ k: "tag", v: "VIP" }]],
     ["maybe", "Said maybe last time", [{ k: "maybeLast" }]],
-    ["nevercame", "Never came but replied", [{ k: "repliedNeverCame" }]],
+    ["nevercame", "Replied, never came", [{ k: "repliedNeverCame" }]],
     ["noshows", "No-shows", [{ k: "noShow" }]],
     ...(brand ? [["customers", "Customers", [{ k: "tag", v: "Customer" }]], ["optin", "Opted in to email", [{ k: "optin" }]], ["lapsed", "Came before, not in 90 days", [{ k: "lapsed", n: 90 }]]] : []),
   ];

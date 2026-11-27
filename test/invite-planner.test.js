@@ -112,7 +112,7 @@ test("People builds itself from replies, attendance, follows, the fan club and k
 test("smart lists: live counts for the built-in lists and saved ones", async () => {
   const { bo, ana, sam } = await withHistory("bo-lists");
   let j = await getJ("/api/contacts", bo.cookie); const L = (name) => j.lists.find((l) => l.name === name);
-  assert.equal(L("Came 2+ times").count, 1); assert.equal(L("Said maybe last time").count, 1); assert.equal(L("No-shows").count, 1); assert.equal(L("Never came but replied").count, 2, "Kim (no-show) and Joe");
+  assert.equal(L("Came 2+ times").count, 1); assert.equal(L("Said maybe last time").count, 1); assert.equal(L("No-shows").count, 1); assert.equal(L("Replied, never came").count, 2, "Kim (no-show) and Joe");
   // tag a VIP, save "VIP, no no-shows"
   const anaId = j.people.find((p) => p.email === ana.email).id;
   assert.equal((await post("/api/contacts/" + anaId, { tags: ["VIP", "Friend"], notes: "Loves natural wine" }, bo.cookie)).status, 200);

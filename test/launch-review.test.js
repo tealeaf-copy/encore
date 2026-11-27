@@ -60,7 +60,7 @@ test("footers link the policies, and sign-up and both reply forms carry the cons
   assert.match(su, /By continuing, you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\./, "the sign-in screen");
   assert.match(read("public/signup.html"), /By creating a page you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\./, "the longer form (brands, storefronts)");
   const lite = await (await fetch(srv.base + "/e/lrOpen")).text();
-  const consent = /By replying you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\. If you add a phone, you'll get event texts; reply STOP to stop\./;
+  const consent = /By replying you agree to the <a href="\/terms"[^>]*>Terms<\/a> and <a href="\/privacy"[^>]*>Privacy Policy<\/a>\. If you add a phone, you'll get event texts\. Reply STOP to stop\./;
   assert.match(lite, consent, "the light invite");
   assert.match(read("index.html"), consent, "the full guest form");
 });
@@ -213,7 +213,7 @@ test("The first yes on an event reaches the host's inbox once; the replies after
   const e0 = fakeOutbox.length;
   assert.equal((await guestReply("lrFirst", "lr-key-first1", { name: "Sam Lee", email: "sam.first@guest.example.com", response: "going" })).j.response, "going");
   const m = mailsTo("rae.lr@example.com", e0).filter((x) => /is in for Soup night/.test(x.subject)); assert.equal(m.length, 1, "one email to the host");
-  assert.equal(m[0].subject, "Sam is in for Soup night"); assert.match(m[0].text, /^Sam said I'm in\. That's the first yes for Soup night \(.+\)\.\n\nSee who's coming: http.+open=lrFirst#studio\n\nAfter this one, replies come as one short summary every few hours, never one by one\. You can turn that off in Settings\.\n/); assert.doesNotMatch(m[0].text, /\u2014/);
+  assert.equal(m[0].subject, "Sam is in for Soup night"); assert.match(m[0].text, /^Sam is in\. That's the first reply for Soup night \(.+\)\.\n\nSee who's coming: http.+open=lrFirst#studio\n\nAfter this one, replies come as one short summary every few hours, never one by one\. You can turn that off in Settings\.\n/); assert.doesNotMatch(m[0].text, /\u2014/);
   assert.equal((await guestReply("lrFirst", "lr-key-first2", { name: "Tess Wren", email: "tess.first@guest.example.com", response: "going" })).j.response, "going");
   assert.equal(mailsTo("rae.lr@example.com", e0).filter((x) => /is in for Soup night/.test(x.subject)).length, 1, "the second yes does not email the host");
 });

@@ -210,6 +210,7 @@ The tables above cover what the cohort needs. These are the rest, so nothing in 
 | `ENCORE_USERS` | No | Named team members for a private install. Not for the cohort. |
 | `ENCORE_VERIFY_EMAIL` | No | `0` turns off email confirmation. Leave it unset in production. |
 | `ENCORE_SIGNUP_PER_HOUR` | No | Sign-ups per address per hour. |
+| `ENCORE_TEAMUP_WEEKLY` | No | Team up requests one host can send in 7 days (default 5). server/collab.js. |
 | `ENCORE_RSVP_PER_HOUR`, `ENCORE_RSVP_IP_PER_HOUR` | No | Replies per event and per address per hour. Raise them for a very big event. |
 | `ENCORE_CONTACT_PER_HOUR`, `ENCORE_CONTACT_MATCH_PER_HOUR`, `ENCORE_CONTACT_MATCH_PER_IP_HOUR` | No | The contact form, and finding friends from contacts. |
 | `ENCORE_NOTE_PER_HOUR`, `ENCORE_NOTE_IP_PER_HOUR` | No | Notes to hosts. |

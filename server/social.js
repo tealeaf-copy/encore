@@ -214,6 +214,8 @@ export function makeSocial(store, { C, saveBlob }) {
     return cache;
   }
   const bust = () => { cache = null; };
+  // a new or edited event (a drop included) shows on the feed at once, not after the 15-second cache runs out
+  try { store.events?.on?.("change", (e) => { if (/^ws\/[^/]+\/events\//.test(String(e?.path || ""))) cache = null; }); } catch {}
   const isPublic = (e) => !!e?.discoverable;
   const evCard = (x) => { const e = x.e, h = C.profileOf(x.ws); return { id: x.id, title: e.pubTitle || e.name, date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", activity: e.activity || "", emoji: e.emoji || "", free: e.free || !e.price, price: e.price || "", public: isPublic(e), host: h?.handle ? { handle: h.handle, name: h.name, emoji: h.emoji, color: h.color } : null }; };
   // ---- the feed ----

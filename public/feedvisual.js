@@ -761,8 +761,9 @@ a.fb-add-out{align-items:center;min-height:44px;padding:0 12px;border:1px solid 
 @media (prefers-reduced-motion:reduce){.fb-cta,.fb-fc,.fb-act.pop svg,.fb-send.pop svg,.fb-f.fb-in{transition:none!important;animation:none!important}.fb-fc.gone{transform:none}}
 `;
   /** "?interests=…&city=…" from what this visitor picked (pl.interests), for /api/public/feed, or "". */
-  function publicQuery() { let v = null; try { v = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch {} if (!v || typeof v !== "object") return "";
-    const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
+  function publicQuery() { let v = null; try { v = JSON.parse(localStorage.getItem("pl.interests") || "null"); } catch {} if (!v || typeof v !== "object") v = {};
+    let c0 = String(v.city || "").trim(); if (!c0) try { c0 = String((window.EncorePlace?.get?.() || {}).city || "").trim(); } catch {} // ---- the city picked at the top of the feed counts too (inspiration cards, server/inspiration.js) ----
+    const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = c0.slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   /** One card on its own (the post page, public/post.html): the same drawing as the stream, with its kudos wired. */
   const social = { postOf, face, ago, stamp, kLine, setKudos, setComments, wireKudos, focusBox, live, emojiOnly, rxHtml, mediaHtml, funBtns, RXG, card: (item, { signedIn = false, me = null } = {}) => { LEADFULL = true; return blendHtml({ items: [item], me }, { signedIn }); } };

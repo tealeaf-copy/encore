@@ -305,13 +305,16 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
       ideas: ideas.length ? [ideasCard(ideas, city, now)] : [] };
     // ---- lists in the feed (server/listfeed.js): "Maya made a list", "Maya added ... to ..."; friends and followers only ----
     const LF = app?.locals?.listFeed; if (LF && v.email) { try { pools.list = LF.cards(v, { now, kudosOf: (t) => kudosOf(v, t), commentsOf: (t) => commentsOf(v, t) }); } catch { pools.list = []; } }
-    const items = arrange(pools, pools.list?.length ? { pattern: LIST_PATTERN } : undefined); // ---- end lists in the feed ----
+    let items = arrange(pools, pools.list?.length ? { pattern: LIST_PATTERN } : undefined); // ---- end lists in the feed ----
+    // ---- inspiration cards (server/inspiration.js): holidays and new places, at most one per 8 cards and 2 a day ----
+    const IN = app?.locals?.inspiration; if (IN) { try { items = IN.weave(items, { email, ws, device, city, I, publicOK: (x) => V.cardPublic(x.e) && !!hostOK(I, x.ws) }, IN.today()); } catch {} } // ---- end inspiration ----
     return { items, cold: !email || (!v.followed.size && !v.friends.size), following: v.followed.size, city: v.city ? clean(city, 60) : "", ...(email ? { me: myFace(v) } : {}) };
   }
   /** What one device or person did to a shared (cached) stream: their kudos, and the suggestions they dismissed. */
   function decorate(B, { who = "" } = {}) { if (!B || !who) return B; const gone = dismissed(who), w = hashKey(who);
-    return { ...B, items: B.items.map((it) => { let x = it; if (it.kudos) { const mine = !!kudosDoc(it.kudos.target)?.by?.[w]; x = { ...x, kudos: { ...it.kudos, mine, line: kudosLine(it.kudos.count, mine, it.kudos.names) } }; }
-      if (it.kind === "follow") x = { ...x, cards: it.cards.filter((c) => !gone.has(c.type === "host" ? "host:" + lc(c.handle) : "person:" + c.key)) }; return x; }).filter((it) => it.kind !== "follow" || it.cards.length >= 2) }; }
+    const IN = app?.locals?.inspiration, mine = (L) => (IN ? IN.forWho(L, who) : L); // ---- inspiration: dismissed and the day cap, per device (server/inspiration.js) ----
+    return { ...B, items: mine(B.items.map((it) => { let x = it; if (it.kudos) { const mine = !!kudosDoc(it.kudos.target)?.by?.[w]; x = { ...x, kudos: { ...it.kudos, mine, line: kudosLine(it.kudos.count, mine, it.kudos.names) } }; }
+      if (it.kind === "follow") x = { ...x, cards: it.cards.filter((c) => !gone.has(c.type === "host" ? "host:" + lc(c.handle) : "person:" + c.key)) }; return x; }).filter((it) => it.kind !== "follow" || it.cards.length >= 2)) }; }
   /**
    * The card a target names, when this viewer may see it (else null): { target, kind, ws, owner, title, eventId, chat }.
    * One gate for kudos and comments, with the same rules the stream uses: upcoming open events and interest checks,

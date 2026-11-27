@@ -251,7 +251,10 @@
     // opens the picker). It starts fresh: an older unsaved draft on this device stays where it is.
     let pre = !editing && o.preset ? o.preset : null, pickRun = false;
     try { const u = new URL(location.href), t = u.searchParams.get("tpl"); if (t) { if (!editing && !pre) { pre = root.RunTemplates?.fromQuery?.(u.searchParams) || null; pickRun = !pre; } for (const k of ["tpl", "date", "time", "repeat", "title"]) u.searchParams.delete(k); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
-    const key = keyOf(editing ? cur : null), kept = pre || pickRun ? null : ls.get(key);
+    // ---- an inspiration card's "Plan this" (public/inspire.js): ?insp=<card>&ititle=&idate=&iplace=&ihood=&icity=&icover= starts fresh, filled in ----
+    let insp = null; try { const u = new URL(location.href), id = u.searchParams.get("insp"); if (id) { if (!editing && /^[a-z0-9:-]{2,80}$/.test(id)) { const g = (k) => String(u.searchParams.get(k) || "").slice(0, 80).trim(); insp = { id, title: g("ititle"), date: /^\d{4}-\d{2}-\d{2}$/.test(g("idate")) ? g("idate") : "", place: g("iplace"), hood: g("ihood"), city: g("icity"), cover: /^[a-z]{2,12}$/.test(g("icover")) ? g("icover") : "" }; }
+      for (const k of ["insp", "ititle", "idate", "iplace", "ihood", "icity", "icover"]) u.searchParams.delete(k); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
+    const key = keyOf(editing ? cur : null), kept = pre || pickRun || insp ? null : ls.get(key);
     if (kept?.d && (editing ? kept.base === (cur.updatedAt || null) : (kept.d.pubTitle || kept.d.date || kept.d.why))) { W = { ...W, ...kept.d, id: W.id }; note = editing ? "Your unsaved changes are back." : "Picked up your draft from earlier."; }
     if (!editing && W.effect === "confetti") W.effect = "none";
     const club = (editing && CLUB?.events?.find((x) => x.id === cur.id)?.visibility) || "everyone";
@@ -264,6 +267,7 @@
     else if (editing) for (const [b, k] of Object.entries(KIND_OF_BLOCK)) if (planKind(S.W) === k) S.open.add(b);
     if (pre) applyPreset(pre, false);
     else if (!editing && S.W.planKind === "run") runDefaults(S.W);
+    if (insp) { const W = S.W; W.inspiredBy = insp.id; if (insp.title) { W.pubTitle = insp.title; W.name = insp.title; } if (insp.date) W.date = insp.date; if (insp.place) W.venueName = insp.place; if (insp.hood) W.hood = insp.hood; if (insp.city) W.city = insp.city; if (insp.cover) W.coverArt = { ...(W.coverArt || {}), kind: insp.cover }; S.dirty = true; } // ---- end inspiration ----
     build(); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
   // ---- New York run templates (public/runtemplates.js) ----
   const TPL_SECTIONS = ["the route", "pace groups", "after", "good to know"];

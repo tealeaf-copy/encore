@@ -144,7 +144,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 <input type="file" id="storyFile" accept="image/*,video/*" hidden>
 <script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/avatars.js"></script>
-<script src="/save.js"></script><script src="/follow.js"></script><script src="/inspo.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/feedvisual.js"></script><script src="/listcards.js"></script><script src="/momentupload.js"></script><script src="/composer.js"></script><!-- visual feed, the "+" -->
+<script src="/save.js"></script><script src="/follow.js"></script><script src="/inspo.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/feedvisual.js"></script><script src="/inspire.js"></script><!-- inspiration cards (server/inspiration.js) --><script src="/listcards.js"></script><script src="/momentupload.js"></script><script src="/composer.js"></script><!-- visual feed, the "+" -->
 <script>
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -168,7 +168,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   // (the page used to draw, then reload itself once to pick the city up)
   let cityP = null; const cityReady = () => cityP || (cityP = (async () => { try { if (window.EncorePlace?.get?.() || localStorage.getItem("encore.city") !== null || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; /* any choice, Anywhere too, is kept */
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); sessionStorage.setItem("encore.feedCity", "1"); } } catch {} })());
-  async function load() { try { [F] = await Promise.all([api("/api/me/feed"), cityReady()]); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
+  async function load() { try { [F] = await Promise.all([api("/api/me/feed" + ((c) => (c ? "?city=" + encodeURIComponent(c) : ""))((() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })()) /* the city picked at the top: inspiration cards (server/inspiration.js) */), cityReady()]); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
   // ---- leaderboards: the weekly card, moments ("Mai is now #2"), your own standing ----
   const lbAv = (h) => `<span class="lav" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 44) : esc(h.emoji || "🎉")}</span>`;
   const lbBadges = (e) => (e.badges || []).filter((b) => b.id === "super" || b.id === "legend").map((b) => `<span class="bdg">${esc(b.emoji)} ${esc(b.id === "legend" ? "Local legend" : b.label)}</span>`).join("") + (e.streak && e.streak.weeks >= 3 ? `<span class="bdg">🔥 ${e.streak.weeks}-week streak</span>` : "");

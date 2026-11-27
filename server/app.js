@@ -76,6 +76,7 @@ import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary:
 import { mountChat } from "./chat.js"; // group chats: one per event, an inbox at /chats (server/chat.js)
 import { mountHooks, IDEAS } from "./hooks.js"; import { mountLibrary } from "./library.js"; // Your library: smart lists, your own lists, shared lists, the host library (server/library.js)
 import { mountTrends } from "./trends.js"; // Potto's idea engine: platform trends, trend notes, Potto's ideas (server/trends.js)
+import { mountInspiration } from "./inspiration.js"; // inspiration cards in the feed (server/inspiration.js)
 import { mountPaidInsights } from "./paidinsights.js"; // Paid Insights: Market Insights for brands, Host Insights, opt-in demographics (server/paidinsights.js)
 import { mountCuration } from "./curation.js"; // lists people follow: visibility, curators, I'd go again (server/curation.js)
 import { mountCollections } from "./collections.js"; import { mountGuides } from "./guides.js"; import { mountStats } from "./stats.js"; // Discover collections, host guides, your stats (calm, collections, guides)
@@ -876,6 +877,7 @@ export function createApp({ store, dataDir }) {
   mountCuration(app, { store, small, currentUser, C, X, sendStatic }); // server/curation.js: list visibility, curator pages, follows, I'd go again (after the library)
   // ---- trends: Potto's ideas, grounded in what people here loved (server/trends.js) ----
   mountTrends(app, { store, express, currentUser, C, X, IDEAS }); // ---- end trends ----
+  mountInspiration(app, { store, express, currentUser }); // ---- inspiration cards in the feed: holidays and new places (server/inspiration.js) ----
   mountPaidInsights(app, { store, small, currentUser, C, X, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); // ---- paid insights, after the trends engine it reads (server/paidinsights.js) ----
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js
   // ---------- a guest's own reply, from any phone or browser ----------
@@ -1740,6 +1742,7 @@ export function createApp({ store, dataDir }) {
     if (isEv && !req.guest) app.locals.fanclub?.onEventWrite(req, req.ws, p.split("/")[1], before, after); // a new event tells members and followers (server/fanclub.js) // "Ada moved it to 7:30pm." in the group chat
     if (isEv && !req.guest && !before && !after?.sample && !after?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: p.split("/")[1] });
     if (isEv && !req.guest && after?.published && !before?.published && !after?.sample && !after?.example) capture("event_published", { ws: req.ws, kind: after.kind, region: after.city, private: !after.discoverable });
+    if (isEv && !req.guest && !before && after?.inspiredBy) app.locals.inspiration?.planned(after, req.ws); // ---- an event started from an inspiration card (server/inspiration.js) ----
     const extra = {};
     if (isEv && !req.guest) { rememberVersion(St, p, after); if (req.merged) Object.assign(extra, req.merged, { data: after });
       if (before && (before.headcount !== after.headcount || before.autoWait !== after.autoWait || before.plusOnes !== after.plusOnes || !same(before.guests || [], after.guests || []))) { try { const pr = await promoteWaitlist(req, req.ws, p.split("/")[1]); if (pr.length) extra.promoted = pr; } catch {} } }
@@ -2066,6 +2069,7 @@ export function createApp({ store, dataDir }) {
         return res.json({ id: pol.prior.id, path: "rsvps/" + pol.prior.id, merged: true, ...a, response: a.response || next.response }); }
       const r0 = S(req).add(p, body), a = await afterRsvp(req, req.ws, r0.id, null, body).catch(() => ({})); return res.json({ ...r0, ...a, response: a.response || body.response }); }
     const r = S(req).add(p, body);
+    if (p === "events" && !req.guest && body?.inspiredBy) app.locals.inspiration?.planned(body, req.ws); // ---- an event started from an inspiration card (server/inspiration.js) ----
     if (p === "events" && !req.guest) { claimEvent(r.id, req.ws); if (!body?.sample && !body?.example && req.ws && req.ws !== DEFAULT_WS) trackOnce("first_event_created", req.ws, { ws: req.ws, eventId: r.id }); if (body?.published && !body?.sample && !body?.example) capture("event_published", { ws: req.ws, kind: body.kind, region: body.city, private: !body.discoverable }); }
     // a guest's reply says where it landed (a full event puts "going" on the waitlist)
     res.json(p === "rsvps" && body?.response ? { ...r, response: body.response } : r);

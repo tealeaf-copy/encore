@@ -75,6 +75,8 @@ Server events:
 | `fanclub_joined` | joining a fan club | `signed_in` |
 | `brand_quickbook_searched` | a quick book search | `guests`, `goal`, `results` |
 | `brand_request_sent` | a booking request | `guests` |
+| `inspiration_shown`, `inspiration_tapped`, `inspiration_dismissed` | an inspiration card in the feed half on screen, its Plan this, its Not for me (server/inspiration.js) | `via` (calendar, new_here, team, provider, prompt), `kind` (holiday, observance, season, watch, spot, city), `goal` (the moment, like friendsgiving, or the category, like matcha), `signed_in`, `region` |
+| `inspiration_planned` | an event saved from an inspiration card's Plan this (it carries `inspiredBy`) | `via`, `kind`, `goal`, `region` |
 
 Browser events: `$pageview` (also on in-app navigation), `$identify` for signed-in people, and `$snapshot` only with
 replay on. Anything else is dropped in `before_send`. URLs keep the path only: query strings and #hashes go, and path

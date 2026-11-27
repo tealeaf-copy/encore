@@ -1,0 +1,164 @@
+{
+  "note": "Holidays, observances and seasonal moments people host around (server/inspiration.js). Each has a date rule, a lead window in days before the date (from, to), 2 or 3 hosting ideas, the create canvas kind, the cover drawing (public/eventart.js) and the regions it is shown in. type: civic, cultural, religious, season, watch. Religious observances never get party ideas (server/inspiration.js checkMoment). Dates from tables are the expected dates and can move a day with the calendar or moon sighting; the copy says 'around' for those.",
+  "moments": [
+    { "id": "thanksgiving", "name": "Thanksgiving", "type": "civic", "regions": ["US"], "rule": { "nth": [11, 4, 4] }, "lead": [7, 28], "plan": "on", "cover": "turkey",
+      "ideas": [
+        { "title": "Thanksgiving dinner", "cta": "Host Thanksgiving dinner", "line": "A long table, one big dish each, room for anyone without plans.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Thanksgiving pie bake", "cta": "Host a pie bake the day before", "line": "Everyone bakes one pie, everyone takes a slice of each home.", "kind": "class", "interests": ["baking"] }
+      ] },
+    { "id": "friendsgiving", "name": "Friendsgiving", "type": "civic", "regions": ["US"], "rule": { "nth": [11, 4, 4], "days": -5 }, "lead": [7, 28], "plan": "on", "cover": "turkey",
+      "ideas": [
+        { "title": "Friendsgiving potluck", "cta": "Host a potluck", "line": "Everyone brings one dish. You do the turkey, or don't.", "kind": "potluck", "interests": ["supper"] },
+        { "title": "Friendsgiving dinner", "cta": "Host a Friendsgiving dinner", "line": "A sit-down dinner for friends before everyone goes home.", "kind": "dinner", "interests": ["supper", "wine"] },
+        { "title": "Friendsgiving pie swap", "cta": "Host a pie swap", "line": "Bring a pie, leave with slices of everyone else's.", "kind": "potluck", "interests": ["baking"] }
+      ] },
+    { "id": "canadian-thanksgiving", "name": "Thanksgiving", "type": "civic", "regions": ["CA"], "rule": { "nth": [10, 1, 2] }, "lead": [7, 28], "plan": "saturday-before", "cover": "leaf",
+      "ideas": [
+        { "title": "Thanksgiving potluck", "cta": "Host a Thanksgiving potluck", "line": "Everyone brings one dish for a long autumn table.", "kind": "potluck", "interests": ["supper"] },
+        { "title": "Harvest dinner", "cta": "Host a harvest dinner", "line": "Squash, apples, whatever the market has this week.", "kind": "dinner", "interests": ["supper", "market"] }
+      ] },
+    { "id": "hanukkah", "name": "Hanukkah", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "12-14", "2026": "12-04", "2027": "12-24", "2028": "12-12", "2029": "12-01", "2030": "12-20" } }, "starts": true, "lead": [7, 21], "plan": "on", "cover": "bake",
+      "ideas": [
+        { "title": "Hanukkah latke night", "cta": "If you celebrate, host a latke night", "line": "Candles, latkes and a table of friends on one of the eight nights.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Sufganiyot bake", "cta": "If you celebrate, host a sufganiyot bake", "line": "Fry a batch together and share them while they're warm.", "kind": "class", "interests": ["baking"] }
+      ] },
+    { "id": "christmas", "name": "Christmas", "type": "religious", "regions": ["*"], "rule": { "fixed": [12, 25] }, "lead": [7, 28], "plan": "saturday-before", "cover": "tree",
+      "ideas": [
+        { "title": "Holiday cookie swap", "cta": "If you celebrate, host a cookie swap", "line": "Bring a dozen, leave with a mix of everyone's.", "kind": "potluck", "interests": ["baking"] },
+        { "title": "Friends' holiday dinner", "cta": "If you celebrate, host a holiday dinner for friends", "line": "One dinner with your people before everyone scatters.", "kind": "dinner", "interests": ["supper", "wine"] },
+        { "title": "Gift wrapping afternoon", "cta": "If you celebrate, host a gift wrapping afternoon", "line": "Paper, tape, tea and company for the last of the wrapping.", "kind": "class", "interests": ["crafts"] }
+      ] },
+    { "id": "new-years-eve", "name": "New Year's Eve", "type": "civic", "regions": ["*"], "rule": { "fixed": [12, 31] }, "lead": [7, 28], "plan": "on", "cover": "fireworks",
+      "ideas": [
+        { "title": "New Year's Eve dinner", "cta": "Host a New Year's Eve dinner", "line": "A small table, a late dessert and a toast at midnight.", "kind": "dinner", "interests": ["supper", "wine"] },
+        { "title": "New Year's Eve game night", "cta": "Host a game night to midnight", "line": "Games until the countdown, snacks all night.", "kind": "game", "interests": ["games"] },
+        { "title": "New Year's Day brunch", "cta": "Host a slow New Year's Day brunch", "line": "Coffee, eggs and plans for the year, nobody in a hurry.", "kind": "brunch", "interests": ["coffee"] }
+      ] },
+    { "id": "lunar-new-year", "name": "Lunar New Year", "type": "cultural", "regions": ["*"], "rule": { "table": { "2025": "01-29", "2026": "02-17", "2027": "02-06", "2028": "01-26", "2029": "02-13", "2030": "02-03" } }, "lead": [7, 28], "plan": "saturday-near", "cover": "dumpling",
+      "ideas": [
+        { "title": "Lunar New Year dumpling night", "cta": "Host a dumpling night", "line": "Everyone folds, then everyone eats.", "kind": "dinner", "interests": ["supper", "baking"] },
+        { "title": "Lunar New Year hot pot", "cta": "Host a hot pot dinner", "line": "One pot in the middle of the table and a long evening around it.", "kind": "dinner", "interests": ["supper"] }
+      ] },
+    { "id": "super-bowl", "name": "The Super Bowl", "type": "watch", "regions": ["US"], "rule": { "nth": [2, 0, 2] }, "lead": [7, 21], "plan": "on", "cover": "screen",
+      "ideas": [
+        { "title": "Super Bowl watch party", "cta": "Host a watch party", "line": "The big screen, a snack table and a seat for people who only watch the ads.", "kind": "watch", "interests": ["games"] },
+        { "title": "Super Bowl potluck", "cta": "Host a game day potluck", "line": "Everyone brings one snack and nobody misses a play.", "kind": "potluck", "interests": ["supper"] }
+      ] },
+    { "id": "galentines", "name": "Galentine's Day", "type": "civic", "regions": ["US", "CA"], "rule": { "fixed": [2, 13] }, "lead": [7, 21], "plan": "on", "cover": "brunch",
+      "ideas": [
+        { "title": "Galentine's brunch", "cta": "Host a Galentine's brunch", "line": "A long brunch for the friends who show up for you.", "kind": "brunch", "interests": ["coffee"] },
+        { "title": "Galentine's craft night", "cta": "Host a craft night", "line": "Cards, flowers or clay, and a table of friends.", "kind": "class", "interests": ["crafts", "pottery"] }
+      ] },
+    { "id": "valentines", "name": "Valentine's Day", "type": "civic", "regions": ["*"], "rule": { "fixed": [2, 14] }, "lead": [7, 21], "plan": "on", "cover": "heart",
+      "ideas": [
+        { "title": "Singles dinner for Valentine's", "cta": "Host a singles dinner", "line": "A table of people who don't all know each other yet, and something to do.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Valentine's cooking night", "cta": "Host a cooking night for couples", "line": "A few couples, one menu, everyone cooks a course.", "kind": "class", "interests": ["supper", "baking"] }
+      ] },
+    { "id": "ramadan-iftar", "name": "Ramadan", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "03-01", "2026": "02-18", "2027": "02-08", "2028": "01-28", "2029": "01-16", "2030": "01-05" } }, "starts": true, "around": true, "lead": [-10, 21], "plan": "saturday-after", "cover": "lantern",
+      "ideas": [
+        { "title": "Iftar with friends", "cta": "If you're fasting, host an iftar", "line": "Break the fast together at sunset, with dates, water and a shared meal.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Iftar potluck", "cta": "If you're fasting, host an iftar potluck", "line": "Everyone brings one dish to share at sunset.", "kind": "potluck", "interests": ["supper"] }
+      ] },
+    { "id": "eid-al-fitr", "name": "Eid al-Fitr", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "03-30", "2026": "03-20", "2027": "03-09", "2028": "02-26", "2029": "02-14", "2030": "02-04" } }, "around": true, "lead": [5, 14], "plan": "on", "cover": "dinner",
+      "ideas": [
+        { "title": "Eid dinner", "cta": "If you celebrate, host an Eid dinner", "line": "A festive meal with friends and family to close Ramadan.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Eid sweets morning", "cta": "If you celebrate, host an Eid sweets morning", "line": "Tea, sweets and visits, open house style.", "kind": "brunch", "interests": ["baking", "coffee"] }
+      ] },
+    { "id": "eid-al-adha", "name": "Eid al-Adha", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "06-06", "2026": "05-27", "2027": "05-16", "2028": "05-05", "2029": "04-24", "2030": "04-13" } }, "around": true, "lead": [5, 14], "plan": "on", "cover": "dinner",
+      "ideas": [
+        { "title": "Eid al-Adha dinner", "cta": "If you celebrate, host an Eid dinner", "line": "A shared meal with friends and family.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Eid open house", "cta": "If you celebrate, host an Eid open house", "line": "Tea and food all afternoon, people come and go.", "kind": "potluck", "interests": ["supper", "coffee"] }
+      ] },
+    { "id": "holi", "name": "Holi", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "03-14", "2026": "03-04", "2027": "03-22", "2028": "03-11", "2029": "03-01", "2030": "03-20" } }, "around": true, "lead": [7, 21], "plan": "saturday-near", "cover": "picnic",
+      "ideas": [
+        { "title": "Holi colors in the park", "cta": "If you celebrate, host Holi colors in the park", "line": "Colors, music and food outdoors. Old clothes recommended.", "kind": "picnic", "interests": ["picnic", "dance"] },
+        { "title": "Holi sweets and lunch", "cta": "If you celebrate, host a Holi lunch", "line": "Gujiya, thandai and a long lunch with friends.", "kind": "potluck", "interests": ["supper", "baking"] }
+      ] },
+    { "id": "st-patricks", "name": "St Patrick's Day", "type": "cultural", "regions": ["US", "CA", "IE", "GB"], "rule": { "fixed": [3, 17] }, "lead": [7, 21], "plan": "saturday-near", "cover": "music",
+      "ideas": [
+        { "title": "Irish music and stew night", "cta": "Host a music and stew night", "line": "A pot of stew, soda bread and a few songs.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Soda bread bake", "cta": "Host a soda bread bake", "line": "One easy loaf each, butter on the table.", "kind": "class", "interests": ["baking"] }
+      ] },
+    { "id": "easter", "name": "Easter", "type": "religious", "regions": ["*"], "rule": { "easter": 0 }, "lead": [7, 21], "plan": "on", "cover": "brunch",
+      "ideas": [
+        { "title": "Easter brunch", "cta": "If you celebrate, host an Easter brunch", "line": "A long spring brunch with friends and family.", "kind": "brunch", "interests": ["coffee", "supper"] },
+        { "title": "Egg hunt for the kids", "cta": "If you celebrate, host an egg hunt for the kids", "line": "A park, a basket each and coffee for the grown-ups.", "kind": "picnic", "interests": ["picnic"] }
+      ] },
+    { "id": "cherry-blossoms-dc", "name": "Cherry blossoms", "type": "season", "regions": ["US"], "cities": ["Washington"], "rule": { "fixed": [3, 30] }, "around": true, "usually": "late March", "lead": [7, 28], "plan": "saturday-near", "cover": "garden",
+      "ideas": [
+        { "title": "Cherry blossom walk", "cta": "Host an early cherry blossom walk", "line": "Go early before the crowds, coffee after.", "kind": "run", "interests": ["hike", "coffee"] },
+        { "title": "Blossom picnic", "cta": "Host a blossom picnic", "line": "A blanket under the trees and everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] }
+      ] },
+    { "id": "cherry-blossoms-nyc", "name": "Cherry blossoms", "type": "season", "regions": ["US"], "cities": ["New York", "Boston"], "rule": { "fixed": [4, 20] }, "around": true, "usually": "mid to late April", "lead": [7, 28], "plan": "saturday-near", "cover": "garden",
+      "ideas": [
+        { "title": "Cherry blossom walk", "cta": "Host a cherry blossom walk", "line": "A slow loop under the trees, coffee after.", "kind": "run", "interests": ["hike", "coffee"] },
+        { "title": "Blossom picnic", "cta": "Host a blossom picnic", "line": "A blanket under the trees and everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] }
+      ] },
+    { "id": "cherry-blossoms-west", "name": "Cherry blossoms", "type": "season", "regions": ["US", "CA"], "cities": ["Seattle", "Vancouver", "San Francisco", "Portland", "Philadelphia"], "rule": { "fixed": [4, 5] }, "around": true, "usually": "early April", "lead": [7, 28], "plan": "saturday-near", "cover": "garden",
+      "ideas": [
+        { "title": "Cherry blossom walk", "cta": "Host a cherry blossom walk", "line": "A slow loop under the trees, coffee after.", "kind": "run", "interests": ["hike", "coffee"] },
+        { "title": "Blossom picnic", "cta": "Host a blossom picnic", "line": "A blanket under the trees and everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] }
+      ] },
+    { "id": "picnic-season-south", "name": "Picnic season", "type": "season", "regions": ["US"], "cities": ["Los Angeles", "San Diego", "Austin", "Houston", "Dallas", "Miami", "Atlanta", "Las Vegas", "Nashville"], "rule": { "nth": [3, 6, 2] }, "head": "Picnic weather is close", "lead": [7, 21], "plan": "on", "cover": "picnic",
+      "ideas": [
+        { "title": "First picnic of the year", "cta": "Host the first picnic of the year", "line": "A park, a blanket, everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] },
+        { "title": "Park game afternoon", "cta": "Host games in the park", "line": "Frisbee, cards and snacks on the grass.", "kind": "picnic", "interests": ["games", "picnic"] }
+      ] },
+    { "id": "picnic-season-north", "name": "Picnic season", "type": "season", "regions": ["US", "CA"], "cities": ["New York", "Boston", "Chicago", "Washington", "Philadelphia", "Seattle", "Portland", "Denver", "Minneapolis", "San Francisco", "Toronto", "Montreal", "Vancouver"], "rule": { "nth": [5, 6, 1] }, "head": "The first warm weekends are coming", "lead": [7, 21], "plan": "on", "cover": "picnic",
+      "ideas": [
+        { "title": "First picnic of the year", "cta": "Host the first picnic of the year", "line": "A park, a blanket, everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] },
+        { "title": "Park game afternoon", "cta": "Host games in the park", "line": "Frisbee, cards and snacks on the grass.", "kind": "picnic", "interests": ["games", "picnic"] }
+      ] },
+    { "id": "mothers-day", "name": "Mother's Day", "type": "civic", "regions": ["US", "CA"], "rule": { "nth": [5, 0, 2] }, "lead": [7, 21], "plan": "on", "cover": "brunch",
+      "ideas": [
+        { "title": "Mother's Day brunch", "cta": "Host a Mother's Day brunch", "line": "A slow brunch for the moms and the people who are like moms to you.", "kind": "brunch", "interests": ["coffee"] },
+        { "title": "Flower arranging morning", "cta": "Host a flower arranging morning", "line": "Market flowers, a vase each and coffee.", "kind": "class", "interests": ["crafts"] }
+      ] },
+    { "id": "pride", "name": "Pride", "type": "civic", "regions": ["US", "CA"], "rule": { "nth": [6, 0, -1] }, "head": "Pride weekend is {when}", "lead": [7, 28], "plan": "saturday-before", "cover": "dance",
+      "ideas": [
+        { "title": "Pride brunch", "cta": "Host a Pride brunch", "line": "Brunch with your people before the march.", "kind": "brunch", "interests": ["coffee"] },
+        { "title": "Pride picnic", "cta": "Host a Pride picnic", "line": "A park, a blanket and friends, all afternoon.", "kind": "picnic", "interests": ["picnic", "dance"] }
+      ] },
+    { "id": "fathers-day", "name": "Father's Day", "type": "civic", "regions": ["US", "CA", "GB"], "rule": { "nth": [6, 0, 3] }, "lead": [7, 21], "plan": "on", "cover": "dinner",
+      "ideas": [
+        { "title": "Father's Day cookout", "cta": "Host a Father's Day cookout", "line": "A grill, a yard or a park and an easy afternoon.", "kind": "picnic", "interests": ["supper", "picnic"] },
+        { "title": "Father's Day brunch", "cta": "Host a Father's Day brunch", "line": "A slow brunch for the dads and the people who are like dads to you.", "kind": "brunch", "interests": ["coffee"] }
+      ] },
+    { "id": "summer-solstice", "name": "The summer solstice", "type": "season", "regions": ["N"], "rule": { "table": { "2025": "06-20", "2026": "06-21", "2027": "06-21", "2028": "06-20", "2029": "06-20", "2030": "06-21" }, "fixed": [6, 21] }, "head": "The longest day of the year is {when}", "lead": [7, 21], "plan": "on", "cover": "picnic",
+      "ideas": [
+        { "title": "Solstice sunset picnic", "cta": "Host a sunset picnic", "line": "Stay out until the light goes. Everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] },
+        { "title": "Longest day hike", "cta": "Host a long evening hike", "line": "A trail that ends at a view, timed for sunset.", "kind": "hike", "interests": ["hike"] }
+      ] },
+    { "id": "world-cup-final", "name": "The World Cup final", "type": "watch", "regions": ["*"], "rule": { "table": { "2026": "07-19", "2030": "07-21" } }, "around": true, "lead": [7, 21], "plan": "on", "cover": "screen",
+      "ideas": [
+        { "title": "World Cup final watch party", "cta": "Host a watch party", "line": "The big screen and a room of people who care, or who will by halftime.", "kind": "watch", "interests": ["games"] },
+        { "title": "Final day potluck", "cta": "Host a match day potluck", "line": "Everyone brings food from one of the teams' countries.", "kind": "potluck", "interests": ["supper"] }
+      ] },
+    { "id": "july-4", "name": "The Fourth of July", "type": "civic", "regions": ["US"], "rule": { "fixed": [7, 4] }, "lead": [7, 28], "plan": "on", "cover": "fireworks",
+      "ideas": [
+        { "title": "Fourth of July cookout", "cta": "Host a cookout", "line": "A grill, a cooler and a spot to watch the fireworks after.", "kind": "picnic", "interests": ["supper", "picnic"] },
+        { "title": "Fireworks picnic", "cta": "Host a fireworks picnic", "line": "Claim a patch of grass early, everyone brings one thing.", "kind": "picnic", "interests": ["picnic"] }
+      ] },
+    { "id": "back-to-school", "name": "Back to school", "type": "season", "regions": ["US"], "rule": { "nth": [8, 6, -1] }, "head": "Back to school is {when}", "lead": [7, 21], "plan": "on", "cover": "park",
+      "ideas": [
+        { "title": "Back to school picnic", "cta": "Host a back to school picnic", "line": "Families from the class meet before the first day.", "kind": "picnic", "interests": ["picnic"] },
+        { "title": "Parents' coffee morning", "cta": "Host a parents' coffee morning", "line": "Coffee after drop-off, for the grown-ups.", "kind": "brunch", "interests": ["coffee"] }
+      ] },
+    { "id": "fall-foliage", "name": "Fall foliage", "type": "season", "regions": ["US", "CA"], "cities": ["New York", "Boston", "Philadelphia", "Washington", "Chicago", "Minneapolis", "Denver", "Toronto", "Montreal"], "rule": { "nth": [10, 6, 2] }, "head": "Leaf season usually peaks {when}", "around": true, "lead": [7, 28], "plan": "on", "cover": "leaf",
+      "ideas": [
+        { "title": "Fall foliage hike", "cta": "Host a foliage hike", "line": "A trail with color, rides shared, cider after.", "kind": "hike", "interests": ["hike"] },
+        { "title": "Apple picking day", "cta": "Host an apple picking day", "line": "A farm, a few cars and a pie plan for the haul.", "kind": "hike", "interests": ["baking", "market"] }
+      ] },
+    { "id": "diwali", "name": "Diwali", "type": "religious", "regions": ["*"], "rule": { "table": { "2025": "10-20", "2026": "11-08", "2027": "10-29", "2028": "10-17", "2029": "11-05", "2030": "10-26" } }, "around": true, "lead": [7, 21], "plan": "saturday-near", "cover": "lantern",
+      "ideas": [
+        { "title": "Diwali dinner", "cta": "If you celebrate, host a Diwali dinner", "line": "Lights, sweets and a long dinner with friends.", "kind": "dinner", "interests": ["supper"] },
+        { "title": "Diya painting and sweets", "cta": "If you celebrate, host a diya painting afternoon", "line": "Paint clay lamps together, then share sweets.", "kind": "class", "interests": ["crafts", "pottery"] }
+      ] },
+    { "id": "halloween", "name": "Halloween", "type": "civic", "regions": ["US", "CA", "GB", "IE"], "rule": { "fixed": [10, 31] }, "lead": [7, 28], "plan": "saturday-before", "cover": "movie",
+      "ideas": [
+        { "title": "Scary movie night", "cta": "Host a scary movie night", "line": "One classic, the lights off and a big bowl of snacks.", "kind": "watch", "interests": ["games"] },
+        { "title": "Pumpkin carving night", "cta": "Host a pumpkin carving night", "line": "Pumpkins, tools, newspaper on the floor, soup after.", "kind": "class", "interests": ["crafts"] },
+        { "title": "Halloween costume party", "cta": "Host a costume party", "line": "Costumes optional, effort celebrated.", "kind": "drinks", "interests": ["dance"] }
+      ] }
+  ]
+}

@@ -1,4 +1,5 @@
 <title>Pottery Lab</title>
+<!-- the full invite on a wide screen: room for the side menu from the first paint, so the page doesn't slide right when it draws (round 17) --><script>if(location.pathname==="/g"&&matchMedia("(min-width:861px)").matches)document.documentElement.classList.add("g-rail")</script><style>html.g-rail body:not(.es-has-rail),html.g-rail body.guestmode:not(.es-has-rail){padding-left:224px!important}html.g-rail.nav-folded body:not(.es-has-rail),html.g-rail.nav-folded body.guestmode:not(.es-has-rail){padding-left:72px!important}</style>
 <script src="/eventart.js"></script><script src="/photosheet.js" defer></script><script src="/ideasnudge.js" defer></script><script src="/guides.js" defer></script><script src="/spots.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/questions.js"></script>
 <!-- per-event looks: colours, flyer, effects, title font and reply button (Make it yours) --><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/looks.js"></script><script src="/looks-app.js" defer></script><script src="/momentupload.js" defer></script><!-- visual feed: Add photos in After -->
 <script>
@@ -7608,7 +7609,7 @@ if(typeof cosItems==="function"){ const _ci7=cosItems; cosItems=function(d){ con
 // a finished event: Potto stops nagging about payment and headcount
 { const _ci8=cosItems; cosItems=function(d){ try{ if(isCasual(d)&&d.date&&new Date(d.date+"T23:59:00")<Date.now()) return [{sev:"soon",t:"This one's done.",w:"Kudos and photos are in After.",acts:[]}] }catch{} return _ci8(d) } }
 // Home: brand requests, bookings and orders sit at the top whenever something's waiting
-{ const _rp3=renderPrograms; renderPrograms=function(){ const r=_rp3.apply(this,arguments); try{ if(window.__wsPersonal){ let n=0; const t=setInterval(()=>{ const ib=$("#hostInbox"), v=$("#view-programs"); if(ib&&v){ clearInterval(t); if(ib.querySelector(".hi-row")){ ib.classList.add("needs"); const tabs=v.querySelector(".hw-tabs"); tabs?tabs.after(ib):v.prepend(ib) } } if(++n>30) clearInterval(t) },150) } }catch{} return r } }
+{ const _rp3=renderPrograms; renderPrograms=function(){ const r=_rp3.apply(this,arguments); try{ if(window.__wsPersonal){ let n=0; const t=setInterval(()=>{ const ib=$("#hostInbox"), v=$("#view-programs"); if(ib&&v){ clearInterval(t); if(ib.querySelector(".hi-row")){ ib.classList.add("needs"); const qs=v.querySelector(":scope > #qsPanel"), tabs=v.querySelector(".hw-tabs"); /* round 17: under the composer, so the page doesn't jump 350px when it arrives */ qs?qs.after(ib):tabs?tabs.after(ib):v.prepend(ib) } } if(++n>30) clearInterval(t) },150) } }catch{} return r } }
 { const _hi=hostInboxHTML; hostInboxHTML=async function(){ const h=await _hi.apply(this,arguments); return h.replace(/<span>🎉<\/span><div><b>Booked: /g,'<span>💼</span><div><b>Accepted: ').replace('<small class="eyebrow">Your page</small>','<small class="eyebrow">Needs you</small>') } }
 // guest page: one title, one date, the neighbourhood in "Where", and followers know they're in the early window
 { const _rg23=renderGuest; renderGuest=async function(){ const r=await _rg23.apply(this,arguments); try{ const e=window.__gEv, host=$("#view-guest"); if(!e?.id||!host||!isCasual(e)) return r;
@@ -8952,7 +8953,7 @@ new MutationObserver(()=>{ try{ const v=document.querySelector("#view-guest"), e
 // followers-first: one button that follows (with a free account) and unlocks the request
 (()=>{ try{ if(!/^#rsvp-/.test(location.hash)) return; const s=document.createElement("script"); s.src="/account.js"; s.async=true; document.head.appendChild(s) }catch{} })();
 new MutationObserver(()=>{ try{ const b=document.getElementById("earlyBox"); if(!b||b.dataset.fb||window.__gFollowing) return; const e=window.__gEv, H=window.__gHostInfo||{}; if(!e||!H.handle) return; b.dataset.fb=1; const p=b.querySelector("p.note"); if(p) p.textContent=`Follow ${hostFirst(e)} (a free account, 20 seconds) and you can ask for a spot right now. You'll hear about the next one first, too.`;
-  const btn=document.createElement("button"); btn.type="button"; btn.className="btn primary"; btn.textContent=`Follow ${hostFirst(e)} and unlock`; btn.style.marginTop="8px"; (p||b).after(btn);
+  const btn=document.createElement("button"); btn.type="button"; btn.className="btn primary"; btn.textContent=`Follow ${hostFirst(e)} and ask`; btn.style.marginTop="8px"; (p||b).after(btn);
   btn.onclick=async()=>{ if(!window.EncoreAccount){ toast("One moment…"); return } btn.disabled=true; try{ const r=await window.EncoreAccount.follow({handle:H.handle,via:"early"},{hostName:H.name||hostFirst(e)}); if(r){ window.__gFollowing=true; toast(`Following ${hostFirst(e)}. Ask for your spot below.`); try{ pipSound?.("oink") }catch{} b.innerHTML=`${typeof pipSVG==="function"?pipSVG("happy",40):""}<div><b>Following ${esc(hostFirst(e))}, so you're in early.</b><p class="note">Ask for your spot below.</p></div>`; document.getElementById("g-name")?.scrollIntoView({behavior:"smooth",block:"center"}) } else btn.disabled=false }catch(err){ toast(err.message); btn.disabled=false } } }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // the chat lives in Pottery Lab: say so wherever Pottery Lab talks about sharing
 { const _ss=shareSheet; shareSheet=function(d){ const r=_ss.apply(this,arguments); try{ const n=document.querySelector("#wizBg .wiz .note"); if(n) n.textContent=d?.approvalRequired?"Guests ask to join. You let them in.":d?.preorder?"Guests order for pickup." /* review round 8 */:"Guests tap I'm in." }catch{} return r } }
@@ -12720,7 +12721,7 @@ body:not(.hv-help):has(#view-studio:not([hidden]) > #hv:not([hidden])) #encoreHe
 #hv .hv-b svg,.hv-sheet .hv-b svg{flex:none;width:18px;height:18px}
 #hv .hv-b.pri,.hv-sheet .hv-b.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff}
 #hv .hv-b.big{min-height:52px;font-size:16px;width:100%}
-#hv .hv-b.sm,.hv-sheet .hv-b.sm{min-height:36px;padding:0 12px;font-size:14px}
+#hv .hv-b.sm,.hv-sheet .hv-b.sm{min-height:44px;padding:0 12px;font-size:14px}
 #hv .hv-b.q,.hv-sheet .hv-b.q{border-color:transparent;background:var(--hv-linen,var(--pl-raised))}
 #hv .hv-b:disabled,.hv-sheet .hv-b:disabled{opacity:.55;cursor:default}
 #hv .hv-b:focus-visible,.hv-sheet .hv-b:focus-visible,#hv .hv-tab:focus-visible,#hv .hv-chip:focus-visible{outline:3px solid rgba(201,74,48,.45);outline-offset:2px}
@@ -13376,11 +13377,12 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 // ---- Home, review round 17: what you're hosting comes first. A host with something coming up sees it right under the
 // composer (who's in, one tap to open it), above the next-step, monthly and Potto cards, not three screens down. ----
 (function(){ const up=()=>{ try{ const v=document.getElementById("view-programs"); if(!v||!window.__wsPersonal) return; const qs=v.querySelector(":scope > #qsPanel"), head=v.querySelector(":scope > .canvas-head"), fc=v.querySelector(":scope > .fcards:not(.past)");
-      if(!qs||!head||!fc||!fc.querySelector(".fcard")) return; if(qs.nextElementSibling!==head) qs.after(head); if(head.nextElementSibling!==fc) head.after(fc); v.classList.add("pl-hosting-first") }catch{} };
-  const go=()=>{ const v=document.getElementById("view-programs"); if(!v) return; up(); new MutationObserver(up).observe(v,{childList:true}) };
+      const ib=qs&&v.querySelector(":scope > #hostInbox.needs"); if(ib&&qs.nextElementSibling!==ib) qs.after(ib); // what needs you leads the cards
+      if(!qs||!head||!fc||!fc.querySelector(".fcard")) return; const at=ib||qs; if(at.nextElementSibling!==head) at.after(head); if(head.nextElementSibling!==fc) head.after(fc); if(!v.classList.contains("pl-hosting-first")) v.classList.add("pl-hosting-first") }catch{} };
+  const go=()=>{ const v=document.getElementById("view-programs"); if(!v) return; up(); new MutationObserver(up).observe(v,{childList:true}); const t=setInterval(up,300); setTimeout(()=>clearInterval(t),6000) };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
 </script>
-<style>#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+<style>#signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .btn.sm,#view-guest a.btn.ghost{min-height:44px}#view-guest label:has(> #g-showme),#view-guest label:has(> #gRemember){min-height:44px;align-items:center}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.

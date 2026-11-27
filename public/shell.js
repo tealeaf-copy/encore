@@ -77,7 +77,7 @@
 .es-top .es-brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);color:var(--pl-ink);text-decoration:none}
 .es-top nav{display:flex;gap:16px;align-items:center;font:500 16px "IBM Plex Sans",system-ui}.es-top nav a{color:var(--pl-soft);text-decoration:none}
 .es-top nav a.cta{background:#fff;color:var(--pl-ink);padding:8px 14px;border-radius:999px;border:1px solid var(--pl-line);font-weight:600}
-@media (min-width:861px){body.es-has-rail .es-top .es-brand{visibility:hidden}body.es-has-rail header.top{display:none}body.es-has-rail .es-top nav{display:none}}
+@media (min-width:861px){body.es-has-rail .es-top{display:none}body.es-has-rail .es-top .es-brand{visibility:hidden}body.es-has-rail header.top{display:none}body.es-has-rail .es-top nav{display:none}}
 @media (min-width:861px){body.es-has-rail,body.guestmode.es-has-rail{padding-left:224px!important}}
 .es-rail{width:224px!important;align-items:stretch!important;padding:20px 14px!important;gap:2px!important;background:var(--pl-surface)!important;border-right:1px solid var(--pl-line)!important;backdrop-filter:none!important}
 .es-rail a{width:auto!important;height:44px!important;display:flex!important;align-items:center;gap:12px;padding:10px 12px;border-radius:10px!important;color:var(--pl-soft)!important;font:600 16px "IBM Plex Sans",system-ui,sans-serif;text-decoration:none}

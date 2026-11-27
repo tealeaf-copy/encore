@@ -283,13 +283,19 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
     const r = F.heart(ws, clean(req.params.id, 40), u.email, !(p?.hearts || []).includes(h24("heart|" + lc(u.email)))); if (!r) return bad(res, "No such post.", 404, "not_found"); res.json({ ok: true, cheered: r.hearted, hearts: r.hearts }); });
 
   // ---- following ----
-  app.post("/api/me/following/:handle", small, (req, res) => { const u = me(req, res); if (!u) return; const ws = wsOf(req.params.handle); if (!ws || !C.profileOf(ws)) return bad(res, "No host by that name.", 404, "not_found");
+  // a preview page (not on Pottery Lab yet): Follow is "Notify me when they join" (server/interest.js keeps it, tells them once on claim)
+  const waitFor = (req, res, u) => { const J = app.locals.joinWait, P = J?.of(req.params.handle); if (!P) return bad(res, "No host by that name.", 404, "not_found");
+    if (over("fol|" + lc(u.email), FOLLOW_PER_HOUR) || over("folip|" + (req.ip || "?"), FOLLOW_PER_HOUR * 3)) return bad(res, "That's a lot of follows. Try again later.", 429, "rate_limited");
+    const r = req.body?.on === false ? J.remove(P.handle, u.email) : J.add(P.handle, { email: u.email, name: u.name }, publicOrigin?.(req) || ""); if (r.error) return bad(res, r.error, r.status, r.code);
+    res.json({ ok: true, preview: true, waiting: r.waiting, following: false, notify: false, name: P.name, handle: P.handle }); };
+  app.post("/api/me/following/:handle", small, (req, res) => { const u = me(req, res); if (!u) return; const ws = wsOf(req.params.handle); if (!ws || !C.profileOf(ws)) return waitFor(req, res, u);
     if (ws === u.ws) return bad(res, "That's your own page.");
     if (over("fol|" + lc(u.email), FOLLOW_PER_HOUR) || over("folip|" + (req.ip || "?"), FOLLOW_PER_HOUR * 3)) return bad(res, "That's a lot of follows. Try again later.", 429, "rate_limited");
     const b = req.body || {}, r = F.setFollow(ws, u.email, { on: b.on !== false, notify: typeof b.notify === "boolean" ? b.notify : undefined, name: u.name }); if (r.error) return bad(res, r.error, r.status, r.code);
     if (r.isNew) { try { scopeStore(store, ws).add("audit", { what: `${first(u.name) || "Someone"} followed you`, kind: "growth", at: Date.now() }); const o = F.owner(ws); if (o) X?.notify?.(o, { kind: "follower", key: "fol-" + h24(lc(u.email)).slice(0, 16), text: `${first(u.name) || "Someone new"} followed you. They'll hear first about your next event.`, link: `/@${C.profileOf(ws).handle}`, eventId: "" }); } catch {} }
-    res.json({ ok: true, following: r.following, notify: r.notify, followers: C.followersOf(ws).length }); });
-  app.get("/api/me/following", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json({ hosts: F.followedHosts(u.email), clubs: F.clubMemberships(u.email) }); });
+    res.json({ ok: true, following: r.following, notify: r.notify, followers: C.followersOf(ws).length, name: C.profileOf(ws).name || "", handle: C.profileOf(ws).handle }); });
+  app.get("/api/me/following", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); let waiting = []; try { waiting = app.locals.joinWait?.list(u.email) || []; } catch {}
+    res.json({ hosts: F.followedHosts(u.email), clubs: F.clubMemberships(u.email), waiting }); });
   app.get("/api/me/club-updates", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json({ items: F.feedItems(u.email) }); });
 
   // ---- joining, leaving, a member's own settings ----

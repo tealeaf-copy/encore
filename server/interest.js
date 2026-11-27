@@ -28,6 +28,7 @@ const e = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<"
 const money = (c) => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
 export const INTEREST_CAP = 1000; // people per handle
 const KEY = (h) => "system/interest-" + h;
+const JOIN = "join"; // "Notify me when they join": a Follow on a preview page
 // a price as brands read it (docs/brand-kit.md): "$60" is "$60 a person", "from $45 a person" starts with a capital
 const priceOf = (p) => { let s = clean(p, 50).replace(/\s*(\/\s*(person|head|pp)|per (person|head)|\bpp\b)\.?$/i, " a person"); if (/^\$?\s*\d[\d,]*(\.\d{1,2})?$/.test(s)) s = "$" + s.replace(/^\$\s*/, "") + " a person"; return s ? s[0].toUpperCase() + s.slice(1) : ""; };
 /** The name to use in a sentence: a person's first name, "Ken" for "Ken's Sourdough", else the page's name. */
@@ -68,16 +69,20 @@ export function mountInterest(app, { store, small, currentUser, C, X, publicOrig
   // the page and takes requests (an experience while the host is open to team requests, a shop item while the shop is
   // open, a gift), or right away for "anything from this host". Each row is told once; one email per person.
   const sending = new Set();
-  const readyOf = (T, P, r) => { if (r.item === "any") return { url: `/@${T.handle}` }; const it = [...T.items.values()].find((x) => (r.item.startsWith("shop:") ? x.kind === "shop" : x.kind !== "shop") && lc(x.title) === lc(r.title)); if (!it) return null;
+  const readyOf = (T, P, r) => { if (r.item === "any" || r.item === JOIN) return { url: `/@${T.handle}` }; const it = [...T.items.values()].find((x) => (r.item.startsWith("shop:") ? x.kind === "shop" : x.kind !== "shop") && lc(x.title) === lc(r.title)); if (!it) return null;
     if (it.kind === "exp" && !P.forHire) return null; if (it.kind === "shop" && !P.shop?.open) return null; return { url: urlOf(T.handle, it) }; };
   async function tellOnClaim(handle) { const d0 = docOf(handle); if (!d0 || d0.toldAt || sending.has(handle)) return 0; const ws = C.wsOfHandle(handle), P = ws && C.profileOf(ws), T = P && thingsOf(handle); if (!P || !T || T.preview) return 0;
     sending.add(handle); try {
       const origin = String(process.env.ENCORE_PUBLIC_URL || d0.origin || "").replace(/\/+$/, ""), cfg = emailConfig(DEFAULT_WS, true), nm = clean(P.name, 60) || handle;
       const people = new Map(); for (const r of d0.list) { if (r.told) continue; const R = readyOf(T, P, r); if (!R) continue; (people.get(r.email) || people.set(r.email, []).get(r.email)).push({ r, url: R.url }); }
       let n = 0; const told = new Set();
-      for (const [email, rows] of people) { const lines = rows.map((x) => `${x.r.title}: ${origin}${x.url}`);
+      for (const [email, rows] of people) { const asks = rows.filter((x) => x.r.item !== JOIN), joined = rows.length > asks.length, lines = asks.map((x) => `${x.r.title}: ${origin}${x.url}`);
+        // "Notify me when they join" (a Follow on a preview page): they follow the real page now, so they hear when it posts
+        if (joined) { try { C.follow?.(ws, { email, name: clean(rows[0].r.name, 80), via: "join" }); } catch {} }
+        const said = [joined ? `You asked us to tell you when ${nm} joined. They're here, and you're following their page now, so you'll hear when they post something new:\n\n${origin}/@${handle}` : "",
+          asks.length ? `You asked about ${asks.map((x) => x.r.title).join(" and ")}. ${nm} is on Pottery Lab now, so you can ask them directly:\n\n${lines.join("\n")}` : ""].filter(Boolean).join("\n\n");
         const ok = cfg && (!X?.canEmail || X.canEmail(email)) ? (await sendEmail(cfg, { list: "guest", origin, to: email, subject: `${nm} is on Pottery Lab now`, fromName: "Pottery Lab",
-          text: `Hi ${clean(rows[0].r.name, 40).split(/\s+/)[0] || "there"},\n\nYou asked about ${rows.map((x) => x.r.title).join(" and ")}. ${nm} is on Pottery Lab now, so you can ask them directly:\n\n${lines.join("\n")}\n\nWe said we'd tell you once, so this is the only email about it.` }).catch(() => ({}))).ok : false;
+          text: `Hi ${clean(rows[0].r.name, 40).split(/\s+/)[0] || "there"},\n\n${said}\n\nWe said we'd tell you once, so this is the only email about it.` }).catch(() => ({}))).ok : false;
         if (ok) n++; for (const x of rows) told.add(email + "|" + x.r.item); }
       // written onto the latest copy, so someone who asked while the emails went out isn't lost
       const d = docOf(handle) || d0; for (const r of d.list) if (told.has(r.email + "|" + r.item)) r.told = true;
@@ -86,6 +91,19 @@ export function mountInterest(app, { store, small, currentUser, C, X, publicOrig
   // a handle being taken (system/handle-<h>, written when a page saves): tell the people who asked about it
   store.events?.on?.("change", (ev) => { const m = /^system\/handle-([a-z0-9][a-z0-9-]{1,39})$/.exec(String(ev?.path || "")); if (!m) return; const h = m[1], d = docOf(h); if (!d || d.toldAt) return;
     setTimeout(() => { tellOnClaim(h).catch(() => {}); }, 30); });
+
+  // ---------- "Notify me when they join": Follow on a preview page (POST /api/me/following/:handle, server/fanclub.js) ----------
+  // One row per person (item "join") in the same per-handle document, so the claim above tells them once and makes them a follower.
+  const joinWait = {
+    of: (handle) => { const T = thingsOf(handle); return T && T.preview ? { handle: T.handle, name: clean(T.P.name, 60) || T.handle } : null; },
+    has: (handle, email) => !!(docOf(lc(handle))?.list || []).some((r) => r.item === JOIN && r.email === lc(email) && !r.told),
+    add(handle, { email, name }, origin) { const T = thingsOf(handle); if (!T || !T.preview) return { error: "No page by that name.", status: 404, code: "not_found" };
+      const r = addInterest(T.handle, { key: JOIN, title: "When they join" }, { name: clean(name, 80) || "there", email: lc(email), size: 0, note: "" }, origin); if (r.full) return { error: "This page has a long list already. Check back soon.", status: 409, code: "full" };
+      return { ok: true, waiting: true }; },
+    remove(handle, email) { const d = docOf(lc(handle)); if (!d) return { ok: true, waiting: false }; const n = d.list.length; d.list = d.list.filter((r) => !(r.item === JOIN && r.email === lc(email))); if (d.list.length !== n) store.set(KEY(d.handle), { ...d, updatedAt: Date.now() }); return { ok: true, waiting: false }; },
+    list: (email) => allInterest().filter((d) => !d.toldAt && d.list.some((r) => r.item === JOIN && r.email === lc(email) && !r.told)).map((d) => d.handle),
+  };
+  app.locals.joinWait = joinWait;
 
   // ---------- POST: "I'm interested" on a preview page ----------
   app.post("/api/public/interest/:handle", small, (req, res) => {
@@ -105,7 +123,7 @@ export function mountInterest(app, { store, small, currentUser, C, X, publicOrig
     const P = C.profileOf(u.ws); if (!P?.handle) return res.json({ total: 0, items: [] }); const d = docOf(P.handle); if (!d || C.wsOfHandle(P.handle) !== u.ws) return res.json({ total: 0, items: [] });
     if (!d.toldAt) tellOnClaim(P.handle).catch(() => {});
     const T = thingsOf(P.handle), N = new Map(); for (const r of d.list) N.set(r.title, (N.get(r.title) || 0) + 1);
-    const items = [...N].map(([title, n]) => { const it = [...(T?.items.values() || [])].find((x) => lc(x.title) === lc(title)); return { title, n, line: `${n} ${n === 1 ? "person" : "people"} asked about ${title}`, url: it ? urlOf(P.handle, it) : "" }; }).sort((a, b) => b.n - a.n);
+    const items = [...N].map(([title, n]) => { const it = [...(T?.items.values() || [])].find((x) => lc(x.title) === lc(title)); return { title, n, line: title === "When they join" ? `${n} ${n === 1 ? "person" : "people"} asked to hear when you joined, and follow you now` : `${n} ${n === 1 ? "person" : "people"} asked about ${title}`, url: it ? urlOf(P.handle, it) : "" }; }).sort((a, b) => b.n - a.n);
     res.json({ total: new Set(d.list.map((r) => r.email)).size, items, told: !!d.toldAt }); });
 
   // ---------- admins: everything ----------

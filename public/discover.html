@@ -103,7 +103,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
 <footer>Pottery Lab · <a href="/discover">Discover</a> · <a href="/hosts">Hosts</a> · <a href="/hosts/book">For brands</a> · <a href="/security">Security</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
 <script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
-<script src="/avatars.js"></script>
+<script src="/avatars.js"></script><script src="/follow.js"></script>
 <script>
 (function () {
   const C = window.EncoreCommunity, P = window.EncorePlace, $ = (s) => document.querySelector(s), esc = C.esc;
@@ -219,13 +219,11 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
     const avOf = (h) => { const ac = h.theme?.accent || h.color || "#E26D8E"; return (h.gallery || [])[0] ? `<img src="${esc(h.gallery[0])}" alt="">` : h.theme?.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.theme.avatarArt, ac, 48) : esc(h.emoji || "🎉"); };
     $("#hosts").innerHTML = L.length ? L.map((h) => { const n = nextOf(h), on = F.includes(h.handle);
       const nx = n ? `<a class="hcd-nx" href="/g#rsvp-${encodeURIComponent(n.id)}"><b>Next</b><span>${esc([sd(n.date), n.title].filter(Boolean).join(" · "))}</span></a>` : "";
-      return `<article class="hcd" style="--c:${esc(h.theme?.accent || h.color || "#E26D8E")}" data-fo="${Number(h.followers) || 0}"><span class="hcd-av" aria-hidden="true">${avOf(h)}</span><div class="hcd-id"><div class="hcd-top"><a class="hcd-name" href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>${h.sample ? `<span class="hcd-ex">Example</span>` : ""}</div><small class="hcd-sub">${h.sample ? `<span class="hcd-exs">Example · </span>` : ""}<span class="hcd-st">${esc(subOf(h, Number(h.followers) || 0))}</span></small></div><button class="hcd-f" type="button" data-fh="${esc(h.handle)}" aria-pressed="${on}">${on ? "Following" : "Follow"}<span class="sr"> ${esc(h.name)}</span></button>${nx}</article>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
+      return `<article class="hcd" style="--c:${esc(h.theme?.accent || h.color || "#E26D8E")}" data-fo="${Number(h.followers) || 0}"><span class="hcd-av" aria-hidden="true">${avOf(h)}</span><div class="hcd-id"><div class="hcd-top"><a class="hcd-name" href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>${h.sample ? `<span class="hcd-ex">Example</span>` : ""}</div><small class="hcd-sub">${h.sample ? `<span class="hcd-exs">Example · </span>` : ""}<span class="hcd-st">${esc(subOf(h, Number(h.followers) || 0))}</span></small></div>${window.PLFollow ? window.PLFollow.button({ handle: h.handle, name: h.name, showcase: h.showcase }, { cls: "hcd-f" }) : `<a class="hcd-f" href="/@${encodeURIComponent(h.handle)}">${on ? "Following" : "Follow"}<span class="sr"> ${esc(h.name)}</span></a>`}${nx}</article>`; }).join("") : `<div class="empty">The first hosts are setting up their pages.</div>`;
     const byH = new Map(L.map((h) => [h.handle, h]));
-    document.querySelectorAll("[data-fh]").forEach((b) => (b.onclick = async () => { if (b.getAttribute("aria-pressed") === "true") return; let email = ""; try { email = localStorage.getItem("encore.email") || ""; } catch {}
-      const card = b.closest(".hcd"), h = byH.get(b.dataset.fh) || {};
-      try { const j = await C.follow({ handle: b.dataset.fh, hostName: h.name || "", email, tastes: [], via: "discover" }); C.oink(); b.setAttribute("aria-pressed", "true"); b.firstChild.textContent = "Following";
-        const fo = j && j.followers ? j.followers : (Number(card?.dataset.fo) || 0) + 1, sub = card?.querySelector(".hcd-st"); if (sub) sub.textContent = subOf(h, fo);
-      } catch (e) { if (e.message) alert(e.message); } }));
+    // Follow happens in place (public/follow.js); the card's follower count moves with it
+    if (!window.__hcdFol) { window.__hcdFol = 1; window.addEventListener("pl:follow", (e) => { const d = e.detail || {}; if (d.followers == null) return;
+      document.querySelectorAll(".hcd").forEach((card) => { if (!card.querySelector(`[data-pl-follow="${CSS.escape(d.handle)}"]`)) return; card.dataset.fo = d.followers; const h = byH.get(d.handle) || {}, sub = card.querySelector(".hcd-st"); if (sub) sub.textContent = subOf(h, d.followers); }); }); }
   }
 
   // ---- order from local hosts: one row, only for your city ----

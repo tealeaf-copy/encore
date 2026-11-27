@@ -295,7 +295,7 @@
     const card = (c) => { const t = c.type === "host" ? "host:" + c.handle : "person:" + c.key;
       return `<li class="fb-fc" data-fb-card="${esc(t)}"${c.type === "person" ? rep({ type: "person", target: "person:" + c.key, key: c.key, name: c.name }) : ""}><button type="button" class="fb-x" data-fb-dismiss="${esc(t)}" aria-label="Not for me: ${esc(c.name)}">${ICON.x}</button>
         <a class="fb-fc-a" href="${esc(c.url || "#")}">${ringed(c, 64)}<b>${esc(c.name)}</b></a><small>${esc(c.reason)}</small>
-        ${c.type === "host" ? `<button type="button" class="fb-fbtn" data-fb-follow="${esc(c.handle)}" data-url="/@${esc(c.handle)}#follow">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>` : `<button type="button" class="fb-fbtn" data-fb-friend="${esc(c.key)}">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>`}</li>`; };
+        ${c.type === "host" ? `<button type="button" class="fb-fbtn" data-fb-follow="${esc(c.handle)}">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>` : `<button type="button" class="fb-fbtn" data-fb-friend="${esc(c.key)}">Follow<span class="fb-sr"> ${esc(c.name)}</span></button>`}</li>`; };
     return `<section class="fb-card fb-follow" data-kind="follow" aria-labelledby="fbFollowH"><header class="fb-sec"><h2 id="fbFollowH">${esc(f.title)}</h2><a href="${signedIn ? "/people" : "/login?next=/people"}">See all</a></header>
       <ul class="fb-fcs" tabindex="0" aria-label="${esc(f.title)}">${f.cards.map(card).join("")}</ul></section>`; }
   const ideasCard = (x) => `<section class="fb-card fb-ideas" data-kind="ideas"><div><p class="fb-kick">Ideas to try</p><h3 class="fb-title sm">Small formats people loved</h3><p class="fb-line">${esc((x.titles || []).join(", "))}${x.count > 3 ? ` and ${x.count - 3} more` : ""}. Swipe through and keep the ones you'd go to, or host.</p></div>
@@ -409,8 +409,9 @@
     $$("[data-fb-share]", root).forEach((b) => (b.onclick = async () => { const url = location.origin + b.dataset.fbShare, title = b.dataset.title || "Pottery Lab";
       if (navigator.share) { try { await navigator.share({ title, url }); return; } catch (e) { if (e?.name === "AbortError") return; } }
       try { await navigator.clipboard.writeText(url); say(b, "Link copied"); setTimeout(() => say(b, "Share"), 2200); } catch { prompt("Copy this link", url); } }));
-    $$("[data-fb-follow]", root).forEach((b) => (b.onclick = () => followClick(b)));
-    $$("[data-fb-friend]", root).forEach((b) => (b.onclick = async () => { if (b.disabled) return; b.disabled = true;
+    // public/follow.js follows in place (toast with Undo, a menu on Following, sign-in that comes back); followClick is the fallback
+    $$("[data-fb-follow]", root).forEach((b) => (b.onclick = (e) => (window.PLFollow ? window.PLFollow.tap(b, e) : followClick(b))));
+    $$("[data-fb-friend]", root).forEach((b) => (b.onclick = async (e) => { if (window.PLFollow?.tapPerson) return window.PLFollow.tapPerson(b, e); if (b.disabled) return; b.disabled = true;
       try { const r = await fetch("/api/me/friends", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fbFriend }) }); if (!r.ok) throw 0; b.classList.add("on"); say(b, "Following"); } catch { b.disabled = false; } }));
     $$("[data-fb-dismiss]", root).forEach((b) => (b.onclick = () => { const li = b.closest("li"), ul = li?.parentElement; fetch("/api/feed/dismiss", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target: b.dataset.fbDismiss }) }).catch(() => {}); try { const L = JSON.parse(localStorage.getItem("pl.fbGone") || "[]"); localStorage.setItem("pl.fbGone", JSON.stringify([b.dataset.fbDismiss, ...L].slice(0, 100))); } catch {}
       const next = li?.nextElementSibling || li?.previousElementSibling; li?.classList.add("gone"); setTimeout(() => { li?.remove(); if (ul && !ul.children.length) ul.closest(".fb-follow")?.remove(); else next?.querySelector("button,a")?.focus({ preventScroll: true }); }, RM() ? 0 : 220); }));

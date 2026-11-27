@@ -34,7 +34,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 .podium .why{font-size:13px;color:var(--smoke);overflow-wrap:anywhere}
 .bd{display:block;font-size:13px;font-weight:600;color:var(--ink)}
 .mv{font-size:13px;font-weight:500;color:var(--smoke);white-space:nowrap}
-.fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--pl-line-strong);color:var(--ink);background:var(--pl-surface);font-weight:600;font-size:14px;text-decoration:none;margin-top:8px}.fo:hover{border-color:var(--ink)}
+.fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--pl-line-strong);color:var(--ink);background:var(--pl-surface);font-weight:600;font-size:14px;text-decoration:none;margin-top:8px}button.fo{font-family:inherit;cursor:pointer}.fo:hover{border-color:var(--ink)}
 .list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .row{display:grid;grid-template-columns:34px 48px minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
 .row .rk{font:500 14px var(--sys-mono,ui-monospace,monospace);color:var(--smoke);text-align:center}.row .av{width:48px;height:48px;font-size:22px}
@@ -68,7 +68,7 @@ main.lb-wait #how,main.lb-wait .foot,main.lb-wait ~ .foot{display:none}
   </main>
   <p class="foot">Agents and builders: <a href="/api/v1/leaderboard">the leaderboard API</a>, <a href="/api/v1/leaderboard/rules">the rules as JSON</a> or <a href="/llms.txt">llms.txt</a>.</p>
 </div>
-<script src="/avatars.js"></script>
+<script src="/avatars.js"></script><script src="/follow.js"></script>
 <script>
 (() => {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -100,15 +100,17 @@ main.lb-wait #how,main.lb-wait .foot,main.lb-wait ~ .foot{display:none}
     if (!B.qualified) { const what = st.category === "all" ? "something" : esc((CATS.find(([k]) => k === st.category) || [, "events"])[1].toLowerCase()), Rz = B.rising || [];
       // cold start: no ranks or scores yet, just who's been hosting here lately, and an open door for the next host
       $("#board").innerHTML = Rz.length ? `<div class="bh"><div><h2>Rising in ${esc(st.city)}</h2><p>Hosts who've hosted here lately. A board with ranks starts once ${B.min_hosts || 3} hosts have hosted ${what}.</p></div></div>
-        <ul class="list rising" aria-label="Rising in ${esc(st.city)}">${Rz.map((h) => `<li class="row">${av(h)}<span><a class="nm" href="${esc(h.url)}">${esc(h.name)}</a><span class="why">Hosted recently</span></span><a class="fo" href="${esc(h.url)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a></li>`).join("")}</ul>
+        <ul class="list rising" aria-label="Rising in ${esc(st.city)}">${Rz.map((h) => `<li class="row">${av(h)}<span><a class="nm" href="${esc(h.url)}">${esc(h.name)}</a><span class="why">Hosted recently</span></span>${fol(h)}</li>`).join("")}</ul>
         <p class="empty" style="margin-top:14px"><b>Host in ${esc(st.city)}?</b>Host one event and you're on this list. <a href="/signup?mode=friends">Start hosting</a> or <a href="/events">find an event</a>.</p>`
         : `<div class="empty"><b>Be one of the first hosts in ${esc(st.city || "your city")}</b>A board shows once ${B.min_hosts || 3} hosts here have hosted ${what}. <a href="/signup?mode=friends">Host one</a> or <a href="/events">find an event</a>.</div>`; return; }
     const E = B.entries, top = E.slice(0, 3), rest = E.slice(3), per = B.period === "month" ? "The last 30 days" : "All time";
-    const follow = (e) => `<a class="fo" href="${esc(e.host.url)}#follow">Follow<span class="sr"> ${esc(e.host.name)}</span></a>`;
+    const follow = (e) => fol(e.host);
     $("#board").innerHTML = `${fell ? `<p class="fb-note" style="margin:0 0 10px;color:var(--smoke,var(--pl-soft))">Not enough hosts this month yet, so this is All time.</p>` : ""}<div class="bh"><div><h2>${esc(B.title)}</h2><p>${per} · ${B.hosts_on_board} ${B.hosts_on_board === 1 ? "host" : "hosts"}</p></div><a href="#how">How it's ranked</a></div>
       <ol class="podium" aria-label="Top 3">${top.map((e) => `<li class="r${e.rank}"><span class="medal" aria-label="Number ${e.rank}">${e.rank}</span>${av(e.host)}<a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a><span class="sc">${pts(e.score)}</span><span class="why">${esc(e.why)}</span>${badges(e) || (e.movement && e.movement.direction !== "new" ? mv(e.movement) : "")}<span style="flex:1"></span>${follow(e)}</li>`).join("")}</ol>
       ${rest.length ? `<ol class="list" start="4" aria-label="Everyone else">${rest.map((e) => `<li class="row"><span class="rk">${e.rank}</span>${av(e.host)}<span><a class="nm" href="${esc(e.host.url)}">${esc(e.host.name)}</a><span class="why">${esc(e.why)}</span>${badges(e) || (mv(e.movement) ? `<span class="why">${mv(e.movement)}</span>` : "")}</span><span class="sc">${pts(e.score)}</span></li>`).join("")}</ol>` : ""}`;
   }
+  // Follow in place (public/follow.js); the handle comes from the host's page link
+  function fol(h) { const handle = h.handle || String(h.url || "").replace(/^.*\/@/, "").split(/[/?#]/)[0]; return window.PLFollow ? window.PLFollow.button({ handle, name: h.name }, { cls: "fo" }) : `<a class="fo" href="${esc(h.url)}">See page<span class="sr"> ${esc(h.name)}</span></a>`; }
   $("#city").onchange = (e) => { st.city = e.target.value; st.category = "all"; load(); };
   document.querySelectorAll("[data-p]").forEach((b) => (b.onclick = () => { st.period = b.dataset.p; picked = true; load(); }));
   $("#cats").onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; st.category = b.dataset.c; load(); };

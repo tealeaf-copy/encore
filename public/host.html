@@ -58,6 +58,7 @@ main h2.sec,main .hire h2,main .proof h2,main section[id^="ow"] h2,main .sr-sec 
 .sub{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-top:18px;padding:14px 16px;border-radius:6px;background:color-mix(in srgb,var(--accent,var(--c)) 10%,var(--card))}.sub>div{display:flex;flex-direction:column}.sub small{color:var(--soft)}.sub-f{display:flex;gap:6px;flex:1 1 280px}.sub-f input{flex:1;min-width:0}
 .order-done{display:flex;gap:16px;align-items:flex-start}.order-done>div{flex:1}.order-done h2{font-size:28px;margin:6px 0}
 .book{margin-top:28px;padding:24px;border-radius:6px;border:1px solid var(--line);background:var(--card)}.book h2{font-size:28px;margin:6px 0}.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:10px;margin:14px 0}.bx{display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:6px;border:1px solid var(--line);background:var(--bg)}.bx-em{font-size:28px}.bx p{margin:2px 0;color:var(--soft);font-size:14px}.bx small{color:var(--soft)}.bx-p{font-weight:600}.bx .btn{margin-top:6px;align-self:flex-start}.book-form{display:grid;gap:8px}.book-form[hidden]{display:none}.book textarea{font:inherit;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-height:80px}
+.head-act{display:contents}.head-act .plf-btn,#follow .plf-btn,#topEdit{font-family:var(--body,inherit)}
 .share-btn{font:600 13px var(--body,inherit);padding:5px 12px;border-radius:var(--radius,999px);border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .store-fab.shop-fab{bottom:72px}@media (max-width:760px){.store-fab{right:12px;padding:10px 14px;font-size:13px}.store-fab.shop-fab{bottom:64px}}.sp-tabs{display:flex;gap:6px;margin:12px 0}.sp-tabs button{border:1px solid #E6DDD2;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}.sp-tabs button[aria-pressed=true]{background:var(--pl-ink);color:#fff}
 .sp-row{display:flex;gap:8px;align-items:center;font-weight:600}.sp-item{border:1px solid #EEE4D8;border-radius:6px;padding:8px;margin:8px 0;display:grid;gap:6px}.sp-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}@media (max-width:560px){.sp-3{grid-template-columns:1fr!important}}.store-pane textarea{width:100%;box-sizing:border-box;border:1px solid #E6DDD2;border-radius:6px;padding:8px 10px;font:inherit}
@@ -118,7 +119,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 </div>
 <footer>Made with Pottery Lab · <a href="/about">About</a> · <a href="/hosts">Find more hosts</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
 <script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/spots.js"></script><script src="/community.js"></script>
-<script src="/account.js"></script>
+<script src="/account.js"></script><script src="/follow.js"></script><script src="/savelist.js" defer></script>
 <script src="/collab.js"></script>
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
@@ -156,12 +157,23 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
   const short = String(first).trim().split(/\s+/).length > 2 && d.person ? String(d.person).trim().split(/\s+/)[0] : first; window.__encoreShort = short;
   if (d.sample) { h.sample = true; document.body.classList.add("example-host"); } // example page: no "Free to request" next to "Nothing here can be booked"
   document.title = `${h.name || "@" + h.handle} · Pottery Lab`; document.body.style.setProperty("--c", h.color || "#E26D8E");
-  const followed = (() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })();
+  // following: what the server says for a signed-in visitor (d.viewer, server/fanclub.js); this browser's list only for email follows
+  const signedIn0 = /(?:^|;\s*)encore_in=1/.test(document.cookie), PF = window.PLFollow;
+  const followed = d.viewer?.signedIn ? !!d.viewer.following : (() => { try { return JSON.parse(localStorage.getItem("encore.following") || "[]").includes(h.handle); } catch { return false; } })();
+  // one control in the header, first in the row with Share and Save to list, for every visitor: Follow / Following,
+  // "Notify me when they join" on a preview page, "Edit page" on your own page (test/save-follow.test.js audits each kind)
+  function headAction() { if (document.querySelector("[data-head-act]")) return; const share = document.getElementById("shareBtn"), row = share?.parentElement || document.querySelector(".head > div"); if (!row) return;
+    const w = document.createElement("span"); w.className = "head-act"; w.dataset.headAct = "1";
+    w.innerHTML = isOwner ? `<a class="plf-btn" id="topEdit" href="?edit=1">Edit page</a>` : h.showcase ? (PF ? PF.button({ handle: h.handle, name: h.name, showcase: true }, { id: "topNotify" }) : "") : folBtn("topFollow", "");
+    if (!w.firstElementChild) return; if (share) share.before(w); else row.appendChild(w);
+    const ed = w.querySelector("#topEdit"); if (ed) ed.onclick = (ev) => { const fab = document.querySelector(".store-fab:not(.shop-fab)"); if (fab) { ev.preventDefault(); fab.click(); } }; }
+  // the Follow button (public/follow.js): follows in place, Following opens notifications and Unfollow
+  const folBtn = (id, cls) => (PF && !h.showcase ? PF.button({ handle: h.handle, name: short }, { cls, id, on: !!d.viewer?.following }) : "");
   const knownEmail = (() => { try { return localStorage.getItem("encore.email") || ""; } catch { return ""; } })();
   const tastes = (h.tags || []).slice(0, 5), poss = (n) => /s$/i.test(String(n)) ? `${n}'` : `${n}'s`;
   m.innerHTML = `<div class="cover"></div>
   <div class="head"><span class="av">${esc(h.emoji || "🎉")}</span><div><div class="name-row"><h1>${esc(h.name || "@" + h.handle)}</h1></div>${d.rising ? `<span class="rising" style="display:inline-block;margin:2px 0 4px;padding:2px 9px;border-radius:999px;background:#E3F1DD;border:1.5px solid var(--pl-ink);font-size:13px;font-weight:700">Rising in ${esc(d.rising.city)}${d.rising.rank === 1 ? " · #1" : ""}</span>` : ""}<div class="handle">@${esc(h.handle)}${h.hood || h.city ? " · " + esc([h.hood, h.city].filter(Boolean).join(", ")) : ""}</div>
-    <div class="stats"><span id="fcw"${d.followers ? "" : " hidden"}><b id="fc">${d.followers || 0}</b> <span id="fcl">follower${d.followers === 1 ? "" : "s"}</span></span>${d.past.length ? `<span><b>${d.past.length}</b> ${d.past.length === 1 ? "event" : "events"} hosted</span>` : ""}${d.upcoming.length > 1 ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div><div class="gigs" id="hGigs" hidden></div>${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}${tastes.length ? `<div class="tags">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}</div></div>
+    <div class="stats"><span id="fcw"${d.followers ? "" : " hidden"}><b id="fc" data-pl-followers="${esc(h.handle)}" data-pl-fmt="count">${d.followers || 0}</b> <span id="fcl">follower${d.followers === 1 ? "" : "s"}</span></span>${d.past.length ? `<span><b>${d.past.length}</b> ${d.past.length === 1 ? "event" : "events"} hosted</span>` : ""}${d.upcoming.length > 1 ? `<span><b>${d.upcoming.length}</b> coming up</span>` : ""}</div><div class="gigs" id="hGigs" hidden></div>${h.bio ? `<p class="bio">${esc(h.bio)}</p>` : ""}${tastes.length ? `<div class="tags">${tastes.map((t) => `<i>${esc(t)}</i>`).join("")}</div>` : ""}</div></div>
   <section class="next-up" id="nextUp" hidden></section>
   <div class="cols"><div>
     <h2 class="sec s-coming">Coming up</h2><div class="grid s-coming">${d.upcoming.length ? series(d.upcoming).map((e) => e._more ? `<div class="ev-series">${C.eventCard(e)}<p class="more-dates">+${e._more} more ${e._more === 1 ? "date" : "dates"}: ${esc(e._dates)}</p></div>` : C.eventCard(e)).join("") : `<div class="empty">${window.Potto ? `<span class="potto-empty">${window.Potto.svg("sleep", 92)}</span>` : ""}Nothing coming up yet.${window.Potto && !h.showcase && !d.sample ? " <b>Potto's napping till the next one.</b>" : ""}${h.showcase ? " Check their Instagram." : ""}</div>`}</div>
@@ -169,9 +181,9 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
     <div id="extras"></div>
   </div><aside class="side"><div id="sideExtras"></div>
     <div class="card" id="follow" data-nm="${esc(short)}"><h3>Hear about the next one</h3>
-      <form class="fform" id="ff" novalidate><div class="row"><input name="name" placeholder="First name" autocomplete="given-name"><input name="email" type="email" placeholder="Email" autocomplete="email"></div>
+      ${signedIn0 && PF ? `<p class="muted fl-line" id="flLine">${followed ? `You follow ${esc(short)}. Tap Following for notifications or to unfollow.` : `Follow ${esc(short)} and you'll hear when they post something new.`}</p>${folBtn("", "btn")}` : `<form class="fform" id="ff" novalidate><div class="row"><input name="name" placeholder="First name" autocomplete="given-name"><input name="email" type="email" placeholder="Email" autocomplete="email"></div>
       ${tastes.length && !(h.experiences || []).length ? `<p style="margin:4px 0 0;font-size:14px;font-weight:600">What are you into?</p><div class="chips" aria-label="What you're into">${tastes.map((t) => `<label><input type="checkbox" name="t" value="${esc(t)}"><span>${esc(t)}</span></label>`).join("")}</div>` : ""}
-      <button class="btn" type="submit">Follow</button><small class="muted" id="ferr" role="alert"></small></form></div>
+      <button class="btn" type="submit">Follow</button><small class="muted" id="ferr" role="alert"></small></form>`}</div>
       </aside></div>`;
   window.EncoreClub?.mount(h, d); // the fan club card at #club (public/fanclub.js): join or leave for a guest, start and members for the host
   window.EncoreMembership?.mount(h, d); // paid memberships at #membership (public/memberships.js): Become a member, You're a member, the host's setup and members
@@ -303,20 +315,21 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
     { const L0 = window.EncoreStore?.withEventLook?.(h, [...(d.upcoming || []), ...(d.past || [])]); if (L0 && L0 !== h) h.theme = L0.theme; } // review round 12: a new page wears its latest event's look
     window.EncoreStore?.apply(h); window.EncoreStore?.feature(h, (d.upcoming || []).filter((e) => !e.drop)); /* a drop is ordered from "What I offer", not joined */ window.EncoreShop?.shop(h, first); const ofP = Promise.resolve(window.EncoreDrop?.offer(h, first, d, isOwner)).catch(() => {});
     // the scrapbook, what's on offer, a series and the turnout each arrive on their own. They are laid out hidden and shown together once they have landed (1.5s at most), so none of them pushes another down under a reader.
-    { m.classList.add("late-wait"); const reveal = () => m.classList.remove("late-wait"); Promise.allSettled([sbP, ofP]).then(() => setTimeout(reveal, 150)); setTimeout(reveal, 1500); } if (isOwner) window.EncoreStore?.coverButton?.(h); window.EncoreShop?.share(h); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h, first); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
+    { m.classList.add("late-wait"); const reveal = () => m.classList.remove("late-wait"); Promise.allSettled([sbP, ofP]).then(() => setTimeout(reveal, 150)); setTimeout(reveal, 1500); } if (isOwner) window.EncoreStore?.coverButton?.(h); window.EncoreShop?.share(h); headAction(); window.EncoreShop?.owner(h); window.EncoreStore?.editor(h); window.EncoreCollab?.mount(h, first); if (location.pathname.startsWith("/h/")) history.replaceState(null, "", "/@" + h.handle + location.search + location.hash);
   if (isOwner) { try { const nav = document.querySelector("header.top nav"); nav?.querySelectorAll('a[href^="/signup"]').forEach((a) => { a.href = "?edit=1"; a.textContent = "Edit page"; a.onclick = (ev) => { const fab = document.querySelector(".store-fab:not(.shop-fab)"); if (fab) { ev.preventDefault(); fab.click(); } }; }); } catch {}
     fetch("/api/db/collection?path=events", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { docs: [] })).then((j) => { const today = new Date().toISOString().slice(0, 10), shown = new Set((d.upcoming || []).map((x) => x.id));
       const P = (j.docs || []).filter((x) => x.data && !x.data.example && !x.data.sample && !shown.has(x.id) && x.data.date && x.data.date >= today && (x.data.name || x.data.pubTitle)).sort((a, b) => String(a.data.date).localeCompare(String(b.data.date))).slice(0, 6); if (!P.length) return;
       const grid = document.querySelector(".grid.s-coming"); if (!grid) return; grid.querySelectorAll(".empty").forEach((x) => x.remove()); document.querySelectorAll(".s-coming").forEach((x) => { x.hidden = false; x.style.display = ""; });
       grid.insertAdjacentHTML("beforeend", P.map(({ id, data: e }) => `<div class="priv-ev">${C.eventCard({ id, title: e.pubTitle || e.name, name: e.name, date: e.date, startTime: e.startTime, activity: e.activity, emoji: e.emoji, hood: e.hood, city: e.city, casual: e.casual, coverPhoto: e.coverPhoto, price: e.price, free: e.free, costNote: e.costNote, groupPrice: e.groupPrice, groupSize: e.groupSize, priceUnit: e.priceUnit, host: null }).replace(/href="[^"]*"/, `href="/?app=1&amp;open=${encodeURIComponent(id)}#studio"`)}<p class="priv-tag">Only you see this. ${!e.published && !e.discoverable ? "Draft" : e.discoverable ? "Not on your page yet" : "It's link only"}.</p></div>`).join("")); }).catch(() => {}); }
   const ff = document.getElementById("ff"), fe = document.getElementById("ferr");
-  if (followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You're following ${esc(short)}</b></div>`;
-  ff.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff), signedIn = /(?:^|;\s*)encore_in=1/.test(document.cookie);
+  if (ff && followed) ff.innerHTML = `<div class="done">${C.pipSVG("happy", 34)}<b>You're following ${esc(short)}</b></div>`;
+  ff?.addEventListener?.("submit", async (e) => { e.preventDefault(); fe.textContent = ""; const fd = new FormData(ff), signedIn = /(?:^|;\s*)encore_in=1/.test(document.cookie);
     if (!signedIn && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(fd.get("email") || "").trim())) { fe.textContent = fd.get("email") ? "That email doesn't look right." : "Add your email to follow."; ff.querySelector("input[name=email]")?.focus(); return; }
     try { const j = await C.follow({ handle: h.handle, hostName: h.name, first, email: fd.get("email"), name: fd.get("name"), tastes: fd.getAll("t"), via: new URLSearchParams(location.search).get("via") || "page" });
       C.oink(); { const fc = document.getElementById("fc"), fw = document.getElementById("fcw"), fl = document.getElementById("fcl"); if (fc) fc.textContent = j.followers; if (fl) fl.textContent = j.followers === 1 ? "follower" : "followers"; if (fw) fw.hidden = false; } 
       try { const L = JSON.parse(localStorage.getItem("encore.following") || "[]"); if (!L.includes(h.handle)) L.push(h.handle); localStorage.setItem("encore.following", JSON.stringify(L)); } catch {}
       document.querySelectorAll("#follow > h3, #follow > p.muted").forEach((x) => x.remove()); ff.innerHTML = `<div class="done"><span class="hop">${C.pipSVG("happy", 40)}</span><div><b>You're following ${esc(short)}</b></div></div>`;
+      PF?.toast?.(`You'll hear when <b>${esc(short)}</b> posts something new.`);
     } catch (err) { fe.textContent = err.message; } });
 })();
 </script>
@@ -331,14 +344,21 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/shell.js"></script>
 <script src="/series.js" defer></script>
 <script>
-// follow card: signed-in people follow in one tap; people who already follow see a thank-you
-(function () { const handle = decodeURIComponent(location.pathname.replace(/^\/@/, "").split("/")[0]); let tries = 0;
-  const go = async () => { const card = document.getElementById("follow"), f = document.getElementById("ff"); if (!card || !f) { if (tries++ < 20) setTimeout(go, 300); return; }
-    let following = false; try { following = JSON.parse(localStorage.getItem("encore.following") || "[]").includes(handle); } catch {}
-    const nm = String(card.dataset.nm || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-    if (following) { card.innerHTML = `<h3>You're following ${nm}</h3>`; return; }
-    try { const me = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (me?.verified && me.email) { const row = f.querySelector(".row"); if (row) { row.style.display = "none"; f.name.value = me.name || ""; f.email.value = me.email; } } } catch {} };
-  go(); })();
+// Follow on the host page (public/follow.js): the counts and the card's line move with it. Arriving at /@handle#follow
+// signed in never follows on its own: the Follow button is highlighted with a short line, unless the visitor just signed
+// in to follow (?pl_follow=, follow.js finishes it and says so).
+(function () { if (!/(?:^|;\s*)encore_in=1/.test(document.cookie) || !window.PLFollow) return; let tries = 0;
+  const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  window.addEventListener("pl:follow", (e) => { const d = e.detail || {}, card = document.getElementById("follow"), b = document.getElementById("topFollow"); if (!b || d.handle !== b.dataset.plFollow) return; const nm = esc(card?.dataset.nm || "them");
+    if (d.followers != null) { const fl = document.getElementById("fcl"), fw = document.getElementById("fcw"); if (fl) fl.textContent = d.followers === 1 ? "follower" : "followers"; if (fw) fw.hidden = !d.followers; }
+    const line = document.getElementById("flLine"); if (line) line.innerHTML = d.following ? `You follow ${nm}. Tap Following for notifications or to unfollow.` : `Follow ${nm} and you'll hear when they post something new.`;
+    document.getElementById("folHint")?.remove(); document.querySelectorAll(".plf-hi").forEach((x) => x.classList.remove("plf-hi")); });
+  const arrive = () => { if (location.hash !== "#follow" || window.PLFollow.returnedFrom()) return; const b = document.getElementById("topFollow"), card = document.getElementById("follow");
+    if (!b) { if (tries++ < 20) setTimeout(arrive, 250); return; } if (document.getElementById("folHint")) return;
+    const nm = esc(card?.dataset.nm || "them"), on = b.getAttribute("aria-pressed") === "true";
+    b.classList.add("plf-hi"); (b.closest("[data-head-act]")?.parentElement || b.closest(".name-row"))?.insertAdjacentHTML("afterend", `<p class="plf-line" id="folHint">${on ? `You follow ${nm}. Tap Following for notifications or to unfollow.` : `Tap Follow to hear when ${nm} posts something new.`}</p>`);
+    try { history.replaceState(history.state, "", location.pathname + location.search); } catch {} b.scrollIntoView({ block: "center" }); b.focus({ preventScroll: true }); };
+  window.addEventListener("hashchange", () => { tries = 0; arrive(); }); document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", arrive) : setTimeout(arrive, 0); })();
 </script>
 <script src="/stats.js" defer></script><script src="/sharecards.js" defer></script><script src="/places.js" defer></script><!-- Your places on a page (public/places.js) --><script src="/igimport.js" defer></script><!-- hook: "Refresh from your Instagram" after a claim, and the row in Edit page (public/igimport.js) -->
 <script>

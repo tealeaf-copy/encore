@@ -144,7 +144,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 <input type="file" id="storyFile" accept="image/*,video/*" hidden>
 <script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/emoji.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/avatars.js"></script>
-<script src="/save.js"></script><script src="/inspo.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/feedvisual.js"></script><script src="/listcards.js"></script><script src="/momentupload.js"></script><script src="/composer.js"></script><!-- visual feed, the "+" -->
+<script src="/save.js"></script><script src="/follow.js"></script><script src="/inspo.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/feedvisual.js"></script><script src="/listcards.js"></script><script src="/momentupload.js"></script><script src="/composer.js"></script><!-- visual feed, the "+" -->
 <script>
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -172,13 +172,13 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   // ---- leaderboards: the weekly card, moments ("Mai is now #2"), your own standing ----
   const lbAv = (h) => `<span class="lav" aria-hidden="true">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="">` : h.avatarArt && window.EncoreAvatars ? window.EncoreAvatars.svg(h.avatarArt, h.accent || "#E26D8E", 44) : esc(h.emoji || "🎉")}</span>`;
   const lbBadges = (e) => (e.badges || []).filter((b) => b.id === "super" || b.id === "legend").map((b) => `<span class="bdg">${esc(b.emoji)} ${esc(b.id === "legend" ? "Local legend" : b.label)}</span>`).join("") + (e.streak && e.streak.weeks >= 3 ? `<span class="bdg">🔥 ${e.streak.weeks}-week streak</span>` : "");
-  const lbFollow = (e, signedIn) => e.mine ? "" : e.following ? `<button class="lbf" type="button" disabled>Following</button>` : signedIn ? `<button class="lbf" type="button" data-lbf="${esc(e.host.handle)}">Follow<span class="sr"> ${esc(e.host.name)}</span></button>` : `<a class="lbf" href="/@${esc(e.host.handle)}#follow">Follow<span class="sr"> ${esc(e.host.name)}</span></a>`;
+  // Follow in place (public/follow.js): Following opens notifications and Unfollow; signed out it signs in and comes back
+  const lbFollow = (e) => e.mine ? "" : window.PLFollow ? window.PLFollow.button({ handle: e.host.handle, name: e.host.name }, { cls: "lbf" }) : `<a class="lbf" href="/@${esc(e.host.handle)}">See page<span class="sr"> ${esc(e.host.name)}</span></a>`;
   function lbCard(it, signedIn) { const M = ["#F3E7A8", "#E4E4EC", "#F3C9A6"];
     return `<section class="lbc" aria-label="${esc(it.title)}"><h3>🏆 ${esc(it.title)}</h3><p class="lbs">${esc(it.sub)}</p><ol>${it.entries.map((e) => `<li><span class="rk" style="--m:${M[e.rank - 1] || "#fff"}" aria-label="Number ${e.rank}">${e.rank}</span>${lbAv(e.host)}<span><a class="nm" href="/@${esc(e.host.handle)}">${esc(e.host.name)}</a><span class="why">${esc(e.why)}</span>${lbBadges(e)}</span>${lbFollow(e, signedIn)}</li>`).join("")}</ol><a class="lbgo" href="${esc(it.url)}">See the leaderboard</a></section>`; }
   const lbMoment = (it) => `<a class="lbm" href="${esc(it.link || "/leaderboard")}"><span class="e" aria-hidden="true">${esc(it.emoji || "🏆")}</span><span><b>${esc(it.text)}</b><small>${ago(it.at)} ago · ${it.type === "rank" ? "Leaderboard" : "Badge"}</small></span></a>`;
   const lbMe = (it) => `<a class="lbm me" href="${esc(it.link || "/leaderboard")}"><span class="e" aria-hidden="true">🏆</span><span><b>${esc(it.text)}</b><small>${esc(it.next || "See the leaderboard")}</small></span></a>`;
   const LB = { leaderboard: (it) => lbCard(it, true), standing: lbMoment, "you-rank": lbMe };
-  const wireLb = (root) => $$("[data-lbf]", root).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/public/follow", { handle: b.dataset.lbf, via: "leaderboard" }); b.textContent = "Following"; } catch (e) { b.disabled = false; toast(e.message); } }));
   // ---- signed out: the public feed of open events and hosts, with a nudge to sign in for posts from people you follow ----
   // ---- visual feed: signed out, the same scrapbook wall from public content only (open events, showcase pages, public photos) ----
   // picks made in "What are you into?" reorder the signed-out wall straight away

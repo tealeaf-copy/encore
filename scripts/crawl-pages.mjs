@@ -16,7 +16,7 @@ import { createApp } from "../server/app.js";
 import { seedRoutes, pagesFor } from "../test/routes-seed.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const WIDTH = +arg("--width", 390), ONLY = arg("--only", ""), SHOW_APIS = process.argv.includes("--apis"), FLOWS = !process.argv.includes("--no-flows");
+const WIDTH = +arg("--width", 390), ONLY = arg("--only", ""), SHOW_APIS = process.argv.includes("--apis"), FLOWS = !process.argv.includes("--no-flows"), SHOW_CLS = process.argv.includes("--cls"), shifts = []; // --cls also lists every page over 0.1 (the target), without failing on it
 const CLS_SPIKE = 0.25, STUCK_MS = 4000, CHURN_PER_S = 40;
 // installed before any page script: layout shifts, unhandled rejections and DOM changes, read back after load
 const WATCH = () => { const W = (window.__crawl = { cls: 0, rejections: [], mut: 0 });
@@ -69,6 +69,7 @@ for (const [role, cookie] of Object.entries(roles)) {
 async function health(page, bad) {
   const a = await page.evaluate(() => ({ ...window.__crawl })).catch(() => null); if (!a) return;
   if (a.cls > CLS_SPIKE) bad(`layout shift spike: CLS ${a.cls.toFixed(3)}`);
+  if (SHOW_CLS && a.cls > 0.1) shifts.push(`${page.url().replace(/^https?:\/\/[^/]+/, "")}  CLS ${a.cls.toFixed(3)}`);
   for (const r of new Set(a.rejections)) bad("unhandled rejection: " + r);
   const m0 = a.mut; await page.waitForTimeout(2000); const m1 = await page.evaluate(() => window.__crawl.mut).catch(() => m0);
   if ((m1 - m0) / 2 > CHURN_PER_S) bad(`the page keeps rewriting itself while idle: ${Math.round((m1 - m0) / 2)} DOM changes a second`);
@@ -120,6 +121,7 @@ async function flows() {
 if (FLOWS && !ONLY) problems.push(...(await flows()));
 await browser.close(); server.closeAllConnections?.(); server.close(); store.close(); fs.rmSync(dir, { recursive: true, force: true });
 if (SHOW_APIS) console.log([...apis].sort().join("\n"));
+if (SHOW_CLS) console.log(shifts.length ? "over 0.1 (the target), not counted as problems:\n" + shifts.join("\n") : "no page over CLS 0.1");
 console.log(problems.length ? problems.join("\n") : "");
 console.log(`${problems.length} problem${problems.length === 1 ? "" : "s"} at ${WIDTH}px`);
 process.exit(problems.length ? 1 : 0);

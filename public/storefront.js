@@ -266,7 +266,7 @@
         try { const r = await fetch("/api/host/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: st.theme }) }); const k = await r.json().catch(() => ({})); if (!r.ok) throw new Error(k.message || "That didn't save. Try again."); if (k.host) Object.assign(h, k.host); n.innerHTML = `<b>Done. Change it any time in Edit page.</b>`; setTimeout(() => n.remove(), 4000); }
         catch (e) { n.innerHTML = `<b>${esc0(e.message)}</b>`; } };
       (document.querySelector("main") || document.body).prepend(n); }
-    const fab = document.createElement("button"); fab.className = "store-fab"; fab.type = "button"; fab.innerHTML = `${PENCIL}<span>Edit page</span>`; document.body.appendChild(fab);
+    const fab = document.createElement("button"); fab.className = "store-fab"; fab.type = "button"; fab.setAttribute("aria-label", "Edit page"); fab.innerHTML = `${PENCIL}<span>Edit page</span>`; document.body.appendChild(fab);
     const pane = document.createElement("aside"); pane.className = "store-pane"; pane.hidden = true; document.body.appendChild(pane);
     const live = () => apply({ ...h, theme: st.theme, sections: st.sections, links: st.links.filter((l) => l.label && /^https:\/\//.test(l.url)), tagline: st.tagline });
     const sw = (k, v, inner, title) => `<button type="button" class="sw" data-k="${k}" data-v="${v}" aria-pressed="${st.theme[k] === v}" title="${title || v}">${inner}</button>`;

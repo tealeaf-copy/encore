@@ -41,6 +41,12 @@
   addEventListener("error", (e) => { const img = e.target; if (!img || img.tagName !== "IMG" || img.dataset.plBroken || img.hasAttribute("data-no-fallback")) return; img.dataset.plBroken = "1";
     try { const box = img.closest(".ls-media,.fv-media,.gxcover,.cover,[data-cover]"); if (box && window.EventArt?.cover) { const t = document.createElement("div"); t.innerHTML = window.EventArt.cover({ title: img.alt || box.closest("article,a,section")?.querySelector("h2,h3,.ls-title,.fv-title")?.textContent || "" }, { title: "", label: "" }); const art = t.firstElementChild; if (art) { art.setAttribute("aria-hidden", "true"); img.replaceWith(art); return; } } } catch {}
     img.style.visibility = "hidden"; }, true);
+  // a script a tap fetches on demand (a sheet's module) that didn't load (a dropped connection, a deploy mid-tap): its tag
+  // goes, so the next tap fetches it again instead of finding a dead tag and doing nothing, and one calm line says so
+  addEventListener("error", (e) => { const s = e.target; if (!s || s.tagName !== "SCRIPT" || !s.src || !same(s.src) || document.readyState === "loading") return; s.remove();
+    if (!document.body || document.getElementById("plRetry")) return; const b = document.createElement("div"); b.id = "plRetry"; b.setAttribute("role", "status");
+    b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:2147483601;max-width:420px;margin:0 auto;padding:12px 14px;border-radius:6px;background:var(--pl-ink,#1D1B18);color:#fff;font:500 15px/1.35 'IBM Plex Sans',system-ui,sans-serif;text-align:center";
+    b.textContent = navigator.onLine === false ? "You're offline. Tap again when you're back." : "That didn't load. Tap it again."; document.body.appendChild(b); setTimeout(() => b.remove(), 4000); }, true);
   // the service worker drew this page from its cache and the fresh copy turned out different in kind: load that one
   try { navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.plReload && e.data.plReload === location.href) location.reload(); }); } catch {}
   const key = () => { try { return crypto.randomUUID(); } catch { return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12); } };

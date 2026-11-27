@@ -683,7 +683,11 @@ export function createApp({ store, dataDir }) {
     out = out.replace(/(<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^"]*")>/, '$1 id="gfonts"><script>if(location.pathname==="/g"){const l=document.getElementById("gfonts");l.media="print";addEventListener("load",()=>{l.media="all"})}</script>');
     return out;
   }
-  app.get(/^\/_app\/([A-Za-z0-9_-]{16}\.(?:js|css))$/, (req, res) => { const A = APP_ASSETS.get(req.params[0]); if (!A) return res.status(404).type("text").send("Not found");
+  // A page drawn by the deploy before this one asks for that deploy's files, which this server never built (they live in
+  // memory): a missing script reloads the page once a minute at most, so it comes back whole from this deploy instead of
+  // half-drawn without its scripts; a missing stylesheet is empty (the reload brings the real one).
+  const STALE_JS = `(function(){try{var k="pl.staleApp",t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,String(Date.now()));location.reload()}}catch(e){}})();`;
+  app.get(/^\/_app\/([A-Za-z0-9_-]{16}\.(?:js|css))$/, (req, res) => { const A = APP_ASSETS.get(req.params[0]); if (!A) { res.set("Cache-Control", "no-store"); return req.params[0].endsWith(".js") ? res.type("application/javascript").send(STALE_JS) : res.type("text/css").send(""); }
     res.set({ "Cache-Control": "public, max-age=31536000, immutable", "Content-Type": A.type, Vary: "Accept-Encoding" }); const ae = req.headers["accept-encoding"] || "";
     if (A.br && /\bbr\b/.test(ae)) return res.set("Content-Encoding", "br").send(A.br); if (/\bgzip\b/.test(ae)) return res.set("Content-Encoding", "gzip").send(A.gz); res.send(A.body); });
   async function builtPage() {

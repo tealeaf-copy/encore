@@ -77,7 +77,7 @@ test("book one event with no campaign: a one-event guest list sits behind it, th
   const c = srv.store.get("system/camp-" + r.campaignId).data; assert.equal(c.single, true); assert.deepEqual(c.bookings, [j.id]);
   let E = (await ok(await get(`/api/teams/events/${j.id}`, S.owner.c))).event;
   assert.equal(E.briefState.brand, true); assert.equal(E.briefState.host, false); assert.equal(E.briefState.waitingOn, "host");
-  assert.ok(E.briefLines.some((l) => /8 brand-invited seats, 2 host-sourced seats/.test(l))); assert.equal(E.owner.email, S.owner.email);
+  assert.ok(E.briefLines.some((l) => /8 brand-invited spots, 2 host-sourced spots/.test(l))); assert.equal(E.owner.email, S.owner.email);
   assert.ok(E.exposure.rows.length); assert.match(E.availability.line, /open/); assert.ok(E.access);
   // the campaign list says it's one event
   assert.equal((await ok(await get("/api/campaigns", S.owner.c))).campaigns.find((x) => x.id === c.id).single, true);
@@ -333,7 +333,7 @@ test("what it's like: recap photos only with consent, quotes only from guests wh
   const H = S.hosts.find((h) => h.handle === "long-table");
   await ok(await post("/api/bb/host/recap", { photos: [{ url: "/_blob/abcdefghijklmnopqrst", caption: "The long table", consent: true }, { url: "/_blob/bbbbbbbbbbbbbbbbbbbb", consent: false }, { url: "https://elsewhere.example/x.jpg", consent: true }] }, H.c));
   const d = await ok(await get(`/api/bb/x/long-table/${H.pkgId}/like`)); assert.deepEqual(d.photos.map((p) => p.url), ["/_blob/abcdefghijklmnopqrst"]);
-  assert.ok(d.quotes.length >= 1 && d.quotes.every((q) => q.name && !q.name.includes(" "))); assert.equal(d.capture.rule, "consent"); assert.match(d.capture.line, /photograph guests who say yes/);
+  assert.ok(d.quotes.length >= 1 && d.quotes.every((q) => q.name && !q.name.includes(" "))); assert.equal(d.capture.rule, "consent"); assert.match(d.capture.line, /photograph guests who agree/);
 });
 
 test("pages: the new brand pages load, the admin page is admin only, and the hero says who it's for", async () => {

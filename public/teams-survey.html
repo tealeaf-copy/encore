@@ -21,14 +21,14 @@
         <label class="bb-field"><span>Anything else that stood out? (optional)</span><textarea name="said" rows="2" maxlength="600">${esc(A.said || "")}</textarea></label>
         ${box("quoteOk", "OK to quote me, with my first name", "Only what you wrote above.", A.quoteOk)}
         <p class="ti-k" style="margin-top:18px">You choose</p>
-        ${box("listed", "Stay in touch with people from tonight", "Other guests who chose this can see your first name and ask to stay in touch. Your details pass only if you both say yes.", A.listed)}
+        ${box("listed", "Stay in touch with people from tonight", "Other guests who chose this can see your first name and ask to stay in touch. Your details pass only if you both agree.", A.listed)}
         ${box("followHost", `Follow ${d.host} and hear about their next event`, `Between you and ${d.host}. It isn't a yes to ${d.company}.`, A.followHost)}
         ${box("nextOk", `Save me a spot at ${d.host}'s next one`, "", A.nextOk)}
         ${box("similarOk", "Tell me about similar hosts' next events", "A host who runs something like this may invite you once. Nothing else is shared.", A.similarOk)}
         ${box("contactOk", `${d.company} may contact me about a follow-up`, "Leave it off and they won't get your details from us.", A.contactOk)}
         ${d.side === "host" ? `${box("matchOk", `Let ${d.company} know which company I work for`, "Only the company name, so they can count which teams came.", A.matchOk)}<label class="bb-field"><span>Company (only if you ticked that)</span><input name="company" maxlength="100" value="${esc(A.company || "")}" autocomplete="organization"></label>` : ""}
         ${d.hasEmail ? "" : `<label class="bb-field"><span>Email (only to follow ${esc(d.host)})</span><input name="email" type="email" autocomplete="email"></label>`}
-        <label class="bb-field"><span>How people you connect with can reach you (optional)</span><input name="contact" maxlength="160" value="${esc(A.contact || "")}" placeholder="An email or a profile link"><small>Shown only to someone you both said yes to.</small></label>
+        <label class="bb-field"><span>How people you connect with can reach you (optional)</span><input name="contact" maxlength="160" value="${esc(A.contact || "")}" placeholder="An email or a profile link"><small>Shown only to someone you both chose.</small></label>
         <button class="bb-btn primary lg" type="submit">${d.answer ? "Save changes" : "Send"}</button><p class="bb-meta" id="msg" role="status"></p></form>
       ${people(d)}<div id="pairs"></div>`;
     threads();
@@ -41,7 +41,7 @@
   // a light thread with each person you both said yes to, and a nudge to meet again within two weeks
   async function threads() { const el = $("#pairs"); if (!el) return; let P; try { P = await api(`/api/survey/${encodeURIComponent(token)}/pairs`); } catch { return; } if (!P.pairs.length) { el.innerHTML = ""; return; }
     const t = (x) => new Date(x).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    el.innerHTML = P.pairs.map((p) => `<section class="ti-card tp-pair" style="margin-top:16px" data-pair="${esc(p.id)}"><h2>You and ${esc(p.with)}</h2><p class="ti-sub">You both said yes. Two weeks is a good window to meet again.${p.contact ? ` ${esc(p.with)}: ${esc(p.contact)}` : ""}</p>
+    el.innerHTML = P.pairs.map((p) => `<section class="ti-card tp-pair" style="margin-top:16px" data-pair="${esc(p.id)}"><h2>You and ${esc(p.with)}</h2><p class="ti-sub">You both chose to stay in touch. Two weeks is a good window to meet again.${p.contact ? ` ${esc(p.with)}: ${esc(p.contact)}` : ""}</p>
       <div class="bb-thread">${p.messages.length ? p.messages.map((m) => `<div class="bb-msg${m.mine ? " me" : ""}${m.system ? " sys" : ""}"><p>${esc(m.text)}</p><time>${esc(t(m.at))}</time></div>`).join("") : `<p class="bb-meta">Say hello, or suggest a coffee.</p>`}</div>
       <form class="tp2-send" data-send><label class="bb-field"><span>Message ${esc(p.with)}</span><input name="text" maxlength="1000" placeholder="Coffee next week?" autocomplete="off"></label><button class="bb-btn primary" type="submit">Send</button></form>
       <label class="tp-check" style="margin-top:10px"><input type="checkbox" data-met${p.met ? " checked" : ""}><span><b>We met up</b><small>${p.theyMet ? `${esc(p.with)} said you did.` : "Only counted, never shown to the brand by name."}</small></span></label></section>`).join("");
@@ -49,9 +49,9 @@
       box.querySelector("[data-send]").onsubmit = async (e) => { e.preventDefault(); const v = e.target.text.value.trim(); if (!v) return; try { await api(`/api/survey/${token}/pairs/${id}`, { text: v }); threads(); } catch (er) { BB.toast(er.message); } };
       box.querySelector("[data-met]").onchange = async (e) => { try { await api(`/api/survey/${token}/pairs/${id}`, { met: e.target.checked }); BB.toast(e.target.checked ? "Glad you met." : "Saved"); } catch (er) { BB.toast(er.message); } }; }); }
   function people(d) { const C = d.connections; if (!d.answer?.listed) return "";
-    return `<section class="ti-card" style="margin-top:16px"><h2>Which people do you want to stay in touch with?</h2><p class="ti-sub">Only guests who chose to be listed. Nobody sees your details unless you both say yes.</p>
+    return `<section class="ti-card" style="margin-top:16px"><h2>Which people do you want to stay in touch with?</h2><p class="ti-sub">Only guests who chose to be listed. Nobody sees your details unless you both agree.</p>
       ${C.incoming.length ? `<p class="ti-k" style="margin-top:12px">Asked to stay in touch with you</p><ul class="tp-lines">${C.incoming.map((x) => `<li style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(x.first)}</span><span style="display:flex;gap:6px"><button class="bb-btn primary" data-ans="${esc(x.from)}" data-yes="1">Yes</button><button class="bb-btn quiet" data-ans="${esc(x.from)}">No thanks</button></span></li>`).join("")}</ul>` : ""}
-      ${C.mutual.length ? `<p class="ti-k" style="margin-top:12px">You both said yes</p><ul class="tp-lines">${C.mutual.map((x) => `<li><b>${esc(x.first)}</b> · ${esc(x.contact || "No contact shared yet")}</li>`).join("")}</ul>` : ""}
+      ${C.mutual.length ? `<p class="ti-k" style="margin-top:12px">You both chose each other</p><ul class="tp-lines">${C.mutual.map((x) => `<li><b>${esc(x.first)}</b> · ${esc(x.contact || "No contact shared yet")}</li>`).join("")}</ul>` : ""}
       ${d.others.length ? `<p class="ti-k" style="margin-top:12px">From tonight</p><ul class="tp-lines">${d.others.filter((o) => !C.mutual.some((m) => m.token === o.token) && !C.incoming.some((i) => i.from === o.token)).map((o) => `<li style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span><b>${esc(o.first)}</b> <span class="bb-meta">${esc(o.from)}</span></span>${C.asked.includes(o.token) ? `<span class="bb-meta">${icon("check")} Asked</span>` : `<button class="bb-btn" data-ask="${esc(o.token)}">Stay in touch</button>`}</li>`).join("")}</ul>` : `<p class="bb-meta">No one else has chosen this yet. Check back in a day or two.</p>`}</section>`; }
   draw();
 })();

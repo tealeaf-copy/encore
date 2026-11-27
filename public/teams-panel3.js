@@ -24,7 +24,7 @@
         ${H.sent ? `<p class="tp-note">${esc(C.text)}. ${esc(C.targets.of ? C.targets.text + "." : "")}</p>` : `<p class="tp2-flag warn">The date, time or access changes, so guests reconfirm before you commit. Send the note below: each guest gets their own link.</p>`}
         <form class="tp3-thr" id="tp3Thr"><label class="bb-field"><span>Let the hold go if fewer than this many guests can make it</span><input name="t" type="number" min="0" max="${Math.max(C.of, V.guests)}" inputmode="numeric" value="${H.threshold}"></label><button class="bb-btn quiet" type="submit">Save</button></form>` : `<p class="tp-note">Same date and time, same access. Guests don't need to reconfirm.</p>`}
       <p class="tp-q">Price and deposit</p><ul class="tp-lines">${H.price.lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>
-      <p class="tp-note">${H.hostOk ? `${icon("check")} ${esc(H.host)} said yes to the date.` : `Waiting on ${esc(H.host)} to say yes. You can commit either way.`}</p>
+      <p class="tp-note">${H.hostOk ? `${icon("check")} ${esc(H.host)} accepted the date.` : `Waiting on ${esc(H.host)} to accept. You can commit either way.`}</p>
       <div class="tp-acts"><button class="bb-btn primary" id="tp3Commit"${H.commit.ok ? "" : " disabled"}>Commit to ${esc(H.host)}</button><button class="bb-btn quiet" id="tp3Let">Let the hold go</button></div>${H.commit.ok ? "" : `<p class="tp-note" role="status">${esc(H.commit.why)}</p>`}</div>`;
   }
   function optionsHtml(V) {
@@ -65,7 +65,7 @@
       <p class="ti-sub">${esc(H.company)} needs a replacement host for ${esc(H.headcount)} people and is holding ${esc(H.name)} with you.${H.live ? " Your date stays blocked until the hold ends." : ""}</p>
       ${H.live ? `<p class="tp3-clock" data-until="${H.expiresAt}" role="timer">${esc(H.left)}</p><p class="tp-note">The brand commits by <b>${esc(when(H.expiresAt))}</b>, or the hold ends and your date opens again.${H.rsvpNeeded ? ` It also ends sooner if fewer than ${esc(H.threshold)} guests can make it.` : ""}</p>` : `<p class="tp-note">${esc(H.why || (H.state === "committed" ? "The brand committed. The request is in your inbox." : ""))}</p>`}
       <ul class="tp-den"><li><span>Guests</span><b>${esc(H.headcount)}</b></li><li><span>Your price for the group</span><b>${money(H.price.totalCents)}</b></li>${H.rsvpNeeded ? `<li><span>Guests reconfirmed so far</span><b>${H.counts.yes} of ${H.counts.of}</b></li>` : ""}</ul>
-      ${H.live ? (H.hostOk ? `<p class="tp-note">${icon("check")} You said yes. When the brand commits, it's booked.</p>` : `<div class="tp-acts"><button class="bb-btn primary" data-yes="1">I can do it</button><button class="bb-btn quiet" data-yes="0">I can't</button></div>`) : ""}</section>`).join("");
+      ${H.live ? (H.hostOk ? `<p class="tp-note">${icon("check")} You accepted. When the brand commits, it's booked.</p>` : `<div class="tp-acts"><button class="bb-btn primary" data-yes="1">I can do it</button><button class="bb-btn quiet" data-yes="0">I can't</button></div>`) : ""}</section>`).join("");
     tick(() => hostHolds(el));
     $$("[data-hold]", el).forEach((box) => box.querySelectorAll("[data-yes]").forEach((b) => (b.onclick = async () => { try { await api(`/api/bb/host/holds/${box.dataset.hold}`, { yes: b.dataset.yes === "1" }); BB.toast(b.dataset.yes === "1" ? "Sent: you can do it" : "Hold let go"); hostHolds(el); } catch (e) { fail(e); } })));
   }

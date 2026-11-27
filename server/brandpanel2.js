@@ -212,7 +212,7 @@ export function followUpSpeed(c, events = [], { today = isoDay(), names = {} } =
     const k = lc(t.owner) || "unassigned", x = by.get(k) || { owner: k, name: names[k] || "", n: 0, of: 0 }; x.of++; if (done) x.n++; by.set(k, x); }
   const rows = [...by.values()].map((x) => ({ ...x, ...ofN(x.n, x.of, "done within 7 days") })).sort((a, b) => b.of - a.of);
   const n = rows.reduce((a, x) => a + x.n, 0), of = rows.reduce((a, x) => a + x.of, 0);
-  return { rows, total: ofN(n, of, "target-account follow-ups done within 7 days"), scope: "Customer dinners, brand-invited seats at target accounts. Host-sourced guests are left out of sales tasks unless they opted in." };
+  return { rows, total: ofN(n, of, "target-account follow-ups done within 7 days"), scope: "Customer dinners, brand-invited spots at target accounts. Host-sourced guests are left out of sales tasks unless they opted in." };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ export function tierNarrative({ company = "", tier, events = [], totals = null, 
   const T = tier || TIERS[1], n = events.length, hosts = [...new Set(events.map((e) => e.hostName).filter(Boolean))], done = events.filter((e) => e.status === "done").length, S = [];
   S.push(`${company || "The team"} ran ${plural(n, "event")} as ${T.label.split(": ")[1]}${hosts.length ? `, with ${hosts.slice(0, 3).join(", ")}${hosts.length > 3 ? ` and ${hosts.length - 3} more` : ""}` : ""}${n !== done ? ` (${done} of ${n} have happened)` : ""}.`);
   if (totals && done) { const A = totals.attendance, Tg = totals.targets, Sv = totals.survey;
-    if (A.brand.of) S.push(`${A.brand.text} brand-invited guests who said yes came${A.host.of ? `, and ${A.host.text} host-sourced guests` : ""}.`);
+    if (A.brand.of) S.push(`${A.brand.text} brand-invited guests who were in came${A.host.of ? `, and ${A.host.text} host-sourced guests` : ""}.`);
     if (Tg.accounts) S.push(`${Tg.invited.text} target accounts were invited and ${Tg.attended.n} came.`);
     if (Sv.useful.of) S.push(`${Sv.useful.text} guests who answered the survey made a useful connection.`);
     S.push(`The team logged ${plural(totals.meetings, "meeting")} and ${plural(totals.opportunities.n, "opportunity", "opportunities")}.`); }
@@ -298,7 +298,7 @@ export const nextTimeAgreed = (n) => !!n && n.items?.length === 2 && n.brand?.v 
 
 // ---------------------------------------------------------------------------------------------------------------
 // 10. The rebooking rule: set in the brief before invites go out, evaluated by the report.
-export const RULE_METRICS = { targetsAttended: "named target accounts came", usefulPct: "% of guests who answered made a useful connection", meetings: "meetings logged", mutual: "connections both guests said yes to" };
+export const RULE_METRICS = { targetsAttended: "named target accounts came", usefulPct: "% of guests who answered made a useful connection", meetings: "meetings logged", mutual: "connections both guests agreed to" };
 export function cleanRule(b = {}) {
   const metric = Object.prototype.hasOwnProperty.call(RULE_METRICS, b.metric) ? b.metric : "targetsAttended", raw = Array.isArray(b.accounts) ? b.accounts : String(b.accounts || "").split(/[,\n]/);
   const accounts = [...new Set(raw.map((x) => clean(x, 100)).filter(Boolean))].slice(0, 50), atLeast = int(b.atLeast, 1, metric === "usefulPct" ? 100 : 500), useful = clean(b.useful, 240);
@@ -326,7 +326,7 @@ export const TAKEAWAY_PROMPT = "What did you take away?";
 // with the event). Anything else is an "Observed difference". The thresholds live here and nowhere else.
 export const SOURCES = { survey: "Guest survey", crm: "CRM record" };
 export const MATCH = { sharePts: 20, relative: 0.2, sameCity: true, sameGoal: true,
-  fields: { brandShare: "Brand seats (vs host seats)", targetShare: "Guests at target accounts", effort: "Brand effort (invites sent)", spend: "Spend per guest", city: "City", goal: "Event goal" },
+  fields: { brandShare: "Brand spots (vs host spots)", targetShare: "Guests at target accounts", effort: "Brand effort (invites sent)", spend: "Spend per guest", city: "City", goal: "Event goal" },
   line: "Lift only where both groups match: brand and target-account shares within 20 points, invites sent and spend per guest within 20%, the same city and the same goal, checked before outcomes were known." };
 /** One group's profile from the match checks stored with its events. */
 export function groupProfile(profiles = [], events = profiles.length) {
@@ -375,7 +375,7 @@ export const FORMATS = [
   { id: "craft-expert", occasion: "team", together: "class", name: "Craft night with an expert", size: [6, 16], what: "An expert maker teaches one piece start to finish; everyone leaves with it.", ros: ros(["0:00", "Arrive, materials out"], ["0:10", "The expert shows the piece"], ["0:25", "Make it, the expert goes table to table"], ["1:45", "Show and tell"], ["2:00", "Close"]), rules: ["Phones away while making"] },
   { id: "game-league", occasion: "team", together: "competition", name: "Game night league", size: [8, 40], what: "Short rounds of games picked for the group, teams reshuffled each round.", ros: ros(["0:00", "Arrive, teams drawn"], ["0:15", "Round one"], ["0:45", "Food break, reshuffle"], ["1:05", "Round two"], ["1:45", "Final and close"]), rules: ["Teams reshuffle every round"] },
   { id: "offsite-day", occasion: "team", together: "class", name: "Offsite day with a maker", size: [12, 40], what: "A morning making something, a long lunch, an afternoon session the team runs.", ros: ros(["9:30", "Arrive, coffee"], ["10:00", "Make something with the host"], ["12:30", "Long lunch"], ["14:00", "The team's own session"], ["16:00", "Close"]), rules: ["The host runs the morning, the team runs the afternoon"] },
-  { id: "supper-series", occasion: "community", together: "introductions", name: "Supper club series", size: [10, 20], what: "The same table each month, half returning guests and half new, the host seats them.", ros: ros(["0:00", "Arrive, the host greets returning guests"], ["0:20", "Seated, introductions round"], ["2:00", "Close, next date shared"]), rules: ["Half the seats for returning guests", "The brand takes part as a guest"] },
+  { id: "supper-series", occasion: "community", together: "introductions", name: "Supper club series", size: [10, 20], what: "The same table each month, half returning guests and half new, the host seats them.", ros: ros(["0:00", "Arrive, the host greets returning guests"], ["0:20", "Seated, introductions round"], ["2:00", "Close, next date shared"]), rules: ["Half the spots for returning guests", "The brand takes part as a guest"] },
   { id: "run-club", occasion: "community", together: "introductions", name: "Run and coffee", size: [8, 60], what: "A no-drop run in pace groups, then coffee where groups mix.", ros: ros(["0:00", "Meet, pace groups"], ["0:10", "Run"], ["0:50", "Coffee, groups mix"], ["1:20", "Close"]), rules: ["No-drop: nobody runs alone"] },
   { id: "skill-swap", occasion: "community", together: "roundtable", name: "Skill swap", size: [10, 24], what: "Guests teach each other one thing in ten minutes, in small rotating groups.", ros: ros(["0:00", "Arrive, sign up to teach"], ["0:20", "Rounds of ten minutes"], ["1:30", "Close"]), rules: ["No product demos"] },
   { id: "hands-on-class", occasion: "workshop", together: "class", name: "Hands-on class", size: [6, 16], what: "The host teaches a skill step by step; everyone makes their own.", ros: ros(["0:00", "Arrive, set up"], ["0:15", "Demo"], ["0:30", "Make"], ["1:45", "Share and close"]), rules: ["Photos only with a yes"] },
@@ -393,11 +393,11 @@ export function againPlan(prevEv = {}, prevGuests = []) {
   return { held, pairs };
 }
 export function keepList(plan, { repeat = false, firstFeeCents = 0, thisFeeCents = 0 } = {}) {
-  return [{ k: "returning", label: "Returning guests", line: plan.held.length ? `${plural(plan.held.length, "seat")} held for guests who asked to come back` : "No one asked to come back yet" },
-    { k: "pairs", label: "Matched pairs", line: plan.pairs.length ? `${plural(plan.pairs.length, "pair")} who both said yes, seated at the same table` : "No matched pairs from last time" },
+  return [{ k: "returning", label: "Returning guests", line: plan.held.length ? `${plural(plan.held.length, "spot")} held for guests who asked to come back` : "No one asked to come back yet" },
+    { k: "pairs", label: "Matched pairs", line: plan.pairs.length ? `${plural(plan.pairs.length, "pair")} who both agreed, seated at the same table` : "No matched pairs from last time" },
     { k: "protection", label: "Protection", line: "Your deposit is held until the host accepts, and the money at risk shows by date." },
     { k: "replacement", label: "Replacement guarantee", line: "If your host can't make it, we find a replacement or refund you." },
-    { k: "report", label: "The report", line: "Seats by source, the survey with denominators, follow-ups and your rebooking rule, in one place." },
+    { k: "report", label: "The report", line: "Spots by source, the survey with denominators, follow-ups and your rebooking rule, in one place." },
     ...(repeat && firstFeeCents > thisFeeCents ? [{ k: "fee", label: "A smaller booking fee", line: `${money(thisFeeCents)} instead of ${money(firstFeeCents)}, because you've booked this host before.` }] : [])];
 }
 export const repeatPct = (env = process.env) => (env.ENCORE_REPEAT_FEE_PCT != null && env.ENCORE_REPEAT_FEE_PCT !== "" ? int(env.ENCORE_REPEAT_FEE_PCT, 0, 100) : 50);
@@ -454,7 +454,7 @@ export function durability(reqs = [], { evOf = () => null, attendance = [], sign
     cohorts: [...cohorts.values()].sort((a, b) => a.cohort.localeCompare(b.cohort)).map((c) => ({ ...c, rebooked90Pct: pct(c.rebooked90, c.brands) })),
     onPlatform: { on, direct, selfReported, of: on + off, value: on + off ? pct(on, on + off) : null, response: asks ? { n: asks.answered, of: asks.asked, pct: pct(asks.answered, asks.asked), text: `${asks.answered} of ${asks.asked}` } : null },
     more: [bar("onPlatform", "Repeat brand-host bookings kept on Pottery Lab (direct repeat bookings included)", on, on + off, 80, off ? `Includes ${plural(direct, "direct repeat booking")} from the follow-up${selfReported ? ` and ${selfReported} a host reported` : ""}` : "The follow-up asks both sides about bookings made outside Pottery Lab"),
-      bar("secondSeats", "Second-booking seats filled by first-event guests", s2, s2of, BARS.secondSeats), bar("differentHost", "Rebooking brands that tried a different host", diff, rebookers.length, BARS.differentHost),
+      bar("secondSeats", "Second-booking spots filled by first-event guests", s2, s2of, BARS.secondSeats), bar("differentHost", "Rebooking brands that tried a different host", diff, rebookers.length, BARS.differentHost),
       bar("multiHost90", "Guests at 2+ different hosts within 90 days", multi, byGuest.size, BARS.multiHost90), bar("firstCohort120", `First host cohort (${firstM || "none yet"}): a second paid brand booking within 120 days`, fcN, fc.length, BARS.firstCohort120)] };
 }
 
@@ -743,7 +743,7 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
     for (const x of BB().allSetups()) { const F = S0(x.ws).get("teambook/founding")?.data; if (!F && !Fl.foundingHosts.includes(x.ws)) continue; const L = BB().reqs().filter((r) => r.hostWs === x.ws && ["booked", "done"].includes(statusOf(r, today)));
       const net = L.reduce((a, r) => a + Math.max(0, (r.price?.totalCents || 0) - (r.price?.feeCents || 0) - (r.price?.taxCents || 0)), 0), hours = L.reduce((a, r) => a + (P.evGet(r.id)?.prep?.logged || []).reduce((s, l) => s + l.hours, 0) + 3, 0);
       let fol = new Set(); try { fol = new Set(C.followersOf(x.ws).map((f) => lc(f.email))); } catch {} const rs = S0(x.ws).list("rsvps").map((d) => d.data).filter((r) => r?.response === "going");
-      rows.push({ ws: x.ws, ...foundingRow({ name: x.h.name, handle: x.h.handle, F: F || {}, paidPilot: Fl.paidPilot.includes(x.ws), teamNetCents: net, teamHours: L.length ? hours : 0, followerSeats: ofN(rs.filter((r) => fol.has(lc(r.email))).length, rs.length, "seats at public events filled by followers") }), invited: Fl.foundingHosts.includes(x.ws), bookings: L.length }); }
+      rows.push({ ws: x.ws, ...foundingRow({ name: x.h.name, handle: x.h.handle, F: F || {}, paidPilot: Fl.paidPilot.includes(x.ws), teamNetCents: net, teamHours: L.length ? hours : 0, followerSeats: ofN(rs.filter((r) => fol.has(lc(r.email))).length, rs.length, "spots at public events filled by followers") }), invited: Fl.foundingHosts.includes(x.ws), bookings: L.length }); }
     const tests = store.listPrefix("system", "bpxo-").map((d) => d.data).filter(Boolean).map((x) => ({ id: x.id, from: C.profileOf(x.fromWs)?.name || "", to: x.toName, ...ofN(crossedOf(x).length, x.emails.length, "regulars crossed over"), at: x.at }));
     const brands = [...new Set(BB().reqs().map((r) => r.brandWs))].map((ws) => ({ ws, company: getWorkspace(ws)?.company || "", designPartner: Fl.designPartners.includes(ws) }));
     send(res, { hosts: rows, tests, brands, autoRebooks: store.listPrefix("system", "bpev-").map((d) => d.data).filter((e) => e?.autoRebook).map((e) => ({ id: e.reqId, triggered: !!e.autoRebook.triggered, signedAt: e.autoRebook.signedAt })) }); });

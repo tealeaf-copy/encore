@@ -84,8 +84,8 @@ export const TOGETHER = {
   standard: { label: "A standard dinner", line: "A seated dinner with no set format." },
 };
 export const CREATIVE = { host: "The host leads the format and the menu", shared: "The host leads, the brand gives a theme", brand: "The brand sets the format, the host runs it" };
-export const INVITES = { brand: "The brand invites all its guests", both: "Both: the brand fills its seats, the host fills theirs", host: "The host invites from their following" };
-export const PHOTOS = { none: "No photos or video", host: "Only the host's recap photos, shared after", consent: "The brand may photograph guests who say yes", open: "The brand may take photos and short video" };
+export const INVITES = { brand: "The brand invites all its guests", both: "Both: the brand fills its spots, the host fills theirs", host: "The host invites from their following" };
+export const PHOTOS = { none: "No photos or video", host: "Only the host's recap photos, shared after", consent: "The brand may photograph guests who agree", open: "The brand may take photos and short video" };
 export const FOLLOWUP = { none: "No follow-up from the brand", consented: "Only guests who agree, within 7 days", sales: "Sales may follow up with guests who agree" };
 /** Room rules, standard on every brief: how many of the brand's own staff are in the room, companies kept out, the brand
  *  takes part as a guest (not a presenter), and no pitch. */
@@ -160,7 +160,7 @@ export function editBrief(cur, b = {}, { side = "brand", who = "", headcount = 0
   if (b.plan != null) next.plan = clean(b.plan, 500);
   if (b.mix) { next.mix = { brand: int(b.mix.brand ?? base.mix.brand, 0, 2000), host: int(b.mix.host ?? base.mix.host, 0, 2000) }; }
   next.room = b.room && typeof b.room === "object" ? cleanRoom(b.room, base.room) : cleanRoom({}, base.room);
-  if (headcount && next.mix.brand + next.mix.host > headcount) return { error: `The seats add up to ${next.mix.brand + next.mix.host}, more than the group of ${headcount}.` };
+  if (headcount && next.mix.brand + next.mix.host > headcount) return { error: `The spots add up to ${next.mix.brand + next.mix.host}, more than the group of ${headcount}.` };
   if (next.invites === "brand" && next.mix.host > 0) next.invites = "both";
   const changed = ["goal", "goalNote", "creative", "creativeNote", "invites", "photos", "photoNote", "followup", "followupNote", "together", "plan"].some((k) => next[k] !== base[k]) || next.mix.brand !== base.mix.brand || next.mix.host !== base.mix.host || JSON.stringify(next.room) !== JSON.stringify(cleanRoom({}, base.room));
   if (cur && changed) next.v = (base.v || 1) + 1;
@@ -180,7 +180,7 @@ export function briefState(b) {
 export function briefLines(b) {
   if (!b) return [];
   const G = goalOf(b.goal), T = TOGETHER[b.together];
-  return [`Goal: ${G?.label || "Event"}${b.goalNote ? `. ${b.goalNote}` : ""}`, `Guest mix: ${b.mix.brand} brand-invited ${b.mix.brand === 1 ? "seat" : "seats"}, ${b.mix.host} host-sourced ${b.mix.host === 1 ? "seat" : "seats"}`,
+  return [`Goal: ${G?.label || "Event"}${b.goalNote ? `. ${b.goalNote}` : ""}`, `Guest mix: ${b.mix.brand} brand-invited ${b.mix.brand === 1 ? "spot" : "spots"}, ${b.mix.host} host-sourced ${b.mix.host === 1 ? "spot" : "spots"}`,
     `Creative control: ${CREATIVE[b.creative]}${b.creativeNote ? `. ${b.creativeNote}` : ""}`, `Invitations: ${INVITES[b.invites]}`, `Photos and content: ${PHOTOS[b.photos]}${b.photoNote ? `. ${b.photoNote}` : ""}`,
     `Follow-up: ${FOLLOWUP[b.followup]}${b.followupNote ? `. ${b.followupNote}` : ""}`, `Together: ${T?.label || ""}. ${b.plan || T?.line || ""}`.trim(), `Room rules: ${roomLines(b.room).join(". ")}`];
 }
@@ -251,7 +251,7 @@ export function connectionsFor(ev, me) {
 }
 export function connectionCounts(ev) {
   const R = ev.survey?.responses || {}, L = (ev.connections || []).filter((c) => c.aYes), M = L.filter((c) => c.bYes === true), people = new Set(M.flatMap((c) => [c.a, c.b]));
-  return { listed: ofN(Object.values(R).filter((r) => r.listed).length, Object.keys(R).length, "open to staying in touch"), asked: L.length, mutual: M.length, guestsConnected: ofN(people.size, Object.keys(R).length, "made a connection both said yes to") };
+  return { listed: ofN(Object.values(R).filter((r) => r.listed).length, Object.keys(R).length, "open to staying in touch"), asked: L.length, mutual: M.length, guestsConnected: ofN(people.size, Object.keys(R).length, "made a connection both agreed to") };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -297,11 +297,11 @@ export function outcomesOf(c, events = [], { today = isoDay() } = {}) {
   const hostSeats = sum((e) => e.seats.host.added), hostAtt = sum((e) => e.seats.host.attended), returning = sum((e) => e.returning) + returningAcross(c, events);
   const cohorts = { attended, brandAttended: sum((e) => e.seats.brand.attended), hostAttended: hostAtt };
   const totals = {
-    attendance: { attended, brand: ofN(cohorts.brandAttended, sum((e) => e.seats.brand.yes), "brand guests who said yes came"), host: ofN(hostAtt, hostSeats, "host-sourced guests came") },
+    attendance: { attended, brand: ofN(cohorts.brandAttended, sum((e) => e.seats.brand.yes), "brand guests who were in came"), host: ofN(hostAtt, hostSeats, "host-sourced guests came") },
     meetings, opportunities: { n: opps.length, amountCents: opps.reduce((a, o) => a + o.amountCents, 0) },
     targets: { accounts: targets.length, invited: ofN(tInv.size, targets.length, "target accounts invited"), attended: ofN(tAtt.size, targets.length, "target accounts came"), hostMatched: agg("matchOk") },
     survey: { respondents: ofN(S.respondents, S.asked, "guests answered the survey"), useful: agg("useful"), back: agg("back"), contactOk: agg("contactOk"), followHost: agg("followHost"), nextOk: agg("nextOk") },
-    connections: { guestsConnected: ofN(sum((e) => e.connections.guestsConnected.n), S.respondents, "made a connection both said yes to"), mutual: sum((e) => e.connections.mutual) },
+    connections: { guestsConnected: ofN(sum((e) => e.connections.guestsConnected.n), S.respondents, "made a connection both agreed to"), mutual: sum((e) => e.connections.mutual) },
     tasks: T, returning: ofN(returning, attended, "guests came back"),
     costCents: cost, costPerTargetCents: tAtt.size ? Math.round(doneCost / tAtt.size) : null, costPerUsefulFollowUpCents: T.useful ? Math.round(doneCost / T.useful) : null,
     costPerGuestCents: doneAtt ? Math.round(doneCost / doneAtt) : null, costPerReturningCents: returning ? Math.round(doneCost / returning) : null };
@@ -384,7 +384,7 @@ export function hostEarnings(reqs = [], { hostSeats = {}, followerEmails = new S
     if (r.via === "host-page" || r.via === "follower" || followerEmails.has(lc(r.brandEmail))) audience++; const m = (r.date || isoDay(r.createdAt)).slice(0, 7); months[m] = (months[m] || 0) + v; }
   const brands = byBrand.size, rebooked = [...byBrand.values()].filter((n) => n > 1).length, seats = live.flatMap((r) => hostSeats[r.id] || []), fromFollowers = seats.filter((s) => s.follower).length;
   return { revenueCents: total, repeatRevenueCents: repeat, repeatSharePct: pct(repeat, total), bookings: live.length,
-    brandRebook: ofN(rebooked, brands, "brands booked again"), followerFill: ofN(fromFollowers, seats.length, "of your seats filled by your followers"), fromAudience: ofN(audience, live.length, "bookings came from your audience"),
+    brandRebook: ofN(rebooked, brands, "brands booked again"), followerFill: ofN(fromFollowers, seats.length, "of your spots filled by your followers"), fromAudience: ofN(audience, live.length, "bookings came from your audience"),
     months: Object.entries(months).sort().map(([month, cents]) => ({ month, cents })) };
 }
 export function internalMetrics(reqs = [], { hostSeats = {}, followerShare = [], today = isoDay() } = {}) {
@@ -398,7 +398,7 @@ export function internalMetrics(reqs = [], { hostSeats = {}, followerShare = [],
   return { cohorts: Object.values(cohorts).sort((a, b) => a.cohort.localeCompare(b.cohort)).map((c) => ({ ...c, again90Pct: pct(c.again90, c.hosts), againAnyPct: pct(c.againAny, c.hosts) })),
     brandRebook: ofN(brands.filter((L) => L.length > 1).length, brands.length, "brands booked again"), sameHostRebook: ofN(brands.filter((L) => new Set(L.map((r) => r.hostWs)).size < L.length).length, brands.length, "brands rebooked the same host"),
     repeatRevenuePerHostCents: H.length ? Math.round(H.reduce((a, x) => a + x.repeatRevenueCents, 0) / H.length) : 0, hosts: H.length, repeatHosts: ofN(H.filter((x) => x.repeatRevenueCents > 0).length, H.length, "hosts with repeat revenue"),
-    teamSeatsFromFollowers: ofN(seats.filter((s) => s.follower).length, seats.length, "host-sourced team seats were followers"), ownEventsFromFollowers: ofN(fs.n, fs.of, "guests at hosts' own events were followers") };
+    teamSeatsFromFollowers: ofN(seats.filter((s) => s.follower).length, seats.length, "host-sourced team spots went to followers"), ownEventsFromFollowers: ofN(fs.n, fs.of, "guests at hosts' own events were followers") };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -546,7 +546,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
     if (b.remove) { E.ev.hostSeats = (E.ev.hostSeats || []).filter((s) => s.id !== b.remove); evSet(E.ev); return res.json({ ok: true, hostSeats: E.ev.hostSeats }); }
     if (b.id) { const s = (E.ev.hostSeats || []).find((x) => x.id === b.id); if (!s) return bad(res, "Not found.", 404, "not_found"); if (b.checkedIn != null) { s.checkedIn = !!b.checkedIn; s.checkedAt = s.checkedIn ? Date.now() : 0; if (s.checkedIn && E.r.date && E.r.date <= isoDay()) tokenFor(E.ev, { side: "host", sid: s.id, first: first(s.name), email: s.email }); } evSet(E.ev); return res.json({ ok: true, hostSeats: E.ev.hostSeats }); }
     const name = clean(b.name, 80), email = lc(clean(b.email, 160)); if (!name) return bad(res, "Add their name."); if (email && !EMAIL_RE.test(email)) return bad(res, "That email doesn't look right.");
-    const cap = E.ev.brief?.mix?.host ?? E.ev.confirm?.hostSeats ?? 0; if ((E.ev.hostSeats || []).length >= Math.max(cap, 1) + 4) return bad(res, `The brief has ${cap} host seats. Agree a change with the brand first.`);
+    const cap = E.ev.brief?.mix?.host ?? E.ev.confirm?.hostSeats ?? 0; if ((E.ev.hostSeats || []).length >= Math.max(cap, 1) + 4) return bad(res, `The brief has ${cap} host spots. Agree a change with the brand first.`);
     let follower = false; try { follower = !!email && C.followersOf(E.H.ws).some((f) => lc(f.email) === email); } catch {}
     const prior = !!email && BB().reqs().some((x) => x.hostWs === E.H.ws && x.id !== E.r.id && (evGet(x.id)?.hostSeats || []).some((s) => s.email === email && s.checkedIn));
     E.ev.hostSeats = [...(E.ev.hostSeats || []), { id: rid(4), name, email, follower: follower || b.follower === true, returning: prior, checkedIn: false, at: Date.now() }].slice(0, 500); evSet(E.ev); res.json({ ok: true, hostSeats: E.ev.hostSeats }); });
@@ -653,7 +653,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
     const recap = (scopeStore(store, ws).get("teambook/recap")?.data?.photos || []).filter((p) => p.consent === true && /^\/_blob\/[A-Za-z0-9]{20}$/.test(p.url)).slice(0, 6), quotes = [], rules = new Map();
     for (const r of BB().reqs().filter((x) => x.hostWs === ws && statusOf(x) === "done")) { const ev = evGet(r.id); if (!ev) continue; for (const q of surveySummary(ev.survey?.tokens, ev.survey?.responses).quotes) quotes.push({ ...q, event: r.pkgName }); if (ev.brief) rules.set(ev.brief.photos, (rules.get(ev.brief.photos) || 0) + 1); }
     const photosRule = [...rules.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "consent";
-    res.set("Cache-Control", "public, max-age=60").json({ photos: recap, quotes: quotes.slice(0, 4), capture: { rule: photosRule, line: PHOTOS[photosRule], always: "Guests choose whether to be photographed and quoted. Nothing goes out with a name unless they said yes." } }); });
+    res.set("Cache-Control", "public, max-age=60").json({ photos: recap, quotes: quotes.slice(0, 4), capture: { rule: photosRule, line: PHOTOS[photosRule], always: "Guests choose whether to be photographed and quoted. Nothing goes out with a name unless they agree." } }); });
   app.post("/api/bb/host/recap", small, (req, res) => { const H = hostMe(req, res); if (!H) return; const L = (Array.isArray(req.body?.photos) ? req.body.photos : []).filter((p) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(p?.url || "")).slice(0, 12).map((p) => ({ url: p.url, caption: clean(p.caption, 120), consent: p.consent === true }));
     scopeStore(store, H.ws).set("teambook/recap", { photos: L, at: Date.now() }); res.json({ ok: true, photos: L }); });
 
@@ -689,7 +689,7 @@ export function summaryHtml(E) {
 <section class="rp-sec"><h2><span class="rp-no">01</span>Money</h2><ul class="rp-money"><li><span>Total</span><b>${esc(money0(E.money.totalCents))}</b></li><li><span>Paid so far</span><b>${esc(money0(E.money.paidCents))}</b></li><li><span>Still due</span><b>${esc(money0(E.money.dueCents))}</b></li></ul>
 ${X ? `<p class="ti-k" style="margin-top:16px">If plans change</p><ul class="tp-list">${X}</ul><p class="tp-note">${esc(E.exposure.line)}</p>` : ""}</section>
 ${E.briefLines.length ? `<section class="rp-sec"><h2><span class="rp-no">02</span>The brief</h2><ul class="tp-list">${E.briefLines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></section>` : ""}
-<section class="rp-sec"><h2><span class="rp-no">03</span>Seats</h2><ul class="rp-money"><li><span>Brand invited</span><b>${E.seats.brand.invited}</b></li><li><span>Host-sourced</span><b>${E.seats.host.added}</b></li><li><span>Came</span><b>${E.seats.attended}</b></li></ul></section>
+<section class="rp-sec"><h2><span class="rp-no">03</span>Spots</h2><ul class="rp-money"><li><span>Brand invited</span><b>${E.seats.brand.invited}</b></li><li><span>Host-sourced</span><b>${E.seats.host.added}</b></li><li><span>Came</span><b>${E.seats.attended}</b></li></ul></section>
 <section class="rp-sec"><h2><span class="rp-no">04</span>Timeline</h2><ol class="tp-tl">${T || "<li>Nothing yet.</li>"}</ol></section>
 <footer class="rp-foot"><p>From Pottery Lab. This page has no guest names or emails. Anyone with the link can read it; the team can turn the link off.</p></footer>
 </main></body></html>`;

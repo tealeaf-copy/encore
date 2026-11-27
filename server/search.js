@@ -119,7 +119,7 @@ export const TEAM_GOALS = {
   wellbeing: { label: "Wellbeing week", audience: "team", cats: ["movement", "workshop", "culture"], words: /\b(yoga|pilates|wellness|wellbeing|breath|mindful|stretch|run)\b/i },
   community: { label: "Meetup or hackathon", audience: "attendees", cats: ["drinks", "workshop"], venue: true, words: /\b(meetup|hackathon|demo night|build|venue|room|space|projector|wifi|wi-fi|talks?|reception|workflow|agent|code)\b/i, avoid: /\b(run|jog|hike|pilates|yoga|bouquet|flower)\b/i },
 };
-export const AUDIENCE_WORD = { team: "your team", guests: "your guests", public: "the people who stop by", attendees: "your attendees" };
+export const AUDIENCE_WORD = { team: "your team", guests: "your guests", public: "the people who stop by", attendees: "the people at your event" };
 
 /** How well one experience fits a goal and headcount. Returns null when it shouldn't be offered at all. */
 export function goalFit(goal, x, n = 0) {

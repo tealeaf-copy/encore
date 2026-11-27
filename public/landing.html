@@ -171,7 +171,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
     <div class="win"><div class="winbar"><i></i><i></i><i></i><span>Guests · CFO dinner · Sample data</span></div><div class="winbody"><div class="duo"><img loading="lazy" src="/img/home/guests-intel.jpg" alt="Pottery Lab's Ahead of you notes on a CFO guest list: half the list is VPs rather than CFOs, one company has two guests, and only 3 tier A accounts are invited, each with a suggested fix. Sample data."><div class="phone"><img loading="lazy" src="/img/home/invite-phone.jpg" alt="Guest invite on a phone: a private dinner hosted by Northwind in New York, with Attending and Regrets buttons. Sample data."></div></div></div></div>
     <div>
       <p class="proof">Pottery Lab reads your list before you send it. <span class="dim">Wrong seniority, two guests from one company, too few target accounts: you hear it first.</span></p>
-      <div class="feats"><small>Features</small><ul><li>AE nominations from a link</li><li>Invites in the AE's voice, once approved</li><li>RSVP pages built for phones</li><li>Waitlist that fills freed seats</li></ul></div>
+      <div class="feats"><small>Features</small><ul><li>AE nominations from a link</li><li>Invites in the AE's voice, once approved</li><li>RSVP pages built for phones</li><li>Waitlist that fills freed spots</li></ul></div>
     </div>
   </div>
 </div></section>
@@ -194,7 +194,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
     <div class="tile tall"><div class="bubbles" style="width:min(440px,calc(100% - 48px));left:24px;right:auto">
       <div class="bub enc">Hi Le. Who do you most want in the room?</div><div class="bub">Finance leaders, in Chicago, about $25k.</div>
       <div class="bub enc"><b>Three ideas for CFOs:</b> a chef's table for 12, a sunrise run during the big conference, a plus-one craft morning.</div>
-      <div class="bub enc"><b>Worth knowing:</b> CFOs say yes less often in the last two weeks of a quarter. Invite about 1.6× the seats.</div>
+      <div class="bub enc"><b>Worth knowing:</b> CFOs accept less often in the last two weeks of a quarter. Invite about 1.6× the spots.</div>
       <div class="bub">Draft the chef's table.</div></div>
       <h3>Concierge</h3><p>Brainstorm your next event in a short chat, then turn any idea into a full plan.</p></div>
     <div class="tile"><div class="notes"><div><b>Your list is 60% VP, not the CFOs you're pitching to</b><span>Retitle the invite, or ask AEs for more C-level names.</span></div><div><b>Northwind ×2</b><span>Seat colleagues at different tables.</span></div></div>
@@ -210,7 +210,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
     <div class="bento" style="margin-top:0;grid-template-columns:repeat(3,minmax(0,1fr))">
       <div class="tile" style="min-height:240px"><div class="notes"><div><b>🏃 Saturday Run Club</b><span>Meet at the north gate, 8am. No-drop pace. Coffee after, about $4 each.</span></div></div><h3>Run clubs</h3><p>Same time every week, a reminder the night before, and the next one set up in a tap.</p></div>
       <div class="tile" style="min-height:240px"><div class="notes"><div><b>🥾 Sunrise Hike</b><span>Trailhead at 7. Carpools from the city. Bring water and layers.</span></div></div><h3>Hikes</h3><p>Trail link, who's driving, what to pack, and a forecast check before you go.</p></div>
-      <div class="tile" style="min-height:240px"><div class="notes"><div><b>☕ Apartment Café</b><span>Pour-overs and pastries, 9:30 to 11:30. Claim the croissants.</span></div></div><h3>At home</h3><p>A sign-up list so nobody brings six salads, and the address only for people who said yes.</p></div>
+      <div class="tile" style="min-height:240px"><div class="notes"><div><b>☕ Apartment Café</b><span>Pour-overs and pastries, 9:30 to 11:30. Claim the croissants.</span></div></div><h3>At home</h3><p>A sign-up list so nobody brings six salads, and the address only for people who are in.</p></div>
     </div>
     <div>
       <p class="proof">Everything your friends need, in one link. <span class="dim">Where to meet, what to bring, who's driving, and a chip-in link when there's a cost.</span></p>
@@ -293,7 +293,7 @@ dialog{background:#1A1512;color:var(--ink);border:1px solid var(--line)!importan
     const what=o.label?o.label.replace(/^./,ch=>ch.toUpperCase()):/advisory|\bcab\b/i.test(x)?"Customer advisory board":/roundtable/i.test(x)?"Executive roundtable":P.cities.length>1?(o.meal?o.meal.replace(/^./,ch=>ch.toUpperCase())+" roadshow":"City roadshow"):o.meal&&d.kind==="dinner"?"Executive "+o.meal:(KL[d.kind]||"Event");
     const who=(o.roles||[])[0]||"guests", where=P.cities.length>1?P.cities.join(", "):(d.city||"");
     const title=`${esc(what)} · ${d.headcount} ${esc(who)}${o.headcount?"":'<span class="as">assumed</span>'}${where?` · ${esc(where)}`:""}`;
-    const vs=o.budget?(P.over>0?`vs. your ${m(o.budget)}: still ${m(P.over)} over. Fewer seats or a lower-cost city closes it.`:`within your ${m(o.budget)}${P.trims.length?", after trimming":""}: ${m(o.budget-P.total)} to spare`):"No budget given: this is what it usually costs";
+    const vs=o.budget?(P.over>0?`vs. your ${m(o.budget)}: still ${m(P.over)} over. Fewer spots or a lower-cost city closes the gap.`:`within your ${m(o.budget)}${P.trims.length?", after trimming":""}: ${m(o.budget-P.total)} to spare`):"No budget given: this is what it usually costs";
     out.innerHTML=`<div class="ttl fade"><b>${title}</b><span class="note">Same estimate you'll see in the app</span></div><div class="lines fade">${P.rows.map(r=>`<div class="ln"><span>${esc(r.line)}</span><b>${m(r.amount)}</b><small>${esc(r.note||"")}</small></div>`).join("")}</div>
       ${P.trims.length?`<div class="note fade" style="background:#F6EDDC;border-radius:10px;padding:8px 10px"><b>Trimmed to fit your budget:</b> ${P.trims.map(t=>esc(t.why)+` (−${m(t.saved)})`).join("; ")}. Add anything back in the app.</div>`:""}
       <div class="ttl fade"><span class="tot">${m(P.total)}</span><span class="note">${esc(vs)}</span></div>

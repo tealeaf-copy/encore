@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Your hosts · Pottery Lab</title><meta name="description" content="The hosts your team has booked, how their events went, and one tap to book them again with the same brief.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i><i class="t"></i></div></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $ } = BB; BB.top("home");
+  const main = $("#main"), day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "");
+  const of = (x) => (x.of ? `${x.n} of ${x.of}${x.pct != null ? ` (${x.pct}%)` : ""}` : "No answers yet");
+  (async () => { let d; try { d = await api("/api/teams/hosts"); } catch (e) {
+      main.removeAttribute("aria-busy");
+      if (e.status === 401) { main.innerHTML = `<section class="bb-xhead"><h1>Sign in to see your hosts</h1><p class="bb-lede">The hosts your team has booked, how their events went, and one tap to book them again.</p><a class="bb-btn primary lg" href="/login?next=/teams/hosts">Sign in</a></section>`; return; }
+      main.innerHTML = `<section class="bb-xhead"><h1>Your hosts</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
+    main.removeAttribute("aria-busy");
+    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">${esc(d.company)}</p><h1>Your hosts</h1><p class="ti-sub">Everyone your team has booked, what came of it, and the brief you agreed last time.</p></div><div class="acts"><a class="bb-btn quiet" href="/teams/discover">${icon("all")}Find a new host</a></div></header>
+      ${d.hosts.length ? `<div class="tp-grid two">${d.hosts.map((h) => `<section class="tp-box"><p class="ti-k">${h.events} ${h.events === 1 ? "booking" : "bookings"} · last ${esc(day(h.lastDate) || "date to agree")}</p><h2><a href="/@${esc(h.handle)}">${esc(h.name)}</a></h2><p class="bb-meta" style="margin:0">${h.person ? `${esc(h.person)} hosts. ` : ""}Last time: ${esc(h.lastPkg)}.</p>
+          <ul class="tp-den"><li><span>Guests who came</span><b>${h.came}</b></li><li><span>Made a useful connection</span><b>${esc(of(h.useful))}</b></li><li><span>Want to come back</span><b>${esc(of(h.back))}</b></li><li><span>Returning guests</span><b>${h.returning}</b></li><li><span>Your team's rating</span><b>${h.rating != null ? h.rating.toFixed(1) + " of 5" : "Not yet"}</b></li><li><span>Spent with them</span><b>${money(h.spentCents)}</b></li></ul>
+          ${h.brief.length ? `<details style="margin-top:10px"><summary><b>Last brief</b></summary><ul class="tp-lines">${h.brief.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details>` : ""}
+          <div class="tp-acts"><a class="bb-btn primary" href="/teams/discover?again=${esc(h.lastId)}">${icon("repeat")}Book ${esc(h.person || h.name.split(" ")[0])} again</a><a class="bb-btn quiet" href="/teams/bookings/${esc(h.lastId)}">Last event</a></div></section>`).join("")}</div>`
+        : `<div class="ti-empty"><h3>No hosts yet</h3><p>Once a host accepts your first booking, they show here with how the event went and a way to book them again with the same brief.</p><p><a class="bb-btn primary" href="/teams/home">Book one event</a></p></div>`}`;
+  })();
+})();
+</script></body></html>

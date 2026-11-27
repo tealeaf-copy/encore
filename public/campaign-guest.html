@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Your invite · Pottery Lab</title><meta name="description" content="Reply to an invite, or ask to join, and choose what you share."><meta name="robots" content="noindex">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
 <body class="bb ti"><header class="bb-top"><div class="in"><a class="bb-logo" href="/"><svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg><span>Pottery Lab</span></a></div></header>
 <main class="bb-wrap bb-narrow" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
 <script src="/eventart.js"></script><script src="/brandbook.js"></script>
@@ -11,9 +11,13 @@
   const oops = (e) => (main.innerHTML = `<section class="bb-xhead"><h1>This link doesn't work</h1><p class="bb-lede">${esc(e.message)}</p></section>`);
   const evCard = (e) => `<div class="ti-card" style="margin:16px 0"><p class="ti-k">${esc(day(e.date))}</p><h2>${esc(e.name)}</h2><p class="ti-sub">With ${esc(e.host)}${e.area ? ` in ${esc(e.area)}` : ""} · a small group of about ${e.headcount}. The exact place comes once you're in.</p></div>`;
   async function rsvp() { let d; try { d = await api(`/api/cg/${cid}/r/${token}`); } catch (e) { return oops(e); }
-    const E = d.event;
+    const E = d.event, U = new URLSearchParams(location.search), one = U.get("r");
     if (d.past && d.checkedIn) return feedback(d);
+    // one tap from the email: "I'm in" or "Can't go" lands here and is saved straight away
+    if ((one === "yes" || one === "no") && !d.past && d.status !== one) { try { await api(`/api/cg/${cid}/r/${token}`, { reply: one }); history.replaceState(null, "", location.pathname); return rsvp(); } catch {} }
     main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${esc(d.company)} invited you</p><h1>${d.name ? `${esc(d.name)}, are you <em>in?</em>` : "Are you <em>in?</em>"}</h1></section>
+      ${d.from ? `<figure class="tp-from"><p>${esc(d.from.note || `I'd love you to come.`)}</p><small>${esc(d.from.name)}${d.from.title ? `, ${esc(d.from.title)}` : ""}, ${esc(d.company)}</small></figure>` : ""}
+      ${d.status === "yes" ? `<p class="bb-note">${icon("check")} You're in. See you there.</p>` : d.status === "no" ? `<p class="bb-note">Thanks for letting ${esc(d.company)} know.</p>` : ""}
       ${E ? evCard(E) : ""}
       <div class="ti-actions"><button class="bb-btn ${d.status === "yes" ? "ink" : "primary"} lg" data-r="yes" aria-pressed="${d.status === "yes"}">${d.status === "yes" ? icon("check") : ""}I'm in</button><button class="bb-btn quiet lg" data-r="no" aria-pressed="${d.status === "no"}">Can't go</button></div>
       <label class="ti-card quiet" style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin-top:16px"><input type="checkbox" id="share" ${d.consent ? "checked" : ""} style="width:22px;height:22px;margin-top:2px"><span><b>Share my name and email with ${esc(d.company)}</b><br><span class="bb-meta">So they can follow up after the event. Leave it off and they won't get your details from Pottery Lab. You can change this any time with this link.</span></span></label>
@@ -22,7 +26,7 @@
     $("#share").onchange = async (e) => { try { await api(`/api/cg/${cid}/r/${token}`, { consent: e.target.checked }); $("#msg").textContent = e.target.checked ? `${d.company} can see your name and email.` : `${d.company} won't get your details from us.`; } catch {} };
   }
   function feedback(d) {
-    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Thanks for coming</p><h1>How was <em>${esc(d.event?.name || "it")}</em>?</h1><p class="bb-lede">${esc(d.company)} sees your answers only as totals, mixed with everyone else's.</p></section>
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">Thanks for coming</p><h1>How was <em>${esc(d.event?.name || "it")}</em>?</h1><p class="bb-lede">${esc(d.company)} sees your answers only as totals, mixed with everyone else's.</p>${d.survey ? `<p><a class="bb-btn primary" href="${esc(d.survey)}">Four quick questions, and stay in touch with people you met</a></p>` : ""}</section>
       <form id="fb" class="ti-card"><p class="ti-k">Would you go again?</p><div class="ti-actions" style="margin-top:0"><label class="bb-chip"><input type="radio" name="again" value="yes" ${d.again === true ? "checked" : ""}> Yes</label><label class="bb-chip"><input type="radio" name="again" value="no" ${d.again === false ? "checked" : ""}> Not really</label></div>
       <label class="bb-field"><span>What stood out? (optional)</span><textarea name="said" rows="3" maxlength="600" placeholder="The people, the food, what you made…"></textarea></label>
       <label style="display:flex;gap:8px;align-items:flex-start;margin:0 0 14px"><input type="checkbox" name="quoteOk" ${d.quoteOk ? "checked" : ""} style="margin-top:4px"><span>OK to quote me, with my first name</span></label>

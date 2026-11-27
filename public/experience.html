@@ -1,8 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Experience · Pottery Lab</title><meta name="description" content="A host your team can book: photos, the full price for your group, reviews and terms in plain words.">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
 <body class="bb"><main class="bb-wrap" id="main"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
-<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("discover");
@@ -32,6 +32,7 @@
         <ul class="bb-facts">${[s.since ? [icon("cal"), `Hosting since ${s.since}`] : null, s.events ? [icon("table"), `${s.events} events hosted, ${s.teamEvents} for teams on Pottery Lab`] : null, s.again?.pct != null ? [icon("repeat"), s.again.text] : null, s.responseHours != null ? [icon("chat"), `Usually replies in ${BB.hours(s.responseHours)}${s.responseRate != null ? `, answers ${Math.round(s.responseRate * 100)}% of requests within a day` : ""}`] : [icon("chat"), "Replies within a day, or the request is free to withdraw"], s.brands ? [icon("repeat"), `${s.repeatBrands} of ${s.brands} teams booked again`] : null].filter(Boolean).map(([i, t]) => `<li>${i}<span>${esc(t)}</span></li>`).join("")}</ul>
         <p class="bb-note">${icon("lock")} ${esc(D.contact)}</p></div></div>
         ${s.trusted ? "" : `<details class="bb-panel"><summary><b>Not a Trusted host yet.</b> What that means</summary><ul class="bb-checks">${s.checks.map((c) => `<li class="${c.met ? "ok" : "no"}">${icon(c.met ? "check" : "minus")}<span>${esc(c.label)}<small>${esc(c.have)}</small></span></li>`).join("")}</ul><p class="bb-meta">New hosts are welcome. Every booking is covered by the same terms.</p></details>`}</section>
+      <section class="bb-sec tp" id="like"></section>
       <section class="bb-sec" id="reviews"><h2>Reviews</h2><div id="rev"></div></section>
       <section class="bb-sec" id="dates"><h2>When ${esc(h.person || "they")} can do it</h2><p class="bb-meta">Pick a date at checkout, or ask for something like “any weekday evening in ${new Date(D.availability[1].month + "-15").toLocaleDateString("en-US", { month: "long" })}”.</p><div class="bb-cals">${D.availability.map((a) => BB.calendar(a)).join("")}</div>${BB.legend()}</section>
       ${p.remote ? "" : `<section class="bb-sec"><h2>Where</h2><p>${esc(D.venue)}, around ${esc(D.area.area || D.area.city)}.</p>${BB.map([{ ...D.area, name: p.name }], { on: D.area.area })}<p class="bb-meta">${icon("lock")} This is the neighbourhood, not the address. You get the address once you're booked.</p></section>`}
@@ -40,7 +41,7 @@
       <p class="bb-meta" style="margin-top:24px"><button class="bb-link" type="button" id="report">${icon("flag")} Report this listing</button></p>
     </div><aside id="box"></aside></div>
     <div class="bb-bar"><div class="t"><b id="barT">${money(D.price.totalCents)} total</b><small>for ${people} · ${esc(D.terms.short.split(":")[0])} cancellation</small></div><a class="bb-btn primary" href="/teams/book/${esc(handle)}/${esc(pkgId)}?people=${people}" id="barB">${p.instant && s.trusted ? "Book now" : "Request"}</a></div>`;
-    $("#gal").append(BB.gallery(p, p.name)); $("#rev").append(BB.reviews(D.reviews)); box();
+    $("#gal").append(BB.gallery(p, p.name)); $("#rev").append(BB.reviews(D.reviews)); box(); window.TP?.like(handle, p.id, $("#like"));
     $("#report").onclick = () => BB.sheet("Report this listing", `<p>Tell us what's wrong. Someone on our team reads every report within a day.</p><label class="bb-field"><span>What's wrong?</span><textarea id="rpT" maxlength="600"></textarea></label><div class="ft"><span></span><button class="bb-btn primary" id="rpGo">Send report</button></div>`, { onOpen: (bg, close) => (bg.querySelector("#rpGo").onclick = async () => { try { await api("/api/report", { type: "host", target: "host:" + handle, reason: "other", note: bg.querySelector("#rpT").value, url: location.pathname }); close(); BB.toast("Thanks. We'll look at it."); } catch (e) { BB.toast(e.message); } }) });
   }
   function box() { const p = D.pkg; $("#box").innerHTML = BB.priceBox(D.price, D.terms, { min: p.minGuests, max: p.maxGuests, cta: cta() });

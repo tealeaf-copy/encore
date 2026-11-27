@@ -493,6 +493,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     push(r, "brand", approvalPending ? "asked the team to approve" : "sent the request");
     if (I.ok) instantBook(r);
     reqSet(r); if (cg) X.campaignAttach?.(cg.id, r.id);
+    try { X.onBbRequest?.(r, b, u); } catch (e) { console.warn("[brandbook] request hook", e.message); } // briefs, one-event bookings, setup time (server/brandpanel.js)
     if (approvalPending) for (const a of r.approval.approvers) tell(a, `${first(r.contactName) || "A teammate"} wants to book ${p.name} for ${n} (${money0(price.totalCents)}). It needs your OK.`, `/teams/bookings/${r.id}`);
     else tell(ownerEmailOf(ws), r.instant ? `${company} booked ${p.name} for ${n} with Instant book.` : `${company} asked to book ${p.name} for ${n}. Reply within a day.`, `/host/teams#inbox`);
     res.json({ ok: true, id: r.id, status: r.status, instant: !!r.instant, instantWhy: I.why, url: `/teams/bookings/${r.id}`, request: view(r, "brand") }); });
@@ -593,7 +594,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const b = req.body || {}, act = b.action; if (!["requested", "countered"].includes(r.status)) return bad(res, "This request is already answered.", 409, "conflict");
     const F = findPkg(r.handle, r.pkgId);
     if (act === "accept") { if (!r.date) { if (!ISO.test(b.date || "")) return bad(res, `Pick a date in ${flexLabel(r.flex).replace(/^Any /, "")} to accept.`); if (!fitsFlex(b.date, r.flex) && !b.anyDate) return bad(res, "That date is outside what they asked for. Suggest it as a change instead."); r.date = b.date; }
-      r.status = "accepted"; push(r, "host", "accepted"); if (r.deposit?.state === "held") chargeDeposit(r); }
+      r.status = "accepted"; push(r, "host", "accepted"); try { X.onHostAccept?.(r, H); } catch {} if (r.deposit?.state === "held") chargeDeposit(r); }
     else if (act === "counter") { const date = ISO.test(b.date || "") ? b.date : "", pp = b.perPersonCents != null && b.perPersonCents !== "" ? int(b.perPersonCents, 0, 1e7) : null; if (!date && pp == null) return bad(res, "Suggest a new date or a new price.");
       r.counter = { date, perPersonCents: pp, note: scrubContact(cleanText(b.note, 600)), at: Date.now(), totalCents: F ? priceFor(F.p, r.headcount, { override: pp != null ? { perPersonCents: pp } : null }).totalCents : 0 }; r.status = "countered"; push(r, "host", "suggested a change"); }
     else if (act === "decline") { r.status = "declined"; r.declineNote = scrubContact(cleanText(b.note, 600)); releaseDeposit(r); push(r, "host", "declined"); }
@@ -636,6 +637,8 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     for (const ws of allWorkspaceIds()) { if (ws === DEFAULT_WS) continue; const V = verifyOf(ws); if (!V.id || V.id.state === "none") continue; const h = C.profileOf(ws) || {};
       out.push({ handle: h.handle, name: h.name, email: ownerEmailOf(ws), legalName: V.id.legalName, state: V.id.state, submittedAt: V.id.submittedAt, reviewedAt: V.id.reviewedAt || 0 }); }
     res.set("Cache-Control", "private, no-store").json({ verifications: out.sort((a, b) => (a.state === "pending" ? -1 : 1) - (b.state === "pending" ? -1 : 1) || b.submittedAt - a.submittedAt) }); });
+  // the pieces server/brandpanel.js builds on (quick book, briefs, host earnings), read only
+  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf };
   app.post("/api/bb/admin/verifications/:handle", small, (req, res) => { const a = admin(req, res); if (!a) return; const ws = C.wsOfHandle(lc(req.params.handle)); if (!ws) return bad(res, "No host by that name.", 404, "not_found");
     const V = verifyOf(ws); if (!V.id) return bad(res, "Nothing to review.", 409, "conflict"); V.id = { ...V.id, state: req.body?.approve ? "approved" : "declined", reviewedAt: Date.now(), reviewedBy: lc(a.email), note: clean(req.body?.note, 300) };
     S0(ws).set("teambook/verify", V); tell(ownerEmailOf(ws), req.body?.approve ? "You're ID checked. The badge is on your team listings now." : "We couldn't confirm your ID. Reply to our email and we'll sort it out.", "/host/teams#trust"); res.json({ ok: true, state: V.id.state }); });

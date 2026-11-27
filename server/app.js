@@ -56,6 +56,7 @@ import { mountSlots } from "./slots.js"; // review round 13: slots on the invite
 import { mountPlans } from "./plans.js"; import { mountKinds } from "./kinds.js"; // a table for friends, a weekend away, a summit (server/kinds.js) // Plans: your timeline, the calendar, itineraries and your plans as a webcal feed (server/plans.js)
 import { mountHooksOut, unfurlOf } from "./hooksout.js"; // review round 13: Discord/Slack unfurls and webhooks, .ics feeds
 import { mountHostLike } from "./hostlike.js"; // "Host one like this": a draft from a past event, and how many hosted one after seeing it
+import { mountBrandPanel } from "./brandpanel.js"; // quick book, briefs, outcomes, host earnings (server/brandpanel.js)
 import { mountBrandbook } from "./brandbook.js"; import { mountInsights } from "./insights.js"; import { mountCampaigns } from "./campaigns.js"; // brand Insights ("What resonates") and Campaigns (server/insights.js, server/campaigns.js) // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
@@ -780,7 +781,7 @@ export function createApp({ store, dataDir }) {
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
   mountInterest(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
   mountBrandbook(app, { store, small, currentUser, C, X, assetsDir, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); // /x/<handle>/<id> and "I'm interested" (server/interest.js)
-  { const INS = mountInsights(app, { store, small, currentUser, C, X, PUBLIC_DIR }); mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DIR, insights: INS, publicOrigin: (req) => originOf(req) }); } // /teams/insights, /teams/campaigns, /teams/home
+  { const INS = mountInsights(app, { store, small, currentUser, C, X, PUBLIC_DIR }); mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DIR, insights: INS, publicOrigin: (req) => originOf(req) }); app.locals.brandPanel = mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_DIR, publicOrigin: (req) => originOf(req) }); } // /teams/insights, /teams/campaigns, /teams/home
   mountBrand(app, { small, currentUser });
   mountCollabs(app, { store, small, currentUser, C, X });
   mountOnboard(app, { store, currentUser, C, sendStatic, publicOrigin: (req) => originOf(req) });

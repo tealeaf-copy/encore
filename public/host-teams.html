@@ -1,21 +1,21 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bookable for teams · Pottery Lab</title><meta name="description" content="Set up packages for teams, answer requests, get verified and see payouts.">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><style>.ht-steps{margin-top:20px}.ht-steps li{border-top:3px solid var(--pl-line,#CFC8B9);padding-right:8px}.ht-steps li[aria-current=step]{border-top-color:var(--pl-accent,#29489A)}.ht-steps button{all:unset;cursor:pointer;display:block;width:100%;padding:2px 0;font:inherit;color:inherit}.ht-steps button:focus-visible{outline:3px solid var(--bb-focus,rgba(41,72,154,.3));outline-offset:2px}</style></head>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"><style>.ht-steps{margin-top:20px}.ht-steps li{border-top:3px solid var(--pl-line,#CFC8B9);padding-right:8px}.ht-steps li[aria-current=step]{border-top-color:var(--pl-accent,#29489A)}.ht-steps button{all:unset;cursor:pointer;display:block;width:100%;padding:2px 0;font:inherit;color:inherit}.ht-steps button:focus-visible{outline:3px solid var(--bb-focus,rgba(41,72,154,.3));outline-offset:2px}</style></head>
 <body class="bb"><main class="bb-wrap" id="main" style="max-width:960px"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
-<script src="/eventart.js"></script><script src="/photosheet.js"></script><script src="/brandbook.js"></script>
+<script src="/eventart.js"></script><script src="/photosheet.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("teams", "host");
-  const main = $("#main"); let D = null, REQ = [], tab = (location.hash || "#inbox").slice(1);
+  const main = $("#main"); let D = null, REQ = [], BR = {}, tab = (location.hash || "#inbox").slice(1);
   const day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "");
   const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  async function load() { try { D = await api("/api/bb/host/setup"); REQ = (await api("/api/bb/host/requests")).requests; } catch (e) { main.innerHTML = e.status === 401 ? `<h1>Sign in to set up team bookings</h1><a class="bb-btn primary lg" href="/login?next=/host/teams">Sign in</a>` : `<h1>First, your host page</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn primary" href="/?app=1">Set up your page</a>`; return; } draw(); }
+  async function load() { try { D = await api("/api/bb/host/setup"); REQ = (await api("/api/bb/host/requests")).requests; try { BR = Object.fromEntries((await api("/api/bb/host/confirm")).events.map((e) => [e.id, e])); } catch {} } catch (e) { main.innerHTML = e.status === 401 ? `<h1>Sign in to set up team bookings</h1><a class="bb-btn primary lg" href="/login?next=/host/teams">Sign in</a>` : `<h1>First, your host page</h1><p class="bb-lede">${esc(e.message)}</p><a class="bb-btn primary" href="/?app=1">Set up your page</a>`; return; } draw(); }
   function draw() { const open = REQ.filter((r) => ["requested", "question"].includes(r.status) && !(r.status === "question" && r.respondedAt)).length, s = D.stats;
     main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${esc(D.host.name)}</p><h1>Bookable for <em>teams</em></h1><p class="bb-lede">Companies book hosts for offsites, client dinners and celebrations. Set your packages once, then answer requests here.</p>
       <div class="bb-badges">${D.setup.on ? `<span class="bb-badge">${icon("check")}Listed for teams</span>` : `<span class="bb-badge">${icon("minus")}Not listed yet</span>`}${s.trusted ? BB.trustedBadge() : ""}<span class="bb-badge">Quality score <b class="bb-mono">&nbsp;${s.quality}</b></span></div></section>
-      <div class="bb-tabs" role="tablist">${[["inbox", `Requests${open ? ` (${open})` : ""}`], ["setup", "Setup"], ["trust", "Trust"], ["payouts", "Payouts"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</div><div id="pane"></div>`;
+      <div class="bb-tabs" role="tablist">${[["inbox", `Requests${open ? ` (${open})` : ""}`], ["confirm", "Confirm"], ["earnings", "Earnings"], ["setup", "Setup"], ["trust", "Trust"], ["payouts", "Payouts"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</div><div id="pane"></div>`;
     $$("[data-tab]").forEach((b) => (b.onclick = () => { tab = b.dataset.tab; history.replaceState(null, "", "#" + tab); draw(); }));
-    ({ inbox, setup, trust, payouts }[tab] || inbox)(); }
+    ({ inbox, setup, trust, payouts, confirm: () => window.TP?.hostConfirm($("#pane")), earnings: () => window.TP?.hostEarnings($("#pane")) }[tab] || inbox)(); }
 
   // ---- the request inbox: accept, suggest a change, decline ----
   function inbox() { const P = $("#pane");
@@ -37,6 +37,7 @@
     return `<div class="bb-req"><div><span class="bb-status ${r.status}">${esc(r.statusText)}</span>${r.instant ? ` <span class="bb-badge instant">${icon("bolt")}Instant</span>` : ""}
       <h3 style="margin-top:8px">${esc(r.company)} · ${esc(r.pkgName)}</h3><p class="bb-meta">${r.status === "question" ? "" : `${icon("cal")} ${esc(r.date ? day(r.date) : r.flexText)} · `}${icon("people")} ${r.headcount} · <b class="bb-mono">${money(r.price.totalCents)}</b> total${r.occasion ? ` · ${esc(r.occasion)}` : ""}</p>
       ${r.diets.length || r.access.length ? `<p class="bb-meta">${esc([...r.diets, ...r.access].join(", "))}</p>` : ""}${r.notes ? `<p style="margin:4px 0">“${esc(r.notes)}”</p>` : ""}
+      ${BR[r.id]?.briefLines?.length ? `<details class="bb-panel" style="margin:8px 0"${r.status === "requested" ? " open" : ""}><summary><b>The brief</b> <span class="bb-meta">${esc(BR[r.id].briefState.line)}${r.status === "requested" ? ". Accepting agrees to it; to change it, open Confirm." : ""}</span></summary><ul class="tp-lines">${BR[r.id].briefLines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></details>` : ""}
       ${r.status === "requested" ? `<p class="bb-meta">${icon("clock")} Asked ${mins < 60 ? mins + " min" : Math.round(mins / 60) < 48 ? Math.round(mins / 60) + " hours" : Math.round(mins / 1440) + " days"} ago. Replying within a day keeps you on track for Trusted host.</p>` : ""}
       ${r.status === "countered" ? `<p class="bb-meta">You suggested ${r.counter.date ? day(r.counter.date) : ""}${r.counter.perPersonCents != null ? ` ${money(r.counter.perPersonCents)} a person` : ""}. Waiting on them.</p>` : ""}
       ${r.contact ? `<p class="bb-meta">${icon("mail")} ${esc(r.contact.name)}, <a href="mailto:${esc(r.contact.email)}">${esc(r.contact.email)}</a>${r.contact.phone ? " · " + esc(r.contact.phone) : ""}</p>` : ""}

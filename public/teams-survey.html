@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>How was it · Pottery Lab</title><meta name="description" content="Four quick questions after a hosted event. Every answer is optional and you choose who sees what."><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><header class="bb-top"><div class="in"><a class="bb-logo" href="/"><svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg><span>Pottery Lab</span></a></div></header>
+<main class="bb-wrap bb-narrow" id="main"><p class="bb-meta" style="padding-top:24px">Loading your questions</p></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, $, $$ } = BB, main = $("#main"), token = location.pathname.split("/")[2] || "";
+  const day = (d) => (d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "");
+  const yn = (name, q, v) => `<p class="tp-q">${esc(q)}</p><div class="tp-yn" role="radiogroup" aria-label="${esc(q)}"><label><input type="radio" name="${name}" value="yes"${v === true ? " checked" : ""}> Yes</label><label><input type="radio" name="${name}" value="no"${v === false ? " checked" : ""}> Not really</label></div>`;
+  const scale = (name, q, v) => `<label class="bb-field"><span>${esc(q)}</span><select name="${name}"><option value="">Skip</option>${[1, 2, 3, 4, 5].map((n) => `<option value="${n}"${v === n ? " selected" : ""}>${n}${n === 1 ? ", not at all" : n === 5 ? ", very" : ""}</option>`).join("")}</select></label>`;
+  const box = (name, title, sub, on) => `<label class="tp-check"><input type="checkbox" name="${name}"${on ? " checked" : ""}><span><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></label>`;
+  async function draw() { let d; try { d = await api(`/api/survey/${encodeURIComponent(token)}`); } catch (e) { main.innerHTML = `<section class="bb-xhead"><h1>This link doesn't work</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
+    const A = d.answer || {};
+    if (!d.past) { main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${esc(d.event)}</p><h1>See you there</h1><p class="bb-lede">These questions open after the event on ${esc(day(d.date))}.</p></section>`; return; }
+    main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${esc(d.event)} · with ${esc(d.host)}</p><h1>${d.first ? `Thanks for coming, ${esc(d.first)}` : "Thanks for coming"}</h1><p class="bb-lede">Four quick questions, all optional. ${esc(d.company)} sees totals, never your answers by name. Each yes below is separate, and you can change it later on this page.</p></section>
+      <form id="sv" class="ti-card">${yn("useful", "Did you make a useful connection?", A.useful)}${yn("back", "Want to come back to the next one?", A.back)}
+        <div class="tp-row">${scale("before", `Before tonight, how much did you think of ${d.company}?`, A.before)}${scale("after", "And now?", A.after)}</div>
+        <label class="bb-field" style="margin-top:12px"><span>Anything that stood out? (optional)</span><textarea name="said" rows="3" maxlength="600">${esc(A.said || "")}</textarea></label>
+        ${box("quoteOk", "OK to quote me, with my first name", "Only what you wrote above.", A.quoteOk)}
+        <p class="ti-k" style="margin-top:18px">You choose</p>
+        ${box("listed", "Stay in touch with people from tonight", "Other guests who chose this can see your first name and ask to stay in touch. Your details pass only if you both say yes.", A.listed)}
+        ${box("followHost", `Follow ${d.host} and hear about their next event`, `Between you and ${d.host}. It isn't a yes to ${d.company}.`, A.followHost)}
+        ${box("nextOk", `Save me a spot at ${d.host}'s next one`, "", A.nextOk)}
+        ${box("contactOk", `${d.company} may contact me about a follow-up`, "Leave it off and they won't get your details from us.", A.contactOk)}
+        ${d.side === "host" ? `${box("matchOk", `Let ${d.company} know which company I work for`, "Only the company name, so they can count which teams came.", A.matchOk)}<label class="bb-field"><span>Company (only if you ticked that)</span><input name="company" maxlength="100" value="${esc(A.company || "")}" autocomplete="organization"></label>` : ""}
+        ${d.hasEmail ? "" : `<label class="bb-field"><span>Email (only to follow ${esc(d.host)})</span><input name="email" type="email" autocomplete="email"></label>`}
+        <label class="bb-field"><span>How people you connect with can reach you (optional)</span><input name="contact" maxlength="160" value="${esc(A.contact || "")}" placeholder="An email or a profile link"><small>Shown only to someone you both said yes to.</small></label>
+        <button class="bb-btn primary lg" type="submit">${d.answer ? "Save changes" : "Send"}</button><p class="bb-meta" id="msg" role="status"></p></form>
+      ${people(d)}`;
+    $("#sv").onsubmit = async (e) => { e.preventDefault(); const f = new FormData(e.target), b = (k) => f.get(k) === "on", y = (k) => (f.get(k) === "yes" ? true : f.get(k) === "no" ? false : null);
+      try { await api(`/api/survey/${token}`, { useful: y("useful"), back: y("back"), before: f.get("before") || null, after: f.get("after") || null, said: f.get("said") || "", quoteOk: b("quoteOk"), listed: b("listed"), followHost: b("followHost"), nextOk: b("nextOk"), contactOk: b("contactOk"), matchOk: b("matchOk"), company: f.get("company") || "", email: f.get("email") || "", contact: f.get("contact") || "" });
+        BB.toast("Thank you. Saved."); draw(); } catch (er) { $("#msg").textContent = er.message; } };
+    $$("[data-ask]").forEach((b) => (b.onclick = async () => { try { await api(`/api/survey/${token}/connect`, { to: b.dataset.ask }); BB.toast("Asked. They'll see it on their page."); draw(); } catch (er) { BB.toast(er.message); } }));
+    $$("[data-ans]").forEach((b) => (b.onclick = async () => { try { await api(`/api/survey/${token}/connect`, { to: b.dataset.ans, answer: b.dataset.yes === "1" }); draw(); } catch (er) { BB.toast(er.message); } }));
+  }
+  function people(d) { const C = d.connections; if (!d.answer?.listed) return "";
+    return `<section class="ti-card" style="margin-top:16px"><h2>Which people do you want to stay in touch with?</h2><p class="ti-sub">Only guests who chose to be listed. Nobody sees your details unless you both say yes.</p>
+      ${C.incoming.length ? `<p class="ti-k" style="margin-top:12px">Asked to stay in touch with you</p><ul class="tp-lines">${C.incoming.map((x) => `<li style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(x.first)}</span><span style="display:flex;gap:6px"><button class="bb-btn primary" data-ans="${esc(x.from)}" data-yes="1">Yes</button><button class="bb-btn quiet" data-ans="${esc(x.from)}">No thanks</button></span></li>`).join("")}</ul>` : ""}
+      ${C.mutual.length ? `<p class="ti-k" style="margin-top:12px">You both said yes</p><ul class="tp-lines">${C.mutual.map((x) => `<li><b>${esc(x.first)}</b> · ${esc(x.contact || "No contact shared yet")}</li>`).join("")}</ul>` : ""}
+      ${d.others.length ? `<p class="ti-k" style="margin-top:12px">From tonight</p><ul class="tp-lines">${d.others.filter((o) => !C.mutual.some((m) => m.token === o.token) && !C.incoming.some((i) => i.from === o.token)).map((o) => `<li style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><span><b>${esc(o.first)}</b> <span class="bb-meta">${esc(o.from)}</span></span>${C.asked.includes(o.token) ? `<span class="bb-meta">${icon("check")} Asked</span>` : `<button class="bb-btn" data-ask="${esc(o.token)}">Stay in touch</button>`}</li>`).join("")}</ul>` : `<p class="bb-meta">No one else has chosen this yet. Check back in a day or two.</p>`}</section>`; }
+  draw();
+})();
+</script></body></html>

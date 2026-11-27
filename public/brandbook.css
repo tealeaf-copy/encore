@@ -233,8 +233,8 @@ body.bb{margin:0;background:var(--bb-page);color:var(--bb-ink);font:16px/1.5 var
 .bb-terms li::before{content:"";width:10px;height:10px;margin-top:7px;border:1px solid var(--bb-ink);border-radius:50%}
 
 /* ---- reviews: teams and guests kept apart ---- */
-.bb-tabs{display:flex;gap:4px;border-bottom:1px solid var(--bb-line);margin:0 0 12px}
-.bb-tabs button{all:unset;cursor:pointer;padding:10px 12px;min-height:24px;font:500 15px var(--bb-sans);color:var(--bb-soft);border-bottom:2px solid transparent;margin-bottom:-1px}
+.bb-tabs{display:flex;gap:4px;border-bottom:1px solid var(--bb-line);margin:0 0 12px;overflow-x:auto;scrollbar-width:none}.bb-tabs::-webkit-scrollbar{display:none}
+.bb-tabs button{all:unset;flex:none;cursor:pointer;padding:10px 12px;min-height:24px;font:500 15px var(--bb-sans);color:var(--bb-soft);border-bottom:2px solid transparent;margin-bottom:-1px}
 .bb-tabs button[aria-selected=true]{color:var(--bb-ink);border-color:var(--bb-ink)}
 .bb-reviews{display:grid;gap:16px;grid-template-columns:1fr}
 @media (min-width:700px){.bb-reviews{grid-template-columns:1fr 1fr}}

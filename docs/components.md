@@ -84,3 +84,14 @@ report, on top of the ones above: stat tiles (`.ti-tiles`, `.ti-tile`), bars (`.
 (`public/timeline.css`). Every number a brand sees about guests follows the Insights rules in `server/insights.js`
 (10+ people and 3+ events behind a cell, people in bands, opt in, no identities); the explainer is
 `/teams/insights/how`. Tests: `test/insights.test.js`, `test/campaigns.test.js`.
+
+## Quick book, briefs and outcomes
+
+`public/teams-panel.css` and `public/teams-panel.js` (`window.TP`) add the brand panel pieces from `server/brandpanel.js`:
+Quick book (`TP.quickBook`, the first thing on /teams/home and /teams/discover), the event panel on a booking
+(`TP.eventPanel`: owner, approval, the brief, money at risk by date, seats, survey, the summary link, series and book
+again), the host's Confirm and Earnings tabs on /host/teams, outcomes and CRM sync (beta) on a campaign's Measure tab
+(`TP.outcomes`), who an invite is from (`TP.inviteFrom`), recommendations with confidence labels (`TP.recs`) and "What
+it's like" on experience pages (`TP.like`). Pages: /teams/hosts, /survey/<token>, /teams/e/<id>?k= (read-only summary),
+/admin/brand-metrics (admins only). Every share shows what it's out of, and a percentage only from 5 answers up. CRM
+setup: docs/crm-sync.md. Tests: `test/brand-panel.test.js`.

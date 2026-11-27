@@ -128,3 +128,25 @@ Only the six personas below 9 on delight are re-scored; everyone else was re-che
 - **No small serif titles**: card, section and campaign titles in teams-intel.css and the timeline titles in timeline.css use the text face at 600 under 24px.
 - **Run tab at 390**: grid columns no longer push the page sideways (`.ti-grid>*{min-width:0}`).
 - **The app's Home settles once** (index.html): cards that arrive late (the streak card, guides, new replies, hosts you follow, near you, the playbook line) wait under the quick-start panel, laid out but hidden, until they stop arriving (2.6 seconds at most), then fade in together. The paste or calendar-file hint is drawn with the composer instead of 400ms later.
+
+## Round 5
+
+Screens: `review17/round-5/before` and `review17/round-5/after`. Driven as the weekend-away host and a guest who's in (the plan page), the summit host (the agenda), and the game night host on the day (the Status board and Check in).
+
+| Persona | Use | Joy | Ease | Intu | Pick | Notes (what moved) |
+|---|---|---|---|---|---|---|
+| Engineer | 9 | 9 | 9 | 9 | 9 | Every check-in tap answers in under 5ms on both check-in screens and rolls back if the save fails. The Status board looks for new replies every 20 seconds, only while it's open and the page is in view. The plan page loads into a skeleton of itself. Zero crawl problems at 390 and 1280, no console warnings on the persona pages. |
+| Product designer | 9 | 8 | 9 | 9 | 9 | The plan page is a notebook now, and "Here" is a stamp. Still 8: the slot cards on the invite keep 12 to 16px corners and pill buttons, off brand (round 6). |
+| Field marketer (brand) | 9 | 9 | 9 | 9 | 9 | Holds. |
+| Game or hack night host | 9 | 8 | 9 | 9 | 9 | Check-in feels good and the board counts up as replies land. Still 8: the bracket and demo queue are plain lists, and seeding is one button (round 6). |
+| Weekend getaway host | 9 | 9 | 9 | 9 | 9 | The plan reads like a travel notebook: a big day number on each divider, "Tonight" and "Tomorrow morning" in the event's own time zone, Up next, a drawn map of the area, a packing list guests tick off, and the weekend laid out from one tap. |
+| Small summit host | 9 | 8 | 9 | 9 | 9 | A summit run of show in one tap (doors and name tags, talks, breakouts, lunch, lightning talks, wrap), Up next on the day. Still 8: no printable agenda for the door (round 6). |
+
+### Fixed in round 5
+
+- **The plan page as a travel notebook** (public/plan.html): each day opens with a divider, its number set large ("02") and its name ("Tomorrow", "Saturday"); the day splits into morning, afternoon and evening, named for when they are in the event's own time zone ("Tonight", "This morning", "Tomorrow morning"). The next thing carries an "Up next" tag and what's passed goes soft. A line under the title says "Starts tomorrow at 4pm", "Starts in 2 days" or "Day 2 of 3". Each timed item now carries its start (`at`, from `itineraryDays` in server/plans.js).
+- **A drawn map of the area** links to /map for the city. It's always the area, never a pinned door, and says the exact spot is on the invite for guests who are in.
+- **Before you go**: the host's "bring" list as boxes a guest ticks (the ticks stay on that phone) and what's included. A trip with no list gets "A packing list to start from", which says it's only ideas, not the host's. The plan payload carries `bring` and `included`.
+- **Thoughtful defaults for the host**: the editor folds away under "Edit the plan" once there's a plan, and an empty plan offers shapes to start from: "Weekend away", "Summit run of show" and "One evening", built from the event's own days and start time. Potto says the one true thing about it: "Start from a shape, then change what you like. I'll keep it in time order." (the server sorts by day and time).
+- **The invite planner** (public/invite-plan.js): someone who replied before but hasn't come yet reads "First time", not "Replied, never came". The capacity meter fills once a visit. The Status board counts up on the first look and, as replies arrive, a changed column counts on from what it was with an ink underline. Check in answers the tap at once (the button turns into a "Here" stamp, the count ticks, a green arrivals line fills, a haptic in the app), then saves; when everyone's in, the "All here" stamp lands and Potto says "Everyone's here. I'll stop counting." The thank-you button waits until someone's checked in.
+- **Planner fixes**: people added by email alone show their email instead of a blank name; the meter leads with who's in when nothing was sent yet ("8 in", not "0 invited").

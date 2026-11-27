@@ -7,6 +7,7 @@
 .pl-plan{max-width:680px;margin:0 auto;padding-bottom:48px}
 .pv-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
 .pv-chipst{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:4px;background:var(--pl-sand);color:var(--pl-ink);font:500 14px var(--pl-font-text)}
+.pv-when{font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-accent-text)}
 .pv-acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
 .pv-acts a,.pv-acts button{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);text-decoration:none;cursor:pointer}
 .pv-acts .pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
@@ -16,10 +17,51 @@
 .pv-lock{margin:16px 0;padding:18px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
 .pv-lock p{margin:0 0 12px;font:400 16px/1.45 var(--pl-font-text)}
 .pv-miss{padding:40px 0;text-align:center;color:var(--pl-soft)}
+/* a skeleton the size of the page: the cover, the title, the buttons, three rows */
+.pv-skel{display:grid;gap:12px;padding:8px 0}.pv-skel i{display:block;border-radius:6px;background:var(--pl-raised);animation:pvPulse 1.4s ease-in-out infinite}
+.pv-skel .c{height:232px}.pv-skel .t{height:34px;width:70%}.pv-skel .a{height:44px;width:60%}.pv-skel .r{height:52px}
+@keyframes pvPulse{50%{opacity:.55}}
+/* where: a small drawn map of the area (never a pinned door), and a way to the full map */
+.fn-where{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;margin:16px 0 0;padding:10px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);text-decoration:none}
+.fn-where svg{width:112px;height:76px;display:block;border-radius:4px;border:1px solid var(--pl-line)}
+.fn-where b{display:block;font:600 16px/1.3 var(--pl-font-text)}.fn-where small{display:block;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.fn-where .k{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--pl-accent-text)}
+/* the itinerary, like a travel notebook: a day divider with the day's number, then the morning, afternoon and evening */
+.fn-itin{margin-top:4px}
+.fn-day{margin:0 0 6px}
+.fn-dd{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;gap:12px;padding:22px 0 8px;border-bottom:1px dashed var(--pl-line-strong)}
+.fn-dd.solo{grid-template-columns:minmax(0,1fr)}
+.fn-dn{font:600 40px/0.9 var(--pl-font-display);letter-spacing:-.03em;color:var(--pl-ink);font-variant-numeric:tabular-nums}
+.fn-dt{margin:0;display:grid;gap:2px}.fn-dt b{font:600 19px/1.2 var(--pl-font-text);letter-spacing:-.01em}.fn-dt span{font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
+.fn-day.is-today .fn-dt b{background:var(--pl-highlight);box-decoration-break:clone;-webkit-box-decoration-break:clone;padding:0 4px;margin-left:-4px;justify-self:start}
+.fn-part{margin:14px 0 2px;font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.07em;color:var(--pl-accent-text)}
+.fn-itin .tl-list{margin:0}
+.fn-next{display:inline-block;margin:0 8px 2px 0;padding:2px 6px;border-radius:3px;background:var(--pl-accent);color:var(--pl-on-accent);font:500 11px/1.3 var(--pl-font-mono);text-transform:uppercase;letter-spacing:.07em;vertical-align:2px}
+.tl-irow.is-done .tl-ititle,.tl-irow.is-done .tl-time{color:var(--pl-soft)}
+.fn-empty{padding:14px 0;color:var(--pl-soft);font:400 15px var(--pl-font-text)}
+/* before you go: what to bring (ticks stay on this phone) and what's covered */
+.fn-before{display:grid;gap:16px;margin:14px 0 0}
+@media (min-width:600px){.fn-before.two{grid-template-columns:1fr 1fr}}
+.fn-before h3{margin:0 0 6px;font:600 16px var(--pl-font-text)}
+.fn-check,.fn-inc{list-style:none;margin:0;padding:0}
+.fn-check li{border-bottom:1px dashed var(--pl-line)}
+.fn-check label{display:flex;gap:12px;align-items:center;min-height:44px;cursor:pointer;font:400 16px/1.35 var(--pl-font-text)}
+.fn-check input{--fx-rot:0deg;appearance:none;flex:none;width:22px;height:22px;margin:0;border:1.5px solid var(--pl-ink);border-radius:4px;background:var(--pl-surface);display:grid;place-items:center;cursor:pointer}
+.fn-check input:checked{background:var(--pl-ink)}.fn-check input:checked::after{content:"";width:10px;height:6px;border:solid var(--pl-surface);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.fn-check input:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+.fn-check input:checked+span{color:var(--pl-soft);text-decoration:line-through;text-decoration-color:var(--pl-line-strong)}
+.fn-inc li{display:flex;gap:10px;align-items:baseline;min-height:36px;padding:6px 0;border-bottom:1px dashed var(--pl-line);font:400 16px/1.35 var(--pl-font-text)}
+.fn-inc li::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--pl-moss);transform:translateY(-2px)}
+.fn-note{margin:8px 0 0;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
 /* the host's editor: one row per part of the plan */
-.it-ed{margin:18px 0 0;padding:14px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface);display:grid;gap:12px}
-.it-ed h3{margin:0;font:600 16px var(--pl-font-text)}
-.it-ed p.hint{margin:-6px 0 0;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.it-wrap{margin:22px 0 0;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md);background:var(--pl-surface)}
+.it-wrap>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:52px;padding:0 14px;cursor:pointer;font:600 16px var(--pl-font-text)}
+.it-wrap>summary::-webkit-details-marker{display:none}.it-wrap>summary small{font:500 12px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--pl-soft)}
+.it-wrap>summary:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px;border-radius:6px}
+.it-ed{padding:0 14px 14px;display:grid;gap:12px}
+.it-ed p.hint{margin:0;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.it-potto{display:flex;gap:10px;align-items:center;font:400 15px/1.4 var(--pl-font-text)}.it-potto svg{flex:none}
+.it-tpl{display:flex;flex-wrap:wrap;gap:8px}.it-tpl button{min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn);border:1.5px dashed var(--pl-line-strong);background:var(--pl-page);font:500 15px var(--pl-font-text);color:var(--pl-ink);cursor:pointer}
 .it-row{display:grid;grid-template-columns:1fr 92px;gap:8px;padding:10px 0;border-top:var(--pl-rule-dashed,1px dashed var(--pl-line))}
 .it-row label{display:grid;gap:4px;font:500 13px var(--pl-font-text);color:var(--pl-soft)}
 .it-row .wide{grid-column:1/-1}
@@ -31,38 +73,76 @@
 .it-pub{display:flex;align-items:center;gap:8px;min-height:44px;font:400 15px var(--pl-font-text)}.it-pub input{width:20px;height:20px}
 .it-msg{font:400 14px var(--pl-font-text);color:var(--pl-success)}.it-msg.bad{color:var(--pl-danger)}
 @media (min-width:640px){.it-row{grid-template-columns:150px 92px 150px 1fr}.it-row .wide{grid-column:auto}.it-row .sub{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){.pv-skel i{animation:none}}
 </style>
 </head><body>
-<div class="wrap"><main class="pl-plan" id="m" aria-live="polite"><p class="pv-miss">Getting the plan</p></main></div>
-<script src="/authguard.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
+<div class="wrap"><main class="pl-plan" id="m" aria-live="polite" aria-busy="true"><div class="pv-skel" aria-label="Getting the plan"><i class="c"></i><i class="t"></i><i class="a"></i><i class="r"></i><i class="r"></i><i class="r"></i></div></main></div>
+<script src="/authguard.js"></script><script src="/fx.js"></script><script src="/mascot.js" defer></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/timeline.js"></script><script src="/addcal.js"></script>
 <script>
-// A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day.
-// Guests who are in see it, or everyone when the host makes it public; the host lays it out here.
-(async function () { const T = window.PLTimeline, esc = T.esc, m = document.getElementById("m"), id = (location.pathname.match(/^\/plans\/([A-Za-z0-9_-]{2,80})$/) || [])[1];
-  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })(), today = T.localDay(Date.now(), tz);
+// A plan's page (server/plans.js GET /api/public/plan/:id): the cover, the dates and the host, then the plan day by day,
+// set like a travel notebook: a divider for each day, the morning, afternoon and evening named for when they are
+// ("Tonight", "Tomorrow morning"), what's up next, a small drawn map of the area and what to bring. Guests who are in
+// see it, or everyone when the host makes it public; the host lays it out here.
+(async function () { const T = window.PLTimeline, esc = T.esc, m = document.getElementById("m"), id = (location.pathname.match(/^\/plans\/([A-Za-z0-9_-]{2,80})$/) || [])[1], fx = window.PLFx;
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; } })();
+  const ls = { get: (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
   let proof = null; try { proof = JSON.parse(localStorage.getItem("encore-rsvp-" + id) || "null"); } catch {}
   const q = proof?.rid && proof?.code ? `?rid=${encodeURIComponent(proof.rid)}&code=${encodeURIComponent(proof.code)}` : "";
   let P = null; try { const r = await fetch(`/api/public/plan/${encodeURIComponent(id || "")}${q}`, { credentials: "same-origin" }); if (r.ok) P = (await r.json()).plan; } catch {}
+  m.removeAttribute("aria-busy");
   if (!P) { m.innerHTML = `<p class="pv-miss">We couldn't find this plan. <a href="/plans">Back to your plans</a></p>`; return; }
   document.title = P.title + " · Pottery Lab";
   const A = window.EncoreAvatars, av = P.host.avatarArt && A ? A.svg(P.host.avatarArt, P.host.color, 40) : "";
   let art = ""; try { if (!P.cover && window.EventArt?.cover) { window.EventArt.ensureCss?.(); art = window.EventArt.cover({ title: P.title, coverArt: P.coverArt, date: P.date }, { title: "", label: "" }) || ""; } } catch {}
   const G = T.ICON;
+  // ---- time words, in the event's own time zone ----
+  const evTz = P.tz || tz, today = T.localDay(Date.now(), evTz), nOf = (d) => T.daysBetween(today, d);
+  const wk = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+  const dateText = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  const rel = (d) => { const n = nOf(d); return n === 0 ? "Today" : n === 1 ? "Tomorrow" : n === -1 ? "Yesterday" : n > 1 && n < 7 ? wk(d) : ""; };
+  const partOf = (t) => (!/^\d{2}:\d{2}$/.test(t || "") ? "" : +t.slice(0, 2) < 12 ? "morning" : +t.slice(0, 2) < 17 ? "afternoon" : "evening");
+  const partLabel = (d, p) => { const n = nOf(d); if (n === 0) return p === "evening" ? "Tonight" : `This ${p}`; if (n === 1) return `Tomorrow ${p}`; return p[0].toUpperCase() + p.slice(1); };
+  const when = () => { const now = Date.now(); if (!P.startMs) return ""; if (now < P.startMs) { const n = nOf(P.date); const t = P.startTime ? T.clock(P.startTime) : "";
+      return n === 0 ? `Starts today${t ? " at " + t : ""}` : n === 1 ? `Starts tomorrow${t ? " at " + t : ""}` : n < 14 ? `Starts in ${n} days` : `Starts ${dateText(P.date)}`; }
+    if (P.endMs && now < P.endMs) { const d = P.days.find((x) => x.date === today); return P.multi && d ? `Day ${d.n} of ${P.days.length}` : "Happening now"; } return ""; };
+  // the next thing on the plan, and the one happening now (only while the plan is on)
+  function marks() { const now = Date.now(), all = P.days.flatMap((d) => d.items).filter((x) => x.at); if (!all.length || !P.endMs || now > P.endMs + 3600e3 || now < (P.startMs || 0) - 2 * 864e5) return { next: null, done: new Set() };
+    const next = all.find((x) => x.at > now) || null, done = new Set(all.filter((x) => x.at <= now && x !== all[all.indexOf(next) - 1]).map((x) => x.at + x.title)); return { next, done }; }
+  function itinHtml() { const M = marks();
+    return `<div class="tl tl-itin fn-itin">${P.days.map((d) => { const r = rel(d.date), parts = []; for (const x of d.items) { const p = partOf(x.time), last = parts[parts.length - 1]; if (last && last.p === p) last.items.push(x); else parts.push({ p, items: [x] }); }
+      const named = parts.filter((g) => g.p).length, near = r === "Today" || r === "Tomorrow", showParts = named >= 2 || (named === 1 && near);
+      const rows = (L) => L.map((x) => { let h = T.itinRowHtml(x); if (x === M.next) h = h.replace('class="tl-row tl-irow', 'class="tl-row tl-irow is-next').replace('<b class="tl-title tl-ititle">', `<b class="tl-title tl-ititle"><span class="fn-next">Up next</span>`); else if (M.done.has(x.at + x.title)) h = h.replace('class="tl-row tl-irow', 'class="tl-row tl-irow is-done'); return h; }).join("");
+      return `<section class="fn-day${d.date === today ? " is-today" : ""}" data-date="${esc(d.date)}"><div class="fn-dd${P.days.length > 1 ? "" : " solo"}">${P.days.length > 1 ? `<span class="fn-dn" aria-hidden="true">${String(d.n).padStart(2, "0")}</span>` : ""}<h3 class="fn-dt">${P.days.length > 1 ? `<span class="vh" style="position:absolute;left:-9999px">Day ${d.n}, </span>` : ""}<b>${esc(r || wk(d.date))}</b><span>${esc(dateText(d.date))}</span></h3></div>`
+        + (d.items.length ? parts.map((g) => `${showParts && g.p ? `<h4 class="fn-part">${esc(partLabel(d.date, g.p))}</h4>` : ""}<ol class="tl-list">${rows(g.items)}</ol>`).join("") : `<p class="fn-empty">${d.n === P.days.length && P.days.length > 1 ? "Heading home. Nothing planned." : "Nothing planned yet. Time to wander."}</p>`) + `</section>`; }).join("")}</div>`; }
+  // a small drawn map: linen, a few streets, a river, a dashed circle for the area. Never a pinned door.
+  const mapThumb = () => `<svg viewBox="0 0 112 76" aria-hidden="true"><rect width="112" height="76" fill="var(--pl-page)"/><path d="M-4 58C20 50 34 66 58 56S96 40 118 46" fill="none" stroke="var(--pl-line)" stroke-width="7" stroke-linecap="round"/><g fill="none" stroke="var(--pl-line-strong)" stroke-width="1" opacity=".7"><path d="M0 20h112M0 38h112M22 0v76M52 0v76M84 0v76"/></g><path d="M8 70L40 8M70 76L104 4" fill="none" stroke="var(--pl-surface)" stroke-width="3"/><circle cx="56" cy="34" r="19" fill="var(--pl-accent-soft)" stroke="var(--pl-accent)" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="56" cy="34" r="3" fill="var(--pl-accent)"/></svg>`;
+  const whereHtml = () => !P.place || P.locked ? "" : `<a class="fn-where" href="/map${P.city ? "?city=" + encodeURIComponent(P.city) : ""}">${mapThumb()}<span><span class="k">Where</span><b>${esc(P.place)}</b><small>${P.going || P.isHost ? "The exact spot is on the invite." : "The area. The exact spot goes to guests who are in."} Open the map.</small></span></a>`;
+  // what to bring: the host's list, or for a trip with none, a starter list that says it's only ideas
+  const STARTER = ["A warm layer", "Comfortable shoes", "Phone charger", "Anything you need to sleep well"];
+  function beforeHtml() { if (P.locked) return ""; const own = (P.bring || []).length, list = own ? P.bring : P.multi && !P.isHost ? STARTER : [], inc = P.included || [], ticks = ls.get("pl.pack." + P.id) || [];
+    if (!list.length && !inc.length) return "";
+    return `<h2 class="pv-h2">Before you go<small>${P.multi ? "Packing" : "Bring"}</small></h2><div class="fn-before${list.length && inc.length ? " two" : ""}">`
+      + (list.length ? `<div><h3>${own ? "What to bring" : "A packing list to start from"}</h3><ul class="fn-check">${list.map((x, i) => `<li><label><input type="checkbox" data-pack="${i}"${ticks.includes(x) ? " checked" : ""}><span>${esc(x)}</span></label></li>`).join("")}</ul><p class="fn-note">${own ? "Your ticks stay on this phone." : `Ideas, not from ${esc(P.host.first || "the host")}. Ask in the chat if you're not sure.`}</p></div>` : "")
+      + (inc.length ? `<div><h3>Included</h3><ul class="fn-inc">${inc.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "") + `</div>`; }
   function draw() {
     const locked = P.locked ? `<div class="pv-lock"><p>${P.response === "waitlist" ? "You're on the waitlist. The plan shows here once you're in." : P.response === "requested" ? `You asked to join. The plan shows here once ${esc(P.host.first || "the host")} lets you in.` : `Say you're in to see the plan, day by day.`}</p><a class="btn primary" href="/e/${encodeURIComponent(P.id)}">Open the invite</a></div>` : "";
-    const empty = !P.locked && !P.days.some((d) => d.items.length);
+    const empty = !P.locked && !P.days.some((d) => d.items.length), w = when();
     m.innerHTML = T.coverHtml(P, { avatar: av, art: typeof art === "string" ? art : "", back: "/plans" })
-      + (P.status ? `<div class="pv-status"><span class="pv-chipst">${esc(P.status)}</span></div>` : "")
+      + (P.status || w ? `<div class="pv-status">${P.status ? `<span class="pv-chipst">${esc(P.status)}</span>` : ""}${w ? `<span class="pv-when">${esc(w)}</span>` : ""}</div>` : "")
       + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}</div>`
+      + whereHtml()
       + `<h2 class="pv-h2">The plan<small>${P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
-      + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : T.itineraryHtml(P.days, { today })))
-      + (P.editable ? editorHtml() : "");
+      + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml()))
+      + beforeHtml()
+      + (P.editable ? editorHtml(empty) : "");
     m.querySelector("[data-addcal]")?.addEventListener("click", (e) => window.PLAddCal?.open(e.currentTarget, P));
     const more = m.querySelector(".pc-more"); if (more) more.onclick = (e) => { e.stopPropagation(); let mn = m.querySelector(".pc-menu"); if (mn) { mn.remove(); more.setAttribute("aria-expanded", "false"); return; }
       mn = document.createElement("div"); mn.className = "pc-menu"; mn.setAttribute("role", "menu");
       mn.innerHTML = `<a role="menuitem" href="/e/${encodeURIComponent(P.id)}">Open the invite</a>${P.date ? `<a role="menuitem" href="${esc(window.PLAddCal?.ics(P) || "#")}">Add to calendar (.ics)</a>` : ""}<button type="button" role="menuitem" data-copy>Copy link</button>${P.isHost ? `<a role="menuitem" href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}`;
       m.querySelector(".pc").style.position = "relative"; m.querySelector(".pc").appendChild(mn); more.setAttribute("aria-expanded", "true");
       mn.querySelector("[data-copy]").onclick = async (ev) => { try { await navigator.clipboard.writeText(location.origin + "/e/" + P.id); ev.target.textContent = "Copied"; } catch {} }; };
+    // ticking the packing list: the tick answers at once, a light haptic in the app, and it stays on this phone
+    m.querySelectorAll("[data-pack]").forEach((c) => (c.onchange = () => { const L = [...m.querySelectorAll("[data-pack]")].filter((x) => x.checked).map((x) => x.nextElementSibling.textContent); ls.set("pl.pack." + P.id, L); if (c.checked && fx) { fx.ink(c); fx.haptic("light"); } }));
     if (P.editable) wireEditor();
     if (P.editable && /[?&]edit=1\b/.test(location.search)) setTimeout(() => m.querySelector(".it-ed")?.scrollIntoView({ block: "start" }), 60); // from the editor's Settings: "The plan, day by day"
   }
@@ -73,19 +153,37 @@
   const rowHtml = (x, i) => `<div class="it-row" data-i="${i}"><label>Day<select data-f="day">${dayOpts(x.day)}</select></label><label>Time<input data-f="time" value="${esc(x.time ? T.clock(x.time) : "")}" placeholder="4pm" inputmode="text"></label>
     <label>Kind<select data-f="kind">${KINDS.map(([k, l]) => `<option value="${k}"${k === x.kind ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label><label class="wide">What<input data-f="title" value="${esc(x.title)}" placeholder="Check in" maxlength="80"></label>
     <label class="wide sub">One line under it<input data-f="sub" value="${esc(x.sub || "")}" placeholder="Keys at the front desk after 4pm" maxlength="100"></label><button type="button" class="rm" data-rm="${i}">Remove</button></div>`;
-  const editorHtml = () => `<section class="it-ed" aria-label="Lay out the plan"><h3>Lay out the plan</h3><p class="hint">Arrive, check in, dinner, a workshop, checkout. Guests who are in see it here and on the invite.</p>
+  // shapes to start from: a weekend away, a summit's run of show, one evening. Every line can change.
+  const hm = (t, add) => { const [h, mi] = (t || "19:00").split(":").map(Number), v = Math.min(23 * 60 + 30, h * 60 + mi + add); return String(Math.floor(v / 60)).padStart(2, "0") + ":" + String(v % 60).padStart(2, "0"); };
+  const TPL = {
+    trip: { label: "Weekend away", rows: () => P.days.flatMap((d, i) => { const first = i === 0, last = i === P.days.length - 1, day = d.date;
+      if (first) return [{ day, time: P.startTime || "16:00", kind: "arrive", title: "Arrive and settle in", sub: "" }, { day, time: "19:30", kind: "meal", title: "Dinner together", sub: "" }];
+      if (last) return [{ day, time: "09:30", kind: "meal", title: "Slow breakfast", sub: "" }, { day, time: "11:00", kind: "checkout", title: "Check out", sub: "" }];
+      return [{ day, time: "09:00", kind: "meal", title: "Breakfast", sub: "" }, { day, time: "11:00", kind: "activity", title: "Something outdoors", sub: "" }, { day, time: "15:00", kind: "free", title: "Free afternoon", sub: "" }, { day, time: "19:30", kind: "meal", title: "Dinner", sub: "" }]; }) },
+    summit: { label: "Summit run of show", rows: () => P.days.flatMap((d, i) => { const day = d.date, last = i === P.days.length - 1, s = P.startTime && P.startTime < "11:00" ? P.startTime : "09:00";
+      return [{ day, time: hm(s, -30), kind: "arrive", title: i ? "Doors and coffee" : "Doors, coffee and name tags", sub: i ? "" : "Name tags at the front table" }, { day, time: s, kind: "talk", title: i ? "Welcome back" : "Welcome and why we're here", sub: "" },
+        { day, time: hm(s, 30), kind: "talk", title: "First talk", sub: "" }, { day, time: hm(s, 90), kind: "free", title: "Break", sub: "" }, { day, time: hm(s, 120), kind: "workshop", title: "Breakouts", sub: "Pick a room at the break" },
+        { day, time: "12:30", kind: "meal", title: "Lunch", sub: "" }, { day, time: "14:00", kind: "talk", title: "Lightning talks", sub: "Five minutes each" }, { day, time: "15:30", kind: "free", title: "Break", sub: "" },
+        last ? { day, time: "16:00", kind: "talk", title: "Closing talk and thanks", sub: "" } : { day, time: "16:00", kind: "talk", title: "Panel", sub: "" }, last ? { day, time: "17:00", kind: "checkout", title: "Wrap and goodbyes", sub: "" } : { day, time: "17:30", kind: "meal", title: "Drinks", sub: "" }]; }) },
+    evening: { label: "One evening", rows: () => { const day = P.date, s = P.startTime || "19:00"; return [{ day, time: s, kind: "arrive", title: "Doors open", sub: "" }, { day, time: hm(s, 30), kind: "meal", title: "Food", sub: "" }, { day, time: hm(s, 90), kind: "activity", title: "The main thing", sub: "" }, { day, time: hm(s, 180), kind: "checkout", title: "Wrap", sub: "" }]; } },
+  };
+  const tplKeys = () => (P.multi ? ["trip", "summit"] : ["evening", "summit"]);
+  const potto = () => { try { return window.Potto ? window.Potto.svg("think", 40, "") : ""; } catch { return ""; } };
+  const editorHtml = (empty) => `<details class="it-wrap"${empty || /[?&]edit=1\b/.test(location.search) ? " open" : ""}><summary>${empty ? "Lay out the plan" : "Edit the plan"}<small>${rows.length ? `${rows.length} ${rows.length === 1 ? "thing" : "things"}` : "Host only"}</small></summary><section class="it-ed" aria-label="Lay out the plan"><p class="hint">Arrive, check in, dinner, a workshop, checkout. Guests who are in see it here and on the invite.</p>
+    ${!rows.length ? `<p class="it-potto">${potto()}<span>Start from a shape, then change what you like. I'll keep it in time order.</span></p><div class="it-tpl" role="group" aria-label="Start from">${tplKeys().map((k) => `<button type="button" data-tpl="${k}">${esc(TPL[k].label)}</button>`).join("")}</div>` : ""}
     <div id="itRows">${rows.map(rowHtml).join("")}</div>
     <div class="it-bar"><button type="button" id="itAdd">+ Add to the plan</button></div>
     <label class="it-pub"><input type="checkbox" id="itPub"${P.public ? " checked" : ""}> Anyone with the link can see the plan</label>
-    <div class="it-bar"><button type="button" class="pri" id="itSave">Save the plan</button><span class="it-msg" id="itMsg" role="status"></span></div></section>`;
+    <div class="it-bar"><button type="button" class="pri" id="itSave">Save the plan</button><span class="it-msg" id="itMsg" role="status"></span></div></section></details>`;
   function read() { m.querySelectorAll(".it-row").forEach((r) => { const x = rows[+r.dataset.i]; if (!x) return; r.querySelectorAll("[data-f]").forEach((f) => { x[f.dataset.f] = f.value; }); }); }
   function wireEditor() {
-    m.querySelector("#itAdd").onclick = () => { read(); const last = rows[rows.length - 1]; rows.push({ day: last?.day || P.date, time: "", kind: "activity", title: "", sub: "" }); draw(); m.querySelectorAll('.it-row [data-f="title"]')[rows.length - 1]?.focus(); };
-    m.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { read(); rows.splice(+b.dataset.rm, 1); draw(); });
+    m.querySelector("#itAdd").onclick = () => { read(); const last = rows[rows.length - 1]; rows.push({ day: last?.day || P.date, time: "", kind: "activity", title: "", sub: "" }); draw(); m.querySelector(".it-wrap").open = true; m.querySelectorAll('.it-row [data-f="title"]')[rows.length - 1]?.focus(); };
+    m.querySelectorAll("[data-tpl]").forEach((b) => (b.onclick = () => { rows = TPL[b.dataset.tpl].rows(); draw(); const w = m.querySelector(".it-wrap"); w.open = true; const msg = m.querySelector("#itMsg"); if (msg) msg.textContent = "Filled in. Change anything, then save."; m.querySelector("#itRows")?.scrollIntoView({ block: "nearest" }); }));
+    m.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { read(); rows.splice(+b.dataset.rm, 1); draw(); m.querySelector(".it-wrap").open = true; });
     m.querySelector("#itSave").onclick = async () => { read(); const msg = m.querySelector("#itMsg"); msg.className = "it-msg"; msg.textContent = "Saving";
       try { const r = await fetch(`/api/host/events/${encodeURIComponent(P.id)}/itinerary`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itinerary: rows, public: m.querySelector("#itPub").checked }) }); const j = await r.json();
         if (!r.ok) { msg.className = "it-msg bad"; msg.textContent = j.message || "That didn't save. Try again."; return; }
-        P.public = j.public; rows = j.itinerary.map((x) => ({ ...x })); P.days = P.days.map((d) => ({ ...d, items: j.itinerary.filter((x) => x.day === d.date) })); draw(); const m2 = m.querySelector("#itMsg"); if (m2) m2.textContent = "Saved. Guests who are in can see it."; }
+        P.public = j.public; rows = j.itinerary.map((x) => ({ ...x })); P.days = P.days.map((d) => ({ ...d, items: j.itinerary.filter((x) => x.day === d.date) })); draw(); m.querySelector(".it-wrap").open = true; const m2 = m.querySelector("#itMsg"); if (m2) m2.textContent = "Saved. Guests who are in can see it."; fx?.haptic("light"); }
       catch { msg.className = "it-msg bad"; msg.textContent = "That didn't save. Check your connection."; } };
   }
   draw();

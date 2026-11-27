@@ -37,6 +37,7 @@ export const addDays = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * day
 const dayNo = (d) => Math.round(Date.parse(d + "T12:00:00Z") / dayMs);
 const titleOf = (ev) => clean(ev?.pubTitle || ev?.name, 120) || "An event";
 const areaOf = (ev) => [clean(ev?.hood, 60), clean(String(ev?.city || "").split(",")[0], 60)].filter((x, i, a) => x && a.indexOf(x) === i).join(", ");
+const listOf = (v) => (Array.isArray(v) ? v : String(v || "").split(/\n|,(?![^(]*\))/)).map((x) => clean(x, 80)).filter(Boolean).map((x) => x[0].toUpperCase() + x.slice(1)).slice(0, 12);
 const priced = (ev) => !!ev?.price && ev.price !== "chip" && !ev.free;
 
 /** Every kind a timeline item can be. Pure. */
@@ -165,7 +166,7 @@ export function scrubberOf(ev) {
 }
 /** The itinerary in days: [{ date, n, items }], one per day of the event (empty days too). Pure. */
 export function itineraryDays(ev, items) { if (!ISO.test(ev?.date || "")) return []; const out = [], to = lastDay(ev);
-  for (let d = ev.date, n = 1; d <= to && n <= 31; d = addDays(d, 1), n++) out.push({ date: d, n, items: items.filter((x) => x.day === d) }); return out; }
+  for (let d = ev.date, n = 1; d <= to && n <= 31; d = addDays(d, 1), n++) { const tz = eventTz(ev); out.push({ date: d, n, items: items.filter((x) => x.day === d).map((x) => (HHMM.test(x.time || "") ? { ...x, at: zonedMs(d, x.time, tz) } : x)) }); } return out; }
 /** The chip on a plan's cover: the host's own label, else "Weekend away", "Summit", "Supper club" and so on. Pure. */
 export function typeChip(ev) {
   const own = clean(ev?.typeLabel, 24); if (own) return own;
@@ -288,7 +289,9 @@ export function makePlans({ store, C, X }) {
     return { id, eventId: id, key: "plan:" + id, title: titleOf(ev), date: ev.date || "", startMs: sp.startMs, endMs: multiDay(ev) ? spanOf({ ...ev, startTime: "" }).endMs : sp.endMs, allDay: multiDay(ev) || sp.allDay, tz: sp.tz, status, editable: isHost && !ev.drop, endDate: lastDay(ev), startTime: ev.startTime || "", endTime: ev.endTime || "", chip: typeChip(ev), multi: multiDay(ev),
       place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), cover: /^\/(_blob|presets)\//.test(ev.coverPhoto || "") ? ev.coverPhoto : (h.gallery || [])[0] || "", coverArt: ev.coverArt || null,
       host: { name: clean(h.name || ev.hostName, 60), first: hostFirstOf(ws, ev), handle: h.handle || "", avatarArt: h.theme?.avatarArt || "", color: h.theme?.accent || h.color || "" },
-      isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length };
+      isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length,
+      // what to bring and what the host covers, for the "Before you go" card (the invite shows the same lists to everyone)
+      bring: listOf(ev.bring).filter((x) => !/^yourself$/i.test(x)), included: listOf(ev.included), city: clean(String(ev.city || "").split(",")[0], 60) };
   }
   /** Who is looking at one event: its host (their own workspace), or a guest by the proof this browser holds, or by their account's email. */
   function viewerOf(id, { rid = "", code = "", email = "", ws: myWs = "" } = {}) {

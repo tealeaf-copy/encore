@@ -66,7 +66,7 @@ textarea.ip-in{min-height:120px;padding:10px 12px;resize:vertical}
 
 /* the status board */
 .ip-board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
-.ip-col{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--pl-surface);border:1px solid var(--pl-line);text-align:left;cursor:pointer;color:inherit;font:inherit}
+.ip-col{display:grid;gap:2px;padding:10px 12px;border-radius:6px;background:var(--pl-surface);border:1px solid var(--pl-line);text-align:left;cursor:pointer;color:inherit;font:inherit}
 .ip-col[aria-pressed="true"]{border-color:var(--pl-ink);box-shadow:inset 0 0 0 1px var(--pl-ink)}
 .ip-col span{font-size:13px;color:var(--pl-soft)}.ip-col b{font:400 28px/1 var(--sys-display)}
 .ip-note{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--pl-r-lg,16px);background:var(--pl-accent-soft);margin:0 0 12px}
@@ -86,8 +86,12 @@ textarea.ip-in{min-height:120px;padding:10px 12px;resize:vertical}
 
 /* check-in */
 .ip-door .ip-row{min-height:64px}
-.ip-here{min-width:88px;min-height:44px;border-radius:999px;border:1px solid var(--pl-line-strong);background:var(--pl-surface);font:600 14px var(--sys-title);cursor:pointer;color:var(--pl-ink)}
-.ip-here[aria-pressed="true"]{background:var(--pl-success);border-color:var(--pl-success);color:#fff}
+.ip-here{--fx-rot:0deg;min-width:88px;min-height:44px;border-radius:6px;border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);font:600 14px var(--sys-title);cursor:pointer;color:var(--pl-ink);touch-action:manipulation}
+.ip-here[aria-pressed="true"]{--fx-rot:-3deg;transform:rotate(-3deg);border-color:var(--pl-success);color:var(--pl-success);font:500 13px var(--pl-font-mono);text-transform:uppercase;letter-spacing:.1em}
+.ip-arrive{height:8px;margin:10px 0 4px;border:1px solid var(--pl-line-strong);border-radius:2px;background:var(--pl-raised);overflow:hidden}.ip-arrive i{display:block;height:100%;background:var(--pl-success);transition:width .35s cubic-bezier(.2,.7,.2,1)}
+.ip-potto{display:flex;gap:10px;align-items:center;margin:10px 0 0;font:500 15px/1.4 var(--pl-font-text)}.ip-potto svg{flex:none}
+.ip-col.ip-bump b{text-decoration:underline;text-decoration-color:var(--pl-accent);text-decoration-thickness:2px;text-underline-offset:5px}
+@media (prefers-reduced-motion:reduce){.ip-arrive i{transition:none}}
 
 /* seats setup */
 .ip-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px}

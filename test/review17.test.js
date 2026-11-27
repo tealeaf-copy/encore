@@ -70,6 +70,37 @@ test("no small serif titles: teams-intel.css and timeline.css set the serif only
   }
 });
 
+test("round 5, the plan page reads like a travel notebook: day dividers, time words, up next, a drawn map, what to bring", async () => {
+  const { itineraryDays } = await import("../server/plans.js");
+  const ev = { date: "2026-12-12", endDate: "2026-12-13", city: "New York", itinerary: [] }, items = [{ day: "2026-12-12", time: "19:30", kind: "meal", title: "Dinner" }, { day: "2026-12-13", time: "", kind: "free", title: "Lazy day" }];
+  const D = itineraryDays(ev, items); assert.equal(typeof D[0].items[0].at, "number", "a timed item knows when it starts, for Up next"); assert.equal(D[1].items[0].at, undefined, "an untimed one doesn't");
+  const srv = read("server/plans.js"); assert.match(srv, /bring: listOf\(ev\.bring\)\.filter\(\(x\) => !\/\^yourself\$\/i\.test\(x\)\), included: listOf\(ev\.included\)/);
+  const P = read("public/plan.html");
+  assert.match(P, /class="fn-dn" aria-hidden="true">\$\{String\(d\.n\)\.padStart\(2, "0"\)\}/, "a big day number on each divider");
+  assert.match(P, /if \(n === 0\) return p === "evening" \? "Tonight" : `This \$\{p\}`; if \(n === 1\) return `Tomorrow \$\{p\}`/, "Tonight, This morning, Tomorrow morning");
+  assert.match(P, /<span class="fn-next">Up next<\/span>/);
+  assert.match(P, /class="fn-where" href="\/map/, "a small drawn map of the area, linking to the full map");
+  assert.match(P, /A packing list to start from/); assert.match(P, /Ideas, not from \$\{esc\(P\.host\.first \|\| "the host"\)\}/, "a starter list says it isn't the host's");
+  assert.match(P, /ls\.set\("pl\.pack\." \+ P\.id/, "ticks stay on this phone");
+  assert.match(P, /summit: \{ label: "Summit run of show"/); assert.match(P, /trip: \{ label: "Weekend away"/);
+  assert.match(P, /I'll keep it in time order\./, "Potto's line is true: the server sorts the plan by day and time");
+  assert.match(srv, /out\.sort\(\(a, b\) => a\.day\.localeCompare\(b\.day\) \|\| \(a\.time \|\| "99"\)\.localeCompare\(b\.time \|\| "99"\)\)/);
+  assert.match(P, /class="pv-skel"/); assert.doesNotMatch(P, /—/);
+});
+
+test("round 5, the invite planner: kinder words, a board that counts up as replies arrive, a check-in that answers the tap", () => {
+  const J = read("public/invite-plan.js"), C = read("public/invite-plan.css");
+  assert.doesNotMatch(J, /Replied, never came/); assert.match(J, /p\.replies \? "First time"/);
+  assert.match(J, /fx\.fill\(qa\("\.ip-meter \.ip-bar i", el\), "ip\." \+ id\)/, "the meter fills once a visit");
+  assert.match(J, /fx\.tick\(b, now\[k\], 500\); if \(now\[k\] > was\)/, "a column that changed counts from what it was");
+  assert.match(J, /if \(document\.hidden \|\| !\["status", "after"\]\.includes\(s\.view\) \|\| s\.busy\) return;/, "looks for new replies only while you watch");
+  assert.match(J, /const h = paint\(on\); if \(on && fx\) \{ fx\.ink\(b\); fx\.haptic\("medium"\)/);
+  assert.match(J, /catch \(e\) \{ paint\(!on\);/, "a failed save puts it back");
+  assert.match(J, /Everyone's here\. I'll stop counting\./);
+  assert.match(C, /\.ip-here\[aria-pressed="true"\]\{--fx-rot:-3deg;transform:rotate\(-3deg\)/, "Here reads like a stamp");
+  assert.match(read("public/contacts.html"), /<script src="\/fx\.js"><\/script>/);
+});
+
 test("the app's Home settles once: late cards wait under the quick-start panel and show together, the hint draws with the composer", () => {
   const spa = read("index.html");
   assert.match(spa, /#view-programs\.pl-settling>#qsPanel~\*\{visibility:hidden\}/, "hidden but laid out, so their arrival moves nothing on screen");

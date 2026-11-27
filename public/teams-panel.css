@@ -159,3 +159,24 @@
 .tp2-pass{display:inline-block;font:500 12px/1.3 var(--pl-font-mono);text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;margin-left:8px;background:var(--pl-raised);color:var(--pl-ink)}
 .tp2-pass.yes{background:var(--pl-accent-soft);color:var(--pl-accent-text)}
 .tp2-pass.no{background:var(--pl-sand);color:var(--pl-ink)}
+/* round 3 (public/teams-panel3.js): the recovery hold and its clock, reconfirmations, the cancel path, matched lift */
+.tp3-hold{border:1.5px solid var(--pl-ink);border-radius:var(--tp-r);background:var(--pl-page);padding:14px 16px;margin:12px 0;min-width:0}
+.tp3-hold h3{font:600 20px/1.3 var(--pl-font-serif);margin:2px 0 4px}
+.tp3-hold .ti-k .bb-ic{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.tp3-clock{font:500 32px/1.1 var(--pl-font-mono);font-variant-numeric:tabular-nums;margin:8px 0 4px;color:var(--pl-ink)}
+.tp3-badge{display:inline-block;font:500 12px/1.3 var(--pl-font-mono);text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:var(--pl-sand);color:var(--pl-ink)}
+.tp3-badge.ok{background:var(--pl-accent-soft);color:var(--pl-accent-text)}
+.tp3-thr{display:flex;flex-wrap:wrap;gap:8px;align-items:end;margin:10px 0 0}
+.tp3-thr .bb-field{flex:1 1 220px;margin:0;min-width:0}
+.tp3-hours{max-width:220px}
+.tp3-cancel{border-top:var(--tp-rule);margin-top:18px;padding-top:14px}
+.tp3-cancel h3{font:600 18px/1.3 var(--pl-font-text);margin:0 0 4px}
+.tp3-recs{display:block;min-width:0}
+.tp3-recs>li{display:block;min-width:0;max-width:100%;padding:10px 0;border-bottom:var(--tp-rule)}
+.tp3-rec .tp-scroll{max-width:100%;overflow-x:auto}
+.tp3-rec p{margin:0 0 6px}
+.tp3-match li b{text-align:right;white-space:normal;min-width:0;font:600 15px/1.4 var(--pl-font-text)}
+.tp3-match li span{min-width:0}
+.tp3-ok{display:block;font:500 14px/1.4 var(--pl-font-text);color:var(--pl-soft)}
+.tp3-ok.no{color:var(--pl-ink);background:var(--pl-sand);display:inline-block;padding:0 6px;border-radius:4px}
+.tp2-money tr.tp3-tot td{font-weight:600;border-bottom:1.5px solid var(--pl-ink)}

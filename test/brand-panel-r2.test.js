@@ -46,7 +46,8 @@ test("1. replacements: same city, the group fits, open in the window, inside the
   assert.match(P.options.find((o) => o.handle === "b").differs[0], /Nothing major/); assert.equal(P.thin, false);
   const thin = pickReplacements([X("b")], base); assert.equal(thin.thin, true); assert.match(thin.line, /Only one comparable host/);
   assert.match(pickReplacements([], base).line, /No comparable host is open/);
-  const N = guestChangeNote({ company: "Fernwood Labs", oldName: "Supper club", newName: "Wine night", newHost: "Margo", date: day(3), from: "Maya" }); assert.match(N.subject, /^Change of plan, same evening/); assert.match(N.text, /^Change of plan, same evening\./); assert.ok(!/\u2014/.test(N.text));
+  const N = guestChangeNote({ company: "Fernwood Labs", oldName: "Supper club", newName: "Wine night", newHost: "Margo", oldDate: day(3), newDate: day(3), oldTime: "evening", newTime: "evening", from: "Maya" }); assert.match(N.subject, /^Change of plan, same evening/);
+  assert.doesNotMatch(guestChangeNote({ newName: "Wine night", date: day(3) }).text, /same evening/, "no original date known: no promise"); // round 3 assert.match(N.text, /^Change of plan, same evening\./); assert.ok(!/\u2014/.test(N.text));
   assert.equal(recoveryMoney({ payments: [{ state: "charged", cents: 30000 }] }, "credit").cents, 30000); assert.match(recoveryMoney({}, "refund").line, /Nothing was paid/);
   assert.equal(drillSummary([{ startedAt: 0, finishedAt: 90e3 }]).last, 1.5);
 });
@@ -268,7 +269,7 @@ test("19. design-partner auto-rebook: pre-signed, it triggers when the brief's r
 test("12. recommendations as lift against a comparison, with both denominators and each outcome's source", async () => {
   const cell = (format, events, respondents, useful, meetings = 0) => ({ format, events, people: respondents, respondents, useful, meetings, attended: respondents });
   const L = liftRecs([cell("roundtable", 14, 120, 60, 14), cell("standard", 9, 80, 20, 4), cell("class", 2, 20, 10)], { audience: "engineering leaders", city: "NYC" });
-  const u = L.items.find((x) => x.metric === "useful"); assert.equal(u.text, "For engineering leaders in NYC, roundtables: 2.0× the useful-connection rate of standard dinners (14 events vs 9 events)"); assert.equal(u.source, "Guest survey"); assert.equal(u.a.text, "60 of 120"); assert.equal(u.b.text, "20 of 80");
+  const u = L.items.find((x) => x.metric === "useful"); assert.equal(u.text, "For engineering leaders in NYC, roundtables: 2.0× the useful-connection rate of standard dinners, an observed difference (14 events vs 9 events)", "no match checks stored: an observed difference (round 3)"); assert.equal(u.source, "Guest survey"); assert.equal(u.a.text, "60 of 120"); assert.equal(u.b.text, "20 of 80");
   const m = L.items.find((x) => x.metric === "meetings"); assert.equal(m.source, "CRM record"); assert.match(m.text, /meetings per event/);
   assert.ok(!L.items.some((x) => x.format === "class"), "under the floor: 2 events");
   assert.equal(liftRecs([cell("roundtable", 14, 120, 60), cell("standard", 2, 80, 20)]).items.length, 0, "the comparison needs the floor too");

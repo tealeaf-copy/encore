@@ -55,29 +55,62 @@ const paidOf = (r) => (r.payments || []).filter((p) => p.state === "charged").re
 
 // ---------------------------------------------------------------------------------------------------------------
 // 1. Recovery: comparable replacements when a host cancels. Hard rules: the same city, the group fits, open within the
-// date window, inside the price band. Each option says what differs from the original. Thin results say so.
+// date window, inside the price band. Each option says what differs from the original: the date, the time, the format
+// and access, plainly. A change of date, time or access means guests reconfirm (server/brandpanel3.js).
 export const RECOVERY = { closeDays: 7, windowDays: 3, band: 0.3, max: 3 };
+export const TIME_WORDS = { evening: "in the evening", daytime: "during the day", any: "at a time to agree" };
+const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : "");
+/** "19:00" -> "7pm", "19:30" -> "7:30pm", "evening" -> "in the evening". */
+export function timeLabel(t = "") { const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(t || ""); if (m) { const h = +m[1], mm = +m[2]; return `${h % 12 || 12}${mm ? ":" + m[2] : ""}${h >= 12 ? "pm" : "am"}`; } return TIME_WORDS[t] || ""; }
+const ACCESS_WORDS = { "step-free": "step-free entry", "accessible restroom": "an accessible restroom", "seating for everyone": "seating for everyone", "quiet space": "a quiet space", "ASL on request": "ASL on request" };
+const VENUE_WORDS = { host: "at the host's space", brand: "at your office or venue", venue: "at a venue the host books" };
+/** What changes for guests if they move to x on `date`: the date, the time, the format and access. base.time is the
+ * booking's own time ("19:00") or its package's ("evening"); a replacement in the same part of the day keeps it. */
+export function changesFor(base = {}, x = {}, date = x.date || "") {
+  const time = x.pkgTime && base.pkgTime && x.pkgTime !== base.pkgTime ? x.pkgTime : base.time || x.pkgTime || "";
+  const lost = (base.access || []).filter((a) => !(x.access || []).includes(a)), shared = (x.moods || []).filter((m) => (base.moods || []).includes(m)).length;
+  const format = [base.moods?.length && x.moods?.length && !shared ? `${x.name || "the new booking"} is a different kind of experience` : "", base.venue && x.venue && base.venue !== x.venue ? `it's ${VENUE_WORDS[x.venue]}, not ${VENUE_WORDS[base.venue]}` : ""].filter(Boolean).join("; ");
+  const C = { date: !!date && date !== base.date, time: (time || "") !== (base.time || ""), newDate: date, newTime: time, oldDate: base.date || "", oldTime: base.time || "", access: lost.map((a) => `the new place doesn't list ${ACCESS_WORDS[a] || a}`), format };
+  return { ...C, rsvp: C.date || C.time || C.access.length > 0, sameEvening: !!C.oldDate && !C.date && !C.time };
+}
 export function pickReplacements(cands = [], base = {}, { windowDays = RECOVERY.windowDays, band = RECOVERY.band, max = RECOVERY.max } = {}) {
   const city = lc(base.city), pp = base.perPersonCents || 0, out = [];
   const near = (x) => (x.dateState === "open" ? base.date : x.altDate && Math.abs(daysBetween(base.date, x.altDate)) <= windowDays ? x.altDate : "");
   const fits = cands.filter((x) => x.handle !== base.handle && (!city || lc(x.city) === city) && base.headcount >= x.minGuests && base.headcount <= x.maxGuests && near(x) && (!pp || Math.abs(x.perPersonCents - pp) <= pp * band));
-  const scored = fits.map((x) => { const date = near(x), diff = x.totalCents - (base.totalCents || 0), differs = [];
+  const scored = fits.map((x) => { const date = near(x), diff = x.totalCents - (base.totalCents || 0), differs = [], ch = changesFor(base, x, date);
     if (date !== base.date) differs.push(`${short(date)} instead of ${short(base.date)}`);
+    if (ch.time) differs.push(`${cap(timeLabel(ch.newTime) || "A different time")} instead of ${timeLabel(ch.oldTime) || "the original time"}`);
     if (diff) differs.push(`${money0(Math.abs(diff))} ${diff > 0 ? "more" : "less"} in total`);
     if (base.area && x.area && lc(x.area) !== lc(base.area)) differs.push(`In ${x.area}, not ${base.area}`);
     const shared = (x.moods || []).filter((m) => (base.moods || []).includes(m)).length; if (base.moods?.length && !shared) differs.push("A different kind of experience");
+    if (base.venue && x.venue && base.venue !== x.venue) differs.push(cap(VENUE_WORDS[x.venue]));
+    for (const a of ch.access) differs.push(cap(a));
     if (x.maxGuests < (base.maxGuests || 0)) differs.push(`Room for ${x.maxGuests} at most`);
-    return { ...x, date, priceDiffCents: diff, differs: differs.length ? differs : ["Nothing major: same city, date, size and price band"], score: (date === base.date ? 50 : 20) + shared * 10 - Math.round(Math.abs(diff) / 2000) + Math.round((x.quality || 0) * 0.2) }; });
+    return { ...x, date, changes: ch, priceDiffCents: diff, differs: differs.length ? differs : ["Nothing major: same city, date, time, size and price band"], score: (date === base.date ? 50 : 20) - (ch.time ? 10 : 0) - ch.access.length * 8 + shared * 10 - Math.round(Math.abs(diff) / 2000) + Math.round((x.quality || 0) * 0.2) }; });
   scored.sort((a, b) => b.score - a.score || Math.abs(a.priceDiffCents) - Math.abs(b.priceDiffCents));
   const seen = new Set(); for (const x of scored) { if (seen.has(x.handle)) continue; seen.add(x.handle); out.push(x); if (out.length === max) break; }
   const thin = out.length < max;
-  return { options: out, thin, line: !out.length ? "No comparable host is open that week in this city. Your money comes back in full, and we'll tell you if one opens up." : thin ? `Only ${out.length === 1 ? "one comparable host is" : `${out.length} comparable hosts are`} open in that window. Choices are thin, so check what differs.` : "Three comparable hosts are open. Each one says what differs." };
+  return { options: out, thin, line: !out.length ? "No comparable host is open that week in this city. You can cancel the event below, and your money comes back in full." : thin ? `Only ${out.length === 1 ? "one comparable host is" : `${out.length} comparable hosts are`} open in that window. Choices are thin, so check what differs.` : "Three comparable hosts are open. Each one says what differs." };
 }
-/** The note to guests, drafted and ready to send. Plain, no blame, the same evening when we can. */
-export function guestChangeNote({ company = "", oldName = "", newName = "", newHost = "", date = "", sameDate = true, from = "" } = {}) {
-  const when = short(date);
-  return { subject: sameDate ? `Change of plan, same evening: ${newName}` : `Change of plan: ${newName} on ${when}`,
-    text: `${sameDate ? "Change of plan, same evening." : `Change of plan: we've moved to ${when}.`} ${oldName ? `${oldName} can't go ahead, so ` : ""}we're now at ${newName}${newHost ? ` with ${newHost}` : ""}${sameDate ? `, still on ${when}` : ""}. Your spot is kept, and nothing else changes for you.${from ? `\n\n${from}${company ? `, ${company}` : ""}` : company ? `\n\n${company}` : ""}` };
+/** The note to guests, drafted and ready to send. It says "same evening" only when the date and the time are both
+ * known and unchanged; otherwise it states the new date and time, any format change and any access change, plainly. */
+export function guestChangeNote({ company = "", oldName = "", newName = "", newHost = "", oldDate = "", newDate = "", date = "", oldTime = "", newTime = "", format = "", access = [], rsvpLink = "", from = "" } = {}) {
+  const nd = newDate || date, same = !!oldDate && oldDate === nd && (oldTime || "") === (newTime || ""), when = short(nd), at = timeLabel(newTime), L = [];
+  const atText = at ? (/^\d/.test(at) ? ` at ${at}` : ` ${at}`) : "";
+  L.push(`${same ? "Change of plan, same evening." : "Change of plan."} ${oldName ? `${oldName} can't go ahead, so ` : ""}${same ? `we're now at ${newName}${newHost ? ` with ${newHost}` : ""}, still on ${when}${atText}.` : `we've booked ${newName}${newHost ? ` with ${newHost}` : ""}.`}`);
+  if (!same) { const dateMoved = !oldDate || oldDate !== nd, timeMoved = (oldTime || "") !== (newTime || "");
+    L.push(`${dateMoved ? "New date" : "Date"}: ${when}${dateMoved && oldDate ? ` (was ${short(oldDate)})` : dateMoved ? "" : ", as before"}.`);
+    if (at || oldTime) L.push(`${timeMoved ? "New time" : "Time"}: ${cap(at || "to be confirmed")}${timeMoved && oldTime ? ` (was ${timeLabel(oldTime)})` : timeMoved ? "" : ", as before"}.`); }
+  if (format) L.push(`Format: ${format}.`);
+  for (const a of access || []) L.push(`Access: ${a}.`);
+  L.push(rsvpLink ? `Can you still come? Tell us here: ${rsvpLink}` : !same || (access || []).length ? "Can you still come? Reply to this email and tell us." : "Your spot is kept.");
+  const sign = from ? `${from}${company ? `, ${company}` : ""}` : company;
+  return { same, subject: same ? `Change of plan, same evening: ${newName}` : `Change of plan: ${newName}, ${when}${atText}`, text: L.join("\n") + (sign ? `\n\n${sign}` : "") };
+}
+/** The note when no replacement can save the event. */
+export function cancelNote({ company = "", name = "", date = "", from = "" } = {}) {
+  const sign = from ? `${from}${company ? `, ${company}` : ""}` : company;
+  return { subject: `Cancelled: ${name}${date ? `, ${short(date)}` : ""}`, text: `We're sorry: ${name}${date ? ` on ${short(date)}` : ""} is cancelled. The host can't go ahead, and we couldn't find a replacement that works. Nothing is owed by you, and there's nothing you need to do.\n\nWe'll be in touch when we plan the next one.${sign ? `\n\n${sign}` : ""}` };
 }
 /** Money when the host cancels: everything paid comes back, as a refund or (the brand's pick) as credit on the rebook. */
 export function recoveryMoney(r = {}, choice = "refund") {
@@ -287,20 +320,47 @@ export function evaluateRule(R, E) {
 export const TAKEAWAY_PROMPT = "What did you take away?";
 
 // ---------------------------------------------------------------------------------------------------------------
-// 12. Recommendations as lift against a comparison, with both denominators and each outcome's source.
+// 12. Recommendations against a comparison, with both denominators and each outcome's source. The word "lift" is kept
+// for matched comparisons only: both groups alike on invite mix, brand effort, spend per guest, city and goal, checked
+// on the locked rebooking rule's planned invite list before outcomes were known (server/brandpanel3.js stores the check
+// with the event). Anything else is an "Observed difference". The thresholds live here and nowhere else.
 export const SOURCES = { survey: "Guest survey", crm: "CRM record" };
-export function liftRecs(cells = [], { minPeople = K.people, minEvents = K.events, audience = "", city = "" } = {}) {
+export const MATCH = { sharePts: 20, relative: 0.2, sameCity: true, sameGoal: true,
+  fields: { brandShare: "Brand seats (vs host seats)", targetShare: "Guests at target accounts", effort: "Brand effort (invites sent)", spend: "Spend per guest", city: "City", goal: "Event goal" },
+  line: "Lift only where both groups match: brand and target-account shares within 20 points, invites sent and spend per guest within 20%, the same city and the same goal, checked before outcomes were known." };
+/** One group's profile from the match checks stored with its events. */
+export function groupProfile(profiles = [], events = profiles.length) {
+  const P = profiles.filter(Boolean), avg = (k) => (P.length ? P.reduce((a, p) => a + (+p[k] || 0), 0) / P.length : null);
+  return { n: P.length, of: events, brandShare: avg("brandShare"), targetShare: avg("targetShare"), effort: avg("effort"), spend: avg("spendPerGuestCents"), cities: [...new Set(P.map((p) => lc(p.city)).filter(Boolean))], goals: [...new Set(P.map((p) => p.goal).filter(Boolean))], cityName: P.find((p) => p.city)?.city || "" };
+}
+/** Are two groups similar enough to call a difference "lift"? Every field, side by side, with a pass or not. */
+export function matchCheck(a = {}, b = {}, M = MATCH) {
+  const pts = (x) => (x == null ? "None" : `${Math.round(x * 100)}%`), rel = (x, y) => x != null && y != null && (y === 0 ? x === 0 : Math.abs(x - y) <= M.relative * Math.abs(y));
+  const F = [
+    { k: "brandShare", a: pts(a.brandShare), b: pts(b.brandShare), ok: a.brandShare != null && b.brandShare != null && Math.abs(a.brandShare - b.brandShare) * 100 <= M.sharePts },
+    { k: "targetShare", a: pts(a.targetShare), b: pts(b.targetShare), ok: a.targetShare != null && b.targetShare != null && Math.abs(a.targetShare - b.targetShare) * 100 <= M.sharePts },
+    { k: "effort", a: a.effort == null ? "None" : `${Math.round(a.effort)} invites`, b: b.effort == null ? "None" : `${Math.round(b.effort)} invites`, ok: rel(a.effort, b.effort) },
+    { k: "spend", a: a.spend == null ? "None" : money0(a.spend), b: b.spend == null ? "None" : money0(b.spend), ok: rel(a.spend, b.spend) },
+    { k: "city", a: a.cities?.length === 1 ? a.cityName : a.cities?.length ? "Several" : "None", b: b.cities?.length === 1 ? b.cityName : b.cities?.length ? "Several" : "None", ok: !M.sameCity || (a.cities?.length === 1 && b.cities?.length === 1 && a.cities[0] === b.cities[0]) },
+    { k: "goal", a: a.goals?.length === 1 ? GOALS[a.goals[0]]?.label || a.goals[0] : a.goals?.length ? "Several" : "None", b: b.goals?.length === 1 ? GOALS[b.goals[0]]?.label || b.goals[0] : b.goals?.length ? "Several" : "None", ok: !M.sameGoal || (a.goals?.length === 1 && b.goals?.length === 1 && a.goals[0] === b.goals[0]) },
+  ].map((f) => ({ ...f, label: M.fields[f.k] }));
+  const covered = !!a.of && !!b.of && a.n === a.of && b.n === b.of, off = F.filter((f) => !f.ok);
+  const why = !covered ? `Not matched: ${(a.of || 0) - (a.n || 0) + (b.of || 0) - (b.n || 0)} of ${(a.of || 0) + (b.of || 0)} events have no match check from before the event.` : off.length ? `Not matched on ${off.map((f) => f.label.toLowerCase()).join(", ")}.` : "Matched on every field.";
+  return { matched: covered && !off.length, covered, fields: F, why, checked: { a: `${a.n || 0} of ${a.of || 0} events`, b: `${b.n || 0} of ${b.of || 0} events` } };
+}
+export function liftRecs(cells = [], { minPeople = K.people, minEvents = K.events, audience = "", city = "", M = MATCH } = {}) {
   const ok = (x) => x.events >= minEvents && x.people >= minPeople, out = [], std = cells.find((x) => x.format === "standard" && ok(x));
   for (const x of cells.filter((c) => c.format !== "standard" && ok(c))) {
-    const rest = std || cells.filter((c) => c !== x && c.format !== x.format).reduce((a, c) => ({ format: "other", label: "other formats", events: a.events + c.events, people: a.people + c.people, respondents: a.respondents + c.respondents, useful: a.useful + c.useful, meetings: a.meetings + c.meetings, attended: a.attended + c.attended }), { events: 0, people: 0, respondents: 0, useful: 0, meetings: 0, attended: 0 });
+    const rest = std || cells.filter((c) => c !== x && c.format !== x.format).reduce((a, c) => ({ format: "other", label: "other formats", events: a.events + c.events, people: a.people + c.people, respondents: a.respondents + c.respondents, useful: a.useful + c.useful, meetings: a.meetings + c.meetings, attended: a.attended + c.attended, profiles: [...a.profiles, ...(c.profiles || [])] }), { events: 0, people: 0, respondents: 0, useful: 0, meetings: 0, attended: 0, profiles: [] });
     if (!ok(rest)) continue; const label = std ? "standard dinners" : "other formats", who = `For ${audience || "guests"}${city ? ` in ${city}` : ""}, ${(TOGETHER[x.format]?.label || x.format).replace(/^an? /i, "").toLowerCase()}`;
-    const rates = [];
-    if (x.respondents >= minPeople && rest.respondents >= minPeople) { const a = x.useful / x.respondents, b = rest.useful / rest.respondents; if (b > 0) rates.push({ metric: "useful", source: SOURCES.survey, lift: Math.round((a / b) * 10) / 10, a: ofN(x.useful, x.respondents), b: ofN(rest.useful, rest.respondents), what: "useful-connection rate" }); }
-    if (x.attended >= minPeople && rest.attended >= minPeople && rest.meetings > 0) { const a = x.meetings / x.events, b = rest.meetings / rest.events; rates.push({ metric: "meetings", source: SOURCES.crm, lift: Math.round((a / b) * 10) / 10, a: { n: x.meetings, of: x.events, text: `${x.meetings} meetings over ${x.events} events` }, b: { n: rest.meetings, of: rest.events, text: `${rest.meetings} meetings over ${rest.events} events` }, what: "meetings per event" }); }
-    for (const R of rates) out.push({ format: x.format, against: label, ...R, events: x.events, againstEvents: rest.events, text: `${who}: ${R.lift.toFixed(1)}× the ${R.what} of ${label} (${x.events} events vs ${rest.events} events)`, sourceLine: `Source: ${R.source}` });
+    const match = matchCheck(groupProfile(x.profiles || [], x.events), groupProfile(rest.profiles || [], rest.events), M), rates = [];
+    if (x.respondents >= minPeople && rest.respondents >= minPeople) { const a = x.useful / x.respondents, b = rest.useful / rest.respondents; if (b > 0) rates.push({ metric: "useful", source: SOURCES.survey, ratio: Math.round((a / b) * 10) / 10, a: ofN(x.useful, x.respondents), b: ofN(rest.useful, rest.respondents), what: "useful-connection rate" }); }
+    if (x.attended >= minPeople && rest.attended >= minPeople && rest.meetings > 0) { const a = x.meetings / x.events, b = rest.meetings / rest.events; rates.push({ metric: "meetings", source: SOURCES.crm, ratio: Math.round((a / b) * 10) / 10, a: { n: x.meetings, of: x.events, text: `${x.meetings} meetings over ${x.events} events` }, b: { n: rest.meetings, of: rest.events, text: `${rest.meetings} meetings over ${rest.events} events` }, what: "meetings per event" }); }
+    for (const R of rates) out.push({ format: x.format, against: label, ...R, matched: match.matched, label: match.matched ? "Lift" : "Observed difference", lift: match.matched ? R.ratio : null, match, events: x.events, againstEvents: rest.events,
+      text: match.matched ? `${who}: ${R.ratio.toFixed(1)}× lift in the ${R.what} over ${label} (${x.events} events vs ${rest.events} events)` : `${who}: ${R.ratio.toFixed(1)}× the ${R.what} of ${label}, an observed difference (${x.events} events vs ${rest.events} events)`, sourceLine: `Source: ${R.source}` });
   }
-  out.sort((a, b) => b.lift - a.lift);
-  return { items: out, floor: { people: minPeople, events: minEvents }, note: out.length ? "Each line compares one format with a baseline, with both sample sizes. Lift under 1.0 means fewer than the baseline." : `Shown once a format and its comparison each have ${minPeople}+ people across ${minEvents}+ events.` };
+  out.sort((a, b) => Number(b.matched) - Number(a.matched) || b.ratio - a.ratio);
+  return { items: out, floor: { people: minPeople, events: minEvents }, rule: M.line, note: out.length ? `Each line compares one format with a baseline, with both sample sizes and the match fields. ${M.line} Everything else is an observed difference.` : `Shown once a format and its comparison each have ${minPeople}+ people across ${minEvents}+ events.` };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -361,7 +421,9 @@ export function crossoverShare(list = [], { since = 0 } = {}) { const L = list.f
 export const BARS = { customer90: 40, team365: 50, teamLeading60: 30, community60: 25, secondSeats: 20, differentHost: 30, multiHost90: 15, firstCohort120: 60 };
 const bar = (key, label, n, of, b, note = "") => { const v = of ? pct(n, of) : null; return { key, label, bar: b, n, of, value: v, pass: of ? v >= b : null, text: `${n} of ${of}`, note }; };
 /** reqs: every team booking; evOf(id): its bpev doc; attendance: [{ email, hostWs, date, goal? , reqId? }]; signals: { [brandWs]: [{ what, at }] }. */
-export function durability(reqs = [], { evOf = () => null, attendance = [], signals = {}, offPlatform = {}, designPartners = new Set(), today = isoDay() } = {}) {
+/** followups: { "brandWs|hostWs": { brand: n | null, host: n | null } }, each side's answer to "Did you book each other
+ * again outside Pottery Lab?" (server/brandpanel3.js). asks: { asked, answered } across both sides. */
+export function durability(reqs = [], { evOf = () => null, attendance = [], signals = {}, offPlatform = {}, followups = {}, asks = null, designPartners = new Set(), today = isoDay() } = {}) {
   const live = reqs.filter((r) => LIVE.includes(statusOf(r, today)) || (statusOf(r, today) === "cancelled" && paidOf(r) > (r.refund?.cents || 0))).map((r) => ({ ...r, d: r.date || isoDay(r.createdAt), goal: evOf(r.id)?.brief?.goal || "" })).sort((a, b) => a.d.localeCompare(b.d));
   const byBrand = new Map(); for (const r of live) (byBrand.get(r.brandWs) || byBrand.set(r.brandWs, []).get(r.brandWs)).push(r);
   const groups = { all: [], partners: [] }; for (const [ws, L] of byBrand) (designPartners.has(ws) ? groups.partners : groups.all).push([ws, L]);
@@ -374,7 +436,11 @@ export function durability(reqs = [], { evOf = () => null, attendance = [], sign
   const cohorts = new Map(); for (const [ws, L] of byBrand) { const m = L[0].d.slice(0, 7), C = cohorts.get(m) || { cohort: m, brands: 0, rebooked90: 0, partners: 0 }; C.brands++; if (designPartners.has(ws)) C.partners++; if (L.some((r) => r !== L[0] && daysBetween(L[0].d, r.d) <= 90)) C.rebooked90++; cohorts.set(m, C); }
   // pairs: on-platform rate, second-booking seats from first-event guests
   const pairs = new Map(); for (const r of live) { const k = r.brandWs + "|" + r.hostWs; (pairs.get(k) || pairs.set(k, []).get(k)).push(r); }
-  const repeatPairs = [...pairs.values()].filter((L) => L.length > 1), on = repeatPairs.reduce((a, L) => a + L.length - 1, 0), hostsInPairs = new Set(repeatPairs.map((L) => L[0].hostWs)), off = [...hostsInPairs].reduce((a, ws) => a + (offPlatform[ws] || 0), 0);
+  const repeatPairs = [...pairs.values()].filter((L) => L.length > 1), on = repeatPairs.reduce((a, L) => a + L.length - 1, 0), hostsInPairs = new Set(repeatPairs.map((L) => L[0].hostWs));
+  // the denominator counts direct repeat bookings: each pair's follow-up answers (the larger of the two sides, so a
+  // booking both sides report counts once), and a host's own self-report only where neither side has answered
+  const answered = new Set(), direct = Object.entries(followups).reduce((a, [k, f]) => { if (f?.brand == null && f?.host == null) return a; answered.add(k.split("|")[1]); return a + Math.max(+f.brand || 0, +f.host || 0); }, 0);
+  const selfReported = [...new Set([...hostsInPairs, ...Object.keys(offPlatform)])].filter((ws) => !answered.has(ws) && hostsInPairs.has(ws)).reduce((a, ws) => a + (offPlatform[ws] || 0), 0), off = direct + selfReported;
   const seatsOf = (r) => { const ev = evOf(r.id) || {}; return (ev.attendedEmails || []).map(lc); };
   let s2 = 0, s2of = 0; for (const L of repeatPairs) { const firstSet = new Set(seatsOf(L[0])); const S = seatsOf(L[1]); s2of += S.length; s2 += S.filter((e) => firstSet.has(e)).length; }
   const rebookers = [...byBrand.values()].filter((L) => L.length > 1), diff = rebookers.filter((L) => L.slice(1).some((r) => r.hostWs !== L[0].hostWs)).length;
@@ -386,7 +452,8 @@ export function durability(reqs = [], { evOf = () => null, attendance = [], sign
   const firstM = [...byHost.values()].map((L) => L[0].d.slice(0, 7)).sort()[0] || "", fc = [...byHost.values()].filter((L) => L[0].d.slice(0, 7) === firstM), fcN = fc.filter((L) => L.slice(1).some((r) => daysBetween(L[0].d, r.d) <= 120)).length;
   return { occasions: [...occasions(groups.all), community()], partners: occasions(groups.partners), partnerBrands: groups.partners.length,
     cohorts: [...cohorts.values()].sort((a, b) => a.cohort.localeCompare(b.cohort)).map((c) => ({ ...c, rebooked90Pct: pct(c.rebooked90, c.brands) })),
-    more: [bar("onPlatform", "Repeat brand-host pairs: bookings kept on Pottery Lab", on, on + off, 80, off ? `Includes ${off} off-platform bookings hosts told us about` : "Hosts can tell us about bookings made off the platform"),
+    onPlatform: { on, direct, selfReported, of: on + off, value: on + off ? pct(on, on + off) : null, response: asks ? { n: asks.answered, of: asks.asked, pct: pct(asks.answered, asks.asked), text: `${asks.answered} of ${asks.asked}` } : null },
+    more: [bar("onPlatform", "Repeat brand-host bookings kept on Pottery Lab (direct repeat bookings included)", on, on + off, 80, off ? `Includes ${plural(direct, "direct repeat booking")} from the follow-up${selfReported ? ` and ${selfReported} a host reported` : ""}` : "The follow-up asks both sides about bookings made outside Pottery Lab"),
       bar("secondSeats", "Second-booking seats filled by first-event guests", s2, s2of, BARS.secondSeats), bar("differentHost", "Rebooking brands that tried a different host", diff, rebookers.length, BARS.differentHost),
       bar("multiHost90", "Guests at 2+ different hosts within 90 days", multi, byGuest.size, BARS.multiHost90), bar("firstCohort120", `First host cohort (${firstM || "none yet"}): a second paid brand booking within 120 days`, fcN, fc.length, BARS.firstCohort120)] };
 }
@@ -444,37 +511,33 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
   // ---- 1. recovery ----
   X.onBbCancel = (r, side) => { if (side !== "host" || !r.date || r.date < isoDay()) return; const ev = P.evOf(r), days = daysBetween(isoDay(), r.date), to = lc(ev.owner?.email || r.brandEmail);
     ev.recovery = { at: Date.now(), close: days <= RECOVERY.closeDays, daysBefore: days, owner: to, state: "open", money: recoveryMoney(r, "refund") }; P.note(ev, "host", "cancelled. Recovery started"); P.evSet(ev);
-    BB().tell(to, `${P.hostName(r)} cancelled ${r.pkgName}${days <= RECOVERY.closeDays ? `, ${days === 0 ? "today" : `${plural(days, "day")} out`}` : ""}. We've found comparable hosts. Rebook in one tap.`, `/teams/bookings/${r.id}#recovery`); };
+    BB().tell(to, `${P.hostName(r)} cancelled ${r.pkgName}${days <= RECOVERY.closeDays ? `, ${days === 0 ? "today" : `${plural(days, "day")} out`}` : ""}. We've found comparable hosts. Hold one while your guests reconfirm.`, `/teams/bookings/${r.id}#recovery`); };
   function candidatesFor(r, { headcount = r.headcount, date = r.date, brandWs = r.brandWs } = {}) {
     const out = [], today = isoDay(); for (const x of BB().allSetups()) { if (x.ws === r.hostWs || x.ws === brandWs) continue; if (BB().example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; const A = approxArea(x.s.area, x.s.city || x.h.city), st = BB().statsOf(x.ws);
       for (const p of x.s.packages.filter((p) => p.on && !p.remote)) { const taken = BB().takenFor(x.ws, p.id), months = [...new Set([addDays(date, -RECOVERY.windowDays).slice(0, 7), date.slice(0, 7), addDays(date, RECOVERY.windowDays).slice(0, 7)])], days = months.flatMap((m) => availabilityFor(p, m, { taken, today }).days);
         const dateState = days.find((d) => d.date === date)?.state || "closed", alt = dateState === "open" ? "" : days.filter((d) => d.state === "open").sort((a, b) => Math.abs(daysBetween(date, a.date)) - Math.abs(daysBetween(date, b.date)))[0]?.date || "";
         const pr = priceFor(p, headcount, { feeBps: X.feeBpsFor(brandWs, x.ws) ?? FEE_BPS() });
-        out.push({ handle: x.h.handle, pkg: p.id, name: p.name, host: x.h.name || x.h.handle, city: A.city || x.s.city || "", area: A.area, minGuests: p.minGuests, maxGuests: p.maxGuests, perPersonCents: pr.effectivePerPersonCents, totalCents: pr.totalCents, dateState, altDate: alt, moods: p.moods || [], quality: st.quality, trusted: st.trusted, summary: pr.summary }); } }
+        out.push({ handle: x.h.handle, ws: x.ws, pkg: p.id, name: p.name, host: x.h.name || x.h.handle, city: A.city || x.s.city || "", area: A.area, minGuests: p.minGuests, maxGuests: p.maxGuests, perPersonCents: pr.effectivePerPersonCents, totalCents: pr.totalCents, depositCents: pr.depositCents, dateState, altDate: alt, moods: p.moods || [], pkgTime: p.time || "evening", access: p.access || [], venue: p.venue || "host", quality: st.quality, trusted: st.trusted, summary: pr.summary }); } }
     return out; }
+  /** The original booking, as the replacements are compared with it: city, date, time, access, format and price. */
+  function recoveryBase(r) { const F = BB().findPkg(r.handle, r.pkgId), A = F ? approxArea(F.s.area, F.s.city || F.h.city) : { city: "", area: "" }, pp = r.headcount ? Math.round((r.price?.totalCents || 0) / r.headcount) : 0;
+    return { handle: r.handle, city: A.city || F?.s?.city || "", area: A.area, date: r.date, headcount: r.headcount, perPersonCents: pp, totalCents: r.price?.totalCents || 0, depositCents: r.deposit?.cents || r.price?.depositCents || 0, moods: F?.p?.moods || [], maxGuests: F?.p?.maxGuests || 0,
+      pkgTime: F?.p?.time || "evening", time: r.time || F?.p?.time || "evening", access: [...new Set([...(F?.p?.access || []), ...(r.access || [])])], venue: F?.p?.venue || "host" }; }
+  const fromOf = (r, ev) => { const c = P.campOf(r); return c?.inviteFrom?.[r.id]?.name || c?.inviteFrom?.all?.name || ev.owner?.name || ""; };
+  const noteFor = (r, ev, x, rsvpLink = "") => { if (!x) return null; const ch = x?.changes || {}; return guestChangeNote({ company: r.company, oldName: r.pkgName, newName: x?.name || "a new host", newHost: x?.host || "", oldDate: r.date, newDate: x?.date || r.date, oldTime: ch.oldTime || "", newTime: ch.newTime || "", format: ch.format || "", access: ch.access || [], rsvpLink, from: fromOf(r, ev) }); };
   function recoveryView(r, ev, { drill = false } = {}) {
-    const F = BB().findPkg(r.handle, r.pkgId), A = F ? approxArea(F.s.area, F.s.city || F.h.city) : { city: "", area: "" }, pp = r.headcount ? Math.round((r.price?.totalCents || 0) / r.headcount) : 0;
-    const base = { handle: r.handle, city: A.city || F?.s?.city || "", area: A.area, date: r.date, headcount: r.headcount, perPersonCents: pp, totalCents: r.price?.totalCents || 0, moods: F?.p?.moods || [], maxGuests: F?.p?.maxGuests || 0 };
-    const pick = pickReplacements(candidatesFor(r), base), c = P.campOf(r), G = c ? (c.guests || []).filter((g) => g.event === r.id && ["yes", "invited"].includes(g.status)) : [], from = c?.inviteFrom?.[r.id]?.name || c?.inviteFrom?.all?.name || ev.owner?.name || "";
-    const top = pick.options[0];
-    return { drill, base: { name: r.pkgName, host: P.hostName(r), date: r.date, headcount: r.headcount, totalCents: base.totalCents, city: base.city }, ...pick, options: pick.options.map((x) => ({ handle: x.handle, pkg: x.pkg, name: x.name, host: x.host, area: x.area, date: x.date, totalCents: x.totalCents, priceDiffCents: x.priceDiffCents, differs: x.differs, trusted: x.trusted, summary: x.summary,
-        priceLine: x.priceDiffCents ? `${money(Math.abs(x.priceDiffCents))} ${x.priceDiffCents > 0 ? "more" : "less"} than before (${money0(x.totalCents)} vs ${money0(base.totalCents)})` : `The same total, ${money0(x.totalCents)}` })),
-      note: guestChangeNote({ company: r.company, oldName: r.pkgName, newName: top?.name || "a new host", newHost: top?.host || "", date: top?.date || r.date, sameDate: !top || top.date === r.date, from }), guests: G.length,
-      money: drill ? recoveryMoney({ payments: r.payments, refund: { cents: paidOf(r) } }, ev.drill?.money || "refund") : ev.recovery?.money || recoveryMoney(r), state: drill ? "drill" : ev.recovery?.state || "none", minutes: ev.recovery?.minutes ?? null, close: !!ev.recovery?.close, drills: drillSummary(ev.drills || []) }; }
+    const base = recoveryBase(r), pick = pickReplacements(candidatesFor(r), base), c = P.campOf(r), G = c ? (c.guests || []).filter((g) => g.event === r.id && ["yes", "invited"].includes(g.status)) : [];
+    const options = pick.options.map((x) => ({ handle: x.handle, ws: x.ws, pkg: x.pkg, name: x.name, host: x.host, area: x.area, date: x.date, totalCents: x.totalCents, depositCents: x.depositCents, priceDiffCents: x.priceDiffCents, differs: x.differs, changes: x.changes, trusted: x.trusted, summary: x.summary,
+        priceLine: x.priceDiffCents ? `${money(Math.abs(x.priceDiffCents))} ${x.priceDiffCents > 0 ? "more" : "less"} than before (${money0(x.totalCents)} vs ${money0(base.totalCents)})` : `The same total, ${money0(x.totalCents)}` }));
+    const V = { drill, base: { name: r.pkgName, host: P.hostName(r), date: r.date, time: base.time, timeLabel: timeLabel(base.time), headcount: r.headcount, totalCents: base.totalCents, depositCents: base.depositCents, city: base.city }, ...pick, options,
+      note: noteFor(r, ev, options[0]), cancelNote: cancelNote({ company: r.company, name: r.pkgName, date: r.date, from: fromOf(r, ev) }), guests: G.length,
+      money: drill ? recoveryMoney({ payments: r.payments, refund: { cents: paidOf(r) } }, ev.drill?.money || "refund") : ev.recovery?.money || recoveryMoney(r), state: drill ? "drill" : ev.recovery?.state || "none", minutes: ev.recovery?.minutes ?? null, close: !!ev.recovery?.close, drills: drillSummary(ev.drills || []) };
+    return drill || !X.recoveryMore ? V : X.recoveryMore(r, ev, V); }
+  X.recovery = { candidatesFor, recoveryBase, recoveryView, noteFor, fromOf, mail };
   app.get("/api/teams/events/:id/recovery", (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (!E.ev.recovery) return bad(res, "Nothing to recover: the host hasn't cancelled.", 409, "conflict"); send(res, recoveryView(E.r, E.ev)); });
   app.post("/api/teams/events/:id/recovery/money", small, (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (!E.ev.recovery) return bad(res, "Nothing to recover.", 409, "conflict");
     E.ev.recovery.money = recoveryMoney(E.r, req.body?.choice); P.note(E.ev, "brand", E.ev.recovery.money.choice === "credit" ? "kept the money as credit" : "took the refund"); P.evSet(E.ev); send(res, recoveryView(E.r, E.ev)); });
-  app.post("/api/teams/events/:id/recovery/rebook", small, (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (!E.ev.recovery || E.ev.recovery.state === "rebooked") return bad(res, E.ev.recovery ? "Already rebooked." : "Nothing to recover.", 409, "conflict");
-    const V = recoveryView(E.r, E.ev), x = V.options.find((o) => o.handle === req.body?.handle && o.pkg === req.body?.pkg) || null; if (!x) return bad(res, "Pick one of the hosts shown.");
-    const out = BB().createRequest(E.u, { handle: x.handle, pkg: x.pkg, headcount: E.r.headcount, date: x.date, company: E.r.company, recoveryOf: E.r.id, via: "again", single: !E.r.campaignId, ...(E.r.campaignId ? { campaign: E.r.campaignId } : {}) });
-    if (out.error) return bad(res, out.error, out.status, out.code); send(res, { ok: true, id: out.r.id, url: `/teams/bookings/${out.r.id}`, minutes: P.evGet(E.r.id)?.recovery?.minutes ?? null, priceLine: x.priceLine }); });
-  app.post("/api/teams/events/:id/recovery/message", small, async (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (!E.ev.recovery) return bad(res, "Nothing to recover.", 409, "conflict");
-    const c = P.campOf(E.r), nr = E.ev.recovery.rebookId ? BB().reqGet(E.ev.recovery.rebookId) : null, G = c ? (c.guests || []).filter((g) => g.event === E.r.id && ["yes", "invited"].includes(g.status) && g.email) : [];
-    const N = guestChangeNote({ company: E.r.company, oldName: E.r.pkgName, newName: nr?.pkgName || "a new host", newHost: nr ? P.hostName(nr) : "", date: nr?.date || E.r.date, sameDate: !nr || nr.date === E.r.date, from: c?.inviteFrom?.all?.name || E.ev.owner?.name || "" });
-    const subject = clean(req.body?.subject, 140) || N.subject, text = String(req.body?.text || N.text).slice(0, 2000); let sent = 0;
-    for (const g of G) if (await mail(E.r.brandWs, g.email, subject, `Hi ${first(g.name) || "there"},\n\n${text}`, E.r.company)) sent++;
-    if (nr && c) { for (const g of c.guests || []) if (g.event === E.r.id) g.event = nr.id; if (!(c.bookings || []).includes(nr.id)) c.bookings = [...(c.bookings || []), nr.id]; P.cSet(c); }
-    E.ev.recovery.messagedAt = Date.now(); P.note(E.ev, "brand", `told ${plural(G.length, "guest")} about the change`); P.evSet(E.ev); send(res, { ok: true, guests: G.length, emailed: sent }); });
+  // the hold on a replacement, the fresh RSVP, the commit, the guest note and "Cancel the event": server/brandpanel3.js
   // the drill: pilot mode only, nothing is cancelled, booked or sent
   const pilotOn = (r) => !!P.campOf(r)?.pilot?.on;
   app.post("/api/teams/events/:id/drill", small, (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (!pilotOn(E.r)) return bad(res, "Turn on pilot mode on the campaign to run the drill.", 409, "no_pilot"); if (!E.r.date) return bad(res, "Pick a date first.", 409, "no_date");
@@ -530,8 +593,8 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
     const F = BB().findPkg(r.handle, r.pkgId), c = P.campOf(r), O = c ? P.outcomesFor(c) : null, E1 = O?.events.find((e) => e.id === r.id) || null, G = c ? (c.guests || []).filter((g) => g.event === r.id) : [];
     const tier = tierOf({ events: 1, cities: 1, headcount: r.headcount }), hours = (ev.prep?.logged || []).reduce((a, x) => a + x.hours, 0);
     const prefAll = c ? prefAggregate((c.guests || []).filter((g) => g.prefs)) : prefAggregate([]);
-    maybeAutoRebook(r, ev, E1);
-    return { status: statusOf(r), pricing: pricingView(r, F, ev), fee: feeView(r), credit: r.credit || null, recovery: ev.recovery ? { state: ev.recovery.state, close: ev.recovery.close, minutes: ev.recovery.minutes ?? null, money: ev.recovery.money } : null, pilot: pilotOn(r), drills: drillSummary(ev.drills || []),
+    maybeAutoRebook(r, ev, E1); X.matchSnap?.(r, ev); X.offAskFor?.(r, ev);
+    return { matchCheck: ev.matchCheck || null, offAsk: X.offAskView?.(ev, "brand") || null, status: statusOf(r), pricing: pricingView(r, F, ev), fee: feeView(r), credit: r.credit || null, recovery: ev.recovery ? { state: ev.recovery.state, close: ev.recovery.close, minutes: ev.recovery.minutes ?? null, money: ev.recovery.money } : null, pilot: pilotOn(r), drills: drillSummary(ev.drills || []),
       rule: ev.rule || null, ruleLine: ruleLine(ev.rule), ruleLocked: invitesOut(r), ruleResult: evaluateRule(ev.rule, E1), metrics: RULE_METRICS,
       format: ev.format ? { ...ev.format, def: formatOf(ev.format.id) } : null, room: ev.brief?.room || ROOM_DEFAULTS, roomLines: roomLines(ev.brief?.room), kept: G.filter((g) => competitorOf(ev.brief, g)).length,
       nextTime: ev.nextTime || null, nextAgreed: nextTimeAgreed(ev.nextTime), lastTime: ev.lastTime || null, again: ev.again ? { held: ev.again.held.length, pairs: ev.again.pairs, followers: ev.again.followers, firsts: ev.again.held.map((h) => h.first).filter(Boolean).slice(0, 12) } : null,
@@ -541,7 +604,7 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
 
   // ---- 10. the rebooking rule, set before invites go out ----
   app.post("/api/teams/events/:id/rule", small, (req, res) => { const E = P.brandEvent(req, res); if (!E) return; if (invitesOut(E.r)) return bad(res, E.ev.rule ? "Invites have gone out, so the rebooking rule is fixed for this event." : "Invites have gone out. Set the rule before inviting next time.", 409, "locked");
-    const R = cleanRule(req.body || {}); if (R.error) return bad(res, R.error); E.ev.rule = R.rule; P.note(E.ev, "brand", "set the rebooking rule"); P.evSet(E.ev); send(res, { rule: E.ev.rule, line: ruleLine(E.ev.rule) }); });
+    const R = cleanRule(req.body || {}); if (R.error) return bad(res, R.error); E.ev.rule = R.rule; P.note(E.ev, "brand", "set the rebooking rule"); X.matchSnap?.(E.r, E.ev); P.evSet(E.ev); send(res, { rule: E.ev.rule, line: ruleLine(E.ev.rule) }); });
   // ---- 19. design-partner auto-rebook: pre-signed, it triggers when the rule is met ----
   app.post("/api/teams/events/:id/auto-rebook", small, (req, res) => { const E = P.brandEvent(req, res); if (!E) return; const b = req.body || {};
     if (b.off) { delete E.ev.autoRebook; P.evSet(E.ev); return send(res, { autoRebook: null }); } if (!E.ev.rule) return bad(res, "Set the rebooking rule first. The second booking triggers when it's met.", 409, "no_rule");
@@ -576,7 +639,8 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
   // ---- the host's extras: pricing and prep, feedback first, groups, the mix, the format, held seats ----
   app.get("/api/bb/host/events/:id/more", (req, res) => { const E = P.hostEvent(req, res); if (!E) return; const r = E.r, ev = E.ev, c = P.campOf(r), F = BB().findPkg(r.handle, r.pkgId), G = c ? (c.guests || []).filter((g) => g.event === r.id && ["yes", "invited"].includes(g.status)) : [];
     let fb = null; if (isPast(r)) { fb = feedbackFor(ev, "host"); if (fb.comments.length && !ev.feedback?.hostSeenAt) { ev.feedback = { ...(ev.feedback || {}), hostSeenAt: Date.now() }; P.evSet(ev); } }
-    send(res, { pricing: pricingView(r, F, ev), prep: ev.prep || null, fee: feeView(r), feedback: fb, groups: groupsFor(G), question: PREF_QUESTION, mix: c ? { proposed: mixFor(c, r.id), approval: ev.mixApproval || null, abm: !!c.abm?.accounts?.length } : null,
+    if (X.offAskFor?.(r, ev)) P.evSet(ev);
+    send(res, { offAsk: X.offAskView?.(ev, "host") || null, pricing: pricingView(r, F, ev), prep: ev.prep || null, fee: feeView(r), feedback: fb, groups: groupsFor(G), question: PREF_QUESTION, mix: c ? { proposed: mixFor(c, r.id), approval: ev.mixApproval || null, abm: !!c.abm?.accounts?.length } : null,
       format: ev.format ? { ...ev.format, def: formatOf(ev.format.id) } : null, nextTime: ev.nextTime || null, nextAgreed: nextTimeAgreed(ev.nextTime), lastTime: ev.lastTime || null, room: roomLines(ev.brief?.room),
       again: ev.again ? { held: ev.again.held.length, firsts: ev.again.held.map((h) => h.first).filter(Boolean), pairs: ev.again.pairs, followers: ev.again.followers, followersSentAt: ev.again.followersSentAt || 0 } : null, past: isPast(r), status: statusOf(r) }); });
   app.post("/api/bb/host/events/:id/prep", small, (req, res) => { const E = P.hostEvent(req, res); if (!E) return; const b = req.body || {}, before = E.ev.prep?.customFeeCents || 0;
@@ -616,7 +680,7 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
     const tier = tierOf({ events: E.length || 1, cities: cities.size || 1, headcount }), allPairs = E.flatMap(({ ev }) => ev?.pairs || []), pairs = pairStats(allPairs), hours = E.reduce((a, { ev }) => a + (ev?.prep?.logged || []).reduce((s, x) => s + x.hours, 0), 0);
     const rules = E.filter(({ ev }) => ev?.rule).map(({ r, ev }) => ({ id: r.id, name: r.pkgName, line: ruleLine(ev.rule), result: evaluateRule(ev.rule, O.events.find((e) => e.id === r.id)) }));
     const drills = E.flatMap(({ ev }) => ev?.drills || []);
-    send(res, { speed, tier, tiers: TIERS, narrative: tierNarrative({ company: L.u.W.company, tier, events: O.events.map((e) => ({ ...e, hostName: P.hostName({ hostWs: BB().reqGet(e.id)?.hostWs, handle: e.handle }) })), totals: O.totals, speed, pairs, hours: hours || null }), pairs, prefs: prefAggregate((c.guests || []).filter((g) => g.prefs)), rules, drills: drillSummary(drills), abm: abmState(c, { events: E.map((x) => x.r), evOf: (r) => P.evGet(r.id) }) }); });
+    send(res, { speed, tier, tiers: TIERS, narrative: tierNarrative({ company: L.u.W.company, tier, events: O.events.map((e) => ({ ...e, hostName: P.hostName({ hostWs: BB().reqGet(e.id)?.hostWs, handle: e.handle }) })), totals: O.totals, speed, pairs, hours: hours || null }), pairs, prefs: prefAggregate((c.guests || []).filter((g) => g.prefs)), rules, drills: drillSummary(drills), pilot: X.pilotFor?.(E) || null, abm: abmState(c, { events: E.map((x) => x.r), evOf: (r) => P.evGet(r.id) }) }); });
 
   // ---- 12. lift ----
   const AUD = { engineers: ["engineering"], founders: ["founder"], designers: ["design"], product: ["product"], marketers: ["marketing"], leaders: ["leader"] };
@@ -625,11 +689,11 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
     for (const d of store.listPrefix("system", "camp-")) { const c = d.data; for (const o of c?.outcomes || []) if (o.kind === "meeting" && o.event) meetings.set(o.event, (meetings.get(o.event) || 0) + 1); }
     for (const r of BB().reqs()) { if (statusOf(r) !== "done") continue; const ev = P.evGet(r.id); if (!ev?.survey?.responses) continue; const s = BB().setupOf(r.hostWs) || {}, cty = approxArea(s.area, s.city).city || s.city || "";
       if (city && lc(cty) !== lc(city) && !(lc(city) === "new york" && ["brooklyn", "manhattan", "queens", "new york"].includes(lc(cty)))) continue;
-      const f = ev.brief?.together || "standard", x = cells.get(f) || { format: f, events: 0, people: 0, respondents: 0, useful: 0, meetings: 0, attended: 0 }; let counted = 0;
+      const f = ev.brief?.together || "standard", x = cells.get(f) || { format: f, events: 0, people: 0, respondents: 0, useful: 0, meetings: 0, attended: 0, profiles: [] }; let counted = 0;
       for (const [t, a] of Object.entries(ev.survey.responses)) { if (a.useful == null) continue; if (audience.length) { const em = ev.survey.tokens[t]?.email; const pr = em ? prefsOf(store, em) : null; if (!pr?.include || !pr.work.some((w) => audience.includes(w))) continue; } x.respondents++; counted++; if (a.useful) x.useful++; }
-      if (!counted) continue; x.events++; x.people += counted; x.attended += Math.max(counted, Object.keys(ev.survey.tokens).length); x.meetings += meetings.get(r.id) || 0; cells.set(f, x); }
+      if (!counted) continue; x.events++; x.people += counted; x.profiles.push(ev.matchCheck?.before ? ev.matchCheck.profile : null); x.attended += Math.max(counted, Object.keys(ev.survey.tokens).length); x.meetings += meetings.get(r.id) || 0; cells.set(f, x); }
     return [...cells.values()]; }
-  app.get("/api/teams/recommendations/lift", (req, res) => { const u = P.brandMe(req, res); if (!u) return; const city = clean(req.query.city, 60), aud = AUD[lc(req.query.audience)] ? lc(req.query.audience) : "";
+  app.get("/api/teams/recommendations/lift", (req, res) => { const u = P.brandMe(req, res); if (!u) return; X.matchSweep?.(); const city = clean(req.query.city, 60), aud = AUD[lc(req.query.audience)] ? lc(req.query.audience) : "";
     send(res, { ...liftRecs(liftCells({ city, audience: AUD[aud] || [] }), { audience: aud ? { engineers: "engineering leaders", founders: "founders", designers: "designers", product: "product people", marketers: "marketers", leaders: "leaders" }[aud] : "", city }), city, audience: aud, sources: SOURCES }); });
 
   // ---- 15. what you keep by booking again ----
@@ -696,7 +760,8 @@ export function mountBrandPanel2(app, { store, small, currentUser, C, X, P, PUBL
     for (const x of BB().allSetups()) { for (const d of S0(x.ws).list("events")) { const e = d.data || {}; if (!ISO.test(e.date || "")) continue; for (const g of e.guests || []) if (/attended/i.test(g.status || "") && g.email) attendance.push({ email: lc(g.email), hostWs: x.ws, date: e.date }); }
       offPlatform[x.ws] = S0(x.ws).get("teambook/founding")?.data?.offPlatform || 0; }
     for (const ws of new Set(L.map((r) => r.brandWs))) { signals[ws] = (S0(ws).get("teambook/signals")?.data?.list || []).concat(store.listPrefix("system", "bbsl-").map((d) => d.data).filter((s) => s?.ws === ws).map((s) => ({ what: "save-host", at: s.createdAt || s.updatedAt || 0 }))); }
-    send(res, { ...durability(L, { evOf: (id) => evs.get(id), attendance, signals, offPlatform, designPartners: new Set(flags().designPartners) }), bars: BARS }); });
+    const FU = X.followupData?.() || {};
+    send(res, { ...durability(L, { evOf: (id) => evs.get(id), attendance, signals, offPlatform, followups: FU.followups || {}, asks: FU.asks || null, designPartners: new Set(flags().designPartners) }), bars: BARS }); });
 
   return { runPairNudges, maybeAutoRebook: (id) => { const r = BB().reqGet(id), ev = r && P.evGet(r.id), c = r && P.campOf(r); if (!ev || !c) return null; const out = maybeAutoRebook(r, ev, P.outcomesFor(c).events.find((e) => e.id === r.id)); P.evSet(ev); return out; }, orgOfWs };
 }

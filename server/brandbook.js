@@ -388,7 +388,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     out.sort((a, b) => (b.host.example ? -1 : 0) - (a.host.example ? -1 : 0) || b.quality - a.quality || (a.perPersonCents - b.perPersonCents));
     res.set("Cache-Control", "private, no-store").json({ results: out, total: out.length, mood: MOODS.find((m) => m.id === mood) || null }); });
 
-  const takenFor = (ws, pkgId) => new Set(reqs().filter((r) => r.hostWs === ws && r.pkgId === pkgId && ["booked", "accepted"].includes(r.status) && r.date).map((r) => r.date));
+  const takenFor = (ws, pkgId) => new Set([...reqs().filter((r) => r.hostWs === ws && r.pkgId === pkgId && ["booked", "accepted"].includes(r.status) && r.date).map((r) => r.date), ...(X.heldDates?.(ws, pkgId) || [])]); // a recovery hold keeps the date (server/brandpanel3.js)
   const findPkg = (handle, pkgId) => { const ws = C.wsOfHandle(lc(handle)); const h = ws && C.profileOf(ws); const s = ws && setupOf(ws); const p = s?.packages?.find((x) => x.id === String(pkgId || "")); return ws && h && s && p ? { ws, h, s, p } : null; };
 
   // ---- the experience page ----

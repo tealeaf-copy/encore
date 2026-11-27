@@ -91,12 +91,12 @@ export function streakLine(s) {
   const unit = s.cadence === "week" ? "week" : "month", run = (n) => (n === 1 ? `One ${unit} so far` : `${n} ${unit}s in a row`), named = (n) => `${n}-${unit} streak`, when = s.cadence === "week" ? "this week" : `in ${s.periodLabel}`;
   switch (s.status) {
     case "none": return { line: "Your first one starts a streak. Dinner for four is plenty.", tone: "start" };
-    case "off": return { line: s.count ? `${s.count === 1 ? "One event" : `${s.count} events`} hosted. No streak to keep; every one counts.` : "No streak to keep. Every event counts when it happens.", tone: "good" };
+    case "off": return { line: s.count ? `${s.count === 1 ? "One event" : `${s.count} events`} hosted. No streak to keep. Every one counts.` : "No streak to keep. Every event counts when it happens.", tone: "good" };
     case "done": return { line: `${run(s.count)}. ${s.cadence === "week" ? "This week" : s.periodLabel} is covered.`, tone: "good" };
     case "restarted": return { line: "A new run, started. The first one back is the hardest, and it's done.", tone: "good" };
     case "resting": return { line: `A rest pass covered last ${unit}. Your ${named(s.count)} is safe.`, tone: "rest" };
     case "repairable": return { line: `Your ${named(s.count)} is paused, not gone. Host anything by ${fmtDay(s.repairBy)}, even a coffee, and it's back.`, tone: "repair" };
-    case "lapsed": return { line: `Your ${named(s.lapsedFrom)} ended. Streaks end; tables don't. The next one starts a new run.${s.cadence === "month" ? " Big events, less often? Count events instead in Settings." : ""}`, tone: "restart" };
+    case "lapsed": return { line: `Your ${named(s.lapsedFrom)} ended. Streaks end. Tables don't. The next one starts a new run.${s.cadence === "month" ? " Big events, less often? Count events instead in Settings." : ""}`, tone: "restart" };
     default: return s.upcomingThisPeriod ? { line: `${run(s.count)}. Your next one, ${fmtDay(s.nextUpcoming)}, keeps it going.`, tone: "good" }
       : s.passes ? { line: `${run(s.count)}. Nothing ${when} yet, and that's fine.`, tone: "open" }
       : { line: `${run(s.count)}. Something small ${when} keeps it going.`, tone: "open" };

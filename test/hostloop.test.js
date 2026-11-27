@@ -61,7 +61,7 @@ test("Repair: with no pass left, anything hosted within 14 days of the missed pe
   assert.equal(late.repaired.length, 0); assert.equal(late.count, 1, "too late to repair: a new run"); assert.equal(late.status, "restarted");
   const gone = streakState({ dates: ["2026-08-10"], now: NOW });
   assert.equal(gone.status, "lapsed"); assert.equal(gone.lapsedFrom, 1);
-  const kind = streakLine(gone).line; assert.match(kind, /Streaks end; tables don't/); assert.doesNotMatch(kind, /lost|failed|broke|shame|sad/i, "never shame");
+  const kind = streakLine(gone).line; assert.match(kind, /Streaks end\. Tables don't/); assert.doesNotMatch(kind, /lost|failed|broke|shame|sad/i, "never shame");
   // weekly: the 14 days cover the next two weeks
   const w = streakState({ dates: [wk(4), wk(3), wk(0)], cadence: "week", now: NOW });
   assert.ok(w.restUsed.length === 1 && w.repaired.length === 1, "one week rested, the next repaired"); assert.equal(w.count, 3);

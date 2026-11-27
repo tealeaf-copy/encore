@@ -20,7 +20,7 @@ Our hosts are introverted and have high standards. They're engineers, gamers, op
 - "Your first one is out in the world. Now the only job is to show up. I'll keep the list."
 - "A rest pass covered last month. Your 3-month streak is safe."
 - "Your 4-week streak is paused, not gone. Host anything by Sun, Dec 6, even a coffee, and it's back."
-- "Your 6-month streak ended. Streaks end; tables don't. The next one starts a new run."
+- "Your 6-month streak ended. Streaks end. Tables don't. The next one starts a new run."
 - "Done. That counts."
 - "Nothing on the calendar. That's fine. A dinner for four is a whole event."
 - "How was Soup night? A two-line thank-you to the 4 guests who came is the thing they'll remember."

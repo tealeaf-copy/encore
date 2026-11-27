@@ -20,9 +20,9 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th
 
 <h2>If you're a guest</h2>
 <ul>
-<li><b>No account needed to RSVP.</b> You give a name and, if you like, a way to reach you. Contact details are optional; your RSVP counts without them.</li>
+<li><b>No account needed to reply.</b> You give a name and, if you like, a way to reach you. Contact details are optional. Your reply counts without them.</li>
 <li><b>The host sees what you share with them:</b> your reply, contact details, food needs, and answers to their questions. Other guests don't see your contact details or answers.</li>
-<li><b>Only you can change your RSVP.</b> Your browser holds a private key for it; nobody else can edit or cancel it.</li>
+<li><b>Only you can change your reply.</b> Your browser holds a private key for it. Nobody else can edit or cancel it.</li>
 <li><b>Pottery Lab doesn't message you on its own.</b> Invites and updates go out when the host sends them, by the channel you chose.</li>
 </ul>
 
@@ -35,9 +35,9 @@ table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}td,th
 
 <h2>How it's protected</h2>
 <table><tr><th style="width:34%">Control</th><th>How it works today</th></tr>
-<tr><td>Sign-in</td><td>Passwords are stored as scrypt hashes, never in plain text. Sessions are signed and can be revoked on the server; sign-in attempts are rate-limited.</td></tr>
+<tr><td>Sign-in</td><td>Passwords are stored as scrypt hashes, never in plain text. Sessions are signed and can be revoked on the server. Sign-in attempts are rate-limited.</td></tr>
 <tr><td>Data</td><td>One service with its own database. Each host's data sits in its own workspace, and every read and write is checked against who is asking.</td></tr>
-<tr><td>Invite pages</td><td>Guests' pages only receive the fields meant for guests; everything else is removed on the server before it's sent.</td></tr>
+<tr><td>Invite pages</td><td>Guests' pages only receive the fields meant for guests. Everything else is removed on the server before it's sent.</td></tr>
 <tr><td>Browser protections</td><td>Every page runs under a strict content-security policy, so a page or an upload can't load code from elsewhere.</td></tr>
 <tr><td>Uploads</td><td>Limited to images, PDFs, video and plain data files, and served so they can't run code.</td></tr></table>
 

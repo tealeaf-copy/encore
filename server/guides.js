@@ -75,7 +75,7 @@ export const GUIDES = [
       { id: "costs", title: "Add the shared costs", body: "The house, groceries, the car. Each is split among the people who are in, with \"You owe Maya $84\" and your pay link.", label: "See your plans", href: "/plans", auto: (s) => s.tripCosts > 0 },
     ] },
   { id: "small-summit", title: "Run a small summit", short: "Tracks, rooms, speakers, a door that moves.", for: "any",
-    intro: "Start with five speakers you know, a host for every room and long hallway time. Guests pick their own agenda; you keep the run of show.",
+    intro: "Start with five speakers you know, a host for every room and long hallway time. Guests pick their own agenda. You keep the run of show.",
     steps: [
       { id: "event", title: "Start the summit", body: "Pick Summit. Add the days, your tracks and your rooms with how many fit.", label: "Start a summit", href: newOf("summit"), auto: (s) => s.summits > 0 },
       { id: "agenda", title: "Build the agenda", body: "Sessions with a time, a track, a room and speakers. Guests save the ones they want, and we warn them when two overlap.", label: "See your plans", href: "/plans", auto: (s) => s.sessions > 0 },

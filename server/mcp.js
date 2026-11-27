@@ -231,7 +231,7 @@ export function mountMcp(app, { scoped, afterEventWrite, json, findToken = () =>
       if (msg.method === "tools/call") {
         const name = msg.params?.name, fn = Object.hasOwn(run, name) ? run[name] : null, args = msg.params?.arguments || {};
         if (!fn) return fail(-32602, `Unknown tool ${name}`);
-        if (WRITES.has(name) && !writable(who.ws)) return reply({ ...text("This workspace's free trial has ended, so changes are paused. Upgrade in Pottery Lab to keep editing; reading still works."), isError: true });
+        if (WRITES.has(name) && !writable(who.ws)) return reply({ ...text("This workspace's free trial has ended, so changes are paused. Upgrade in Pottery Lab to keep editing. Reading still works."), isError: true });
         try {
           const out = fn(args);
           if (!WRITES.has(name)) readLog(who, args.id, name);

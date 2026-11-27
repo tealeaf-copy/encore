@@ -891,7 +891,7 @@ export function createApp({ store, dataDir }) {
   app.use("/api", (req, res, next) => {
     if (req.guest || req.method === "GET" || req.method === "HEAD" || TRIAL_FREE.has(req.path)) return next();
     const ws = sessionWorkspace(req);
-    if (ws !== DEFAULT_WS && !trialState(getWorkspace(ws)).writable) return res.status(402).json({ code: "trial_ended", message: "Your free trial has ended, so changes are paused. Upgrade to keep editing; everything is still here to read." });
+    if (ws !== DEFAULT_WS && !trialState(getWorkspace(ws)).writable) return res.status(402).json({ code: "trial_ended", message: "Your free trial has ended, so changes are paused. Upgrade to keep editing. Everything is still here to read." });
     next();
   });
 
@@ -1189,7 +1189,7 @@ export function createApp({ store, dataDir }) {
     const so = st.get("signoffs/" + m[1]), evN = st.get(p);
     if (so && evN) { const nowM = eventMoney(evN.data); let changed = false;
       for (const r of so.data.requests || []) if (r.status === "approved" && Math.abs(nowM.cost - (r.decidedCost ?? r.cost)) > Math.max(500, (r.decidedCost ?? r.cost) * 0.05)) { r.status = "stale"; r.staleAt = Date.now(); r.staleCost = nowM.cost; changed = true; }
-      if (changed) { st.set("signoffs/" + m[1], so.data); st.add("audit", { eventId: m[1], what: `${evN.data.name || m[1]}: sign-off needs renewing; the plan is now ${nowM.currency} ${nowM.cost.toLocaleString("en-US")}`, who: "Pottery Lab server", email: null, verified: true, at: Date.now() }); } }
+      if (changed) { st.set("signoffs/" + m[1], so.data); st.add("audit", { eventId: m[1], what: `${evN.data.name || m[1]}: sign-off needs renewing. The plan is now ${nowM.currency} ${nowM.cost.toLocaleString("en-US")}`, who: "Pottery Lab server", email: null, verified: true, at: Date.now() }); } }
     const ap = st.get("approvals/" + m[1]); if (!ap || !Object.keys(ap.data.roles || {}).length) return;
     const ev = st.get(p); if (!ev) return;
     const now = eventMoney(ev.data), moved = (a, b) => Math.abs(a - b) > Math.max(500, b * 0.05);
@@ -1296,7 +1296,7 @@ export function createApp({ store, dataDir }) {
     if (!aeOk(req.ws, eventId, slug, b.t)) return res.status(403).json({ code: "not_granted", message: "This link isn't valid." });
     const ev = /^[A-Za-z0-9_-]+$/.test(eventId) ? S(req).get("events/" + eventId) : null; if (!ev) return res.status(404).json({ code: "not_found" });
     const same = (ev.data.guests || []).filter((x) => x.name === b.guest && aeSlug(x.owner) === slug && (!b.company || x.company === b.company));
-    if (same.length > 1) return res.status(409).json({ code: "conflict", message: "Two of your guests share that name; include the company." });
+    if (same.length > 1) return res.status(409).json({ code: "conflict", message: "Two of your guests share that name. Include the company." });
     const g = same[0];
     if (!g) return res.status(403).json({ code: "not_granted", message: "That guest isn't one of yours." });
     const action = String(b.action || ""); if (!["approve", "sent", "done", "note", "nudge", "roe"].includes(action)) return res.status(400).json({ code: "invalid" });

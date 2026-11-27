@@ -206,10 +206,10 @@
       if (t.cover === "awning") { loadFont("florist"); awning(cv, h, t); }
       if (t.cover === "noren" && !t.coverUrl) norenCover(cv, h);
       if (t.cover === "pantry" && !t.coverUrl) pantryCover(cv, h);
-      // the calm default: the host's name on a quiet brand wash (never clip art). A photo shows whole, no name over it.
+      // the calm default: a quiet brand wash (never clip art). A photo shows whole.
       cv.querySelector(".cv-calm")?.remove(); cv.classList.toggle("cv-photo", !!t.coverUrl);
       if (!document.getElementById("cv-calm-css")) { const st = document.createElement("style"); st.id = "cv-calm-css"; st.textContent = `.cover{position:relative;overflow:hidden}.cover.cv-photo{height:clamp(220px,24vw,320px)}.cv-calm{position:absolute;inset:0 0 auto 0;padding:24px 28px;pointer-events:none;font:600 clamp(26px,4.6vw,44px)/1.1 var(--head,Fredoka),system-ui,sans-serif;letter-spacing:-.01em;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.18);overflow-wrap:anywhere;max-width:80%}.cv-calm small{display:block;margin-top:6px;font:500 15px/1.35 var(--body,"IBM Plex Sans"),system-ui,sans-serif;opacity:.92}@media (max-width:760px){.cover.cv-photo{height:200px}.cv-calm{padding:18px 20px;max-width:100%}}`; document.head.appendChild(st); }
-      if (!t.coverUrl && (t.cover === "calm" || t.cover === "drawn")) { const nm = document.createElement("div"); nm.className = "cv-calm"; nm.setAttribute("aria-hidden", "true"); nm.style.color = contrast(t.accent, "#FFFFFF") >= 2.4 ? "#fff" : "#1F1A17"; nm.textContent = String(h.name || "@" + (h.handle || "")).trim(); cv.appendChild(nm); }
+      /* review round 18: the wash stays quiet. The name is the page's heading right under it, so it is not printed here a second time. */
       // "Drawn": line-art stickers of what they make on the cover (bread for a baker, cups for a café), only when picked
       cv.querySelector(".cv-art")?.remove(); const EA = window.EventArt;
       if (!t.coverUrl && EA && t.cover === "drawn") { cv.querySelector(".cv-calm")?.remove(); const ks = EA.kindsOf({ title: `${h.tagline || ""} ${(h.tags || []).join(" ")}`, why: `${h.bio || ""} ${(h.experiences || []).map((x) => x.name).join(" ")}` }).filter((k) => !["party", "tech", "talk", "workshop", "giveaway", "market"].includes(k)).slice(0, 3); /* review round 12: a hack night's page draws a laptop, not dice */

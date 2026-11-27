@@ -16,9 +16,9 @@
   // plain small text, a full title over two lines, one primary action ("Host this") and the rest behind a quiet More
   const CSS = `.fv-inspo .pli{flex:0 0 min(78vw,260px)!important;width:min(78vw,260px)!important;margin:0 !important}.fv-inspo :is(.pli-meta,.pli-more){display:none!important}
 .pli{position:relative;display:flex;min-width:0;color:var(--pl-ink);font:15px/1.4 "IBM Plex Sans",system-ui,sans-serif}
-.pli-card{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;overflow:visible;box-shadow:none;transition:border-color .2s}
+.pli-card{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:6px;overflow:visible;box-shadow:none;transition:border-color .2s}
 @media (hover:hover){.pli:hover .pli-card{border-color:var(--pl-line-strong)}}
-.pli-media{position:relative;aspect-ratio:4/5;margin:0;border-radius:15px 15px 0 0;overflow:hidden;background:var(--pl-raised)}
+.pli-media{position:relative;aspect-ratio:4/5;margin:0;border-radius:5px 5px 0 0;overflow:hidden;background:var(--pl-raised)}
 .pli-media img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
 @media (hover:hover){.pli-media img,.pli-media .ea-art{transition:transform .5s cubic-bezier(.2,.8,.2,1)}.pli:hover .pli-media img,.pli:hover .pli-media .ea-art{transform:scale(1.03)}}
 .pli-art .ea-cover{position:absolute!important;inset:0}
@@ -35,8 +35,8 @@
 .pli-more{position:relative;flex:none}.pli-more>summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--pl-line);cursor:pointer;color:var(--pl-soft);background:var(--pl-surface)}.pli-more>summary::-webkit-details-marker{display:none}
 .pli-more>summary>span,.pli-more>summary>span::before,.pli-more>summary>span::after{display:block;width:4px;height:4px;border-radius:50%;background:currentColor}.pli-more>summary>span{position:relative}.pli-more>summary>span::before,.pli-more>summary>span::after{content:"";position:absolute;top:0}.pli-more>summary>span::before{left:-7px}.pli-more>summary>span::after{left:7px}
 .pli-more>summary:hover,.pli-more[open]>summary{border-color:var(--pl-line-strong);color:var(--pl-ink)}
-.pli-menu{position:absolute;right:0;bottom:52px;z-index:30;min-width:210px;display:grid;gap:2px;padding:6px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28)}
-.pli-mi,.pli-menu .pls-btn{display:flex!important;align-items:center;gap:8px;width:100%!important;height:auto!important;min-height:44px;padding:0 12px!important;border:0!important;border-radius:12px!important;background:none!important;box-shadow:none!important;color:var(--pl-ink)!important;font:500 15px "IBM Plex Sans",system-ui!important;text-align:left;text-decoration:none;cursor:pointer;white-space:nowrap}
+.pli-menu{position:absolute;right:0;bottom:52px;z-index:30;min-width:210px;display:grid;gap:2px;padding:6px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:6px;box-shadow:0 1px 2px rgba(31,26,23,.06),0 10px 28px -16px rgba(31,26,23,.28)}
+.pli-mi,.pli-menu .pls-btn{display:flex!important;align-items:center;gap:8px;width:100%!important;height:auto!important;min-height:44px;padding:0 12px!important;border:0!important;border-radius:6px!important;background:none!important;box-shadow:none!important;color:var(--pl-ink)!important;font:500 15px "IBM Plex Sans",system-ui!important;text-align:left;text-decoration:none;cursor:pointer;white-space:nowrap}
 .pli-mi:hover,.pli-menu .pls-btn:hover{background:var(--pl-raised)!important}.pli-menu .pls-btn svg{width:20px;height:20px}
 .pli-mnote{display:block;padding:4px 12px 6px;color:var(--pl-soft);font-size:13px}.pli-mnote:empty,.pli-mnote[hidden]{display:none}
 .pli-fly{position:absolute;inset:0;background:linear-gradient(180deg,var(--f0) 0,var(--f0b) 100%);color:var(--f1);display:flex;flex-direction:column;justify-content:space-between;padding:16px 14px 14px;overflow:hidden}

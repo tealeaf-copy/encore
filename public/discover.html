@@ -12,27 +12,27 @@
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .intro{padding:14px 0 10px}.intro h1{font-size:var(--fs-28-40,28px);line-height:1.08}.intro p{margin:6px 0 0;color:var(--soft);font-size:16px}
 .fbar{margin-bottom:8px}.fbar .loc{gap:6px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;box-shadow:none!important;color:var(--ink)!important;padding:0 14px!important}
-.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line);border-radius:16px}
+.locp[hidden]{display:none!important}.locp{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 10px;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line);border-radius:6px}
 .locp label{width:100%;font-weight:600;font-size:14px}.locp input{flex:1 1 180px;min-height:44px}
 .locp button{min-height:44px;border-radius:999px;padding:8px 14px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
 .locp button.go{background:var(--red);border-color:var(--red);color:#fff}.locp .note{width:100%;margin:0;font-size:14px;color:var(--soft)}.locp .note:empty{display:none}
 section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 4px}section .lede{color:var(--soft);margin:0 0 16px;font-size:14px}
 #events,#fyList{margin-top:16px}.ls-grid .why{display:block;color:var(--smoke,#665A51)!important;font-size:13px}
 .sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}.sec-h a{color:var(--red);font-weight:600;font-size:14px;min-height:44px;display:inline-flex;align-items:center}
-.note-box{margin:8px 0 12px;padding:14px 16px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:16px;color:var(--pl-soft);font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
+.note-box{margin:8px 0 12px;padding:14px 16px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:6px;color:var(--pl-soft);font-size:14px}.note-box a,.note-box button{color:var(--red);font-weight:600}
 .note-box button{background:none;border:0;font:inherit;cursor:pointer;padding:0;text-decoration:underline;min-height:44px}
 .more-btn{margin-top:12px;min-height:44px}
 .far-h{grid-column:1/-1;margin:14px 0 0;font-size:16px}
 /* order from local hosts: one sideways row */
 .shop-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}
-.shop{flex:0 0 210px;scroll-snap-align:start;display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;text-decoration:none;color:inherit}
-.shop .ic{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
+.shop{flex:0 0 210px;scroll-snap-align:start;display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px;text-decoration:none;color:inherit}
+.shop .ic{width:40px;height:40px;border-radius:6px;overflow:hidden;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,var(--c) 16%,#fff);grid-row:1/span 2}.shop .ic svg,.shop .ic img{width:100%;height:100%;object-fit:cover}
 .shop b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop small{color:var(--soft);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shop .go{grid-column:1/-1;margin-top:6px;font-size:14px;font-weight:600;color:var(--red)}
 /* hosts worth following: one card shape. Fixed slots (avatar, name + tag, place and counts, a one-line "next" strip,
    Follow in the same top-right spot), so every card in a row is the same height and nothing floats. */
 .hlist{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}
-.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line,var(--pl-line));border-radius:16px;color:var(--ink,var(--pl-ink));transition:border-color .15s}
+.hcd{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;grid-template-areas:"av id f" "nx nx nx";column-gap:12px;row-gap:12px;align-items:center;padding:16px;background:var(--card,var(--pl-surface));border:1.5px solid var(--line,var(--pl-line));border-radius:6px;color:var(--ink,var(--pl-ink));transition:border-color .15s}
 .hcd:hover{border-color:var(--line-strong,var(--pl-line-strong))}
 .hcd:focus-within{border-color:var(--pl-ink)}
 .hcd-av{grid-area:av;width:48px;height:48px;border-radius:50%;overflow:hidden;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--c) 18%,#fff);border:1.5px solid var(--line,var(--pl-line))}
@@ -47,7 +47,7 @@ section{padding:24px 0 8px}section h2{font-size:var(--fs-20-28,20px);margin:0 0 
 .hcd-f{grid-area:f;position:relative;z-index:1;min-height:44px;min-width:96px;padding:0 16px!important;font:600 14px "IBM Plex Sans",system-ui,sans-serif!important;border-radius:999px;border:1.5px solid var(--line-strong,var(--pl-line-strong))!important;background:var(--card,var(--pl-surface))!important;color:var(--pl-ink)!important;cursor:pointer;box-shadow:none!important}
 .hcd-f:hover{border-color:var(--pl-ink)!important}.hcd-f[aria-pressed=true]{background:var(--pl-ink)!important;color:#fff!important}
 .hcd-f:focus-visible,.hcd-nx:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
-.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:12px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
+.hcd-nx{grid-area:nx;position:relative;z-index:1;display:flex;gap:6px;align-items:center;min-height:40px;padding:8px 12px;border-radius:6px;background:var(--pl-page);font-size:14px;line-height:1.3;color:var(--pl-ink);text-decoration:none;min-width:0}
 .hcd-nx b{flex:none;font-weight:600;color:var(--pl-accent-text)}.hcd-nx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 a.hcd-nx:hover{background:var(--pl-raised)}
 .hcd-exs{display:none;font-weight:600;color:var(--pl-soft)}
@@ -56,9 +56,9 @@ a.hcd-nx:hover{background:var(--pl-raised)}
 @media (prefers-reduced-motion:reduce){.hcd{transition:none}.hcd:hover{transform:none}}
 /* the end of the page: one way in for new hosts, the quiz as a quiet line under it */
 .endcards{display:grid;gap:12px;padding-top:32px}
-#hostCard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:20px;background:var(--card,var(--pl-surface))!important;border:1.5px solid var(--line,var(--pl-line))!important;border-radius:16px!important;box-shadow:none!important}
+#hostCard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:20px;background:var(--card,var(--pl-surface))!important;border:1.5px solid var(--line,var(--pl-line))!important;border-radius:6px!important;box-shadow:none!important}
 #hostCard h2{font-size:20px;margin:0}#hostCard p{margin:2px 0 0;color:var(--pl-soft);font-size:14px}#hostCard .btn{min-height:44px;flex:none}
-#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 20px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:16px;background:transparent}
+#quiz{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:16px 20px;border:1.5px dashed var(--line-strong,var(--pl-line-strong));border-radius:6px;background:transparent}
 #quiz:empty{display:none}
 #quiz>span[aria-hidden]{font-size:26px!important;line-height:1}
 #quiz h2{font-size:16px;margin:0}#quiz small{color:var(--pl-soft);font-size:13px}#quiz small a{color:var(--pl-accent-text)}

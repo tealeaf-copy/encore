@@ -93,9 +93,9 @@ html.kit-on body.store :is(.tags i,.ev-p,.perk,.trust-line span,.gigs span,.stor
 .kit-story[style*="--kit-accent"] .fv-host b::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--kit-accent);margin-right:6px;vertical-align:2px}
 
 /* ---- owner banner: a suggested kit, accepted in one tap ---- */
-.bk-sug{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;max-width:960px;margin:14px auto;padding:14px 16px;border-radius:16px;background:var(--pl-surface);border:1.5px solid var(--pl-line);font:400 15px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
+.bk-sug{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;max-width:960px;margin:14px auto;padding:14px 16px;border-radius:6px;background:var(--pl-surface);border:1.5px solid var(--pl-line);font:400 15px/1.4 "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
 .bk-sug b{font-weight:600}.bk-sug .bk-sug-a{display:flex;gap:8px;flex-wrap:wrap}
-.bk-sug button{min-height:44px;padding:0 16px;border-radius:999px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border:1.5px solid var(--pl-line-strong);background:#fff;color:var(--pl-ink)}
+.bk-sug button{min-height:44px;padding:0 16px;border-radius:6px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border:1.5px solid var(--pl-line-strong);background:var(--pl-surface);color:var(--pl-ink)}
 .bk-sug button.go1{background:var(--pl-accent);border-color:var(--pl-accent);color:#fff}
 .bk-sug button:focus-visible{outline:3px solid var(--pl-ink);outline-offset:2px}
 .bk-entry{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--pl-page);border:1.5px solid var(--pl-line)}

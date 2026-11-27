@@ -1,10 +1,8 @@
-// Menu card for food experiences: each course on its own card, joined by + badges, ending in a tilted "= the night"
-// card. Lines can be "To start: Pandan madeleines" (label: dish) or just the dish. Used on guest pages, host storefronts
+// Menu card for food experiences: a ruled notebook card, each course on its own numbered line, signed off with the
+// night's theme. Lines can be "To start: Pandan madeleines" (label: dish) or just the dish. Used on guest pages, host storefronts
 // and as a live preview in the host kit, with a few templates to start from.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const TONES = { berry: ["#B8327E", "#7A1E55", "#FDF6D8", "#D8379A"], plum: ["#4A0F32", "#2E0820", "#F5E9FF", "#6A2E8F"], sage: ["#2F6B4F", "#1D4733", "#FFF6DA", "#8A5A0C"], tomato: ["#C94A30", "#8A2E1C", "#FFF3E2", "#B8361E"], lilac: ["#C9B8F5", "#8B6FD6", "#FFFBE6", "#7A4FD6"] };
-  const BADGE = ["#2F9D5A", "#E85AB8", "#E8762C", "#2F6FE0", "#E0A030"];
   const TEMPLATES = [
     { name: "Three courses", theme: "A cozy dinner at mine", lines: ["To start: Pandan madeleines, salted butter", "Main: Lemongrass chicken, jasmine rice, herbs", "Dessert: Coconut pandan cake"] },
     { name: "Tasting menu", theme: "Autumn in Kyoto", lines: ["Snack: Hamachi, yuzu, shiso", "Small plate: Grilled maitake, miso butter", "Main: Miso black cod", "Pre-dessert: Yuzu sorbet", "Dessert: Matcha panna cotta"] },
@@ -46,27 +44,24 @@
 .mc-hv .mh-price{margin:16px 0 0;font:700 17px/1.35 var(--kit-body,"Zilla Slab",Georgia,serif);font-variant-numeric:tabular-nums;color:#8A3414;letter-spacing:.02em}.mc-hv .mh-note{margin:6px 0 0;font-size:14px;color:#6B4E36}
 html body .mc-hv .mh-l b{color:#2B1D12!important}html body .mc-hv .mh-l small,html body .mc-hv figcaption small,html body .mc-hv .mh-note{color:#6B4E36!important}html body .mc-hv .mh-title{color:#3B2414!important}html body .mc-hv .mh-price{color:#8A3414!important}
 @media (max-width:480px){.mc-hv{padding:76px 14px 78px}.mc-hv .mh-band{height:64px;background-size:232px 64px}}`;
-  function html({ theme = "", courses = [], note = "", tone, style = "", items = [], price = "" } = {}) {
+  function html({ theme = "", courses = [], note = "", style = "", items = [], price = "" } = {}) {
     if (style === "harvest") return harvest({ theme, courses, items, note, price });
     const L = (courses || []).map(split).filter((x) => x.dish).slice(0, 8); if (!L.length) return "";
-    const keys = Object.keys(TONES), t = TONES[tone] ? tone : keys[hash(theme + L[0].dish) % keys.length], [bg, ring, fin, acc] = TONES[t];
-    const card = (x, i) => `<li class="mc-c" style="--i:${i}">${x.label ? `<small>${esc(x.label)}</small>` : ""}<b>${esc(x.dish)}</b></li>`;
-    const badge = (sym, i) => `<li class="mc-b" aria-hidden="true"><span style="background:${BADGE[i % BADGE.length]}">${sym}</span></li>`;
-    const parts = []; L.forEach((x, i) => { if (i) parts.push(badge("+", i - 1)); parts.push(card(x, i)); });
-    parts.push(badge("=", L.length)); parts.push(`<li class="mc-c mc-fin" style="--i:${L.length};background:${fin};color:${acc}"><b>${esc(theme || "A very good night")}</b></li>`);
-    return `<figure class="mc" style="--mc-bg:${bg};--mc-ring:${ring}"><figcaption class="mc-h">The menu</figcaption><ol class="mc-l">${parts.join("")}</ol>${note ? `<p class="mc-note">${esc(note)}</p>` : ""}</figure>`;
+    // the house card is a page from the notebook: ruled lines, numbered courses, the theme signed off underneath. It
+    // uses the page's own tokens, so on a host's page with a brand kit it wears their ink and accent (review round 18;
+    // it was a plum card with coloured dots).
+    const card = (x, i) => `<li class="mc-c"><span class="mc-n" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span><div>${x.label ? `<small>${esc(x.label)}</small>` : ""}<b>${esc(x.dish)}</b></div></li>`;
+    return `<figure class="mc"><figcaption class="mc-h">The menu</figcaption><ol class="mc-l">${L.map(card).join("")}</ol>${theme ? `<p class="mc-fin">${esc(theme)}</p>` : ""}${note ? `<p class="mc-note">${esc(note)}</p>` : ""}</figure>`;
   }
-  const CSS = `.mc{margin:14px 0 0;padding:22px 18px 20px;border-radius:22px;background-color:var(--mc-bg);background-image:linear-gradient(rgba(255,255,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.14) 1px,transparent 1px);background-size:100% 25%,16.66% 100%;font-family:"IBM Plex Sans","Inter",system-ui,sans-serif;color:#151515}
-.mc-h{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;opacity:.85;text-align:center;margin:0 0 12px}
-.mc-l{list-style:none;margin:0 auto;padding:0;max-width:460px;display:grid;justify-items:stretch}
-.mc-c{background:#fff;border-radius:18px;padding:14px 18px;text-align:center;display:grid;gap:2px;transition:transform .35s cubic-bezier(.3,1.5,.5,1),box-shadow .3s;transition-delay:calc(var(--i) * 40ms)}
-.mc-c small{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8A7D73}.mc-c b{font-size:var(--fs-16-20,16px);font-weight:700;letter-spacing:-.015em;line-height:1.2}
-.mc-fin{transform:rotate(-2.2deg);margin-top:2px}.mc-fin b{font-size:var(--fs-16-20,16px)}
-.mc-b{display:grid;place-items:center;height:22px;position:relative;z-index:1}.mc-b span{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 20px/1 system-ui;border:4px solid var(--mc-ring);transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
-.mc .mc-h{color:#fff!important}.mc .mc-b span{color:#fff!important}.mc .mc-fin b{color:inherit!important}.mc .mc-c b{color:#151515}.mc .mc-c small{color:#8A7D73!important}
-.mc-note{margin:14px 0 0;text-align:center;color:#fff;font-weight:600;font-size:14px}
-@media (hover:hover){.mc:hover .mc-c{transform:translateY(-2px);box-shadow:0 6px 16px -10px rgba(0,0,0,.45)}.mc:hover .mc-fin{transform:rotate(0deg) scale(1.02)}.mc:hover .mc-b span{transform:rotate(90deg)}}
-@media (prefers-reduced-motion:reduce){.mc *{transition:none!important}}
+  const CSS = `.mc{margin:14px 0 0;padding:16px 16px 14px;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:var(--pl-r-md,6px);background:var(--pl-surface,#FAF8F3);font-family:var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);text-align:left}
+.mc .mc-h{font:500 13px/1 var(--pl-font-mono,"IBM Plex Mono",ui-monospace,monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-accent-text,#29489A)!important;margin:0 0 8px}
+.mc-l{list-style:none;margin:0;padding:0}
+.mc-c{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:baseline;padding:10px 0;border-top:1px dashed var(--pl-line,#CFC8B9)}
+.mc .mc-n{font:500 13px/1.5 var(--pl-font-mono,"IBM Plex Mono",ui-monospace,monospace);color:var(--pl-soft,#444845)!important}
+.mc .mc-c small{display:block;font:500 13px/1.4 var(--pl-font-mono,"IBM Plex Mono",ui-monospace,monospace);letter-spacing:.06em;text-transform:uppercase;color:var(--pl-soft,#444845)!important}
+.mc .mc-c b{display:block;font-weight:600;font-size:16px;line-height:1.35;color:var(--pl-ink,#1B1D1C)!important}
+.mc .mc-fin{margin:0;padding:12px 0 2px;border-top:1.5px solid var(--pl-line-strong,#1B1D1C);font:500 24px/1.2 var(--pl-font-display,"IBM Plex Sans",system-ui,sans-serif);letter-spacing:-.01em;color:var(--pl-ink,#1B1D1C)!important}
+.mc .mc-note{margin:8px 0 0;font-size:14px;line-height:1.45;color:var(--pl-soft,#444845)!important}
 .mc-tpl{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.mc-tpl button{border:1px solid #E4D9C8;background:#fff;border-radius:999px;padding:5px 11px;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}.mc-tpl button:hover{border-color:#1F1A17}`;
   function ensureCss() { if (typeof document === "undefined" || document.getElementById("mcCss")) return; const s = document.createElement("style"); s.id = "mcCss"; s.textContent = CSS + HV_CSS.replace(/\.mc-hv \.mh-band\{/, `.mc-hv .mh-band{background-image:${bandBg()};`); document.head.appendChild(s); }
   if (typeof document !== "undefined") ensureCss();

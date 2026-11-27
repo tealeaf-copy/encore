@@ -136,6 +136,10 @@ Check: tap each button on /login with a real account and land signed in.
 | `ENCORE_AI_PER_HOUR`, `ENCORE_AI_READS_PER_HOUR`, `ENCORE_POTTO_PER_HOUR`, `ENCORE_POTTO_TOKENS_PER_DAY` | No | Limits on Potto per person, so one loop can't run up a bill. | |
 | `STRIPE_SECRET_KEY` | For paid memberships and team booking deposits | Payments through Stripe. A `sk_test_…` key is test mode: no real money moves. | /admin/launch: "Payments" amber means test mode. Book a test experience with a Stripe test card. |
 | `ENCORE_STRIPE_LIVE` | With a live key | Set to `1` together with a `sk_live_…` key to take real money. | "Payments" green. |
+| `STRIPE_WEBHOOK_SECRET` | For paid memberships | The signing secret of the Stripe webhook at `/api/stripe/webhook` (events on connected accounts). Memberships stay off without it. See docs/memberships.md. | `/api/admin/memberships` shows the webhook as set. |
+| `ENCORE_MEMBERSHIP_FEE_BPS` | No | The platform fee on memberships in basis points (0 at launch, capped at 3000). | |
+| `ENCORE_MEMBERSHIPS` | No | `0` turns paid memberships off even with Stripe set. | |
+| `STRIPE_CONNECT_CLIENT_ID` | No | Only for Standard Connect accounts; Express accounts (the default) don't need it. | |
 | `ENCORE_TEAM_FEE_BPS`, `ENCORE_REPEAT_FEE_PCT` | No | Pottery Lab's fee on team bookings (basis points, default 0) and the repeat booking discount (percent, default 50). | |
 | `ENCORE_POSTHOG_KEY`, `ENCORE_POSTHOG_HOST` | Recommended | Product analytics in PostHog: see where the cohort gets stuck. The host defaults to PostHog's US cloud. | /admin/launch green. Open a page, then see the visit in PostHog's live events. |
 | `ENCORE_POSTHOG_REPLAY`, `ENCORE_ANALYTICS_SALT` | No | `1` turns on masked session replay; the salt hashes ids before they go to PostHog (defaults to `SESSION_SECRET`). | |

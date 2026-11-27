@@ -67,6 +67,8 @@ a.hcd-nx:hover{background:var(--pl-raised)}
 #events .tags,#fyList .tags{display:none!important}
 /* until the events arrive, the sections under them wait too, so nothing on screen jumps down when the cards land */
 body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wait > footer{display:none!important}body.dc-wait #events{min-height:60vh}
+/* the shelves above "Coming up" answer on their own clock (slowest on the first visit after a start, when nothing is cached): the events wait unseen until the shelves have landed, so they are drawn once, in their final place */
+body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
 .ev .badge,.ev-badge{font-size:13px!important;padding:2px 8px!important;line-height:16px!important}
 .again{background:none;border:0;color:var(--red);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;padding:0;min-height:44px}
 </style>
@@ -256,7 +258,10 @@ body.dc-wait #hostsSec,body.dc-wait .endcards,body.dc-wait #shopsSec,body.dc-wai
   // one quiz in Pottery Lab: /quiz. Here, just the way in (or your result, drawn below)
   { const q = $("#quiz"); let has = false; try { has = !!localStorage.getItem("encore.guestType"); } catch {} if (q && !has) q.innerHTML = `<div style="flex:1;min-width:180px"><h2>What kind of guest are you?</h2><small>Six taps. No account needed.</small></div><a class="btn ghost" href="/quiz">Take the quiz</a>`; }
   const ready = () => document.body.classList.remove("dc-wait"); setTimeout(ready, 8000);
-  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); ready();
+  // the shelves (public/collections.js) have answered once #plShelves carries its class and is no longer busy; never wait on them for more than 2.5 seconds
+  const shelvesIn = new Promise((done) => { const el = $("#plShelves"), ok = () => !el || (el.classList.contains("plk-shelves") && !el.hasAttribute("aria-busy")); if (ok()) return done();
+    const mo = new MutationObserver(() => { if (ok()) { mo.disconnect(); done(); } }); mo.observe(el, { attributes: true, attributeFilter: ["class", "aria-busy"] }); setTimeout(() => { mo.disconnect(); done(); }, 2500); });
+  fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); shelvesIn.then(ready);
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="ls-empty"><b>Couldn't load events.</b><p>Check your connection, then refresh the page.</p></div>`; ready(); });
 })();
 </script><script src="/collections.js" defer></script><script src="/lists.js"></script><script src="/nav.js"></script>

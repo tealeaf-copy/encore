@@ -72,7 +72,7 @@ body[data-snap=full] .locate{opacity:0;pointer-events:none}
 .sh-head h1{margin:0;font:600 19px/1.25 var(--pl-font-text);letter-spacing:-.01em}
 .sh-head h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sh-head h1 em{font-style:normal;color:inherit;background:linear-gradient(transparent 58%,var(--m-hl) 58%,var(--m-hl) 92%,transparent 92%)}
 .sh-head .kick{color:var(--pl-soft);white-space:nowrap}
-.cats{flex:none;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 16px 12px;border-bottom:var(--m-rule)}.cats::-webkit-scrollbar{display:none}
+.cats{flex:none;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 16px 12px;border-bottom:var(--m-rule)}.cats::-webkit-scrollbar{display:none}.cats[data-wait]{min-height:67px;box-sizing:border-box}/* the chips' room, held until they land */
 .cat{flex:none;display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 12px 0 9px;background:var(--m-paper);border:1.5px solid var(--m-ink);border-radius:var(--m-r);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
 .cat svg path,.cat svg circle{transition:stroke .15s}
 .cat[aria-pressed=true]{background:var(--m-ink);color:var(--m-card)}.cat[aria-pressed=true] svg path{stroke:var(--m-card)}.cat[aria-pressed=true] svg circle{fill:var(--m-card)}
@@ -119,12 +119,16 @@ body[data-snap=full] .locate{opacity:0;pointer-events:none}
 .pcard .x{position:absolute;top:-14px;right:-6px;width:30px;height:30px;border-radius:50%;background:var(--m-card);border:var(--m-line);display:grid;place-items:center;cursor:pointer;padding:0}
 
 /* ---- the map couldn't load: the list by neighbourhood ---- */
-body.nomap{overflow:auto}
-.nomap #stage{position:static;height:auto}.nomap #map,.nomap .locate,.nomap .pcard,.nomap body[data-snap=full] .locate{opacity:0;pointer-events:none}
+.nomap #map,.nomap .locate,.nomap .pcard,.nomap body[data-snap=full] .locate{opacity:0;pointer-events:none}
 .zoomhint{display:none!important}
+/* on a phone the list becomes the page; on a wide screen the list stays where it was and the map's box says why it is empty, so nothing moves (it was a 0.5 layout shift) */
+@media (max-width:899.98px){
+body.nomap{overflow:auto}
+.nomap #stage{position:static;height:auto}
 .nomap .top{position:sticky;top:0;left:0;padding:var(--top) 0 8px 12px;background:var(--m-paper);border-bottom:var(--m-rule)}
 .nomap .sheet{position:static;transform:none!important;height:auto;border:0;border-radius:0;background:var(--m-paper)}
 .nomap .grab{display:none}.nomap .list{overflow:visible}.nomap .sh-head{padding-top:14px}
+}
 .quiet{margin:12px 16px 0;padding:12px 14px;border:1.5px dashed var(--pl-line);border-radius:var(--m-r);font-size:14px;color:var(--pl-soft);display:flex;gap:10px;align-items:flex-start}
 .quiet button{background:none;border:0;padding:0 4px;min-height:44px;margin:-12px 0;color:var(--pl-accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:14px;white-space:nowrap}
 
@@ -150,7 +154,7 @@ body.nomap{overflow:auto}
   .grab{display:none}.sh-head{padding-top:20px}.sh-head h1{font-size:22px}
   .locate{bottom:24px}.pcard{left:16px;right:auto;width:380px;bottom:24px}
   #map .maplibregl-ctrl-bottom-left{bottom:0}
-  .nomap .sheet{width:auto}.nomap .rows{max-width:760px}
+  .nomap #stage::after{content:"The map didn't load. Everything on it is in the list, by neighbourhood.";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(320px,80%);padding:14px 16px;border:1.5px dashed var(--pl-line);border-radius:var(--m-r);font-size:15px;line-height:1.45;color:var(--pl-soft);text-align:center}
 }
 @media (prefers-reduced-motion:reduce){.sheet.anim,.locate,.pcard{transition:none}.pli-o,.pli-route{animation:none;opacity:1;transform:none;stroke-dashoffset:0}}
 </style>
@@ -173,7 +177,7 @@ body.nomap{overflow:auto}
 <section class="sheet" id="sheet" aria-label="Events" data-snap="peek">
   <button type="button" class="grab" id="grab" aria-label="Show more of the list"><span></span></button>
   <div class="sh-head" id="shHead"><h1 id="shTitle">Finding what's on</h1><span class="kick" id="shSub"></span></div>
-  <div class="cats" id="cats" role="group" aria-label="Categories"></div>
+  <div class="cats" id="cats" role="group" aria-label="Categories" data-wait></div>
   <div class="list" id="list"><div id="note"></div><ol class="rows" id="rows" aria-live="polite"></ol><div class="legend" id="legend"></div></div>
 </section>
 <div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-labelledby="introH"></div>
@@ -330,14 +334,14 @@ body.nomap{overflow:auto}
     box.hidden = false; $("#introGo").onclick = closeIntro; box.onclick = (e) => { if (e.target === box) closeIntro(); }; $("#introGo").focus({ preventScroll: true }); }
 
   // ---------- start ----------
-  function noMap(why) { S.nomap = true; S.map = null; document.body.classList.add("nomap"); setShown(0, false); render(); if (why) console.info("[map] showing the list instead:", why); }
+  function noMap(why) { S.nomap = true; S.map = null; document.body.classList.add("nomap"); $("#intro").hidden = true; /* no map to introduce; it shows the next time the map loads */ setShown(0, false); render(); if (why) console.info("[map] showing the list instead:", why); }
   async function start() { const city = PRM.get("city") || window.EncorePlace?.get()?.city || "";
     try { S.data = await (await fetch("/api/public/map" + (city ? "?city=" + encodeURIComponent(city) : ""))).json(); } catch { S.data = { events: [], hoods: [], tiles: { kind: "off" } }; }
     $("#back").href = "/discover" + (S.data.city ? "?c=" + encodeURIComponent(S.data.city) : "");
     try { await window.PLSave?.ready; } catch {}
     if (window.PLSave?.signedIn()) { try { S.me = await (await fetch("/api/me/map?ids=" + encodeURIComponent((S.data.events || []).map((e) => e.id).slice(0, 40).join(",")), { credentials: "same-origin" })).json(); } catch {} }
     await loadMine();
-    snap(PRM.get("sheet") && H[PRM.get("sheet")] ? PRM.get("sheet") : "peek"); render(); maybeIntro();
+    snap(PRM.get("sheet") && H[PRM.get("sheet")] ? PRM.get("sheet") : "peek"); render(); delete $("#cats").dataset.wait; maybeIntro();
     if (PRM.get("tiles") === "off") return noMap("tiles=off");
     try { S.map = await PLMap.mount($("#map"), { center: S.data.center || { lat: 40.71, lng: -73.96 }, zoom: 12.4, tiles: S.data.tiles, lib: S.data.lib, style: window.PL_MAP_STYLE || null, padding: pad, timeoutMs: 10000 }); }
     catch (e) { return noMap(e?.message); }

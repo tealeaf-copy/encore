@@ -276,3 +276,15 @@ No exclamation marks were added, not even for the first guest: the confetti and 
   `server/directory.js`.
 - "Add a little more (optional)" on the reply form could name what's inside it (a note, coming solo, ask me about).
 - "Hosts your team will talk about." on `/hosts/book` leans a little salesy for this audience.
+
+## Verification
+
+- `npm test`: the box ran at a load average of 150 to 200 for the whole session, so the full suite was run file by
+  file, each file retried up to three times. 133 of 135 files pass. Two fail the same way on unmodified main under
+  the same load: `test/invite-type.test.js` (a browser timing check sees two Add to calendar buttons mid-render) and
+  `test/security.test.js` test 6 (fetch failed during sign-in). On a quiet box at the start, main passed all 1290.
+- `node scripts/crawl-pages.mjs --width 390`: 0 problems.
+- `node scripts/crawl-pages.mjs --width 1280`: 3 layout-shift spikes (/leaderboard, a guest's /, /feed after tapping
+  /hosts/book). Unmodified main shows the same /leaderboard spikes (CLS 0.17 to 0.33) under the same load, so they
+  come from slow loading, not from copy. Worth a rerun on a quiet box.
+- `node scripts/copy-lint.mjs`: 4 hits, all in files other work owns.

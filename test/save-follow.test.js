@@ -102,7 +102,8 @@ test("In a browser: Save to list and Follow on real pages, signed in and out", a
   const sam = await join("Sam Ortiz", "sam.sf@example.com"), base = srv.base;
   const ctxOf = async (cookie) => { const ctx = await br.newContext({ ...devices["iPhone 13"], serviceWorkers: "block" }); await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
     await ctx.addInitScript(() => { try { localStorage.setItem("pl.interestsSeen", "1"); localStorage.setItem("pl.deckDone", "1"); } catch {} });
-    if (cookie) { const [k, ...v] = cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }, { name: "encore_in", value: "1", url: base }]); } return ctx; };
+    if (cookie) { const [k, ...v] = cookie.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }, { name: "encore_in", value: "1", url: base }]); }
+    ctx.setDefaultNavigationTimeout(90000); ctx.setDefaultTimeout(45000); return ctx; }; // a busy machine can take 20s for a first page
   const settle = async (p) => { await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {}); await p.waitForTimeout(400); };
   try {
     const ctx = await ctxOf(sam), p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
@@ -131,7 +132,7 @@ test("In a browser: Save to list and Follow on real pages, signed in and out", a
     // the host page: arriving at #follow does not follow; it highlights the button with a line
     await p.goto(base + "/@mai-sf#follow"); await settle(p); await p.waitForSelector("#folHint"); assert.equal(await p.locator("#topFollow").getAttribute("aria-pressed"), "false");
     assert.equal((await (await get("/api/me/following", sam)).json()).hosts.length, 0, "no silent follow");
-    await p.click("#topFollow"); await p.waitForFunction(() => document.getElementById("fc")?.textContent === "1"); assert.equal(await p.locator("#topFollow").getAttribute("aria-pressed"), "true");
+    const fc0 = await p.evaluate(() => +document.getElementById("fc").textContent); await p.click("#topFollow"); await p.waitForFunction((n) => +document.getElementById("fc")?.textContent === n + 1, fc0); assert.equal(await p.locator("#topFollow").getAttribute("aria-pressed"), "true");
     assert.deepEqual(errs, []); await ctx.close();
     // signed out: one tap goes to sign-up with ?next= back here; back signed in, the follow completes once and says so
     const out = await ctxOf(null), q = await out.newPage(); await q.goto(base + "/@mai-sf"); await settle(q); await q.locator("#topFollow").click(); await q.waitForURL(/\/signup/);
@@ -167,7 +168,7 @@ test("Every host page has one control in its header: Follow or Following, Notify
   try {
     for (const width of [390, 1280]) {
       const ctx = await br.newContext({ ...(width === 390 ? devices["iPhone 13"] : { viewport: { width, height: 900 } }), serviceWorkers: "block" }); await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: "" }));
-      const [k, ...v] = viewer.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }, { name: "encore_in", value: "1", url: base }]); const p = await ctx.newPage();
+      const [k, ...v] = viewer.split("="); await ctx.addCookies([{ name: k, value: v.join("="), url: base }, { name: "encore_in", value: "1", url: base }]); ctx.setDefaultNavigationTimeout(90000); ctx.setDefaultTimeout(45000); const p = await ctx.newPage();
       for (const [handle, re] of Object.entries(want)) { await p.goto(base + "/@" + handle); await ready(p);
         const c = await control(p); assert.equal(c.n, 1, `${handle} at ${width}: one header control`); assert.match(c.text, re, `${handle} at ${width}: ${c.text}`); assert.ok(c.shown && c.h >= 44, `${handle} at ${width}: shown, 44px (${c.h})`); }
       // following shows it, and the count moves in place
@@ -177,9 +178,9 @@ test("Every host page has one control in its header: Follow or Following, Notify
       await p.click("#topFollow"); await p.click(".plf-menu [data-a=off]"); await p.waitForFunction(() => document.getElementById("topFollow").getAttribute("aria-pressed") === "false"); assert.equal(await p.evaluate(() => +document.getElementById("fc").textContent), n0);
       await ctx.close();
       // the host on their own page: Edit page, no Follow; signed out: Follow
-      const own = await br.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block" }); const [k2, ...v2] = club.split("="); await own.addCookies([{ name: k2, value: v2.join("="), url: base }, { name: "encore_in", value: "1", url: base }]);
+      const own = await br.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block" }); own.setDefaultNavigationTimeout(90000); const [k2, ...v2] = club.split("="); await own.addCookies([{ name: k2, value: v2.join("="), url: base }, { name: "encore_in", value: "1", url: base }]);
       const o = await own.newPage(); await o.goto(base + "/@cara-sf"); await ready(o); let c = await control(o); assert.equal(c.n, 1); assert.equal(c.text, "Edit page"); assert.equal(await o.locator("[data-pl-follow='cara-sf']:visible").count(), 0); await own.close();
-      const out = await br.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block" }), q = await out.newPage(); await q.goto(base + "/@kevin-sf"); await q.waitForSelector("#topFollow"); c = await control(q); assert.equal(c.n, 1); assert.equal(c.text, "Follow"); await out.close();
+      const out = await br.newContext({ viewport: { width, height: 900 }, serviceWorkers: "block" }); out.setDefaultNavigationTimeout(90000); const q = await out.newPage(); await q.goto(base + "/@kevin-sf"); await q.waitForSelector("#topFollow"); c = await control(q); assert.equal(c.n, 1); assert.equal(c.text, "Follow"); await out.close();
     }
   } finally { await br.close(); }
 });

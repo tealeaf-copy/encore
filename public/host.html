@@ -123,7 +123,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/avatars.js"></script><script src="/mascot.js"></script><script src="/doodle.js"></script><script src="/scrapbook.js"></script>
 <script src="/menucard.js"></script><script src="/support-editor.js"></script><script src="/color.js"></script><script src="/brandkit.js"></script><script src="/storefront.js"></script>
 <script src="/giftart.js"></script>
-<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/kudoswall.js"></script>
+<script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -174,6 +174,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
       <button class="btn" type="submit">Follow</button><small class="muted" id="ferr" role="alert"></small></form></div>
       </aside></div>`;
   window.EncoreClub?.mount(h, d); // the fan club card at #club (public/fanclub.js): join or leave for a guest, start and members for the host
+  window.EncoreMembership?.mount(h, d); // paid memberships at #membership (public/memberships.js): Become a member, You're a member, the host's setup and members
   // one "Support" card for every way to chip in: tips, a pledge, the support links and the wishlist
   let tippers = 0; const long = String(first).trim().split(/\s+/).length > 2, supH = !long ? `Support ${first}` : d.person ? `Support ${String(d.person).trim().split(/\s+/)[0]}` : "Chip in";
   const tipLink = (a) => [h.venmo && `https://venmo.com/${encodeURIComponent(h.venmo)}?txn=pay&amount=${a}&note=${encodeURIComponent("Thank you for hosting!")}`, h.paypal && `https://paypal.me/${encodeURIComponent(h.paypal)}/${a}`, h.cashapp && `https://cash.app/$${encodeURIComponent(h.cashapp)}/${a}`].filter(Boolean)[0];

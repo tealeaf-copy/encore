@@ -67,6 +67,7 @@ import { mountBrandPanel } from "./brandpanel.js"; // quick book, briefs, outcom
 import { mountBrandPanel2 } from "./brandpanel2.js"; // recovery, company settings, account dinners, formats, durability (server/brandpanel2.js)
 import { mountBrandPanel3 } from "./brandpanel3.js"; // the recovery hold and fresh RSVP, cancel, matched lift, durability measures (server/brandpanel3.js)
 import { mountBrandbook } from "./brandbook.js"; import { brandView } from "./brandexamples.js"; import { mountBrandDemo } from "./branddemo.js"; import { mountInsights } from "./insights.js"; import { mountCampaigns } from "./campaigns.js"; // brand Insights ("What resonates") and Campaigns (server/insights.js, server/campaigns.js) // booking experience hosts for teams: Discover by mood, trust, shortlists, request to book (server/brandbook.js)
+import { mountMemberships } from "./memberships.js"; // paid host memberships: tiers, Stripe Connect and Billing, priority access (server/memberships.js)
 import { mountFanclub } from "./fanclub.js"; // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { mountPeople } from "./people.js"; import { mountSeats } from "./seats.js"; import { mountInvites } from "./invites.js"; // People, seats by audience and the invite plan (server/people.js, seats.js, invites.js) // fan clubs and the follow graph: follow, join, members-first, host updates (server/fanclub.js)
 import { makeReplyDigest } from "./replydigest.js"; // the host's reply summary: one email per event every few hours (server/replydigest.js)
@@ -787,7 +788,10 @@ export function createApp({ store, dataDir }) {
   mountChat(app, { store, small, currentUser, C, X, mail: (...a) => mailWs(...a), publicOrigin: (req) => originOf(req), replyToken: (ws, rid) => replyToken(ws, rid), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) }); // group chats (server/chat.js)
   mountFeedVisual(app, { store, small, currentUser, C, X, sendPage: (res, f) => sendStatic(res, f, "<p>Page missing.</p>") }); // ---- visual feed (server/feedvisual.js) ----
   mountFeedComments(app, { small, currentUser, X, sendHtml: (req, res, html) => sendText(req, res, html) }); // ---- comments on feed cards and the post page (server/feedcomments.js), next to the feed blend it reads ----
-  mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X }); mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
+  mountPeople(app, { store, small, big: express.json({ limit: "2mb" }), currentUser, C, sendStatic }); mountSeats(app, { store, small, currentUser, C, X });
+  app.locals.promoteWaitlist = (...a) => promoteWaitlist(...a); // memberships: the waitlist moves up when a members window ends
+  mountMemberships(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // paid memberships (server/memberships.js): after fan clubs and seats, which it hooks into; its Stripe webhook takes the raw body
+  mountInvites(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // the address book and the invite plan
   mountBrandKit(app, { small, ownerOnly: (req, res) => ownerOnly(req, res), C, assetsDir }); // ---- brand kits (server/brandkit.js) ----
   mountComeWith(app, { store, small, currentUser, X }); // "Come with me?" (server/comewith.js)
   mountPayMethods(app, { store, small, currentUser, X }); // Get paid (server/paymethods.js)
@@ -1588,7 +1592,7 @@ export function createApp({ store, dataDir }) {
     if (GUEST_COLLECTIONS.has(collection) && Buffer.byteLength(JSON.stringify(b)) > GUEST_BODY_MAX) { res.status(413).json({ code: "too_large", message: "That's too much to send. Try a smaller photo or a shorter note." }); return false; }
     if (collection === "feedback" || collection === "interest") return guestNote(req, res, collection, b); // review round 11
     if (collection === "rsvps") {
-      const raw0 = b; b = cleanGuestRsvp(b);
+      const raw0 = b; b = cleanGuestRsvp(b); req.joinWait = raw0.joinWait === true; // memberships: "Join the waitlist" during a members window (read in rsvpPolicy, never stored)
       // ---- review round 8: a pre-order is rebuilt here from the event's own items and prices (server/preorder.js) ----
       { const pth = String(req.query.path || ""), cur0 = /^rsvps\/[A-Za-z0-9_-]+$/.test(pth) ? S(req).get(pth)?.data : null, eid0 = String(b.eventId || cur0?.eventId || "");
         const evO = /^[A-Za-z0-9_-]{1,80}$/.test(eid0) ? (S(req).get("events/" + eid0)?.data || null) : null;
@@ -1682,7 +1686,7 @@ export function createApp({ store, dataDir }) {
     const cur = S(req).get(path)?.data || {}, pol = rsvpPolicy(req, { ...cur, ...body, eventId: cur.eventId || body.eventId }, path.split("/")[1]);
     if (pol.error) throw httpError(pol.status || 409, pol.code || "sold_out", pol.error);
     const o = pol.body; if (!o.eventId) return body;
-    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}), ...(o.seatBlock != null ? { seatBlock: o.seatBlock } : {}) };
+    return { ...body, ...(body.response != null || o.response !== cur.response ? { response: o.response } : {}), ...(o.party != null ? { party: o.party } : {}), ...(o.waitAt ? { waitAt: o.waitAt } : {}), ...(o.partyCut ? { partyCut: true } : {}), ...(body.tiers != null && o.tiers ? { tiers: o.tiers } : {}), ...(o.seatBlock != null ? { seatBlock: o.seatBlock } : {}), ...(o.memberWait ? { memberWait: o.memberWait } : {}), ...(o.memberRank != null ? { memberRank: o.memberRank } : {}) /* memberships */ };
   }
   /** Over: its last day is before today where it happens. Pure apart from the clock. */
   const eventOver = (ev) => { const d = /^\d{4}-\d{2}-\d{2}$/.test(ev?.endDate || "") && ev.endDate >= (ev.date || "") ? ev.endDate : ev?.date; return /^\d{4}-\d{2}-\d{2}$/.test(d || "") && d < todayIn(eventTz(ev)); };
@@ -1799,6 +1803,18 @@ export function createApp({ store, dataDir }) {
     if (cw) { out.withOf = cw.withOf; out._withH = cw.withH; if (cw.pairOf) { out.pairOf = cw.pairOf; delete out.party; } }
     // ask-to-join: a guest's yes is a request until the host lets them in (once let in, they can change their mind back)
     if (req.guest && ev.approvalRequired && out.response === "going" && pr.response !== "going" && !pr.letInAt) out.response = "requested";
+    // ---- memberships hook (server/memberships.js): during a paid members window only open tiers say I'm in or order. Who
+    // is a member comes from the signed-in account or an email this reply proved by link, never the email in the form ----
+    let memberRank = null;
+    if (req.guest && (out.response === "going" || out.response === "requested") && pr.response !== "going" && app.locals.memberships) {
+      let sEm = ""; try { sEm = String(currentUser(req)?.email || "").trim().toLowerCase(); } catch {}
+      const proven = pr.emailProven && String(pr.emailProven).toLowerCase() === String(pr.email || "").trim().toLowerCase() ? String(pr.emailProven).toLowerCase() : "", who = sEm || proven;
+      memberRank = app.locals.memberships.rankOf(req.ws, who); // the members' held seats (server/seats.js) go by this too
+      const invited = !!who && !!app.locals.invites?.isInvited?.(req.ws, eventId, [who]);
+      const mg = app.locals.memberships.gate(req.ws, eventId, { email: who, invited, wait: !!req.joinWait, ev });
+      if (mg?.error) return { body: out, prior, error: mg.error, status: mg.status, code: mg.code, extra: { ...(mg.opensAt ? { opensAt: mg.opensAt } : {}), ...(mg.publicAt ? { publicAt: mg.publicAt } : {}), ...(mg.canWait != null ? { canWait: mg.canWait } : {}), ...(mg.handle ? { handle: mg.handle } : {}) } };
+      if (memberRank) out.memberRank = memberRank; else delete out.memberRank; // stamped by the server: who may move up into a held seat
+      if (mg?.waitlist) { out.response = "waitlist"; out.memberWait = mg.memberWait; out.waitAt = pr.waitAt || Date.now(); return { body: out, prior }; } }
     // a pre-order's cap counts what's ordered (max 20 loaves), and a full one says how many are left instead of a waitlist.
     // review round 11: with a menu, I'm in needs an order, and a pre-order never goes on the waitlist.
     if (ev.preorder && req.guest && out.response === "going") {
@@ -1811,10 +1827,10 @@ export function createApp({ store, dataDir }) {
     if (out.response === "going" && +ev.headcount > 0 && ev.autoWait !== false && !meAlready && !out.pairOf) {
       const cap = +ev.headcount, taken = seatsTaken(ev, all, { skip: prior?.id, skipKey: em }) - (cw?.credit || 0), mine = seatsOf(out, ev);
       if (pr.response === "going") { const u = partyUnit(ev), room = Math.max(seatsOf(pr, ev), cap - taken); if (mine > room) { out.party = Math.max(u, Math.floor(room / u) * u); out.partyCut = true; } } // already in: keeps their spots (whole groups)
-      else if (taken + mine > cap || (!cw?.credit && waitlistOf(all.filter((d) => d.id !== prior?.id)).length)) out.response = "waitlist";
+      else if (taken + mine > cap || (!cw?.credit && waitlistOf(all.filter((d) => d.id !== prior?.id && !app.locals.memberships?.holdsBack?.(req.ws, eventId, d.data) /* memberships: people waiting for a members window to end don't stand in a member's way */)).length)) out.response = "waitlist";
     }
     // seats by audience (server/seats.js): the best block this guest qualifies for, or not open yet, or the waitlist
-    if (req.guest && out.response === "going" && !meAlready && !out.pairOf) { const sb = app.locals.seats?.gate?.(req.ws, eventId, ev, all, out, prior, [em, currentUser(req)?.email]); if (sb?.error) return { body: out, prior, error: sb.error, status: sb.status, code: sb.code }; if (sb?.waitlist) out.response = "waitlist"; else if (sb?.block != null) out.seatBlock = sb.block; }
+    if (req.guest && out.response === "going" && !meAlready && !out.pairOf) { const sb = app.locals.seats?.gate?.(req.ws, eventId, ev, all, out, prior, [em, currentUser(req)?.email], memberRank != null ? { memberRank } : {}); if (sb?.error) return { body: out, prior, error: sb.error, status: sb.status, code: sb.code }; if (sb?.waitlist) out.response = "waitlist"; else if (sb?.block != null) out.seatBlock = sb.block; }
     if (out.response === "waitlist") out.waitAt = pr.response === "waitlist" && pr.waitAt ? pr.waitAt : Date.now();
     return { body: out, prior };
   }
@@ -1853,8 +1869,10 @@ export function createApp({ store, dataDir }) {
     for (let i = 0; i < 100; i++) {
       const all = St.list("rsvps").filter((d) => d.data?.eventId === eventId), free = +ev.headcount - seatsTaken(ev, all); if (free <= 0) break;
       // ask-to-join events: only people the host already let in move up on their own; the host decides the rest
-      const next = waitlistOf(all).find((d) => heldOf(d.data, ev) <= free && (!ev.approvalRequired || d.data.letInAt)); if (!next) break;
-      St.set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now() }); done.push(next);
+      // memberships hook: someone who joined the waitlist during a paid members window waits until it opens to everyone
+      // and while members' seats are held (server/seats.js placeWaiter) only a member of the right tier moves into one
+      let spot; const next = waitlistOf(all).find((d) => { if (!(heldOf(d.data, ev) <= free && (!ev.approvalRequired || d.data.letInAt) && !app.locals.memberships?.holdsBack?.(ws, eventId, d.data))) return false; spot = app.locals.seats?.placeWaiter?.(ws, eventId, ev, all, d.data); return spot !== null; }); if (!next) break;
+      St.set("rsvps/" + next.id, { ...next.data, response: "going", promotedAt: Date.now(), changedAt: Date.now(), ...(spot && spot.block != null ? { seatBlock: spot.block } : {}) }); done.push(next);
     }
     const title = titleOf(ev), when = whenOf(ev), owner = getWorkspace(ws)?.ownerEmail || "";
     for (const d of done) { const r = d.data, to = String(r.email || "").trim(), name = firstOf(r.name) || "there";
@@ -2004,7 +2022,7 @@ export function createApp({ store, dataDir }) {
         if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
         if (evG.date && evG.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." });
         if (rsvpLimited(req, eidG)) return res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); }
-      const pol = rsvpPolicy(req, body); if (pol.error) return res.status(pol.status || 409).json({ code: pol.code || "sold_out", message: pol.error, ...(pol.left != null ? { left: pol.left } : {}) }); body = pol.body;
+      const pol = rsvpPolicy(req, body); if (pol.error) return res.status(pol.status || 409).json({ code: pol.code || "sold_out", message: pol.error, ...(pol.left != null ? { left: pol.left } : {}), ...(pol.extra || {}) }); body = pol.body;
       // the same email from another device can't overwrite someone's reply: only a device that sent it or opened the emailed
       // link (its guest key), a verified personal invite, or the host can change it. Anyone else gets the link sent to that email.
       if (pol.prior && req.guest) { const sameDevice = keyOk(pol.prior.data, guestKey(req)), viaInvite = !!pol.prior.data._inv && String(req.get("x-encore-invite") || "").split("~")[0] === pol.prior.data._inv && /^[A-Za-z0-9_-]+$/.test(String(body.eventId || "")) && !!invitedGuest(req, String(body.eventId), S(req).get("events/" + String(body.eventId))?.data || {});

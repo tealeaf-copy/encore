@@ -13372,7 +13372,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 // ---- the host loop (public/hostloop.js, server/hostloop.js): host Home's card with the streak, today's small move,
 // warmth and Circles, and the once-only milestone celebration ----
 (function(){ if(location.pathname!=="/"||!/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; const add=(src)=>{ if(document.querySelector(`script[src="${src}"]`)) return; const t=document.createElement("script"); t.src=src; t.async=false; document.head.appendChild(t) };
-  if(!window.Potto) add("/mascot.js"); add("/fx.js"); add("/hostloop.js") })();
+  if(!window.Potto) add("/mascot.js"); add("/fx.js"); add("/hostloop.js"); add("/memberships.js") /* Home's membership card: progress, Start a membership, members (public/memberships.js) */ })();
 // ---- Home settles once: the cards that arrive late (the streak card, guides, new replies, hosts you follow, near you,
 // the playbook line) each land under the quick-start panel at their own time, and each used to push the page down.
 // Everything under that panel waits, hidden but laid out, until they've stopped arriving, then shows in one fade.

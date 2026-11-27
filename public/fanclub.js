@@ -80,14 +80,14 @@
     let M0 = null;
     function host(M) { const c = S.c; M = M || M0;
       if (c.on && S.view === "settings") return settings(M); if (c.on && S.view === "note") return note(M);
-      if (!c.on) { box.innerHTML = `<p class="club-k">Only you see this</p><h3 id="clubH">Start a fan club</h3><p>A home for your regulars. Members hear about new dates first and get a chat of their own. Free, and you can turn it off any time.</p>
+      if (!c.on) { box.innerHTML = `<p class="club-k">Only you see this</p><h3 id="clubH">Start a fan club</h3><p>A home for your regulars. Members hear about new dates first and get a chat of their own. Free, and you can turn it off any time.</p>${window.EncoreMembership?.clubLine?.(d) || "" /* paid memberships (public/memberships.js) */}
           <label>Club name<input id="clubName" maxlength="60" value="${esc(c.name || M?.club?.name || "")}" placeholder="${esc(hostName)}'s Regulars"></label><label>One line on why to join<input id="clubPitch" maxlength="140" value="${esc(c.pitch || "")}" placeholder="First to hear, first to the table."></label>
           <button type="button" class="club-b pri" data-start>Start the club</button><p class="club-err" role="alert">${esc(S.err)}</p>`;
         $("[data-start]").onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const j = await post("/api/host/club", { on: true, name: $("#clubName").value.trim() || undefined, pitch: $("#clubPitch").value.trim() }); S.c = { ...S.c, ...(j.club || j), on: true, members: S.c.members || 0 }; S.err = ""; S.view = ""; host(M); window.PLFx?.stamp?.("Open", $("h3"), { small: true }); $("h3 .hl-stamp")?.style.setProperty("margin-left", "10px"); load(); } catch (e) { b.disabled = false; err(e.message); } };
         return; }
       const mem = M?.members || [], reg = M?.regulars || [];
       box.innerHTML = `<p class="club-k">Your fan club · ${n(M ? mem.length : c.members || 0, "member", "members")}</p><h3 id="clubH">${esc(c.name)}</h3>${c.pitch ? `<p>${esc(c.pitch)}</p>` : ""}
-        <p class="club-m">Members hear about a new date ${c.earlyHours > 0 ? `${c.earlyHours} hours before everyone else` : "as soon as it's out"}.</p>
+        <p class="club-m">Members hear about a new date ${c.earlyHours > 0 ? `${c.earlyHours} hours before everyone else` : "as soon as it's out"}.</p>${window.EncoreMembership?.clubLine?.(d) || "" /* paid memberships (public/memberships.js): Start a membership, or how close you are */}
         ${mem.length ? `<ul>${(reg.length ? reg : mem.slice(0, 5)).map((m) => `<li><span>${esc(m.name)}</span><small>${m.attended ? n(m.attended, "event", "events") : "joined " + esc(day(m.since))}</small></li>`).join("")}</ul>` : `<p class="club-m">Nobody yet. Guests can join from this card on your page, so send them your page link.</p>`}
         <div class="club-row"><button type="button" class="club-b" data-note>Write a note</button><button type="button" class="club-b" data-settings>Club settings</button></div><p class="club-err" role="alert">${esc(S.err)}</p>`;
       $("[data-note]").onclick = () => show("note", () => host(M0)); $("[data-settings]").onclick = () => show("settings", () => host(M0)); }

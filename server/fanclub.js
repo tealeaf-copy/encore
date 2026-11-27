@@ -59,6 +59,11 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
   const owner = (ws) => lc(getWorkspace(ws)?.ownerEmail);
   const handleOf = (ws) => C.profileOf(ws)?.handle || "";
   const chatIdOf = (ws) => "club-" + h24("club|" + ws).slice(0, 16);
+  // ---- hooks: paid memberships (server/memberships.js) fill these in; with none, the club works as before ----
+  // handles(ws, id): the event's members window is the memberships' to enforce; onPublish(req, ws, id): true when it set
+  // the tiered windows itself; hostPage(req, ws, viewer): the membership card's data; badgeOf(ws, email): a tier name
+  // for the member's badge; onRemove(ws, email): the host took a member out (a paid one stops being charged).
+  const hooks = {};
 
   // ---- settings ----
   function config(ws) { const c = S0(ws).get("fanclub/main")?.data || {}, h = C.profileOf(ws) || {};
@@ -93,7 +98,9 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
     try { if (!C.followersOf(ws).some((f) => lc(f.email) === em)) C.follow(ws, { email: em, name: m.name, via: "club" }); } catch {}
     return { member: m }; }
   function leave(ws, email, { by = "member" } = {}) { const em = lc(email), cur = memberDoc(ws, em); if (!active(cur)) return { ok: true, was: false };
-    S0(ws).set(mPath(em), { ...cur, ...(by === "host" ? { removedAt: clock() } : { leftAt: clock() }), history: [...(cur.history || []), { at: clock(), j: 0 }].slice(-50) }); return { ok: true, was: true }; }
+    S0(ws).set(mPath(em), { ...cur, ...(by === "host" ? { removedAt: clock() } : { leftAt: clock() }), history: [...(cur.history || []), { at: clock(), j: 0 }].slice(-50) });
+    if (by === "host") { try { hooks.onRemove?.(ws, em); } catch {} } // memberships hook: a paid member taken out stops being charged
+    return { ok: true, was: true }; }
   /** The host changed their mind about a removal: the member is back, with the date they first joined. */
   function restore(ws, id) { const p = "clubmembers/" + id, cur = S0(ws).get(p)?.data; if (!cur?.removedAt) return null; const { removedAt, leftAt, ...rest } = cur; void removedAt; void leftAt;
     S0(ws).set(p, { ...rest, history: [...(cur.history || []), { at: clock(), j: 1 }].slice(-50) }); return { ok: true }; }
@@ -128,7 +135,8 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
   /** The fan clubs someone is in. */
   function clubMemberships(email) { const em = lc(email), out = []; if (!em) return out;
     for (const ws of allWorkspaceIds()) { if (ws === DEFAULT_WS) continue; try { const m = memberDoc(ws, em); if (!active(m) || !isMember(ws, em)) continue; const h = C.profileOf(ws), c = config(ws); if (!h?.handle) continue;
-      out.push({ handle: h.handle, host: h.name || h.handle, club: c.name, since: m.joinedAt, firstSince: m.firstJoinedAt || m.joinedAt, showBadge: !!m.showBadge, muted: !!m.muted, chatId: c.chatId }); } catch {} }
+      let tier = ""; try { tier = hooks.badgeOf?.(ws, em) || ""; } catch {} // memberships hook: "Patron" on the badge
+      out.push({ handle: h.handle, host: h.name || h.handle, club: c.name, since: m.joinedAt, firstSince: m.firstJoinedAt || m.joinedAt, showBadge: !!m.showBadge, muted: !!m.muted, chatId: c.chatId, ...(tier ? { tier } : {}) }); } catch {} }
     return out.sort((a, b) => a.since - b.since); }
 
   // ---- event visibility: members only, members first ----
@@ -146,7 +154,9 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
   /** Can this person read a club-only event? The host, members. */
   const canSee = (ws, email) => { const em = lc(email); return !!em && (em === owner(ws) || isMember(ws, em)); };
   /** Before a reply: null when it's fine, else the refusal. Members-only needs a member; members-first waits for the window. */
-  function rsvpGate(ws, id, emails = []) { const v = visOf(ws, id); if (!v) return null; const E = emails.map(lc).filter(Boolean), c = config(ws);
+  function rsvpGate(ws, id, emails = []) { const v = visOf(ws, id); if (!v) return null;
+    try { if (hooks.handles?.(ws, id)) return null; } catch {} // memberships hook: a paid members window is checked in the reply itself (server/app.js rsvpPolicy)
+    const E = emails.map(lc).filter(Boolean), c = config(ws);
     if (v.only && !E.some((e) => canSee(ws, e))) return { code: "club_only", message: `This one is for ${c.name} only. Join the fan club on ${C.profileOf(ws)?.name || "the host"}'s page to get in.`, handle: handleOf(ws) };
     if (!v.only && v.earlyUntil && v.earlyUntil > clock() && !E.some((e) => canSee(ws, e))) return { code: "club_early", message: `${c.name} can reply first, until ${new Date(v.earlyUntil).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Join the fan club to book now, or come back then.`, handle: handleOf(ws), until: v.earlyUntil };
     return null; }
@@ -174,7 +184,7 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
     try { const u = X?.userOf?.(em); if (u?.ws && config(u.ws).on) out.push(chatIdOf(u.ws)); } catch {} return out; }
 
   return { config, setConfig, blocked, isMember, memberDoc, membersOf, join, leave, restore, removedOf, memberSettings, attendance, growth, followerDoc, setFollow, followedHosts, clubMemberships,
-    visibility, setVisibility, visOf, canSee, rsvpGate, postsOf, addPost, heart, feedItems, postTarget, chatEvent, chatMembers, chatIdsFor, chatIdOf, owner, handleOf, S0 };
+    visibility, setVisibility, visOf, canSee, rsvpGate, postsOf, addPost, heart, feedItems, postTarget, chatEvent, chatMembers, chatIdsFor, chatIdOf, owner, handleOf, S0, hooks };
 }
 
 export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigin = () => "" }) {
@@ -204,6 +214,7 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
   async function onPublish(req, ws, id) { try {
     const S = F.S0(ws), ev = S.get("events/" + id)?.data, h = C.profileOf(ws); if (!ev || ev.example || ev.sample || ev.cancelled || !h?.handle || demo(ws)) return;
     const v = F.visOf(ws, id) || {}; if (v.toldAt) return;
+    try { if (F.hooks.onPublish?.(req, ws, id)) return; } catch {} // memberships hook: paid tiers open one after another; members and followers hear from there
     const today = new Date().toISOString().slice(0, 10); if (ev.date && ev.date < today) return;
     const c = F.config(ws), title = ev.pubTitle || ev.name || "Something new", kind = ev.drop ? "drop" : "event", link = `/e/${encodeURIComponent(id)}`;
     let earlyUntil = v.earlyUntil || 0;
@@ -227,7 +238,7 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
     for (const ws of allWorkspaceIds()) { if (ws === DEFAULT_WS) continue; const S = F.S0(ws); let L = []; try { L = S.list("clubevents"); } catch { continue; }
       for (const d of L) { const v = d.data || {}; if (!v.toldAt || v.only || v.followersToldAt || !v.earlyUntil || v.earlyUntil > now) continue; const skip = new Set(F.membersOf(ws).map((m) => lc(m.email))); told += await tellFollowers({}, ws, d.id, skip); } }
     return { told }; }
-  F.onPublish = onPublish; F.runJobs = runJobs; F.tellFollowers = tellFollowers;
+  F.onPublish = onPublish; F.runJobs = runJobs; F.tellFollowers = tellFollowers; F.tellOne = tellOne; // tellOne: memberships send through it too
   if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => runJobs().catch((e) => console.warn("[fanclub] jobs", e?.message)), 10 * 60e3); t.unref?.(); }
 
   /** Event writes (server/app.js writeDoc): a newly published event or drop tells members and followers; members-only stays off Discover. */
@@ -257,7 +268,9 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
       .map(({ id, e }) => ({ id, title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", hood: e.hood || "", city: e.city || "", coverPhoto: PHOTO_OK(e.coverPhoto) ? e.coverPhoto : "", activity: e.activity || "", emoji: e.emoji || "", clubOnly: true })) : [];
     return { ...body, upcoming, past, stats, club: c.on ? { on: true, name: c.name, pitch: c.pitch, perks: c.perks, earlyHours: c.earlyHours, members: F.membersOf(ws).length, posts: F.postsOf(ws).length } : { on: false },
       viewer: { signedIn: !!u, own, following: !!f && !f.pending, notify: !!f && f.notify !== false, member, since: member ? md.joinedAt : 0, showBadge: !!md?.showBadge, muted: !!md?.muted, removed: !!md?.removedAt, blocked: !!em && F.blocked(ws, em) },
-      ...(see && c.on ? { clubEvents } : {}) }; }
+      ...(see && c.on ? { clubEvents } : {}), ...membershipOf(req, ws, u) }; }
+  // memberships hook: the "Become a member" card's data rides along with the page (no second request)
+  function membershipOf(req, ws, u) { try { const m = F.hooks.hostPage?.(req, ws, u); return m ? { membership: m } : {}; } catch (e) { console.warn("[fanclub] membership", e?.message); return {}; } }
 
   // ---- blocks reach the old follow endpoint too (server/community.js) ----
   app.post("/api/public/follow", small, (req, res, next) => { const ws = wsOf(req.body?.handle), u = viewer(req), em = lc(u?.email || req.body?.email);
@@ -302,7 +315,7 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
     res.json(out); });
   // a person's own page: the clubs they chose to show ("Regular at Bo's since March")
   app.get("/api/public/badges/:handle", (req, res) => { const ws = wsOf(req.params.handle), o = ws && F.owner(ws); if (!o) return res.json({ clubs: [] });
-    res.json({ clubs: F.clubMemberships(o).filter((c) => c.showBadge).map((c) => ({ handle: c.handle, host: c.host, club: c.club, since: c.firstSince || c.since })) }); });
+    res.json({ clubs: F.clubMemberships(o).filter((c) => c.showBadge).map((c) => ({ handle: c.handle, host: c.host, club: c.club, since: c.firstSince || c.since, ...(c.tier ? { tier: c.tier } : {}) })) }); });
   // one-click unsubscribe from one club's (or one host's) notices
   const unsubPage = (title, msg) => `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><body style="font:16px/1.5 system-ui,sans-serif;max-width:440px;margin:60px auto;padding:0 16px;color:#1F1A17;background:#FBF8F3"><h1 style="font-size:22px">${title}</h1><p>${msg}</p></body>`;
   app.get("/api/public/club/unsub", (req, res) => { const ws = wsOf(req.query.h); let em = ""; try { em = Buffer.from(String(req.query.e || ""), "base64url").toString(); } catch {}

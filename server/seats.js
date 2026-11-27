@@ -25,9 +25,10 @@ import { startMs } from "./invites.js";
 const HOUR = 3600e3, DAY = 864e5;
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
 const clean = (v, n = 60) => String(v ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, n);
-export const KINDS = ["tier", "club", "vip", "list", "regulars", "new", "everyone"];
-const RANK = { tier: 0, club: 1, vip: 2, list: 2, regulars: 3, new: 4, everyone: 9 };
-export const KIND_LABEL = { club: "Fan club", vip: "VIP list", list: "A list", regulars: "Regulars", new: "New guests", everyone: "Everyone else", tier: "Supporters" };
+// "member": paid members (server/memberships.js) of tier minRank or higher; set by the memberships, released when the event opens to everyone
+export const KINDS = ["member", "tier", "club", "vip", "list", "regulars", "new", "everyone"];
+const RANK = { member: 0, tier: 0, club: 1, vip: 2, list: 2, regulars: 3, new: 4, everyone: 9 };
+export const KIND_LABEL = { member: "Members", club: "Fan club", vip: "VIP list", list: "A list", regulars: "Regulars", new: "New guests", everyone: "Everyone else", tier: "Supporters" };
 export const HOLD_MS = 20e3;
 
 /** "Wed 9am" in the event's own time zone. */
@@ -37,7 +38,7 @@ export function fmtOpen(ms, ev) { if (!ms) return ""; const tz = eventTz(ev);
 export function cleanBlocks(B) {
   return (Array.isArray(B) ? B : []).slice(0, 8).map((b, i) => { const kind = KINDS.includes(b?.kind) ? b.kind : "everyone";
     return { id: ID.test(String(b?.id || "")) ? String(b.id).slice(0, 20) : "b" + (i + 1), kind, label: clean(b?.label) || (kind === "tier" ? TIER_LABEL[b?.tier] || "Supporters" : KIND_LABEL[kind]), n: Math.max(0, Math.min(10000, Math.floor(+b?.n || 0))),
-      opensAt: Math.max(0, Math.floor(+b?.opensAt || 0)), releaseAt: kind === "everyone" ? 0 : Math.max(0, Math.floor(+b?.releaseAt || 0)), ...(kind === "tier" ? { tier: ["monthly", "yearly", "founding"].includes(b?.tier) ? b.tier : "founding" } : {}), ...(kind === "list" && ID.test(String(b?.list || "")) ? { list: String(b.list) } : {}) }; })
+      opensAt: Math.max(0, Math.floor(+b?.opensAt || 0)), releaseAt: kind === "everyone" ? 0 : Math.max(0, Math.floor(+b?.releaseAt || 0)), ...(kind === "tier" ? { tier: ["monthly", "yearly", "founding"].includes(b?.tier) ? b.tier : "founding" } : {}), ...(kind === "list" && ID.test(String(b?.list || "")) ? { list: String(b.list) } : {}), ...(kind === "member" ? { minRank: Math.max(1, Math.min(3, Math.floor(+b?.minRank || 1))) } : {}) }; })
     .filter((b) => b.n > 0 || b.kind === "everyone");
 }
 
@@ -56,23 +57,26 @@ export function preset(name, { cap, t0, ev, club = false, tiers = [] }) {
 }
 export const PRESETS = [["even", "Even split", "Fan club, regulars and everyone get the same share."], ["regulars", "Regulars first", "Half for people who came twice, the rest opens 2 days later."], ["members", "Members first", "Half for your fan club, opening first."], ["fresh", "Fresh faces", "Half saved for people who've never come."]];
 
-export function makeSeats({ store, P, F = null, now: clock = () => Date.now() }) {
+export function makeSeats({ store, P, F = null, MS = () => null, now: clock = () => Date.now() }) {
   const S0 = (ws) => scopeStore(store, ws);
   const cfgOf = (ws, id) => { const d = ID.test(String(id || "")) ? S0(ws).get("seatplans/" + id)?.data : null; return d ? { on: !!d.on, blocks: cleanBlocks(d.blocks), rollover: d.rollover !== false, preset: d.preset || "" } : { on: false, blocks: [], rollover: true, preset: "" }; };
-  function setCfg(ws, id, b = {}, { native = false } = {}) { const cur = cfgOf(ws, id); let blocks = b.blocks != null ? cleanBlocks(b.blocks) : cur.blocks;
+  function setCfg(ws, id, b = {}, { native = false, membership = false } = {}) { const cur = cfgOf(ws, id); let blocks = b.blocks != null ? cleanBlocks(b.blocks) : cur.blocks;
     if (native) { const old = cur.blocks.filter((x) => x.kind === "tier"); blocks = [...old, ...blocks.filter((x) => x.kind !== "tier")]; } // the app never adds or edits a paid block
+    if (!membership) { const held = cur.blocks.filter((x) => x.kind === "member"); blocks = [...held, ...blocks.filter((x) => x.kind !== "member")]; } // memberships hook: only server/memberships.js sets the members' block
     const ids = new Set(); blocks = blocks.map((x, i) => { let k = x.id; while (ids.has(k)) k = x.id + i; ids.add(k); return { ...x, id: k }; });
     const next = { on: b.on != null ? !!b.on : cur.on || blocks.length > 0, blocks, rollover: b.rollover != null ? !!b.rollover : cur.rollover, preset: clean(b.preset, 20) || cur.preset, updatedAt: clock() };
     S0(ws).set("seatplans/" + id, next);
     // seat blocks take over from the fan club's members-first window: the club block's open time is the early access
-    if (next.on) { try { const v = S0(ws).get("clubevents/" + id)?.data; if (v && !v.only && v.earlyUntil) S0(ws).set("clubevents/" + id, { ...v, earlyUntil: 0, bySeats: true }); } catch {} }
+    if (next.on) { try { const v = S0(ws).get("clubevents/" + id)?.data; if (v && !v.only && v.earlyUntil && !v.byMembership /* a paid members window stays: server/memberships.js */) S0(ws).set("clubevents/" + id, { ...v, earlyUntil: 0, bySeats: true }); } catch {} }
     return cfgOf(ws, id); }
 
   // ---- who qualifies ----
   const tierOf = (ws, email) => { const k = crypto.createHash("sha256").update(lc(email)).digest("hex").slice(0, 24); const t = S0(ws).get("pledges/" + k)?.data?.tier; return t && t !== "none" ? t : ""; };
-  function eligible(ws, b, email, person) { const em = lc(email);
+  function eligible(ws, b, email, person, opts = {}) { const em = lc(email);
     switch (b.kind) {
       case "everyone": return true;
+      // memberships hook: the reply passes the rank of the signed-in member (never the email typed into the form)
+      case "member": { const r = opts.memberRank != null ? +opts.memberRank : (MS()?.rankOf?.(ws, em) || 0); return r >= (b.minRank || 1); }
       case "new": return !person || !person.attended;
       case "regulars": return !!person && person.attended >= 2;
       case "club": return !!em && !!F?.isMember?.(ws, em);
@@ -99,7 +103,7 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
     return { cfg: c, blocks: B, open };
   }
   /** A guest's I'm in: the block they get, a refusal (not open yet), or the waitlist. */
-  function gate(ws, id, ev, R, out, prior, emails = []) {
+  function gate(ws, id, ev, R, out, prior, emails = [], opts = {}) {
     const st0 = cfgOf(ws, id); if (!st0.on) return null;
     const pr = prior?.data || {}; if (pr.response === "going" && pr.seatBlock) return { block: pr.seatBlock };
     const em = emails.map(lc).find((e) => EMAIL_RE.test(e)) || "", key = keyFor(em || out.email, out.phone) || "anon:" + h24(JSON.stringify([out.name, out.phone]));
@@ -108,7 +112,7 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
     // someone the host invited personally (server/invites.js) never waits for the public open time
     let invited = false; try { invited = !!S0(ws).get("invplans/" + id)?.data?.people?.[idOf(key)]?.invitedAt; } catch {}
     if (invited) for (const b of st.blocks) if (b.kind === "everyone") b.open = true;
-    const E = st.blocks.filter((b) => eligible(ws, b, em, person)).sort((a, b) => RANK[a.kind] - RANK[b.kind]);
+    const E = st.blocks.filter((b) => eligible(ws, b, em, person, opts)).sort((a, b) => RANK[a.kind] - RANK[b.kind]);
     const pick = E.find((b) => b.open && b.left >= mine);
     if (pick) { holdsOf(id).set(key, { block: pick.id, n: mine, at: clock() }); return { block: pick.id === "_open" ? "" : pick.id }; }
     const later = E.filter((b) => !b.open && b.left >= mine).sort((a, b) => a.opensAt - b.opensAt)[0];
@@ -116,6 +120,13 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
     return { waitlist: true };
   }
   const release = (id, email) => { const k = lc(email); if (k) holdsOf(id).delete(k); };
+  /** memberships hook: moving someone up from the waitlist while members' seats are still held. Returns undefined (no
+   * held block, move up as before), { block } (the block their seat comes from) or null (no seat for them yet). The
+   * rank is the one the server stamped on their reply (memberRank), never the email on it. */
+  function placeWaiter(ws, id, ev, R, r) { const c = cfgOf(ws, id); if (!c.on || !c.blocks.some((b) => b.kind === "member" && !(c.rollover && b.releaseAt && clock() >= b.releaseAt))) return undefined;
+    const st = state(ws, id, ev, R, { skipKey: keyFor(r.email, r.phone) }); if (!st) return undefined; const mine = seatsOf({ ...r, response: "going" }, ev);
+    const pick = st.blocks.filter((b) => b.kind === "everyone" || (b.kind === "member" && eligible(ws, b, "", null, { memberRank: +r.memberRank || 0 }))).sort((a, b) => RANK[a.kind] - RANK[b.kind]).find((b) => b.open && b.left >= mine);
+    return pick ? { block: pick.id === "_open" ? "" : pick.id } : null; }
 
   /** "Fan club 6/8 · Regulars 6/6 · New 3/6" for the host. */
   function summary(ws, id, ev, R) { const s = state(ws, id, ev, R || S0(ws).list("rsvps")); if (!s) return { on: false, ...cfgOf(ws, id) };
@@ -128,8 +139,8 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
     const s = state(ws, id, ev, S0(ws).list("rsvps")); if (!s) return { on: false };
     const em = lc(email), person = em ? P.byKey(ws, em) : null;
     const E = s.blocks.filter((b) => b.kind !== "everyone" && eligible(ws, b, em, person)).sort((a, b) => RANK[a.kind] - RANK[b.kind]), open = s.open;
-    const word = (b) => (b.kind === "tier" ? (native ? "early" : "supporter") : b.kind === "club" ? "member" : b.kind === "regulars" ? "regular" : b.kind === "new" ? "first-timer" : "early");
-    const who = (b) => (b.kind === "tier" ? (native ? "You" : "Supporters") : b.kind === "club" ? "Members" : b.kind === "regulars" ? "Regulars" : b.kind === "new" ? "First-timers" : "You");
+    const word = (b) => (b.kind === "tier" ? (native ? "early" : "supporter") : b.kind === "club" || b.kind === "member" ? "member" : b.kind === "regulars" ? "regular" : b.kind === "new" ? "first-timer" : "early");
+    const who = (b) => (b.kind === "tier" ? (native ? "You" : "Supporters") : b.kind === "club" || b.kind === "member" ? "Members" : b.kind === "regulars" ? "Regulars" : b.kind === "new" ? "First-timers" : "You");
     const mineB = E.find((b) => b.open && b.left > 0) || E.find((b) => !b.open && b.left > 0);
     if (mineB && mineB.open) return { on: true, line: `${who(mineB)} can reply first. ${mineB.left === 1 ? `1 ${word(mineB)} spot left.` : `${mineB.left} ${word(mineB)} spots left.`}`, can: true, left: mineB.left };
     if (mineB) return { on: true, line: `Your early access opens ${fmtOpen(mineB.opensAt, ev)}.`, can: false, remind: true, opensAt: mineB.opensAt };
@@ -149,12 +160,12 @@ export function makeSeats({ store, P, F = null, now: clock = () => Date.now() })
         n++; } }
     return n; }
 
-  return { cfgOf, setCfg, state, gate, release, summary, guestLine, eligible, addReminder, runReminders, tierOf };
+  return { cfgOf, setCfg, state, gate, release, placeWaiter, summary, guestLine, eligible, addReminder, runReminders, tierOf };
 }
 
 export function mountSeats(app, { store, small, currentUser, C, X, publicOrigin = () => "" }) {
   const P = app.locals.people, F = app.locals.fanclub || null;
-  const Z = makeSeats({ store, P, F });
+  const Z = makeSeats({ store, P, F, MS: () => app.locals.memberships || null });
   app.locals.seats = Z;
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const viewer = (req) => { try { const u = currentUser(req); return u && u.email ? u : null; } catch { return null; } };
@@ -165,7 +176,7 @@ export function mountSeats(app, { store, small, currentUser, C, X, publicOrigin 
 
   app.get("/api/plan/:id/seats", (req, res) => { const H = hostOf(req, res); if (!H) return; const native = isNativeReq(req), s = Z.summary(H.ws, H.id, H.ev);
     const tiers = native ? [] : tiersOf(H.ws), lists = P.lists(H.ws).filter((l) => !l.builtin).map((l) => ({ id: l.id, name: l.name, count: l.count }));
-    const out = { ...s, presets: PRESETS.map(([id, name, line]) => ({ id, name, line })), kinds: KINDS.filter((k) => k !== "tier" || tiers.length), tiers: tiers.map((t) => ({ id: t, label: TIER_LABEL[t] })), lists, club: !!F?.config?.(H.ws)?.on, cap: +H.ev.headcount || 0 };
+    const out = { ...s, presets: PRESETS.map(([id, name, line]) => ({ id, name, line })), kinds: KINDS.filter((k) => k !== "member" && (k !== "tier" || tiers.length)), tiers: tiers.map((t) => ({ id: t, label: TIER_LABEL[t] })), lists, club: !!F?.config?.(H.ws)?.on, cap: +H.ev.headcount || 0 };
     if (native && out.blocks) out.blocks = out.blocks.map((b) => (b.kind === "tier" ? { ...b, label: "Early access", tier: "" } : b));
     res.json(out); });
   app.post("/api/plan/:id/seats", small, (req, res) => { const H = hostOf(req, res, true); if (!H) return; const b = req.body || {}, native = isNativeReq(req);
@@ -173,11 +184,14 @@ export function mountSeats(app, { store, small, currentUser, C, X, publicOrigin 
     const c = Z.setCfg(H.ws, H.id, { ...b, blocks }, { native }); res.json({ ok: true, ...Z.summary(H.ws, H.id, H.ev), cfg: c }); });
   // the guest: one plain line about their own access
   app.get("/api/public/seats/:id", (req, res) => { const id = String(req.params.id || ""); if (!ID.test(id)) return res.json({ on: false }); const ws = workspaceOfEvent(id), ev = ws && scopeStore(store, ws).get("events/" + id)?.data; if (!ev) return res.json({ on: false });
-    res.set("Cache-Control", "private, no-store"); const u = viewer(req); res.json(Z.guestLine(ws, id, ev, u?.email || "", { native: isNativeReq(req) })); });
+    res.set("Cache-Control", "private, no-store"); const u = viewer(req);
+    try { const ml = app.locals.memberships?.guestLine?.(ws, id, ev, u?.email || "", { native: isNativeReq(req) }); if (ml) return res.json(ml); } catch {} // memberships hook: a paid members window speaks first
+    res.json(Z.guestLine(ws, id, ev, u?.email || "", { native: isNativeReq(req) })); });
   app.post("/api/public/seats/:id/remind", small, (req, res) => { const id = String(req.params.id || ""); const ws = ID.test(id) && workspaceOfEvent(id), ev = ws && scopeStore(store, ws).get("events/" + id)?.data; if (!ev) return bad(res, "That event isn't here any more.", 404, "not_found");
     if (over("sr|" + (req.ip || "?"), 20)) return bad(res, "That's a lot of reminders. Try again later.", 429, "rate_limited");
     const u = viewer(req), email = lc(u?.email || req.body?.email); if (!EMAIL_RE.test(email)) return bad(res, "Add your email so we can tell you.");
-    const line = Z.guestLine(ws, id, ev, u?.email || ""); const at = line.opensAt || Z.state(ws, id, ev, [])?.open?.opensAt || 0; if (!at || at <= Date.now()) return res.json({ ok: true, open: true });
+    let ml = null; try { ml = app.locals.memberships?.guestLine?.(ws, id, ev, u?.email || ""); } catch {} // memberships hook: remind at this person's own open time
+    const line = ml || Z.guestLine(ws, id, ev, u?.email || ""); const at = line.opensAt || Z.state(ws, id, ev, [])?.open?.opensAt || 0; if (!at || at <= Date.now()) return res.json({ ok: true, open: true });
     Z.addReminder(ws, id, email, at); res.json({ ok: true, at }); });
   if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => Z.runReminders(Date.now(), { notify: X?.notify, origin: process.env.ENCORE_PUBLIC_URL || "" }).catch((e) => console.warn("[seats]", e?.message)), 5 * 60e3); t.unref?.(); }
   return Z;

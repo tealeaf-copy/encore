@@ -16,6 +16,9 @@
       b.onclick = async () => { const ct = document.getElementById("ct"), email = (ct && /@/.test(ct.value) ? ct.value : "").trim();
         b.disabled = true; try { const r = await fetch("/api/public/seats/" + encodeURIComponent(id) + "/remind", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }); const j = await r.json().catch(() => ({}));
           if (!r.ok) { b.disabled = false; p.textContent = j.message || "Add your email above, then tap Remind me."; ct?.focus(); return; } b.textContent = "We'll tell you when it opens"; } catch { b.disabled = false; } };
+      // a paid members window (server/memberships.js): everyone else can wait in line, and moves up when it opens
+      if (info.wait) { const w = document.createElement("button"); w.type = "button"; w.className = "go"; w.id = "seatWait"; w.textContent = "Join the waitlist"; w.style.marginTop = "8px"; b.after(w);
+        w.onclick = () => { window.__plJoinWait = true; const f = send.form || document.getElementById("f"); if (f?.requestSubmit) f.requestSubmit(send); else send.click(); }; }
     }
     done = true;
   }

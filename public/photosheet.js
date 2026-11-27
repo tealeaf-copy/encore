@@ -8,6 +8,8 @@
 //   PhotoSheet.open({ for: "cover" | "page" | "avatar", current: { url, source, focus }, eventId, templates, onChange })
 //     onChange({ url, source, focus } | { template } | { removed: true }) saves it the caller's way; without onChange the
 //     sheet saves through POST /api/photos/use. Resolves with what was chosen, or null when closed.
+//   draw: optional { render(svg, prompt) -> html, accent } (covers only, with onChange): adds "Describe it and Potto
+//     draws it"; the choice comes back as { drawn: { svg, prompt } }.
 //   templates: optional [{ id, label, html }] the caller draws (the event's own illustrated covers); otherwise the
 //     sheet asks /api/public/photos/templates and draws them with EventArt, EncoreAvatars or a colour wash.
 (function () {
@@ -33,7 +35,7 @@
 .phs-now{position:relative;margin:0 0 16px;border-radius:16px;overflow:hidden;background:#EFE6D8;border:1.5px solid #E4D9C8}
 .phs-now img{display:block;width:100%;height:100%;object-fit:cover}.phs-now.round{width:132px;margin-left:auto;margin-right:auto;border-radius:50%}
 .phs-now .phs-empty{display:grid;place-items:center;height:100%;color:#665A51;font-size:14px;text-align:center;padding:8px}
-.phs-up{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:999px;background:#C94A30;color:#fff;font:600 16px Fredoka,"IBM Plex Sans",system-ui,sans-serif;cursor:pointer;margin:0 0 4px}
+.phs-up{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:6px;background:var(--pl-accent,#29489A);color:#fff;font:600 16px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;margin:0 0 4px}
 .phs-up input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .phs-note{margin:4px 0 16px;color:#665A51;font-size:13px;text-align:center}
 .phs h3{font:600 14px/1.3 "IBM Plex Sans",system-ui,sans-serif;margin:16px 0 8px;color:#1F1A17}
@@ -42,6 +44,10 @@
 .phs-t img,.phs-t svg{display:block;width:100%;height:100%;object-fit:cover}.phs-t[aria-pressed=true]{border-color:#1F1A17;box-shadow:0 0 0 2px #1F1A17}
 .phs-t .phs-l{position:absolute;left:0;right:0;bottom:0;padding:2px 6px;background:rgba(255,252,247,.88);font-size:13px;color:#1F1A17;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .phs-quiet{grid-column:1/-1;color:#665A51;font-size:13px;margin:0}
+.phs-draw{display:flex;gap:8px;align-items:stretch}.phs-draw textarea{flex:1;min-width:0;min-height:48px;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--pl-line-strong,#C9BFB2);border-radius:6px;background:var(--pl-surface,#fff);color:var(--pl-ink,#1F1A17);font:400 16px/1.4 "IBM Plex Sans",system-ui,sans-serif;resize:vertical}
+.phs-drawgo{flex:none;min-height:48px;padding:0 16px;border:0;border-radius:6px;background:var(--pl-ink,#1F1A17);color:#fff;font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}.phs-drawgo:disabled{opacity:.6;cursor:default}
+.phs-draw textarea:focus-visible,.phs-drawgo:focus-visible{outline:3px solid var(--pl-ink,#1F1A17);outline-offset:2px}.phs [data-drawn]{margin-top:10px}.phs [data-drawn] .phs-t svg{width:100%;height:100%}
+@media (max-width:420px){.phs-draw{flex-direction:column}}
 .phs-rm{all:unset;display:block;width:100%;text-align:center;min-height:44px;line-height:44px;margin-top:16px;color:#B04A30;font-weight:600;cursor:pointer;border-radius:999px}
 .phs-frame{position:relative;margin:0 auto 8px;border-radius:16px;overflow:hidden;background:#1F1A17;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .phs-frame:active{cursor:grabbing}.phs-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
@@ -93,6 +99,7 @@
         body.innerHTML = `<div class="phs-now${K.round ? " round" : ""}" style="aspect-ratio:${K.aspect}">${has ? `<img src="${esc(cur.url)}" alt="Your ${esc(K.title.toLowerCase())} now">` : `<span class="phs-empty">${K.round ? "No photo yet" : "No photo yet. Pick one below."}</span>`}</div>
           <label class="phs-up">${UP}<span>Upload a photo</span><input type="file" accept="image/png,image/jpeg,image/webp"></label><p class="phs-note">${esc(K.note)} PNG, JPEG or WebP, up to ${K.max} MB.</p>
           ${has && cur.source ? `<button type="button" class="btn ghost sm phs-redo" style="display:flex;margin:0 auto 8px">Reposition</button>` : ""}
+          ${opts.draw && opts.onChange ? `<h3 id="phsDrawH">Describe it and Potto draws it</h3><div class="phs-draw"><textarea id="phsDrawP" rows="2" maxlength="200" aria-labelledby="phsDrawH" placeholder="A long table under string lights, bowls of dumplings"></textarea><button type="button" class="phs-drawgo">Draw it</button></div><p class="phs-note" style="text-align:left">A line drawing in the Pottery Lab style, made from your words. Draw a few and pick the one you like.</p><div class="phs-grid" data-drawn hidden></div>` : ""}
           <h3>Your recent uploads</h3><div class="phs-grid${K.round ? " sq" : ""}" data-recent><p class="phs-quiet">Looking…</p></div>
           <h3>Templates</h3><div class="phs-grid${K.round ? " sq" : ""}" data-tpl><p class="phs-quiet">Loading…</p></div>
           ${has ? `<button type="button" class="phs-rm">Remove photo</button>` : ""}<p class="phs-msg" role="status" aria-live="polite">${esc(msg)}</p>`;
@@ -103,6 +110,20 @@
           const u = URL.createObjectURL(f); try { const img = await loadImage(u); if (img.naturalWidth < 64 || img.naturalHeight < 64) { say("That photo is very small. Pick a bigger one."); return; } frame({ img, file: f, local: u, focus: { x: 50, y: 50 } }); } catch (err) { say(err.message); } };
         body.querySelector(".phs-redo")?.addEventListener("click", async () => { try { frame({ img: await loadImage(cur.source), source: cur.source, focus: cur.focus || { x: 50, y: 50 } }); } catch (err) { say(err.message); } });
         body.querySelector(".phs-rm")?.addEventListener("click", async (e) => { e.target.disabled = true; try { const r = await save({ removed: true }); close(r); } catch (err) { say(err.message); e.target.disabled = false; } });
+        // a cover from words: the caller says how to render a drawing (opts.draw.render) and which spot colour to ask for
+        const dgo = body.querySelector(".phs-drawgo");
+        if (dgo) { const drawn = opts.__drawn || (opts.__drawn = []), box = body.querySelector("[data-drawn]"), ta = body.querySelector("#phsDrawP"); if (opts.__drawPrompt) ta.value = opts.__drawPrompt;
+          const paintD = () => { box.hidden = !drawn.length; box.innerHTML = drawn.map((d, i) => `<button type="button" class="phs-t" style="aspect-ratio:16/10" data-d="${i}" aria-label="Use this drawing: ${esc(d.prompt)}">${opts.draw.render(d.svg, d.prompt)}</button>`).join("");
+            box.querySelectorAll("[data-d]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { const d = drawn[+b.dataset.d]; const r = await save({ drawn: { svg: d.svg, prompt: d.prompt } }); close(r); } catch (err) { say(err.message); b.disabled = false; } })); };
+          paintD();
+          const go = async () => { const prompt = ta.value.trim(); if (prompt.length < 3) { say("Describe what to draw, like a turkey in running shoes."); ta.focus(); return; }
+            if (dgo.disabled) return; dgo.disabled = true; dgo.textContent = "Drawing…"; say("Potto is drawing. This takes a few seconds."); opts.__drawPrompt = prompt;
+            try { const r = await fetch("/api/art/draw", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, accent: opts.draw.accent || "" }) }), j = await r.json().catch(() => ({}));
+              if (!r.ok || !j.svg) throw new Error(j.message || "That drawing didn't come out. Try describing it a little differently.");
+              drawn.unshift({ svg: j.svg, prompt }); if (drawn.length > 6) drawn.length = 6; if (!body.contains(box)) return; paintD(); say(j.left != null && j.left <= 5 ? `Tap a drawing to use it. ${j.left} more today.` : "Tap a drawing to use it, or change the words and draw another."); }
+            catch (err) { if (body.contains(box)) say(err.message); }
+            dgo.disabled = false; dgo.textContent = drawn.length ? "Draw another" : "Draw it"; };
+          dgo.onclick = go; ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go(); } }); if (drawn.length) dgo.textContent = "Draw another"; }
         // recent uploads
         fetch("/api/photos/recent", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : { photos: [] })).then((j) => { const box = body.querySelector("[data-recent]"); if (!box) return; const L = (j.photos || []).slice(0, 12);
           box.innerHTML = L.length ? L.map((p, i) => `<button type="button" class="phs-t" style="aspect-ratio:${K.round ? 1 : 4 / 3}" data-i="${i}" aria-pressed="${p.url === cur.source}" aria-label="Use this upload"><img src="${esc(p.url)}" alt="" loading="lazy"></button>`).join("") : `<p class="phs-quiet">Photos you upload show here, so you can use one again.</p>`;

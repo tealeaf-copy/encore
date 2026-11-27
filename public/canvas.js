@@ -402,9 +402,12 @@
   // of this event's drawn covers. It hands the choice back; the canvas keeps it until Save, like everything else here.
   async function coverSheet() { const W = S.W, P = root.PhotoSheet; if (!P) return say("One moment, the photo picker is loading.");
     const tpl = app("coverTemplates"); let templates; try { templates = tpl ? tpl({ ...W, coverPhoto: W.coverPhoto || "" }) : undefined; } catch {}
-    await P.open({ for: "cover", eventId: W.id || "", current: { url: app("safeCover")?.(W.coverPhoto) || "", source: app("safeCover")?.(W.coverSource) || "", focus: W.coverFocus || null }, templates,
+    const EA = root.EventArt, evNow = () => ({ ...W, coverArt: null, title: W.pubTitle || W.name || "" }), toneNow = () => { try { return W.coverArt?.tone || EA.toneOf(evNow(), EA.kindOf(evNow())); } catch { return ""; } };
+    const draw = EA ? { accent: (() => { try { return EA.SPOT[toneNow()] || ""; } catch { return ""; } })(), render: (svg, prompt) => { try { EA.ensureCss?.(); return EA.cover(evNow(), { svg, tone: toneNow(), title: evNow().title || String(prompt || "").slice(0, 40), label: "" }); } catch { return ""; } } } : null;
+    await P.open({ for: "cover", eventId: W.id || "", current: { url: app("safeCover")?.(W.coverPhoto) || "", source: app("safeCover")?.(W.coverSource) || "", focus: W.coverFocus || null }, templates, draw,
       onChange: async (c) => { const A = root.EventArt;
         if (c.removed) Object.assign(W, { coverPhoto: "", coverSource: "", coverFocus: null });
+        else if (c.drawn) Object.assign(W, { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: { kind: "custom", svg: c.drawn.svg, prompt: c.drawn.prompt, tone: toneNow() } });
         else if (c.template) Object.assign(W, { coverPhoto: "", coverSource: "", coverFocus: null, coverArt: { kind: c.template, tone: A ? A.toneOf({ ...W, title: W.pubTitle || W.name || "" }, c.template) : "" } });
         else Object.assign(W, { coverPhoto: c.url, coverSource: c.source, coverFocus: c.focus, coverArt: null });
         changed(true); pulse("#cvCover", "cover"); } }); }

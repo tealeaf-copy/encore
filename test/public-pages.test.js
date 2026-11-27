@@ -84,3 +84,10 @@ test("a fresh page starts at the top: the guard ships with the loader, the shell
     assert.match(s, /nav\.type !== "navigate" \|\| location\.hash/, f + " leaves back, reload and #links alone");
     assert.match(s, /if \(!touched && [^;]*scrollTo\(0, 0\)/, f + " never moves a reader who has touched the page"); }
 });
+
+test("the cover sheet can draw a cover from words: the create canvas offers it and keeps the drawing as the event's cover", () => {
+  const ps = read("public/photosheet.js"), cv = read("public/canvas.js");
+  assert.match(ps, /Describe it and Potto draws it/); assert.match(ps, /fetch\("\/api\/art\/draw"/); assert.match(ps, /save\(\{ drawn: \{ svg: d\.svg, prompt: d\.prompt \} \}\)/);
+  assert.match(ps, /opts\.draw && opts\.onChange/, "only where the caller can keep a drawing");
+  assert.match(cv, /templates, draw,/); assert.match(cv, /c\.drawn\) Object\.assign\(W, \{ coverPhoto: "", coverSource: "", coverFocus: null, coverArt: \{ kind: "custom", svg: c\.drawn\.svg/);
+});

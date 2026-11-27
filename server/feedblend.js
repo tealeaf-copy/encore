@@ -11,6 +11,7 @@
 //   post       a friend's post (signed in)
 //   club       a host's post to their fan club (server/fanclub.js postsOf), to members only; its kudos is the club heart
 //   row        whatever events are left over, as one quiet sideways row at the end
+//   list       "Maya made a list" or "Maya added ... to ...": a friend's or a followed curator's list (server/listfeed.js)
 // Rhythm (arrange): no kind sits next to itself more than twice, the follow row comes early and the ideas deck later.
 // Hosts lead every card, and hosts you follow rank first.
 //
@@ -59,6 +60,7 @@ export const MAX_RUN = 2;
 /** The longest run of one kind next to itself. */
 export const maxRun = (L) => { let best = 0, n = 0, prev = null; for (const it of L) { n = it.kind === prev ? n + 1 : 1; prev = it.kind; best = Math.max(best, n); } return best; };
 const PATTERN = ["club", "event", "recap", "event", "milestone", "post", "recap", "event", "post", "milestone"];
+const LIST_PATTERN = ["club", "event", "list", "recap", "event", "milestone", "post", "recap", "event", "list", "post", "milestone"]; // with list cards (server/listfeed.js)
 /**
  * One stream from pools of cards by kind (each pool already in order). Kinds take turns by PATTERN, a kind never sits
  * next to itself more than MAX_RUN times, and the single cards (the follow row, the ideas deck) go in at their slot.
@@ -295,7 +297,9 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
     const pools = { club: clubPosts(v, now), event: events(v, now), recap: recaps(v, now), milestone: milestones(v, now), post: (posts || []).map((p) => ({ ...p, kind: "post", key: "p:" + p.id })),
       follow: F.length >= 2 ? [{ kind: "follow", key: "follow", title: email ? "Hosts and people to follow" : "Hosts to follow", cards: F }] : [],
       ideas: ideas.length ? [{ kind: "ideas", key: "ideas", count: ideas.length, titles: ideas.slice(0, 3).map((x) => clean(x.title, 60)) }] : [] };
-    const items = arrange(pools);
+    // ---- lists in the feed (server/listfeed.js): "Maya made a list", "Maya added ... to ..."; friends and followers only ----
+    const LF = app?.locals?.listFeed; if (LF && v.email) { try { pools.list = LF.cards(v, { now, kudosOf: (t) => kudosOf(v, t), commentsOf: (t) => commentsOf(v, t) }); } catch { pools.list = []; } }
+    const items = arrange(pools, pools.list?.length ? { pattern: LIST_PATTERN } : undefined); // ---- end lists in the feed ----
     return { items, cold: !email || (!v.followed.size && !v.friends.size), following: v.followed.size, city: v.city ? clean(city, 60) : "", ...(email ? { me: myFace(v) } : {}) };
   }
   /** What one device or person did to a shared (cached) stream: their kudos, and the suggestions they dismissed. */
@@ -309,6 +313,7 @@ export function makeFeedBlend(store, { C, X, V, app = null }) {
    * club posts for members (and their host). Private, unlisted, friends-only and cancelled events have no card.
    */
   function cardOf(target, v, memo = {}) { const tg = String(target || ""), I = v.I, t = today(), fc = app?.locals?.fanclub;
+    if (tg.startsWith("l:")) { try { return app?.locals?.listFeed?.cardOf(tg, v) || null; } catch { return null; } } // lists in the feed (server/listfeed.js)
     const cm = /^club\.([a-z0-9][a-z0-9-]{1,29})\|([A-Za-z0-9_-]{1,40})$/.exec(tg);
     if (cm) { try { const ws = C.wsOfHandle(cm[1]); if (!fc || !ws || !v.email || !hostOK(I, ws) || v.blocks.has("host:" + cm[1])) return null; const owner = lc(getWorkspace(ws)?.ownerEmail), member = fc.isMember(ws, v.email);
         if (!member && owner !== v.email && v.ws !== ws) return null; const p = fc.postsOf(ws, { viewer: v.email }).find((p) => p.id === cm[2]); if (!p) return null;

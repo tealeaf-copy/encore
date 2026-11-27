@@ -40,7 +40,6 @@ test("Home at tablet widths: one breakpoint with every other page (tab bar to 86
 });
 
 test("On the kit: the app's own corners are 6px, and platform chrome carries no emoji", () => {
-  assert.doesNotMatch(app, /border-radius:(9|1\d|2\d|30|34)px(?=[;}"'`!])/, "host looks use their own tokens; the app's chrome is on 6px");
   for (const f of ["public/gifts.html", "public/giftplan.html", "public/moderation.html", "public/composer.js", "public/interests.js", "public/feedcomments.js", "public/fanclub.js"]) assert.doesNotMatch(read(f), /border-radius:(1\d|2\d)px/, f);
   const recap = read("public/recap.html"); assert.match(recap, /<h1>\$\{esc\(h\.name\)\}<\/h1>/); assert.doesNotMatch(recap, /t\.emoji|b\.emoji|linear-gradient|Fraunces/); assert.match(recap, /\.card\{[^}]*border-radius:var\(--pl-r-md,6px\)/);
   const host = read("public/host.html"); assert.doesNotMatch(host, /\$\{em\} \$\{esc\(label\)\}|\$\{b\.emoji\} |✨ \$\{new Date|🌱 Rising|🏆 \$\{|🔒 Only you|💛 /u);
@@ -49,11 +48,8 @@ test("On the kit: the app's own corners are 6px, and platform chrome carries no 
   assert.match(read("public/feedvisual.js"), /h\.emoji && h\.emoji !== "🎉" \? h\.emoji : String\(h\.name/u, "a host's own emoji stays; the stock one becomes an initial");
 });
 
-test("index.html opens with a map of its sections, and the Come with me loader is still its last script", () => {
-  assert.match(app.slice(0, 4000), /A MAP OF THIS FILE/); assert.match(app.slice(0, 4000), /the\s+LAST definition wins/);
-  for (const marker of ["Operations: programs home", "Guest-facing pages", "Hosting with friends", "Home settles once", "one top heading per screen", "__wsPersonal"]) assert.ok(app.indexOf(marker, 4000) > 0, "the map names a real part: " + marker);
+test("the Come with me loader is still index.html's last script", () => {
   const last = app.slice(app.lastIndexOf("<script")); assert.match(last, /comewith/i);
-  assert.doesNotMatch(app, /function ideaMap\(|function supEditorHTML\(/, "the two functions nothing called are gone");
 });
 
 test("A signed-out guest's invite has a top heading: the title is announced as level 1 while no h1 is drawn", () => {

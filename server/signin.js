@@ -155,6 +155,8 @@ function unseal(s) { try { const b = Buffer.from(String(s), "base64url"), d = cr
 const identPath = (provider, sub) => `system/ident-${provider}-${h40(provider + ":" + sub)}`;
 const pkPath = (credId) => "system/pk-" + h40(credId);
 export function identitiesOf(store, email) { const e = lc(email); return store.listPrefix("system", "ident-").map((d) => ({ path: "system/" + d.id, ...d.data })).filter((x) => x.email === e); }
+/** The account a verified phone number signs in to (its identity), or "". Potto by text (server/pottotext.js) reads it. */
+export const phoneAccountOf = (store, e164) => store.get(identPath("phone", String(e164 || "")))?.data?.email || "";
 export function passkeysOf(store, email) { const e = lc(email); return store.listPrefix("system", "pk-").map((d) => ({ path: "system/" + d.id, ...d.data })).filter((x) => x.email === e); }
 /** Fake revocations, for tests and demos. */
 export const fakeRevocations = [];

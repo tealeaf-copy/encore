@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>You're invited · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<meta property="og:title" content="A friend invited you to Pottery Lab">
+<meta property="og:description" content="Pottery Lab is invite only. This invite is just for you.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/system.css">
+<style>
+/* /join/<code>: a friend's personal invite (server/friendinvites.js). Field Notes: linen page, a notebook card in an ink line */
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;min-height:100vh;background:var(--pl-page);color:var(--pl-ink);font:17px/1.6 var(--pl-font-text)}
+main{max-width:480px;margin:0 auto;padding:max(32px,env(safe-area-inset-top)) 16px 48px}
+.mark{display:flex;align-items:center;gap:8px;font:500 13px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);text-decoration:none;margin:0 0 24px}
+.card{background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;overflow:hidden}
+.top{display:flex;align-items:center;gap:16px;padding:20px 20px 0}
+.face{flex:none;width:72px;height:72px;border-radius:50%;border:1.5px solid var(--pl-ink);overflow:hidden;background:var(--pl-sand)}
+.face>*{width:100%!important;height:100%!important}
+.kick{font:500 13px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin:0}
+h1{font:600 30px/1.15 var(--pl-font-display);letter-spacing:-.02em;margin:16px 20px 8px}
+.line{margin:0 20px 20px;color:var(--pl-soft)}
+.perk{padding:10px 20px;background:var(--pl-sand);border-top:1.5px solid var(--pl-ink);border-bottom:1.5px solid var(--pl-ink);font:500 15px/1.4 var(--pl-font-text)}
+.acts{padding:20px;display:grid;gap:10px}
+.go{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:6px;border:1.5px solid var(--pl-ink);background:var(--pl-accent);color:var(--pl-on-accent);font:600 17px var(--pl-font-text);text-decoration:none}
+.go:hover{background:var(--pl-accent-press)}
+.small{font-size:14px;color:var(--pl-soft);margin:0;text-align:center}
+.small a{color:var(--pl-accent-text)}
+ul.why{list-style:none;margin:24px 0 0;padding:0}ul.why li{padding:12px 0;border-top:1px dashed var(--pl-line);color:var(--pl-soft);font-size:15px}ul.why b{color:var(--pl-ink);display:block;font-size:16px}
+.off h1{margin-top:20px}
+</style>
+</head>
+<body>
+<main>
+  <a class="mark" href="/">Pottery Lab</a>
+  <div id="load" class="card" aria-busy="true"><p class="line" style="margin:20px">Opening your invite</p></div>
+  <article class="card" id="inv" hidden>
+    <div class="top"><span class="face" id="face"></span><p class="kick">A personal invite</p></div>
+    <h1 id="h"></h1>
+    <p class="line" id="line"></p>
+    <div class="perk">Pottery Lab is invite only. This link is for you, and works once.</div>
+    <div class="acts">
+      <a class="go" id="join" href="/signup">Join with your phone or email</a>
+      <p class="small">Already here? <a href="/login">Sign in</a></p>
+    </div>
+  </article>
+  <article class="card off" id="off" hidden>
+    <h1 id="offH">This invite has been used</h1>
+    <p class="line" id="offMsg"></p>
+    <div class="acts"><a class="go" href="/signup?why=invite">Join the waitlist</a><p class="small">Already here? <a href="/login">Sign in</a></p></div>
+  </article>
+  <ul class="why">
+    <li><b>Small get-togethers with friends</b>Dinners, game nights, walks. Say you're in with one tap.</li>
+    <li><b>No group chat chaos</b>Who's coming, what to bring and where it is, all in one place.</li>
+  </ul>
+</main>
+<script src="/avatars.js"></script><script src="/photosheet.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id), code = (location.pathname.split("/").pop() || "").toUpperCase();
+  let j = null; try { const r = await fetch("/api/public/friend-invite/" + encodeURIComponent(code) + "?view=1"); j = await r.json(); if (r.status === 404) j = { ok: false, message: j.message }; } catch {}
+  $("load").hidden = true;
+  if (!j || !j.ok) { $("off").hidden = false; $("offH").textContent = j && j.status === "expired" ? "This invite ran out" : j && j.status ? "This invite can't be used" : "This invite link doesn't work";
+    $("offMsg").textContent = (j && j.message) || "Ask your friend for a new one, or join the waitlist and we'll make room."; document.title = "Invite · Pottery Lab"; return; }
+  const name = j.from && j.from.first ? j.from.first : "";
+  $("h").textContent = name ? `${name} invited you to Pottery Lab` : "You're invited to Pottery Lab";
+  document.title = (name ? `${name} invited you` : "You're invited") + " · Pottery Lab";
+  $("line").textContent = j.line;
+  $("face").innerHTML = window.PhotoSheet ? PhotoSheet.face((j.from && j.from.avatar) || {}, name || "P", 72) : "";
+  $("join").href = j.signup;
+  $("inv").hidden = false;
+})();
+</script>
+</body>
+</html>

@@ -192,7 +192,10 @@
       B[k] = await toBlob(c, k === "card" ? "image/jpeg" : "image/png", 0.9); api.last = B; const im = $(`[data-img="${k}"]`, bg); if (im && B[k]) im.src = URL.createObjectURL(B[k]); return B[k]; } catch { return null; } };
     paint("card").then((b) => { if (b && opts.onCard) { try { opts.onCard(b, D); } catch {} } }); setTimeout(() => { paint("flyer"); paint("qr"); }, 60);
     // the actions
-    const sms = () => { location.href = `sms:?&body=${encodeURIComponent(msg)}`; tr("sms"); };
+    // Messages: sms:?&body= on iPhone, sms:?body= on Android; elsewhere the share sheet, then copy (friend invites use the same, public/invites.js)
+    const UA = navigator.userAgent || "", droid = /Android/i.test(UA), phone = droid || /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const smsTo = (m) => (droid ? "sms:?body=" : "sms:?&body=") + encodeURIComponent(m);
+    const sms = async () => { tr("sms"); if (phone) { location.href = smsTo(msg); return; } if (navigator.share) { try { await navigator.share({ text: msg }); return; } catch (e) { if (e && e.name === "AbortError") return; } } if (await copyText(msg)) say("Copied. Paste it into a text"); };
     const more = async () => { tr("more"); if (navigator.share) { try { await navigator.share({ title: D.title, text: msg.replace(D.url, "").trim(), url: D.url }); return; } catch (e) { if (e?.name === "AbortError") return; } } if (await copyText(msg)) say("Copied. Paste it anywhere"); };
     // Instagram takes no link from a web page, so the link is copied and Instagram opens, ready to paste in a chat
     const insta = async () => { tr("instagram"); const ok = await copyText(D.url); say(ok ? "Link copied. Paste it in an Instagram chat" : "Opening Instagram");
@@ -200,7 +203,7 @@
     const img = async (k, how) => { const b = await paint(k); if (!b) return say("One second, it's still drawing"); const file = `${name}-${k}.png`; tr(how === "story" ? "story" : how === "save" ? "save" : how === "sms" ? "sms" : "more");
       if (how === "save") { if (phone() && (await shareFile(b, file))) return; download(b, file); return say(k === "qr" ? "QR code saved" : "Flyer saved"); }
       if (how === "story") { const ok = await copyText(D.url); if (await shareFile(b, file)) return; download(b, file); return say(ok ? "Saved. The link is copied for a link sticker" : "Saved. Add it to your story"); }
-      if (await shareFile(b, file, { text: msg })) return; download(b, file); await copyText(msg); if (how === "sms") { say("Saved. Attach it in Messages"); setTimeout(() => { location.href = `sms:?&body=${encodeURIComponent(msg)}`; }, 600); } else say("Saved, and the link is copied"); };
+      if (await shareFile(b, file, { text: msg })) return; download(b, file); await copyText(msg); if (how === "sms") { say("Saved. Attach it in Messages"); if (phone) setTimeout(() => { location.href = smsTo(msg); }, 600); } else say("Saved, and the link is copied"); };
     const ROWS = {
       link: [["Copy link", IC.link, async () => { tr("copy"); if (await copyText(D.url)) say("Link copied"); }, 1], ["Messages", IC.sms, sms], ["Instagram", IC.ig, insta], ["WhatsApp", IC.wa, () => { tr("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener"); }], ["More", IC.more, more]],
       flyer: [["Save", IC.save, () => img("flyer", "save"), 1], ["Messages", IC.sms, () => img("flyer", "sms")], ["Stories", IC.story, () => img("flyer", "story")], ["More", IC.more, () => img("flyer", "more")]],

@@ -57,7 +57,7 @@ export function pagesFor(S) {
     "/", "/feed", "/discover", "/events", "/ideas", "/hosts", "/saved", "/plans", "/chats", `/chats/${S.open}`, "/settings", "/community", "/playbook",
     "/signup", "/login", "/about", "/privacy", "/terms", `/@${S.handle}`, `/e/${S.open}`, `/e/${S.past}`, `/i/${S.open}`, "/g", `/x/${S.handle}/${S.exp}`,
     `/plans/rtTable`, `/plans/rtTrip`, `/plans/rtSummit`, `/speakers/rtSummit/sp1`, `/e/rtTable`, "/start?t=table", "/guides/weekend-away", `/again/${S.past}?${q(S.pastRid)}`, `/k/${S.past}?${q(S.pastRid)}`, `/recap/${S.handle}`, `/p/${S.past}?${q(S.pastRid)}`, "/?app=1", "/leaderboard", "/pricing",
-    { path: "/moderation", as: "admin" }, { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
+    { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA", // friend invites (server/friendinvites.js): the admin page, and a link that no longer works { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }
 

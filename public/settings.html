@@ -43,6 +43,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
 .msg{font-size:14px;color:var(--smoke);min-height:20px;margin:0}
 .signedout{text-align:center}
 #signin .btn.sm{min-height:44px;flex:none}#signin .msg:not(:empty){margin-top:8px}
+.tx-f{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0}.tx-f input{flex:1 1 180px;min-width:0;min-height:44px;border:1.5px solid var(--line-strong);border-radius:6px;padding:0 12px;font:16px inherit;background:var(--card);color:var(--ink)}
 .pic-row{justify-content:flex-start;gap:16px;border-top:0}.pic{flex:none;display:block;width:64px;height:64px}.pic-row .btn{margin-left:auto}
 </style>
 </head>
@@ -70,6 +71,13 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
       <div class="row"><span>Emails<small>Reminders and updates by email</small></span><input type="checkbox" class="sw" id="emails" aria-label="Emails"></div>
       <div class="row"><span>Reply summaries<small>When you host: one short email per event every few hours with who said yes, maybe or can't. Never one email per reply.</small></span><input type="checkbox" class="sw" id="replyDigest" aria-label="Reply summaries"></div>
     </section>
+    <!-- Potto by text (server/pottotext.js, docs/potto-text.md): your number and the "Text with Potto" switch, off by default -->
+    <section aria-labelledby="hText" id="text" hidden><h2 id="hText">Text with Potto</h2><p>Reply to invites, check your plans and order from drops by text or WhatsApp. Off until you turn it on.</p>
+      <div id="txPhone"></div>
+      <div class="row"><span>Text with Potto<small id="txSub">Add your number first</small></span><input type="checkbox" class="sw" id="txOn" aria-label="Text with Potto" disabled></div>
+      <p class="msg" id="txConsent"></p><p class="msg" id="txMsg" role="status"></p>
+    </section>
+    <!-- end Potto by text -->
     <section aria-labelledby="hFind"><h2 id="hFind">Finding you</h2><p>Off unless you turn it on. When it's on, friends who check their contacts on Find people can see you're here. We compare scrambled emails and phone numbers and keep nothing they send.</p>
       <div class="row"><span>Let people find me by email or phone<small>Your email and the phone on your account</small></span><input type="checkbox" class="sw" id="findable" aria-label="Let people find me by email or phone"></div></section>
     <section aria-labelledby="hIns" id="insights"><h2 id="hIns">Brand insights</h2><p>Brands on Pottery Lab can see what kinds of events people love, as totals only: "supper clubs in Brooklyn, 40+ people, 88% would go again". Your activity is left out unless you turn this off. If you do, your replies, kudos and interests can count toward those totals, always mixed with at least 9 other people and 3 events, never with your name, email or anything that points to you. Brands can't download it. <a href="/teams/insights/how">How insights work</a></p>
@@ -129,6 +137,22 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     const drawW = () => { chips.innerHTML = (IN.options || []).map(([k, l]) => `<button type="button" class="btn sm" aria-pressed="${work.includes(k)}" data-w="${k}" style="${work.includes(k) ? "background:var(--ink);color:#fff" : ""}">${l}</button>`).join(""); chips.querySelectorAll("[data-w]").forEach((b) => (b.onclick = () => { const k = b.dataset.w; work = work.includes(k) ? work.filter((x) => x !== k) : [...work, k].slice(0, 4); send("/api/me/insights", { work }).catch(() => {}); drawW(); })); };
     out.checked = IN.include !== true; wk.hidden = out.checked; drawW();
     out.onchange = (e) => { wk.hidden = e.target.checked; send("/api/me/insights", { include: !e.target.checked }).catch(() => { e.target.checked = !e.target.checked; wk.hidden = e.target.checked; }); }; } catch {}
+  // Potto by text: confirm a number by code (/api/me/phone), then the switch records the opt-in (/api/me/potto-text)
+  try { let T = await get("/api/me/potto-text"); const box = $("#text"), sw = $("#txOn"), msg = $("#txMsg");
+    const pretty = (p) => (/^\+1\d{10}$/.test(p || "") ? `(${p.slice(2, 5)}) ${p.slice(5, 8)}-${p.slice(8)}` : p || "");
+    const drawTx = () => { box.hidden = !T.available; sw.disabled = !T.phone; sw.checked = !!T.on;
+      $("#txSub").textContent = !T.phone ? "Add your number first" : T.on ? `On for ${pretty(T.phone)}${T.number ? `. Text ${pretty(T.number)}` : ""}${T.whatsapp && T.whatsappNumber ? `, or WhatsApp ${pretty(T.whatsappNumber)}` : ""}` : T.stopped ? "Off. You replied STOP." : "Off";
+      $("#txConsent").textContent = T.phone && !T.on ? "By turning this on: " + T.consent : "";
+      $("#txPhone").innerHTML = T.phone ? `<div class="row"><span>Your number<small>${esc(pretty(T.phone))}, confirmed</small></span></div>`
+        : `<form class="tx-f" id="txF"><input type="tel" id="txNum" autocomplete="tel" inputmode="tel" placeholder="Your mobile number" aria-label="Your mobile number" required><button class="btn sm go" type="submit" id="txSend">Send code</button></form>
+           <form class="tx-f" id="txC" hidden><input type="text" id="txCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" aria-label="6-digit code" required><button class="btn sm go" type="submit">Confirm</button></form>`;
+      const f = $("#txF"), c = $("#txC");
+      if (f) f.onsubmit = async (e) => { e.preventDefault(); msg.textContent = "Sending a code…"; try { const j = await send("/api/me/phone/start", { phone: $("#txNum").value }); msg.textContent = j.message || "We texted you a code."; c.hidden = false; $("#txCode").focus(); } catch (err) { msg.textContent = err.message; } };
+      if (c) c.onsubmit = async (e) => { e.preventDefault(); try { await send("/api/me/phone/verify", { phone: $("#txNum").value, code: $("#txCode").value }); T = await get("/api/me/potto-text"); msg.textContent = "Number confirmed. Turn on Text with Potto when you're ready."; drawTx(); } catch (err) { msg.textContent = err.message; } }; };
+    drawTx();
+    sw.onchange = async () => { const on = sw.checked; sw.disabled = true; try { T = await send("/api/me/potto-text", { on }); msg.textContent = on ? "You're set. Potto just sent you a hello." : "Off. Potto won't text you."; } catch (err) { sw.checked = !on; msg.textContent = err.message; } drawTx(); };
+    if (location.hash === "#text" && T.available) setTimeout(() => box.scrollIntoView({ block: "start" }), 50);
+  } catch {}
   // blocked
   async function drawBlocks() { const B = (await get("/api/me/blocks")).blocks || [], el = $("#blocks");
     el.innerHTML = B.length ? B.map((b) => `<div class="row"><span>${esc(b.name || (b.target.startsWith("host:") ? "@" + b.target.slice(5) : "Someone"))}<small>${b.target.startsWith("host:") ? "Host" : "Person"}</small></span><button type="button" class="btn sm" data-t="${esc(b.target)}">Unblock</button></div>`).join("") : `<p class="msg">No one. If someone bothers you, open the ⋯ on their post or page.</p>`;

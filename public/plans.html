@@ -53,6 +53,8 @@ h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;
       <div class="pv-seg" role="tablist" aria-label="How to see your plans" id="ppSeg"><button type="button" role="tab" data-view="timeline" aria-selected="true" aria-controls="ppMain">Timeline</button><button type="button" role="tab" data-view="calendar" aria-selected="false" aria-controls="ppMain">Calendar</button></div></header>
     <p class="pv-sum" id="ppSum" hidden></p>
     <div class="pv-sync" id="ppSync"></div>
+    <!-- friend invites by text (public/invites.js, server/friendinvites.js): "Invite a friend (4 left)" -->
+    <div id="plInvite" hidden></div>
     <div class="pv-grid" id="ppGrid"><section id="ppMain" role="tabpanel" aria-live="polite"><p class="pv-load">Getting your plans</p></section><aside class="pv-aside" id="ppAside" aria-label="This month"></aside></div>
     <div class="pv-foot" id="ppFoot"><a id="ppPast" href="/plans?past=1">Past plans</a><a href="/requests" id="reqLink" hidden>Your requests to hosts</a></div>
     <div id="scene" hidden style="margin:22px 0 6px"></div>
@@ -133,6 +135,7 @@ h2.sub{font:600 17px/1.3 var(--pl-font-text);margin:28px 0 0;padding-bottom:8px;
   const main = document.querySelector("main") || document.body; main.insertBefore(sec, document.getElementById("rpCard")); } catch {} })();
 </script>
 <script src="/save.js"></script><script src="/passport.js"></script><script>/* "Your scene" (public/passport.js): shows after a first reply or first kudos */ window.PLPassport && PLPassport.mount(document.getElementById("scene"));</script>
+<script src="/invites.js"></script><script>/* friend invites: signed in only */ if (/(?:^|;\s*)encore_in=1/.test(document.cookie) && window.PLInvites) PLInvites.mount(document.getElementById("plInvite"));</script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 <style>.rp-card{margin:34px 0 10px;padding:20px;border:1px solid var(--pl-line);border-radius:6px;background:#fff;max-width:620px}.rp-card h2{margin:0 0 4px;font-size:20px;display:inline}.rp-card summary{cursor:pointer;list-style:none}.rp-card summary::-webkit-details-marker{display:none}.rp-card summary::after{content:"Open ▾";float:right;font-size:13px;color:var(--pl-accent);font-weight:600}.rp-card[open] summary::after{content:"Close ▴"}.rp-card summary .rp-sub{display:block;margin-top:4px}.rp-sub{color:var(--pl-soft);margin:0 0 14px;font-size:14.5px}

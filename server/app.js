@@ -38,7 +38,7 @@ import { mountBrand, startResearch } from "./brand.js";
 import { mountChecks } from "./checks.js";
 import { mountCollabs } from "./collabs.js";
 import { mountOnboard } from "./onboard.js";
-import { mountSignin } from "./signin.js";
+import { mountSignin, signinEmailConfig } from "./signin.js";
 import { mountDirectory } from "./directory.js";
 import { mountLeaderboard } from "./leaderboard.js";
 import { mountHostLoop } from "./hostloop.js"; // streaks with rest passes, small moves, warmth, Circles, Potto's nudges, /start, /path (server/hostloop.js)
@@ -51,6 +51,7 @@ import { mountRepeats } from "./repeats.js"; // weekly and monthly events make t
 import { mountHelp } from "./help.js";
 import { mountInbox, inboxPrefsOf } from "./inbox.js"; // the Inbox the bell opens (server/inbox.js, public/inbox.html)
 import { mountPotto } from "./potto.js"; // Ask Potto (server/potto.js, public/potto.js)
+import { mountPottoText } from "./pottotext.js"; import { mountFriendInvites } from "./friendinvites.js"; // Potto by text, friend invites by text
 import { mountComeWith, friendTerms, claimHold, findHold } from "./comewith.js"; // "Come with me?": a link for one friend, their spot held 48 hours
 import { mountSeries } from "./series.js"; // review round 13: episode numbers and the series changelog
 import { mountSlots } from "./slots.js"; // review round 13: slots on the invite (demo queue, game poll, bracket) and quiet guests
@@ -429,7 +430,7 @@ export function createApp({ store, dataDir }) {
     // a shared founder code stays reusable, but a few uses per IP and per day, each one logged (launch review)
     const fg = codeCheck?.founder ? founderGate(store, req) : null; if (fg && !fg.ok) return fail(429, { code: "rate_limited", message: fg.message });
     const W = createWorkspace({ company, ownerEmail: email, personal, ref }); fg?.log(email);
-    if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} }
+    if (codeCheck?.ok && codeCheck.c) { C.useCode(code, { ws: W.id, email, name }); if (codeCheck.c.ownerEmail) try { X.addFriend(email, codeCheck.c.ownerEmail); X.addFriend(codeCheck.c.ownerEmail, email); } catch {} } // a waitlist invite from an admin (server/friendinvites.js) has no owner to befriend
     if (vouch) { try { const by = getWorkspace(vouch.ws), instead = needCode && !codeCheck?.ok;
       updateWorkspace(W.id, { vouchedBy: { ws: vouch.ws, eventId: vouch.eventId, via: vouch.via, at: Date.now(), ...(instead ? { insteadOfCode: true } : {}) } });
       scopeStore(store, W.id).add("audit", { eventId: "", what: `Started hosting as a guest of ${by?.company || "another host"}'s event (${vouch.via === "kudos" ? "sent kudos" : "was in"})`, kind: "growth", at: Date.now() });
@@ -817,6 +818,10 @@ export function createApp({ store, dataDir }) {
   mountHelp(app, { store, express, currentUser, C, X, sendStatic, publicOrigin: (req) => originOf(req) });
   mountInbox(app, { store, small, currentUser, C, X, sendStatic, afterRsvp: (...a) => afterRsvp(...a) }); // the Inbox (server/inbox.js)
   mountPotto(app, { store, express, currentUser, C, X }); // Ask Potto (server/potto.js)
+  // ---- Potto by text and friend invites by text (server/pottotext.js, server/friendinvites.js) ----
+  mountPottoText(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) });
+  mountFriendInvites(app, { store, small, currentUser, C, X, sendStatic: (...a) => sendStatic(...a), publicOrigin: (req) => originOf(req), emailConfig: () => signinEmailConfig(), textOnce: (p, t) => app.locals.pottoText.textOnce(p, t) });
+  // ---- end Potto by text ----
   // hooks for new people: "What are you into?", Inspo, saves and boards, the passport, friends going, the weekend digest (server/hooks.js)
   mountHooks(app, { store, currentUser, publicOrigin: (req) => originOf(req), C, X, SB, sendStatic, express });
   mountMap(app, { store, C, currentUser, sendStatic }); // after hooks: saves counts and friends going (server/map.js)
@@ -824,7 +829,7 @@ export function createApp({ store, dataDir }) {
   mountCollections(app, { C, X, sendStatic, publicOrigin: (req) => originOf(req) }); mountGuides(app, { store, small, currentUser, C, X, sendStatic }); mountStats(app, { store, small, currentUser, C, X, sendStatic }); // server/collections.js, guides.js, stats.js
   // ---------- a guest's own reply, from any phone or browser ----------
   // "Email me my link": sends the link to the address on the reply (never says whether there is one).
-  const replyHits = new Map(); const replyLimited = (req, n) => { const k = (req.ip || "?") + req.path, now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };
+  const replyHits = new Map(); const replyLimited = (req, n) => { const k = (app.locals.pottoText?.isOwn(req) ? "potto:" + req.get("x-potto-who") : req.ip || "?") + req.path, /* Potto by text: one limit per person, not one for 127.0.0.1 */ now = Date.now(); let h = replyHits.get(k); if (!h || now - h.start > 3600_000) { h = { n: 0, start: now }; replyHits.set(k, h); } return ++h.n > n; };
   app.post("/api/public/reply/link", small, async (req, res) => { if (replyLimited(req, 10)) return res.status(429).json({ code: "rate_limited", message: "Too many tries. Try again later." });
     const eventId = String(req.body?.eventId || "").slice(0, 80), email = String(req.body?.email || "").trim().toLowerCase(), ws = /^[A-Za-z0-9_-]+$/.test(eventId) ? workspaceOfEvent(eventId) : null;
     if (!ws || !EMAIL_OK(email)) return res.status(400).json({ code: "invalid", message: "Add the email you replied with." });

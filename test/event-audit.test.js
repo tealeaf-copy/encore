@@ -61,7 +61,7 @@ test("the full invite: host line and Follow (not on your own event), Help and Re
   const B = I.slice(i, I.indexOf("</script>", i));
   assert.match(B, /\$\{own\?"":`<button type="button" class="plf-btn" data-pl-follow="\$\{esc\(h\.handle\)\}"/, "no Follow on your own event");
   assert.match(B, /data-lz="help">Help<\/a> · <a href="#" data-lz="report">Report/);
-  assert.match(B, /html body\.g-cancelled #view-guest#view-guest#view-guest :is\(#gForm,#gTopCta,\[data-addcal\]\),html body\.g-cancelled :is\(#gBar,\.g-bar,\.prb\)/, "no reply form, reply bar or calendar on a cancelled event (above slots.css)"); assert.match(B, /Members first until/);
+  assert.match(B, /html body\.g-cancelled #view-guest#view-guest#view-guest :is\(#gForm,#gTopCta,#statusPill,\[data-addcal\]\),html body\.g-cancelled :is\(#gBar,\.g-bar,\.prb\)/, "no reply form, reply bar or calendar on a cancelled event (above slots.css)"); assert.match(B, /Members first until/);
   assert.match(B, /cancelled this one/); assert.match(B, /Replies are closed\./);
   assert.doesNotMatch(B, /\u2014/, "no em dashes");
   const scripts = [...I.matchAll(/<script[\s>]/g)].map((m) => m.index), last = I.slice(scripts[scripts.length - 1]);

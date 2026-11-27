@@ -87,3 +87,60 @@ export function apisFor(S) {
     { path: "/api/admin/reports", as: "admin" },
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }
+
+// The event-page audit's world (scripts/event-audit.mjs): seedRoutes, plus one event per state a guest can meet, and
+// the reply proof each guest's browser holds. Guests who replied signed out are replayed with that proof in
+// localStorage, the way a phone comes back to the link.
+export async function seedAudit(base) {
+  const S = await seedRoutes(base);
+  const cookieOf = (r) => (r.headers.get("set-cookie") || "").split(";")[0];
+  const post = async (p, body, cookie) => fetch(base + p, { method: "POST", headers: { ...J, ...(cookie ? { cookie } : {}) }, body: JSON.stringify(body) });
+  const put = (p, body, cookie) => fetch(base + "/api/db/doc?path=" + p, { method: "PUT", headers: { ...J, cookie }, body: JSON.stringify(body) });
+  const patch = (p, body, cookie) => fetch(base + "/api/db/doc?path=" + p, { method: "PATCH", headers: { ...J, cookie }, body: JSON.stringify(body) });
+  const signup = async (name, email) => { const r = await post("/api/signup", { name, email, password: "long-password-1", mode: "friends" }); const j = await r.json(); if (r.status !== 200) throw new Error("signup " + email + " " + JSON.stringify(j)); return { cookie: cookieOf(r), ws: j.workspace.id, email, name }; };
+  let n = 0;
+  const reply = async (eventId, { name, email, cookie, response = "going" } = {}) => { const key = "kaudit" + String(++n).padStart(6, "0"), code = "A" + String(n).padStart(5, "0");
+    const doc = await (await fetch(base + "/api/db/doc?path=events/" + eventId, { headers: { "x-encore-guest": "1", ...(cookie ? { cookie } : {}) } })).json();
+    const r = await fetch(base + "/api/db/collection?path=rsvps", { method: "POST", headers: { ...J, "x-encore-guest": "1", "x-encore-key": key, "x-encore-workspace": doc.workspace, ...(cookie ? { cookie } : {}) }, body: JSON.stringify({ eventId, response: doc.data?.approvalRequired ? "requested" : response, name, email, code, createdAt: Date.now(), via: "invite-lite" }) });
+    const j = await r.json(); if (!r.ok) throw new Error("reply " + eventId + " " + JSON.stringify(j)); return { rid: String(j.id || "").split("/").pop(), code, name }; };
+  const H = S.host.cookie, ev = (o) => ({ kind: "social", casual: true, activity: "dinner", city: "Brooklyn", hood: "Bed-Stuy", meetPoint: "Bed-Stuy", startTime: "19:00", headcount: 8, emoji: "🥟", published: true, discoverable: true, unlisted: false, date: day(8), ...o });
+  const nia = await signup("Nia Brooks", "nia.audit@example.com"); // signed in, never replied to anything
+  const bo = await signup("Bo Tran", "bo.audit@example.com"); // a second host: co-host on one of Mai's, and a fan club with a members-first window
+  await post("/api/host/profile", { handle: "bo-audit", name: "Bo's Table", city: "Brooklyn", tagline: "Noodles on Sundays." }, bo.cookie);
+  const SECRET = "41 Hidden Lane, Apt 3";
+  await post("/api/host/profile", { handle: "mai-routes", name: "Mai's Supper Club", venmo: "mai-routes" }, H);
+  await put("events/auPlace", ev({ name: "Pasta at the library", venueName: "Sunset Park Library", venueAddr: "5108 4th Ave", meetPoint: "Sunset Park Library", coverPhoto: S.cover, description: "Fresh pasta and a long table.", bring: ["A jar for leftovers"] }), H);
+  await put("events/auHome", ev({ name: "Supper at my place", meetPoint: "Mai's place", venueAddr: SECRET, addrHidden: true, description: "Dinner in my kitchen." }), H);
+  await put("events/auLong", ev({ name: "A very long evening of hand-pulled noodles, slow broth and stories from three grandmothers' kitchens", meetPoint: "", hood: "", city: "", description: "We start with tea. ".repeat(60).trim() }), H);
+  await put("events/auFull", ev({ name: "Tiny tasting", headcount: 2 }), H);
+  await put("events/auAsk", ev({ name: "Chef's counter", approvalRequired: true }), H);
+  await put("events/auPaid", ev({ name: "Ramen class", price: "$25" }), H);
+  await put("events/auCancel", ev({ name: "Cancelled picnic" }), H);
+  await put("events/auMoved", ev({ name: "Moved brunch", date: day(11), look: { update: { text: "New date: one week later.", at: Date.now() } } }), H);
+  await put("events/auPrivate", ev({ name: "Birthday dinner", discoverable: false, unlisted: true }), H);
+  await put("events/auCohost", ev({ name: "Two-host supper", cohosts: [{ handle: "bo-audit", name: "Bo" }] }), H);
+  await put("events/auExample", ev({ name: "Example supper", example: true }), H);
+  const st = {};
+  for (const r of ["going", "maybe", "no"]) st["place-" + r] = { id: "auPlace", ...(await reply("auPlace", { name: "Lee " + r, email: `lee.${r}@example.com`, response: r })), response: r };
+  st["home-going"] = { id: "auHome", ...(await reply("auHome", { name: "Ana Diaz", email: "ana.audit@example.com" })), response: "going" };
+  await reply("auFull", { name: "Kim A", email: "kima@example.com" }); await reply("auFull", { name: "Kim B", email: "kimb@example.com" });
+  st["full-wait"] = { id: "auFull", ...(await reply("auFull", { name: "Wes Wait", email: "wes@example.com" })), response: "waitlist" };
+  for (const k of ["pending", "approved", "declined"]) st["ask-" + k] = { id: "auAsk", ...(await reply("auAsk", { name: "Ari " + k, email: `ari.${k}@example.com` })), response: "requested" }; // the phone keeps "requested"; the host says yes or no later
+  await patch("rsvps/" + st["ask-approved"].rid, { response: "going" }, H); await patch("rsvps/" + st["ask-declined"].rid, { response: "declined" }, H);
+  st["paid-unpaid"] = { id: "auPaid", ...(await reply("auPaid", { name: "Pat Unpaid", email: "pat.u@example.com" })), response: "going" };
+  st["paid-paid"] = { id: "auPaid", ...(await reply("auPaid", { name: "Pat Paid", email: "pat.p@example.com" })), response: "going" };
+  await patch("rsvps/" + st["paid-paid"].rid, { paid: true, paidAt: Date.now() }, H);
+  st["cancel-going"] = { id: "auCancel", ...(await reply("auCancel", { name: "Cy Gone", email: "cy@example.com" })), response: "going" };
+  st["moved-going"] = { id: "auMoved", ...(await reply("auMoved", { name: "Mo Moved", email: "mo@example.com" })), response: "going" };
+  await patch("events/auCancel", { cancelled: true }, H);
+  // the fan club: members first for 48 hours (Sam, the seeded guest, is a member; Nia is not)
+  await post("/api/host/club", { on: true, earlyHours: 48 }, bo.cookie); await post("/api/me/club/bo-audit/join", {}, S.guest.cookie);
+  await put("events/auEarly", ev({ name: "Members-first noodles", meetPoint: "Bo's place", venueAddr: SECRET, addrHidden: true }), bo.cookie);
+  // a drop (an order page)
+  const d = await (await post("/api/host/drops", { title: "Chili crisp Saturday", items: [{ name: "Chili crisp", price: "12" }], slots: ["Sat 10 to 11am"], area: "Bed-Stuy", address: SECRET, always: true, pay: "pickup" }, H)).json();
+  // a brand-bookable experience (/teams/x/<handle>/<pkg>)
+  await post("/api/host/profile", { handle: "mai-routes", name: "Mai's Supper Club", forHire: true }, H);
+  const B = await (await post("/api/bb/host/setup", { on: true, policy: "standard", area: "Bed-Stuy", city: "Brooklyn", address: SECRET, phone: "+1 718 555 0100", story: "I cook for people I like.", since: 2019,
+    packages: [{ name: "Supper club for your team", story: "Six courses at a long table.", moods: ["client", "bonding"], perPersonCents: 12000, minimumCents: 120000, minGuests: 6, maxGuests: 14, leadDays: 7, includes: ["Ingredients", "Venue", "Service"], weekdays: [1, 2, 3, 4, 5], time: "evening", taxBps: 0, depositPct: 25 }] }, H)).json().catch(() => ({}));
+  return { ...S, nia, bo, secret: SECRET, drop: d.id || "", pkg: B?.setup?.packages?.[0]?.id || "", states: st };
+}

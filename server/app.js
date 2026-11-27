@@ -14,6 +14,7 @@ import { runToolLoop, toCapError, aiMode } from "./ai.js";
 import { configured, configuredFor, callTool, withCrm } from "./integrations/index.js";
 import { clientCredentialsToken } from "./integrations/salesforce.js";
 import { gongOrigin, gongAuth } from "./integrations/gong.js";
+import { coverOf } from "./eventcover.js"; // one cover per event everywhere
 import { makeCommunity, mountCommunity, inviteOnly } from "./community.js";
 import { mountReplyFill } from "./replyfill.js"; // Potto fills in the reply form from what you told us before
 import { PREVIEW_LABEL } from "./previews.js";
@@ -717,7 +718,7 @@ export function createApp({ store, dataDir }) {
   // Without a photo, a share link shows the line-art card for the event's illustration (public/og/<kind>.png, made by
   // scripts/make-og.cjs). The illustration is picked the same way the invite picks its cover, using eventart.js itself.
   let EA = null; try { const sandbox = { window: {}, document: { head: { appendChild() {} }, createElement: () => ({ style: {} }), getElementById: () => null, querySelector: () => null } }; sandbox.window.document = sandbox.document; vm.runInNewContext(fs.readFileSync(path.join(PUBLIC_DIR, "eventart.js"), "utf8"), sandbox); EA = sandbox.window.EventArt || null; } catch {}
-  const ogCardFor = (ev, base) => { try { const pick = ev.coverArt && typeof ev.coverArt === "object" && EA?.valid(ev.coverArt.kind) ? String(ev.coverArt.kind).split("+")[0] : EA ? EA.kindOf(ev) : "party"; return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
+  const ogCardFor = (ev, base) => { try { const pick = String(coverOf(ev).art?.kind || "party").split("+")[0]; /* the drawing every card shows (server/eventcover.js) */ return fs.existsSync(path.join(PUBLIC_DIR, "og", pick + ".png")) ? `${base}/og/${pick}.png` : `${base}/og/party.png`; } catch { return ""; } };
   // A share link with a preview: /e/<id> tells iMessage, WhatsApp and Instagram the event's title, date and cover,
   // and is the reply page itself (public/invite.html). The part after "#" never reaches a server, so /g links can't preview.
   // "Come with me?" links (/i/<id>?with=<token>) open the same light invite; the preview says who sent it

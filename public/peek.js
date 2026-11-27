@@ -42,7 +42,7 @@
   }
   function coverHtml(p) {
     if (p.cover) return `<img src="${esc(p.cover)}" alt="" loading="lazy">`;
-    try { const E = window.EventArt; if (E?.cover) { E.ensureCss?.(); const a = E.cover({ title: p.title, coverArt: p.coverArt, date: p.date }, { title: "", label: "" }); if (typeof a === "string" && a) return a; } } catch {}
+    try { const E = window.EventArt; if (E?.cover) { E.ensureCss?.(); const a = E.cover({ title: p.title, coverArt: p.coverArt, date: p.date, coverSpec: p.coverSpec }, { title: "", label: "" }); if (typeof a === "string" && a) return a; } } catch {}
     return `<span class="pk-art-blank" aria-hidden="true"></span>`;
   }
   function whoHtml(w) { if (!w || !w.count) return w ? `<p class="pk-who"><span class="pk-whotxt">No one's in yet.</span></p>` : "";

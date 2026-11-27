@@ -11,6 +11,7 @@
 // - A moment the host hides is gone everywhere except the host's own list, where it can be shown again.
 // - Kudos quotes on public cards come from open events only, with emails and phone numbers scrubbed.
 // Showcase (prepared) pages fill the signed-out feed with their covers and illustrated art, so it never looks empty.
+import { coverOf } from "./eventcover.js"; // one cover per event everywhere
 import crypto from "node:crypto";
 import { previewListed } from "./previews.js";
 import fs from "node:fs";
@@ -148,7 +149,7 @@ export function makeFeedVisual(store, { C, X }) {
     const cap = +e.headcount || 0;
     return { id: x.id, etype: typeOf(e), title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
       ...(e.drop ? { drop: true, pickup: globalThis.PLPickup.line(e), free: false } : {}), // a drop reads Pickup, never an event date
-      approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : e.drop ? (e.orderItems || []).map((it) => (it.photos || [])[0] || it.photo || "").find(MEDIA_OK) || "" : "", coverArt: artOf(e), look: lookOf(e), host: h, url: e.drop ? `/e/${encodeURIComponent(x.id)}` : `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
+      approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : e.drop ? (e.orderItems || []).map((it) => (it.photos || [])[0] || it.photo || "").find(MEDIA_OK) || "" : "", coverArt: artOf(e), coverSpec: coverOf(e, x.id), look: lookOf(e), host: h, url: e.drop ? `/e/${encodeURIComponent(x.id)}` : `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
       ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),
       ...(() => { try { if (!isPublicEvent(e)) return {}; if (past) { const n = hostedCount(store, x.id); return n ? { hostedAfter: n, hostedLine: countLine(n) } : {}; }
         const T = togetherOf(scopeStore(store, x.ws).listShared("rsvps"), e, x.id); /* read only: parsed once per change (server/db.js) */ return T.length ? { together: T.slice(0, 2) } : {}; } catch { return {}; } })(),

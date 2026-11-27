@@ -18,6 +18,7 @@
 //   hands it to the invite's own write (POST /api/public/reply/:id). Paid spots, asks to join and orders stay on the
 //   event page (replyRule).
 // - Calendar: a private webcal feed of your plans (/plans/feed/<token>.ics, built with the .ics code in hooksout.js).
+import { coverOf } from "./eventcover.js"; // one cover per event everywhere
 import crypto from "node:crypto";
 import { scopeStore, allWorkspaceIds, workspaceOfEvent, getWorkspace, getDbUser, DEFAULT_WS } from "./workspaces.js";
 import { seatsTaken, waitlistPos, waitlistOf, guestPlace, replyKey } from "./social.js";
@@ -121,7 +122,7 @@ export function itemOf({ id, ev, kind, status, place = "", host = "", href = "",
   const day = sp.startMs != null && !sp.allDay ? localDay(sp.startMs, sp.tz) : d;
   const sub = [status, place, host ? `with ${host}` : ""].filter(Boolean).join(" · ");
   return { key: key || `${kind}:${id}`, kind, eventId: id, title: title || titleOf(ev), date: day, endDate: multiDay(ev) && kind !== "todo" && !date ? lastDay(ev) : "", time: HHMM.test(t) ? t : "", tz: sp.tz,
-    startMs: sp.startMs, endMs: sp.endMs, allDay: sp.allDay, status, place, host, sub, href: href || `/e/${encodeURIComponent(id)}`, ord, ...(ev && kind !== "todo" ? { etype: typeOf(ev) } : {}), ...extra };
+    startMs: sp.startMs, endMs: sp.endMs, allDay: sp.allDay, status, place, host, sub, href: href || `/e/${encodeURIComponent(id)}`, ord, ...(ev && kind !== "todo" ? { etype: typeOf(ev), coverSpec: coverOf(ev, id) } : {}), ...extra }; // the row's thumbnail is the event's own cover
 }
 
 // ---------- itineraries ----------
@@ -308,7 +309,7 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     const sp = spanOf(ev), all = scopeStore(store, ws).list("rsvps").filter((d) => d.data?.eventId === id);
     const status = isHost ? statusOf("hosting", ev, null, { going: Math.round(seatsTaken(ev, all)), asking: all.filter((d) => d.data?.response === "requested").length }) : mine ? statusOf(kindOf(ev, mine), ev, mine, { hostFirst: hostFirstOf(ws, ev) }) : "";
     return { id, eventId: id, key: "plan:" + id, title: titleOf(ev), date: ev.date || "", startMs: sp.startMs, endMs: multiDay(ev) ? spanOf({ ...ev, startTime: "" }).endMs : sp.endMs, allDay: multiDay(ev) || sp.allDay, tz: sp.tz, status, editable: isHost && !ev.drop, endDate: lastDay(ev), startTime: ev.startTime || "", endTime: ev.endTime || "", chip: typeChip(ev), multi: multiDay(ev),
-      place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), cover: /^\/(_blob|presets)\//.test(ev.coverPhoto || "") ? ev.coverPhoto : (h.gallery || [])[0] || "", coverArt: ev.coverArt || null,
+      place: placeOf(ev, { exact: inn, say: guestPlace(ws) }), cover: /^\/(_blob|presets)\//.test(ev.coverPhoto || "") ? ev.coverPhoto : "", coverArt: ev.coverArt || null, coverSpec: coverOf(ev, id), /* the event's own cover: never the host's gallery standing in for it */
       host: { name: clean(h.name || ev.hostName, 60), first: hostFirstOf(ws, ev), handle: h.handle || "", avatarArt: h.theme?.avatarArt || "", color: h.theme?.accent || h.color || "" },
       // chat: the group chat, for people who are in (the event audit); a cancelled plan offers no calendar
       isHost, going: inn, response: mine?.response || "", public: !!ev.itineraryPublic, cancelled: !!ev.cancelled, chat: inn && !ev.cancelled ? `/chats/${encodeURIComponent(id)}` : "", locked: !may, days: may ? itineraryDays(ev, items) : [], count: (ev.itinerary || []).length,
@@ -352,7 +353,7 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     return {
       id, eventId: id, key: "peek:" + id, title: titleOf(ev), href, invite: `/e/${encodeURIComponent(id)}`, when: whenLine(ev), date: ev.date || "", endDate: multiDay(ev) ? lastDay(ev) : "", time: HHMM.test(ev.startTime || "") ? ev.startTime : "",
       startMs: sp.startMs, endMs: multiDay(ev) ? spanOf({ ...ev, startTime: "" }).endMs : sp.endMs, allDay: multiDay(ev) || sp.allDay, tz: sp.tz, multi: multiDay(ev), chip: typeChip(ev),
-      cover, coverArt: ev.coverArt && typeof ev.coverArt === "object" ? ev.coverArt : null,
+      cover, coverArt: ev.coverArt && typeof ev.coverArt === "object" ? ev.coverArt : null, coverSpec: coverOf(ev, id),
       host: { name: clean(h.name || ev.hostName, 60), first: hostFirst, handle: clean(h.handle, 40), href: h.handle ? `/@${encodeURIComponent(h.handle)}` : "", avatarArt: clean(h.theme?.avatarArt, 120),
         avatarUrl: /^(\/_blob\/[A-Za-z0-9_-]{6,80}|https:\/\/[^\s"<>()]+)$/.test(h.theme?.avatarUrl || "") ? h.theme.avatarUrl : "", color: /^#[0-9a-f]{6}$/i.test(h.theme?.accent || h.color || "") ? h.theme?.accent || h.color : "" },
       place: placeOf(ev, { exact: inn, say: isHost ? (x) => x : say }), locked: !inn, address: addr, online: !!ev.online,

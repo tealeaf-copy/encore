@@ -97,7 +97,7 @@
   if (!P) { m.innerHTML = `<p class="pv-miss">We couldn't find this plan. <a href="/plans">Back to your plans</a></p>`; return; }
   document.title = P.title + " · Pottery Lab";
   const A = window.EncoreAvatars, av = P.host.avatarArt && A ? A.svg(P.host.avatarArt, P.host.color, 40) : "";
-  let art = ""; try { if (!P.cover && window.EventArt?.cover) { window.EventArt.ensureCss?.(); art = window.EventArt.cover({ title: P.title, coverArt: P.coverArt, date: P.date }, { title: "", label: "" }) || ""; } } catch {}
+  let art = ""; try { if (!P.cover && window.EventArt?.cover) { window.EventArt.ensureCss?.(); art = window.EventArt.cover({ title: P.title, coverArt: P.coverArt, date: P.date, coverSpec: P.coverSpec }, { title: "", label: "" }) || ""; } } catch {}
   const G = T.ICON;
   // ---- time words, in the event's own time zone ----
   const evTz = P.tz || tz, today = T.localDay(Date.now(), evTz), nOf = (d) => T.daysBetween(today, d);

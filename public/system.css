@@ -15,8 +15,10 @@
    IBM Plex Mono for kickers and data only. Every colour, face, corner and line of the brand is in this block (see
    docs/brand-kit.md). test/brand-tokens.test.js checks each text/background pair here at WCAG AA. ==== */
 @import url("/fonts/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap");
-/* copy never ends on one word alone, headings break into even lines, bold is the kit's 600 (also in every full page's head, server/appstore.js) */
-:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}
+/* copy never ends on one word alone, headings break into even lines, bold is the kit's 600, and a weight the kit doesn't load
+   (bold Plex Mono, which comes in 500 only) draws in the nearest real one instead of a smeared fake bold (also in
+   every full page's head, server/appstore.js) */
+:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}:where(html){font-synthesis-weight:none}
 /* a stand-in shaped like IBM Plex Sans while it loads, so headings don't change size when it arrives */
 @font-face{font-family:"PL Display Fallback";src:local("Arial"),local("Helvetica"),local("Liberation Sans");size-adjust:101%;ascent-override:102%;descent-override:27%;line-gap-override:0%}
 :root{

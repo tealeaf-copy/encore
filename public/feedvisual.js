@@ -201,7 +201,7 @@
   const CHECK = `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3L15 7"/></svg>`;
   const followingBtn = (h) => `<button type="button" class="fb-follow-in on" data-fb-fmenu="${esc(h.handle)}" aria-haspopup="menu" aria-expanded="false">Following${CHECK}<span class="fb-sr"> ${esc(h.name)}</span></button>`;
   const followBtn = (h) => (!h ? "" : h.mine ? (LEADFULL ? `<a class="fb-follow-in" href="/@${esc(h.handle)}">Edit page</a>` : "") : h.following ? (LEADFULL ? followingBtn(h) : "")
-    : `<button type="button" class="fb-follow-in" data-fb-follow="${esc(h.handle)}" data-url="/@${esc(h.handle)}#follow" data-name="${esc(h.name)}">Follow<span class="fb-sr"> ${esc(h.name)}</span></button>`);
+    : `<button type="button" class="fb-follow-in" data-fb-follow="${esc(h.handle)}" data-name="${esc(h.name)}">Follow<span class="fb-sr"> ${esc(h.name)}</span></button>`);
   const lead = (h, sub, report) => `<header class="fb-lead"${report ? rep(report) : ""}><a class="fb-host" href="/@${esc(h.handle)}">${ringed(h)}<span><b>${esc(h.name)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></a>${followBtn(h)}</header>`;
   // a small row of faces: named people first, then unnamed sketch faces (never a name we may not show)
   const sketch = (f) => `<span class="fv-av" style="--c:${esc(okColor(f.color) || "#E26D8E")};width:24px;height:24px" aria-hidden="true">${window.EncoreAvatars && f.art ? window.EncoreAvatars.svg(f.art, f.color || "#E26D8E", 24) : ""}</span>`;
@@ -387,7 +387,7 @@
     try { const r = await fetch(`/api/me/following/${encodeURIComponent(b.dataset.fbFollow)}`, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: true }) });
       if (r.ok) { $$(`[data-fb-follow="${CSS.escape(b.dataset.fbFollow)}"]`).forEach((x) => { if (x.classList.contains("fb-follow-in") && LEADFULL) { x.outerHTML = followingBtn({ handle: x.dataset.fbFollow, name: x.dataset.name || "" }); return; } x.disabled = true; x.classList.add("on"); say(x, "Following"); });
         live("Following. You'll hear about their next event."); $(`[data-fb-fmenu="${CSS.escape(b.dataset.fbFollow)}"]`)?.focus({ preventScroll: true }); return; }
-      location.href = b.dataset.url; } catch { b.disabled = false; } }
+      location.href = "/@" + encodeURIComponent(b.dataset.fbFollow) + "#follow"; /* only without public/follow.js */ } catch { b.disabled = false; } }
   // Following (on a post page): a small menu with notifications on or off, and Unfollow
   let fmenu = null; const closeFm = () => { if (!fmenu) return; fmenu.m.remove(); fmenu.b.setAttribute("aria-expanded", "false"); fmenu = null; };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && fmenu) { const b = fmenu.b; closeFm(); b.focus(); } });

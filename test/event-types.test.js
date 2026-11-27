@@ -26,7 +26,7 @@ test("event types: about ten, each with a word, a plural, a line and an icon, an
 test("event types: every kind the code knows maps to exactly one type", () => {
   for (const [k, v] of Object.entries(T.KIND)) assert.ok(TYPES.includes(v), `${k} -> ${v}`);
   // "What are you planning?" on the server and on the canvas: each one is a real type, never the neutral one
-  for (const k of PLAN_KINDS) { assert.ok(T.KIND[k], "server kind " + k); assert.notEqual(typeOf({ planKind: k }), "event", k); }
+  for (const k of PLAN_KINDS) { assert.ok(T.KIND[k], "server kind " + k); if (k !== "other") assert.notEqual(typeOf({ planKind: k }), "event", k); } // "Something else" stays the neutral Event
   const cv = read("public/canvas.js"), block = cv.slice(cv.indexOf("const PLAN_KINDS = ["), cv.indexOf("];", cv.indexOf("const PLAN_KINDS = [")));
   const canvasKinds = [...block.matchAll(/\{\s*k:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]);
   assert.ok(canvasKinds.length >= 7, "found the canvas kinds");

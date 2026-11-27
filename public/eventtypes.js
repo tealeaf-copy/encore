@@ -45,7 +45,7 @@
     dinner: "dinner", table: "dinner", supper: "dinner", supperclub: "dinner", potluck: "dinner", brunch: "dinner", lunch: "dinner", meal: "dinner", food: "dinner", cook: "dinner", taco: "dinner", dumpling: "dinner", turkey: "dinner", heart: "dinner",
     drop: "pickup", preorder: "pickup", pickup: "pickup", order: "pickup", shop: "pickup",
     popup: "popup", "pop-up": "popup", market: "popup", stall: "popup", tasting: "popup", sale: "popup", swap: "popup", giveaway: "popup", fair: "popup",
-    party: "party", house: "party", houseparty: "party", "house-party": "party", home: "party", hangout: "party", gather: "party", birthday: "party", celebration: "party", fireworks: "party", tree: "party", holiday: "party", new: "party",
+    party: "party", drinks: "party", picnic: "party", house: "party", houseparty: "party", "house-party": "party", home: "party", hangout: "party", gather: "party", birthday: "party", celebration: "party", fireworks: "party", tree: "party", holiday: "party", new: "party",
     class: "class", workshop: "class", lesson: "class", craft: "class", pottery: "class", paint: "class", garden: "class", museum: "event", course: "class",
     run: "active", hike: "active", walk: "active", bike: "active", ride: "active", yoga: "active", swim: "active", climb: "active", sport: "active", active: "active", outdoors: "active", tour: "active",
     game: "games", games: "games", gamenight: "games", hack: "games", hacknight: "games", tech: "games", laptop: "games", controller: "games", screen: "games", watch: "games", watchparty: "games", trivia: "games",
@@ -53,7 +53,7 @@
     summit: "talk", conference: "talk", talk: "talk", panel: "talk", meetup: "talk", salon: "talk", book: "talk", bookclub: "talk", lecture: "talk",
     booking: "booking", booked: "booking", experience: "booking", team: "booking", offsite: "booking",
     // known, and neutral on purpose
-    coffee: "event", cafe: "event", bake: "event", tea: "event", wine: "event", drinks: "event", music: "event", movie: "event", dance: "event", picnic: "event", park: "event", leaf: "event", lantern: "event", pin: "event", social: "event", other: "event", event: "event",
+    coffee: "event", cafe: "event", bake: "event", tea: "event", wine: "event", music: "event", movie: "event", dance: "event",  park: "event", leaf: "event", lantern: "event", pin: "event", social: "event", other: "event", event: "event",
   };
   // the map's old categories (server/map.js catOf), for links and saved filters that still say them
   const CAT = { supper: "dinner", games: "games", run: "active", workshop: "class", drop: "pickup", market: "popup" };

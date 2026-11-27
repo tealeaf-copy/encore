@@ -98,10 +98,10 @@
   // ---- the CSS: flatten the columns, order by variable, hide what's off, and each style ----
   const PINNED = [".bk-sug", ".pv-note", ".sc-note", ".ex-note", ".photo-nudge", "#hNext", ".cover", ".head"];
   const ALL = () => [...SECTIONS.flatMap((s) => s.sel), ".plb"];
-  const STATIC = `html.pl-lay #m{display:flex;flex-direction:column;gap:24px;max-width:860px;margin-inline:auto}
+  const STATIC = `html.pl-lay #m{display:flex;flex-direction:column;max-width:860px;margin-inline:auto}
 html.pl-lay #m :is(.cols,.cols>div,aside.side,#extras,#sideExtras){display:contents}
 html.pl-lay #m>*,html.pl-lay #m .cols>div>*,html.pl-lay #m aside.side>*,html.pl-lay #m #extras>*,html.pl-lay #m #sideExtras>*{order:var(--pl-o,800)}
-html.pl-lay #m :is(${ALL().join(",")}){margin-top:0;margin-bottom:0}
+html.pl-lay #m :is(${ALL().join(",")}){margin-top:var(--pl-gap,24px);margin-bottom:0}
 html.pl-lay body:not(.is-owner) #offer.pla-emptied{display:none}html.pl-lay #m .head{margin-bottom:-8px}html.pl-lay #m .head .bio{display:none}html.pl-lay #m .sf-foot{--pl-o:1000}
 ${PINNED.map((s, i) => `html.pl-lay #m ${s}{--pl-o:${i - 20}}`).join("")}
 html.pl-lay.plc-slim #m .cover{height:120px}html.pl-lay.plc-none #m .cover{display:none}html.pl-lay.plc-none #m .head{margin-top:16px}html.pl-lay.plc-none #m .head>div:nth-child(2){padding-top:8px}

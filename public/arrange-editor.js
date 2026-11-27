@@ -30,65 +30,67 @@
   };
   const BI = { text: I.text, photo: I.photo, quote: I.quote, links: I.link, video: I.video, divider: I.divider };
   const CSS = `
-html.pl-arranging body{padding-top:calc(68px + env(safe-area-inset-top))!important;padding-bottom:calc(96px + env(safe-area-inset-bottom))!important}
+html.pl-arranging body{padding-top:calc(80px + env(safe-area-inset-top))!important;padding-bottom:calc(96px + env(safe-area-inset-bottom))!important}html.pl-arranging.pla-tipping body{padding-bottom:calc(190px + env(safe-area-inset-bottom))!important}
+@media (max-width:640px){html.pl-arranging body{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}html.pl-arranging.pla-tipping body{padding-bottom:calc(240px + env(safe-area-inset-bottom))!important}}
 html.pl-arranging,html.pl-arranging body{overflow-anchor:none}
-html.pl-arranging :is(.store-fab,.es-tabs,.es-rail,.plt-live){display:none!important}
-html.pl-arranging.pl-lay #m{gap:84px;padding-top:24px}
+html.pl-arranging :is(.store-fab,.es-tabs,.plt-live){display:none!important}
+html.pl-arranging.pl-lay #m{--pl-gap:84px;padding-top:24px}
 html.pl-arranging [data-pl-sec]{position:relative;overflow:visible!important;outline:1.5px dashed rgba(41,72,154,.45);outline-offset:8px;border-radius:6px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:outline-color .2s}
 html.pl-arranging [data-pl-sub]{outline:1.5px dashed rgba(41,72,154,.25);outline-offset:8px;border-radius:6px}
 html.pl-arranging [data-pl-sec]>:not(.pla-chrome),html.pl-arranging [data-pl-sub]>*{pointer-events:none}
-html.pl-arranging [data-pl-sec]:hover,html.pl-arranging [data-pl-sec]:focus-within{outline-color:var(--pl-accent,#29489A);outline-style:solid}
-.pla-chrome{position:absolute;left:-9px;right:-9px;top:-54px;height:44px;padding:0 0 0 0;display:flex;align-items:center;gap:6px;z-index:6;font:500 15px/1.2 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-ink,#1B1D1C);letter-spacing:0;text-transform:none;pointer-events:auto}
-.pla-chrome button{min-width:44px;min-height:44px;display:inline-grid;place-items:center;grid-auto-flow:column;gap:6px;padding:0 10px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;cursor:pointer}
-.pla-chrome button:hover{border-color:var(--pl-ink,#1B1D1C)}.pla-chrome button:focus-visible,.pla-bar button:focus-visible,.pla-dock button:focus-visible,.pla-sheet :is(button,input,textarea):focus-visible{outline:3px solid var(--pl-focus,rgba(41,72,154,.3));outline-offset:2px}
+@media (hover:hover){html.pl-arranging [data-pl-sec]:hover{outline-color:#29489A;outline-style:solid}.pla-chrome button:hover,}html.pl-arranging [data-pl-sec]:focus-within{outline-color:#29489A;outline-style:solid}
+.pla-chrome{position:absolute;left:-9px;right:-9px;bottom:calc(100% + 10px);min-height:44px;display:flex;align-items:center;gap:6px;z-index:6;font:500 15px/1.2 "IBM Plex Sans",system-ui,sans-serif;color:#1B1D1C;letter-spacing:0;text-transform:none;pointer-events:auto}
+.pla-chrome button{min-width:44px;min-height:44px;display:inline-grid;place-items:center;grid-auto-flow:column;gap:6px;padding:0 10px;border:1.5px solid #CFC8B9;border-radius:6px;background:#FAF8F3;color:#1B1D1C;font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
+.pla-chrome button:focus-visible,.pla-bar button:focus-visible,.pla-dock button:focus-visible,.pla-sheet :is(button,input,textarea):focus-visible{outline:3px solid rgba(41,72,154,.3);outline-offset:2px}
 .pla-chrome button[disabled]{opacity:.4;cursor:default}
-.pla-grip{cursor:grab!important;touch-action:none;background:var(--pl-accent,#29489A)!important;color:#fff!important;border-color:var(--pl-accent,#29489A)!important}
-.pla-name{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;padding-left:4px}
+.pla-grip{cursor:grab!important;touch-action:none;background:#29489A!important;color:#fff!important;border-color:#29489A!important}
+.pla-name{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.25;font-weight:600;padding-left:4px}
 .pla-tools{display:flex;gap:6px;flex:none}
 @media (max-width:520px){.pla-chrome .pla-lbl,.pla-bar .pla-lbl{display:none}.pla-chrome button{padding:0 8px}.pla-tools{gap:4px}}
 html.pla-dragging [data-pl-sec]{max-height:150px;overflow:hidden!important;-webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
 html.pla-dragging [data-pl-sub]{display:none!important}
-html.pla-dragging.pl-lay #m{gap:16px}html.pla-dragging .pla-chrome{display:none}
-html.pla-dragging [data-pl-sec]::after{content:attr(data-pl-name);position:absolute;right:10px;top:10px;z-index:7;padding:4px 10px;border-radius:6px;background:var(--pl-ink,#1B1D1C);color:#fff;font:600 14px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
-[data-pl-sec].pla-lifted{z-index:20;-webkit-mask-image:none!important;mask-image:none!important;box-shadow:0 18px 40px -12px rgba(27,29,28,.45),0 0 0 2px var(--pl-accent,#29489A);background:var(--bg,var(--pl-page,#EFEBE2));cursor:grabbing;outline:0!important}
+html.pla-dragging.pl-lay #m{--pl-gap:16px}html.pla-dragging .pla-chrome{display:none}
+html.pla-dragging [data-pl-sec]::after{content:attr(data-pl-name);position:absolute;right:10px;top:10px;z-index:7;padding:4px 10px;border-radius:6px;background:#1B1D1C;color:#fff;font:600 14px "IBM Plex Sans",system-ui,sans-serif}
+[data-pl-sec].pla-lifted{z-index:20;-webkit-mask-image:none!important;mask-image:none!important;box-shadow:0 18px 40px -12px rgba(27,29,28,.45),0 0 0 2px #29489A;background:var(--bg,#EFEBE2);cursor:grabbing;outline:0!important}
 [data-pl-sec].pla-press{transition:transform .25s;transform:scale(.99)}
-.pla-bar{position:fixed;left:0;right:0;top:0;z-index:70;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;display:flex;align-items:center;gap:8px;background:var(--pl-surface,#FAF8F3);border-bottom:1.5px solid var(--pl-ink,#1B1D1C);font-family:var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-ink,#1B1D1C)}
-.pla-bar .pla-t{flex:1;min-width:0;display:flex;flex-direction:column}.pla-bar .pla-t b{font-size:17px}.pla-bar .pla-t small{font-size:13px;color:var(--pl-soft,#444845);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pla-bar button,.pla-dock button{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff;color:var(--pl-ink,#1B1D1C);font:600 15px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;cursor:pointer;white-space:nowrap;flex:none}
-.pla-bar button[disabled]{opacity:.4;cursor:default}.pla-bar .pla-done{background:var(--pl-accent,#29489A);border-color:var(--pl-accent,#29489A);color:#fff;padding:0 18px}
-.pla-bar button[aria-pressed=true]{background:var(--pl-accent-soft,#E3E8F4);border-color:var(--pl-accent,#29489A)}
+.pla-bar{position:fixed;left:0;right:0;top:0;z-index:70;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;display:flex;align-items:center;gap:8px;background:#FAF8F3;border-bottom:1.5px solid #1B1D1C;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#1B1D1C}
+.pla-bar .pla-t{flex:1;min-width:0;display:flex;flex-direction:column}.pla-bar .pla-t b{font-size:17px}.pla-bar .pla-t small{font-size:13px;line-height:1.3;color:#444845}
+.pla-bar button,.pla-dock button{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;color:#1B1D1C;font:600 15px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;white-space:nowrap;flex:none}
+.pla-bar button[disabled]{opacity:.4;cursor:default}.pla-bar .pla-done{background:#29489A;border-color:#29489A;color:#fff;padding:0 18px}
+.pla-bar button[aria-pressed=true]{background:#E3E8F4;border-color:#29489A}
 .pla-saved{display:inline-flex;align-items:center;gap:4px}.pla-saved svg{width:14px;height:14px}
-.pla-dock{position:fixed;left:0;right:0;bottom:0;z-index:70;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;background:var(--pl-surface,#FAF8F3);border-top:1.5px solid var(--pl-ink,#1B1D1C)}
-.pla-dock::-webkit-scrollbar{display:none}.pla-dock .pla-pri{background:var(--pl-ink,#1B1D1C);border-color:var(--pl-ink,#1B1D1C);color:#fff}
+.pla-dock{position:fixed;left:0;right:0;bottom:0;z-index:70;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;background:#FAF8F3;border-top:1.5px solid #1B1D1C}
+.pla-dock::-webkit-scrollbar{display:none}.pla-dock .pla-short{display:none}
+@media (max-width:640px){.pla-dock{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;gap:6px}.pla-dock button{padding:0 6px;font-size:15px;gap:4px}.pla-dock .pla-long{display:none}.pla-dock .pla-short{display:inline}}
 @media (min-width:900px){.pla-dock{justify-content:center}}
 html.pla-preview .pla-chrome,html.pla-preview .pla-dock,html.pla-preview .pla-tip,html.pla-preview :is(.of-own,.bk-sug,#srChangelog,#owHire,.h-next,.av-chg,.sup-own,.pla-empty){display:none!important}
-html.pla-preview [data-pl-sec],html.pla-preview [data-pl-sub]{outline:0!important}html.pla-preview [data-pl-sec]>*,html.pla-preview [data-pl-sub]>*{pointer-events:auto}html.pla-preview.pl-lay #m{gap:24px}
+html.pla-preview [data-pl-sec],html.pla-preview [data-pl-sub]{outline:0!important}html.pla-preview [data-pl-sec]>*,html.pla-preview [data-pl-sub]>*{pointer-events:auto}html.pla-preview.pl-lay #m{--pl-gap:24px}
 html.pla-preview body{padding-bottom:0!important}
 .pla-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.pla-tip{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:69;max-width:440px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:10px 12px;border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px;background:var(--pl-sand-soft,#F7EFCB);color:var(--pl-ink,#1B1D1C);font:500 15px/1.4 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;box-shadow:0 10px 30px -18px rgba(27,29,28,.5)}
+.pla-tip{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:69;}@media (max-width:640px){.pla-tip{bottom:calc(132px + env(safe-area-inset-bottom))}}.pla-tip{max-width:440px;margin:0 auto;display:flex;gap:10px;align-items:center;padding:10px 12px;border:1.5px solid #1B1D1C;border-radius:6px;background:#F7EFCB;color:#1B1D1C;font:500 15px/1.4 "IBM Plex Sans",system-ui,sans-serif;box-shadow:0 10px 30px -18px rgba(27,29,28,.5)}
 .pla-tip .pla-potto{flex:none;width:40px;height:40px;display:grid;place-items:center}.pla-tip p{margin:0;flex:1}.pla-tip button{min-width:44px;min-height:44px;border:0;background:none;color:inherit;cursor:pointer;display:grid;place-items:center}
 @media (prefers-reduced-motion:no-preference){.pla-tip{animation:plaIn .28s cubic-bezier(.2,.9,.3,1.2)}@keyframes plaIn{from{transform:translateY(12px);opacity:0}}}
 .pla-scrim{position:fixed;inset:0;z-index:80;background:rgba(27,29,28,.35);display:flex;align-items:flex-end;justify-content:center}
-.pla-sheet{width:min(560px,100%);max-height:min(84vh,720px);overflow:auto;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);border:1.5px solid var(--pl-ink,#1B1D1C);border-bottom:0;border-radius:6px 6px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));font:400 16px/1.5 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
-@media (min-width:700px){.pla-scrim{align-items:center}.pla-sheet{border-bottom:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px}}
-.pla-sheet h2{font:600 24px/1.2 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;margin:0}.pla-sh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.pla-sheet h3{font:600 13px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft,#444845);margin:18px 0 8px}
-.pla-sheet p.pla-lead{margin:0 0 4px;color:var(--pl-soft,#444845)}
-.pla-sheet button{font:600 16px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-ink,#1B1D1C);cursor:pointer}
-.pla-x{min-width:44px;min-height:44px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff;display:grid;place-items:center}
+.pla-sheet{width:min(560px,100%);max-height:min(84vh,720px);overflow:auto;background:#FAF8F3;color:#1B1D1C;border:1.5px solid #1B1D1C;border-bottom:0;border-radius:6px 6px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));font:400 16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+@media (min-width:700px){.pla-scrim{align-items:center}.pla-sheet{border-bottom:1.5px solid #1B1D1C;border-radius:6px}}
+.pla-sheet h2{font:600 24px/1.2 "IBM Plex Sans",system-ui,sans-serif!important;letter-spacing:-.01em!important;margin:0}.pla-sh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.pla-sheet h3{font:600 13px "IBM Plex Sans",system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#444845;margin:18px 0 8px}
+.pla-sheet p.pla-lead{margin:0 0 4px;color:#444845}
+.pla-sheet button{font:600 16px "IBM Plex Sans",system-ui,sans-serif;color:#1B1D1C;cursor:pointer}
+.pla-x{min-width:44px;min-height:44px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;display:grid;place-items:center}
 .pla-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.pla-tile{display:grid;grid-template-columns:24px minmax(0,1fr);gap:4px 10px;align-items:start;text-align:left;min-height:64px;padding:12px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff}
-.pla-tile:hover{border-color:var(--pl-ink,#1B1D1C)}.pla-tile small{grid-column:2;font:400 14px/1.35 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-soft,#444845)}
-.pla-starters{display:grid;gap:8px}.pla-st{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:12px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff}
-.pla-st.fit{border-color:var(--pl-accent,#29489A);box-shadow:inset 0 0 0 1px var(--pl-accent,#29489A)}.pla-st small{display:block;font:400 14px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-soft,#444845)}.pla-fit{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:6px;background:var(--pl-accent-soft,#E3E8F4);color:var(--pl-accent-text,#29489A);font-size:13px}
-.pla-mini{display:grid;gap:3px;padding:6px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:var(--pl-page,#EFEBE2)}.pla-mini i{display:block;height:7px;border-radius:2px;background:var(--pl-ink,#1B1D1C);opacity:.75}.pla-mini i.c{height:12px;background:var(--pl-accent,#29489A)}
-.pla-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--pl-line,#CFC8B9)}.pla-row:first-of-type{border-top:0}
-.pla-btn{min-height:44px;padding:0 16px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff}.pla-btn.pri{background:var(--pl-accent,#29489A);border-color:var(--pl-accent,#29489A);color:#fff!important}.pla-btn.warn{color:var(--pl-danger,#A2361A)!important}
-.pla-f{display:grid;gap:4px;margin-top:12px;font-weight:600;font-size:15px}.pla-f input,.pla-f textarea{font:400 16px/1.45 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;padding:10px 12px;border:1.5px solid var(--pl-line,#CFC8B9);border-radius:6px;background:#fff;color:var(--pl-ink,#1B1D1C);min-height:44px;box-sizing:border-box;width:100%}
-.pla-foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:16px}.pla-err{color:var(--pl-danger,#A2361A);font-size:15px;margin:8px 0 0;min-height:1em}
-.pla-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px;margin-top:8px}.pla-pic{position:relative;padding:0;border:2px solid transparent;border-radius:6px;background:none;aspect-ratio:1;overflow:hidden}.pla-pic img{width:100%;height:100%;object-fit:cover;display:block}.pla-pic[aria-pressed=true]{border-color:var(--pl-accent,#29489A)}.pla-pic[aria-pressed=true]::after{content:"";position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;background:var(--pl-accent,#29489A)}
-.pla-up{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1.5px dashed var(--pl-ink,#1B1D1C);border-radius:6px;background:#fff;font-weight:600;cursor:pointer;margin-top:8px}.pla-up input{position:absolute;opacity:0;width:1px;height:1px}
-.pla-empty{color:var(--pl-soft,#444845);font-style:normal;border:1.5px dashed var(--pl-line,#CFC8B9);border-radius:6px;padding:14px}
+.pla-tile{display:grid;grid-template-columns:24px minmax(0,1fr);gap:4px 10px;align-items:start;text-align:left;min-height:64px;padding:12px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff}
+.pla-tile:hover{border-color:#1B1D1C}.pla-tile small{grid-column:2;font:400 14px/1.35 "IBM Plex Sans",system-ui,sans-serif;color:#444845}
+.pla-starters{display:grid;gap:8px}.pla-st{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:12px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff}
+.pla-st.fit{border-color:#29489A;box-shadow:inset 0 0 0 1px #29489A}.pla-st small{display:block;font:400 14px "IBM Plex Sans",system-ui,sans-serif;color:#444845}.pla-fit{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:6px;background:#E3E8F4;color:#29489A;font-size:13px}
+.pla-mini{display:grid;gap:3px;padding:6px;border:1.5px solid #CFC8B9;border-radius:6px;background:#EFEBE2}.pla-mini i{display:block;height:7px;border-radius:2px;background:#1B1D1C;opacity:.75}.pla-mini i.c{height:12px;background:#29489A}
+.pla-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid #CFC8B9}.pla-row:first-of-type{border-top:0}
+.pla-btn{min-height:44px;padding:0 16px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff}.pla-btn.pri{background:#29489A;border-color:#29489A;color:#fff!important}.pla-btn.warn{color:#A2361A!important}
+.pla-f{display:grid;gap:4px;margin-top:12px;font-weight:600;font-size:15px}.pla-f input,.pla-f textarea{font:400 16px/1.45 "IBM Plex Sans",system-ui,sans-serif;padding:10px 12px;border:1.5px solid #CFC8B9;border-radius:6px;background:#fff;color:#1B1D1C;min-height:44px;box-sizing:border-box;width:100%}
+.pla-foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:16px}.pla-err{color:#A2361A;font-size:15px;margin:8px 0 0;min-height:1em}
+.pla-pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px;margin-top:8px}.pla-pic{position:relative;padding:0;border:2px solid transparent;border-radius:6px;background:none;aspect-ratio:1;overflow:hidden}.pla-pic img{width:100%;height:100%;object-fit:cover;display:block}.pla-pic[aria-pressed=true]{border-color:#29489A}.pla-pic[aria-pressed=true]::after{content:"";position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:50%;background:#29489A}
+.pla-up{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1.5px dashed #1B1D1C;border-radius:6px;background:#fff;font-weight:600;cursor:pointer;margin-top:8px}.pla-up input{position:absolute;opacity:0;width:1px;height:1px}
+.pla-empty{color:#444845;font-style:normal;border:1.5px dashed #CFC8B9;border-radius:6px;padding:14px}
 html.pl-arranging .plb-divider{min-height:24px}
 @media (prefers-reduced-motion:reduce){html.pl-arranging *{transition:none!important;animation:none!important}}
 `;
@@ -96,7 +98,7 @@ html.pl-arranging .plb-divider{min-height:24px}
   const E = { A: null, L: null, hist: [], fut: [], handle: "", open: false, timer: 0, saveP: null, dirty: false, err: "", kind: "", facts: {} };
   const items = () => E.L.items;
   const meta = (it) => (PLL.BY[it.id] ? PLL.BY[it.id] : PLL.BLOCKS[it.type] || { label: "Section", variants: [] });
-  const nameOf = (it) => { if (!it) return "Section"; if (PLL.BY[it.id]) return PLL.BY[it.id].label; const B = PLL.BLOCKS[it.type], d = it.data || {}, t = String(d.title || d.text || d.caption || "").trim(); return t ? `${B.label}: ${t.length > 22 ? t.slice(0, 21) + "…" : t}` : B.label; };
+  const nameOf = (it) => { if (!it) return "Section"; if (PLL.BY[it.id]) return PLL.BY[it.id].label; const B = PLL.BLOCKS[it.type], d = it.data || {}, t = String(d.title || d.text || d.caption || "").trim(); void t; return B.label; };
   // where a section is on the page: every element it has, the first one carries the toolbar
   const elsOf = (it) => { const m = $("#m"); if (!m) return []; if (!PLL.BY[it.id]) return $$(`.plb[data-pl="${it.id}"]`, m); return PLL.BY[it.id].sel.flatMap((s) => $$(s, m)).filter((el, i, A2) => A2.indexOf(el) === i && !el.closest(".pla-chrome")); };
   const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).display !== "none";
@@ -169,7 +171,7 @@ html.pl-arranging .plb-divider{min-height:24px}
     de.classList.add("pla-dragging"); D.el.classList.add("pla-lifted");
     // the page folds into cards: keep the lifted one under the finger
     const r1 = D.el.getBoundingClientRect(); scrollBy(0, r1.top + D.grab - ev.clientY);
-    $(".pla-tip")?.remove(); D.lastY = ev.clientY; follow(); say(`${nameOf(D.it)} lifted. Move to place it, let go to drop.`); tick(); }
+    untip(); D.lastY = ev.clientY; follow(); say(`${nameOf(D.it)} lifted. Move to place it, let go to drop.`); tick(); }
   function move(ev) { if (!D || ev.pointerId !== D.id) return; D.lastY = ev.clientY;
     if (!D.lifted) { const dx = Math.abs(ev.clientX - D.x), dy = Math.abs(ev.clientY - D.y);
       if (D.type === "mouse") { if (dx + dy > 4) lift(ev); return; }
@@ -241,7 +243,7 @@ html.pl-arranging .plb-divider{min-height:24px}
   function bringBack(id, here) { let L = clone(E.L); const it = L.items.find((x) => x.id === id); delete it.off; if (here) { E.L = L; L = place(id, hereId()); }
     closeSheet(); commit(L, `${nameOf(it)} is back.`); setTimeout(() => primary(items().find((x) => x.id === id))?.scrollIntoView({ block: "center", behavior: reduce() ? "auto" : "smooth" }), 80); }
   function hiddenSheet() { const H = hiddenList();
-    const s = sheet("Hidden", H.length ? `<p class="pla-lead">Guests don't see these. Bring one back any time.</p>${H.map((it) => `<div class="pla-row"><b>${esc(nameOf(it))}</b><button type="button" class="pla-btn" data-back="${it.id}">Bring back</button></div>`).join("")}` : `<p class="pla-lead">Nothing hidden. Hide a section from its toolbar and it waits here.</p>`);
+    const s = sheet("Hidden", H.length ? `<p class="pla-lead">Guests don't see these. Bring one back any time.</p>${H.map((it) => `<div class="pla-row"><span><b>${esc(nameOf(it))}</b>${PLL.SPLIT.has(it.id) ? `<small style="display:block;color:#444845;font-size:14px">Shown inside Coming up for now. Bring it back for its own section.</small>` : ""}</span><button type="button" class="pla-btn" data-back="${it.id}">Bring back</button></div>`).join("")}` : `<p class="pla-lead">Nothing hidden. Hide a section from its toolbar and it waits here.</p>`);
     $$("[data-back]", s).forEach((b) => (b.onclick = () => bringBack(b.dataset.back, false))); }
   function startersSheet() { const fit = E.kind;
     const mini = (S) => `<span class="pla-mini" aria-hidden="true">${S.order.slice(0, 5).map(([id], i) => `<i class="${i === 0 ? "c" : ""}" style="width:${[100, 80, 92, 70, 86][i]}%"></i>`).join("")}</span>`;
@@ -252,9 +254,10 @@ html.pl-arranging .plb-divider{min-height:24px}
     try { const j = await api("POST", "/api/host/layout/" + encodeURIComponent(E.handle) + "/suggest", { layout: E.L }); commit(j.layout, "Potto arranged your page. " + (j.tips || []).join(" ")); tip((j.tips || [])[0] || "Here's an order that fits what you have."); scrollTo({ top: 0, behavior: reduce() ? "auto" : "smooth" }); }
     catch (e) { tip(e.message); } finally { if (b) b.disabled = false; } }
   function coverCycle() { const C = PLL.COVER, i = C.findIndex((x) => x[0] === (E.L.cover || "tall")), n = C[(i + 1) % C.length]; const L = clone(E.L); L.cover = n[0]; commit(L, `${n[1]}.`); const b = $(".pla-cov span"); if (b) b.textContent = n[1]; scrollTo({ top: 0, behavior: reduce() ? "auto" : "smooth" }); }
-  function tip(t) { $(".pla-tip")?.remove(); const el = document.createElement("div"); el.className = "pla-tip"; el.setAttribute("role", "status");
+  function tip(t) { untip(); const el = document.createElement("div"); el.className = "pla-tip"; el.setAttribute("role", "status");
     el.innerHTML = `<span class="pla-potto" aria-hidden="true">${window.Potto?.svg ? window.Potto.svg("happy", 40) : I.wand}</span><p>${esc(t)}</p><button type="button" aria-label="Dismiss tip">${I.x}</button>`;
-    el.querySelector("button").onclick = () => el.remove(); document.body.appendChild(el); clearTimeout(tip.t); tip.t = setTimeout(() => el.remove(), 9000); }
+    el.querySelector("button").onclick = untip; document.body.appendChild(el); de.classList.add("pla-tipping"); clearTimeout(tip.t); tip.t = setTimeout(untip, 9000); }
+  function untip() { $(".pla-tip")?.remove(); de.classList.remove("pla-tipping"); }
 
   // ---- the host's own blocks: edit sheet ----
   async function upload(file) { const r = await fetch("/api/assets", { method: "POST", credentials: "same-origin", headers: { "Content-Type": file.type || "application/octet-stream" }, body: file }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That upload didn't work. Try a smaller file."); return j.url; }
@@ -292,7 +295,8 @@ html.pl-arranging .plb-divider{min-height:24px}
     const top = document.createElement("div"); top.className = "pla-bar"; top.setAttribute("role", "toolbar"); top.setAttribute("aria-label", "Arrange your page");
     top.innerHTML = `<button type="button" class="pla-undo" aria-label="Undo" title="Undo">${I.undo}</button><button type="button" class="pla-redo" aria-label="Redo" title="Redo">${I.redo}</button><span class="pla-t"><b>Arrange</b><small class="pla-status">Your draft saves as you go.</small></span><button type="button" class="pla-prev" aria-pressed="false">${I.eye}<span class="pla-lbl">Preview</span></button><button type="button" class="pla-done">Done</button>`;
     const dock = document.createElement("div"); dock.className = "pla-dock"; dock.setAttribute("role", "toolbar"); dock.setAttribute("aria-label", "Page tools");
-    dock.innerHTML = `<button type="button" class="pla-pri pla-add">${I.plus}Add a section</button><button type="button" class="pla-sug">${I.wand}Suggest a layout</button><button type="button" class="pla-sta">${I.grid}Starters</button><button type="button" class="pla-hid">${I.tray}Hidden<span class="pla-hidden-n"></span></button><button type="button" class="pla-cov">${I.cover}<span>${esc((PLL.COVER.find((x) => x[0] === (E.L.cover || "tall")) || [])[1])}</span></button><button type="button" class="pla-rst">${I.reset}Reset to the suggested layout</button>`;
+    const two = (s, l) => `<span class="pla-short">${s}</span><span class="pla-long">${l}</span>`;
+    dock.innerHTML = `<button type="button" class="pla-add" aria-label="Add a section">${I.plus}${two("Add", "Add a section")}</button><button type="button" class="pla-sug" aria-label="Suggest a layout">${I.wand}${two("Suggest", "Suggest a layout")}</button><button type="button" class="pla-sta">${I.grid}Starters</button><button type="button" class="pla-hid">${I.tray}Hidden<span class="pla-hidden-n"></span></button><button type="button" class="pla-cov">${I.cover}<span>${esc((PLL.COVER.find((x) => x[0] === (E.L.cover || "tall")) || [])[1])}</span></button><button type="button" class="pla-rst" aria-label="Reset to the suggested layout">${I.reset}${two("Reset", "Reset to the suggested layout")}</button>`;
     const sr = document.createElement("div"); sr.className = "pla-sr"; sr.setAttribute("aria-live", "polite"); sr.setAttribute("role", "status");
     document.body.append(top, dock, sr);
     $(".pla-undo").onclick = undo; $(".pla-redo").onclick = redo; $(".pla-done").onclick = done; $(".pla-prev").onclick = preview;

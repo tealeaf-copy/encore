@@ -68,7 +68,7 @@ test("Potto's suggestion is plain rules from what the host has, and always passe
   assert.equal(lots.layout.items.find((x) => x.id === "photos").v, "mosaic"); assert.match(lots.tips[0], /best photo first/);
   const maker = PLL.suggest({ drops: 3, upcoming: 0, photos: 1 }); assert.equal(maker.kind, "maker"); assert.equal(maker.layout.items[0].id, "drops");
   for (const s of PLL.STARTERS) { const L = PLL.starter(s.id); assert.ok(!PLL.check(L).error, s.id); assert.equal(new Set(L.items.map((x) => x.id)).size, L.items.length); }
-  for (const f of ["public/arrange-core.js", "public/arrange.js", "public/arrange-editor.js", "server/pagelayout.js"]) { const t = fs.readFileSync(new URL("../" + f, import.meta.url), "utf8"); assert.ok(!t.includes("—"), f + ": no em dashes"); }
+  for (const f of ["public/arrange-core.js", "public/arrange.js", "public/arrange-editor.js", "server/pagelayout.js"]) { const t = fs.readFileSync(new URL("../" + f, import.meta.url), "utf8"); assert.ok(!t.includes("\u2014"), f + ": no em dashes"); }
 });
 
 // ---------------- in a browser ----------------
@@ -82,7 +82,7 @@ test("on a phone: long-press lifts a section, the page scrolls near the edge, th
   await call("DELETE", `/api/host/layout/${S.handle}`, null, S.host.cookie);
   const browser = await pw.chromium.launch(); const errs = [];
   try { const ctx = await browser.newContext({ ...pw.devices["iPhone 13"], viewport: { width: 390, height: 844 } }); await asHost(ctx);
-    const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
+    const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push(m.text()); }); p.on("requestfailed", (r) => { if (r.url().startsWith(srv.base) && !/ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push("failed " + r.url()); });
     await p.goto(srv.base + "/@" + S.handle + "?arrange=1"); await p.waitForSelector('[data-pl-sec="kudos"] .pla-chrome', { timeout: 15000 }); await p.waitForTimeout(800);
     const before0 = await order(p); assert.ok(before0.indexOf("kudos") > 1);
     const cdp = await ctx.newCDPSession(p), touch = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
@@ -121,7 +121,7 @@ test("at 1280 with a mouse and a keyboard: drag, move up and down, hide and brin
   await call("DELETE", `/api/host/layout/${S.handle}`, null, S.host.cookie);
   const browser = await pw.chromium.launch(); const errs = [];
   try { const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }); await asHost(ctx);
-    const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message));
+    const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errs.push(m.text()); }); p.on("requestfailed", (r) => { if (r.url().startsWith(srv.base) && !/ERR_ABORTED/.test(r.failure()?.errorText || "")) errs.push("failed " + r.url()); });
     await p.goto(srv.base + "/@" + S.handle); await p.waitForTimeout(1200);
     // the door is in Edit page
     await p.click(".store-fab:not(.shop-fab)"); await p.click(".store-pane .pla-door button"); await p.waitForSelector('[data-pl-sec="past"] .pla-chrome', { timeout: 15000 }); await p.waitForTimeout(600);
@@ -173,7 +173,7 @@ test("at 1280 with a mouse and a keyboard: drag, move up and down, hide and brin
       const seen = await q.evaluate((ids) => { const P = window.PLLayout; return ids.map((id) => { const s = P.BY[id] ? P.BY[id].sel : []; const el = s.flatMap((x) => [...document.querySelectorAll("#m " + x)]).find((e) => e.getClientRects().length); return el ? [id, el.getBoundingClientRect().top] : null; }).filter(Boolean); }, want.filter((id) => PLL.BY[id]));
       for (let i = 1; i < seen.length; i++) assert.ok(seen[i][1] >= seen[i - 1][1], `${width}: ${seen[i - 1][0]} above ${seen[i][0]}`);
       assert.equal(await q.locator('.plb-text h2:has-text("House rules")').count(), 1);
-      const cls = await q.evaluate(() => window.__cls); assert.ok(cls < 0.1, `${width}: CLS ${cls.toFixed(3)}`);
+      const cls = await q.evaluate(() => window.__cls); assert.ok(cls < 0.05, `${width}: CLS ${cls.toFixed(3)}`);
       await v.close(); }
   } finally { await browser.close(); }
 });

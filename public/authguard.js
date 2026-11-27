@@ -6,7 +6,7 @@
 // The kit's faces are asked for at the same moment, not only from system.css's @import (which waits for system.css),
 // so system.css applies as soon as it lands instead of after a second round trip (design audit: layout shift on load)
 (function () { try { const F = "/fonts/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap";
-  if (!document.querySelector(`link[href="${F}"]`)) { const f = document.createElement("link"); f.rel = "stylesheet"; f.href = F; (document.head || document.documentElement).appendChild(f); } } catch {} })();
+  if (!document.getElementById("plFonts")) { const f = document.createElement("link"); f.id = "plFonts"; f.rel = "stylesheet"; f.href = F; (document.head || document.documentElement).appendChild(f); } } catch {} })();
 (function () { try { let l = document.getElementById("systemCss"); if (!l) { l = document.createElement("link"); l.id = "systemCss"; l.rel = "stylesheet"; l.href = "/system.css"; (document.head || document.documentElement).appendChild(l); }
   const last = () => { try { const h = document.head; if (h && h.lastElementChild !== l) h.appendChild(l); } catch {} };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", last); else last(); window.addEventListener("load", last); } catch {} })();

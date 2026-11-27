@@ -4,7 +4,8 @@
 //   sent when neither is set. ENCORE_FAKE_PUSH=1 records pushes in memory instead (tests and demos), like ENCORE_FAKE_EMAIL.
 // - What gets pushed: every new item in someone's bell (server/social.js notify), read off the store's change events,
 //   so replies, "you're in", reminders, "a spot opened up" and new photos all push without touching their senders.
-//   People choose per kind in /settings (system/pushprefs-<hash>); quiet hours are the phone's own Focus.
+//   People choose per kind in /settings (system/pushprefs-<hash>); quiet hours are the phone's own Focus. A bell item
+//   marked nopush (an alert with its phone switch off) stays in the bell.
 //
 // APNs env: ENCORE_APNS_KEY (the .p8 contents, or base64 of it), ENCORE_APNS_KEY_ID, ENCORE_APPLE_TEAM_ID,
 //   ENCORE_IOS_BUNDLE_ID (the topic), ENCORE_APNS_ENV=production|sandbox (sandbox for Xcode builds, production for
@@ -128,7 +129,7 @@ export function makePush(store, env = process.env) {
     if (!fresh.length) return;
     store.set(logPath(em), { kind: "pushlog", email: em, lastAt: Math.max(...fresh.map((n) => n.at || 0)) });
     const unread = d.list.filter((n) => !n.read).length;
-    for (const n of fresh.slice(-3)) await send(em, { title: titleFor(n), body: strip(n.text), link: n.link, kind: n.kind, badge: unread, thread: n.eventId || n.kind });
+    for (const n of fresh.slice(-3)) if (!n.nopush) await send(em, { title: titleFor(n), body: strip(n.text), link: n.link, kind: n.kind, badge: unread, thread: n.eventId || n.kind });
   }
   let watching = false;
   function watch() {

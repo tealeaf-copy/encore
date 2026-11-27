@@ -31,17 +31,31 @@ export function ansList(ans, qs = []) { if (Array.isArray(ans)) return ans.filte
 export function lanesOf(text) { const t = lc(text), L = Object.entries(LANES).filter(([, w]) => w.some((x) => t.includes(x))).map(([k]) => k); return L.length > 1 ? L.filter((k) => k !== "club") : L; }
 const miles = (a, b) => { const R = 3958.8, r = (x) => (x * Math.PI) / 180, dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng), h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
 
+// What an alert watches, in the words people use ("dinners and cooking nights", not "cook events").
+export const LANE_WORDS = { run: "runs", hike: "hikes", bike: "bike rides", cook: "dinners and cooking nights", potluck: "potlucks", games: "game nights", movie: "movie nights", concert: "concerts and shows", cafe: "coffee and tea meetups", bake: "bakes and giveaways", picnic: "picnics", book: "book clubs", club: "club meetups" };
+const titleCase = (s) => String(s || "").replace(/\b([a-z])/g, (m) => m.toUpperCase());
+/** One line that says exactly what an alert watches: "Dinners and cooking nights in Brooklyn, free, on weekends". */
+export function alertSummary(a = {}) {
+  const what = (a.lanes || []).map((l) => LANE_WORDS[l] || l).join(" or ") || "anything", where = a.radiusMi ? `within ${Math.round(a.radiusMi * 10) / 10} miles of you` : a.city || a.homeCity ? `in ${a.city || a.homeCity}` : "anywhere";
+  const s = [what + " " + where, a.free ? "free" : "", a.weekend ? `on ${a.weekend === "sat" ? "Saturdays" : a.weekend === "sun" ? "Sundays" : "weekends"}` : ""].filter(Boolean).join(", ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 /** "notify me whenever there's a run event happening within 5 miles away from me that is public" → a rule. */
 export function parseAlert(text) {
   const t = lc(text), lanes = lanesOf(t), m = t.match(/(\d+(?:\.\d+)?)\s*(mi|mile|miles|km|kilomet(?:er|re)s?)\b/);
-  const radiusMi = m ? (/^k/.test(m[2]) ? +m[1] * 0.621 : +m[1]) : /near me|nearby|close/.test(t) ? 5 : null;
+  const radiusMi = m ? (/^k/.test(m[2]) ? +m[1] * 0.621 : +m[1]) : /near me|nearby|close to me|around me/.test(t) ? 5 : null;
   const free = /\bfree\b/.test(t), weekend = /weekend|saturday|sunday/.test(t) ? (/saturday/.test(t) && !/sunday/.test(t) ? "sat" : /sunday/.test(t) && !/saturday/.test(t) ? "sun" : "weekend") : "";
-  const city = (String(text).match(/\bin ([A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)?)/) || [])[1] || "";
-  const parts = [lanes.length ? lanes.join(" or ") + " events" : "any event", radiusMi ? `within ${Math.round(radiusMi * 10) / 10} miles` : city ? `in ${city}` : "near you", free ? "that are free" : "", weekend ? `on ${weekend === "sat" ? "Saturdays" : weekend === "sun" ? "Sundays" : "weekends"}` : "", "and open to the public"].filter(Boolean);
-  return { lanes, radiusMi, city, free, weekend, publicOnly: true, summary: parts.join(", ").replace(/, and open/, " and open") };
+  // "in my city", "in my area" and "near me" mean wherever you are (the page sends your city); any case works for a city name
+  const myCity = /\b(?:in|around) (?:my|our) (?:city|town|area|neighbou?rhood)\b|near me|nearby|close to me|around me/.test(t);
+  let city = (String(text).match(/\bin ([A-Z][A-Za-z]+(?: [A-Z][A-Za-z]+)?)/) || [])[1] || "";
+  if (!city) { const c = (t.match(/\bin ([a-z][a-z'.-]+(?: [a-z][a-z'.-]+){0,2}?)(?=\s+(?:on|that|which|within|for|every|at|near|this|with|and|when|if)\b|[,.!?]|$)/) || [])[1] || "";
+    if (c && !/^(my|our|the|a|an|this|that|town|city|the city|my city|my area|weekends?|evenings?|mornings?|person|public)\b/.test(c)) city = titleCase(c); }
+  const rule = { lanes, radiusMi, city, free, weekend, publicOnly: true, myCity };
+  return { ...rule, summary: alertSummary(rule) };
 }
 export function alertMatches(a, ev, evGeo) {
-  if (!ev?.discoverable || ev.unlisted) return false; // private events never reach strangers' alerts
+  if (a?.paused) return false; // paused: checked again when it's back on
+  if (!ev?.discoverable || ev.unlisted || ev.example || ev.published === false) return false; // private events never reach strangers' alerts
   const lanes = lanesOf(`${ev.activity || ""} ${ev.pubTitle || ""} ${ev.name || ""}`);
   if (a.lanes?.length && !a.lanes.some((l) => lanes.includes(l))) return false;
   if (a.free && !(ev.free || !ev.price)) return false;
@@ -165,7 +179,8 @@ export function makeSocial(store, { C, saveBlob }) {
   // ---- friends (one-way, like following a person; mutual shows as "friends") ----
   const fKey = (email) => "friends-" + hash(email);
   const friendsOf = (email) => sys(fKey(email))?.list || [];
-  function addFriend(email, other) { const L = friendsOf(email).filter((x) => x.email !== lc(other)); L.unshift({ email: lc(other), at: Date.now() }); put(fKey(email), { kind: "friends", email: lc(email), list: L.slice(0, 2000) }); notify(other, { kind: "friend", text: `${first(person(email).name) || "Someone"} added you as a friend`, from: lc(email), link: handleOf(email) ? `/h/${handleOf(email)}` : "/feed" }); }
+  function addFriend(email, other) { const L = friendsOf(email).filter((x) => x.email !== lc(other)); L.unshift({ email: lc(other), at: Date.now() }); put(fKey(email), { kind: "friends", email: lc(email), list: L.slice(0, 2000) }); const back = friendsOf(other).some((x) => x.email === lc(email)), who = first(person(email).name) || "Someone";
+    notify(other, { kind: "friend", key: `friend-${hash(email)}-${back ? 1 : 0}`, text: back ? `${who} added you back. You're friends now.` : `${who} added you as a friend. Add them back?`, from: lc(email), link: "/feed#friends" }); }
   function dropFriend(email, other) { put(fKey(email), { kind: "friends", email: lc(email), list: friendsOf(email).filter((x) => x.email !== lc(other)) }); }
   // ---- inbox ----
   const iKey = (email) => "inbox-" + hash(email);
@@ -305,22 +320,44 @@ export function makeSocial(store, { C, saveBlob }) {
     return { ws, S, r, rid: String(rid), ev: S.get("events/" + eventId)?.data };
   }
   // ---- alerts ----
+  // Each person's alerts live in system/alerts-<hash>. An alert remembers the events it already showed you (seen), so the
+  // hourly sweep and the on-save check never tell you twice, and the last 20 it told you about (hits) for the Watching tab.
   const aKey = (email) => "alerts-" + hash(email);
   const alertsOf = (email) => sys(aKey(email))?.list || [];
   function saveAlerts(email, L) { put(aKey(email), { kind: "alerts", email: lc(email), list: L }); }
-  function allAlerts() { return store.listPrefix("system", "alerts-").map((d) => d.data).filter((x) => x?.kind === "alerts").flatMap((x) => (x.list || []).map((a) => ({ ...a, email: x.email }))); }
-  async function onEventChange(ws, id, origin = "") {
-    const S = scopeStore(store, ws), e = S.get("events/" + id)?.data; bust(); if (!e || e.example || !e.discoverable || (e.date || "") < today()) return 0;
-    const W = getWorkspace(ws); let n = 0;
-    for (const a of allAlerts()) { if (lc(a.email) === lc(W?.ownerEmail)) continue; if (!alertMatches(a, e, e.geo)) continue;
-      const host = C.profileOf(ws), title = e.pubTitle || e.name;
-      if (notify(a.email, { kind: "alert", key: `alert-${a.id}-${id}`, text: `New: ${title}${host?.name ? ` by ${host.name}` : ""}${e.date ? `, ${niceDate(e.date)}` : ""}. You asked for "${a.summary}".`, link: `/g#rsvp-${id}`, eventId: id })) { n++;
-        const cfg = canEmail(a.email) && emailConfig(DEFAULT_WS, true); if (cfg) sendEmail(cfg, { list: "guest", origin, to: a.email, subject: `Something you'd like: ${title}`, text: `${title}${e.date ? ` on ${niceDate(e.date)}` : ""}${e.city ? ` in ${e.city}` : ""}.\n\nAre you in? ${origin}/g#rsvp-${id}\n\nYou asked Pottery Lab: "${a.text}". Change your alerts at ${origin}/feed` }).catch(() => {}); } }
+  function allAlertDocs() { return store.listPrefix("system", "alerts-").map((d) => d.data).filter((x) => x?.kind === "alerts" && x.email && (x.list || []).length); }
+  const alertsChecked = () => sys("alerts-checked")?.at || 0;
+  /** Tell one person about one event for each of their alerts that matches and hasn't shown it yet. Returns how many. */
+  function alertDoc(email, list, ws, id, e, origin, now) {
+    const W = getWorkspace(ws); if (lc(email) === lc(W?.ownerEmail)) return 0; let n = 0;
+    for (const a of list) { if (a.paused || (a.seen || []).includes(id) || !alertMatches(a, e, e.geo)) continue;
+      const host = C.profileOf(ws), title = e.pubTitle || e.name, summary = alertSummary(a);
+      a.seen = [id, ...(a.seen || [])].slice(0, 300); a.hits = [{ eventId: id, title, date: e.date || "", city: e.city || "", at: now }, ...(a.hits || []).filter((h) => h.eventId !== id)].slice(0, 20);
+      if (notify(email, { kind: "alert", key: `alert-${a.id}-${id}`, text: `New: ${title}${host?.name ? ` by ${host.name}` : ""}${e.date ? `, ${niceDate(e.date)}` : ""}. You're watching for ${summary.charAt(0).toLowerCase() + summary.slice(1)}.`, link: `/g#rsvp-${id}`, eventId: id, alertId: a.id, ...(a.push === false ? { nopush: true } : {}) })) { n++;
+        const cfg = a.email !== false && canEmail(email) && emailConfig(DEFAULT_WS, true); if (cfg) sendEmail(cfg, { list: "guest", origin, to: email, subject: `Something you'd like: ${title}`, text: `${title}${e.date ? ` on ${niceDate(e.date)}` : ""}${e.city ? ` in ${e.city}` : ""}.\n\nAre you in? ${origin}/g#rsvp-${id}\n\nYou asked Pottery Lab: "${a.text}". Pause or change it in Watching: ${origin}/feed#alerts` }).catch(() => {}); } }
     return n;
   }
+  /** One event was saved: check it against everyone's alerts now. */
+  async function onEventChange(ws, id, origin = "") {
+    const S = scopeStore(store, ws), e = S.get("events/" + id)?.data; bust(); if (!e || e.example || !e.discoverable || e.unlisted || (e.date || "") < today()) return 0;
+    let n = 0; const now = Date.now();
+    for (const d of allAlertDocs()) { const L = d.list.map((a) => ({ ...a })), k = alertDoc(d.email, L, ws, id, e, origin, now); if (k) { n += k; saveAlerts(d.email, L); } }
+    put("alerts-checked", { kind: "alerts-checked", at: now }); return n;
+  }
+  /** The hourly sweep: every open event coming up against every alert, for anything the on-save check missed
+   *  (an event made public some other way, an alert turned back on). Returns how many people were told. */
+  function sweepAlerts(now = Date.now(), origin = process.env.ENCORE_PUBLIC_URL || "") {
+    const I = index(), t = today(now), evs = [...I.events.values()].filter((x) => x.e.discoverable && !x.e.unlisted && !x.e.example && (x.e.date || "") >= t); let n = 0;
+    for (const d of allAlertDocs()) { const L = d.list.map((a) => ({ ...a })); let k = 0; for (const x of evs) k += alertDoc(d.email, L, x.ws, x.id, x.e, origin, now); if (k) { n += k; saveAlerts(d.email, L); } }
+    put("alerts-checked", { kind: "alerts-checked", at: now }); return n;
+  }
+  /** What's coming up that an alert matches right now (the Watching tab shows the first few). */
+  function alertMatchesNow(a, limit = 3) { const I = index(), t = today(), L = [...I.events.values()].filter((x) => (x.e.date || "") >= t && alertMatches({ ...a, paused: false }, x.e, x.e.geo)).sort((x, y) => String(x.e.date).localeCompare(String(y.e.date)));
+    return { count: L.length, list: L.slice(0, limit).map((x) => ({ id: x.id, title: x.e.pubTitle || x.e.name, date: x.e.date || "", city: x.e.city || "", hood: x.e.hood || "", url: `/g#rsvp-${x.id}` })) }; }
   // ---- the hourly job: kudos nudges, prep alerts, pickup texts ----
   async function runJobs(now = Date.now(), origin = process.env.ENCORE_PUBLIC_URL || "") {
     const out = { kudosAsks: 0, prepAlerts: 0, texts: 0 }, I = index(), sms = smsConfig();
+    try { out.alerts = sweepAlerts(now, origin); } catch (e) { console.warn("[alerts]", e.message); }
     for (const x of I.events.values()) if (x.e.stage === "interest" && x.e.autoGo) { try { if (await X.autoGo?.(x.ws, x.id, origin)) out.autoGo = (out.autoGo || 0) + 1; } catch {} }
     for (const x of I.events.values()) {
       const e = x.e; if (!e.casual || !e.date) continue; const S = scopeStore(store, x.ws), done = (k) => !!S.get("jobs/" + k), mark = (k) => S.set("jobs/" + k, { at: now });
@@ -378,7 +415,7 @@ export function makeSocial(store, { C, saveBlob }) {
       S.set("kudosloop/" + id, { giver: hash(em), to: hash("ws:" + toWs), kind, kudosAt: k.at, at: now, days: Math.floor((now - k.at) / DAY) }); n++; }
     return n;
   }
-  return { loopTouch, recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, runJobs, bust, index, saveBlob, userOf };
+  return { loopTouch, recap, prefs, canEmail, person, ensureProfile, friendsOf, addFriend, dropFriend, notify, inbox, markRead, feed, eventProfile, hostStrengths, turnoutOf, rsvpProof, alertsOf, saveAlerts, onEventChange, sweepAlerts, alertsChecked, alertMatchesNow, runJobs, bust, index, saveBlob, userOf };
 }
 
 export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X, raw, afterRsvp = null }) {
@@ -439,24 +476,76 @@ export function mountSocial(app, { store, small, currentUser, publicOrigin, C, X
   app.get("/api/people", (req, res) => { const u = me(req, res); if (!u) return; const q = lc(req.query.q).replace(/^@/, ""); if (q.length < 2) return res.json({ people: [] });
     const out = []; for (const d of store.listPrefix("system", "ws-")) { const w = d.data; if (w?.kind !== "workspace") continue; const h = C.profileOf(w.id); const p = X.person(w.ownerEmail); if (lc(w.ownerEmail) === lc(u.email)) continue; if ((h?.handle || "").includes(q) || lc(p.name).includes(q) || lc(w.ownerEmail) === q) out.push({ name: p.name, handle: h?.handle || null, emoji: h?.emoji || "🙂", color: h?.color, city: h?.city || "", email: lc(w.ownerEmail) === q ? lc(w.ownerEmail) : undefined, key: Buffer.from(lc(w.ownerEmail)).toString("base64url") }); if (out.length >= 12) break; }
     res.json({ people: out }); });
+  // the city picker's "Where events are" chips (public/place.js): cities with open events coming up, busiest first
+  app.get("/api/public/places", (req, res) => { const I = X.index(), n = new Map(), t = today();
+    for (const x of I.events.values()) { const e = x.e; if (!e?.discoverable || e.unlisted || e.published === false || (e.date || "") < t) continue; const c = clean(e.city, 60); if (!c) continue; const k = lc(c); const cur = n.get(k) || { city: c, n: 0 }; cur.n++; n.set(k, cur); }
+    res.set("Cache-Control", "public, max-age=300"); res.json({ cities: [...n.values()].sort((a, b) => b.n - a.n || a.city.localeCompare(b.city)).slice(0, 12) }); });
   const emailFromKey = (k) => { try { return Buffer.from(String(k || ""), "base64url").toString(); } catch { return ""; } };
   app.post("/api/me/friends", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}; let email = b.key ? emailFromKey(b.key) : ""; if (!email && b.eventId && b.pkey) { try { const ws2 = workspaceOfEvent(clean(b.eventId, 80)); const R = ws2 ? scopeStore(store, ws2).list("rsvps").map((d) => d.data || {}).filter((r) => r.eventId === b.eventId) : []; const mine = R.some((r) => lc(r.email) === lc(u.email) && r.response === "going"); const hit = R.find((r) => r.email && attKey(String(b.eventId), lc(r.email)) === String(b.pkey)); if (mine && hit) email = lc(hit.email); } catch {} } if (!email && b.handle) { const ws = C.wsOfHandle(String(b.handle).replace(/^@/, "")); email = ws ? getWorkspace(ws)?.ownerEmail : ""; }
     if (!email || !X.userOf(email)) return bad(res, "No member by that name.", 404, "not_found"); if (lc(email) === lc(u.email)) return bad(res, "That's you!"); X.addFriend(u.email, email); res.json({ ok: true, friend: X.person(email) }); });
+  // the Friends tab: your friends and what they're up to, people who added you (requests), and who hasn't added you back yet
+  const hidKey = (em) => "system/friendreq-hidden-" + hash(em), hiddenOf = (em) => new Set(store.get(hidKey(em))?.data?.list || []);
+  const blockedEither = (a, b) => { try { const S = app.locals.appstore?.safety; if (!S?.blocksOf) return false; const k = (e) => "person:" + Buffer.from(lc(e)).toString("base64url"); return (S.blocksOf(a) || []).some((x) => x.target === k(b)) || (S.blocksOf(b) || []).some((x) => x.target === k(a)); } catch { return false; } };
+  const keyOfEm = (e) => Buffer.from(lc(e)).toString("base64url");
+  const pubPerson = (em) => { const p = X.person(em); return { key: keyOfEm(em), name: p.name || "Someone", handle: p.handle || null, emoji: p.emoji, color: p.color }; };
+  function friendsView(email) {
+    const em = lc(email), I = X.index(), t = today(), mine = X.friendsOf(em).map((f) => lc(f.email)), mineSet = new Set(mine);
+    const myEvents = new Set((I.att.get(em) || []).map((a) => a.eventId)); for (const [id, x] of I.events) if (lc(x.owner) === em) myEvents.add(id);
+    const canSee = (id) => { const x = I.events.get(id); return !!x && (!!x.e.discoverable || myEvents.has(id)); };
+    const card = (id) => { const x = I.events.get(id); return { id, title: x.e.pubTitle || x.e.name || "An event", date: x.e.date || "", city: x.e.city || "", url: `/g#rsvp-${id}` }; };
+    const doing = (f) => { const out = [];
+      for (const [id, x] of I.events) if (lc(x.owner) === f && x.e.discoverable && !x.e.unlisted && (x.e.date || "") >= t) out.push({ kind: "hosting", ...card(id) });
+      for (const a of I.att.get(f) || []) { const x = I.events.get(a.eventId); if (!x || !canSee(a.eventId) || lc(x.owner) === f) continue; if ((x.e.date || "") >= t) out.push({ kind: "going", ...card(a.eventId), together: myEvents.has(a.eventId) }); }
+      const K = I.kudos.filter((k) => lc(k.email) === f && k.love && canSee(k.eventId) && Date.now() - (k.at || 0) < 30 * 864e5).sort((a, b) => (b.at || 0) - (a.at || 0))[0]; if (K) out.push({ kind: "kudos", ...card(K.eventId), love: String(K.love).slice(0, 140) });
+      return out.sort((a, b) => ({ hosting: 0, going: 1, kudos: 2 })[a.kind] - ({ hosting: 0, going: 1, kudos: 2 })[b.kind] || String(a.date).localeCompare(String(b.date))).slice(0, 3); };
+    const friends = mine.filter((f) => X.userOf(f) && !blockedEither(em, f)).map((f) => ({ ...pubPerson(f), mutual: X.friendsOf(f).some((x) => lc(x.email) === em), doing: doing(f) }));
+    const hid = hiddenOf(em), requests = [];
+    for (const d of store.listPrefix("system", "friends-")) { const x = d.data; if (x?.kind !== "friends" || !x.email) continue; const o = lc(x.email); if (o === em || mineSet.has(o) || hid.has(o) || !X.userOf(o) || blockedEither(em, o)) continue;
+      const r = (x.list || []).find((f) => lc(f.email) === em); if (r) requests.push({ ...pubPerson(o), at: r.at || 0, together: [...myEvents].filter((id) => (I.att.get(o) || []).some((a) => a.eventId === id)).length }); }
+    requests.sort((a, b) => b.at - a.at);
+    return { friends: friends.sort((a, b) => b.doing.length - a.doing.length || String(a.name).localeCompare(b.name)), requests: requests.slice(0, 50), waiting: friends.filter((f) => !f.mutual).length };
+  }
+  app.get("/api/me/friends", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json(friendsView(u.email)); });
+  // "Not now" on a request: it leaves your list (they aren't told)
+  app.post("/api/me/friends/ignore", small, (req, res) => { const u = me(req, res); if (!u) return; const em = lc(emailFromKey(req.body?.key)); if (!em) return bad(res, "Who?");
+    const L = [em, ...hiddenOf(u.email)].filter((x, i, A) => A.indexOf(x) === i).slice(0, 2000); store.set(hidKey(u.email), { kind: "friendreq-hidden", email: lc(u.email), list: L }); res.json({ ok: true }); });
   app.delete("/api/me/friends/:key", (req, res) => { const u = me(req, res); if (!u) return; X.dropFriend(u.email, emailFromKey(req.params.key)); res.json({ ok: true }); });
   // inbox
   app.get("/api/me/inbox", (req, res) => { const u = me(req, res); if (!u) return; res.json({ items: X.inbox(u.email).slice(0, 60) }); });
   app.post("/api/me/inbox/read", small, (req, res) => { const u = me(req, res); if (!u) return; X.markRead(u.email); res.json({ ok: true }); });
   // alerts in plain words
-  app.get("/api/me/alerts", (req, res) => { const u = me(req, res); if (!u) return; res.json({ alerts: X.alertsOf(u.email) }); });
-  app.post("/api/me/alerts", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, text = clean(b.text, 300); if (text.length < 4) return bad(res, "Tell Potto what you'd like to hear about.");
+  const pushDevices = (em) => { try { return (app.locals.appstore?.push || app.locals.push)?.devicesOf?.(em)?.length || 0; } catch { return 0; } };
+  const WEEK = 7 * 864e5;
+  /** One alert as the Watching tab shows it: what it watches, on or paused, how you'll hear, what it found. */
+  const alertView = (a, em) => { const now = Date.now(), m = X.alertMatchesNow(a);
+    return { id: a.id, text: a.text, summary: alertSummary(a), radiusMi: a.radiusMi || null, city: a.city || a.homeCity || "", lanes: (a.lanes || []).map((l) => LANE_WORDS[l] || l), where: a.radiusMi ? `Within ${Math.round(a.radiusMi * 10) / 10} miles of you` : a.city || a.homeCity || "Anywhere", free: !!a.free, weekend: a.weekend || "",
+      paused: !!a.paused, email: a.email !== false, push: a.push !== false, at: a.at, hits: (a.hits || []).slice(0, 3), weekHits: (a.hits || []).filter((h) => now - h.at < WEEK).length, upcoming: m.list, upcomingCount: m.count }; };
+  const alertsRes = (u) => ({ alerts: X.alertsOf(u.email).map((a) => alertView(a, u.email)), checkedAt: X.alertsChecked(), everyMin: 60, channels: { email: X.canEmail(u.email), pushDevices: pushDevices(u.email) } });
+  app.get("/api/me/alerts", (req, res) => { const u = me(req, res); if (!u) return; res.set("Cache-Control", "private, no-store"); res.json(alertsRes(u)); });
+  app.post("/api/me/alerts", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, text = clean(b.text, 300); if (text.length < 4) return bad(res, "Tell us what you'd like to hear about, like \"runs in Austin\".");
     const rule = parseAlert(text), geo = Number.isFinite(+b.lat) && Number.isFinite(+b.lng) && b.lat !== null && b.lng !== null && b.lat !== "" ? { lat: Math.round(+b.lat * 100) / 100, lng: Math.round(+b.lng * 100) / 100 } : {};
-    if (rule.radiusMi && geo.lat == null && !rule.city && !clean(b.city, 60)) return bad(res, "Potto needs your location for a distance. Allow location, or say a city (\"in Austin\").", 400, "need_location");
+    const homeCity = clean(b.city, 60);
+    if (rule.radiusMi && geo.lat == null && !rule.city && !homeCity) return bad(res, "For a distance we need your location. Allow location, or say a city (\"in Austin\").", 400, "need_location");
     const L = X.alertsOf(u.email); if (L.length >= 20) return bad(res, "You have 20 alerts. Delete one first.");
-    const a = { id: crypto.randomBytes(6).toString("hex"), text, ...rule, ...geo, homeCity: clean(b.city, 60), at: Date.now() }; X.saveAlerts(u.email, [a, ...L]);
-    // tell them right away about anything already coming up
-    const I = X.index(), matches = [...I.events.values()].filter((x) => (x.e.date || "") >= today() && alertMatches(a, x.e, x.e.geo)).slice(0, 5).map((x) => ({ id: x.id, title: x.e.pubTitle || x.e.name, date: x.e.date }));
-    res.json({ ok: true, alert: a, matches }); });
+    const a = { id: crypto.randomBytes(6).toString("hex"), text, ...rule, ...geo, homeCity, at: Date.now(), paused: false, email: true, push: true, hits: [] };
+    a.summary = alertSummary(a);
+    // what's already coming up shows right away (and won't be announced again as "new")
+    const now = X.alertMatchesNow(a, 5), I = X.index(); a.seen = [...I.events.values()].filter((x) => (x.e.date || "") >= today() && alertMatches(a, x.e, x.e.geo)).map((x) => x.id).slice(0, 300);
+    X.saveAlerts(u.email, [a, ...L]);
+    res.json({ ok: true, alert: alertView(a, u.email), matches: now.list, matchCount: now.count, checkedAt: X.alertsChecked(), channels: alertsRes(u).channels }); });
+  // pause, turn email or push off for one alert, or change what it watches
+  app.patch("/api/me/alerts/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const b = req.body || {}, L = X.alertsOf(u.email), i = L.findIndex((a) => a.id === req.params.id); if (i < 0) return bad(res, "That alert is gone.", 404, "not_found");
+    let a = { ...L[i] }; for (const k of ["paused", "email", "push"]) if (typeof b[k] === "boolean") a[k] = b[k];
+    if (typeof b.text === "string") { const text = clean(b.text, 300); if (text.length < 4) return bad(res, "Tell us what you'd like to hear about."); const rule = parseAlert(text), homeCity = clean(b.city, 60) || a.homeCity || "";
+      if (rule.radiusMi && a.lat == null && !rule.city && !homeCity) return bad(res, "For a distance we need your location. Say a city instead (\"in Austin\").", 400, "need_location");
+      a = { ...a, ...rule, text, homeCity }; const I = X.index(); a.seen = [...new Set([...(a.seen || []), ...[...I.events.values()].filter((x) => (x.e.date || "") >= today() && alertMatches({ ...a, paused: false }, x.e, x.e.geo)).map((x) => x.id)])].slice(0, 300); }
+    a.summary = alertSummary(a); L[i] = a; X.saveAlerts(u.email, L); res.json({ ok: true, alert: alertView(a, u.email) }); });
   app.delete("/api/me/alerts/:id", (req, res) => { const u = me(req, res); if (!u) return; X.saveAlerts(u.email, X.alertsOf(u.email).filter((a) => a.id !== req.params.id)); res.json({ ok: true }); });
+  // "Send me a test": a sample lands in the bell (and on the phone, when the app is installed and push is on), so you can see it work
+  app.post("/api/me/alerts/:id/test", small, (req, res) => { const u = me(req, res); if (!u) return; const a = X.alertsOf(u.email).find((x) => x.id === req.params.id); if (!a) return bad(res, "That alert is gone.", 404, "not_found");
+    const devices = pushDevices(u.email), push = devices > 0 && a.push !== false && !a.paused;
+    X.notify(u.email, { kind: "alert", key: `alert-test-${a.id}-${Date.now()}`, test: true, alertId: a.id, text: `Test: this is how an alert looks. When something new matches "${alertSummary(a)}", it lands here with the event and a link.`, link: "/feed#alerts", ...(push ? {} : { nopush: true }) });
+    res.json({ ok: true, bell: true, push, pushDevices: devices }); });
   // event profile
   app.get("/api/me/recap", (req, res) => { const u = me(req, res); if (!u) return; res.json(X.recap(u.email)); });
   app.get("/api/me/prefs", (req, res) => { const u = me(req, res); if (!u) return; const p = X.prefs(u.email); res.json({ ...p, replyDigest: p.replyDigest !== false }); });

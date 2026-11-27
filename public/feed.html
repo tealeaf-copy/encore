@@ -27,8 +27,31 @@
 .post-b{padding:10px 14px 14px}.post-b p{margin:0 0 8px}.quote{font:600 17px/1.35 var(--sys-title)}
 .acts{display:flex;gap:6px;flex-wrap:wrap}.acts .btn{padding:7px 12px;font-size:13px}
 .card h3{font-size:19px;margin-bottom:4px}.card+.card{margin-top:14px}
-.alerts .ex{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.alerts .ex button{border:1px dashed var(--line);background:none;color:var(--soft);border-radius:999px;padding:5px 10px;font:13px "IBM Plex Sans",system-ui;cursor:pointer}
-.alerts form{display:flex;gap:8px}.alerts form input{flex:1}.al{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}.al small{display:block;color:var(--soft)}.x{background:none;border:0;color:var(--soft);cursor:pointer;font-size:16px}
+/* Watching and Friends: Field Notes cards, 44px targets, plain words */
+.wt-head{margin:2px 0 14px}.wt-head h2{margin:0 0 4px;font:600 22px/1.25 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:-.01em;color:var(--pl-ink)}.wt-head p{margin:0;color:var(--pl-soft);font-size:15px;line-height:1.45}
+.wt-pulse{display:flex;align-items:center;gap:8px;margin-top:8px!important;font-size:13px!important}.wt-pulse .dot{width:8px;height:8px;border-radius:50%;background:var(--pl-success);flex:none;box-shadow:0 0 0 3px var(--pl-success-soft)}
+.wt-lab{display:block;font-size:13px;color:var(--pl-soft);margin:6px 0}.wt-row{display:flex;gap:8px;flex-wrap:wrap}.wt-row input{flex:1 1 200px;min-height:44px;box-sizing:border-box;font-size:16px}.wt-row .btn{min-height:44px}
+.wt-ex{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}.wt-ex button{min-height:44px;padding:0 12px;border:1px dashed var(--pl-line);border-radius:6px;background:none;color:var(--pl-ink);font:400 14px "IBM Plex Sans",system-ui;cursor:pointer}
+.wt-where{margin:10px 0 0;font-size:13px;color:var(--pl-soft)}.wt-msg{margin:8px 0 0;font-size:14px;color:var(--pl-danger)}.wt-msg:empty{display:none}
+.al-card{background:var(--pl-surface);border:1.5px solid var(--pl-ink);border-radius:6px;padding:16px;margin:0 0 14px;scroll-margin-top:80px}.al-card.fresh{box-shadow:0 0 0 4px var(--pl-accent-soft)}.al-card.off{border-color:var(--pl-line)}
+.al-top{display:flex;flex-direction:column;gap:6px}.al-top h3{margin:0;font:600 18px/1.3 "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-ink)}
+.al-state{align-self:flex-start;font:500 12px/1 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:6px;background:var(--pl-success-soft);color:var(--pl-success)}.off .al-state{background:var(--pl-raised);color:var(--pl-soft)}
+.al-said{margin:6px 0 0;font-size:14px;color:var(--pl-soft)}
+.al-what{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin:12px 0 0;padding:12px 0;border-top:1px dashed var(--pl-line);border-bottom:1px dashed var(--pl-line)}.al-what dt{font:500 11px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}.al-what dd{margin:2px 0 0;font-size:15px;color:var(--pl-ink)}
+.al-status{margin:12px 0 0;font-size:15px;color:var(--pl-ink)}
+.al-sec{margin-top:14px}.al-sec h4{margin:0 0 6px;font:500 12px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+.al-list{list-style:none;margin:0;padding:0}.al-list a{display:flex;flex-direction:column;justify-content:center;min-height:48px;padding:6px 0;border-bottom:1px dashed var(--pl-line);color:var(--pl-ink);text-decoration:none}.al-list b{font-weight:600}.al-list small,.al-last,.al-none{color:var(--pl-soft);font-size:13px}.al-none,.al-last{margin:4px 0 0}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}.sw-row small{color:var(--pl-soft);font-size:13px;text-align:right}
+.sw{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0;border:0;background:none;color:var(--pl-ink);font:400 15px "IBM Plex Sans",system-ui;cursor:pointer;text-align:left}.sw[disabled]{color:var(--pl-soft);cursor:default}
+.sw-t{position:relative;width:40px;height:24px;border-radius:12px;background:var(--pl-line);flex:none;transition:background .15s}.sw-t i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw[aria-checked=true] .sw-t,.sw-t.on{background:var(--pl-accent)}.sw[aria-checked=true] .sw-t i,.sw-t.on i{transform:translateX(16px)}.sw:focus-visible{outline:3px solid var(--pl-focus);outline-offset:2px;border-radius:6px}.sw.static{cursor:default}
+.al-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.al-acts .btn{min-height:44px;padding:0 14px;font-size:14px}.al-acts .danger{color:var(--pl-danger)!important}.al-edit{margin-top:14px}
+@keyframes plRing{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}}#bell.ring-now{animation:plRing .8s ease-in-out 2}@media (prefers-reduced-motion:reduce){#bell.ring-now{animation:none}}
+.fr-sub{margin:0 0 6px;color:var(--pl-soft);font-size:14px}.fr-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:4px;border-radius:6px;background:var(--pl-accent-soft);color:var(--pl-accent-text);font:600 13px "IBM Plex Sans",system-ui;vertical-align:2px}
+.fr .person{min-height:56px}.fr .person .btn{min-height:44px;padding:0 14px;font-size:14px}.fr-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fr-find input{width:100%;min-height:44px;box-sizing:border-box;font-size:16px}.fr-more{display:flex;flex-direction:column;justify-content:center;min-height:56px;margin-top:10px;padding:8px 12px;border:1.5px solid var(--pl-line);border-radius:6px;color:var(--pl-ink);text-decoration:none}.fr-more b{color:var(--pl-accent-text)}.fr-more small{color:var(--pl-soft);font-size:13px}
+.fr-p{align-items:flex-start!important}.fr-p b a{color:var(--pl-ink);text-decoration:none}.fr-doing{list-style:none;margin:6px 0 0;padding:0}.fr-doing a{display:block;padding:6px 0;min-height:32px;color:var(--pl-ink);text-decoration:none;font-size:14px}.fr-doing small{display:block;color:var(--pl-soft)}.fr-k{color:var(--pl-soft)}.fr-quiet{margin-top:4px}
+.fr-have{font-size:13px;color:var(--pl-soft)}.fr-empty p{margin:0 0 12px;color:var(--pl-ink)}.fr-empty .btn{min-height:44px;display:inline-flex;align-items:center}.fr-none{font-size:14px}
 .trait{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0}.trait .e{font-size:28px;text-align:center}.trait small{color:var(--soft);display:block}.meter{height:6px;border-radius:9px;background:var(--line);margin-top:4px}.meter i{display:block;height:100%;border-radius:9px;background:var(--pl-accent)}
 .hero-trait{display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;background:var(--pl-page);margin-bottom:10px;color:var(--pl-ink)}.hero-trait .e{font-size:44px}.hero-trait h2{font-size:24px}
 .quiz .q{font:600 16px var(--sys-title);margin:12px 0 6px}.quiz .o{display:flex;flex-wrap:wrap;gap:6px}.quiz .o button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:8px 12px;font:500 14px "IBM Plex Sans",system-ui;cursor:pointer}.quiz .o button[aria-pressed=true]{border-color:var(--brand);background:var(--pink)}
@@ -91,12 +114,12 @@ body:is(.tab-feed,.pub-feed){background-color:var(--pl-page)}
 body.pc-has-fab.tab-feed .composer{display:none!important}
 .composer:not(.open) .cbar,.composer:not(.open) .clink{display:none}.composer.open{padding:12px 14px}.composer.open textarea{height:auto;min-height:72px}
 .composer .ib{min-height:44px;padding:0 14px}.composer .cbar .btn{min-height:44px}
-/* the city in the opening line: quiet, in mono like the date */
-.fv-kicker .place-chip{display:inline-flex!important;align-items:center;gap:8px;background:none!important;border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;font:inherit;color:inherit;min-height:0!important}
-.fv-kicker .place-chip .pc-pin,.fv-kicker .place-chip .pc-gps,.fv-kicker .place-chip .pc-note{display:none}
-.fv-kicker .place-chip b{font:inherit;color:var(--pl-ink)}.fv-kicker .place-chip button{background:none;border:0;padding:0 2px;min-height:44px;font:500 13px "IBM Plex Sans",system-ui;letter-spacing:0;text-transform:none;color:var(--pl-accent-text)!important;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.fv-kicker .pc-form{text-transform:none;letter-spacing:0;gap:8px;flex-wrap:wrap}.fv-kicker .pc-form input{min-height:44px;width:12em;box-sizing:border-box;padding:0 12px;border:1.5px solid var(--pl-line-strong,#C9BFB2);border-radius:6px;background:var(--pl-surface,#fff);color:var(--pl-ink);font:400 16px/1.2 "IBM Plex Sans",system-ui!important;letter-spacing:0!important;text-transform:none!important}
-.fv-kicker .pc-form .pc-save{background:var(--pl-accent)!important;color:#fff!important;text-decoration:none!important;padding:0 16px!important;border-radius:6px!important;font:600 14px "IBM Plex Sans",system-ui!important;min-height:44px}
+/* the city in the opening line: one button, "Showing San Francisco  Change"; a tap opens the city sheet (public/place.js) */
+.fv-kicker>#feedPlace::before{display:none}
+.fv-kicker .pc-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:0 0 0 -2px;padding:0 10px 0 8px;border:1.5px solid var(--pl-line);border-radius:6px;background:var(--pl-surface);color:var(--pl-ink);font:400 14px/1.2 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:0;text-transform:none;cursor:pointer;max-width:100%}
+.fv-kicker .pc-btn{white-space:nowrap}.fv-kicker .pc-btn .pc-pin{display:inline-flex;flex:none;color:var(--pl-accent-text)}.fv-kicker .pc-btn .pc-lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fv-kicker .pc-btn .pc-chg{flex:none}.fv-kicker .pc-near{font-weight:400;color:var(--pl-soft)}@media (max-width:420px){.fv-kicker .pc-near{display:none}}.fv-kicker .pc-btn b{font-weight:600}
+.fv-kicker .pc-btn .pc-chg{color:var(--pl-accent-text);font-weight:600;text-decoration:underline;text-underline-offset:3px;margin-left:4px}
+.fv-kicker .pc-btn:focus-visible{outline:3px solid var(--pl-focus);outline-offset:2px}
 /* a post from a friend: the same scrapbook page as everything else */
 .fv-post .cheers{margin:10px 0 0!important;font-size:13px;font-weight:500;color:var(--pl-soft)}.fv-post .pdel{min-height:44px;margin:0}
 .fv-btn.cheer.on{background:#FBEBC4;border-color:#E9D29A}
@@ -125,7 +148,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 <script>
 (function () {
   const C = window.EncoreCommunity, esc = C.esc, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  let F = null, P = null, A = null, tab = ["me", "alerts", "friends"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "feed";
+  let F = null, P = null, tab = ["me", "alerts", "friends"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "feed";
   // the opening and a card, the size they'll be, before anything arrives
   if (window.FeedVisual) { window.FeedVisual.css(); if (!window.PLCalm) $("#m").innerHTML = window.FeedVisual.skeleton(); } // the calm loader (public/calm.js) waits on #m
   setTimeout(() => { try { selTab(); } catch {} }, 0);
@@ -134,7 +157,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 3600 ? `${Math.max(1, Math.round(s / 60))}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`; };
   const av = (p) => `<a class="av" style="--c:${esc(p?.color || "#E26D8E")}" ${p?.handle ? `href="/h/${esc(p.handle)}"` : ""}>${esc(p?.emoji || "🙂")}</a>`;
   const nm = (p) => esc(p?.name || "Someone"), fn = (p) => esc(String(p?.name || "Someone").split(" ")[0]);
-  const toast = (t) => { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--pl-ink);color:#fff;padding:10px 16px;border-radius:14px;z-index:40;max-width:90vw;font-size:14px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3200); };
+  const toast = (t) => { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); el.style.cssText = "position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--pl-ink);color:#fff;padding:12px 16px;border-radius:6px;z-index:90;max-width:min(90vw,420px);font-size:15px"; document.body.appendChild(el); } el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(() => (el.hidden = true), 3200); };
   const LANE_WORD = { run: "run", hike: "hike", bike: "bike ride", cook: "cooking night", potluck: "potluck", games: "board game night", movie: "movie night", concert: "concert", cafe: "café morning", bake: "bake or giveaway", picnic: "picnic", book: "book club", club: "club night" };
   const laneOfEv = (e) => { const t = `${e.activity} ${e.title}`.toLowerCase(); return Object.keys(LANE_WORD).find((k) => t.includes(k === "games" ? "game" : k === "cafe" ? "caf" : k === "cook" ? "cook" : k)) || ""; };
   const alertFor = (e) => `Tell me about ${LANE_WORD[laneOfEv(e)] ? LANE_WORD[laneOfEv(e)] + "s" : "things like " + (e.title || "this")}${e.city ? " in " + e.city : (window.EncorePlace?.get()?.city ? " in " + window.EncorePlace.get().city : "")} that are public`;
@@ -143,7 +166,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   window.PLFeedReload = () => load(); // the city from your workspace lands after the first draw: redraw in place, no page reload
   // your workspace's city, asked for alongside the feed the first time on a device, so the first draw already has it
   // (the page used to draw, then reload itself once to pick the city up)
-  let cityP = null; const cityReady = () => cityP || (cityP = (async () => { try { if (window.EncorePlace?.get?.()?.city || localStorage.getItem("encore.city") || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return;
+  let cityP = null; const cityReady = () => cityP || (cityP = (async () => { try { if (window.EncorePlace?.get?.() || localStorage.getItem("encore.city") !== null || !/(?:^|;\s*)encore_in=1/.test(document.cookie)) return; /* any choice, Anywhere too, is kept */
     const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); sessionStorage.setItem("encore.feedCity", "1"); } } catch {} })());
   async function load() { try { [F] = await Promise.all([api("/api/me/feed"), cityReady()]); } catch (e) { if (e.code === "unauthenticated") return drawPublic(); $("#m").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } $(".tabs").hidden = false; drawRail(); drawBell(); draw(); drawSide(); }
   // ---- leaderboards: the weekly card, moments ("Mai is now #2"), your own standing ----
@@ -201,8 +224,11 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
     if (L.length === 1) return go(L[0]); const i = prompt("Which one?\n" + L.map((e, i) => `${i + 1}. ${e.title} (${C.fmtDate(e.date)})`).join("\n"), "1"); const e = L[(+i || 1) - 1]; if (e) go(e); }
   // ---- tabs ----
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
-  $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
-  function draw() { document.body.classList.remove("pre-feed"); document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
+  // the tab is in the address (#alerts, #friends, #me), so the bell's links, Back and a reload land on it
+  const setHash = () => { try { history.replaceState(null, "", tab === "feed" ? location.pathname + location.search : "#" + tab); } catch {} };
+  $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); setHash(); draw(); }));
+  addEventListener("hashchange", () => { const h = location.hash.slice(1), t = ["me", "alerts", "friends"].includes(h) ? h : h === "" || h === "feed" ? "feed" : null; if (!t || !F) return; const open = document.querySelector(".notes"); if (open) open.remove(); if (t !== tab) { tab = t; selTab(); draw(); window.scrollTo({ top: 0 }); } });
+  function draw() { document.body.classList.remove("pre-feed"); document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") { AL = null; return drawAlerts(m); } drawFriends(m); }
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   // ---- visual feed: your people's posts, photos and events media-first, with the public wall around them ----
   // a post from a friend: the same scrapbook page as a past event (an instant photo, the words, one action)
@@ -237,25 +263,93 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
     const ans = { ...pr.self }; $$("[data-q]").forEach((b) => (b.onclick = () => { ans[b.dataset.q] = b.dataset.v; $$(`[data-q="${b.dataset.q}"]`).forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
     $("#reQuiz") && !pr.built && $("#reQuiz").remove(); $("#reQuiz") && ($("#reQuiz").onclick = () => { m._quiz = true; drawMe(m); });
     $("#saveQuiz") && ($("#saveQuiz").onclick = async () => { try { const j = await post("/api/me/profile/self", ans); P.profile = j.profile; m._quiz = false; C.oink(); drawMe(m); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { toast(e.message); } }); }
-  // ---- alerts in plain words ----
-  async function drawAlerts(m) { if (!A) { try { A = (await api("/api/me/alerts")).alerts; } catch { A = []; } }
-    m.innerHTML = `<div class="card alerts"><div style="display:flex;gap:10px;align-items:center">${C.pipSVG("think", 44)}<div><h3>What should I watch for?</h3><p class="muted" style="margin:0">Describe it. I'll tell you when one's posted.</p></div></div>
-      <div class="ex">${[`Runs ${(window.EncorePlace?.get()?.city) ? "in " + window.EncorePlace.get().city : "near me"}`, "Free board game nights in my city", "Hikes on weekends within 20 miles"].map((x) => `<button data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
-      <form id="alF"><input id="alIn" placeholder="e.g. cooking nights within 3 miles" maxlength="300"><button class="btn" type="submit">Save</button></form><p class="muted" id="alMsg" style="font-size:13px;margin:6px 0 0"></p>
-      <div style="margin-top:10px">${A.length ? A.map((a) => `<div class="al"><div>🔔 <b>${esc(a.summary)}</b><small>"${esc(a.text)}"</small></div><button class="x" data-del="${esc(a.id)}" aria-label="Delete">✕</button></div>`).join("") : ""}</div></div>`;
-    $$("[data-ex]").forEach((b) => (b.onclick = () => { $("#alIn").value = b.dataset.ex; $("#alIn").focus(); }));
-    $$("[data-del]").forEach((b) => (b.onclick = async () => { await fetch("/api/me/alerts/" + b.dataset.del, { method: "DELETE" }); A = A.filter((a) => a.id !== b.dataset.del); drawAlerts(m); }));
-    $("#alF").onsubmit = async (ev) => { ev.preventDefault(); const text = $("#alIn").value.trim(); if (!text) return; const msg = $("#alMsg"); const needLoc = /\b\d+\s*(mi|mile|km)|near me|nearby|close to me/i.test(text);
-      const send = async (geo) => { try { const j = await post("/api/me/alerts", { text, ...geo }); A = [j.alert, ...A]; C.oink(); drawAlerts(m); $("#alMsg").textContent = j.matches.length ? `Saved. Already coming up: ${j.matches.map((x) => x.title).join(", ")}.` : "Saved. I'll tell you here and by email."; } catch (e) { msg.textContent = e.message; } };
-      if (needLoc && navigator.geolocation) { msg.textContent = "Asking for your location (only a rough area is kept)…"; navigator.geolocation.getCurrentPosition((p) => send({ lat: p.coords.latitude, lng: p.coords.longitude }), () => send({})); } else send({}); }; }
-  // ---- friends ----
-  function drawFriends(m) {
-    m.innerHTML = `<div class="card"><h3>Add friends</h3><input id="pq" placeholder="Name or @handle" style="width:100%"><div class="people" id="pres"></div></div>
-      ${F.suggestions.length ? `<div class="card"><h3>You've been to things together</h3><div class="people">${F.suggestions.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.together} event${p.together === 1 ? "" : "s"} together</small></div><button class="btn" data-add="${esc(p.key)}">Add</button></div>`).join("")}</div></div>` : ""}
-      <div class="card"><h3>Your friends</h3><div class="people">${F.friends.length ? F.friends.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.handle ? "@" + esc(p.handle) : ""}${p.mutual ? " · friends with you too" : ""}</small></div></div>`).join("") : `<p class="muted">No friends yet.</p>`}</div></div>`;
-    let t; $("#pq").oninput = () => { clearTimeout(t); t = setTimeout(async () => { const q = $("#pq").value.trim(); if (q.length < 2) { $("#pres").innerHTML = ""; return; } const j = await api("/api/people?q=" + encodeURIComponent(q)).catch(() => ({ people: [] })); $("#pres").innerHTML = j.people.length ? j.people.map((p) => `<div class="person">${av(p)}<div><b>${nm(p)}</b><small>${p.handle ? "@" + esc(p.handle) : ""}${p.city ? " · " + esc(p.city) : ""}</small></div><button class="btn" data-add="${esc(p.key)}">Add</button></div>`).join("") : `<p class="muted">Nobody by that name yet.${window.__inviteOnly ? " Pottery Lab is invite-only, so send them a host code." : ""}</p>`; wireAdd(); }, 250); };
-    wireAdd(); }
-  function wireAdd() { $$("[data-add],[data-add-email]").forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends", { key: b.dataset.add || b.dataset.addEmail }); C.oink(); b.textContent = "Added ✓"; F = await api("/api/me/feed"); drawRail(); } catch (e) { toast(e.message); b.disabled = false; } })); }
+  // ---- Watching: alerts you can see working (server/social.js) ----
+  // Each alert is a card: what it watches, on or paused, when we last checked, what's coming up now, how you'll hear
+  // (bell always; email and phone per alert), and Send me a test / Pause / Edit / Delete.
+  const agoWords = (t) => { if (!t) return ""; const m = Math.max(1, Math.round((Date.now() - t) / 60e3)); return m < 2 ? "just now" : m < 60 ? `${m} minutes ago` : m < 120 ? "an hour ago" : m < 1440 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`; };
+  const dayWords = (d) => { try { return C.fmtDate(d); } catch { return d || ""; } };
+  const myCity = () => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } };
+  const sw = (id, on, label, dis) => `<button type="button" class="sw" role="switch" aria-checked="${on && !dis}" data-sw="${esc(id)}"${dis ? " disabled" : ""}><span class="sw-t" aria-hidden="true"><i></i></span><span>${esc(label)}</span></button>`;
+  function alertCard(a, AL, fresh) {
+    const ch = AL.channels || {}, pushN = ch.pushDevices || 0;
+    const status = a.paused ? "Paused. We won't tell you anything until you turn it back on."
+      : a.weekHits ? `On. ${a.weekHits} new ${a.weekHits === 1 ? "match" : "matches"} this week.`
+      : "On. Nothing new yet.";
+    const rows = [["What", a.lanes.length ? (a.lanes.join(", ").charAt(0).toUpperCase() + a.lanes.join(", ").slice(1)) : "Anything"], ["Where", a.where], ["When", a.weekend === "sat" ? "Saturdays" : a.weekend === "sun" ? "Sundays" : a.weekend ? "Weekends" : "Any day"], ["Price", a.free ? "Free only" : "Any price"]];
+    const up = a.upcoming || [];
+    return `<article class="al-card${a.paused ? " off" : ""}${fresh ? " fresh" : ""}" data-al="${esc(a.id)}" aria-labelledby="alH-${esc(a.id)}">
+      <div class="al-top"><span class="al-state">${a.paused ? "Paused" : "On"}</span><h3 id="alH-${esc(a.id)}">${esc(a.summary)}</h3></div>
+      <p class="al-said">You said: "${esc(a.text)}"</p>
+      <dl class="al-what">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+      <p class="al-status" role="status">${esc(status)}</p>
+      <div class="al-sec"><h4>${up.length ? `Coming up now${a.upcomingCount > up.length ? ` (${a.upcomingCount})` : ""}` : "Coming up now"}</h4>
+        ${up.length ? `<ul class="al-list">${up.map((e) => `<li><a href="${esc(e.url)}"><b>${esc(e.title)}</b><small>${esc([dayWords(e.date), e.hood || e.city].filter(Boolean).join(" · "))}</small></a></li>`).join("")}</ul>` : `<p class="al-none">Nothing right now. We'll tell you when one is posted.</p>`}
+        ${(a.hits || []).length ? `<p class="al-last">Last told you about <b>${esc(a.hits[0].title)}</b>, ${esc(agoWords(a.hits[0].at))}.</p>` : ""}</div>
+      <div class="al-sec al-hear"><h4>How you'll hear</h4>
+        <div class="sw-row"><span class="sw static"><span class="sw-t on" aria-hidden="true"><i></i></span><span>In your bell</span></span><small>Always</small></div>
+        <div class="sw-row">${sw("email", a.email, "Email", !ch.email)}<small>${ch.email ? "" : `Emails are off. <a href="/settings">Settings</a>`}</small></div>
+        <div class="sw-row">${sw("push", a.push, "Phone notification", !pushN)}<small>${pushN ? "" : "In the Pottery Lab app"}</small></div></div>
+      <div class="al-acts"><button type="button" class="btn" data-act="test">Send me a test</button><button type="button" class="btn ghost" data-act="pause">${a.paused ? "Turn on" : "Pause"}</button><button type="button" class="btn ghost" data-act="edit">Edit</button><button type="button" class="btn ghost danger" data-act="del">Delete</button></div>
+    </article>`; }
+  let AL = null;
+  async function drawAlerts(m, { fresh = "", msg = "" } = {}) {
+    if (!AL) { m.innerHTML = `<div class="empty" data-calm-wait>Loading…</div>`; try { AL = await api("/api/me/alerts"); } catch (e) { m.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } }
+    if (tab !== "alerts") return; const L = AL.alerts || [], city = myCity();
+    const checked = AL.checkedAt ? `Last checked ${agoWords(AL.checkedAt)}.` : "";
+    const ex = [`Runs in ${city || "my city"}`, "Free game nights in my city", "Hikes on weekends", "Dinners within 3 miles"];
+    const form = `<form class="wt-new card" id="alF"><h3>${L.length ? "Watch for something else" : "What should we watch for?"}</h3>
+        <label for="alIn" class="wt-lab">Say it in your own words</label><div class="wt-row"><input id="alIn" placeholder="e.g. cooking nights within 3 miles" maxlength="300" autocomplete="off" enterkeyhint="done"><button class="btn" type="submit">Start watching</button></div>
+        <div class="wt-ex" aria-label="Ideas">${ex.map((x) => `<button type="button" data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+        <p class="wt-where">${city ? `"My city" and "near me" mean <b>${esc(city)}</b>.` : "Say a city, like \"in Austin\", or set your city at the top of the feed."}</p><p class="wt-msg" id="alMsg" role="status"></p></form>`;
+    m.innerHTML = `<section class="wt" aria-labelledby="wtH"><header class="wt-head"><h2 id="wtH">Watching</h2><p>We'll tell you when something matches. Here's what we're watching for you.</p>
+        <p class="wt-pulse"><span class="dot" aria-hidden="true"></span>${esc([checked, "We check every hour and each time a host posts."].filter(Boolean).join(" "))}</p></header>
+      ${L.length ? L.map((a) => alertCard(a, AL, a.id === fresh)).join("") + form : form}</section>`;
+    if (msg) $("#alMsg").textContent = msg;
+    $$("[data-ex]", m).forEach((b) => (b.onclick = () => { $("#alIn").value = b.dataset.ex; $("#alIn").focus(); }));
+    $$("[data-al]", m).forEach((card) => wireAlert(m, card));
+    if (fresh) { const c = m.querySelector(`[data-al="${CSS.escape(fresh)}"]`); if (c) c.scrollIntoView({ block: "start", behavior: "smooth" }); }
+    $("#alF").onsubmit = async (ev) => { ev.preventDefault(); const text = $("#alIn").value.trim(), out = $("#alMsg"); if (!text) { out.textContent = "Tell us what to watch for first."; $("#alIn").focus(); return; }
+      const btn = $("#alF [type=submit]"); btn.disabled = true; const needLoc = /\b\d+\s*(mi|mile|km)/i.test(text) && !/\bin [a-z]/i.test(text.replace(/\bin (my|our) /i, ""));
+      const send = async (geo) => { try { const j = await post("/api/me/alerts", { text, city: myCity(), ...geo }); AL = { ...AL, alerts: [j.alert, ...(AL.alerts || [])], channels: j.channels || AL.channels, checkedAt: j.checkedAt || AL.checkedAt }; C.oink && C.oink();
+          toast(j.matchCount ? `Watching. ${j.matchCount} already coming up.` : "Watching. Nothing right now. We'll tell you when one is posted."); drawAlerts(m, { fresh: j.alert.id }); }
+        catch (e) { out.textContent = e.message; btn.disabled = false; } };
+      if (needLoc && navigator.geolocation) { out.textContent = "Asking your phone where you are, for the distance. Only a rough area is kept."; navigator.geolocation.getCurrentPosition((p) => send({ lat: p.coords.latitude, lng: p.coords.longitude }), () => send({}), { timeout: 15000, maximumAge: 300e3 }); } else send({}); }; }
+  function wireAlert(m, card) { const id = card.dataset.al, a = (AL.alerts || []).find((x) => x.id === id); if (!a) return;
+    const patch = async (b) => { try { const j = await api("/api/me/alerts/" + encodeURIComponent(id), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }); AL.alerts = AL.alerts.map((x) => (x.id === id ? j.alert : x)); return j.alert; } catch (e) { toast(e.message); return null; } };
+    card.querySelectorAll("[data-sw]").forEach((b) => (b.onclick = async () => { const k = b.dataset.sw, on = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", String(on)); const r = await patch({ [k]: on }); if (!r) b.setAttribute("aria-checked", String(!on)); else toast(`${k === "email" ? "Email" : "Phone notifications"} ${on ? "on" : "off"} for this alert.`); }));
+    card.querySelector('[data-act="pause"]').onclick = async () => { const r = await patch({ paused: !a.paused }); if (r) { toast(r.paused ? "Paused. Turn it on any time." : "On again. We'll check within the hour."); drawAlerts(m); } };
+    card.querySelector('[data-act="del"]').onclick = async () => { if (!confirm("Stop watching for this?")) return; try { await api("/api/me/alerts/" + encodeURIComponent(id), { method: "DELETE" }); AL.alerts = AL.alerts.filter((x) => x.id !== id); toast("Deleted."); drawAlerts(m); } catch (e) { toast(e.message); } };
+    card.querySelector('[data-act="test"]').onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { const j = await post(`/api/me/alerts/${encodeURIComponent(id)}/test`); F.unread = (F.unread || 0) + 1; drawBell(); const bell = $("#bell"); bell && bell.classList.add("ring-now"); setTimeout(() => bell && bell.classList.remove("ring-now"), 1600);
+      toast(j.push ? "Sent. Check the bell and your phone." : "Sent. Check the bell at the top."); } catch (e) { toast(e.message); } b.disabled = false; };
+    card.querySelector('[data-act="edit"]').onclick = () => { const sec = document.createElement("form"); sec.className = "al-edit"; sec.innerHTML = `<label for="ale-${esc(id)}" class="wt-lab">What should we watch for?</label><div class="wt-row"><input id="ale-${esc(id)}" maxlength="300" value="${esc(a.text)}" autocomplete="off"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-x>Cancel</button></div><p class="wt-msg" role="status"></p>`;
+      card.querySelector(".al-acts").replaceWith(sec); const inp = sec.querySelector("input"); inp.focus(); sec.querySelector("[data-x]").onclick = () => drawAlerts(m);
+      sec.onsubmit = async (e) => { e.preventDefault(); try { const j = await api("/api/me/alerts/" + encodeURIComponent(id), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: inp.value.trim(), city: myCity() }) }); AL.alerts = AL.alerts.map((x) => (x.id === id ? j.alert : x)); toast("Saved."); drawAlerts(m, { fresh: id }); } catch (er) { sec.querySelector(".wt-msg").textContent = er.message; } }; }; }
+  // ---- Friends: requests to accept, find people, your friends and what they're up to (server/social.js /api/me/friends) ----
+  const pav = (p) => (window.FeedVisual?.avatar ? window.FeedVisual.avatar(p, 40) : av(p));
+  const doingLine = (d) => `<li><a href="${esc(d.url)}"><span class="fr-k">${d.kind === "hosting" ? "Hosting" : d.kind === "going" ? (d.together ? "Going, you too" : "Going to") : "Sent kudos"}</span> <b>${esc(d.title)}</b>${d.kind === "kudos" && d.love ? `<small>"${esc(d.love)}"</small>` : d.date ? `<small>${esc([dayWords(d.date), d.city].filter(Boolean).join(" · "))}</small>` : ""}</a></li>`;
+  async function drawFriends(m, { msg = "" } = {}) {
+    if (!m.querySelector(".fr")) m.innerHTML = `<div class="empty" data-calm-wait>Loading…</div>`;
+    let FR; try { FR = await api("/api/me/friends"); } catch (e) { m.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; } if (tab !== "friends") return;
+    const sug = (F.suggestions || []).filter((p) => !FR.friends.some((f) => f.key === p.key) && !FR.requests.some((r) => r.key === p.key));
+    const FIND = `<div class="card fr-find"><h3>Find friends</h3><label for="pq" class="wt-lab">Search by first name or @handle</label><input id="pq" type="search" placeholder="Name or @handle" autocomplete="off" enterkeyhint="search"><div class="people" id="pres" aria-live="polite"></div>
+        <a class="fr-more" href="/people"><b>More ways to find people</b><small>Suggested for you, your contacts, and your QR code</small></a></div>
+      ${sug.length ? `<div class="card"><h3>You've been to things together</h3><div class="people">${sug.map((p) => `<div class="person">${pav(p)}<div><b>${nm(p)}</b><small>${p.together} event${p.together === 1 ? "" : "s"} together</small></div><button type="button" class="btn" data-add="${esc(p.key)}">Add</button></div>`).join("")}</div></div>` : ""}`;
+    m.innerHTML = `<section class="fr" aria-labelledby="frH"><header class="wt-head"><h2 id="frH">Friends</h2><p>See what your friends are going to and hosting. Add people you've met at events.</p></header>
+      ${FR.requests.length ? `<div class="card fr-req"><h3>Added you <span class="fr-n">${FR.requests.length}</span></h3><p class="fr-sub">Add them back and you'll see each other's plans.</p><div class="people">${FR.requests.map((p) => `<div class="person">${pav(p)}<div><b>${nm(p)}</b><small>${p.together ? `${p.together} event${p.together === 1 ? "" : "s"} together` : p.handle ? "@" + esc(p.handle) : "Wants to be friends"}</small></div><span class="fr-btns"><button type="button" class="btn" data-accept="${esc(p.key)}">Add back</button><button type="button" class="btn ghost" data-ignore="${esc(p.key)}">Not now</button></span></div>`).join("")}</div></div>` : ""}
+      ${FR.friends.length ? "" : FIND}
+      <div class="card fr-list"><h3>Your friends${FR.friends.length ? ` <span class="fr-n">${FR.friends.length}</span>` : ""}</h3>
+        ${FR.friends.length ? `<div class="people">${FR.friends.map((p) => `<div class="person fr-p">${pav(p)}<div><b>${p.handle ? `<a href="/@${esc(p.handle)}">${nm(p)}</a>` : nm(p)}</b><small>${p.mutual ? "Friends" : "Waiting for them to add you back"}</small>${p.doing.length ? `<ul class="fr-doing">${p.doing.map(doingLine).join("")}</ul>` : `<small class="fr-quiet">Nothing coming up yet.</small>`}</div></div>`).join("")}</div>`
+          : `<div class="fr-empty"><p><b>No friends here yet.</b> Add people you've been to things with, or share your code so they can add you.</p><a class="btn" href="/people">Find people</a></div>`}</div>${FR.friends.length ? FIND : ""}</section>`;
+    if (msg) toast(msg);
+    let t; $("#pq").oninput = () => { clearTimeout(t); t = setTimeout(async () => { const q = $("#pq").value.trim(); if (q.length < 2) { $("#pres").innerHTML = ""; return; }
+      const j = await api("/api/me/people/search?q=" + encodeURIComponent(q)).catch(() => ({ people: [] })); if ($("#pq")?.value.trim() !== q) return;
+      $("#pres").innerHTML = j.people.length ? j.people.map((p) => { const have = FR.friends.some((f) => f.key === p.key); return `<div class="person">${pav(p)}<div><b>${nm(p)}</b><small>${esc([p.handle ? "@" + p.handle : "", p.place].filter(Boolean).join(" · "))}</small></div>${have ? `<span class="fr-have">Friends</span>` : `<button type="button" class="btn" data-add="${esc(p.key)}">Add</button>`}</div>`; }).join("")
+        : `<p class="muted fr-none">Nobody by that name yet. <a href="/people">Invite them or share your code</a>.</p>`; wireAdd(m); }, 250); };
+    wireAdd(m);
+    $$("[data-accept]", m).forEach((b) => (b.onclick = () => addFriend(m, b, b.dataset.accept, "Friends now. You'll see each other's plans.")));
+    $$("[data-ignore]", m).forEach((b) => (b.onclick = async () => { b.disabled = true; try { await post("/api/me/friends/ignore", { key: b.dataset.ignore }); drawFriends(m); } catch (e) { toast(e.message); b.disabled = false; } })); }
+  async function addFriend(m, b, key, done) { b.disabled = true; try { await post("/api/me/friends", { key }); C.oink && C.oink(); b.textContent = "Added"; F = await api("/api/me/feed").catch(() => F); drawRail(); drawFriends(m, { msg: done }); } catch (e) { toast(e.message); b.disabled = false; } }
+  function wireAdd(m) { $$("[data-add]", m).forEach((b) => (b.onclick = () => addFriend(m, b, b.dataset.add, "Added. They'll see a request to add you back."))); }
   // ---- notifications ----
   $("#bell").onclick = async () => { const j = await api("/api/me/inbox").catch(() => ({ items: [] })); const el = document.createElement("div"); el.className = "notes";
     // "Needs you" first and never hidden (things only you can answer), then everything else, then Potto says you're done
@@ -270,7 +364,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   if (location.hash === "#bell") setTimeout(() => $("#bell")?.click(), 300);
   load();
 })();
-</script><script>(async () => { try { if (localStorage.getItem("encore.city")) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); if (window.PLFeedReload) window.PLFeedReload(); else location.reload(); } } } catch {} })();</script>
+</script><script>(async () => { try { if (localStorage.getItem("encore.city") !== null) return; const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); if (W?.city && window.EncorePlace) { window.EncorePlace.setManual(W.city); if (!sessionStorage.getItem("encore.feedCity")) { sessionStorage.setItem("encore.feedCity", "1"); if (window.PLFeedReload) window.PLFeedReload(); else location.reload(); } } } catch {} })();</script>
 <script src="/nav.js"></script>
 <script src="/shell.js"></script>
 </body></html>

@@ -4,7 +4,8 @@
 (function () {
   const C = window.EncoreColor;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"]];
+  const EFFECTS = [["none", "None"], ["sparkles", "Sparkles"], ["snow", "Snow"], ["confetti", "Confetti"], ["petals", "Petals"], ["paper", "Paper"], ["velvet", "Velvet"], ["stars", "Stars"], ["twinkle", "Twinkle"], ["lanterns", "Lanterns"], ["scanlines", "Scanlines"], ["pixels", "Pixels"], ["jarwall", "Jar wall"],
+    ["streamers", "Streamers"], ["balloons", "Balloons"], ["bulbs", "String lights"], ["dice", "Dice"], ["leaves", "Leaves"], ["rain", "Rain"], ["steam", "Steam"], ["bubbles", "Bubbles"]]; // the last row is drawn by public/effects.js
   // title fonts: the title only; the rest of the page stays in the house sans
   const FONTS = {
     clean: { label: "Clean", css: '"Inter", "IBM Plex Sans", system-ui, sans-serif', q: "Inter:wght@700;800", w: 800, ls: "-.035em", k: 1 },
@@ -242,11 +243,14 @@ body.lk-invite.lk-on h1.lk-title{font-size:calc(var(--fs-28-40,28px) * var(--lk-
     if (F) { el.classList.add("lk-face-" + sturdyOf(L.titleFont)); el.style.setProperty("--lk-title", F.css); el.style.setProperty("--lk-tw", F.w); el.style.setProperty("--lk-tls", F.ls); el.style.setProperty("--lk-tk", 1); }
     if (L.vibe && VIBES[L.vibe]) el.classList.add("lk-vibe-" + L.vibe);
     el.style.setProperty("--lk-glow", L.effect === "lanterns" ? "#F28A3A" : glowOf(L)); if (T) { el.style.setProperty("--lk-pix", T.ink); el.style.setProperty("--lk-spot", T.spot || T.btn); }
-    // no ambient effect or string lights over the page: the cover art carries the mood (effect() and lights() stay for older callers)
-    const stops = [];
+    // the effect: drawn behind the words by public/effects.js, loaded the first time a page has one (still for less motion)
+    const stops = []; if (L.effect && L.effect !== "none") stops.push(fxMount(el, e, L, T));
     decorate(el === document.body ? document : el, e); if (BK) BK.after(el, e);
     el.__lkStop = () => stops.forEach((f) => f());
     return T; }
+  function fxMount(el, e, L, T) { let stop = null, dead = false; const go = () => { if (!dead && window.EncoreEffects) stop = window.EncoreEffects.mount(el, L, { event: e, theme: T }); };
+    if (window.EncoreEffects) go(); else { let s = document.getElementById("fx-js"); if (!s) { s = document.createElement("script"); s.id = "fx-js"; s.src = "/effects.js"; s.async = true; document.head.appendChild(s); } s.addEventListener("load", go, { once: true }); }
+    return () => { dead = true; stop?.(); }; }
   // ---------- the cover: card deck and stickers, on every cover inside root (the invite's .cov, /g's .gxcover, the preview's .mk-cov) ----------
   const hash = (t) => { let h = 0; for (const c of String(t)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
   function cornerWord(e) { const A = window.EventArt; let w = ""; try { if (A) { const k = String((A.valid?.(e?.coverArt?.kind) && e.coverArt.kind) || A.kindOf(e || {})).split("+")[0]; w = A.LABEL?.[k] || ""; } } catch {}

@@ -46,7 +46,7 @@ test("looks: every title font reads as a sturdy face, the page stays linen and t
     assert.ok(C.worst(T.link, [LINEN, SURFACE]) >= 4.5, "accent text " + p);
     assert.ok(C.contrast(T.cover, SURFACE) < 1.25, "at most a very light tint on the cover frame " + p); }
   const src = read("public/looks.js"), apply = src.slice(src.indexOf("function apply("), src.indexOf("// ---------- the cover"));
-  assert.doesNotMatch(apply, /classList\.add\("lk-(page|root)"\)|stops\.push\(effect\(/, "no page tint, gradient or effect over the page");
+  assert.doesNotMatch(apply, /classList\.add\("lk-(page|root)"\)|stops\.push\(effect\(/, "no page tint or gradient; the effect is drawn by public/effects.js (test/effects.test.js)");
   assert.match(src, /\.lk-on\{--lk-title:var\(--inv-title-face,inherit\)\}/, "a look without a font still titles in the serif");
 });
 

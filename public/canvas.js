@@ -71,9 +71,18 @@
   // host's brand kit display face when they have a kit (public/brandkit.js). The others are looks.js title fonts.
   const TITLE_STYLES = [["display", "Display", ""], ["clean", "Clean", "clean"], ["mono", "Mono", "mono"], ["script", "Script", "script"]];
   const titleStyleOf = (d) => (TITLE_STYLES.find((s) => s[2] === (d?.look?.titleFont || "")) || [""])[0];
-  // the ambient effect: off unless the host picks one, and still for people who prefer less motion (looks.js)
-  const EFFECTS = [["none", "None", "Just the page.", "none"], ["grain", "Grain", "A soft paper texture.", "paper"], ["snow", "Soft snow", "A few slow flakes.", "snow"], ["glow", "Candlelight", "Warm points of light, barely moving.", "twinkle"]];
-  const effectOf = (d) => (EFFECTS.find((x) => x[3] === (d?.look?.effect || "none")) || EFFECTS[0])[0];
+  // the effect: off unless the host picks one. public/effects.js draws it behind the page, the same here, in the guest
+  // preview and on every guest page, and holds it still for people who prefer less motion. [id, label, what it is, group]
+  const EFFECTS = [["none", "None", "Just the page.", "Quiet"], ["paper", "Paper grain", "A soft paper texture.", "Quiet"], ["stars", "Stars", "Small stars, slowly blinking. For late nights.", "Quiet"], ["twinkle", "Candlelight", "Warm points of light, barely moving.", "Quiet"],
+    ["confetti", "Confetti", "Soft paper bits, falling slowly.", "Party"], ["streamers", "Streamers", "Curly paper ribbons.", "Party"], ["balloons", "Balloons", "A few, drifting up.", "Party"], ["bulbs", "String lights", "Bulbs along the top.", "Party"], ["sparkles", "Sparkles", "Around your title.", "Party"], ["dice", "Dice", "Two dice roll in, once. For game nights.", "Party"],
+    ["petals", "Petals", "Falling slowly, in your colours.", "Seasonal"], ["snow", "Snow", "A few slow flakes.", "Seasonal"], ["leaves", "Leaves", "Autumn leaves drifting down.", "Seasonal"], ["rain", "Rain", "Rain on the window, for cozy nights.", "Seasonal"],
+    ["steam", "Steam", "Rising slowly, as over a warm pot.", "Food and drink"], ["bubbles", "Bubbles", "Small bubbles, for drinks.", "Food and drink"]];
+  const FX_GROUPS = ["Quiet", "Party", "Seasonal", "Food and drink"];
+  // older effects from the vibes: still drawn and kept, not offered again
+  const FX_OLD = { velvet: "Velvet", lanterns: "Lanterns", scanlines: "Scanlines", pixels: "Pixels", jarwall: "Jar wall" };
+  const effectOf = (d) => { const v = d?.look?.effect || "none"; return EFFECTS.some((x) => x[0] === v) || FX_OLD[v] ? v : "none"; };
+  const effectName = (d) => { const v = effectOf(d); return (EFFECTS.find((x) => x[0] === v) || [v, FX_OLD[v] || "None"])[1]; };
+  const effectLevel = (d) => (d?.look?.effectLevel === "lively" && effectOf(d) !== "none" ? "lively" : "subtle");
 
   // "Thursday, Nov 26 · 7:00pm to 10:00pm"
   const HHMM = /^\d{2}:\d{2}$/;
@@ -192,7 +201,7 @@
     if (path === "reservation.restaurant" && (!d.venueName || d.venueName === was)) d.venueName = d.reservation.restaurant; // the place guests see is the restaurant
     return d; }
 
-  const pure = { PLAN_KINDS, KIND_BLOCKS, applyKind, kindText, kindSet, planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, effectOf, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
+  const pure = { PLAN_KINDS, KIND_BLOCKS, applyKind, kindText, kindSet, planFromLine, planLineLabel, ADDONS, addonText, addonSet, addonHas, addonFix, httpsOf, VIS, VIS_CLUB, visList, visKey, visApply, TITLE_STYLES, titleStyleOf, EFFECTS, FX_GROUPS, effectOf, effectName, effectLevel, whenSentence, clock, TIMES, missing, isFeeler, unfurlOf, guestOf };
   root.EventCanvas = { ...pure };
   if (typeof document === "undefined") return;
 
@@ -260,7 +269,7 @@
   const histIn = () => { try { if (!history.state?.cv) history.pushState({ ...(history.state || {}), cv: 1 }, ""); } catch {} };
   const histOut = () => { try { if (history.state?.cv) { histSkip = true; history.back(); } } catch {} };
   addEventListener("popstate", (e) => { if (histSkip) { histSkip = false; e.stopImmediatePropagation(); return; } if (!S?.el) return; e.stopImmediatePropagation();
-    const sh = q(".cv-sh-bg"); if (sh) { sh.remove(); histIn(); return; } if (S.dirty) histIn(); tryClose(); }, true);
+    const sh = q(".cv-sh-bg"); if (sh) { (sh.__close || (() => sh.remove()))(); histIn(); return; } if (S.dirty) histIn(); tryClose(); }, true);
   function close(quiet) { if (!S?.el) return; if (!quiet) histOut(); S.el.__lkStop?.(); S.el.remove(); document.body.classList.remove("cv-open"); qa(".cv-sh-bg").forEach((x) => x.remove()); if (!quiet) S = null; else S.el = null; }
 
   // ---------- drawing ----------
@@ -346,7 +355,11 @@
     document.body.appendChild(el); S.el = el; css(); draw(); wire(el);
     if (!touch() && !String(S.W.pubTitle || "").trim()) setTimeout(() => q("#cvTitle", el)?.focus(), 60); }
   function stateLine() { const live = !S.isNew; return S.dirty ? (live ? "Not saved yet. Guests see changes after you save." : "Draft, saved on this device. Only you can see it.") : live ? "Live. Guests see changes after you save." : "Draft. Only you can see it."; }
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); }
+  // the dock says what's on: "Look: Sage", "Effect: Petals"
+  function lookName(W) { const L = W.look || {}, LK = root.EncoreLooks, p = (L.palette || [])[0]; if (!p) return "House"; const sw = (LK?.SWATCHES || []).find((x) => x[0] === p); return sw ? sw[3] : LK?.VIBES?.[L.vibe]?.label || "Your colours"; }
+  function dockNames() { const W = S?.W, el = S?.el; if (!W || !el) return; for (const [k, ic, word, v] of [["look", I.look, "Look", lookName(W)], ["effect", I.fx, "Effect", effectName(W)]]) { const b = q(`.cv-dock [data-cv=${k}]`, el); if (!b) continue;
+      b.innerHTML = `${ic}<span>${word}</span><small>${esc(v)}</small>`; b.setAttribute("aria-label", `${word}: ${v}`); } }
   function grow(t) { if (!t || t.tagName !== "TEXTAREA") return; t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
   // the look: colours, the title font and the effect, drawn by looks.js on the page itself; the Display style is the
   // brand's display serif, or the host's brand kit display face
@@ -411,10 +424,11 @@
       } }); }
 
   // ---------- sheets ----------
-  function sheet({ title, sub = "", body, foot = "", wide = false, onClose }) { const bg = document.createElement("div"); bg.className = "cv-sh-bg";
-    bg.innerHTML = `<div class="cv-sh${wide ? " wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div><button type="button" class="cv-x" data-x aria-label="Close">${I.x}</button></header><div class="cv-sh-body">${body}</div>${foot ? `<footer>${foot}</footer>` : ""}</div>`;
+  function sheet({ title, sub = "", body, foot = "", wide = false, onClose, tray = false }) { const bg = document.createElement("div"); bg.className = "cv-sh-bg" + (tray ? " cv-tray" : "");
+    bg.innerHTML = tray ? `<div class="cv-sh cv-tray" role="dialog" aria-modal="false" aria-label="${esc(title)}"><header><button type="button" class="cv-b cv-tc" data-x>Cancel</button><h2>${esc(title)}</h2>${done()}</header><div class="cv-sh-body">${body}</div></div>`
+      : `<div class="cv-sh${wide ? " wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><header><div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div><button type="button" class="cv-x" data-x aria-label="Close">${I.x}</button></header><div class="cv-sh-body">${body}</div>${foot ? `<footer>${foot}</footer>` : ""}</div>`;
     document.body.appendChild(bg); const back = document.activeElement;
-    const close = () => { bg.remove(); try { back?.focus?.({ preventScroll: true }); } catch {} onClose?.(); };
+    const close = () => { if (!bg.isConnected) return; bg.remove(); try { back?.focus?.({ preventScroll: true }); } catch {} onClose?.(); }; bg.__close = close;
     bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("[data-x]")) close(); });
     bg.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
     setTimeout(() => { const f = !touch() && q(".cv-sh-body input:not([type=file]):not([type=radio]),.cv-sh-body textarea", bg); (f || q("[data-x]", bg))?.focus({ preventScroll: true }); }, 30);
@@ -491,17 +505,43 @@
       const n = { icon, title: t, body: bd }; if (i >= 0) L[i] = n; else L.push(n); W.sections = L; Sh.close(); changed(true); const nb = q(`[data-sec="${i >= 0 ? i : L.length - 1}"]`, S.el); if (i < 0) nb?.scrollIntoView({ block: "center", behavior: "smooth" }); pulse(nb, "sections"); };
     if (Sh.$("#cvSecDel")) Sh.$("#cvSecDel").onclick = () => { L.splice(i, 1); W.sections = L; Sh.close(); changed(true); }; }
 
-  function lookSheet() { const W = S.W, LK = root.EncoreLooks, SWS = LK?.SWATCHES || [], cur = (W.look?.palette || [])[0] || "";
-    const Sh = sheet({ title: "Look", sub: "The page colours. Your title style stays as it is.", body: `<div class="cv-looks" role="radiogroup" aria-label="Colours">
-      <button type="button" role="radio" aria-checked="${!cur}" data-pal=""><i style="background:#FAF6F0"><b style="background:#1F1A17"></b></i><span>House</span></button>
-      ${SWS.map((s, k) => `<button type="button" role="radio" aria-checked="${cur === s[0]}" data-pal="${k}"><i style="background:${s[0]}"><b style="background:${s[1]}"></b></i><span>${esc(s[3])}</span></button>`).join("")}</div>`, foot: done() });
-    Sh.$("[data-done]").onclick = Sh.close;
-    Sh.$$("[data-pal]").forEach((b) => (b.onclick = () => { const L = { ...(W.look || {}) }; if (b.dataset.pal === "") delete L.palette; else L.palette = SWS[+b.dataset.pal].slice(0, 3); delete L.vibe; W.look = L; W.theme = ""; Sh.$$("[data-pal]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); changed(); dress(); })); }
+  // ---------- Look and Effect: a tray, with the invite in view behind it ----------
+  // Every tap shows on the canvas at once (and in the guest preview). Done keeps it; Cancel, Escape or Back puts back
+  // what was there when the tray opened. Save still saves. About a third of a phone at the bottom, a side panel on a desk.
+  function traySheet({ title, body, where, onEnd }) { const W = S.W, was = { look: W.look ? JSON.parse(JSON.stringify(W.look)) : W.look, theme: W.theme, effect: W.effect }, sig = () => JSON.stringify([W.look || {}, W.theme || "", W.effect || ""]), s0 = sig(); let kept = false;
+    const Sh = sheet({ title, body, tray: true, onClose: () => { onEnd?.(); S?.el?.classList.remove("cv-traying");
+      if (!kept && S && sig() !== s0) { if (was.look === undefined) delete W.look; else W.look = was.look; W.theme = was.theme; W.effect = was.effect; changed(); dress(); dockNames(); } } });
+    S.el.classList.add("cv-traying"); const fit = () => { const t = q(".cv-sh", Sh.bg); if (t && S?.el) { S.el.style.setProperty("--cv-tray", Math.round(t.getBoundingClientRect().height) + "px"); Sh.bg.style.setProperty("--cv-top", Math.round(q(".cv-body", S.el)?.getBoundingClientRect().top || 0) + "px"); } }; fit(); requestAnimationFrame(fit);
+    Sh.$("[data-done]").onclick = () => { kept = true; Sh.close(); };
+    // bring what changed into view above the tray
+    Sh.show = (sel) => { const n = sel && q(sel, S.el); if (!n) return; requestAnimationFrame(() => { const sc = q("#cvScroll", S.el); if (!sc) return; const a = n.getBoundingClientRect(), b = sc.getBoundingClientRect();
+      if (a.top < b.top + 8 || a.bottom > b.bottom - 8) sc.scrollTo({ top: sc.scrollTop + a.top - b.top - Math.max(12, (b.height - a.height) / 3), behavior: root.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); }); };
+    Sh.show(where); return Sh; }
+  // effects.js: loaded by looks.js the first time a page has an effect; the tray asks for it for its thumbnails
+  function withFx(fn) { if (root.EncoreEffects) return fn(root.EncoreEffects); let s = document.getElementById("fx-js"); if (!s) { s = document.createElement("script"); s.id = "fx-js"; s.src = "/effects.js"; s.async = true; document.head.appendChild(s); } s.addEventListener("load", () => root.EncoreEffects && fn(root.EncoreEffects), { once: true }); }
 
-  function effectSheet() { const W = S.W, cur = effectOf(W);
-    const Sh = sheet({ title: "Effect", sub: "Something quiet in the background. Off unless you pick one. It holds still for anyone who prefers less motion.", body: `<div class="cv-opts" role="radiogroup" aria-label="Effect">${EFFECTS.map(([k, l, s]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-fx="${k}"><b>${esc(l)}</b><small>${esc(s)}</small></button>`).join("")}</div>`, foot: done() });
-    Sh.$("[data-done]").onclick = Sh.close;
-    Sh.$$("[data-fx]").forEach((b) => (b.onclick = () => { const v = EFFECTS.find((x) => x[0] === b.dataset.fx)[3]; W.look = { ...(W.look || {}), effect: v }; if (v === "none") delete W.look.effect; W.effect = "none"; Sh.$$("[data-fx]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); changed(); dress(); })); }
+  function lookSheet() { const W = S.W, LK = root.EncoreLooks, SWS = LK?.SWATCHES || [], cur = (W.look?.palette || [])[0] || "";
+    const Sh = traySheet({ title: "Look", where: "#cvReply", body: `<p class="cv-hint">Your colours, on the reply button and across the invite.</p><div class="cv-looks" role="radiogroup" aria-label="Colours">
+      <button type="button" role="radio" aria-checked="${!cur}" data-pal=""><i style="background:#FAF6F0"><b style="background:#1F1A17"></b></i><span>House</span></button>
+      ${SWS.map((s, k) => `<button type="button" role="radio" aria-checked="${cur === s[0]}" data-pal="${k}"><i style="background:${s[0]}"><b style="background:${s[1]}"></b></i><span>${esc(s[3])}</span></button>`).join("")}</div>` });
+    Sh.$$("[data-pal]").forEach((b) => (b.onclick = () => { const L = { ...(W.look || {}) }; if (b.dataset.pal === "") delete L.palette; else L.palette = SWS[+b.dataset.pal].slice(0, 3); delete L.vibe; W.look = L; W.theme = "";
+      Sh.$$("[data-pal]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); changed(); dress(); dockNames(); pulse("#cvReply", "reply"); Sh.show("#cvReply"); })); }
+
+  function effectSheet() { const W = S.W, cur = effectOf(W), old = FX_OLD[cur] ? [[cur, FX_OLD[cur], ""]] : [], stops = [], stop = () => stops.splice(0).forEach((f) => { try { f(); } catch {} });
+    const tile = ([k, l, sub]) => `<button type="button" role="radio" aria-checked="${k === cur}" data-fx="${k}"${sub ? ` title="${esc(sub)}"` : ""}><canvas class="cv-fxt" data-fxt="${k}" aria-hidden="true"></canvas><span>${esc(l)}</span></button>`;
+    const Sh = traySheet({ title: "Effect", where: cur === "sparkles" ? "#cvTitle" : "", onEnd: stop, body: `
+      <div class="cv-seg cv-lvl" role="group" aria-label="How much"><button type="button" data-lvl="subtle">Subtle</button><button type="button" data-lvl="lively">Lively</button></div>
+      ${old.length ? `<p class="cv-sect">Yours now</p><div class="cv-fxg" role="radiogroup" aria-label="Yours now">${old.map(tile).join("")}</div>` : ""}
+      ${FX_GROUPS.map((g) => `<p class="cv-sect">${esc(g)}</p><div class="cv-fxg" role="radiogroup" aria-label="${esc(g)}">${EFFECTS.filter((x) => x[3] === g).map(tile).join("")}</div>`).join("")}
+      <p class="cv-hint">Light and quiet, it never gets in the way of a tap. It holds still for anyone who prefers less motion.</p>` });
+    // a tiny moving picture on each tile, in this event's colours
+    const thumbs = (lvl) => withFx((FX) => { stop(); if (!Sh.bg.isConnected) return; Sh.$$("[data-fxt]").forEach((c) => stops.push(FX.thumb(c, c.dataset.fxt, { look: W.look, event: W, level: lvl }))); });
+    const lvlOn = () => { const none = effectOf(W) === "none"; Sh.$$("[data-lvl]").forEach((b) => { b.disabled = none; b.setAttribute("aria-pressed", String(!none && b.dataset.lvl === effectLevel(W))); }); };
+    thumbs(effectLevel(W)); lvlOn();
+    const put = (v, lvl) => { const L = { ...(W.look || {}), effect: v }; if (v === "none") { delete L.effect; delete L.effectLevel; } else if (lvl === "lively") L.effectLevel = "lively"; else delete L.effectLevel;
+      W.look = L; W.effect = "none"; changed(); dress(); dockNames(); lvlOn(); preview("look"); };
+    Sh.$$("[data-fx]").forEach((b) => (b.onclick = () => { put(b.dataset.fx, effectLevel(W)); Sh.$$("[data-fx]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); Sh.show(b.dataset.fx === "sparkles" ? "#cvTitle" : ""); }));
+    Sh.$$("[data-lvl]").forEach((b) => (b.onclick = () => { const v = effectOf(W); if (v === "none") return; put(v, b.dataset.lvl); thumbs(b.dataset.lvl); })); }
 
   // ---------- quick actions: the settings that used to be long sections, each in its own sheet ----------
   function quick(k) { const W = S.W, refresh = () => { const p = q(".cv-pills", S.el); if (p) p.innerHTML = pills(W); };
@@ -674,7 +714,7 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-pill{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:6px!important;border:1px solid var(--cv-line2)!important;background:#fff!important;font-size:15px;font-weight:600;margin:0}#cv .cv-pill svg{width:16px;height:16px}
 #cv .cv-pill.on{border-color:var(--cv-ink)!important;box-shadow:inset 0 0 0 1px var(--cv-ink)}
 /* the dock floats over the page's bottom padding, never over content */
-#cv .cv-dock{position:relative;flex:none;align-self:center;margin:8px auto calc(12px + env(safe-area-inset-bottom));z-index:3;display:grid;grid-template-columns:repeat(3,78px);height:var(--cv-dock-h);padding:0 6px;border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);border:1.5px solid var(--pl-ink,#1B1D1C);box-shadow:none}
+#cv .cv-dock{position:relative;flex:none;align-self:center;margin:8px auto calc(12px + env(safe-area-inset-bottom));z-index:3;display:grid;grid-template-columns:repeat(3,minmax(78px,auto));height:var(--cv-dock-h);padding:0 6px;border-radius:6px;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);border:1.5px solid var(--pl-ink,#1B1D1C);box-shadow:none}
 #cv .cv-dock button{display:grid;place-items:center;align-content:center;gap:2px;border:0!important;background:none!important;color:var(--pl-ink,#1B1D1C)!important;font-size:13px;font-weight:600;border-radius:4px!important;margin:0;padding:0}#cv .cv-dock button:focus-visible{outline:2px solid var(--pl-accent,#29489A)!important;outline-offset:-4px}
 /* sheets */
 .cv-sh-bg{position:fixed;inset:0;z-index:9500;background:rgba(29,27,24,.36);display:flex;align-items:flex-end;justify-content:center;animation:cvFade .16s ease both}
@@ -706,6 +746,25 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 .cv-sh .cv-rowlist{display:grid}.cv-sh .cv-rowbtn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;min-height:62px;padding:8px 0;border:0!important;border-top:1px solid var(--cv-line)!important;border-radius:0!important;background:none!important;text-align:left;margin:0}.cv-sh .cv-rowbtn:first-child{border-top:0!important}
 .cv-sh .cv-rowbtn b{display:block;font-weight:600}.cv-sh .cv-rowbtn small{display:block;color:var(--cv-soft);font-size:15px}
 @media (min-width:760px){#cv .cv-page{padding-top:28px;gap:16px}#cv textarea.cv-title{font-size:calc(48px * var(--tk,1))}.cv-sh-bg{align-items:center;padding:24px}.cv-sh{border-radius:22px;max-height:84vh}.cv-sh.wide{max-width:640px}#cv .cv-top{padding-left:24px;padding-right:24px}}
+/* the dock names what's on: Look, then "Sage" under it */
+#cv .cv-dock button{padding:0 8px;line-height:1.15}#cv .cv-dock button small{font-size:12px;font-weight:400;color:var(--pl-soft,#5D564E);max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Look and Effect: a tray with the invite in view above it (a side panel from 1024px). The page behind stays live. */
+.cv-sh-bg.cv-tray{background:transparent;pointer-events:none;animation:none;align-items:flex-end;padding:0}
+.cv-sh.cv-tray{pointer-events:auto;max-width:none;height:min(38vh,320px);max-height:none;border-radius:6px 6px 0 0;border-top:1.5px solid var(--cv-ink);box-shadow:0 -8px 24px rgba(29,27,24,.12)}
+.cv-sh.cv-tray>header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--cv-line)}.cv-sh.cv-tray>header h2{text-align:center;font-size:17px}
+.cv-sh.cv-tray>header .cv-b{min-height:44px;padding:0 14px;font-size:15px}.cv-sh.cv-tray .cv-sh-body{padding:12px 16px calc(16px + env(safe-area-inset-bottom));gap:10px;align-content:start}
+.cv-sh .cv-fxg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cv-sh .cv-fxg button{display:grid;gap:4px;justify-items:stretch;padding:6px 6px 8px;min-height:44px;border-radius:6px!important;border:1px solid var(--cv-line2)!important;background:#fff!important;font-size:14px;font-weight:500;text-align:center;margin:0}
+.cv-sh .cv-fxg button[aria-checked=true]{border-color:var(--cv-ink)!important;box-shadow:inset 0 0 0 1px var(--cv-ink);font-weight:600}
+.cv-sh .cv-fxt{display:block;width:100%;height:40px;border-radius:4px;background:var(--pl-page,#EFEBE2)}
+.cv-sh .cv-lvl{max-width:280px}.cv-sh .cv-lvl button:disabled{opacity:.45;cursor:default}
+.cv-sh.cv-tray .cv-looks{grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}.cv-sh.cv-tray .cv-looks button{padding:8px 4px;font-size:14px}
+#cv.cv-traying .cv-dock{display:none}#cv.cv-traying .cv-left{padding-bottom:var(--cv-tray,0px)}
+@media (min-width:600px){.cv-sh .cv-fxg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (min-width:1024px){.cv-sh-bg.cv-tray{justify-content:flex-start;align-items:stretch;top:var(--cv-top,73px)}
+  .cv-sh.cv-tray{width:360px;height:auto;border-radius:0;border-top:0;border-right:1.5px solid var(--cv-ink);box-shadow:8px 0 24px rgba(29,27,24,.08)}.cv-sh.cv-tray .cv-fxg{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #cv.cv-traying .cv-left{padding:0 0 0 360px}#cv.cv-traying .cv-dock{display:none}}
+@media (min-width:1024px) and (max-width:1239px){#cv.cv-traying .cv-body{grid-template-columns:minmax(0,1fr)}#cv.cv-traying .cv-guest{display:none}}
 `;
   root.EventCanvas = { ...pure, open, close, isOpen: () => !!S?.el, state: () => S };
 })(typeof window !== "undefined" ? window : globalThis);

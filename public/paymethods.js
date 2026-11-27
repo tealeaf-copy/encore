@@ -36,7 +36,7 @@
 .pm-in{display:flex;align-items:stretch;min-height:48px;border:1.5px solid var(--pl-line-strong);border-radius:6px;background:#fff;overflow:hidden}.pm-in:focus-within{outline:3px solid var(--pl-focus,var(--pl-accent));outline-offset:1px}
 .pm-pre{display:flex;align-items:center;padding:0 0 0 12px;color:var(--pl-soft);font:400 16px/1 var(--pl-font-mono,"IBM Plex Mono",ui-monospace,monospace);white-space:nowrap}
 .pm-in input{flex:1;min-width:0;width:auto!important;height:auto!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;background:transparent!important;padding:0 12px 0 4px;font:400 16px/1.2 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);color:var(--pl-ink)}.pm-in.np input{padding-left:12px}
-.pm-in[data-bad] {border-color:var(--pl-danger)}.pm-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:24px;font-size:13px;color:var(--pl-soft)}.pm-sub [data-err]{color:var(--pl-danger)}
+.pm-in[data-bad] {border-color:var(--pl-danger)}.pm-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;font-size:13px;color:var(--pl-soft)}.pm-sub [data-err]{color:var(--pl-danger)}
 .pm-test{flex:none;color:var(--pl-accent-text,var(--pl-accent));font-weight:600;text-decoration:underline;font-size:14px;min-height:32px;display:inline-flex;align-items:center}.pm-test[hidden]{display:none}
 .pm-priv{margin:0;padding:10px 12px;border-radius:6px;background:var(--pl-raised);color:var(--pl-ink);font-size:14px;line-height:1.45}.pm-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .pm-b{min-height:44px;padding:0 18px;border-radius:6px;border:1.5px solid var(--pl-line-strong);background:transparent;color:var(--pl-ink);font:600 15px/1 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
@@ -93,9 +93,11 @@
       catch { msg.textContent = "That didn't save. Check your connection and try again."; } finally { btn.disabled = false; } }); }
   let n = 0;
   /** The Settings section. */
-  async function settings(el) { if (!el) return; css(); const j = await load(true); const p = j?.pay || {}; el.innerHTML = formHTML(p, "pms" + ++n);
+  // drawn at once (empty), then filled in, so nothing below it jumps when the answer comes back
+  async function settings(el) { if (!el) return; css(); el.innerHTML = formHTML({}, "pms" + ++n); const form = $("form", el), j = await load(true), p = j?.pay || {};
+    for (const k of KEYS) { const i = $(`input[name=${k}]`, form); if (i && p[k]) i.value = p[k]; } if (p.link || p.note) $(".pm-more", form).open = true;
     if (j && !p.saved && hasAny(p)) $(".pm-msg", el).textContent = "From the tip buttons on your page. Save to use them for your events too.";
-    wire($("form", el)); }
+    wire(form); }
   /** The small sheet: add or change them without leaving what you were doing. */
   async function sheet({ onSave, title = "How you get paid" } = {}) { css(); document.getElementById("pmSheet")?.remove(); const j = await load(true), p = j?.pay || {};
     const bg = document.createElement("div"); bg.className = "pm-sh-bg"; bg.id = "pmSheet";

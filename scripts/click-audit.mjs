@@ -57,7 +57,6 @@ const sheetOpeners = {
     await p.evaluate((f) => window.ShareKit.open({ eventId: "rtOpen", start: f }), fmtName); },
   photo: async (p) => { await p.addScriptTag({ url: "/photosheet.js" }).catch(() => {}); await p.waitForFunction(() => window.PhotoSheet, null, { timeout: 8000 }); await p.evaluate(() => { window.PhotoSheet.open({ for: "cover", eventId: "rtOpen", onChange: () => {} }); }); },
   savelist: async (p) => { await p.locator("[data-pl-savelist]").filter({ visible: true }).first().click(); },
-  comments: async (p) => { await p.locator("[data-fb-comment]").filter({ visible: true }).first().click(); await p.waitForSelector(".fcm", { timeout: 8000 }); },
   peek: async (p) => { await p.locator(".pk-row, [data-peek], .plans-row, a[href^='/plans/']").filter({ visible: true }).first().click(); },
 };
 const PAGES = [
@@ -70,7 +69,8 @@ const PAGES = [
   ["/inbox", ["host"], { name: "Ask Potto sheet", setup: "potto" }], ["/feed", ["host"], { name: "+ composer", setup: "plus" }],
   [`/e/${S.open}`, ["host"], { name: "share sheet: link", setup: "share:link" }], [`/e/${S.open}`, ["host"], { name: "share sheet: flyer", setup: "share:flyer" }], [`/e/${S.open}`, ["host"], { name: "share sheet: qr", setup: "share:qr" }],
   ["/feed", ["host"], { name: "photo sheet", setup: "photo" }], [`/e/${S.open}`, ["guest"], { name: "save-to-list sheet", setup: "savelist" }], ["/plans", ["guest"], { name: "Plans peek", setup: "peek" }],
-  ["/login", ["out"]], ["/signup", ["out"]], ["/leaderboard", ["out", "guest"]], ["/feed", ["guest"], { name: "feed comments sheet", setup: "comments" }], // main's one-field sign-in and the comments under a feed card
+  ["/login", ["out"]], ["/signup", ["out"]], ["/leaderboard", ["out", "guest"]], [`/post/e/${S.open}`, ["out", "guest"]], // main's one-field sign-in; a feed card's comments open its post page
+  [`/plans/${S.vegas}`, ["trip"]], [`/e/${S.vegas}`, ["out", "guest"]], ["/proposals", ["bhost"]], ["/ideas", ["out", "guest"]], // a group trip's feeler (server/trips.js), brand proposals, Ideas
   ["/teams/home", ["brand"]], ["/teams/discover", ["brand"]], [`/teams/x/long-table/${pkg}`, ["brand"]], [`/teams/book/long-table/${pkg}`, ["brand"]], ["/teams/campaigns", ["brand"]],
   ...["plan", "source", "book", "invite", "run", "measure"].map((t) => [`/teams/campaigns/${C1}/${t}`, ["brand"]]), [`/teams/campaigns/${C1}/report`, ["brand"]],
   ["/teams/insights", ["brand"]], ["/teams/formats", ["brand"]], ["/teams/company", ["brand"]], ["/teams/hosts", ["brand"]], ["/teams/bookings", ["brand"]], ["/host/teams", ["bhost"]],

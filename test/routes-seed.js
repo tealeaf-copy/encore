@@ -186,7 +186,10 @@ export async function seedClickAudit(base, store, { brand = true } = {}) {
   await put("events/auTrip", ev({ name: "Lake weekend", date: day(12), endDate: day(14), startTime: "16:00", planKind: "weekend", noMaybe: true, carpool: true, discoverable: false, unlisted: true,
     lodging: { name: "Lake House", area: "Woodstock", checkIn: "16:00", checkOut: "11:00", address: "9 Lake Rd" }, beds: [{ id: "b1", room: "Loft", label: "Queen", sleeps: 2 }] }), tripHost.cookie);
   await answer("auSummit", "kauditsumm01", "going", S.guest); await answer("auTrip", "kaudittrip01", "going", S.guest);
+  // a group trip still at the feeler stage (server/trips.js): friends answer which weekend and what they'd spend
+  const yr = new Date().getFullYear() + 1, vegas = (await (await post("/api/host/trips", { say: "Vegas for a 30th, sometime in March" }, tripHost.cookie)).json()).id;
+  await post(`/api/host/trips/${vegas}/feeler`, { destination: "Las Vegas", weekends: [{ from: `${yr}-03-12`, to: `${yr}-03-14` }, { from: `${yr}-03-26`, to: `${yr}-03-28` }], note: "Two nights, flights on your own.", publish: true }, tripHost.cookie);
   let B = null;
   if (brand && store) { const { seedBrandPanel } = await import("./brand-panel-seed.js"); B = await seedBrandPanel(base, store, { guests: 60 }); }
-  return { ...S, newGuest, maybe: { ...maybe, rid: maybeRid }, wait: { ...wait, rid: waitRid }, small: "rtSmall", seller, drop: drop.id, order, summitHost, tripHost, summit: "auSummit", trip: "auTrip", brand: B };
+  return { ...S, newGuest, maybe: { ...maybe, rid: maybeRid }, wait: { ...wait, rid: waitRid }, small: "rtSmall", seller, drop: drop.id, order, summitHost, tripHost, summit: "auSummit", trip: "auTrip", vegas, brand: B };
 }

@@ -7,6 +7,8 @@
 //   places). Private by default. A list can also be "share link" (read only, anyone with the link) or "shared with
 //   friends" (people you added as friends can open it and add to it, for planning together). Shared lists use an
 //   unguessable token; switching back to private kills the link, and a new share makes a new one.
+//   Public (server/curation.js): on the owner's curator page, Discover and followers' feeds, followable. It keeps a
+//   token too, so its /l/<token> link works like a share link. Every new list is Private.
 // - the old boards (system/plsave-<hash>.boards, one board per save) stay where they are and keep working. Each board
 //   shows up here as a list with the board's id: its items are its saves plus anything added here, and renaming or
 //   deleting the list renames or deletes the board. Nothing is copied out of the saves record.
@@ -39,7 +41,7 @@ const IMG = (u) => (SAVE_IMG_OK(u) ? u : "");
 const PLAY_OK = (u) => /^https:\/\/[^\s"'<>()]{4,300}$/i.test(u || "");
 
 export const KINDS = ["event", "host", "club", "idea", "place"];
-export const SHARE = ["private", "link", "friends"];
+export const SHARE = ["private", "friends", "link", "public"]; // public: server/curation.js
 export const SMART = [
   { id: "going", name: "Going", sub: "Your plans coming up" },
   { id: "saved", name: "Saved", sub: "Everything you saved" },
@@ -52,7 +54,11 @@ const DEFAULT_PINS = SMART.map((s) => "smart:" + s.id);
 const refOk = (kind, ref) => (kind === "event" ? ID_OK.test(ref) : kind === "host" || kind === "club" ? HANDLE.test(ref) : kind === "idea" ? IDEA_OK.test(ref) : kind === "place" ? PLACE_OK.test(ref) : false);
 const keyOf = (i) => i.kind + ":" + i.ref;
 
-export function makeLibrary({ store, H, Dir, F, X, C, now: clock = () => Date.now() }) {
+export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock = () => Date.now() }) {
+  // ---- visibility (server/curation.js): blocks both ways, friends who stepped out, opens for the nudge ----
+  const gate = () => { try { return G() || null; } catch { return null; } };
+  const hiddenFor = (owner, viewer, mode) => { const g = gate(); try { return !!g && !!viewer && lc(owner) !== lc(viewer) && g.hidden(owner, viewer, { mode }); } catch { return false; } };
+  // ---- end visibility ----
   const sys = (k) => store.get("system/" + k)?.data;
   const put = (k, v) => store.set("system/" + k, v);
   const lKey = (email) => "pllib-" + hash(email);
@@ -116,6 +122,7 @@ export function makeLibrary({ store, H, Dir, F, X, C, now: clock = () => Date.no
   /** Friends lists other people shared with this person. */
   function sharedWith(email) { const me = lc(email), out = []; if (!me) return out;
     for (const d of store.listPrefix("system", "pllibtok-")) { const t = d.data; if (t?.kind !== "pllibtok" || t.mode !== "friends" || lc(t.email) === me) continue; if (!isFriend(t.email, me)) continue;
+      if (hiddenFor(t.email, me, "friends")) continue; // visibility: a block, or they stepped out of this person's friends lists
       const R = raw(t.email), L = R.lists.find((x) => x.id === t.list && x.share === "friends" && x.token); if (L) out.push({ owner: t.email, L }); }
     return out; }
   function library(base, email) { const { R, S } = load(email), today = iso(clock());
@@ -132,11 +139,14 @@ export function makeLibrary({ store, H, Dir, F, X, C, now: clock = () => Date.no
     const sm = SMART.find((s) => s.id === id); if (sm) { R.opened["smart:" + id] = clock(); write(email, R); const items = smartItems(base, email, id); return { smart: true, id, name: sm.name, sub: sm.sub, count: items.length, items, pinned: pinsOf(R).includes("smart:" + id) }; }
     const L = R.lists.find((x) => x.id === id); if (!L) return null; R.opened[id] = clock(); write(email, R);
     const items = hydrateAll(base, itemsOf(L, S), {}).map((i) => { const src = L.items.find((x) => keyOf(x) === keyOf(i)); return { ...i, addedBy: src?.by && lc(src.by) !== lc(email) ? first(person(src.by).name) : "" }; });
-    return { ...summary(base, L, S, R), items }; }
+    return { ...summary(base, L, S, R), items: items.map((i) => ({ ...i, why: L.notes?.[keyOf(i)] || "" })) }; }
 
   // ---- writing lists ----
   const cleanShare = (v) => (SHARE.includes(v) ? v : "private");
-  function setShare(email, L, mode, { rotate = false } = {}) { mode = cleanShare(mode);
+  function setShare(email, L, mode, { rotate = false } = {}) { mode = cleanShare(mode); const was = L.share || "private";
+    // visibility: when it reached friends' feeds (sharedAt) and followers' (publicAt), for the feed cards (server/listfeed.js)
+    if ((mode === "friends" || mode === "public") && was !== "friends" && was !== "public") L.sharedAt = clock();
+    if (mode === "public" && was !== "public") L.publicAt = clock();
     if (L.token && (mode === "private" || rotate)) { store.delete("system/" + tKey(L.token)); L.token = ""; }
     if (mode !== "private") { if (!L.token) L.token = crypto.randomBytes(18).toString("base64url"); put(tKey(L.token), { kind: "pllibtok", email: lc(email), list: L.id, mode, at: clock() }); }
     L.share = mode; }
@@ -175,13 +185,16 @@ export function makeLibrary({ store, H, Dir, F, X, C, now: clock = () => Date.no
     const R = raw(t.email), L = R.lists.find((x) => x.id === t.list); if (!L || L.token !== token || L.share === "private") return null; return { owner: lc(t.email), L, R }; }
   /** What anyone with the link sees: public things only, first names only. Friends lists open for the owner and their friends. */
   function publicView(base, token, viewer = "") { const T = byToken(token); if (!T) return { error: "This list isn't shared any more.", status: 404, code: "not_found" };
-    const { owner, L } = T, v = lc(viewer), own = !!v && v === owner, friend = !own && isFriend(owner, v);
+    const { owner, L } = T, v = lc(viewer), own = !!v && v === owner, friend = !own && isFriend(owner, v) && !hiddenFor(owner, v, "friends");
+    if (!own && hiddenFor(owner, v, "block")) return { error: "This list isn't shared any more.", status: 404, code: "not_found" }; // visibility: blocked either way
     if (L.share === "friends" && !own && !friend) return { error: "This list is shared with friends only.", status: 403, code: "friends_only", by: first(person(owner).name) || "" };
     const S = H.savesRaw(owner), items = itemsOf(L, S).map((i) => { const h = hydrate(base, i, { pub: true }); if (!h) return null; const by = L.share === "friends" && i.by ? first(person(i.by).name) : "";
-      return { kind: h.kind, ref: h.ref, title: h.title, img: h.img, url: h.url, line: h.line, date: h.date, status: h.status, art: h.art, emoji: h.emoji, ...(h.host ? { host: h.host } : {}), ...(by ? { addedBy: by } : {}), mine: !!v && lc(i.by || "") === v }; }).filter(Boolean);
-    return { name: L.name, note: L.note || "", by: first(person(owner).name) || "", mode: L.share, count: items.length, type: typeOf(items), covers: coverOf(items), items, canAdd: L.share === "friends" && (own || friend), isOwner: own, id: own ? L.id : undefined }; }
+      return { kind: h.kind, ref: h.ref, title: h.title, img: h.img, url: h.url, line: h.line, date: h.date, status: h.status, art: h.art, emoji: h.emoji, ...(h.host ? { host: h.host } : {}), ...(by ? { addedBy: by } : {}), mine: !!v && lc(i.by || "") === v, why: L.notes?.[keyOf(i)] || "" }; }).filter(Boolean);
+    const out = { name: L.name, note: L.note || "", by: first(person(owner).name) || "", mode: L.share, count: items.length, type: typeOf(items), covers: coverOf(items), items, canAdd: L.share === "friends" && (own || friend), isOwner: own, id: own ? L.id : undefined };
+    try { const g = gate(); if (g) { if (!own) g.opened(owner, L, v); return g.decorate(out, { owner, L, viewer: v }); } } catch {} // visibility: follow, notes and I'd go again (server/curation.js)
+    return out; }
   function friendAdd(token, viewer, x) { const T = byToken(token); if (!T) return { error: "This list isn't shared any more.", status: 404, code: "not_found" };
-    const { owner, L, R } = T, v = lc(viewer); if (L.share !== "friends" || !(v === owner || isFriend(owner, v))) return { error: "Only friends can add to this list.", status: 403, code: "not_granted" };
+    const { owner, L, R } = T, v = lc(viewer); if (L.share !== "friends" || !(v === owner || (isFriend(owner, v) && !hiddenFor(owner, v, "friends")))) return { error: "Only friends can add to this list.", status: 403, code: "not_granted" };
     const it = cleanItem(x); if (!it) return { error: "That can't go on a list.", status: 400, code: "invalid" };
     const r = addTo(L, it, v === owner ? "" : v); if (r.error) return r; if (r.added) write(owner, R);
     if (v !== owner) { const me = load(v); me.R.last = "t:" + token; write(v, me.R); }
@@ -263,13 +276,22 @@ export function makeLibrary({ store, H, Dir, F, X, C, now: clock = () => Date.no
     if (from === "event") doc.guests = [];
     S.set("events/" + nid, doc); return { id: nid, open: "/?app=1&open=" + encodeURIComponent(nid) + "#studio" }; }
 
-  return { raw, load, library, openList, createList, updateList, deleteList, addItem, removeItem, pin, sheet, applySheet, byToken, publicView, friendAdd, friendRemove, sharedWith, smartItems, hostLibrary, saveTemplate, dropTemplate, startFrom, tKey };
+  // ---- visibility (server/curation.js): what a list shows to anyone but its owner, and the curator's notes ----
+  /** A list's items as a public page would show them (never a private or link-only event), newest first, with when each was added. */
+  function publicItems(owner, L, base = "") { const S = H.savesRaw(owner);
+    return itemsOf(L, S).map((i) => { const h = hydrate(base, i, { pub: true }); return h ? { ...h, at: i.at || L.at || 0, why: L.notes?.[keyOf(i)] || "" } : null; }).filter(Boolean); }
+  /** The curator's one line on why something is on the list (empty takes it off). */
+  function setNote(email, id, kind, ref, why) { const { R, S } = load(email), L = R.lists.find((x) => x.id === id); if (!L) return { error: "No such list.", status: 404, code: "not_found" };
+    const k = kind + ":" + ref; if (!itemsOf(L, S).some((i) => keyOf(i) === k)) return { error: "That isn't on this list.", status: 404, code: "not_found" };
+    const t = clean(why, 120); L.notes = { ...(L.notes || {}) }; if (t) L.notes[k] = t; else delete L.notes[k]; write(email, R); return { ok: true, why: t }; }
+  // ---- end visibility ----
+  return { publicItems, setNote, coverOf, typeOf, raw, load, library, openList, createList, updateList, deleteList, addItem, removeItem, pin, sheet, applySheet, byToken, publicView, friendAdd, friendRemove, sharedWith, smartItems, hostLibrary, saveTemplate, dropTemplate, startFrom, tKey };
 }
 
 export function mountLibrary(app, { store, currentUser, publicOrigin, C, X, sendStatic, express }) {
   const H = app.locals.hooks, Dir = app.locals.directory, F = app.locals.fanclub;
   if (!H || !Dir) return null;
-  const L = makeLibrary({ store, H, Dir, F, X, C }); app.locals.library = L;
+  const L = makeLibrary({ store, H, Dir, F, X, C, G: () => app.locals.curation }); app.locals.library = L; // G: visibility (server/curation.js)
   const base = (req) => String(publicOrigin(req) || "").replace(/\/+$/, "");
   const json = express.json({ limit: "32kb" });
   const hits = new Map(); const limited = (key, n) => { const now = Date.now(); let h = hits.get(key); if (!h || now - h.start > 3600e3) { h = { n: 0, start: now }; hits.set(key, h); if (hits.size > 20000) hits.clear(); } return ++h.n > n; };

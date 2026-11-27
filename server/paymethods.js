@@ -9,6 +9,7 @@
 // The browser side is public/paymethods.js (the same cleaning and deep links, the Settings section, the editor sheet).
 import { scopeStore, getWorkspace, getDbUser, putDbUser, DEFAULT_WS } from "./workspaces.js";
 import { dueCents } from "./social.js";
+import { payStateOf } from "./droppay.js"; // a drop's order: Paid, Claimed, Not paid yet, at pickup
 
 export const PAY_KEYS = ["venmo", "paypal", "cashapp", "link", "note"];
 export const PAY_LABEL = { venmo: "Venmo", paypal: "PayPal", cashapp: "Cash App", link: "Pay link", note: "Note" };
@@ -111,7 +112,9 @@ export function guestPay(ws, ev, r) {
   const pay = payOfWs(ws), skip = sameAsLink(pay, ev.ticketUrl), keys = eventMethods(pay, ev).filter((k) => k !== skip);
   const cents = ev.preorder ? orderCents(r) : dueCents(ev, r), title = String(ev.pubTitle || ev.name || "").trim(), note = [first(r?.name), title].filter(Boolean).join(" · ");
   const W = getWorkspace(ws), host = first(ev.hostName) || first(getDbUser(W?.ownerEmail || "")?.name) || "your host";
-  return { ok: true, host, cents, note, text: keys.includes("note") ? pay.note : "", paid: !!r?.paid, claimed: !!r?.paidClaim, hasLink: !!String(ev.ticketUrl || "").trim(),
+  const ds = ev.drop ? payStateOf(ev, r) : null; // a drop: a claim or a mark counts only for the order as it stands
+  return { ok: true, host, cents, note, text: keys.includes("note") ? pay.note : "", paid: ds ? ds.state === "paid" : !!r?.paid, claimed: ds ? ds.state === "claimed" : !!r?.paidClaim, hasLink: !!String(ev.ticketUrl || "").trim(),
+    ...(ds ? { state: ds.state, pickupOk: ds.pickupOk, choice: ds.choice, amount: ds.amount, changed: !!ds.changed } : {}),
     methods: keys.filter((k) => k !== "note").map((k) => ({ k, label: PAY_LABEL[k], handle: k === "link" ? "" : pay[k], href: deepLink(k, pay[k], cents, note), url: profileUrl(k, pay[k]) })) };
 }
 
@@ -138,6 +141,8 @@ export function mountPayMethods(app, { store, small, currentUser, X }) {
   // "I paid", from those buttons: a claim on their own reply. The host still confirms.
   app.post("/api/public/pay/:eventId/claim", small, (req, res) => { const b = req.body || {}, P = X.rsvpProof(String(req.params.eventId || "").slice(0, 80), String(b.rid || "").slice(0, 80), String(b.code || "").slice(0, 40));
     if (!P || P.r.response !== "going") return bad(res, "Reply first.", 403, "not_granted");
-    if (!P.r.paidClaim) P.S.update("rsvps/" + P.rid.replace(/[^A-Za-z0-9_-]/g, ""), { paidClaim: true, paidClaimAt: Date.now(), changedAt: Date.now() });
+    // a drop's claim is for the whole order as it stands (server/droppay.js): a bigger order later is Not paid yet again
+    const dropCents = P.ev?.drop ? orderCents(P.r) : 0, again = P.r.paidClaim && dropCents && +P.r.paidClaimCents > 0 && +P.r.paidClaimCents < dropCents;
+    if (!P.r.paidClaim || again) P.S.update("rsvps/" + P.rid.replace(/[^A-Za-z0-9_-]/g, ""), { paidClaim: true, paidClaimAt: Date.now(), changedAt: Date.now(), ...(P.ev?.drop ? { paidClaimCents: dropCents, payChoice: "" } : {}) });
     res.json({ ok: true }); });
 }

@@ -31,7 +31,8 @@ import { mountPhotos, guardEventPhotos } from "./photos.js";
 import { makeVerify, verifyRequired, emailVerified, founderGate } from "./verify.js"; // email verification, founder-code limits // the "Change photo" sheet: event covers, page covers, profile pictures
 import { mountGiftPlan } from "./giftplan.js";
 import { mountShop, payLink } from "./shop.js";
-import { mountDrops, dropOrderError, soldOf, ordersBySlot, addressOpen } from "./drops.js"; // drops: order ahead, pick up at a set time (a pre-order event)
+import { mountDrops, dropOrderError, soldOf, ordersBySlot, addressOpen } from "./drops.js";
+import { asksAhead, pickupOk } from "./droppay.js"; // a drop's order email: the pay step when it asks to pay ahead // drops: order ahead, pick up at a set time (a pre-order event)
 import { mountCover } from "./cover.js"; // the host page cover photo
 import { mountIgImport } from "./igimport.js"; // "Start from your Instagram": a draft of the host page from their own Instagram (server/igimport.js)
 import { mountMarket } from "./market.js";
@@ -824,7 +825,7 @@ export function createApp({ store, dataDir }) {
   const PH = mountPhotos(app, { store, assetsDir, currentUser, C, small, raw: express.raw({ type: () => true, limit: "11mb" }) }); app.locals.photos = PH; // server/photos.js
   app.get("/recap/:handle", (req, res) => { if (!C.wsOfHandle(String(req.params.handle || "").toLowerCase())) { res.status(404); return sendStatic(res, "404.html", "<p>Page not found.</p>"); } sendStatic(res, "recap.html", "<p>Recap missing.</p>"); });
   mountShop(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
-  mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X }); // before /x pages: old shop links open the drop
+  mountDrops(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, replyToken: (ws, rid) => replyToken(ws, rid) /* reminders link straight to the order's pay step */ }); // before /x pages: old shop links open the drop
   mountCover(app, { assetsDir, currentUser, C });
   mountIgImport(app, { store, currentUser, C, assetsDir, publicOrigin: (req) => originOf(req), sendStatic: (...a) => sendStatic(...a) }); // ---- Start from your Instagram (server/igimport.js) ----
   mountMarket(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X });
@@ -1957,7 +1958,9 @@ export function createApp({ store, dataDir }) {
       // a drop's buyer gets the exact pickup address once it's close (the day before, or when orders close); nowhere public ever shows it
       if (ev.drop && String(ev.venueAddr || "").trim()) O.push(addressOpen(ev, r.slot) ? `Pickup address: ${String(ev.venueAddr).trim()}${ev.hood ? ` (${ev.hood})` : ""}` : "We'll send the exact spot the day before.");
       else if (where) O.push(`Where: ${where}${pe.addrHidden ? " (the exact address is on your invite)" : ""}`);
-      if (cents && url) O.push("", `Pay ${orderMoney(cents / 100)} here: ${payLink(url, cents, [String(r.name || "").trim(), title].filter(Boolean).join(" · "))}`);
+      // a drop that asks to pay ahead (server/droppay.js): the pay step on their own order, with the host's methods and the amount filled in
+      if (cents && ev.drop && asksAhead(ev)) O.push("", `Not paid yet. Pay ${host === "Your host" ? "your host" : host} ${orderMoney(cents / 100)} before pickup: ${link.replace("#", "?pay=1#")}`, ...(pickupOk(ev) ? ["Or choose to pay at pickup there."] : []), `Payments go straight to ${host === "Your host" ? "your host" : host}. Pottery Lab doesn't hold the money.`);
+      else if (cents && url) O.push("", `Pay ${orderMoney(cents / 100)} here: ${payLink(url, cents, [String(r.name || "").trim(), title].filter(Boolean).join(" · "))}`);
       else if (cents && ev.ticketNote) O.push("", `Pay ${orderMoney(cents / 100)} at pickup.`);
       O.push("", `Your order, to see or change it: ${link}`, "", "Plans changed? Open it and tap Can't go, so the batch isn't wasted.");
       const m = await mailWs(ws, { list: "guest", origin, to, subject: `Your order: ${title}`, text: O.join("\n") + "\n", eventId: r.eventId, kind: "confirm", fromName: host === "Your host" ? "" : host });

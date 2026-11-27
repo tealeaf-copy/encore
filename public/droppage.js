@@ -7,7 +7,13 @@
 // date and the time; a full window can't be picked), a name and one way to reach you (filled in from your account or
 // this phone), an optional note to the maker, the total and one button: Place order. After ordering: "Order placed.
 // Pick up Sun, Dec 6, 9 to 10am in Greenpoint. We'll send the exact spot the day before." with Add to calendar
-// (public/addcal.js) and the maker's pay link when they use one. Wide screens: photos on the left, the order on the right.
+// (public/addcal.js). Wide screens: photos on the left, the order on the right.
+//
+// Paying before pickup (server/droppay.js): when the drop asks to pay ahead, the order is followed by the pay step,
+// "Pay Maya $36 now", with the maker's own Get paid buttons (Venmo, PayPal, Cash App, a pay link; amount and note filled
+// in) and "I paid", a claim the maker confirms. Where the maker allows it, "I'll pay at pickup (cash or card)" is a
+// choice. With no way to pay set up: "Maya will tell you how to pay." Until it's paid, a calm "Not paid yet · $36 ·
+// Pay now" line sits under the title. Pottery Lab never holds the money. /e/<id>?pay=1 (the reminders) opens the step.
 //
 // The words for pickup come from public/pickup.js, the same reader the server, the feed and the emails use. The page
 // reads GET /api/public/drop/:id (never the exact address) and orders through the same reply write as before
@@ -52,6 +58,13 @@
 .dpg .err{color:var(--pl-danger,#A8341A);margin:8px 0 0;min-height:1em}
 .dg-tk{padding:16px;border:1.5px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);display:grid;gap:8px}.dg-tk h2{margin:0;font:600 24px/1.2 var(--pl-font-display,var(--pl-font-text))}.dg-tk p{margin:0}.dg-tk ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}.dg-tk li{display:flex;justify-content:space-between;gap:8px}
 .dg-tk .code{font:600 15px var(--pl-font-mono)}.dg-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.dg-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-ink);background:var(--pl-page);color:var(--pl-ink);font:600 15px var(--pl-font-text);text-decoration:none;cursor:pointer}.dg-btn.pri{background:var(--kit-btn,var(--pl-accent));border-color:var(--kit-btn,var(--pl-accent));color:var(--kit-on-btn,var(--pl-on-accent,#fff))}
+.dg-pay{display:grid;gap:8px;margin:4px 0 0;padding:12px 0 0;border-top:1.5px solid var(--pl-line)}.dg-pay h3{margin:0;font:600 20px/1.25 var(--pl-font-text);scroll-margin-top:16px}.dg-pay h3:focus{outline:none}.dg-pay h3:focus-visible{outline:3px solid var(--pl-focus,var(--pl-accent));outline-offset:2px}
+.dg-pay .pms{display:grid;gap:8px}.dg-pm{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 16px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-ink);background:var(--pl-page);color:var(--pl-ink);font:600 16px/1.2 var(--pl-font-text);text-decoration:none;min-width:0}
+.dg-pm.pri{background:var(--kit-btn,var(--pl-accent));border-color:var(--kit-btn,var(--pl-accent));color:var(--kit-on-btn,var(--pl-on-accent,#fff))}.dg-pm span{min-width:0;overflow-wrap:anywhere}.dg-pm small{font-weight:400;font-size:14px;margin-left:6px;opacity:.9}.dg-pm b{flex:none;font-weight:600}
+.dg-pm:focus-visible,.dg-due a:focus-visible,.dg-pay button:focus-visible{outline:3px solid var(--pl-focus,var(--pl-accent));outline-offset:2px}.dg-pay .alt{display:flex;flex-wrap:wrap;gap:8px}.dg-pay .alt .dg-btn{flex:1 1 160px}
+.dg-pay .t{margin:0;padding:8px 12px;border-radius:var(--pl-r-md,6px);background:var(--pl-sand-soft,#FBF6EE);overflow-wrap:anywhere}.dg-pay .f{margin:0;font-size:14px;color:var(--pl-soft);font-weight:400}.dg-pay .ok{margin:0;font-weight:600}.dg-pay .err{margin:0;min-height:0}.dg-pay .err:empty{display:none}
+.dg-due{min-height:62px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin:0 0 14px;padding:8px 12px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);font-size:15px}.dg-due[hidden]{display:none}.dg-due b{font-weight:600}
+.dg-due a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:var(--pl-r-btn,6px);border:1.5px solid var(--pl-ink);color:var(--pl-ink);font-weight:600;text-decoration:none;background:var(--pl-page)}
 .dg-ex{margin:0 0 12px;padding:10px 12px;border:1.5px dashed var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-sand-soft)}
 .dg-view{position:fixed;inset:0;z-index:9000;background:rgba(15,16,16,.94);display:flex;flex-direction:column}.dg-view .bar{display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff}.dg-view .bar b{flex:1;font:600 16px var(--pl-font-text)}
 .dg-view .bar button,.dg-view .nav{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer}
@@ -80,12 +93,15 @@
     const soldOut = items.length && items.every((x) => x.left === 0), canOrder = !d.paused && !closed && !soldOut && !d.example && !owner;
     const status = d.paused ? ["off", "Orders paused"] : closed ? ["off", "Orders closed"] : soldOut ? ["off", "Sold out"] : ["open", `Open for orders${d.left ? " · " + d.left : ""}`];
     const cover = d.coverPhoto ? `<img src="${esc(d.coverPhoto)}" alt="${esc(d.title)}" width="1600" height="1000" fetchpriority="high" decoding="async">` : (() => { try { const EA = window.EventArt; if (EA && (d.coverArt || !d.cover)) { EA.ensureCss?.(); return EA.cover({ ...e, title: d.title, coverArt: d.coverArt || e.coverArt, activity: "bake" }, { title: "", label: "" }); } } catch {} return d.cover ? `<img src="${esc(d.cover)}" alt="${esc(d.title)}" width="1600" height="1000" decoding="async">` : ""; })();
-    const pay = d.payOnline ? `Pay with ${esc(first)}'s pay link after you order` : "Pay at pickup";
+    const pay = d.payMode === "either" ? `Pay ${esc(first)} ahead, or at pickup` : d.payAhead ? `Pay ${esc(first)} ahead, after you order` : "Pay at pickup";
+    const dueSlot = !!(mine && mine.response !== "no" && d.payAhead && !owner); // their order, on a drop that asks to pay ahead: the line under the title has its room from the first paint
+    const payLine = (t) => d.payMode === "either" ? `Pay${t ? " " + money(t) : ""} ahead once your order is in, or at pickup.` : d.payAhead ? `You pay ${esc(first)}${t ? " " + money(t) : ""} once your order is in.` : `You pay${t ? " " + money(t) : ""} at pickup.`;
     const head = `<div class="dg-cov">${cover}</div>
       <p class="dg-tags"><span class="dg-tag">Order ahead</span><span class="dg-tag ${status[0]}" id="dgStatus">${esc(status[1])}</span></p>
       <h1 class="lk-title">${esc(d.title)}</h1>
       ${h.name ? `<p class="dg-by"><span class="av">${h.avatarUrl ? `<img src="${esc(h.avatarUrl)}" alt="" width="28" height="28">` : esc(first[0] || "")}</span><span>By ${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${esc(h.name)}</a>` : esc(h.name)}</span></p>` : ""}
       <div class="dg-facts facts"><div>${I.cal}<span><b id="dgWhen">${esc(d.pickup)}</b></span></div>${d.area ? `<div>${I.pin}<span>Pick up in ${esc(d.area)}${d.hasAddress ? `. The exact spot comes the day before.` : ""}</span></div>` : ""}${d.orderBy ? `<div>${I.clock}<span>Order by ${esc(d.orderBy)}</span></div>` : ""}<div>${I.tag}<span>${pay}</span></div></div>
+      ${dueSlot ? `<p class="dg-due" id="dgDue" role="status" aria-busy="true"></p>` : ""}
       ${d.note ? `<div class="dg-note"><p style="margin:0">${esc(d.note)}</p><small>${esc(first)}, the maker</small></div>` : ""}
       ${d.allergens ? `<p class="dg-alg" id="dgAlg">${I.info}<span><b>Allergens:</b> ${esc(d.allergens)}</span></p>` : ""}`;
     const ownBar = owner ? `<div class="dg-own" id="dgOwn"><p><b>This is your drop.</b> Guests order on this page. Their orders land in Orders, by pickup time.</p><div class="row"><button type="button" class="dg-btn pri" data-own="orders">See orders</button><button type="button" class="dg-btn" data-own="edit">Edit drop</button><button type="button" class="dg-btn" data-own="share">Copy link</button></div></div>` : "";
@@ -106,14 +122,14 @@
       <label class="f">Your name<input type="text" id="oNm" autocomplete="name" maxlength="80" required></label>
       <label class="f">Email or phone <small>So ${esc(first)} can tell you it's ready.</small><input type="text" id="oCt" autocomplete="email" inputmode="email" maxlength="120" required></label>
       <label class="f">A note for ${esc(first)} <small>Optional</small><textarea id="oNote" maxlength="300" rows="2"></textarea></label>
-      <div class="dg-sum"><div class="tot"><span id="dgCount">Nothing picked yet</span><span id="dgTotal"></span></div><p id="dgPay">${d.payOnline ? `You pay with ${esc(first)}'s pay link once your order is in.` : "You pay at pickup."}</p></div>
+      <div class="dg-sum"><div class="tot"><span id="dgCount">Nothing picked yet</span><span id="dgTotal"></span></div><p id="dgPay">${payLine(0)}</p></div>
       <p class="err" id="oEr" role="alert"></p><button class="go" id="oGo"${canOrder ? "" : " disabled"}>${d.example ? "Example only" : owner ? "Guests order here" : d.paused ? "Orders paused" : closed ? "Orders closed" : soldOut ? "Sold out" : "Place order"}</button></form>`;
     m.innerHTML = top + `<div class="dpg wide"><div class="dg-main">${head}${ownBar}<h2 class="dg-h" id="dgMenu">What's for sale</h2><div class="dg-items">${items.map(card).join("") || `<p class="muted">Nothing listed yet.</p>`}</div></div><div class="dg-side" id="dgSide">${form}</div></div>`;
     const $ = (s) => m.querySelector(s), qty = {};
     const linesNow = () => items.filter((x) => qty[x.i] > 0).map((x) => ({ x, n: qty[x.i] })), cents = (x) => Math.round(x.price * 100);
     const paint = () => { const L = linesNow(), n = L.reduce((a, l) => a + l.n, 0), t = L.reduce((a, l) => a + l.n * cents(l.x), 0);
       $("#dgCount").textContent = n ? `${n} item${n === 1 ? "" : "s"}` : "Nothing picked yet"; $("#dgTotal").textContent = n ? money(t) : "";
-      $("#dgPay").textContent = d.payOnline ? `You pay${t ? " " + money(t) : ""} with ${first}'s pay link once your order is in.` : `You pay${t ? " " + money(t) : ""} at pickup.`;
+      $("#dgPay").innerHTML = payLine(t);
       for (const x of items) { const el = m.querySelector(`.dg-it[data-i="${x.i}"]`); if (!el) continue; const q = qty[x.i] || 0, cap = Math.min(x.max || 20, x.left == null ? 99 : x.left);
         el.querySelector("output").textContent = q; el.querySelector('[data-d="-1"]').disabled = !q; el.querySelector('[data-d="1"]').disabled = !canOrder || q >= cap; } };
     m.addEventListener("click", (ev) => { const b = ev.target.closest(".dg-st [data-d]"); if (b && !$("#dgF")) return; /* the order is in: the ticket replaced the form */ if (b) { const x = items.find((i) => String(i.i) === b.closest(".dg-it").dataset.i); if (!x) return;
@@ -165,23 +181,51 @@
     // ---- after ordering, and coming back later: the order, pickup, pay, calendar ----
     async function ticket(M, fresh) { const side = $("#dgSide"); if (!side) return; m.querySelectorAll(".dg-st [data-d]").forEach((x) => (x.disabled = true));
       const w = P.windowOfSlot(d, M.slot) || (wins.length === 1 ? wins[0] : null), dt = w ? P.dateFor(w, today) : P.firstDate(d, today), wl = w ? P.label(dt ? { ...w, date: dt, day: "" } : w).replace(" · ", ", ") : "";
-      let addr = ""; if (M.rid && M.code && d.hasAddress) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(id)}?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`)).json(); if (a?.ok) addr = a.venueAddr || ""; } catch {} }
-      const lines = M.lines || [], total = +M.total || lines.reduce((a, l) => a + Math.round(l.price * 100) * l.qty, 0), payUrl = d.payOnline && total && e.ticketUrl ? o.payLinkOf(e.ticketUrl, money(total), [M.name, d.title].filter(Boolean).join(" · ")) : "";
+      const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(M.rid || "")}&code=${encodeURIComponent(M.code || "")}`, J = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      // the address (the day before) and how to pay (server/paymethods.js guestPay, server/droppay.js), both before drawing: the page holds still
+      const [A, PJ] = M.rid && M.code ? await Promise.all([d.hasAddress ? J(`/api/public/address/${q}`) : null, d.payAhead ? J(`/api/public/pay/${q}`) : null]) : [null, null];
+      const addr = A?.ok ? A.venueAddr || "" : "";
+      const lines = M.lines || [], total = +M.total || lines.reduce((a, l) => a + Math.round(l.price * 100) * l.qty, 0);
       const where = addr ? ` at ${addr}${d.area ? `, ${d.area}` : ""}` : d.area ? ` in ${d.area}` : "";
-      const st = M.paid ? "Paid. See you at pickup." : M.paidClaim ? `You said you paid. ${first} will check.` : payUrl ? `Pay ${money(total)} with ${first}'s link to finish.` : total ? `Pay ${money(total)} at pickup.` : "";
-      side.innerHTML = `<div class="dg-tk" id="tk" role="status"><h2>${fresh ? "Order placed" : "Your order"}</h2>
+      // where the order stands: paid, claimed, unpaid, pickup (their choice, or the drop's only way), free
+      let PS = !total ? "free" : PJ?.ok ? PJ.state || (PJ.paid ? "paid" : PJ.claimed ? "claimed" : "unpaid") : M.paid ? "paid" : M.paidClaim ? "claimed" : d.payAhead ? "unpaid" : "pickup";
+      const st = !d.payAhead && total ? (PS === "paid" ? "Paid. See you at pickup." : `Pay ${money(total)} at pickup.`) : "";
+      side.innerHTML = `<div class="dg-tk" id="tk" role="status" data-pm="1"><h2>${fresh ? "Order placed" : "Your order"}</h2>
         <p>${wl ? `Pick up ${esc(wl)}${esc(where)}.` : `Pick up${esc(where)}.`}${!addr && d.hasAddress ? " We'll send the exact spot the day before." : ""}</p>
         ${lines.length ? `<ul>${lines.map((l) => `<li><span>${l.qty} × ${esc(l.name)}</span><span>${l.price ? money(Math.round(l.price * 100) * l.qty) : ""}</span></li>`).join("")}${total ? `<li style="font-weight:600;border-top:1px solid var(--pl-line);padding-top:4px"><span>Total</span><span>${money(total)}</span></li>` : ""}</ul>` : M.order ? `<p>${esc(M.order)}</p>` : ""}
         ${M.code ? `<p class="muted">Order <span class="code">#${esc(String(M.code).slice(0, 6))}</span>. Show this at pickup.</p>` : ""}${st ? `<p class="muted" id="tkPay">${esc(st)}</p>` : ""}
-        <div class="dg-btns">${payUrl && !M.paid && !M.paidClaim ? `<a class="dg-btn pri" id="oPay" href="${esc(payUrl)}" target="_blank" rel="noopener">Pay ${money(total)}</a><button type="button" class="dg-btn" id="oPaid" hidden>I paid</button>` : ""}${dt ? `<button type="button" class="dg-btn${payUrl ? "" : " pri"}" id="cal" data-addcal aria-haspopup="dialog">${I.cal}Add to calendar</button>` : ""}</div>
+        ${d.payAhead && total ? `<section class="dg-pay" id="dgPayStep" aria-labelledby="dgPayH"></section>` : ""}
+        <div class="dg-btns">${dt ? `<button type="button" class="dg-btn${d.payAhead && total ? "" : " pri"}" id="cal" data-addcal aria-haspopup="dialog">${I.cal}Add to calendar</button>` : ""}</div>
         <p style="margin-top:6px;font-size:15px"><button type="button" class="dg-btn" id="oCancel" style="min-height:40px;border-color:var(--pl-line-strong)">Can't make it? Cancel order</button></p></div>`;
       side.querySelector("#tk").scrollIntoView({ behavior: fresh ? "smooth" : "auto", block: "nearest" });
       const cal = side.querySelector("#cal"); if (cal) cal.onclick = () => { const it = { eventId: id, title: `Pickup: ${d.title}`, date: dt, place: [addr, d.area, d.city].filter(Boolean).join(", "), ...(w?.start ? { startMs: new Date(`${dt}T${w.start}:00`).getTime(), endMs: new Date(`${dt}T${w.end || w.start}:00`).getTime() + (w.end ? 0 : 3600e3) } : { allDay: true }) };
         const open = () => window.PLAddCal?.open(cal, it); if (window.PLAddCal) open(); else { const s = document.createElement("script"); s.src = "/addcal.js"; s.onload = open; document.head.appendChild(s); } };
-      const oPay = side.querySelector("#oPay"), oPaid = side.querySelector("#oPaid");
-      if (oPay && oPaid) { oPay.addEventListener("click", () => { oPaid.hidden = false; });
-        oPaid.onclick = async () => { oPaid.disabled = true; try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + M.rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": o.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
-          ls.set("encore-rsvp-" + id, JSON.stringify({ ...M, paidClaim: true })); side.querySelector("#tkPay").textContent = `You said you paid. ${first} will check.`; oPay.remove(); oPaid.remove(); } catch { oPaid.disabled = false; oPaid.textContent = "Didn't go through. Try again"; } }; }
+      // ---- the pay step (server/droppay.js): the maker's buttons with the amount, I paid, or I'll pay at pickup ----
+      const step = side.querySelector("#dgPayStep"), due = $("#dgDue");
+      const note = [M.name, d.title].filter(Boolean).join(" · "), own = e.ticketUrl ? o.payLinkOf(e.ticketUrl, money(total), note) : "";
+      const ownLabel = /venmo\.com/i.test(own) ? "Venmo" : /paypal\./i.test(own) ? "PayPal" : /cash\.app/i.test(own) ? "Cash App" : "Pay link";
+      const shown = (m) => (m.k === "venmo" ? "@" + m.handle : m.k === "cashapp" ? "$" + m.handle : m.k === "paypal" ? "paypal.me/" + m.handle : "");
+      const B = [...(own ? [{ k: "own", label: ownLabel, href: own }] : []), ...((PJ?.methods || []).map((x) => ({ ...x, sub: shown(x) })))];
+      const post = async (url, body) => { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rid: M.rid, code: M.code, ...body }) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "That didn't go through. Try again."); return j; };
+      const drawPay = (focus) => { if (!step) return; const amt = money(total), choice = PS === "pickup";
+        if (due) { due.removeAttribute("aria-busy"); due.hidden = PS === "free"; due.innerHTML = PS === "unpaid" ? `<span><b>Not paid yet</b> · ${amt}</span><a href="#dgPayStep" id="dgDueGo">Pay now</a>` : PS === "claimed" ? `<span><b>Paid · thanks.</b> Waiting for ${esc(first)} to confirm.</span>` : PS === "paid" ? `<span><b>Paid · thanks.</b> See you at pickup.</span>` : `<span><b>Paying at pickup</b> · ${amt}</span>`;
+          const go = due.querySelector("#dgDueGo"); if (go) go.onclick = (ev) => { ev.preventDefault(); step.scrollIntoView({ behavior: "smooth", block: "start" }); step.querySelector("h3")?.focus({ preventScroll: true }); }; }
+        if (PS === "paid") { step.innerHTML = `<h3 id="dgPayH" tabindex="-1">Paid · thanks</h3><p class="f">${esc(first)} has your ${amt}. See you at pickup.</p>`; return; }
+        if (PS === "claimed") { step.innerHTML = `<h3 id="dgPayH" tabindex="-1">Paid · thanks</h3><p class="f">You said you paid ${amt}. Waiting for ${esc(first)} to confirm.</p>`; return; }
+        if (choice) { step.innerHTML = `<h3 id="dgPayH" tabindex="-1">Paying at pickup · ${amt}</h3><p class="f">Bring cash or a card for ${esc(first)}. Changed your mind?</p><div class="alt"><button type="button" class="dg-btn" id="dgAhead">Pay now instead</button></div><p class="err" id="dgPayEr" role="alert"></p>`;
+          step.querySelector("#dgAhead").onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { await post("/api/public/drop-pay/" + encodeURIComponent(id), { choice: "ahead" }); PS = "unpaid"; drawPay(true); } catch (x) { b.disabled = false; step.querySelector("#dgPayEr").textContent = x.message; } }; return; }
+        step.innerHTML = `<h3 id="dgPayH" tabindex="-1">${PJ?.changed || (M.paidClaim && PS === "unpaid") ? `Your order changed. Pay ${esc(first)} ${amt}` : `Pay ${esc(first)} ${amt} now`}</h3>
+          ${B.length ? `<p class="f">Tap one to pay ${esc(first)} in their app, with ${amt} filled in. Then come back and tap I paid.</p><div class="pms">${B.map((x, i) => `<a class="dg-pm${i ? "" : " pri"}" data-pm-k="${esc(x.k)}" href="${esc(x.href)}" target="_blank" rel="noopener nofollow"><span>${esc(x.label)}${x.sub ? `<small>${esc(x.sub)}</small>` : ""}</span><b>${amt}</b></a>`).join("")}</div>` : PJ?.text ? "" : `<p class="ok">${esc(first)} will tell you how to pay.</p>`}
+          ${PJ?.text ? `<p class="t">${esc(PJ.text)}</p>` : ""}
+          <div class="alt"><button type="button" class="dg-btn${B.length || PJ?.text ? "" : " pri"}" id="dgPaid">I paid ${amt}</button>${d.payMode === "either" ? `<button type="button" class="dg-btn" id="dgPickup">I'll pay at pickup (cash or card)</button>` : ""}</div>
+          <p class="err" id="dgPayEr" role="alert"></p><p class="f">Payments go straight to ${esc(first)}. Pottery Lab doesn't hold the money.</p>`;
+        const er = step.querySelector("#dgPayEr");
+        step.querySelector("#dgPaid").onclick = async (ev) => { const b = ev.currentTarget; b.disabled = true; try { await post(`/api/public/pay/${encodeURIComponent(id)}/claim`, {}); PS = "claimed"; ls.set("encore-rsvp-" + id, JSON.stringify({ ...M, paidClaim: true })); drawPay(true); } catch (x) { b.disabled = false; er.textContent = x.message; } };
+        const pk = step.querySelector("#dgPickup"); if (pk) pk.onclick = async () => { pk.disabled = true; try { await post("/api/public/drop-pay/" + encodeURIComponent(id), { choice: "pickup" }); PS = "pickup"; drawPay(true); } catch (x) { pk.disabled = false; er.textContent = x.message; } };
+        if (focus) step.querySelector("h3")?.focus({ preventScroll: true }); };
+      drawPay(false);
+      // from a reminder (/e/<id>?pay=1): straight to the pay step
+      if (step && /[?&]pay=1\b/.test(location.search) && !fresh) setTimeout(() => { step.scrollIntoView({ block: "start" }); step.querySelector("h3")?.focus({ preventScroll: true }); }, 60);
       side.querySelector("#oCancel").onclick = async (ev) => { const b = ev.currentTarget; if (!confirm(`Cancel your order? ${first} will see it's cancelled.`)) return; b.disabled = true;
         // with the order's own code (public/invite.html does the same): an order placed on another phone has no key here
         try { const r = await fetch("/api/public/reply/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response: "no", rid: M.rid, code: M.code }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "");
@@ -190,6 +234,7 @@
     if (mine && !owner) { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`;
       const R = o.st?.orderLines ? o.st : await fetch("/api/public/reply/" + q).then((r) => (r.ok ? r.json() : null)).catch(() => null);
       if (R && R.response === "going" && (R.orderLines || []).length) ticket({ ...mine, name: R.name || mine.name, lines: R.orderLines, total: Math.round((+R.orderTotal || 0) * 100), slot: R.slot || mine.slot, order: R.order, paid: !!R.paid, paidClaim: !!R.paidClaim }, false);
-      else if (R && R.response === "going" && mine.order) ticket(mine, false); }
+      else if (R && R.response === "going" && mine.order) ticket(mine, false);
+      else $("#dgDue")?.remove(); /* no order here after all (cancelled, or another phone's) */ }
   };
 })();

@@ -116,7 +116,7 @@
     listeners.add((j) => { if (el.isConnected) draw(j); }); draw(await load()); }
   /** The drop setup: the same line, read only, with Change. */
   async function dropRow(el) { if (!el) return; css(); const draw = (j) => { const L = list(j?.pay);
-      el.innerHTML = `<div class="pm-ed"><p class="pm-ed-h">${L.length ? "Guests pay you through" : "No way to get paid yet"}</p><p class="pm-ed-f" style="color:var(--pl-ink);font-size:15px">${L.length ? esc(L.join(", ")) + ". Leave the link below empty to use these." : "Add Venmo, PayPal or Cash App, or paste a pay link below."}</p><div><button type="button" class="pm-ln" data-pm-edit>${L.length ? "Change" : "Add how you get paid"}</button></div></div>`;
+      el.innerHTML = `<div class="pm-ed"><p class="pm-ed-h">${L.length ? "Guests pay you through" : "No way to get paid yet"}</p><p class="pm-ed-f" style="color:var(--pl-ink);font-size:15px">${L.length ? esc(L.join(", ")) + ". Buyers get these with the amount filled in." : "Add Venmo, PayPal or Cash App so buyers can pay you ahead. Until then they read that you'll tell them how to pay."}</p><div><button type="button" class="pm-ln" data-pm-edit>${L.length ? "Change" : "Add how you get paid"}</button></div></div>`;
       $("[data-pm-edit]", el).onclick = () => sheet(); };
     listeners.add((j) => { if (el.isConnected) draw(j); }); draw(await load()); }
   /** The first method's own page, for a drop's pay link when the host left it empty. */

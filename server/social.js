@@ -12,6 +12,7 @@ import { holdsOf, togetherOf, friendTerms } from "./comewith.js"; // "Come with 
 import { eventTz, zonedMs, hourIn } from "./tz.js";
 import { pottoSettings } from "./reminders.js";
 import { addressOpen } from "./drops.js";
+import { payStateOf } from "./droppay.js"; // an unpaid drop order's day-before email is the pay reminder (server/droppay.js)
 import { newWithHost } from "./tables.js"; // review round 13: the one "New" (first time with this host)
 import { momentKind, momentMaxBytes, videoSeconds, sniffedAs, unreadVideoMaxBytes, MOMENT_MAX_SECONDS, MOMENTS_PER_PERSON, momentsPublic, momentsOnPage } from "./feedvisual.js"; // visual feed: moment rules
 
@@ -387,8 +388,13 @@ export function makeSocial(store, { C, saveBlob }) {
           let sent = 0; const seen = new Set();
           for (const d of S.list("rsvps")) { const r = d.data || {}; if (r.eventId !== x.id || r.response !== "going") continue; const who = lc(r.email || r.phone || d.id); if (seen.has(who)) continue; seen.add(who); let got = false;
             // a drop: the pickup window they picked and, now that it's the day before, the exact spot (server/drops.js addressOpen)
-            if (e.drop && cfg && r.email && canEmail(r.email)) { const w = globalThis.PLPickup.windowOfSlot(e, r.slot), spot = [String(e.venueAddr || "").trim(), e.hood].filter(Boolean).join(", ");
-              sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Pickup tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nYour order from ${hostName} is ready tomorrow.\nPickup: ${w ? globalThis.PLPickup.label(w) : globalThis.PLPickup.line(e, { prefix: "" })}\n${spot ? `Pickup spot: ${spot}\n` : ""}${r.order ? `Your order: ${String(r.order).split(" · ")[0]}\n` : ""}\nCan't make it? Open your order: ${origin}/e/${x.id}` }).catch(() => {}); got = true; }
+            // an unpaid order that asks to pay ahead (server/droppay.js): one day-before email carries the pickup and the pay line,
+            // whichever job sends it first; the other one then leaves it out
+            const ps = e.drop ? payStateOf(e, r) : null, unpaid = ps?.state === "unpaid";
+            if (e.drop && r.payEveMailAt) got = true;
+            else if (e.drop && cfg && r.email && canEmail(r.email)) { const w = globalThis.PLPickup.windowOfSlot(e, r.slot), spot = [String(e.venueAddr || "").trim(), e.hood].filter(Boolean).join(", ");
+              sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Pickup tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nYour order from ${hostName} is ready tomorrow.\nPickup: ${w ? globalThis.PLPickup.label(w) : globalThis.PLPickup.line(e, { prefix: "" })}\n${spot ? `Pickup spot: ${spot}\n` : ""}${r.order ? `Your order: ${String(r.order).split(" · ")[0]}\n` : ""}${unpaid ? `\nYou haven't paid yet: Pay ${hostName} ${ps.amount}: ${origin}/e/${x.id}?pay=1\nPayments go straight to ${hostName}. Pottery Lab doesn't hold the money.\n` : ""}\nCan't make it? Open your order: ${origin}/e/${x.id}` }).catch(() => {}); got = true;
+              if (unpaid) S.update("rsvps/" + d.id, { payEveMailAt: now }); }
             else if (cfg && r.email && canEmail(r.email)) { sendEmail(cfg, { list: "guest", origin, brandWs: x.ws, to: r.email, subject: `Tomorrow: ${title}`, text: `Hi ${first(r.name) || "there"},\n\nSee you ${when}${where ? ` at ${where}` : ""} for ${title}.${(e.bring || []).length ? `\nBring: ${e.bring.join(", ")}.` : ""}\n\nPlans changed? Tap Can't go so ${hostName} knows: ${link}` }).catch(() => {}); got = true; }
             if (sms && PHONE_OK(r.phone) && r.smsOk !== false) { const ok = await sendSms(sms, { to: r.phone, text: `Hi ${first(r.name) || "there"}. Tomorrow: ${title}, ${when}${where ? ` at ${where}` : ""}. Can't go? ${link} Reply STOP to opt out.` }); if (ok.ok) { out.texts++; got = true; } }
             if (got) sent++; }

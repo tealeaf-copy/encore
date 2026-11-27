@@ -27,6 +27,7 @@ import { episodeOf } from "./episodes.js";
 import { vevent, calendar, publicCopy } from "./hooksout.js";
 import { slotLabel } from "./preorder.js";
 import { addressOpen } from "./drops.js";
+import { payStateOf } from "./droppay.js"; // a drop order: Not paid yet, Paid, waiting for the host to confirm
 import "../public/pickup.js"; // a drop's pickup windows, read the same way as every page (globalThis.PLPickup)
 import { typeOf } from "./eventtypes.js"; // the type tag on each row (Pop-up, Pickup, ...)
 
@@ -94,7 +95,9 @@ export function statusOf(kind, ev, reply = null, { going = 0, asking = 0, orders
     return [`Hosting · ${going} in`, asking ? `${asking} asking` : ""].filter(Boolean).join(" · "); }
   if (kind === "saved") return "Saved";
   if (kind === "waitlist") return reply?.response === "requested" ? `Asked · waiting on ${host}` : pos ? `Waitlist #${pos}` : "On the waitlist";
-  if (kind === "pickup" && ev?.drop) { const P = globalThis.PLPickup, w = P.windowOfSlot(ev, reply?.slot), code = String(reply?.code || "").slice(0, 6).toUpperCase(); return [w ? `Pickup ${w.date ? P.span(w) : P.label(w)}` : P.line(ev), code ? `#${code}` : ""].filter(Boolean).join(" · "); }
+  if (kind === "pickup" && ev?.drop) { const P = globalThis.PLPickup, w = P.windowOfSlot(ev, reply?.slot), code = String(reply?.code || "").slice(0, 6).toUpperCase(), ps = payStateOf(ev, reply);
+    const pay = ps.state === "unpaid" ? `Not paid yet · ${ps.amount}` : ps.state === "claimed" ? `Paid · waiting for ${host} to confirm` : ps.state === "paid" ? "Paid" : ps.state === "pickup" && !ps.only ? "Paying at pickup" : "";
+    return [w ? `Pickup ${w.date ? P.span(w) : P.label(w)}` : P.line(ev), code ? `#${code}` : "", over ? "" : pay].filter(Boolean).join(" · "); }
   if (kind === "pickup") { const s = slotLabel(reply?.pickupLabel || reply?.slot || ""); const code = String(reply?.code || "").slice(0, 6).toUpperCase(); return [s ? `Pickup ${s}` : "Pickup", code ? `#${code}` : ""].filter(Boolean).join(" · "); }
   if (reply?.response === "maybe") return reply.interest === "in" ? "In · waiting on the date" : "Maybe";
   if (over && reply?.response === "going" && kind !== "class") return "Went";
@@ -240,6 +243,8 @@ export function makePlans({ store, C, X, kinds = () => null }) {
     const status = statusOf(kind, ev, r, { pos, hostFirst: host, episode: ep, today });
     const main = itemOf({ id, ev, kind, status, place: placeOf(ev, { exact: inn && (!ev.drop || addressOpen(ev, r.slot)) /* a drop's exact spot comes the day before */, say: guestPlace(ws) }), host, date: date !== ev.date ? date : "", time, extra: { rid, in: inn, ...(multiDay(ev) && inn && !((ev.agenda?.sessions || []).length && (ev.planKind === "summit" || ev.kind === "summit")) ? { itinerary: itineraryFor(ev, { exact: true }) } : {}) /* a summit's guests get their own agenda, not the run of show */ } });
     if (multiDay(ev) || ev.itinerary?.length) main.href = `/plans/${encodeURIComponent(id)}`;
+    // a drop order that asks to pay ahead: the banner on Plans ("Not paid yet · $36 · Pay now", public/plans.html)
+    if (ev.drop && inn && !(today && main.date && main.date < today)) { const ps = payStateOf(ev, r); if (["unpaid", "claimed"].includes(ps.state)) main.pay = { state: ps.state, amount: ps.amount, host, href: `/e/${encodeURIComponent(id)}?pay=1` }; }
     const out = [main];
     if (!main.date) return out;
     if (inn && r.slot && !ev.drop && (ev.slots || []).includes(r.slot)) out.push(itemOf({ id, ev, kind: "todo", key: `todo:bring:${id}`, title: bringLine(r.slot), status: `For ${titleOf(ev)}`, date: main.date, time: main.time, ord: -1 }));

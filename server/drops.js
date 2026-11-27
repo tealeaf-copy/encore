@@ -9,6 +9,8 @@ import crypto from "node:crypto";
 import { scopeStore, getWorkspace, allWorkspaceIds, updateWorkspace, claimEvent, workspaceOfEvent, DEFAULT_WS } from "./workspaces.js";
 import { emailConfig, sendEmail } from "./email.js";
 import { foreignBlob } from "./photos.js";
+import { payStateOf, payModeOf, asksAhead, pickupOk, makeDropPay } from "./droppay.js";
+import { payOfWs, hasPay } from "./paymethods.js"; // Orders: nudge a host who asks to be paid ahead with no way to get paid // paying before pickup: where an order stands, reminders
 import "../public/pickup.js"; // the one reader of pickup windows, shared with every page (window.PLPickup)
 const P = () => globalThis.PLPickup;
 
@@ -85,12 +87,14 @@ export function cleanDrop(b = {}, cur = {}) {
   const slots = [...windows.map((w) => P().label(w)), ...loose].filter((s, i, A) => A.indexOf(s) === i).slice(0, 8);
   const area = clean(b.area ?? cur.area, 80);
   if (!area) return { error: "Add the neighborhood people see, like Midtown or Greenpoint." };
-  const pay = ["link", "pickup"].includes(b.pay) ? b.pay : cur.pay || "pickup", payUrl = String(b.payUrl ?? cur.payUrl ?? "").trim();
+  // how they pay (server/droppay.js): ahead, ahead or at pickup, at pickup only. "link" is the older pay-ahead-with-a-link.
+  const pay = ["link", "pickup", "ahead", "either"].includes(b.pay) ? b.pay : cur.pay || "pickup", payUrl = pay === "pickup" ? "" : String(b.payUrl ?? cur.payUrl ?? "").trim();
   if (pay === "link" && !/^https:\/\/[^\s<>"]{3,300}$/i.test(payUrl)) return { error: "Payment links start with https://. Or pick Pay at pickup." };
+  if (payUrl && !/^https:\/\/[^\s<>"]{3,300}$/i.test(payUrl)) return { error: "Payment links start with https://. Or leave it empty to use your Get paid methods." };
   const title = clean(b.title ?? cur.title, 80) || (items.length === 1 ? items[0].name : `${items[0].name} and more`);
   const byDate = DAY_OK(b.orderByDate) ? b.orderByDate : b.orderByDate === "" ? "" : DAY_OK(cur.orderByDate) ? cur.orderByDate : "", byTime = HM.test(b.orderByTime ?? cur.orderByTime ?? "") ? (b.orderByTime ?? cur.orderByTime) : "";
   return { drop: { title, note: clean(b.note ?? cur.note, 240), items, slots, windows, windowCap: cap, area, address: clean(b.address ?? cur.address, 160), always, date: always ? "" : date,
-    orderBy: clean(b.orderBy ?? cur.orderBy, 40), orderByDate: byDate, orderByTime: byDate ? byTime : "", pay, payUrl: pay === "link" ? payUrl : "", allergens: clean(b.allergens ?? cur.allergens, 200),
+    orderBy: clean(b.orderBy ?? cur.orderBy, 40), orderByDate: byDate, orderByTime: byDate ? byTime : "", pay, payUrl, allergens: clean(b.allergens ?? cur.allergens, 200),
     open: b.open != null ? !!b.open : cur.open != null ? !!cur.open : true, repeatWeekly: !always && (b.repeatWeekly != null ? !!b.repeatWeekly : !!cur.repeatWeekly), ...coverOf(b, cur) } };
 }
 
@@ -100,7 +104,7 @@ export function dropEvent(d, host = {}, cur = {}) {
   const first = (d.windows || []).filter((w) => w.date).sort((a, z) => a.date.localeCompare(z.date) || a.start.localeCompare(z.start))[0];
   return { ...cur, name: d.title, pubTitle: d.title, why: d.note, drop: true, preorder: true, casual: true, planKind: "drop", always: d.always, date: first?.date || d.date, startTime: first?.start || "", endTime: first?.end || "",
     slots: d.slots, windows: d.windows || [], windowCap: d.windowCap || 0, orderItems: d.items, priceUnit: "each", price: "", headcount: 0, hood: d.area, meetPoint: "", venueName: "", venueAddr: d.address, city: cur.city || host.city || "",
-    ticketUrl: d.payUrl, ticketNote: d.pay === "pickup" ? "Pay at pickup" : "", orderBy: d.orderBy || (d.orderByDate ? P().day(d.orderByDate) + (d.orderByTime ? " " + P().span({ start: d.orderByTime }) : "") : ""), orderByDate: d.orderByDate, orderByTime: d.orderByTime || "",
+    ticketUrl: d.pay === "pickup" ? "" : d.payUrl || "", ticketNote: d.pay === "pickup" ? "Pay at pickup" : "", payMode: d.pay || "pickup", orderBy: d.orderBy || (d.orderByDate ? P().day(d.orderByDate) + (d.orderByTime ? " " + P().span({ start: d.orderByTime }) : "") : ""), orderByDate: d.orderByDate, orderByTime: d.orderByTime || "",
     allergens: d.allergens || "", ordersPaused: !d.open, repeat: d.repeatWeekly ? "weekly" : "",
     coverPhoto: d.coverPhoto || "", coverSource: d.coverSource || "", coverFocus: d.coverFocus || null, coverArt: d.coverArt || null,
     hostName: host.name || cur.hostName || "", published: true, discoverable: true, unlisted: cur.unlisted ?? false, batchAt: cur.batchAt || Date.now(), updatedAt: Date.now(), createdAt: cur.createdAt || Date.now() };
@@ -110,7 +114,7 @@ export function dropOf(id, e) {
   const windows = (e.windows || []).length ? e.windows : windowsFromSlots(e.slots || [], e.date, e.always);
   return { id, title: e.pubTitle || e.name || "", note: e.why || "", items: (e.orderItems || []).map((x) => ({ id: x.id || "", name: x.name, price: +x.price || 0, desc: x.desc || "", stock: +x.stock || 0, max: +x.max || 6, photo: x.photo || "", photos: (x.photos || []).length ? x.photos : x.photo ? [x.photo] : [] })),
     slots: e.slots || [], windows, windowCap: +e.windowCap || 0, area: e.hood || e.meetPoint || "", address: e.venueAddr || "", always: !!e.always, date: e.date || "", orderBy: e.orderBy || "", orderByDate: e.orderByDate || "", orderByTime: e.orderByTime || "",
-    pay: e.ticketUrl ? "link" : "pickup", payUrl: e.ticketUrl || "", allergens: e.allergens || "", open: !e.ordersPaused, repeatWeekly: e.repeat === "weekly", batchAt: e.batchAt || 0,
+    pay: ["link", "ahead", "either", "pickup"].includes(e.payMode) ? e.payMode : e.ticketUrl ? "link" : "pickup", payUrl: e.ticketUrl || "", allergens: e.allergens || "", open: !e.ordersPaused, repeatWeekly: e.repeat === "weekly", batchAt: e.batchAt || 0,
     coverPhoto: e.coverPhoto || "", coverSource: e.coverSource || "", coverFocus: e.coverFocus || null, coverArt: e.coverArt || null };
 }
 
@@ -155,7 +159,7 @@ export function publicDrop(id, ev, sold, host, bySlot = {}) {
   const windows = P().windowsOf(ev).map((w) => { const label = P().label(w), n = bySlot[label] || 0; return { id: w.id, date: w.date || "", day: w.day || "", start: w.start || "", end: w.end || "", label, full: !!(+w.cap && n >= +w.cap), ...(+w.cap ? { left: Math.max(0, +w.cap - n) } : {}) }; });
   return { id, url: `/e/${encodeURIComponent(id)}`, title: ev.pubTitle || ev.name || "", note: ev.why || "", area: ev.hood || "", slots: ev.slots || [], windows, always: !!ev.always, date: ev.date || "",
     pickup: P().line(ev), left: P().leftLine(items), cover: PHOTO_OK(ev.coverPhoto) ? ev.coverPhoto : items.find((x) => x.photo)?.photo || "", coverPhoto: PHOTO_OK(ev.coverPhoto) ? ev.coverPhoto : "", coverArt: ev.coverArt || null,
-    allergens: ev.allergens || "", orderBy: ev.orderBy || "", orderByDate: ev.orderByDate || "", paused: !!ev.ordersPaused, payAtPickup: !ev.ticketUrl, payOnline: !!ev.ticketUrl, hasAddress: !!String(ev.venueAddr || "").trim(),
+    allergens: ev.allergens || "", orderBy: ev.orderBy || "", orderByDate: ev.orderByDate || "", paused: !!ev.ordersPaused, payMode: payModeOf(ev), payAhead: asksAhead(ev), payAtPickup: !asksAhead(ev) || pickupOk(ev), payOnline: asksAhead(ev), payLink: !!String(ev.ticketUrl || "").trim(), hasAddress: !!String(ev.venueAddr || "").trim(),
     city: ev.city || "", example: !!(ev.example || ev.sample), items,
     ...(host ? { host: { handle: host.handle, name: host.name, avatarUrl: host.theme?.avatarUrl || "" } } : {}) };
 }
@@ -176,7 +180,7 @@ export function shopToDrop(store, C, ws) {
 }
 export function migrateShops(store, C) { let n = 0; for (const ws of allWorkspaceIds()) { try { if (shopToDrop(store, C, ws)) n++; } catch {} } return n; }
 
-export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X }) {
+export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X, replyToken = null }) {
   const bad = (res, message, status = 400, code = "invalid") => res.status(status).json({ code, message });
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   try { migrateShops(store, C); } catch {}
@@ -193,7 +197,7 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
   app.get("/api/host/drops", (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u);
     // a shop set up before drops existed becomes one now (the first time its owner looks)
     try { shopToDrop(store, C, u.ws); } catch {}
-    res.json({ handle: h.handle || "", legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "", items: (h.shop.items || []).filter((x) => x.name).map((x) => ({ name: x.name, price: +x.cents ? x.cents / 100 : "", stock: x.stock || "", photo: x.photo || "" })) } : null,
+    res.json({ handle: h.handle || "", getPaid: hasPay(payOfWs(u.ws)), legacy: h.shop && !h.shop.eventId ? { area: h.shop.where || "", address: h.shop.address || "", slots: h.shop.slots || [], payUrl: h.shop.payUrl || "", title: h.shop.title || "", note: h.shop.note || "", items: (h.shop.items || []).filter((x) => x.name).map((x) => ({ name: x.name, price: +x.cents ? x.cents / 100 : "", stock: x.stock || "", photo: x.photo || "" })) } : null,
       drops: dropsOf(store, u.ws).sort((a, b) => (b.e.createdAt || 0) - (a.e.createdAt || 0)).map(({ id, e }) => ({ ...dropOf(id, e), url: `${publicOrigin(req)}/e/${encodeURIComponent(id)}`, path: `/e/${encodeURIComponent(id)}`, batch: counts(S, id, e) })) }); });
 
   app.post("/api/host/drops", small, (req, res) => { const u = me(req, res); if (!u) return; const { S, h } = mine(u); if (!h.handle) return bad(res, "Set up your page first.");
@@ -239,14 +243,32 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X 
     for (const d of S.list("rsvps")) { const r = d.data || {}, ev = D.get(r.eventId); if (!ev || !(r.orderLines || []).length || !["going", "no"].includes(r.response)) continue;
       const cents = (r.orderLines || []).reduce((a, l) => a + Math.round((+l.price || 0) * 100) * (+l.qty || 0), 0);
       const status = r.orderStatus || (r.response === "no" ? "cancelled" : r.checkedInAt ? "picked" : r.paid ? "paid" : "new");
-      out.push({ id: d.id, src: "drop", eventId: r.eventId, drop: ev.pubTitle || ev.name || "", code: String(r.code || d.id).slice(0, 6).toUpperCase(), name: r.name || "", email: r.email || "", phone: r.phone || "", slot: r.slot || r.pickupLabel || "", note: r.orderNote || "",
+      const ps = payStateOf(ev, r); // Paid, Claimed, Not paid, at pickup (server/droppay.js)
+      out.push({ id: d.id, src: "drop", eventId: r.eventId, drop: ev.pubTitle || ev.name || "", pay: ps.state, payChoice: r.payChoice || "", payAhead: ps.ahead, reminded: (r.payReminders || []).length, payChanged: !!ps.changed, code: String(r.code || d.id).slice(0, 6).toUpperCase(), name: r.name || "", email: r.email || "", phone: r.phone || "", slot: r.slot || r.pickupLabel || "", note: r.orderNote || "",
         lines: r.orderLines.map((l) => ({ name: l.name, qty: +l.qty || 0, cents: Math.round((+l.price || 0) * 100) })), total: cents, totalText: money(cents), status, at: +r.orderAt || +r.createdAt || 0, current: (+r.orderAt || +r.createdAt || 0) >= (+ev.batchAt || 0) }); }
     return out; };
   app.locals.dropOrders = dropOrders;
+  // ---- paying before pickup (server/droppay.js): Mark paid, Remind unpaid, the buyer's I'll pay at pickup, the reminders ----
+  const DP = makeDropPay({ store, C, X, replyToken, potto: () => app.locals.pottoText }); app.locals.dropPay = DP;
+  app.post("/api/host/drop-orders/:id/paid", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "rsvps/" + clean(req.params.id, 60), r = S.get(p)?.data; if (!r) return bad(res, "No such order.", 404, "not_found");
+    const ev = S.get("events/" + r.eventId)?.data; if (!ev?.drop) return bad(res, "No such order.", 404, "not_found");
+    const on = req.body?.paid !== false, cents = payStateOf(ev, r).cents;
+    // Mark paid: cash at pickup, or confirming a buyer's I paid. Undo takes it back (their claim, if any, stays theirs).
+    S.update(p, on ? { paid: true, paidAt: Date.now(), paidCents: cents } : { paid: false, paidAt: null, paidCents: 0, ...(r.orderStatus === "paid" ? { orderStatus: "new" } : {}) });
+    res.json({ ok: true, pay: payStateOf(ev, S.get(p).data).state }); });
+  app.post("/api/host/drops/:id/remind-unpaid", small, async (req, res) => { const u = me(req, res); if (!u) return; const r = await DP.remindUnpaid(u.ws, clean(req.params.id, 80), Date.now(), publicOrigin(req));
+    if (r.error) return bad(res, r.error, r.status || 400, r.code || "invalid"); res.json(r); });
+  // a buyer chooses how they'll pay, proved by their order's own code: "pickup" (where the host allows it) or back to paying ahead
+  app.post("/api/public/drop-pay/:id", small, (req, res) => { const b = req.body || {}, P0 = X.rsvpProof(clean(req.params.id, 80), String(b.rid || "").slice(0, 80), String(b.code || "").slice(0, 40));
+    if (!P0 || P0.r.response !== "going" || !P0.ev?.drop) return bad(res, "Open your order first.", 403, "not_granted");
+    const choice = b.choice === "pickup" ? "pickup" : "ahead"; if (choice === "pickup" && !pickupOk(P0.ev)) return bad(res, `${P0.ev.hostName ? String(P0.ev.hostName).split(/\s+/)[0] : "The maker"} asks to pay ahead for this one.`, 409, "pay_ahead");
+    P0.S.update("rsvps/" + P0.rid.replace(/[^A-Za-z0-9_-]/g, ""), { payChoice: choice === "pickup" ? "pickup" : "", payChoiceAt: Date.now(), changedAt: Date.now() });
+    res.json({ ok: true, ...payStateOf(P0.ev, P0.S.get("rsvps/" + P0.rid.replace(/[^A-Za-z0-9_-]/g, ""))?.data) }); });
+  if (!process.env.NODE_TEST_CONTEXT) { const t = setInterval(() => DP.runReminders().catch((e) => console.warn("[droppay]", e?.message)), 15 * 60e3); t.unref?.(); }
   app.post("/api/host/drop-orders/:id", small, (req, res) => { const u = me(req, res); if (!u) return; const S = scopeStore(store, u.ws), p = "rsvps/" + clean(req.params.id, 60), r = S.get(p)?.data; if (!r) return bad(res, "No such order.", 404, "not_found");
     const ev = S.get("events/" + r.eventId)?.data; if (!ev?.drop) return bad(res, "No such order.", 404, "not_found");
     const st = ["new", "paid", "ready", "picked", "cancelled"].includes(req.body?.status) ? req.body.status : r.orderStatus || "new";
-    S.update(p, { orderStatus: st, [st + "At"]: Date.now(), ...(st === "paid" ? { paid: true, paidAt: Date.now() } : {}), ...(st === "picked" ? { checkedInAt: Date.now() } : {}), ...(st === "cancelled" ? { response: "no" } : r.response === "no" ? { response: "going" } : {}) });
+    S.update(p, { orderStatus: st, [st + "At"]: Date.now(), ...(st === "paid" ? { paid: true, paidAt: Date.now(), paidCents: payStateOf(ev, r).cents } : {}), ...(st === "picked" ? { checkedInAt: Date.now() } : {}), ...(st === "cancelled" ? { response: "no" } : r.response === "no" ? { response: "going" } : {}) });
     res.json({ ok: true, status: st }); });
   return { dropOrders };
 }

@@ -13373,6 +13373,15 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",watch); else watch(); })();
 </script>
 <script>
+// ---- Home, review round 17: what you're hosting comes first. A host with something coming up sees it right under the
+// composer (who's in, one tap to open it), above the next-step, monthly and Potto cards, not three screens down. ----
+(function(){ const up=()=>{ try{ const v=document.getElementById("view-programs"); if(!v||!window.__wsPersonal) return; const qs=v.querySelector(":scope > #qsPanel"), head=v.querySelector(":scope > .canvas-head"), fc=v.querySelector(":scope > .fcards:not(.past)");
+      if(!qs||!head||!fc||!fc.querySelector(".fcard")) return; if(qs.nextElementSibling!==head) qs.after(head); if(head.nextElementSibling!==fc) head.after(fc); v.classList.add("pl-hosting-first") }catch{} };
+  const go=()=>{ const v=document.getElementById("view-programs"); if(!v) return; up(); new MutationObserver(up).observe(v,{childList:true}) };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
+</script>
+<style>#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+<script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.
 (function(){ const add=(src)=>{ if(document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)) return; const t=document.createElement("script"); t.src=src; t.async=false; document.head.appendChild(t) };

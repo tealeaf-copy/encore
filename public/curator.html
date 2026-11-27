@@ -1,0 +1,47 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/authguard.js"></script>
+<title>Lists · Pottery Lab</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* A curator's page (/@<handle>/lists, server/curation.js): their public lists, followers and one Follow. Private,
+   friends and link lists never show here. */
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{overflow-x:clip}
+body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif}
+a{color:inherit}button{font:inherit;color:inherit}
+.cu{max-width:880px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(140px + env(safe-area-inset-bottom))}
+.cu-top{display:flex;align-items:center;gap:16px;margin:24px 0 8px;flex-wrap:wrap}
+.cu-face{flex:none;width:72px;height:72px;border-radius:50%;border:1.5px solid var(--pl-ink);display:grid;place-items:center;background:var(--c,var(--pl-sand));font:600 28px var(--pl-font-text,"IBM Plex Sans"),system-ui}
+.cu-tx{flex:1;min-width:180px}.cu-tx h1{margin:2px 0 2px;font:600 28px/1.15 var(--pl-font-serif,"IBM Plex Serif"),Georgia,serif;letter-spacing:-.01em;overflow-wrap:anywhere}.cu-tx p{margin:0;color:var(--pl-soft);font-size:15px}
+.cu-lede{margin:8px 0 20px;color:var(--pl-soft);font-size:16px;max-width:560px}
+.cu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:16px}
+.cu-empty{margin:20px 0;padding:20px;border:1.5px dashed var(--pl-line-strong);border-radius:6px;background:var(--pl-surface)}.cu-empty b{display:block;font-size:17px}.cu-empty p{margin:6px 0 12px;color:var(--pl-soft)}
+.cu-own{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+@media (min-width:861px){.cu{padding-top:28px}.cu-tx h1{font-size:32px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<script src="/eventart.js"></script></head><body>
+<main class="cu" id="m" aria-live="polite"><p style="margin-top:40px;color:var(--pl-soft)">Loading…</p></main>
+<script src="/savelist.js"></script><script src="/listpublic.js"></script>
+<script>
+(function () {
+  const P = window.PLLists, esc = P.esc, M = document.getElementById("m"), plural = P.plural;
+  const handle = (/^\/@([a-z0-9][a-z0-9-]{1,29})\/lists$/.exec(location.pathname) || [])[1] || "";
+  const okColor = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : "");
+  let D = null;
+  function draw() { const c = D, lists = c.lists || [];
+    document.title = `${c.name}'s lists · Pottery Lab`;
+    M.innerHTML = `<header class="cu-top"><span class="cu-face" style="--c:${esc(okColor(c.color) || "var(--pl-sand)")}" aria-hidden="true">${esc(String(c.name || "?").slice(0, 1).toUpperCase())}</span>
+        <div class="cu-tx"><span class="pll-k">Lists</span><h1>${esc(c.name)}</h1><p><span id="cuFans">${plural(c.followers || 0, "follower")}</span> · ${plural(lists.length, "public list")}</p></div>
+        ${c.me ? "" : P.btn("curator", c.handle, c.following, { name: c.name, cls: "primary" })}</header>
+      ${c.me ? `${P.strip(c.stats)}<div class="cu-own"><a class="pll-btn" href="/library">Your library</a></div>` : `<p class="cu-lede">Places and nights ${esc(c.name)} picked. Follow to see new lists and what they add, in your feed.</p>`}
+      ${lists.length ? `<div class="cu-grid">${lists.map((l) => P.card(l, { follow: !c.me })).join("")}</div>`
+        : `<div class="cu-empty"><b>${c.me ? "No public lists yet." : `${esc(c.name)} hasn't made a list public yet.`}</b><p>${c.me ? "Open a list in your library and set it to Public. You'll see how it looks first." : "Lists show up here when they do."}</p>${c.me ? `<a class="pll-btn primary" href="/library">Open your library</a>` : `<a class="pll-btn" href="/discover">Find something</a>`}</div>`}`; }
+  document.addEventListener("pl:listfollow", (e) => { if (e.detail.act === "curator" && D && typeof e.detail.followers === "number") { D.followers = e.detail.followers; const f = document.getElementById("cuFans"); if (f) f.textContent = plural(D.followers, "follower"); } });
+  (async () => { const r = await P.api("/api/public/curators/" + encodeURIComponent(handle));
+    if (!r.ok) { document.title = "No lists here · Pottery Lab"; M.innerHTML = `<div class="cu-empty" style="margin-top:40px"><b>No lists here.</b><p>This person may not have public lists, or the link is old.</p><a class="pll-btn" href="/discover">Find something</a></div>`; return; }
+    D = r.j; P.css(); draw(); })();
+})();
+</script>
+<script src="/nav.js"></script><script src="/shell.js"></script>
+</body></html>

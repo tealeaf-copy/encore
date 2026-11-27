@@ -729,7 +729,7 @@ export function createApp({ store, dataDir }) {
     // it doesn't handle (paid Ask to join, a pay step, slots, polls, work events, past events) to the full invite at /g#rsvp-<id>
     const meta = `<title>${e(title)} · Pottery Lab</title>
 <meta property="og:type" content="website"><meta property="og:title" content="${e(req.cwOg || title)}"><meta property="og:description" content="${e(desc || "You're invited.")}"><meta property="og:url" content="${e(base + "/e/" + id)}"><meta property="og:site_name" content="Pottery Lab">${img ? `<meta property="og:image" content="${e(img)}">${card || /\/og\/[a-z]+\.png$/.test(img) ? `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image">` : `<meta name="twitter:card" content="summary">`}
-<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}`; // the host's brand kit reaches the light invite with its host (/api/public/event-host), so the page stays small
+<meta name="description" content="${e(desc)}"><link rel="canonical" href="${e(base + "/e/" + id)}">${U?.meta || ""}${ev.drop ? `<style>@media (min-width:900px){html body #m#m#m{max-width:1080px}}</style>` : ""}`; // a drop's order page is wide from the first paint (public/droppage.js widens it when it draws; the page slid sideways) // the host's brand kit reaches the light invite with its host (/api/public/event-host), so the page stays small
     const page = invitePage();
     if (!page) return res.redirect(302, to);
     // signed in, your reply follows your account (the event audit): a reply made on another device is put where this

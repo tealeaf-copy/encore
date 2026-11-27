@@ -42,3 +42,7 @@ select{width:100%;padding:12px 14px;border:1.5px solid var(--pl-line-strong);bor
 
 /* 44px tap targets (round 17) */
 #m a.sl-btn{min-height:44px}#m #out.linkbtn{min-height:44px}
+
+/* the page holds its height while the invite is fetched and drawn: the footer waited at the top of a wide screen and
+   jumped down when the event landed (a layout shift of 0.56 on a drop) */
+main#m{min-height:100vh}

@@ -116,7 +116,7 @@
       $("#dgPay").textContent = d.payOnline ? `You pay${t ? " " + money(t) : ""} with ${first}'s pay link once your order is in.` : `You pay${t ? " " + money(t) : ""} at pickup.`;
       for (const x of items) { const el = m.querySelector(`.dg-it[data-i="${x.i}"]`); if (!el) continue; const q = qty[x.i] || 0, cap = Math.min(x.max || 20, x.left == null ? 99 : x.left);
         el.querySelector("output").textContent = q; el.querySelector('[data-d="-1"]').disabled = !q; el.querySelector('[data-d="1"]').disabled = !canOrder || q >= cap; } };
-    m.addEventListener("click", (ev) => { const b = ev.target.closest(".dg-st [data-d]"); if (b) { const x = items.find((i) => String(i.i) === b.closest(".dg-it").dataset.i); if (!x) return;
+    m.addEventListener("click", (ev) => { const b = ev.target.closest(".dg-st [data-d]"); if (b && !$("#dgF")) return; /* the order is in: the ticket replaced the form */ if (b) { const x = items.find((i) => String(i.i) === b.closest(".dg-it").dataset.i); if (!x) return;
         const cap = Math.min(x.max || 20, x.left == null ? 99 : x.left); qty[x.i] = Math.max(0, Math.min(cap, (qty[x.i] || 0) + +b.dataset.d)); $("#oEr").textContent = ""; paint(); return; }
       const v = ev.target.closest("[data-view]"); if (v) { const x = items.find((i) => String(i.i) === v.dataset.view); if (x) viewer(x); } });
     paint();
@@ -163,7 +163,7 @@
         ticket(M, true); }
       catch (err) { er.textContent = /fetch|load failed|network/i.test(err.message) ? "That didn't go through. Check your connection and try again." : err.message; go.disabled = false; go.textContent = "Place order"; } };
     // ---- after ordering, and coming back later: the order, pickup, pay, calendar ----
-    async function ticket(M, fresh) { const side = $("#dgSide"); if (!side) return;
+    async function ticket(M, fresh) { const side = $("#dgSide"); if (!side) return; m.querySelectorAll(".dg-st [data-d]").forEach((x) => (x.disabled = true));
       const w = P.windowOfSlot(d, M.slot) || (wins.length === 1 ? wins[0] : null), dt = w ? P.dateFor(w, today) : P.firstDate(d, today), wl = w ? P.label(dt ? { ...w, date: dt, day: "" } : w).replace(" · ", ", ") : "";
       let addr = ""; if (M.rid && M.code && d.hasAddress) { try { const a = await (await fetch(`/api/public/address/${encodeURIComponent(id)}?rid=${encodeURIComponent(M.rid)}&code=${encodeURIComponent(M.code)}`)).json(); if (a?.ok) addr = a.venueAddr || ""; } catch {} }
       const lines = M.lines || [], total = +M.total || lines.reduce((a, l) => a + Math.round(l.price * 100) * l.qty, 0), payUrl = d.payOnline && total && e.ticketUrl ? o.payLinkOf(e.ticketUrl, money(total), [M.name, d.title].filter(Boolean).join(" · ")) : "";
@@ -173,7 +173,7 @@
         <p>${wl ? `Pick up ${esc(wl)}${esc(where)}.` : `Pick up${esc(where)}.`}${!addr && d.hasAddress ? " We'll send the exact spot the day before." : ""}</p>
         ${lines.length ? `<ul>${lines.map((l) => `<li><span>${l.qty} × ${esc(l.name)}</span><span>${l.price ? money(Math.round(l.price * 100) * l.qty) : ""}</span></li>`).join("")}${total ? `<li style="font-weight:600;border-top:1px solid var(--pl-line);padding-top:4px"><span>Total</span><span>${money(total)}</span></li>` : ""}</ul>` : M.order ? `<p>${esc(M.order)}</p>` : ""}
         ${M.code ? `<p class="muted">Order <span class="code">#${esc(String(M.code).slice(0, 6))}</span>. Show this at pickup.</p>` : ""}${st ? `<p class="muted" id="tkPay">${esc(st)}</p>` : ""}
-        <div class="dg-btns">${payUrl && !M.paid && !M.paidClaim ? `<a class="dg-btn pri" id="oPay" href="${esc(payUrl)}" target="_blank" rel="noopener">Pay ${money(total)}</a><button type="button" class="dg-btn" id="oPaid" hidden>I paid</button>` : ""}${dt ? `<button type="button" class="dg-btn${payUrl ? "" : " pri"}" id="cal" data-addcal aria-haspopup="menu">${I.cal}Add to calendar</button>` : ""}</div>
+        <div class="dg-btns">${payUrl && !M.paid && !M.paidClaim ? `<a class="dg-btn pri" id="oPay" href="${esc(payUrl)}" target="_blank" rel="noopener">Pay ${money(total)}</a><button type="button" class="dg-btn" id="oPaid" hidden>I paid</button>` : ""}${dt ? `<button type="button" class="dg-btn${payUrl ? "" : " pri"}" id="cal" data-addcal aria-haspopup="dialog">${I.cal}Add to calendar</button>` : ""}</div>
         <p style="margin-top:6px;font-size:15px"><button type="button" class="dg-btn" id="oCancel" style="min-height:40px;border-color:var(--pl-line-strong)">Can't make it? Cancel order</button></p></div>`;
       side.querySelector("#tk").scrollIntoView({ behavior: fresh ? "smooth" : "auto", block: "nearest" });
       const cal = side.querySelector("#cal"); if (cal) cal.onclick = () => { const it = { eventId: id, title: `Pickup: ${d.title}`, date: dt, place: [addr, d.area, d.city].filter(Boolean).join(", "), ...(w?.start ? { startMs: new Date(`${dt}T${w.start}:00`).getTime(), endMs: new Date(`${dt}T${w.end || w.start}:00`).getTime() + (w.end ? 0 : 3600e3) } : { allDay: true }) };
@@ -183,8 +183,9 @@
         oPaid.onclick = async () => { oPaid.disabled = true; try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + M.rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": o.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ paidClaim: true, changedAt: Date.now() }) }); if (!r.ok) throw 0;
           ls.set("encore-rsvp-" + id, JSON.stringify({ ...M, paidClaim: true })); side.querySelector("#tkPay").textContent = `You said you paid. ${first} will check.`; oPay.remove(); oPaid.remove(); } catch { oPaid.disabled = false; oPaid.textContent = "Didn't go through. Try again"; } }; }
       side.querySelector("#oCancel").onclick = async (ev) => { const b = ev.currentTarget; if (!confirm(`Cancel your order? ${first} will see it's cancelled.`)) return; b.disabled = true;
-        try { const r = await fetch("/api/db/doc?path=" + encodeURIComponent("rsvps/" + M.rid), { method: "PATCH", headers: { "Content-Type": "application/json", "x-encore-guest": "1", "x-encore-key": o.gkey(), "x-encore-workspace": ws }, body: JSON.stringify({ response: "no", changedAt: Date.now() }) }); if (!r.ok) throw 0;
-          ls.set("encore-rsvp-" + id, JSON.stringify({ ...M, response: "no" })); location.reload(); } catch { b.disabled = false; b.textContent = "Didn't go through. Try again"; } }; }
+        // with the order's own code (public/invite.html does the same): an order placed on another phone has no key here
+        try { const r = await fetch("/api/public/reply/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response: "no", rid: M.rid, code: M.code }) }); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "");
+          ls.set("encore-rsvp-" + id, JSON.stringify({ ...M, response: "no" })); location.reload(); } catch (x) { b.disabled = false; b.textContent = (x.message ? x.message + " " : "") + "Didn't go through. Try again"; } }; }
     // coming back: their order, not a blank form (asked again with the order's own code)
     if (mine && !owner) { const q = `${encodeURIComponent(id)}?rid=${encodeURIComponent(mine.rid)}&code=${encodeURIComponent(mine.code)}`;
       const R = o.st?.orderLines ? o.st : await fetch("/api/public/reply/" + q).then((r) => (r.ok ? r.json() : null)).catch(() => null);

@@ -189,7 +189,7 @@ export function makeInvites({ store, C, X, P, F = null, seats = null, now: clock
   /** "Fill the empty seats": when people said no and there's room, the likeliest people not yet asked. */
   function fill(ws, id, rows, m) { if (!m.no && !(m.left > 0)) return null; const room = m.seats ? m.seats - m.expect : 0; if (room <= 0 && !m.no) return null; const inPlan = new Set(rows.map((x) => x.p.id));
     const C2 = P.build(ws).filter((p) => !inPlan.has(p.id) && !p.noShows && (p.email || p.phone) && replyRate(p) >= 0.35).sort((a, b) => replyRate(b) - replyRate(a)).slice(0, Math.max(3, Math.min(10, room || m.no)));
-    if (!C2.length) return null; return { text: m.no ? `${m.no} can't make it. ${C2.length === 1 ? "1 more person" : `${C2.length} more people`} could fill the gap.` : `${Math.max(0, room)} seats may go empty. ${C2.length === 1 ? "1 person" : `${C2.length} people`} you haven't asked are likely to say yes.`, ids: C2.map((p) => p.id), people: C2.map((p) => ({ id: p.id, name: p.name, rate: Math.round(replyRate(p) * 100) })) }; }
+    if (!C2.length) return null; return { text: m.no ? `${m.no} can't make it. ${C2.length === 1 ? "1 more person" : `${C2.length} more people`} could fill the gap.` : `${Math.max(0, room)} spots may go empty. ${C2.length === 1 ? "1 person" : `${C2.length} people`} you haven't asked are likely to come.`, ids: C2.map((p) => p.id), people: C2.map((p) => ({ id: p.id, name: p.name, rate: Math.round(replyRate(p) * 100) })) }; }
 
   /** Everything the Invite tab draws. */
   function summary(ws, id, role = "manage") {

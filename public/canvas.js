@@ -300,7 +300,7 @@
   addEventListener("resize", () => { try { if (S?.el) fitKinds(); } catch {} });
   function sectionBlock(s, i) { return `<section class="cv-blk cv-own" data-sec="${i}"><header>${SX().svg(s.icon)}<h3>${esc(s.title || "A note")}</h3><button type="button" class="cv-rm cv-ed" data-secedit="${i}" aria-label="Edit ${esc(s.title || "section")}">${I.pen}</button></header>${s.body ? `<p>${esc(s.body).replace(/\n/g, "<br>")}</p>` : ""}</section>`; }
   function pills(W) { const n = (W.questions || []).length || (W.askQ ? 1 : 0);
-    return [["questions", I.q, n ? `Questions (${n})` : "Add questions", n > 0], ["reminders", I.bell, "Reminders", W.autoRemind !== false], ["approval", I.lock, "Require approval", !!W.approvalRequired], ["more", I.more, "More", false]]
+    return [["questions", I.q, n ? `Questions (${n})` : "Add questions", n > 0], ["reminders", I.bell, "Reminders", W.autoRemind !== false], ["approval", I.lock, "Ask to join", !!W.approvalRequired], ["more", I.more, "More", false]]
       .map(([k, ic, t, on]) => `<button type="button" class="cv-pill${on ? " on" : ""}" data-qa="${k}">${on && k !== "questions" ? I.check : ic}<span>${t}</span></button>`).join(""); }
 
   // the link preview friends see in a chat, drawn live (unfurlOf above mirrors the server's meta tags)
@@ -511,7 +511,7 @@
       else { Sh.$("#cvQb").innerHTML = `<label class="cv-f">A question<input id="cvAsk" value="${esc(W.askQ || "")}" placeholder="Anything you don't eat?" maxlength="120"></label>`; Sh.$("#cvAsk").oninput = (e) => { W.askQ = e.target.value; changed(); }; } return; }
     if (k === "reminders") { const Sh = sheet({ title: "Reminders", body: sw("cvRem", W.autoRemind !== false, "Remind guests the day before", "Everyone who's in gets a short note with the time and place.") + `<p class="cv-hint">You can also message guests any time from your event.</p>`, foot: done(), onClose: refresh });
       Sh.$("[data-done]").onclick = Sh.close; wireSw(Sh, "cvRem", (v) => { W.autoRemind = v; changed(); }); return; }
-    if (k === "approval") { const Sh = sheet({ title: "Require approval", body: sw("cvAppr", !!W.approvalRequired, "I let each guest in", "Guests ask to join. You see who they are and say yes.") + sw("cvHideG", !W.hideGuests, "Show who's going", "Guests who are in see each other's first names."), foot: done(), onClose: () => draw() });
+    if (k === "approval") { const Sh = sheet({ title: "Ask to join", body: sw("cvAppr", !!W.approvalRequired, "I let each guest in", "Guests ask to join. You see who they are and let them in, or not this time.") + sw("cvHideG", !W.hideGuests, "Show who's going", "Guests who are in see each other's first names."), foot: done(), onClose: () => draw() });
       Sh.$("[data-done]").onclick = Sh.close; wireSw(Sh, "cvAppr", (v) => { W.approvalRequired = v; changed(); }); wireSw(Sh, "cvHideG", (v) => { W.hideGuests = !v; changed(); }); return; }
     if (k === "more") return moreSheet(); }
   const rows = (R) => R.map(([k, t, s]) => `<button type="button" class="cv-rowbtn" data-row="${k}"><span><b>${esc(t)}</b><small>${esc(s)}</small></span>${I.chev}</button>`).join("");
@@ -536,7 +536,7 @@
     if (k === "classic") { leave(() => { root.__hvClassic = true; const h = document.getElementById("hv"); if (h) h.hidden = true; try { root.HostEvent?.useDraft?.(getDraft()); app("renderStep")?.(); } catch {} }); return; }
     if (k === "questions" || k === "reminders" || k === "approval") return quick(k); }
   function settingsSheet() { const W = S.W, saved = !!S.orig?.id, n = (W.questions || []).length;
-    const R = [["questions", "Questions for guests", n ? `${n} question${n > 1 ? "s" : ""}` : "None yet"], ["reminders", "Reminders", W.autoRemind !== false ? "The day before" : "Off"], ["approval", "Require approval", W.approvalRequired ? "You let each guest in" : "Anyone with the link can say yes"],
+    const R = [["questions", "Questions for guests", n ? `${n} question${n > 1 ? "s" : ""}` : "None yet"], ["reminders", "Reminders", W.autoRemind !== false ? "The day before" : "Off"], ["approval", "Ask to join", W.approvalRequired ? "You let each guest in" : "Anyone with the link can reply I'm in"],
       ["price", "Price and tickets", priceLine(W)], ["spots", "Spots and waitlist", +W.headcount ? `${+W.headcount} spots` : "No limit"], ["plus", "Plus-ones", +W.plusOnes ? `Up to ${+W.plusOnes} each` : "None"], ["repeat", "Repeat", ({ weekly: "Every week", biweekly: "Every two weeks", monthly: "Every month" })[W.repeat] || "Just once"],
       ["plan", "The plan, day by day", (W.itinerary || []).length ? `${W.itinerary.length} ${W.itinerary.length === 1 ? "item" : "items"}` : saved ? "An itinerary or agenda guests can follow" : "Save first, then lay out the days"],
       ...(saved ? [["tools", "More tools", "Check-in, tables, slots, texting the invite"], ["classic", "Every setting", "The full planner, with every option."]] : [])];

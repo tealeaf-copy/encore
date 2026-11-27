@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script src="/authguard.js"></script>
 <title>A year of hosting · Pottery Lab</title>
-<meta name="description" content="A host's year on Pottery Lab: the gatherings, the people who came, and the ones who came back.">
+<meta name="description" content="A host's year on Pottery Lab: the events, the people who came, and the ones who came back.">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--paper:var(--pl-page);--ink:var(--pl-ink);--smoke:var(--pl-soft);--line:var(--pl-line);--acc:var(--pl-accent)}
@@ -38,22 +38,22 @@
   document.title = `${h.name}'s ${d.year} on Pottery Lab`;
   const av = h.theme.avatarUrl ? `<img src="${esc(h.theme.avatarUrl)}" alt="">` : h.theme.avatarArt && A ? A.svg(h.theme.avatarArt, h.theme.accent, 58) : h.emoji && h.emoji !== "🎉" ? esc(h.emoji) : `<span style="display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--pl-sand);color:var(--pl-ink);font:600 22px/1 var(--sys-display)">${esc(String(first || h.name || "?").charAt(0).toUpperCase())}</span>`;
   const YRS = [...new Set([...(d.years || []), d.year])].sort(), years = YRS.length < 2 ? "" : YRS.map((y) => `<a href="?year=${y}" ${y === d.year ? 'aria-current="page"' : ""}>${y}</a>`).join("");
-  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><h1>${esc(h.name)}</h1><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No gatherings on Pottery Lab in ${d.year}. The first one is the best one to remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
+  if (!d.events) { m.innerHTML = `<div class="card"><div class="who"><span class="av">${av}</span><div><h1>${esc(h.name)}</h1><small>${esc(h.city)}</small></div></div><div class="yr">${d.year}</div><p class="yr-sub">No events on Pottery Lab in ${d.year} yet. The first one is the one people remember.</p></div><div class="actions"><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`; return; }
   const max = Math.max(1, ...d.months), M = "JFMAMJJASOND".split("");
   const share = `${location.origin}/recap/${encodeURIComponent(h.handle)}?year=${d.year}`;
   m.innerHTML = `<div class="card" id="card">
     <div class="who"><span class="av">${av}</span><div><h1>${esc(h.name)}</h1><small>${esc(h.city)}</small></div></div>
     <div class="yr">${d.year}</div><p class="yr-sub">${esc(first)}'s year of <em>hosting</em></p>${window.Potto ? `<span class="potto-c">${window.Potto.svg("cheer", 118)}</span>` : ""}
-    <div class="stats"><div class="st"><b>${d.events}</b><span>${d.events === 1 ? "gathering" : "gatherings"}</span></div><div class="st"><b>${d.guests}</b><span>people came</span></div>
-      <div class="st"><b>${d.returning}</b><span>came back again</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, at best</span></div></div>
-    <div class="bars" aria-label="Gatherings by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>
-    ${d.busiestMonth ? `<p class="line">Busiest month: <b>${esc(d.busiestMonth.month)}</b>, with ${d.busiestMonth.n} ${d.busiestMonth.n === 1 ? "gathering" : "gatherings"}.</p>` : ""}
+    <div class="stats"><div class="st"><b>${d.events}</b><span>${d.events === 1 ? "event" : "events"}</span></div><div class="st"><b>${d.guests}</b><span>${d.guests === 1 ? "guest came" : "guests came"}</span></div>
+      <div class="st"><b>${d.returning}</b><span>came back</span></div><div class="st"><b>${d.longestStreak}</b><span>${d.streakUnit === "month" ? (d.longestStreak === 1 ? "month" : "months") : d.longestStreak === 1 ? "week" : "weeks"} in a row, at most</span></div></div>
+    <div class="bars" aria-label="Events by month">${d.months.map((n) => `<i class="${n ? "" : "z"}" style="height:${Math.max(4, (n / max) * 100)}%" title="${n}"></i>`).join("")}</div><div class="months">${M.map((x) => `<span>${x}</span>`).join("")}</div>
+    ${d.busiestMonth ? `<p class="line">Busiest month: <b>${esc(d.busiestMonth.month)}</b>, with ${d.busiestMonth.n} ${d.busiestMonth.n === 1 ? "event" : "events"}.</p>` : ""}
     ${d.tags.length ? `<div class="tags">${d.tags.map((t) => `<span>${esc(t.label)}<i>×${t.n}</i></span>`).join("")}</div>` : ""}
-    ${d.quote ? `<div class="quote">“${esc(d.quote.love)}”<small>${esc(d.quote.name)}${d.quote.event ? `, after ${esc(d.quote.event)}` : ""}</small></div>` : ""}
+    ${d.quote ? `<div class="quote">"${esc(d.quote.love)}"<small>${esc(d.quote.name)}${d.quote.event ? `, after ${esc(d.quote.event)}` : ""}</small></div>` : ""}
     ${(d.badges || []).length ? `<div class="badges">${d.badges.slice(0, 4).map((b) => `<span>${esc(b.label)}</span>`).join("")}</div>` : ""}
     <div class="brand"><span>pottery lab</span><span>@${esc(h.handle)}</span></div></div>
     <div class="actions"><button type="button" id="shareBtn">Share</button><a class="go" href="/@${encodeURIComponent(h.handle)}">See ${esc(first)}'s page</a></div><div class="years">${years}</div>`;
-  document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Pottery Lab: ${d.events} gatherings, ${d.guests} people.`;
+  document.getElementById("shareBtn").onclick = async () => { const text = `${h.name}'s ${d.year} on Pottery Lab: ${d.events} ${d.events === 1 ? "event" : "events"}, ${d.guests} ${d.guests === 1 ? "guest" : "guests"}.`;
     try { if (navigator.share) { await navigator.share({ title: document.title, text, url: share }); return; } await navigator.clipboard.writeText(share); document.getElementById("shareBtn").textContent = "Link copied"; } catch {} };
 })();
 </script>

@@ -49,8 +49,8 @@ input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #1B1D1C;border-
   fetch(`/api/public/photo-drop/${encodeURIComponent(id)}?${proof}`).then(async (r) => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.message || "This link isn't working."); return j; }).then(draw)
     .catch((e) => { body.innerHTML = `<h1>Hmm.</h1><p class="sub">${esc(e.message)}</p><p><a href="/feed">See what people are hosting</a></p>`; });
   function draw(j) {
-    if (j.noPhotos) { body.innerHTML = `<h1>${esc(j.title)} was no photos</h1><p class="sub">The host asked for no photos at this one, so there's no photo wall. Thanks for coming!</p>`; return; }
-    if (!j.open) { body.innerHTML = `<h1>Photos open after ${esc(j.title)}</h1><p class="sub">Come back the morning after. See you there!</p>`; return; }
+    if (j.noPhotos) { body.innerHTML = `<h1>${esc(j.title)} was no photos</h1><p class="sub">The host asked for no photos at this one, so there's no photo wall. Thanks for coming.</p>`; return; }
+    if (!j.open) { body.innerHTML = `<h1>Photos open after ${esc(j.title)}</h1><p class="sub">Come back the morning after. See you there.</p>`; return; }
     body.innerHTML = `<h1>Add your photos from <em>${esc(j.title)}</em></h1>
       <p class="sub">${esc([day(j.date), j.host?.name ? "hosted by " + j.host.name : ""].filter(Boolean).join(", "))}. ${j.name ? `Thanks for coming, ${esc(j.name)}.` : "Thanks for coming."}</p>
       <div class="drop"><label class="f" for="cap">A caption <small>Optional. Shows under your photos, without emails or phone numbers.</small><input type="text" id="cap" maxlength="120" placeholder="e.g. the dumpling line"></label>

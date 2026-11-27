@@ -61,7 +61,7 @@
         <path d="M70 118c30 8 60 8 90 0" stroke="${accent}" stroke-width="1.5" fill="none" opacity=".6"/>
         <text x="115" y="176" text-anchor="middle" font-family="${SANS}" font-size="8" letter-spacing="2" fill="#9A8A7A">${esc(fit(brand ? up(brand) : "WITH THANKS", 22))}</text></g>
       <g transform="rotate(4 230 120)"><rect x="170" y="50" width="120" height="140" rx="3" fill="#FFFDF8" stroke="#E4D9C8"/>
-        <text font-family="${SCRIPT}" font-size="15" fill="#3B2A20">${wrap(note || "Thank you for everything this year.", 15).map((l, i) => `<tspan x="184" y="${84 + i * 20}">${esc(l)}</tspan>`).join("")}<tspan x="184" y="160">— the team</tspan></text></g></svg>`; }
+        <text font-family="${SCRIPT}" font-size="15" fill="#3B2A20">${wrap(note || "Thank you for everything this year.", 15).map((l, i) => `<tspan x="184" y="${84 + i * 20}">${esc(l)}</tspan>`).join("")}<tspan x="184" y="160">From the team</tspan></text></g></svg>`; }
 
   function photo({ name = "Alex", brand = "", accent = "#5B7FD6", bg = "#F6EFE6", note = "" }) { const sky = mix(accent, 0.55);
     return `<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Instant photo for ${esc(name)}"><rect width="320" height="220" fill="${bg}"/>

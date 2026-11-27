@@ -20,7 +20,7 @@
   // Attendee personas: who shows up, and how. Used on Discover (you) and in the app (your guests).
   const PERSONAS = {
     regular: { name: "The Regular", emoji: "🫶", color: "#E26D8E", line: "Comes back. Knows everyone's name by week three.", host: "Your backbone. Ask them to co-host." },
-    early: { name: "The Early Bird", emoji: "🐣", color: "#E0A030", line: "Says yes first, shows up first, helps set up.", host: "Invite them a day early. Their yes pulls others in." },
+    early: { name: "The Early Bird", emoji: "🐣", color: "#E0A030", line: "Replies first, shows up first, helps set up.", host: "Invite them a day early. Their yes pulls others in." },
     connector: { name: "The Connector", emoji: "🔗", color: "#5B7FD6", line: "Never comes alone. Brings the friend who needed this.", host: "Give them two extra spots. They fill them." },
     contributor: { name: "The Contributor", emoji: "🧺", color: "#3E9C6E", line: "Brings snacks, a speaker, the folding table.", host: "Hand them a slot on the bring list." },
     explorer: { name: "The Explorer", emoji: "🧭", color: "#8C62C9", line: "Tries anything once. New neighborhood, new crowd.", host: "Your best bet for a first-timer event." },

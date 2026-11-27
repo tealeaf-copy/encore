@@ -65,7 +65,7 @@
     const P = ev.qStyle || {}; let i = 0; const el = document.createElement("div"); el.className = "tf"; box.appendChild(el);
     const val = (q) => answers[q.id], has = (q) => { const v = val(q); return Array.isArray(v) ? v.length > 0 : v != null && String(v).trim() !== ""; };
     const draw = (done = false) => { const pct = Math.round(((done ? Q.length : i) / Q.length) * 100);
-      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you!") : "Got it. Now tap Send."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:var(--pl-soft);cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
+      if (done) { el.innerHTML = `<div class="tf-bar"><i style="width:100%"></i></div><div class="tf-done">${window.Potto ? window.Potto.svg("cheer", 96, "Potto cheering") : "🎉"}<b>${preview ? esc(P.thanks || "Got it, thank you.") : "Got it. Now tap Send."}</b><button type="button" class="bk" data-edit style="border:0;background:none;color:var(--pl-soft);cursor:pointer">Change an answer</button></div>`; onDone?.(); return; }
       const q = Q[i], v = val(q), opts = q.options.length ? q.options : q.type === "yesno" ? ["Yes", "No"] : q.type === "emoji" ? ["😐", "🙂", "😍"] : [];
       let input = "";
       if (q.type === "short" || q.type === "instagram" || q.type === "phone") input = `<input type="${q.type === "phone" ? "tel" : "text"}" value="${esc(v ?? "")}" placeholder="${esc(q.placeholder || (q.type === "instagram" ? "@yourhandle" : q.type === "phone" ? "(917) 555 0142" : "Type your answer"))}" maxlength="200">`;

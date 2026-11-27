@@ -13,7 +13,7 @@
   function sheet(h, mine) { style(); const first = window.__encoreShort || window.__encorePerson || String(h.name || "").split(" ")[0].replace(/['’]s$/i, ""); let kind = "cohost";
     const bg = document.createElement("div"); bg.className = "cl-bg"; document.body.appendChild(bg); const close = () => bg.remove(); bg.onclick = (e) => { if (e.target === bg) close(); };
     bg.innerHTML = `<div class="cl" role="dialog" aria-modal="true" aria-label="Suggest a collab"><button class="x" type="button" aria-label="Close">×</button><h2>Suggest a collab</h2>
-      <p>If ${esc(first)} says yes, you'll swap emails.</p>
+      <p>If ${esc(first)} likes the idea, you'll swap emails.</p>
       <form novalidate><div class="kinds" role="group" aria-label="What kind of collab">${KINDS.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === kind}">${esc(l)}</button>`).join("")}</div>
         <label>The idea<textarea name="idea" rows="4" required placeholder="e.g. One night, both our crowds."></textarea></label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Roughly when<input name="when" placeholder="e.g. March"></label><label>Where<input name="city" value="${esc(h.city || "")}"></label></div>
@@ -62,12 +62,12 @@
 
   // the owner's Collabs tab: requests from other hosts (reply, say yes, pass) and the ones you sent
   async function ownerPane(B) { if (!B) return; B.innerHTML = `<p class="muted">Loading…</p>`; let j = {}; try { j = await (await fetch("/api/collabs")).json(); } catch {}
-    const A = window.EncoreAvatars, row = (c) => `<div class="breq ${c.status}"><div style="display:flex;gap:8px;align-items:center">${c.other?.avatarArt && A ? A.svg(c.other.avatarArt, c.other.accent, 28) : ""}<b><a href="/@${esc(c.other?.handle)}" target="_blank" rel="noopener">${esc(c.other?.name || "A host")}</a></b> <small>${esc(c.kindLabel)} · ${c.status === "new" ? (c.incoming ? "New" : "Sent") : c.status === "accepted" ? "Said yes" : "Passed"}</small></div>
+    const A = window.EncoreAvatars, row = (c) => `<div class="breq ${c.status}"><div style="display:flex;gap:8px;align-items:center">${c.other?.avatarArt && A ? A.svg(c.other.avatarArt, c.other.accent, 28) : ""}<b><a href="/@${esc(c.other?.handle)}" target="_blank" rel="noopener">${esc(c.other?.name || "A host")}</a></b> <small>${esc(c.kindLabel)} · ${c.status === "new" ? (c.incoming ? "New" : "Sent") : c.status === "accepted" ? "Accepted" : "Passed"}</small></div>
       <p>${esc(c.idea)}</p>${c.when || c.city ? `<small>${esc([c.when, c.city].filter(Boolean).join(" · "))}</small>` : ""}${c.otherEmail ? `<p><b>Plan it together:</b> <a href="mailto:${esc(c.otherEmail)}">${esc(c.otherEmail)}</a></p>` : ""}
       ${(c.thread || []).map((m) => `<small><b>${esc(m.name)}:</b> ${esc(m.text)}</small>`).join("")}
-      <div class="btns2">${c.incoming && c.status === "new" ? `<button type="button" class="sp-save" data-cla="accept" data-id="${c.id}">Say yes</button><button type="button" class="sp-btn" data-cla="decline" data-id="${c.id}">Pass</button>` : ""}<input data-clm="${c.id}" placeholder="Message ${esc(c.other?.name || "them")}"><button type="button" class="sp-btn" data-cls="${c.id}">Send</button></div></div>`;
+      <div class="btns2">${c.incoming && c.status === "new" ? `<button type="button" class="sp-save" data-cla="accept" data-id="${c.id}">Accept</button><button type="button" class="sp-btn" data-cla="decline" data-id="${c.id}">Pass</button>` : ""}<input data-clm="${c.id}" placeholder="Message ${esc(c.other?.name || "them")}"><button type="button" class="sp-btn" data-cls="${c.id}">Send</button></div></div>`;
     const In = j.incoming || [], Out = j.sent || [];
-    B.innerHTML = `<p class="muted" style="margin-top:0">Say yes to swap emails. The collab shows on both pages.</p>
+    B.innerHTML = `<p class="muted" style="margin-top:0">Accept to swap emails. The collab shows on both pages.</p>
       ${In.length ? `<h4>For you</h4>${In.map(row).join("")}` : `<p class="muted">No collab ideas yet.</p>`}${Out.length ? `<h4>Sent</h4>${Out.map(row).join("")}` : ""}`;
     B.querySelectorAll("[data-cla]").forEach((b) => (b.onclick = async () => { b.disabled = true; await fetch(`/api/collabs/${b.dataset.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: b.dataset.cla }) }); ownerPane(B); }));
     B.querySelectorAll("[data-cls]").forEach((b) => (b.onclick = async () => { const i = B.querySelector(`[data-clm="${b.dataset.cls}"]`), text = i.value.trim(); if (!text) return; b.disabled = true; await fetch(`/api/collabs/${b.dataset.cls}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "message", text }) }); ownerPane(B); })); }

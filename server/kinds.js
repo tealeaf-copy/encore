@@ -174,7 +174,7 @@ export function carAction(rec, pid, b = {}) {
   const mine = rec.cars.find((c) => c.driver === pid), act = String(b.action || "");
   if (act === "drive") { const seats = Math.max(1, Math.min(8, Math.round(+b.seats || 3))), note = clean(b.note, 80);
     rec.cars.forEach((c) => (c.riders = (c.riders || []).filter((p) => p !== pid)));
-    if (mine) { if ((mine.riders || []).length > seats) return `${mine.riders.length} people already have a seat. Keep at least ${mine.riders.length}.`; mine.seats = seats; mine.note = note; return ""; }
+    if (mine) { if ((mine.riders || []).length > seats) return `${mine.riders.length} people already have a seat in this car. Keep at least ${mine.riders.length}.`; mine.seats = seats; mine.note = note; return ""; }
     if (rec.cars.length >= 12) return "That's a lot of cars. Twelve is the most."; rec.cars.push({ id: newId(), driver: pid, seats, note, riders: [] }); return ""; }
   if (act === "stop") { if (!mine) return "You're not driving."; rec.cars = rec.cars.filter((c) => c !== mine); return ""; }
   if (act === "leave") { rec.cars.forEach((c) => (c.riders = (c.riders || []).filter((p) => p !== pid))); return ""; }

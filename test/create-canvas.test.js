@@ -103,7 +103,7 @@ test("Wiring: the light invite stays small, the preview is inert, and the app op
   assert.match(html.slice(html.lastIndexOf("\n<script")), /^\n<script>\n\/\/ ---- "Come with me\?"/, "the Come with me? loader stays last");
   assert.ok(html.indexOf('<script src="/canvas.js" defer></script>') < html.lastIndexOf("<script>"));
   const js = read("public/canvas.js");
-  for (const w of ["Untitled event", "More to say?", "New section", "Who can find this event?", "Quick actions for hosts", "Add questions", "Reminders", "Require approval", "Guest view", "Preview as guest", "Only you see this part", "Guests see this page"]) assert.ok(js.includes(w), w);
+  for (const w of ["Untitled event", "More to say?", "New section", "Who can find this event?", "Quick actions for hosts", "Add questions", "Reminders", "Ask to join", "Guest view", "Preview as guest", "Only you see this part", "Guests see this page"]) assert.ok(js.includes(w), w);
   assert.match(js, /root\.ShareKit, H = root\.HostEvent; if \(K\?\.open\) K\.open\(d\); else if \(H\?\.openShare\)/, "the first save opens the share entry");
   assert.match(js, /PhotoSheet/, "the cover pencil opens the shared photo sheet"); assert.match(js, /\/api\/host\/club\/events\//, "fan club only goes through the fan club");
   assert.doesNotMatch(js + read("public/sections.js") + pv, /\u2014/, "no em dashes");

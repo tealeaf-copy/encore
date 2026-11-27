@@ -162,7 +162,7 @@ export const MILESTONES = [
   // the first guest to say yes, before the host has held anything: the moment it turns into a real night (the sheet names the guest, see stateOf)
   { id: "firstyes", test: (s) => s.guests >= 1 && !(s.hosted >= 1), title: "Your first yes.", line: "Someone's coming. It's a real night now." },
   { id: "tenth", test: (s) => s.hosted >= 10, title: "Ten nights hosted.", line: "That's a habit now. A good one." },
-  { id: "soldout", test: (s) => s.soldOut >= 1, title: "Every seat taken.", line: "Your first sold-out night. Someone's on the waitlist wishing they'd been faster." },
+  { id: "soldout", test: (s) => s.soldOut >= 1, title: "Every spot taken.", line: "Your first sold-out night. Someone's on the waitlist wishing they'd been faster." },
   { id: "regular", test: (s) => s.regulars >= 1, title: "You have a regular.", line: "Someone came back a third time. That's the whole point." },
 ];
 /** The next milestone to celebrate (achieved, not seen yet), or null. Pure. */
@@ -175,11 +175,11 @@ export const guideHrefOf = (id) => (GUIDES.some((g) => g.id === GUIDE_OF[id]) ? 
 export const PATH = [
   { id: "dinner4", title: "Dinner for 4", test: (f) => f.hosted >= 1, steps: ["Pick a night two weeks out.", "Ask three people you'd like at the same table.", "Cook one thing well. Buy the rest."] },
   { id: "booked", title: "Book a table for friends", test: (f) => f.tables >= 1, steps: ["Book for the number you expect, not the number you invite.", "Give a reply-by day two days before.", "Call the restaurant when the count moves."] },
-  { id: "table8", title: "A table of 8", test: (f) => f.maxGuests >= 8, steps: ["Invite ten; eight will say yes.", "Seat people next to someone new.", "Send a reminder the day before."] },
+  { id: "table8", title: "A table of 8", test: (f) => f.maxGuests >= 8, steps: ["Invite ten. About eight will be in.", "Seat people next to someone new.", "Send a reminder the day before."] },
   { id: "regular", title: "A regular night", test: (f) => f.hosted >= 3 && f.streakBest >= 3, steps: ["Same day, same time, every month.", "Say the next date out loud at the end.", "Let a regular bring a friend."] },
   { id: "ticketed", title: "Your first ticketed event", test: (f) => f.ticketed >= 1, steps: ["Price to cover costs, then a little.", "Say what the money pays for.", "Keep a few spots for people you know."] },
   { id: "series", title: "A series", test: (f) => f.series >= 1, steps: ["Give it a name people can say.", "Number the episodes.", "Your regulars hear first."] },
-  { id: "soldout", title: "A sold-out night", test: (f) => f.soldOut >= 1, steps: ["Fewer seats than you think.", "Turn on the waitlist.", "Tell the waitlist first next time."] },
+  { id: "soldout", title: "A sold-out night", test: (f) => f.soldOut >= 1, steps: ["Fewer spots than you think.", "Turn on the waitlist.", "Tell the waitlist first next time."] },
   { id: "weekend", title: "A weekend away", test: (f) => f.multiDay >= 1, steps: ["Book the place before the people.", "Share a rough plan, not a schedule.", "Collect money early."] },
   { id: "summit", title: "A summit", test: (f) => f.maxGuests >= 60, steps: ["Start with five speakers you know.", "A host for every room.", "Leave the hallway time long."] },
 ];
@@ -191,7 +191,7 @@ export function loopBadges(base, f, s) {
   const B = (base?.badges || []).slice();
   if (s.restUsed.length && s.count > 0 && s.status !== "repairable") B.push({ id: "rested", label: "Rested and back", why: "Took a rest month and kept hosting" });
   if (s.repaired.length) B.push({ id: "repaired", label: "Picked it back up", why: "Repaired a streak within two weeks" });
-  if (f.soldOut) B.push({ id: "soldout", label: "Sold out once", why: "Every seat taken at least once" });
+  if (f.soldOut) B.push({ id: "soldout", label: "Sold out once", why: "Every spot taken at least once" });
   if (f.regulars) B.push({ id: "regular", label: "Has regulars", why: `${plural(f.regulars, "guest")} came three times or more` });
   if (f.movesDone >= 10) B.push({ id: "moves", label: "Ten small moves", why: "Small things, done often" });
   return B;

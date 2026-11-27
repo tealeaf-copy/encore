@@ -77,7 +77,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
       <label>What is it<input name="title" maxlength="80" placeholder="Dinner for 4"></label>
       <div class="two"><label>When<input name="date" type="date"></label><label>Time<input name="time" type="time" step="900"></label></div>
       <label id="placeL">Where <small>A neighbourhood is enough for now</small><input name="place" maxlength="80" placeholder="My place, Greenpoint"></label>
-      <div><span id="seatsL" style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Seats</span><div class="step"><button type="button" id="less" aria-label="One fewer seat">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more seat">+</button></div></div>
+      <div><span id="seatsL" style="font-weight:600;font-size:15px;display:block;margin-bottom:6px">Spots</span><div class="step"><button type="button" id="less" aria-label="One fewer spot">−</button><output id="seatsOut" aria-live="polite">4</output><button type="button" id="more" aria-label="One more spot">+</button></div></div>
       <label>A line for guests <small>Optional</small><textarea name="note" maxlength="280" placeholder="I'm making dumplings. Bring something to drink."></textarea></label>
       <p class="saved" id="saved" aria-live="polite"></p>
     </form>
@@ -119,7 +119,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
     regular: { chip: "A regular night", title: "First Fridays supper", kind: "Supper club", seats: 8, noun: "supper", note: "Same night every month. Come to one, come to all." },
     ticketed: { chip: "Ticketed", title: "Supper club, seven courses", kind: "Supper club", seats: 12, noun: "supper", note: "$45 covers food. Bring your own bottle." },
     series: { chip: "A series", title: "Hack night #1", kind: "Hack night", seats: 20, time: "18:30", noun: "hack night", note: "Bring a laptop. Ship something small." },
-    soldout: { chip: "Small and full", title: "Dumpling night", kind: "Dinner", seats: 6, noun: "dinner", note: "Six seats. Waitlist after that." },
+    soldout: { chip: "Small and full", title: "Dumpling night", kind: "Dinner", seats: 6, noun: "dinner", note: "Six spots. Waitlist after that." },
     weekend: { chip: "A weekend away", title: "A weekend upstate", kind: "Trip", seats: 8, time: "10:00", days: 2, noun: "weekend", note: "One house, eight people, no schedule." },
     summit: { chip: "A summit", title: "A small summit", kind: "Summit", seats: 80, time: "09:30", noun: "summit", note: "Five talks, long breaks, good coffee." },
     feeler: { chip: "A feeler", title: "Would you come to a dumpling night?", kind: "Feeler", seats: 6, noun: "feeler", note: "Thinking about it for later this month. Reply if you'd come." },
@@ -139,7 +139,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
     return s + (d.endDate ? " to " + new Date(d.endDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", day: "numeric" }) : "") + " · " + ((h % 12) || 12) + (m ? ":" + String(m).padStart(2, "0") : "") + (h < 12 ? "am" : "pm"); };
   function draw() {
     // a booked table: the place is the restaurant, the seats are the party size, and guests get a reply-by day
-    const X = T[t] || {}; $("#placeL").firstChild.textContent = X.place ? X.place + " " : "Where "; $("#seatsL").textContent = X.seatWord || "Seats";
+    const X = T[t] || {}; $("#placeL").firstChild.textContent = X.place ? X.place + " " : "Where "; $("#seatsL").textContent = X.seatWord || "Spots";
     const hold = t === "table" && d.date ? new Date(new Date(d.date + "T12:00:00").getTime() - 2 * 864e5).toLocaleDateString("en-US", { weekday: "long" }) : "";
     $("#cKind").textContent = d.kind || "Dinner"; $("#cTitle").textContent = d.title || T[t].title; $("#cWhen").textContent = fmtWhen(); $("#cWhere").textContent = d.place || (T[t].place ? "The restaurant" : "Somewhere you like"); F.place.placeholder = T[t].placeHint || "My place, Greenpoint";
     $("#cSeats").innerHTML = Array.from({ length: Math.min(24, d.seats) }, () => "<i></i>").join("") + (d.seats > 24 ? `<span class="meta">+${d.seats - 24}</span>` : "");

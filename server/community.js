@@ -366,7 +366,7 @@ export function mountCommunity(app, { X, store, small, json, currentUser, sessio
   // vouch for a guest: send someone who said yes to your event one of your codes, so they can host without waiting
   app.post("/api/codes/vouch", small, async (req, res) => { const u = me(req, res); if (!u) return; if (limited(req, 30)) return res.status(429).json({ code: "rate_limited", message: "Slow down." });
     const b = req.body || {}, eventId = clean(b.eventId, 80), S = scopeStore(store, u.ws); if (!S.get("events/" + eventId)) return res.status(404).json({ code: "not_found", message: "No such event." });
-    const r = S.list("rsvps").map((d) => d.data || {}).find((x) => x.eventId === eventId && x.email && x.email.toLowerCase() === String(b.email || "").toLowerCase() && x.response === "going"); if (!r) return res.status(404).json({ code: "not_found", message: "You can vouch for people who said yes to your event." });
+    const r = S.list("rsvps").map((d) => d.data || {}).find((x) => x.eventId === eventId && x.email && x.email.toLowerCase() === String(b.email || "").toLowerCase() && x.response === "going"); if (!r) return res.status(404).json({ code: "not_found", message: "You can vouch for people who were in at your event." });
     const to = r.email.toLowerCase(); if (C.codesOf(u.email).some((c) => c.sentTo === to)) return res.json({ ok: true, already: true });
     const free = C.codesOf(u.email).find((c) => !c.usedAt && !c.sentTo); if (!free) return res.status(409).json({ code: "conflict", message: "You've used all your host codes. Host another event to earn ten more." });
     store.update("system/code-" + free.code, { sentTo: to, sentAt: Date.now(), vouched: true });

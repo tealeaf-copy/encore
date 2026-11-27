@@ -62,7 +62,7 @@ test("Discover and the homepage reserve space for late sections", () => {
 // /about tells why Pottery Lab exists (docs/about-story.md): the host first, then guests, then brands, in the house voice.
 test("/about: the host's story, four host pillars, three readers, three community rules, the tagline word for word, and plain words", () => {
   const home = read("public/home.html"), text = home.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
-  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>You're the one who always makes the plan\.<\/h1>/);
+  assert.match(home, /<span class="kick">Why we exist<\/span>\s*<h1>Your co-host for every plan\.<\/h1>/);
   // one primary action, worded for a first event; signed in (encore_in) it reads Plan an event
   assert.equal((home.match(/href="\/start" data-plan>Plan your first event<\/a>/g) || []).length, 3, "hero, hosts card and close");
   assert.doesNotMatch(text, /Plan a dinner/);
@@ -79,14 +79,14 @@ test("/about: the host's story, four host pillars, three readers, three communit
   assert.match(home, /<span class="kick">03 · For hosts<\/span>\s*<h2 id="changes">What it does for hosts\.<\/h2>/);
   const order = ["For hosts", "For guests", "For brands"].map((k) => text.indexOf(`<span class="kick">${k}</span>`));
   assert.ok(order.every((i) => i > 0) && order[0] < order[1] && order[1] < order[2], "hosts, then guests, then brands");
-  assert.match(text, /Host memorable experiences, with your fav people\.<\/p><p>We've been the planner\. This is the tool we wished we had\./);
+  assert.match(text, /Your co-host for every plan\.<\/p><p>We've been the planner\. This is the tool we wished we had\./);
   assert.match(text, /where you go to explore, discover and plan out your in-person events and experiences with the people you love/, "the guest line");
   assert.match(text, /<b>Insights:<\/b>[^<]*at least 10 people and 3 events/, "insights name their privacy thresholds (server/insights.js K)");
   for (const h of ["/start", "/feed", "/teams/discover"]) assert.match(text, new RegExp(`<section class="sec end"[\\s\\S]*href="${h}"`), `the close links ${h}`);
   assert.doesNotMatch(text.replace(/<!doctype[^>]*>/i, ""), /—|!|seamless|effortless|unlock|elevate|curated|magical|marketplace|empower|attendees|\bseats\b|per person|journey|ecosystem|game-changer|vibrant|community-driven|we believe/i);
   assert.match(home, /<meta name="description" content="[^"]*host[^"]*">/);
-  assert.match(home, /<meta property="og:title" content="You're the one who always makes the plan/);
-  assert.match(home, /<title>About Pottery Lab · For the one who always makes the plan<\/title>/);
+  assert.match(home, /<meta property="og:title" content="Your co-host for every plan/);
+  assert.match(home, /<title>Pottery Lab · Your co-host for every plan<\/title>/);
 });
 
 test("host pages keep their full width when a series loads the invite stylesheet", () => {

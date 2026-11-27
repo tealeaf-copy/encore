@@ -8,7 +8,8 @@ Pottery Lab is where hosts plan memorable experiences for their favorite people,
 
 It is not a marketplace first. Hosts come first, guests second, brands last.
 
-**Tagline:** Host memorable experiences, with your fav people.
+**Tagline:** Your co-host for every plan.
+**Under it:** Potto brainstorms the idea, finds the time that works for everyone, designs the invite, chases the replies and keeps the group going.
 **Line under it:** We've been the planner. This is the tool we wished we had.
 
 Use both exactly as written. Don't rephrase them.
@@ -239,7 +240,7 @@ The platform owns the frame; the host owns the content inside it.
 ## Examples
 
 **Good**
-- "Host memorable experiences, with your fav people."
+- "Your co-host for every plan."
 - "If you love it, you can host it."
 - "A scrapbook of every event you host."
 - "Found by strangers. Booked by brands."

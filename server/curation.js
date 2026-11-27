@@ -229,7 +229,9 @@ export function mountCuration(app, { store, small, currentUser, C, X, sendStatic
   app.get("/api/me/lists/following", (req, res) => { const u = me(req, res); if (!u) return; res.json(CU.following(u.email)); });
   // Discover's shelf and a host's lists
   app.get("/api/public/lists-popular", (req, res) => { if (slowIp(req, res)) return; const v = em(req); res.set("Cache-Control", v ? "private, no-store" : "public, max-age=60"); res.json({ lists: CU.popular(v) }); });
-  app.get("/api/public/host-lists/:handle", (req, res) => { if (slowIp(req, res)) return; const v = em(req); res.set("Cache-Control", v ? "private, no-store" : "public, max-age=60"); res.json(CU.hostLists(String(req.params.handle || ""), v)); });
+  app.get("/api/public/host-lists/:handle", (req, res) => { if (slowIp(req, res)) return; const v = em(req); res.set("Cache-Control", v ? "private, no-store" : "public, max-age=60"); const h = lc(req.params.handle), r = CU.hostLists(h, v);
+    // one answer for the host page (public/listpublic.js): the lists, I'd go again, and the person's own public lists
+    const cur = HANDLE.test(h) ? CU.curator(h, v) : null; r.curator = cur?.lists?.length ? { name: cur.name, handle: cur.handle, lists: cur.lists.length } : null; r.again = HANDLE.test(h) && C.wsOfHandle(h) ? CU.vouchInfo("host", h, v) : null; res.json(r); });
   // I'd go again: the line for an event or host page, and the tap
   app.get("/api/public/again", (req, res) => { if (slowIp(req, res)) return; res.set("Cache-Control", "private, no-store"); const kind = lc(req.query.kind), ref = kind === "host" ? lc(req.query.ref) : String(req.query.ref || ""), v = em(req);
     if (kind === "event") { const I = X.index(), x = I.events.get(ref), V = app.locals.feedVisual; if (!x || !(V?.cardPublic?.(x.e) || V?.wasThere?.(I, ref, v))) return res.json({ count: 0, line: "", mine: false, can: false }); }
@@ -239,6 +241,10 @@ export function mountCuration(app, { store, small, currentUser, C, X, sendStatic
   app.post("/api/me/again", small, (req, res) => { const u = me(req, res); if (!u) return; if (over("v|" + lc(u.email), 120)) return res.status(429).json({ code: "rate_limited", message: "Slow down." }); send(res, CU.vouch(u.email, req.body?.kind, req.body?.ref, on(req))); });
   // the curator's note on an item, their strip and the nudge
   app.post("/api/me/library/lists/:id/note", small, (req, res) => { const u = me(req, res); if (!u) return; send(res, L.setNote(u.email, String(req.params.id || ""), lc(req.body?.kind), String(req.body?.ref || ""), req.body?.why)); });
+  // before Public: exactly what a stranger will see, and how many things stay hidden (private or link-only events)
+  app.get("/api/me/library/lists/:id/preview", (req, res) => { const u = me(req, res); if (!u) return; const owner = lc(u.email), Lst = L.raw(owner).lists.find((x) => x.id === String(req.params.id || ""));
+    if (!Lst) return res.status(404).json({ code: "not_found", message: "No such list." }); const items = L.publicItems(owner, Lst), all = L.openList("", owner, Lst.id)?.count || items.length, p = CU.person(owner);
+    res.json({ name: Lst.name, note: Lst.note || "", by: first(p.name), handle: p.handle || "", count: items.length, hidden: Math.max(0, all - items.length), covers: L.coverOf(items), items: items.slice(0, 6).map((i) => ({ kind: i.kind, ref: i.ref, title: i.title, img: i.img, art: i.art, why: i.why })) }); });
   app.get("/api/me/lists/stats", (req, res) => { const u = me(req, res); if (!u) return; try { X.ensureProfile(u); } catch {} res.json({ ...CU.stats(u.email), nudge: CU.nudge(u.email) }); });
   app.post("/api/me/lists/nudge", small, (req, res) => { const u = me(req, res); if (!u) return; send(res, CU.dismissNudge(u.email, String(req.body?.id || ""))); });
   return CU;

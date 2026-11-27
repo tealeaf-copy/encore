@@ -50,6 +50,9 @@
     bg.addEventListener("click", (e) => { if (e.target === bg) close(); }); bg.querySelector(".psl-x").onclick = close; document.addEventListener("keydown", key);
     document.body.appendChild(bg); setTimeout(() => (bg.querySelector("input,textarea,[aria-checked],.psl-btn") || bg.querySelector(".psl-x")).focus({ preventScroll: true }), 30);
     return { el: bg, close, $: (s) => bg.querySelector(s), $$: (s) => [...bg.querySelectorAll(s)] }; }
+  // ---- list visibility (server/curation.js): who can see each list, in the words the library uses ----
+  const SHARE_LABEL = { private: "Private", friends: "Friends", link: "Link", public: "Public" };
+  // ---- end list visibility ----
   const toast = (html, go) => { if (window.PLSave?.toast) return window.PLSave.toast(html, go ? { go, goLabel: "Open", ms: 4000 } : { ms: 3500 }); };
 
   // ---- Save to list ----
@@ -59,7 +62,7 @@
     if (!D) { toast("Couldn't open your lists. Try again."); return; }
     const fresh = !D.saved && !D.lists.some((l) => l.has) && !D.shared.some((l) => l.has), on = new Set([...D.lists, ...D.shared].filter((l) => l.has).map((l) => l.id));
     if (fresh && D.last) on.add(D.last); let saved = D.saved || (fresh && D.canSave && !D.last);
-    const row = (l, extra = "") => `<button type="button" class="psl-row" role="checkbox" data-l="${esc(l.id)}" aria-checked="${on.has(l.id)}">${collage(l.covers)}<span class="nm"><b>${esc(l.name)}${l.id === D.last ? `<span class="psl-last">Last used</span>` : ""}</b><small>${esc(extra || (l.share === "private" ? "Private" : l.share === "link" ? "Share link" : "With friends"))} · ${l.count} ${l.count === 1 ? "thing" : "things"}</small></span><span class="psl-ck" aria-hidden="true"></span></button>`;
+    const row = (l, extra = "") => `<button type="button" class="psl-row" role="checkbox" data-l="${esc(l.id)}" aria-checked="${on.has(l.id)}">${collage(l.covers)}<span class="nm"><b>${esc(l.name)}${l.id === D.last ? `<span class="psl-last">Last used</span>` : ""}</b><small>${esc(extra || SHARE_LABEL[l.share] || "Private")} · ${l.count} ${l.count === 1 ? "thing" : "things"}</small></span><span class="psl-ck" aria-hidden="true"></span></button>`;
     const body = `<div class="psl-it"><span class="psl-tile one">${pic(item)}</span><span style="min-width:0"><b>${esc(item.title || "This one")}</b><small>${esc({ event: "Event", host: "Host", club: "Fan club", idea: "Idea", place: "Place" }[item.kind] || "")}</small></span></div>
       ${D.canSave ? `<button type="button" class="psl-row" role="checkbox" data-saved aria-checked="${saved}"><span class="psl-tile one">${HEART}</span><span class="nm"><b>Saved</b><small>Everything you save</small></span><span class="psl-ck" aria-hidden="true"></span></button>` : ""}
       ${D.lists.length ? `<span class="psl-k">Your lists</span>${D.lists.map((l) => row(l)).join("")}` : ""}

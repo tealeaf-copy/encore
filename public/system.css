@@ -87,7 +87,7 @@
 .pl-type--event{--t-bg:var(--pl-type-event-bg);--t-fg:var(--pl-type-event-fg)}
 html body .pl-type{display:inline-flex;align-items:center;gap:5px;flex:none;width:max-content;max-width:100%;min-height:22px;margin:0;padding:2px 7px 2px 6px;box-sizing:border-box;border-radius:6px;background:var(--t-bg,var(--pl-type-event-bg));color:var(--t-fg,var(--pl-type-event-fg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t-fg,#444845) 22%,transparent);font:500 12px/16px var(--pl-font-mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;vertical-align:middle;text-decoration:none;text-shadow:none}
 html body .pl-type>span{overflow:hidden;text-overflow:ellipsis}html body .pl-type .pl-type__i{flex:none;width:14px;height:14px}
-html body .pl-type.pl-type--b{display:flex;margin:0 0 6px}
+html body .pl-type.pl-type--b{display:flex;margin:0 0 6px}html body .fb-media+.pl-type{margin-top:12px}
 .pl-type-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
 /* filter chips in the same colours: quiet until picked, then the type's tint with an ink edge */
 html body .pl-type-chip{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:44px;padding:0 12px;border-radius:6px;border:1.5px solid var(--pl-line);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);cursor:pointer;white-space:nowrap}

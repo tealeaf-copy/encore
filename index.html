@@ -13387,11 +13387,13 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 #signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#signOutM a[style*="none"] + .so-dot{display:none}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
 <!-- round 18 -->
 <script>
-// ---- Review round 18: one top heading per screen. A view that is not on screen keeps its content, so its heading
-// steps down to an h2 while it is hidden and steps back up the moment the view is shown (before the next paint). ----
+// ---- Review round 18: one top heading per screen. A view or panel that is not on screen keeps its content, so its
+// heading steps down to an h2 while it is not drawn and steps back up when it is shown (checked once a frame, before
+// the paint, whenever the app changes). ----
 (function(){ const swap=(el,tag)=>{ const n=document.createElement(tag); for(const a of el.attributes) n.setAttribute(a.name,a.value); while(el.firstChild) n.appendChild(el.firstChild); if(tag==="h2") n.setAttribute("data-h1",""); else n.removeAttribute("data-h1"); el.replaceWith(n) };
-  const tidy=()=>{ try{ for(const v of document.querySelectorAll("main > section.view")){ if(v.hidden) v.querySelectorAll("h1").forEach((h)=>swap(h,"h2")); else v.querySelectorAll("h2[data-h1]").forEach((h)=>swap(h,"h1")) } }catch{} };
-  const go=()=>{ const m=document.querySelector("main"); if(!m) return; tidy(); new MutationObserver(tidy).observe(m,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden"]}) };
+  const tidy=()=>{ queued=false; try{ document.querySelectorAll("main h1,main h2[data-h1]").forEach((h)=>{ const drawn=h.getClientRects().length>0; if(drawn&&h.localName==="h2") swap(h,"h1"); else if(!drawn&&h.localName==="h1") swap(h,"h2") }) }catch{} };
+  let queued=false; const later=()=>{ if(queued) return; queued=true; requestAnimationFrame(tidy) };
+  const go=()=>{ const m=document.querySelector("main"); if(!m) return; tidy(); new MutationObserver(later).observe(m,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style","class"]}) };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go); else go(); })();
 
 // ---- Home, review round 18: one nudge at a time. Potto's list, today's small move, the next step and the playbook

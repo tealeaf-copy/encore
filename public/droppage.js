@@ -31,7 +31,7 @@
 .dg-note{margin:0 0 12px;padding:10px 12px;border-left:3px solid var(--pl-line-strong);background:var(--pl-surface)}.dg-note small{display:block;color:var(--pl-soft);margin-top:4px}
 .dg-alg{display:flex;gap:8px;margin:0 0 14px;padding:10px 12px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-sand-soft,#FBF6EE);font-size:15px}.dg-alg svg{flex:none;margin-top:2px}
 .dg-own{display:grid;gap:8px;margin:0 0 14px;padding:12px;border:1.5px dashed var(--pl-ink);border-radius:var(--pl-r-md,6px);background:var(--pl-surface)}.dg-own p{margin:0}.dg-own .row{display:flex;flex-wrap:wrap;gap:8px}
-.dg-h{font:600 20px/1.25 var(--pl-font-display,var(--pl-font-text));margin:22px 0 10px}
+.dg-h{font:600 20px/1.25 var(--pl-font-text);margin:22px 0 10px}
 .dg-items{display:grid;gap:14px;grid-template-columns:1fr}@media (min-width:560px) and (max-width:899px){.dg-items{grid-template-columns:1fr 1fr}}
 .dg-it{border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);overflow:hidden;display:flex;flex-direction:column}
 .dg-it .ph{position:relative;display:block;width:100%;aspect-ratio:4/3;border:0;padding:0;margin:0;background:var(--pl-sand);cursor:zoom-in;overflow:hidden}.dg-it .ph img{width:100%;height:100%;object-fit:cover;display:block}

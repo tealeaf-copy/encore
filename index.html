@@ -12006,7 +12006,7 @@ async function fvMoments(){ const d=draft, el=document.getElementById("afterPart
 (function(){ try{
   const load=(src,cb)=>{ if(document.querySelector(`script[src="${src}"],script[src^="${src}?"]`)){ cb&&setTimeout(cb,0); return } const t=document.createElement("script"); t.src=src; if(cb) t.onload=cb; document.head.appendChild(t) };
   const q=new URLSearchParams(location.search), signed=/(?:^|;\s*)encore_in=1/.test(document.cookie); if(!signed) return;
-  load("/save.js"); if(location.pathname==="/g"){ load("/friendsgoing.js"); return }
+  load("/save.js"); if(location.pathname==="/g"){ load("/friendsgoing.js"); load("/listpublic.js") /* I'd go again (server/curation.js) */; return }
   if(location.pathname!=="/") return;
   let pend=q.get("idea")||"", fromSignup=false; if(!pend&&(q.get("welcome")||window.__welcome)){ try{ const L=JSON.parse(localStorage.getItem("pl.hostIdea")||"null"); if(L?.id&&Date.now()-(L.at||0)<3*864e5){ pend=L.id; fromSignup=true } }catch{} }
   const ready=(fn)=>{ let n=0; const t=setInterval(()=>{ n++; if(((typeof dbReady!=="undefined"&&dbReady)&&window.__wsDone)||n>60){ clearInterval(t); fn() } },150) };

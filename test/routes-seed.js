@@ -47,7 +47,18 @@ export async function seedRoutes(base) {
     agenda: { tracks: ["Design"], rooms: [{ name: "Main hall", capacity: 80 }], sessions: [{ id: "s1", day: 1, time: "10:00", title: "Keynote", track: "Design", room: "Main hall", speakers: ["sp1"] }] } }), host.cookie);
   const trip = await reply("rtTrip", "kroutestrip1", { name: guest.name, email: guest.email, cookie: guest.cookie });
   await reply("rtSummit", "kroutessumm1", { name: guest.name, email: guest.email, cookie: guest.cookie });
-  return { host, guest, admin, cover, handle: "mai-routes", exp: "dumpling1", open: "rtOpen", past: "rtPast", ask: "rtAsk", today: "rtToday", draft: "rtDraft", openRid: g, pastRid: p, tripRid: trip };
+  // ---- lists people follow (server/curation.js): Sam's public list, a note, I'd go again, Mai follows Sam ----
+  await fetch(base + "/api/me/profile", { headers: { cookie: guest.cookie } });
+  const lst = await (await post("/api/me/library/lists", { name: "Quiet dinners in Brooklyn", note: "Small tables, good talk." }, guest.cookie)).json();
+  for (const [kind, ref, title] of [["event", "rtToday", "Tonight's supper"], ["event", "rtAsk", "Supper by request"], ["event", "rtTable", "Dinner at Lilia"], ["host", "mai-routes", "Mai's Supper Club"], ["event", "rtOpen", "Dumpling night"]]) await post(`/api/me/library/lists/${lst.list.id}/items`, { kind, ref, title }, guest.cookie);
+  await post(`/api/me/library/lists/${lst.list.id}/note`, { kind: "event", ref: "rtOpen", why: "Order the dumplings, sit at the bar." }, guest.cookie);
+  const pub = await (await post(`/api/me/library/lists/${lst.list.id}`, { share: "public" }, guest.cookie)).json();
+  await post("/api/me/again", { kind: "event", ref: "rtPast", on: true }, guest.cookie); await post("/api/me/again", { kind: "host", ref: "mai-routes", on: true }, guest.cookie);
+  const guestHandle = (await (await fetch(base + "/api/me/profile", { headers: { cookie: guest.cookie } })).json()).person?.handle || "";
+  await post(`/api/me/curators/${guestHandle}/follow`, { on: true }, host.cookie);
+  const listToken = String(pub.list?.link || "").slice(3);
+  // ---- end lists ----
+  return { listHandle: guestHandle, listToken, host, guest, admin, cover, handle: "mai-routes", exp: "dumpling1", open: "rtOpen", past: "rtPast", ask: "rtAsk", today: "rtToday", draft: "rtDraft", openRid: g, pastRid: p, tripRid: trip };
 }
 
 // every user-facing page. `as` limits a page to a role ("admin" pages 404 for everyone else, on purpose).
@@ -60,6 +71,7 @@ export function pagesFor(S) {
     // friend invites (server/friendinvites.js): the admin page, and a link that no longer works
     { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA",
     "/import/instagram", "/import/instagram?mode=refresh", { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
+    ...(S.listHandle ? [`/@${S.listHandle}/lists`, "/library"] : []), ...(S.listToken ? [`/l/${S.listToken}`] : []), // lists people follow (server/curation.js)
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }
 

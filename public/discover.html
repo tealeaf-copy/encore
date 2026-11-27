@@ -252,7 +252,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   fetch("/api/public/discover").then((r) => r.json()).then((d) => { data = d; LOADED = true; drawAll(); shelvesIn.then(ready);
     if (QTEXT || PRM.get("lane")) setTimeout(() => $("#evSec").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }).catch(() => { $("#events").innerHTML = `<div class="ls-empty"><b>Couldn't load events.</b><p>Check your connection, then refresh the page.</p></div>`; ready(); });
 })();
-</script><script src="/collections.js" defer></script><script src="/lists.js"></script><script src="/nav.js"></script>
+</script><script src="/collections.js" defer></script><script src="/listpublic.js" defer></script><script src="/lists.js"></script><script src="/nav.js"></script>
 <script src="/shell.js"></script>
 <script>
 // took the guest-type quiz already? show the result instead of asking again

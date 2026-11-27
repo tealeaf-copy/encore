@@ -91,3 +91,9 @@ test("the cover sheet can draw a cover from words: the create canvas offers it a
   assert.match(ps, /opts\.draw && opts\.onChange/, "only where the caller can keep a drawing");
   assert.match(cv, /templates, draw,/); assert.match(cv, /c\.drawn\) Object\.assign\(W, \{ coverPhoto: "", coverSource: "", coverFocus: null, coverArt: \{ kind: "custom", svg: c\.drawn\.svg/);
 });
+
+test("Chats are split into Hosting and Going, coming dates first, past ones folded, with a switch when you have both", () => {
+  const js = read("public/chat.js"), css = read("public/chat.css");
+  assert.match(js, /group\("Hosting", H/); assert.match(js, /H\.length \? "Going" : "Your events"/); assert.match(js, /<details class="ch-past"/); assert.match(js, /data-chseg="\$\{k\}"/);
+  assert.match(css, /\.ch-grp,\.ch-past\{display:block!important/, "groups stack, never sit side by side");
+});

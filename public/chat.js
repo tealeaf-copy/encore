@@ -57,7 +57,7 @@
   window.openChat = (id) => go(String(id || "")); // other code can open a chat in place
 
   // ---- the inbox ----
-  let B = null, q = "";
+  let B = null, q = "", chSeg = (() => { try { return sessionStorage.getItem("pl.chSeg") || "all"; } catch { return "all"; } })();
   async function loadInbox() { let ok = true; try { B = await api("/api/chats", { proofs: proofs() }); } catch { ok = false; B = B || { chats: [] }; } paintRows(); badge(); return ok; }
   function badge() { const n = (B?.chats || []).filter((c) => c.unread > 0).length; window.__plChatsUnread = n; document.title = (n ? `(${n}) ` : "") + "Chats · Pottery Lab"; $$("[data-chats-badge]").forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n); }); try { window.PLChatNav?.set?.(n); } catch {} }
   function rowHTML(c) { const cur = c.id === route.id ? ' aria-current="page"' : "", un = c.unread > 0;
@@ -66,15 +66,21 @@
     return `<a class="ch-row${un ? " unread" : ""}${c.locked ? " locked" : ""}" href="/chats/${encodeURIComponent(c.id)}" data-id="${esc(c.id)}"${cur} aria-label="${esc(c.title)}${un ? `, ${c.unread} new` : ""}">${thumb(c).replace("</span>", faces + "</span>")}
       <span class="ch-rmain"><span class="ch-rtop"><span class="ch-rname">${esc(c.title)}</span><span class="ch-rtime ch-mono">${esc(c.at ? rel(c.at) : "")}</span></span>
       <span class="ch-rlast">${last}${c.muted ? G.mute.replace('class="ch-ic ', 'class="ch-ic ch-muted ') : ""}${un ? `<b class="ch-n">${c.unread > 99 ? "99+" : c.unread}</b>` : ""}</span>
-      ${c.upcoming && c.when ? `<span class="ch-when">${c.role === "host" || c.role === "cohost" ? '<span class="ch-tag">Hosting</span> ' : ""}${esc(c.when)}</span>` : ""}</span></a>`; }
+      ${c.upcoming && c.when ? `<span class="ch-when">${c.role === "cohost" ? '<span class="ch-tag">Co-hosting</span> ' : ""}${esc(c.when)}</span>` : ""}</span></a>`; }
   function paintRows() { const box = $("#chRows"); if (!box || !B) return; const t = q.trim().toLowerCase();
     const L = (B.chats || []).filter((c) => !t || [c.title, c.last?.text, c.last?.by, ...(c.faces || []).map((f) => f.name)].join(" ").toLowerCase().includes(t));
     if (!(B.chats || []).length) { box.innerHTML = `<div class="ch-empty">${window.Potto ? window.Potto.svg("wave", 96, "Potto waving") : ""}<b>No chats yet</b><span>When you're in for an event, its group chat shows up here.</span><a class="ch-btn primary" href="/discover">Find something to do</a>${B.signedIn ? "" : `<a href="/login?next=/chats" style="color:var(--pl-accent-text);font-weight:600;min-height:44px;display:inline-flex;align-items:center">Have an account? Sign in</a>`}</div>`; return; }
     if (!L.length) { box.innerHTML = `<p class="ch-sec" style="justify-content:center">Nothing matches "${esc(q)}"</p>`; return; }
-    const up = L.filter((c) => c.upcoming), past = L.filter((c) => !c.upcoming);
-    box.innerHTML = (up.length ? `<h2 class="ch-sec">Upcoming</h2>${up.map(rowHTML).join("")}` : "") + (past.length ? `<h2 class="ch-sec">Past</h2>${past.map(rowHTML).join("")}` : "") +
+    // two groups: what you're hosting and what you're going to; each shows coming dates first, past ones folded below
+    const hosting = (c) => c.role === "host" || c.role === "cohost", seg = ["all", "hosting", "going"].includes(chSeg) ? chSeg : "all";
+    const H = L.filter(hosting), G = L.filter((c) => !hosting(c)), n = (A) => A.filter((c) => c.unread > 0).length;
+    const tabs = H.length && G.length ? `<div class="ch-seg" role="tablist" aria-label="Show">${[["all", "All", L], ["hosting", "Hosting", H], ["going", "Going", G]].map(([k, lab, A]) => `<button type="button" role="tab" data-chseg="${k}" aria-selected="${seg === k}">${lab}${n(A) ? ` <b class="ch-n">${n(A)}</b>` : ""}</button>`).join("")}</div>` : "";
+    const group = (title, A, sub) => { if (!A.length) return ""; const up = A.filter((c) => c.upcoming), past = A.filter((c) => !c.upcoming);
+      return `<section class="ch-grp"><h2 class="ch-sec">${title}<span class="ch-sec-n">${A.length}</span></h2>${sub ? `<p class="ch-sub">${sub}</p>` : ""}${up.map(rowHTML).join("")}${past.length ? (up.length ? `<details class="ch-past"${t ? " open" : ""}><summary>Past (${past.length})</summary>${past.map(rowHTML).join("")}</details>` : past.map(rowHTML).join("")) : ""}</section>`; };
+    box.innerHTML = tabs + (seg !== "going" ? group("Hosting", H, H.length && G.length ? "" : "") : "") + (seg !== "hosting" ? group(H.length ? "Going" : "Your events", G, "") : "") +
       (B.signedIn ? "" : `<p class="ch-hint">On another phone? <a href="/signup?mode=friends&amp;next=/chats">Make a free account</a> to see your chats anywhere.</p>`); }
   $("#chQ")?.addEventListener("input", (e) => { q = e.target.value; paintRows(); });
+  document.addEventListener("click", (e) => { const sb = e.target.closest?.("[data-chseg]"); if (sb) { chSeg = sb.dataset.chseg; try { sessionStorage.setItem("pl.chSeg", chSeg); } catch {} paintRows(); document.querySelector(`[data-chseg="${chSeg}"]`)?.focus(); } });
   document.addEventListener("click", (e) => { const a = e.target.closest?.(".ch-row[data-id]"); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); go(a.dataset.id); });
 
   // ---- the thread ----

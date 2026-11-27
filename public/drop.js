@@ -88,12 +88,15 @@
   .of-empty{padding:16px;border:1.5px solid var(--line,var(--pl-line,#CFC8B9));border-radius:6px;color:var(--soft,var(--pl-soft,#444845))}`;
   const css = () => { if ($("#dp-css")) return; const s = document.createElement("style"); s.id = "dp-css"; s.textContent = CSS + PCSS; document.head.appendChild(s); };
 
-  function sheet({ title, sub = "", step = 0, of = 0, stepName = "", body, foot = "", label }) { css(); $("#dpSheet")?.remove();
-    const bg = document.createElement("div"); bg.className = "dp-bg"; bg.id = "dpSheet";
+  // a step, or the next sheet in a flow, draws into the sheet that is already open: the backdrop never flashes off and
+  // on between them (one tap, one screen), and focus stays where it was going back to
+  function sheet({ title, sub = "", step = 0, of = 0, stepName = "", body, foot = "", label }) { css(); const old = $("#dpSheet"), keep = old?.__prev;
+    if (old) { old.__key && document.removeEventListener("keydown", old.__key); old.remove(); }
+    const bg = document.createElement("div"); bg.className = "dp-bg" + (old ? " dp-again" : ""); bg.id = "dpSheet";
     bg.innerHTML = `<div class="dp-sheet" role="dialog" aria-modal="true" aria-label="${esc(label || title)}"><div class="dp-hd"><div style="flex:1;min-width:0">${of ? `<p class="dp-step">Step ${step} of ${of} · ${esc(stepName)}</p><div class="dp-bar" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i class="${i < step ? "on" : ""}"></i>`).join("")}</div>` : ""}<h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div><button type="button" class="dp-x" aria-label="Close">${I.x}</button></div><div class="dp-body">${body}</div>${foot ? `<div class="dp-ft">${foot}</div>` : ""}</div>`;
-    document.body.appendChild(bg); const prev = document.activeElement; document.documentElement.style.overflow = "hidden";
+    document.body.appendChild(bg); const prev = keep || document.activeElement; bg.__prev = prev; document.documentElement.style.overflow = "hidden";
     const close = () => { bg.remove(); document.documentElement.style.overflow = ""; document.removeEventListener("keydown", key); try { prev?.focus?.(); } catch {} }, key = (e) => { if (e.key === "Escape" && bg.isConnected) close(); };
-    document.addEventListener("keydown", key); $(".dp-x", bg).onclick = close; bg.addEventListener("mousedown", (e) => { if (e.target === bg) close(); });
+    bg.__key = key; document.addEventListener("keydown", key); $(".dp-x", bg).onclick = close; bg.addEventListener("mousedown", (e) => { if (e.target === bg) close(); });
     setTimeout(() => { if (matchMedia("(pointer:fine)").matches) $(".dp-x", bg)?.focus({ preventScroll: true }); else $(".dp-sheet", bg)?.setAttribute("tabindex", "-1"), $(".dp-sheet", bg)?.focus({ preventScroll: true }); }, 30); return { bg, close, body: $(".dp-body", bg) }; }
 
   // ---- pickup windows: "Sat 9 to 10am", the way the brand writes times ----

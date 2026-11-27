@@ -439,3 +439,9 @@ html body .fc-draft{display:inline-block!important;align-self:flex-start;width:m
 .pl-list__group{margin:var(--pl-space-5) 0 var(--pl-space-1);font:500 13px/1.3 var(--pl-font-mono);letter-spacing:var(--pl-kicker-track,.04em);text-transform:uppercase;color:var(--pl-soft)}
 .pl-intro{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.pl-intro.is-open{display:block;overflow:visible}
 .pl-more{border:0;background:none;padding:0;min-height:44px;font:600 15px var(--pl-font-text);color:var(--pl-accent-text);cursor:pointer}
+
+/* date and time fields: the page's face, a steady height, the value centred (iOS collapses an empty one; Chromium drew
+   mm/dd/yyyy in a monospace) */
+input:is([type=date],[type=time],[type=datetime-local]){font-family:inherit;min-height:44px;line-height:1.25;box-sizing:border-box}
+input:is([type=date],[type=time],[type=datetime-local])::-webkit-date-and-time-value{text-align:left;min-height:1.25em}
+input:is([type=date],[type=time],[type=datetime-local])::-webkit-datetime-edit{font-family:inherit;padding:0}

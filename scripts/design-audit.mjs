@@ -143,11 +143,11 @@ function audit(opts) {
       const kids = [...el.children].filter(vis), byTop = {};
       for (const k of kids) { const kr = k.getBoundingClientRect(); if (kr.height < 60 || kr.width < 80) continue; const key = Math.round(kr.top / 6); (byTop[key] ||= []).push([k, kr]); }
       for (const row of Object.values(byTop)) { if (row.length < 2) continue; const hs = row.map(([, kr]) => kr.height), lo = Math.min(...hs), hi = Math.max(...hs);
-        if (hi - lo > 24 && hi / lo > 1.12 && row.every(([k]) => k.className === row[0][0].className) && once("c" + name(el))) add("cards", el, `cards in one row are ${Math.round(lo)}px to ${Math.round(hi)}px tall`, "low"); }
+        const ws = row.map(([, kr]) => kr.width); if (Math.max(...ws) / Math.min(...ws) < 1.25 && hi - lo > 24 && hi / lo > 1.12 && row.every(([k]) => k.className === row[0][0].className) && once("c" + name(el))) add("cards", el, `cards in one row are ${Math.round(lo)}px to ${Math.round(hi)}px tall`, "low"); }
     }
     if (typeof el.className === "string" && /card/i.test(el.className) && r.height > 100 && (parseFloat(cs.borderTopWidth) > 0 || cs.backgroundColor !== "rgba(0, 0, 0, 0)")) {
       const kids = [...el.children].filter(vis); if (kids.length) { const bottom = Math.max(...kids.map((k) => k.getBoundingClientRect().bottom)), gap = r.bottom - parseFloat(cs.paddingBottom) - parseFloat(cs.borderBottomWidth) - bottom;
-        if (gap > 40 && cs.display !== "grid" && once("g" + name(el))) add("cards", el, `${Math.round(gap)}px of empty card under its content`, "low"); }
+        const pd = el.parentElement ? getComputedStyle(el.parentElement).display : ""; if (gap > 40 && !/grid|flex/.test(pd) && cs.display !== "grid" && once("g" + name(el))) add("cards", el, `${Math.round(gap)}px of empty card under its content`, "low"); }
     }
   }
   // a kit face the page names but never loads draws in the system font instead (the name alone passes the check above);
@@ -165,7 +165,7 @@ function audit(opts) {
     const t = (el.innerText || "").replace(/\s+/g, " ").trim(); if (t.length < 18 || t.length > 260) continue;
     const nodes = textNodes(el); if (!nodes.length) continue;
     const words = []; for (let i = nodes.length - 1; i >= 0 && words.length < 2; i--) { const v = nodes[i].nodeValue, re = /\S+/g; let m; const found = []; while ((m = re.exec(v))) found.push([nodes[i], m.index, m.index + m[0].length, m[0]]); words.unshift(...found.slice(-(2 - words.length))); }
-    if (words.length < 2) continue; const top = ([n, s, e]) => { const rg = document.createRange(); rg.setStart(n, s); rg.setEnd(n, e); const rr = rg.getClientRects()[0]; return rr ? rr.top : null; };
+    if (words.length < 2 || t.split(" ").length <= 3) continue; /* a three-word title balanced onto two lines is fine */ const top = ([n, s, e]) => { const rg = document.createRange(); rg.setStart(n, s); rg.setEnd(n, e); const rr = rg.getClientRects()[0]; return rr ? rr.top : null; };
     const a = top(words[0]), b = top(words[1]); if (a == null || b == null) continue;
     if (b - a > 4 && words[1][3].replace(/[^\p{L}\p{N}]/gu, "").length > 0 && once("w1" + name(el))) add("orphan", el, `last line is one word ("${words[1][3]}")`, "low");
   }

@@ -274,7 +274,8 @@
       ${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
       ${e.drop && e.pickup ? meta(["Order ahead", e.pickup.replace(/^Pickup /, "Pickup "), e.left || e.price]) /* a drop: pickup, never an event date (public/pickup.js) */ : meta([when(e), e.free ? "Free" : e.price, st])}
       <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
-  function blendRecap(r) { // not recapCard: that name is the story viewer's recap slide above, and a second declaration replaced it, so a recap story crashed const key = "fb:" + r.id;
+  // not recapCard: that name is the story viewer's recap slide above, and a second declaration replaced it, so a recap story crashed
+  function blendRecap(r) { const key = "fb:" + r.id;
     REG.set(key, { host: r.host, items: (r.photos || []).map((p, i) => ({ id: "m:" + (p.id || i) + ":" + r.id, type: p.type === "video" ? "video" : "image", url: p.url, poster: p.poster, caption: [r.title, dayOf(r.date, { weekday: "short" })].filter(Boolean).join(" · "), note: p.caption, by: p.by, past: true, cta: r.next ? { label: "I'm in", url: r.next.url } : { label: "Share", url: r.share.url } })) });
     const sub = ["Recap", dayOf(r.date, { weekday: "short", month: "short", day: "numeric" }), r.where].filter(Boolean).join(" · ");
     return `<article class="fb-card fb-recap" data-fv-id="${esc(r.id)}" data-kind="recap">${lead(r.host, sub, { type: "event", target: "event:" + r.id, name: r.title })}

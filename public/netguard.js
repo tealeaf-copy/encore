@@ -47,6 +47,18 @@
     if (!document.body || document.getElementById("plRetry")) return; const b = document.createElement("div"); b.id = "plRetry"; b.setAttribute("role", "status");
     b.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:2147483601;max-width:420px;margin:0 auto;padding:12px 14px;border-radius:6px;background:var(--pl-ink,#1D1B18);color:#fff;font:500 15px/1.35 'IBM Plex Sans',system-ui,sans-serif;text-align:center";
     b.textContent = navigator.onLine === false ? "You're offline. Tap again when you're back." : "That didn't load. Tap it again."; document.body.appendChild(b); setTimeout(() => b.remove(), 4000); }, true);
+  // a floating button (the host page's pencil, a shop's cart) never sits on top of a control: while one is under it, it
+  // steps aside (fades and lets taps through) until the page scrolls on. Pages add their FABs late, so it looks each time.
+  { const FAB = ".store-fab,.shop-fab,.own-fab", CTL = 'a[href],button,input,select,textarea,summary,[role="button"],[tabindex="0"]'; let q = 0;
+    const fixed = (n) => { for (; n && n !== document.body; n = n.parentElement) if (/fixed|sticky/.test(getComputedStyle(n).position)) return true; return false; };
+    const look = () => { q = 0; for (const f of document.querySelectorAll(FAB)) { if (!f.getClientRects().length) continue; const r = f.getBoundingClientRect(); let hit = false;
+      for (const [x, y] of [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]]) {
+        for (const el of document.elementsFromPoint(x, y)) { if (f.contains(el)) continue; const c = el.closest(CTL); if (c && !f.contains(c) && !fixed(c)) { hit = true; break; } } if (hit) break; }
+      f.classList.toggle("pl-fab-dodge", hit); } };
+    const soon = () => { if (!q) q = requestAnimationFrame(look); };
+    addEventListener("scroll", soon, { passive: true }); addEventListener("resize", soon); addEventListener("load", soon);
+    const st = () => { if (document.getElementById("plFabCss")) return; const s = document.createElement("style"); s.id = "plFabCss"; s.textContent = ".pl-fab-dodge{opacity:0!important;pointer-events:none!important;transition:opacity .15s}"; document.head.appendChild(s); };
+    if (document.head) st(); else addEventListener("DOMContentLoaded", st); setTimeout(soon, 1500); }
   // the service worker drew this page from its cache and the fresh copy turned out different in kind: load that one
   try { navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.plReload && e.data.plReload === location.href) location.reload(); }); } catch {}
   const key = () => { try { return crypto.randomUUID(); } catch { return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12); } };

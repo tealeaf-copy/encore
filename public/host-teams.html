@@ -2,7 +2,7 @@
 <title>Bookable for teams · Pottery Lab</title><meta name="description" content="Set up packages for teams, answer requests, get verified and see payouts.">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"><style>.ht-steps{margin-top:20px}.ht-steps li{border-top:3px solid var(--pl-line,#CFC8B9);padding-right:8px}.ht-steps li[aria-current=step]{border-top-color:var(--pl-accent,#29489A)}.ht-steps button{all:unset;cursor:pointer;display:block;width:100%;padding:2px 0;font:inherit;color:inherit}.ht-steps button:focus-visible{outline:3px solid var(--bb-focus,rgba(41,72,154,.3));outline-offset:2px}</style></head>
 <body class="bb"><main class="bb-wrap" id="main" style="max-width:960px"><p class="bb-meta" style="padding-top:24px">Loading…</p></main>
-<script src="/eventart.js"></script><script src="/photosheet.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
+<script src="/eventart.js"></script><script src="/photosheet.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script><script src="/teams-panel2.js"></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("teams", "host");
@@ -13,9 +13,9 @@
   function draw() { const open = REQ.filter((r) => ["requested", "question"].includes(r.status) && !(r.status === "question" && r.respondedAt)).length, s = D.stats;
     main.innerHTML = `<section class="bb-xhead"><p class="bb-kicker">${esc(D.host.name)}</p><h1>Bookable for <em>teams</em></h1><p class="bb-lede">Companies book hosts for offsites, client dinners and celebrations. Set your packages once, then answer requests here.</p>
       <div class="bb-badges">${D.setup.on ? `<span class="bb-badge">${icon("check")}Listed for teams</span>` : `<span class="bb-badge">${icon("minus")}Not listed yet</span>`}${s.trusted ? BB.trustedBadge() : ""}<span class="bb-badge">Quality score <b class="bb-mono">&nbsp;${s.quality}</b></span></div></section>
-      <div class="bb-tabs" role="tablist">${[["inbox", `Requests${open ? ` (${open})` : ""}`], ["confirm", "Confirm"], ["earnings", "Earnings"], ["setup", "Setup"], ["trust", "Trust"], ["payouts", "Payouts"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</div><div id="pane"></div>`;
+      <div class="bb-tabs" role="tablist">${[["inbox", `Requests${open ? ` (${open})` : ""}`], ["confirm", "Confirm"], ["earnings", "Earnings"], ["followers", "Followers"], ["setup", "Setup"], ["trust", "Trust"], ["payouts", "Payouts"]].map(([k, t]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}</div><div id="pane"></div><div id="pane2" class="tp"></div>`;
     $$("[data-tab]").forEach((b) => (b.onclick = () => { tab = b.dataset.tab; history.replaceState(null, "", "#" + tab); draw(); }));
-    ({ inbox, setup, trust, payouts, confirm: () => window.TP?.hostConfirm($("#pane")), earnings: () => window.TP?.hostEarnings($("#pane")) }[tab] || inbox)(); }
+    ({ inbox, setup, trust, payouts, confirm: () => { window.TP?.hostConfirm($("#pane")); window.TP2?.hostExtras($("#pane2")); }, earnings: () => window.TP?.hostEarnings($("#pane")), followers: () => window.TP2?.hostFollowers($("#pane")) }[tab] || inbox)(); }
 
   // ---- the request inbox: accept, suggest a change, decline ----
   function inbox() { const P = $("#pane");

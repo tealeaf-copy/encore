@@ -95,3 +95,14 @@ again), the host's Confirm and Earnings tabs on /host/teams, outcomes and CRM sy
 it's like" on experience pages (`TP.like`). Pages: /teams/hosts, /survey/<token>, /teams/e/<id>?k= (read-only summary),
 /admin/brand-metrics (admins only). Every share shows what it's out of, and a percentage only from 5 answers up. CRM
 setup: docs/crm-sync.md. Tests: `test/brand-panel.test.js`.
+
+## Round 2: recovery, company settings, account dinners, formats and durability
+
+`public/teams-panel2.js` (`window.TP2`) adds the round 2 pieces from `server/brandpanel2.js`, styled by the `tp2-` block in
+`public/teams-panel.css`: recovery and the drill on a booking (`TP2.eventMore`, which also shows pricing lines, the
+rebooking rule, format and room rules, two changes for next time and the tier paragraph), the host's pricing, prep, mix,
+groups and feedback on the /host/teams Confirm tab (`TP2.hostExtras`) and the Followers tab (`TP2.hostFollowers`),
+account approvals and the campaign extras (`TP2.abm`, `TP2.campaignMore`), and "What you keep" on Book again
+(`TP2.keep`). Pages: /teams/company, /teams/formats, /xo/<id>, /founding-hosts, /admin/founding-hosts, plus the
+durability bars on /admin/brand-metrics. Pooled numbers keep the floor of 10 people across 3 events. Tests:
+`test/brand-panel-r2.test.js`.

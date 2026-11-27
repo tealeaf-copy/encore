@@ -81,11 +81,22 @@ export const TOGETHER = {
   roundtable: { label: "Roundtables", line: "Small discussion groups, a question for each course." },
   competition: { label: "A friendly competition", line: "Teams compete instead of sitting through a class." },
   class: { label: "A hands-on class", line: "Everyone makes something, with the host teaching." },
+  standard: { label: "A standard dinner", line: "A seated dinner with no set format." },
 };
 export const CREATIVE = { host: "The host leads the format and the menu", shared: "The host leads, the brand gives a theme", brand: "The brand sets the format, the host runs it" };
 export const INVITES = { brand: "The brand invites all its guests", both: "Both: the brand fills its seats, the host fills theirs", host: "The host invites from their following" };
 export const PHOTOS = { none: "No photos or video", host: "Only the host's recap photos, shared after", consent: "The brand may photograph guests who say yes", open: "The brand may take photos and short video" };
 export const FOLLOWUP = { none: "No follow-up from the brand", consented: "Only guests who agree, within 7 days", sales: "Sales may follow up with guests who agree" };
+/** Room rules, standard on every brief: how many of the brand's own staff are in the room, companies kept out, the brand
+ *  takes part as a guest (not a presenter), and no pitch. */
+export const ROOM_DEFAULTS = { staffCap: 2, competitors: [], asGuest: true, noPitch: true };
+export function cleanRoom(b = {}, cur = ROOM_DEFAULTS) {
+  const c = { ...ROOM_DEFAULTS, ...(cur || {}) }, list = Array.isArray(b.competitors) ? b.competitors : b.competitors != null ? String(b.competitors).split(/[,\n]/) : c.competitors;
+  return { staffCap: b.staffCap != null && b.staffCap !== "" ? int(b.staffCap, 0, 50) : c.staffCap, competitors: [...new Set(list.map((x) => clean(x, 80)).filter(Boolean))].slice(0, 40),
+    asGuest: b.asGuest != null ? b.asGuest === true || b.asGuest === "yes" : c.asGuest !== false, noPitch: b.noPitch != null ? b.noPitch === true || b.noPitch === "yes" : c.noPitch !== false };
+}
+export function roomLines(r) { const R = { ...ROOM_DEFAULTS, ...(r || {}) };
+  return [`Brand staff in the room: ${R.staffCap} at most`, R.competitors.length ? `Kept out: guests from ${R.competitors.join(", ")}` : "No companies kept out", R.asGuest ? "The brand takes part as a guest, not a presenter" : "The brand may say a few words", R.noPitch ? "No pitch" : "A short product mention is fine"]; }
 
 // ---------------------------------------------------------------------------------------------------------------
 // The money at risk by date: what the brand would lose by cancelling on each day, from the policy's own refund rule
@@ -130,7 +141,7 @@ export function quickRank(cands = [], { date = "", people = 0, budgetCents = 0, 
 // version, the other side is asked again.
 export function briefDefaults(goal = "customer", headcount = 12) {
   const G = goalOf(goal) || GOALS.customer, n = int(headcount, 0, 2000), host = G.id === "community" ? Math.floor(n / 2) : 0;
-  return { v: 1, goal: G.id, goalNote: "", mix: { brand: n - host, host }, creative: "host", creativeNote: "", invites: host ? "both" : "brand", photos: "consent", photoNote: "", followup: "consented", followupNote: "", together: G.together, plan: "", brandAgreed: null, hostAgreed: null, history: [] };
+  return { v: 1, goal: G.id, goalNote: "", mix: { brand: n - host, host }, room: { ...ROOM_DEFAULTS }, creative: "host", creativeNote: "", invites: host ? "both" : "brand", photos: "consent", photoNote: "", followup: "consented", followupNote: "", together: G.together, plan: "", brandAgreed: null, hostAgreed: null, history: [] };
 }
 const pickKey = (v, M, d) => (Object.prototype.hasOwnProperty.call(M, v) ? v : d);
 /** Clean an edit to the brief. Returns { brief } or { error }. */
@@ -141,9 +152,10 @@ export function editBrief(cur, b = {}, { side = "brand", who = "", headcount = 0
   for (const k of ["goalNote", "creativeNote", "photoNote", "followupNote"]) if (b[k] != null) next[k] = clean(b[k], 300);
   if (b.plan != null) next.plan = clean(b.plan, 500);
   if (b.mix) { next.mix = { brand: int(b.mix.brand ?? base.mix.brand, 0, 2000), host: int(b.mix.host ?? base.mix.host, 0, 2000) }; }
+  next.room = b.room && typeof b.room === "object" ? cleanRoom(b.room, base.room) : cleanRoom({}, base.room);
   if (headcount && next.mix.brand + next.mix.host > headcount) return { error: `The seats add up to ${next.mix.brand + next.mix.host}, more than the group of ${headcount}.` };
   if (next.invites === "brand" && next.mix.host > 0) next.invites = "both";
-  const changed = ["goal", "goalNote", "creative", "creativeNote", "invites", "photos", "photoNote", "followup", "followupNote", "together", "plan"].some((k) => next[k] !== base[k]) || next.mix.brand !== base.mix.brand || next.mix.host !== base.mix.host;
+  const changed = ["goal", "goalNote", "creative", "creativeNote", "invites", "photos", "photoNote", "followup", "followupNote", "together", "plan"].some((k) => next[k] !== base[k]) || next.mix.brand !== base.mix.brand || next.mix.host !== base.mix.host || JSON.stringify(next.room) !== JSON.stringify(cleanRoom({}, base.room));
   if (cur && changed) next.v = (base.v || 1) + 1;
   const mark = { by: clean(who, 80), at: now, v: next.v };
   if (side === "brand") { next.brandAgreed = mark; if (changed && cur) next.hostAgreed = base.hostAgreed && base.hostAgreed.v === next.v ? base.hostAgreed : null; }
@@ -163,7 +175,7 @@ export function briefLines(b) {
   const G = goalOf(b.goal), T = TOGETHER[b.together];
   return [`Goal: ${G?.label || "Event"}${b.goalNote ? `. ${b.goalNote}` : ""}`, `Guest mix: ${b.mix.brand} brand-invited ${b.mix.brand === 1 ? "seat" : "seats"}, ${b.mix.host} host-sourced ${b.mix.host === 1 ? "seat" : "seats"}`,
     `Creative control: ${CREATIVE[b.creative]}${b.creativeNote ? `. ${b.creativeNote}` : ""}`, `Invitations: ${INVITES[b.invites]}`, `Photos and content: ${PHOTOS[b.photos]}${b.photoNote ? `. ${b.photoNote}` : ""}`,
-    `Follow-up: ${FOLLOWUP[b.followup]}${b.followupNote ? `. ${b.followupNote}` : ""}`, `Together: ${T?.label || ""}. ${b.plan || T?.line || ""}`.trim()];
+    `Follow-up: ${FOLLOWUP[b.followup]}${b.followupNote ? `. ${b.followupNote}` : ""}`, `Together: ${T?.label || ""}. ${b.plan || T?.line || ""}`.trim(), `Room rules: ${roomLines(b.room).join(". ")}`];
 }
 const ROS_TAG = "Brief: ";
 /** The run of show with the brief in it: the main part says what guests do; doors carry the photo rule; the wrap the follow-up rule. */
@@ -194,7 +206,8 @@ export function cleanAnswer(b = {}, cur = {}) {
   return { useful: yn(b.useful, cur.useful), back: yn(b.back, cur.back), before: r15(b.before, cur.before), after: r15(b.after, cur.after), said: b.said != null ? clean(b.said, 600) : cur.said || "", quoteOk: b.quoteOk != null ? b.quoteOk === true : !!cur.quoteOk,
     matchOk: b.matchOk != null ? b.matchOk === true : !!cur.matchOk, company: b.company != null ? clean(b.company, 100) : cur.company || "", contactOk: b.contactOk != null ? b.contactOk === true : !!cur.contactOk,
     followHost: b.followHost != null ? b.followHost === true : !!cur.followHost, nextOk: b.nextOk != null ? b.nextOk === true : !!cur.nextOk, listed: b.listed != null ? b.listed === true : !!cur.listed,
-    contact: b.contact != null ? clean(b.contact, 160) : cur.contact || "", at: Date.now() };
+    contact: b.contact != null ? clean(b.contact, 160) : cur.contact || "", takeaway: b.takeaway != null ? clean(b.takeaway, 600) : cur.takeaway || "",
+    similarOk: b.similarOk != null ? b.similarOk === true : !!cur.similarOk, at: Date.now() };
 }
 /** The event's survey, counted. `tokens` say who could answer (and from which side); `responses` what they said. */
 export function surveySummary(tokens = {}, responses = {}) {
@@ -440,7 +453,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
       for (const p of x.s.packages.filter((p) => p.on && (!only || only === `${x.h.handle}/${p.id}`))) { const card = BB().cardOf(x, p, people || p.minGuests, st), price = card.price, taken = BB().takenFor(x.ws, p.id);
         let dateState = "", altDate = ""; if (date) { const months = [date.slice(0, 7), addDays(date, 20).slice(0, 7)], days = months.flatMap((m) => availabilityFor(p, m, { taken, today }).days); dateState = days.find((d) => d.date === date)?.state || "closed";
           if (dateState !== "open") { const near = days.filter((d) => d.state === "open" && Math.abs(daysBetween(date, d.date)) <= 14).sort((a, b) => Math.abs(daysBetween(date, a.date)) - Math.abs(daysBetween(date, b.date)))[0]; altDate = near?.date || ""; } }
-        const full = priceFor(p, people), terms = cancellationTerms(x.s.policy, p.depositPct);
+        const full = priceFor(p, people, u ? { feeBps: BB().feeFor(u.ws, x.ws) } : {}), terms = cancellationTerms(x.s.policy, p.depositPct);
         cands.push({ ...card, price, city: x.s.city || x.h.city || "", areaCity: A.city, area: A.area, access: p.access || [], diets: p.diets || [], moods: p.moods || [], quality: st.quality, trusted: st.trusted, totalCents: full.totalCents, effectivePerPersonCents: full.effectivePerPersonCents,
           dateState, altDate, policy: x.s.policy, depositCents: full.depositCents, terms: terms.short, priceLines: full.lines.filter((l) => l.cents || l.k === "people"), summary: full.summary }); } }
     const top = quickRank(cands, { date, people, budgetCents, city: only ? "" : city, goal }).map((x) => { const when = x.dateState === "open" ? date : x.altDate;
@@ -552,7 +565,8 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
       c.tasks = [...(c.tasks || []), { id: rid(4), title: `Follow up with ${nm || "a guest"}`, team: "sales", owner: lc(S.ev.owner?.email || c.ownerEmail), due: addDays(isoDay(), 7), status: "open", result: "", event: S.r.id, guest: S.who.gid || S.who.sid, auto: true, at: Date.now(), doneAt: 0 }].slice(-500); cSet(c); } }
     evSet(S.ev); res.json(svView(S)); });
   app.post("/api/survey/:token/connect", small, (req, res) => { if (limited("svc:" + req.ip, 200)) return bad(res, "Slow down.", 429, "rate_limited"); const S = svOf(req); if (!S) return bad(res, "This link doesn't work anymore.", 404, "not_found");
-    const to = String(req.body?.to || ""), out = req.body?.answer != null ? answerConnection(S.ev, S.t, to, req.body.answer === true) : askConnection(S.ev, S.t, to); if (out.error) return bad(res, out.error); evSet(S.ev); res.json({ ...svView(S), mutual: out.mutual }); });
+    const to = String(req.body?.to || ""), out = req.body?.answer != null ? answerConnection(S.ev, S.t, to, req.body.answer === true) : askConnection(S.ev, S.t, to); if (out.error) return bad(res, out.error);
+    if (out.mutual) { try { X.onPairMutual?.(S.ev, S.t, to); } catch {} } evSet(S.ev); res.json({ ...svView(S), mutual: out.mutual }); }); // both said yes: a light thread opens (server/brandpanel2.js)
 
   // ---- outcomes, tasks, targets, pilot and CRM on a campaign ----
   const loadC = (req, res, what) => { const u = brandMe(req, res); if (!u) return null; const c = cGet(req.params.id), role = c && campaignRole(c, { email: u.email, ws: u.ws, wsOwner: u.wsOwner }); if (!c || !role) { bad(res, "Not found.", 404, "not_found"); return null; } if (!can(role, what)) { bad(res, "Only editors and owners can change this.", 403, "not_granted"); return null; } return { u, c, role }; };
@@ -644,7 +658,7 @@ export function mountBrandPanel(app, { store, small, currentUser, C, X, PUBLIC_D
       share.push({ ws: x.ws, attended, fromFollowers: from }); }
     res.set("Cache-Control", "private, no-store").json(internalMetrics(L, { hostSeats: seatsBy(L), followerShare: share })); });
 
-  return { evGet, outcomesOf: (id) => { const c = cGet(id); return c ? outcomesOf(c, eventsOf(c)) : null; } };
+  return { evGet, evOf, evSet, note, cGet, cSet, cList, campOf, eventsOf, eventView, tokenFor, hostName, nameOf, brandMe, hostMe, brandEvent, hostEvent, me, outcomesOf: (id) => { const c = cGet(id); return c ? outcomesOf(c, eventsOf(c)) : null; }, outcomesFor: (c) => outcomesOf(c, eventsOf(c)) };
 }
 
 // ---------------------------------------------------------------------------------------------------------------

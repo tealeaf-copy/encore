@@ -18,10 +18,10 @@
 <div><b id="s4"></b>If your host cancels, you get everything back and we help you find another.</div>
 </section>
 </main>
-<script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script><script src="/teams-panel2.js"></script>
 <script>
 (function () {
-  const { esc, api, icon, $, $$ } = BB; BB.top("discover"); window.TP?.quickBook($("#quick"));
+  const { esc, api, icon, $, $$ } = BB; BB.top("discover"); window.TP?.quickBook($("#quick")); { const ag = new URLSearchParams(location.search).get("again"); if (ag && window.TP2) { const k = document.createElement("div"); k.className = "tp"; $("#quick").after(k); TP2.keep(ag, k); } } // what you keep by booking again (server/brandpanel2.js)
   $("#pill .go").innerHTML = icon("sliders"); $('[data-v="list"]').innerHTML = icon("list") + "&nbsp;List"; $('[data-v="map"]').innerHTML = icon("map") + "&nbsp;Map";
   $("#s1").innerHTML = icon("check") + "Trusted hosts"; $("#s2").innerHTML = icon("doc") + "The full price"; $("#s3").innerHTML = icon("lock") + "Private until booked"; $("#s4").innerHTML = icon("shield") + "Covered if plans change";
   const U = new URLSearchParams(location.search); let saved0 = {}; try { saved0 = JSON.parse(localStorage.getItem("bb.filters") || "{}"); } catch {}

@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Founding hosts · Pottery Lab</title><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="t"></i></div></main>
+<script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, money, $, $$ } = BB, main = $("#main");
+  const rate = (c) => (c == null ? "Not yet" : `${money(c)} an hour`), d = (x) => new Date(x + "T12:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  async function draw() { let D; try { D = await api("/api/admin/founding"); } catch { main.removeAttribute("aria-busy"); main.innerHTML = `<section class="bb-xhead"><h1>Not found</h1></section>`; return; }
+    main.removeAttribute("aria-busy");
+    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Internal · admins only</p><h1>Founding hosts</h1><p class="ti-sub">The evidence we collect before launch: signed dates, paid pilots, earnings per hour against each host's own events, follower seats, whether they'd send the next brand inquiry through us, and the crossover tests.</p></div></header>
+      <section class="tp-box"><h2>Hosts</h2>${D.hosts.length ? `<div class="tp-scroll"><table class="tp-tbl"><thead><tr><th>Host</th><th>Signed dates</th><th>Paid pilot</th><th>Team bookings, net an hour</th><th>Own events, an hour</th><th>Followers' share of seats</th><th>Next inquiry here?</th><th></th></tr></thead><tbody>
+        ${D.hosts.map((h) => `<tr><td><a href="/@${esc(h.handle)}">${esc(h.name)}</a>${h.invited ? "" : `<small class="bb-meta" style="display:block">Not invited yet</small>`}</td><td>${h.dates.length ? esc(h.dates.map(d).join(", ")) : "None"}</td><td>${h.paidPilot ? "Yes" : "No"}</td><td class="n">${esc(rate(h.teamPerHourCents))}${h.ratio != null ? `<small class="bb-meta" style="display:block">${h.ratio}× their own</small>` : ""}</td><td class="n">${esc(rate(h.publicPerHourCents))}</td><td class="n">${esc(h.followerSeats.text)}${h.followerSeats.pct != null ? ` (${h.followerSeats.pct}%)` : ""}</td><td>${esc({ yes: "Yes", maybe: "Maybe", no: "No" }[h.sendNext] || "Not asked")}</td>
+          <td><button class="bb-btn quiet" data-f="${esc(h.ws)}" data-k="foundingHost" data-on="${!h.invited}">${h.invited ? "Remove" : "Invite"}</button><button class="bb-btn quiet" data-f="${esc(h.ws)}" data-k="paidPilot" data-on="${!h.paidPilot}">${h.paidPilot ? "Not a pilot" : "Paid pilot"}</button></td></tr>`).join("")}</tbody></table></div><p class="tp-note">Team hours are logged prep plus 3 hours for each event. Own-event numbers are what the host told us.</p>` : `<p class="ti-sub">No founding hosts yet.</p>`}</section>
+      <section class="tp-box"><h2>Crossover tests</h2>${D.tests.length ? `<ul class="tp-den">${D.tests.map((t) => `<li><span>${esc(t.from)} to ${esc(t.to)}</span><b>${esc(t.text)}${t.pct != null ? ` (${t.pct}%)` : ""}</b></li>`).join("")}</ul>` : `<p class="ti-sub">None yet.</p>`}</section>
+      <section class="tp-box"><h2>Design partners</h2><p class="ti-sub">Brands flagged here are reported apart on the retention page. ${D.autoRebooks.length} pre-signed rebooks, ${D.autoRebooks.filter((a) => a.triggered).length} triggered.</p><ul class="tp-den">${D.brands.map((b) => `<li><span>${esc(b.company || "A brand")}</span><b><button class="bb-btn quiet" data-f="${esc(b.ws)}" data-k="designPartner" data-on="${!b.designPartner}">${b.designPartner ? "Design partner" : "Mark as design partner"}</button></b></li>`).join("")}</ul></section>`;
+    $$("[data-f]").forEach((b) => (b.onclick = async () => { try { await api("/api/admin/brand-flags", { ws: b.dataset.f, flag: b.dataset.k, on: b.dataset.on === "true" }); draw(); } catch (e) { BB.toast(e.message); } }));
+  }
+  draw();
+})();
+</script></body></html>

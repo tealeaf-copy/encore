@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Format library · Pottery Lab</title><meta name="description" content="Formats for customer dinners, team days, community series and workshops, each with a run of show, the ideal size, what guests do together and the room rules.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i><i class="t"></i></div></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, $, $$ } = BB; BB.top("home");
+  const main = $("#main"), U = new URLSearchParams(location.search), forId = (U.get("for") || "").replace(/[^a-f0-9]/g, "");
+  let goal = U.get("goal") || "", D = null;
+  async function load() { try { D = await api("/api/teams/formats"); } catch (e) { main.removeAttribute("aria-busy"); main.innerHTML = `<section class="bb-xhead"><h1>Format library</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; } draw(); }
+  function draw() { main.removeAttribute("aria-busy"); const L = D.formats.filter((f) => !goal || f.occasion === goal);
+    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">${forId ? "Pick a format for your booking" : "For brands"}</p><h1>Format library</h1><p class="ti-sub">${D.formats.length} formats that work for groups. Each one has a run of show, the size it suits, what guests do together and the room rules. Pick one and the host proposes their version.</p></div></header>
+      <div class="tp-goals" role="group" aria-label="Occasion" style="margin:0 0 16px"><button type="button" data-g="" aria-pressed="${!goal}">All</button>${D.occasions.map((o) => `<button type="button" data-g="${esc(o.id)}" aria-pressed="${goal === o.id}">${esc(o.label)}</button>`).join("")}</div>
+      <div class="tp2-fmts">${L.map((f) => `<article class="tp2-fmt"><p class="ti-k">${esc(f.occasionLabel)} · ${f.size[0]} to ${f.size[1]} people</p><h2>${esc(f.name)}</h2><p style="margin:0">${esc(f.what)}</p>
+        <details><summary><b>Run of show</b></summary><ul class="tp-lines">${f.ros.map((x) => `<li><b class="tp2-at">${esc(x.at)}</b> ${esc(x.what)}</li>`).join("")}</ul></details>
+        <p class="tp-q" style="margin:4px 0 0">Room rules</p><ul class="tp-lines">${f.rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+        ${forId ? `<div class="tp-acts"><button class="bb-btn primary" data-pick="${esc(f.id)}">Pick this format</button></div>` : ""}</article>`).join("")}</div>`;
+    $$("[data-g]").forEach((b) => (b.onclick = () => { goal = b.dataset.g; draw(); }));
+    $$("[data-pick]").forEach((b) => (b.onclick = async () => { try { await api(`/api/teams/events/${forId}/format`, { id: b.dataset.pick }); location.href = `/teams/bookings/${forId}`; } catch (e) { BB.toast(e.message); } }));
+  }
+  load();
+})();
+</script></body></html>

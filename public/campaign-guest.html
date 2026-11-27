@@ -21,7 +21,12 @@
       ${E ? evCard(E) : ""}
       <div class="ti-actions"><button class="bb-btn ${d.status === "yes" ? "ink" : "primary"} lg" data-r="yes" aria-pressed="${d.status === "yes"}">${d.status === "yes" ? icon("check") : ""}I'm in</button><button class="bb-btn quiet lg" data-r="no" aria-pressed="${d.status === "no"}">Can't go</button></div>
       <label class="ti-card quiet" style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;margin-top:16px"><input type="checkbox" id="share" ${d.consent ? "checked" : ""} style="width:22px;height:22px;margin-top:2px"><span><b>Share my name and email with ${esc(d.company)}</b><br><span class="bb-meta">So they can follow up after the event. Leave it off and they won't get your details from Pottery Lab. You can change this any time with this link.</span></span></label>
-      <p class="bb-meta" id="msg" role="status"></p>`;
+      <p class="bb-meta" id="msg" role="status"></p>
+      ${d.prefs && !d.past ? `<form class="ti-card quiet" id="prefs" style="margin-top:16px"><p class="ti-k">Optional</p>
+        <p class="tp-q">${esc(d.prefs.part)}</p><div class="tp-yn" role="radiogroup" aria-label="${esc(d.prefs.part)}">${Object.entries(d.prefs.parts).map(([k, v]) => `<label><input type="radio" name="part" value="${esc(k)}"${d.prefs.mine?.part === k ? " checked" : ""}> ${esc(v)}</label>`).join("")}</div>
+        <p class="tp-q">${esc(d.prefs.intros)}</p><div class="tp-yn" role="radiogroup" aria-label="${esc(d.prefs.intros)}">${Object.entries(d.prefs.intros).map(([k, v]) => `<label><input type="radio" name="intros" value="${esc(k)}"${d.prefs.mine?.intros === k ? " checked" : ""}> ${esc(v)}</label>`).join("")}</div>
+        <p class="tp-note">${esc(d.prefs.note)}</p></form>` : ""}`;
+    $("#prefs")?.addEventListener("change", async (e) => { const n = e.target.name; if (!["part", "intros"].includes(n)) return; try { await api(`/api/cg/${cid}/r/${token}`, { [n]: e.target.value }); BB.toast("Saved for the host"); } catch (er) { BB.toast(er.message); } });
     main.querySelectorAll("[data-r]").forEach((b) => (b.onclick = async () => { try { await api(`/api/cg/${cid}/r/${token}`, { reply: b.dataset.r, consent: $("#share").checked }); $("#msg").textContent = b.dataset.r === "yes" ? "You're in. See you there." : "Thanks for letting them know."; setTimeout(rsvp, 900); } catch (e) { $("#msg").textContent = e.message; } }));
     $("#share").onchange = async (e) => { try { await api(`/api/cg/${cid}/r/${token}`, { consent: e.target.checked }); $("#msg").textContent = e.target.checked ? `${d.company} can see your name and email.` : `${d.company} won't get your details from us.`; } catch {} };
   }

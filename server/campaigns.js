@@ -354,7 +354,8 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
   app.delete("/api/campaigns/:id/guests/:gid", (req, res) => { const L = load(req, res, "guests"); if (!L) return; L.c.guests = (L.c.guests || []).filter((x) => x.id !== req.params.gid); cSet(L.c); res.json({ campaign: full(L.c, L.role) }); });
   app.post("/api/campaigns/:id/invites", small, async (req, res) => { const L = load(req, res, "guests"); if (!L) return; if (limited("ci:" + L.c.id, 30)) return bad(res, "That's a lot of sends. Try again in an hour.", 429, "rate_limited");
     const ev = clean(req.body?.event, 24), base = publicOrigin(req), company = L.u.W.company || "Our team";
-    let to = (L.c.guests || []).filter((g) => (!ev || g.event === ev) && g.event && g.status === "added"), planned = 0;
+    let to = (L.c.guests || []).filter((g) => (!ev || g.event === ev) && g.event && g.status === "added"), planned = 0; const held = [];
+    to = to.filter((g) => { let why = ""; try { why = X.inviteHold?.(L.c, g) || ""; } catch {} if (why) held.push({ id: g.id, name: first(g.name), why }); return !why; }); // account owners approve, competitors stay out (server/brandpanel2.js)
     // review 16: guests who agreed to hear from the brand get the event's own invite through its plan (People, waves,
     // reminders, add to calendar); everyone else still gets the campaign's reply link, which asks for that consent
     for (const reqId of [...new Set(to.map((g) => g.event))]) { const eid = guestEvent(L.c, reqGet(reqId), { make: true }); if (!eid || !I0()) continue; const mine = to.filter((g) => g.event === reqId && g.consent?.share && g.email);
@@ -366,7 +367,7 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
       if (cfg && g.email) { const when = R?.date ? new Date(R.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "soon";
         try { const out = await sendEmail(cfg, { to: g.email, subject: `${company} would love you at ${R?.pkgName || "a small event"}`, text: `Hi ${first(g.name) || "there"},\n\n${company} is hosting ${R?.pkgName || "a small event"} with ${R ? hostName(R) : "a local host"} on ${when}, for about ${R?.headcount || "a small group of"} people. We'd love you there.\n\n${(() => { const F = L.c.inviteFrom?.[g.event] || L.c.inviteFrom?.all; return F?.name ? `${F.note ? F.note + "\n\n" : ""}${F.name}${F.title ? ", " + F.title : ""}, ${company}\n\n` : ""; })()}I'm in (one tap): ${link}?r=yes\nCan't go: ${link}?r=no\n\nYou choose whether to share your details with ${company}.`, fromName: (L.c.inviteFrom?.[g.event] || L.c.inviteFrom?.all)?.name ? `${(L.c.inviteFrom?.[g.event] || L.c.inviteFrom?.all).name} at ${company}` : company, list: "guest" }); if (out?.ok !== false) sent++; } catch {} }
       g.status = "invited"; g.invitedAt = Date.now(); }
-    try { for (const k of new Set(to.map((g) => g.event))) mirror(L.c, k); } catch {} cSet(L.c); res.json({ invited: to.length + planned, emailed: sent + planned, viaPlan: planned, links, campaign: full(L.c, L.role) }); });
+    try { for (const k of new Set(to.map((g) => g.event))) mirror(L.c, k); } catch {} cSet(L.c); res.json({ invited: to.length + planned, emailed: sent + planned, viaPlan: planned, links, held, campaign: full(L.c, L.role) }); });
 
   // ---- measure ----
   app.get("/api/campaigns/:id/export.csv", (req, res) => { const L = load(req, res, "export"); if (!L) return; if (!L.c.firstListAt && (L.c.guests || []).some((g) => g.checkedIn && g.consent?.share)) { L.c.firstListAt = Date.now(); cSet(L.c); }
@@ -406,13 +407,14 @@ export function mountCampaigns(app, { store, small, currentUser, C, X, PUBLIC_DI
   const byToken = (req) => { const c = cGet(req.params.id); if (!c) return {}; const t = String(req.params.token || ""); const g = (c.guests || []).find((x) => x.token && safeEq(x.token, t)); return { c, g }; };
   app.get("/api/cg/:id/r/:token", (req, res) => { const { c, g } = byToken(req); if (!c || !g) return bad(res, "This link doesn't work anymore. Ask whoever invited you for a new one.", 404, "not_found"); const r = reqGet(g.event), W = getWorkspace(c.ws);
     res.set("Cache-Control", "private, no-store").json({ company: W?.company || "", name: first(g.name), event: r ? pubEvent(r) : null, status: g.status, consent: !!g.consent?.share, checkedIn: g.checkedIn, again: g.again, said: g.said ? true : false, quoteOk: g.quoteOk, past: !!(r?.date && r.date < isoDay()), from: (() => { const F = c.inviteFrom?.[g.event] || c.inviteFrom?.all; return F?.name ? { name: F.name, title: F.title || "", note: F.note || "" } : null; })(),
-      survey: r && r.date && r.date < isoDay() && g.checkedIn ? X.surveyLinkFor?.(r, { side: "brand", gid: g.id, cid: c.id, first: first(g.name), email: g.email }) || "" : "" }); });
+      survey: r && r.date && r.date < isoDay() && g.checkedIn ? X.surveyLinkFor?.(r, { side: "brand", gid: g.id, cid: c.id, first: first(g.name), email: g.email }) || "" : "", prefs: X.cgPrefs?.(g) || null }); });
   app.post("/api/cg/:id/r/:token", small, (req, res) => { if (limited("cr:" + req.ip, 120)) return bad(res, "Slow down.", 429, "rate_limited"); const { c, g } = byToken(req); if (!c || !g) return bad(res, "This link doesn't work anymore.", 404, "not_found"); const b = req.body || {};
     if (b.reply === "yes" || b.reply === "no") { g.status = b.reply; g.repliedAt = Date.now(); }
     if (b.consent != null) g.consent = b.consent === true ? { share: true, at: Date.now(), via: "rsvp" } : { share: false, at: 0, via: "" };
     if (b.again != null) g.again = b.again === true ? true : b.again === false ? false : null;
     if (b.said != null) g.said = clean(b.said, 600);
     if (b.quoteOk != null) g.quoteOk = b.quoteOk === true;
+    try { X.onCgReply?.(c, g, b); } catch {} // the optional "what are you here for" question (server/brandpanel2.js)
     try { if (g.event) mirror(c, g.event); } catch {} cSet(c); res.json({ ok: true, status: g.status, consent: !!g.consent?.share }); });
 
   return { results, rollupOf: (id) => { const c = cGet(id); return c ? rollup(c, reqsOf(c)) : null; } };

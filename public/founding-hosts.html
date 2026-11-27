@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Founding hosts · Pottery Lab</title><meta name="description" content="A small group of hosts who take the first paid team bookings, tell us honestly how they compare with their own events, and help shape what we build.">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><header class="bb-top"><div class="in"><a class="bb-logo" href="/"><svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg><span>Pottery Lab</span></a></div></header>
+<main class="bb-wrap bb-narrow" id="main">
+<section class="bb-xhead"><p class="bb-kicker">For hosts</p><h1>Founding hosts</h1><p class="bb-lede">A small group of hosts who take the first paid team bookings before launch, and tell us plainly how they compare with their own events.</p></section>
+<section class="tp-box"><h2>What you commit to</h2><ul class="tp-lines"><li>A few dates you hold for team bookings over the next three months.</li><li>Logging your prep hours, so brands see what custom work really takes.</li><li>Two honest numbers about your own public events: what they earn and how long they take.</li><li>One question after each booking: would you send your next brand inquiry through Pottery Lab?</li></ul></section>
+<section class="tp-box"><h2>What you get</h2><ul class="tp-lines"><li>The first paid brand bookings, some as paid pilots.</li><li>Brands who book you again pay a smaller booking fee, so repeat work stays here.</li><li>Your followers, yours to download at any time.</li><li>Guests from similar hosts who asked to hear about you, invited with their OK.</li></ul></section>
+<div id="mine"></div>
+</main>
+<script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $ } = BB, el = $("#mine");
+  const day = (d) => new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  async function draw() { let d; try { d = await api("/api/bb/host/founding"); } catch (e) { el.innerHTML = `<section class="tp-box quiet"><h2>Hosting already?</h2><p class="ti-sub">${e.status === 401 ? "Sign in as a host to see your commitments." : esc(e.message)}</p>${e.status === 401 ? `<div class="tp-acts"><a class="bb-btn primary" href="/login?next=/founding-hosts">Sign in</a></div>` : ""}</section>`; return; }
+    const F = d.founding || { dates: [] };
+    el.innerHTML = `<form class="tp-box" id="ff"><h2>${d.invited ? "Your commitments" : "Tell us about your hosting"}</h2>${d.paidPilot ? `<p><span class="tp-state ok">Paid pilot</span></p>` : ""}<p class="ti-sub">${F.signedAt ? `Signed ${esc(new Date(F.signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }))}.` : "Hold up to three dates for team bookings."}</p>
+      <div class="tp2-grid3">${[0, 1, 2].map((i) => `<label class="bb-field"><span>Date ${i + 1}</span><input type="date" name="d${i}" value="${esc(F.dates?.[i] || "")}"></label>`).join("")}</div>
+      <div class="tp-row"><label class="bb-field"><span>Your last public event earned ($, after costs)</span><input name="pubE" type="number" min="0" inputmode="decimal" value="${F.publicEarningsCents ? F.publicEarningsCents / 100 : ""}"></label><label class="bb-field"><span>Hours it took, prep included</span><input name="pubH" type="number" min="0" step="0.5" inputmode="decimal" value="${F.publicHours || ""}"></label></div>
+      <label class="bb-field"><span>Would you send your next brand inquiry through Pottery Lab?</span><select name="send"><option value="">Pick one</option>${[["yes", "Yes"], ["maybe", "Maybe"], ["no", "No"]].map(([k, v]) => `<option value="${k}"${F.sendNext === k ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+      <label class="bb-field"><span>Bookings you took off Pottery Lab with a brand you met here (optional)</span><input name="off" type="number" min="0" inputmode="numeric" value="${F.offPlatform || ""}"><small>Only counted. It helps us see whether repeat work stays on the platform.</small></label>
+      <button class="bb-btn primary" type="submit">Save</button></form>
+      ${d.invited ? `<section class="tp-box"><h2>The crossover test</h2><p class="ti-sub">Invite your followers to another founding host's next event. We count how many of them go, or follow that host.</p>
+        <form id="xt" class="tp-row" style="align-items:end"><label class="bb-field"><span>Their handle</span><input name="to" placeholder="wheel-and-kiln" autocomplete="off"></label><button class="bb-btn" type="submit">${icon("mail")}Invite my followers</button></form>
+        ${d.tests.length ? `<ul class="tp-den" style="margin-top:12px">${d.tests.map((t) => `<li><span>To ${esc(t.to)}</span><b>${t.crossed} of ${t.invited} crossed over</b></li>`).join("")}</ul>` : ""}</section>` : ""}`;
+    $("#ff").onsubmit = async (e) => { e.preventDefault(); const f = e.target; try { await api("/api/bb/host/founding", { dates: [f.d0.value, f.d1.value, f.d2.value].filter(Boolean), publicEarnings: f.pubE.value || 0, publicHours: f.pubH.value || 0, sendNext: f.send.value, offPlatform: f.off.value || 0 }); BB.toast("Saved"); draw(); } catch (er) { BB.toast(er.message); } };
+    $("#xt") && ($("#xt").onsubmit = async (e) => { e.preventDefault(); try { const o = await api("/api/bb/host/crossover-test", { to: e.target.to.value.trim().replace(/^@/, "") }); BB.toast(`Invited ${o.invited}`); draw(); } catch (er) { BB.toast(er.message); } }); }
+  draw();
+})();
+</script></body></html>

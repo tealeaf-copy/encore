@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Company settings · Pottery Lab</title><meta name="description" content="One company, several teams: shared approval rules, brand rules and invoicing, so a new team books without new setup."><meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"></head>
+<body class="bb ti tp"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i></div></main>
+<script src="/eventart.js"></script><script src="/brandbook.js"></script>
+<script>
+(function () {
+  const { esc, api, icon, money, $, $$ } = BB; BB.top("home");
+  const main = $("#main"), opts = (M, cur) => Object.entries(M).map(([k, v]) => `<option value="${esc(k)}"${k === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+  async function load() { let d; try { d = await api("/api/teams/company"); } catch (e) { main.removeAttribute("aria-busy");
+      main.innerHTML = e.status === 401 ? `<section class="bb-xhead"><h1>Sign in to see your company</h1><a class="bb-btn primary lg" href="/login?next=/teams/company">Sign in</a></section>` : `<section class="bb-xhead"><h1>Company settings</h1><p class="bb-lede">${esc(e.message)}</p></section>`; return; }
+    main.removeAttribute("aria-busy"); const O = d.org;
+    if (!O) { main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Workspace and teams</p><h1>Company settings</h1><p class="ti-sub">Set the approval rule, brand rules and invoicing once. Every team at your company books under them, without new setup.</p></div></header>
+        ${d.suggest ? `<section class="tp-box"><h2>${esc(d.suggest.name)} is already here</h2><p class="ti-sub">${d.suggest.teams} ${d.suggest.teams === 1 ? "team books" : "teams book"} under its settings. Join to use the same rules.</p><div class="tp-acts"><button class="bb-btn primary" id="join">Join ${esc(d.suggest.name)}</button></div></section>` : ""}
+        <section class="tp-box"><h2>Have a join code?</h2><form id="code" class="tp-row" style="align-items:end"><label class="bb-field"><span>Company link id</span><input name="id" autocomplete="off"></label><label class="bb-field"><span>Join code</span><input name="code" autocomplete="off"></label><button class="bb-btn" type="submit">Join</button></form></section>
+        ${d.canCreate ? `<section class="tp-box quiet"><h2>Set up your company</h2><p class="ti-sub">Your team's current approval rule becomes the company default. You can change it next.</p><div class="tp-acts"><button class="bb-btn primary" id="make">Set up the company</button></div></section>` : ""}`;
+      $("#join") && ($("#join").onclick = () => api("/api/teams/company/join", { id: d.suggest.id }).then(load, (e) => BB.toast(e.message)));
+      $("#code").onsubmit = (e) => { e.preventDefault(); api("/api/teams/company/join", { id: e.target.id.value.trim(), code: e.target.code.value.trim() }).then(load, (er) => BB.toast(er.message)); };
+      $("#make") && ($("#make").onclick = () => api("/api/teams/company", {}).then(load, (e) => BB.toast(e.message))); return; }
+    const D = O.defaults, R = D.rules, Rm = D.brand.room;
+    main.innerHTML = `<header class="ti-head"><div><p class="bb-kicker">Workspace and teams</p><h1>${esc(O.name)}</h1><p class="ti-sub">Shared defaults for every team. A team with its own approval rule keeps it; everything else comes from here.</p></div></header>
+      <section class="tp-box"><h2>What your team books under</h2><ul class="tp-lines">${O.mine.lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul></section>
+      <section class="tp-box"><h2>Teams</h2><ul class="tp-den">${O.teams.map((t) => `<li><span>${esc(t.company || "A team")}${t.mine ? " (yours)" : ""}<small class="bb-meta" style="display:block">${t.members} ${t.members === 1 ? "person" : "people"}${t.ownRules ? ", its own approval rule" : ", the company's approval rule"}</small></span></li>`).join("")}</ul>
+        ${O.owner ? `<p class="tp-note">To add a team, share the link id <b class="tp2-at">${esc(O.id)}</b> and the join code <b class="tp2-at">${esc(O.code)}</b>. Teams with an email at ${esc(O.domain || "your domain")} can join without the code.</p>` : ""}</section>
+      ${O.owner ? `<form class="tp-box" id="def"><h2>Shared defaults</h2>
+        <p class="tp-q">Approval</p><div class="tp-row"><label class="bb-field"><span>Needs an OK</span><select name="approval">${opts({ off: "Never", over: "Over an amount", always: "Every booking" }, R.approval)}</select></label><label class="bb-field"><span>Over ($)</span><input name="over" type="number" min="0" inputmode="numeric" value="${R.overCents / 100}"></label></div>
+        <label class="bb-field"><span>Approvers (emails)</span><input name="approvers" value="${esc(R.approvers.join(", "))}"></label>
+        <p class="tp-q">Brand rules</p><label class="bb-field"><span>Photos</span><select name="photos">${opts(d.photos, D.brand.photos)}</select></label>
+        <div class="tp-row"><label class="bb-field"><span>Brand staff in the room, at most</span><input name="staffCap" type="number" min="0" inputmode="numeric" value="${Rm.staffCap}"></label><label class="bb-field"><span>Keep out guests from</span><input name="competitors" value="${esc(Rm.competitors.join(", "))}" placeholder="Competitor names"></label></div>
+        <label class="tp-check"><input type="checkbox" name="asGuest"${Rm.asGuest ? " checked" : ""}><span><b>We take part as guests, not presenters</b></span></label><label class="tp-check"><input type="checkbox" name="noPitch"${Rm.noPitch ? " checked" : ""}><span><b>No pitch</b></span></label>
+        <p class="tp-q">Invoicing</p><div class="tp-row"><label class="bb-field"><span>Bill to</span><input name="company" value="${esc(D.invoicing.company)}"></label><label class="bb-field"><span>Tax ID</span><input name="taxId" value="${esc(D.invoicing.taxId)}"></label></div>
+        <div class="tp-row"><label class="bb-field"><span>Address</span><input name="address" value="${esc(D.invoicing.address)}"></label><label class="bb-field"><span>PO number</span><input name="po" value="${esc(D.invoicing.po)}"></label></div>
+        <button class="bb-btn primary" type="submit">Save the defaults</button></form>` : ""}`;
+    $("#def") && ($("#def").onsubmit = async (e) => { e.preventDefault(); const f = e.target;
+      try { await api("/api/teams/company", { defaults: { rules: { approval: f.approval.value, overCents: Math.round(+f.over.value * 100) || 0, approvers: f.approvers.value }, brand: { photos: f.photos.value, room: { staffCap: f.staffCap.value, competitors: f.competitors.value, asGuest: f.asGuest.checked, noPitch: f.noPitch.checked } }, invoicing: { company: f.company.value, taxId: f.taxId.value, address: f.address.value, po: f.po.value } } }); BB.toast("Saved"); load(); } catch (er) { BB.toast(er.message); } });
+  }
+  load();
+})();
+</script></body></html>

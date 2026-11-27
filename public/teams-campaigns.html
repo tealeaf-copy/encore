@@ -2,7 +2,7 @@
 <title>Campaigns · Pottery Lab</title><meta name="description" content="Plan, source, book, invite, run and measure your team's in-person experiences, one campaign at a time.">
 <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/system.css"><link rel="stylesheet" href="/brandbook.css"><link rel="stylesheet" href="/timeline.css"><link rel="stylesheet" href="/teams-intel.css"><link rel="stylesheet" href="/teams-panel.css"><style>.ti-ros{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}.ti-ros li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:baseline}.ti-ros b{font-size:14px}.ti-ge{margin:12px 0}</style></head>
 <body class="bb ti"><main class="bb-wrap" id="main" aria-busy="true"><div class="ti-skel" aria-label="Loading"><i class="k"></i><i class="h"></i><i class="p"></i><i class="t"></i><i class="r"></i><i class="b"></i></div></main>
-<script src="/fx.js"></script><script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script><script src="/qr.js" defer></script><script src="/sharekit.js" defer></script>
+<script src="/fx.js"></script><script src="/eventart.js"></script><script src="/brandbook.js"></script><script src="/teams-panel.js"></script><script src="/teams-panel2.js"></script><script src="/qr.js" defer></script><script src="/sharekit.js" defer></script>
 <script>
 (function () {
   const { esc, api, icon, money, $, $$ } = BB; BB.top("campaigns");
@@ -144,6 +144,7 @@
         : `<div class="ti-empty"><h3>No one on this list yet</h3><p>Import a CSV from your CRM, add people one by one, or share the sign-up page.</p></div>`}
       <p class="ti-privacy">${icon("lock")}<span>Only people who said yes to sharing their details go into the CRM export, and never what they said about the event. Guests choose this in their invite.</span></p>`;
     if (window.TP) { const o = document.createElement("div"); o.className = "tp"; $("#pane").append(o); TP.inviteFrom(C, o); } // a short note from a named person (server/brandpanel.js)
+    if (window.TP2) { const o2 = document.createElement("div"); o2.className = "tp"; $("#pane").append(o2); TP2.abm(C, o2); } // account owners approve their customers (server/brandpanel2.js)
     $$("[data-ev]").forEach((b) => (b.onclick = () => { evSel = b.dataset.ev; invite(); }));
     $("#mkPlan") && ($("#mkPlan").onclick = act(async () => { const r = await api(`/api/campaigns/${C.id}/events/${evSel}/plan`, {}); C = r.campaign; BB.toast(`Guest list ready${r.added ? `, ${r.added} on the plan` : ""}`); frame(); }));
     $("#nudge") && ($("#nudge").onclick = act(async () => { const r = await api(`/api/campaigns/${C.id}/events/${evSel}/remind`, {}); BB.toast(r.reminded ? `Nudged ${r.reminded}` : r.tooSoon ? "Already nudged recently. Try again tomorrow." : "No one to nudge by email yet"); }));
@@ -211,7 +212,7 @@
     $$("[data-fu]").forEach((s) => (s.onchange = act(async () => { const r = await api(`/api/campaigns/${C.id}/guests/${s.dataset.fu}`, { followUp: s.value }, "PATCH"); C = r.campaign; BB.toast("Saved"); })));
     $("#rep2") && ($("#rep2").onclick = report);
     window.PLFx?.fill($$(".ti-kpis .b i, .ti-bars .b i"), "measure." + C.id);
-    if (window.TP) { const o = document.createElement("div"); o.className = "tp"; $("#pane").append(o); TP.outcomes(C, o); } // outcomes beyond attendance, tasks, pilot, CRM sync (server/brandpanel.js)
+    if (window.TP) { const o = document.createElement("div"); o.className = "tp"; $("#pane").append(o); TP.outcomes(C, o); if (window.TP2) { const o2 = document.createElement("div"); o2.className = "tp"; $("#pane").append(o2); TP2.campaignMore(C, o2); } } // outcomes beyond attendance, tasks, pilot, CRM sync (server/brandpanel.js)
   }
   id ? detail() : list();
 })();

@@ -112,3 +112,50 @@
 .tp-sum-grid>div{padding:12px 14px;border-right:1px solid var(--pl-line);border-bottom:1px solid var(--pl-line)}
 .tp-big{font:600 16px/1.35 var(--pl-font-text);margin:0}
 .tp-skel{height:220px;border:1.5px dashed var(--pl-line);border-radius:var(--tp-r);margin:12px 0}
+/* Round 2 (server/brandpanel2.js, public/teams-panel2.js): recovery, pricing lines, flags, formats, the forwardable
+   paragraph, groups, threads and the durability bars. The same tokens; the text face under 24px. */
+.tp2-alert{border-width:2px;background:var(--pl-surface)}
+.tp2-opts{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);margin:12px 0}
+@media (min-width:900px){.tp2-opts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tp2-opt{border:1.5px solid var(--pl-ink);border-radius:var(--tp-r);background:var(--pl-page);padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tp2-opt h3{font:600 18px/1.3 var(--pl-font-text);margin:0}
+.tp2-opt .tp-acts{margin-top:auto;padding-top:6px}
+.tp2-num{font:500 24px/1.1 var(--pl-font-mono);font-variant-numeric:tabular-nums;margin:4px 0}
+.tp2-num small{display:block;font:400 14px/1.4 var(--pl-font-text);color:var(--pl-soft);margin-top:4px}
+.tp2-clock{font:500 32px/1 var(--pl-font-mono);font-variant-numeric:tabular-nums;margin:8px 0 12px}
+.tp2-choice{border:0;margin:12px 0 0;padding:0;min-width:0}
+.tp2-money{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0 0}
+.tp2-money td{padding:7px 0;border-bottom:var(--tp-rule);vertical-align:top}
+.tp2-money td.n{text-align:right;font-family:var(--pl-font-mono);font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
+.tp2-total{display:flex;justify-content:space-between;gap:12px;margin:8px 0 0;padding-top:6px;border-top:1.5px solid var(--pl-ink);font-weight:600}
+.tp2-total b{font:600 16px var(--pl-font-mono);font-variant-numeric:tabular-nums}
+.tp2-flag{margin:10px 0 0;font-size:15px;color:var(--pl-soft)}
+.tp2-flag.warn{display:inline-block;padding:6px 10px;border-radius:var(--tp-r);background:var(--pl-sand);color:var(--pl-ink)}
+.tp2-para{font-size:17px;line-height:1.6;margin:6px 0 0;max-width:68ch}
+.tp2-at{font:500 14px var(--pl-font-mono);font-variant-numeric:tabular-nums}
+.tp2-quote{margin:12px 0 0;padding-left:14px;border-left:3px solid var(--pl-accent);font-size:17px}
+.tp2-quote cite{display:block;font-style:normal;color:var(--pl-soft);font-size:14px;margin-top:4px}
+.tp2-grid3{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));margin:12px 0;align-items:end}
+.tp2-grid3 .bb-field{margin:0;min-width:0}
+.tp2-grid3 .wide,.tp2-grid3 .tp-check{grid-column:1/-1;margin:0}
+@media (min-width:760px){.tp2-grid3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tp2-groups{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.tp2-li{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+.tp2-send{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+.tp2-send .bb-field{flex:1 1 200px;margin:0;min-width:0}
+.bb-msg.sys{justify-self:center;background:var(--pl-sand);border-color:var(--pl-line)}
+.bb-msg p{margin:0}
+.bb-msg time{display:block;color:var(--pl-soft);font-size:13px;margin-top:2px}
+.tp2-fmts{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.tp2-fmts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1100px){.tp2-fmts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tp2-fmt{border:1.5px solid var(--pl-ink);border-radius:var(--tp-r);background:var(--pl-surface);padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.tp2-fmt h2{font:600 20px/1.3 var(--pl-font-text);margin:0}
+.tp2-fmt .tp-acts{margin-top:auto}
+.tp2-bars{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+.tp2-bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;border-bottom:var(--tp-rule);padding-bottom:8px;font-size:15px}
+.tp2-bars li small{grid-column:1/-1;color:var(--pl-soft);font-size:14px}
+.tp2-bars li b{font:500 15px var(--pl-font-mono);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.tp2-pass{display:inline-block;font:500 12px/1.3 var(--pl-font-mono);text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;margin-left:8px;background:var(--pl-raised);color:var(--pl-ink)}
+.tp2-pass.yes{background:var(--pl-accent-soft);color:var(--pl-accent-text)}
+.tp2-pass.no{background:var(--pl-sand);color:var(--pl-ink)}

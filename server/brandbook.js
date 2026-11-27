@@ -405,7 +405,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
       availability: months.map((m) => availabilityFor(p, m, { taken: takenFor(ws, p.id), today })), others, criteria: TRUSTED, venue: p.venue === "host" ? "At the host's space" : p.venue === "brand" ? "At your office or venue" : "At a venue the host books",
       contact: "Message the host here. Emails and numbers are shared once you're booked." }); });
   app.get("/api/bb/x/:handle/:pkg/availability", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F) return bad(res, "Not found.", 404, "not_found"); res.json(availabilityFor(F.p, String(req.query.month || ""), { taken: takenFor(F.ws, F.p.id) })); });
-  app.get("/api/bb/price/:handle/:pkg", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F) return bad(res, "Not found.", 404, "not_found"); res.json({ price: priceFor(F.p, int(req.query.people, 1, 2000)), terms: cancellationTerms(F.s.policy, F.p.depositPct) }); });
+  app.get("/api/bb/price/:handle/:pkg", (req, res) => { const F = findPkg(req.params.handle, req.params.pkg); if (!F) return bad(res, "Not found.", 404, "not_found"); const u = me(req); res.json({ price: priceFor(F.p, int(req.query.people, 1, 2000), { feeBps: u ? feeFor(u.ws, F.ws) : FEE_BPS() }), terms: cancellationTerms(F.s.policy, F.p.depositPct) }); });
   app.get("/api/bb/hostpkgs/:handle", (req, res) => { const ws = C.wsOfHandle(lc(req.params.handle)), h = ws && C.profileOf(ws), s = ws && setupOf(ws); if (!h || !s?.on) return res.json({ packages: [] });
     res.set("Cache-Control", "public, max-age=60").json({ name: h.name, packages: s.packages.filter((p) => p.on).map((p) => ({ id: p.id, name: p.name, perPersonCents: p.perPersonCents, minGuests: p.minGuests, maxGuests: p.maxGuests })) }); });
   app.get("/api/bb/map", (req, res) => { const out = []; for (const x of allSetups()) { if (example(x.ws) && process.env.ENCORE_HIDE_DEMO === "1") continue; for (const p of x.s.packages.filter((p) => p.on && !p.remote)) out.push({ handle: x.h.handle, pkg: p.id, name: p.name, ...approxArea(x.s.area, x.s.city || x.h.city) }); } res.json({ places: out, note: "Areas are approximate. The exact address is shared once you're booked." }); });
@@ -444,7 +444,8 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   app.delete("/api/bb/shortlists/:id", (req, res) => { const sl = slGet(req.params.id), role = roleOf(req, sl); if (!sl || !slCan(role, "delete")) return bad(res, "Only the person who made it can delete it.", 403, "not_granted"); store.delete("system/bbsl-" + sl.id); res.json({ ok: true }); });
 
   // ---- brand approval rule ----
-  const rulesOf = (ws) => ({ approval: "off", overCents: 0, approvers: [], ...(S0(ws).get("teambook/rules")?.data || {}) });
+  const rulesOf = (ws) => ({ approval: "off", overCents: 0, approvers: [], ...(S0(ws).get("teambook/rules")?.data || X.orgRulesOf?.(ws) || {}) }); // a team with no rule of its own uses its company's (server/brandpanel2.js)
+  const feeFor = (brandWs, hostWs) => { try { const v = X.feeBpsFor?.(brandWs, hostWs); if (v != null) return v; } catch {} return FEE_BPS(); }; // repeat pairs pay less (server/brandpanel2.js)
   const needsApproval = (rules, totalCents, email) => rules.approval !== "off" && !(rules.approvers || []).map(lc).includes(lc(email)) && (rules.approval === "always" || totalCents > (rules.overCents || 0));
   app.get("/api/bb/brand/rules", (req, res) => { const u = need(req, res); if (!u) return; const W = getWorkspace(u.ws); res.json({ rules: rulesOf(u.ws), company: W?.company || "", brand: W?.plan !== "friends", canEdit: !!u.owner, me: lc(u.email), name: u.name || "", pay: { provider: payProvider().name, test: payProvider().test } }); });
   app.post("/api/bb/brand/rules", small, (req, res) => { const u = need(req, res); if (!u) return; if (!u.owner) return bad(res, "Only the workspace owner sets the approval rule.", 403, "not_granted"); const b = req.body || {};
@@ -471,23 +472,27 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   const pay = payProvider();
 
   app.post("/api/bb/requests", small, async (req, res) => { const u = need(req, res); if (!u) return; if (limited("r:" + u.ws, 40)) return bad(res, "That's a lot of requests at once. Try again in a while.", 429, "rate_limited");
-    const b = req.body || {}, F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return bad(res, "This experience isn't bookable right now.", 404, "not_found");
-    if (F.ws === u.ws) return bad(res, "That's your own experience.");
-    if (example(F.ws) && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1") return bad(res, "This is an example host, so it can't take requests.", 403, "example");
+    const out = createRequest(u, req.body || {}); if (out.error) return bad(res, out.error, out.status || 400, out.code || "invalid");
+    res.json({ ok: true, id: out.r.id, status: out.r.status, instant: !!out.r.instant, instantWhy: out.I.why, url: `/teams/bookings/${out.r.id}`, request: view(out.r, "brand") }); });
+  // a request to book, from the brand's form or from the brand panel (a one-tap rebook, a pre-signed rebook)
+  function createRequest(u, b = {}) { const no = (error, status = 400, code = "invalid") => ({ error, status, code });
+    const F = findPkg(b.handle, b.pkg); if (!F || !F.s.on || !F.p.on) return no("This experience isn't bookable right now.", 404, "not_found");
+    if (F.ws === u.ws) return no("That's your own experience.");
+    if (example(F.ws) && process.env.ENCORE_ALLOW_DEMO_WRITES !== "1") return no("This is an example host, so it can't take requests.", 403, "example");
     const { ws, h, s, p } = F, n = int(b.headcount, 0, 2000);
-    if (n < p.minGuests || n > p.maxGuests) return bad(res, `${p.name} is for ${p.minGuests} to ${p.maxGuests} people.`);
+    if (n < p.minGuests || n > p.maxGuests) return no(`${p.name} is for ${p.minGuests} to ${p.maxGuests} people.`);
     const date = ISO.test(b.date || "") ? b.date : "", flex = !date && b.flex && /^\d{4}-\d{2}$/.test(b.flex.month || "") ? { month: b.flex.month, days: ["weekday", "weekend", "any"].includes(b.flex.days) ? b.flex.days : "weekday", time: ["evening", "daytime", "any"].includes(b.flex.time) ? b.flex.time : "evening" } : null;
-    if (!date && !flex) return bad(res, "Pick a date, or a month that works.");
-    const today = isoDay(); if (date && date < today) return bad(res, "That date has passed.");
-    const W = getWorkspace(u.ws), company = clean(b.company || (W?.plan !== "friends" ? W?.company : ""), 120); if (!company) return bad(res, "Add your company name.");
-    const price = priceFor(p, n), terms = cancellationTerms(s.policy, p.depositPct), st = statsOf(ws), rules = rulesOf(u.ws);
-    const cg = b.campaign && X.campaignGate ? X.campaignGate(u, String(b.campaign), price.totalCents) : null; if (cg && !cg.ok) return bad(res, cg.message, 403, "not_granted"); // a campaign's roles and budget (server/campaigns.js)
+    if (!date && !flex) return no("Pick a date, or a month that works.");
+    const today = isoDay(); if (date && date < today) return no("That date has passed.");
+    const W = getWorkspace(u.ws), company = clean(b.company || (W?.plan !== "friends" ? W?.company : ""), 120); if (!company) return no("Add your company name.");
+    const feeBps = feeFor(u.ws, ws), price = priceFor(p, n, { feeBps }), terms = cancellationTerms(s.policy, p.depositPct), st = statsOf(ws), rules = rulesOf(u.ws);
+    const cg = b.campaign && X.campaignGate ? X.campaignGate(u, String(b.campaign), price.totalCents) : null; if (cg && !cg.ok) return no(cg.message, 403, "not_granted"); // a campaign's roles and budget (server/campaigns.js)
     const approvalPending = needsApproval(rules, price.totalCents, u.email) || !!cg?.approval;
     const open = !date || availabilityFor(p, date.slice(0, 7), { taken: takenFor(ws, p.id), today }).days.find((d) => d.date === date)?.state === "open";
     const I = instantEligible({ trusted: st.trusted, pkg: p, date, headcount: n, today, approvalPending, open });
     const r = { kind: "bbreq", id: rid(8), hostWs: ws, handle: h.handle, pkgId: p.id, pkgName: p.name, brandWs: u.ws, brandEmail: lc(u.email), brandPhone: clean(b.phone, 30), contactName: clean(u.name || getDbUser(u.email)?.name || "", 80), company,
       date, flex, headcount: n, diets: (Array.isArray(b.diets) ? b.diets : []).filter((d) => DIETS.includes(d)), dietNotes: clean(b.dietNotes, 300), access: (Array.isArray(b.access) ? b.access : []).filter((d) => ACCESS.includes(d)), occasion: clean(b.occasion, 120), notes: scrubContact(cleanText(b.notes, 1200)),
-      price, terms, venue: { kind: p.venue, address: p.venue === "host" ? s.address || "" : "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
+      price, feeBps, terms, venue: { kind: p.venue, address: p.venue === "host" ? s.address || "" : "" }, deposit: { state: "none", cents: price.depositCents, provider: pay.name },
       status: approvalPending ? "approval" : "requested", approval: approvalPending ? (cg?.approval && !needsApproval(rules, price.totalCents, u.email) ? { state: "pending", approvers: cg.approval.approvers, rule: cg.approval.rule } : { state: "pending", approvers: [...new Set([...(rules.approvers || []), ...(cg?.approval?.approvers || [])])], rule: rules.approval === "always" ? "Every booking" : `Over ${money0(rules.overCents)}` }) : null, ...(cg ? { campaignId: cg.id } : {}),
       instantWanted: I.ok || (!!p.instant && st.trusted && approvalPending && I.why === "Your team approves this first."), messages: [], history: [], reviews: {}, billing: { company }, createdAt: Date.now(), sentAt: approvalPending ? 0 : Date.now() };
     push(r, "brand", approvalPending ? "asked the team to approve" : "sent the request");
@@ -496,7 +501,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     try { X.onBbRequest?.(r, b, u); } catch (e) { console.warn("[brandbook] request hook", e.message); } // briefs, one-event bookings, setup time (server/brandpanel.js)
     if (approvalPending) for (const a of r.approval.approvers) tell(a, `${first(r.contactName) || "A teammate"} wants to book ${p.name} for ${n} (${money0(price.totalCents)}). It needs your OK.`, `/teams/bookings/${r.id}`);
     else tell(ownerEmailOf(ws), r.instant ? `${company} booked ${p.name} for ${n} with Instant book.` : `${company} asked to book ${p.name} for ${n}. Reply within a day.`, `/host/teams#inbox`);
-    res.json({ ok: true, id: r.id, status: r.status, instant: !!r.instant, instantWhy: I.why, url: `/teams/bookings/${r.id}`, request: view(r, "brand") }); });
+    return { r, I }; }
   function instantBook(r) { r.status = "accepted"; r.instant = true; r.respondedAt = Date.now(); r.sentAt ||= Date.now(); push(r, "host", "Instant book: accepted"); }
 
   // a question before booking: a thread with the host, nothing held or charged
@@ -548,7 +553,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
   // the brand answers a counter, cancels, or saves billing details for the invoice
   app.post("/api/bb/requests/:id/respond", small, (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !brandSide(u, r)) return bad(res, "Not found.", 404, "not_found");
     if (r.status !== "countered" || !r.counter) return bad(res, "There's no change to answer.", 409, "conflict");
-    if (req.body?.accept) { const F = findPkg(r.handle, r.pkgId); if (r.counter.date) { r.date = r.counter.date; } if (r.counter.perPersonCents != null && F) { r.price = priceFor(F.p, r.headcount, { override: { perPersonCents: r.counter.perPersonCents } }); r.deposit = { ...r.deposit, cents: r.price.depositCents }; }
+    if (req.body?.accept) { const F = findPkg(r.handle, r.pkgId); if (r.counter.date) { r.date = r.counter.date; } if (r.counter.perPersonCents != null && F) { r.price = priceFor(F.p, r.headcount, { override: { perPersonCents: r.counter.perPersonCents }, ...(r.feeBps != null ? { feeBps: r.feeBps } : {}) }); r.deposit = { ...r.deposit, cents: r.price.depositCents }; }
       r.status = "accepted"; r.counter = { ...r.counter, answer: "yes" }; push(r, "brand", "took the host's suggestion"); if (r.deposit.state === "held") chargeDeposit(r); }
     else { r.status = "declined"; r.counter = { ...r.counter, answer: "no" }; push(r, "brand", "said no to the change"); releaseDeposit(r); }
     reqSet(r); tell(ownerEmailOf(r.hostWs), `${r.company} ${req.body?.accept ? "took" : "passed on"} your suggestion for ${r.pkgName}.`, "/host/teams#inbox"); res.json({ request: view(r, "brand") }); });
@@ -558,6 +563,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
     const refund = side === "host" ? paid : refundFor(r.terms?.policy, days, paid, r.deposit?.cents || 0);
     r.status = "cancelled"; r.cancelledBy = side; r.cancelledAt = Date.now(); r.refund = { cents: refund, at: Date.now() }; releaseDeposit(r); push(r, side, `cancelled${refund ? `, ${money(refund)} back to the brand` : ""}`);
     reqSet(r); tell(side === "brand" ? ownerEmailOf(r.hostWs) : r.brandEmail, `${side === "brand" ? r.company : C.profileOf(r.hostWs)?.name || "The host"} cancelled ${r.pkgName}.`, side === "brand" ? "/host/teams#inbox" : `/teams/bookings/${r.id}`);
+    try { X.onBbCancel?.(r, side); } catch (e) { console.warn("[brandbook] cancel hook", e.message); } // a host cancelling close to the date starts recovery (server/brandpanel2.js)
     res.json({ request: view(r, side), refundCents: refund }); });
   app.post("/api/bb/requests/:id/billing", small, (req, res) => { const u = need(req, res); if (!u) return; const r = reqGet(req.params.id); if (!r || !brandSide(u, r)) return bad(res, "Not found.", 404, "not_found");
     const b = req.body || {}; r.billing = { company: clean(b.company, 120) || r.company, taxId: clean(b.taxId, 40), address: cleanText(b.address, 300), po: clean(b.po, 40) }; reqSet(r); res.json({ request: view(r, "brand") }); });
@@ -638,7 +644,7 @@ export function mountBrandbook(app, { store, small, currentUser, C, X = {}, publ
       out.push({ handle: h.handle, name: h.name, email: ownerEmailOf(ws), legalName: V.id.legalName, state: V.id.state, submittedAt: V.id.submittedAt, reviewedAt: V.id.reviewedAt || 0 }); }
     res.set("Cache-Control", "private, no-store").json({ verifications: out.sort((a, b) => (a.state === "pending" ? -1 : 1) - (b.state === "pending" ? -1 : 1) || b.submittedAt - a.submittedAt) }); });
   // the pieces server/brandpanel.js builds on (quick book, briefs, host earnings), read only
-  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf };
+  X.bb = { allSetups, statsOf, takenFor, findPkg, setupOf, reqs, reqGet, reqSet, rulesOf, needsApproval, ownerEmailOf, example, push, tell, cardOf, createRequest, feeFor, view };
   app.post("/api/bb/admin/verifications/:handle", small, (req, res) => { const a = admin(req, res); if (!a) return; const ws = C.wsOfHandle(lc(req.params.handle)); if (!ws) return bad(res, "No host by that name.", 404, "not_found");
     const V = verifyOf(ws); if (!V.id) return bad(res, "Nothing to review.", 409, "conflict"); V.id = { ...V.id, state: req.body?.approve ? "approved" : "declined", reviewedAt: Date.now(), reviewedBy: lc(a.email), note: clean(req.body?.note, 300) };
     S0(ws).set("teambook/verify", V); tell(ownerEmailOf(ws), req.body?.approve ? "You're ID checked. The badge is on your team listings now." : "We couldn't confirm your ID. Reply to our email and we'll sort it out.", "/host/teams#trust"); res.json({ ok: true, state: V.id.state }); });

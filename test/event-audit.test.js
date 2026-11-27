@@ -44,7 +44,8 @@ test("guests can tell a cancelled event and an example; the address waits until 
 test("the light invite: the host line with Follow, Help, Report and Share, the reply back from your account, a cancelled event to the full invite", async () => {
   const L = read("public/invite.html"); assert.ok(L.length < 40000, "the light invite stays under its cap: " + L.length);
   assert.match(L, /<script src="\/event-extras\.js" defer><\/script>/); assert.match(L, /const h = self\.__H = H\.host \|\| \{\}/, "the host, for the host line");
-  assert.match(L, /if \(!e \|\| !ws \|\| e\.cancelled \|\| e\.club\?\.earlyUntil > Date\.now\(\) && !e\.club\.member \|\|/, "cancelled, or members first and not a member: the full invite, which says so");
+  const A = read("server/app.js"); assert.match(A, /if \(ev\.example \|\| ev\.cancelled \|\| app\.locals\.fanclub\?\.visibility\?\.\(ws, id\) === "early"\) return res\.redirect\(302, to\);/, "cancelled, or members first: the full invite, which says so");
+  let g = await fetch(srv.base + "/e/eaGone", { redirect: "manual" }); assert.equal(g.status, 302); assert.equal(g.headers.get("location"), "/g#rsvp-eaGone");
   // the parts the light invite has no room for: drawn by public/event-extras.js
   const X = read("public/event-extras.js");
   assert.match(X, /<div class="hrow"|d\.className = "hrow"/); assert.match(X, /<a href="\/@\$\{esc\(h\.handle\)\}"><span class="hav">/, "the host's face and name open their page");

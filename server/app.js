@@ -707,6 +707,11 @@ export function createApp({ store, dataDir }) {
     if (id === "_preview") { const page = invitePage(); res.set("Cache-Control", "no-store"); return page ? res.type("html").send(page.replace("<!--META-->", () => '<title>Guest preview · Pottery Lab</title><meta name="robots" content="noindex">')) : res.sendStatus(404); }
     if (!ev) { res.status(404); return sendStatic(res, "404.html", "<p>This invite isn't here.</p>"); } // a cut-off or deleted link: a real not-found page, not a blank invite
     if (ev.example && !ev.drop) return res.redirect(302, to); // an example drop is still an order page (public/droppage.js)
+    // the full invite says what the light one has no room for: a cancelled event, a fan club's members-first window
+    // (members reply there; everyone else is told when they can) (the event audit). A drop stays its order page (the
+    // full invite sends a drop back here), and a paid members window stays here: the light invite's seats line speaks
+    // for it (server/memberships.js guestLine), so there is one rule for it, not two.
+    if (!ev.drop && (ev.cancelled || (app.locals.fanclub?.visibility?.(ws, id) === "early" && !app.locals.memberships?.handles?.(ws, id)))) return res.redirect(302, to);
     const U = app.locals.fanclub?.visibility?.(ws, id) === "members" ? null : (() => { try { return unfurlOf(store, ws, id, ev, base); } catch { return null; } })(); // review round 13: episode, spots left, chat-app cards (server/hooksout.js)
     const h = C.profileOf(ws), clubOnly = app.locals.fanclub?.visibility?.(ws, id) === "members", title = clubOnly ? `A members-only event${h?.name ? ` from ${h.name}` : ""}` : (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",

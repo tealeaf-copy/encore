@@ -80,7 +80,7 @@
         if (n?.same && n.date) courseNext = n.date;
         else if (n?.id && n.id !== id) { pastOf = { id, e, past: J.past || null }; id = n.id; mine = null; try { mine = JSON.parse(ls.get("encore-rsvp-" + id) || "null"); } catch {} return load(); } }
       // ---- end repeats ----
-      if (!e || !ws || e.cancelled || e.club?.earlyUntil > Date.now() && !e.club.member && !e.club.paid || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
+      if (!e || !ws || e.sample || e.example || !e.casual || e.discreet || e.stage === "interest" || !e.date || (e.date && e.date < today && !courseNext) || ((e.slots || []).length && !e.preorder) || (e.dateOptions || []).length || e.chipIn || e.payUrl || +e.plusOnes > 0 || e.askPhone || /giveaway/i.test(e.activity || "") || (e.approvalRequired && paidOf(e))) return go();
       if (mine && !(st && ["going", "waitlist", "maybe", "no", "requested"].includes(st.response))) return go();
       render(e, ws, H || {}, A || {}, mine && st ? { ...mine, response: st.response, place: st.waitlistPos || st.place, paid: !!st.paid, paidClaim: !!st.paidClaim } : null); repeatBits(e, courseNext); if (paidOf(e) || e.preorder) more("/paymethods.js"); /* Get paid: the host's buttons once in */ if (e.preorder && !mine) more("/invite-order.js", () => window.InviteOrder?.(e, ws, H || {}, { ls, gkey, esc, payLinkOf, when }));
       // a returning pre-order guest sees their order

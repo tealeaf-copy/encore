@@ -35,8 +35,10 @@
     } catch { go.disabled = false; } }
   // the Home view is drawn by the app; put the card on top of it whenever it's showing (the done state too, until it times out)
   function paint() { const v = document.getElementById("view-programs"); if (!v || v.hidden || !(N?.discover || DONE)) return; if (document.getElementById("plnDiscover")) return; css();
-    if (!N?.discover) { v.insertAdjacentHTML("afterbegin", DONE); return; }
-    v.insertAdjacentHTML("afterbegin", card(N.discover)); const el = document.getElementById("plnDiscover");
+    // under the composer, where late cards wait and fade in together: put at the top it pushed the whole page down 180px (round 17)
+    const at = v.querySelector(":scope > #qsPanel"), put = (h) => (at ? at.insertAdjacentHTML("afterend", h) : v.insertAdjacentHTML("afterbegin", h));
+    if (!N?.discover) { put(DONE); return; }
+    put(card(N.discover)); const el = document.getElementById("plnDiscover");
     el.querySelector("[data-pln-show]").onclick = () => act(true); el.querySelector("[data-pln-no]").onclick = () => act(false); }
   // "3 people asked about Matcha workshop": people who left their email on the preview page before this host joined (server/interest.js)
   let ASK = null; const askedSeen = () => { try { return localStorage.getItem("pl.askedSeen") === String(ASK?.total || 0); } catch { return false; } };

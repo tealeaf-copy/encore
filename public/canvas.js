@@ -240,7 +240,14 @@
     const K = PLAN_KINDS.find((x) => x.k === k); say(`${K.label}: set up. Change anything.`);
     const blk = q(`[data-kblock="${Object.keys(KIND_OF_BLOCK).find((b) => KIND_OF_BLOCK[b] === k) || ""}"]`, S.el); if (blk) { blk.classList.add("new"); setTimeout(() => blk.scrollIntoView({ block: "center", behavior: "smooth" }), 60); } }
 
-  function close(quiet) { if (!S?.el) return; S.el.__lkStop?.(); S.el.remove(); document.body.classList.remove("cv-open"); qa(".cv-sh-bg").forEach((x) => x.remove()); if (!quiet) S = null; else S.el = null; }
+  // The editor is a step in the browser's history: Back closes it (asking first when there are unsaved changes) instead of
+  // moving the app underneath and leaving the editor floating over it.
+  let histSkip = false;
+  const histIn = () => { try { if (!history.state?.cv) history.pushState({ ...(history.state || {}), cv: 1 }, ""); } catch {} };
+  const histOut = () => { try { if (history.state?.cv) { histSkip = true; history.back(); } } catch {} };
+  addEventListener("popstate", (e) => { if (histSkip) { histSkip = false; e.stopImmediatePropagation(); return; } if (!S?.el) return; e.stopImmediatePropagation();
+    const sh = q(".cv-sh-bg"); if (sh) { sh.remove(); histIn(); return; } if (S.dirty) histIn(); tryClose(); }, true);
+  function close(quiet) { if (!S?.el) return; if (!quiet) histOut(); S.el.__lkStop?.(); S.el.remove(); document.body.classList.remove("cv-open"); qa(".cv-sh-bg").forEach((x) => x.remove()); if (!quiet) S = null; else S.el = null; }
 
   // ---------- drawing ----------
   function coverHTML(W) { const u = app("safeCover")?.(W.coverPhoto) || (/^\/_blob\/|^https:\/\//.test(W.coverPhoto || "") ? W.coverPhoto : ""), A = root.EventArt;
@@ -303,7 +310,7 @@
         <div class="cv-qa"><span class="cv-qa-h">Quick actions for hosts</span><div class="cv-pills">${pills(W)}</div></div>
       </div>`; }
 
-  function build() { document.body.classList.add("cv-open"); const el = document.createElement("div"); el.id = "cv"; el.className = "kit-off"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", S.isNew ? "New event" : "Edit event");
+  function build() { document.body.classList.add("cv-open"); histIn(); const el = document.createElement("div"); el.id = "cv"; el.className = "kit-off"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", S.isNew ? "New event" : "Edit event");
     el.innerHTML = `<header class="cv-top"><button type="button" class="cv-x" data-cv="close" aria-label="Close">${I.x}</button>
         <div class="cv-mode" role="group" aria-label="View"><button type="button" data-mode="edit" aria-pressed="true">Edit</button><button type="button" data-mode="guest" aria-pressed="false">Guest view</button></div>
         <button type="button" class="cv-save" data-cv="save">Save</button></header>

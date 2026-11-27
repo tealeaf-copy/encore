@@ -76,7 +76,7 @@
     b.onclick = async () => { busy = true; b.disabled = true; const M2 = mine(id) || M; await send(() => fetch("/api/public/come-with", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventId: id, rid: M2.rid, code: M2.code }) }), { title: (document.querySelector("#view-guest h1, main h1")?.textContent || "").trim(), box }); b.disabled = false; busy = false; };
     together(); }
   // "Mia and Jo are in": above the names on the light invite, under the title on the full one
-  async function together() { if (!id || tgAsked === id) return; tgAsked = id; let A = null; try { A = await (await fetch("/api/public/attendees/" + encodeURIComponent(id), { credentials: "same-origin" })).json(); } catch {} const T = A?.together || []; if (!T.length) return;
+  async function together() { if (!id || id === "_preview" || tgAsked === id) return; tgAsked = id; let A = null; try { A = await (await fetch("/api/public/attendees/" + encodeURIComponent(id), { credentials: "same-origin" })).json(); } catch {} const T = A?.together || []; if (!T.length) return;
     const withPill = () => { const P = window.PLFriends; if (!P) return false; tg = document.createElement("div"); tg.className = "cwm-tg"; tg.innerHTML = T.slice(0, 3).map((t) => P.html({ count: t.count, line: t.line, people: t.people })).join(" "); placeTg(); return true; };
     if (!withPill()) { const s = document.createElement("script"); s.src = "/friendsgoing.js"; s.onload = withPill; document.head.appendChild(s); } }
   function placeTg() { if (!tg || document.body.contains(tg)) return; const n = $(".going") || $(".going-n") || $("#view-guest .who-going") || $("#view-guest h1, #view-guest .lk-title"); if (n) n.after(tg); }

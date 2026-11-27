@@ -255,7 +255,7 @@ ${sec("ros", "Run of show", it.runOfShow.length ? list(it.runOfShow, true) : "")
 ${sec("good", "Good to know", good.length ? `<dl class="good">${good.map(([k, v]) => `<div><dt>${k}</dt><dd>${e(v)}</dd></div>`).join("")}</dl>` : "")}
 ${K ? `<section class="sec" id="kudos" aria-labelledby="kh"><h2 class="sh" id="kh">Kudos</h2>${K.quotes.length ? K.quotes.map((q) => `<blockquote class="kq"><p>${e(q.text)}</p><cite>${e(q.name)}</cite></blockquote>`).join("") : `<p>${K.n} ${K.n === 1 ? "guest" : "guests"} sent kudos.</p>`}</section>` : ""}
 <section class="act" id="request" aria-labelledby="act">${form}</section>
-<section class="sec" aria-labelledby="mh"><h2 class="sh" id="mh">More from ${e(nm)}</h2>${others.length ? `<ul class="others">${others.map((x) => `<li><a href="${e(urlOf(T.handle, x))}"><b>${e(x.title)}</b>${x.price ? `<span>${e(x.price)}</span>` : ""}</a></li>`).join("")}</ul>` : ""}<p class="foot">${T.preview ? `${e(nm)} hasn't joined Pottery Lab yet. This page shows what they offer. ` : ""}<a href="${host}">See ${e(nm)}'s page</a></p></section>
+${others.length ? `<section class="sec" aria-labelledby="mh"><h2 class="sh" id="mh">More from ${e(nm)}</h2><ul class="others">${others.map((x) => `<li><a href="${e(urlOf(T.handle, x))}"><b>${e(x.title)}</b>${x.price ? `<span>${e(x.price)}</span>` : ""}</a></li>`).join("")}</ul>` : `<section>`}<p class="foot">${T.preview ? `${e(nm)} hasn't joined Pottery Lab yet. This page shows what they offer. ` : ""}<a href="${host}">See ${e(nm)}'s page</a></p></section>
 </article></main>
 <script src="/save.js" defer></script>
 <script>(function(){var $=function(s){return document.querySelector(s)};

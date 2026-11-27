@@ -65,14 +65,14 @@
     download: '<path d="M12 4v12M8 12l4 4 4-4"/><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"/>',
   };
   const icon = (n, cls = "") => `<svg class="bb-ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || ""}</svg>`;
-  const LOGO = '<svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0"/></svg>';
+  const LOGO = '<svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>';
 
   // ---- header: one quiet bar for the brand side, one for the host side ----
   function top(active, side = "brand") {
     const L = side === "host" ? [["/host/teams", "inbox", "Teams", "teams"], ["/teams/discover", "all", "See it as a brand", "discover"]]
       : [["/teams/home", "home", "Home", "home"], ["/teams/discover", "all", "Discover hosts", "discover"], ["/teams/campaigns", "flag", "Campaigns", "campaigns"], ["/teams/insights", "spark", "Insights", "insights"], ["/teams/bookings", "cal", "Bookings", "bookings"]];
     const el = document.createElement("header"); el.className = "bb-top";
-    el.innerHTML = `<div class="in"><a class="bb-logo" href="${side === "host" ? "/host/teams" : "/teams/home"}">${LOGO}<span>Pottery Lab</span></a><nav class="bb-nav" aria-label="Teams">${L.map(([h, i, t, k]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ""} aria-label="${t}">${icon(i)}<span class="lbl">${t}</span></a>`).join("")}</nav></div>`;
+    el.innerHTML = `<div class="in"><a class="bb-logo" aria-label="Pottery Lab home" href="${side === "host" ? "/host/teams" : "/teams/home"}">${LOGO}<span>pottery lab</span></a><nav class="bb-nav" aria-label="Teams">${L.map(([h, i, t, k]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ""} aria-label="${t}">${icon(i)}<span class="lbl">${t}</span></a>`).join("")}</nav></div>`;
     document.body.prepend(el); return el;
   }
 

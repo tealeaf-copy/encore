@@ -10,7 +10,7 @@
 body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:16px/1.5 var(--pl-font-text);-webkit-font-smoothing:antialiased}
 main{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
 .top{display:flex;justify-content:space-between;align-items:center;min-height:52px}
-.brand{display:flex;gap:8px;align-items:center;text-decoration:none;color:inherit;font-weight:600}
+.brand{display:flex;gap:8px;align-items:center;text-decoration:none;color:inherit;font:600 25px/1 var(--pl-font-display,"IBM Plex Sans"),system-ui,sans-serif;letter-spacing:-.03em}
 .top a.in{display:inline-flex;align-items:center;min-height:44px;color:var(--pl-soft);text-decoration:none;font-size:15px}
 .eyebrow{display:block;font:500 12px/1.4 var(--pl-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pl-soft);margin:16px 0 8px}
 h1{font:400 34px/1.08 var(--pl-font-display);letter-spacing:-.015em;margin:0 0 6px;text-wrap:balance}
@@ -57,7 +57,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 </style>
 </head><body>
 <main>
-  <header class="top"><a class="brand" href="/about" aria-label="Pottery Lab"><svg viewBox="0 0 28 28" width="22" height="22" aria-hidden="true"><path d="M10 4.2h8M11.1 4.2v1.7c0 1.2-.9 1.8-.9 2.9 0 1.3-5.5 3.2-5.5 8.9 0 4.5 4.1 7.3 9.3 7.3s9.3-2.8 9.3-7.3c0-5.7-5.5-7.6-5.5-8.9 0-1.1-.9-1.7-.9-2.9V4.2M12.7 19.2c.8.55 1.8.55 2.6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>pottery lab</a><a class="in" id="signIn" href="/login?next=%2Fstart%3Fsave%3D1">Sign in</a></header>
+  <header class="top"><a class="brand" href="/about" aria-label="Pottery Lab"><svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a><a class="in" id="signIn" href="/login?next=%2Fstart%3Fsave%3D1">Sign in</a></header>
 
   <div id="plan">
     <span class="eyebrow" id="eyebrow">Plan a dinner</span>

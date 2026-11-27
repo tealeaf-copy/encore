@@ -235,7 +235,7 @@ test("A comment in the host's Inbox keeps its own full stops: who and where on t
 test("Feed cards: a double tap is one kudos, 44px targets and 6px corners on the comment box and the post page", () => {
   const fv = fs.readFileSync(new URL("../public/feedvisual.js", import.meta.url), "utf8"), pg = fs.readFileSync(new URL("../public/post.html", import.meta.url), "utf8");
   assert.match(fv, /if \(Date\.now\(\) - \(tapped\.get\(t\) \|\| 0\) < 500\) return;/);
-  assert.match(fv, /\.fb-follow-in\{flex:none;min-height:44px;[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-title a\{display:block;padding:6px 0;margin:-6px 0/);
+  assert.match(fv, /\.fb-follow-in\{flex:none;min-height:44px;[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-title a\{display:block;padding:9px 0;margin:-9px 0/); // 24px titles on a phone: 27.6 + 18 clears 44
   assert.match(fv, /\.fb-sendc\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/); assert.match(fv, /\.fb-add textarea\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-md,6px\)/); assert.match(fv, /\.fb-count\{[^}]*min-height:44px/);
   assert.doesNotMatch(pg, /border-radius:(1\d|2\d)px/, "the post page is on the kit's 6px"); assert.match(pg, /\.pp-send\{[^}]*min-height:44px[^}]*border-radius:var\(--pl-r-btn,6px\)/);
   // no stretched hit areas: a pseudo-element never grows a control over its neighbours in the social block

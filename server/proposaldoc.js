@@ -39,7 +39,7 @@ export function docHtml(V) {
   if (P.on !== false) { const real = P.stats.length > 0, fresh = P.isNew;
     out.push(`<section class="pp-sec" id="proof"><h2>${fresh ? "First brand partnership" : `${esc(H.name)} on Pottery Lab`}</h2>
       ${fresh ? `<p class="pp-lede">This would be ${esc(who)}'s first brand partnership on Pottery Lab.${real ? " Here's what's on the platform so far." : " Here's what they've done before, in their own words."}</p>` : ""}
-      ${real ? `<ul class="pp-stats">${P.stats.map((s) => `<li><b>${esc(s.n)}</b><span>${esc(s.label)}</span></li>`).join("")}</ul><p class="pp-src">${verified(V)} <span>Counted from real events and replies on Pottery Lab.</span></p>` : ""}
+      ${real ? `<ul class="pp-stats">${P.stats.map((s) => `<li><b>${esc(s.n)}</b><span>${esc(s.label)}</span></li>`).join("")}</ul><p class="pp-src">${verified(V)} <span>${P.example ? "Made-up numbers for an example host." : "Counted from real events and replies on Pottery Lab."}</span></p>` : ""}
       ${P.quotes.length ? `<div class="pp-quotes">${P.quotes.map((q) => `<figure><blockquote>“${esc(q.text)}”</blockquote><figcaption>${esc(q.name)}${q.event ? `, ${esc(q.event)}` : ""}${q.month ? ` · ${esc(monthOf(q.month))}` : ""} ${q.example ? '<span class="pp-tag ex">Example</span>' : '<span class="pp-ver sm">' + CHECK + "Kudos on Pottery Lab</span>"}</figcaption></figure>`).join("")}</div>` : ""}
       ${P.recent?.length ? `<p class="pp-meta"><span>Recently:</span>${P.recent.map((r) => `<span>${esc(r.title)}${r.month ? `, ${esc(monthOf(r.month))}` : ""}</span>`).join("")}</p>` : ""}
       ${P.offline.length ? `<div class="pp-offline"><h3>Before Pottery Lab ${hostSaid}</h3><ul>${P.offline.map((o) => `<li><b>${esc(o.what)}</b>${[o.when, o.people].filter(Boolean).length ? ` <span>${esc([o.when, o.people].filter(Boolean).join(" · "))}</span>` : ""}</li>`).join("")}</ul><p class="pp-src">Told to us by ${esc(who)}. Not checked by Pottery Lab.</p></div>` : ""}
@@ -142,8 +142,8 @@ export function pdfOf(V, { one = false, assetsDir = "" } = {}) {
   const tag = (t, x, yy, c = SOFT) => { font("courier", "bold", 8); const w = D.getTextWidth(t) + 8; D.setDrawColor(...c); D.setLineWidth(0.7); D.roundedRect(x, yy - 8, w, 11, 2, 2, "S"); color(c); D.text(t, x + 4, yy); return w; };
 
   // cover band
-  D.setFillColor(...LINEN); D.rect(0, 0, W, one ? 150 : 250, "F"); D.setFillColor(...acc); D.rect(0, 0, W, 8, "F");
-  let ph = null; try { const u = V.about?.photo || V.host.photo; if (assetsDir && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "")) { const id = u.split("/").pop(), meta = JSON.parse(fs.readFileSync(path.join(assetsDir, id + ".json"), "utf8")), kind = /png/i.test(meta.contentType) ? "PNG" : /jpe?g/i.test(meta.contentType) ? "JPEG" : ""; if (kind) ph = { data: new Uint8Array(fs.readFileSync(path.join(assetsDir, id))), kind }; } } catch {}
+    let ph = null; try { const u = V.about?.photo || V.host.photo; if (assetsDir && /^\/_blob\/[A-Za-z0-9]{20}$/.test(u || "")) { const id = u.split("/").pop(), meta = JSON.parse(fs.readFileSync(path.join(assetsDir, id + ".json"), "utf8")), kind = /png/i.test(meta.contentType) ? "PNG" : /jpe?g/i.test(meta.contentType) ? "JPEG" : ""; if (kind) ph = { data: new Uint8Array(fs.readFileSync(path.join(assetsDir, id))), kind }; } } catch {}
+  const band = one ? 150 : ph ? 250 : 190; D.setFillColor(...LINEN); D.rect(0, 0, W, band, "F"); D.setFillColor(...acc); D.rect(0, 0, W, 8, "F");
   const textW = ph && !one ? CW - 170 : CW;
   y = one ? 36 : 64;
   if (V.example) { tag("EXAMPLE", M, y + 2, acc); y += 16; }
@@ -153,12 +153,12 @@ export function pdfOf(V, { one = false, assetsDir = "" } = {}) {
   const meta = [B.name && `For ${B.name}`, B.occasion !== V.cover.sub && B.occasion, B.date && dayOf(B.date), V.plan.guests && `${V.plan.guests} guests`].filter(Boolean).join("  ·  ");
   if (meta) { y += 6; text(meta, { z: 10, c: SOFT, w: textW, max: 2 }); }
   if (ph && !one) { try { D.addImage(ph.data, ph.kind, W - M - 150, 56, 150, 150, undefined, "FAST"); } catch {} }
-  y = Math.max(y, one ? 150 : 250) + 8;
+  y = Math.max(y, band) + 8;
 
   const P = V.proof, I = V.idea, R = V.pricing, pick = I.concepts[I.pick] || I.concepts[0], rec = R.tiers[R.recommend] || R.tiers[0];
   const stats = () => { if (!P.stats.length) return; const S = P.stats.slice(0, one ? 3 : 6), cols = 3, cw = (CW - (cols - 1) * 10) / cols;
     for (let i = 0; i < S.length; i += cols) { if (!room(52)) return; S.slice(i, i + cols).forEach((s, j) => { const x = M + j * (cw + 10); D.setDrawColor(...INK); D.setLineWidth(1); D.roundedRect(x, y, cw, 46, 4, 4, "S"); font("helvetica", "bold", 18); color(INK); D.text(pdfText(s.n), x + 10, y + 21); font("helvetica", "normal", 8.5); color(SOFT); D.text(D.splitTextToSize(pdfText(s.label), cw - 20).slice(0, 2), x + 10, y + 33); }); y += 54; }
-    if (room(14)) { const w = tag(P.example ? "EXAMPLE NUMBERS" : "VERIFIED BY POTTERY LAB", M, y + 9, P.example ? acc : BLUE); font("helvetica", "normal", 9); color(SOFT); D.text("Counted from real events and replies on Pottery Lab.", M + w + 6, y + 9); y += 16; } };
+    if (room(14)) { const w = tag(P.example ? "EXAMPLE NUMBERS" : "VERIFIED BY POTTERY LAB", M, y + 9, P.example ? acc : BLUE); font("helvetica", "normal", 9); color(SOFT); D.text(P.example ? "Made-up numbers for an example host." : "Counted from real events and replies on Pottery Lab.", M + w + 6, y + 9); y += 16; } };
 
   if (one) {
     head(`${I.on !== false && pick ? pick.name : "The idea"}`);

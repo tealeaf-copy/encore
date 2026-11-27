@@ -148,6 +148,7 @@
       if (step === "pricing") $$("[data-money$='.cents']").forEach((inp) => { const m = /tiers\.(\d+)\.cents$/.exec(inp.dataset.money); const t = m && D.totals[+m[1]]; const sm = inp.parentElement.querySelector("small"); if (t && sm) sm.textContent = `${money(t.totalCents)} total, ${money(t.depositCents)} deposit`; });
       const h1 = $("h1", main); if (h1) h1.textContent = M.brand.name ? `For ${M.brand.name}` : "New proposal"; } catch (e) { toast(e.message); } ok(); }, ms); }); }
 
+  if (main.dataset.out) { const e = new Error("Sign in first."); e.status = 401; fail(e); return; }
   (async () => { try { const T = await api("/api/proposals/templates"); window.__TPL = T.templates; window.__UNITS = T.units; window.__POL = T.policies; } catch {}
     const m = /^\/proposals\/([a-f0-9]{8,24})\/edit$/.exec(path);
     if (m) editPage(m[1]); else if (path === "/proposals/new") newPage(); else listPage(); })();

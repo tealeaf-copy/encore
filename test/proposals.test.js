@@ -163,7 +163,7 @@ test("the brand answers: accept goes into the booking and deposit path, a questi
 
 test("examples: from the example hosts, labelled Example on the page, the PDF and the card, never Verified and never answerable", async () => {
   const T = (await ok(await get("/api/proposals/templates"))).templates; assert.equal(T.length, 6); assert.ok(T.every((t) => t.example.startsWith("/proposals/example/")));
-  for (const t of T) { const r = await get(t.example), h = await r.text(); assert.equal(r.status, 200, t.id); assert.match(h, /<b>Example<\/b> This is an example proposal/); assert.match(h, /Fernlight/); assert.doesNotMatch(h, /Verified by Pottery Lab/); assert.match(h, /noindex/); assert.doesNotMatch(h, /data-act="accept"/, "an example can't be accepted"); }
+  for (const t of T) { const r = await get(t.example), h = await r.text(); assert.equal(r.status, 200, t.id); assert.match(h, /<b>Example<\/b> This is an example proposal/); assert.match(h, /Fernlight/); assert.doesNotMatch(h, /Verified by Pottery Lab/); assert.doesNotMatch(h, /Counted from real events/, "an example never claims real numbers"); assert.match(h, /noindex/); assert.doesNotMatch(h, /data-act="accept"/, "an example can't be accepted"); }
   const pdf = Buffer.from(await (await get("/proposals/example/dinner/pdf")).arrayBuffer()).toString("latin1"); const pages = (pdf.match(/\/Type \/Page\b/g) || []).length;
   assert.equal((pdf.match(/Booked and paid through Pottery Lab · Example\) Tj/g) || []).length, pages, "every page footer says Example");
   assert.equal((await get("/proposals/example/nope")).status, 404);

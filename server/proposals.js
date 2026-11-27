@@ -123,7 +123,6 @@ export function mountProposals(app, { store, small, currentUser, C, X = {}, PUBL
   const me = (req) => { const u = currentUser(req); return u && u.ws && u.ws !== DEFAULT_WS ? u : null; };
   const BB = () => X.bb || {};
   const hits = new Map(), limited = (k, n, win = 3600e3) => { const now = Date.now(); let h = hits.get(k); if (!h || now - h.at > win) { h = { n: 0, at: now }; hits.set(k, h); } if (hits.size > 20000) hits.clear(); return ++h.n > n; };
-  const page = (file) => (req, res) => { let html = ""; try { html = fs.readFileSync(path.join(PUBLIC_DIR, file), "utf8"); } catch { return res.status(404).type("text").send("Not found"); } res.set("Cache-Control", "private, no-cache").type("html").send(html); };
   const get = (id) => store.get("system/prop-" + String(id || "").replace(/[^a-f0-9]/g, "").slice(0, 24))?.data || null;
   const put = (P) => { P.updatedAt = Date.now(); store.set("system/prop-" + P.id, P); return P; };
   const byToken = (t) => { const k = String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40); if (k.length < 20) return null; const p = store.get("system/proptok-" + k)?.data; const P = p && get(p.id); return P && P.token === k ? P : null; };
@@ -249,7 +248,9 @@ export function mountProposals(app, { store, small, currentUser, C, X = {}, PUBL
   // from a request in Team requests: find or make the draft on the server and open it (one proposal a request)
   app.get("/proposals/new", (req, res, next) => { const u = me(req), r = req.query.request ? reqOf(String(req.query.request)) : null; if (!u || !r || r.hostWs !== u.ws || !C.profileOf(u.ws)?.handle) return next();
     let P = mine(u.ws).find((p) => p.requestId === r.id && p.status !== "withdrawn"); if (!P) P = put(fresh(u.ws, { requestId: r.id })); res.redirect(302, `/proposals/${P.id}/edit`); });
-  app.get(["/proposals", "/proposals/new", "/proposals/:id/edit"], page("proposals.html"));
+  // signed out, the page shows "Sign in" without asking the API first (no failed request on the way)
+  app.get(["/proposals", "/proposals/new", "/proposals/:id/edit"], (req, res) => { let html = ""; try { html = fs.readFileSync(path.join(PUBLIC_DIR, "proposals.html"), "utf8"); } catch { return res.status(404).type("text").send("Not found"); }
+    if (!me(req)) html = html.replace('<main class="pb" id="main">', '<main class="pb" id="main" data-out="1">'); res.set("Cache-Control", "private, no-cache").type("html").send(html); });
   const sendDoc = (res, html, { cache = "private, no-store" } = {}) => res.set({ "Cache-Control": cache, "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "same-origin" }).type("html").send(html);
 
   // the brand's page: read-only, noindex, the link is the key

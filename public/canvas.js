@@ -298,7 +298,7 @@
   function pickKind(k) { if (S.W.planKind === "run" && k !== "run" && root.RunTemplates) { const R = root.RunTemplates; S.W.questions = (S.W.questions || []).filter((x) => !Object.values(R.RUN_Q).includes(x.id)); delete S.W.runSignup; delete S.W.runTpl; S.open.delete("runsignup"); } // a run's sign-up goes with it
     const r = applyKind(S.W, k, S.open);
     if (r.handoff === "drop") { const D = root.EncoreDrop; if (D?.setup) { close(); D.setup({ onDone: (j) => { if (j?.id) { location.hash = "#programs"; location.reload(); } } }); } else say("The drop setup is still loading. Try again in a moment."); return; }
-    S.W = r.d; S.open = r.open; if (k === "run") runDefaults(S.W); changed(true); try { root.PLFx?.haptic?.("light"); } catch {}
+    S.W = r.d; S.open = r.open; if (k === "run") runDefaults(S.W); changed(true); picksPoke(); try { root.PLFx?.haptic?.("light"); } catch {}
     const K = PLAN_KINDS.find((x) => x.k === k); if (K.own) { setTimeout(() => q("#cvKindOwn", S.el)?.focus(), 30); return; } say(`${K.label}: set up. Change anything.`);
     const blk = q(`[data-kblock="${Object.keys(KIND_OF_BLOCK).find((b) => KIND_OF_BLOCK[b] === k) || ""}"]`, S.el); if (blk) { blk.classList.add("new"); setTimeout(() => blk.scrollIntoView({ block: "center", behavior: "smooth" }), 60); } }
 
@@ -376,6 +376,7 @@
       <div class="cv-ed cv-tw"><label class="vh" for="cvTitle">Event title</label><textarea id="cvTitle" class="cv-title" rows="1" maxlength="90" placeholder="Untitled event" enterkeyhint="done">${esc(W.pubTitle || W.name || "")}</textarea></div>
       <p class="cv-err" id="cvTitleErr" role="alert"></p><button type="button" class="cv-fromline cv-ed" id="cvFromLine" hidden></button><div id="cvNight" class="cv-ed" hidden></div>
       <div class="cv-styles" role="radiogroup" aria-label="Title style">${TITLE_STYLES.map(([k, l, f]) => { const ff = f ? root.EncoreLooks?.FONTS?.[f]?.css : KF?.display || "var(--pl-font-display)"; return `<button type="button" role="radio" aria-checked="${st === k}" data-style="${k}" style="font-family:${esc(ff || "inherit")}">${f ? l : KF ? "Your kit" : l}</button>`; }).join("")}</div>
+      ${S.isNew ? `<div id="cvPicks" class="cv-picks" hidden></div>` : ""}
       <button type="button" class="cv-when cv-ed${when ? "" : " empty"}" data-cv="when" id="cvWhen">${when ? (F ? `<small>A feeler. Nothing's booked yet.</small><b>Friends pick a date</b><span>${esc(when.replace(/^Asking friends · /, ""))}</span>` : `<b>${esc(wd)}</b>${wt ? `<span>${esc(wt)}</span>` : ""}`) : `<b>Pick a date and time</b><span>Or ask friends which date works first</span>`}</button>
       <div class="cv-rows">
         <div class="cv-row"><span class="cv-av" style="--c:${esc(PROFILE?.color || "#E3D7BE")}">${PROFILE?.avatarUrl ? `<img src="${esc(PROFILE.avatarUrl)}" alt="">` : esc(hostName().slice(0, 1).toUpperCase())}</span><span class="cv-rt"><small>Hosted by</small><b>${esc(hostName())}${cohostLine(W)}</b></span><button type="button" class="cv-mini" data-cv="cohost">${I.plus}<span>Co-host</span></button></div>
@@ -411,7 +412,7 @@
     root.PLTrendIdeas.mount(el, { key: "canvas", n: 3, lead: "Ideas from Potto", ready: true, onPick: (x) => { const W = S.W;
       if (x.kind && !W.planKind && PLAN_KINDS.some((k) => k.k === x.kind && !k.handoff)) { const r = applyKind(W, x.kind, S.open); S.W = r.d; S.open = r.open; }
       S.W.pubTitle = S.W.name = String(x.title || "").slice(0, 90); changed(true); say(`${x.title}: started. Change anything.`); q("#cvTitle", S.el)?.focus({ preventScroll: true }); } }); } // ---- end trends ----
-  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); root.PLCohost?.drawn?.(cohost()); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); }
+  function draw(keepScroll = true) { const sc = q("#cvScroll", S.el), y = sc.scrollTop; q("#cvPage", S.el).innerHTML = pageHTML(); ideasRow(); root.PLCohost?.drawn?.(cohost()); grow(q("#cvTitle", S.el)); grow(q("#cvDesc", S.el)); qa("[data-af],[data-link]", S.el).forEach(grow); dress(); fitKinds(); if (keepScroll) sc.scrollTop = y; preview(); dockNames(); suggestHook(); picksHook(); }
   // the dock says what's on: "Look: Sage", "Effect: Petals"
   function lookName(W) { const L = W.look || {}, LK = root.EncoreLooks, p = (L.palette || [])[0]; if (!p) return "House"; const sw = (LK?.SWATCHES || []).find((x) => x[0] === p); return sw ? sw[3] : LK?.VIBES?.[L.vibe]?.label || "Your colours"; }
   function dockNames() { const W = S?.W, el = S?.el; if (!W || !el) return; for (const [k, ic, word, v] of [["look", I.look, "Look", lookName(W)], ["effect", I.fx, "Effect", effectName(W)]]) { const b = q(`.cv-dock [data-cv=${k}]`, el); if (!b) continue;
@@ -455,6 +456,12 @@
     P.attach(Sh.$("#cvWhere"), { kind: "place", city: () => city.value.trim() || sugCity(), onPick: (it) => { if (it.city && !city.value.trim()) city.value = it.city; } });
     P.attach(city, { kind: "city", city: sugCity }); }
   if (!root.PLCohost && !document.querySelector('script[src^="/cohost.js"]')) { const s = document.createElement("script"); s.src = "/cohost.js"; s.async = true; document.head.appendChild(s); } // co-host: Here's your night (public/cohost.js), loaded here so the app shell stays the same size
+  // ---- Potto's picks (public/placesuggest.js): places and nudges for what's being made, below the title. It opens on a
+  // kind tap or the first words typed, never by itself; picking a place fills Where and the cover drawing. ----
+  function picksHook() { const el = S?.el && q("#cvPicks", S.el), P = root.PLSuggestPlaces; if (!el) return; if (!P?.mount) { if (!document.querySelector('script[src^="/placesuggest.js"]')) { const s = document.createElement("script"); s.src = "/placesuggest.js"; s.async = true; s.onload = () => picksHook(); document.head.appendChild(s); } return; }
+    P.mount(el, { session: S, get: () => S?.W || {}, isNew: () => !!S?.isNew, city: sugCity, say, pickKind: (k) => pickKind(k), openAddon: (k) => { S.open.add(k); changed(true); },
+      apply: (fn, msg) => { fn(S.W); try { app("applyPlace")?.(S.W); } catch {} changed(true); if (msg) say(msg); } }); }
+  const picksPoke = () => { try { root.PLSuggestPlaces?.poke?.(); } catch {} }; // ---- end Potto's picks ----
   if (!root.PLSuggest && !document.querySelector('script[src^="/autocomplete.js"]')) { const s = document.createElement("script"); s.src = "/autocomplete.js"; s.async = true; document.head.appendChild(s); }
   (root.__plSuggestQ = root.__plSuggestQ || []).push(() => suggestHook()); // the canvas may open before the file lands
 
@@ -464,7 +471,7 @@
 
   function wire(el) {
     el.addEventListener("input", (e) => { const t = e.target, W = S.W;
-      if (t.id === "cvTitle") { pvFlash = "title"; W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = "";
+      if (t.id === "cvTitle") { pvFlash = "title"; picksPoke(); W.pubTitle = t.value.replace(/\n/g, " "); W.name = W.pubTitle; if (t.value.includes("\n")) t.value = W.pubTitle; grow(t); q("#cvTitleErr", el).textContent = "";
         root.PLCohost?.typed?.(t.value, cohost()); // co-host: Here's your night (public/cohost.js)
         { const fb = q("#cvFromLine", el); clearTimeout(fb?.__t); if (fb) fb.__t = setTimeout(() => { const P = planFromLine(t.value); fb.hidden = !P || (!!W.date && !!W.startTime && !!(W.meetPoint || W.venueName)); if (P) { fb.textContent = planLineLabel(P); fb.__p = P; } }, 400); } const cov = q("#cvCover", el); if (cov && !W.coverPhoto && !W.coverArt?.kind) { clearTimeout(t.__c); t.__c = setTimeout(() => { const pen = q(".cv-pen", cov); cov.innerHTML = coverHTML(W); cov.appendChild(pen); }, 500); } }
       else if (t.id === "cvKindOwn") { const v = t.value.replace(/\s+/g, " ").trimStart().slice(0, 24); W.typeLabel = v.trim(); W.activity = v.trim().toLowerCase(); pvFlash = "title"; }

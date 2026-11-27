@@ -45,6 +45,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
 .signedout{text-align:center}
 #signin .btn.sm{min-height:44px;flex:none}#signin .msg:not(:empty){margin-top:8px}
 .tx-f{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 0}.tx-f input{flex:1 1 180px;min-width:0;min-height:44px;border:1.5px solid var(--line-strong);border-radius:6px;padding:0 12px;font:16px inherit;background:var(--card);color:var(--ink)}
+.ha{display:grid;gap:12px}.ha-f{display:grid;gap:4px;font-weight:600;font-size:15px}.ha-f input{min-height:44px;border:1.5px solid var(--line-strong);border-radius:6px;padding:0 12px;font:400 16px "IBM Plex Sans",system-ui,sans-serif;background:var(--card);color:var(--ink)}.ha .row{border-top:0}.ha-b{display:flex;gap:8px;flex-wrap:wrap}
 .pic-row{justify-content:flex-start;gap:16px;border-top:0}.pic{flex:none;display:block;width:64px;height:64px}.pic-row .btn{margin-left:auto}
 </style>
 </head>
@@ -85,6 +86,7 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     <!-- autocomplete (public/autocomplete.js, server/suggest.js): Potto's suggestions as you type; off keeps the ones from this device -->
     <section aria-labelledby="hSug" id="suggest"><h2 id="hSug">Suggestions as you type</h2><p>When you type an idea or a place, Potto offers a few ways to finish it. A tap fills it in. Your recent picks stay on this device.</p>
       <div class="row"><span>Suggestions from Potto<small>Smarter ones as you type. Only what you typed, your city and the kind of field are sent. Off keeps the quick ones from this device.</small></span><input type="checkbox" class="sw" id="pottoSuggest" aria-label="Suggestions from Potto" checked></div></section>
+    <section id="plHomeSet" aria-labelledby="hHome" hidden></section><script src="/homearea.js" defer></script><!-- Home area for Potto's picks, private (public/homearea.js, server/placesuggest.js) -->
     <section aria-labelledby="hName" id="names"><h2 id="hName">Your name on the feed</h2><p>Kudos and comments on the feed are public, like the posts they're on. Choose who sees your name next to them. Everyone else sees "A guest". Hosts always see who commented on their own posts.</p>
       <fieldset class="nm-set"><legend>Show my name on kudos and comments</legend>
         <label class="row"><span>Everyone</span><input type="radio" name="socialName" value="everyone" checked></label>

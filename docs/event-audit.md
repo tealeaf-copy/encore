@@ -4,6 +4,17 @@ Made by `node scripts/event-audit.mjs` (390 and 1280px). One row per surface and
 Each row lists the checks that apply to that state: a plain name must be there and work, "no ..." must not be there (a reply form on a cancelled event, the address before you are in, Follow on your own event); errors and layout apply everywhere. Open items name the agent that owns them while they work. High: 5 · medium: 1 · low: 12.
 
 
+## Ported onto main (Nov 27, 2026)
+
+The fixes were made on an older main and moved onto the current one. What changed on the way:
+- Follow is main's shared `public/follow.js` (window.PLFollow) on every event surface: the light invite (through `public/event-extras.js`), the full invite, plan pages, Plans, chats and experience pages. The temporary `public/follow-fallback.js` is gone. `public/friendsgoing.js` now names its styles `plfgCss`: it shared the id `plfCss` with follow.js, so whichever loaded second drew no styles.
+- Help is main's own link (`[data-help]`, `public/report.js`) in the invite footers. The audit adds only Report beside it.
+- Members first: a paid members window (`server/memberships.js`) keeps its own rules. The light invite keeps it, with its seats line (`memberships.guestLine` through `/api/public/seats`), and the full invite shows that same line, so there is one rule. A fan club window with no membership behind it still goes to the full invite, which says when it opens. The guest doc's `club` says `paid` for a membership window.
+- A cancelled drop stays its order page (the full invite sends a drop back to `/e/`).
+- The thing page (`/x/<handle>/<thing>`) keeps main's Follow, which opens the host page to follow.
+
+The tables below are from the run before the port. The audit was not run again after it.
+
 ## Before and after (Nov 27, 2026)
 
 81 cases at each width: the light invite (/e/), the full invite (/g), drop order pages, plan pages, the Plans peek, the chat details, the feed's event card, team experiences (/x/), a brand-booked experience (/teams/x/) and the host's own event in the app; signed out, signed in, going, maybe, can't go, waitlisted, asked / let in / turned down, paid and unpaid, members first (member and not), full, cancelled, date changed, past, the host, a co-host, link-only, a table, a weekend away, a summit, long text, no place, a home address.

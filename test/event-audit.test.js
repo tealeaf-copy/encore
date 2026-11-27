@@ -77,7 +77,7 @@ test("the full invite: host line and Follow (not on your own event), Report, a c
 test("the shared Follow: every event surface loads main's public/follow.js, and its styles and the friends-going row's both load", () => {
   assert.ok(!fs.existsSync(new URL("../public/follow-fallback.js", import.meta.url)), "the temporary fallback is gone");
   for (const f of ["public/plan.html", "public/plans.html", "public/chats.html", "public/experience.html"]) { const h = read(f); assert.match(h, /<script src="\/follow\.js" defer><\/script>/, f); assert.doesNotMatch(h, /follow-(fallback|shim)/, f); }
-  assert.match(read("server/interest.js"), /<script src="\/follow\.js" defer><\/script>/); assert.match(read("public/event-extras.js"), /load\("\/follow\.js"\)/);
+  assert.match(read("public/event-extras.js"), /load\("\/follow\.js"\)/);
   // public/friendsgoing.js used the style id plfCss too, so whichever loaded second drew no styles
   const F = read("public/follow.js"), G = read("public/friendsgoing.js");
   assert.match(F, /s\.id = "plfCss"/); assert.match(G, /s\.id = "plfgCss"/); assert.doesNotMatch(G, /"plfCss"/);
@@ -103,5 +103,5 @@ test("chats: the details sheet names the host with their page and Follow; experi
   const t = await (await fetch(srv.base + "/api/chats/eaOpen", { headers: { cookie: sam.cookie } })).json(); assert.equal(t.event.hostHandle, "mai-audit");
   const c = read("public/chat.js"); assert.match(c, /class="ch-hrow"><a href="\/@\$\{encodeURIComponent\(T\.event\.hostHandle\)\}"/); assert.match(c, /\$\{host \? "" : `<button type="button" class="plf-btn" data-pl-follow=/);
   const x = await (await fetch(srv.base + "/x/mai-audit/dumpling1")).text();
-  assert.match(x, /Hosted by <a href="\/@mai-audit">/); assert.match(x, /data-pl-follow="mai-audit"/); assert.match(x, /id="share"/); assert.match(x, /\/follow\.js/);
+  assert.match(x, /Hosted by <a href="\/@mai-audit">/); assert.match(x, /<a class="btn2" href="\/@mai-audit#follow">/, "main's thing page: Follow on the host page"); assert.match(x, /id="share"/);
 });

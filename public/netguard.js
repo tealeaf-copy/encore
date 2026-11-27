@@ -55,7 +55,7 @@
       for (const [x, y] of [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]]) {
         for (const el of document.elementsFromPoint(x, y)) { if (f.contains(el)) continue; const c = el.closest(CTL); if (c && !f.contains(c) && !fixed(c)) { hit = true; break; } } if (hit) break; }
       f.classList.toggle("pl-fab-dodge", hit); } };
-    const soon = () => { if (!q) q = requestAnimationFrame(look); };
+    const soon = () => { if (!q && window.requestAnimationFrame) q = requestAnimationFrame(look); };
     addEventListener("scroll", soon, { passive: true }); addEventListener("resize", soon); addEventListener("load", soon);
     const st = () => { if (document.getElementById("plFabCss")) return; const s = document.createElement("style"); s.id = "plFabCss"; s.textContent = ".pl-fab-dodge{opacity:0!important;pointer-events:none!important;transition:opacity .15s}"; document.head.appendChild(s); };
     if (document.head) st(); else addEventListener("DOMContentLoaded", st); setTimeout(soon, 1500); }

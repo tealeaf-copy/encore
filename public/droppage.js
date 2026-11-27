@@ -32,7 +32,7 @@
 .dg-alg{display:flex;gap:8px;margin:0 0 14px;padding:10px 12px;border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-sand-soft,#FBF6EE);font-size:15px}.dg-alg svg{flex:none;margin-top:2px}
 .dg-own{display:grid;gap:8px;margin:0 0 14px;padding:12px;border:1.5px dashed var(--pl-ink);border-radius:var(--pl-r-md,6px);background:var(--pl-surface)}.dg-own p{margin:0}.dg-own .row{display:flex;flex-wrap:wrap;gap:8px}
 .dg-h{font:600 20px/1.25 var(--pl-font-display,var(--pl-font-text));margin:22px 0 10px}
-.dg-items{display:grid;gap:14px;grid-template-columns:1fr}@media (min-width:560px){.dg-items{grid-template-columns:1fr 1fr}}
+.dg-items{display:grid;gap:14px;grid-template-columns:1fr}@media (min-width:560px) and (max-width:899px){.dg-items{grid-template-columns:1fr 1fr}}
 .dg-it{border:1.5px solid var(--pl-line-strong);border-radius:var(--pl-r-md,6px);background:var(--pl-surface);overflow:hidden;display:flex;flex-direction:column}
 .dg-it .ph{position:relative;display:block;width:100%;aspect-ratio:4/3;border:0;padding:0;margin:0;background:var(--pl-sand);cursor:zoom-in;overflow:hidden}.dg-it .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .dg-it .ph .n{position:absolute;right:8px;bottom:8px;background:rgba(27,29,28,.72);color:#fff;border-radius:999px;padding:2px 9px;font:500 12px var(--pl-font-text)}.dg-it .ph.none{cursor:default;display:grid;place-items:center;color:var(--pl-soft)}
@@ -57,7 +57,7 @@
 .dg-view .bar button,.dg-view .nav{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer}
 .dg-view .rail{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.dg-view .rail::-webkit-scrollbar{display:none}.dg-view figure{flex:0 0 100%;margin:0;display:grid;place-items:center;scroll-snap-align:center;padding:8px}.dg-view img{max-width:100%;max-height:100%;object-fit:contain}
 .dg-view .nav{position:absolute;top:50%}.dg-view .nav.p{left:10px}.dg-view .nav.n{right:10px}@media (max-width:640px){.dg-view .nav{display:none}}
-#dgF{min-width:0}@media (min-width:900px){body.dg-on main#m{max-width:1080px}.dpg .dg-side .dg-wins{grid-template-columns:1fr}.dpg.wide{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:start}.dpg.wide .dg-side{position:sticky;top:16px}}
+#dgF{min-width:0}@media (min-width:900px){html body.dg-on #m#m#m{max-width:1080px}.dpg.wide .dg-items{grid-template-columns:1fr 1fr}.dpg .dg-side .dg-wins{grid-template-columns:1fr}.dpg.wide{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:start}.dpg.wide .dg-side{position:sticky;top:16px}}
 @media (prefers-reduced-motion:reduce){.dg-view .rail{scroll-behavior:auto}}`;
   const ISO = /^\d{4}-\d{2}-\d{2}$/;
 

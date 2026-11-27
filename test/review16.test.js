@@ -126,7 +126,7 @@ test("After you reply on /g, the sticky bar's room goes with the bar", () => {
   const css = read("public/slots.css");
   assert.match(css, /html body:has\(#gBar\) #view-guest#view-guest\.ev2\{padding-bottom:calc\(var\(--inv-bar-h\)/, "the bar's room only while the bar is on the page");
   assert.doesNotMatch(css, /@media \(max-width:759px\)\{html body #view-guest#view-guest\.ev2\{padding-bottom:calc/, "never unconditionally");
-  assert.match(css, /html body #m#m\{max-width:600px;padding:max\(8px,env\(safe-area-inset-top\)\) 16px calc\(var\(--inv-safe-b\) \+ 32px\)/, "the light invite's own padding leaves out the bar");
+  assert.match(css, /html body #m#m:not\(\[data-calm="host"\]\)\{max-width:600px;padding:max\(8px,env\(safe-area-inset-top\)\) 16px calc\(var\(--inv-safe-b\) \+ 32px\)/, "the light invite's own padding leaves out the bar");
   assert.doesNotMatch(read("public/replybar.js"), /document\.body\.style\.paddingBottom = on/, "the bar never pads the body by hand");
 });
 

@@ -175,8 +175,9 @@ form.del input[type=text]{border:1.5px solid var(--line-strong);border-radius:6p
     if (location.hash === "#text" && T.available) setTimeout(() => box.scrollIntoView({ block: "start" }), 50);
   } catch {}
   // usage counts (server/posthog.js): shown only when analytics is set up; off here or "No thanks" on the notice means none
-  try { const UA = await get("/api/me/analytics"); if (UA.configured) { const sw = $("#useOn"); let local = null; try { local = localStorage.getItem("pl-count"); } catch {} $("#usage").hidden = false; sw.checked = UA.on !== false && local !== "no";
-    sw.onchange = (e) => { const on = e.target.checked; try { localStorage.setItem("pl-count", on ? "yes" : "no"); } catch {} try { window.PLCount?.set(on); } catch {} send("/api/me/analytics", { on }).catch(() => {}); }; } } catch {}
+  if (document.querySelector('script[src*="/plcount.js"]')) { const sw = $("#useOn"); let local = null; try { local = localStorage.getItem("pl-count"); } catch {} $("#usage").hidden = false; sw.checked = local !== "no";
+    get("/api/me/analytics").then((UA) => { sw.checked = UA.on !== false && local !== "no"; }).catch(() => {});
+    sw.onchange = (e) => { const on = e.target.checked; try { localStorage.setItem("pl-count", on ? "yes" : "no"); } catch {} try { window.PLCount?.set(on); } catch {} send("/api/me/analytics", { on }).catch(() => {}); }; }
   // blocked
   async function drawBlocks() { const B = (await get("/api/me/blocks")).blocks || [], el = $("#blocks");
     el.innerHTML = B.length ? B.map((b) => `<div class="row"><span>${esc(b.name || (b.target.startsWith("host:") ? "@" + b.target.slice(5) : "Someone"))}<small>${b.target.startsWith("host:") ? "Host" : "Person"}</small></span><button type="button" class="btn sm" data-t="${esc(b.target)}">Unblock</button></div>`).join("") : `<p class="msg">No one. If someone bothers you, open the ⋯ on their post or page.</p>`;

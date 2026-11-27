@@ -4,7 +4,7 @@
 (function () {
   if (window.__plNudges) return; window.__plNudges = 1;
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const CSS = `.pln{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin:0 0 16px;padding:14px 16px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:16px;color:var(--pl-ink);font:15px/1.4 "IBM Plex Sans",system-ui,sans-serif}
+  const CSS = `.pln{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin:0 0 16px;padding:14px 16px;background:var(--pl-surface);border:1.5px solid var(--pl-line);border-radius:6px;color:var(--pl-ink);font:15px/1.4 "IBM Plex Sans",system-ui,sans-serif}
 .pln .pln-e{grid-row:span 2;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--pl-sand-soft);color:var(--pl-frame)}.pln .pln-e svg{width:20px;height:20px}.pln b{font:600 17px/1.2 var(--sys-title)}.pln p{margin:0;color:var(--pl-soft)}
 .pln .pln-acts{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .pln .pln-go{min-height:44px;padding:0 18px;border:1px solid var(--pl-accent);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 15px "IBM Plex Sans",system-ui;cursor:pointer}.pln .pln-go:disabled{background:var(--pl-raised);color:#4A3F37;box-shadow:none}

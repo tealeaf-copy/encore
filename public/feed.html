@@ -112,7 +112,9 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   <div class="fgrid"><div class="fcol">
   <div class="rail" id="rail" aria-label="Stories"></div>
   <div class="tabs" role="tablist" hidden><button data-t="feed" aria-selected="true">Feed</button><button data-t="me" aria-selected="false">Mine</button><button data-t="alerts" aria-selected="false">Watching</button><button data-t="friends" aria-selected="false">Friends</button></div>
-  <script>/* signed in: the stories row and the tabs hold their place from the first paint, so the feed doesn't drop 158px when they fill */ if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) { document.querySelector(".tabs").hidden = false; document.getElementById("rail").classList.add("rail-wait"); }</script>
+  <script>/* signed in: the stories row and the tabs hold their place from the first paint, so the feed doesn't drop 158px when they fill */ if (/(?:^|;\s*)encore_in=1/.test(document.cookie)) { document.querySelector(".tabs").hidden = false; document.getElementById("rail").classList.add("rail-wait"); }
+  /* signed out: the stories row holds its place too, and so does the one-line "New here?" note a first visit gets (public/shell.js), so the feed doesn't drop 170px on a first, cold load */
+  else { const r = document.getElementById("rail"); r.classList.add("rail-wait"); let seen = false; try { seen = !!localStorage.getItem("pl.aboutNote"); } catch (e) {} if (!seen) r.insertAdjacentHTML("beforebegin", '<p id="plAboutRoom" aria-hidden="true" style="height:54px;margin:12px 0 0"></p>'); }</script>
   <main id="m" data-calm="feed"></main>
   </div><aside class="fside" id="side" aria-label="Suggestions"></aside></div>
 </div>
@@ -161,7 +163,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   async function drawPublic() { document.body.classList.add("pub-feed"); for (const sel of [".tabs", "#bell"]) { const el = $(sel); if (el) el.hidden = true; }
     const V = window.FeedVisual, city = (() => { try { return (window.EncorePlace?.get() || {}).city || ""; } catch { return ""; } })();
     const [d, lb] = await Promise.all([api("/api/public/feed" + (V.publicQuery ? V.publicQuery() : "")).catch(() => ({ upcoming: [], past: [], moments: [], kudos: [], showcase: [], stories: [] })), api("/api/public/leaderboard/card?city=" + encodeURIComponent(city)).then((j) => j.card).catch(() => null)]);
-    V.rail($("#rail"), d.stories, { signedIn: false });
+    V.rail($("#rail"), d.stories, { signedIn: false }); $("#rail").classList.remove("rail-wait"); /* no stories: the held row closes with the loader, in the same frame */
     // the weekly edition; the leaderboard is a quiet link at the end, hosts to follow sit in "Find your people"
     $("#m").innerHTML = V.composePublic(d, { lb: lb ? "1" : "" }); V.wire($("#m"));
     const pl = $("#feedPlace"); if (pl && window.EncorePlace) window.EncorePlace.chip(pl, () => drawPublic());

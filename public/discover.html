@@ -123,14 +123,16 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   // one calm card, like /events: a 3:2 cover, a quiet status word, the date, the full title, the host, one button
   const tmOf = (t) => t && /^\d{1,2}:\d{2}$/.test(t) ? new Date("2000-01-01T" + t.padStart(5, "0")).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).replace(/:00(?=\s)/, "").replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()) : t || "";
   const cap = (t) => { t = String(t || "").trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ""; };
-  const card = (e, why) => { const H = e.host || {}, url = `/g#rsvp-${encodeURIComponent(e.id)}`, free = e.free || !e.price;
-    const st = e.sample ? "Example" : e.approvalRequired ? "Ask to join" : "";
-    const meta = [st ? `<b>${esc(st)}</b>` : "", esc(ET && cap(e.activity) === ET.labelOf(e) ? "" : cap(e.activity)), esc(free ? (e.costNote || "Free") : e.price === "chip" ? "Chip in" : e.price)].filter(Boolean).join(" · ");
+  // a drop (order ahead) has its prices on its items and often no day: it says Order and what it costs, never Free or "Date coming soon"
+  const dropFrom = (e) => { const P = (e.orderItems || []).map((i) => +i.price).filter((n) => n > 0); if (!P.length) return ""; const m = Math.min(...P), f = "$" + (m % 1 ? m.toFixed(2) : m); return P.length > 1 && Math.max(...P) > m ? "From " + f : f; };
+  const card = (e, why) => { const H = e.host || {}, drop = !!(e.drop || e.preorder), url = drop ? `/e/${encodeURIComponent(e.id)}` : `/g#rsvp-${encodeURIComponent(e.id)}`, free = !drop && (e.free || !e.price);
+    const st = e.sample ? "Example" : drop ? "Order ahead" : e.approvalRequired ? "Ask to join" : "";
+    const meta = [st ? `<b>${esc(st)}</b>` : "", drop || (ET && cap(e.activity) === ET.labelOf(e)) ? "" : esc(cap(e.activity)), drop ? esc(dropFrom(e)) : esc(free ? (e.costNote || "Free") : e.price === "chip" ? "Chip in" : e.price)].filter(Boolean).join(" · ");
     const cov = e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="" loading="lazy">` : window.EventArt ? window.EventArt.cover(e, { title: "", label: "" }) : "";
     const save = window.PLSave ? window.PLSave.button({ kind: "event", ref: e.id, title: e.title, img: e.coverPhoto || "" }) : "";
-    return `<article class="ls-card"><div class="ls-media">${cov}</div><div class="ls-body">${ET ? ET.tag(e, { cls: "pl-type--b" }) : ""}${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(e.drop && e.pickup ? "Order ahead · " + e.pickup : e.date ? C.fmtDate(e.date) + (e.startTime ? " · " + tmOf(e.startTime) : "") : "Date coming soon")}</p>
+    return `<article class="ls-card"><div class="ls-media">${cov}</div><div class="ls-body">${ET ? ET.tag(e, { cls: "pl-type--b" }) : ""}${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(e.drop && e.pickup ? e.pickup : drop ? "Order any time" : e.date ? C.fmtDate(e.date) + (e.startTime ? " · " + tmOf(e.startTime) : "") : "Date coming soon")}</p>
       <a class="ls-title" href="${url}">${esc(e.title)}</a><p class="ls-sub">${H.name ? "by " + esc(H.name) : ""}${e.hood || e.city ? `${H.name ? " · " : ""}${esc(e.hood || e.city)}` : ""}</p>${why ? `<small class="why">${esc(why)}</small>` : ""}
-      <div class="ls-acts"><a class="ls-btn primary" href="${url}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${save}${H.handle ? `<a class="ls-mi" href="/@${encodeURIComponent(H.handle)}">More from ${esc(H.name || "this host")}</a>` : ""}</div></details></div></div></article>`; };
+      <div class="ls-acts"><a class="ls-btn primary" href="${url}" aria-label="${drop ? "Order" : "See the event"}: ${esc(e.title)}">${drop ? "Order" : "See the event"}</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${save}${H.handle ? `<a class="ls-mi" href="/@${encodeURIComponent(H.handle)}">More from ${esc(H.name || "this host")}</a>` : ""}</div></details></div></div></article>`; };
 
   // ---- one location chip: tap to set your city ----
   // one city picker (public/place.js): a bottom sheet on phones, a popover on desktop; a pick applies at once

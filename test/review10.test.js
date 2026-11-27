@@ -59,7 +59,7 @@ test("Discover nudge: link only or on your page, and whether the page is ready f
   assert.match(js, /is link only/); assert.doesNotMatch(js, /is Link only/); assert.match(js, /is on your page/);
   assert.match(js, /Followers see it\. Put it on Discover so people nearby find it too\./);
   assert.match(js, /so it shows on Discover/); assert.match(js, /Finish your page/); assert.match(js, /\?customize=1/);
-  assert.match(js, /if \(!N\?\.discover\) \{ v\.insertAdjacentHTML\("afterbegin", DONE\); return; \}/, "the done state stays when Home redraws");
+  assert.match(js, /if \(!N\?\.discover\) \{ put\(DONE\); return; \}/, "the done state stays when Home redraws");
   assert.doesNotMatch(js, /—/);
 });
 

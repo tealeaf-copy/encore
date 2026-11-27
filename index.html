@@ -1378,7 +1378,7 @@ main.wrap{padding-bottom:104px}
 <script>
 // local calendar dates (not UTC): today's date and whole days until a YYYY-MM-DD date
 // declared here (the early block) so render code that runs from a fetch callback before later blocks parse can use them
-function hostFirst(e){ return String(e?.hostName||window.__gHostName||"").trim().split(/\s+/)[0]||"your host" }
+function hostFirst(e){ return (String(e?.hostName||window.__gHostName||"").trim().split(/\s+/)[0]||"").replace(/['’]s$/i,"")||"your host" } // "Bo's Omecasa" hosts as Bo, never "Bo's is hosting"
 // review round 11: "6 pairs", "3 pairs left", "12 spots" (public/spots.js, shared with the light invite and the host page)
 function spotsText(e,left){ if(window.EncoreSpots) return window.EncoreSpots.spotsText(e,left); const n=left==null?+e?.headcount||0:left; return `${n} spot${n===1?"":"s"}${left==null?"":" left"}` }
 function orderByText(e){ return window.EncoreSpots?window.EncoreSpots.orderByText(e):"" }
@@ -9131,7 +9131,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
     const sb=document.getElementById("stepBtn"); if(sb&&isFriendsDraft?.()){ const L=[1,6,4,7], i=L.indexOf(+step); const want=i>=0?`${STEP_NAMES[step]||""} ▾`:sb.textContent; if(sb.textContent!==want) sb.textContent=want }
     // Home: a sign-out link at the bottom on phones
     const home=document.getElementById("view-programs"), so=document.getElementById("signOutM"); if(home&&so&&so.parentElement===home&&home.lastElementChild!==so&&(so.dataset.mv=(+so.dataset.mv||0)+1)<6) home.appendChild(so);
-    if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a> · <a href="/settings" class="note">Settings</a>`/* app store: Settings, with Delete account */; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
+    if(home&&!document.getElementById("signOutM")){ const a=document.createElement("p"); a.id="signOutM"; a.style.cssText="text-align:center;margin:28px 0 8px"; a.innerHTML=`<a href="#" class="note">Sign out</a><span class="so-dot"> · </span><a href="/settings" class="note">Settings</a>`/* app store: Settings, with Delete account */; a.querySelector("a").onclick=ev=>{ ev.preventDefault(); signOut() }; home.appendChild(a) }
   }catch{} }).observe(document.documentElement,{childList:true,subtree:true});
 // "Open the plan" links from Your plans and the event page land on that event
 // back from signing in: put the event that couldn't save back on screen and save it
@@ -13384,7 +13384,7 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
 </script>
 <style>/* Home on a wide screen: one centred column, every card the same width (it was three widths and two alignments) */
 @media (min-width:861px){body.friends-ws #view-programs{max-width:880px;margin-left:auto;margin-right:auto}body.friends-ws #view-programs > .cg,body.friends-ws #view-programs > .pipbrief,body.friends-ws #view-programs .plg-card{max-width:none}body.friends-ws #view-programs > .pipbrief{margin-left:0;margin-right:0}}
-#signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
+#signOutM a.note{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}#signOutM a[style*="none"] + .so-dot{display:none}#view-guest .ev2-acts .btn{min-height:44px!important}p.note.ev2-foot a{display:inline-flex!important;align-items:center;min-height:44px}#view-programs.pl-hosting-first #cgSugg > :nth-child(n+4){display:none}#view-programs.pl-hosting-first > .canvas-head{margin-top:var(--sp-5)}#view-programs.pl-hosting-first > .fcards:not(.past){margin-bottom:var(--sp-5)}</style>
 <script>
 // ---- "Come with me?" on the full invite (public/comewith.js) and "Host one like this" (public/hostlike.js): a past
 // invite's button, and the draft it opens here (?like=<event>) the way "Host this" opens an idea ---- The kind's card (public/planhook.js) shows under the full invite too.

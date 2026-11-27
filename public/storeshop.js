@@ -401,7 +401,7 @@ const post = async (u, b) => { const s = JSON.stringify(b || {}), r = await fetc
       <b>People asked before you joined</b><ul>${j.items.slice(0, 6).map((x) => `<li>${x.url ? `<a href="${esc(x.url)}">${esc(x.line)}</a>` : `<span>${esc(x.line)}</span>`}</li>`).join("")}</ul><p>${j.told ? "We emailed each of them once with a link to it." : "We'll email each of them once when it's ready to book."}</p>`;
     const at = document.getElementById("book") || document.getElementById("extras") || document.querySelector(".cols"); if (at) at.before(sec); }
   // ---- owner: shop and bookings ----
-  async function owner(h) { let mine; try { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } catch { return; } if (!mine || mine.handle !== h.handle) return;
+  async function owner(h) { let mine; try { if (window.__mineP) mine = (await window.__mineP)?.host; else { const r = await fetch("/api/host/profile"); if (!r.ok) return; mine = (await r.json()).host; } } catch { return; } if (!mine || mine.handle !== h.handle) return;
     const tf = document.getElementById("topFollow"); if (tf) tf.hidden = true; document.querySelectorAll(".top nav a.cta").forEach((a) => (a.hidden = true));
     let personal = false; try { const W = await (await fetch("/api/workspace", { credentials: "same-origin" })).json(); personal = !!W?.personal; } catch {} const fab = document.createElement("button"); fab.className = "store-fab shop-fab"; fab.type = "button";
     // review round 12: one floating button. Shop and bookings stays out of the way until the host turns on paid work

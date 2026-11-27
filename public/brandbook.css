@@ -45,6 +45,8 @@ body.bb{margin:0;background:var(--bb-page);color:var(--bb-ink);font:16px/1.5 var
 
 /* ---- header ---- */
 .bb-top{position:sticky;top:0;z-index:40;background:var(--bb-page);border-bottom:1px solid var(--bb-line)}
+/* the bar is added by script: its room is held from the first paint so the page never drops 57px */
+body.bb[data-top]:not(:has(> .bb-top)){padding-top:57px}
 .bb-top .in{max-width:var(--bb-max);margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:16px}
 @media (min-width:861px){.bb-top .in{padding:0 32px}}
 .bb-logo{display:flex;align-items:center;min-height:44px;gap:8px;text-decoration:none;font:400 20px var(--bb-serif)}

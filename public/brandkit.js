@@ -153,7 +153,7 @@
   function decor(k) { const row = document.querySelector(".head .name-row"); if (!row) return; let img = document.querySelector(".head .kit-logo");
     if (!/^\/_blob\/[A-Za-z0-9]{20}$/.test(k?.logo || "")) { img?.remove(); return; } if (!img) { img = document.createElement("img"); img.className = "kit-logo"; img.alt = ""; row.before(img); } if (img.getAttribute("src") !== k.logo) img.src = k.logo; }
   // the owner's own page: a suggested kit, accepted in one tap (only until they save one)
-  async function ownerBanner() { if (document.querySelector(".bk-sug")) return; let j; try { const r = await fetch("/api/host/brandkit", { credentials: "same-origin" }); if (!r.ok) return; j = await r.json(); } catch { return; }
+  async function ownerBanner() { if (document.querySelector(".bk-sug")) return; let j; try { const pre = window.__bkP; window.__bkP = null; if (pre) j = await pre; if (!j) { const r = await fetch("/api/host/brandkit", { credentials: "same-origin" }); if (!r.ok) return; j = await r.json(); } } catch { return; }
     mineKit = j.kit || null; if (j.saved || !j.suggest || !STARTERS[j.suggest.starter]) return; const S = STARTERS[j.suggest.starter], box = document.createElement("div"); box.className = "bk-sug kit-off"; box.setAttribute("role", "region"); box.setAttribute("aria-label", "Brand kit");
     const e = (x) => String(x).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
     box.innerHTML = `<span><b>Your brand kit:</b> ${e(S.label)}, ${e(j.suggest.why)}. One look for your page, events and invites.</span><span class="bk-sug-a"><button type="button" class="go1">Use ${e(S.label)}</button><button type="button" data-brandkit="${e(j.suggest.starter)}">See all</button></span>`;

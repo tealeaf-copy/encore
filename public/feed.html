@@ -78,6 +78,8 @@
 /* ---- the feed as a quiet weekly edition (public/feedvisual.js): one column, no side rail on the feed itself ---- */
 body.tab-feed .fside,body.pub-feed .fside{display:none!important}
 body.tab-feed .fgrid,body.pub-feed .fgrid{grid-template-columns:minmax(0,960px)!important}
+/* before the feed is drawn the page already has its one wide column, so the first cards never slide sideways */
+body.pre-feed .fgrid{grid-template-columns:minmax(0,960px)!important}body.pre-feed .fside{display:none!important}
 body:is(.tab-feed,.pub-feed){background-color:var(--pl-page)}
 /* tabs: words with a line under the one you're on, not four pills */
 .tabs[hidden]{display:none!important}.tabs{gap:4px;margin:2px 0 8px;border-bottom:1.5px solid var(--pl-line);scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
@@ -103,6 +105,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
 </style><link rel="stylesheet" href="/playful.css">
 <script src="/calm.js"></script><script src="/authguard.js"></script><script src="/place.js"></script>
 </head><body>
+<script>if(!["me","alerts","friends"].includes(location.hash.slice(1)))document.body.classList.add("pre-feed")</script>
 <div class="wrap">
   <header class="top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a>
     <nav><button class="bell" id="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><i id="bellN" hidden></i></button><span class="fpw"><a class="fp" href="/people" aria-label="Find people"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8.5" r="3.5"/><path d="M3.5 19.5c.6-3.6 3.2-5.6 6.5-5.6 1.3 0 2.5.3 3.5.9"/><circle cx="17" cy="16" r="2.8"/><path d="m19 18 2 2"/></svg></a></span><a href="/discover">Discover</a><a href="/plans">Your plans</a><a href="/requests">Requests</a><a href="/feed" aria-current="page">Feed</a><a class="cta" href="/">Start your page</a></nav></header>
@@ -197,7 +200,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   // ---- tabs ----
   function selTab() { $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.t === tab))); }
   $$(".tabs button").forEach((b) => (b.onclick = () => { tab = b.dataset.t; selTab(); draw(); }));
-  function draw() { document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
+  function draw() { document.body.classList.remove("pre-feed"); document.body.classList.toggle("tab-feed", tab === "feed"); const m = $("#m"); const hs = document.querySelector("#side .sc-hosts"); if (hs) hs.hidden = tab !== "feed"; if (tab === "feed") { drawFeed(m); addComposer(m); return; } if (tab === "me") return drawMe(m); if (tab === "alerts") return drawAlerts(m); drawFriends(m); }
   function placeChip() { const el = document.getElementById("feedPlace"); if (el && window.EncorePlace && !el.dataset.on) { el.dataset.on = 1; window.EncorePlace.chip(el, () => draw()); } }
   // ---- visual feed: your people's posts, photos and events media-first, with the public wall around them ----
   // a post from a friend: the same scrapbook page as a past event (an instant photo, the words, one action)

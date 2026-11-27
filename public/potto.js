@@ -293,7 +293,7 @@ body.pt-has-dock{padding-bottom:calc(150px + env(safe-area-inset-bottom))!import
         api("/api/potto/note", { threadId: S.threadId, answer: h.answer || "", links }).catch(() => {}); return; }
       if (j.note) note(j.note);
       done({ role: "potto", text: j.answer, links: j.links || [], actions: j.actions || [] }); }
-    catch (err) { done({ role: "potto", text: err.status === 429 ? err.message : `${err.message || "I couldn't answer that."}`, links: [] }); } }
+    catch (err) { done({ role: "potto", text: err.status === 429 ? err.message : `${err.message || "That one stumped me. Try asking another way, or reach a person from Help."}`, links: [] }); } }
 
   // ---------- where the dock goes ----------
   // the host's Home in the app (index.html "#view-programs"); the Inbox page mounts its own (public/inbox.html)

@@ -218,6 +218,41 @@ community relabel ("book once 10 accounts are in"), and the ask-to-join note ("l
   house word would be "a spot for someone new".
 - **The + composer (`public/composer.js`).** Not read in this pass.
 
+## Potto's voice pass
+
+The owner's brief: Potto should feel playful, friendly, warm, understanding and empathetic. If Potto were a person, a
+very smart, humble, fun friend you'd go to parties with. `docs/potto-voice.md` is rewritten around that friend (seven
+principles, do and don't pairs from the app, six moments, word choices, staying humble), and every prompt that speaks
+as Potto now carries one shared voice block, `POTTO_VOICE` in `server/pottovoice.js`: Ask Potto (`server/potto.js`),
+the help sheet's answers (`server/help.js`) and the gift planner (`server/giftplan.js`). The Studio's two
+chief-of-staff prompts in `index.html` carry a short version. The art prompts draw pictures and the event reader and
+onboarding prompts return structured data, so they don't speak as Potto and were left alone.
+
+Scores are playful / friendly / warm / understanding / empathetic, before → after. The bar was 9 or more on each
+without going saccharine, so the fixes are small: a plain fact, then one kind line.
+
+| Moment | Where | Before | After | The line now |
+|---|---|---|---|---|
+| First hello, help sheet | `public/help.js` | 6 / 8 / 7 / 7 / 7 | 9 / 9 / 9 / 9 / 9 | "Hi, I'm Potto. Ask me anything, or pick one below. If I don't know, I'll find you a person." |
+| First hello, empty Home and the Ask box | `index.html`, `server/hostloop.js` | 9 / 9 / 9 / 9 / 9 | same | "What's the plan? Like "Tacos at mine Saturday at 7"." / "Nothing on the calendar. That's fine. A dinner for four is a whole event." |
+| Nudge to finish setup | `public/help.js`, `public/start.html` | 8 / 9 / 9 / 9 / 9 | same | "Stuck? I can help, or get you a person." |
+| Error, Ask Potto and help | `public/potto.js`, `public/help.js` | 4 / 7 / 5 / 6 / 6 | 9 / 9 / 9 / 9 / 9 | "That one stumped me. Try asking another way, or reach a person from Help." |
+| Error, slow model | `server/potto.js` | 3 / 6 / 5 / 6 / 5 | 9 / 9 / 9 / 9 / 9 | "I'm a little slow right now, so here's the short version." |
+| Error, Studio | `index.html` | 4 / 7 / 6 / 8 / 7 | 9 / 9 / 9 / 9 / 9 | "I couldn't finish the research. Nothing was lost, so try again in a minute." |
+| A host's first guest | `server/hostloop.js` | 7 / 9 / 8 / 8 / 8 | 9 / 9 / 9 / 9 / 9 | "Sam is in. Your first guest. It's a real night now, and you made it happen." |
+| Milestones (10th, sold out, regular) | `server/hostloop.js` | 8 / 9 / 8 / 8 / 7 | 9 / 9 / 9 / 9 / 9 | "Every spot taken. Your first sold-out night. Word got around. You did that." |
+| A quiet month, heads-up | `server/hostloop.js` | 8 / 8 / 8 / 7 / 6 | 9 / 9 / 9 / 9 / 9 | "November ends in 4 days. A quiet month is normal. If you feel like it, even a coffee counts." |
+| A quiet month, repair window | `server/hostloop.js` | 8 / 8 / 8 / 7 / 6 | 9 / 9 / 9 / 9 / 9 | "No pressure. Even a coffee counts. Sun, Dec 6 is the last day to keep your 3-month streak." |
+| Someone cancels, the host's bell | `server/app.js` | 5 / 7 / 5 / 6 / 5 | 9 / 9 / 9 / 9 / 9 | "Ana can't go to Supper now. Plans change. Their spot is open again." |
+| Someone cancels, the guest | `index.html`, `public/peek.js` | 7 / 8 / 8 / 8 / 8 | 9 / 9 / 9 / 9 / 9 | "Sorry to miss you. Mai knows. Next time." / "Saved. Your host knows you can't make it." |
+| A guest opens a past invite | `index.html` | 5 / 7 / 6 / 6 / 5 | 9 / 9 / 9 / 9 / 9 | "This one already happened. There's usually a next time. Hear about it first." |
+| Small moves done | `server/hostloop.js` | 9 / 9 / 9 / 9 / 9 | same | "Done. That counts." / "Noted in the book." |
+| Before and after an event | `server/hostloop.js` | 9 / 9 / 9 / 9 / 9 | same | "Pie night is tomorrow. Three things: send a reminder, check the spots, pick a playlist. That's it." |
+| Loaders | `index.html`, `public/photosheet.js` | 8 / 9 / 8 / 9 / 9 | 9 / 9 / 9 / 9 / 9 | "Potto is drawing "a long table at dusk"…" (straight quotes now) |
+| Generated answers (Ask Potto, help, gifts) | server prompts | 7 / 8 / 7 / 7 / 7 | 9 / 9 / 9 / 9 / 9 | The shared voice block: notice the specific thing, light humour never at anyone's expense, credit people, read the room, admit when unsure, never brag about AI. |
+
+No exclamation marks were added, not even for the first guest: the confetti and a plain line carry it.
+
 ## Owner decisions
 
 1. **RSVP in the Studio.** Field marketers say "RSVP link", "RSVP rate" and "show rate", and the Studio uses them. The

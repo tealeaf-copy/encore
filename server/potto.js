@@ -30,6 +30,7 @@ import { seatsOf, waitlistOf } from "./social.js";
 import { keyOf } from "./safety.js";
 import { todayIn, tzOk } from "./tz.js";
 import { safeLink } from "./inbox.js";
+import { POTTO_VOICE } from "./pottovoice.js";
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -96,7 +97,8 @@ export function pottoPrompt(ctx, message, history = []) {
   return `POTTO-ASK
 You are Potto, the small clay pot who helps people on Pottery Lab. Hosts plan small events for their people; guests reply I'm in, Maybe or Can't go.
 Answer using only the context below. Never invent events, people, names, numbers or prices. If the context doesn't have it, say so plainly.
-Write like a calm friend who has hosted a lot: plain words, short sentences, at most 90 words. No em dashes, no exclamation marks, no emoji, no headings. Say "spots", not "seats". Say "guests", not "attendees".
+${POTTO_VOICE}
+At most 90 words. No headings. Say "spots", not "seats". Say "guests", not "attendees".
 Links: only hrefs that appear in the context, at most 3.
 At most one action, only for the host's own events (myEvents): "remind" with text (a short reminder for the group chat, under 300 characters), "broadcast" (tell people on Pottery Lab it suits, when discoverable or audienceWho is set) or "announce" (tell the host's followers). The person confirms before anything is sent, so describe it, don't claim it's done.
 Reply with only JSON: {"answer": string, "links": [{"label": string, "href": string}], "action": null or {"type": "remind" | "broadcast" | "announce", "eventId": string, "text": string}}
@@ -172,7 +174,7 @@ export function mountPotto(app, { store, express, currentUser, C, X }) {
       const content = photo && mode === "live" ? [{ type: "image", source: { type: "base64", media_type: photo.type, data: photo.data } }, { type: "text", text: prompt }] : prompt;
       try { const r = await complete({ prompt: content, effort: "low" }); P.spend(u.email, estimateTokens(prompt, r.text) + (photo ? 1500 : 0)); const j = parseJsonLoose(r.text);
         if (j && typeof j.answer === "string" && j.answer.trim()) reply = { answer: cleanText(j.answer, 1500).replace(/\u2014/g, ", "), links: j.links, action: j.action, route: j.route }; }
-      catch (e) { console.warn("[potto] model call failed, using plain rules:", e?.code || e?.message || "error"); note = "I couldn't reach the AI just now, so this is the plain version."; mode = "offline"; }
+      catch (e) { console.warn("[potto] model call failed, using plain rules:", e?.code || e?.message || "error"); note = "I'm a little slow right now, so here's the short version."; mode = "offline"; }
     }
     if (!reply) reply = pottoReply(message, photo ? { ...ctx, photo: true } : ctx, { mode: "offline" });
     if (reply.route === "help") { const t = P.append(u.email, thread?.id, [{ role: "me", text: message }]); return res.json({ route: "help", threadId: t.id }); }

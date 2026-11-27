@@ -140,7 +140,7 @@
   const pressed = (v) => body.querySelectorAll(".pk-seg [data-pk-set]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.pkSet === v)));
   /** The button under a "finish on the event page" line says what you do there. */
   const finish = (x) => (x?.pay ? "Pay to hold your spot" : x?.ask ? "Ask to join" : "Finish on the event page");
-  const DONE = { going: "Saved. You're in.", maybe: "Saved. You said maybe.", no: "Saved. You can't go.", waitlist: "The event is full, so you're on the waitlist.", requested: "Sent. The host lets each guest in." };
+  const DONE = { going: "Saved. You're in.", maybe: "Saved. You said maybe.", no: "Saved. Your host knows you can't make it.", waitlist: "The event is full, so you're on the waitlist.", requested: "Sent. The host lets each guest in." };
   /** Change the reply: the control moves at once, the server confirms, and it moves back if the server says no. */
   async function reply(want, btn) { const p = cur.p, R = p.reply; if (!R || busy) return; const was = R.state, id = p.id;
     const a = (R.answers || []).find((x) => x.value === want);

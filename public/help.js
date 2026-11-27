@@ -228,7 +228,7 @@
     const down = m.rated === "down" && !(m.actions || []).some((a) => a.href === "#person") ? `<div class="eh-acts"><button type="button" data-person>Talk to a person</button></div>` : "";
     return `<div class="eh-m potto" data-i="${i}"><small>Potto</small>${esc(m.text)}${acts ? `<div class="eh-acts">${acts}</div>` : ""}${down}${rel}${rate}</div>`;
   }
-  const greet = () => ({ role: "potto", text: PLANS && !signedIn() ? "Hi, I'm Potto. Looking for an invite? I can help you find it." : ONB && !signedIn() ? "Hi, I'm Potto. Ask me anything about getting started, or pick one below." : "Hi, I'm Potto. Ask me anything, or pick one below." });
+  const greet = () => ({ role: "potto", text: PLANS && !signedIn() ? "Hi, I'm Potto. Looking for an invite? I can help you find it." : ONB && !signedIn() ? "Hi, I'm Potto. Ask me anything about getting started, or pick one below. If I don't know, I'll find you a person." : "Hi, I'm Potto. Ask me anything, or pick one below. If I don't know, I'll find you a person." });
   function drawLog(keepScroll) { const L = $(".eh-log"), B = $("#ehBody"), top = B.scrollTop;
     L.innerHTML = [greet(), ...log].map((m, i) => msgHTML(m, i - 1)).join("") + (log.length ? `<button type="button" class="eh-clear" data-clear>Start over</button>` : "");
     bindTicketForms(L); drawEarlier(); B.scrollTop = keepScroll ? top : B.scrollHeight; }
@@ -240,7 +240,7 @@
     let m;
     try { const r = await fetch("/api/help/ask", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, page: P + location.search + location.hash, eventId: ctx().eventId || appEvent()?.id || "", history: log.filter((x) => x.role !== "ticket").slice(-9, -1).map((x) => ({ role: x.role, text: x.text })) }) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) m = { role: "potto", text: j.message || "I couldn't answer that just now. A person can help.", actions: [{ label: "Talk to a person", href: "#person" }] };
+      if (!r.ok) m = { role: "potto", text: j.message || "That one stumped me. A person can help.", actions: [{ label: "Talk to a person", href: "#person" }] };
       else { const acts = (j.actions || []).filter((a) => a && a.label && a.href); if (j.suggestHuman && !acts.some((a) => a.href === "#person")) acts.push({ label: "Talk to a person", href: "#person" });
         m = { role: "potto", text: j.answer || "I'm not sure. A person can help.", actions: acts, section: j.section || null, mode: j.mode || "", related: j.related || [], q: text }; }
     } catch { m = { role: "potto", text: "I can't reach Pottery Lab right now. Check your connection, or talk to a person.", actions: [{ label: "Talk to a person", href: "#person" }] }; }

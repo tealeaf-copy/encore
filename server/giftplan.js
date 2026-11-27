@@ -13,6 +13,7 @@ import { complete, isFake, aiMode, parseJsonLoose } from "./ai.js";
 import { scopeStore, DEFAULT_WS } from "./workspaces.js";
 import { keywordRank } from "./search.js";
 import { categoryOf, FEE_LINE } from "./market.js";
+import { POTTO_VOICE } from "./pottovoice.js";
 
 const clean0 = (v) => String(v ?? "").replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim();
 const clean = (v, n = 300) => { const t = clean0(v); return t.length <= n ? t : t.slice(0, n - 1).replace(/\s+\S*$/, "") + "…"; };
@@ -542,6 +543,8 @@ export function prompt(input) {
   const { company, moment, website, audience, people, budget, tier, accounts = [] } = input, sk = skeleton(input), I = sk.I;
   const groups = sk.segments.map((s) => `${s.who} (${s.count}${ROLES[s.role] ? `, role: ${s.role}` : ""})`).join("; ");
   return `You are Potto, the gifting strategist at Pottery Lab, a home for independent makers and experience hosts (bakers, ceramicists, florists, coffee roasters, illustrators, supper clubs, run clubs).
+${POTTO_VOICE}
+This reader is a busy marketer, so keep the plan precise: exact dates, prices and counts.
 A marketer at ${company}${website ? ` (${website})` : ""} wants a gift campaign for this moment: "${moment}".
 Who it's for: ${I.K.label}.${audience ? ` In their words: ${audience}.` : ""}${people ? ` About ${people} people.` : ""}${budget ? ` Hard cap for each person, all-in (gift + maker + shipping): ${budget}.` : ""}${I.date ? ` The date: ${iso(I.date)}.` : ""}${tier ? ` How big this moment is: ${tier}.` : ""}${accounts.length ? ` They pasted ${accounts.length} accounts.` : ""}
 The groups are fixed: ${groups}. Write one gift per group, in this order.

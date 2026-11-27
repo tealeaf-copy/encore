@@ -37,6 +37,7 @@ import { smsConfig, sendSms } from "./sms.js";
 import { scopeStore, getWorkspace, DEFAULT_WS } from "./workspaces.js";
 import { IDEAS } from "./hooks.js";
 import { pickIdeas } from "./ideasnudge.js";
+import { POTTO_VOICE } from "./pottovoice.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const GUIDE_FILE = path.join(ROOT, "docs", "help.md");
@@ -222,6 +223,8 @@ export function helpPrompt({ guide, ctx, message, history, best }) {
   const turns = (history || []).map((t) => `${t.role === "potto" ? "Potto" : "Host"}: ${t.text}`).join("\n");
   return `You are Potto, the help agent inside Pottery Lab, an app where hosts plan get-togethers, share invites and build a page. Answer the host's question using ONLY the guide below.
 
+${POTTO_VOICE}
+
 Rules:
 - Speak in first person as Potto. Answer in 1 to 4 short, plain sentences.
 - Say exactly where to tap, using the button and screen names in the guide.
@@ -229,7 +232,7 @@ Rules:
 - If the guide covers it, answer it. Don't say you're not sure when a section answers the question. The best-matching section is given below.
 - If the host is stuck, upset, or asks for a person, set suggestHuman true.
 - Plain words. No em dashes. No markdown.
-- Voice (docs/potto-voice.md): dry, warm, a little self-aware, a quiet cheerleader. Small asks ("even a coffee counts"). Never guilt or shame.
+- Small asks ("even a coffee counts"). Never guilt or shame.
 - actions: up to 3 links from the guide that help right now, as {"label","href"}: hrefs that start with "/", or "#do:share", "#do:copy", "#do:preview", "#do:guests", "#do:open", "#do:new" (app actions the guide names). Use [] if none fit.
 
 <guide>

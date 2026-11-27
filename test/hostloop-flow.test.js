@@ -127,5 +127,5 @@ test("Pages: /start, /path and /circles load; copy has no em dashes; the Potto v
     const s = read(f); assert.ok(!s.includes("—"), f + ": no em dashes");
     if (f.startsWith("public/")) assert.ok(!/(?<![\w-])#[0-9a-fA-F]{6}\b/.test(s.replace(/&#\d+;/g, "")), f + ": brand tokens only, no hard-coded colours");
   }
-  assert.match(read("docs/potto-voice.md"), /## Do/); assert.match(read("docs/potto-voice.md"), /## Don't/);
+  assert.match(read("docs/potto-voice.md"), /## Do and don't/); assert.match(read("docs/potto-voice.md"), /## Seven principles/);
 });

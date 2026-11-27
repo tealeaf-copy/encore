@@ -397,7 +397,7 @@ A fan club is for a host's regulars. Hosts start it from the Fan club card on th
 ## Memberships
 
 Keywords: membership, become a member, paid membership, support a host, monthly, yearly, patron, tiers, priority access, early access, cancel membership, manage membership
-Questions: How do I become a member? | What do members get? | How do I cancel my membership? | How do I start a membership?
+Questions: How do I become a paying member? | What does a paid membership include? | How do I cancel my membership? | How do I start a paid membership?
 Hosts who have hosted 5 events can start a membership: up to 3 tiers at $5, $10 or $20 a month, or yearly. Members book before everyone else (higher tiers earlier), and a tier can also include seats held for members, members-only events, a member badge and a monthly note. Join from the Become a member card on the host's page; payment is by Stripe, on the web only. Change your tier, update your card or cancel from Manage on the same card. When you cancel, your perks last until the end of the period you paid for. The money goes to the host.
 [Find a host](/hosts)
 

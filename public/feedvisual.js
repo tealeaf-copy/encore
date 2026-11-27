@@ -161,7 +161,7 @@
   // "Host one like this" (public/hostlike.js) on a real past event, and how many hosted one after seeing it
   const likeBtn = (e) => (e.id && !e.sample && !/^s[cx]-/.test(e.id) ? `<button type="button" class="fv-mi fv-like" data-pl-like="${esc(e.id)}" data-title="${esc(e.title)}">Host one like this</button>${e.hostedLine ? `<small class="fv-mnote">${esc(e.hostedLine)}</small>` : ""}` : "");
   // a tile for a row: a small 4:5 picture, a title, one line
-  function mini(e, { cityToo = false } = {}) { if (e.id) EVS.set(String(e.id), e); const cap = [short(e), cityToo ? e.city || where(e) : where(e), e.sample ? "Example" : ""].filter(Boolean).join(" · ");
+  function mini(e, { cityToo = false } = {}) { if (e.id) EVS.set(String(e.id), e); const cap = [short(e), cityToo ? e.city || where(e) : where(e), e.sample ? "Example" : ""].filter(Boolean).join("\u00a0· "); // the dot stays with the word before it, so a wrapped line never starts with one
     return `<a class="fv-tile" href="${esc(e.cta?.url || e.url)}" data-fv-id="${esc(e.id || "")}"><span class="fv-tile-m">${coverOK(e) ? `<img class="fv-img" data-fv-q src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async" style="object-position:${coverPos(e.look)}">` : art(e, { title: "" })}</span>${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<b>${esc(e.title)}</b><small>${esc(cap)}</small></a>`; }
   // a past event as a scrapbook page: one big instant photo with tape, two smaller ones, who came, one kudos quote
   function dump(e, { by = null, key = "", photos = null, quote = null } = {}) { const P = (photos || e.photos || []).slice(0, 8);
@@ -526,16 +526,16 @@
 .fv-av{flex:none;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:color-mix(in srgb,var(--c) 22%,#fff);border:1.5px solid var(--fv-line2);font-size:14px;line-height:1}.fv-av img,.fv-av svg{width:100%!important;height:100%!important;object-fit:cover;max-width:none!important;max-height:none!important}
 /* stories rail: thin rings, ember when there's something new */
 .fv-rail{display:flex;gap:14px;overflow-x:auto;padding:6px 2px 10px;scrollbar-width:none;scroll-snap-type:x proximity}.fv-rail::-webkit-scrollbar{display:none}
-.fv-ring{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;width:68px;min-height:44px;background:none;border:0;padding:0;cursor:pointer;color:var(--fv-ink);font:500 13px "IBM Plex Sans",system-ui;scroll-snap-align:start}
+.fv-ring{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;min-height:44px;background:none;border:0;padding:0;cursor:pointer;color:var(--fv-ink);font:500 13px "IBM Plex Sans",system-ui;scroll-snap-align:start}
 .fv-ring-c{width:64px;height:64px;border-radius:50%;padding:3px;display:grid;place-items:center;background:transparent;border:2px solid var(--fv-line2);box-sizing:border-box;transition:border-color .6s var(--fv-ease),transform .3s var(--fv-ease)}
 .fv-ring.new .fv-ring-c{border-color:var(--fv-ember)}
 .fv-ring-c>img,.fv-ring-c>.fv-av,.fv-ring-art{width:100%!important;height:100%!important;border-radius:50%;object-fit:cover;border:0;display:grid;place-items:center;overflow:hidden;box-sizing:border-box}.fv-ring-art svg{width:86%;height:auto}
 .fv-ring.add .fv-ring-c{border-style:dashed}.fv-ring.add b{font:500 26px var(--sys-display);color:var(--fv-smoke)}
-.fv-ring small{max-width:68px;min-height:2.4em;font-size:13px;line-height:1.2;text-align:center;color:var(--fv-smoke);overflow-wrap:anywhere;text-wrap:balance}.fv-ring.new small{color:var(--fv-ink)}
+.fv-ring small{max-width:76px;min-height:2.5em;font-size:13px;line-height:1.25;text-align:center;color:var(--fv-smoke);text-wrap:balance;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fv-ring.new small{color:var(--fv-ink)}
 @media (hover:hover){.fv-ring:hover .fv-ring-c{transform:scale(1.04)}}.fv-ring:focus-visible{outline:none}.fv-ring:focus-visible .fv-ring-c{outline:3px solid var(--fv-ink);outline-offset:2px}
 .fv-ring.just-seen .fv-ring-c{animation:fv-seen .8s var(--fv-ease)}@keyframes fv-seen{0%{border-color:var(--fv-ember)}100%{border-color:var(--fv-line2)}}
 .fv-ring-dot{position:absolute;top:2px;right:4px;width:12px;height:12px;border-radius:50%;background:var(--fv-butter);border:2px solid var(--fv-paper)}
-.fv-ring-tag{position:absolute;top:48px;left:50%;transform:translateX(-50%);font:500 13px/1 "IBM Plex Sans",system-ui;font-style:normal;background:var(--fv-card);color:var(--fv-smoke);border:1px solid var(--fv-line);border-radius:999px;padding:2px 6px}
+.fv-ring-tag{position:absolute;top:48px;left:50%;transform:translateX(-50%);font:500 12px/1 var(--pl-font-mono,"IBM Plex Mono",monospace);letter-spacing:.04em;text-transform:uppercase;font-style:normal;background:var(--fv-card);color:var(--fv-ink);border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:4px;padding:3px 5px}
 .fv-peek{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 4px;border:1.5px dashed var(--fv-line);border-radius:16px;min-height:64px;flex:1;overflow:hidden}.fv-peek p{margin:0;color:var(--fv-smoke);font-size:14px}.fv-peek-p{flex:none;width:56px;height:52px;overflow:hidden;align-self:flex-end;margin-bottom:-10px}.fv-peek-p svg{width:56px;height:auto}
 /* the opening: date and city in mono, one headline, one line */
 .fv-intro{position:relative;padding:8px 72px 0 0;margin:0 0 28px}
@@ -596,9 +596,9 @@
 .fv-post .ptext{margin:12px 0 0;font-size:16px;line-height:1.5}.fv-post .plink{margin-top:10px}
 /* 3. tiles, in rows that scroll inside themselves */
 .fv-row{display:flex;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px;scroll-padding:0 16px}.fv-row::-webkit-scrollbar{display:none}
-.fv-tile{flex:none;width:148px;scroll-snap-align:start;color:var(--fv-ink);text-decoration:none;border-radius:12px}
-.fv-tile-m{position:relative;display:block;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--fv-linen)}.fv-tile-m img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.fv-tile-m .ea-cover{position:absolute!important;inset:0}
-.fv-tile b{display:block;margin-top:8px;font:600 15px/1.25 var(--sys-title);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fv-tile small{display:block;margin-top:2px;font:400 13px/1.4 var(--fv-mono);letter-spacing:-.01em;color:var(--fv-smoke);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fv-tile{flex:none;width:148px;scroll-snap-align:start;color:var(--fv-ink);text-decoration:none;border-radius:6px}
+.fv-tile-m{position:relative;display:block;aspect-ratio:4/5;border-radius:6px;overflow:hidden;background:var(--fv-linen)}.fv-tile-m img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.fv-tile-m .ea-cover{position:absolute!important;inset:0}
+.fv-tile b{display:block;margin-top:8px;font:600 15px/1.25 var(--sys-title);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fv-tile small{display:block;margin-top:2px;font:400 13px/1.4 var(--fv-mono);letter-spacing:-.01em;color:var(--fv-smoke);text-wrap:balance}
 .fv-tile.host{width:112px;text-align:center;display:grid;justify-items:center;gap:2px;padding:4px 0}.fv-tile.host .fv-av{border-width:1.5px}.fv-tile.host b{font-size:14px;margin-top:6px}.fv-tile.host small{font-family:"IBM Plex Sans",system-ui;max-width:100%}
 @media (hover:hover){.fv-tile .fv-tile-m img{transition:transform .5s var(--fv-ease)}.fv-tile:hover .fv-tile-m img{transform:scale(1.03)}}
 .fv-slot[hidden]{display:none}.fv-slot{display:flex;flex-direction:column;gap:20px}
@@ -610,7 +610,7 @@
 .fv-inspo .pli-fly{border-radius:12px}
 .fv-artfb{display:grid;place-items:center;height:100%;font-size:48px;background:var(--pl-sand)}
 /* the end */
-.fv-end{margin:64px 0 24px;padding-top:24px;border-top:1.5px solid var(--fv-line);text-align:center}.fv-end p{margin:0 0 6px;color:var(--fv-smoke);font-size:14px}.fv-end p:first-of-type{font:600 20px var(--pl-font-text);color:var(--fv-ink)}.fv-end a{color:var(--fv-ember-d);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
+.fv-end{margin:32px 0 24px;padding-top:24px;border-top:1.5px solid var(--fv-line);text-align:center}.fv-end p{margin:0 0 6px;color:var(--fv-smoke);font-size:14px}.fv-end p:first-of-type{font:600 20px var(--pl-font-text);color:var(--fv-ink)}.fv-end a{color:var(--fv-ember-d);font-weight:600;display:inline-flex;align-items:center;min-height:44px}
 /* loading: the opening and a card, the size they'll be */
 .fv-skel{display:grid;gap:12px;padding:20px 0}.fv-skel i{display:block;border-radius:10px;background:linear-gradient(90deg,var(--fv-linen) 0,#F5EDE1 40%,var(--fv-linen) 80%) 0 0/300% 100%;animation:fv-shim 1.6s linear infinite}
 .fv-skel .k{width:40%;height:14px}.fv-skel .h{width:80%;height:32px}.fv-skel .l{width:65%;height:16px}.fv-skel .m{aspect-ratio:4/5;max-height:60vh;border-radius:16px;margin-top:24px}.fv-skel .t{width:55%;height:22px}

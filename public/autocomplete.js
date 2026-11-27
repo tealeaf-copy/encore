@@ -171,7 +171,7 @@
     // "run in pro", "dinners in brook": finish the place after in, at, near or around
     const m = /^(.*\b(?:in|at|near|around)\s+)([^,]{2,30})$/i.exec(String(q || "")); if (m && !/^(?:my|our|the|a|an)\b/i.test(m[2].trim())) {
       for (const p of rankPlaces(m[2], { kind: "place", city: o.city, places: D, limit: 4 })) { const name = p.src === "hood" ? p.hood || p.text : p.text; if (!name || norm(name) === norm(m[2])) continue;
-        const text = m[1] + name; put({ text, value: text, place: p.src === "city" ? undefined : name, city: p.city, hint: p.hint || p.city || "", score: 97 - completion(q, text).length / 8 - (p.score < 90 ? 6 : 0) + (p.score > 100 ? 2 : 0), src: "place" }); } }
+        const text = m[1] + name; put({ text, value: text, place: p.src === "city" ? undefined : name, city: p.city, hint: p.src === "city" ? "City" : p.hint || p.city || "", score: 97 - completion(q, text).length / 8 - (p.score < 90 ? 6 : 0) + (p.score > 100 ? 2 : 0), src: "place" }); } }
     for (const e of o.mine || []) { const t = typeof e === "string" ? e : e.t; const s = matchScore(t, qn); if (!s) continue; const cur = out.get(norm(t));
       put({ ...(cur || {}), text: t, value: t, k: (cur && cur.k) || e.k || "", score: (cur ? cur.score : s) + 20, src: cur ? cur.src : "mine", hint: "You hosted" }); }
     for (const h of o.history || []) { const t = typeof h === "string" ? h : h.t; const s = matchScore(t, qn); if (!s) continue; const cur = out.get(norm(t)), days = h.at ? (Date.now() - h.at) / 864e5 : 30;

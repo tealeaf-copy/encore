@@ -4,7 +4,7 @@
 // campaigns with guest lists, replies, check-ins and feedback. Every company and person here is invented.
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { scopeStore, getDbUser } from "../server/workspaces.js";
+import { scopeStore, getDbUser, claimEvent } from "../server/workspaces.js";
 import { prefKey } from "../server/insights.js";
 
 const hash = (s) => crypto.createHash("sha256").update(String(s || "").trim().toLowerCase()).digest("hex").slice(0, 24);
@@ -65,6 +65,7 @@ export async function seedBrandIntel(base, store, { guests: NG = 300, optIn = 0.
       const id = "ev" + (++evN).toString(36) + crypto.randomBytes(3).toString("hex"), start = k % 4 === 3 && !H.weekend ? (H.time < "12" ? "08:00" : "18:00") : H.time;
       S.set("events/" + id, { name: `${H.name}: ${H.pkg.name}`, pubTitle: H.pkg.name, activity: H.kind === "games" ? "game night" : H.kind === "run" ? "run" : H.kind === "coffee" ? "coffee" : H.kind === "tasting" ? "wine tasting" : H.kind === "workshop" ? "pottery workshop" : "supper club",
         date, startTime: start, city: H.city, hood: H.hood, headcount: H.head, price: H.price, discoverable: true, guests: [...chosen].map((p) => ({ name: p.name, email: p.email, status: "Attended" })), createdAt: Date.parse(date) - 20 * 864e5 });
+      claimEvent(id, H.ws); // the index a real event gets when it is made through the API: without it the host's own Home was told "no such event" (eight 404s for sign-off requests)
       for (const p of chosen) { if (!p.fav && R() < 0.35) p.fav = H.handle; if (R() < 0.72) { const again = R() < H.again; S.add("kudos", { eventId: id, email: p.email, name: p.name, tags: again ? ["again", "welcome"] : ["vibe"], love: true, at: Date.parse(date) + 864e5 }); } }
     }
   }

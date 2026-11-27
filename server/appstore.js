@@ -54,7 +54,11 @@ const SW_REG = `<script>if("serviceWorker"in navigator&&!/^\\/(sw|support)/.test
 // a page-to-page fade the browser skips rejects its promises; that's not an error (public/netguard.js does the same on
 // full pages, this is the light invite's copy)
 const VT_QUIET = `<script>addEventListener("pagereveal",(e)=>{const t=e.viewTransition;if(t)["ready","finished","updateCallbackDone"].forEach((k)=>t[k]&&t[k].catch(()=>{}))})</script>`;
-const LIGHT = VT_QUIET + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
+// Every page: short copy never ends on one word alone, headings break into even lines, and bold is the kit's 600 (the
+// browser's "bolder" inside a 600 label asked for a 900 the kit never loads) (design audit,
+// docs/design-audit.md). :where() keeps it at zero specificity, so a page's own text-wrap still wins.
+const WRAP = `<style>:where(p,li,dd,dt,small,figcaption,blockquote,label,caption){text-wrap:pretty}:where(h1,h2,h3,h4,h5,legend){text-wrap:balance}:where(b,strong){font-weight:600}</style>`;
+const LIGHT = VT_QUIET + WRAP + `<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#EFEBE2"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><script src="/native.js" defer></script><script src="/report.js" defer></script>`; // help for everyone, error reports, the status line (public/report.js)
 // every full page: network manners first (public/netguard.js), then the app tags; the speculation rules prefetch a page
 // link a finger lands on (server/perf.js)
 // the page-to-page fade's opt-in, in the head of every full page: public/craft.css has the same rule, but it is added by

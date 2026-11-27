@@ -54,7 +54,7 @@
 .phs-frame.round::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(31,26,23,.55);pointer-events:none}
 .phs-frame:focus-visible{outline:3px solid #C94A30;outline-offset:3px}
 .phs-hint{display:flex;align-items:center;justify-content:center;gap:6px;color:#665A51;font-size:13px;margin:0 0 16px}
-.phs-row{display:flex;gap:8px}.phs-row button{flex:1;min-height:52px;border-radius:999px;font:600 16px Fredoka,"IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
+.phs-row{display:flex;gap:8px}.phs-row button{flex:1;min-height:52px;border-radius:999px;font:600 16px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer}
 .phs-go{background:#C94A30;color:#fff;border:1px solid #C94A30}.phs-go:disabled{opacity:.6}.phs-back{background:#fff;color:#1F1A17;border:1.5px solid #D9CCBB}
 .phs-msg{min-height:20px;margin:8px 0 0;font-size:13px;color:#B04A30;text-align:center}
 .phs-busy{color:#665A51}
@@ -174,6 +174,6 @@
   // a face for a profile picture: the photo, else the drawn portrait, else the first letter
   function face(a = {}, name = "", size = 56) { if (a.url) return `<img src="${esc(a.url)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block">`;
     if (a.art && window.EncoreAvatars) return `<span style="display:block;width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;background:#EFE6D8">${window.EncoreAvatars.svg(a.art, "#C94A30", size)}</span>`;
-    return `<span style="display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:50%;background:#F2D48F;color:#1F1A17;font:600 ${Math.round(size * 0.42)}px Fredoka,system-ui">${esc((String(name).trim()[0] || "?").toUpperCase())}</span>`; }
+    return `<span style="display:grid;place-items:center;width:${size}px;height:${size}px;border-radius:50%;background:#F2D48F;color:#1F1A17;font:600 ${Math.round(size * 0.42)}px 'IBM Plex Sans',system-ui">${esc((String(name).trim()[0] || "?").toUpperCase())}</span>`; }
   window.PhotoSheet = { open, KINDS, profile, pageCover, mine, face };
 })();

@@ -1,6 +1,6 @@
 /* Pottery Lab, playful: chunky rounded type, ink outlines, sticker shadows, pastel blocks.
    Loaded after each public page's own styles, so it only restyles; it never changes layout or behaviour. */
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&display=swap");
+@import url("/fonts/css2?family=IBM+Plex+Serif:wght@600&display=swap");
 :root{--p-ink:var(--pl-ink);--p-paper:var(--pl-page);--p-butter:var(--pl-sand);--p-mint:#BDEBCB;--p-sky:#C4DEFF;--p-pink:#FFCAD6;--p-peach:#FFD3B4;--p-lilac:#DCCBFF;--p-ember:var(--pl-accent);--p-shadow:4px 4px 0 var(--p-ink);--p-shadow-lg:6px 6px 0 var(--p-ink);--p-line:2.5px solid var(--p-ink)}
 
 /* paper with a soft dot grid, always light.

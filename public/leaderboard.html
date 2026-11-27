@@ -2,7 +2,7 @@
 <script src="/authguard.js"></script>
 <title>Leaderboard · Pottery Lab</title>
 <meta name="description" content="The hosts guests loved most, by city and kind of event, this month and all time. Ranked by kudos, who'd go again and guests who came.">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/lists.css">
 <style>
 :root{--paper:var(--pl-page);--linen:var(--pl-raised);--ink:var(--pl-ink);--smoke:var(--pl-soft);--ember:var(--pl-accent);--ember-d:var(--pl-accent-text);--butter:var(--pl-sand);--sage:#4F5C42;--line:var(--pl-line);--gold:var(--pl-sand);--silver:#E4E4EC;--bronze:#F3C9A6}
@@ -24,7 +24,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 .bh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 14px;margin:6px 0 14px}.bh h2{margin:0;font-size:24px;line-height:1.2}.bh p{margin:0;color:var(--smoke);font-size:14px}
 .bh a{color:var(--ember-d);font-weight:600;font-size:14px;display:inline-flex;align-items:center;min-height:44px}
 .podium{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
-.podium li{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0;background:var(--pl-surface);border:1.5px solid var(--line);border-radius:16px;padding:14px 10px 14px;position:relative}
+.podium li{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0;background:var(--pl-surface);border:1.5px solid var(--line);border-radius:6px;padding:14px 10px 14px;position:relative}
 
 .podium .medal{font:500 13px var(--sys-mono,ui-monospace,monospace);color:var(--smoke)}
 .av{flex:none;width:56px;height:56px;border-radius:50%;border:1.5px solid var(--line);background:var(--bg,var(--pl-sand));display:grid;place-items:center;overflow:hidden;font-size:26px}.av img,.av svg{width:100%;height:100%;object-fit:cover}
@@ -34,21 +34,21 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 .podium .why{font-size:13px;color:var(--smoke);overflow-wrap:anywhere}
 .bd{display:block;font-size:13px;font-weight:600;color:var(--ink)}
 .mv{font-size:13px;font-weight:500;color:var(--smoke);white-space:nowrap}
-.fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--pl-line-strong);color:var(--ink);background:var(--pl-surface);font-weight:600;font-size:14px;text-decoration:none;margin-top:8px}button.fo{font-family:inherit;cursor:pointer}.fo:hover{border-color:var(--ink)}
+.fo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:6px;border:1.5px solid var(--pl-line-strong);color:var(--ink);background:var(--pl-surface);font-weight:600;font-size:14px;text-decoration:none;margin-top:8px}button.fo{font-family:inherit;cursor:pointer}.fo:hover{border-color:var(--ink)}
 .list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.row{display:grid;grid-template-columns:34px 48px minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px}
+.row{display:grid;grid-template-columns:34px 48px minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFCF7;border:1.5px solid var(--line);border-radius:6px;padding:12px 14px}
 .row .rk{font:500 14px var(--sys-mono,ui-monospace,monospace);color:var(--smoke);text-align:center}.row .av{width:48px;height:48px;font-size:22px}
 .row .nm{font:600 16px/1.25 var(--sys-title);text-decoration:none;overflow-wrap:anywhere}.row .why{display:block;font-size:13px;color:var(--smoke)}.row .bd{justify-content:flex-start;margin-top:3px}
 .row .sc{font:700 18px/1 var(--sys-title);text-align:right}
-.empty{background:transparent;border:1.5px dashed #D9CCBB;border-radius:16px;padding:24px 20px;color:var(--smoke)}.empty b{display:block;color:var(--ink);font:600 18px var(--sys-title);margin-bottom:4px}
-.how{margin-top:40px;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:20px}.how h2{margin:0 0 8px;font-size:22px}.how ul{margin:0 0 10px;padding-left:20px}.how li{margin:0 0 4px}.how code{display:block;white-space:normal;background:var(--linen);border-radius:12px;padding:10px 12px;font:13px/1.5 ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.empty{background:transparent;border:1.5px dashed #D9CCBB;border-radius:6px;padding:24px 20px;color:var(--smoke)}.empty b{display:block;color:var(--ink);font:600 18px var(--sys-title);margin-bottom:4px}
+.how{margin-top:40px;background:#FFFCF7;border:1.5px solid var(--line);border-radius:6px;padding:20px}.how h2{margin:0 0 8px;font-size:22px}.how ul{margin:0 0 10px;padding-left:20px}.how li{margin:0 0 4px}.how code{display:block;white-space:normal;background:var(--linen);border-radius:6px;padding:10px 12px;font:13px/1.5 "IBM Plex Mono",ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
 /* the ranking notes and the footer wait for the board, so they never get pushed down when it lands */
 main.lb-wait #how,main.lb-wait .foot,main.lb-wait ~ .foot{display:none}
 .foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--smoke);font-size:14px}.foot a{color:var(--ember-d);font-weight:600}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
-.hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:6px;padding:8px 14px;font-weight:600;font-size:14px}
 @media (min-width:861px){.hd-top{display:none}}@media (max-width:860px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom))!important}}
-@media (max-width:480px){.podium{gap:7px}.podium li{padding:14px 5px 10px;border-radius:16px}.av{width:44px;height:44px;font-size:20px}.podium .r1 .av{width:54px;height:54px}.podium .nm{font-size:14px}.podium .sc{font-size:19px}.podium .why{font-size:12px}.podium .fo{padding:6px 10px;font-size:13px}
+@media (max-width:480px){.podium{gap:7px}.podium li{padding:14px 5px 10px;border-radius:6px}.av{width:44px;height:44px;font-size:20px}.podium .r1 .av{width:54px;height:54px}.podium .nm{font-size:14px}.podium .sc{font-size:19px}.podium .why{font-size:12px}.podium .fo{padding:6px 10px;font-size:13px}
   .row{grid-template-columns:26px 40px minmax(0,1fr) auto;gap:8px;padding:10px}.row .av{width:40px;height:40px;font-size:18px}}
 </style><script src="/mascot.js"></script></head><body>
 <div class="ls-wrap" style="padding-bottom:70px">

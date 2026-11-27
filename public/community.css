@@ -1,3 +1,4 @@
+@import url("/fonts/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&family=IBM+Plex+Mono:wght@500&display=swap"); /* the kit faces, served from here (design audit: /plans/<id> drew in the system face) */
 :root{--bg:#FBF6EF;--card:#fff;--ink:var(--pl-ink);--soft:var(--pl-soft);--line:#EEE4D8;--brand:var(--pl-accent);--brand2:var(--pl-accent-text);--pink:#FBE3E8;--ok:#2F7A4F}
 *{box-sizing:border-box}html,body{overflow-x:clip}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}

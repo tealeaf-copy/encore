@@ -20,7 +20,7 @@
       : `<rect x="10" y="22" width="180" height="156" rx="18" fill="none" stroke="${ink}" stroke-width="7"/><rect x="22" y="34" width="156" height="132" rx="10" fill="none" stroke="${ink}" stroke-width="2.5" stroke-dasharray="3 5"/>`;
     const top = round ? `<path id="${id}t" d="M30 100a70 70 0 0 1 140 0" fill="none"/><text font-family="Arial Black,Arial,sans-serif" font-size="17" font-weight="900" letter-spacing="2" fill="${ink}" text-anchor="middle"><textPath href="#${id}t" startOffset="50%">${esc(label)}</textPath></text>`
       : `<text x="100" y="54" font-family="Arial Black,Arial,sans-serif" font-size="${label.length > 11 ? 12 : 16}" font-weight="900" letter-spacing="2" fill="${ink}" text-anchor="middle">${esc(label)}</text>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="${size}" height="${size}" aria-hidden="true"><g opacity=".92">${shape}${top}${art}<text x="100" y="${round ? 160 : 156}" font-family="IBM Plex Mono,Courier New,monospace" font-size="15" font-weight="700" letter-spacing="1" fill="${ink}" text-anchor="middle">${esc(date)}</text></g></svg>`; }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="${size}" height="${size}" aria-hidden="true"><g opacity=".92">${shape}${top}${art}<text x="100" y="${round ? 160 : 156}" font-family="IBM Plex Mono,Courier New,monospace" font-size="15" font-weight="500" letter-spacing="1" fill="${ink}" text-anchor="middle">${esc(date)}</text></g></svg>`; }
 
   const CSS = `.pp{position:relative;max-width:760px;background:#FBF4E6;border:2.5px solid var(--pl-ink);border-radius:6px;box-shadow:5px 5px 0 var(--pl-ink);padding:18px 18px 16px;color:var(--pl-ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif;overflow:hidden;
   background-image:repeating-radial-gradient(circle at 110% -10%,rgba(111,127,94,.08) 0 2px,transparent 2px 14px),radial-gradient(rgba(102,90,81,.07) 1px,transparent 1.2px);background-size:auto,7px 7px}
@@ -35,10 +35,10 @@
 .pp-hosts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}.pp-hosts a{display:inline-flex;gap:5px;align-items:center;background:#fff;border:1.5px solid var(--pl-ink);border-radius:999px;padding:3px 10px;font:600 13px "IBM Plex Sans",system-ui;text-decoration:none;color:var(--pl-ink)}
 .pp h3{font:600 16px var(--sys-title);margin:12px 0 2px}
 .pp-share{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border:2px solid var(--pl-ink);border-radius:999px;background:var(--pl-accent);color:#fff;font:600 15px "IBM Plex Sans",system-ui;cursor:pointer;box-shadow:2px 2px 0 var(--pl-ink)}
-.pp-cap{font:600 20px Caveat,cursive;color:var(--pl-accent-text);transform:rotate(-2deg);display:inline-block}
+.pp-cap{font:600 17px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;color:var(--pl-accent-text);display:inline-block}
 .pp-empty{color:var(--pl-soft);margin:8px 0}
 @media (max-width:520px){.pp{padding:16px 12px 14px}.pp-stamps{grid-template-columns:repeat(3,1fr);gap:2px 4px}.pp-stamp svg{width:96px;height:96px}.pp-next{width:88px;height:88px}}`;
-  const css = () => { if (document.getElementById("ppCss")) return; if (![...document.querySelectorAll('link[href*="fonts.googleapis"],link[href^="/fonts/css2"]')].some((l) => /Caveat/.test(l.href))) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap"; document.head.appendChild(l); } const s = document.createElement("style"); s.id = "ppCss"; s.textContent = CSS; document.head.appendChild(s); };
+  const css = () => { if (document.getElementById("ppCss")) return; const s = document.createElement("style"); s.id = "ppCss"; s.textContent = CSS; document.head.appendChild(s); };
 
   function card(P) { css(); if (!P) return ""; const c = P.counts || {};
     const stamps = (P.stamps || []).slice(0, 24).map((s) => `<a class="pp-stamp" style="--r:${(hash(s.eventId) % 17) - 8}deg"${s.url ? ` href="${esc(s.url)}"` : ""}>${stampSvg(s, 112)}<small>${esc(s.public ? s.title : "A private event")}</small></a>`).join("");
@@ -53,7 +53,7 @@
   // ---------- the story image ----------
   const img = (svg) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); });
   function wrap(x, text, cx, y, maxW, lh) { const words = String(text).split(/\s+/); let line = "", n = 0; for (const w of words) { const t = line ? line + " " + w : w; if (x.measureText(t).width > maxW && line) { x.fillText(line, cx, y + n * lh); n++; line = w; } else line = t; } if (line) { x.fillText(line, cx, y + n * lh); n++; } return n; }
-  async function storyBlob(P) { const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"); try { await document.fonts?.load?.("600 80px 'IBM Plex Sans'"); await document.fonts?.load?.("600 60px Caveat"); } catch {}
+  async function storyBlob(P) { const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"); try { await document.fonts?.load?.("600 80px 'IBM Plex Sans'"); await document.fonts?.load?.("500 30px 'IBM Plex Mono'"); } catch {}
     x.fillStyle = "#EFEBE2"; x.fillRect(0, 0, W, H); x.fillStyle = "rgba(102,90,81,.07)"; for (let i = 0; i < W; i += 14) for (let j = 0; j < H; j += 14) x.fillRect(i, j, 2, 2);
     const px = 80, py = 200, pw = W - 160, ph = 1360; x.fillStyle = "#1B1D1C"; x.beginPath(); x.roundRect(px + 16, py + 16, pw, ph, 56); x.fill(); x.fillStyle = "#FBF4E6"; x.beginPath(); x.roundRect(px, py, pw, ph, 56); x.fill(); x.lineWidth = 8; x.strokeStyle = "#1B1D1C"; x.stroke();
     x.save(); x.translate(px + 120, py - 6); x.rotate(-0.08); x.fillStyle = "rgba(242,212,143,.95)"; x.fillRect(0, -26, 220, 54); x.restore();
@@ -65,7 +65,7 @@
     const S = (P.stamps || []).slice(0, 9); const imgs = await Promise.all(S.map((s) => img(stampSvg(s, 280))));
     imgs.forEach((im, i) => { if (!im) return; const col = i % 3, row = Math.floor(i / 3), cx = px + 150 + col * 290, cy = py + 720 + row * 250; x.save(); x.translate(cx, cy); x.rotate(((hash(S[i].eventId) % 17) - 8) * Math.PI / 180); x.globalAlpha = 0.92; x.drawImage(im, -130, -130, 260, 260); x.restore(); });
     if (!S.length) { x.fillStyle = "#8C7E70"; x.font = "600 40px 'IBM Plex Sans', system-ui"; x.textAlign = "center"; x.fillText("First stamp coming soon", W / 2, py + 900); }
-    x.fillStyle = "#29489A"; x.textAlign = "center"; x.font = "600 64px Caveat, cursive"; x.save(); x.translate(W / 2, py + ph + 115); x.rotate(-0.03); x.fillText(c0.events >= 5 ? "a regular, clearly" : "my scene, so far", 0, 0); x.restore();
+    x.fillStyle = "#29489A"; x.textAlign = "center"; x.font = "600 52px 'IBM Plex Sans', sans-serif"; x.save(); x.translate(W / 2, py + ph + 115); x.rotate(-0.03); x.fillText(c0.events >= 5 ? "a regular, clearly" : "my scene, so far", 0, 0); x.restore();
     x.fillStyle = "#1B1D1C"; x.font = "600 44px 'IBM Plex Sans', system-ui"; wrap(x, "Find yours on Pottery Lab", W / 2, H - 170, W - 200, 56);
     x.font = "700 60px 'IBM Plex Sans',Georgia,serif"; x.fillText("pottery lab", W / 2, H - 80);
     return await new Promise((r) => c.toBlob(r, "image/png")); }

@@ -13444,8 +13444,6 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
     if(h?.handle&&!host.querySelector(".hrow")){ const name=h.name||X.person||hostFirst(e), d=document.createElement("div"); d.className="hrow";
       d.innerHTML=`<a href="/@${esc(h.handle)}"><span class="hav">${h.avatarUrl?`<img src="${esc(h.avatarUrl)}" alt="">`:esc((name||"?")[0])}</span><b>${esc(name)}</b></a>${own?"":`<button type="button" class="plf-btn" data-pl-follow="${esc(h.handle)}" data-name="${esc(name)}" aria-pressed="false">Follow</button>`}`;
       const at=inv.querySelector(":scope > .gxfacts")||inv.querySelector(":scope > h3"); if(at) at.after(d); else inv.prepend(d) }
-    // signed in, the Follow button follows in place, so the "Hear about the next one" email card would be a second Follow
-    if(/(?:^|;\s*)encore_in=1/.test(document.cookie)) host.querySelectorAll(".gk-follow").forEach(x=>{ if(x.style.display!=="none") x.style.display="none" });
     if(!document.querySelector(".gx-lz")){ const p=document.createElement("p"); p.className="note gx-lz"; p.innerHTML=`<a href="#" data-lz="report">Report</a>`; (host.firstElementChild||host).appendChild(p) }
     if(e.cancelled&&!host.querySelector(".gx-cancel")){ const who=hostFirst(e), n=document.createElement("div"); n.className="panel gx-cancel"; n.setAttribute("role","status");
       n.innerHTML=`<h3>${esc(who==="your host"?"This was cancelled":who+" cancelled this one")}</h3><p class="note" style="margin:0">${M?.response==="going"?"You were in, so there's nothing to do. ":""}Replies are closed.${own?"":` Follow ${esc(who==="your host"?"the host":who)} to hear about the next one.`}</p>`;

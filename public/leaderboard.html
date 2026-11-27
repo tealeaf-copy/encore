@@ -42,6 +42,8 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 .row .sc{font:700 18px/1 var(--sys-title);text-align:right}
 .empty{background:transparent;border:1.5px dashed #D9CCBB;border-radius:16px;padding:24px 20px;color:var(--smoke)}.empty b{display:block;color:var(--ink);font:600 18px var(--sys-title);margin-bottom:4px}
 .how{margin-top:40px;background:#FFFCF7;border:1.5px solid var(--line);border-radius:16px;padding:20px}.how h2{margin:0 0 8px;font-size:22px}.how ul{margin:0 0 10px;padding-left:20px}.how li{margin:0 0 4px}.how code{display:block;white-space:normal;background:var(--linen);border-radius:12px;padding:10px 12px;font:13px/1.5 ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+/* the ranking notes and the footer wait for the board, so they never get pushed down when it lands */
+main.lb-wait #how,main.lb-wait .foot,main.lb-wait ~ .foot{display:none}
 .foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--smoke);font-size:14px}.foot a{color:var(--ember-d);font-weight:600}
 .hd-top{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}.hd-top .brand{display:flex;gap:8px;align-items:center;font:700 20px var(--sys-display);text-decoration:none;color:var(--ink)}
 .hd-cta{background:var(--ember);color:#fff;text-decoration:none;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
@@ -51,7 +53,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
 </style><script src="/mascot.js"></script></head><body>
 <div class="ls-wrap" style="padding-bottom:70px">
   <header class="top hd-top"><a class="brand" href="/"><svg viewBox="0 0 48 48" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="45" height="45" rx="6"/><path d="M17 11h14M19 11v4l-6 6v9a7 7 0 0 0 7 7h8a7 7 0 0 0 7-7v-9l-6-6v-4"/><circle cx="20.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/><circle cx="27.5" cy="26" r="1.9" stroke="none" style="fill:var(--pl-accent,#29489A)"/></svg>pottery lab</a><a class="hd-cta" href="/signup?mode=friends">Start your page</a></header>
-  <main>
+  <main class="lb-wait">
   <section class="ls-head"><div><h1>Leaderboard</h1>
     <p class="ls-what">The hosts guests loved most, by city and kind of event. Tap a host to see their page.</p><p class="ls-what">Rather a small, private ranking on effort? <a href="/circles" style="color:var(--pl-accent-text);font-weight:600">Circles</a> are opt-in.</p></div></section>
   <div class="ls-filters" role="group" aria-label="Filter the leaderboard" style="margin-bottom:24px">
@@ -89,6 +91,7 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
     $("#cats").innerHTML = CATS.filter(([k]) => k === "all" || k === st.category || here.includes(k)).map(([k, l]) => `<button type="button" class="ls-chip" data-c="${k}" aria-pressed="${k === st.category}">${esc(l)}</button>`).join(""); }
   function drawCities() { const C = [...new Set([...cities.map((c) => c.city), ...boards.map((b) => b.city)])]; if (st.city && !C.some((c) => c.toLowerCase() === st.city.toLowerCase())) C.unshift(st.city);
     $("#city").innerHTML = C.length ? C.map((c) => `<option value="${esc(c)}"${c.toLowerCase() === st.city.toLowerCase() ? " selected" : ""}>${esc(c)}</option>`).join("") : `<option value="">No cities yet</option>`; $("#city").classList.toggle("on", !!st.city); }
+  let wait = 2; const ready = () => { if (--wait <= 0) document.querySelector("main")?.classList.remove("lb-wait"); };
   async function load() { sync(); document.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === st.period)));
     let j; try { j = await (await fetch(`/api/v1/leaderboard?${new URLSearchParams({ city: st.city, category: st.category, ...(picked ? { period: st.period } : {}) })}`)).json(); } catch { $("#board").innerHTML = `<p class="empty">Couldn't load the leaderboard. Refresh to try again.</p>`; return; }
     boards = j.boards || []; cities = j.cities || []; const B = j.data || {}; if (!st.city && B.city) { st.city = B.city; sync(); }
@@ -109,9 +112,9 @@ button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(
   $("#city").onchange = (e) => { st.city = e.target.value; st.category = "all"; load(); };
   document.querySelectorAll("[data-p]").forEach((b) => (b.onclick = () => { st.period = b.dataset.p; picked = true; load(); }));
   $("#cats").onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; st.category = b.dataset.c; load(); };
-  fetch("/api/v1/leaderboard/rules").then((r) => r.json()).then((R) => { $("#howL").innerHTML = (R.text || []).map((t) => `<li>${esc(t)}</li>`).join(""); $("#howF").textContent = R.formula || ""; }).catch(() => {});
+  fetch("/api/v1/leaderboard/rules").then((r) => r.json()).then((R) => { $("#howL").innerHTML = (R.text || []).map((t) => `<li>${esc(t)}</li>`).join(""); $("#howF").textContent = R.formula || ""; }).catch(() => {}).finally(ready);
   // no city in the link: the visitor's city when it has a board, else the busiest one
-  (async () => { if (!st.city && mine) { try { const j = await (await fetch("/api/v1/leaderboard?city=" + encodeURIComponent(mine))).json(); if (j.data?.qualified || (j.cities || []).some((c) => c.city.toLowerCase() === mine.toLowerCase())) st.city = j.data?.city || mine; } catch {} } load(); })();
+  (async () => { if (!st.city && mine) { try { const j = await (await fetch("/api/v1/leaderboard?city=" + encodeURIComponent(mine))).json(); if (j.data?.qualified || (j.cities || []).some((c) => c.city.toLowerCase() === mine.toLowerCase())) st.city = j.data?.city || mine; } catch {} } await load().catch(() => {}); ready(); })();
 })();
 </script>
 <script src="/nav.js"></script><script src="/shell.js"></script>

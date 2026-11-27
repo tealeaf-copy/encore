@@ -201,3 +201,39 @@ test("The fan club has a card on the host's page: start it, join it, leave it (p
   assert.doesNotMatch(guides, /edit=1#club/, "the guide's Start a fan club opens the card, not the page editor"); assert.equal((guides.match(/href: "\{page\}#club"/g) || []).length, 3);
   assert.doesNotMatch(js, /\u2014/);
 });
+
+// review round 19: the club's settings have a page (the card on the host's page, public/fanclub.js)
+test("Club settings: perks and the first-dibs window save, a removed member can be let back in, a member's badge and mute", async () => {
+  const kai = await host("Kai Rivers", "kai-r19"), ana = await person("Ana Bell"), jo = await person("Jo Park");
+  assert.equal((await clubOn(kai, { name: "Kai's Regulars" })).status, 200);
+  const saved = await (await post("/api/host/club", { pitch: "First to the table.", earlyHours: 48, perks: ["A jar of chilli oil", " ", "The recipe card"] }, kai.cookie)).json();
+  assert.equal(saved.club.earlyHours, 48); assert.deepEqual(saved.club.perks, ["A jar of chilli oil", "The recipe card"]); assert.equal(saved.club.on, true, "saving settings doesn't turn the club off");
+  for (const p of [ana, jo]) assert.equal((await post("/api/me/club/kai-r19/join", {}, p.cookie)).status, 200);
+  let H = await getJ("/api/host/club", kai.cookie); assert.equal(H.members.length, 2); assert.deepEqual(H.removed, []); assert.deepEqual(H.earlyOptions, [0, 12, 24, 48, 72]); assert.equal(H.perksMax, 5); assert.equal(H.postMax, 500);
+  const a = H.members.find((m) => m.name === "Ana");
+  assert.equal((await post(`/api/host/club/members/${a.id}/remove`, {}, kai.cookie)).status, 200);
+  H = await getJ("/api/host/club", kai.cookie); assert.equal(H.members.length, 1); assert.equal(H.removed.length, 1); assert.equal(H.removed[0].name, "Ana"); assert.ok(!("email" in H.removed[0]), "first names only");
+  assert.equal((await post("/api/me/club/kai-r19/join", {}, ana.cookie)).status, 403, "a removed member can't rejoin by themselves");
+  assert.notEqual((await post(`/api/host/club/members/${a.id}/restore`, {}, jo.cookie)).status, 200, "only the host");
+  assert.equal((await getJ("/api/host/club", kai.cookie)).removed.length, 1);
+  assert.equal((await post(`/api/host/club/members/${a.id}/restore`, {}, kai.cookie)).status, 200);
+  assert.equal((await post(`/api/host/club/members/${a.id}/restore`, {}, kai.cookie)).status, 404, "nothing to undo twice");
+  H = await getJ("/api/host/club", kai.cookie); assert.equal(H.members.length, 2); assert.deepEqual(H.removed, []);
+  assert.equal((await getJ("/api/public/club/kai-r19", ana.cookie)).member, true, "back in, without joining again");
+  // a member's own switches, and what the page gets to draw them
+  const s = await (await post("/api/me/club/kai-r19/settings", { showBadge: true, muted: true }, ana.cookie)).json(); assert.deepEqual([s.showBadge, s.muted], [true, true]);
+  const v = (await getJ("/api/public/host/kai-r19", ana.cookie)).viewer; assert.deepEqual([v.member, v.showBadge, v.muted], [true, true, true]);
+  assert.equal((await getJ("/api/host/club", kai.cookie)).members.find((m) => m.name === "Ana").badge, true);
+  // a date set to members first uses the window the host picked
+  assert.equal((await put("events/kaiR19", { kind: "social", casual: true, published: true, discoverable: true, name: "Noodle night", date: day(9) }, kai.cookie)).status, 200);
+  const t0 = Date.now(), r = await (await post("/api/host/club/events/kaiR19", { visibility: "early" }, kai.cookie)).json(); assert.equal(r.visibility, "early"); assert.ok(Math.abs(r.earlyUntil - (t0 + 48 * 3600e3)) < 60e3, "48 hours from now");
+  assert.equal((await getJ("/api/host/club", kai.cookie)).events.find((e) => e.id === "kaiR19").visibility, "early");
+});
+test("The club card carries its settings: perks, first dibs, dates, members, a note, and a member's switches (public/fanclub.js)", () => {
+  const js = fs.readFileSync(new URL("../public/fanclub.js", import.meta.url), "utf8");
+  for (const re of [/Club settings/, /id="clubEarly"/, /data-perk=/, /Add a perk/, /"\/api\/host\/club", \{ name: c\.name\.trim\(\), pitch: c\.pitch\.trim\(\), earlyHours: c\.earlyHours, perks:/, /\/remove"\)/, /\/restore"\)/, /Let back in/, /"\/api\/host\/club\/events\/" \+/, /Members first/, /Members only/,
+    /"\/api\/host\/club\/posts", \{ text: t \}/, /api \+ "\/settings", \{ \[key\]: on \}/, /id="clubBadge"/, /id="clubMute"/, /Tap again to remove/, /Tap again to turn it off/]) assert.match(js, re);
+  assert.doesNotMatch(js, /href="\/feed">Write a note/, "a note is written in the card, not one step away on the feed");
+  assert.match(js, /\.club-x\{[^}]*width:44px;height:44px/); assert.match(js, /label\.club-sw\{[^}]*min-height:44px/); assert.doesNotMatch(js, /—/);
+  assert.doesNotMatch(js, /border-radius:(1[0-9]|2[0-9])px/, "6px corners, the kit's");
+});

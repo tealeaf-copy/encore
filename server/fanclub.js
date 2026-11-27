@@ -94,6 +94,10 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
     return { member: m }; }
   function leave(ws, email, { by = "member" } = {}) { const em = lc(email), cur = memberDoc(ws, em); if (!active(cur)) return { ok: true, was: false };
     S0(ws).set(mPath(em), { ...cur, ...(by === "host" ? { removedAt: clock() } : { leftAt: clock() }), history: [...(cur.history || []), { at: clock(), j: 0 }].slice(-50) }); return { ok: true, was: true }; }
+  /** The host changed their mind about a removal: the member is back, with the date they first joined. */
+  function restore(ws, id) { const p = "clubmembers/" + id, cur = S0(ws).get(p)?.data; if (!cur?.removedAt) return null; const { removedAt, leftAt, ...rest } = cur; void removedAt; void leftAt;
+    S0(ws).set(p, { ...rest, history: [...(cur.history || []), { at: clock(), j: 1 }].slice(-50) }); return { ok: true }; }
+  const removedOf = (ws) => S0(ws).list("clubmembers").map((d) => ({ id: d.id, ...d.data })).filter((m) => m.removedAt).sort((a, b) => b.removedAt - a.removedAt).slice(0, 50);
   function memberSettings(ws, email, b = {}) { const cur = memberDoc(ws, email); if (!active(cur)) return null; const p = {}; if (typeof b.showBadge === "boolean") p.showBadge = b.showBadge; if (typeof b.muted === "boolean") p.muted = b.muted;
     S0(ws).update(mPath(email), p); return { ...cur, ...p }; }
   /** Attendance at this host's past events (going, not marked no-show), by email. */
@@ -169,7 +173,7 @@ export function makeFanclub({ store, C, X = null, safety = null, now: clock = ()
   function chatIdsFor(email) { const em = lc(email), out = []; for (const c of clubMemberships(em)) if (c.chatId) out.push(c.chatId);
     try { const u = X?.userOf?.(em); if (u?.ws && config(u.ws).on) out.push(chatIdOf(u.ws)); } catch {} return out; }
 
-  return { config, setConfig, blocked, isMember, memberDoc, membersOf, join, leave, memberSettings, attendance, growth, followerDoc, setFollow, followedHosts, clubMemberships,
+  return { config, setConfig, blocked, isMember, memberDoc, membersOf, join, leave, restore, removedOf, memberSettings, attendance, growth, followerDoc, setFollow, followedHosts, clubMemberships,
     visibility, setVisibility, visOf, canSee, rsvpGate, postsOf, addPost, heart, feedItems, postTarget, chatEvent, chatMembers, chatIdsFor, chatIdOf, owner, handleOf, S0 };
 }
 
@@ -312,13 +316,15 @@ export function mountFanclub(app, { store, small, currentUser, C, X, publicOrigi
     const today = new Date().toISOString().slice(0, 10);
     const events = F.S0(ws).list("events").map((d) => ({ id: d.id, e: d.data || {} })).filter(({ e }) => !e.example && !e.sample && !e.cancelled && (e.date || "9999") >= today && (e.name || e.pubTitle))
       .sort((a, b) => String(a.e.date || "9").localeCompare(String(b.e.date || "9"))).slice(0, 20).map(({ id, e }) => ({ id, title: e.pubTitle || e.name, date: e.date || "", drop: !!e.drop, visibility: F.visibility(ws, id), earlyUntil: F.visOf(ws, id)?.earlyUntil || 0 }));
-    res.json({ club: F.config(ws), members, regulars: [...members].filter((m) => m.attended > 0).sort((a, b) => b.attended - a.attended || a.since - b.since).slice(0, 5), growth: F.growth(ws), followers: C.followersOf(ws).length, posts: F.postsOf(ws), events }); });
+    res.json({ club: F.config(ws), members, removed: F.removedOf(ws).map((m) => ({ id: m.id, name: first(m.name) || "Member", at: m.removedAt })), earlyOptions: EARLY_HOURS, perksMax: PERKS_MAX, postMax: POST_MAX, regulars: [...members].filter((m) => m.attended > 0).sort((a, b) => b.attended - a.attended || a.since - b.since).slice(0, 5), growth: F.growth(ws), followers: C.followersOf(ws).length, posts: F.postsOf(ws), events }); });
   app.post("/api/host/club", small, (req, res) => { const H = hostOf(req, res); if (!H) return; const r = F.setConfig(H.ws, req.body || {}); if (r.error) return bad(res, r.error); res.json({ ok: true, ...r }); });
   app.get("/api/host/club/members.csv", (req, res) => { const H = hostOf(req, res); if (!H) return; const A = F.attendance(H.ws), q = (s) => `"${String(s ?? "").replace(/"/g, '""').replace(/^[=+\-@]/, "'$&")}"`;
     const rows = [["First name", "Member since", "Events attended", "Shows badge"], ...F.membersOf(H.ws).map((m) => [first(m.name) || "Member", new Date(m.joinedAt).toISOString().slice(0, 10), A.get(lc(m.email)) || 0, m.showBadge ? "yes" : "no"])];
     res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="${H.h.handle}-members.csv"`, "Cache-Control": "private, no-store" }).send(rows.map((r) => r.map(q).join(",")).join("\n") + "\n"); });
   app.post("/api/host/club/members/:id/remove", small, (req, res) => { const H = hostOf(req, res); if (!H) return; const id = clean(req.params.id, 40), d = F.S0(H.ws).get("clubmembers/" + id)?.data; if (!d) return bad(res, "No such member.", 404, "not_found");
     F.leave(H.ws, d.email, { by: "host" }); res.json({ ok: true, members: F.membersOf(H.ws).length }); });
+  app.post("/api/host/club/members/:id/restore", small, (req, res) => { const H = hostOf(req, res); if (!H) return; const r = F.restore(H.ws, clean(req.params.id, 40)); if (!r) return bad(res, "No such member.", 404, "not_found");
+    res.json({ ok: true, members: F.membersOf(H.ws).length }); });
   app.post("/api/host/club/posts", small, async (req, res) => { const H = hostOf(req, res); if (!H) return; const { ws, h } = H; const c = F.config(ws); if (!c.on) return bad(res, "Turn on your fan club first.");
     if (over("post|" + ws, POST_PER_HOUR) || over("postd|" + ws, POST_PER_DAY, DAY)) return bad(res, "That's a lot of updates for now. Try again later.", 429, "rate_limited");
     const r = F.addPost(ws, { text: req.body?.text, photo: req.body?.photo }); if (r.error) return bad(res, r.error, 400, r.code || "invalid");

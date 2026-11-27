@@ -128,10 +128,13 @@
     // the title: what comes before the first date, time or comma; the rest, if it says something, is the description
     const first = Math.min(...cut.filter((x) => x > 3), lo.indexOf(",") > 3 ? lo.indexOf(",") : Infinity);
     let title = (Number.isFinite(first) ? t.slice(0, first) : t).replace(/[\s,.-]+(?:on|at|this|next)?$/i, "").trim(); if (title.length < 3) title = t.split(",")[0].trim();
-    const rest = t.split(",").slice(1).map((x) => x.trim()).filter((x) => x && !/^\d{1,3}\s*(friends|people|guests|seats|spots)$/i.test(x) && !/^(?:on )?(sun|mon|tue|wed|thu|fri|sat)/i.test(x) && !/^\d{1,2}(:\d{2})?\s*(am|pm)$/i.test(x));
+    // "Saturday 8am easy 5K, then coffee": a line that starts with the day keeps what it is ("Easy 5K"), not "Saturday"
+    if (/^(?:this |next )?(?:sun|mon|tue|wed|thu|fri|sat)[a-z]*(?: night| morning| afternoon| evening)?$|^(?:tonight|tomorrow(?: night)?)$/i.test(title)) { let x = t.split(",")[0]; for (const m of [wd, rel, tm]) if (m) x = x.replace(m[0], " "); x = x.replace(/\s+/g, " ").replace(/^[\s,.-]+|[\s,.-]+$/g, ""); if (x.length >= 3) title = x; }
+    if (/\b(?:every|each) (?:week|sun|mon|tue|wed|thu|fri|sat)|\bweekly\b/i.test(t)) o.repeat = "weekly";
+    const rest = t.split(",").slice(1).map((x) => x.trim()).filter((x) => x && !/^\d{1,3}\s*(friends|people|guests|seats|spots)$/i.test(x) && !/^(?:on )?(sun|mon|tue|wed|thu|fri|sat)/i.test(x) && !/^\d{1,2}(:\d{2})?\s*(am|pm)$/i.test(x) && !/^(?:every|each) (?:week|[a-z]+day)$|^weekly$/i.test(x));
     return { title: title.charAt(0).toUpperCase() + title.slice(1), ...o, ...(rest.length ? { why: rest.join(". ").replace(/^./, (c) => c.toUpperCase()).replace(/([^.!?])$/, "$1.") } : {}) }; }
   /** The button's words: "Fill in Sat, Dec 5, 7pm and My place". */
-  function planLineLabel(p) { if (!p) return ""; const bits = [p.date ? new Date(p.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", p.startTime ? clock(p.startTime).replace(":00", "") : "", p.meetPoint || "", p.headcount ? `${p.headcount} spots` : ""].filter(Boolean);
+  function planLineLabel(p) { if (!p) return ""; const bits = [p.date ? new Date(p.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "", p.startTime ? clock(p.startTime).replace(":00", "") : "", p.meetPoint || "", p.headcount ? `${p.headcount} spots` : "", p.repeat === "weekly" ? "every week" : ""].filter(Boolean);
     return "Fill in " + (bits.length > 1 ? bits.slice(0, -1).join(", ") + " and " + bits[bits.length - 1] : bits[0]); }
 
   // "What are you planning?": each kind preloads its add-ons, sections and defaults, from a dinner to a summit. The
@@ -164,7 +167,8 @@
       agenda: { tracks: ["Main stage", "Workshops"], rooms: [{ name: "Main hall", capacity: 80 }, { name: "Studio", capacity: 20 }], sessions: [] } },
     { k: "other", label: "Something else", line: "Name it yourself", n: 8, time: "19:00", set: {}, own: true },
   ];
-  const KIND_BLOCKS = [{ k: "table", title: "The booking", icon: "food" }, { k: "stay", title: "Where we're staying", icon: "key" }, { k: "agenda", title: "Agenda and rooms", icon: "clock" }];
+  // runsignup: a run's reply (pace group, first time, emergency contact, waiver, every week), public/runtemplates.js
+  const KIND_BLOCKS = [{ k: "table", title: "The booking", icon: "food" }, { k: "stay", title: "Where we're staying", icon: "key" }, { k: "agenda", title: "Agenda and rooms", icon: "clock" }, { k: "runsignup", title: "Run sign-up", icon: "note" }];
   /** Pick a kind: its defaults fill only what's empty, its add-ons open, its sections join the host's own. Pure. */
   function applyKind(d, k, open = new Set()) { const K = PLAN_KINDS.find((x) => x.k === k); d = d || {}; open = new Set(open); if (!K) return { d, open };
     if (K.handoff) return { d, open, handoff: K.handoff };
@@ -243,7 +247,11 @@
   async function open(o = {}) { await profile(); close(true);
     const cur = getDraft(), editing = o.mode !== "new" && cur && !cur.example && (cur.id || o.mode);
     let W = editing ? clone(cur) : fresh(), note = "";
-    const key = keyOf(editing ? cur : null), kept = ls.get(key);
+    // a New York run template (public/runtemplates.js): o.preset, or ?tpl= from Potto's link or the Home card (?tpl=pick
+    // opens the picker). It starts fresh: an older unsaved draft on this device stays where it is.
+    let pre = !editing && o.preset ? o.preset : null, pickRun = false;
+    try { const u = new URL(location.href), t = u.searchParams.get("tpl"); if (t) { if (!editing && !pre) { pre = root.RunTemplates?.fromQuery?.(u.searchParams) || null; pickRun = !pre; } for (const k of ["tpl", "date", "time", "repeat", "title"]) u.searchParams.delete(k); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
+    const key = keyOf(editing ? cur : null), kept = pre || pickRun ? null : ls.get(key);
     if (kept?.d && (editing ? kept.base === (cur.updatedAt || null) : (kept.d.pubTitle || kept.d.date || kept.d.why))) { W = { ...W, ...kept.d, id: W.id }; note = editing ? "Your unsaved changes are back." : "Picked up your draft from earlier."; }
     if (!editing && W.effect === "confetti") W.effect = "none";
     const club = (editing && CLUB?.events?.find((x) => x.id === cur.id)?.visibility) || "everyone";
@@ -254,12 +262,31 @@
     let want = o.kind || ""; try { const u = new URL(location.href); if (!want && !editing) want = u.searchParams.get("kind") || ""; if (u.searchParams.has("kind")) { u.searchParams.delete("kind"); history.replaceState(history.state, "", u.pathname + u.search + u.hash); } } catch {}
     if (!editing && want && PLAN_KINDS.some((x) => x.k === want && !x.handoff) && S.W.planKind !== want) { const r = applyKind(S.W, want, S.open); S.W = r.d; S.open = r.open; }
     else if (editing) for (const [b, k] of Object.entries(KIND_OF_BLOCK)) if (planKind(S.W) === k) S.open.add(b);
-    build(); }
+    if (pre) applyPreset(pre, false);
+    else if (!editing && S.W.planKind === "run") runDefaults(S.W);
+    build(); if (pickRun && root.RunTemplates?.sheet) setTimeout(() => root.RunTemplates.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) }), 250); }
+  // ---- New York run templates (public/runtemplates.js) ----
+  const TPL_SECTIONS = ["the route", "pace groups", "after", "good to know"];
+  /** Fill the canvas from a template. keep: the host's own title, date and time stay when they've set them. */
+  function applyPreset(P, keep) { const R = root.RunTemplates, had = { title: String(S.W.pubTitle || "").trim(), date: S.W.date, time: S.W.startTime, kindTime: PLAN_KINDS.find((k) => k.k === S.W.planKind)?.time, runTpl: S.W.runTpl };
+    const r = applyKind(S.W, "run", S.open); S.W = r.d; S.open = r.open; const W = S.W, p = clone(P);
+    // what came from an earlier template changes with the new one; what the host typed stays
+    const prevT = R?.byId?.(had.runTpl);
+    if (keep) { if (had.title && had.title !== prevT?.title) { delete p.pubTitle; delete p.name; } if (had.date && !prevT) delete p.date; if (had.time && had.time !== had.kindTime && !prevT) { delete p.startTime; delete p.endTime; } }
+    const ownS = (W.sections || []).filter((s) => !TPL_SECTIONS.includes(String(s.title || "").toLowerCase())), ownQ = (W.questions || []).filter((x) => !Object.values(R?.RUN_Q || {}).includes(x.id));
+    Object.assign(W, p, { sections: [...(p.sections || []), ...ownS], questions: [...(p.questions || []), ...ownQ] });
+    for (const a of ADDONS) if (addonHas(W, a.k)) S.open.add(a.k); S.open.add("runsignup");
+    try { localStorage.setItem("pl.runCity", "New York"); } catch {} } // a New York run: Home shows the templates from now on
+  /** A run picked by hand gets the run sign-up too: pace groups and "first time?", no food question. */
+  function runDefaults(W) { const R = root.RunTemplates; if (!R) return; if (!R.signup(W).paces.length && !(W.questions || []).some((x) => x.id === R.RUN_Q.first)) { R.signupSet(W, "paces", ["Easy, 11:00 a mile or slower", "Steady, 9:30 to 11:00 a mile", "Quicker, under 9:30 a mile"]); R.signupSet(W, "first", true); } W.askDiet = false; S.open.add("runsignup"); }
+  /** From the picker while the canvas is open (RunTemplates.use, "Pick a run"). */
+  function preset(P) { if (!S?.el || !P) return; applyPreset(P, true); changed(true); try { root.PLFx?.haptic?.("light"); } catch {} say("Filled in. Change anything, then Save."); }
   const planKind = (W) => W.planKind || (W.reservation?.restaurant ? "table" : W.lodging?.name ? "weekend" : (W.agenda?.tracks || []).length ? "summit" : "");
   /** "What are you planning?": fill in the kind's defaults, open its blocks, or hand a drop to the drop setup. */
-  function pickKind(k) { const r = applyKind(S.W, k, S.open);
+  function pickKind(k) { if (S.W.planKind === "run" && k !== "run" && root.RunTemplates) { const R = root.RunTemplates; S.W.questions = (S.W.questions || []).filter((x) => !Object.values(R.RUN_Q).includes(x.id)); delete S.W.runSignup; delete S.W.runTpl; S.open.delete("runsignup"); } // a run's sign-up goes with it
+    const r = applyKind(S.W, k, S.open);
     if (r.handoff === "drop") { const D = root.EncoreDrop; if (D?.setup) { close(); D.setup({ onDone: (j) => { if (j?.id) { location.hash = "#programs"; location.reload(); } } }); } else say("The drop setup is still loading. Try again in a moment."); return; }
-    S.W = r.d; S.open = r.open; changed(true); try { root.PLFx?.haptic?.("light"); } catch {}
+    S.W = r.d; S.open = r.open; if (k === "run") runDefaults(S.W); changed(true); try { root.PLFx?.haptic?.("light"); } catch {}
     const K = PLAN_KINDS.find((x) => x.k === k); if (K.own) { setTimeout(() => q("#cvKindOwn", S.el)?.focus(), 30); return; } say(`${K.label}: set up. Change anything.`);
     const blk = q(`[data-kblock="${Object.keys(KIND_OF_BLOCK).find((b) => KIND_OF_BLOCK[b] === k) || ""}"]`, S.el); if (blk) { blk.classList.add("new"); setTimeout(() => blk.scrollIntoView({ block: "center", behavior: "smooth" }), 60); } }
 
@@ -288,19 +315,30 @@
       body = `<textarea data-af="${a.k}" rows="2" placeholder="${esc(ph)}" aria-label="${esc(a.title)}">${esc(addonText(W, a.k))}</textarea>`; }
     return `<section class="cv-blk" data-addon="${a.k}"><header>${ic}<h3>${esc(a.title)}</h3>${rm}</header>${body}</section>`; }
   // the kind's own blocks: the booking, where we're staying, the agenda's tracks and rooms
-  const KIND_OF_BLOCK = { table: "table", stay: "weekend", agenda: "summit" };
+  const KIND_OF_BLOCK = { table: "table", stay: "weekend", agenda: "summit", runsignup: "run" };
   function kindBlock(W, b) { const f = (path, label, ph, o = {}) => `<label class="cv-kf${o.wide ? " w" : ""}"><span>${esc(label)}</span>${o.area ? `<textarea data-kf="${path}" rows="2" placeholder="${esc(ph)}">${esc(kindText(W, path))}</textarea>` : `<input data-kf="${path}" value="${esc(kindText(W, path))}" placeholder="${esc(ph)}"${o.type ? ` type="${o.type}"` : ""}${o.mode ? ` inputmode="${o.mode}"` : ""} autocomplete="off">`}${o.note ? `<small>${esc(o.note)}</small>` : ""}</label>`;
     let body = "";
     if (b.k === "table") body = `<div class="cv-kg">${f("reservation.restaurant", "Restaurant", "Lilia", { wide: true })}${f("reservation.time", "Booked for", "7:30pm")}${f("reservation.party", "Party size", "6", { mode: "numeric" })}${f("reservation.holdUntil", "Reply by", "", { type: "date", note: "Guests read: Reply by Thursday so I can update the booking." })}
       <label class="cv-kf"><span>The bill</span><select data-kf="reservation.split"><option value="even"${W.reservation?.split !== "own" && W.reservation?.split !== "" ? " selected" : ""}>Split it evenly</option><option value="own"${W.reservation?.split === "own" ? " selected" : ""}>Each pays their own</option><option value=""${W.reservation?.split === "" ? " selected" : ""}>Decide later</option></select></label>
       ${f("reservation.link", "Booking link", "resy.com/…", { wide: true, mode: "url" })}${f("reservation.confirmation", "Confirmation", "Optional")}</div><p class="cv-kn">The link and confirmation go to guests who are in. You'll see "You're at 7 of 6" as replies come in.</p>`;
     else if (b.k === "stay") body = `<div class="cv-kg">${f("lodging.name", "The place", "Esopus Cabin", { wide: true })}${f("lodging.area", "Area", "Phoenicia")}${f("lodging.checkIn", "Check in", "4pm")}${f("lodging.checkOut", "Check out", "11am")}${f("lodging.address", "Address", "Only people who are in see it", { wide: true })}${f("lodging.link", "Listing link", "airbnb.com/…", { wide: true, mode: "url" })}</div><p class="cv-kn">After you save: who sleeps where, rides with seats to claim and shared costs, on the plan page.</p>`;
+    else if (b.k === "runsignup") { const R = root.RunTemplates, s = R ? R.signup(W) : { paces: [], first: false, ice: false, waiver: false, waiverText: "" }, sw1 = (k, on, label, sub) => `<div class="cv-sw cv-rsw"><span><b id="cvRun${k}L">${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><button type="button" role="switch" data-run="${k}" aria-checked="${!!on}" aria-labelledby="cvRun${k}L"><i></i></button></div>`;
+      body = `<div class="cv-kg"><label class="cv-kf w"><span>Pace groups, one per line</span><textarea data-runpace rows="3" placeholder="Easy, 11:00 a mile or slower">${esc(s.paces.join("\n"))}</textarea><small>Guests pick one when they reply. Leave it empty to skip it.</small></label></div>
+        ${sw1("repeat", W.repeat === "weekly", "Every week", "The next date drafts itself after each run, for you to check.")}${sw1("first", s.first, "Ask if it's their first time", "So you can say hello at the start.")}${sw1("ice", s.ice, "Emergency contact", "Each runner adds a name and phone. Only you see it.")}${sw1("waiver", s.waiver, "Waiver line", "Runners tick it to reply.")}
+        ${s.waiver ? `<label class="cv-kf w"><span>Waiver words</span><input data-runwaiver value="${esc(s.waiverText)}" maxlength="160"></label>` : ""}<p class="cv-kn">No food question on a run. Guests still reply in one tap, no account needed.</p>`; }
     else body = `<div class="cv-kg">${f("agenda.tracks", "Tracks", "Main stage, Workshops", { wide: true })}${f("agenda.rooms", "Rooms and how many fit", "Main hall, 80", { wide: true, area: true })}</div><p class="cv-kn">After you save: sessions, speakers and sponsors on the plan page. Guests save sessions to their own agenda.</p>`;
     return `<section class="cv-blk cv-kind" data-kblock="${b.k}"><header>${SX().svg(b.icon)}<h3>${esc(b.title)}</h3><button type="button" class="cv-rm" data-rmk="${b.k}" aria-label="Remove ${esc(b.title.toLowerCase())}">${I.x}</button></header>${body}</section>`; }
   // "What are you planning?": the most common kinds in two rows, "More" opens the rest in place (fitKinds hides what
   // doesn't fit two rows at this width). "Something else" takes the host's own name for it.
+  // New York run templates (public/runtemplates.js): for a host in New York (their page city, the city picker, Potto),
+  // one row over the kinds: "New York runs, ready to go" opens the picker; a template fills the spot, route, pace groups,
+  // after, what to bring and the run sign-up in one tap.
+  const nycHost = (W) => { const R = root.RunTemplates; if (!R) return false; let c = [PROFILE?.city, PROFILE?.hood, W?.city]; try { c.push(root.EncorePlace?.get?.()?.city, localStorage.getItem("pl.runCity")); } catch {} return c.some((x) => R.isNYC(x)); };
+  function nycRow(W) { if (!S.isNew || !nycHost(W) || (W.planKind && W.planKind !== "run")) return ""; const T = W.runTpl && root.RunTemplates.byId(W.runTpl);
+    return `<div class="cv-nyc cv-ed"><span><b>${T ? `From: ${esc(T.title)}` : "New York runs, ready to go"}</b><small>${T ? "Filled in from this run. Pick another spot and the route, pace groups and after follow." : "The spot, route, pace groups and coffee after, filled in."}</small></span><button type="button" data-cv="nycruns">${T ? "Change" : "Pick a run"}</button></div>`; }
   function kindsRow(W) { if (!S.isNew) return ""; const own = W.planKind === "other";
-    return `<div class="cv-kinds cv-ed${S.kindsAll ? " all" : ""}" role="group" aria-labelledby="cvKindsH"><div class="cv-kh"><p id="cvKindsH">What are you planning?</p><button type="button" class="cv-kmore" data-kmore aria-expanded="${!!S.kindsAll}" aria-controls="cvKindsL" hidden>${S.kindsAll ? "Fewer" : "More"}</button></div><div id="cvKindsL">${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div>${own ? `<label class="cv-kown"><span>What is it?</span><input id="cvKindOwn" maxlength="24" value="${esc(W.typeLabel || "")}" placeholder="Like: Clothes swap" autocomplete="off"></label>` : ""}</div>`; }
+    if (W.runTpl && W.planKind === "run" && nycHost(W)) return nycRow(W); // a template already says what it is
+    return nycRow(W) + `<div class="cv-kinds cv-ed${S.kindsAll ? " all" : ""}" role="group" aria-labelledby="cvKindsH"><div class="cv-kh"><p id="cvKindsH">What are you planning?</p><button type="button" class="cv-kmore" data-kmore aria-expanded="${!!S.kindsAll}" aria-controls="cvKindsL" hidden>${S.kindsAll ? "Fewer" : "More"}</button></div><div id="cvKindsL">${PLAN_KINDS.map((k) => `<button type="button" class="cv-kc" data-kind="${k.k}" aria-pressed="${W.planKind === k.k}" title="${esc(k.line)}">${esc(k.label)}</button>`).join("")}</div>${own ? `<label class="cv-kown"><span>What is it?</span><input id="cvKindOwn" maxlength="24" value="${esc(W.typeLabel || "")}" placeholder="Like: Clothes swap" autocomplete="off"></label>` : ""}</div>`; }
   /** Two rows of kinds unless "More" is open; the picked one always shows. */
   function fitKinds() { const box = S?.el && q("#cvKindsL", S.el), more = S?.el && q("[data-kmore]", S.el); if (!box || !more) return; const C = qa(".cv-kc", box); C.forEach((c) => (c.hidden = false));
     const tops = [...new Set(C.map((c) => c.offsetTop))].sort((a, b) => a - b), cut = tops[1] ?? tops[0], over = C.filter((c) => c.offsetTop > cut);
@@ -413,6 +451,7 @@
       else if (t.id === "cvDesc") { W.why = t.value; grow(t); pvFlash = "desc"; }
       else if (t.dataset.af) { addonSet(W, t.dataset.af, t.value); grow(t); pvFlash = "sections"; }
       else if (t.dataset.kf) { kindSet(W, t.dataset.kf, t.value); grow(t); }
+      else if (t.hasAttribute("data-runpace") || t.hasAttribute("data-runwaiver")) { root.RunTemplates?.signupSet(W, t.hasAttribute("data-runpace") ? "paces" : "waiverText", t.value); grow(t); }
       else if (t.dataset.link) { const L = (W.links || []).length ? W.links.map((x) => ({ ...x })) : [{ label: "", url: "" }]; while (L.length <= +t.dataset.link) L.push({ label: "", url: "" }); L[+t.dataset.link][t.dataset.lf] = t.value; W.links = L.map((l) => ({ label: l.label.slice(0, 60), url: l.url.slice(0, 500) })); }
       else return; changed(); });
     el.addEventListener("keydown", (e) => { if (e.target.id === "cvTitle" && e.key === "Enter") { e.preventDefault(); e.target.blur(); } if (e.key === "Escape" && !q(".cv-sh-bg")) tryClose(); });
@@ -425,9 +464,10 @@
       if (b.dataset.kind) return pickKind(b.dataset.kind);
       if (b.hasAttribute("data-kmore")) { S.kindsAll = !S.kindsAll; const k = q(".cv-kinds", el); k?.classList.toggle("all", S.kindsAll); b.textContent = S.kindsAll ? "Fewer" : "More"; b.setAttribute("aria-expanded", String(S.kindsAll)); fitKinds(); return; }
       if (b.dataset.rmk) { S.open.delete(b.dataset.rmk); changed(true); return; }
+      if (b.dataset.run) { const k = b.dataset.run, v = b.getAttribute("aria-checked") !== "true"; if (k === "repeat") W.repeat = v ? "weekly" : ""; else root.RunTemplates?.signupSet(W, k, v); if (k === "waiver") changed(true); else { b.setAttribute("aria-checked", String(v)); changed(); } return; }
       if (b.dataset.rm) { const k = b.dataset.rm; S.open.delete(k); addonSet(W, k, k === "link" ? [] : ""); changed(true); return; }
       if (b.dataset.secedit) return sectionSheet(+b.dataset.secedit);
-      if (b.id === "cvFromLine") { const P = b.__p || planFromLine(W.pubTitle); if (!P) return; W.pubTitle = W.name = P.title; for (const k of ["date", "startTime", "meetPoint"]) if (P[k] && !W[k]) W[k] = P[k]; if (P.headcount && !+W.headcount) W.headcount = P.headcount; if (P.why && !String(W.why || "").trim()) W.why = P.why;
+      if (b.id === "cvFromLine") { const P = b.__p || planFromLine(W.pubTitle); if (!P) return; W.pubTitle = W.name = P.title; const kt = PLAN_KINDS.find((x) => x.k === W.planKind)?.time; for (const k of ["date", "startTime", "meetPoint"]) if (P[k] && (!W[k] || (k === "startTime" && W[k] === kt))) W[k] = P[k]; if (P.repeat && !W.repeat) W.repeat = P.repeat; // the kind's 8am gives way to the time typed if (P.headcount && !+W.headcount) W.headcount = P.headcount; if (P.why && !String(W.why || "").trim()) W.why = P.why;
         try { app("applyPlace")?.(W); } catch {} changed(true); say("Filled in. Tap anything to change it."); return; }
       if (b.dataset.qa) return quick(b.dataset.qa);
       switch (b.dataset.cv) {
@@ -441,6 +481,7 @@
         case "look": return lookSheet();
         case "effect": return effectSheet();
         case "settings": return settingsSheet();
+        case "nycruns": return root.RunTemplates?.sheet({ onPick: (id) => preset(root.RunTemplates.toEvent(id, {})) });
         case "link-more": { W.links = [...(W.links || []).filter((l) => l.label || l.url), { label: "", url: "" }]; changed(true); const ins = qa('[data-lf="label"]', el); ins[ins.length - 1]?.focus(); return; }
         case "fresh": { ls.del(S.key); S.W = fresh(); S.note = ""; S.open = new Set(); S.dirty = false; draw(false); return; }
       } }); }
@@ -720,6 +761,10 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
 #cv .cv-kg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}#cv .cv-kf{display:grid;gap:4px;min-width:0;align-self:start;align-content:start}#cv .cv-kf.w{grid-column:1/-1}#cv .cv-kf>span{font:500 14px var(--cv-sans);color:var(--cv-soft)}#cv .cv-kf small{font-size:14px;line-height:1.4;color:var(--cv-soft)}#cv .cv-blk p.cv-kn{font-size:15px;color:var(--cv-soft)}
 #cv .cv-kinds{margin:0 0 14px;padding:8px 14px 14px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-kh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin:0 0 6px}#cv .cv-kinds p{margin:0;font:600 17px/1.3 var(--cv-sans);text-wrap:balance}#cv .cv-kmore{flex:none;min-height:44px;padding:0 4px 0 12px;border:0!important;background:none!important;color:var(--cv-ink);font:600 15px var(--cv-sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}#cv .cv-kmore[hidden]{display:none}#cv .cv-kmore:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}#cv #cvKindsL{display:flex;flex-wrap:wrap;gap:8px}#cv .cv-kc[hidden]{display:none}#cv .cv-kown{display:grid;gap:6px;margin:12px 0 0;font:600 14px var(--cv-sans)}#cv .cv-kown input{min-height:44px;padding:0 12px;border:1.5px solid var(--cv-line2);border-radius:6px;background:var(--cv-bg);font:400 16px var(--cv-sans);color:var(--cv-ink)}
 #cv .cv-kc{min-height:44px;padding:0 12px;white-space:nowrap;line-height:1.2;border-radius:6px!important;border:1.5px solid var(--cv-line2)!important;background:var(--cv-bg)!important;font:500 15px var(--cv-sans)}#cv .cv-kc[aria-pressed=true]{background:var(--cv-ink)!important;border-color:var(--cv-ink)!important;color:var(--cv-card)!important}#cv .cv-kc:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px}
+#cv .cv-nyc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1.5px solid var(--cv-ink);border-radius:6px;background:var(--cv-card)}#cv .cv-nyc b{display:block;font:600 16px/1.3 var(--cv-sans)}#cv .cv-nyc small{display:block;margin-top:2px;color:var(--cv-soft);font-size:14px;line-height:1.4}#cv .cv-nyc button{min-height:44px;padding:0 14px;margin:0;border-radius:6px!important;border:1.5px solid var(--cv-pri)!important;background:var(--cv-pri)!important;color:var(--cv-on-pri)!important;font:600 15px var(--cv-sans);white-space:nowrap}
+#cv .cv-rsw{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:6px 0;border-top:1px solid var(--cv-line)}#cv .cv-rsw b{display:block;font-weight:600;font-size:16px}#cv .cv-rsw small{display:block;color:var(--cv-soft);font-size:14px;line-height:1.4}
+#cv .cv-rsw [role=switch]{position:relative;width:56px;height:44px;padding:0;margin:0;border:0!important;background:none!important;cursor:pointer}#cv .cv-rsw [role=switch]::before{content:"";position:absolute;left:2px;top:6px;width:52px;height:32px;border-radius:999px;background:var(--cv-line2)}#cv .cv-rsw [role=switch][aria-checked=true]::before{background:var(--cv-pri)}
+#cv .cv-rsw [role=switch] i{position:absolute;top:9px;left:5px;width:26px;height:26px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}#cv .cv-rsw [role=switch][aria-checked=true] i{transform:translateX(20px)}#cv .cv-rsw [role=switch]:focus-visible{outline:2px solid var(--cv-acc);outline-offset:2px;border-radius:6px}
 #cv .cv-rm,.cv-sh .cv-rm{width:40px;height:40px;border-radius:999px!important;border:0!important;background:transparent!important;display:grid;place-items:center;color:var(--cv-soft)!important;padding:0;margin:0}
 #cv .cv-two,.cv-sh .cv-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
 #cv .cv-text-btn,.cv-sh .cv-text-btn{display:inline-flex;align-items:center;gap:6px;justify-self:start;min-height:44px;padding:0!important;border:0!important;background:none!important;font-size:15px;font-weight:600;text-decoration:underline;text-underline-offset:3px;color:var(--cv-ink)!important;margin:0}
@@ -793,5 +838,5 @@ html body #cv :is(h2,h3),html body .cv-sh-bg .cv-sh :is(h2,h3){font-family:var(-
   #cv.cv-traying .cv-left{padding:0 0 0 360px}#cv.cv-traying .cv-dock{display:none}}
 @media (min-width:1024px) and (max-width:1239px){#cv.cv-traying .cv-body{grid-template-columns:minmax(0,1fr)}#cv.cv-traying .cv-guest{display:none}}
 `;
-  root.EventCanvas = { ...pure, open, close, isOpen: () => !!S?.el, state: () => S };
+  root.EventCanvas = { ...pure, open, close, preset, isOpen: () => !!S?.el, state: () => S };
 })(typeof window !== "undefined" ? window : globalThis);

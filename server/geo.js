@@ -47,6 +47,10 @@ const HOOD_ROWS = [
   ["New York", "Chelsea", 40.7465, -74.0014], ["New York", "Flatiron", 40.7410, -73.9897], ["New York", "Midtown", 40.7549, -73.9840],
   ["New York", "Hell's Kitchen", 40.7638, -73.9918], ["New York", "Upper West Side", 40.7870, -73.9754], ["New York", "Upper East Side", 40.7736, -73.9566],
   ["New York", "Harlem", 40.8116, -73.9465], ["New York", "Washington Heights", 40.8417, -73.9394], ["New York", "Flatbush", 40.6409, -73.9624],
+  // the parks and spots the New York run templates meet at (public/runtemplates.js)
+  ["New York", "Central Park", 40.7829, -73.9654], ["New York", "Carnegie Hill", 40.7845, -73.9550], ["New York", "Yorkville", 40.7762, -73.9492],
+  ["New York", "Columbus Circle", 40.7681, -73.9819], ["New York", "Civic Center", 40.7134, -74.0034], ["New York", "Prospect Park", 40.6602, -73.9690],
+  ["New York", "Van Cortlandt Park", 40.8972, -73.8861], ["New York", "Astoria Park", 40.7794, -73.9223], ["New York", "McCarren Park", 40.7206, -73.9516],
   // San Francisco and the Bay
   ["San Francisco", "Mission", 37.7599, -122.4148], ["San Francisco", "Mission District", 37.7599, -122.4148], ["San Francisco", "SoMa", 37.7785, -122.4056],
   ["San Francisco", "Hayes Valley", 37.7759, -122.4245], ["San Francisco", "Noe Valley", 37.7502, -122.4337], ["San Francisco", "Castro", 37.7609, -122.4350],

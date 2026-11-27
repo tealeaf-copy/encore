@@ -3,7 +3,7 @@
 // One picker everywhere (feed header, Discover, Hosts): EncorePlace.sheet(), a bottom sheet on phones and a popover on desktop.
 (function () {
   const CITIES = [
-    ["New York", 40.71, -74.01, "brooklyn|manhattan|queens|bronx|nyc|williamsburg|greenpoint|bushwick|harlem|astoria"], ["Los Angeles", 34.05, -118.24, "la|silver lake|venice|santa monica"], ["San Francisco", 37.77, -122.42, "sf|oakland|berkeley"],
+    ["New York", 40.71, -74.01, "brooklyn|manhattan|queens|bronx|nyc|new york city|staten island|williamsburg|greenpoint|bushwick|harlem|astoria|park slope|dumbo|long island city|upper west side|upper east side"], ["Los Angeles", 34.05, -118.24, "la|silver lake|venice|santa monica"], ["San Francisco", 37.77, -122.42, "sf|oakland|berkeley"],
     ["Chicago", 41.88, -87.63], ["Boston", 42.36, -71.06, "cambridge|somerville"], ["Seattle", 47.61, -122.33], ["Austin", 30.27, -97.74], ["Denver", 39.74, -104.99], ["Miami", 25.76, -80.19],
     ["Washington", 38.91, -77.04, "dc"], ["Philadelphia", 39.95, -75.17], ["Atlanta", 33.75, -84.39], ["Dallas", 32.78, -96.8], ["Houston", 29.76, -95.37], ["Portland", 45.52, -122.68], ["San Diego", 32.72, -117.16], ["Las Vegas", 36.17, -115.14, "vegas|henderson|summerlin|the strip"],
     ["Nashville", 36.16, -86.78], ["Minneapolis", 44.98, -93.27], ["Toronto", 43.65, -79.38], ["Vancouver", 49.28, -123.12], ["Montreal", 45.5, -73.57], ["Mexico City", 19.43, -99.13, "cdmx"],

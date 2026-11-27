@@ -150,7 +150,7 @@
     I.size(); seed(I); if (I.still) still(I); else { LIVE.add(I); frame(I, 0); wake(); } return I; }
 
   // ---------- the layer behind the page ----------
-  const CSS = `.fxe-host:not(body){isolation:isolate}.fxe-layer{pointer-events:none;z-index:2;overflow:hidden;contain:strict}.fxe-layer.vp{position:fixed;inset:0}.fxe-layer.box{position:absolute;inset:0}
+  const CSS = `.fxe-host:not(body){isolation:isolate}.fxe-layer{pointer-events:none;z-index:2;overflow:hidden;contain:strict}.fxe-layer.vp{position:fixed;inset:0;z-index:-1}.fxe-layer.box{position:absolute;inset:0}
 .fxe-layer.stk{position:sticky;top:0;left:0;display:block;width:100%}.fxe-layer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .fxe-layer.paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .3 0 0 0 0 .25 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.55}
 .fxe-layer.paper.lively{opacity:.9}`;

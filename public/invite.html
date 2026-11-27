@@ -100,7 +100,7 @@
     const where = [...new Set([e.meetPoint || e.venueName, e.hood || e.city])].filter(Boolean).join(" · "), route = httpsUrl(e.routeUrl), bring = bringOf(e);
     // the kicker over the title: "MADISON IS HOSTING · HACK NIGHT"
     const kw = (() => { try { const w = LK?.cornerWord?.(e) || ""; return /^event$/i.test(w) || w == window.EventTypes?.labelOf(e) ? "" : w; } catch { return ""; } })(), hn = esc(first), T = e.teamUp?.hosts || [], who = T[1] ? esc(T.map((x) => x.first || x.name).join(" and ")) + " are hosting" : h.name || e.hostName ? `${h.handle ? `<a href="/@${encodeURIComponent(h.handle)}">${hn}</a>` : hn} is hosting` : "";
-    const kicker = (window.EventTypes ? EventTypes.tag(e, { cls: "pl-type--b" }) : "") + (who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "");
+    const kicker = (window.EventTypes && !kw ? EventTypes.tag(e, { cls: "pl-type--b" }) : "") + (who || kw ? `<p class="kicker">${[who, esc(kw)].filter(Boolean).join(" · ")}</p>` : "");
     const names = (A.attendees || []).slice(0, 8).map((a) => `<span>${esc(a.emoji ? a.emoji + " " : "")}${esc(a.name)}</span>`).join("");
     const LK0 = window.EncoreLooks; // per-event looks, for the reply button words (LK below is the same object)
     // "6 pairs" or "12 spots" (public/spots.js)

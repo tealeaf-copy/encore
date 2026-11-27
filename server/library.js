@@ -24,7 +24,7 @@
 // Docs: system/pllib-<hash of email> (lists, pins, last-used list), system/pllibtok-<hash of token> (token to owner
 // and list), ws/<host>/hostlib/<id> (templates). All carry the owner's email, so account deletion (server/account.js)
 // removes them, and items a person added to a friend's list (they carry `by`) go with them.
-import { coverOf } from "./eventcover.js"; // one cover per event everywhere
+import { coverOf as eventCover } from "./eventcover.js"; // one cover per event everywhere (coverOf below is a list's cover)
 import crypto from "node:crypto";
 import { scopeStore, workspaceOfEvent, getWorkspace, DEFAULT_WS, claimEvent } from "./workspaces.js";
 import { randomId } from "./db.js";
@@ -254,7 +254,7 @@ export function makeLibrary({ store, H, Dir, F, X, C, G = () => null, now: clock
     const guestsOf = ({ id, ev }) => { const M = new Map(); for (const g of Array.isArray(ev.guests) ? ev.guests : []) if (/Attended|Going/.test(g?.status || "") && (g.email || g.name)) M.set(lc(g.email) || lc(g.name), { name: clean(g.name, 80), email: lc(g.email) });
       for (const r of going(id)) if (r.email || r.name) M.set(lc(r.email) || lc(r.name), { name: clean(r.name, 80), email: lc(r.email) }); return [...M.values()]; };
     const past = evs.filter((x) => x.ev.date && x.ev.date < today).sort((a, b) => b.ev.date.localeCompare(a.ev.date));
-    const card = (x) => ({ id: x.id, title: titleOf(x.ev), date: x.ev.date || "", img: coverOfEv(x.ev), coverSpec: coverOf(x.ev, x.id), art: { activity: clean(x.ev.activity, 40), kind: clean(x.ev.coverArt?.kind, 30), tone: clean(x.ev.coverArt?.tone, 12) } });
+    const card = (x) => ({ id: x.id, title: titleOf(x.ev), date: x.ev.date || "", img: coverOfEv(x.ev), coverSpec: eventCover(x.ev, x.id), art: { activity: clean(x.ev.activity, 40), kind: clean(x.ev.coverArt?.kind, 30), tone: clean(x.ev.coverArt?.tone, 12) } });
     const seen = new Set(), once = (k) => (k && !seen.has(k) ? (seen.add(k), true) : false);
     const menus = evs.filter((x) => Array.isArray(x.ev.courses) && x.ev.courses.some((c) => clean(c, 120))).filter((x) => once("m|" + x.ev.courses.join("|"))).map((x) => ({ ...card(x), lines: x.ev.courses.map((c) => clean(c, 120)).filter(Boolean).slice(0, 6) }));
     const playlists = evs.filter((x) => PLAY_OK(x.ev.playlistUrl) && once("p|" + x.ev.playlistUrl)).map((x) => ({ ...card(x), url: x.ev.playlistUrl, host: (() => { try { return new URL(x.ev.playlistUrl).hostname.replace(/^www\./, ""); } catch { return ""; } })() }));

@@ -70,3 +70,11 @@ test("the link preview draws the same kind as the cover", async () => {
   const h = await (await fetch(srv.base + "/e/" + IDS.run)).text(), img = (/property="og:image" content="([^"]+)"/.exec(h) || [])[1] || "";
   assert.match(img, /\/og\/run\.png$/, "the run's preview is the run drawing, not coffee: " + img);
 });
+
+test("the host's Library (past events, menus, playlists) sends the same cover too", async () => {
+  assert.ok((await put("events/cvPast1", ev({ name: "Last month's supper", activity: "dinner", date: day(-20), courses: ["Dumplings", "Greens"] }), host.cookie)).ok);
+  const r = await fetch(srv.base + "/api/host/library", { headers: { cookie: host.cookie } }); assert.equal(r.status, 200, "the Library loads");
+  const L = await r.json(), cards = Object.values(L).filter(Array.isArray).flat().filter((x) => x && x.id === "cvPast1");
+  assert.ok(cards.length, "the past event is in the Library: " + Object.keys(L));
+  for (const c of cards) assert.deepEqual(c.coverSpec, coverOf(await stored("cvPast1"), "cvPast1"));
+});

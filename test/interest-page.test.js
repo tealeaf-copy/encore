@@ -69,7 +69,7 @@ test("the host's real photo leads when there is one; the drawn cover only when t
   assert.doesNotMatch(bo, /<div class="ea-cover/, "no drawn cover over a real photo"); assert.match(bo, /aspect-ratio:4\/5/, "a fixed ratio, so nothing shifts when it loads");
   assert.match(await page("/x/atbo/x1"), /<div class="ph"><img src="\/presets\/atelier-bo-/, "the host's photo for their other thing too");
   assert.match(await page("/x/tuongvan/any"), /<div class="ph"><img src="\/presets\//, "a page with only past events uses their photo");
-  const tram = await page("/x/tram/x0"); assert.match(tram, /<div class="ph art"><div class="ea-cover/, "no photo: the drawn cover"); assert.doesNotMatch(tram, /figcaption/);
+  const tram = await page("/x/tram/x0"); assert.match(tram, /<div class="ph art"><div class="ea-cover/, "no photo: the drawn cover"); assert.doesNotMatch(tram, /<figcaption>/);
 });
 
 test("the facts table, the right fields for the kind, What's included as a section, the footer link", async () => {

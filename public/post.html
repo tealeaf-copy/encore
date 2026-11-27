@@ -6,7 +6,8 @@
 <style>
 /* The post page (/post/...): one feed card on top, everyone who gave kudos, the whole conversation and the box to add
    to it. Server: server/feedcomments.js (the page arrives with its own data in #postData). Tokens only, light only. */
-:root{--eh-bottom:calc(84px + env(safe-area-inset-bottom,0px))} /* "Need a hand?" sits above the comment box */
+.pp-row textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media (max-width:860px){html:has(.eh-btn:not(.eh-intab)) #ppBox{padding-right:76px}} /* room for "Need a hand?" (public/help.js) next to Send */
+@media (max-width:430px){.pp-row>.fb-f{display:none}.pp-row .fx-b{width:36px}.pp-send{padding:0 14px}}
 *{box-sizing:border-box}html,body{overflow-x:clip}body{margin:0;background:var(--pl-page,#EFEBE2);color:var(--pl-ink,#1B1D1C);font:16px/1.5 var(--sys-sans,"IBM Plex Sans",system-ui,sans-serif);color-scheme:light}
 .ppg{max-width:600px;margin:0 auto;padding:8px 16px 0}
 .ppg{--fb-ink:var(--pl-ink);--fb-soft:var(--pl-soft);--fb-line:var(--pl-line);--fb-line2:var(--pl-line-strong);--fb-card:var(--pl-surface);--fb-linen:var(--pl-raised);--fb-acc:var(--pl-accent);--fb-acc-press:var(--pl-accent-press);--fb-acc-text:var(--pl-accent-text);--fb-on-acc:var(--pl-on-accent,#fff)}
@@ -65,7 +66,7 @@
   <section class="pp-sec" id="kudos" aria-labelledby="ppKH"><h2 id="ppKH">Kudos</h2><div id="ppK"></div></section>
   <section class="pp-sec" id="comments" aria-labelledby="ppCH"><h2 id="ppCH">Comments</h2><ol class="pp-list" id="ppList"></ol>
     <a class="pp-chat" id="ppChat" hidden>You were there. Open the group chat</a>
-    <div id="ppBox"></div></section>
+    <div id="ppBox" class="pp-fab"></div><!-- pp-fab: "Need a hand?" (public/help.js) sits above the box --></section>
 </main>
 <script id="postData" type="application/json">null</script>
 <script src="/feedvisual.js"></script><script src="/feedfun.js"></script><script src="/feedcomments.js"></script>

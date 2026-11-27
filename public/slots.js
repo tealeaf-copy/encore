@@ -213,7 +213,7 @@
     d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-calx]")) return close(); if (e.target.closest(".sl-calopt")) setTimeout(close, 0); });
     d.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); }); ($(".sl-calopt", d) || $("[data-calx]", d)).focus({ preventScroll: true }); }
   // capture on window: runs before the preview's own "nothing here leaves the page" listener, so the preview can explain
-  addEventListener("click", (e) => { const a = e.target.closest?.("a[href]"); if (!a || a.classList.contains("sl-calopt") || e.defaultPrevented || e.metaKey || e.ctrlKey) return; const C = calOf(a); if (!C) return;
+  if (typeof addEventListener === "function") addEventListener("click", (e) => { const a = e.target.closest?.("a[href]"); if (!a || a.classList.contains("sl-calopt") || e.defaultPrevented || e.metaKey || e.ctrlKey) return; const C = calOf(a); if (!C) return;
     e.preventDefault(); calMenu(a, C); }, true);
   window.Slots = { lineupHTML, quietHTML, hostPanel, askHint, quietFormHTML, run: schedule, markdownOf, ctx: ctxOf, draw: (c) => run(c) };
   if (typeof document === "undefined") return;

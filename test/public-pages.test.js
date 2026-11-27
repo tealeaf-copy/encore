@@ -20,8 +20,8 @@ test("the fast invite shows end time, bring list, route, rides, chat and price",
   assert.match(html, /Thanks for telling \$\{who\}/);
   assert.doesNotMatch(html, /No spot this time/);
   assert.match(html, /You're #\$\{place\} on the waitlist/, "waitlist place when the server gives one");
-  // the calendar end: the host's end time, next day when it runs past midnight
-  assert.match(html, /endT < t/);
+  // the calendar is the server's .ics (server/hooksout.js calTimes: the host's end time, next day when it runs past midnight)
+  assert.match(html, /cal\.href = `\/e\/\$\{encodeURIComponent\(eid\)\}\.ics\?rid=/);
 });
 
 test("a friend's invite never shows the brands link", () => {

@@ -70,7 +70,7 @@ test("Add to calendar: a valid .ics for a timed, an all-day and an open-ended ev
   const T = calTimes({ date: "2026-12-04", startTime: "19:00", endTime: "21:30", tz: "America/New_York" }); assert.deepEqual({ ...T }, { allDay: false, start: "20261205T000000Z", end: "20261205T023000Z", tz: "America/New_York" });
   assert.equal(calTimes({ date: "2026-12-04", startTime: "19:00", tz: "America/New_York" }).end, "20261205T030000Z", "no end time: three hours");
   const A = calTimes({ date: "2026-12-04", endDate: "2026-12-06" }); assert.equal(A.allDay, true); assert.equal(A.start, "20261204"); assert.equal(A.end, "20261207");
-  assert.equal(calTimes({ date: "" }), null);
+  assert.equal(calTimes({ date: "" }), null); assert.equal(calTimes({ date: "2026-12-04", startTime: "22:00", endTime: "01:00", tz: "UTC" }).end, "20261205T010000Z", "past midnight: the next day");
   const L = calLinks({ ev: { date: "2026-12-04", startTime: "19:00", tz: "America/New_York" }, title: "Run club", url: "https://x/e/a", location: "Brooklyn" });
   assert.match(L.google, /dates=20261205T000000Z%2F20261205T030000Z&details=https%3A%2F%2Fx%2Fe%2Fa&location=Brooklyn&ctz=America%2FNew_York/);
   assert.match(L.outlook, /startdt=2026-12-05T00%3A00%3A00Z&enddt=2026-12-05T03%3A00%3A00Z/);

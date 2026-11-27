@@ -49,8 +49,10 @@ test("the invite meta and the ticket: drawn glyphs, the door code right under it
   // the host is the kicker over the title ("MADISON IS HOSTING · HACK NIGHT", Field Notes), not a face row; never 🎉
   assert.match(invite, /<p class="kicker">\$\{\[who, esc\(kw\)\]\.filter\(Boolean\)\.join\(" · "\)\}<\/p>/); assert.ok(!invite.includes("🎉 is hosting"));
   // food is the point only when it's what the event is
-  const fo = vm.runInNewContext(invite.match(/const FOODY = [^\n]*\n[^\n]*\n  const MAINNF[^\n]*\n  const foodyOf[^\n]*/)[0] + "; foodyOf");
-  assert.equal(fo({ name: "GDQ watch party", activity: "watch party", concept: "snacks potluck" }), false); assert.equal(fo({ name: "Supper club", concept: "" }), true); assert.equal(fo({ name: "Hangout", concept: "potluck dinner" }), true);
+  // (one rule for both invites and the host's Questions sheet: public/questions.js askDiet; the planning brief never reaches guests)
+  assert.match(invite, /const foodyOf = \(e\) => window\.Questions \? Questions\.askDiet\(e\)/);
+  const win = {}; vm.runInNewContext(read("public/questions.js"), { window: win, document: undefined }); const fo = win.Questions.askDiet;
+  assert.equal(fo({ name: "GDQ watch party", activity: "watch party", concept: "snacks potluck" }), false); assert.equal(fo({ name: "Supper club", concept: "" }), true); assert.equal(fo({ name: "Hangout potluck dinner" }), true);
 });
 
 test("quiet controls: no offset sticker shadows or tilts on buttons, chips and banners", () => {

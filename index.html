@@ -6909,7 +6909,9 @@ LIB.push({name:"Free Bake Giveaway",audience:"friends",format:"Giveaway",line:"B
 // Until the answer is in (at most 2.5s), Home stays invisible: it used to draw the work Home first and swap it for the
 // friends one a moment later, the app's biggest layout jump.
 const wsReveal=()=>document.documentElement.classList.remove("ws-wait");
-try{ if(!isGuestRoute?.()&&(!location.hash||location.hash==="#programs")){ const st=document.createElement("style"); st.textContent="html.ws-wait #view-programs,html.ws-wait #appHeader{visibility:hidden}html.ws-wait body::after{content:'Setting the table\\2026';position:fixed;inset:0;display:grid;place-items:center;font:400 17px/1.4 'IBM Plex Sans',system-ui,sans-serif;color:#444845;pointer-events:none}"; /* while we find out whose Home this is: no half-drawn tab bar, and a quiet line instead of a blank page (slow connections, review round 18) */ document.head.appendChild(st); document.documentElement.classList.add("ws-wait"); setTimeout(wsReveal,2500) } }catch{}
+try{ if(!isGuestRoute?.()&&(!location.hash||location.hash==="#programs")){ const st=document.createElement("style"); st.textContent="html.ws-wait #view-programs,html.ws-wait #appHeader{visibility:hidden}html.ws-wait body::after{content:'Setting the table\\2026';position:fixed;inset:0;display:grid;place-items:center;font:400 17px/1.4 'IBM Plex Sans',system-ui,sans-serif;color:#444845;pointer-events:none}"; /* while we find out whose Home this is: no half-drawn tab bar, and a quiet line instead of a blank page (slow connections, review round 18) */ document.head.appendChild(st); document.documentElement.classList.add("ws-wait"); setTimeout(wsReveal,2500);
+  /* round 19: the cards under the composer are held from here, before Home first shows, until the "Home settles once" script further down takes over (it sits later in this long file and could run a moment after Home was already on screen) */
+  if(location.pathname==="/"&&/(?:^|;\s*)encore_in=1/.test(document.cookie)){ st.textContent+="html.pl-presettle #view-programs>#qsPanel~*{visibility:hidden}"; document.documentElement.classList.add("pl-presettle"); setTimeout(()=>document.documentElement.classList.remove("pl-presettle"),5000) } } }catch{}
 (async()=>{ try{ if(isGuestRoute?.()) return; const r=await fetch("/api/workspace"); if(!r.ok) return; const W=await r.json(); window.__wsDone=1; if(W&&W.personal===false&&W.plan!=="self-hosted"&&!W.handle&&!W.regularOnly&&!location.hash&&!/[?&](classic|new)=1/.test(location.search)){ location.replace("/teams/home"); return } /* brand teams: Home is the dashboard at /teams/home; ?classic=1 keeps the older programs view */ if(W?.personal){ window.__wsPersonal=true; document.body.classList.add("friends-ws"); if(!location.hash||location.hash==="#programs") renderPrograms?.() } else if(window.__homeTab==="start"&&(!location.hash||location.hash==="#programs")) renderPrograms?.() }catch{} finally{ requestAnimationFrame(wsReveal) } })();
 // The crew: who's bringing what, and rides, where the host can see them.
 function crewClaims(d){ const R=(typeof allRsvps!=="undefined"?allRsvps:[]).filter(r=>r.eventId===d.id&&r.response==="going"), G=d.guests||[], key=x=>String(x.email||x.name||"").toLowerCase(), seen=new Set(), out=[];
@@ -13368,12 +13370,19 @@ function hvPotto(d,c,stage,P){ if(stage==="draft") return "Looks good. Share it 
   const st=document.createElement("style"); st.textContent="#view-programs.pl-settling>#qsPanel~*{visibility:hidden}#view-programs.pl-settled>#qsPanel~*{animation:plSettle .28s ease-out both}@keyframes plSettle{from{opacity:0}to{opacity:1}}@media (prefers-reduced-motion:reduce){#view-programs.pl-settled>#qsPanel~*{animation:none}}"; document.head.appendChild(st);
   let done=false, t0=0, quiet=null, cap=null, mo=null;
   const reveal=()=>{ if(done) return; done=true; clearTimeout(quiet); clearTimeout(cap); mo?.disconnect(); const v=document.getElementById("view-programs"); if(!v) return; v.classList.remove("pl-settling"); v.classList.add("pl-settled"); setTimeout(()=>v.classList.remove("pl-settled"),400) };
-  const arm=(v)=>{ if(t0||done) return; t0=performance.now(); v.classList.add("pl-settling"); cap=setTimeout(reveal,2600);
-    const later=()=>{ clearTimeout(quiet); quiet=setTimeout(reveal,Math.max(750,1100-(performance.now()-t0))) }; later();
-    mo=new MutationObserver(later); mo.observe(v,{childList:true}) };
+  // round 19: the clock starts once Home itself is on screen (html.ws-wait lifted), not while the first answers are
+  // still on their way; on a slow connection the wait used to run out before the cards had even arrived
+  const arm=(v)=>{ if(t0||done) return; v.classList.add("pl-settling"); const H=document.documentElement; H.classList.remove("pl-presettle");
+    const go=()=>{ if(t0||done) return; t0=performance.now(); cap=setTimeout(reveal,2600);
+      const later=()=>{ clearTimeout(quiet); quiet=setTimeout(reveal,Math.max(750,1100-(performance.now()-t0))) }; later();
+      mo=new MutationObserver(later); mo.observe(v,{childList:true}) };
+    if(!H.classList.contains("ws-wait")) return go();
+    const w=new MutationObserver(()=>{ if(!H.classList.contains("ws-wait")){ w.disconnect(); go() } }); w.observe(H,{attributes:true,attributeFilter:["class"]}); setTimeout(()=>{ w.disconnect(); go() },6000) };
   const watch=()=>{ const v=document.getElementById("view-programs"); if(!v) return; if(!v.hidden) return arm(v);
     const o=new MutationObserver(()=>{ if(!v.hidden){ o.disconnect(); arm(v) } }); o.observe(v,{attributes:true,attributeFilter:["hidden"]}); setTimeout(()=>o.disconnect(),8000) };
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",watch); else watch(); })();
+  // round 19: Home's markup is above this script, so the wait starts now. It used to start at DOMContentLoaded, after
+  // the deferred scripts, and on some loads the cards were on screen for a tenth of a second before they hid to settle.
+  if(document.getElementById("view-programs")) watch(); else document.addEventListener("DOMContentLoaded",watch); })();
 </script>
 <script>
 // ---- Home, review round 17: what you're hosting comes first. A host with something coming up sees it right under the

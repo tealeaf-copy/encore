@@ -150,6 +150,8 @@ Check: tap each button on /login with a real account and land signed in.
 | `ENCORE_HIDE_DEMO`, `ENCORE_HIDE_PREVIEWS`, `ENCORE_FEED_PREVIEWS` | Recommended once real events are up | Hide the sample hosts and preview pages from Discover and the feed, or pick which previews show. | Discover shows only real hosts. |
 | `ENCORE_COHORT_START` | Recommended | The cohort's first day (`2026-12-01`). /admin/launch then counts the goal from that day, not all time. | /admin/launch says "Counting from …". |
 
+Brand proposals (`/proposals`, server/proposals.js) need no setting of their own. They use the team booking deposit path (`STRIPE_SECRET_KEY` above), the fee (`ENCORE_TEAM_FEE_BPS`, shown in dollars) and Potto (`ANTHROPIC_API_KEY`; without it, "make it shorter" and "make it warmer" use plain rules). With `ENCORE_HIDE_DEMO=1` the example proposals (`/proposals/example/<template>`) are hidden with the example hosts. To check: as a host with a team request, open Team requests, tap "Send a proposal", send it, then open the link signed in as the brand and accept; the booking shows "Accepted, deposit due".
+
 ### 8. The phone apps (only if you ship them to the cohort)
 
 | Setting | What it does |

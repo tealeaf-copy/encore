@@ -71,6 +71,7 @@ export function pagesFor(S) {
     // friend invites (server/friendinvites.js): the admin page, and a link that no longer works
     { path: "/moderation", as: "admin" }, { path: "/admin/invites", as: "admin" }, "/join/FAAAAAAAAA",
     "/import/instagram", "/import/instagram?mode=refresh", { path: "/this-page-is-not-here", status: 404 }, { path: "/e/zz-not-here", status: 404 }, "/@tram",
+    "/proposals", "/proposals/new", "/proposals/example/dinner", // brand proposals (server/proposals.js): the host's list and builder, and an example
     ...(S.listHandle ? [`/@${S.listHandle}/lists`, "/library"] : []), ...(S.listToken ? [`/l/${S.listToken}`] : []), // lists people follow (server/curation.js)
   ].map((x) => (typeof x === "string" ? { path: x } : x));
 }

@@ -32,12 +32,12 @@
   const CSS = `
   .dp-bg{position:fixed;inset:0;z-index:2147483000;background:rgba(27,29,28,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center}
   @media (min-width:700px){.dp-bg{align-items:center;padding:24px}}
-  .dp-sheet{background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);width:100%;max-width:560px;max-height:94dvh;display:flex;flex-direction:column;border-radius:6px 6px 0 0;box-shadow:0 -8px 40px rgba(31,26,23,.18);font:400 16px/1.45 "IBM Plex Sans",system-ui,sans-serif;border:1.5px solid var(--pl-ink,#1B1D1C);border-bottom:0}
+  .dp-sheet{background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);width:100%;max-width:560px;max-height:94vh;max-height:94dvh;display:flex;flex-direction:column;border-radius:6px 6px 0 0;box-shadow:0 -8px 40px rgba(31,26,23,.18);font:400 16px/1.45 "IBM Plex Sans",system-ui,sans-serif;border:1.5px solid var(--pl-ink,#1B1D1C);border-bottom:0}
   @media (min-width:700px){.dp-sheet{border-radius:6px;border-bottom:1.5px solid var(--pl-ink,#1B1D1C);max-height:90dvh}}
   .dp-sheet:focus{outline:none}.dp-hd{display:flex;align-items:flex-start;gap:12px;padding:16px 16px 8px 20px}.dp-hd h2{font:600 20px/1.25 var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;margin:0}.dp-hd p{margin:4px 0 0;font-size:14px;color:var(--pl-soft,#444845)}
   .dp-step{font:500 13px "IBM Plex Sans",system-ui,sans-serif;color:var(--pl-soft,#444845);margin:0 0 6px}.dp-bar{display:flex;gap:4px;margin:0 0 10px}.dp-bar i{flex:1;height:4px;border-radius:4px;background:var(--pl-line,#CFC8B9)}.dp-bar i.on{background:var(--pl-accent,#29489A)}
   .dp-x{margin-left:auto;flex:none;width:44px;height:44px;border-radius:6px;border:1.5px solid var(--pl-line,#CFC8B9);background:#fff;color:var(--pl-ink,#1B1D1C);display:grid;place-items:center;cursor:pointer}
-  .dp-body{overflow:auto;padding:8px 20px 20px;flex:1;-webkit-overflow-scrolling:touch}
+  .dp-body{overflow:auto;padding:8px 20px 28px;flex:1 1 auto;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .dp-ft{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1.5px solid var(--pl-line,#CFC8B9);background:var(--pl-surface,#FAF8F3);border-radius:0}
   .dp-ft .dp-msg{margin-right:auto;font-size:14px;color:var(--pl-danger,#A2361A)}
   .dp-b{min-height:44px;padding:0 18px;border-radius:6px;border:1.5px solid var(--pl-line,#CFC8B9);background:#fff;color:var(--pl-ink,#1B1D1C);font:600 16px var(--pl-font-text,"IBM Plex Sans"),system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
@@ -119,10 +119,11 @@
   // and how people pay. Never an event's date, guest list, plus-ones, bring list or questions.
   const HOW = `<details class="dp-how"><summary>How drops work</summary><ul><li>You show what you're making, each with a price.</li><li>People order ahead and pick a pickup time. You see every order in Orders.</li><li>They get the exact spot the day before pickup. Everyone else sees the neighborhood.</li></ul></details>`;
   const PCSS = `.dp-zone{display:grid;place-items:center;gap:6px;text-align:center;padding:28px 16px;border:2px dashed var(--pl-line-strong,#B9B2A5);border-radius:6px;background:var(--pl-surface,#FAF8F3);cursor:pointer;min-height:180px}
-  .dp-zone.on{border-color:var(--pl-accent,#29489A);background:var(--pl-accent-soft,#E7ECF7)}.dp-zone b{font-size:18px}.dp-zone small{color:var(--pl-soft,#555)}.dp-zone svg{width:40px;height:40px;color:var(--pl-accent,#29489A)}
+  .dp-zone.on{border-color:var(--pl-accent,#29489A);background:var(--pl-accent-soft,#E7ECF7)}.dp-zone b{font-size:18px}.dp-zone small{color:var(--pl-soft,#555)}.dp-zone>svg{width:40px;height:40px;color:var(--pl-accent,#29489A)}
   .dp-zbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
   .dp-cov{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;border:1.5px solid var(--pl-ink,#1B1D1C);background:var(--pl-sand,#EFE6D8);margin:0 0 10px}.dp-cov img{width:100%;height:100%;object-fit:cover;display:block}.dp-cov .ea-cover{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
-  .dp-cov .dp-b{position:absolute;right:8px;bottom:8px}
+  .dp-cov .ea-txt{display:none!important}.dp-cov .ea-art{position:absolute!important;inset:52px 12px 10px!important;width:auto!important;height:auto!important;display:flex!important;align-items:center;justify-content:center;transform:none!important}.dp-cov .ea-art svg{width:100%!important;height:100%!important;max-width:none!important}
+  .dp-cov .dp-b{position:absolute;right:6px;top:6px;bottom:auto;min-height:44px;padding:0 12px;font-size:13px;background:rgba(255,255,255,.92)}.dp-cov .dp-b svg{width:16px;height:16px}
   .dp-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}.dp-th{position:relative;width:76px;height:76px;border-radius:6px;overflow:hidden;border:1.5px solid var(--pl-line,#D9D3C7);background:var(--pl-sand,#EFE6D8);touch-action:none}
   .dp-th img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}.dp-th.drag{opacity:.4}.dp-th .main{position:absolute;left:4px;top:4px;background:var(--pl-ink,#1B1D1C);color:#fff;font:600 10px/1 "IBM Plex Mono",monospace;padding:3px 5px;border-radius:3px;text-transform:uppercase}
   .dp-th button{position:absolute;width:28px;height:28px;border-radius:6px;border:0;background:rgba(27,29,28,.72);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}.dp-th [data-prm]{right:3px;top:3px}.dp-th [data-pmv]{left:3px;bottom:3px}
@@ -181,7 +182,7 @@
       ${(x.photos || []).length < MAXPH ? `<label class="dp-addph">${I.camera}<span>Add photo</span><input type="file" accept="image/*" multiple data-iph="${i}" class="dp-vh"></label>${coarse() ? `<label class="dp-addph">${I.camera}<span>Camera</span><input type="file" accept="image/*" capture="environment" data-iph="${i}" class="dp-vh"></label>` : ""}` : ""}</div>`;
     const timeSel = (a, cur) => `<select ${a}>${TIMES.map((m) => `<option value="${m}"${m === mm(cur) ? " selected" : ""}>${tLabel(m)}</option>`).join("")}</select>`;
     function draw() { css();
-      const foot = `<p class="dp-msg" id="dpErr" role="alert"></p>${step > 1 ? `<button type="button" class="dp-b" id="dpBack">${I.back}<span>Back</span></button>` : ""}${edit && step < LAST ? `<button type="button" class="dp-b" id="dpSaveNow">Save</button>` : ""}<button type="button" class="dp-b pri" id="dpNext">${step < LAST ? (step === 1 && !allPhotos().length ? "Skip for now" : "Next") : edit ? "Save changes" : "Open orders"}</button>`;
+      const foot = `<p class="dp-msg" id="dpErr" role="alert"></p>${step > 1 ? `<button type="button" class="dp-b" id="dpBack">${I.back}<span>Back</span></button>` : ""}${edit && step < LAST ? `<button type="button" class="dp-b" id="dpSaveNow">Save</button>` : ""}<button type="button" class="dp-b pri" id="dpNext">${step < LAST ? "Next" : edit ? "Save changes" : "Open orders"}</button>`;
       let body = "";
       if (step === 1) body = `<div class="dp-potto">${potto("happy", 48)}<p>${edit ? "Change your cover or add photos." : "Start with photos. People order what they can see."}</p></div>
         <div class="dp-cov" id="dpCov">${coverHTML()}<button type="button" class="dp-b sm" id="dpCovBtn">${I.edit}<span>${D.coverPhoto || D.coverArt ? "Change cover" : "Choose a cover"}</span></button></div>

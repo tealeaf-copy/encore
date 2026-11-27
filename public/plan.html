@@ -137,7 +137,7 @@
       + `<div class="pv-acts">${P.date ? `<button type="button" class="pri" data-addcal="${esc(P.key)}" aria-haspopup="menu" aria-expanded="false">${G.cal}Add to calendar</button>` : ""}<a href="/e/${encodeURIComponent(P.id)}">${P.isHost ? "See the invite" : "Open the invite"}</a>${P.isHost ? `<a href="/?open=${encodeURIComponent(P.id)}">Edit in the studio</a>` : ""}${P.isHost && !empty ? `<button type="button" data-print>Print the plan</button>` : ""}</div>`
       + whereHtml()
       + KH
-      + (noPlan ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length} days` : esc(T.rangeText(P.date))}</small></h2>`
+      + (noPlan ? "" : `<h2 class="pv-h2">${ros ? "Run of show" : "The plan"}<small>${ros ? "Host and team" : P.multi ? `${P.days.length || T.daysBetween(P.date, P.endDate) + 1} days` : esc(T.rangeText(P.date))}</small></h2>`
       + (locked || (empty && !P.isHost ? `<div class="pv-lock"><p>${esc(P.host.first || "The host")} hasn't laid out the plan yet. Check back closer to the day.</p></div>` : itinHtml())))
       + beforeHtml()
       + (P.editable && !(K?.kind === "table" && empty) ? editorHtml(empty) : "");

@@ -3,7 +3,7 @@
 // page. Not part of npm test (it needs Chromium). Run: node scripts/crawl-pages.mjs [--width 390] [--only /feed] [--no-flows]
 // It starts its own server on a scratch data dir, seeds it with test/routes-seed.js, and prints one line per problem.
 // With --apis it also prints every /api GET the pages made, so test/routes-smoke.test.js can list them.
-// Each page also fails on: an unhandled promise rejection, a layout shift spike (CLS over 0.25), a calm loader still
+// Each page also fails on: an unhandled promise rejection, a layout shift spike (CLS over 0.15; every page was under 0.1 at both widths in review round 18), a calm loader still
 // up 4 seconds after the page went quiet (a stuck spinner), and a page that keeps rewriting itself while idle (over
 // 40 DOM changes a second, the /g bug). Then the flows: tap through the primary nav and back (the page must come back
 // where it was), open the + sheet, the share sheet and the reply form.
@@ -17,7 +17,7 @@ import { seedRoutes, pagesFor } from "../test/routes-seed.js";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const WIDTH = +arg("--width", 390), ONLY = arg("--only", ""), SHOW_APIS = process.argv.includes("--apis"), FLOWS = !process.argv.includes("--no-flows"), SHOW_CLS = process.argv.includes("--cls"), shifts = []; // --cls also lists every page over 0.1 (the target), without failing on it
-const CLS_SPIKE = 0.25, STUCK_MS = 4000, CHURN_PER_S = 40;
+const CLS_SPIKE = 0.15, STUCK_MS = 4000, CHURN_PER_S = 40;
 // installed before any page script: layout shifts, unhandled rejections and DOM changes, read back after load
 const WATCH = () => { const W = (window.__crawl = { cls: 0, rejections: [], mut: 0 });
   try { new PerformanceObserver((l) => l.getEntries().forEach((e) => { if (!e.hadRecentInput) W.cls += e.value; })).observe({ type: "layout-shift", buffered: true }); } catch {}

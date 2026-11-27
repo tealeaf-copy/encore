@@ -30,19 +30,17 @@
       if (!html) { cur?.remove(); continue; }
       if (cur && cur.__h === html) continue; const t = document.createElement("template"); t.innerHTML = html; const el = t.content.firstElementChild; el.__h = html;
       if (cur) cur.replaceWith(el); else m.appendChild(el); } }
-  // ---- Order ahead and Book me: rows of the offer list, moved into their own section when the host turned it on ----
-  const SPLIT = { drops: { id: "plDrops", k: /^Order ahead$/i, h: "Order ahead" }, book: { id: "plBook", k: /^For teams and groups$/i, h: "Book me" } };
+  // ---- Order ahead and Book me: groups of the offer (public/hostitems.js), moved into their own section when the host turned it on ----
+  const SPLIT = { drops: { id: "plDrops" }, book: { id: "plBook" } };
   function split() { const m = main(), off = $("#offer"); if (!m) return; const on = (id) => { const it = (A.layout?.items || []).find((x) => x.id === id); return !!(A.layout && it && !it.off); };
     for (const [key, S] of Object.entries(SPLIT)) { let sec = document.getElementById(S.id);
-      if (sec && off && sec.__from !== off) { $$(".of-row", sec).forEach((r) => r.remove()); sec.__from = off; } // the offer list was drawn again: its new rows replace the old ones
-      const rowsOut = sec ? $$(".of-row", sec) : [];
-      if (!on(key) || !off) { if (rowsOut.length && off) { const list = $(".of-list", off) || off; rowsOut.forEach((r) => list.appendChild(r)); } if (sec && (!on(key) || !rowsOut.length)) sec.remove(); continue; }
-      const mine = $$(".of-list > .of-row", off).filter((r) => S.k.test(($(".of-k", r)?.textContent || "").trim()));
-      if (!mine.length && !rowsOut.length) { sec?.remove(); continue; }
-      if (!sec) { sec = document.createElement("section"); sec.id = S.id; sec.className = "offer pla-split"; sec.setAttribute("aria-labelledby", S.id + "H"); sec.innerHTML = `<h2 class="sec" id="${S.id}H">${S.h}</h2><div class="of-list"></div>`; m.appendChild(sec); sec.__from = off; }
-      const list = $(".of-list", sec); mine.forEach((r) => list.appendChild(r)); }
-    // an offer list left with nothing in it says so plainly, and comes back when its rows do
-    if (off) { const left = $$(".of-list > .of-row", off).length; off.classList.toggle("pla-emptied", !left && !!$("#plDrops, #plBook")); } }
+      if (sec && off && sec.__from !== off) { $$(".hi-g", sec).forEach((r) => r.remove()); sec.__from = off; } // the offer was drawn again: its new groups replace the old ones
+      const g = (off && $(`.hi-g[data-g="${key}"]`, off)) || (sec && $(".hi-g", sec));
+      if (!on(key) || !off || !g) { if (g && off && g.parentElement !== off) { const after = key === "drops" ? $('.hi-g[data-g="book"]', off) : null; off.insertBefore(g, after); } sec?.remove(); continue; }
+      if (!sec) { sec = document.createElement("section"); sec.id = S.id; sec.className = "offer pla-split"; m.appendChild(sec); sec.__from = off; }
+      if (g.parentElement !== sec) sec.appendChild(g); const hid = $("h2", g)?.id; if (hid) sec.setAttribute("aria-labelledby", hid); }
+    // an offer left with nothing in it says so plainly, and comes back when its groups do
+    if (off) { const left = $$(".hi-g .of-row, .hi-g .hi-row", off).length; off.classList.toggle("pla-emptied", !left && !!$("#plDrops, #plBook")); } }
   function sync() { if (!A.host) return; about(); blocks(); split(); }
   let q = 0; const soon = () => { if (q) return; q = 1; queueMicrotask(() => { q = 0; sync(); }); };
 

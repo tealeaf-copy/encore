@@ -11,6 +11,7 @@ import { emailConfig, sendEmail } from "./email.js";
 import { foreignBlob } from "./photos.js";
 import { payStateOf, payModeOf, asksAhead, pickupOk, makeDropPay } from "./droppay.js";
 import { payOfWs, hasPay } from "./paymethods.js"; // Orders: nudge a host who asks to be paid ahead with no way to get paid // paying before pickup: where an order stands, reminders
+import { pageItems } from "./pageitems.js";
 import "../public/pickup.js"; // the one reader of pickup windows, shared with every page (window.PLPickup)
 const P = () => globalThis.PLPickup;
 
@@ -231,7 +232,9 @@ export function mountDrops(app, { store, small, currentUser, publicOrigin, C, X,
     res.json({ drop: { ...publicDrop(id, ev, soldOf(S, id, ev), C.profileOf(ws), ordersBySlot(S, id, ev)), ws } }); });
   // a host's open drops, for their page's "What I offer"
   app.get("/api/public/drops/:handle", (req, res) => { const ws = C.wsOfHandle(clean(req.params.handle, 40).toLowerCase()); if (!ws) return res.json({ drops: [] }); const S = scopeStore(store, ws);
-    res.json({ drops: liveDrops(store, ws).filter(({ e }) => e.discoverable).map(({ id, e }) => publicDrop(id, e, soldOf(S, id, e), null, ordersBySlot(S, id, e))) }); });
+    // "Hide from my page" (server/pageitems.js): off the page for visitors, marked for the host; the drop's link still works
+    let own = false; try { own = currentUser(req)?.ws === ws; } catch {} const PI = pageItems(store, ws); if (own) res.set("Cache-Control", "private, no-store");
+    res.json({ drops: liveDrops(store, ws).filter(({ id, e }) => e.discoverable && (own || !PI.hidden.has("e:" + id))).map(({ id, e }) => ({ ...publicDrop(id, e, soldOf(S, id, e), null, ordersBySlot(S, id, e)), ...(PI.hidden.has("e:" + id) ? { pageHidden: true } : {}), ...(PI.pinned.includes("e:" + id) ? { pinned: PI.pinned.indexOf("e:" + id) + 1 } : {}) })) }); });
 
   // the old shop links (/x/<handle>/shop/<i>, from shares and the feed) open the drop that replaced the shop
   app.get(/^\/x\/([a-z0-9][a-z0-9-]{1,39})\/shop\/([A-Za-z0-9_-]{1,20})$/, (req, res, next) => { const ws = C.wsOfHandle(req.params[0]); if (!ws) return next();

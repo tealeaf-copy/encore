@@ -126,7 +126,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
 <script src="/giftart.js"></script>
 <script src="/terms.js"></script><script src="/storeshop.js"></script><script src="/drop.js"></script><script src="/fanclub.js"></script><script src="/listpublic.js" defer></script><script src="/memberships.js"></script><script src="/kudoswall.js"></script>
 <!-- [arrange hook] the host's page layout: the shared rules, then the page side (public/arrange-core.js, public/arrange.js) -->
-<script src="/arrange-core.js"></script><script src="/arrange.js"></script>
+<script src="/arrange-core.js"></script><script src="/arrange.js"></script><script src="/hostitems.js"></script><!-- Coming up, Order ahead, Book me; Pin and Hide per item (public/hostitems.js) -->
 <script>
 (async function () {
   const C = window.EncoreCommunity, esc = C.esc, handle = decodeURIComponent(location.pathname.split("/").pop() || "").replace(/^@/, ""), m = document.getElementById("m");
@@ -144,7 +144,7 @@ html.kit-on body :is(.ex-off,.ex-tag,.ex-note,.ex-note *){font-family:var(--pl-f
   const h = d.host, first = h.showcase ? h.name : d.personal ? d.person : d.person ? (h.name || d.person) : (h.name || handle).split(/[\s']/)[0]; // a person's own name becomes their first name; a business name stays whole
   window.__encorePerson = first;
   // the owner's own page: no Follow form for themselves, an Edit page button, and their private plans (only they see them)
-  const ownerHost = (await mineP)?.host, isOwner = !!ownerHost?.handle && ownerHost.handle === h.handle && !d.sample; if (isOwner) document.body.classList.add("is-owner");
+  const ownerHost = (await mineP)?.host, isOwner = ((!!ownerHost?.handle && ownerHost.handle === h.handle) || !!d.viewer?.own) && !d.sample; // the server's owner check (d.viewer.own) counts too if (isOwner) document.body.classList.add("is-owner");
   // the owner's brand kit banner sits above the page: its answer is fetched now (0.5s at most) so the page is not pushed down after it paints
   if (ownerHost?.handle && ownerHost.handle === h.handle) { window.__bkP = fetch("/api/host/brandkit", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     const css = document.getElementById("bk-css") ? null : new Promise((ok) => { const l = document.createElement("link"); l.id = "bk-css"; l.rel = "stylesheet"; l.href = "/brandkit.css"; l.onload = l.onerror = ok; document.head.appendChild(l); }); /* the banner's styles, so it is drawn at its real height */

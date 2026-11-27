@@ -70,7 +70,7 @@ test("no repeated words from our side: the full invite's form doesn't repeat the
   assert.match(idx, /bring=\[\]; \/\* the invite's own Bring row already says what to bring/);
   assert.match(idx, /toLocaleDateString\("en-US",\{weekday:"short",month:"short",day:"numeric"\}\):"", t\?/, "the bar's date is en-US like the page, not the phone's locale");
   assert.match(idx, /<span class="ev2-when-time">\$\{st\?esc\(st\+\(en\?` to \$\{en\}`:""\)\)/, "7pm to 10pm, as on the light invite");
-  assert.match(idx, /You're the host<\/span>/); assert.match(idx, /Open in app<\/a>/); assert.match(idx, /encore-gebar-off-/, "the host line can be put away");
+  assert.match(idx, /You're the host<\/span>/); assert.match(idx, /Manage<\/a>/); assert.match(idx, /encore-gebar-off-/, "the host line can be put away");
   assert.doesNotMatch(idx, /You're the host\. Tap anything outlined to edit it\.<\/span><a class="btn sm ghost"/);
   assert.match(idx, /isCasual\(e\)\?"Show my name to other guests":"Show my name and company to other guests"/, "company only for work events");
   // the event copy under the host's words stays hidden when it only repeats their sentences

@@ -101,6 +101,7 @@ import { mountDelightAfter } from "./delightafter.js"; // during and after the e
 import { mountSuggest } from "./suggest.js"; // Potto's autocomplete: ideas and places as you type (server/suggest.js, public/autocomplete.js)
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
+import { mountPageItems, hostRole } from "./pageitems.js"; // Hide from my page, Pin to top, and who hosts an event (the owner or a co-host)
 import { mountPageLayout } from "./pagelayout.js"; // [arrange hook] the host page's own order, styles and blocks (server/pagelayout.js)
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
 import { typeOf, typeLabel } from "./eventtypes.js"; // the type tag (Pop-up, Pickup, House party, ...) on the invite and in link previews
@@ -744,7 +745,12 @@ export function createApp({ store, dataDir }) {
     let mineJs = ""; try { const u = currentUser(req); if (u?.email) { const em = String(u.email).toLowerCase(), d = scopeStore(store, ws).list("rsvps").filter((x) => x.data?.eventId === id && String(x.data?.email || "").toLowerCase() === em && x.data?.code).sort((a, b) => (b.data.changedAt || b.data.createdAt || 0) - (a.data.changedAt || a.data.createdAt || 0))[0];
       if (d) mineJs = `<script>try{const k=${JSON.stringify("encore-rsvp-" + id)};localStorage.getItem(k)||localStorage.setItem(k,${JSON.stringify(JSON.stringify({ rid: d.id, code: d.data.code, name: d.data.name || "", response: d.data.response, eventId: id })).replace(/</g, "\\u003c")})}catch{}</script>`; } } catch {}
     // compressed (brotli when the phone takes it, else gzip): the invite is most of what a guest downloads before replying
-    sendText(req, res, page.replace("<!--META-->", () => meta + mineJs), { cache: mineJs ? "private, no-store" : "public, max-age=120" }); });
+    // the event's own host or a co-host never gets a reply form or an Ask to join bar on it: Manage instead (server/pageitems.js hostRole)
+    let roleJs = ""; try { const role = hostRole(C, currentUser(req), ws, ev); if (role) roleJs = ownInviteBar(id, role); } catch {}
+    sendText(req, res, page.replace("<!--META-->", () => meta + mineJs + roleJs), { cache: mineJs || roleJs ? "private, no-store" : "public, max-age=120" }); });
+  /** The light invite as its host sees it: the reply form and the sticky reply bar hidden, one Manage bar in their place
+   *  (public/ownbar.js). Small on purpose: the served invite stays under 40,000 characters. */
+  const ownInviteBar = (id, role) => `<style>#f,.stick{display:none!important}</style><script src="/ownbar.js" data-r="${role === "cohost" ? "cohost" : "host"}" data-i="${String(id).replace(/[^A-Za-z0-9_-]/g, "")}" defer></script>`;
   // public/invite.html, read again only when the file changes
   let inviteCache = null;
   function invitePage() { const f = path.join(PUBLIC_DIR, "invite.html");
@@ -806,6 +812,7 @@ export function createApp({ store, dataDir }) {
   // ---------- community: invite codes, host pages, followers, discover (public parts check nothing; member parts check the session) ----------
   mountFanclub(app, { store, small, currentUser, C, X, publicOrigin: (req) => originOf(req) }); // before community: it reads the host page answer and guards follow and pledge
   mountCommunity(app, { X, store, small, currentUser, ownerOnly: (req, res) => ownerOnly(req, res), publicOrigin: (req) => originOf(req), C });
+  mountPageItems(app, { store, C, currentUser, small }); // one item at a time: Hide from my page, Pin to top (server/pageitems.js)
   const PAGE_LAYOUT = mountPageLayout(app, { store, C, X, currentUser, assetsDir }); // [arrange hook] owner-only layout API; the live layout goes into /@handle
   app.locals.social = X;
   mountSocial(app, { store, small, currentUser, publicOrigin: (req) => originOf(req), C, X, afterRsvp: (...a) => afterRsvp(...a), raw: express.raw({ type: () => true, limit: `${Number(process.env.ASSET_MAX_MB || 15)}mb` }) });
@@ -2063,6 +2070,8 @@ export function createApp({ store, dataDir }) {
       // guests reply only to real events, once the event is over replies are closed, and one address can't flood an event
       if (req.guest) { const eidG = String(body?.eventId || ""), evG = /^[A-Za-z0-9_-]+$/.test(eidG) ? S(req).get("events/" + eidG)?.data : null;
         if (!evG) return res.status(404).json({ code: "not_found", message: "That event isn't here any more." });
+        // the host (or a co-host) never replies to their own event as a guest: they manage it (server/pageitems.js hostRole)
+        { let u = null; try { u = currentUser(req); } catch {} if (hostRole(C, u, req.ws, evG)) return res.status(409).json({ code: "own_event", message: "You're hosting this one, so there's nothing to reply. Manage it from your events.", manage: `/?app=1&open=${encodeURIComponent(eidG)}#studio` }); }
         if (evG.date && evG.date < new Date(Date.now() - 14 * 3600e3).toISOString().slice(0, 10)) return res.status(409).json({ code: "past", message: "This one has already happened, so replies are closed." });
         if (rsvpLimited(req, eidG)) return res.status(429).json({ code: "rate_limited", message: "Lots of replies from here at once. Try again in a few minutes." }); }
       const pol = rsvpPolicy(req, body); if (pol.error) return res.status(pol.status || 409).json({ code: pol.code || "sold_out", message: pol.error, ...(pol.left != null ? { left: pol.left } : {}), ...(pol.extra || {}) }); body = pol.body;

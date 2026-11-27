@@ -244,6 +244,9 @@ html.pl-arranging .plb-divider{min-height:24px}
     closeSheet(); commit(L, `${nameOf(it)} is back.`); setTimeout(() => primary(items().find((x) => x.id === id))?.scrollIntoView({ block: "center", behavior: reduce() ? "auto" : "smooth" }), 80); }
   function hiddenSheet() { const H = hiddenList();
     const s = sheet("Hidden", H.length ? `<p class="pla-lead">Guests don't see these. Bring one back any time.</p>${H.map((it) => `<div class="pla-row"><span><b>${esc(nameOf(it))}</b>${PLL.SPLIT.has(it.id) ? `<small style="display:block;color:#444845;font-size:14px">Shown inside Coming up for now. Bring it back for its own section.</small>` : ""}</span><button type="button" class="pla-btn" data-back="${it.id}">Bring back</button></div>`).join("")}` : `<p class="pla-lead">Nothing hidden. Hide a section from its toolbar and it waits here.</p>`);
+    // one event, drop, experience or past event at a time: Pin to top and Hide from my page (public/hostitems.js)
+    if (window.PLHostItems) { s.querySelector(".pla-sheet").insertAdjacentHTML("beforeend", `<div class="pla-row"><span><b>One thing at a time</b><small style="display:block;color:#444845;font-size:14px">Pin up to 2 events to the top, or hide one from your page. It stays live by its link.</small></span><button type="button" class="pla-btn" data-items>Events and items</button></div>`);
+      s.querySelector("[data-items]").onclick = () => { closeSheet(); window.PLHostItems.manager(); }; }
     $$("[data-back]", s).forEach((b) => (b.onclick = () => bringBack(b.dataset.back, false))); }
   function startersSheet() { const fit = E.kind;
     const mini = (S) => `<span class="pla-mini" aria-hidden="true">${S.order.slice(0, 5).map(([id], i) => `<i class="${i === 0 ? "c" : ""}" style="width:${[100, 80, 92, 70, 86][i]}%"></i>`).join("")}</span>`;

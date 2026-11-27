@@ -15,6 +15,7 @@ import dns from "node:dns";
 import net from "node:net";
 import https from "node:https";
 import { scopeStore, DEFAULT_WS } from "./workspaces.js";
+import { pageItems } from "./pageitems.js";
 
 const SITES = [/(^|\.)partiful\.com$/i, /(^|\.)lu\.ma$/i, /(^|\.)luma\.com$/i, /(^|\.)eventbrite\.[a-z.]{2,8}$/i, /(^|\.)henly\.app$/i];
 // where talks live: a video or a podcast episode becomes a webinar or podcast draft, with that link as its recording
@@ -323,8 +324,10 @@ export function mountScrapbook(app, { store, small, currentUser, C, saveImage })
   const publicItems = (L, ids) => L.map(({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured, featuredOrder, section, role, room, proof, format, company, logos, topic, organizer, audience, recording, slides }) => ({ id, title, date, time, place, guests, note, about, source, site, link, photos, cover, featured: !!featured, featuredOrder: featuredOrder || 0, section: ids.has(section) ? section : "", role: role || "", room: room || "", proof: proof || "", format: format || "", company: company || "", logos: cleanLogos(logos),
     topic: topic || "", organizer: organizer || "", audience: audienceOf(audience), recording: httpsLink(recording), slides: httpsLink(slides) }));
   app.get("/api/public/host/:handle/scrapbook", (req, res) => { const ws = C.wsOfHandle(String(req.params.handle || "").toLowerCase()); if (!ws) return res.json({ items: [], sections: [], featured: [] });
-    const L = list(ws), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
-    res.json({ items: publicItems(L, ids),
+    // "Hide from my page" (server/pageitems.js): off the public scrapbook, still in the host's own
+    let own = false; try { own = currentUser(req)?.ws === ws; } catch {} const PI = pageItems(store, ws); if (own) res.set("Cache-Control", "private, no-store");
+    const L = list(ws).filter((x) => own || !PI.hidden.has("s:" + x.id)).map((x) => (PI.hidden.has("s:" + x.id) ? { ...x, pageHidden: true } : x)), secs = sectionsOf(ws), used = new Set(L.map((x) => x.section).filter(Boolean)), ids = new Set(secs.map((s) => s.id));
+    res.json({ items: publicItems(L, ids).map((x, i) => (L[i].pageHidden ? { ...x, pageHidden: true } : x)),
       sections: secs.filter((s) => used.has(s.id)), featured: featuredIds(L).slice(0, MAX_FEATURED) }); });
   app.get("/api/host/scrapbook", (req, res) => { const u = me(req, res); if (!u) return; const L = list(u.ws); res.json({ items: L, sections: sectionsOf(u.ws), featured: featuredIds(L), limits: { ...LIMITS, featured: MAX_FEATURED, sections: MAX_SECTIONS }, roles: ROLES, formats: FORMATS }); });
   // Potto's "Sort my events": suggested sections for the events not in one yet. Nothing changes until the host confirms (PUT below).

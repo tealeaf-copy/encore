@@ -9,6 +9,7 @@ import { getDbUser } from "./workspaces.js";
 import { trustFrom, isExampleEmail } from "./recognition.js";
 import { goalFit, placeFit, metroOf, METRO_NAMES, perPerson, isFlat, priceText, TEAM_GOALS, AUDIENCE_WORD } from "./search.js";
 import { categoryOf } from "./market.js";
+import { pageItems } from "./pageitems.js"; // hidden from the host's page means off the portfolio too
 
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, n);
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -108,7 +109,7 @@ export function mountHosts(app, { store, small, currentUser, publicOrigin, C, X 
   // ---- portfolio and hiring: brands find hosts ----
   app.get("/api/public/hosts", (req, res) => { const city = lc(req.query.city), kind = lc(req.query.kind), out = [];
     for (const ws of allWorkspaceIds()) { const h = C.profileOf(ws); if (!h?.handle || !h.forHire) continue; const S = X.hostStrengths(ws); if (city && !lc(`${h.city} ${h.hood}`).includes(city)) continue; if (kind && !S.kinds.some((k) => k.kind === kind)) continue;
-      out.push({ handle: h.handle, name: h.name, emoji: h.emoji, color: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", city: h.city, services: h.services || "", experiences: (h.experiences || []).slice(0, 3).map((x) => ({ name: x.name, price: x.price, min: x.min, max: x.max, emoji: x.emoji })), events: S.events, guests: S.guests, returning: S.returning, kudos: S.kudosCount, kinds: S.kinds.slice(0, 3), quote: S.kudos.find((k) => k.love)?.love || "", followers: C.followersOf(ws).length }); }
+      out.push({ handle: h.handle, name: h.name, emoji: h.emoji, color: h.theme?.accent || h.color, avatarArt: h.theme?.avatarArt || "", city: h.city, services: h.services || "", experiences: (h.experiences || []).filter((x) => !pageItems(store, ws).hidden.has("x:" + x.id)).slice(0, 3).map((x) => ({ name: x.name, price: x.price, min: x.min, max: x.max, emoji: x.emoji })), events: S.events, guests: S.guests, returning: S.returning, kudos: S.kudosCount, kinds: S.kinds.slice(0, 3), quote: S.kudos.find((k) => k.love)?.love || "", followers: C.followersOf(ws).length }); }
     out.sort((a, b) => b.kudos * 2 + b.guests + b.returning * 2 - (a.kudos * 2 + a.guests + a.returning * 2)); res.json({ hosts: out.slice(0, 60) }); });
   app.post("/api/public/inquiry/:handle", small, async (req, res) => { if (limited(req, 6)) return bad(res, "Too many messages from here. Try later.", 429, "rate_limited"); const ws = C.wsOfHandle(req.params.handle), h = ws && C.profileOf(ws); if (!h?.forHire) return bad(res, "This host isn't taking work through Pottery Lab right now.", 404, "not_found");
     const b = req.body || {}, email = lc(clean(b.email, 200)); if (!EMAIL_OK(email)) return bad(res, "Add an email so they can reply."); const msg = clean(b.message, 1500); if (msg.length < 10) return bad(res, "Say a little about what you have in mind.");

@@ -376,29 +376,32 @@
 
   // ================= the host page: one "What I offer" section =================
   async function offer(h, first, d, isOwner) { if (!h || h.showcase || $("#offer")) return; css();
-    let drops = []; try { drops = (await (await fetch("/api/public/drops/" + encodeURIComponent(h.handle))).json()).drops || []; } catch {}
+    let drops = []; try { drops = (await (await fetch("/api/public/drops/" + encodeURIComponent(h.handle), { credentials: "same-origin" })).json()).drops || []; } catch {}
     let mineD = []; if (isOwner) { try { mineD = (await api("/api/host/drops")).drops || []; } catch {} }
     const ev = (d.upcoming || []).filter((e) => !e.drop && !drops.some((x) => x.id === e.id)), X = h.forHire || h.sample ? h.experiences || [] : [];
     const dayTxt = (x) => x ? new Date(x + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "";
-    const rows = [];
-    for (const e of ev) rows.push({ k: "Event", art: e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="">` : I.cal, t: e.title || e.name, line: [dayTxt(e.date) + (e.startTime ? " · " + clock(e.startTime) : ""), e.hood || e.city, e.priceLine].filter(Boolean).join(" · "), go: e.private ? "" : `<a class="of-go" href="/e/${encodeURIComponent(e.id)}">${e.preorder ? "Order" : e.approvalRequired ? "Ask to join" : "I'm in"}</a>` });
-    for (const x of drops) { const lo = Math.min(...x.items.map((i) => i.price)), out = x.items.every((i) => i.left === 0);
-      rows.push({ k: "Order ahead", art: x.cover ? `<img src="${esc(x.cover)}" alt="${esc(x.title)}" loading="lazy">` : drawn(`${x.title} ${x.items.map((i) => i.name).join(" ")}`, I.bag, "currentColor"), t: x.title, line: [x.items.length > 1 ? `From ${money(lo)}` : money(lo), x.pickup || (x.date ? `Pickup ${dayTxt(x.date)}` : ""), x.area, x.left].filter(Boolean).join(" · "), // the same pickup words as the order page (server/drops.js publicDrop)
-        go: x.paused ? `<span class="of-k" style="grid-column:1/-1">Orders are paused. Follow to hear when they open.</span>` : out ? `<span class="of-k" style="grid-column:1/-1">Sold out this batch.</span>` : `<a class="of-go" href="${esc(x.url)}">Order</a>` }); }
-    for (const x of X) { const p = window.EncoreShop?.priceText?.(x.price) || "";
-      rows.push({ k: "For teams and groups", art: x.photo ? `<img src="${esc(x.photo)}" alt="">` : drawn(x.name, I.people, "currentColor"), t: x.name, line: [p ? (/^from /i.test(p) ? p : "From " + p) : "To be quoted", x.min > 1 ? `${x.min} to ${x.max} guests` : x.max ? `Up to ${x.max} guests` : "", x.length].filter(Boolean).join(" · "), go: `<button type="button" class="of-go" data-req="${esc(x.id)}">Request a date</button>` }); }
-    if (!rows.length && !isOwner) return;
-    const sec = document.createElement("section"); sec.className = "offer"; sec.id = "offer"; sec.setAttribute("aria-labelledby", "offerH");
-    const own = isOwner ? `<div class="of-own"><small>Only you see this. Guests see the list below.</small><button type="button" class="pri" data-own="new">${I.plus}<span>Add something</span></button><button type="button" data-own="orders">${I.list}<span>Orders${mineD.reduce((a, x) => a + (x.batch?.orders || 0), 0) ? ` (${mineD.reduce((a, x) => a + (x.batch?.orders || 0), 0)})` : ""}</span></button>${mineD.map((x) => `<button type="button" data-drop="${esc(x.id)}">${I.bag}<span>${esc(x.title)}${x.open ? "" : " (paused)"}</span></button>`).join("")}</div>` : "";
-    sec.innerHTML = `<h2 class="sec" id="offerH">What ${isOwner ? "you" : esc(first)} offer${isOwner ? "" : "s"}</h2><p class="of-sub">${rows.length ? ((k) => k.length > 1 ? k.slice(0, -1).join(", ") + " and " + k.slice(-1) : k[0])([ev.length && "events to join", drops.length && "things to order ahead", X.length && "experiences to book"].filter(Boolean)).replace(/^./, (c) => c.toUpperCase()) + "." : "Add an event, a drop or something teams can book. It shows here."}</p>${own}
-      ${rows.length ? `<div class="of-list">${rows.map((r) => `<div class="of-row"><span class="of-art" aria-hidden="true">${r.art}</span><div class="of-b"><span class="of-k">${esc(r.k)}</span><b>${esc(r.t)}</b>${r.line ? `<p>${r.line.split(" · ").map((x) => x.length <= 24 ? `<span>${esc(x)}</span>` : esc(x)).join(" · ")}</p>` : ""}</div>${r.go}</div>`).join("")}</div>` : `<div class="of-empty">Nothing here yet.</div>`}`;
+    const visible = (L) => L.filter((x) => !x.pageHidden).length;
+    if (!visible(ev) && !visible(drops) && !visible(X) && !isOwner) return;
+    const sec = document.createElement("section"); sec.className = "offer"; sec.id = "offer";
+    // the owner's tools, above the lists: only they see this row (Message your followers lives here, not inside a run card)
+    const nOrders = mineD.reduce((a, x) => a + (x.batch?.orders || 0), 0);
+    sec.innerHTML = isOwner ? `<div class="of-own"><small>Only you see this. Guests see the lists below.</small><button type="button" class="pri" data-own="new">${I.plus}<span>Add something</span></button><button type="button" data-own="orders">${I.list}<span>Orders${nOrders ? ` (${nOrders})` : ""}</span></button><button type="button" data-own="msg"><span>Message your followers</span></button>${mineD.map((x) => `<button type="button" data-drop="${esc(x.id)}">${I.bag}<span>${esc(x.title)}${x.open ? "" : " (paused)"}</span></button>`).join("")}</div>` : "";
     const at = $(".cols > div") || $("main"); const old = $("h2.sec.s-coming"); if (old) old.before(sec); else at?.prepend(sec);
-    // one list: the old "Coming up" grid is folded into this one
-    if (ev.length || rows.length) $$(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; });
-    $$("[data-req]", sec).forEach((b) => (b.onclick = () => { const bk = $("#book"); if (!bk) { location.href = `/x/${h.handle}/${encodeURIComponent(b.dataset.req)}`; return; } bk.__expand?.(true); bk.__open?.(b.dataset.req); bk.scrollIntoView({ behavior: "smooth", block: "start" }); }));
+    // one place for what's coming: the old "Coming up" grid is folded into this one
+    $$(".s-coming").forEach((x) => { x.hidden = true; x.style.display = "none"; });
     const redraw = () => { sec.remove(); offer(h, first, d, isOwner); };
-    $$("[data-own]", sec).forEach((b) => (b.onclick = () => b.dataset.own === "new" ? choose({ onDone: redraw }) : inbox({ onDone: redraw })));
+    const req = (id) => { const bk = $("#book"); if (!bk) { location.href = `/x/${h.handle}/${encodeURIComponent(id)}`; return; } bk.__expand?.(true); bk.__open?.(id); bk.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    const draw = () => window.PLHostItems.render(sec, { h, d, owner: isOwner, events: ev, drops, exps: X,
+      art: { drop: (x) => (x.cover ? `<img src="${esc(x.cover)}" alt="" loading="lazy">` : drawn(`${x.title} ${x.items.map((i) => i.name).join(" ")}`, I.bag, "currentColor")), exp: (x) => (x.photo ? `<img src="${esc(x.photo)}" alt="" loading="lazy">` : drawn(x.name, I.people, "currentColor")) },
+      line: { drop: (x) => { const lo = Math.min(...x.items.map((i) => i.price)); return [x.items.length > 1 ? `From ${money(lo)}` : money(lo), x.pickup || (x.date ? `Pickup ${dayTxt(x.date)}` : ""), x.area, x.left].filter(Boolean).join(" · "); }, // the same pickup words as the order page (server/drops.js publicDrop)
+        exp: (x) => { const p = window.EncoreShop?.priceText?.(x.price) || ""; return [p ? (/^from /i.test(p) ? p : "From " + p) : "To be quoted", x.min > 1 ? `${x.min} to ${x.max} guests` : x.max ? `Up to ${x.max} guests` : "", x.length].filter(Boolean).join(" · "); } },
+      onReq: req, onDrop: (id) => { const x = mineD.find((y) => y.id === id); if (x) manage(x, redraw); else inbox({ onDone: redraw }); }, onExp: (id) => bookable({ exp: (h.experiences || []).find((x) => x.id === id), onDone: () => location.reload() }) });
+    if (window.PLHostItems) draw(); else await new Promise((ok) => { const s = document.createElement("script"); s.src = "/hostitems.js"; s.onload = () => { draw(); ok(); }; s.onerror = ok; document.head.appendChild(s); });
+    $$("[data-own]", sec).forEach((b) => (b.onclick = () => b.dataset.own === "new" ? choose({ onDone: redraw }) : b.dataset.own === "msg" ? followersMessage() : inbox({ onDone: redraw })));
     $$("[data-drop]", sec).forEach((b) => (b.onclick = () => manage(mineD.find((x) => x.id === b.dataset.drop), redraw))); }
+  // "Message your followers" (public/runtemplates.js messageSheet): loaded the first time the owner asks for it
+  function followersMessage() { if (window.RunTemplates?.messageSheet) return window.RunTemplates.messageSheet();
+    const s = document.createElement("script"); s.src = "/runtemplates.js"; s.onload = () => window.RunTemplates?.messageSheet?.(); document.head.appendChild(s); }
   const clock = (t) => { const [hh, mm] = String(t).split(":").map(Number); return `${hh % 12 || 12}${mm ? ":" + String(mm).padStart(2, "0") : ""}${hh < 12 ? "am" : "pm"}`; };
 
   window.EncoreDrop = { setup, live, manage, inbox, bookable, choose, offer, dropCard, windowLabel, KINDS };

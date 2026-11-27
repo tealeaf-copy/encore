@@ -85,6 +85,8 @@
 [hidden]{display:none!important}
 .eh-btn{position:fixed;right:var(--eh-right,16px);bottom:var(--eh-bottom,16px);z-index:9500;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px 8px 10px;border-radius:999px;border:1.5px solid var(--pl-frame);background:var(--pl-surface);color:var(--pl-ink);font:600 16px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;box-shadow:0 10px 28px -16px rgba(31,26,23,.28);transition:transform .15s}
 .eh-btn:hover{transform:translateY(-1px)}.eh-btn.eh-intab{display:none}
+/* at rest over words or a control, it tucks into the page's right margin (a slim edge still opens it) and comes back over empty space */
+.eh-btn{transition:transform .2s ease,opacity .2s ease}.eh-btn.eh-tuck{transform:translateX(calc(100% + var(--eh-right,16px) - 14px));opacity:.9}.eh-btn.eh-tuck:hover,.eh-btn.eh-tuck:focus-visible{transform:none;opacity:1}
 .eh-btn .eh-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:var(--pl-accent);border:2px solid var(--pl-surface)}
 .eh-btn.eh-dock{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:auto;bottom:auto;padding:6px 12px 6px 8px;font-size:14px;min-height:44px}
 .eh-scrim{position:fixed;inset:0;z-index:2147483000;background:rgba(31,26,23,.36);cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;animation:ehFade .18s ease-out}
@@ -179,6 +181,17 @@
   const modalOpen = () => { try { if (document.querySelector("#wizBg .wiz, #wizBg[data-wizard]") && shown(document.querySelector("#wizBg"))) return true;
     for (const e of document.querySelectorAll('[role=dialog], [aria-modal=true], dialog[open], .store-pane, .sheet, .pin-bg, .fv-sv')) if (shown(e)) return true; } catch {} return false; };
   const tabBar = () => { if (innerWidth > 860) return false; try { for (const e of document.querySelectorAll(".es-tabs,nav.tabs")) { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); if (fixedish(e) && cs.display !== "none" && cs.visibility !== "hidden" && r.width >= innerWidth * 0.9 && r.bottom >= innerHeight - 2 && r.height > 30) return true; } } catch {} return false; };
+  // Is there text, a picture or a control under where the button sits (untucked)? Text is read by its own line boxes, so
+  // the empty end of a short line doesn't count.
+  const MEDIA = "img,svg,video,canvas,picture,iframe,input,textarea,select,button,[role=button],[role=img]";
+  function contentAt(x, y) { for (const e of document.elementsFromPoint(x, y)) { if (e === host || host.contains(e)) continue; if (e === document.body || e === document.documentElement) return false; if (fixedish(e)) continue;
+      if (e.closest(MEDIA)) return true;
+      for (const n of e.childNodes) { if (n.nodeType !== 3 || !n.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(n); for (const q of r.getClientRects()) if (x >= q.left - 2 && x <= q.right + 2 && y >= q.top - 2 && y <= q.bottom + 2) return true; } }
+    return false; }
+  function overContent(b, bottom) { try { const w = b.offsetWidth, hh = b.offsetHeight, right = parseFloat(getComputedStyle(b).right) || 16, x0 = innerWidth - right - w, y0 = innerHeight - bottom - hh;
+      for (const fx of [0.15, 0.5, 0.85]) for (const fy of [0.15, 0.5, 0.85]) if (contentAt(x0 + w * fx, y0 + hh * fy)) return true; } catch {} return false; }
+  // look again when scrolling stops (the button stays as it is while the page moves)
+  { let st = 0; addEventListener("scroll", () => { clearTimeout(st); st = setTimeout(() => place(), 160); }, { passive: true }); }
   function place() {
     try { const b = btn(); if (!b || isOpen()) return; const away = modalOpen(); b.classList.toggle("eh-away", away); nudge().classList.toggle("eh-away", away); if (away) return;
       // phones with a bottom tab bar: help lives in the Me sheet (public/chatnav.js), so nothing floats over the page's own
@@ -187,6 +200,7 @@
       const h = obstacleHeight(), dock = !intab && h > innerHeight * 0.45 - 8;
       b.classList.toggle("eh-dock", dock); nudge().classList.toggle("eh-dock", dock);
       const bottom = dock ? 16 : Math.round(h ? h + 12 : 16); document.documentElement.style.setProperty("--eh-bottom", bottom + "px");
+      b.classList.toggle("eh-tuck", !intab && !dock && overContent(b, bottom));
     } catch {}
   }
 

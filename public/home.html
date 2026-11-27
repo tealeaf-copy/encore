@@ -11,7 +11,7 @@
 body{margin:0;background:var(--pl-page);color:var(--pl-ink);font:400 17px/1.6 var(--pl-font-text);-webkit-font-smoothing:antialiased}
 a{color:inherit}.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
 h1,h2,h3{font-family:var(--pl-font-display);font-weight:var(--pl-display-weight);letter-spacing:-.02em;margin:0;text-wrap:balance}
-p{margin:0}
+p{margin:0;text-wrap:pretty}
 .kick{display:block;font:500 13px/1.4 var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin:0 0 12px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:var(--pl-r-btn);padding:0 20px;font:600 17px var(--pl-font-text);text-decoration:none;border:1.5px solid transparent}
 .btn.primary{background:var(--pl-accent);color:var(--pl-on-accent)}.btn.primary:hover{background:var(--pl-accent-press)}
@@ -33,27 +33,28 @@ p{margin:0}
 .sec{border-top:var(--pl-rule);padding:32px 0 48px}
 .sec h2{font-size:clamp(30px,4.4vw,44px);line-height:1.08;max-width:20ch}
 .read{max-width:640px}.read p+p{margin-top:16px}
-.sec .lede{margin-top:14px;max-width:36em;color:var(--pl-soft)}
+.sec .lede{margin-top:12px;max-width:36em;color:var(--pl-soft)}
 @media (min-width:900px){.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px}.split .read{margin-top:4px}.split .week{margin-top:4px}}
-.sec .split h2+.read,.sec>h2+.read{margin-top:20px}@media (min-width:900px){.sec .split h2+.read{margin-top:0}}
+/* one rhythm: kicker 12px, heading to what follows 24px (12px to a lede), paragraphs 16px apart */
+.split>.read,.split>.week,.sec>h2+.read{margin-top:24px}@media (min-width:900px){.split>.read,.split>.week{margin-top:4px}}
 /* the week behind one dinner */
-.week{list-style:none;margin:24px 0 0;padding:0;max-width:680px}
+.week{list-style:none;margin:0;padding:0;max-width:680px}
 .week li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:14px 0;border-top:var(--pl-rule-dashed)}.week li:first-child{border-top:0;padding-top:0}
 .week b{font:500 13px/1.9 var(--pl-font-mono);letter-spacing:.04em;color:var(--pl-soft)}
 /* pull quote: our own words, not a testimonial */
-.pull{margin:0;padding:28px 0;border-top:var(--pl-rule-dashed);border-bottom:var(--pl-rule-dashed);max-width:820px}
-.pull p{font:var(--pl-serif-weight,600) clamp(24px,3.2vw,32px)/1.3 var(--pl-font-serif);color:var(--pl-ink);text-wrap:balance}
-.pull cite{display:block;margin-top:14px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
-.quote-wrap{padding:8px 0 48px}
+.pull{margin:0;padding:4px 0 4px 18px;border-left:3px solid var(--pl-accent);max-width:720px}
+.pull p{font:400 22px/1.5 var(--pl-font-text);letter-spacing:-.005em;color:var(--pl-ink);text-wrap:pretty}@media (min-width:900px){.pull p{font-size:24px}}
+.pull cite{display:block;margin-top:12px;font:500 13px var(--pl-font-mono);font-style:normal;letter-spacing:.04em;text-transform:uppercase;color:var(--pl-soft)}
+.quote-wrap{padding:8px 0 56px}@media (min-width:900px){.quote-wrap{padding-bottom:72px}}
 /* what changes: five rows */
-.pillars{list-style:none;margin:28px 0 0;padding:0;counter-reset:p}
+.pillars{list-style:none;margin:24px 0 0;padding:0;counter-reset:p}
 .pillars>li{display:grid;gap:8px 32px;padding:24px 0;border-top:var(--pl-rule-dashed)}
 @media (min-width:900px){.pillars>li{grid-template-columns:minmax(0,4fr) minmax(0,7fr)}}
 .pillars .n{display:block;font:500 13px var(--pl-font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--pl-accent-text);margin-bottom:6px}
 .pillars h3{font-size:28px;line-height:1.15}
 .pillars ul{margin:0;padding:0 0 0 18px;max-width:640px}.pillars ul li+li{margin-top:8px}.pillars ul li::marker{color:var(--pl-soft)}
 /* three readers */
-.cols{display:grid;gap:16px;margin-top:28px}
+.cols{display:grid;gap:16px;margin-top:24px}
 @media (min-width:760px){.cols{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .ab-col{background:var(--pl-surface);border:var(--pl-bw,1.5px) solid var(--pl-ink);border-radius:var(--pl-r-md);padding:20px;display:flex;flex-direction:column;gap:12px}
 .ab-col h3{font-size:24px;line-height:1.2}.ab-col p:not(.soon){flex:1}.ab-col .soon{font-size:16px;color:var(--pl-soft);padding-top:10px;border-top:var(--pl-rule-dashed)}.ab-col .soon b{font-weight:600;color:var(--pl-ink)}
@@ -70,10 +71,10 @@ p{margin:0}
 .beliefs li{counter-increment:b;display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;padding:12px 0;border-top:var(--pl-rule-dashed)}
 .beliefs li::before{content:counter(b,decimal-leading-zero);font:500 13px/1.9 var(--pl-font-mono);color:var(--pl-soft)}
 .beliefs b{font-weight:600}
-.motto{margin-top:32px;max-width:720px}.motto p:first-child{font:var(--pl-display-weight) clamp(26px,3.4vw,34px)/1.2 var(--pl-font-display);letter-spacing:-.02em}.motto p+p{margin-top:8px;color:var(--pl-soft)}
+.motto{margin-top:24px;max-width:720px}.motto p:first-child{font:var(--pl-display-weight) clamp(26px,3.4vw,34px)/1.2 var(--pl-font-display);letter-spacing:-.02em}.motto p+p{margin-top:8px;color:var(--pl-soft)}
 .small{font-size:16px;color:var(--pl-soft);margin-top:24px;max-width:720px}.small a{color:var(--pl-ink)}
 /* end */
-.end{text-align:center;padding-bottom:56px}.end h2{margin:0 auto}.end .close{max-width:30em;margin:14px auto 0;color:var(--pl-soft)}.end .ctas{justify-content:center;margin-top:24px}.end .potto{display:block;margin:0 auto 16px;width:88px;height:auto}
+.end{text-align:center;padding-bottom:56px}.end h2{margin:0 auto}.end .close{max-width:30em;margin:12px auto 0;color:var(--pl-soft)}.end .ctas{justify-content:center;margin-top:24px}.end .potto{display:block;margin:0 auto 16px;width:88px;height:auto}
 footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 0 48px;border-top:var(--pl-rule);color:var(--pl-soft);font-size:16px}
 footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer a{text-decoration:none}footer a:hover{color:var(--pl-ink);text-decoration:underline}
 @media (min-width:900px){.wrap{padding:0 32px}.hero{padding:64px 0 72px}.sec{padding:40px 0 72px}}
@@ -156,7 +157,7 @@ footer .ftl{display:flex;gap:16px;flex-wrap:wrap}footer a{text-decoration:none}f
   <span class="kick">On now</span>
   <h2 id="live">What's on right now.</h2>
   <div id="feed" aria-busy="true"><div class="fi-sk"></div><div class="fi-sk"></div><div class="fi-sk"></div></div>
-  <p style="margin:20px 0 0"><a class="ab-go" href="/feed">See everything on the feed</a></p>
+  <p style="margin:16px 0 0"><a class="ab-go" href="/feed">See everything on the feed</a></p>
 </section>
 
 <section class="sec" aria-labelledby="believe">

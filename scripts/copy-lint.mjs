@@ -7,6 +7,7 @@
 // Run: node scripts/copy-lint.mjs            prints counts per rule and per file, exits 1 if anything is found
 //      node scripts/copy-lint.mjs --list     also prints every hit with its line
 //      node scripts/copy-lint.mjs --only public/invite.html
+//      node scripts/copy-lint.mjs --semi     also lists semicolons that join two sentences (advisory)
 // Lines a guest or host wrote (seed data, examples quoted as "don't" in prompts) can be skipped with a
 // "copy-lint: ok" comment on the same line.
 import fs from "node:fs";
@@ -15,6 +16,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LIST = process.argv.includes("--list");
+const SEMI = process.argv.includes("--semi"), semis = [];
 const ONLY = (() => { const i = process.argv.indexOf("--only"); return i > 0 ? process.argv[i + 1] : ""; })();
 
 // The never-use list (brand kit "Phrases we don't use" and "Words", plus the plain-English list).
@@ -114,6 +116,8 @@ for (const rel of files) {
     if (/[A-Za-z0-9)'"’]!+(?=\s|$|["'’)<])/.test(t) && !/!=/.test(t)) at("bang", "exclamation mark");
     // prompts sent to the writing model list the banned words on purpose; they aren't shown to anyone
     const prompt = /\bYou are (?:a|an|the|Potto)\b|WRITING STYLE|GUEST RULES|POTTO-[A-Z]+|Never use these/.test(t);
+    // --semi also lists semicolons joining two sentences (advisory: not counted in the exit code)
+    if (SEMI && !prompt && /[a-z]{2}; [a-z]{2,}/.test(t)) semis.push(`${rel}:${line}  ${t.replace(/\s+/g, " ").trim().slice(0, 140)}`);
     if (!prompt) for (const [name, re] of BANNED) if (re.test(t) && !(name === "seats" && /\b(?:car|ride|driv)/i.test(t))) at("word", name);
   }
 }
@@ -125,4 +129,5 @@ const words = hits.filter((h) => h.rule === "word").reduce((a, h) => ((a[h.what]
 if (Object.keys(words).length) console.log("  words: " + Object.entries(words).sort((a, b) => b[1] - a[1]).map(([w, c]) => `${w} ${c}`).join(", "));
 for (const [f, c] of Object.entries(perFile).sort((a, b) => b[1] - a[1])) console.log(`  ${String(c).padStart(4)}  ${f}`);
 if (LIST) for (const h of hits) console.log(`${h.rel}:${h.line}  ${h.rule}/${h.what}  ${h.text}`);
+if (SEMI) { console.log(`semicolons (advisory): ${semis.length}`); for (const x of semis) console.log("  " + x); }
 process.exit(hits.length ? 1 : 0);

@@ -1378,6 +1378,13 @@ main.wrap{padding-bottom:104px}
 <div class="tip" id="tip" hidden></div>
 
 <script>
+// Regex lookbehind ((?<=…), (?<!…)) only exists in Safari 16.4 and later; as a literal it is a syntax error that stops a
+// whole script block on an older iPhone. So those patterns are built with plRx: the real pattern where it works, and
+// the same pattern without its lookbehinds (a little looser, never broken) where it doesn't. test/start-safari.test.js
+window.plRx=function(src,flags){ try{ return new RegExp(src,flags) }catch(e){ let out="",i=0,cls=false; while(i<src.length){ const c=src[i];
+  if(c==="\\"){ out+=src.slice(i,i+2); i+=2; continue } if(cls){ if(c==="]") cls=false; out+=c; i++; continue } if(c==="["){ cls=true; out+=c; i++; continue }
+  if(src.startsWith("(?<=",i)||src.startsWith("(?<!",i)){ let d=0,k=i,inC=false; for(;k<src.length;k++){ const x=src[k]; if(x==="\\"){ k++; continue } if(inC){ if(x==="]") inC=false; continue } if(x==="[") inC=true; else if(x==="(") d++; else if(x===")"&&--d===0) break } i=k+1; continue }
+  out+=c; i++ } return new RegExp(out,flags) } };
 // local calendar dates (not UTC): today's date and whole days until a YYYY-MM-DD date
 // declared here (the early block) so render code that runs from a fetch callback before later blocks parse can use them
 function hostFirst(e){ return (String(e?.hostName||window.__gHostName||"").trim().split(/\s+/)[0]||"").replace(/['’]s$/i,"")||"your host" } // "Bo's Omecasa" hosts as Bo, never "Bo's is hosting"
@@ -6530,7 +6537,7 @@ if(typeof drawSignoff==="function"){ const _ds=drawSignoff; drawSignoff=function
 
 // ---------- 6. Honest first take: never cheer about what isn't known ----------
 { const _q3=quickStart; quickStart=function(t){ const was=window.pipToast; let said=null; window.pipToast=(m,mo,u)=>{ said=[m,mo,u] }; const r=_q3.apply(this,arguments); window.pipToast=was;
-  try{ const d=draft, I=cosItems(d).filter(x=>x.sev!=="idea"); const hid=$("#toast"); setTimeout(()=>{ if(hid) hid.hidden=true; pipToast(I.length?`Honest take: ${I[0].t} ${String(I[0].w).split(/(?<=\.)\s/)[0]}`:`Love it: the budget fits and the date checks out. Next I'd lock the guest list.`,I.length?"skeptic":"happy") },900) }catch{} return r } }
+  try{ const d=draft, I=cosItems(d).filter(x=>x.sev!=="idea"); const hid=$("#toast"); setTimeout(()=>{ if(hid) hid.hidden=true; pipToast(I.length?`Honest take: ${I[0].t} ${String(I[0].w).split((globalThis.plRx||RegExp)(String.raw`(?<=\.)\s`))[0]}`:`Love it: the budget fits and the date checks out. Next I'd lock the guest list.`,I.length?"skeptic":"happy") },900) }catch{} return r } }
 
 // ---------- 7. Chief-of-staff actions: one message, with Undo ----------
 if(typeof wireCos==="function"){ const _wc2=wireCos; wireCos=function(host,d){ _wc2(host,d); } }
@@ -9145,7 +9152,7 @@ new MutationObserver(()=>{ try{ if(!window.__wsPersonal) return;
     if(saved.draft.id&&!allEvents.some(e=>e.id===saved.draft.id)){ try{ localStorage.removeItem(SIGNED_OUT_KEY) }catch{} return } // another account: not theirs to save
     draft=hydrate({...saved.draft}); const ok=await saveEvent(true); /* saved straight away, before anything else on the page picks a draft */
     if(ok){ try{ localStorage.removeItem(SIGNED_OUT_KEY) }catch{} document.getElementById("signedOutBar")?.remove(); openEvent({...draft,id:draft.id},+saved.step||1); setTimeout(()=>toast("You're signed in. Your changes are saved."),200) } },250) }catch{} })();
-(()=>{ try{ if(isGuestRoute?.()) return; let id=null, st=1; try{ id=JSON.parse(localStorage.getItem("encore-open")||"null"); localStorage.removeItem("encore-open") }catch{} try{ const u=new URL(location.href), q=u.searchParams.get("open"); if(q){ id=q; st=+u.searchParams.get("step")||1; u.searchParams.delete("open"); u.searchParams.delete("step"); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash) } }catch{} if(!id) return; let n=0; const t=setInterval(()=>{ try{ const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x.id===id); if(e){ clearInterval(t); openEvent(e,st) } else if(++n>40) clearInterval(t) }catch{ clearInterval(t) } },250) }catch{} })();
+(()=>{ try{ if(isGuestRoute?.()) return; let id=null, st=1, cv=false; try{ id=JSON.parse(localStorage.getItem("encore-open")||"null"); localStorage.removeItem("encore-open") }catch{} try{ const u=new URL(location.href), q=u.searchParams.get("open"); if(q){ id=q; st=+u.searchParams.get("step")||1; cv=u.searchParams.get("canvas")==="1"; u.searchParams.delete("open"); u.searchParams.delete("step"); u.searchParams.delete("canvas"); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash) } }catch{} if(!id) return; window.__plOpenId=id; /* "New event" on arrival (below) leaves this one alone */ let n=0; const t=setInterval(()=>{ try{ const e=(typeof allEvents!=="undefined"?allEvents:[]).find(x=>x.id===id); if(e){ clearInterval(t); openEvent(e,st); if(cv){ let k=0; const c=setInterval(()=>{ if(window.EventCanvas?.open&&typeof draft!=="undefined"&&draft?.id===id){ clearInterval(c); window.EventCanvas.open({mode:"edit"}) } else if(++k>40) clearInterval(c) },250) } } else if(++n>40) clearInterval(t) }catch{ clearInterval(t) } },250) }catch{} })(); // ?canvas=1 (from /start's "Open it in Pottery Lab"): straight into the create canvas
 
 // ==================================================================
 // User research, casual host (round 2): the Plan step fits a dinner that's already on.
@@ -11239,7 +11246,7 @@ function p1NewEvent(){ try{ document.getElementById("wizBg")?.remove(); document
 document.addEventListener("click",e=>{ const a=e.target.closest?.('a[data-view="studio"]'); if(!a||!/new event/i.test(a.textContent||"")) return; e.preventDefault(); e.stopImmediatePropagation(); p1NewEvent() },true);
 (()=>{ try{ const q=new URLSearchParams(location.search), nav=performance.getEntriesByType?.("navigation")?.[0]?.type, ref=document.referrer?new URL(document.referrer):null;
   const fromPage=ref&&ref.origin===location.origin&&!(ref.pathname==="/"&&/app=1/.test(ref.search))&&nav==="navigate";
-  if(location.hash==="#studio"&&!q.get("open")&&(q.get("new")==="1"||fromPage)){ let n=0; const t=setInterval(()=>{ n++; if(((typeof dbReady!=="undefined"&&dbReady)&&window.__wsDone)||n>40){ clearInterval(t); setTimeout(p1NewEvent,300); if(q.get("new")){ q.delete("new"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash) } } },150) } }catch{} })();
+  if(location.hash==="#studio"&&!q.get("open")&&!window.__plOpenId&&(q.get("new")==="1"||fromPage)){ let n=0; const t=setInterval(()=>{ n++; if(((typeof dbReady!=="undefined"&&dbReady)&&window.__wsDone)||n>40){ clearInterval(t); setTimeout(p1NewEvent,300); if(q.get("new")){ q.delete("new"); history.replaceState(null,"",location.pathname+(q.toString()?"?"+q:"")+location.hash) } } },150) } }catch{} })();
 
 // ---------- Helpers stay open while you change them ----------
 document.addEventListener("toggle",e=>{ const x=e.target; if(x?.tagName!=="DETAILS"||!x.closest?.("#stepHost")) return; const k=(x.id||"")+"|"+(x.querySelector(":scope>summary")?.textContent||"").trim().slice(0,40); const S=window.__p1Open||(window.__p1Open=new Set()); x.open?S.add(k):S.delete(k) },true);
@@ -11260,7 +11267,7 @@ const SR_DAY=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Satur
 // what the host typed: "6-week improv course", "8 sessions", "$70 for a 4-week pass", "$70 for 4 classes", "4-class pass for $70"
 function seriesParse(text){ const t=String(text||""), o={};
   const wk=t.match(/\b(\d{1,2})[- ]?weeks?[- ](?:long[- ])?(?:[a-z]+[- ])?(course|series|class|workshop|program|programme|intensive|bootcamp)\b(?![- ]?(?:pass|card|pack))/i);
-  const ss=t.match(/(?<!\$\s?\d{1,5}(?:\.\d{2})?\s*(?:for|gets you|buys)\s+(?:a\s+)?)\b(\d{1,2})\s+(?:weekly\s+)?sessions\b/i);
+  const ss=t.match((globalThis.plRx||RegExp)(String.raw`(?<!\$\s?\d{1,5}(?:\.\d{2})?\s*(?:for|gets you|buys)\s+(?:a\s+)?)\b(\d{1,2})\s+(?:weekly\s+)?sessions\b`,"i"));
   const n=+(wk?.[1]||ss?.[1]||0); if(n>=2&&n<=52){ o.sessions=n; o.repeat=/\bevery other\b|\bbiweekly\b|\bfortnightly\b/i.test(t)?"biweekly":"weekly"; o.course=true }
   const ps=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*(?:for|gets you|buys)\s+(?:a\s+|an\s+)?(\d{1,2})[- ]?(?:weeks?|class(?:es)?|sessions?|lessons?|visits?)\b(?:[- ]?(?:pass|card|pack|bundle))?/i)
     ||(m=>m&&[m[0],m[2],m[1]])(t.match(/\b(\d{1,2})[- ]?(?:week|class|session|lesson|visit)[- ]?(?:pass|card|pack|bundle)\s*(?:for|at|is|:)?\s*\$\s?(\d{1,5}(?:\.\d{2})?)/i));
@@ -11434,7 +11441,7 @@ function prNth(t){ const m=t.match(new RegExp(`\\b(?:on\\s+)?(?:the\\s+)?(every\
   if(n<0&&!m[4]&&!m[1]&&!/\b(monthly|each month|every month|of the month)\b/i.test(t)) return null;
   return {n,wd,text:m[0]} }
 // a month-day date: "Dec 12", "Jan 6th", "6 Jan", "12/18"; the next one from today
-const PR_MD_RE=/(?<![\d$.\/])\b(1[0-2]|0?[1-9])\/(3[01]|[12]\d|0?[1-9])(?:\/(\d{4}|\d{2}))?\b(?![\/\d]|\s*(?:off|price|cups?|tsp|tbsp|lbs?|oz)\b)/;
+const PR_MD_RE=(globalThis.plRx||RegExp)(String.raw`(?<![\d$.\/])\b(1[0-2]|0?[1-9])\/(3[01]|[12]\d|0?[1-9])(?:\/(\d{4}|\d{2}))?\b(?![\/\d]|\s*(?:off|price|cups?|tsp|tbsp|lbs?|oz)\b)`);
 function prDate(t,today){ let m=t.match(new RegExp(`\\b(${PR_MON_RE})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?::\\d|am\\b|pm\\b))`,"i")), mo, dd, yy=0;
   if(m){ mo=PR_MON.indexOf(m[1].slice(0,3).toLowerCase()); dd=+m[2] } else { m=t.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${PR_MON_RE})\\b`,"i")); if(m){ mo=PR_MON.indexOf(m[2].slice(0,3).toLowerCase()); dd=+m[1] } }
   if(!m){ m=t.match(PR_MD_RE); if(m){ mo=+m[1]-1; dd=+m[2]; if(m[3]) yy=+m[3]<100?2000+ +m[3]:+m[3] } }
@@ -11456,15 +11463,15 @@ function prRange(a,am,b,bm,t){ a=+a; b=+b; if(a>23||b>24) return null; let H1;
   if(a>12||a===0||a===12) H1=a; else H1=PR_PM_CTX.test(t)||(!PR_AM_CTX.test(t)&&a<=8)?a+12:a;
   let H2=b>12||b===0?b:[b,b+12].filter(h=>h<=24).find(h=>h*60+(+bm||0)>H1*60+(+am||0)); if(H2==null) H2=b; if(H2===24) H2=0;
   const s1=prClock(H1,am), s2=prClock(H2,bm); return s1&&s2&&s1!==s2?{startTime:s1,endTime:s2}:null }
-const prRangeRe=()=>new RegExp(`(?<![$\\d.:/])(?<!(?:${PR_MON_RE})\\.?\\s)(?<!\\b(?:for|ages?|aged|kids|grades?)\\s)\\b(\\d{1,2})(?::(\\d{2}))?\\s*(?:-|–|\\u2014|to|until|till)\\s*(\\d{1,2})(?::(\\d{2}))?\\b(?![\\/:\\d.%]|\\s*(?:am|pm)\\b|\\s*${PR_NOT_TIME})`,"i");
+const prRangeRe=()=>(globalThis.plRx||RegExp)(`(?<![$\\d.:/])(?<!(?:${PR_MON_RE})\\.?\\s)(?<!\\b(?:for|ages?|aged|kids|grades?)\\s)\\b(\\d{1,2})(?::(\\d{2}))?\\s*(?:-|–|\\u2014|to|until|till)\\s*(\\d{1,2})(?::(\\d{2}))?\\b(?![\\/:\\d.%]|\\s*(?:am|pm)\\b|\\s*${PR_NOT_TIME})`,"i");
 const prBareRe=()=>new RegExp(`(?:\\bat\\s+|\\b(?:${PR_DAYS_RE})s?\\.?,?\\s+(?:at\\s+)?|\\b(?:tonight|tomorrow|tmrw|tmw|today)\\s+(?:at\\s+)?|\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+(?:at\\s+)?|\\b\\d{1,2}\\/\\d{1,2}(?:\\/\\d{2,4})?,?\\s+(?:at\\s+)?)(\\d{1,2})(?::(\\d{2}))?\\b(?![\\/:\\d.%-]|\\s*(?:am|pm|st|nd|rd|th)\\b|\\s*${PR_NOT_TIME})`,"i");
 // start and end: "7am", "7:30pm", "10am to 1pm", "2-4:30pm", "19:00", "11-3", "fri 7", "dec 10 7:30"
 function prTimes(t){ const s=t.replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
-  const rg=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  const rg=s.match((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b`,"i"));
   if(rg){ const ap2=rg[6].toLowerCase(); let ap1=(rg[3]||"").toLowerCase(); if(!ap1) ap1=ap2==="pm"&&(+rg[1]%12)>(+rg[4]%12)?"am":ap2; const a=prClock(rg[1],rg[2],ap1), b=prClock(rg[4],rg[5],ap2); if(a&&b) return {startTime:a,endTime:b} }
   const r2=s.match(prRangeRe()); if(r2){ const r=prRange(r2[1],r2[2],r2[3],r2[4],s); if(r) return r }
-  const one=s.match(/(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i); if(one){ const a=prClock(one[1],one[2],one[3].toLowerCase()); if(a) return {startTime:a} }
-  const h24=s.match(/(?<![$\d.:\/])\b([01]?\d|2[0-3]):([0-5]\d)\b/); if(h24) return {startTime:prBare(h24[1],h24[2],s)};
+  const one=s.match((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:])\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b`,"i")); if(one){ const a=prClock(one[1],one[2],one[3].toLowerCase()); if(a) return {startTime:a} }
+  const h24=s.match((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:\/])\b([01]?\d|2[0-3]):([0-5]\d)\b`)); if(h24) return {startTime:prBare(h24[1],h24[2],s)};
   const b=s.match(prBareRe()); if(b){ const a=prBare(b[1],b[2],s); if(a) return {startTime:a} }
   return {} }
 // "9pm-late", "9pm till late", "until late": an open end. Out of the title, and no end time.
@@ -11479,7 +11486,7 @@ const PR_SPLIT=new RegExp(`[;!?]|\\.\\s|,|\\s+[-–\\u2014]\\s+|\\s+(?:for|with|
 function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].replace(new RegExp(PR_LATE.source,"gi")," ").replace(/\bnoon\b/gi,"12pm").replace(/\bmidnight\b/gi,"12am");
   const lead=t.match(new RegExp(`^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\\s+(\\S+)$`,"i"));
   if(!lead){ const nth=prNth(t); if(nth) t=t.replace(nth.text," ");
-    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(new RegExp(prRangeRe().source,"gi")," ")
+    t=t.replace((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|\u2014|to|until|till)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\b`,"gi")," ").replace(new RegExp(prRangeRe().source,"gi")," ")
       .replace(new RegExp(`\\b((?:${PR_DAYS_RE})s?\\.?)\\s+(?:at\\s+)?\\d{1,2}(?::\\d{2})?\\b(?![\\/:\\d%-]|\\s*(?:am|pm|st|nd|rd|th)\\b|\\s*${PR_NOT_TIME})`,"gi"),"$1")
       .replace(new RegExp(`\\bat\\s+\\d{1,2}(?::\\d{2})?\\b(?![\\/:\\d%-]|\\s*(?:am|pm)\\b|\\s*${PR_NOT_TIME})`,"gi")," ")
       .replace(new RegExp(PR_MD_RE.source,"g")," ");
@@ -11487,7 +11494,7 @@ function prTitleClause(t){ t=t.split(/\s+(?:in|at)\s+(?=(?:the\s+)?[A-Z])/)[0].r
       .replace(new RegExp(`\\b(?:${PR_MON_RE})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b(?:,?\\s+20\\d\\d)?`,"gi")," ")
       .replace(new RegExp(`\\b\\d{1,2}\\s+(?:${PR_DAY.join("|")})s\\b`,"gi")," ").replace(/\b\d{1,2}\s+(?:weekly\s+)?sessions\b/gi," ");
     for(const d of prDays(t).reverse()) t=t.slice(0,d.index)+" "+t.slice(d.index+d.text.length);
-    t=t.replace(/(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/gi," ").replace(/(?<![$\d.:\/])\b\d{1,2}:\d{2}\b/g," ").replace(/\b(?:noon|tonight|today|tomorrow|tmrw|tmw|this weekend|this evening)\b/gi," ")
+    t=t.replace((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:])\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b`,"gi")," ").replace((globalThis.plRx||RegExp)(String.raw`(?<![$\d.:\/])\b\d{1,2}:\d{2}\b`,"g")," ").replace(/\b(?:noon|tonight|today|tomorrow|tmrw|tmw|this weekend|this evening)\b/gi," ")
       .replace(/\s{2,}/g," ").trim(); for(let k=0;k<4;k++){ const n=t.replace(/(?:\s+|^)(?:every(?: other)?|on|at|from|in|for|with|by|to|this|next|starting|beginning|pickup|and|&|the|of)$/i,""); if(n===t) break; t=n } t=t.replace(/^(?:every(?: other)?|on|this|next|from|starting)\s+/i,"") }
   return t.replace(/^[\s,·:–\u2014-]+|[\s,·:–\u2014-]+$/g,"").trim() }
 // the event's own name: the host's first words, without the day, time, date, repeat, price or spots. Up to ~60
@@ -11502,7 +11509,7 @@ function prTitle(text){ let t=prCost(String(text||"")).rest.trim(); for(const re
   for(const p of parts.slice(0,4)){ const c=prTitleClause(p||""); if(/[a-z]{3,}/i.test(c)&&!/^(?:pickup|bring|from|every|starting|at|on|and|free|drop[- ]?in)\b/i.test(c)){ t=c; break } }
   if(t.length>60){ const c=t.slice(0,61), cut=Math.max(c.lastIndexOf(", "),c.lastIndexOf(" and "),c.lastIndexOf(" & "),c.lastIndexOf(": ")); t=(cut>=20?c.slice(0,cut):c.replace(/\s+\S*$/,"")).replace(/[\s,:&-]+$/,"") }
   // a lowercase short day left at the end ("... ledge sun") goes; "in the sun" stays
-  t=t.replace(new RegExp(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); t=prTrail(t).title;
+  t=t.replace((globalThis.plRx||RegExp)(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); t=prTrail(t).title;
   return t?t.replace(/^./,c=>c.toUpperCase()):"" }
 // a class you teach (dance, yoga, improv, a language, music lessons) is a "class"; a make-a-thing session stays a "workshop"
 const PR_CLASS=/\b(?:dance|dancing|salsa|bachata|tango|kizomba|zumba|ballet|hip[- ]?hop|swing dance|improv|yoga|pilates|barre)\b/i, PR_LESSON=/\b(?:class|classes|lessons?|course|fundamentals|basics|for beginners|beginners?|drop[- ]?in|series|workshop)\b/i,
@@ -11519,7 +11526,7 @@ const PR_PLACE_NOUN="station|stn|park|square|plaza|library|gardens?|beach|pier|h
 function plNumNoun(w){ return /^(?:studio|pier|room|suite|unit|floor|building|bldg|hall|gate|platform|dock|stage|court|field|lot|bay|space|loft|shed|kitchen|lab|wharf|terminal|warehouse|station|booth)$/i.test(String(w||"")) }
 function plKeepNum(x,place){ const W=String(place||"").trim().split(/\s+/); if(!plNumNoun(W[W.length-1])) return place; const i=x.indexOf(place); if(i<0) return place; const n=x.slice(i+place.length).match(/^\s+(\d{1,4})\b(?![:.]?\d|\s*(?:am|pm|a\.m|p\.m|ish)\b|\s*(?:-|–|to)\s*\d)/i); return n?`${place} ${n[1]}`:place }
 function prPlace(text){ const t=String(text||""), skip=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|noon|midnight|tonight|today|tomorrow|i|we|my|our)$`,"i");
-  const re=new RegExp(`(?<![-\\w'’])(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|\\d{1,4}\\b(?![:.]?\\d|\\s*(?:am|pm)\\b)|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN})\\b)?)`,"gu"); let m;
+  const re=(globalThis.plRx||RegExp)(`(?<![-\\w'’])(at|in)\\s+((?:the\\s+)?${PR_PLACE_WORD}(?:\\s+(?:${PR_PLACE_WORD}|\\d{1,4}\\b(?![:.]?\\d|\\s*(?:am|pm)\\b)|of|on|&))*(?:\\s+(?:${PR_PLACE_NOUN})\\b)?)`,"gu"); let m;
   while((m=re.exec(t))){ if(m[1]==="at"&&prAfterAt(t,m.index)) continue; const words=m[2].split(/\s+/); while(words.length&&(skip.test(words[words.length-1].replace(/[.,]$/,""))||/^(?:of|on|&)$/i.test(words[words.length-1])||(/^\d+$/.test(words[words.length-1])&&!(words.length>=2&&plNumNoun(words[words.length-2]))))) words.pop();
     if(!words.length||skip.test(words[0].replace(/^the$/i,""))||(words[0].toLowerCase()==="the"&&words.length<2)) continue;
     const place=words.join(" ").replace(/[.,]+$/,""); if(place.length<3) continue;
@@ -11560,7 +11567,7 @@ const prCase=W=>W.map((w,i)=>i&&/^(?:on|of|the|and|&|by|de|la|du|at)$/i.test(w)?
 const prEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 function prWhere(text){ const t=String(text||""), o={}, cut=[];
   const mt=t.match(/\bmeet(?:ing)?\s+(?:up\s+)?(?:at|by|outside|in front of)\s+(.+)$/i); if(mt&&!prAfterAt(t,mt.index)){ const W=prGrab(mt[1]); if(W.length) o.meet=W.join(" ") } // "then meet at Joe's" is after, not where
-  const re=/(?<![-\w'’])(at|@|from|in)\s+/gi; let m;
+  const re=(globalThis.plRx||RegExp)(String.raw`(?<![-\w'’])(at|@|from|in)\s+`,"gi"); let m;
   while((m=re.exec(t))){ if(/\bmeet(?:ing)?\s+(?:up\s+)?$/i.test(t.slice(0,m.index))||prAfterAt(t,m.index)) continue; const W=prGrab(t.slice(m.index+m[0].length)); if(!W.length) continue;
     // review round 12: "pizza from Arizmendi", "snacks from Costco" say where the food comes from, not where to meet
     if(m[1].toLowerCase()==="from"&&PR_FROM_FOOD.test(t.slice(0,m.index))) continue;
@@ -11568,7 +11575,7 @@ function prWhere(text){ const t=String(text||""), o={}, cut=[];
     // a capitalised "at The Smith" / "in Bed-Stuy" stays with the older readers (prPlace, the city reader)
     if(kw!=="from"&&/^[A-Z]/.test(W[0])) continue; if(kw==="in"&&f==="the") continue;
     const name=prCase(W); if(kw==="at"){ if(!o.place) o.place=name } else if(kw==="from"){ if(!o.meet){ o.meet=name; o.meetFrom=true } } else if(!o.hood) o.hood=name;
-    cut.push(new RegExp(`\\s*(?<![-\\w'’])${m[1]==="@"?"@":kw}\\s+${W.map(prEsc).join("\\s+")}\\b`,"i")) }
+    cut.push((globalThis.plRx||RegExp)(`\\s*(?<![-\\w'’])${m[1]==="@"?"@":kw}\\s+${W.map(prEsc).join("\\s+")}\\b`,"i")) }
   return {...o,cut} }
 const PR_FROM_FOOD=/\b(?:pizzas?|food|snacks?|tacos?|drinks?|beers?|wine|coffee|bagels?|donuts?|doughnuts?|pastries|bread|dinner|lunch|breakfast|catering|cake|dumplings?|sushi|burritos?|sandwiches|takeout|take-out|delivery|order(?:ed|ing)?|dessert|boba|tea)\s*$/i;
 // "(333 Court St)": the street address; "2nd fl above the bike shop on Telegraph": how to find the door. Both go in the
@@ -11593,7 +11600,7 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
   // the course: "8 week pottery wheel course", "6-week improv course", "8 sessions", "6 Wednesdays", "$320 for all 8"
   const sp=(typeof seriesParse==="function"?seriesParse(t):{})||{};
   const wk=t.match(/\b(\d{1,2})[- ]?weeks?\b(?:[- ]long)?[\s-]+(?:[a-z'’]+[\s-]+){0,3}?(?:course|series|class(?:es)?|workshop|program|programme|intensive|bootcamp|lessons?)\b(?![- ]?(?:pass|card|pack))/i);
-  const nd=t.match(new RegExp(`(?<!\\d\\s?(?:-|–|to)\\s?)\\b(\\d{1,2})\\s+(${PR_DAY.join("|")})s\\b`,"i"));
+  const nd=t.match((globalThis.plRx||RegExp)(`(?<!\\d\\s?(?:-|–|to)\\s?)\\b(\\d{1,2})\\s+(${PR_DAY.join("|")})s\\b`,"i"));
   const all=t.match(/\$\s?(\d{1,5}(?:\.\d{2})?)\s*for\s+(?:all|the)\s+(\d{1,2})\b(?!\s*(?:people|persons?|guests|spots|seats|ppl|friends|of us))/i);
   const n=+(sp.sessions||(wk&&wk[1])||(nd&&nd[1])||(all&&all[2])||0);
   if(n>=2&&n<=52){ o.sessions=n; o.course=true; o.label="workshop"; o.activity="workshop" }
@@ -11663,11 +11670,11 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
   const wh=prWhere(t); if(wh.place&&!o.place) o.place=wh.place; if(wh.hood&&!o.hood) o.hood=wh.hood; if(wh.meet&&!(wh.meetFrom&&o.place)) o.meet=wh.meet; // review round 12: "at"/"@" wins over "from"
   { const A=prAddr(t); if(A.addr) o.addr=A.addr; if(A.addrNote) o.addrNote=A.addrNote }
   // review round 7: "at my stoop" is where to meet ("My stoop"), never a venue name; "my place" stays with the older readers
-  { const mm=t.match(/(?<![-\w])at\s+(my|our)\s+([a-z][\w'’-]*)\b/i); if(mm&&!/^(?:place|apartment|apt|flat|house|home|pad)$/i.test(mm[2])){ o.meet=(mm[1]+" "+mm[2].toLowerCase()).replace(/^./,c=>c.toUpperCase()); o.meetMine=true; if(o.place&&/^(?:my|our)\b/i.test(o.place)) delete o.place } }
+  { const mm=t.match((globalThis.plRx||RegExp)(String.raw`(?<![-\w])at\s+(my|our)\s+([a-z][\w'’-]*)\b`,"i")); if(mm&&!/^(?:place|apartment|apt|flat|house|home|pad)$/i.test(mm[2])){ o.meet=(mm[1]+" "+mm[2].toLowerCase()).replace(/^./,c=>c.toUpperCase()); o.meetMine=true; if(o.place&&/^(?:my|our)\b/i.test(o.place)) delete o.place } }
   // "at my stoop in Park Slope", "at The Annoyance in Lakeview", "in Silver Lake at the ...": "in <Name>" next to a place is the neighbourhood
-  { const re=/(?<![-\w'’])in\s+([A-Z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*){0,3})/g, sk=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|the)$`,"i"); let m;
+  { const re=(globalThis.plRx||RegExp)(String.raw`(?<![-\w'’])in\s+([A-Z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*){0,3})`,"g"), sk=new RegExp(`^(?:${PR_DAYS_RE}|${PR_MON_RE}|the)$`,"i"); let m;
     while(!o.hood&&(m=re.exec(t))){ const before=t.slice(Math.max(0,m.index-45),m.index).split(/[,;]/).pop(), after=t.slice(m.index+m[0].length);
-      if(!/(?<![-\w])at\s/i.test(before)&&!/^\s*,?\s*at\s/i.test(after)) continue; const W=m[1].split(/\s+/); while(W.length&&sk.test(W[W.length-1])) W.pop(); if(W.length&&!sk.test(W[0])) o.hood=W.join(" ") } }
+      if(!(globalThis.plRx||RegExp)(String.raw`(?<![-\w])at\s`,"i").test(before)&&!/^\s*,?\s*at\s/i.test(after)) continue; const W=m[1].split(/\s+/); while(W.length&&sk.test(W[W.length-1])) W.pop(); if(W.length&&!sk.test(W[0])) o.hood=W.join(" ") } }
   if(o.meet&&o.place&&o.place===o.hood) delete o.place;
   // "tacos after at Veracruz": not the place; the older readers' guess gets undone in the wiring
   { const am=t.match(/\b(?:after|afterwards|afterward|then)\b[^,;.!?]{0,30}?\bat\s+((?:the\s+)?[A-Za-z][\w'’.-]*(?:\s+[A-Z][\w'’.-]*){0,3})/i); if(am) o.afterAt=am[1].replace(/^./,c=>c.toUpperCase()) }
@@ -11675,7 +11682,7 @@ function prRead(text){ const C0=prCost(String(text||"")), t=C0.rest, lo=t.toLowe
   { const N=prNotes(t); if(N.length) o.notes=N.join(". ")+"."; if(o.title&&PR_PLAIN.test(o.title)){ const k=String(t).split(/[,;]|\.\s/).map(x=>x.trim()).slice(1).find(x=>/\b(?:menu|cooking|cuisine|food|feast|dishes|omakase|bbq|tasting)\b/i.test(x)&&!/\$|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(x)&&x.length<=40);
       if(k) o.title=`${o.title}: ${k.replace(/\b(\d+)\s+course\b/i,"$1-course")}` } }
   // "Sunrise hike rattlesnake ledge": the trail words after the activity are the place
-  if(!o.place){ let s=t; for(const re of wh.cut) s=s.replace(re," "); s=s.replace(/\s+meet(?:ing)?\b[\s\S]*$/i,"").split(PR_SPLIT)[0].trim().replace(new RegExp(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); const tr=prTrail(s); if(tr.place) o.place=tr.place }
+  if(!o.place){ let s=t; for(const re of wh.cut) s=s.replace(re," "); s=s.replace(/\s+meet(?:ing)?\b[\s\S]*$/i,"").split(PR_SPLIT)[0].trim().replace((globalThis.plRx||RegExp)(`(?<!\\bthe)\\s+(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)$`),"").trim(); const tr=prTrail(s); if(tr.place) o.place=tr.place }
   return o }
 // money words for one price: "$12 each", "$40 for 2", "$10 a class"; "" when the plain "a person" fits
 function prPrice(d){ const amt=v=>{ const m=String(v??"").match(/(\d+(?:\.\d{1,2})?)/); return m?"$"+m[1]:"" };
@@ -12099,7 +12106,7 @@ new MutationObserver(()=>{ try{ const e=window.__gEv, v=document.getElementById(
 // ==================================================================
 // ---------- Potto reads with the model: words ----------
 // a distance, or a count of stops or shops, and the "loop" after it
-const PR8_UNIT=/(?<![$\d.:\/\w])(\d{1,3}(?:\.\d)?)(?:\s*(?:-|–|to)\s*(\d{1,3}(?:\.\d)?))?\s*(?:k|km|kms|kilomet(?:er|re)s?|mi|miles?|stops|shops|laps)\b(?!\s*(?:budget|usd|dollars|\$))(?:\s+(?:loop|route|out and back|out-and-back))?/gi;
+const PR8_UNIT=(globalThis.plRx||RegExp)(String.raw`(?<![$\d.:\/\w])(\d{1,3}(?:\.\d)?)(?:\s*(?:-|–|to)\s*(\d{1,3}(?:\.\d)?))?\s*(?:k|km|kms|kilomet(?:er|re)s?|mi|miles?|stops|shops|laps)\b(?!\s*(?:budget|usd|dollars|\$))(?:\s+(?:loop|route|out and back|out-and-back))?`,"gi");
 const PR8_UNIT_ONLY=/^\s*\d{1,3}(?:\.\d)?(?:\s*(?:-|–|to)\s*\d{1,3}(?:\.\d)?)?\s*(?:k|km|kms|mi|miles?|stops|shops|laps)\b/i;
 // the host picks who comes
 const PR8_ASK=/\b(?:ask(?:ing)?|request(?:ing)?|apply(?:ing)?)\s+(?:to|2)\s+(?:join|come|attend)\b|\b(?:i|we)(?:['’]ll|\s+will)?\s+(?:pick|choose|approve|select|vet|decide)\s+(?:who|the guests|guests|people|everyone|each)\b|\bapprov(?:e|ing)\s+(?:the\s+)?(?:guests|people|each|everyone|requests|who)\b|\bby approval\b|\binvite[- ]only\b|\bapproval (?:needed|required)\b|\bapprove only\b|\brequest access\b|\blet (?:ppl|people|guests|folks|them) in\b/i;
@@ -12374,11 +12381,11 @@ function r9Items(t,noun){ const out=[], seen=new Set(), N=String(noun||"").trim(
   return out.slice(0,8) }
 // the thing a pre-order sells, from its title: "Preorder my cinnamon buns" is cinnamon buns, "Babka drop: ..." is babka
 const r9Noun=title=>String(title||"").split(":")[0].replace(/\b(?:pre-?orders?|preorders?|orders?(?:\s+open)?|open|drop|pick-?up|pop-?up|sale|for\s+.*|my|our|the|holiday|weekend|this|week|friday|saturday|sunday)\b/gi," ").replace(/\s{2,}/g," ").trim();
-const r9One=s=>s.replace(/(?:ies)$/i,"y").replace(/(?:(ch|sh|x|ss)es)$/i,"$1").replace(/(?<![su])s$/i,"");
+const r9One=s=>s.replace(/(?:ies)$/i,"y").replace(/(?:(ch|sh|x|ss)es)$/i,"$1").replace((globalThis.plRx||RegExp)(String.raw`(?<![su])s$`,"i"),"");
 // spots said with other words: "6 students", "8 wheels max", "cap at 14"
 const R9_SPOTS=/\b(\d{1,4})\s*(?:students|wheels|participants|attendees|dancers|hikers|runners|riders|kids|players|bakers|cooks|tickets)\b|\b(?:cap(?:ped)?\s+at|limit(?:ed)?\s+(?:to\s+)?|capacity\s+(?:of\s+)?)\s*(\d{1,4})\b(?!\s*(?:am|pm|per|each|\$|for\b))/i;
 // a number that's a length of time or a size, never spots: "5 weeks", "2 hrs", "8 inch"
-const r9NotSpots=(t,n)=>new RegExp(`(?<![\\d.$])${+n}(?:\\s*\\+|\\s*-?\\s*(?:weeks?|wks?|hrs?|hours?|mins?|minutes|days?|parts|inch(?:es)?|in\\b|"|ft\\b|feet|courses|sessions|classes|years?|yrs?|yo\\b))`,"i").test(t);
+const r9NotSpots=(t,n)=>(globalThis.plRx||RegExp)(`(?<![\\d.$])${+n}(?:\\s*\\+|\\s*-?\\s*(?:weeks?|wks?|hrs?|hours?|mins?|minutes|days?|parts|inch(?:es)?|in\\b|"|ft\\b|feet|courses|sessions|classes|years?|yrs?|yo\\b))`,"i").test(t);
 const R9_TIMEW=/\b(?:morning|evening|night|afternoon|week|weekly|biweekly|monthly|day|daily|every|this|next|sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/gi;
 function r9TitleTidy(s,first){ let t=String(s||"").trim();
   t=t.replace(/^(?:a\s+)?(?:lil|little)\s+(?=\S)/i,"");
@@ -12430,7 +12437,7 @@ function r9TitleTidy(s,first){ let t=String(s||"").trim();
           if(b&&+b[2]!==+e[1]) I.push({name:noun?`${b[1]} ${noun.toLowerCase()}`:`${b[1]} for $${b[2]}`,price:+b[2]}) } }
       if(I.length) set("items",I);
       // a cap: "max 20 loaves", "limit 60", "30 boxes", "only 15"
-      const cap=t.match(new RegExp(`\\b(?:max|limit|only|up to|cap(?:ped)?\\s+at|just)\\s+(\\d{1,4})\\b(?!\\s*(?:per|each|a\\s|am|pm|for\\b|\\$|inch|in\\b))|(?<!\\bof\\s)\\b(\\d{1,4})\\s+(?:${R9_GOODS}|available)\\b`,"i"));
+      const cap=t.match((globalThis.plRx||RegExp)(`\\b(?:max|limit|only|up to|cap(?:ped)?\\s+at|just)\\s+(\\d{1,4})\\b(?!\\s*(?:per|each|a\\s|am|pm|for\\b|\\$|inch|in\\b))|(?<!\\bof\\s)\\b(\\d{1,4})\\s+(?:${R9_GOODS}|available)\\b`,"i"));
       if(cap){ set("headcount",+(cap[1]||cap[2])); // review round 11: what the cap counts ("max 20 loaves" is 20 loaves), for "20 loaves" / "3 loaves left"
         const u=t.slice(cap.index).match(new RegExp(`^\\D*\\d{1,4}\\s+(${R9_GOODS})\\b`,"i")); if(u&&!/^orders?$/i.test(u[1])) set("stockUnit",u[1].toLowerCase()) } }
     else { const sp=t.match(R9_SPOTS); if(sp&&!o.headUnit) set("headcount",+(sp[1]||sp[2]));

@@ -16,7 +16,7 @@
     const P = location.pathname, root = document.documentElement;
     let folded = false; try { folded = localStorage.getItem("encore-nav-collapsed") === "1"; } catch {}
     if (folded) root.classList.add("nav-folded");
-    const rail = P === "/g" || /^\/(discover|events|leaderboard|feed|ideas|saved|library|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats|inbox)$/.test(P) || /^\/(library\/host|l\/[A-Za-z0-9_-]{24})$/.test(P) || /^\/(team|hosts|h|chats)\//.test(P) || /^\/@/.test(P);
+    const rail = P === "/g" || /^\/(discover|events|leaderboard|feed|ideas|saved|library|plans|requests|hosts|quiz|teams|gifts|vendor|results|team|chats|inbox|start)$/.test(P) || /^\/(library\/host|l\/[A-Za-z0-9_-]{24})$/.test(P) || /^\/(team|hosts|h|chats)\//.test(P) || /^\/@/.test(P);
     if (rail) root.classList.add("es-pre");
     const st = document.createElement("style"); st.id = "navFoldCss";
     st.textContent = `@media (max-width:860px){input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select{font-size:16px!important}}@media (max-width:860px){html.es-pre header.top nav > a{display:none}}@media (min-width:861px){html.es-pre body{padding-left:224px}html.es-pre.nav-folded body{padding-left:72px}html.es-pre body::before{content:"";position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--pl-surface);border-right:1px solid var(--pl-line);z-index:1}html.es-pre.nav-folded body::before{width:72px}html.es-pre body header.top{display:none}}

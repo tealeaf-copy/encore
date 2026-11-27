@@ -48,7 +48,10 @@
   // the soft page-to-page fade (public/craft.css): when the browser skips it (the next page's styles weren't in yet, a
   // hidden tab), its promises reject; that's not an error, the page still opens
   const quiet = (t) => { for (const k of ["ready", "finished", "updateCallbackDone"]) t?.[k]?.catch?.(() => {}); };
-  addEventListener("pagereveal", (e) => quiet(e.viewTransition)); addEventListener("pageswap", (e) => quiet(e.viewTransition));
+  // and a fade that hangs (WebKit's cross-document fades are new; while one runs the page takes no taps) is cut short,
+  // so a page can never sit frozen under an old snapshot
+  const cap = (t) => { if (!t?.skipTransition) return; let over = false; t.finished?.then?.(() => (over = true), () => (over = true)); setTimeout(() => { if (!over) try { t.skipTransition(); } catch {} }, 1200); };
+  addEventListener("pagereveal", (e) => { quiet(e.viewTransition); cap(e.viewTransition); }); addEventListener("pageswap", (e) => quiet(e.viewTransition));
   // a dropped connection rejects fetch with a TypeError; pages catch most of them, the rest shouldn't read as crashes
   addEventListener("unhandledrejection", (e) => { const r = e.reason; if (r && r.name === "TypeError" && /fetch|network|load failed/i.test(String(r.message))) { e.preventDefault(); if (!window.__plNetNoted) { window.__plNetNoted = 1; console.warn("[net] a request failed:", r.message); } } });
 })();

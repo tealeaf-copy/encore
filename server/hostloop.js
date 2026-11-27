@@ -276,6 +276,14 @@ export function dueNudges(cands, { now = Date.now(), tz = "UTC", prefs = {}, sen
 }
 
 // ---------- the pre-signup draft ----------
+// /start's templates (public/start.html) the create canvas has a kind for (public/canvas.js PLAN_KINDS)
+const START_KIND = { "": "dinner", dinner4: "dinner", table8: "dinner", soldout: "dinner", table: "table", game: "game", weekend: "weekend", summit: "summit" };
+/** Where "Plan a dinner" (/start) takes a signed-in host instead: the create canvas with the kind set, or null to stay. Pure. */
+export function startRedirect(q = {}, host = null) {
+  if (!host || q.save || q.saved || q.from) return null; const t = typeof q.t === "string" ? q.t : "";
+  const k = Object.prototype.hasOwnProperty.call(START_KIND, t) ? START_KIND[t] : null;
+  return k ? `/?app=1&new=1&kind=${k}#studio` : null;
+}
 const nextFriday = (now) => { const d = new Date(now + "T12:00:00Z"); const add = (5 - d.getUTCDay() + 7) % 7 || 7; d.setUTCDate(d.getUTCDate() + add); return d.toISOString().slice(0, 10); };
 /** A visitor's draft from /start, made safe and shaped as an event. Pure. */
 export function draftToEvent(d = {}, { now = today(), city = "", tz = "" } = {}) {
@@ -442,7 +450,14 @@ export function mountHostLoop(app, { store, small, currentUser, C, X, sendStatic
   app.locals.hostloop = L; X.hostloop = L;
   const me = (req, res) => { const u = currentUser(req); if (!u || u.ws === DEFAULT_WS) { res.status(401).json({ code: "unauthenticated", message: "Sign in first." }); return null; } return u; };
   const no = (res) => res.set("Cache-Control", "private, no-store");
-  app.get("/start", (req, res) => sendStatic(res, "start.html", "<p>Start page missing.</p>"));
+  // a signed-in person who can host (a personal page, not a brand team, not a guest-only account), else null
+  const hostOf = (req) => { try { const u = currentUser(req); if (!u || !u.ws || u.ws === DEFAULT_WS) return null; const W = getWorkspace(u.ws); if (!W || W.regularOnly) return null;
+    return W.plan === "friends" || W.plan === "self-hosted" || !W.plan || W.host?.handle ? u : null; } catch { return null; } };
+  // /start is the first win for people without an account. A signed-in host who taps "Plan a dinner" goes straight to
+  // the real create canvas with that kind set (public/canvas.js reads ?kind=); the page stays for signed-out people,
+  // for a draft coming back from sign-up (?save=1), a saved one (?saved=) and the small moves the canvas has no kind for
+  app.get("/start", (req, res) => { const to = startRedirect(req.query, hostOf(req)); if (to) return res.set({ "Cache-Control": "private, no-store", Vary: "Cookie" }).redirect(302, to);
+    res.set("Vary", "Cookie"); sendStatic(res, "start.html", "<p>Start page missing.</p>"); });
   app.get("/path", (req, res) => sendStatic(res, "path.html", "<p>Path page missing.</p>"));
   app.get("/circles", (req, res) => sendStatic(res, "circles.html", "<p>Circles page missing.</p>"));
   app.get("/api/me/hostloop", (req, res) => { const u = me(req, res); if (!u) return; if (getWorkspace(u.ws)?.personal === false) return no(res).json({ off: true }); no(res).json(L.stateOf(u.ws, { peek: req.query.peek === "1" })); });

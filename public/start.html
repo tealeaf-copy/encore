@@ -36,6 +36,8 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 .step button{width:48px;height:48px;border:0;background:none;font:500 22px var(--pl-font-mono);color:var(--pl-ink);cursor:pointer}.step output{min-width:40px;text-align:center;font:500 18px var(--pl-font-mono)}
 .saved{font:400 13px var(--pl-font-mono);color:var(--pl-soft);display:flex;align-items:center;gap:6px;min-height:20px}
 .go{position:sticky;bottom:0;padding:12px 0 calc(8px + env(safe-area-inset-bottom));background:var(--pl-page);border-top:1px dashed var(--pl-line-strong);margin-top:18px}
+/* the app's nav (public/shell.js): the tab bar on phones, so the Save bar sits just above it; the rail on wide screens */
+@media (max-width:860px){body.es-has-tabs .go{bottom:var(--st-tabs,64px);padding-bottom:12px}body.es-has-tabs main{padding-bottom:24px}}
 .btn{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:6px;border:1px solid var(--pl-ink);background:var(--pl-surface);color:var(--pl-ink);font:600 16px var(--pl-font-text);text-decoration:none;cursor:pointer;padding:0 16px;text-align:center}
 .btn.pri{background:var(--pl-accent);border-color:var(--pl-accent);color:var(--pl-on-accent)}
 .btn:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}.btn[disabled]{opacity:.6}
@@ -86,8 +88,8 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
 
   <div id="done" class="done" hidden>
     <div id="doneStamp" style="margin-top:20px"></div>
-    <h2 data-h1 id="doneH">Your first one is out in the world.</h2>
-    <p class="lede" id="doneLine">Now the only job is to show up. I'll keep the list.</p>
+    <h2 data-h1 id="doneH">It's out in the world.</h2>
+    <p class="lede" id="doneLine">Send the link. I'll keep the list.</p>
     <div class="linkbox"><input id="link" readonly aria-label="Your invite link"><button type="button" class="btn pri" id="copy" style="width:auto;min-width:96px">Copy</button></div>
     <button type="button" class="btn" id="share" hidden>Send it</button>
     <ul class="list" id="next"><li><b>01</b><span>Send the link to three people. Group chat is fine.</span></li><li><b>02</b><span>When they reply, you'll see it here and in your bell.</span></li><li><b>03</b><span>The day before, I'll remind you to send a reminder. That's it.</span></li></ul>
@@ -95,7 +97,7 @@ textarea{min-height:76px;resize:vertical}input:focus,textarea:focus{outline:2px 
   </div>
   <p class="msg" id="err" role="alert"></p>
 </main>
-<script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script>
+<script src="/mascot.js"></script><script src="/fx.js"></script><script src="/hostloop.js"></script><script src="/shell.js" defer></script>
 <script>
 // one top heading at a time: the "done" screen takes it over from the plan
 function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => { const tag = el.closest("[hidden]") ? "h2" : "h1"; if (el.localName === tag) return; const n = document.createElement(tag); for (const a of el.attributes) n.setAttribute(a.name, a.value); while (el.firstChild) n.appendChild(el.firstChild); n.toggleAttribute("data-h1", tag === "h2"); el.replaceWith(n); }); }
@@ -157,6 +159,10 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   // a "same crew" draft from a past event (signed in): its name
   if (q.get("from") && /^[A-Za-z0-9_-]{2,80}$/.test(q.get("from"))) fetch("/api/db/doc?path=" + encodeURIComponent("events/" + q.get("from")), { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((j) => { const n = j?.data?.pubTitle || j?.data?.name; if (n && t === "again" && d.title === T.again.title) { d.title = n; d.seats = +j.data.headcount || d.seats; d.place = j.data.venueName || j.data.hood || d.place; fill(); draw(); keep(); } }).catch(() => {});
 
+  // the Save bar rides just above the app's tab bar on phones (public/shell.js draws it after this script)
+  const fitTabs = () => { const n = document.querySelector(".es-tabs"), h = n && getComputedStyle(n).display !== "none" ? n.offsetHeight : 0; if (h) document.documentElement.style.setProperty("--st-tabs", h + "px"); };
+  addEventListener("load", fitTabs); addEventListener("resize", fitTabs); setTimeout(fitTabs, 1200);
+
   // ---- saving: signed out gets the save prompt; signed in (or back from sign-up) saves and sends ----
   fetch("/api/me", { credentials: "same-origin" }).then((r) => r.json()).then((m) => { signed = !!m?.verified; if (signed) { $("#signIn").hidden = true; $("#lede").textContent = "Fill in what you know. Change anything later."; if (q.get("save") === "1" && ls.get(KEY)) save(); } }).catch(() => {});
   function prompt() {
@@ -183,7 +189,7 @@ function oneH1() { document.querySelectorAll("h1,h2[data-h1]").forEach((el) => {
   }
   function done(id, out, cel) {
     $("#plan").hidden = true; $("#done").hidden = false; oneH1(); history.replaceState(null, "", "/start?saved=" + encodeURIComponent(id)); window.scrollTo(0, 0);
-    const link = location.origin + "/e/" + id; $("#link").value = link; $("#openApp").href = "/?app=1&open=" + encodeURIComponent(id) + "#studio";
+    const link = location.origin + "/e/" + id; $("#link").value = link; $("#openApp").href = "/?app=1&open=" + encodeURIComponent(id) + "&canvas=1#studio"; /* opens this one in the create canvas (index.html) */
     if (!out) { $("#doneH").textContent = "Saved. One tap and it's out."; $("#doneLine").textContent = "Tap the link we just emailed you to confirm it's you. This page sends it out by itself when you do. Your dinner is safe in your account."; $("#copy").disabled = true; $("#link").value = "Ready after you confirm your email"; if (fx.stamp) fx.stamp("Saved", $("#doneStamp"));
       // this page sends it by itself once the email is confirmed (in this tab or another)
       const wait = setInterval(async () => { try { const m = await (await fetch("/api/me", { credentials: "same-origin" })).json(); if (!m?.emailVerified) return; clearInterval(wait);

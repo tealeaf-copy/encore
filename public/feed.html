@@ -195,7 +195,7 @@ body.pc-has-fab.tab-feed .composer{display:none!important}
   function drawBell() { const n = F.unread || 0, b = $("#bellN"); b.hidden = !n; b.textContent = n; }
   // ---- stories ----
   // ---- visual feed: the stories rail (hosts with photos, videos and flyers from the last 14 days) and the viewer (public/feedvisual.js) ----
-  function drawRail() { const mine = (F.stories || []).find((s) => s.mine), last = mine?.items.at(-1);
+  function drawRail() { const mine = (F.stories || []).find((s) => s.mine), last = mine?.items?.slice(-1)[0];
     window.FeedVisual.rail($("#rail"), F.storiesV || [], { signedIn: true, mine: last ? { thumb: last.type === "image" ? last.url : "" } : null, onAdd: () => { if (!(F.mine || []).length) { toast("Photos go with an event you went to or hosted. Once you've been to one, add yours here."); return; } pickEvent(); } }); }
   function pickEvent() { const L = F.mine; const go = (e) => window.MomentUpload.pick({ q: { eventId: e.id }, onStart: (fs, extra) => toast(`Adding ${fs.length}${extra ? ` (the first ${fs.length})` : ""}…`), onEach: (f, r, err) => err && toast(err.message), onDone: (n) => { if (n) { C.oink(); toast(n === 1 ? "Added. Friends see it in their feed." : `${n} added. Friends see them in their feed.`); load(); } } });
     if (L.length === 1) return go(L[0]); const i = prompt("Which one?\n" + L.map((e, i) => `${i + 1}. ${e.title} (${C.fmtDate(e.date)})`).join("\n"), "1"); const e = L[(+i || 1) - 1]; if (e) go(e); }

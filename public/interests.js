@@ -21,7 +21,7 @@
 
   const CSS = `.pin-bg{position:fixed;inset:0;z-index:8000;background:rgba(31,26,23,.45);display:grid;place-items:center;padding:12px;animation:pinFade .25s ease}
 @keyframes pinFade{from{opacity:0}}
-.pin{position:relative;width:min(100%,640px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;
+.pin{position:relative;width:min(100%,640px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--pl-page);border:2.5px solid var(--pl-ink);border-radius:var(--pl-r-md,6px);box-shadow:6px 6px 0 var(--pl-ink);padding:22px 18px 18px;color:var(--pl-ink);font:16px/1.45 "IBM Plex Sans",system-ui,sans-serif;
   background-image:radial-gradient(rgba(102,90,81,.08) 1px,transparent 1.2px);background-size:7px 7px;animation:pinUp .4s cubic-bezier(.3,1.4,.5,1)}
 @keyframes pinUp{from{transform:translateY(30px) rotate(-1deg);opacity:0}}
 .pin h2{font:600 clamp(28px,6vw,38px)/1.02 var(--sys-display);margin:0 0 4px;letter-spacing:-.01em}.pin h2 em{font-style:normal;color:var(--pl-accent)}
@@ -56,7 +56,7 @@
 .pin-ev b{font:600 16px/1.15 var(--sys-title);display:block}.pin-ev small{color:var(--pl-soft);font-size:13.5px;display:block}.pin-ev .fr{color:#4F6B3A;font-weight:600}
 .pin-empty{background:var(--pl-surface);border:2px dashed #C9BBA7;border-radius:var(--pl-r-md,6px);padding:14px;color:var(--pl-soft)}
 @media (max-width:640px){.pin h2,.pin .pin-sub{padding-right:118px}.pin-hosts{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:4px 4px 10px;margin:0 -4px;scrollbar-width:none}.pin-hosts::-webkit-scrollbar{display:none}.pin-host{flex:0 0 200px;scroll-snap-align:start;padding:10px}.pin-host .av{width:44px;height:44px;font-size:22px}.pin-host small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.pin-hosts .pin-empty{flex:1 0 100%}}
-@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:var(--pl-r-lg,6px) var(--pl-r-lg,6px) 0 0;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
+@media (max-width:520px){.pin-bg{padding:0;align-items:end}.pin{border-radius:var(--pl-r-lg,6px) var(--pl-r-lg,6px) 0 0;max-height:94vh;max-height:94dvh;border-bottom:0;box-shadow:none;padding:20px 16px 16px}.pin .pin-potto{width:58px;right:62px;top:2px}.pin-chip{min-height:46px;font-size:15px;padding:5px 13px 5px 10px}}
 /* round 11 UX pass: UI controls take the app's one line (1.5px) and no sticker shadows or tilts; the thick ink line
    stays on illustrations. Picked chips fill with their colour and gain Potto's brown line */
 .pin{border:1.5px solid var(--pl-frame);box-shadow:0 18px 48px -18px rgba(31,26,23,.45)}

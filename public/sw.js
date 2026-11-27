@@ -1,21 +1,24 @@
 // Pottery Lab service worker: fast repeat visits and an offline shell, not an offline app.
-// - Shell pages (the feed, Discover, Plans, Chats, People, Settings, Saved, Ideas, the app): stale-while-revalidate.
-//   A page you opened before draws at once from the cache while a fresh copy is fetched for next time; the data in it
-//   always comes from the API. Every other page is network first. Offline: the cached copy, else /offline.html.
+// - Pages: network first, always. A page waits up to PAGE_TIMEOUT for the network; a slow or dropped answer falls back
+//   to the last good copy of that page (or /offline.html), and the fresh answer is still kept for next time. Only a
+//   plain 200 HTML answer is ever kept: never an error page, a redirect, a JSON answer or anything marked no-store.
+//   (Shell pages used to be stale-while-revalidate: a phone could keep drawing an old or broken copy of a page with
+//   another day's scripts, and the fix only showed on the visit after. REV below drops every copy kept that way.)
 // - Versioned files (/x.js?v=<hash>, served immutable), hashed app bundles (/_app/*) and fonts: cache first.
-//   Other scripts, styles and icons: stale-while-revalidate.
+//   Other scripts, styles and icons: stale-while-revalidate, 200s only.
 // - A few read-only APIs the shell pages open with (your plans, the feed, Discover, your chats): network first with a
 //   timeout. A slow or dropped answer falls back to the last copy (marked x-pl-cache: stale) instead of a spinner.
 //   Every other API call and upload goes straight to the network. Signing out or in drops the cached pages and data.
 // - Cache busting: the server stamps VERSION (a hash of this file, offline.html, the manifest and native.js) at /sw.js;
-//   a new version installs, takes over, and deletes every cache from older versions.
+//   a new version installs, takes over, and deletes every cache from older versions (the data cache too).
 const VERSION = "__SW_VERSION__";
-const SHELL = "pl-shell-" + VERSION, STATIC = "pl-static-" + VERSION, PAGES = "pl-pages-" + VERSION, DATA = "pl-data";
+const REV = 20; // bump to drop every cached page, file and answer on every phone
+const SHELL = "pl-shell-" + VERSION, STATIC = "pl-static-" + VERSION, PAGES = "pl-pages-" + VERSION + "-r" + REV, DATA = "pl-data-r" + REV;
 const SHELL_FILES = ["/offline.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/apple-touch-icon.png", "/mascot.js", "/system.css"];
-const MAX_PAGES = 25, MAX_STATIC = 300, API_TIMEOUT = 4000;
-// pages that are the same shell for everyone (their content comes from the API), so a cached copy is always safe to show
-const SWR_PAGES = /^\/(feed|discover|plans|chats|people|settings|saved|ideas|events|hosts|about)$/;
-const swrPage = (url) => SWR_PAGES.test(url.pathname) || (url.pathname === "/" && url.searchParams.get("app") === "1");
+const MAX_PAGES = 25, MAX_STATIC = 300, API_TIMEOUT = 4000, PAGE_TIMEOUT = 3500;
+// pages a finger may warm ahead of a tap (public/shell.js): the same shell for everyone, their content comes from the API
+const WARM_PAGES = /^\/(feed|discover|plans|chats|people|settings|saved|ideas|events|hosts|about|start)$/;
+const warmPage = (url) => WARM_PAGES.test(url.pathname) || (url.pathname === "/" && url.searchParams.get("app") === "1");
 // read-only APIs worth a last copy
 const DATA_APIS = /^\/api\/(me\/plans|me\/feed|public\/feed|public\/discover|chats)$/;
 
@@ -24,7 +27,7 @@ self.addEventListener("install", (e) => {
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k.startsWith("pl-") && k !== DATA && ![SHELL, STATIC, PAGES].includes(k)) await caches.delete(k);
+    for (const k of await caches.keys()) if (k.startsWith("pl-") && ![SHELL, STATIC, PAGES, DATA].includes(k)) await caches.delete(k);
     if (self.registration.navigationPreload) await self.registration.navigationPreload.enable().catch(() => {});
     await self.clients.claim();
   })());
@@ -32,47 +35,48 @@ self.addEventListener("activate", (e) => {
 const forget = () => Promise.all([caches.delete(DATA), caches.delete(PAGES)]).catch(() => {});
 self.addEventListener("message", (e) => {
   if (e.data === "signed-out") e.waitUntil?.(forget());
-  // public/shell.js asks for a page a finger just landed on, so the tap opens it from the cache
-  else if (e.data && e.data.warm) { try { const u = new URL(e.data.warm, self.location.origin); if (u.origin === self.location.origin && swrPage(u)) e.waitUntil?.(refresh(new Request(u.href, { credentials: "same-origin" }))); } catch {} }
+  // public/shell.js asks for a page a finger just landed on, so a slow network still has a fresh copy to fall back on
+  else if (e.data && e.data.warm) { try { const u = new URL(e.data.warm, self.location.origin); if (u.origin === self.location.origin && warmPage(u)) e.waitUntil?.(refresh(new Request(u.href, { credentials: "same-origin", headers: { accept: "text/html" } })).catch(() => {})); } catch {} }
 });
 
 async function trim(name, max) { const c = await caches.open(name), keys = await c.keys(); for (const k of keys.slice(0, Math.max(0, keys.length - max))) await c.delete(k); }
-const cacheable = (res) => res && res.ok && res.type === "basic" && !res.redirected && !/no-store/.test(res.headers.get("Cache-Control") || "");
-// fetch a page and keep it for next time
+// an answer worth keeping: a plain 200 from us, not a redirect, not marked no-store
+const cacheable = (res) => !!res && res.status === 200 && res.type === "basic" && !res.redirected && !/no-store/.test(res.headers.get("Cache-Control") || "");
+// a page worth keeping: all of that, and HTML (never an error page, never a JSON answer)
+const pageOk = (res) => cacheable(res) && /^text\/html/i.test(res.headers.get("Content-Type") || "");
+// one copy per page, whatever the #hash
+const pageKey = (u) => String(u).split("#")[0];
+// fetch a page (the navigation preload when there is one) and keep a good answer for next time
 async function refresh(req, preload) {
   const res = (preload && (await preload.catch(() => null))) || (await fetch(req));
-  if (cacheable(res)) { const c = await caches.open(PAGES); await c.put(req.url, res.clone()).catch(() => {}); trim(PAGES, MAX_PAGES).catch(() => {}); }
+  if (pageOk(res)) { const c = await caches.open(PAGES); await c.put(pageKey(req.url), res.clone()).catch(() => {}); trim(PAGES, MAX_PAGES).catch(() => {}); }
   return res;
 }
-const offline = async (req) => (await caches.match(req.url, { cacheName: PAGES })) || (await caches.match("/offline.html")) || new Response("You're offline.", { status: 503, headers: { "Content-Type": "text/plain" } });
+const lastCopy = async (req) => { const hit = await caches.match(pageKey(req.url), { cacheName: PAGES }); return hit && pageOk(hit) ? hit : null; };
+const offline = async (req) => (await lastCopy(req)) || (await caches.match("/offline.html")) || new Response("You're offline.", { status: 503, headers: { "Content-Type": "text/plain" } });
+// network first with a timeout: the network's answer when it comes in time (any status: a 404 page is the truth); a
+// slow one gets the last good copy, and only a page with no copy keeps waiting for the network
+async function page(e) {
+  const net = refresh(e.request, e.preloadResponse); e.waitUntil(net.catch(() => {}));
+  const first = await Promise.race([net.catch(() => "down"), new Promise((r) => setTimeout(() => r("late"), PAGE_TIMEOUT))]);
+  if (first !== "late" && first !== "down") return first;
+  const hit = await lastCopy(e.request); if (hit) return hit;
+  if (first === "late") { try { return await net; } catch {} }
+  return offline(e.request);
+}
 
 self.addEventListener("fetch", (e) => {
   const req = e.request; if (req.method !== "GET") {
     // signing out (or in as someone else) drops the cached pages and data
-    if (req.method === "POST" && /^\/api\/(logout|login|signup)$/.test(new URL(req.url).pathname)) e.waitUntil(forget());
+    if (req.method === "POST" && /^\/api\/(logout|login|signup|auth\/(code|email)\/verify|me\/delete)$/.test(new URL(req.url).pathname)) e.waitUntil(forget());
     return;
   }
   const url = new URL(req.url);
   const same = url.origin === self.location.origin;
-  if (req.mode === "navigate") {
-    if (same && swrPage(url)) {
-      // stale-while-revalidate: the cached shell now, a fresh one for next time
-      e.respondWith((async () => {
-        const hit = await caches.match(req.url, { cacheName: PAGES });
-        const fresh = refresh(req, e.preloadResponse);
-        // the page changed meaning since it was cached (a sign-in ran out and it now redirects): reload it fresh
-        if (hit) { e.waitUntil(fresh.then(async (r) => { if (r.redirected || r.status !== hit.status) (await self.clients.get(e.resultingClientId))?.postMessage({ plReload: req.url }); }).catch(() => {})); return hit; }
-        try { return await fresh; } catch { return offline(req); }
-      })());
-      return;
-    }
-    // other pages: network first; a copy of each page you open for offline
-    e.respondWith((async () => { try { return await refresh(req, e.preloadResponse); } catch { return offline(req); } })());
-    return;
-  }
+  if (req.mode === "navigate") { if (same) e.respondWith(page(e)); return; }
   if (same && DATA_APIS.test(url.pathname) && !url.search.includes("v=")) {
     e.respondWith((async () => {
-      const net = fetch(req).then(async (res) => { if (res.ok) await (await caches.open(DATA)).put(req, res.clone()).catch(() => {}); return res; });
+      const net = fetch(req).then(async (res) => { if (cacheable(res) && /json/i.test(res.headers.get("Content-Type") || "")) await (await caches.open(DATA)).put(req, res.clone()).catch(() => {}); return res; });
       const late = new Promise((r) => setTimeout(r, API_TIMEOUT));
       const first = await Promise.race([net.catch(() => null), late.then(() => "late")]);
       if (first && first !== "late") return first;
@@ -88,14 +92,14 @@ self.addEventListener("fetch", (e) => {
   // never changes: cache first
   if (same && (url.pathname.startsWith("/_app/") || url.pathname.startsWith("/fonts/") || url.searchParams.has("v"))) {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      if (res.ok && (url.pathname.startsWith("/_app/") || /immutable|max-age=[1-9]\d{5,}/.test(res.headers.get("Cache-Control") || ""))) { const copy = res.clone(); e.waitUntil(caches.open(STATIC).then((c) => c.put(req, copy)).then(() => trim(STATIC, MAX_STATIC)).catch(() => {})); }
+      if (cacheable(res) && (url.pathname.startsWith("/_app/") || /immutable|max-age=[1-9]\d{5,}/.test(res.headers.get("Cache-Control") || ""))) { const copy = res.clone(); e.waitUntil(caches.open(STATIC).then((c) => c.put(req, copy)).then(() => trim(STATIC, MAX_STATIC)).catch(() => {})); }
       return res; })));
     return;
   }
   if ((same && /\.(js|css|svg|png|webp|jpg|woff2?|webmanifest|json)$/.test(url.pathname)) || fonts) {
     e.respondWith((async () => {
       const c = await caches.open(STATIC), hit = await c.match(req);
-      const net = fetch(req).then((res) => { if (res.ok || res.type === "opaque") c.put(req, res.clone()).catch(() => {}); return res; }).catch(() => hit);
+      const net = fetch(req).then((res) => { if (cacheable(res) || (fonts && res.type === "opaque")) c.put(req, res.clone()).catch(() => {}); return res; }).catch(() => hit || Response.error());
       if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
       return net;
     })());

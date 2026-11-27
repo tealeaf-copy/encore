@@ -246,7 +246,7 @@
     } catch { m = { role: "potto", text: "I can't reach Pottery Lab right now. Check your connection, or talk to a person.", actions: [{ label: "Talk to a person", href: "#person" }] }; }
     log.push(m); saveLog(); drawLog(); busy = false; go.disabled = false; say("Potto: " + m.text);
     // the answer reads from its first line, not from the thumbs under it
-    const last = [...root.querySelectorAll(".eh-log .eh-m.potto")].at(-1), B = $("#ehBody"); if (last) B.scrollTop = Math.max(0, last.offsetTop - B.offsetTop - 64);
+    const last = [...root.querySelectorAll(".eh-log .eh-m.potto")].slice(-1)[0], B = $("#ehBody"); if (last) B.scrollTop = Math.max(0, last.offsetTop - B.offsetTop - 64);
     if (!phone()) $(".eh-ask textarea").focus({ preventScroll: true });
   }
   // screen readers hear the newest message once, not the whole chat every time it's drawn
@@ -349,9 +349,9 @@
         if (!r.ok) throw new Error(j.message || "Couldn't send that. Try again.");
         if (j.ticket) { tickets = [j.ticket, ...tickets.filter((t) => t.id !== j.id)]; ss.set("encore.help.t", JSON.stringify({ at: Date.now(), tickets })); }
         say("Sent. " + (j.expect || `A person replies ${within}.`));
-        log.push({ role: "ticket", id: j.id, withChat: withChat && chat.length > 0, text: j.ticket ? "" : message || chat.filter((m) => m.role === "host").at(-1)?.text || "", expect: j.expect || "" }); saveLog();
+        log.push({ role: "ticket", id: j.id, withChat: withChat && chat.length > 0, text: j.ticket ? "" : message || chat.filter((m) => m.role === "host").slice(-1)[0]?.text || "", expect: j.expect || "" }); saveLog();
         // scroll the chat, never the sheet (scrollIntoView would also scroll the sheet's clipped box and leave a gap)
-        backToChat(true); const card = [...root.querySelectorAll(".eh-log .eh-tk")].at(-1), B = $("#ehBody"); if (card) { B.scrollTop = Math.max(0, card.offsetTop - B.offsetTop - 16); card.focus({ preventScroll: true }); }
+        backToChat(true); const card = [...root.querySelectorAll(".eh-log .eh-tk")].slice(-1)[0], B = $("#ehBody"); if (card) { B.scrollTop = Math.max(0, card.offsetTop - B.offsetTop - 16); card.focus({ preventScroll: true }); }
         startPoll();
       } catch (err) { er.textContent = err.message; go.disabled = false; go.textContent = "Send to the team"; }
     };

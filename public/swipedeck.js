@@ -1,9 +1,13 @@
-// The swipe deck: a first visit to /feed, before the feed itself. One full-screen card at a time: real upcoming events
+// The swipe deck ("Would you go?"), opened only by a tap (the feed's "Swipe ideas"). One full-screen card at a time: real upcoming events
 // in the visitor's city first, then ideas to try and photos from hosts' pages (GET /api/public/deck). "Save" saves
 // the card (public/save.js: on the account, or in this browser and sent at signup) and trains the interests
 // (public/interests.js); "Pass" skips. Touch swipe, the two buttons, or the arrow keys. After 5 cards: "Your 3 picks are
 // saved. Make a free account to keep them." Signed in, it closes straight into the feed. "Pick topics instead" opens
-// the old picker. Shown once per browser (pl.deckDone), and never to someone who already picked interests.
+// the old picker.
+// It never opens by itself: it used to open over /feed and / on a first visit, a full-screen dialog that covered the page
+// and the tab bar, so a tap on "Plan a dinner" (or anything else) landed on the deck instead. maybeAuto stays for old
+// callers and does nothing. Whatever happens, the deck lets go of the page: closing it, leaving the page (pagehide)
+// and coming back to it from the back-forward cache all remove it and give the page its scroll back.
 (function () {
   if (window.PLDeck) return;
   const DONE = "pl.deckDone", SWIPES = 5;
@@ -61,7 +65,7 @@
 .sd-stamp.yes{right:16px;color:#3E6B34;transform:rotate(12deg)}.sd-stamp.no{left:16px;color:var(--pl-accent-text);transform:rotate(-12deg)}
 .sd-body{flex:none;padding:12px 16px 16px;color:var(--pl-ink)}.sd-card.dark .sd-body{color:var(--pl-page)}.sd-card.dark .sd-meta,.sd-card.dark .sd-line,.sd-card.dark .sd-host{color:rgba(255,248,238,.85)}
 .sd-host{display:flex;align-items:center;gap:8px;margin:0;font-size:14px;color:var(--pl-soft)}.sd-host b{font-weight:700}
-.sd-av{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(31,26,23,.18);overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 22%,#fff);font-size:15px}.sd-av img,.sd-av svg{width:100%;height:100%;object-fit:cover}
+.sd-av{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(31,26,23,.18);overflow:hidden;display:grid;place-items:center;background:#fff;background:color-mix(in srgb,var(--c) 22%,#fff);font-size:15px}.sd-av img,.sd-av svg{width:100%;height:100%;object-fit:cover}
 .sd-idea{font-size:20px}
 .sd-body h3{margin:6px 0 2px;font:600 clamp(24px,6.6vw,30px)/1.08 var(--sys-display);text-wrap:balance;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .sd-meta{margin:0;font-size:15px;color:var(--pl-soft);font-weight:600}.sd-line{margin:4px 0 0;font-size:14.5px;color:var(--pl-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -97,12 +101,17 @@
     const score = (c) => { const t = ` ${[c.title, c.line, c.where, ...(c.tags || [])].join(" ").toLowerCase()} `; return (c.tags || []).filter((x) => mine.includes(x)).length * 3 + words.filter((w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(t)).length; };
     return cards.map((c, n) => ({ c, n, s: score(c) })).sort((a, b) => b.s - a.s || a.n - b.n).map((x) => x.c); }
 
-  let openNow = false;
-  /** Show the deck. opts.cards to skip the fetch (tests); opts.onDone(picks). */
-  async function open(opts = {}) { if (openNow || document.querySelector(".sd")) return; openNow = true; css();
+  let openNow = false, leaving = false, release = null;
+  // the one way out: remove the deck, give the page back its scroll, let a new one open later
+  const letGo = () => { const r = release; release = null; openNow = false; if (r) try { r(); } catch {} document.querySelectorAll(".sd").forEach((x) => x.remove()); };
+  addEventListener("pagehide", () => { leaving = true; letGo(); });
+  addEventListener("pageshow", (e) => { leaving = false; if (e.persisted) letGo(); });
+  /** Show the deck (from a tap). opts.cards to skip the fetch (tests); opts.onDone(picks). */
+  async function open(opts = {}) { if (openNow || leaving || document.querySelector(".sd")) return; openNow = true; css();
     const city = cityNow(); let D = { cards: opts.cards || [] };
     if (!opts.cards) { try { const q = new URLSearchParams({ city }); D = await (await fetch("/api/public/deck?" + q, { credentials: "same-origin" })).json(); } catch { D = { cards: [] }; } }
-    let cards = (D.cards || []).filter((c) => c && c.key && c.title); if (cards.length < 2) { openNow = false; return; } if (!opts.cards) cards = await byInterests(cards);
+    let cards = (D.cards || []).filter((c) => c && c.key && c.title); if (cards.length < 2 || leaving || document.hidden) { openNow = false; return; } if (!opts.cards) cards = await byInterests(cards);
+    if (leaving) { openNow = false; return; } // the page is going away (a link was tapped while the cards loaded)
     add("/save.js"); const total = Math.min(SWIPES, cards.length), picks = [], tags = new Set(); let i = 0, busy = false;
     const el = document.createElement("div"); el.className = "sd"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-labelledby", "sdH");
     const local = D.city && D.local ? D.city : "";
@@ -112,7 +121,8 @@
       <div class="sd-acts"><button type="button" class="sd-btn sd-no" aria-label="Pass">${XG}</button><button type="button" class="sd-btn sd-yes">${HEART}Save</button></div>
       <p class="sd-foot"><button type="button" class="sd-link" id="sdTopics">Pick topics instead</button><span class="sd-keys">or use ← and →</span></p>
       <p class="sd-sr" aria-live="polite" id="sdLive"></p></div>`;
-    document.body.appendChild(el); const prevOverflow = document.body.style.overflow; document.body.style.overflow = "hidden";
+    document.body.appendChild(el); const prevOverflow = document.body.style.overflow === "hidden" ? "" : document.body.style.overflow; document.body.style.overflow = "hidden";
+    release = () => { el.remove(); document.body.style.overflow = prevOverflow; document.removeEventListener("keydown", onKey, true); };
     const $ = (s) => el.querySelector(s), C = [...el.querySelectorAll(".sd-card")], live = $("#sdLive"), dots = [...el.querySelectorAll(".sd-dots i")];
     const lay = () => { C.forEach((c, k) => c.dataset.pos = k < i ? "gone" : k - i < 3 ? String(k - i) : "h"); C.forEach((c, k) => { if (k < i) c.style.display = "none"; c.setAttribute("aria-hidden", String(k !== i)); });
       dots.forEach((d, k) => { d.className = k < i ? (picks.some((p) => p.n === k) ? "on" : "") || "past" : k === i ? "cur" : ""; });
@@ -120,7 +130,7 @@
     function finish(how) { if (!document.contains(el)) return; ls.set(DONE, "1"); ls.set("pl.interestsSeen", "1"); document.removeEventListener("keydown", onKey, true);
       const ids = [...tags]; add("/interests.js").then(() => { if (window.PLInterests?.train) return window.PLInterests.train(ids, city); if (ids.length || city) { let cur = {}; try { cur = JSON.parse(ls.get("pl.interests") || "{}") || {}; } catch {} ls.set("pl.interests", JSON.stringify({ interests: [...new Set([...(cur.interests || []), ...ids])].slice(0, 20), city: cur.city || city, at: Date.now() })); } }).catch(() => {});
       opts.onDone?.(picks.map((p) => p.c));
-      const close = () => { el.remove(); document.body.style.overflow = prevOverflow; openNow = false; window.dispatchEvent(new CustomEvent("pl:deck-done", { detail: { picks: picks.length } })); };
+      const close = () => { letGo(); window.dispatchEvent(new CustomEvent("pl:deck-done", { detail: { picks: picks.length } })); };
       if (how === "topics") { close(); add("/interests.js").then(() => window.PLInterests?.open({ after: "visit" })); return; }
       const n = picks.length, line = n ? `Your ${n} ${n === 1 ? "pick is" : "picks are"} saved.` : "";
       if (signedIn() || how === "close") { close(); if (n && window.PLSave?.toast) window.PLSave.toast(`<b>${esc(line)}</b>${signedIn() ? "" : " Make a free account to keep them."}`, signedIn() ? { go: "/saved", goLabel: "See them", ms: 5000 } : { go: "/signup?mode=friends&from=saves", goLabel: "Make an account", ms: 7000 }); return; }
@@ -147,16 +157,13 @@
       if (Math.abs(dx) > w / 3 || fast) return decide(dx > 0); card.classList.remove("drag"); card.style.transform = ""; card.querySelectorAll(".sd-stamp").forEach((s) => (s.style.opacity = 0)); };
     el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
     const onKey = (e) => { if (!document.contains(el)) return; if (e.key === "ArrowRight") { e.preventDefault(); decide(true); } else if (e.key === "ArrowLeft") { e.preventDefault(); decide(false); } else if (e.key === "Escape") { e.preventDefault(); finish("close"); }
-      else if (e.key === "Tab") { const F = [...el.querySelectorAll("button,a[href]")].filter((x) => x.offsetParent !== null); const k = F.indexOf(document.activeElement); if (e.shiftKey && k <= 0) { e.preventDefault(); F.at(-1).focus(); } else if (!e.shiftKey && k === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
+      else if (e.key === "Tab") { const F = [...el.querySelectorAll("button,a[href]")].filter((x) => x.offsetParent !== null); const k = F.indexOf(document.activeElement); if (e.shiftKey && k <= 0) { e.preventDefault(); F.slice(-1)[0].focus(); } else if (!e.shiftKey && k === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
     document.addEventListener("keydown", onKey, true);
     $(".sd-yes").onclick = () => decide(true); $(".sd-no").onclick = () => decide(false); $(".sd-x").onclick = () => finish("close"); $("#sdTopics").onclick = () => finish("topics");
     el.tabIndex = -1; lay(); el.focus({ preventScroll: true }); // the arrow keys work straight away; Tab reaches the buttons
     return { decide, finish }; }
 
-  /** The first visit to /feed: signed out with no picks yet, or signed in with none on the account. */
-  async function maybeAuto() { if (ls.get(DONE) || (location.pathname !== "/feed" && location.pathname !== "/")) return;
-    if (!signedIn()) { if (ls.get("pl.interestsSeen") || ls.get("pl.interests")) return; return setTimeout(() => open(), 500); }
-    try { const r = await fetch("/api/me/interests", { credentials: "same-origin" }); if (!r.ok) return; const j = await r.json(); if (j.interests?.length || j.city) { ls.set(DONE, "1"); return; } } catch { return; }
-    setTimeout(() => open(), 500); }
-  window.PLDeck = { open, maybeAuto, SWIPES };
+  /** Kept for pages that still call it: the deck no longer opens by itself, so this does nothing. */
+  function maybeAuto() { return false; }
+  window.PLDeck = { open, close: letGo, maybeAuto, SWIPES };
 })();

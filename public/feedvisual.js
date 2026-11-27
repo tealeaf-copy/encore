@@ -124,7 +124,7 @@
         if (performance.now() - d0.t < 400) { const r = stage.getBoundingClientRect(); (e.clientX - r.left < r.width / 3 ? prev : next)(); } };
       stage.onpointerup = up; stage.onpointercancel = () => { clearTimeout(hold); down = null; el.classList.remove("dragging"); if (hold === "held") setPaused(false); }; }
     const onKey = (e) => { if (!document.contains(el)) return; if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "ArrowRight") { e.preventDefault(); next(); } else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); } else if ((e.key === " " || e.key === "k") && !/^(BUTTON|A)$/.test(document.activeElement?.tagName || "")) { e.preventDefault(); setPaused(!paused); } else if (e.key === "m" && vid) { $(".fv-sv-mute", el)?.click(); }
-      else if (e.key === "Tab") { const F = $$("button,a[href]", el).filter((x) => x.offsetParent !== null); if (!F.length) return; const i = F.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); F.at(-1).focus(); } else if (!e.shiftKey && i === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
+      else if (e.key === "Tab") { const F = $$("button,a[href]", el).filter((x) => x.offsetParent !== null); if (!F.length) return; const i = F.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); F.slice(-1)[0].focus(); } else if (!e.shiftKey && i === F.length - 1) { e.preventDefault(); F[0].focus(); } } };
     document.addEventListener("keydown", onKey, true); show(); $(".fv-sv-x", el)?.focus({ preventScroll: true });
     return { close }; }
 
@@ -521,7 +521,7 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
 .fv-confetti{position:fixed;z-index:2147483001;pointer-events:none;width:0;height:0}.fv-confetti i{position:absolute;width:7px;height:10px;background:var(--c);border-radius:2px;animation:fv-boom .8s var(--fv-ease) forwards}@keyframes fv-boom{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),calc(var(--dy) + 70px)) rotate(var(--rot));opacity:0}}
 /* the story viewer */
 .fv-sv{position:fixed;inset:0;z-index:2147483000;background:#15110E;color:#fff;display:flex;justify-content:center;outline:none}
-.fv-sv-in{position:relative;width:min(100%,calc(100dvh * .5625 + 40px));height:100%;display:flex;flex-direction:column;transform:translateY(var(--drag,0));transition:transform .2s}.fv-sv.dragging .fv-sv-in{transition:none;opacity:calc(1 - var(--drag,0px) / 400px)}
+.fv-sv-in{position:relative;width:min(100%,calc(100vh * .5625 + 40px));width:min(100%,calc(100dvh * .5625 + 40px));height:100%;display:flex;flex-direction:column;transform:translateY(var(--drag,0));transition:transform .2s}.fv-sv.dragging .fv-sv-in{transition:none;opacity:calc(1 - var(--drag,0px) / 400px)}
 .fv-sv-bars{display:flex;gap:4px;padding:calc(10px + env(safe-area-inset-top)) 10px 0;position:relative;z-index:3}.fv-sv-bars i{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.35);overflow:hidden}.fv-sv-bars b{display:block;height:100%;background:#fff;transform-origin:left;transform:scaleX(0)}
 .fv-sv-top{position:relative;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 10px 8px 14px}.fv-sv-top>div{flex:1;min-width:0}.fv-sv-top b{display:block;font:600 16px var(--sys-title)}.fv-sv-top small{display:block;opacity:.85;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fv-sv-top button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:16px;cursor:pointer}.fv-sv-top button:focus-visible,.fv-sv-foot a:focus-visible,.fv-sv-foot button:focus-visible,.fv-sv-prev:focus-visible,.fv-sv-next:focus-visible{outline:3px solid var(--fv-butter);outline-offset:2px}
@@ -625,9 +625,7 @@ img.fv-img,.fv-mb>img{opacity:0;transition:opacity .5s var(--fv-ease)}img.fv-img
     const I = (Array.isArray(v.interests) ? v.interests : []).filter((x) => /^[a-z0-9-]{1,30}$/.test(x)).slice(0, 20), c = String(v.city || "").trim().slice(0, 60), q = new URLSearchParams();
     if (I.length) q.set("interests", I.join(",")); if (c) q.set("city", c); const s = q.toString(); return s ? "?" + s : ""; }
   window.FeedVisual = { rail, openStories, compose, composePublic, composeSignedIn, skeleton, wire, flyer, dump, mini, avatar, css, REG, deviceId, publicQuery, blendHtml, RENDER };
-  // the swipe deck (public/swipedeck.js) on a first visit to /feed, signed in or out; it decides whether to show itself
-  if (location.pathname === "/feed" || location.pathname === "/") { let done = false; try { done = !!localStorage.getItem("pl.deckDone"); } catch {}
-    const go = () => { if (window.PLDeck) return window.PLDeck.maybeAuto(); if (document.querySelector('script[src="/swipedeck.js"],script[src^="/swipedeck.js?"]')) return; const sc = document.createElement("script"); sc.src = "/swipedeck.js"; sc.defer = true; sc.onload = () => window.PLDeck?.maybeAuto(); document.head.appendChild(sc); };
-    if (!done) document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go) : go(); }
+  // the swipe deck (public/swipedeck.js) opens only from a tap on "Swipe ideas" (data-fb-deck above), never by itself:
+  // on a first visit it used to cover the whole feed and its tab bar
 })();
 // ---- end visual feed ----

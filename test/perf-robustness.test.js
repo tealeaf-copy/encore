@@ -93,18 +93,19 @@ test("fonts are ours: Google Fonts links point at /fonts/css2, swap, the display
   assert.ok(fontRequest(PUB, "family=Fraunces:ital,wght@1,600").every((f) => f.style === "italic"));
 });
 
-test("the service worker: stale-while-revalidate shells, cache-first versioned files, network-first APIs with a timeout, offline fallback", () => {
+test("the service worker: network-first pages with a short timeout, cache-first versioned files, network-first APIs with a timeout, offline fallback", () => {
   const sw = read("public/sw.js");
-  const swr = sw.match(/const SWR_PAGES = (\/.+\/);/)[1];
-  for (const p of ["feed", "discover", "plans", "chats", "people", "settings"]) assert.ok(new RegExp(swr.slice(1, -1)).test("/" + p), p);
-  assert.ok(!new RegExp(swr.slice(1, -1)).test("/e/abc") && !new RegExp(swr.slice(1, -1)).test("/g"), "invites stay network first");
+  const warm = sw.match(/const WARM_PAGES = (\/.+\/);/)[1]; // pages a finger warms ahead of a tap (they are still network first)
+  for (const p of ["feed", "discover", "plans", "chats", "people", "settings", "start"]) assert.ok(new RegExp(warm.slice(1, -1)).test("/" + p), p);
+  assert.ok(!new RegExp(warm.slice(1, -1)).test("/e/abc") && !new RegExp(warm.slice(1, -1)).test("/g"), "invites are never warmed");
   assert.match(sw, /url\.pathname === "\/" && url\.searchParams\.get\("app"\) === "1"/, "the app shell too");
-  assert.match(sw, /const hit = await caches\.match\(req\.url, \{ cacheName: PAGES \}\);\s*const fresh = refresh\(req, e\.preloadResponse\);/);
+  assert.match(sw, /if \(req\.mode === "navigate"\) \{ if \(same\) e\.respondWith\(page\(e\)\); return; \}/, "every page is network first (test/start-safari.test.js runs it)");
+  assert.match(sw, /PAGE_TIMEOUT = \d{4}/);
   assert.match(sw, /url\.pathname\.startsWith\("\/_app\/"\) \|\| url\.pathname\.startsWith\("\/fonts\/"\) \|\| url\.searchParams\.has\("v"\)/, "cache first for files that never change");
   assert.match(sw, /immutable/, "only responses the server marked immutable are pinned");
   assert.match(sw, /API_TIMEOUT = 4000/); assert.match(sw, /Promise\.race\(\[net\.catch\(\(\) => null\), late/); assert.match(sw, /x-pl-cache", "stale"/);
   assert.match(sw, /caches\.match\("\/offline\.html"\)/); assert.ok(fs.existsSync(path.join(PUB, "offline.html")));
-  assert.match(sw, /\/\^\\\/api\\\/\(logout\|login\|signup\)\$\/.+forget\(\)/, "signing out or in drops cached pages and data");
+  assert.match(sw, /\/\^\\\/api\\\/\(logout\|login\|signup\|auth[^\n]+forget\(\)/, "signing out or in drops cached pages and data");
   assert.match(sw, /!res\.redirected/, "a redirect is never cached as the page");
   assert.match(sw, /navigationPreload\.enable/);
   assert.doesNotMatch(sw, /DATA_APIS[^\n]*(db|host|admin)/, "only a few read-only APIs keep a last copy");

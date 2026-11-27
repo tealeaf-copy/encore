@@ -56,7 +56,7 @@
       if (F.who === "following" && !follows.has(e.host?.handle)) return false;
       if (F.prices.length && !F.prices.includes(e.tier)) return false;
       if (F.vibes.length && !F.vibes.includes(e.vibe)) return false;
-      if (F.cat && e.cat !== F.cat) return false;
+      if (F.cat && (e.etype || e.cat) !== F.cat) return false; // the type chips (public/eventtypes.js); the old categories still match
       if (!F.mine && !whenMatches(e.date, F.when, today)) return false;
       return true; }); }
   const activeCount = (f) => { const F = { ...EMPTY(), ...(f || {}) }; return (F.who !== "all") + !!F.prices.length + !!F.vibes.length + (F.when !== "any") + !!F.cat; };

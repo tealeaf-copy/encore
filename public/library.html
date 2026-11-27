@@ -76,7 +76,7 @@ a{color:inherit}button{font:inherit;color:inherit}
 @media (min-width:861px){.lb{padding-top:28px}.lb-top h1,.lh h1{font-size:32px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-<script src="/eventart.js"></script></head><body>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script></head><body>
 <main class="lb" id="m" aria-live="polite"></main>
 <script src="/savelist.js"></script><script src="/listpublic.js"></script><!-- Public lists: follow, I'd go again, the curator's strip (server/curation.js) -->
 <script>
@@ -115,7 +115,7 @@ a{color:inherit}button{font:inherit;color:inherit}
   const when = (d) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || "")) return ""; const x = new Date(d + "T12:00:00Z"); return `${DOW[x.getUTCDay()]}, ${MON[x.getUTCMonth()]} ${x.getUTCDate()}`; };
   const itemSub = (i) => [i.past ? "Went" : KIND_WORD[i.kind], i.kind === "event" ? when(i.date) : "", i.line && i.kind !== "event" ? i.line : ""].filter(Boolean).join(" · ");
   const itemUrl = (i) => safeUrl(i.url) || (i.kind === "event" ? "/e/" + encodeURIComponent(i.ref) : i.kind === "idea" ? "/ideas#" + i.ref : i.kind === "host" || i.kind === "club" ? "/@" + i.ref : "");
-  const itemRow = (i, more = true) => { const u = itemUrl(i), inner = `${thumb(i)}<span class="tx"><b>${esc(i.title || "Untitled")}</b><small><span>${esc(i.sub ?? itemSub(i))}</span></small></span>`;
+  const itemRow = (i, more = true) => { const u = itemUrl(i), inner = `${thumb(i)}<span class="tx">${i.kind === "event" && window.EventTypes ? window.EventTypes.tag({ etype: i.etype, title: i.title, activity: i.art?.activity }, { cls: "pl-type--b" }) : ""}<b>${esc(i.title || "Untitled")}</b><small><span>${esc(i.sub ?? itemSub(i))}</span></small></span>`;
     return `<li style="display:flex;align-items:center;border-bottom:1px solid var(--pl-line)">${u ? `<a class="lb-row" style="border:0" href="${esc(u)}">${inner}</a>` : `<span class="lb-row" style="border:0;cursor:default">${inner}</span>`}${more ? `<button type="button" class="lb-more" data-more="${esc(i.kind)}:${esc(i.ref)}" aria-label="More for ${esc(i.title || "this")}">${IC.more}</button>` : ""}</li>`; };
   const findItem = (list, key) => list.find((i) => i.kind + ":" + i.ref === key);
 

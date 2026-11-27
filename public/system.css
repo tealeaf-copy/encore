@@ -63,6 +63,38 @@
 }
 /* ==== end of brand tokens ==== */
 
+/* ==== EVENT TYPE TAGS: what kind of thing it is, at a glance (public/eventtypes.js). One quiet tint and one ink-safe
+   text colour per type, the same on every page (a host's brand kit never recolours them), each with a line icon and the
+   type word so colour is never the only signal. test/event-types.test.js checks each pair at WCAG AA for small text. */
+:root{
+  --pl-type-popup-bg:#F6DED3;--pl-type-popup-fg:#93300F;
+  --pl-type-pickup-bg:#F3E7A8;--pl-type-pickup-fg:#5C4A00;
+  --pl-type-party-bg:#F2DCE5;--pl-type-party-fg:#86294F;
+  --pl-type-dinner-bg:#F1E1CA;--pl-type-dinner-fg:#743F0C;
+  --pl-type-class-bg:#E5E0F0;--pl-type-class-fg:#4D3D80;
+  --pl-type-active-bg:#DEE6D2;--pl-type-active-fg:#3A5527;
+  --pl-type-games-bg:#D6E6EE;--pl-type-games-fg:#1D5273;
+  --pl-type-trip-bg:#D5EAE3;--pl-type-trip-fg:#1C5A4E;
+  --pl-type-talk-bg:#E7E2D8;--pl-type-talk-fg:#4A433C;
+  --pl-type-booking-bg:#E3E8F4;--pl-type-booking-fg:#29489A;
+  --pl-type-event-bg:#EAE6DC;--pl-type-event-fg:#444845;
+}
+.pl-type--popup{--t-bg:var(--pl-type-popup-bg);--t-fg:var(--pl-type-popup-fg)}.pl-type--pickup{--t-bg:var(--pl-type-pickup-bg);--t-fg:var(--pl-type-pickup-fg)}
+.pl-type--party{--t-bg:var(--pl-type-party-bg);--t-fg:var(--pl-type-party-fg)}.pl-type--dinner{--t-bg:var(--pl-type-dinner-bg);--t-fg:var(--pl-type-dinner-fg)}
+.pl-type--class{--t-bg:var(--pl-type-class-bg);--t-fg:var(--pl-type-class-fg)}.pl-type--active{--t-bg:var(--pl-type-active-bg);--t-fg:var(--pl-type-active-fg)}
+.pl-type--games{--t-bg:var(--pl-type-games-bg);--t-fg:var(--pl-type-games-fg)}.pl-type--trip{--t-bg:var(--pl-type-trip-bg);--t-fg:var(--pl-type-trip-fg)}
+.pl-type--talk{--t-bg:var(--pl-type-talk-bg);--t-fg:var(--pl-type-talk-fg)}.pl-type--booking{--t-bg:var(--pl-type-booking-bg);--t-fg:var(--pl-type-booking-fg)}
+.pl-type--event{--t-bg:var(--pl-type-event-bg);--t-fg:var(--pl-type-event-fg)}
+html body .pl-type{display:inline-flex;align-items:center;gap:5px;flex:none;width:max-content;max-width:100%;min-height:22px;margin:0;padding:2px 7px 2px 6px;box-sizing:border-box;border-radius:6px;background:var(--t-bg,var(--pl-type-event-bg));color:var(--t-fg,var(--pl-type-event-fg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t-fg,#444845) 22%,transparent);font:500 12px/16px var(--pl-font-mono);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;vertical-align:middle;text-decoration:none;text-shadow:none}
+html body .pl-type>span{overflow:hidden;text-overflow:ellipsis}html body .pl-type .pl-type__i{flex:none;width:14px;height:14px}
+html body .pl-type.pl-type--b{display:flex;margin:0 0 6px}
+.pl-type-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 6px}
+/* filter chips in the same colours: quiet until picked, then the type's tint with an ink edge */
+html body .pl-type-chip{display:inline-flex;align-items:center;gap:6px;flex:none;min-height:44px;padding:0 12px;border-radius:6px;border:1.5px solid var(--pl-line);background:var(--pl-surface);color:var(--pl-ink);font:500 15px var(--pl-font-text);cursor:pointer;white-space:nowrap}
+html body .pl-type-chip .pl-type__i{color:var(--t-fg)}html body .pl-type-chip[aria-pressed=true]{background:var(--t-bg);color:var(--t-fg);border-color:var(--t-fg)}
+html body .pl-type-chip:focus-visible{outline:2px solid var(--pl-accent);outline-offset:2px}
+/* ==== end of event type tags ==== */
+
 /* ---- the guest invite's type scale (the light invite /e and the full invite /g; rules in public/slots.css "Field Notes
    invite"). One scale, ranked: kicker, title, when, place, body, meta. Sizes / line heights in px, spacing on a 4/8 rhythm.
    A look or brand kit may change only the accent, the cover art and the title face (sturdy set: --inv-title-face) ---- */

@@ -151,7 +151,7 @@
     return `<article class="fv-card fv-ev kit-story${poster ? " poster" : ""}" data-fv-id="${esc(e.id || "")}" style="${window.EncoreBrandKit?.storyStyle(e.host) || ""}">
       <a class="fv-media" href="${esc(e.cta?.url || e.url)}" tabindex="-1" aria-hidden="true">${media}</a>
       <div class="fv-body"><p class="fv-host">${avatar(e.host, 24)}<span><b>${esc(e.host?.name || "A host")}</b>${by?.note ? ` · ${esc(by.note)}` : ""}</span></p>
-        <h3 class="fv-title"><a href="${esc(e.cta?.url || e.url)}">${esc(e.title)}</a></h3><p class="fv-data">${[when(e), where(e)].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</p>
+        ${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<h3 class="fv-title"><a href="${esc(e.cta?.url || e.url)}">${esc(e.title)}</a></h3><p class="fv-data">${[when(e), where(e)].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join("")}</p>
         ${friendsSpot(e)}${togetherSpot(e)}${st ? `<p class="fv-cap2">${esc(st)}</p>` : ""}
         <div class="fv-acts"><a class="fv-btn primary" data-fv-in href="${esc(e.cta?.url || e.url)}">${esc(btnText(e, e.cta?.label || "I'm in"))}</a>${more([withBtn(e), saveSpot({ kind: "event", id: e.id, ref: e.id, title: e.title, url: e.url, image: e.cover || "", img: e.cover || "" })], e.title)}</div></div></article>`; }
   // "Come with me?" (public/comewith.js): signed in, a link for one friend from your own reply; "Mia and Jo are in" once both are
@@ -162,7 +162,7 @@
   const likeBtn = (e) => (e.id && !e.sample && !/^s[cx]-/.test(e.id) ? `<button type="button" class="fv-mi fv-like" data-pl-like="${esc(e.id)}" data-title="${esc(e.title)}">Host one like this</button>${e.hostedLine ? `<small class="fv-mnote">${esc(e.hostedLine)}</small>` : ""}` : "");
   // a tile for a row: a small 4:5 picture, a title, one line
   function mini(e, { cityToo = false } = {}) { if (e.id) EVS.set(String(e.id), e); const cap = [short(e), cityToo ? e.city || where(e) : where(e), e.sample ? "Example" : ""].filter(Boolean).join(" · ");
-    return `<a class="fv-tile" href="${esc(e.cta?.url || e.url)}" data-fv-id="${esc(e.id || "")}"><span class="fv-tile-m">${coverOK(e) ? `<img class="fv-img" data-fv-q src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async" style="object-position:${coverPos(e.look)}">` : art(e, { title: "" })}</span><b>${esc(e.title)}</b><small>${esc(cap)}</small></a>`; }
+    return `<a class="fv-tile" href="${esc(e.cta?.url || e.url)}" data-fv-id="${esc(e.id || "")}"><span class="fv-tile-m">${coverOK(e) ? `<img class="fv-img" data-fv-q src="${esc(e.cover)}" alt="" width="200" height="250" loading="lazy" decoding="async" style="object-position:${coverPos(e.look)}">` : art(e, { title: "" })}</span>${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<b>${esc(e.title)}</b><small>${esc(cap)}</small></a>`; }
   // a past event as a scrapbook page: one big instant photo with tape, two smaller ones, who came, one kudos quote
   function dump(e, { by = null, key = "", photos = null, quote = null } = {}) { const P = (photos || e.photos || []).slice(0, 8);
     if (e.cover && !P.some((p) => p.url === e.cover)) P.unshift({ id: "cover", url: e.cover, type: "image", caption: "" });
@@ -268,10 +268,10 @@
   function evCard(e, i) { const st = e.spotsLeft != null && e.spotsLeft <= 5 ? (e.spotsLeft ? `${e.spotsLeft} spot${e.spotsLeft === 1 ? "" : "s"} left` : "Full") : "";
     const media = e.cover ? `<img class="fv-img" src="${esc(e.cover)}" alt="" width="800" height="500" ${i === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">` : art({ ...e, hood: e.where }, { title: "" });
     const P = e.proof || {};
-    return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, [e.members ? "For members" : e.drop ? "Drop" : e.followed ? "A host you follow" : "", e.where].filter(Boolean).join(" · "), { type: "event", target: "event:" + e.id, name: e.title })}
+    return `<article class="fb-card fb-ev" data-fv-id="${esc(e.id)}" data-kind="event">${lead(e.host, [e.members ? "For members" : e.followed ? "A host you follow" : "", e.where].filter(Boolean).join(" · "), { type: "event", target: "event:" + e.id, name: e.title })}
       ${P.line ? `<p class="fb-proof">${stack(P.faces, P.sketches)}<span>${esc(P.line)}</span></p>` : ""}
       <a class="fb-media" href="${esc(e.cta.url)}" tabindex="-1" aria-hidden="true">${media}</a>
-      <h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
+      ${window.EventTypes?.tag(e, { cls: "pl-type--b" }) || ""}<h3 class="fb-title"><a href="${esc(e.cta.url)}">${esc(e.title)}</a></h3>${e.line ? `<p class="fb-line">${esc(e.line)}</p>` : ""}
       ${e.drop && e.pickup ? meta(["Order ahead", e.pickup.replace(/^Pickup /, "Pickup "), e.left || e.price]) /* a drop: pickup, never an event date (public/pickup.js) */ : meta([when(e), e.free ? "Free" : e.price, st])}
       <a class="fb-cta" data-fv-in href="${esc(e.cta.url)}">${esc(e.cta.label)}</a>${actRow(e)}</article>`; }
   function recapCard(r) { const key = "fb:" + r.id;

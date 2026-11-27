@@ -28,6 +28,7 @@ import { vevent, calendar, publicCopy } from "./hooksout.js";
 import { slotLabel } from "./preorder.js";
 import { addressOpen } from "./drops.js";
 import "../public/pickup.js"; // a drop's pickup windows, read the same way as every page (globalThis.PLPickup)
+import { typeOf } from "./eventtypes.js"; // the type tag on each row (Pop-up, Pickup, ...)
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/, HHMM = /^\d{2}:\d{2}$/, ID = /^[A-Za-z0-9_-]{2,80}$/;
 const lc = (s) => String(s || "").trim().toLowerCase();
@@ -117,7 +118,7 @@ export function itemOf({ id, ev, kind, status, place = "", host = "", href = "",
   const day = sp.startMs != null && !sp.allDay ? localDay(sp.startMs, sp.tz) : d;
   const sub = [status, place, host ? `with ${host}` : ""].filter(Boolean).join(" · ");
   return { key: key || `${kind}:${id}`, kind, eventId: id, title: title || titleOf(ev), date: day, endDate: multiDay(ev) && kind !== "todo" && !date ? lastDay(ev) : "", time: HHMM.test(t) ? t : "", tz: sp.tz,
-    startMs: sp.startMs, endMs: sp.endMs, allDay: sp.allDay, status, place, host, sub, href: href || `/e/${encodeURIComponent(id)}`, ord, ...extra };
+    startMs: sp.startMs, endMs: sp.endMs, allDay: sp.allDay, status, place, host, sub, href: href || `/e/${encodeURIComponent(id)}`, ord, ...(ev && kind !== "todo" ? { etype: typeOf(ev) } : {}), ...extra };
 }
 
 // ---------- itineraries ----------

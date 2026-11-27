@@ -46,6 +46,8 @@
 
   // the order kinds take in a day's dots, and their names
   const KIND = { hosting: "Hosting", going: "Going", class: "Class", pickup: "Pickup", waitlist: "Waitlist", saved: "Saved", todo: "To do", session: "Your agenda" };
+  // what kind of thing it is (public/eventtypes.js): a small type tag over the title
+  const typeTag = (it) => (window.EventTypes && it.etype ? window.EventTypes.tag(it.etype, { cls: "pl-type--b" }) : "");
   const DOT_ORDER = ["hosting", "going", "class", "pickup", "waitlist", "saved"];
   /** { "YYYY-MM-DD": ["hosting", "going"] } for a month ("YYYY-MM"): one dot per kind a day has, a span on each of its days. To-dos ride on their event. Pure. */
   function calendarDots(items, ym) { const out = {};
@@ -88,7 +90,7 @@
     const href = it.draft ? `/?open=${encodeURIComponent(it.eventId)}` : it.href || `/e/${encodeURIComponent(it.eventId)}`;
     return `<li class="tl-row k-${esc(it.kind)}${past ? " is-past" : ""}${live ? " is-live" : ""}${it.draft ? " is-draft" : ""}${withCal ? " has-cal" : ""}"><a class="tl-a" href="${esc(href)}"${peekAttr(it)}>`
       + `<span class="tl-time">${live ? "Now" : esc(time)}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
-      + `<span class="tl-body"><span class="tl-k">${esc(KIND[it.kind] || "")}</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${st}${st && rest ? " · " : ""}${rest}</span>${loc}</span>`
+      + `<span class="tl-body"><span class="tl-k">${esc(KIND[it.kind] || "")}</span>${typeTag(it)}<b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${st}${st && rest ? " · " : ""}${rest}</span>${loc}</span>`
       + `<span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${withCal ? calBtn(it) : ""}</li>`;
   }
   /** An itinerary row (inside a plan, or nested in a multi-day block). */
@@ -104,7 +106,7 @@
         : `<li class="tl-row tl-irow tl-quiet"><div class="tl-a"><span class="tl-time">${d.n === 1 && it.time ? esc(clock(it.time)) : ""}</span><span class="tl-node tl-node-i" aria-hidden="true">${ICON[d.n === 1 ? "arrive" : d.n === days.length ? "checkout" : "free"]}</span><span class="tl-body"><span class="tl-sub">${d.n === 1 ? "First day" : d.n === days.length ? "Last day" : `Day ${d.n}`}</span></span></div></li>`;
       return `<li class="tl-nday${on ? " is-today" : ""}"><span class="tl-ndh">${on ? "<b>Today</b> · " : ""}${esc(L.text)}</span><ol class="tl-list tl-nlist">${rows}</ol></li>`; }).join("");
     return `<li class="tl-span k-${esc(it.kind)}${past ? " is-past" : ""}${cal ? " has-cal" : ""}"><a class="tl-a tl-spanhead" href="${esc(href)}"${peekAttr(it)}><span class="tl-time">${esc(it.allDay ? "" : clock(it.time))}</span><span class="tl-node" aria-hidden="true">${ICON[it.kind] || ICON.going}</span>`
-      + `<span class="tl-body"><span class="tl-k">${esc(rangeText(it.date, it.endDate))} · ${days.length} days</span><b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${it.status ? `<span class="tl-st">${esc(it.status)}</span>` : ""}${[it.place, it.host ? `with ${it.host}` : ""].filter(Boolean).map((x) => " · " + esc(x)).join("")}</span></span><span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${cal ? calBtn(it) : ""}`
+      + `<span class="tl-body"><span class="tl-k">${esc(rangeText(it.date, it.endDate))} · ${days.length} days</span>${typeTag(it)}<b class="tl-title">${esc(it.title)}</b><span class="tl-sub">${it.status ? `<span class="tl-st">${esc(it.status)}</span>` : ""}${[it.place, it.host ? `with ${it.host}` : ""].filter(Boolean).map((x) => " · " + esc(x)).join("")}</span></span><span class="tl-chev" aria-hidden="true">${ICON.chev}</span></a>${cal ? calBtn(it) : ""}`
       + `<ol class="tl-nest">${nest}</ol></li>`;
   }
   const nowHtml = (now, tz) => { const t = new Date(now).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", ...(zoneOk(tz) ? { timeZone: tz } : {}) }).replace(/\s([AP]M)$/, (_, x) => x.toLowerCase()).replace(":00", "");

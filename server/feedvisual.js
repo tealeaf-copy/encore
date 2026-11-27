@@ -21,6 +21,7 @@ import { cleanLook } from "./looks.js";
 import "../public/pickup.js"; // a drop's pickup words (globalThis.PLPickup)
 import { kitJson } from "./brandkit.js"; // a host's brand kit, for story cards
 import { interestsOf, cleanInterests } from "./hooks.js";
+import { typeOf } from "./eventtypes.js"; // the type tag on each card
 
 const PRESETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "presets");
 const DAY = 864e5;
@@ -145,7 +146,7 @@ export function makeFeedVisual(store, { C, X }) {
     const K = kudosOf(I, x.id).filter((k) => k.love || (k.tags || []).length), q = K.filter((k) => k.love && k.verified).sort((a, b) => (b.verified === "guest_list") - (a.verified === "guest_list") || b.love.length - a.love.length)[0];
     const came = G(I).came.get(x.id) || 0;
     const cap = +e.headcount || 0;
-    return { id: x.id, title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
+    return { id: x.id, etype: typeOf(e), title: e.pubTitle || e.name || "", date: e.date || "", startTime: e.startTime || "", city: e.city || "", hood: e.hood || "", emoji: e.emoji || "", activity: e.activity || "", free: !!(e.free || !e.price), price: e.price || "",
       ...(e.drop ? { drop: true, pickup: globalThis.PLPickup.line(e), free: false } : {}), // a drop reads Pickup, never an event date
       approvalRequired: !!e.approvalRequired, past, cover: MEDIA_OK(e.coverPhoto) ? e.coverPhoto : e.drop ? (e.orderItems || []).map((it) => (it.photos || [])[0] || it.photo || "").find(MEDIA_OK) || "" : "", coverArt: artOf(e), look: lookOf(e), host: h, url: e.drop ? `/e/${encodeURIComponent(x.id)}` : `/g#rsvp-${encodeURIComponent(x.id)}`, page: h ? `/@${h.handle}` : "",
       ...(sample(x.ws, I) ? { sample: true } : {}), ...(past ? { came, kudos: K.length, photos, newPhotos: photos.filter((m) => m.at > Date.now() - 3 * DAY).length /* photo drops: "5 new photos" */, ...(q ? { quote: { text: scrub(q.love).slice(0, 220), name: first(q.name) || "A guest", verifiedLabel: q.verified === "guest_list" ? "Came, on the guest list" : "Replied I'm in" } } : {}), reacts: reactsOf(x.id), myReacts: myReacts(x.id, email || device) } : { going, ...(cap && going ? { spotsLeft: Math.max(0, cap - going) } : {}) }),

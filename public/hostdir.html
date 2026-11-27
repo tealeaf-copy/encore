@@ -53,7 +53,7 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   <button type="button" class="ls-btn" id="more" hidden style="margin-top:24px"></button>
   <p class="teams" style="border-width:1.5px">Booking for a brand? <a href="/hosts/book">Request a date</a>.</p>
 </div>
-<script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/avatars.js"></script><script src="/place.js"></script>
 <script>
 (function () {
   const $ = (s) => document.querySelector(s), esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -81,9 +81,10 @@ h1{font:700 var(--fs-28-40,28px)/1.08 var(--sys-display);margin:0 0 8px}.lede{co
   const facts = (h) => [statusOf(h) ? `<span class="st">${esc(statusOf(h))}</span>` : "", ...[[h.hood, cityOf(h)].filter(Boolean).join(", "), h.followers ? `${h.followers} ${h.followers === 1 ? "follower" : "followers"}` : "", h.hosted ? `${h.hosted} ${h.hosted === 1 ? "event" : "events"}` : ""].filter(Boolean).map(esc)].filter(Boolean).join(" · ");
   // "Next: Sunrise 5K, Sat, Nov 28", the same line Discover's host cards show
   let EVS = []; const nextOf = (h) => { const n = EVS.filter((e) => e.host?.handle === h.handle && e.stage !== "interest" && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0]; if (!n) return ""; const d = new Date(n.date + "T12:00"); const t = String(n.title || "").replace(new RegExp("^" + String(h.name || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[:,-]\\s*", "i"), "") || n.title; return `Next: ${t}${isNaN(d) ? "" : ", " + d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}`; };
+  const nextTag = (h) => { const n = window.EventTypes && EVS.filter((e) => e.host?.handle === h.handle && e.stage !== "interest" && e.date).sort((a, b) => String(a.date).localeCompare(String(b.date)))[0]; return n ? window.EventTypes.tag(n, { cls: "pl-type--b" }) : ""; }; // the next one's type tag (public/eventtypes.js)
   const igOf = (h) => ((h.links || []).find((l) => /^https:\/\/(www\.)?instagram\.com\//i.test(l.url || "")) || {}).url || "";
   const cardOf = (h) => `<div class="h"><span class="top" style="--bg:${tint(h)}"><span class="av">${avatar(h)}</span></span>
-      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `<span class="nx-l">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}</span>
+      <span class="bd"><a class="hl" href="/@${encodeURIComponent(h.handle)}"><b>${esc(h.name)}</b></a><span class="tl">${esc(h.tagline || h.bio || "Hosts small events")}</span>${nextOf(h) ? `${nextTag(h)}<span class="nx-l">${esc(nextOf(h))}</span>` : ""}${h._why ? `<span class="why">${esc(h._why)}</span>` : ""}${facts(h) ? `<span class="facts">${facts(h)}</span>` : ""}</span>
       <span class="ft">${h.showcase ? (igOf(h) ? `<a class="ls-btn" href="${esc(igOf(h))}" target="_blank" rel="noopener">See on Instagram<span class="sr"> for ${esc(h.name)} (opens in a new tab)</span></a>` : "") : `<a class="ls-btn primary" href="/@${encodeURIComponent(h.handle)}#follow">Follow<span class="sr"> ${esc(h.name)}</span></a>`}</span></div>`;
   // Top hosts this month (from the leaderboard): the picked city, else the visitor's, else the busiest; only when the board qualifies
   const TOP = new Map(); let topSeq = 0;

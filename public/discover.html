@@ -101,7 +101,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   </div>
 </div>
 <footer>Pottery Lab · <a href="/discover">Discover</a> · <a href="/hosts">Hosts</a> · <a href="/hosts/book">For brands</a> · <a href="/security">Security</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
-<script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
+<script src="/eventtypes.js"></script><script src="/eventart.js"></script><script src="/mascot.js"></script><script src="/community.js"></script>
 <script src="/account.js"></script>
 <script src="/avatars.js"></script>
 <script>
@@ -115,7 +115,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   let MINE = { gaps: [], waiting: [], handle: "" }, LOADED = false;
   let data = { events: [], hosts: [] }, shops = null, filter = "all", city = "", evShown = PAGE, farOpen = false, fyIds = new Set();
   try { city = localStorage.getItem("encore.city") || ""; } catch {}
-  const PRM = new URLSearchParams(location.search), QTEXT = (PRM.get("q") || "").trim().toLowerCase(); if (["move", "make", "gather", "discover"].includes(PRM.get("lane"))) filter = PRM.get("lane");
+  const PRM = new URLSearchParams(location.search), QTEXT = (PRM.get("q") || "").trim().toLowerCase(); if (["move", "make", "gather", "discover"].includes(PRM.get("lane"))) filter = PRM.get("lane"); const ET = window.EventTypes; if (ET && ET.valid(PRM.get("type"))) filter = PRM.get("type"); /* ?type=popup: the type chips (public/eventtypes.js) */
   const QWORDS = QTEXT.replace(/\b(near|me|in|a|an|the|for|my|of|some|nights?|events?|club)\b/g, " ").split(/\s+/).filter((w) => w.length > 2);
   const qMatch = (e) => !QWORDS.length || QWORDS.some((w) => `${e.title || ""} ${e.activity || ""} ${e.host?.name || ""} ${e.city || ""} ${e.hood || ""}`.toLowerCase().includes(w.replace(/s$/, "")));
   const near = (x) => { if (!city) return true; const cf = city.toLowerCase(); return P ? P.near(`${x.city || ""}`, cf) || (!!x.hood && P.near(`${x.hood}`, cf)) : `${x.city || ""} ${x.hood || ""}`.toLowerCase().includes(cf); };
@@ -125,10 +125,10 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   const cap = (t) => { t = String(t || "").trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ""; };
   const card = (e, why) => { const H = e.host || {}, url = `/g#rsvp-${encodeURIComponent(e.id)}`, free = e.free || !e.price;
     const st = e.sample ? "Example" : e.approvalRequired ? "Ask to join" : "";
-    const meta = [st ? `<b>${esc(st)}</b>` : "", esc(cap(e.activity)), esc(free ? (e.costNote || "Free") : e.price === "chip" ? "Chip in" : e.price)].filter(Boolean).join(" · ");
+    const meta = [st ? `<b>${esc(st)}</b>` : "", esc(ET && cap(e.activity) === ET.labelOf(e) ? "" : cap(e.activity)), esc(free ? (e.costNote || "Free") : e.price === "chip" ? "Chip in" : e.price)].filter(Boolean).join(" · ");
     const cov = e.coverPhoto ? `<img src="${esc(e.coverPhoto)}" alt="" loading="lazy">` : window.EventArt ? window.EventArt.cover(e, { title: "", label: "" }) : "";
     const save = window.PLSave ? window.PLSave.button({ kind: "event", ref: e.id, title: e.title, img: e.coverPhoto || "" }) : "";
-    return `<article class="ls-card"><div class="ls-media">${cov}</div><div class="ls-body">${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(e.drop && e.pickup ? "Order ahead · " + e.pickup : e.date ? C.fmtDate(e.date) + (e.startTime ? " · " + tmOf(e.startTime) : "") : "Date coming soon")}</p>
+    return `<article class="ls-card"><div class="ls-media">${cov}</div><div class="ls-body">${ET ? ET.tag(e, { cls: "pl-type--b" }) : ""}${meta ? `<p class="ls-meta">${meta}</p>` : ""}<p class="ls-when">${esc(e.drop && e.pickup ? "Order ahead · " + e.pickup : e.date ? C.fmtDate(e.date) + (e.startTime ? " · " + tmOf(e.startTime) : "") : "Date coming soon")}</p>
       <a class="ls-title" href="${url}">${esc(e.title)}</a><p class="ls-sub">${H.name ? "by " + esc(H.name) : ""}${e.hood || e.city ? `${H.name ? " · " : ""}${esc(e.hood || e.city)}` : ""}</p>${why ? `<small class="why">${esc(why)}</small>` : ""}
       <div class="ls-acts"><a class="ls-btn primary" href="${url}" aria-label="See the event: ${esc(e.title)}">See the event</a><details class="ls-more"><summary aria-label="More for ${esc(e.title)}"><span aria-hidden="true"></span></summary><div class="ls-menu">${save}${H.handle ? `<a class="ls-mi" href="/@${encodeURIComponent(H.handle)}">More from ${esc(H.name || "this host")}</a>` : ""}</div></details></div></div></article>`; };
 
@@ -144,8 +144,10 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
 
   // ---- what kind of thing: one row of chips ----
   function drawFilters() {
-    const lanes = [["all", "Everything"], ["move", "Move"], ["make", "Make & taste"], ["gather", "Gather"], ["discover", "Somewhere new"]];
-    $("#filters").innerHTML = lanes.map(([k, t]) => `<button type="button" class="ls-chip" aria-pressed="${filter === k}" data-f="${k}">${t}</button>`).join("");
+    // the same types and colours as the tags on the cards: only the ones there are events for (and the one picked)
+    const types = ET ? ET.present(data.events).filter((k) => k !== "event") : [], all = `<button type="button" class="ls-chip" aria-pressed="${filter === "all" || !!LANE_H[filter]}" data-f="all">Everything</button>`;
+    if (ET && ET.valid(filter) && !types.includes(filter)) types.push(filter);
+    $("#filters").innerHTML = all + types.map((k) => ET.chip(k, filter === k, "data-f")).join("");
     $("#filters").querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; evShown = PAGE; farOpen = false; drawFilters(); drawEvents(); });
   }
 
@@ -173,10 +175,10 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   const LANE_H = { move: "Move", make: "Make & taste", gather: "Gather", discover: "Somewhere new" }; // one name per lane: the chip, this heading and the quiz
   function drawEvents() {
     whyN = 0; const realN = data.events.filter((e) => !e.sample).length;
-    const base = collapse(data.events.filter((e) => (filter === "all" || C.laneOf(e) === filter) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
+    const base = collapse(data.events.filter((e) => (filter === "all" || (LANE_H[filter] ? C.laneOf(e) === filter : ET && ET.typeOf(e) === filter)) && qMatch(e) && !(e.sample && realN >= 4) && !fyIds.has(e.id))).sort(byDate);
     const local = base.filter(near), far = city ? base.filter((e) => !near(e)) : [];
     { const ih = $("#introH"); if (ih && ih.textContent !== "Discover") ih.textContent = city && data.events.some(near) ? "Small events near you" : "Small events, big welcome"; } // no "near you" over "Nothing in Tokyo"
-    const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter]) : "Coming up";
+    const what = filter !== "all" ? (GT && GT.lane === filter ? `Picked for ${GT.name}` : LANE_H[filter] || (ET && ET.PLURAL[filter]) || "Coming up") : "Coming up";
     $("#evH").textContent = QTEXT ? `Results for “${PRM.get("q")}”` : city && local.length ? `${what} in ${city}` : what; $("#evH").hidden = !!(QTEXT && !base.length && data.events.length);
     let list = local, note = "", rest = [];
     // a signed-in host whose live event Discover can't list yet hears why, in one line
@@ -235,7 +237,7 @@ body.dc-wait #evSec,body.dc-wait #forYou{visibility:hidden}
   }
   fetch("/api/public/shops").then((r) => r.json()).then((j) => { const seen = new Set(); shops = (j.shops || []).filter((s) => { const k = `${s.name}|${s.title}`.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); drawShops(); }).catch(() => {});
 
-  function drawAll() { drawForYou(); drawEvents(); drawHosts(); drawShops(); }
+  function drawAll() { drawFilters(); drawForYou(); drawEvents(); drawHosts(); drawShops(); }
   drawFilters();
 
   // no city saved: use the workspace's city, or a location the browser already shares (never a surprise prompt)

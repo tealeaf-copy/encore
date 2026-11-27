@@ -182,7 +182,7 @@ body.nomap{overflow:auto}
 </section>
 <div class="intro" id="intro" hidden role="dialog" aria-modal="true" aria-labelledby="introH"></div>
 <script src="/place.js"></script><script src="/avatars.js"></script><script src="/save.js"></script>
-<script src="/mapcore.js"></script><script src="/pins.js"></script><script src="/map.js"></script><script src="/sharecards.js" defer></script><script src="/places.js" defer></script><!-- People you know: friends' places (public/places.js) -->
+<script src="/eventtypes.js"></script><script src="/mapcore.js"></script><script src="/pins.js"></script><script src="/map.js"></script><script src="/sharecards.js" defer></script><script src="/places.js" defer></script><!-- People you know: friends' places (public/places.js) -->
 <script>
 (function () {
   const K = window.PLMapCore, PIN = window.PLPins, $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -216,7 +216,7 @@ body.nomap{overflow:auto}
     const faces = fr ? (fr.people || []).slice(0, 3).map(friendAv).join("") : (e.faces || []).filter((f) => f.art).slice(0, 3).map(faceAv).join("");
     return `<p class="proof">${faces ? `<span class="stack" aria-hidden="true">${faces}</span>` : ""}<span>${esc(line)}</span></p>`; };
   function row(e) { const v = K.vibe(e.vibe);
-    return `<li class="row${e.id === S.sel ? " sel" : ""}" data-id="${esc(e.id)}">${thumb(e)}<div class="body"><span class="kick"><i class="vd" style="--v:${v.color}" title="${esc(v.label)}"></i>${esc(kicker(e))}</span>
+    return `<li class="row${e.id === S.sel ? " sel" : ""}" data-id="${esc(e.id)}">${thumb(e)}<div class="body">${window.EventTypes ? window.EventTypes.tag(e, { cls: "pl-type--b" }) : ""}<span class="kick"><i class="vd" style="--v:${v.color}" title="${esc(v.label)}"></i>${esc(kicker(e))}</span>
       <a class="ttl" href="${esc(e.url)}">${esc(e.title)}</a><p class="hood">${esc(e.hood || e.city || "")}${e.sample ? `<span class="tag">Sample</span>` : ""}</p>
       ${e.host ? `<p class="by">${hostAv(e.host)}<span>by <b>${esc(e.host.name)}</b></span></p>` : ""}${proof(e)}</div><div class="save">${saveBtn(e)}</div></li>`; }
 
@@ -226,7 +226,7 @@ body.nomap{overflow:auto}
     $("#shTitle").innerHTML = S.f.mine ? `<em>Your map</em>: ${L.length} ${L.length === 1 ? "spot" : "spots"}` : L.length ? `${L.length} ${L.length === 1 ? "thing" : "things"} on near <em>${esc(city)}</em>` : `Nothing on near ${esc(city)}`;
     const hoods = new Set(L.map((e) => e.hood).filter(Boolean)).size;
     $("#shSub").textContent = S.f.mine && L.length ? `${hoods} ${hoods === 1 ? "neighbourhood" : "neighbourhoods"} so far` : S.nomap ? "Grouped by neighbourhood" : S.you ? "Distances from you" : "Distances from the map centre"; }
-  function drawCats() { $("#cats").innerHTML = K.CATS.map((c) => `<button type="button" class="cat" data-cat="${c.id}" aria-pressed="${S.f.cat === c.id}">${PIN.cat(c.id, 18)}<span>${c.label}</span></button>`).join(""); }
+  function drawCats() { const ET = window.EventTypes; if (ET) { const T = ET.present(all()).filter((k) => k !== "event"); if (S.f.cat && ET.valid(S.f.cat) && !T.includes(S.f.cat)) T.push(S.f.cat); $("#cats").innerHTML = T.map((k) => ET.chip(k, S.f.cat === k, "data-cat")).join(""); return; } /* the same types and colours as the tags */ $("#cats").innerHTML = K.CATS.map((c) => `<button type="button" class="cat" data-cat="${c.id}" aria-pressed="${S.f.cat === c.id}">${PIN.cat(c.id, 18)}<span>${c.label}</span></button>`).join(""); }
   function drawList() { const L = visible(); drawHead(L);
     const note = S.nomap ? `<p class="quiet"><span>The map didn't load, so here's everything by neighbourhood.</span><button type="button" id="retry">Try the map</button></p>` : "";
     $("#note").innerHTML = note;
@@ -262,7 +262,7 @@ body.nomap{overflow:auto}
   function drawCard() { const c = $("#pcard"), e = byId(S.sel); if (!e || S.nomap) { c.hidden = true; c.innerHTML = ""; return; }
     const where = e.geo.exact ? `<p class="where"><span>${esc(e.place || "A public spot")}${e.hood ? ", " + esc(e.hood) : ""}</span></p>` : `<p class="where"><i aria-hidden="true"></i><span>Around ${esc(e.hood || e.city || "here")}. The host shares the exact spot once you're in.</span></p>`;
     c.innerHTML = `<button type="button" class="x" id="pcX" aria-label="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>${thumb(e, 64)}
-      <div class="body"><span class="kick"><i class="vd" style="--v:${K.vibe(e.vibe).color}"></i>${esc(kicker(e))}</span><a class="ttl" href="${esc(e.url)}">${esc(e.title)}</a>${e.host ? `<p class="by">${hostAv(e.host)}<span>by <b>${esc(e.host.name)}</b></span></p>` : ""}</div>
+      <div class="body">${window.EventTypes ? window.EventTypes.tag(e, { cls: "pl-type--b" }) : ""}<span class="kick"><i class="vd" style="--v:${K.vibe(e.vibe).color}"></i>${esc(kicker(e))}</span><a class="ttl" href="${esc(e.url)}">${esc(e.title)}</a>${e.host ? `<p class="by">${hostAv(e.host)}<span>by <b>${esc(e.host.name)}</b></span></p>` : ""}</div>
       <div class="save">${saveBtn(e)}</div><div class="go" style="grid-column:1/-1">${where}</div><div class="go" style="grid-column:1/-1"><a class="btn" href="${esc(e.url)}">See the event</a>${proof(e)}</div>`;
     c.hidden = false; }
 
@@ -310,7 +310,7 @@ body.nomap{overflow:auto}
 
   // ---------- clicks in the list and the card ----------
   document.addEventListener("click", (ev) => { const t = ev.target;
-    const cat = t.closest(".cat"); if (cat) { S.f.cat = S.f.cat === cat.dataset.cat ? "" : cat.dataset.cat; render({ fit: true }); return; }
+    const cat = t.closest("[data-cat]"); if (cat) { S.f.cat = S.f.cat === cat.dataset.cat ? "" : cat.dataset.cat; render({ fit: true }); return; }
     if (t.closest("[data-act=clear]")) { S.f = { ...K.EMPTY(), mine: false }; render({ fit: true }); return; }
     if (t.closest("[data-act=all]")) { S.f.mine = false; render({ fit: true }); return; }
     if (t.closest("#retry")) { location.reload(); return; }

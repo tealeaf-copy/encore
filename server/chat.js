@@ -25,6 +25,7 @@ import { momentKind, momentMaxBytes, sniffedAs } from "./feedvisual.js";
 import { seatsOf } from "./social.js";
 import { isQuiet } from "./reminders.js";
 import { eventTz } from "./tz.js";
+import { typeOf } from "./eventtypes.js"; // the type tag on each chat row
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const first = (n) => String(n || "").trim().split(/\s+/)[0] || "";
@@ -279,7 +280,7 @@ export function mountChat(app, { store, small, currentUser, C, X, mail = null, p
       const blocked = A.state?.blocked || [], L = byWs.get(W.ws).filter((m) => m.eventId === eventId && visible(m, W, blocked)).sort((a, b) => (a.at || 0) - (b.at || 0));
       const last = L[L.length - 1], readAt = A.state?.readAt || 0, unread = L.filter((m) => m.at > readAt && legacyMk(m, W.ws) !== W.mk && m.role !== "system" && !m.removedAt).length;
       const M = members(W.S, W.ws, eventId, W.ev);
-      out.push({ id: eventId, title: W.ev.pubTitle || W.ev.name || "Event", date: W.ev.date || "", startTime: W.ev.startTime || "", when: whenLine(W.ev), cover: MEDIA_OK(W.ev.coverPhoto) ? W.ev.coverPhoto : "",
+      out.push({ id: eventId, etype: typeOf(W.ev), title: W.ev.pubTitle || W.ev.name || "Event", date: W.ev.date || "", startTime: W.ev.startTime || "", when: whenLine(W.ev), cover: MEDIA_OK(W.ev.coverPhoto) ? W.ev.coverPhoto : "",
         art: { name: W.ev.pubTitle || W.ev.name || "", activity: W.ev.activity || "", coverArt: W.ev.coverArt && typeof W.ev.coverArt === "object" ? { kind: String(W.ev.coverArt.kind || "").slice(0, 40), tone: String(W.ev.coverArt.tone || "").slice(0, 20) } : null },
         faces: M.filter((m) => m.mk !== W.mk).slice(0, 3).map((m) => ({ name: m.name, tint: tint(m.mk), ...(m.avatar ? { avatar: m.avatar } : {}) })), n: M.length, inCount: inCount(W.S, eventId, W.ev),
         last: last ? { by: last.role === "system" ? "" : legacyMk(last, W.ws) === W.mk ? "You" : first(last.by) || "Guest", text: last.removedAt ? "Message removed" : last.kind === "photo" ? "Sent a photo" : String(last.text || "").replace(/\s+/g, " ").slice(0, 90), at: last.at || 0, system: last.role === "system" } : null,

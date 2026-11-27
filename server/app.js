@@ -93,6 +93,7 @@ import { mountPlaces } from "./places.js"; // "Your places" and the year in nigh
 import { upgradeSession, authEnabled, isAuthed, loginHandler, loginPage, logoutHandler, currentUser, users, useAuthStore, approverRoles, approverRolesConfigured, APPROVER_LIKE, hasPersonalPassword, teamOf, sessionWorkspace, startSession, emailTaken, hashPassword, startPasswordReset, finishPasswordReset, startSession as startSessionFor } from "./auth.js";
 import { exportWorkspace, deleteWorkspace } from "./workspaces.js";
 import { buildOrder, slotLabel, orderMoney, itemsOf } from "./preorder.js"; // review round 8
+import { typeOf, typeLabel } from "./eventtypes.js"; // the type tag (Pop-up, Pickup, House party, ...) on the invite and in link previews
 import { DEFAULT_WS, scopeStore, scopeChange, signupEnabled, getWorkspace, createWorkspace, updateWorkspace, trialState, putDbUser, getDbUser, membersOf, createInvite, getInvite, useInvite, createMcpToken, findMcpToken, listMcpTokens, revokeMcpToken, workspaceOfEvent, claimEvent, PLANS, allWorkspaceIds,
   CONNECTION_PROVIDERS, saveConnection, deleteConnection, listConnections, connectionTokens, saveContact, listContacts } from "./workspaces.js";
 
@@ -215,6 +216,7 @@ export function eventMoney(e) {
 export const looksLikeAddress = (t) => { const x = String(t || ""); return /\b\d{1,6}[a-z]?\s+[A-Za-zÀ-ÿ'.-]+(\s+[A-Za-zÀ-ÿ'.-]+){0,3}\s+(st|street|ave|avenue|rd|road|blvd|boulevard|ln|lane|dr|drive|pl|place|way|ct|court|ter|terrace|pkwy|parkway|hwy|sq|square)\b\.?/i.test(x) || /\b(apt|apartment|unit|suite|flat|floor)\s*#?\s*\w+|#\s*\d+|\b(my|our)\s+(place|apartment|flat|house|home|backyard|rooftop|loft)\b|['’]s\s+(place|apartment|flat|house|home)\b/i.test(x); };
 export function publicEvent(data, view) {
   const e = publicExtras(Object.fromEntries(PUBLIC_FIELDS.filter((k) => data[k] != null).map((k) => [k, data[k]])));
+  e.etype = typeOf(data); // what kind of thing it is, worked out from the whole doc (a booked table, a place to stay)
   // review round 13: a group price saved as text ("$40") reaches the pages as the number they read it as
   if (typeof e.groupPrice === "string") { const m = e.groupPrice.replace(/,/g, "").match(/(\d+(?:\.\d{1,2})?)/); if (m && +m[1] > 0) e.groupPrice = +m[1]; else delete e.groupPrice; }
   e.guests = data.noWall ? [] : (data.guests || []).filter(shownToGuests).map((g) => Object.fromEntries(GUEST_GUEST_FIELDS.filter((k) => g[k] != null).map((k) => [k, g[k]])));
@@ -708,7 +710,7 @@ export function createApp({ store, dataDir }) {
     const h = C.profileOf(ws), clubOnly = app.locals.fanclub?.visibility?.(ws, id) === "members", title = clubOnly ? `A members-only event${h?.name ? ` from ${h.name}` : ""}` : (U && (ev.pubTitle || ev.name) ? U.title : ev.pubTitle || ev.name) || "You're invited", when = ev.date ? new Date(ev.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }) : "",
       time = /^\d{2}:\d{2}$/.test(ev.startTime || "") ? new Date("2000-01-01T" + ev.startTime + ":00Z").toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" }) : "",
       desc = ev.drop ? ["Order ahead", globalThis.PLPickup.line(ev), ev.hood || ev.city || "", h?.name ? `From ${h.name}` : ""].filter(Boolean).join(" · ") // a drop's preview says pickup, never an event date (public/pickup.js)
-        : [when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
+        : [!clubOnly && typeOf(ev) !== "event" ? typeLabel(ev) : "", when && `${when}${time ? " · " + time : ""}`, ev.hood || ev.city || "", U?.spots || "", h?.name ? `Hosted by ${h.name}` : ""].filter(Boolean).join(" · "),
       card = !clubOnly && /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.ogCard || "") ? base + ev.ogCard : "", // the link card the host's share sheet drew (public/sharekit.js): cover, title, date, area, mark
       dropPhoto = ev.drop && !ev.coverPhoto ? ((ev.orderItems || []).find((x) => /^\/_blob\/[A-Za-z0-9]{20}$/.test(x?.photo || ""))?.photo || "") : "",
       img = card || (clubOnly ? ogCardFor(ev, base) : dropPhoto ? base + dropPhoto : /^\/_blob\/[A-Za-z0-9_-]{6,80}$/.test(ev.coverPhoto || "") ? base + ev.coverPhoto : /^https:\/\/[^\s"'<>]+$/.test(ev.coverPhoto || "") ? ev.coverPhoto : ogCardFor(ev, base));

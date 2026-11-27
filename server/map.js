@@ -12,6 +12,7 @@
 import { scopeStore, workspaceOfEvent, getWorkspace, allWorkspaceIds, DEFAULT_WS } from "./workspaces.js";
 import { makeGeocoder, cityCentre, hoodsIn, distanceKm } from "./geo.js";
 import { cspWith } from "./posthog.js";
+import { typeOf } from "./eventtypes.js"; // the type tag (Pop-up, Pickup, ...) and the map's type chips
 
 const lc = (s) => String(s || "").trim().toLowerCase();
 const clean = (v, n = 200) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
@@ -64,7 +65,7 @@ export function makeMap({ store, C, H = null, geo = makeGeocoder({ store }) }) {
     const hood = clean(e.hood || (host?.hood && lc(String(e.city || "").split(",")[0]) === lc(String(host?.city || "").split(",")[0]) ? host.hood : "") || (!e.city ? host?.hood : "") || "", 60);
     const pub = !!e.meetPoint && !e.approvalRequired && e.discoverable && g.exact; // the place name only where the public card already shows it
     return { id, url: "/e/" + encodeURIComponent(id), title: clean(e.pubTitle || e.name, 140), date: /^\d{4}-\d{2}-\d{2}$/.test(e.date || "") ? e.date : "", startTime: /^\d{2}:\d{2}$/.test(e.startTime || "") ? e.startTime : "",
-      hood, city: clean(e.city || host?.city, 60), cat, vibe, tier: tierOf(e), priceText: e.free ? "Free" : clean(typeof e.price === "string" || typeof e.price === "number" ? String(e.price) : "", 40),
+      hood, city: clean(e.city || host?.city, 60), cat, etype: typeOf(e), vibe, tier: tierOf(e), priceText: e.free ? "Free" : clean(typeof e.price === "string" || typeof e.price === "number" ? String(e.price) : "", 40),
       cover: PHOTO_OK(e.coverPhoto) ? e.coverPhoto : "", art: { activity: clean(e.activity, 40), kind: ART_OK(e.coverArt?.kind) ? e.coverArt.kind : "", tone: ART_OK(e.coverArt?.tone) ? e.coverArt.tone : "" },
       host: host ? { handle: clean(host.handle, 40), name: clean(host.name || host.handle, 60), color: /^#[0-9a-f]{6}$/i.test(host.theme?.accent || host.color || "") ? host.theme?.accent || host.color : "", avatarArt: /^[a-z]+(~\d){0,6}$/.test(host.theme?.avatarArt || "") ? host.theme.avatarArt : "", url: host.handle ? "/@" + host.handle : "" } : null,
       going: +going.going || 0, faces: (going.faces || []).slice(0, 3).map((f) => ({ art: /^[a-z]+$/.test(f.art || "") ? f.art : "", color: /^#[0-9a-f]{6}$/i.test(f.color || "") ? f.color : "" })),

@@ -283,3 +283,12 @@ html body #m#m .evs h3{font:600 18px/24px var(--pl-font-text)!important;letter-s
 
 /* a past event's reply card (review round 18): "You were there", with nothing left to show at a door or change */
 html body #view-guest#view-guest.ev2 .ev2-rs.pl-was :is(.tcode,.pl-out,.pl-tk-cal,.gchange,.cwm-box){display:none!important}
+/* Add to calendar (slots.js calMenu): a small sheet with the three calendars, Field Notes */
+.sl-calbtn.sl-calbtn{min-height:44px}
+.sl-calbg{position:fixed;inset:0;z-index:9800;background:rgba(27,29,28,.36);display:flex;align-items:flex-end;justify-content:center;padding:0}
+.sl-cal{--sl-soft:var(--pl-soft,#444845);--sl-ink:var(--pl-ink,#1B1D1C);--sl-field:var(--pl-line-strong,#1B1D1C);width:100%;max-width:420px;box-sizing:border-box;background:var(--pl-surface,#FAF8F3);color:var(--pl-ink,#1B1D1C);border:1.5px solid var(--pl-ink,#1B1D1C);border-radius:6px 6px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));display:grid;gap:8px;font:400 16px/1.5 var(--pl-font-text,"IBM Plex Sans",system-ui,sans-serif)}
+.sl-cal .sl-eyebrow{margin:0 0 4px}.sl-cal .sl-sub{margin:0 0 4px}
+.sl-calopt{display:flex;align-items:center;min-height:48px;padding:0 14px;border:1.5px solid var(--pl-line-strong,#1B1D1C);border-radius:6px;background:#fff;color:var(--pl-ink,#1B1D1C);font-weight:600;text-decoration:none}
+.sl-calopt:focus-visible,.sl-cal button:focus-visible{outline:2px solid var(--pl-accent,#29489A);outline-offset:2px}
+.sl-cal .sl-btn{min-height:48px;margin-top:4px}
+@media (min-width:600px){.sl-calbg{align-items:center;padding:24px}.sl-cal{border-radius:6px}}

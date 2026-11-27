@@ -545,9 +545,10 @@
 
   // ---------- quick actions: the settings that used to be long sections, each in its own sheet ----------
   function quick(k) { const W = S.W, refresh = () => { const p = q(".cv-pills", S.el); if (p) p.innerHTML = pills(W); };
-    if (k === "questions") { const Sh = sheet({ title: "Questions for guests", sub: "Asked when they reply. Answers show on your guest list.", wide: true, body: `<div id="cvQb"></div>`, foot: done(), onClose: () => { refresh(); draw(); } });
-      Sh.$("[data-done]").onclick = Sh.close; const QB = root.Questions;
-      if (QB?.builder) { try { QB.builder(Sh.$("#cvQb"), W, () => changed()); } catch (e) { console.warn(e); } }
+    if (k === "questions") { let qb = null; const Sh = sheet({ title: "Questions for guests", sub: "Asked when they reply. Answers show on your guest list.", wide: true, body: `<div id="cvQb"></div>`, foot: done(), onClose: () => { qb?.flush?.(); refresh(); draw(); } });
+      // one way out: Done (Escape and Back still close it); full height on a phone (public/questions.js)
+      Sh.bg.classList.add("qb-sheet"); Sh.$("[data-x]")?.remove(); Sh.$("[data-done]").onclick = Sh.close; const QB = root.Questions;
+      if (QB?.builder) { try { qb = QB.builder(Sh.$("#cvQb"), W, () => changed(), { onFullView: () => { Sh.close(); setMode("guest"); } }); } catch (e) { console.warn(e); } }
       else { Sh.$("#cvQb").innerHTML = `<label class="cv-f">A question<input id="cvAsk" value="${esc(W.askQ || "")}" placeholder="Anything you don't eat?" maxlength="120"></label>`; Sh.$("#cvAsk").oninput = (e) => { W.askQ = e.target.value; changed(); }; } return; }
     if (k === "reminders") { const Sh = sheet({ title: "Reminders", body: sw("cvRem", W.autoRemind !== false, "Remind guests the day before", "Everyone who's in gets a short note with the time and place.") + `<p class="cv-hint">You can also message guests any time from your event.</p>`, foot: done(), onClose: refresh });
       Sh.$("[data-done]").onclick = Sh.close; wireSw(Sh, "cvRem", (v) => { W.autoRemind = v; changed(); }); return; }

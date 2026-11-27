@@ -107,7 +107,7 @@
   const hm = (t) => { const m = /^(\d{2}):(\d{2})$/.exec(t || ""); if (!m) return ""; let h = +m[1]; const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return `${h}${m[2] === "00" ? "" : ":" + m[2]}${ap}`; };
   function toolsHTML(id, e, M) { const terminal = !!document.querySelector(".lk-vibe-terminal") || e?.look?.vibe === "terminal", replied = !!(M && M.response && M.response !== "declined");
     const curl = terminal && replied && window.PlainText ? window.PlainText.curlLine(location.origin, id, M.rid, M.code, "in") : "";
-    return `<div class="sl-tools" id="slTools"><a class="sl-btn ghost sm" href="/e/${encodeURIComponent(id)}.ics${M && M.response === "going" ? proofQ(M) : ""}" download>${ICON.cal}Add to calendar</a></div>
+    return `<div class="sl-tools" id="slTools"><a class="sl-btn ghost sm sl-calbtn" href="/e/${encodeURIComponent(id)}.ics${M && M.response === "going" ? proofQ(M) : ""}">${ICON.cal}Add to calendar</a></div>
       ${curl ? `<section class="sl-card" id="slCurl"><p class="sl-eyebrow">Reply from a terminal</p><code class="sl-code" id="slCurlLine">${esc(curl)}</code><p class="sl-sub">Swap <span class="sl-mono">"in"</span> for <span class="sl-mono">"maybe"</span> or <span class="sl-mono">"no"</span>. This has your own reply code, so keep it to yourself.</p><button type="button" class="sl-btn ghost sm" data-sl="curl">${ICON.term}Copy</button></section>` : ""}`; }
   async function copy(text, btn) { let ok = false; try { await navigator.clipboard.writeText(text); ok = true; } catch { try { const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch {} }
     if (btn) { const was = btn.innerHTML; btn.textContent = ok ? "Copied" : "Couldn't copy"; setTimeout(() => (btn.innerHTML = was), 1600); } }
@@ -198,6 +198,23 @@
     return el;
   }
 
+  // ---------- Add to calendar: one small choice, Apple Calendar, Google or Outlook ----------
+  // Every "Add to calendar" on the guest pages links to the event's .ics (server/hooksout.js). A tap opens this choice
+  // instead of a download: Apple opens the .ics as a plain link (inline, which an iPhone hands to Calendar; a download
+  // went to Files, and in-app browsers ignored it), Google and Outlook go through /e/<id>/cal/<which> with the same
+  // times. In the create canvas's guest preview there's no event yet, so it says so instead of failing quietly.
+  const calOf = (a) => { const m = /^\/e\/([A-Za-z0-9_-]{2,80})\.ics(\?[^#]*)?$/.exec(a.getAttribute("href") || ""); return m ? { id: m[1], q: m[2] || "" } : null; };
+  function calMenu(a, C) { $("#slCal")?.remove(); const pv = C.id === "_preview" || document.documentElement.classList.contains("pv"), back = document.activeElement;
+    const base = `/e/${encodeURIComponent(C.id)}`, d = document.createElement("div"); d.id = "slCal"; d.className = "sl-calbg";
+    d.innerHTML = `<div class="sl-cal" role="dialog" aria-modal="true" aria-labelledby="slCalH"><p class="sl-eyebrow" id="slCalH">Add to calendar</p>${pv
+      ? `<p class="sl-sub">This is the preview. Once you share the invite, guests can add it to Apple Calendar, Google or Outlook from here.</p>`
+      : `<a class="sl-calopt" href="${base}.ics${C.q}">Apple Calendar</a><a class="sl-calopt" href="${base}/cal/google${C.q}" target="_blank" rel="noopener">Google Calendar</a><a class="sl-calopt" href="${base}/cal/outlook${C.q}" target="_blank" rel="noopener">Outlook</a><a class="sl-calopt" href="${base}.ics${C.q}" download>Download the .ics file</a>`}<button type="button" class="sl-btn ghost" data-calx>${pv ? "OK" : "Cancel"}</button></div>`;
+    document.body.appendChild(d); const close = () => { d.remove(); try { back?.focus?.({ preventScroll: true }); } catch {} };
+    d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-calx]")) return close(); if (e.target.closest(".sl-calopt")) setTimeout(close, 0); });
+    d.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); }); ($(".sl-calopt", d) || $("[data-calx]", d)).focus({ preventScroll: true }); }
+  // capture on window: runs before the preview's own "nothing here leaves the page" listener, so the preview can explain
+  addEventListener("click", (e) => { const a = e.target.closest?.("a[href]"); if (!a || a.classList.contains("sl-calopt") || e.defaultPrevented || e.metaKey || e.ctrlKey) return; const C = calOf(a); if (!C) return;
+    e.preventDefault(); calMenu(a, C); }, true);
   window.Slots = { lineupHTML, quietHTML, hostPanel, askHint, quietFormHTML, run: schedule, markdownOf, ctx: ctxOf, draw: (c) => run(c) };
   if (typeof document === "undefined") return;
   if (/^\/[ei]\/[A-Za-z0-9_-]{2,80}$/.test(location.pathname) || location.pathname === "/g") {

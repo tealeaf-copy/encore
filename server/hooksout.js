@@ -65,20 +65,41 @@ export function icsFold(line) {
   out.push(cur); return out.join("\r\n");
 }
 const utcStamp = (ms) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+/** When an event is, for a calendar: { allDay, start, end } as UTC stamps (20261204T000000Z) or, all day, as dates
+ *  (20261204, the end the day after the last day, as RFC 5545 and Google want it). No end time: three hours. Null when
+ *  there's no date. Pure apart from the time zone maths. */
+export function calTimes(ev) { if (!ISO.test(ev?.date || "")) return null;
+  const tz = eventTz(ev), st = HHMM.test(ev.startTime || "") ? ev.startTime : "", en = HHMM.test(ev.endTime || "") ? ev.endTime : "";
+  if (st) { const s = zonedMs(ev.date, st, tz); const endDay = ISO.test(ev.endDate || "") && ev.endDate >= ev.date ? ev.endDate : ev.date; let e = en ? zonedMs(endDay, en, tz) : s + 3 * 3600e3; if (e <= s) e += 864e5;
+    if (Number.isFinite(s)) return { allDay: false, start: utcStamp(s), end: utcStamp(e), tz }; }
+  const nx = new Date(Date.parse((ISO.test(ev.endDate || "") && ev.endDate > ev.date ? ev.endDate : ev.date) + "T12:00:00Z") + 864e5).toISOString().slice(0, 10).replace(/-/g, "");
+  return { allDay: true, start: ev.date.replace(/-/g, ""), end: nx, tz }; }
+/** A course's repeat (sessions > 1), the way the light invite's Google link had it: weekly unless the host said every two
+ *  weeks or monthly (the same weekday of the month), on the course's weekdays, stopping after the last session. Pure. */
+export function seriesRule(ev) { const n = Math.round(+ev?.sessions || 0); if (n < 2 || !ISO.test(ev?.date || "")) return "";
+  const D = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"], x = new Date(ev.date + "T12:00:00Z"), r = ev.repeat || "weekly";
+  const days = [...new Set((Array.isArray(ev.weekdays) ? ev.weekdays : []).map((w) => D.findIndex((d) => String(w).slice(0, 2).toUpperCase() === d)).filter((i) => i >= 0))];
+  const nth = Math.ceil(x.getUTCDate() / 7), last = new Date(x.getTime() + 7 * 864e5).getUTCMonth() !== x.getUTCMonth() && nth >= 4;
+  const f = r === "monthly" ? `FREQ=MONTHLY;BYDAY=${last ? -1 : nth}${D[x.getUTCDay()]}` : r === "biweekly" ? "FREQ=WEEKLY;INTERVAL=2" : `FREQ=WEEKLY${days.length > 1 ? ";BYDAY=" + days.map((i) => D[i]).join(",") : ""}`;
+  return `RRULE:${f};COUNT=${Math.min(n, 104)}`; }
 /** One VEVENT. Pure apart from the time zone maths. */
 export function vevent({ id, ev, title, url, location = "", host = "", now = Date.now() }) {
-  if (!ISO.test(ev?.date || "")) return [];
-  const tz = eventTz(ev), st = HHMM.test(ev.startTime || "") ? ev.startTime : "", en = HHMM.test(ev.endTime || "") ? ev.endTime : "", L = [];
-  L.push("BEGIN:VEVENT", `UID:${id}@potterylab`, `DTSTAMP:${utcStamp(now)}`);
-  if (st) { const s = zonedMs(ev.date, st, tz); let endDay = ISO.test(ev.endDate || "") && ev.endDate >= ev.date ? ev.endDate : ev.date; let e = en ? zonedMs(endDay, en, tz) : s + 3 * 3600e3; if (e <= s) e += 864e5;
-    if (Number.isFinite(s)) L.push(`DTSTART:${utcStamp(s)}`, `DTEND:${utcStamp(e)}`); }
-  else { const d = ev.date.replace(/-/g, ""), nx = new Date(Date.parse((ISO.test(ev.endDate || "") && ev.endDate > ev.date ? ev.endDate : ev.date) + "T12:00:00Z") + 864e5).toISOString().slice(0, 10).replace(/-/g, ""); L.push(`DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${nx}`); }
+  const W = calTimes(ev); if (!W) return [];
+  const L = ["BEGIN:VEVENT", `UID:${id}@potterylab`, `DTSTAMP:${utcStamp(now)}`];
+  if (W.allDay) L.push(`DTSTART;VALUE=DATE:${W.start}`, `DTEND;VALUE=DATE:${W.end}`); else L.push(`DTSTART:${W.start}`, `DTEND:${W.end}`);
+  const rr = seriesRule(ev); if (rr) L.push(rr);
   L.push(`SUMMARY:${icsText(title)}`); if (location) L.push(`LOCATION:${icsText(location)}`);
   // the public copy, the host and the link; no DESCRIPTION at all on a private, friends-only or Ask to join event
   const desc = gated(ev) ? "" : [publicCopy(ev), host ? `Hosted by ${host}` : "", url].filter(Boolean).join("\n"); if (desc) L.push(`DESCRIPTION:${icsText(desc)}`);
   if (url && /^https?:\/\/[^\s"<>]+$/.test(url)) L.push(`URL:${url}`);
   L.push("END:VEVENT"); return L;
 }
+/** Google Calendar and Outlook links for one event, from the same times as the .ics. Pure apart from the time zone maths. */
+export function calLinks({ ev, title, url = "", location = "" }) { const W = calTimes(ev); if (!W) return null;
+  const g = new URLSearchParams({ action: "TEMPLATE", text: title || "", dates: `${W.start}/${W.end}`, details: url, location }); if (!W.allDay && W.tz) g.set("ctz", W.tz); const rr = seriesRule(ev); if (rr) g.set("recur", rr);
+  const iso = (x) => W.allDay ? `${x.slice(0, 4)}-${x.slice(4, 6)}-${x.slice(6, 8)}` : `${x.slice(0, 4)}-${x.slice(4, 6)}-${x.slice(6, 8)}T${x.slice(9, 11)}:${x.slice(11, 13)}:${x.slice(13, 15)}Z`;
+  const o = new URLSearchParams({ path: "/calendar/action/compose", rru: "addevent", subject: title || "", startdt: iso(W.start), enddt: iso(W.end), body: url, location }); if (W.allDay) o.set("allday", "true");
+  return { google: "https://calendar.google.com/calendar/render?" + g, outlook: "https://outlook.live.com/calendar/0/deeplink/compose?" + o }; }
 export const calendar = (name, events) => ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Pottery Lab//Events//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", `X-WR-CALNAME:${icsText(name)}`, ...events.flat(), "END:VCALENDAR"].map(icsFold).join("\r\n") + "\r\n";
 
 // ---------- unfurls ----------
@@ -148,13 +169,20 @@ export function mountHooksOut(app, { store, small, C, ownerOnly, publicOrigin, p
     const base = publicOrigin(req), since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10), S = scopeStore(store, ws);
     const E = isDemo(ws) ? [] : S.list("events").filter((d) => ID.test(d.id) && openEvent(d.data) && !!d.data.discoverable && ISO.test(d.data.date || "") && d.data.date >= since).sort((a, b) => a.data.date.localeCompare(b.data.date)).slice(0, 200);
     sendIcs(res, handle, calendar(`${clean(h.name, 80)} on Pottery Lab`, E.map((d) => vevent({ id: d.id, ev: d.data, title: titleOf(store, d.id, d.data, ws), url: `${base}/e/${encodeURIComponent(d.id)}`, location: areaOf(d.data), host: clean(h.name, 80) })))); });
-  app.get(/^\/e\/([A-Za-z0-9_-]{2,80})\.ics$/, (req, res) => { if (limited("c:" + (req.ip || "?"), 300)) return res.status(429).type("text").send("Slow down.");
-    const id = req.params[0], ws = workspaceOfEvent(id), S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data; if (!ev || ev.example || ev.cancelled || !(ev.published || ev.discoverable)) return res.status(404).type("text").send("No such event.");
+  // One event, for a guest's own calendar: the .ics (Apple Calendar opens it from a plain link, inline, which works better
+  // on an iPhone than a download), and /e/<id>/cal/google and /cal/outlook, which send you on with the same times. A guest
+  // who is in (their reply proof, rid + code) gets the exact place; everyone else gets the area.
+  const oneCal = (req, res) => { if (limited("c:" + (req.ip || "?"), 300)) { res.status(429).type("text").send("Slow down."); return null; }
+    const id = req.params[0], ws = workspaceOfEvent(id), S = ws && scopeStore(store, ws), ev = S?.get("events/" + id)?.data; if (!ev || ev.example || ev.cancelled || !(ev.published || ev.discoverable)) { res.status(404).type("text").send("No such event."); return null; }
     const P = req.query.rid ? app.locals.social?.rsvpProof?.(id, String(req.query.rid).slice(0, 80), String(req.query.code || "").slice(0, 40)) : null, going = P?.r?.response === "going";
     const say = going ? guestPlace(ws) : null, exact = going ? [clean(say(ev.meetPoint || ev.venueName), 120), clean(say(ev.venueAddr), 200)].filter(Boolean).join(", ") : "", base = publicOrigin(req), h = C.profileOf?.(ws);
-    if (going) res.set("Cache-Control", "private, no-store");
-    const body = calendar(clean(ev.pubTitle || ev.name, 80) || "Event", [vevent({ id, ev, title: titleOf(store, id, ev, ws), url: `${base}/e/${encodeURIComponent(id)}`, location: exact || areaOf(ev), host: closed(ev) ? "" : clean(h?.name, 80) })]);
-    res.set({ "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="event.ics"`, ...(going ? {} : { "Cache-Control": "public, max-age=300" }) }).send(body); });
+    res.set("Cache-Control", going ? "private, no-store" : "public, max-age=300");
+    return { id, ev, going, title: titleOf(store, id, ev, ws), url: `${base}/e/${encodeURIComponent(id)}`, location: exact || areaOf(ev), host: closed(ev) ? "" : clean(h?.name, 80) }; };
+  app.get(/^\/e\/([A-Za-z0-9_-]{2,80})\.ics$/, (req, res) => { const O = oneCal(req, res); if (!O) return;
+    const body = calendar(clean(O.ev.pubTitle || O.ev.name, 80) || "Event", [vevent(O)]), file = String(O.title || "event").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "event";
+    res.set({ "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="${file}.ics"` }).send(body); });
+  app.get(/^\/e\/([A-Za-z0-9_-]{2,80})\/cal\/(google|outlook)$/, (req, res) => { const O = oneCal(req, res); if (!O) return; const L = calLinks(O);
+    if (!L) return res.status(404).type("text").send("This event has no date yet."); res.redirect(302, L[req.params[1]]); });
 
   if (jobs) { const tick = () => runReminders().catch((e) => console.warn("[hooksout]", e?.message || e)); const t = setInterval(tick, 3600e3); t.unref?.(); app.locals.hooksJob = { stop: () => clearInterval(t), run: tick }; }
   app.locals.hooksout = { sent, runReminders, onReply, cfgOf };

@@ -211,7 +211,7 @@
       : `<a class="sl-calopt" href="${base}.ics${C.q}">Apple Calendar</a><a class="sl-calopt" href="${base}/cal/google${C.q}" target="_blank" rel="noopener">Google Calendar</a><a class="sl-calopt" href="${base}/cal/outlook${C.q}" target="_blank" rel="noopener">Outlook</a><a class="sl-calopt" href="${base}.ics${C.q}" download>Download the .ics file</a>`}<button type="button" class="sl-btn ghost" data-calx>${pv ? "OK" : "Cancel"}</button></div>`;
     document.body.appendChild(d); const close = () => { d.remove(); try { back?.focus?.({ preventScroll: true }); } catch {} };
     d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-calx]")) return close(); if (e.target.closest(".sl-calopt")) setTimeout(close, 0); });
-    d.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); }); ($(".sl-calopt", d) || $("[data-calx]", d)).focus({ preventScroll: true }); }
+    d.addEventListener("keydown", (e) => { if (e.key === "Escape") return close(); if (e.key !== "Tab") return; const F = [...d.querySelectorAll("a[href],button")], i = F.indexOf(document.activeElement); if (e.shiftKey ? i <= 0 : i === F.length - 1) { e.preventDefault(); (e.shiftKey ? F[F.length - 1] : F[0]).focus(); } }); /* Tab stays in the sheet */ ($(".sl-calopt", d) || $("[data-calx]", d)).focus({ preventScroll: true }); }
   // capture on window: runs before the preview's own "nothing here leaves the page" listener, so the preview can explain
   if (typeof addEventListener === "function") addEventListener("click", (e) => { const a = e.target.closest?.("a[href]"); if (!a || a.classList.contains("sl-calopt") || e.defaultPrevented || e.metaKey || e.ctrlKey) return; const C = calOf(a); if (!C) return;
     e.preventDefault(); calMenu(a, C); }, true);

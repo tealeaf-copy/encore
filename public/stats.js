@@ -40,7 +40,8 @@
 .pls-t.wide{grid-column:1/-1}
 .pls-i{width:36px;height:36px;border-radius:50%;background:var(--pl-raised);display:grid;place-items:center;color:var(--pl-frame)}
 .pls-b{display:grid;gap:1px;min-width:0}
-.pls-n{font:400 28px/1 var(--sys-display);letter-spacing:-.015em;margin-top:2px}
+@media (max-width:480px){.pls-t{grid-template-columns:minmax(0,1fr);gap:8px}.pls-i{width:32px;height:32px}} /* phones: the icon sits above the number, so the words get the whole tile ("neighbourhood explored" wrapped a word a line) */
+.pls-n{font:600 28px/1 var(--sys-display);letter-spacing:-.015em;margin-top:2px}
 .pls-v{font:400 19px/1.25 var(--sys-title);letter-spacing:-.01em;overflow-wrap:anywhere;margin-top:4px}
 .pls-l{font-size:13px;line-height:1.3;color:var(--pl-soft)}
 .pls-b small{font-size:13px;color:var(--pl-muted);line-height:1.35;overflow-wrap:anywhere}

@@ -71,12 +71,14 @@ section.plk-shelves{display:grid;gap:28px;margin:4px 0 8px;padding:8px 0 0}secti
   const skelCard = `<article class="ls-card plk-card" aria-hidden="true"><div class="ls-media ls-skel" style="aspect-ratio:3/2;border-radius:0"></div><div class="ls-body"><p class="ls-when">&nbsp;</p><span class="ls-title">&nbsp;</span><p class="ls-sub">&nbsp;</p></div></article>`;
   const skeleton = (n) => Array.from({ length: n }, () => `<section class="plk-sh" aria-hidden="true"><div class="plk-hd"><h2>&nbsp;</h2></div><p>&nbsp;</p><div class="plk-row">${skelCard.repeat(3)}</div></section>`).join("");
   async function shelves(el, { city: c = city(), max = 0 } = {}) { if (!el) return []; css();
-    if (!el.children.length) { el.classList.add("plk-shelves"); el.setAttribute("aria-busy", "true"); el.innerHTML = skeleton(max || 3); }
+    let seen = -1; try { const v = localStorage.getItem("plk.n"); seen = v == null ? -1 : +v; } catch {}
+    // reserve room only for the shelves the last visit really had, so an empty answer doesn't pull the page up under the reader
+    if (!el.children.length && seen > 0) { el.classList.add("plk-shelves"); el.setAttribute("aria-busy", "true"); el.innerHTML = skeleton(Math.min(max || 3, seen)); }
     let L = []; try { L = (await get("/api/public/collections" + (c ? "?city=" + encodeURIComponent(c) : ""))).collections || []; } catch { L = []; }
     el.classList.add("plk-shelves"); el.removeAttribute("aria-busy");
     // each shelf leads with a card no shelf above it led with, so the row of shelves never opens on the same event twice
     const led = new Set(); for (const x of L) { if (x.kind === "hosts" || !x.events.length) continue; const i = x.events.findIndex((e) => !led.has(e.id)); if (i > 0) x.events.unshift(...x.events.splice(i, 1)); led.add(x.events[0].id); }
-    const shown = max ? L.slice(0, max) : L, rest = max ? L.slice(max) : [];
+    const shown = max ? L.slice(0, max) : L, rest = max ? L.slice(max) : []; try { localStorage.setItem("plk.n", String(shown.length)); } catch {}
     el.innerHTML = (shown.length ? shown.map((x) => `<section class="plk-sh" aria-labelledby="plk-${esc(x.id)}"><div class="plk-hd"><h2 id="plk-${esc(x.id)}">${esc(x.title)}</h2><a href="/c/${encodeURIComponent(x.id)}${c ? "?city=" + encodeURIComponent(c) : ""}" aria-label="See all: ${esc(x.title)}">See all</a></div><p>${esc(x.intro)}</p>
       <div class="plk-row">${x.kind === "hosts" ? x.hosts.map(hostCard).join("") : x.events.map(card).join("") + (x.ideas || []).map(ideaCard).join("")}</div></section>`).join("") : "") + (rest.length ? `<nav class="plk-others" aria-label="More collections"><b>More collections</b>${rest.map((x) => `<a class="ls-chip" href="/c/${encodeURIComponent(x.id)}${c ? "?city=" + encodeURIComponent(c) : ""}">${esc(x.title)}</a>`).join("")}</nav>` : "");
     return L; }

@@ -195,8 +195,8 @@ test("The + sheet: a Create button on the feed, tiles that fit each person, post
   assert.ok(js.includes('"/api/me/posts"') && js.includes('"/api/host/club/posts"') && !/\u2014/.test(js), "the feed's own posts and the club's, no em dashes");
   assert.deepEqual(await (await get("/api/me/compose")).json(), { signedIn: false, tiles: [] });
   const tiles = async (w) => (await (await get("/api/me/compose", U[w].cookie)).json()).tiles;
-  assert.deepEqual(await tiles("noor"), ["event"], "a new member: a new event only");
-  assert.deepEqual(await tiles("ana"), ["event", "photos"], "went to something: photos from it");
+  assert.deepEqual(await tiles("noor"), ["event", "drop"], "a new member with a page: a new event or a drop (a maker's first thing is often a drop)");
+  assert.deepEqual(await tiles("ana"), ["event", "drop", "photos"], "went to something: photos from it");
   assert.deepEqual(await tiles("kit"), ["event", "drop"], "a host: a drop too");
   assert.deepEqual(await tiles("theo"), ["event", "drop", "photos", "club"], "a host with a fan club on: an update for members");
   // a "Who's in?" post through the existing endpoint shows in a friend's stream

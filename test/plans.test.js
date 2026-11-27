@@ -66,7 +66,7 @@ test("kinds and statuses: going, hosting, pickup, class, waitlist and asks, save
   assert.equal(kindOf({ drop: true }, { response: "going" }), "pickup"); assert.equal(kindOf({ series: true }, { response: "going" }), "class");
   assert.equal(kindOf({}, { response: "waitlist" }), "waitlist"); assert.equal(kindOf({}, { response: "requested" }), "waitlist"); assert.equal(kindOf({}, null, { saved: true }), "saved");
   assert.equal(statusOf("hosting", { published: true }, null, { going: 12 }), "Hosting · 12 in"); assert.equal(statusOf("hosting", { published: true }, null, { going: 3, asking: 2 }), "Hosting · 3 in · 2 asking");
-  assert.equal(statusOf("hosting", {}, null), "Draft"); assert.equal(statusOf("hosting", { published: true, drop: true }, null, { orders: 1 }), "Pickup window · 1 order");
+  assert.equal(statusOf("hosting", {}, null), "Draft"); assert.equal(statusOf("hosting", { published: true, drop: true, windows: [{ date: "2026-12-06", start: "09:00", end: "10:00" }] }, null, { orders: 1 }), "Pickup Sun, Dec 6 · 9 to 10am · 1 order");
   assert.equal(statusOf("waitlist", {}, { response: "waitlist" }, { pos: 2 }), "Waitlist #2"); assert.equal(statusOf("waitlist", {}, { response: "requested" }, { hostFirst: "Mina" }), "Asked · waiting on Mina");
   assert.equal(statusOf("pickup", {}, { pickupLabel: "10-11", code: "abc123x" }), "Pickup 10am to 11am · #ABC123");
   assert.equal(statusOf("going", {}, { response: "going" }), "Going"); assert.equal(statusOf("going", { date: "2026-09-28", price: "$60" }, { response: "going" }, { today: "2026-11-27" }), "Went", "a past plan never says Almost in, pay $60"); assert.equal(statusOf("class", {}, { response: "going" }, { episode: { n: 3, total: 6 } }), "Class 3 of 6");

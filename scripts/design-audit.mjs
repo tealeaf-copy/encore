@@ -102,7 +102,7 @@ function audit(opts) {
     }
     // a control whose label wraps (one text run on two lines); a full-width row that holds a title may wrap
     if (isCtl(el) && r.height < 120 && r.width < 280 && (el.innerText || "").trim().length <= 48) {
-      for (const n of textNodes(el)) { const tops = lineTops(n); if (tops.length > 1 && once("w" + name(el))) { add("wrap", el, `label wraps onto ${tops.length} lines ("${n.nodeValue.trim().slice(0, 30)}")`, "medium"); break; } }
+      for (const n of textNodes(el)) { const lc = getComputedStyle(n.parentElement).webkitLineClamp; if (lc && lc !== "none") continue; /* a name set to wrap onto two lines on purpose */ const tops = lineTops(n); if (tops.length > 1 && once("w" + name(el))) { add("wrap", el, `label wraps onto ${tops.length} lines ("${n.nodeValue.trim().slice(0, 30)}")`, "medium"); break; } }
     }
     // interactive inside interactive; a filled pill inside a button
     if (el.matches("a[href],button,[role=button],input:not([type=hidden]),select,textarea,summary,[role=link]")) {
@@ -119,6 +119,8 @@ function audit(opts) {
       const first = cs.fontFamily.split(",")[0].trim();
       if (!KIT_FONTS.test(first) && !/emoji/i.test(first) && once("f" + first + el.tagName + (el.className || ""))) add("font", el, `font is ${first}, not the kit's`, "medium");
       if (KIT_FONTS.test(first) && !used.has(first + "|" + cs.fontWeight)) used.set(first + "|" + cs.fontWeight, el);
+      // headlines are Plex Sans 600 (docs/brand-kit.md); a 400 headline reads as another face
+      if (/^H[1-3]$/.test(el.tagName) && /Plex Sans/.test(first) && parseFloat(cs.fontSize) >= 24 && +cs.fontWeight < 600 && once("hw" + el.tagName + (el.className || ""))) add("font", el, `a ${cs.fontSize} headline at weight ${cs.fontWeight} (the kit's headlines are 600)`, "medium");
       // the display face only at 24px and up: Plex Sans is both, so the check is the serif under 18px
       if (/IBM Plex Serif/i.test(first) && parseFloat(cs.fontSize) < 18 && once("s" + name(el))) add("font", el, `the serif at ${cs.fontSize} (event titles are 22px; under 18px use the text face)`, "low");
     }
@@ -155,7 +157,7 @@ function audit(opts) {
     const mine = faces.filter((f) => f.fam === fam);
     const google = [...document.querySelectorAll('link[href*="fonts.googleapis.com"]')].some((l) => l.href.includes(fam.replace(/ /g, "+")));
     if (!mine.some((f) => f.ok)) add("font", el, google ? `${fam} only comes from Google Fonts here (not the local copy), so offline or blocked it draws in the system face` : `${fam} is named but never loaded here, so it draws in the system face`, google ? "low" : "high");
-    else if (!mine.some((f) => f.ok && (f.w === w || (/ /.test(f.w) && +w >= +f.w.split(" ")[0] && +w <= +f.w.split(" ")[1])))) add("font", el, `${fam} at weight ${w} isn't loaded (the nearest weight or a faked bold draws instead)`, "low"); }
+    else if (getComputedStyle(el).fontSynthesisWeight !== "none" && !mine.some((f) => f.ok && (f.w === w || (/ /.test(f.w) && +w >= +f.w.split(" ")[0] && +w <= +f.w.split(" ")[1])))) add("font", el, `${fam} at weight ${w} isn't loaded (the nearest weight or a faked bold draws instead)`, "low"); }
   // single-word last lines in short copy
   for (const el of shown) {
     if (!el.matches("p,h1,h2,h3,h4,li,figcaption,small,dd,blockquote,[class*=meta],[class*=sub],[class*=desc],[class*=blurb],[class*=title],[class*=lede],[class*=note],[class*=line]")) continue;
